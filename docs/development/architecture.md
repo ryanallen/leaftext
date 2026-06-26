@@ -1,0 +1,114 @@
+# Architecture
+
+> leaftext is a Rust desktop app using tao for windowing and wry for WebView. The Markdown pipeline, IPC bridge, and background indexer are all covered here.
+
+leaftext is a single Rust binary that embeds a WebView (via `wry`) inside a native window (via `tao`). The Markdown rendering pipeline runs on the Rust side; the result is injected into the WebView as HTML. All user interaction — opening files, navigating history, adjusting settings — flows through a typed IPC bridge between JavaScript running in the WebView and the Rust host.
+
+## Core crates
+
+| Crate                   | Role                                                 |
+| ----------------------- | ---------------------------------------------------- |
+| `tao`                   | Native windowing and event loop                      |
+| `wry`                   | WebView embedding (WKWebView / WebView2 / WebKitGTK) |
+| `pulldown-cmark`        | CommonMark + GFM Markdown parser                     |
+| `syntect` + `two-face`  | Syntax highlighting for code blocks                 |
+| `ammonia`               | HTML sanitization (allowlist-based)                  |
+| `rusqlite` (bundled)    | SQLite for the library indexer                       |
+| `rfd`                   | Native file dialogs                                  |
+| `serde` / `serde_json`  | IPC message serialization                            |
+| `notify-debouncer-mini` | Filesystem watcher for live reload                   |
+| `blake3`                | File content hashing in the indexer                  |
+
+## Source files
+
+leaftext's Rust source is organized into three files:
+
+- **`src/main.rs`** — Entry point. Owns the `tao` event loop, the `Workspace` and `Tab` state, the IPC handler dispatch, the `FileWatch` live-reload watcher, and navigation history. Every `UserEvent` variant that drives the UI (open, close tab, switch tab, go back/forward, settings changes, indexer results) is handled here.
+- **`src/lib.rs`** — Core document rendering and app-state helpers. Contains `render_markdown_document()`, the HTML/CSS/JS shell generation (`app_shell_html()`), theme compilation (`compiled_theme_css()`), settings persistence (`load_settings()` / `save_settings()`), the minimap model builder, and the `local_image_protocol_response()` handler for the `leaf-image://` custom URL scheme.
+- **`src/indexer.rs`** — Background SQLite-based library indexer. Implements a breadth-first filesystem walk with a parse/hash worker pool (`PARSE_WORKERS = 4`), incremental fast-path checks on `mtime + size`, missing-file detection, and a separate read-only connection so tree queries answer promptly during a full crawl. It also answers the library's full-text search: files are split into chunks indexed in a SQLite FTS5 table, queried with BM25 ranking and highlighted snippets, and frontmatter fields are parsed into a normalized table.
+
+## Rendering pipeline
+
+When a user opens a `.md` file, the following sequence runs entirely on the Rust side before any content reaches the WebView:
+
+**1. Read the file**
+
+`load_document()` or `opened_document_from_markdown()` in `lib.rs` reads the Markdown source from disk.
+
+**2. Parse with pulldown-cmark**
+
+`render_markdown_document()` parses the Markdown using `pulldown-cmark` with `Options::ENABLE_TABLES`, `ENABLE_STRIKETHROUGH`, `ENABLE_TASKLISTS`, `ENABLE_GFM`, `ENABLE_FOOTNOTES`, and `ENABLE_MATH` enabled.
+
+**3. Apply GitHub extras**
+
+A pipeline of event transformers adds heading IDs, linkifies plain URLs, resolves GitHub issue/PR/commit references and emoji shortcodes, renders syntax-highlighted fenced code blocks via `syntect`, and handles footnote back-references.
+
+**4. Sanitize with ammonia**
+
+The raw rendered HTML is passed through `ammonia` with an allowlist of GFM-safe tags and attributes. Scripts, styles, event handlers, and dangerous URLs are stripped before the WebView ever sees the content.
+
+**5. Inject initial settings**
+
+`initial_settings_script()` produces `window.__leafSettings = {...}` from the persisted `Settings` struct. This script is registered as a WebView initialization script so the theme and library pane render from saved state on the very first paint — no flash of defaults.
+
+**6. Load into the WebView**
+
+`app_shell_html()` generates the full HTML/CSS/JS shell. `reading_mode_css()` assembles the complete style block: Noto fonts + Primer CSS primitives + compiled theme CSS + application CSS. The rendered document HTML is injected into the shell via `workspace_state_script()` or `workspace_switch_script()`, which call the appropriate `window.leaf*` JavaScript entry points.
+
+## IPC bridge
+
+Communication between the JavaScript running in the WebView and the Rust host uses `wry`'s IPC mechanism. JavaScript calls `window.ipc.postMessage(JSON.stringify(message))`. Rust deserializes the body into an `IpcCommand` enum using `serde_json`, then dispatches it as a `UserEvent` on the `tao` event loop.
+
+Key `IpcCommand` variants include:
+
+| Command                | Triggered by                          |
+| ---------------------- | ------------------------------------- |
+| `open`                 | "Open" button or `Ctrl+O` / `Cmd+O`   |
+| `openRecent`           | Recent file list click                |
+| `closeTab`             | Tab close button or `Ctrl+W`          |
+| `switchTab`            | Tab click                             |
+| `moveTab`              | Tab drag-and-drop reorder             |
+| `goBack` / `goForward` | History buttons or keyboard shortcuts |
+| `openLink`             | In-document link click                |
+| `openGlossary`         | Glossary link click (opens the term in a bottom sheet) |
+| `setThemeMode`         | Theme picker in Settings menu         |
+| `setMinimapEnabled`    | Minimap toggle in Settings menu       |
+| `setPagerEnabled`      | Pager toggle in Settings menu         |
+| `setSpeedReaderEnabled` | Speed Reader toggle in Settings menu |
+| `setIndexingEnabled`   | "Index entire device" toggle          |
+| `getFileTree`          | Boot-time library pane initialization |
+| `loadPager`            | Request the Previous / Next pager after a document renders |
+| `search`               | Library search box query              |
+| `revealFile`           | File row context menu: reveal in file manager |
+| `copyFile`             | File row context menu: cut/copy the file to the clipboard |
+| `copyPath`             | File row context menu: copy the file path as text |
+| `renameFile`           | File row context menu: inline rename |
+| `deleteFile`           | File row context menu: move to Recycle Bin / Trash |
+| `showProperties`       | File row context menu: OS file properties |
+| `goHome`               | Clicking the leaftext logo            |
+| `setLibraryState`      | Library view / expanded folders change |
+| `setLibraryLayout`     | Library pane resize or collapse       |
+| `setWindowChrome`      | Theme change repainting the title bar and window border (Windows) |
+
+Results flow back from Rust to JavaScript via `webview.evaluate_script()`, calling `window.leafSetState()`, `window.leafSwitchTab()`, `window.leafReloadDocument()`, `window.leafSetNavigation()`, `window.leafSetLibraryState()`, `window.leafShowGlossary()`, and related entry points.
+
+## Key data structures
+
+The following types in `main.rs` model the reader's stateful document management:
+
+- **`Workspace`** — holds `Vec<Tab>` (all open tabs) and `active: Option<usize>` (the currently visible tab index, or `None` when the home screen is showing).
+- **`Tab`** — holds a `DocumentHistory`, a `ScrollHistory`, a `title` string (cached for the tab bar), and an `Option<ScrollAnchor>` (the last saved reading position).
+- **`DocumentHistory`** — a `Vec<PathBuf>` of visited paths with a current index. Supports `go_back()`, `go_forward()`, and `forget_current()` (used when a file fails to open).
+- **`ScrollHistory`** — two `Vec<ScrollAnchor>` stacks (`back_entries` and `forward_entries`) that record in-document scroll jumps independently from document-level navigation.
+- **`ScrollAnchor`** — `{ section: Option<String>, block: u32, offset_y: f64 }`. A render-stable position: the nearest heading `id` above the reader's top edge, the block ordinal within that section, and the signed pixel offset. Survives a full re-render because the same Markdown always produces the same block sequence.
+- **`FileWatch`** — a debounced `notify` watcher (200 ms window) pointed at the active document's parent directory. Watching the parent rather than the file itself survives editors that save by atomic rename.
+
+## Local image protocol
+
+`local_image_protocol_response()` in `lib.rs` serves local image files under the `leaf-image://` custom URL scheme (or `http://leaf-image.local/` on platforms where custom protocols are restricted, such as Windows and Android).
+
+Before serving any bytes, it validates that the requested path resolves to within the **access root** — the parent of the currently opened document's directory. Requests that escape this scope return `403 Forbidden`; missing files return `404 Not Found`. This scoped access model lets documents reference sibling and parent-directory images via relative paths (including `../`) without exposing the full filesystem.
+
+## Bundled asset protocol
+
+A second custom scheme, `leaf-asset://` (`http://leaf-asset.local/` where custom protocols are restricted), serves the renderer's vendored runtimes — the Mermaid bundle, the KaTeX script and stylesheet, and the KaTeX WOFF2 fonts — straight from bytes compiled into the binary with `include_bytes!`. Diagrams and math therefore render fully offline, with no CDN dependency, and the Content-Security-Policy restricts script, style, and font sources to `'self'` plus this protocol.

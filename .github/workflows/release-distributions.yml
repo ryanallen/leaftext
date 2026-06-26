@@ -1,0 +1,328 @@
+name: Release macOS Distributions
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Existing tag to build and publish
+        required: true
+        type: string
+
+permissions:
+  actions: write
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  DIST_TAG: ${{ inputs.tag_name || github.ref_name }}
+
+jobs:
+  macos:
+    name: Build macOS Distributions
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: refs/tags/${{ inputs.tag_name || github.ref_name }}
+
+      - name: Verify runner tools
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "PATH=$PATH"
+          uname -a
+          sw_vers
+
+          git --version
+          python3 --version
+          gh --version
+          rustc --version || true
+          cargo --version || true
+
+          command -v lipo
+          command -v hdiutil
+          test -x /usr/libexec/PlistBuddy
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Cache Cargo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/git
+            ~/.cargo/registry
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-release-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-release-
+
+      - name: Build release binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cargo build --release --locked --bins --target aarch64-apple-darwin
+          cargo build --release --locked --bins --target x86_64-apple-darwin
+
+      - name: Package distributions
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="${DIST_TAG}"
+          version="${tag#v}"
+          app_name="leaftext.app"
+
+          mkdir -p dist
+
+          python3 <<'PY' > "$RUNNER_TEMP/bin-targets.txt"
+          import json
+          import subprocess
+
+          metadata = json.loads(subprocess.check_output(["cargo", "metadata", "--no-deps", "--format-version", "1"]))
+          packages = metadata.get("packages", [])
+          resolve = metadata.get("resolve") or {}
+          root_id = resolve.get("root")
+          package = next((item for item in packages if item.get("id") == root_id), None)
+          if package is None and metadata.get("workspace_members"):
+              members = set(metadata["workspace_members"])
+              package = next((item for item in packages if item.get("id") in members), None)
+          if package is None and packages:
+              package = packages[0]
+          if package is None:
+              raise SystemExit("Could not resolve Cargo package metadata")
+
+          bins = []
+          for target in package.get("targets", []):
+              if "bin" in target.get("kind", []):
+                  bins.append(target["name"])
+          if not bins:
+              raise SystemExit("Release requires at least one Cargo binary target")
+          print("\n".join(sorted(set(bins))))
+          PY
+
+          main_binary=""
+          while IFS= read -r binary; do
+            if [ -z "${main_binary}" ] || [ "${binary}" = "leaftext" ]; then
+              main_binary="${binary}"
+            fi
+          done < "$RUNNER_TEMP/bin-targets.txt"
+
+          if [ -z "${main_binary}" ]; then
+            echo "Release requires at least one Cargo binary target" >&2
+            exit 1
+          fi
+
+          arm64_binary="target/aarch64-apple-darwin/release/${main_binary}"
+          x64_binary="target/x86_64-apple-darwin/release/${main_binary}"
+          universal_binary="dist/${main_binary}-universal"
+
+          test -x "${arm64_binary}"
+          test -x "${x64_binary}"
+
+          lipo -create \
+            "${arm64_binary}" \
+            "${x64_binary}" \
+            -output "${universal_binary}"
+
+          lipo "${universal_binary}" -verify_arch arm64 x86_64
+          lipo -info "${universal_binary}"
+
+          package_distribution() {
+            local artifact_suffix="$1"
+            local source_binary="$2"
+
+            local package_name="leaftext-${tag}-macos-${artifact_suffix}"
+            local package_dir="dist/package/${package_name}"
+            local app_dir="${package_dir}/${app_name}"
+            local app_contents="${app_dir}/Contents"
+            local app_macos="${app_contents}/MacOS"
+            local app_resources="${app_contents}/Resources"
+            local dmg_root="dist/dmg-${artifact_suffix}"
+            local dmg_path="dist/leaftext-${tag}-macos-${artifact_suffix}.dmg"
+
+            rm -rf "${package_dir}" "${dmg_root}"
+            mkdir -p "${app_macos}" "${app_resources}" "${dmg_root}"
+
+            cp "${source_binary}" "${app_macos}/leaftext"
+            chmod +x "${app_macos}/leaftext"
+
+            cat > "${app_contents}/Info.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleDevelopmentRegion</key>
+            <string>en</string>
+            <key>CFBundleDisplayName</key>
+            <string>Leaf Text</string>
+            <key>CFBundleExecutable</key>
+            <string>leaftext</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.ryanallen.leaftext</string>
+            <key>CFBundleInfoDictionaryVersion</key>
+            <string>6.0</string>
+            <key>CFBundleName</key>
+            <string>Leaf Text</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>CFBundleShortVersionString</key>
+            <string>${version}</string>
+            <key>CFBundleVersion</key>
+            <string>${version}</string>
+            <key>LSMinimumSystemVersion</key>
+            <string>13.0</string>
+            <key>NSHighResolutionCapable</key>
+            <true/>
+            <key>NSPrincipalClass</key>
+            <string>NSApplication</string>
+            <key>NSDesktopFolderUsageDescription</key>
+            <string>Leaf Text indexes Markdown files in your Desktop folder so they appear in the library and search.</string>
+            <key>NSDocumentsFolderUsageDescription</key>
+            <string>Leaf Text indexes Markdown files in your Documents folder so they appear in the library and search.</string>
+            <key>NSDownloadsFolderUsageDescription</key>
+            <string>Leaf Text indexes Markdown files in your Downloads folder so they appear in the library and search.</string>
+            <key>NSRemovableVolumesUsageDescription</key>
+            <string>Leaf Text indexes Markdown files on connected drives so they appear in the library and search.</string>
+            <key>NSNetworkVolumesUsageDescription</key>
+            <string>Leaf Text indexes Markdown files on network volumes so they appear in the library and search.</string>
+          </dict>
+          </plist>
+          PLIST
+
+            # Build the app icon from the PNG source. macOS runners ship sips +
+            # iconutil, so we generate the full .icns at package time rather than
+            # committing a binary; swapping in a larger source PNG re-crisps every
+            # size automatically. A prebuilt assets/Leaf.icns, if present, wins.
+            icon_source="assets/leaf-icon.png"
+            if [ -f "assets/Leaf.icns" ]; then
+              cp "assets/Leaf.icns" "${app_resources}/Leaf.icns"
+              /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string Leaf" "${app_contents}/Info.plist"
+            elif [ -f "${icon_source}" ]; then
+              iconset="${RUNNER_TEMP}/Leaf.iconset"
+              rm -rf "${iconset}"
+              mkdir -p "${iconset}"
+              for spec in \
+                "16:icon_16x16" "32:icon_16x16@2x" \
+                "32:icon_32x32" "64:icon_32x32@2x" \
+                "128:icon_128x128" "256:icon_128x128@2x" \
+                "256:icon_256x256" "512:icon_256x256@2x" \
+                "512:icon_512x512" "1024:icon_512x512@2x"; do
+                px="${spec%%:*}"
+                name="${spec##*:}"
+                sips -z "${px}" "${px}" "${icon_source}" --out "${iconset}/${name}.png" >/dev/null
+              done
+              iconutil -c icns "${iconset}" -o "${app_resources}/Leaf.icns"
+              test -f "${app_resources}/Leaf.icns"
+              /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string Leaf" "${app_contents}/Info.plist"
+            fi
+
+            test -d "${app_contents}"
+            test -x "${app_macos}/leaftext"
+            test -f "${app_contents}/Info.plist"
+            /usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "${app_contents}/Info.plist" | grep -qx "leaftext"
+            /usr/libexec/PlistBuddy -c "Print :CFBundlePackageType" "${app_contents}/Info.plist" | grep -qx "APPL"
+
+            # Ad-hoc sign the finished bundle (no Apple Developer ID available).
+            # This gives the app a valid signature so macOS lists it cleanly under
+            # Privacy & Security and accepts a Full Disk Access grant; we omit the
+            # hardened runtime, which without the allow-jit entitlement would break
+            # the WKWebView the reader renders in. An ad-hoc signature is not
+            # notarized, so first launch still needs right-click > Open, and the
+            # signature (and thus any per-folder TCC grant) changes each release —
+            # Full Disk Access is the durable way to index everything (see docs).
+            codesign --force --sign - "${app_dir}"
+            codesign --verify --verbose "${app_dir}"
+
+            cp -R "${app_dir}" "${dmg_root}/${app_name}"
+            ln -s /Applications "${dmg_root}/Applications"
+
+            test -d "${dmg_root}/${app_name}/Contents/MacOS"
+            test -x "${dmg_root}/${app_name}/Contents/MacOS/leaftext"
+            test -L "${dmg_root}/Applications"
+            test "$(readlink "${dmg_root}/Applications")" = "/Applications"
+
+            create_dmg() {
+              local attempt
+              for attempt in 1 2 3 4 5; do
+                rm -f "${dmg_path}"
+                if hdiutil create -volname "Leaf Text ${tag}" -srcfolder "${dmg_root}" -ov -format UDZO "${dmg_path}"; then
+                  return 0
+                fi
+                if [ "${attempt}" = "5" ]; then
+                  return 1
+                fi
+                echo "hdiutil create failed on attempt ${attempt}; retrying after filesystem cleanup" >&2
+                sync
+                sleep 5
+              done
+            }
+            create_dmg
+
+            mount_dir="$(mktemp -d)"
+            hdiutil attach "${dmg_path}" -mountpoint "${mount_dir}" -nobrowse -readonly
+
+            test -d "${mount_dir}/${app_name}"
+            test -x "${mount_dir}/${app_name}/Contents/MacOS/leaftext"
+            test -f "${mount_dir}/${app_name}/Contents/Info.plist"
+            test -L "${mount_dir}/Applications"
+            test "$(readlink "${mount_dir}/Applications")" = "/Applications"
+
+            hdiutil detach "${mount_dir}" >/dev/null
+            rmdir "${mount_dir}"
+          }
+
+          # One artifact: the universal DMG (arm64 + x86_64 in a single binary).
+          package_distribution "universal" "${universal_binary}"
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="${DIST_TAG}"
+          assets=(
+            "dist/leaftext-${tag}-macos-universal.dmg"
+          )
+
+          # Ensure the release exists; ignore failure if another job created it first.
+          gh release view "${tag}" >/dev/null 2>&1 \
+            || gh release create "${tag}" --title "${tag}" --generate-notes --verify-tag \
+            || true
+
+          # Retry upload: three parallel workflows can race on the same release,
+          # causing transient 404s from the GitHub uploads API.
+          for attempt in 1 2 3 4 5; do
+            if gh release upload "${tag}" "${assets[@]}" --clobber; then
+              break
+            fi
+            if [ "${attempt}" = "5" ]; then
+              echo "Upload failed after 5 attempts" >&2
+              exit 1
+            fi
+            echo "Upload attempt ${attempt} failed; retrying in $((attempt * 15))s" >&2
+            sleep $((attempt * 15))
+          done
+
+      - name: Delete old releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          current="${DIST_TAG}"
+          gh release list --limit 100 --json tagName --jq '.[].tagName' | while IFS= read -r old; do
+            if [ "${old}" != "${current}" ]; then
+              gh release delete "${old}" --yes --cleanup-tag || true
+            fi
+          done

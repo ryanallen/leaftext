@@ -1,0 +1,15 @@
+https://leaftext.com/README.md
+https://leaftext.com/docs/GLOSSARY.md
+https://leaftext.com/docs/development/architecture.md
+https://leaftext.com/docs/development/building.md
+https://leaftext.com/docs/development/releasing.md
+https://leaftext.com/docs/development/theming.md
+https://leaftext.com/docs/features/library.md
+https://leaftext.com/docs/features/markdown-rendering.md
+https://leaftext.com/docs/features/minimap.md
+https://leaftext.com/docs/features/navigation.md
+https://leaftext.com/docs/features/settings.md
+https://leaftext.com/docs/features/themes.md
+https://leaftext.com/docs/installation.md
+https://leaftext.com/docs/introduction.md
+https://leaftext.com/docs/quickstart.md

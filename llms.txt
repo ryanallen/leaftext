@@ -1,0 +1,21 @@
+# Leaf Text
+
+> A desktop reader for Markdown. Open a file. Read it. Source Markdown for every page is linked below.
+
+## Pages
+
+- [Leaf Text](https://leaftext.com/README.md)
+- [Glossary](https://leaftext.com/docs/GLOSSARY.md)
+- [Architecture](https://leaftext.com/docs/development/architecture.md)
+- [Building](https://leaftext.com/docs/development/building.md)
+- [Releasing](https://leaftext.com/docs/development/releasing.md)
+- [Theming](https://leaftext.com/docs/development/theming.md)
+- [Library](https://leaftext.com/docs/features/library.md)
+- [Markdown Rendering](https://leaftext.com/docs/features/markdown-rendering.md)
+- [Minimap](https://leaftext.com/docs/features/minimap.md)
+- [Navigation](https://leaftext.com/docs/features/navigation.md)
+- [Settings](https://leaftext.com/docs/features/settings.md)
+- [Themes](https://leaftext.com/docs/features/themes.md)
+- [Installation](https://leaftext.com/docs/installation.md)
+- [Meet leaftext](https://leaftext.com/docs/introduction.md)
+- [Quickstart](https://leaftext.com/docs/quickstart.md)

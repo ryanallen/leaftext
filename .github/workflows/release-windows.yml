@@ -1,0 +1,87 @@
+name: Release Windows Distributions
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Existing tag to build and publish
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  DIST_TAG: ${{ inputs.tag_name || github.ref_name }}
+
+jobs:
+  windows:
+    name: Build Windows Distributions
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: refs/tags/${{ inputs.tag_name || github.ref_name }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Cargo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/git
+            ~/.cargo/registry
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-release-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-release-
+
+      - name: Install cargo-wix
+        shell: pwsh
+        run: cargo install cargo-wix --locked
+
+      - name: Build distributions
+        shell: pwsh
+        run: ./scripts/build-windows-release.ps1 -Tag "$env:DIST_TAG"
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $tag = $env:DIST_TAG
+          $assets = @(
+            "dist/leaftext-$tag-windows-x86_64.msi"
+          )
+          $existing = @($assets | Where-Object { Test-Path $_ })
+          if ($existing.Count -eq 0) { throw "No release assets were built." }
+
+          & gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            & gh release upload $tag @existing --clobber
+          } else {
+            & gh release create $tag @existing --title $tag --generate-notes --verify-tag
+            if ($LASTEXITCODE -ne 0) {
+              & gh release upload $tag @existing --clobber
+            }
+          }
+          if ($LASTEXITCODE -ne 0) { throw "Publishing release assets failed." }
+
+      - name: Delete old releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $current = $env:DIST_TAG
+          gh release list --limit 100 --json tagName | ConvertFrom-Json | ForEach-Object { $_.tagName } | Where-Object { $_ -ne $current } | ForEach-Object {
+            gh release delete $_ --yes --cleanup-tag
+          }

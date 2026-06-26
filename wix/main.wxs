@@ -1,0 +1,101 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<?if $(sys.BUILDARCH) = x64 or $(sys.BUILDARCH) = arm64 ?>
+    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+<?else ?>
+    <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+<?endif ?>
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+    <Product
+        Id='*'
+        Name='Leaf Text'
+        UpgradeCode='1A3F5501-5C62-44AC-AC64-CBC56702E3FD'
+        Manufacturer='ryanallen'
+        Language='1033'
+        Codepage='1252'
+        Version='$(var.Version)'>
+
+        <Package
+            Id='*'
+            Keywords='Installer'
+            Description='An app for reading and editing markdown and HTML beautifully -- no code, just the content.'
+            Manufacturer='ryanallen'
+            InstallerVersion='450'
+            Languages='1033'
+            Compressed='yes'
+            InstallScope='perMachine'
+            SummaryCodepage='1252'/>
+
+        <MajorUpgrade
+            Schedule='afterInstallInitialize'
+            DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
+
+        <Media Id='1' Cabinet='media1.cab' EmbedCab='yes'/>
+
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
+                <Directory Id='APPLICATIONFOLDER' Name='leaftext'>
+                    <Directory Id='Bin' Name='bin'>
+                        <Component Id='MainExecutable' Guid='*'>
+                            <File
+                                Id='MainExecutableFile'
+                                Name='leaftext.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\leaftext.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                    </Directory>
+                </Directory>
+            </Directory>
+            <Directory Id='ProgramMenuFolder'>
+                <Directory Id='ApplicationProgramsFolder' Name='leaftext'/>
+            </Directory>
+        </Directory>
+
+        <DirectoryRef Id='ApplicationProgramsFolder'>
+            <Component Id='ApplicationStartMenuShortcut' Guid='*'>
+                <Shortcut
+                    Id='ApplicationStartMenuShortcut'
+                    Name='Leaf Text'
+                    Description='Launch Leaf Text'
+                    Target='[Bin]leaftext.exe'
+                    WorkingDirectory='Bin'/>
+                <RemoveFolder Id='ApplicationProgramsFolder' On='uninstall'/>
+                <RegistryValue
+                    Root='HKCU'
+                    Key='Software\ryanallen\leaftext'
+                    Name='installed'
+                    Type='integer'
+                    Value='1'
+                    KeyPath='yes'/>
+            </Component>
+        </DirectoryRef>
+
+        <Feature
+            Id='MainFeature'
+            Title='Application'
+            Description='Installs [ProductName].'
+            Level='1'
+            ConfigurableDirectory='APPLICATIONFOLDER'
+            AllowAdvertise='no'
+            Display='expand'
+            Absent='disallow'>
+            <ComponentRef Id='MainExecutable'/>
+            <Feature
+                Id='StartMenuShortcut'
+                Title='Start Menu Shortcut'
+                Description='Create a [ProductName] shortcut in the Start Menu.'
+                Level='1'
+                Absent='allow'>
+                <ComponentRef Id='ApplicationStartMenuShortcut'/>
+            </Feature>
+        </Feature>
+
+        <SetProperty Id='ARPINSTALLLOCATION' Value='[APPLICATIONFOLDER]' After='CostFinalize'/>
+        <Property Id='ARPHELPLINK' Value='https://github.com/ryanallen/leaftext'/>
+
+        <UI>
+            <UIRef Id='WixUI_FeatureTree'/>
+        </UI>
+    </Product>
+</Wix>

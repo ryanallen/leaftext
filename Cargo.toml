@@ -1,0 +1,33 @@
+[package]
+name = "leaftext"
+version = "0.1.256"
+edition = "2021"
+
+[profile.release]
+strip = true
+lto = "thin"
+codegen-units = 1
+
+[dependencies]
+ammonia = "4.1.2"
+arboard = "3.4"
+blake3 = "1"
+directories = "6.0.0"
+html-escape = "0.2.13"
+linkify = "0.11.0"
+notify-debouncer-mini = "0.4"
+png = "0.17.16"
+pulldown-cmark = "0.13.4"
+rfd = "0.17.2"
+rusqlite = { version = "0.31", features = ["bundled"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+syntect = "5.3.0"
+tao = "0.35.3"
+trash = "5.2"
+two-face = "0.5.1"
+url = "2.5.8"
+wry = "0.55.1"
+
+[target.'cfg(windows)'.build-dependencies]
+embed-resource = "2.5"

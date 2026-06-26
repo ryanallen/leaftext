@@ -1,0 +1,91 @@
+name: Release Linux Distributions
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Existing tag to build and publish
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  DIST_TAG: ${{ inputs.tag_name || github.ref_name }}
+
+jobs:
+  linux:
+    name: Build Linux Distributions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: refs/tags/${{ inputs.tag_name || github.ref_name }}
+
+      - name: Install system libraries
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            build-essential \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libsoup-3.0-dev \
+            libssl-dev \
+            librsvg2-dev \
+            libayatana-appindicator3-dev
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Cache Cargo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/git
+            ~/.cargo/registry
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-release-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-release-
+
+      - name: Build distributions
+        run: bash scripts/build-linux-release.sh --tag "$DIST_TAG"
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="$DIST_TAG"
+          assets=(
+            "dist/leaftext-${tag}-linux-x86_64.tar.gz"
+          )
+
+          if gh release view "${tag}" >/dev/null 2>&1; then
+            gh release upload "${tag}" "${assets[@]}" --clobber
+          elif ! gh release create "${tag}" "${assets[@]}" --title "${tag}" --generate-notes --verify-tag; then
+            gh release upload "${tag}" "${assets[@]}" --clobber
+          fi
+
+      - name: Delete old releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current="$DIST_TAG"
+          gh release list --limit 100 --json tagName --jq '.[].tagName' | while IFS= read -r old; do
+            if [ "${old}" != "${current}" ]; then
+              gh release delete "${old}" --yes --cleanup-tag || true
+            fi
+          done

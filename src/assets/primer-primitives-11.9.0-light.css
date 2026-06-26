@@ -1,0 +1,2511 @@
+[data-color-mode="light"][data-light-theme="light"],
+[data-color-mode="auto"][data-light-theme="light"] {
+  --ansi-cyan: #1b7c83; /** ANSI cyan for terminal text */
+  --ansi-cyanBright: #3192aa; /** ANSI bright cyan for highlighted terminal text */
+  --base-color-black: #1f2328;
+  --base-color-blue-0: #ddf4ff;
+  --base-color-blue-1: #b6e3ff;
+  --base-color-blue-2: #80ccff;
+  --base-color-blue-3: #54aeff;
+  --base-color-blue-4: #218bff;
+  --base-color-blue-5: #0969da;
+  --base-color-blue-6: #0550ae;
+  --base-color-blue-7: #033d8b;
+  --base-color-blue-8: #0a3069;
+  --base-color-blue-9: #002155;
+  --base-color-coral-0: #fff0eb;
+  --base-color-coral-1: #ffd6cc;
+  --base-color-coral-2: #ffb4a1;
+  --base-color-coral-3: #fd8c73;
+  --base-color-coral-4: #ec6547;
+  --base-color-coral-5: #c4432b;
+  --base-color-coral-6: #9e2f1c;
+  --base-color-coral-7: #801f0f;
+  --base-color-coral-8: #691105;
+  --base-color-coral-9: #510901;
+  --base-color-green-0: #dafbe1;
+  --base-color-green-1: #aceebb;
+  --base-color-green-2: #6fdd8b;
+  --base-color-green-3: #4ac26b;
+  --base-color-green-4: #2da44e;
+  --base-color-green-5: #1a7f37;
+  --base-color-green-6: #116329;
+  --base-color-green-7: #044f1e;
+  --base-color-green-8: #003d16;
+  --base-color-green-9: #002d11;
+  --base-color-neutral-1: #f6f8fa;
+  --base-color-neutral-10: #454c54;
+  --base-color-neutral-11: #393f46;
+  --base-color-neutral-12: #25292e;
+  --base-color-neutral-2: #eff2f5;
+  --base-color-neutral-3: #e6eaef;
+  --base-color-neutral-4: #e0e6eb;
+  --base-color-neutral-5: #dae0e7;
+  --base-color-neutral-6: #d1d9e0;
+  --base-color-neutral-7: #c8d1da;
+  --base-color-neutral-8: #818b98;
+  --base-color-neutral-9: #59636e;
+  --base-color-orange-0: #fff1e5;
+  --base-color-orange-1: #ffd8b5;
+  --base-color-orange-2: #ffb77c;
+  --base-color-orange-3: #fb8f44;
+  --base-color-orange-4: #e16f24;
+  --base-color-orange-5: #bc4c00;
+  --base-color-orange-6: #953800;
+  --base-color-orange-7: #762c00;
+  --base-color-orange-8: #5c2200;
+  --base-color-orange-9: #471700;
+  --base-color-pink-0: #ffeff7;
+  --base-color-pink-1: #ffd3eb;
+  --base-color-pink-2: #ffadda;
+  --base-color-pink-3: #ff80c8;
+  --base-color-pink-4: #e85aad;
+  --base-color-pink-5: #bf3989;
+  --base-color-pink-6: #99286e;
+  --base-color-pink-7: #772057;
+  --base-color-pink-8: #611347;
+  --base-color-pink-9: #4d0336;
+  --base-color-purple-0: #fbefff;
+  --base-color-purple-1: #ecd8ff;
+  --base-color-purple-2: #d8b9ff;
+  --base-color-purple-3: #c297ff;
+  --base-color-purple-4: #a475f9;
+  --base-color-purple-5: #8250df;
+  --base-color-purple-6: #6639ba;
+  --base-color-purple-7: #512a97;
+  --base-color-purple-8: #3e1f79;
+  --base-color-purple-9: #2e1461;
+  --base-color-red-0: #ffebe9;
+  --base-color-red-1: #ffcecb;
+  --base-color-red-2: #ffaba8;
+  --base-color-red-3: #ff8182;
+  --base-color-red-4: #fa4549;
+  --base-color-red-5: #cf222e;
+  --base-color-red-6: #a40e26;
+  --base-color-red-7: #82071e;
+  --base-color-red-8: #660018;
+  --base-color-red-9: #4c0014;
+  --base-color-transparent: #ffffff00;
+  --base-color-white: #ffffff;
+  --base-color-yellow-0: #fff8c5;
+  --base-color-yellow-1: #fae17d;
+  --base-color-yellow-2: #eac54f;
+  --base-color-yellow-3: #d4a72c;
+  --base-color-yellow-4: #bf8700;
+  --base-color-yellow-5: #9a6700;
+  --base-color-yellow-6: #7d4e00;
+  --base-color-yellow-7: #633c01;
+  --base-color-yellow-8: #4d2d00;
+  --base-color-yellow-9: #3b2300;
+  --base-display-color-auburn-0: #f2e9e9;
+  --base-display-color-auburn-1: #e6d6d5;
+  --base-display-color-auburn-2: #d4b7b5;
+  --base-display-color-auburn-3: #c59e9b;
+  --base-display-color-auburn-4: #b4827e;
+  --base-display-color-auburn-5: #9d615c;
+  --base-display-color-auburn-6: #8a5551;
+  --base-display-color-auburn-7: #744744;
+  --base-display-color-auburn-8: #5d3937;
+  --base-display-color-auburn-9: #432928;
+  --base-display-color-black: #0d1117;
+  --base-display-color-blue-0: #d1f0ff;
+  --base-display-color-blue-1: #ade1ff;
+  --base-display-color-blue-2: #75c8ff;
+  --base-display-color-blue-3: #47afff;
+  --base-display-color-blue-4: #0f8fff;
+  --base-display-color-blue-5: #006edb;
+  --base-display-color-blue-6: #005fcc;
+  --base-display-color-blue-7: #004db3;
+  --base-display-color-blue-8: #003d99;
+  --base-display-color-blue-9: #002b75;
+  --base-display-color-brown-0: #eeeae2;
+  --base-display-color-brown-1: #dfd7c8;
+  --base-display-color-brown-2: #cbbda4;
+  --base-display-color-brown-3: #b8a484;
+  --base-display-color-brown-4: #a68b64;
+  --base-display-color-brown-5: #856d4c;
+  --base-display-color-brown-6: #755f43;
+  --base-display-color-brown-7: #64513a;
+  --base-display-color-brown-8: #51412f;
+  --base-display-color-brown-9: #3a2e22;
+  --base-display-color-coral-0: #ffe5db;
+  --base-display-color-coral-1: #fecebe;
+  --base-display-color-coral-2: #fcab92;
+  --base-display-color-coral-3: #f88768;
+  --base-display-color-coral-4: #f25f3a;
+  --base-display-color-coral-5: #d43511;
+  --base-display-color-coral-6: #ba2e12;
+  --base-display-color-coral-7: #9b2712;
+  --base-display-color-coral-8: #7e2011;
+  --base-display-color-coral-9: #5d180e;
+  --base-display-color-cyan-0: #bdf4ff;
+  --base-display-color-cyan-1: #7ae9ff;
+  --base-display-color-cyan-2: #00d0fa;
+  --base-display-color-cyan-3: #00b7db;
+  --base-display-color-cyan-4: #0099b8;
+  --base-display-color-cyan-5: #007b94;
+  --base-display-color-cyan-6: #006a80;
+  --base-display-color-cyan-7: #00596b;
+  --base-display-color-cyan-8: #004857;
+  --base-display-color-cyan-9: #003742;
+  --base-display-color-gray-0: #e8ecf2;
+  --base-display-color-gray-1: #d2dae4;
+  --base-display-color-gray-2: #b4c0cf;
+  --base-display-color-gray-3: #9ba9bb;
+  --base-display-color-gray-4: #808fa3;
+  --base-display-color-gray-5: #647182;
+  --base-display-color-gray-6: #5c6570;
+  --base-display-color-gray-7: #4e535a;
+  --base-display-color-gray-8: #424448;
+  --base-display-color-gray-9: #303031;
+  --base-display-color-green-0: #caf7ca;
+  --base-display-color-green-1: #9ceda0;
+  --base-display-color-green-2: #54d961;
+  --base-display-color-green-3: #31bf46;
+  --base-display-color-green-4: #30a147;
+  --base-display-color-green-5: #2c8141;
+  --base-display-color-green-6: #2b6e3f;
+  --base-display-color-green-7: #285c3b;
+  --base-display-color-green-8: #254b34;
+  --base-display-color-green-9: #1d3528;
+  --base-display-color-indigo-0: #e5e9ff;
+  --base-display-color-indigo-1: #d2d7fe;
+  --base-display-color-indigo-2: #b1b9fb;
+  --base-display-color-indigo-3: #979ff7;
+  --base-display-color-indigo-4: #7a82f0;
+  --base-display-color-indigo-5: #5a61e7;
+  --base-display-color-indigo-6: #494edf;
+  --base-display-color-indigo-7: #393cd5;
+  --base-display-color-indigo-8: #2d2db4;
+  --base-display-color-indigo-9: #25247b;
+  --base-display-color-lemon-0: #f7eea1;
+  --base-display-color-lemon-1: #f0db3d;
+  --base-display-color-lemon-2: #d8bd0e;
+  --base-display-color-lemon-3: #c2a60a;
+  --base-display-color-lemon-4: #a68c07;
+  --base-display-color-lemon-5: #866e04;
+  --base-display-color-lemon-6: #786002;
+  --base-display-color-lemon-7: #654f01;
+  --base-display-color-lemon-8: #523f00;
+  --base-display-color-lemon-9: #3d2e00;
+  --base-display-color-lime-0: #e3f2b5;
+  --base-display-color-lime-1: #c7e580;
+  --base-display-color-lime-2: #9bd039;
+  --base-display-color-lime-3: #80b530;
+  --base-display-color-lime-4: #6c9d2f;
+  --base-display-color-lime-5: #527a29;
+  --base-display-color-lime-6: #476c28;
+  --base-display-color-lime-7: #3a5b25;
+  --base-display-color-lime-8: #2f4a21;
+  --base-display-color-lime-9: #213319;
+  --base-display-color-olive-0: #f0f0ad;
+  --base-display-color-olive-1: #dbe170;
+  --base-display-color-olive-2: #b9c832;
+  --base-display-color-olive-3: #9bae32;
+  --base-display-color-olive-4: #819532;
+  --base-display-color-olive-5: #64762d;
+  --base-display-color-olive-6: #56682c;
+  --base-display-color-olive-7: #495a2b;
+  --base-display-color-olive-8: #3b4927;
+  --base-display-color-olive-9: #2a331f;
+  --base-display-color-orange-0: #ffe7d1;
+  --base-display-color-orange-1: #fecfaa;
+  --base-display-color-orange-2: #fbaf74;
+  --base-display-color-orange-3: #f68c41;
+  --base-display-color-orange-4: #eb670f;
+  --base-display-color-orange-5: #b8500f;
+  --base-display-color-orange-6: #a24610;
+  --base-display-color-orange-7: #8d3c11;
+  --base-display-color-orange-8: #70300f;
+  --base-display-color-orange-9: #54230d;
+  --base-display-color-pine-0: #bff8db;
+  --base-display-color-pine-1: #80efb9;
+  --base-display-color-pine-2: #1dd781;
+  --base-display-color-pine-3: #1dbf76;
+  --base-display-color-pine-4: #1aa267;
+  --base-display-color-pine-5: #167e53;
+  --base-display-color-pine-6: #156f4b;
+  --base-display-color-pine-7: #135d41;
+  --base-display-color-pine-8: #114b36;
+  --base-display-color-pine-9: #0d3627;
+  --base-display-color-pink-0: #ffe5f1;
+  --base-display-color-pink-1: #fdc9e2;
+  --base-display-color-pink-2: #f8a5cf;
+  --base-display-color-pink-3: #f184bc;
+  --base-display-color-pink-4: #e55da5;
+  --base-display-color-pink-5: #ce2c85;
+  --base-display-color-pink-6: #b12f79;
+  --base-display-color-pink-7: #8e2e66;
+  --base-display-color-pink-8: #6e2b53;
+  --base-display-color-pink-9: #4d233d;
+  --base-display-color-plum-0: #f8e5ff;
+  --base-display-color-plum-1: #f0cdfe;
+  --base-display-color-plum-2: #e2a7fb;
+  --base-display-color-plum-3: #d487f7;
+  --base-display-color-plum-4: #c264f2;
+  --base-display-color-plum-5: #a830e8;
+  --base-display-color-plum-6: #961edc;
+  --base-display-color-plum-7: #7d1eb8;
+  --base-display-color-plum-8: #651d96;
+  --base-display-color-plum-9: #471769;
+  --base-display-color-purple-0: #f1e5ff;
+  --base-display-color-purple-1: #e6d2fe;
+  --base-display-color-purple-2: #d1b1fc;
+  --base-display-color-purple-3: #bc91f8;
+  --base-display-color-purple-4: #a672f3;
+  --base-display-color-purple-5: #894ceb;
+  --base-display-color-purple-6: #783ae4;
+  --base-display-color-purple-7: #6223d7;
+  --base-display-color-purple-8: #4f21ab;
+  --base-display-color-purple-9: #391b79;
+  --base-display-color-red-0: #ffe2e0;
+  --base-display-color-red-1: #fecdcd;
+  --base-display-color-red-2: #fda5a7;
+  --base-display-color-red-3: #fb8389;
+  --base-display-color-red-4: #f85461;
+  --base-display-color-red-5: #df0c24;
+  --base-display-color-red-6: #c50d28;
+  --base-display-color-red-7: #a60c29;
+  --base-display-color-red-8: #880c27;
+  --base-display-color-red-9: #610a20;
+  --base-display-color-teal-0: #c7f5ef;
+  --base-display-color-teal-1: #89ebe1;
+  --base-display-color-teal-2: #22d3c7;
+  --base-display-color-teal-3: #1db9b4;
+  --base-display-color-teal-4: #179b9b;
+  --base-display-color-teal-5: #127e81;
+  --base-display-color-teal-6: #106e75;
+  --base-display-color-teal-7: #0d5b63;
+  --base-display-color-teal-8: #0a4852;
+  --base-display-color-teal-9: #073740;
+  --base-display-color-white: #ffffff;
+  --base-display-color-yellow-0: #ffec9e;
+  --base-display-color-yellow-1: #ffd642;
+  --base-display-color-yellow-2: #ebb400;
+  --base-display-color-yellow-3: #d19d00;
+  --base-display-color-yellow-4: #b88700;
+  --base-display-color-yellow-5: #946a00;
+  --base-display-color-yellow-6: #805900;
+  --base-display-color-yellow-7: #704d00;
+  --base-display-color-yellow-8: #5c3d00;
+  --base-display-color-yellow-9: #422b00;
+  --bgColor-success-emphasis: #1f883d; /** Strong success background for prominent positive actions */
+  --button-outline-bgColor-active: #0757ba;
+  --button-primary-bgColor-active: #197935;
+  --button-primary-bgColor-disabled: #95d8a6;
+  --button-primary-bgColor-hover: #1c8139;
+  --buttonCounter-danger-fgColor-rest: #c21c2c;
+  --control-checked-bgColor-active: #0757ba;
+  --control-checked-bgColor-hover: #0860ca;
+  --fgColor-danger: #d1242f; /** Danger text for errors and destructive actions */
+  --reactionButton-selected-bgColor-hover: #caecff;
+  --ansi-blackBright: var(--base-color-neutral-11); /** ANSI bright black (dark gray) for dimmed terminal text */
+  --ansi-blue: var(--base-color-blue-5); /** ANSI blue for informational terminal text */
+  --ansi-blueBright: var(--base-color-blue-4); /** ANSI bright blue for highlighted info in terminal */
+  --ansi-gray: var(--base-color-neutral-9); /** ANSI gray for secondary terminal text */
+  --ansi-green: var(--base-color-green-6); /** ANSI green for success indicators in terminal */
+  --ansi-greenBright: var(--base-color-green-5); /** ANSI bright green for highlighted success in terminal */
+  --ansi-magenta: var(--base-color-purple-5); /** ANSI magenta for special terminal text */
+  --ansi-magentaBright: var(--base-color-purple-4); /** ANSI bright magenta for highlighted special text */
+  --ansi-red: var(--base-color-red-5); /** ANSI red for errors and alerts in terminal output */
+  --ansi-redBright: var(--base-color-red-6); /** ANSI bright red for highlighted errors in terminal */
+  --ansi-white: var(--base-color-neutral-9); /** ANSI white for terminal text */
+  --ansi-whiteBright: var(--base-color-neutral-8); /** ANSI bright white for emphasized terminal text */
+  --ansi-yellow: var(--base-color-yellow-8); /** ANSI yellow for warnings in terminal output */
+  --ansi-yellowBright: var(--base-color-yellow-7); /** ANSI bright yellow for highlighted warnings in terminal */
+  --avatarStack-fade-bgColor-default: var(--base-color-neutral-7);
+  --avatarStack-fade-bgColor-muted: var(--base-color-neutral-5);
+  --base-color-neutral-0: var(--base-color-white);
+  --base-color-neutral-13: var(--base-color-black);
+  --bgColor-accent-emphasis: var(--base-color-blue-5); /** Strong accent background for active states and focused states */
+  --bgColor-accent-muted: var(--base-color-blue-0); /** Subtle accent background for informational or selected elements */
+  --bgColor-attention-emphasis: var(--base-color-yellow-5); /** Strong attention background for prominent warnings */
+  --bgColor-attention-muted: var(--base-color-yellow-0); /** Subtle attention background for warnings and caution states */
+  --bgColor-danger-emphasis: var(--base-color-red-5); /** Emphasized danger background for critical errors and delete confirmations */
+  --bgColor-danger-muted: var(--base-color-red-0); /** Muted danger background for error states and destructive action contexts */
+  --bgColor-disabled: var(--base-color-neutral-2); /** Background for disabled interactive elements */
+  --bgColor-done-emphasis: var(--base-color-purple-5); /** Strong background for completed/done state badges and labels */
+  --bgColor-done-muted: var(--base-color-purple-0); /** Subtle background for completed/done state indicators */
+  --bgColor-emphasis: var(--base-color-neutral-12); /** High-emphasis dark background for strong visual contrast */
+  --bgColor-inverse: var(--base-color-neutral-12); /** Inverse background that flips between light and dark modes */
+  --bgColor-muted: var(--base-color-neutral-1); /** Muted background for secondary content areas and subtle grouping */
+  --bgColor-neutral-emphasis: var(--base-color-neutral-9); /** Strong neutral background for prominent neutral elements */
+  --bgColor-neutral-muted: #818b981f; /** Subtle neutral background for tags, labels, and secondary UI elements */
+  --bgColor-open-emphasis: var(--bgColor-success-emphasis); /** Strong background for open state badges and labels */
+  --bgColor-severe-emphasis: var(--base-color-orange-5); /** Strong severe background for prominent high-priority warnings */
+  --bgColor-severe-muted: var(--base-color-orange-0); /** Subtle severe background for high-priority warnings */
+  --bgColor-sponsors-emphasis: var(--base-color-pink-5); /** Strong background for prominent GitHub Sponsors elements */
+  --bgColor-sponsors-muted: var(--base-color-pink-0); /** Subtle background for GitHub Sponsors content */
+  --bgColor-success-muted: var(--base-color-green-0); /** Subtle success background for positive feedback and completed states */
+  --bgColor-transparent: var(--base-color-transparent); /** Fully transparent background */
+  --borderColor-accent-emphasis: var(--base-color-blue-5); /** Strong accent border for selected or focused elements */
+  --borderColor-accent-muted: #54aeff66; /** Subtle accent border for selected or focused elements */
+  --borderColor-attention-emphasis: var(--base-color-yellow-5); /** Strong attention border for prominent warnings */
+  --borderColor-attention-muted: #d4a72c66; /** Subtle attention border for warnings and caution states */
+  --borderColor-danger-emphasis: var(--base-color-red-5); /** Strong danger border for destructive actions and errors */
+  --borderColor-danger-muted: #ff818266; /** Subtle danger border for errors and destructive contexts */
+  --borderColor-default: var(--base-color-neutral-6); /** Default border color for most UI elements */
+  --borderColor-disabled: #818b981a; /** Border color for disabled interactive elements */
+  --borderColor-done-emphasis: var(--base-color-purple-5); /** Strong border for completed/done state badges */
+  --borderColor-done-muted: #c297ff66; /** Subtle border for completed/done state indicators */
+  --borderColor-emphasis: var(--base-color-neutral-8); /** Strong border for emphasis and visual weight */
+  --borderColor-neutral-emphasis: var(--base-color-neutral-9); /** Strong neutral semantic border */
+  --borderColor-severe-emphasis: var(--base-color-orange-5); /** Strong severe border for prominent high-priority warnings */
+  --borderColor-severe-muted: #fb8f4466; /** Subtle severe border for high-priority warnings */
+  --borderColor-sponsors-emphasis: var(--base-color-pink-5); /** Strong border for prominent GitHub Sponsors elements */
+  --borderColor-sponsors-muted: #ff80c866; /** Subtle border for GitHub Sponsors content */
+  --borderColor-success-emphasis: var(--base-color-green-5); /** Strong success border for prominent positive elements */
+  --borderColor-success-muted: #4ac26b66; /** Subtle success border for positive feedback elements */
+  --borderColor-transparent: var(--base-color-transparent); /** Fully transparent border */
+  --boxShadow-thick: inset 0 0 0 0.125rem; /** Thick shadow (2px) used instead of a border for emphasis without layout shift */
+  --boxShadow-thicker: inset 0 0 0 0.25rem; /** Thickest shadow (4px) used for high emphasis borders without layout shift. Use sparingly for maximum visual impact */
+  --boxShadow-thin: inset 0 0 0 0.0625rem; /** Thin shadow used instead of a border to prevent layout shift */
+  --button-danger-bgColor-active: var(--base-color-red-6);
+  --button-danger-fgColor-disabled: #d1242f80;
+  --button-danger-fgColor-rest: var(--fgColor-danger);
+  --button-danger-shadow-selected: inset 0 1px 0 0 #4c001433;
+  --button-inactive-bgColor: var(--base-color-neutral-3);
+  --button-inactive-fgColor: var(--base-color-neutral-9);
+  --button-invisible-bgColor-disabled: var(--base-color-transparent);
+  --button-invisible-borderColor-disabled: var(--base-color-transparent);
+  --button-outline-shadow-selected: inset 0 1px 0 0 #00215533;
+  --button-primary-bgColor-rest: var(--bgColor-success-emphasis);
+  --button-primary-borderColor-disabled: var(--button-primary-bgColor-disabled);
+  --button-primary-shadow-selected: inset 0 1px 0 0 #002d114d;
+  --button-star-iconColor: var(--base-color-yellow-2);
+  --buttonCounter-danger-fgColor-disabled: #d1242f80;
+  --buttonCounter-outline-fgColor-rest: var(--base-color-blue-6);
+  --buttonCounter-primary-bgColor-rest: #002d1133;
+  --buttonKeybindingHint-danger-bgColor-active: #1f232866;
+  --buttonKeybindingHint-danger-bgColor-hover: #1f232833;
+  --buttonKeybindingHint-default-bgColor-rest: var(--base-color-neutral-2);
+  --buttonKeybindingHint-inactive-bgColor: var(--base-color-neutral-2);
+  --buttonKeybindingHint-invisible-borderColor-rest: var(--base-color-transparent);
+  --codeMirror-syntax-fgColor-constant: var(--base-color-blue-6);
+  --codeMirror-syntax-fgColor-entity: var(--base-color-purple-5);
+  --codeMirror-syntax-fgColor-keyword: var(--base-color-red-5);
+  --codeMirror-syntax-fgColor-storage: var(--base-color-red-5);
+  --codeMirror-syntax-fgColor-string: var(--base-color-blue-8);
+  --codeMirror-syntax-fgColor-support: var(--base-color-blue-6);
+  --codeMirror-syntax-fgColor-variable: var(--base-color-orange-6);
+  --color-ansi-cyan: var(--ansi-cyan); /** Deprecated. Use ansi.cyan instead. */
+  --color-ansi-cyan-bright: var(--ansi-cyanBright); /** Deprecated. Use ansi.cyanBright instead. */
+  --contribution-default-bgColor-0: var(--base-color-neutral-2);
+  --contribution-default-bgColor-1: var(--base-color-green-1);
+  --contribution-default-bgColor-2: var(--base-color-green-3);
+  --contribution-default-bgColor-3: var(--base-color-green-4);
+  --contribution-default-bgColor-4: var(--base-color-green-6);
+  --contribution-default-borderColor-0: #1f23280d;
+  --contribution-halloween-bgColor-1: var(--base-display-color-lemon-1);
+  --contribution-halloween-bgColor-2: var(--base-display-color-yellow-1);
+  --contribution-halloween-bgColor-3: var(--base-display-color-orange-3);
+  --contribution-halloween-bgColor-4: var(--base-color-black);
+  --contribution-winter-bgColor-1: var(--base-color-blue-1);
+  --contribution-winter-bgColor-2: var(--base-color-blue-3);
+  --contribution-winter-bgColor-3: var(--base-color-blue-5);
+  --contribution-winter-bgColor-4: var(--base-color-blue-8);
+  --control-bgColor-active: var(--base-color-neutral-3);
+  --control-bgColor-hover: var(--base-color-neutral-2);
+  --control-bgColor-rest: var(--base-color-neutral-1);
+  --control-checked-borderColor-active: var(--control-checked-bgColor-active);
+  --control-checked-borderColor-hover: var(--control-checked-bgColor-hover);
+  --control-danger-fgColor-hover: var(--fgColor-danger);
+  --control-danger-fgColor-rest: var(--fgColor-danger);
+  --control-fgColor-rest: var(--base-color-neutral-12);
+  --control-transparent-bgColor-active: #818b9826;
+  --control-transparent-bgColor-hover: #818b981a;
+  --control-transparent-bgColor-rest: var(--base-color-transparent);
+  --control-transparent-bgColor-selected: #818b9826;
+  --control-transparent-borderColor-active: var(--base-color-transparent);
+  --control-transparent-borderColor-hover: var(--base-color-transparent);
+  --control-transparent-borderColor-rest: var(--base-color-transparent);
+  --controlTrack-bgColor-active: var(--base-color-neutral-5);
+  --controlTrack-bgColor-hover: var(--base-color-neutral-4);
+  --controlTrack-bgColor-rest: var(--base-color-neutral-3);
+  --controlTrack-fgColor-rest: var(--base-color-neutral-9);
+  --counter-borderColor: var(--base-color-transparent);
+  --data-auburn-color-emphasis: var(--base-display-color-auburn-5);
+  --data-auburn-color-muted: var(--base-display-color-auburn-0);
+  --data-blue-color-emphasis: var(--base-display-color-blue-5);
+  --data-blue-color-muted: var(--base-display-color-blue-0);
+  --data-brown-color-emphasis: var(--base-display-color-brown-5);
+  --data-brown-color-muted: var(--base-display-color-brown-0);
+  --data-coral-color-emphasis: var(--base-display-color-coral-5);
+  --data-coral-color-muted: var(--base-display-color-coral-0);
+  --data-gray-color-emphasis: var(--base-display-color-gray-4);
+  --data-gray-color-muted: var(--base-display-color-gray-0);
+  --data-green-color-emphasis: var(--base-display-color-green-4);
+  --data-green-color-muted: var(--base-display-color-green-0);
+  --data-lemon-color-emphasis: var(--base-display-color-lemon-5);
+  --data-lemon-color-muted: var(--base-display-color-lemon-0);
+  --data-lime-color-emphasis: var(--base-display-color-lime-5);
+  --data-lime-color-muted: var(--base-display-color-lime-0);
+  --data-olive-color-emphasis: var(--base-display-color-olive-5);
+  --data-olive-color-muted: var(--base-display-color-olive-0);
+  --data-orange-color-emphasis: var(--base-display-color-orange-4);
+  --data-orange-color-muted: var(--base-display-color-orange-0);
+  --data-pine-color-emphasis: var(--base-display-color-pine-5);
+  --data-pine-color-muted: var(--base-display-color-pine-0);
+  --data-pink-color-emphasis: var(--base-display-color-pink-5);
+  --data-pink-color-muted: var(--base-display-color-pink-0);
+  --data-plum-color-emphasis: var(--base-display-color-plum-5);
+  --data-plum-color-muted: var(--base-display-color-plum-0);
+  --data-purple-color-emphasis: var(--base-display-color-purple-5);
+  --data-purple-color-muted: var(--base-display-color-purple-0);
+  --data-red-color-emphasis: var(--base-display-color-red-5);
+  --data-red-color-muted: var(--base-display-color-red-0);
+  --data-teal-color-emphasis: var(--base-display-color-teal-4);
+  --data-teal-color-muted: var(--base-display-color-teal-0);
+  --data-yellow-color-emphasis: var(--base-display-color-yellow-4);
+  --data-yellow-color-muted: var(--base-display-color-yellow-0);
+  --diffBlob-additionNum-bgColor: var(--base-color-green-1);
+  --diffBlob-additionWord-bgColor: var(--base-color-green-1);
+  --diffBlob-deletionNum-bgColor: var(--base-color-red-1);
+  --diffBlob-deletionWord-bgColor: var(--base-color-red-1);
+  --diffBlob-hunkNum-bgColor-rest: var(--base-color-blue-1);
+  --display-auburn-bgColor-emphasis: var(--base-display-color-auburn-5);
+  --display-auburn-bgColor-muted: var(--base-display-color-auburn-0);
+  --display-auburn-borderColor-emphasis: var(--base-display-color-auburn-5);
+  --display-auburn-borderColor-muted: var(--base-display-color-auburn-1);
+  --display-auburn-fgColor: var(--base-display-color-auburn-6);
+  --display-auburn-scale-0: var(--base-display-color-auburn-0);
+  --display-auburn-scale-1: var(--base-display-color-auburn-1);
+  --display-auburn-scale-2: var(--base-display-color-auburn-2);
+  --display-auburn-scale-3: var(--base-display-color-auburn-3);
+  --display-auburn-scale-4: var(--base-display-color-auburn-4);
+  --display-auburn-scale-5: var(--base-display-color-auburn-5);
+  --display-auburn-scale-6: var(--base-display-color-auburn-6);
+  --display-auburn-scale-7: var(--base-display-color-auburn-7);
+  --display-auburn-scale-8: var(--base-display-color-auburn-8);
+  --display-auburn-scale-9: var(--base-display-color-auburn-9);
+  --display-blue-bgColor-emphasis: var(--base-display-color-blue-5);
+  --display-blue-bgColor-muted: var(--base-display-color-blue-0);
+  --display-blue-borderColor-emphasis: var(--base-display-color-blue-5);
+  --display-blue-borderColor-muted: var(--base-display-color-blue-1);
+  --display-blue-fgColor: var(--base-display-color-blue-6);
+  --display-blue-scale-0: var(--base-display-color-blue-0);
+  --display-blue-scale-1: var(--base-display-color-blue-1);
+  --display-blue-scale-2: var(--base-display-color-blue-2);
+  --display-blue-scale-3: var(--base-display-color-blue-3);
+  --display-blue-scale-4: var(--base-display-color-blue-4);
+  --display-blue-scale-5: var(--base-display-color-blue-5);
+  --display-blue-scale-6: var(--base-display-color-blue-6);
+  --display-blue-scale-7: var(--base-display-color-blue-7);
+  --display-blue-scale-8: var(--base-display-color-blue-8);
+  --display-blue-scale-9: var(--base-display-color-blue-9);
+  --display-brown-bgColor-emphasis: var(--base-display-color-brown-5);
+  --display-brown-bgColor-muted: var(--base-display-color-brown-0);
+  --display-brown-borderColor-emphasis: var(--base-display-color-brown-5);
+  --display-brown-borderColor-muted: var(--base-display-color-brown-1);
+  --display-brown-fgColor: var(--base-display-color-brown-6);
+  --display-brown-scale-0: var(--base-display-color-brown-0);
+  --display-brown-scale-1: var(--base-display-color-brown-1);
+  --display-brown-scale-2: var(--base-display-color-brown-2);
+  --display-brown-scale-3: var(--base-display-color-brown-3);
+  --display-brown-scale-4: var(--base-display-color-brown-4);
+  --display-brown-scale-5: var(--base-display-color-brown-5);
+  --display-brown-scale-6: var(--base-display-color-brown-6);
+  --display-brown-scale-7: var(--base-display-color-brown-7);
+  --display-brown-scale-8: var(--base-display-color-brown-8);
+  --display-brown-scale-9: var(--base-display-color-brown-9);
+  --display-coral-bgColor-emphasis: var(--base-display-color-coral-5);
+  --display-coral-bgColor-muted: var(--base-display-color-coral-0);
+  --display-coral-borderColor-emphasis: var(--base-display-color-coral-5);
+  --display-coral-borderColor-muted: var(--base-display-color-coral-1);
+  --display-coral-fgColor: var(--base-display-color-coral-6);
+  --display-coral-scale-0: var(--base-display-color-coral-0);
+  --display-coral-scale-1: var(--base-display-color-coral-1);
+  --display-coral-scale-2: var(--base-display-color-coral-2);
+  --display-coral-scale-3: var(--base-display-color-coral-3);
+  --display-coral-scale-4: var(--base-display-color-coral-4);
+  --display-coral-scale-5: var(--base-display-color-coral-5);
+  --display-coral-scale-6: var(--base-display-color-coral-6);
+  --display-coral-scale-7: var(--base-display-color-coral-7);
+  --display-coral-scale-8: var(--base-display-color-coral-8);
+  --display-coral-scale-9: var(--base-display-color-coral-9);
+  --display-cyan-bgColor-emphasis: var(--base-display-color-cyan-5);
+  --display-cyan-bgColor-muted: var(--base-display-color-cyan-0);
+  --display-cyan-borderColor-emphasis: var(--base-display-color-cyan-5);
+  --display-cyan-borderColor-muted: var(--base-display-color-cyan-1);
+  --display-cyan-fgColor: var(--base-display-color-cyan-6);
+  --display-cyan-scale-0: var(--base-display-color-cyan-0);
+  --display-cyan-scale-1: var(--base-display-color-cyan-1);
+  --display-cyan-scale-2: var(--base-display-color-cyan-2);
+  --display-cyan-scale-3: var(--base-display-color-cyan-3);
+  --display-cyan-scale-4: var(--base-display-color-cyan-4);
+  --display-cyan-scale-5: var(--base-display-color-cyan-5);
+  --display-cyan-scale-6: var(--base-display-color-cyan-6);
+  --display-cyan-scale-7: var(--base-display-color-cyan-7);
+  --display-cyan-scale-8: var(--base-display-color-cyan-8);
+  --display-cyan-scale-9: var(--base-display-color-cyan-9);
+  --display-gray-bgColor-emphasis: var(--base-display-color-gray-5);
+  --display-gray-bgColor-muted: var(--base-display-color-gray-0);
+  --display-gray-borderColor-emphasis: var(--base-display-color-gray-5);
+  --display-gray-borderColor-muted: var(--base-display-color-gray-1);
+  --display-gray-fgColor: var(--base-display-color-gray-6);
+  --display-gray-scale-0: var(--base-display-color-gray-0);
+  --display-gray-scale-1: var(--base-display-color-gray-1);
+  --display-gray-scale-2: var(--base-display-color-gray-2);
+  --display-gray-scale-3: var(--base-display-color-gray-3);
+  --display-gray-scale-4: var(--base-display-color-gray-4);
+  --display-gray-scale-5: var(--base-display-color-gray-5);
+  --display-gray-scale-6: var(--base-display-color-gray-6);
+  --display-gray-scale-7: var(--base-display-color-gray-7);
+  --display-gray-scale-8: var(--base-display-color-gray-8);
+  --display-gray-scale-9: var(--base-display-color-gray-9);
+  --display-green-bgColor-emphasis: var(--base-display-color-green-5);
+  --display-green-bgColor-muted: var(--base-display-color-green-0);
+  --display-green-borderColor-emphasis: var(--base-display-color-green-5);
+  --display-green-borderColor-muted: var(--base-display-color-green-1);
+  --display-green-fgColor: var(--base-display-color-green-6);
+  --display-green-scale-0: var(--base-display-color-green-0);
+  --display-green-scale-1: var(--base-display-color-green-1);
+  --display-green-scale-2: var(--base-display-color-green-2);
+  --display-green-scale-3: var(--base-display-color-green-3);
+  --display-green-scale-4: var(--base-display-color-green-4);
+  --display-green-scale-5: var(--base-display-color-green-5);
+  --display-green-scale-6: var(--base-display-color-green-6);
+  --display-green-scale-7: var(--base-display-color-green-7);
+  --display-green-scale-8: var(--base-display-color-green-8);
+  --display-green-scale-9: var(--base-display-color-green-9);
+  --display-indigo-bgColor-emphasis: var(--base-display-color-indigo-5);
+  --display-indigo-bgColor-muted: var(--base-display-color-indigo-0);
+  --display-indigo-borderColor-emphasis: var(--base-display-color-indigo-5);
+  --display-indigo-borderColor-muted: var(--base-display-color-indigo-1);
+  --display-indigo-fgColor: var(--base-display-color-indigo-6);
+  --display-indigo-scale-0: var(--base-display-color-indigo-0);
+  --display-indigo-scale-1: var(--base-display-color-indigo-1);
+  --display-indigo-scale-2: var(--base-display-color-indigo-2);
+  --display-indigo-scale-3: var(--base-display-color-indigo-3);
+  --display-indigo-scale-4: var(--base-display-color-indigo-4);
+  --display-indigo-scale-5: var(--base-display-color-indigo-5);
+  --display-indigo-scale-6: var(--base-display-color-indigo-6);
+  --display-indigo-scale-7: var(--base-display-color-indigo-7);
+  --display-indigo-scale-8: var(--base-display-color-indigo-8);
+  --display-indigo-scale-9: var(--base-display-color-indigo-9);
+  --display-lemon-bgColor-emphasis: var(--base-display-color-lemon-5);
+  --display-lemon-bgColor-muted: var(--base-display-color-lemon-0);
+  --display-lemon-borderColor-emphasis: var(--base-display-color-lemon-5);
+  --display-lemon-borderColor-muted: var(--base-display-color-lemon-1);
+  --display-lemon-fgColor: var(--base-display-color-lemon-6);
+  --display-lemon-scale-0: var(--base-display-color-lemon-0);
+  --display-lemon-scale-1: var(--base-display-color-lemon-1);
+  --display-lemon-scale-2: var(--base-display-color-lemon-2);
+  --display-lemon-scale-3: var(--base-display-color-lemon-3);
+  --display-lemon-scale-4: var(--base-display-color-lemon-4);
+  --display-lemon-scale-5: var(--base-display-color-lemon-5);
+  --display-lemon-scale-6: var(--base-display-color-lemon-6);
+  --display-lemon-scale-7: var(--base-display-color-lemon-7);
+  --display-lemon-scale-8: var(--base-display-color-lemon-8);
+  --display-lemon-scale-9: var(--base-display-color-lemon-9);
+  --display-lime-bgColor-emphasis: var(--base-display-color-lime-5);
+  --display-lime-bgColor-muted: var(--base-display-color-lime-0);
+  --display-lime-borderColor-emphasis: var(--base-display-color-lime-5);
+  --display-lime-borderColor-muted: var(--base-display-color-lime-1);
+  --display-lime-fgColor: var(--base-display-color-lime-6);
+  --display-lime-scale-0: var(--base-display-color-lime-0);
+  --display-lime-scale-1: var(--base-display-color-lime-1);
+  --display-lime-scale-2: var(--base-display-color-lime-2);
+  --display-lime-scale-3: var(--base-display-color-lime-3);
+  --display-lime-scale-4: var(--base-display-color-lime-4);
+  --display-lime-scale-5: var(--base-display-color-lime-5);
+  --display-lime-scale-6: var(--base-display-color-lime-6);
+  --display-lime-scale-7: var(--base-display-color-lime-7);
+  --display-lime-scale-8: var(--base-display-color-lime-8);
+  --display-lime-scale-9: var(--base-display-color-lime-9);
+  --display-olive-bgColor-emphasis: var(--base-display-color-olive-5);
+  --display-olive-bgColor-muted: var(--base-display-color-olive-0);
+  --display-olive-borderColor-emphasis: var(--base-display-color-olive-5);
+  --display-olive-borderColor-muted: var(--base-display-color-olive-1);
+  --display-olive-fgColor: var(--base-display-color-olive-6);
+  --display-olive-scale-0: var(--base-display-color-olive-0);
+  --display-olive-scale-1: var(--base-display-color-olive-1);
+  --display-olive-scale-2: var(--base-display-color-olive-2);
+  --display-olive-scale-3: var(--base-display-color-olive-3);
+  --display-olive-scale-4: var(--base-display-color-olive-4);
+  --display-olive-scale-5: var(--base-display-color-olive-5);
+  --display-olive-scale-6: var(--base-display-color-olive-6);
+  --display-olive-scale-7: var(--base-display-color-olive-7);
+  --display-olive-scale-8: var(--base-display-color-olive-8);
+  --display-olive-scale-9: var(--base-display-color-olive-9);
+  --display-orange-bgColor-emphasis: var(--base-display-color-orange-5);
+  --display-orange-bgColor-muted: var(--base-display-color-orange-0);
+  --display-orange-borderColor-emphasis: var(--base-display-color-orange-5);
+  --display-orange-borderColor-muted: var(--base-display-color-orange-1);
+  --display-orange-fgColor: var(--base-display-color-orange-6);
+  --display-orange-scale-0: var(--base-display-color-orange-0);
+  --display-orange-scale-1: var(--base-display-color-orange-1);
+  --display-orange-scale-2: var(--base-display-color-orange-2);
+  --display-orange-scale-3: var(--base-display-color-orange-3);
+  --display-orange-scale-4: var(--base-display-color-orange-4);
+  --display-orange-scale-5: var(--base-display-color-orange-5);
+  --display-orange-scale-6: var(--base-display-color-orange-6);
+  --display-orange-scale-7: var(--base-display-color-orange-7);
+  --display-orange-scale-8: var(--base-display-color-orange-8);
+  --display-orange-scale-9: var(--base-display-color-orange-9);
+  --display-pine-bgColor-emphasis: var(--base-display-color-pine-5);
+  --display-pine-bgColor-muted: var(--base-display-color-pine-0);
+  --display-pine-borderColor-emphasis: var(--base-display-color-pine-5);
+  --display-pine-borderColor-muted: var(--base-display-color-pine-1);
+  --display-pine-fgColor: var(--base-display-color-pine-6);
+  --display-pine-scale-0: var(--base-display-color-pine-0);
+  --display-pine-scale-1: var(--base-display-color-pine-1);
+  --display-pine-scale-2: var(--base-display-color-pine-2);
+  --display-pine-scale-3: var(--base-display-color-pine-3);
+  --display-pine-scale-4: var(--base-display-color-pine-4);
+  --display-pine-scale-5: var(--base-display-color-pine-5);
+  --display-pine-scale-6: var(--base-display-color-pine-6);
+  --display-pine-scale-7: var(--base-display-color-pine-7);
+  --display-pine-scale-8: var(--base-display-color-pine-8);
+  --display-pine-scale-9: var(--base-display-color-pine-9);
+  --display-pink-bgColor-emphasis: var(--base-display-color-pink-5);
+  --display-pink-bgColor-muted: var(--base-display-color-pink-0);
+  --display-pink-borderColor-emphasis: var(--base-display-color-pink-5);
+  --display-pink-borderColor-muted: var(--base-display-color-pink-1);
+  --display-pink-fgColor: var(--base-display-color-pink-6);
+  --display-pink-scale-0: var(--base-display-color-pink-0);
+  --display-pink-scale-1: var(--base-display-color-pink-1);
+  --display-pink-scale-2: var(--base-display-color-pink-2);
+  --display-pink-scale-3: var(--base-display-color-pink-3);
+  --display-pink-scale-4: var(--base-display-color-pink-4);
+  --display-pink-scale-5: var(--base-display-color-pink-5);
+  --display-pink-scale-6: var(--base-display-color-pink-6);
+  --display-pink-scale-7: var(--base-display-color-pink-7);
+  --display-pink-scale-8: var(--base-display-color-pink-8);
+  --display-pink-scale-9: var(--base-display-color-pink-9);
+  --display-plum-bgColor-emphasis: var(--base-display-color-plum-5);
+  --display-plum-bgColor-muted: var(--base-display-color-plum-0);
+  --display-plum-borderColor-emphasis: var(--base-display-color-plum-5);
+  --display-plum-borderColor-muted: var(--base-display-color-plum-1);
+  --display-plum-fgColor: var(--base-display-color-plum-6);
+  --display-plum-scale-0: var(--base-display-color-plum-0);
+  --display-plum-scale-1: var(--base-display-color-plum-1);
+  --display-plum-scale-2: var(--base-display-color-plum-2);
+  --display-plum-scale-3: var(--base-display-color-plum-3);
+  --display-plum-scale-4: var(--base-display-color-plum-4);
+  --display-plum-scale-5: var(--base-display-color-plum-5);
+  --display-plum-scale-6: var(--base-display-color-plum-6);
+  --display-plum-scale-7: var(--base-display-color-plum-7);
+  --display-plum-scale-8: var(--base-display-color-plum-8);
+  --display-plum-scale-9: var(--base-display-color-plum-9);
+  --display-purple-bgColor-emphasis: var(--base-display-color-purple-5);
+  --display-purple-bgColor-muted: var(--base-display-color-purple-0);
+  --display-purple-borderColor-emphasis: var(--base-display-color-purple-5);
+  --display-purple-borderColor-muted: var(--base-display-color-purple-1);
+  --display-purple-fgColor: var(--base-display-color-purple-6);
+  --display-purple-scale-0: var(--base-display-color-purple-0);
+  --display-purple-scale-1: var(--base-display-color-purple-1);
+  --display-purple-scale-2: var(--base-display-color-purple-2);
+  --display-purple-scale-3: var(--base-display-color-purple-3);
+  --display-purple-scale-4: var(--base-display-color-purple-4);
+  --display-purple-scale-5: var(--base-display-color-purple-5);
+  --display-purple-scale-6: var(--base-display-color-purple-6);
+  --display-purple-scale-7: var(--base-display-color-purple-7);
+  --display-purple-scale-8: var(--base-display-color-purple-8);
+  --display-purple-scale-9: var(--base-display-color-purple-9);
+  --display-red-bgColor-emphasis: var(--base-display-color-red-5);
+  --display-red-bgColor-muted: var(--base-display-color-red-0);
+  --display-red-borderColor-emphasis: var(--base-display-color-red-5);
+  --display-red-borderColor-muted: var(--base-display-color-red-1);
+  --display-red-fgColor: var(--base-display-color-red-6);
+  --display-red-scale-0: var(--base-display-color-red-0);
+  --display-red-scale-1: var(--base-display-color-red-1);
+  --display-red-scale-2: var(--base-display-color-red-2);
+  --display-red-scale-3: var(--base-display-color-red-3);
+  --display-red-scale-4: var(--base-display-color-red-4);
+  --display-red-scale-5: var(--base-display-color-red-5);
+  --display-red-scale-6: var(--base-display-color-red-6);
+  --display-red-scale-7: var(--base-display-color-red-7);
+  --display-red-scale-8: var(--base-display-color-red-8);
+  --display-red-scale-9: var(--base-display-color-red-9);
+  --display-teal-bgColor-emphasis: var(--base-display-color-teal-5);
+  --display-teal-bgColor-muted: var(--base-display-color-teal-0);
+  --display-teal-borderColor-emphasis: var(--base-display-color-teal-5);
+  --display-teal-borderColor-muted: var(--base-display-color-teal-1);
+  --display-teal-fgColor: var(--base-display-color-teal-6);
+  --display-teal-scale-0: var(--base-display-color-teal-0);
+  --display-teal-scale-1: var(--base-display-color-teal-1);
+  --display-teal-scale-2: var(--base-display-color-teal-2);
+  --display-teal-scale-3: var(--base-display-color-teal-3);
+  --display-teal-scale-4: var(--base-display-color-teal-4);
+  --display-teal-scale-5: var(--base-display-color-teal-5);
+  --display-teal-scale-6: var(--base-display-color-teal-6);
+  --display-teal-scale-7: var(--base-display-color-teal-7);
+  --display-teal-scale-8: var(--base-display-color-teal-8);
+  --display-teal-scale-9: var(--base-display-color-teal-9);
+  --display-yellow-bgColor-emphasis: var(--base-display-color-yellow-5);
+  --display-yellow-bgColor-muted: var(--base-display-color-yellow-0);
+  --display-yellow-borderColor-emphasis: var(--base-display-color-yellow-5);
+  --display-yellow-borderColor-muted: var(--base-display-color-yellow-1);
+  --display-yellow-fgColor: var(--base-display-color-yellow-6);
+  --display-yellow-scale-0: var(--base-display-color-yellow-0);
+  --display-yellow-scale-1: var(--base-display-color-yellow-1);
+  --display-yellow-scale-2: var(--base-display-color-yellow-2);
+  --display-yellow-scale-3: var(--base-display-color-yellow-3);
+  --display-yellow-scale-4: var(--base-display-color-yellow-4);
+  --display-yellow-scale-5: var(--base-display-color-yellow-5);
+  --display-yellow-scale-6: var(--base-display-color-yellow-6);
+  --display-yellow-scale-7: var(--base-display-color-yellow-7);
+  --display-yellow-scale-8: var(--base-display-color-yellow-8);
+  --display-yellow-scale-9: var(--base-display-color-yellow-9);
+  --fgColor-accent: var(--base-color-blue-5); /** Accent text for links and interactive elements */
+  --fgColor-attention: var(--base-color-yellow-5); /** Attention text for warnings and caution states */
+  --fgColor-closed: var(--fgColor-danger); /** Text color for closed state indicators (issues, PRs) */
+  --fgColor-disabled: var(--base-color-neutral-8); /** Text color for disabled interactive elements */
+  --fgColor-done: var(--base-color-purple-5); /** Text color for completed/done state indicators */
+  --fgColor-muted: var(--base-color-neutral-9); /** Muted text for secondary content and less important information */
+  --fgColor-neutral: var(--base-color-neutral-9); /** Neutral semantic text for icons and secondary elements */
+  --fgColor-severe: var(--base-color-orange-5); /** Severe text for high-priority warnings */
+  --fgColor-sponsors: var(--base-color-pink-5); /** Text color for GitHub Sponsors content */
+  --fgColor-success: var(--base-color-green-5); /** Success text for positive feedback and completed states */
+  --header-bgColor: var(--base-color-neutral-12);
+  --header-borderColor-divider: var(--base-color-neutral-8);
+  --headerSearch-bgColor: var(--base-color-neutral-12);
+  --headerSearch-borderColor: var(--base-color-neutral-8);
+  --highlight-neutral-bgColor: var(--base-color-yellow-0);
+  --label-auburn-bgColor-active: var(--base-display-color-auburn-2);
+  --label-auburn-bgColor-hover: var(--base-display-color-auburn-1);
+  --label-auburn-bgColor-rest: var(--base-display-color-auburn-0);
+  --label-auburn-borderColor: var(--base-color-transparent);
+  --label-auburn-fgColor-active: var(--base-display-color-auburn-8);
+  --label-auburn-fgColor-hover: var(--base-display-color-auburn-7);
+  --label-auburn-fgColor-rest: var(--base-display-color-auburn-6);
+  --label-blue-bgColor-active: var(--base-display-color-blue-2);
+  --label-blue-bgColor-hover: var(--base-display-color-blue-1);
+  --label-blue-bgColor-rest: var(--base-display-color-blue-0);
+  --label-blue-borderColor: var(--base-color-transparent);
+  --label-blue-fgColor-active: var(--base-display-color-blue-8);
+  --label-blue-fgColor-hover: var(--base-display-color-blue-7);
+  --label-blue-fgColor-rest: var(--base-display-color-blue-6);
+  --label-brown-bgColor-active: var(--base-display-color-brown-2);
+  --label-brown-bgColor-hover: var(--base-display-color-brown-1);
+  --label-brown-bgColor-rest: var(--base-display-color-brown-0);
+  --label-brown-borderColor: var(--base-color-transparent);
+  --label-brown-fgColor-active: var(--base-display-color-brown-8);
+  --label-brown-fgColor-hover: var(--base-display-color-brown-7);
+  --label-brown-fgColor-rest: var(--base-display-color-brown-6);
+  --label-coral-bgColor-active: var(--base-display-color-coral-2);
+  --label-coral-bgColor-hover: var(--base-display-color-coral-1);
+  --label-coral-bgColor-rest: var(--base-display-color-coral-0);
+  --label-coral-borderColor: var(--base-color-transparent);
+  --label-coral-fgColor-active: var(--base-display-color-coral-8);
+  --label-coral-fgColor-hover: var(--base-display-color-coral-7);
+  --label-coral-fgColor-rest: var(--base-display-color-coral-6);
+  --label-cyan-bgColor-active: var(--base-display-color-cyan-2);
+  --label-cyan-bgColor-hover: var(--base-display-color-cyan-1);
+  --label-cyan-bgColor-rest: var(--base-display-color-cyan-0);
+  --label-cyan-borderColor: var(--base-color-transparent);
+  --label-cyan-fgColor-active: var(--base-display-color-cyan-8);
+  --label-cyan-fgColor-hover: var(--base-display-color-cyan-7);
+  --label-cyan-fgColor-rest: var(--base-display-color-cyan-6);
+  --label-gray-bgColor-active: var(--base-display-color-gray-2);
+  --label-gray-bgColor-hover: var(--base-display-color-gray-1);
+  --label-gray-bgColor-rest: var(--base-display-color-gray-0);
+  --label-gray-borderColor: var(--base-color-transparent);
+  --label-gray-fgColor-active: var(--base-display-color-gray-8);
+  --label-gray-fgColor-hover: var(--base-display-color-gray-7);
+  --label-gray-fgColor-rest: var(--base-display-color-gray-6);
+  --label-green-bgColor-active: var(--base-display-color-green-2);
+  --label-green-bgColor-hover: var(--base-display-color-green-1);
+  --label-green-bgColor-rest: var(--base-display-color-green-0);
+  --label-green-borderColor: var(--base-color-transparent);
+  --label-green-fgColor-active: var(--base-display-color-green-8);
+  --label-green-fgColor-hover: var(--base-display-color-green-7);
+  --label-green-fgColor-rest: var(--base-display-color-green-6);
+  --label-indigo-bgColor-active: var(--base-display-color-indigo-2);
+  --label-indigo-bgColor-hover: var(--base-display-color-indigo-1);
+  --label-indigo-bgColor-rest: var(--base-display-color-indigo-0);
+  --label-indigo-borderColor: var(--base-color-transparent);
+  --label-indigo-fgColor-active: var(--base-display-color-indigo-8);
+  --label-indigo-fgColor-hover: var(--base-display-color-indigo-7);
+  --label-indigo-fgColor-rest: var(--base-display-color-indigo-6);
+  --label-lemon-bgColor-active: var(--base-display-color-lemon-2);
+  --label-lemon-bgColor-hover: var(--base-display-color-lemon-1);
+  --label-lemon-bgColor-rest: var(--base-display-color-lemon-0);
+  --label-lemon-borderColor: var(--base-color-transparent);
+  --label-lemon-fgColor-active: var(--base-display-color-lemon-8);
+  --label-lemon-fgColor-hover: var(--base-display-color-lemon-7);
+  --label-lemon-fgColor-rest: var(--base-display-color-lemon-6);
+  --label-lime-bgColor-active: var(--base-display-color-lime-2);
+  --label-lime-bgColor-hover: var(--base-display-color-lime-1);
+  --label-lime-bgColor-rest: var(--base-display-color-lime-0);
+  --label-lime-borderColor: var(--base-color-transparent);
+  --label-lime-fgColor-active: var(--base-display-color-lime-8);
+  --label-lime-fgColor-hover: var(--base-display-color-lime-7);
+  --label-lime-fgColor-rest: var(--base-display-color-lime-6);
+  --label-olive-bgColor-active: var(--base-display-color-olive-2);
+  --label-olive-bgColor-hover: var(--base-display-color-olive-1);
+  --label-olive-bgColor-rest: var(--base-display-color-olive-0);
+  --label-olive-borderColor: var(--base-color-transparent);
+  --label-olive-fgColor-active: var(--base-display-color-olive-8);
+  --label-olive-fgColor-hover: var(--base-display-color-olive-7);
+  --label-olive-fgColor-rest: var(--base-display-color-olive-6);
+  --label-orange-bgColor-active: var(--base-display-color-orange-2);
+  --label-orange-bgColor-hover: var(--base-display-color-orange-1);
+  --label-orange-bgColor-rest: var(--base-display-color-orange-0);
+  --label-orange-borderColor: var(--base-color-transparent);
+  --label-orange-fgColor-active: var(--base-display-color-orange-8);
+  --label-orange-fgColor-hover: var(--base-display-color-orange-7);
+  --label-orange-fgColor-rest: var(--base-display-color-orange-6);
+  --label-pine-bgColor-active: var(--base-display-color-pine-2);
+  --label-pine-bgColor-hover: var(--base-display-color-pine-1);
+  --label-pine-bgColor-rest: var(--base-display-color-pine-0);
+  --label-pine-borderColor: var(--base-color-transparent);
+  --label-pine-fgColor-active: var(--base-display-color-pine-8);
+  --label-pine-fgColor-hover: var(--base-display-color-pine-7);
+  --label-pine-fgColor-rest: var(--base-display-color-pine-6);
+  --label-pink-bgColor-active: var(--base-display-color-pink-2);
+  --label-pink-bgColor-hover: var(--base-display-color-pink-1);
+  --label-pink-bgColor-rest: var(--base-display-color-pink-0);
+  --label-pink-borderColor: var(--base-color-transparent);
+  --label-pink-fgColor-active: var(--base-display-color-pink-8);
+  --label-pink-fgColor-hover: var(--base-display-color-pink-7);
+  --label-pink-fgColor-rest: var(--base-display-color-pink-6);
+  --label-plum-bgColor-active: var(--base-display-color-plum-2);
+  --label-plum-bgColor-hover: var(--base-display-color-plum-1);
+  --label-plum-bgColor-rest: var(--base-display-color-plum-0);
+  --label-plum-borderColor: var(--base-color-transparent);
+  --label-plum-fgColor-active: var(--base-display-color-plum-8);
+  --label-plum-fgColor-hover: var(--base-display-color-plum-7);
+  --label-plum-fgColor-rest: var(--base-display-color-plum-6);
+  --label-purple-bgColor-active: var(--base-display-color-purple-2);
+  --label-purple-bgColor-hover: var(--base-display-color-purple-1);
+  --label-purple-bgColor-rest: var(--base-display-color-purple-0);
+  --label-purple-borderColor: var(--base-color-transparent);
+  --label-purple-fgColor-active: var(--base-display-color-purple-8);
+  --label-purple-fgColor-hover: var(--base-display-color-purple-7);
+  --label-purple-fgColor-rest: var(--base-display-color-purple-6);
+  --label-red-bgColor-active: var(--base-display-color-red-2);
+  --label-red-bgColor-hover: var(--base-display-color-red-1);
+  --label-red-bgColor-rest: var(--base-display-color-red-0);
+  --label-red-borderColor: var(--base-color-transparent);
+  --label-red-fgColor-active: var(--base-display-color-red-8);
+  --label-red-fgColor-hover: var(--base-display-color-red-7);
+  --label-red-fgColor-rest: var(--base-display-color-red-6);
+  --label-teal-bgColor-active: var(--base-display-color-teal-2);
+  --label-teal-bgColor-hover: var(--base-display-color-teal-1);
+  --label-teal-bgColor-rest: var(--base-display-color-teal-0);
+  --label-teal-borderColor: var(--base-color-transparent);
+  --label-teal-fgColor-active: var(--base-display-color-teal-8);
+  --label-teal-fgColor-hover: var(--base-display-color-teal-7);
+  --label-teal-fgColor-rest: var(--base-display-color-teal-6);
+  --label-yellow-bgColor-active: var(--base-display-color-yellow-2);
+  --label-yellow-bgColor-hover: var(--base-display-color-yellow-1);
+  --label-yellow-bgColor-rest: var(--base-display-color-yellow-0);
+  --label-yellow-borderColor: var(--base-color-transparent);
+  --label-yellow-fgColor-active: var(--base-display-color-yellow-8);
+  --label-yellow-fgColor-hover: var(--base-display-color-yellow-7);
+  --label-yellow-fgColor-rest: var(--base-display-color-yellow-6);
+  --menu-bgColor-active: var(--base-color-transparent);
+  --overlay-backdrop-bgColor: #c8d1da66;
+  --prettylights-syntax-bracketHighlighterAngle: var(--base-color-neutral-9); /** Syntax highlighting color for angle brackets */
+  --prettylights-syntax-bracketHighlighterUnmatched: var(--base-color-red-7); /** Syntax highlighting color for unmatched brackets */
+  --prettylights-syntax-carriageReturn-bg: var(--base-color-red-5); /** Background color for carriage return characters in diffs */
+  --prettylights-syntax-carriageReturn-text: var(--base-color-neutral-1); /** Text color for carriage return characters in diffs */
+  --prettylights-syntax-comment: var(--base-color-neutral-9); /** Syntax highlighting color for code comments */
+  --prettylights-syntax-constant: var(--base-color-blue-6); /** Syntax highlighting color for constants and literal values */
+  --prettylights-syntax-constantOtherReferenceLink: var(--base-color-blue-8); /** Syntax highlighting color for reference links and URLs in code */
+  --prettylights-syntax-entity: var(--base-color-purple-6); /** Syntax highlighting color for class names, type definitions, and declarations */
+  --prettylights-syntax-entityTag: var(--base-color-blue-6); /** Syntax highlighting color for HTML/XML tags */
+  --prettylights-syntax-invalidIllegal-text: var(--fgColor-danger); /** Text color for invalid or illegal code syntax */
+  --prettylights-syntax-keyword: var(--base-color-red-5); /** Syntax highlighting color for language keywords (if, else, return) */
+  --prettylights-syntax-markup-changed-bg: var(--base-color-orange-1); /** Background color for changed lines in diff views */
+  --prettylights-syntax-markup-changed-text: var(--base-color-orange-6); /** Text color for changed lines in diff views */
+  --prettylights-syntax-markup-deleted-bg: var(--base-color-red-0); /** Background color for deleted lines in diff views */
+  --prettylights-syntax-markup-deleted-text: var(--base-color-red-7); /** Text color for deleted lines in diff views */
+  --prettylights-syntax-markup-heading: var(--base-color-blue-6); /** Syntax highlighting color for headings in markdown */
+  --prettylights-syntax-markup-ignored-bg: var(--base-color-blue-6); /** Background color for ignored content in diffs */
+  --prettylights-syntax-markup-ignored-text: var(--base-color-neutral-6); /** Text color for ignored content in diffs */
+  --prettylights-syntax-markup-inserted-bg: var(--base-color-green-0); /** Background color for inserted lines in diff views */
+  --prettylights-syntax-markup-inserted-text: var(--base-color-green-6); /** Text color for inserted lines in diff views */
+  --prettylights-syntax-markup-list: var(--base-color-yellow-9); /** Syntax highlighting color for list markers in markdown */
+  --prettylights-syntax-metaDiffRange: var(--base-color-purple-5); /** Syntax highlighting color for diff range information (@@ lines) */
+  --prettylights-syntax-string: var(--base-color-blue-8); /** Syntax highlighting color for string literals */
+  --prettylights-syntax-stringRegexp: var(--base-color-green-6); /** Syntax highlighting color for regular expression literals */
+  --prettylights-syntax-sublimeLinterGutterMark: var(--base-color-neutral-8); /** Color for linter gutter marks in code editors */
+  --prettylights-syntax-variable: var(--base-color-orange-6); /** Syntax highlighting color for variables and parameters */
+  --progressBar-bgColor-success: var(--bgColor-success-emphasis);
+  --progressBar-track-borderColor: var(--base-color-transparent);
+  --reactionButton-selected-bgColor-rest: var(--base-color-blue-0);
+  --reactionButton-selected-fgColor-hover: var(--base-color-blue-6);
+  --selectMenu-bgColor-active: var(--base-color-blue-1);
+  --selectMenu-borderColor: var(--base-color-transparent);
+  --shadow-resting-medium: 0 1px 1px 0 #25292e1a, 0 3px 6px 0 #25292e1f; /** Medium resting shadow for cards and elevated surfaces */
+  --skeletonLoader-bgColor: #818b981a;
+  --topicTag-borderColor: var(--base-color-transparent);
+  --treeViewItem-leadingVisual-iconColor-rest: var(--base-color-blue-3);
+  --underlineNav-borderColor-active: var(--base-color-coral-3);
+  --ansi-black: var(--base-color-neutral-13); /** ANSI black for terminal text and backgrounds */
+  --avatar-bgColor: var(--base-color-neutral-0);
+  --avatar-shadow: 0 0 0 2px #ffffffcc;
+  --base-color-inset: var(--base-color-neutral-0);
+  --bgColor-black: var(--base-color-neutral-13); /** Pure black background */
+  --bgColor-closed-emphasis: var(--bgColor-danger-emphasis); /** Strong background for closed state badges and labels */
+  --bgColor-closed-muted: var(--bgColor-danger-muted); /** Subtle background for closed state indicators (issues, PRs) */
+  --bgColor-default: var(--base-color-neutral-0); /** Default background color for pages and main content areas */
+  --bgColor-draft-emphasis: var(--bgColor-neutral-emphasis); /** Strong background for draft state badges and labels */
+  --bgColor-draft-muted: var(--bgColor-neutral-muted); /** Subtle background for draft state indicators */
+  --bgColor-inset: var(--bgColor-muted); /** Inset background for recessed content areas like wells or sunken panels */
+  --bgColor-open-muted: var(--bgColor-success-muted); /** Subtle background for open state indicators (issues, PRs) */
+  --bgColor-upsell-emphasis: var(--bgColor-done-emphasis); /** Strong background for prominent upsell elements */
+  --bgColor-upsell-muted: var(--bgColor-done-muted); /** Subtle background for upsell and promotional content */
+  --bgColor-white: var(--base-color-neutral-0); /** Pure white background */
+  --border-accent-emphasis: var(--borderWidth-default) solid var(--borderColor-accent-emphasis);
+  --border-accent-muted: var(--borderWidth-default) solid var(--borderColor-accent-muted);
+  --border-attention-emphasis: var(--borderWidth-default) solid var(--borderColor-attention-emphasis);
+  --border-attention-muted: var(--borderWidth-default) solid var(--borderColor-attention-muted);
+  --border-danger-emphasis: var(--borderWidth-default) solid var(--borderColor-danger-emphasis);
+  --border-danger-muted: var(--borderWidth-default) solid var(--borderColor-danger-muted);
+  --border-default: var(--borderWidth-default) solid var(--borderColor-default);
+  --border-disabled: var(--borderWidth-default) solid var(--borderColor-disabled);
+  --border-done-emphasis: var(--borderWidth-default) solid var(--borderColor-done-emphasis);
+  --border-done-muted: var(--borderWidth-default) solid var(--borderColor-done-muted);
+  --border-emphasis: var(--borderWidth-default) solid var(--borderColor-emphasis);
+  --border-neutral-emphasis: var(--borderWidth-default) solid var(--borderColor-neutral-emphasis);
+  --border-severe-emphasis: var(--borderWidth-default) solid var(--borderColor-severe-emphasis);
+  --border-severe-muted: var(--borderWidth-default) solid var(--borderColor-severe-muted);
+  --border-sponsors-emphasis: var(--borderWidth-default) solid var(--borderColor-sponsors-emphasis);
+  --border-sponsors-muted: var(--borderWidth-default) solid var(--borderColor-sponsors-muted);
+  --border-success-emphasis: var(--borderWidth-default) solid var(--borderColor-success-emphasis);
+  --border-success-muted: var(--borderWidth-default) solid var(--borderColor-success-muted);
+  --border-transparent: var(--borderWidth-default) solid var(--borderColor-transparent);
+  --borderColor-closed-emphasis: var(--borderColor-danger-emphasis); /** Strong border for closed state badges */
+  --borderColor-closed-muted: var(--borderColor-danger-muted); /** Subtle border for closed state indicators */
+  --borderColor-draft-emphasis: var(--borderColor-neutral-emphasis); /** Strong border for draft state badges */
+  --borderColor-muted: #d1d9e0b3; /** Subtle border for secondary elements and light separators */
+  --borderColor-open-emphasis: var(--borderColor-success-emphasis); /** Strong border for open state badges */
+  --borderColor-open-muted: var(--borderColor-success-muted); /** Subtle border for open state indicators */
+  --borderColor-translucent: #1f232826; /** Semi-transparent border for overlays and layered elements. Border-specific token — no bgColor-translucent counterpart exists by design. */
+  --borderColor-upsell-emphasis: var(--borderColor-done-emphasis); /** Strong border for prominent upsell elements */
+  --borderColor-upsell-muted: var(--borderColor-done-muted); /** Subtle border for upsell and promotional content */
+  --button-danger-bgColor-hover: var(--bgColor-danger-emphasis);
+  --button-danger-bgColor-rest: var(--control-bgColor-rest);
+  --button-danger-fgColor-active: var(--base-color-neutral-0);
+  --button-danger-fgColor-hover: var(--base-color-neutral-0);
+  --button-danger-iconColor-disabled: var(--button-danger-fgColor-disabled);
+  --button-danger-iconColor-hover: var(--base-color-neutral-0);
+  --button-danger-iconColor-rest: var(--button-danger-fgColor-rest);
+  --button-default-bgColor-active: var(--control-bgColor-active);
+  --button-default-bgColor-hover: var(--control-bgColor-hover);
+  --button-default-bgColor-rest: var(--control-bgColor-rest);
+  --button-default-bgColor-selected: var(--control-bgColor-active);
+  --button-default-fgColor-rest: var(--control-fgColor-rest);
+  --button-default-shadow-resting: 0 1px 0 0 #1f23280a;
+  --button-invisible-bgColor-active: var(--control-transparent-bgColor-active);
+  --button-invisible-bgColor-hover: var(--control-transparent-bgColor-hover);
+  --button-invisible-bgColor-rest: var(--control-transparent-bgColor-rest);
+  --button-invisible-borderColor-hover: var(--control-transparent-borderColor-hover);
+  --button-invisible-borderColor-rest: var(--control-transparent-borderColor-rest);
+  --button-invisible-fgColor-active: var(--control-fgColor-rest);
+  --button-invisible-fgColor-hover: var(--control-fgColor-rest);
+  --button-invisible-fgColor-rest: var(--control-fgColor-rest);
+  --button-invisible-iconColor-hover: var(--fgColor-muted);
+  --button-invisible-iconColor-rest: var(--fgColor-muted);
+  --button-outline-bgColor-hover: var(--bgColor-accent-emphasis);
+  --button-outline-bgColor-rest: var(--control-bgColor-rest);
+  --button-outline-fgColor-active: var(--base-color-neutral-0);
+  --button-outline-fgColor-disabled: #0969da80;
+  --button-outline-fgColor-hover: var(--base-color-neutral-0);
+  --button-outline-fgColor-rest: var(--fgColor-accent);
+  --button-primary-fgColor-disabled: #ffffffcc;
+  --buttonCounter-danger-bgColor-disabled: #cf222e0d;
+  --buttonCounter-danger-bgColor-hover: #ffffff33;
+  --buttonCounter-danger-bgColor-rest: #cf222e1a;
+  --buttonCounter-danger-fgColor-hover: var(--base-color-neutral-0);
+  --buttonCounter-default-bgColor-rest: var(--bgColor-neutral-muted);
+  --buttonCounter-invisible-bgColor-rest: var(--bgColor-neutral-muted);
+  --buttonCounter-outline-bgColor-disabled: #0969da0d;
+  --buttonCounter-outline-bgColor-hover: #ffffff33;
+  --buttonCounter-outline-bgColor-rest: #0969da1a;
+  --buttonCounter-outline-fgColor-disabled: #0969da80;
+  --buttonCounter-outline-fgColor-hover: var(--base-color-neutral-0);
+  --buttonKeybindingHint-danger-bgColor-rest: var(--buttonKeybindingHint-default-bgColor-rest);
+  --buttonKeybindingHint-default-bgColor-disabled: var(--buttonKeybindingHint-default-bgColor-rest);
+  --buttonKeybindingHint-default-fgColor-rest: var(--fgColor-muted);
+  --buttonKeybindingHint-inactive-fgColor: var(--button-inactive-fgColor);
+  --buttonKeybindingHint-invisible-bgColor-active: var(--control-transparent-bgColor-active);
+  --buttonKeybindingHint-invisible-bgColor-disabled: var(--button-invisible-bgColor-disabled);
+  --buttonKeybindingHint-invisible-bgColor-hover: var(--control-transparent-bgColor-hover);
+  --buttonKeybindingHint-invisible-bgColor-rest: var(--buttonKeybindingHint-default-bgColor-rest);
+  --buttonKeybindingHint-invisible-fgColor-rest: var(--fgColor-muted);
+  --buttonKeybindingHint-primary-bgColor-disabled: #002d111a;
+  --buttonKeybindingHint-primary-bgColor-rest: var(--buttonCounter-primary-bgColor-rest);
+  --codeMirror-activeline-bgColor: var(--bgColor-neutral-muted);
+  --codeMirror-gutterMarker-fgColor-muted: var(--fgColor-muted);
+  --codeMirror-lineNumber-fgColor: var(--fgColor-muted);
+  --codeMirror-selection-bgColor: var(--borderColor-accent-muted);
+  --codeMirror-syntax-fgColor-comment: var(--base-color-neutral-13);
+  --color-ansi-black-bright: var(--ansi-blackBright); /** Deprecated. Use ansi.blackBright instead. */
+  --color-ansi-blue: var(--ansi-blue); /** Deprecated. Use ansi.blue instead. */
+  --color-ansi-blue-bright: var(--ansi-blueBright); /** Deprecated. Use ansi.blueBright instead. */
+  --color-ansi-gray: var(--ansi-gray); /** Deprecated. Use ansi.gray instead. */
+  --color-ansi-green: var(--ansi-green); /** Deprecated. Use ansi.green instead. */
+  --color-ansi-green-bright: var(--ansi-greenBright); /** Deprecated. Use ansi.greenBright instead. */
+  --color-ansi-magenta: var(--ansi-magenta); /** Deprecated. Use ansi.magenta instead. */
+  --color-ansi-magenta-bright: var(--ansi-magentaBright); /** Deprecated. Use ansi.magentaBright instead. */
+  --color-ansi-red: var(--ansi-red); /** Deprecated. Use ansi.red instead. */
+  --color-ansi-red-bright: var(--ansi-redBright); /** Deprecated. Use ansi.redBright instead. */
+  --color-ansi-white: var(--ansi-white); /** Deprecated. Use ansi.white instead. */
+  --color-ansi-white-bright: var(--ansi-whiteBright); /** Deprecated. Use ansi.whiteBright instead. */
+  --color-ansi-yellow: var(--ansi-yellow); /** Deprecated. Use ansi.yellow instead. */
+  --color-ansi-yellow-bright: var(--ansi-yellowBright); /** Deprecated. Use ansi.yellowBright instead. */
+  --color-prettylights-syntax-brackethighlighter-angle: var(--prettylights-syntax-bracketHighlighterAngle); /** Deprecated. Use prettylights.syntax.bracketHighlighterAngle instead. */
+  --color-prettylights-syntax-brackethighlighter-unmatched: var(--prettylights-syntax-bracketHighlighterUnmatched); /** Deprecated. Use prettylights.syntax.bracketHighlighterUnmatched instead. */
+  --color-prettylights-syntax-carriage-return-bg: var(--prettylights-syntax-carriageReturn-bg); /** Deprecated. Use prettylights.syntax.carriageReturn.bg instead. */
+  --color-prettylights-syntax-carriage-return-text: var(--prettylights-syntax-carriageReturn-text); /** Deprecated. Use prettylights.syntax.carriageReturn.text instead. */
+  --color-prettylights-syntax-comment: var(--prettylights-syntax-comment); /** Deprecated. Use prettylights.syntax.comment instead. */
+  --color-prettylights-syntax-constant: var(--prettylights-syntax-constant); /** Deprecated. Use prettylights.syntax.constant instead. */
+  --color-prettylights-syntax-constant-other-reference-link: var(--prettylights-syntax-constantOtherReferenceLink); /** Deprecated. Use prettylights.syntax.constantOtherReferenceLink instead. */
+  --color-prettylights-syntax-entity: var(--prettylights-syntax-entity); /** Deprecated. Use prettylights.syntax.entity instead. */
+  --color-prettylights-syntax-entity-tag: var(--prettylights-syntax-entityTag); /** Deprecated. Use prettylights.syntax.entityTag instead. */
+  --color-prettylights-syntax-invalid-illegal-text: var(--prettylights-syntax-invalidIllegal-text); /** Deprecated. Use prettylights.syntax.invalidIllegal.text instead. */
+  --color-prettylights-syntax-keyword: var(--prettylights-syntax-keyword); /** Deprecated. Use prettylights.syntax.keyword instead. */
+  --color-prettylights-syntax-markup-changed-bg: var(--prettylights-syntax-markup-changed-bg); /** Deprecated. Use prettylights.syntax.markup.changed.bg instead. */
+  --color-prettylights-syntax-markup-changed-text: var(--prettylights-syntax-markup-changed-text); /** Deprecated. Use prettylights.syntax.markup.changed.text instead. */
+  --color-prettylights-syntax-markup-deleted-bg: var(--prettylights-syntax-markup-deleted-bg); /** Deprecated. Use prettylights.syntax.markup.deleted.bg instead. */
+  --color-prettylights-syntax-markup-deleted-text: var(--prettylights-syntax-markup-deleted-text); /** Deprecated. Use prettylights.syntax.markup.deleted.text instead. */
+  --color-prettylights-syntax-markup-heading: var(--prettylights-syntax-markup-heading); /** Deprecated. Use prettylights.syntax.markup.heading instead. */
+  --color-prettylights-syntax-markup-ignored-bg: var(--prettylights-syntax-markup-ignored-bg); /** Deprecated. Use prettylights.syntax.markup.ignored.bg instead. */
+  --color-prettylights-syntax-markup-ignored-text: var(--prettylights-syntax-markup-ignored-text); /** Deprecated. Use prettylights.syntax.markup.ignored.text instead. */
+  --color-prettylights-syntax-markup-inserted-bg: var(--prettylights-syntax-markup-inserted-bg); /** Deprecated. Use prettylights.syntax.markup.inserted.bg instead. */
+  --color-prettylights-syntax-markup-inserted-text: var(--prettylights-syntax-markup-inserted-text); /** Deprecated. Use prettylights.syntax.markup.inserted.text instead. */
+  --color-prettylights-syntax-markup-list: var(--prettylights-syntax-markup-list); /** Deprecated. Use prettylights.syntax.markup.list instead. */
+  --color-prettylights-syntax-meta-diff-range: var(--prettylights-syntax-metaDiffRange); /** Deprecated. Use prettylights.syntax.metaDiffRange instead. */
+  --color-prettylights-syntax-string: var(--prettylights-syntax-string); /** Deprecated. Use prettylights.syntax.string instead. */
+  --color-prettylights-syntax-string-regexp: var(--prettylights-syntax-stringRegexp); /** Deprecated. Use prettylights.syntax.stringRegexp instead. */
+  --color-prettylights-syntax-sublimelinter-gutter-mark: var(--prettylights-syntax-sublimeLinterGutterMark); /** Deprecated. Use prettylights.syntax.sublimeLinterGutterMark instead. */
+  --color-prettylights-syntax-variable: var(--prettylights-syntax-variable); /** Deprecated. Use prettylights.syntax.variable instead. */
+  --contribution-default-borderColor-1: var(--contribution-default-borderColor-0);
+  --contribution-default-borderColor-2: var(--contribution-default-borderColor-0);
+  --contribution-default-borderColor-3: var(--contribution-default-borderColor-0);
+  --contribution-default-borderColor-4: var(--contribution-default-borderColor-0);
+  --control-bgColor-disabled: var(--bgColor-disabled);
+  --control-bgColor-selected: var(--control-bgColor-rest);
+  --control-borderColor-danger: var(--borderColor-danger-emphasis);
+  --control-borderColor-disabled: var(--borderColor-disabled);
+  --control-borderColor-emphasis: var(--borderColor-emphasis);
+  --control-borderColor-rest: var(--borderColor-default);
+  --control-borderColor-success: var(--borderColor-success-emphasis);
+  --control-borderColor-warning: var(--borderColor-attention-emphasis);
+  --control-checked-bgColor-disabled: var(--fgColor-disabled);
+  --control-checked-bgColor-rest: var(--bgColor-accent-emphasis);
+  --control-danger-bgColor-active: #ffebe966;
+  --control-danger-bgColor-hover: var(--bgColor-danger-muted);
+  --control-fgColor-disabled: var(--fgColor-disabled);
+  --control-fgColor-placeholder: var(--fgColor-muted);
+  --control-iconColor-rest: var(--fgColor-muted);
+  --control-transparent-bgColor-disabled: var(--bgColor-disabled);
+  --controlKnob-bgColor-checked: var(--base-color-neutral-0);
+  --controlKnob-bgColor-rest: var(--base-color-neutral-0);
+  --controlTrack-bgColor-disabled: var(--fgColor-disabled);
+  --controlTrack-borderColor-disabled: var(--fgColor-disabled);
+  --controlTrack-borderColor-rest: var(--borderColor-default);
+  --counter-bgColor-emphasis: var(--bgColor-neutral-emphasis);
+  --counter-bgColor-muted: var(--bgColor-neutral-muted);
+  --diffBlob-additionLine-bgColor: var(--bgColor-success-muted);
+  --diffBlob-deletionLine-bgColor: var(--bgColor-danger-muted);
+  --diffBlob-emptyLine-bgColor: var(--bgColor-muted);
+  --diffBlob-emptyNum-bgColor: var(--bgColor-muted);
+  --diffBlob-expander-iconColor: var(--fgColor-muted);
+  --diffBlob-hunkLine-bgColor: var(--bgColor-accent-muted);
+  --diffBlob-hunkLine-fgColor: var(--fgColor-muted);
+  --diffBlob-hunkNum-bgColor-hover: var(--bgColor-accent-emphasis);
+  --fgColor-black: var(--base-color-neutral-13); /** Pure black text */
+  --fgColor-default: var(--base-color-neutral-13); /** Default text color for primary content and headings */
+  --fgColor-draft: var(--fgColor-neutral); /** Text color for draft state indicators */
+  --fgColor-link: var(--fgColor-accent); /** Text color for hyperlinks */
+  --fgColor-onEmphasis: var(--base-color-neutral-0); /** Text color for use on emphasis backgrounds */
+  --fgColor-onInverse: var(--base-color-neutral-0); /** Text color for use on inverse backgrounds */
+  --fgColor-open: var(--fgColor-success); /** Text color for open state indicators (issues, PRs) */
+  --fgColor-upsell: var(--fgColor-done); /** Text color for upsell and promotional content */
+  --fgColor-white: var(--base-color-neutral-0); /** Pure white text */
+  --focus-outline-color: var(--borderColor-accent-emphasis); /** Outline color for focus states on interactive elements */
+  --header-fgColor-default: #ffffffb3;
+  --header-fgColor-logo: var(--base-color-neutral-0);
+  --overlay-bgColor: var(--base-color-neutral-0);
+  --page-header-bgColor: var(--bgColor-muted);
+  --prettylights-syntax-brackethighlighter-angle: var(--prettylights-syntax-bracketHighlighterAngle); /** Deprecated. Use prettylights.syntax.bracketHighlighterAngle instead. */
+  --prettylights-syntax-brackethighlighter-unmatched: var(--prettylights-syntax-bracketHighlighterUnmatched); /** Deprecated. Use prettylights.syntax.bracketHighlighterUnmatched instead. */
+  --prettylights-syntax-carriage-return-bg: var(--prettylights-syntax-carriageReturn-bg); /** Deprecated. Use prettylights.syntax.carriageReturn.bg instead. */
+  --prettylights-syntax-carriage-return-text: var(--prettylights-syntax-carriageReturn-text); /** Deprecated. Use prettylights.syntax.carriageReturn.text instead. */
+  --prettylights-syntax-constant-other-reference-link: var(--prettylights-syntax-constantOtherReferenceLink); /** Deprecated. Use prettylights.syntax.constantOtherReferenceLink instead. */
+  --prettylights-syntax-entity-tag: var(--prettylights-syntax-entityTag); /** Deprecated. Use prettylights.syntax.entityTag instead. */
+  --prettylights-syntax-invalid-illegal-text: var(--prettylights-syntax-invalidIllegal-text); /** Deprecated. Use prettylights.syntax.invalidIllegal.text instead. */
+  --prettylights-syntax-invalidIllegal-bg: var(--bgColor-danger-muted); /** Background color for invalid or illegal code syntax */
+  --prettylights-syntax-markup-bold: var(--base-color-neutral-13); /** Syntax highlighting color for bold text in markdown */
+  --prettylights-syntax-markup-italic: var(--base-color-neutral-13); /** Syntax highlighting color for italic text in markdown */
+  --prettylights-syntax-meta-diff-range: var(--prettylights-syntax-metaDiffRange); /** Deprecated. Use prettylights.syntax.metaDiffRange instead. */
+  --prettylights-syntax-storageModifierImport: var(--base-color-neutral-13); /** Syntax highlighting color for import and require statements */
+  --prettylights-syntax-string-regexp: var(--prettylights-syntax-stringRegexp); /** Deprecated. Use prettylights.syntax.stringRegexp instead. */
+  --prettylights-syntax-sublimelinter-gutter-mark: var(--prettylights-syntax-sublimeLinterGutterMark); /** Deprecated. Use prettylights.syntax.sublimeLinterGutterMark instead. */
+  --progressBar-bgColor-accent: var(--bgColor-accent-emphasis);
+  --progressBar-bgColor-attention: var(--bgColor-attention-emphasis);
+  --progressBar-bgColor-danger: var(--bgColor-danger-emphasis);
+  --progressBar-bgColor-done: var(--bgColor-done-emphasis);
+  --progressBar-bgColor-neutral: var(--bgColor-neutral-emphasis);
+  --progressBar-bgColor-severe: var(--bgColor-severe-emphasis);
+  --progressBar-bgColor-sponsors: var(--bgColor-sponsors-emphasis);
+  --progressBar-track-bgColor: var(--borderColor-default);
+  --selection-bgColor: #0969da33; /** Background color for text selection highlights */
+  --shadow-inset: inset 0 1px 0 0 #1f23280a; /** Inset shadow for recessed elements */
+  --shadow-resting-small: 0 1px 1px 0 #1f23280a, 0 1px 2px 0 #1f232808; /** Small resting shadow for buttons and interactive elements */
+  --shadow-resting-xsmall: 0 1px 1px 0 #1f23280d; /** Extra small resting shadow for minimal elevation */
+  --sideNav-bgColor-selected: var(--base-color-neutral-0);
+  --timelineBadge-bgColor: var(--bgColor-muted);
+  --tooltip-bgColor: var(--bgColor-emphasis);
+  --underlineNav-iconColor-rest: var(--fgColor-muted);
+  --avatar-borderColor: var(--borderColor-translucent);
+  --border-closed-emphasis: var(--border-danger-emphasis);
+  --border-closed-muted: var(--border-danger-muted);
+  --border-draft-emphasis: var(--borderWidth-default) solid var(--borderColor-draft-emphasis);
+  --border-muted: var(--borderWidth-default) solid var(--borderColor-muted);
+  --border-open-emphasis: var(--border-success-emphasis);
+  --border-open-muted: var(--border-success-muted);
+  --border-translucent: var(--borderWidth-default) solid var(--borderColor-translucent); /** Semi-transparent border shorthand for overlays and layered elements. Border-specific token — no bgColor-translucent counterpart exists by design. */
+  --border-upsell-emphasis: var(--borderWidth-default) solid var(--borderColor-upsell-emphasis);
+  --border-upsell-muted: var(--borderWidth-default) solid var(--borderColor-upsell-muted);
+  --borderColor-neutral-muted: var(--borderColor-muted); /** Subtle neutral semantic border */
+  --button-danger-bgColor-disabled: var(--control-bgColor-disabled);
+  --button-danger-borderColor-rest: var(--control-borderColor-rest);
+  --button-default-bgColor-disabled: var(--control-bgColor-disabled);
+  --button-default-borderColor-active: var(--control-borderColor-rest);
+  --button-default-borderColor-disabled: var(--control-borderColor-disabled);
+  --button-default-borderColor-rest: var(--control-borderColor-rest);
+  --button-default-fgColor-disabled: var(--control-fgColor-disabled);
+  --button-invisible-fgColor-disabled: var(--control-fgColor-disabled);
+  --button-invisible-iconColor-disabled: var(--control-fgColor-disabled);
+  --button-outline-bgColor-disabled: var(--control-bgColor-disabled);
+  --button-primary-borderColor-rest: var(--borderColor-translucent);
+  --button-primary-fgColor-rest: var(--fgColor-white);
+  --button-primary-iconColor-disabled: var(--button-primary-fgColor-disabled);
+  --button-primary-iconColor-rest: #ffffffcc;
+  --buttonKeybindingHint-danger-bgColor-disabled: var(--buttonKeybindingHint-default-bgColor-disabled);
+  --buttonKeybindingHint-danger-borderColor-hover: var(--borderColor-translucent);
+  --buttonKeybindingHint-danger-fgColor-active: var(--fgColor-onEmphasis);
+  --buttonKeybindingHint-danger-fgColor-hover: var(--fgColor-onEmphasis);
+  --buttonKeybindingHint-danger-fgColor-rest: var(--buttonKeybindingHint-default-fgColor-rest);
+  --buttonKeybindingHint-default-borderColor-disabled: var(--control-borderColor-disabled);
+  --buttonKeybindingHint-default-borderColor-rest: var(--borderColor-muted);
+  --buttonKeybindingHint-default-fgColor-disabled: var(--control-fgColor-disabled);
+  --buttonKeybindingHint-inactive-borderColor: var(--borderColor-muted);
+  --buttonKeybindingHint-invisible-borderColor-disabled: var(--control-borderColor-disabled);
+  --buttonKeybindingHint-invisible-fgColor-disabled: var(--control-fgColor-disabled);
+  --buttonKeybindingHint-primary-borderColor-disabled: var(--control-borderColor-disabled);
+  --buttonKeybindingHint-primary-borderColor-rest: var(--borderColor-translucent);
+  --buttonKeybindingHint-primary-fgColor-disabled: var(--button-primary-fgColor-disabled);
+  --buttonKeybindingHint-primary-fgColor-rest: var(--fgColor-onEmphasis);
+  --card-bgColor: var(--bgColor-default);
+  --codeMirror-bgColor: var(--bgColor-default);
+  --codeMirror-cursor-fgColor: var(--fgColor-default);
+  --codeMirror-fgColor: var(--fgColor-default);
+  --codeMirror-gutterMarker-fgColor-default: var(--bgColor-default);
+  --codeMirror-gutters-bgColor: var(--bgColor-default);
+  --codeMirror-lines-bgColor: var(--bgColor-default);
+  --codeMirror-matchingBracket-fgColor: var(--fgColor-default);
+  --color-ansi-black: var(--ansi-black); /** Deprecated. Use ansi.black instead. */
+  --color-prettylights-syntax-invalid-illegal-bg: var(--prettylights-syntax-invalidIllegal-bg); /** Deprecated. Use prettylights.syntax.invalidIllegal.bg instead. */
+  --color-prettylights-syntax-markup-bold: var(--prettylights-syntax-markup-bold); /** Deprecated. Use prettylights.syntax.markup.bold instead. */
+  --color-prettylights-syntax-markup-italic: var(--prettylights-syntax-markup-italic); /** Deprecated. Use prettylights.syntax.markup.italic instead. */
+  --color-prettylights-syntax-storage-modifier-import: var(--prettylights-syntax-storageModifierImport); /** Deprecated. Use prettylights.syntax.storageModifierImport instead. */
+  --control-borderColor-selected: var(--control-bgColor-selected);
+  --control-checked-borderColor-disabled: var(--control-checked-bgColor-disabled);
+  --control-checked-borderColor-rest: var(--control-checked-bgColor-rest);
+  --control-checked-fgColor-disabled: var(--fgColor-onEmphasis);
+  --control-checked-fgColor-rest: var(--fgColor-onEmphasis);
+  --controlKnob-bgColor-disabled: var(--control-bgColor-disabled);
+  --controlKnob-borderColor-checked: var(--control-checked-bgColor-rest);
+  --controlKnob-borderColor-disabled: var(--control-bgColor-disabled);
+  --controlKnob-borderColor-rest: var(--control-borderColor-rest);
+  --controlTrack-fgColor-disabled: var(--fgColor-onEmphasis);
+  --dashboard-bgColor: var(--bgColor-default);
+  --diffBlob-additionLine-fgColor: var(--fgColor-default);
+  --diffBlob-additionNum-fgColor: var(--fgColor-default);
+  --diffBlob-additionWord-fgColor: var(--fgColor-default);
+  --diffBlob-deletionLine-fgColor: var(--fgColor-default);
+  --diffBlob-deletionNum-fgColor: var(--fgColor-default);
+  --diffBlob-deletionWord-fgColor: var(--fgColor-default);
+  --diffBlob-hunkNum-fgColor-hover: var(--fgColor-onEmphasis);
+  --diffBlob-hunkNum-fgColor-rest: var(--fgColor-default);
+  --focus-outline: var(--focus-outline-width) solid var(--focus-outline-color); /** Focus ring outline for keyboard navigation and accessibility. */
+  --focus-outlineColor: var(--focus-outline-color); /** Deprecated. Use focus.outline-color instead. */
+  --overlay-borderColor: #d1d9e080;
+  --prettylights-syntax-invalid-illegal-bg: var(--prettylights-syntax-invalidIllegal-bg); /** Deprecated. Use prettylights.syntax.invalidIllegal.bg instead. */
+  --prettylights-syntax-storage-modifier-import: var(--prettylights-syntax-storageModifierImport); /** Deprecated. Use prettylights.syntax.storageModifierImport instead. */
+  --reactionButton-selected-fgColor-rest: var(--fgColor-link);
+  --tooltip-fgColor: var(--fgColor-onEmphasis);
+  --underlineNav-borderColor-hover: var(--borderColor-muted);
+  --border-neutral-muted: var(--borderWidth-default) solid var(--borderColor-neutral-muted);
+  --borderColor-draft-muted: var(--borderColor-neutral-muted); /** Subtle border for draft state indicators */
+  --button-danger-borderColor-hover: var(--button-primary-borderColor-rest);
+  --button-default-borderColor-hover: var(--button-default-borderColor-rest);
+  --button-primary-borderColor-active: var(--button-primary-borderColor-rest);
+  --button-primary-borderColor-hover: var(--button-primary-borderColor-rest);
+  --buttonKeybindingHint-danger-borderColor-active: var(--buttonKeybindingHint-danger-borderColor-hover);
+  --buttonKeybindingHint-danger-borderColor-disabled: var(--buttonKeybindingHint-default-borderColor-disabled);
+  --buttonKeybindingHint-danger-borderColor-rest: var(--buttonKeybindingHint-default-borderColor-rest);
+  --buttonKeybindingHint-danger-fgColor-disabled: var(--buttonKeybindingHint-default-fgColor-disabled);
+  --shadow-floating-large: 0 0 0 1px #d1d9e000, 0 40px 80px 0 #25292e3d; /** Large floating shadow for modals and dialogs */
+  --shadow-floating-medium: 0 0 0 1px #d1d9e000, 0 8px 16px -4px #25292e14, 0 4px 32px -4px #25292e14, 0 24px 48px -12px #25292e14, 0 48px 96px -24px #25292e14; /** Medium floating shadow for popovers and action menus */
+  --shadow-floating-small: 0 0 0 1px #d1d9e040, 0 6px 12px -3px #25292e0a, 0 6px 18px 0 #25292e1f; /** Small floating shadow for dropdowns, tooltips, and small overlays */
+  --shadow-floating-xlarge: 0 0 0 1px #d1d9e000, 0 56px 112px 0 #25292e52; /** Extra large floating shadow for full-screen overlays and sheets */
+  --border-draft-muted: var(--borderWidth-default) solid var(--borderColor-draft-muted);
+  --button-danger-borderColor-active: var(--button-danger-borderColor-hover);
+  --button-outline-borderColor-hover: var(--button-primary-borderColor-hover);
+  --button-outline-borderColor-active: var(--button-outline-borderColor-hover);
+}
+@media (prefers-color-scheme: dark) {
+  [data-color-mode][data-color-mode="auto"][data-dark-theme="light"] {
+    --ansi-cyan: #1b7c83; /** ANSI cyan for terminal text */
+    --ansi-cyanBright: #3192aa; /** ANSI bright cyan for highlighted terminal text */
+    --base-color-black: #1f2328;
+    --base-color-blue-0: #ddf4ff;
+    --base-color-blue-1: #b6e3ff;
+    --base-color-blue-2: #80ccff;
+    --base-color-blue-3: #54aeff;
+    --base-color-blue-4: #218bff;
+    --base-color-blue-5: #0969da;
+    --base-color-blue-6: #0550ae;
+    --base-color-blue-7: #033d8b;
+    --base-color-blue-8: #0a3069;
+    --base-color-blue-9: #002155;
+    --base-color-coral-0: #fff0eb;
+    --base-color-coral-1: #ffd6cc;
+    --base-color-coral-2: #ffb4a1;
+    --base-color-coral-3: #fd8c73;
+    --base-color-coral-4: #ec6547;
+    --base-color-coral-5: #c4432b;
+    --base-color-coral-6: #9e2f1c;
+    --base-color-coral-7: #801f0f;
+    --base-color-coral-8: #691105;
+    --base-color-coral-9: #510901;
+    --base-color-green-0: #dafbe1;
+    --base-color-green-1: #aceebb;
+    --base-color-green-2: #6fdd8b;
+    --base-color-green-3: #4ac26b;
+    --base-color-green-4: #2da44e;
+    --base-color-green-5: #1a7f37;
+    --base-color-green-6: #116329;
+    --base-color-green-7: #044f1e;
+    --base-color-green-8: #003d16;
+    --base-color-green-9: #002d11;
+    --base-color-neutral-1: #f6f8fa;
+    --base-color-neutral-10: #454c54;
+    --base-color-neutral-11: #393f46;
+    --base-color-neutral-12: #25292e;
+    --base-color-neutral-2: #eff2f5;
+    --base-color-neutral-3: #e6eaef;
+    --base-color-neutral-4: #e0e6eb;
+    --base-color-neutral-5: #dae0e7;
+    --base-color-neutral-6: #d1d9e0;
+    --base-color-neutral-7: #c8d1da;
+    --base-color-neutral-8: #818b98;
+    --base-color-neutral-9: #59636e;
+    --base-color-orange-0: #fff1e5;
+    --base-color-orange-1: #ffd8b5;
+    --base-color-orange-2: #ffb77c;
+    --base-color-orange-3: #fb8f44;
+    --base-color-orange-4: #e16f24;
+    --base-color-orange-5: #bc4c00;
+    --base-color-orange-6: #953800;
+    --base-color-orange-7: #762c00;
+    --base-color-orange-8: #5c2200;
+    --base-color-orange-9: #471700;
+    --base-color-pink-0: #ffeff7;
+    --base-color-pink-1: #ffd3eb;
+    --base-color-pink-2: #ffadda;
+    --base-color-pink-3: #ff80c8;
+    --base-color-pink-4: #e85aad;
+    --base-color-pink-5: #bf3989;
+    --base-color-pink-6: #99286e;
+    --base-color-pink-7: #772057;
+    --base-color-pink-8: #611347;
+    --base-color-pink-9: #4d0336;
+    --base-color-purple-0: #fbefff;
+    --base-color-purple-1: #ecd8ff;
+    --base-color-purple-2: #d8b9ff;
+    --base-color-purple-3: #c297ff;
+    --base-color-purple-4: #a475f9;
+    --base-color-purple-5: #8250df;
+    --base-color-purple-6: #6639ba;
+    --base-color-purple-7: #512a97;
+    --base-color-purple-8: #3e1f79;
+    --base-color-purple-9: #2e1461;
+    --base-color-red-0: #ffebe9;
+    --base-color-red-1: #ffcecb;
+    --base-color-red-2: #ffaba8;
+    --base-color-red-3: #ff8182;
+    --base-color-red-4: #fa4549;
+    --base-color-red-5: #cf222e;
+    --base-color-red-6: #a40e26;
+    --base-color-red-7: #82071e;
+    --base-color-red-8: #660018;
+    --base-color-red-9: #4c0014;
+    --base-color-transparent: #ffffff00;
+    --base-color-white: #ffffff;
+    --base-color-yellow-0: #fff8c5;
+    --base-color-yellow-1: #fae17d;
+    --base-color-yellow-2: #eac54f;
+    --base-color-yellow-3: #d4a72c;
+    --base-color-yellow-4: #bf8700;
+    --base-color-yellow-5: #9a6700;
+    --base-color-yellow-6: #7d4e00;
+    --base-color-yellow-7: #633c01;
+    --base-color-yellow-8: #4d2d00;
+    --base-color-yellow-9: #3b2300;
+    --base-display-color-auburn-0: #f2e9e9;
+    --base-display-color-auburn-1: #e6d6d5;
+    --base-display-color-auburn-2: #d4b7b5;
+    --base-display-color-auburn-3: #c59e9b;
+    --base-display-color-auburn-4: #b4827e;
+    --base-display-color-auburn-5: #9d615c;
+    --base-display-color-auburn-6: #8a5551;
+    --base-display-color-auburn-7: #744744;
+    --base-display-color-auburn-8: #5d3937;
+    --base-display-color-auburn-9: #432928;
+    --base-display-color-black: #0d1117;
+    --base-display-color-blue-0: #d1f0ff;
+    --base-display-color-blue-1: #ade1ff;
+    --base-display-color-blue-2: #75c8ff;
+    --base-display-color-blue-3: #47afff;
+    --base-display-color-blue-4: #0f8fff;
+    --base-display-color-blue-5: #006edb;
+    --base-display-color-blue-6: #005fcc;
+    --base-display-color-blue-7: #004db3;
+    --base-display-color-blue-8: #003d99;
+    --base-display-color-blue-9: #002b75;
+    --base-display-color-brown-0: #eeeae2;
+    --base-display-color-brown-1: #dfd7c8;
+    --base-display-color-brown-2: #cbbda4;
+    --base-display-color-brown-3: #b8a484;
+    --base-display-color-brown-4: #a68b64;
+    --base-display-color-brown-5: #856d4c;
+    --base-display-color-brown-6: #755f43;
+    --base-display-color-brown-7: #64513a;
+    --base-display-color-brown-8: #51412f;
+    --base-display-color-brown-9: #3a2e22;
+    --base-display-color-coral-0: #ffe5db;
+    --base-display-color-coral-1: #fecebe;
+    --base-display-color-coral-2: #fcab92;
+    --base-display-color-coral-3: #f88768;
+    --base-display-color-coral-4: #f25f3a;
+    --base-display-color-coral-5: #d43511;
+    --base-display-color-coral-6: #ba2e12;
+    --base-display-color-coral-7: #9b2712;
+    --base-display-color-coral-8: #7e2011;
+    --base-display-color-coral-9: #5d180e;
+    --base-display-color-cyan-0: #bdf4ff;
+    --base-display-color-cyan-1: #7ae9ff;
+    --base-display-color-cyan-2: #00d0fa;
+    --base-display-color-cyan-3: #00b7db;
+    --base-display-color-cyan-4: #0099b8;
+    --base-display-color-cyan-5: #007b94;
+    --base-display-color-cyan-6: #006a80;
+    --base-display-color-cyan-7: #00596b;
+    --base-display-color-cyan-8: #004857;
+    --base-display-color-cyan-9: #003742;
+    --base-display-color-gray-0: #e8ecf2;
+    --base-display-color-gray-1: #d2dae4;
+    --base-display-color-gray-2: #b4c0cf;
+    --base-display-color-gray-3: #9ba9bb;
+    --base-display-color-gray-4: #808fa3;
+    --base-display-color-gray-5: #647182;
+    --base-display-color-gray-6: #5c6570;
+    --base-display-color-gray-7: #4e535a;
+    --base-display-color-gray-8: #424448;
+    --base-display-color-gray-9: #303031;
+    --base-display-color-green-0: #caf7ca;
+    --base-display-color-green-1: #9ceda0;
+    --base-display-color-green-2: #54d961;
+    --base-display-color-green-3: #31bf46;
+    --base-display-color-green-4: #30a147;
+    --base-display-color-green-5: #2c8141;
+    --base-display-color-green-6: #2b6e3f;
+    --base-display-color-green-7: #285c3b;
+    --base-display-color-green-8: #254b34;
+    --base-display-color-green-9: #1d3528;
+    --base-display-color-indigo-0: #e5e9ff;
+    --base-display-color-indigo-1: #d2d7fe;
+    --base-display-color-indigo-2: #b1b9fb;
+    --base-display-color-indigo-3: #979ff7;
+    --base-display-color-indigo-4: #7a82f0;
+    --base-display-color-indigo-5: #5a61e7;
+    --base-display-color-indigo-6: #494edf;
+    --base-display-color-indigo-7: #393cd5;
+    --base-display-color-indigo-8: #2d2db4;
+    --base-display-color-indigo-9: #25247b;
+    --base-display-color-lemon-0: #f7eea1;
+    --base-display-color-lemon-1: #f0db3d;
+    --base-display-color-lemon-2: #d8bd0e;
+    --base-display-color-lemon-3: #c2a60a;
+    --base-display-color-lemon-4: #a68c07;
+    --base-display-color-lemon-5: #866e04;
+    --base-display-color-lemon-6: #786002;
+    --base-display-color-lemon-7: #654f01;
+    --base-display-color-lemon-8: #523f00;
+    --base-display-color-lemon-9: #3d2e00;
+    --base-display-color-lime-0: #e3f2b5;
+    --base-display-color-lime-1: #c7e580;
+    --base-display-color-lime-2: #9bd039;
+    --base-display-color-lime-3: #80b530;
+    --base-display-color-lime-4: #6c9d2f;
+    --base-display-color-lime-5: #527a29;
+    --base-display-color-lime-6: #476c28;
+    --base-display-color-lime-7: #3a5b25;
+    --base-display-color-lime-8: #2f4a21;
+    --base-display-color-lime-9: #213319;
+    --base-display-color-olive-0: #f0f0ad;
+    --base-display-color-olive-1: #dbe170;
+    --base-display-color-olive-2: #b9c832;
+    --base-display-color-olive-3: #9bae32;
+    --base-display-color-olive-4: #819532;
+    --base-display-color-olive-5: #64762d;
+    --base-display-color-olive-6: #56682c;
+    --base-display-color-olive-7: #495a2b;
+    --base-display-color-olive-8: #3b4927;
+    --base-display-color-olive-9: #2a331f;
+    --base-display-color-orange-0: #ffe7d1;
+    --base-display-color-orange-1: #fecfaa;
+    --base-display-color-orange-2: #fbaf74;
+    --base-display-color-orange-3: #f68c41;
+    --base-display-color-orange-4: #eb670f;
+    --base-display-color-orange-5: #b8500f;
+    --base-display-color-orange-6: #a24610;
+    --base-display-color-orange-7: #8d3c11;
+    --base-display-color-orange-8: #70300f;
+    --base-display-color-orange-9: #54230d;
+    --base-display-color-pine-0: #bff8db;
+    --base-display-color-pine-1: #80efb9;
+    --base-display-color-pine-2: #1dd781;
+    --base-display-color-pine-3: #1dbf76;
+    --base-display-color-pine-4: #1aa267;
+    --base-display-color-pine-5: #167e53;
+    --base-display-color-pine-6: #156f4b;
+    --base-display-color-pine-7: #135d41;
+    --base-display-color-pine-8: #114b36;
+    --base-display-color-pine-9: #0d3627;
+    --base-display-color-pink-0: #ffe5f1;
+    --base-display-color-pink-1: #fdc9e2;
+    --base-display-color-pink-2: #f8a5cf;
+    --base-display-color-pink-3: #f184bc;
+    --base-display-color-pink-4: #e55da5;
+    --base-display-color-pink-5: #ce2c85;
+    --base-display-color-pink-6: #b12f79;
+    --base-display-color-pink-7: #8e2e66;
+    --base-display-color-pink-8: #6e2b53;
+    --base-display-color-pink-9: #4d233d;
+    --base-display-color-plum-0: #f8e5ff;
+    --base-display-color-plum-1: #f0cdfe;
+    --base-display-color-plum-2: #e2a7fb;
+    --base-display-color-plum-3: #d487f7;
+    --base-display-color-plum-4: #c264f2;
+    --base-display-color-plum-5: #a830e8;
+    --base-display-color-plum-6: #961edc;
+    --base-display-color-plum-7: #7d1eb8;
+    --base-display-color-plum-8: #651d96;
+    --base-display-color-plum-9: #471769;
+    --base-display-color-purple-0: #f1e5ff;
+    --base-display-color-purple-1: #e6d2fe;
+    --base-display-color-purple-2: #d1b1fc;
+    --base-display-color-purple-3: #bc91f8;
+    --base-display-color-purple-4: #a672f3;
+    --base-display-color-purple-5: #894ceb;
+    --base-display-color-purple-6: #783ae4;
+    --base-display-color-purple-7: #6223d7;
+    --base-display-color-purple-8: #4f21ab;
+    --base-display-color-purple-9: #391b79;
+    --base-display-color-red-0: #ffe2e0;
+    --base-display-color-red-1: #fecdcd;
+    --base-display-color-red-2: #fda5a7;
+    --base-display-color-red-3: #fb8389;
+    --base-display-color-red-4: #f85461;
+    --base-display-color-red-5: #df0c24;
+    --base-display-color-red-6: #c50d28;
+    --base-display-color-red-7: #a60c29;
+    --base-display-color-red-8: #880c27;
+    --base-display-color-red-9: #610a20;
+    --base-display-color-teal-0: #c7f5ef;
+    --base-display-color-teal-1: #89ebe1;
+    --base-display-color-teal-2: #22d3c7;
+    --base-display-color-teal-3: #1db9b4;
+    --base-display-color-teal-4: #179b9b;
+    --base-display-color-teal-5: #127e81;
+    --base-display-color-teal-6: #106e75;
+    --base-display-color-teal-7: #0d5b63;
+    --base-display-color-teal-8: #0a4852;
+    --base-display-color-teal-9: #073740;
+    --base-display-color-white: #ffffff;
+    --base-display-color-yellow-0: #ffec9e;
+    --base-display-color-yellow-1: #ffd642;
+    --base-display-color-yellow-2: #ebb400;
+    --base-display-color-yellow-3: #d19d00;
+    --base-display-color-yellow-4: #b88700;
+    --base-display-color-yellow-5: #946a00;
+    --base-display-color-yellow-6: #805900;
+    --base-display-color-yellow-7: #704d00;
+    --base-display-color-yellow-8: #5c3d00;
+    --base-display-color-yellow-9: #422b00;
+    --bgColor-success-emphasis: #1f883d; /** Strong success background for prominent positive actions */
+    --button-outline-bgColor-active: #0757ba;
+    --button-primary-bgColor-active: #197935;
+    --button-primary-bgColor-disabled: #95d8a6;
+    --button-primary-bgColor-hover: #1c8139;
+    --buttonCounter-danger-fgColor-rest: #c21c2c;
+    --control-checked-bgColor-active: #0757ba;
+    --control-checked-bgColor-hover: #0860ca;
+    --fgColor-danger: #d1242f; /** Danger text for errors and destructive actions */
+    --reactionButton-selected-bgColor-hover: #caecff;
+    --ansi-blackBright: var(--base-color-neutral-11); /** ANSI bright black (dark gray) for dimmed terminal text */
+    --ansi-blue: var(--base-color-blue-5); /** ANSI blue for informational terminal text */
+    --ansi-blueBright: var(--base-color-blue-4); /** ANSI bright blue for highlighted info in terminal */
+    --ansi-gray: var(--base-color-neutral-9); /** ANSI gray for secondary terminal text */
+    --ansi-green: var(--base-color-green-6); /** ANSI green for success indicators in terminal */
+    --ansi-greenBright: var(--base-color-green-5); /** ANSI bright green for highlighted success in terminal */
+    --ansi-magenta: var(--base-color-purple-5); /** ANSI magenta for special terminal text */
+    --ansi-magentaBright: var(--base-color-purple-4); /** ANSI bright magenta for highlighted special text */
+    --ansi-red: var(--base-color-red-5); /** ANSI red for errors and alerts in terminal output */
+    --ansi-redBright: var(--base-color-red-6); /** ANSI bright red for highlighted errors in terminal */
+    --ansi-white: var(--base-color-neutral-9); /** ANSI white for terminal text */
+    --ansi-whiteBright: var(--base-color-neutral-8); /** ANSI bright white for emphasized terminal text */
+    --ansi-yellow: var(--base-color-yellow-8); /** ANSI yellow for warnings in terminal output */
+    --ansi-yellowBright: var(--base-color-yellow-7); /** ANSI bright yellow for highlighted warnings in terminal */
+    --avatarStack-fade-bgColor-default: var(--base-color-neutral-7);
+    --avatarStack-fade-bgColor-muted: var(--base-color-neutral-5);
+    --base-color-neutral-0: var(--base-color-white);
+    --base-color-neutral-13: var(--base-color-black);
+    --bgColor-accent-emphasis: var(--base-color-blue-5); /** Strong accent background for active states and focused states */
+    --bgColor-accent-muted: var(--base-color-blue-0); /** Subtle accent background for informational or selected elements */
+    --bgColor-attention-emphasis: var(--base-color-yellow-5); /** Strong attention background for prominent warnings */
+    --bgColor-attention-muted: var(--base-color-yellow-0); /** Subtle attention background for warnings and caution states */
+    --bgColor-danger-emphasis: var(--base-color-red-5); /** Emphasized danger background for critical errors and delete confirmations */
+    --bgColor-danger-muted: var(--base-color-red-0); /** Muted danger background for error states and destructive action contexts */
+    --bgColor-disabled: var(--base-color-neutral-2); /** Background for disabled interactive elements */
+    --bgColor-done-emphasis: var(--base-color-purple-5); /** Strong background for completed/done state badges and labels */
+    --bgColor-done-muted: var(--base-color-purple-0); /** Subtle background for completed/done state indicators */
+    --bgColor-emphasis: var(--base-color-neutral-12); /** High-emphasis dark background for strong visual contrast */
+    --bgColor-inverse: var(--base-color-neutral-12); /** Inverse background that flips between light and dark modes */
+    --bgColor-muted: var(--base-color-neutral-1); /** Muted background for secondary content areas and subtle grouping */
+    --bgColor-neutral-emphasis: var(--base-color-neutral-9); /** Strong neutral background for prominent neutral elements */
+    --bgColor-neutral-muted: #818b981f; /** Subtle neutral background for tags, labels, and secondary UI elements */
+    --bgColor-open-emphasis: var(--bgColor-success-emphasis); /** Strong background for open state badges and labels */
+    --bgColor-severe-emphasis: var(--base-color-orange-5); /** Strong severe background for prominent high-priority warnings */
+    --bgColor-severe-muted: var(--base-color-orange-0); /** Subtle severe background for high-priority warnings */
+    --bgColor-sponsors-emphasis: var(--base-color-pink-5); /** Strong background for prominent GitHub Sponsors elements */
+    --bgColor-sponsors-muted: var(--base-color-pink-0); /** Subtle background for GitHub Sponsors content */
+    --bgColor-success-muted: var(--base-color-green-0); /** Subtle success background for positive feedback and completed states */
+    --bgColor-transparent: var(--base-color-transparent); /** Fully transparent background */
+    --borderColor-accent-emphasis: var(--base-color-blue-5); /** Strong accent border for selected or focused elements */
+    --borderColor-accent-muted: #54aeff66; /** Subtle accent border for selected or focused elements */
+    --borderColor-attention-emphasis: var(--base-color-yellow-5); /** Strong attention border for prominent warnings */
+    --borderColor-attention-muted: #d4a72c66; /** Subtle attention border for warnings and caution states */
+    --borderColor-danger-emphasis: var(--base-color-red-5); /** Strong danger border for destructive actions and errors */
+    --borderColor-danger-muted: #ff818266; /** Subtle danger border for errors and destructive contexts */
+    --borderColor-default: var(--base-color-neutral-6); /** Default border color for most UI elements */
+    --borderColor-disabled: #818b981a; /** Border color for disabled interactive elements */
+    --borderColor-done-emphasis: var(--base-color-purple-5); /** Strong border for completed/done state badges */
+    --borderColor-done-muted: #c297ff66; /** Subtle border for completed/done state indicators */
+    --borderColor-emphasis: var(--base-color-neutral-8); /** Strong border for emphasis and visual weight */
+    --borderColor-neutral-emphasis: var(--base-color-neutral-9); /** Strong neutral semantic border */
+    --borderColor-severe-emphasis: var(--base-color-orange-5); /** Strong severe border for prominent high-priority warnings */
+    --borderColor-severe-muted: #fb8f4466; /** Subtle severe border for high-priority warnings */
+    --borderColor-sponsors-emphasis: var(--base-color-pink-5); /** Strong border for prominent GitHub Sponsors elements */
+    --borderColor-sponsors-muted: #ff80c866; /** Subtle border for GitHub Sponsors content */
+    --borderColor-success-emphasis: var(--base-color-green-5); /** Strong success border for prominent positive elements */
+    --borderColor-success-muted: #4ac26b66; /** Subtle success border for positive feedback elements */
+    --borderColor-transparent: var(--base-color-transparent); /** Fully transparent border */
+    --boxShadow-thick: inset 0 0 0 0.125rem; /** Thick shadow (2px) used instead of a border for emphasis without layout shift */
+    --boxShadow-thicker: inset 0 0 0 0.25rem; /** Thickest shadow (4px) used for high emphasis borders without layout shift. Use sparingly for maximum visual impact */
+    --boxShadow-thin: inset 0 0 0 0.0625rem; /** Thin shadow used instead of a border to prevent layout shift */
+    --button-danger-bgColor-active: var(--base-color-red-6);
+    --button-danger-fgColor-disabled: #d1242f80;
+    --button-danger-fgColor-rest: var(--fgColor-danger);
+    --button-danger-shadow-selected: inset 0 1px 0 0 #4c001433;
+    --button-inactive-bgColor: var(--base-color-neutral-3);
+    --button-inactive-fgColor: var(--base-color-neutral-9);
+    --button-invisible-bgColor-disabled: var(--base-color-transparent);
+    --button-invisible-borderColor-disabled: var(--base-color-transparent);
+    --button-outline-shadow-selected: inset 0 1px 0 0 #00215533;
+    --button-primary-bgColor-rest: var(--bgColor-success-emphasis);
+    --button-primary-borderColor-disabled: var(--button-primary-bgColor-disabled);
+    --button-primary-shadow-selected: inset 0 1px 0 0 #002d114d;
+    --button-star-iconColor: var(--base-color-yellow-2);
+    --buttonCounter-danger-fgColor-disabled: #d1242f80;
+    --buttonCounter-outline-fgColor-rest: var(--base-color-blue-6);
+    --buttonCounter-primary-bgColor-rest: #002d1133;
+    --buttonKeybindingHint-danger-bgColor-active: #1f232866;
+    --buttonKeybindingHint-danger-bgColor-hover: #1f232833;
+    --buttonKeybindingHint-default-bgColor-rest: var(--base-color-neutral-2);
+    --buttonKeybindingHint-inactive-bgColor: var(--base-color-neutral-2);
+    --buttonKeybindingHint-invisible-borderColor-rest: var(--base-color-transparent);
+    --codeMirror-syntax-fgColor-constant: var(--base-color-blue-6);
+    --codeMirror-syntax-fgColor-entity: var(--base-color-purple-5);
+    --codeMirror-syntax-fgColor-keyword: var(--base-color-red-5);
+    --codeMirror-syntax-fgColor-storage: var(--base-color-red-5);
+    --codeMirror-syntax-fgColor-string: var(--base-color-blue-8);
+    --codeMirror-syntax-fgColor-support: var(--base-color-blue-6);
+    --codeMirror-syntax-fgColor-variable: var(--base-color-orange-6);
+    --color-ansi-cyan: var(--ansi-cyan); /** Deprecated. Use ansi.cyan instead. */
+    --color-ansi-cyan-bright: var(--ansi-cyanBright); /** Deprecated. Use ansi.cyanBright instead. */
+    --contribution-default-bgColor-0: var(--base-color-neutral-2);
+    --contribution-default-bgColor-1: var(--base-color-green-1);
+    --contribution-default-bgColor-2: var(--base-color-green-3);
+    --contribution-default-bgColor-3: var(--base-color-green-4);
+    --contribution-default-bgColor-4: var(--base-color-green-6);
+    --contribution-default-borderColor-0: #1f23280d;
+    --contribution-halloween-bgColor-1: var(--base-display-color-lemon-1);
+    --contribution-halloween-bgColor-2: var(--base-display-color-yellow-1);
+    --contribution-halloween-bgColor-3: var(--base-display-color-orange-3);
+    --contribution-halloween-bgColor-4: var(--base-color-black);
+    --contribution-winter-bgColor-1: var(--base-color-blue-1);
+    --contribution-winter-bgColor-2: var(--base-color-blue-3);
+    --contribution-winter-bgColor-3: var(--base-color-blue-5);
+    --contribution-winter-bgColor-4: var(--base-color-blue-8);
+    --control-bgColor-active: var(--base-color-neutral-3);
+    --control-bgColor-hover: var(--base-color-neutral-2);
+    --control-bgColor-rest: var(--base-color-neutral-1);
+    --control-checked-borderColor-active: var(--control-checked-bgColor-active);
+    --control-checked-borderColor-hover: var(--control-checked-bgColor-hover);
+    --control-danger-fgColor-hover: var(--fgColor-danger);
+    --control-danger-fgColor-rest: var(--fgColor-danger);
+    --control-fgColor-rest: var(--base-color-neutral-12);
+    --control-transparent-bgColor-active: #818b9826;
+    --control-transparent-bgColor-hover: #818b981a;
+    --control-transparent-bgColor-rest: var(--base-color-transparent);
+    --control-transparent-bgColor-selected: #818b9826;
+    --control-transparent-borderColor-active: var(--base-color-transparent);
+    --control-transparent-borderColor-hover: var(--base-color-transparent);
+    --control-transparent-borderColor-rest: var(--base-color-transparent);
+    --controlTrack-bgColor-active: var(--base-color-neutral-5);
+    --controlTrack-bgColor-hover: var(--base-color-neutral-4);
+    --controlTrack-bgColor-rest: var(--base-color-neutral-3);
+    --controlTrack-fgColor-rest: var(--base-color-neutral-9);
+    --counter-borderColor: var(--base-color-transparent);
+    --data-auburn-color-emphasis: var(--base-display-color-auburn-5);
+    --data-auburn-color-muted: var(--base-display-color-auburn-0);
+    --data-blue-color-emphasis: var(--base-display-color-blue-5);
+    --data-blue-color-muted: var(--base-display-color-blue-0);
+    --data-brown-color-emphasis: var(--base-display-color-brown-5);
+    --data-brown-color-muted: var(--base-display-color-brown-0);
+    --data-coral-color-emphasis: var(--base-display-color-coral-5);
+    --data-coral-color-muted: var(--base-display-color-coral-0);
+    --data-gray-color-emphasis: var(--base-display-color-gray-4);
+    --data-gray-color-muted: var(--base-display-color-gray-0);
+    --data-green-color-emphasis: var(--base-display-color-green-4);
+    --data-green-color-muted: var(--base-display-color-green-0);
+    --data-lemon-color-emphasis: var(--base-display-color-lemon-5);
+    --data-lemon-color-muted: var(--base-display-color-lemon-0);
+    --data-lime-color-emphasis: var(--base-display-color-lime-5);
+    --data-lime-color-muted: var(--base-display-color-lime-0);
+    --data-olive-color-emphasis: var(--base-display-color-olive-5);
+    --data-olive-color-muted: var(--base-display-color-olive-0);
+    --data-orange-color-emphasis: var(--base-display-color-orange-4);
+    --data-orange-color-muted: var(--base-display-color-orange-0);
+    --data-pine-color-emphasis: var(--base-display-color-pine-5);
+    --data-pine-color-muted: var(--base-display-color-pine-0);
+    --data-pink-color-emphasis: var(--base-display-color-pink-5);
+    --data-pink-color-muted: var(--base-display-color-pink-0);
+    --data-plum-color-emphasis: var(--base-display-color-plum-5);
+    --data-plum-color-muted: var(--base-display-color-plum-0);
+    --data-purple-color-emphasis: var(--base-display-color-purple-5);
+    --data-purple-color-muted: var(--base-display-color-purple-0);
+    --data-red-color-emphasis: var(--base-display-color-red-5);
+    --data-red-color-muted: var(--base-display-color-red-0);
+    --data-teal-color-emphasis: var(--base-display-color-teal-4);
+    --data-teal-color-muted: var(--base-display-color-teal-0);
+    --data-yellow-color-emphasis: var(--base-display-color-yellow-4);
+    --data-yellow-color-muted: var(--base-display-color-yellow-0);
+    --diffBlob-additionNum-bgColor: var(--base-color-green-1);
+    --diffBlob-additionWord-bgColor: var(--base-color-green-1);
+    --diffBlob-deletionNum-bgColor: var(--base-color-red-1);
+    --diffBlob-deletionWord-bgColor: var(--base-color-red-1);
+    --diffBlob-hunkNum-bgColor-rest: var(--base-color-blue-1);
+    --display-auburn-bgColor-emphasis: var(--base-display-color-auburn-5);
+    --display-auburn-bgColor-muted: var(--base-display-color-auburn-0);
+    --display-auburn-borderColor-emphasis: var(--base-display-color-auburn-5);
+    --display-auburn-borderColor-muted: var(--base-display-color-auburn-1);
+    --display-auburn-fgColor: var(--base-display-color-auburn-6);
+    --display-auburn-scale-0: var(--base-display-color-auburn-0);
+    --display-auburn-scale-1: var(--base-display-color-auburn-1);
+    --display-auburn-scale-2: var(--base-display-color-auburn-2);
+    --display-auburn-scale-3: var(--base-display-color-auburn-3);
+    --display-auburn-scale-4: var(--base-display-color-auburn-4);
+    --display-auburn-scale-5: var(--base-display-color-auburn-5);
+    --display-auburn-scale-6: var(--base-display-color-auburn-6);
+    --display-auburn-scale-7: var(--base-display-color-auburn-7);
+    --display-auburn-scale-8: var(--base-display-color-auburn-8);
+    --display-auburn-scale-9: var(--base-display-color-auburn-9);
+    --display-blue-bgColor-emphasis: var(--base-display-color-blue-5);
+    --display-blue-bgColor-muted: var(--base-display-color-blue-0);
+    --display-blue-borderColor-emphasis: var(--base-display-color-blue-5);
+    --display-blue-borderColor-muted: var(--base-display-color-blue-1);
+    --display-blue-fgColor: var(--base-display-color-blue-6);
+    --display-blue-scale-0: var(--base-display-color-blue-0);
+    --display-blue-scale-1: var(--base-display-color-blue-1);
+    --display-blue-scale-2: var(--base-display-color-blue-2);
+    --display-blue-scale-3: var(--base-display-color-blue-3);
+    --display-blue-scale-4: var(--base-display-color-blue-4);
+    --display-blue-scale-5: var(--base-display-color-blue-5);
+    --display-blue-scale-6: var(--base-display-color-blue-6);
+    --display-blue-scale-7: var(--base-display-color-blue-7);
+    --display-blue-scale-8: var(--base-display-color-blue-8);
+    --display-blue-scale-9: var(--base-display-color-blue-9);
+    --display-brown-bgColor-emphasis: var(--base-display-color-brown-5);
+    --display-brown-bgColor-muted: var(--base-display-color-brown-0);
+    --display-brown-borderColor-emphasis: var(--base-display-color-brown-5);
+    --display-brown-borderColor-muted: var(--base-display-color-brown-1);
+    --display-brown-fgColor: var(--base-display-color-brown-6);
+    --display-brown-scale-0: var(--base-display-color-brown-0);
+    --display-brown-scale-1: var(--base-display-color-brown-1);
+    --display-brown-scale-2: var(--base-display-color-brown-2);
+    --display-brown-scale-3: var(--base-display-color-brown-3);
+    --display-brown-scale-4: var(--base-display-color-brown-4);
+    --display-brown-scale-5: var(--base-display-color-brown-5);
+    --display-brown-scale-6: var(--base-display-color-brown-6);
+    --display-brown-scale-7: var(--base-display-color-brown-7);
+    --display-brown-scale-8: var(--base-display-color-brown-8);
+    --display-brown-scale-9: var(--base-display-color-brown-9);
+    --display-coral-bgColor-emphasis: var(--base-display-color-coral-5);
+    --display-coral-bgColor-muted: var(--base-display-color-coral-0);
+    --display-coral-borderColor-emphasis: var(--base-display-color-coral-5);
+    --display-coral-borderColor-muted: var(--base-display-color-coral-1);
+    --display-coral-fgColor: var(--base-display-color-coral-6);
+    --display-coral-scale-0: var(--base-display-color-coral-0);
+    --display-coral-scale-1: var(--base-display-color-coral-1);
+    --display-coral-scale-2: var(--base-display-color-coral-2);
+    --display-coral-scale-3: var(--base-display-color-coral-3);
+    --display-coral-scale-4: var(--base-display-color-coral-4);
+    --display-coral-scale-5: var(--base-display-color-coral-5);
+    --display-coral-scale-6: var(--base-display-color-coral-6);
+    --display-coral-scale-7: var(--base-display-color-coral-7);
+    --display-coral-scale-8: var(--base-display-color-coral-8);
+    --display-coral-scale-9: var(--base-display-color-coral-9);
+    --display-cyan-bgColor-emphasis: var(--base-display-color-cyan-5);
+    --display-cyan-bgColor-muted: var(--base-display-color-cyan-0);
+    --display-cyan-borderColor-emphasis: var(--base-display-color-cyan-5);
+    --display-cyan-borderColor-muted: var(--base-display-color-cyan-1);
+    --display-cyan-fgColor: var(--base-display-color-cyan-6);
+    --display-cyan-scale-0: var(--base-display-color-cyan-0);
+    --display-cyan-scale-1: var(--base-display-color-cyan-1);
+    --display-cyan-scale-2: var(--base-display-color-cyan-2);
+    --display-cyan-scale-3: var(--base-display-color-cyan-3);
+    --display-cyan-scale-4: var(--base-display-color-cyan-4);
+    --display-cyan-scale-5: var(--base-display-color-cyan-5);
+    --display-cyan-scale-6: var(--base-display-color-cyan-6);
+    --display-cyan-scale-7: var(--base-display-color-cyan-7);
+    --display-cyan-scale-8: var(--base-display-color-cyan-8);
+    --display-cyan-scale-9: var(--base-display-color-cyan-9);
+    --display-gray-bgColor-emphasis: var(--base-display-color-gray-5);
+    --display-gray-bgColor-muted: var(--base-display-color-gray-0);
+    --display-gray-borderColor-emphasis: var(--base-display-color-gray-5);
+    --display-gray-borderColor-muted: var(--base-display-color-gray-1);
+    --display-gray-fgColor: var(--base-display-color-gray-6);
+    --display-gray-scale-0: var(--base-display-color-gray-0);
+    --display-gray-scale-1: var(--base-display-color-gray-1);
+    --display-gray-scale-2: var(--base-display-color-gray-2);
+    --display-gray-scale-3: var(--base-display-color-gray-3);
+    --display-gray-scale-4: var(--base-display-color-gray-4);
+    --display-gray-scale-5: var(--base-display-color-gray-5);
+    --display-gray-scale-6: var(--base-display-color-gray-6);
+    --display-gray-scale-7: var(--base-display-color-gray-7);
+    --display-gray-scale-8: var(--base-display-color-gray-8);
+    --display-gray-scale-9: var(--base-display-color-gray-9);
+    --display-green-bgColor-emphasis: var(--base-display-color-green-5);
+    --display-green-bgColor-muted: var(--base-display-color-green-0);
+    --display-green-borderColor-emphasis: var(--base-display-color-green-5);
+    --display-green-borderColor-muted: var(--base-display-color-green-1);
+    --display-green-fgColor: var(--base-display-color-green-6);
+    --display-green-scale-0: var(--base-display-color-green-0);
+    --display-green-scale-1: var(--base-display-color-green-1);
+    --display-green-scale-2: var(--base-display-color-green-2);
+    --display-green-scale-3: var(--base-display-color-green-3);
+    --display-green-scale-4: var(--base-display-color-green-4);
+    --display-green-scale-5: var(--base-display-color-green-5);
+    --display-green-scale-6: var(--base-display-color-green-6);
+    --display-green-scale-7: var(--base-display-color-green-7);
+    --display-green-scale-8: var(--base-display-color-green-8);
+    --display-green-scale-9: var(--base-display-color-green-9);
+    --display-indigo-bgColor-emphasis: var(--base-display-color-indigo-5);
+    --display-indigo-bgColor-muted: var(--base-display-color-indigo-0);
+    --display-indigo-borderColor-emphasis: var(--base-display-color-indigo-5);
+    --display-indigo-borderColor-muted: var(--base-display-color-indigo-1);
+    --display-indigo-fgColor: var(--base-display-color-indigo-6);
+    --display-indigo-scale-0: var(--base-display-color-indigo-0);
+    --display-indigo-scale-1: var(--base-display-color-indigo-1);
+    --display-indigo-scale-2: var(--base-display-color-indigo-2);
+    --display-indigo-scale-3: var(--base-display-color-indigo-3);
+    --display-indigo-scale-4: var(--base-display-color-indigo-4);
+    --display-indigo-scale-5: var(--base-display-color-indigo-5);
+    --display-indigo-scale-6: var(--base-display-color-indigo-6);
+    --display-indigo-scale-7: var(--base-display-color-indigo-7);
+    --display-indigo-scale-8: var(--base-display-color-indigo-8);
+    --display-indigo-scale-9: var(--base-display-color-indigo-9);
+    --display-lemon-bgColor-emphasis: var(--base-display-color-lemon-5);
+    --display-lemon-bgColor-muted: var(--base-display-color-lemon-0);
+    --display-lemon-borderColor-emphasis: var(--base-display-color-lemon-5);
+    --display-lemon-borderColor-muted: var(--base-display-color-lemon-1);
+    --display-lemon-fgColor: var(--base-display-color-lemon-6);
+    --display-lemon-scale-0: var(--base-display-color-lemon-0);
+    --display-lemon-scale-1: var(--base-display-color-lemon-1);
+    --display-lemon-scale-2: var(--base-display-color-lemon-2);
+    --display-lemon-scale-3: var(--base-display-color-lemon-3);
+    --display-lemon-scale-4: var(--base-display-color-lemon-4);
+    --display-lemon-scale-5: var(--base-display-color-lemon-5);
+    --display-lemon-scale-6: var(--base-display-color-lemon-6);
+    --display-lemon-scale-7: var(--base-display-color-lemon-7);
+    --display-lemon-scale-8: var(--base-display-color-lemon-8);
+    --display-lemon-scale-9: var(--base-display-color-lemon-9);
+    --display-lime-bgColor-emphasis: var(--base-display-color-lime-5);
+    --display-lime-bgColor-muted: var(--base-display-color-lime-0);
+    --display-lime-borderColor-emphasis: var(--base-display-color-lime-5);
+    --display-lime-borderColor-muted: var(--base-display-color-lime-1);
+    --display-lime-fgColor: var(--base-display-color-lime-6);
+    --display-lime-scale-0: var(--base-display-color-lime-0);
+    --display-lime-scale-1: var(--base-display-color-lime-1);
+    --display-lime-scale-2: var(--base-display-color-lime-2);
+    --display-lime-scale-3: var(--base-display-color-lime-3);
+    --display-lime-scale-4: var(--base-display-color-lime-4);
+    --display-lime-scale-5: var(--base-display-color-lime-5);
+    --display-lime-scale-6: var(--base-display-color-lime-6);
+    --display-lime-scale-7: var(--base-display-color-lime-7);
+    --display-lime-scale-8: var(--base-display-color-lime-8);
+    --display-lime-scale-9: var(--base-display-color-lime-9);
+    --display-olive-bgColor-emphasis: var(--base-display-color-olive-5);
+    --display-olive-bgColor-muted: var(--base-display-color-olive-0);
+    --display-olive-borderColor-emphasis: var(--base-display-color-olive-5);
+    --display-olive-borderColor-muted: var(--base-display-color-olive-1);
+    --display-olive-fgColor: var(--base-display-color-olive-6);
+    --display-olive-scale-0: var(--base-display-color-olive-0);
+    --display-olive-scale-1: var(--base-display-color-olive-1);
+    --display-olive-scale-2: var(--base-display-color-olive-2);
+    --display-olive-scale-3: var(--base-display-color-olive-3);
+    --display-olive-scale-4: var(--base-display-color-olive-4);
+    --display-olive-scale-5: var(--base-display-color-olive-5);
+    --display-olive-scale-6: var(--base-display-color-olive-6);
+    --display-olive-scale-7: var(--base-display-color-olive-7);
+    --display-olive-scale-8: var(--base-display-color-olive-8);
+    --display-olive-scale-9: var(--base-display-color-olive-9);
+    --display-orange-bgColor-emphasis: var(--base-display-color-orange-5);
+    --display-orange-bgColor-muted: var(--base-display-color-orange-0);
+    --display-orange-borderColor-emphasis: var(--base-display-color-orange-5);
+    --display-orange-borderColor-muted: var(--base-display-color-orange-1);
+    --display-orange-fgColor: var(--base-display-color-orange-6);
+    --display-orange-scale-0: var(--base-display-color-orange-0);
+    --display-orange-scale-1: var(--base-display-color-orange-1);
+    --display-orange-scale-2: var(--base-display-color-orange-2);
+    --display-orange-scale-3: var(--base-display-color-orange-3);
+    --display-orange-scale-4: var(--base-display-color-orange-4);
+    --display-orange-scale-5: var(--base-display-color-orange-5);
+    --display-orange-scale-6: var(--base-display-color-orange-6);
+    --display-orange-scale-7: var(--base-display-color-orange-7);
+    --display-orange-scale-8: var(--base-display-color-orange-8);
+    --display-orange-scale-9: var(--base-display-color-orange-9);
+    --display-pine-bgColor-emphasis: var(--base-display-color-pine-5);
+    --display-pine-bgColor-muted: var(--base-display-color-pine-0);
+    --display-pine-borderColor-emphasis: var(--base-display-color-pine-5);
+    --display-pine-borderColor-muted: var(--base-display-color-pine-1);
+    --display-pine-fgColor: var(--base-display-color-pine-6);
+    --display-pine-scale-0: var(--base-display-color-pine-0);
+    --display-pine-scale-1: var(--base-display-color-pine-1);
+    --display-pine-scale-2: var(--base-display-color-pine-2);
+    --display-pine-scale-3: var(--base-display-color-pine-3);
+    --display-pine-scale-4: var(--base-display-color-pine-4);
+    --display-pine-scale-5: var(--base-display-color-pine-5);
+    --display-pine-scale-6: var(--base-display-color-pine-6);
+    --display-pine-scale-7: var(--base-display-color-pine-7);
+    --display-pine-scale-8: var(--base-display-color-pine-8);
+    --display-pine-scale-9: var(--base-display-color-pine-9);
+    --display-pink-bgColor-emphasis: var(--base-display-color-pink-5);
+    --display-pink-bgColor-muted: var(--base-display-color-pink-0);
+    --display-pink-borderColor-emphasis: var(--base-display-color-pink-5);
+    --display-pink-borderColor-muted: var(--base-display-color-pink-1);
+    --display-pink-fgColor: var(--base-display-color-pink-6);
+    --display-pink-scale-0: var(--base-display-color-pink-0);
+    --display-pink-scale-1: var(--base-display-color-pink-1);
+    --display-pink-scale-2: var(--base-display-color-pink-2);
+    --display-pink-scale-3: var(--base-display-color-pink-3);
+    --display-pink-scale-4: var(--base-display-color-pink-4);
+    --display-pink-scale-5: var(--base-display-color-pink-5);
+    --display-pink-scale-6: var(--base-display-color-pink-6);
+    --display-pink-scale-7: var(--base-display-color-pink-7);
+    --display-pink-scale-8: var(--base-display-color-pink-8);
+    --display-pink-scale-9: var(--base-display-color-pink-9);
+    --display-plum-bgColor-emphasis: var(--base-display-color-plum-5);
+    --display-plum-bgColor-muted: var(--base-display-color-plum-0);
+    --display-plum-borderColor-emphasis: var(--base-display-color-plum-5);
+    --display-plum-borderColor-muted: var(--base-display-color-plum-1);
+    --display-plum-fgColor: var(--base-display-color-plum-6);
+    --display-plum-scale-0: var(--base-display-color-plum-0);
+    --display-plum-scale-1: var(--base-display-color-plum-1);
+    --display-plum-scale-2: var(--base-display-color-plum-2);
+    --display-plum-scale-3: var(--base-display-color-plum-3);
+    --display-plum-scale-4: var(--base-display-color-plum-4);
+    --display-plum-scale-5: var(--base-display-color-plum-5);
+    --display-plum-scale-6: var(--base-display-color-plum-6);
+    --display-plum-scale-7: var(--base-display-color-plum-7);
+    --display-plum-scale-8: var(--base-display-color-plum-8);
+    --display-plum-scale-9: var(--base-display-color-plum-9);
+    --display-purple-bgColor-emphasis: var(--base-display-color-purple-5);
+    --display-purple-bgColor-muted: var(--base-display-color-purple-0);
+    --display-purple-borderColor-emphasis: var(--base-display-color-purple-5);
+    --display-purple-borderColor-muted: var(--base-display-color-purple-1);
+    --display-purple-fgColor: var(--base-display-color-purple-6);
+    --display-purple-scale-0: var(--base-display-color-purple-0);
+    --display-purple-scale-1: var(--base-display-color-purple-1);
+    --display-purple-scale-2: var(--base-display-color-purple-2);
+    --display-purple-scale-3: var(--base-display-color-purple-3);
+    --display-purple-scale-4: var(--base-display-color-purple-4);
+    --display-purple-scale-5: var(--base-display-color-purple-5);
+    --display-purple-scale-6: var(--base-display-color-purple-6);
+    --display-purple-scale-7: var(--base-display-color-purple-7);
+    --display-purple-scale-8: var(--base-display-color-purple-8);
+    --display-purple-scale-9: var(--base-display-color-purple-9);
+    --display-red-bgColor-emphasis: var(--base-display-color-red-5);
+    --display-red-bgColor-muted: var(--base-display-color-red-0);
+    --display-red-borderColor-emphasis: var(--base-display-color-red-5);
+    --display-red-borderColor-muted: var(--base-display-color-red-1);
+    --display-red-fgColor: var(--base-display-color-red-6);
+    --display-red-scale-0: var(--base-display-color-red-0);
+    --display-red-scale-1: var(--base-display-color-red-1);
+    --display-red-scale-2: var(--base-display-color-red-2);
+    --display-red-scale-3: var(--base-display-color-red-3);
+    --display-red-scale-4: var(--base-display-color-red-4);
+    --display-red-scale-5: var(--base-display-color-red-5);
+    --display-red-scale-6: var(--base-display-color-red-6);
+    --display-red-scale-7: var(--base-display-color-red-7);
+    --display-red-scale-8: var(--base-display-color-red-8);
+    --display-red-scale-9: var(--base-display-color-red-9);
+    --display-teal-bgColor-emphasis: var(--base-display-color-teal-5);
+    --display-teal-bgColor-muted: var(--base-display-color-teal-0);
+    --display-teal-borderColor-emphasis: var(--base-display-color-teal-5);
+    --display-teal-borderColor-muted: var(--base-display-color-teal-1);
+    --display-teal-fgColor: var(--base-display-color-teal-6);
+    --display-teal-scale-0: var(--base-display-color-teal-0);
+    --display-teal-scale-1: var(--base-display-color-teal-1);
+    --display-teal-scale-2: var(--base-display-color-teal-2);
+    --display-teal-scale-3: var(--base-display-color-teal-3);
+    --display-teal-scale-4: var(--base-display-color-teal-4);
+    --display-teal-scale-5: var(--base-display-color-teal-5);
+    --display-teal-scale-6: var(--base-display-color-teal-6);
+    --display-teal-scale-7: var(--base-display-color-teal-7);
+    --display-teal-scale-8: var(--base-display-color-teal-8);
+    --display-teal-scale-9: var(--base-display-color-teal-9);
+    --display-yellow-bgColor-emphasis: var(--base-display-color-yellow-5);
+    --display-yellow-bgColor-muted: var(--base-display-color-yellow-0);
+    --display-yellow-borderColor-emphasis: var(--base-display-color-yellow-5);
+    --display-yellow-borderColor-muted: var(--base-display-color-yellow-1);
+    --display-yellow-fgColor: var(--base-display-color-yellow-6);
+    --display-yellow-scale-0: var(--base-display-color-yellow-0);
+    --display-yellow-scale-1: var(--base-display-color-yellow-1);
+    --display-yellow-scale-2: var(--base-display-color-yellow-2);
+    --display-yellow-scale-3: var(--base-display-color-yellow-3);
+    --display-yellow-scale-4: var(--base-display-color-yellow-4);
+    --display-yellow-scale-5: var(--base-display-color-yellow-5);
+    --display-yellow-scale-6: var(--base-display-color-yellow-6);
+    --display-yellow-scale-7: var(--base-display-color-yellow-7);
+    --display-yellow-scale-8: var(--base-display-color-yellow-8);
+    --display-yellow-scale-9: var(--base-display-color-yellow-9);
+    --fgColor-accent: var(--base-color-blue-5); /** Accent text for links and interactive elements */
+    --fgColor-attention: var(--base-color-yellow-5); /** Attention text for warnings and caution states */
+    --fgColor-closed: var(--fgColor-danger); /** Text color for closed state indicators (issues, PRs) */
+    --fgColor-disabled: var(--base-color-neutral-8); /** Text color for disabled interactive elements */
+    --fgColor-done: var(--base-color-purple-5); /** Text color for completed/done state indicators */
+    --fgColor-muted: var(--base-color-neutral-9); /** Muted text for secondary content and less important information */
+    --fgColor-neutral: var(--base-color-neutral-9); /** Neutral semantic text for icons and secondary elements */
+    --fgColor-severe: var(--base-color-orange-5); /** Severe text for high-priority warnings */
+    --fgColor-sponsors: var(--base-color-pink-5); /** Text color for GitHub Sponsors content */
+    --fgColor-success: var(--base-color-green-5); /** Success text for positive feedback and completed states */
+    --header-bgColor: var(--base-color-neutral-12);
+    --header-borderColor-divider: var(--base-color-neutral-8);
+    --headerSearch-bgColor: var(--base-color-neutral-12);
+    --headerSearch-borderColor: var(--base-color-neutral-8);
+    --highlight-neutral-bgColor: var(--base-color-yellow-0);
+    --label-auburn-bgColor-active: var(--base-display-color-auburn-2);
+    --label-auburn-bgColor-hover: var(--base-display-color-auburn-1);
+    --label-auburn-bgColor-rest: var(--base-display-color-auburn-0);
+    --label-auburn-borderColor: var(--base-color-transparent);
+    --label-auburn-fgColor-active: var(--base-display-color-auburn-8);
+    --label-auburn-fgColor-hover: var(--base-display-color-auburn-7);
+    --label-auburn-fgColor-rest: var(--base-display-color-auburn-6);
+    --label-blue-bgColor-active: var(--base-display-color-blue-2);
+    --label-blue-bgColor-hover: var(--base-display-color-blue-1);
+    --label-blue-bgColor-rest: var(--base-display-color-blue-0);
+    --label-blue-borderColor: var(--base-color-transparent);
+    --label-blue-fgColor-active: var(--base-display-color-blue-8);
+    --label-blue-fgColor-hover: var(--base-display-color-blue-7);
+    --label-blue-fgColor-rest: var(--base-display-color-blue-6);
+    --label-brown-bgColor-active: var(--base-display-color-brown-2);
+    --label-brown-bgColor-hover: var(--base-display-color-brown-1);
+    --label-brown-bgColor-rest: var(--base-display-color-brown-0);
+    --label-brown-borderColor: var(--base-color-transparent);
+    --label-brown-fgColor-active: var(--base-display-color-brown-8);
+    --label-brown-fgColor-hover: var(--base-display-color-brown-7);
+    --label-brown-fgColor-rest: var(--base-display-color-brown-6);
+    --label-coral-bgColor-active: var(--base-display-color-coral-2);
+    --label-coral-bgColor-hover: var(--base-display-color-coral-1);
+    --label-coral-bgColor-rest: var(--base-display-color-coral-0);
+    --label-coral-borderColor: var(--base-color-transparent);
+    --label-coral-fgColor-active: var(--base-display-color-coral-8);
+    --label-coral-fgColor-hover: var(--base-display-color-coral-7);
+    --label-coral-fgColor-rest: var(--base-display-color-coral-6);
+    --label-cyan-bgColor-active: var(--base-display-color-cyan-2);
+    --label-cyan-bgColor-hover: var(--base-display-color-cyan-1);
+    --label-cyan-bgColor-rest: var(--base-display-color-cyan-0);
+    --label-cyan-borderColor: var(--base-color-transparent);
+    --label-cyan-fgColor-active: var(--base-display-color-cyan-8);
+    --label-cyan-fgColor-hover: var(--base-display-color-cyan-7);
+    --label-cyan-fgColor-rest: var(--base-display-color-cyan-6);
+    --label-gray-bgColor-active: var(--base-display-color-gray-2);
+    --label-gray-bgColor-hover: var(--base-display-color-gray-1);
+    --label-gray-bgColor-rest: var(--base-display-color-gray-0);
+    --label-gray-borderColor: var(--base-color-transparent);
+    --label-gray-fgColor-active: var(--base-display-color-gray-8);
+    --label-gray-fgColor-hover: var(--base-display-color-gray-7);
+    --label-gray-fgColor-rest: var(--base-display-color-gray-6);
+    --label-green-bgColor-active: var(--base-display-color-green-2);
+    --label-green-bgColor-hover: var(--base-display-color-green-1);
+    --label-green-bgColor-rest: var(--base-display-color-green-0);
+    --label-green-borderColor: var(--base-color-transparent);
+    --label-green-fgColor-active: var(--base-display-color-green-8);
+    --label-green-fgColor-hover: var(--base-display-color-green-7);
+    --label-green-fgColor-rest: var(--base-display-color-green-6);
+    --label-indigo-bgColor-active: var(--base-display-color-indigo-2);
+    --label-indigo-bgColor-hover: var(--base-display-color-indigo-1);
+    --label-indigo-bgColor-rest: var(--base-display-color-indigo-0);
+    --label-indigo-borderColor: var(--base-color-transparent);
+    --label-indigo-fgColor-active: var(--base-display-color-indigo-8);
+    --label-indigo-fgColor-hover: var(--base-display-color-indigo-7);
+    --label-indigo-fgColor-rest: var(--base-display-color-indigo-6);
+    --label-lemon-bgColor-active: var(--base-display-color-lemon-2);
+    --label-lemon-bgColor-hover: var(--base-display-color-lemon-1);
+    --label-lemon-bgColor-rest: var(--base-display-color-lemon-0);
+    --label-lemon-borderColor: var(--base-color-transparent);
+    --label-lemon-fgColor-active: var(--base-display-color-lemon-8);
+    --label-lemon-fgColor-hover: var(--base-display-color-lemon-7);
+    --label-lemon-fgColor-rest: var(--base-display-color-lemon-6);
+    --label-lime-bgColor-active: var(--base-display-color-lime-2);
+    --label-lime-bgColor-hover: var(--base-display-color-lime-1);
+    --label-lime-bgColor-rest: var(--base-display-color-lime-0);
+    --label-lime-borderColor: var(--base-color-transparent);
+    --label-lime-fgColor-active: var(--base-display-color-lime-8);
+    --label-lime-fgColor-hover: var(--base-display-color-lime-7);
+    --label-lime-fgColor-rest: var(--base-display-color-lime-6);
+    --label-olive-bgColor-active: var(--base-display-color-olive-2);
+    --label-olive-bgColor-hover: var(--base-display-color-olive-1);
+    --label-olive-bgColor-rest: var(--base-display-color-olive-0);
+    --label-olive-borderColor: var(--base-color-transparent);
+    --label-olive-fgColor-active: var(--base-display-color-olive-8);
+    --label-olive-fgColor-hover: var(--base-display-color-olive-7);
+    --label-olive-fgColor-rest: var(--base-display-color-olive-6);
+    --label-orange-bgColor-active: var(--base-display-color-orange-2);
+    --label-orange-bgColor-hover: var(--base-display-color-orange-1);
+    --label-orange-bgColor-rest: var(--base-display-color-orange-0);
+    --label-orange-borderColor: var(--base-color-transparent);
+    --label-orange-fgColor-active: var(--base-display-color-orange-8);
+    --label-orange-fgColor-hover: var(--base-display-color-orange-7);
+    --label-orange-fgColor-rest: var(--base-display-color-orange-6);
+    --label-pine-bgColor-active: var(--base-display-color-pine-2);
+    --label-pine-bgColor-hover: var(--base-display-color-pine-1);
+    --label-pine-bgColor-rest: var(--base-display-color-pine-0);
+    --label-pine-borderColor: var(--base-color-transparent);
+    --label-pine-fgColor-active: var(--base-display-color-pine-8);
+    --label-pine-fgColor-hover: var(--base-display-color-pine-7);
+    --label-pine-fgColor-rest: var(--base-display-color-pine-6);
+    --label-pink-bgColor-active: var(--base-display-color-pink-2);
+    --label-pink-bgColor-hover: var(--base-display-color-pink-1);
+    --label-pink-bgColor-rest: var(--base-display-color-pink-0);
+    --label-pink-borderColor: var(--base-color-transparent);
+    --label-pink-fgColor-active: var(--base-display-color-pink-8);
+    --label-pink-fgColor-hover: var(--base-display-color-pink-7);
+    --label-pink-fgColor-rest: var(--base-display-color-pink-6);
+    --label-plum-bgColor-active: var(--base-display-color-plum-2);
+    --label-plum-bgColor-hover: var(--base-display-color-plum-1);
+    --label-plum-bgColor-rest: var(--base-display-color-plum-0);
+    --label-plum-borderColor: var(--base-color-transparent);
+    --label-plum-fgColor-active: var(--base-display-color-plum-8);
+    --label-plum-fgColor-hover: var(--base-display-color-plum-7);
+    --label-plum-fgColor-rest: var(--base-display-color-plum-6);
+    --label-purple-bgColor-active: var(--base-display-color-purple-2);
+    --label-purple-bgColor-hover: var(--base-display-color-purple-1);
+    --label-purple-bgColor-rest: var(--base-display-color-purple-0);
+    --label-purple-borderColor: var(--base-color-transparent);
+    --label-purple-fgColor-active: var(--base-display-color-purple-8);
+    --label-purple-fgColor-hover: var(--base-display-color-purple-7);
+    --label-purple-fgColor-rest: var(--base-display-color-purple-6);
+    --label-red-bgColor-active: var(--base-display-color-red-2);
+    --label-red-bgColor-hover: var(--base-display-color-red-1);
+    --label-red-bgColor-rest: var(--base-display-color-red-0);
+    --label-red-borderColor: var(--base-color-transparent);
+    --label-red-fgColor-active: var(--base-display-color-red-8);
+    --label-red-fgColor-hover: var(--base-display-color-red-7);
+    --label-red-fgColor-rest: var(--base-display-color-red-6);
+    --label-teal-bgColor-active: var(--base-display-color-teal-2);
+    --label-teal-bgColor-hover: var(--base-display-color-teal-1);
+    --label-teal-bgColor-rest: var(--base-display-color-teal-0);
+    --label-teal-borderColor: var(--base-color-transparent);
+    --label-teal-fgColor-active: var(--base-display-color-teal-8);
+    --label-teal-fgColor-hover: var(--base-display-color-teal-7);
+    --label-teal-fgColor-rest: var(--base-display-color-teal-6);
+    --label-yellow-bgColor-active: var(--base-display-color-yellow-2);
+    --label-yellow-bgColor-hover: var(--base-display-color-yellow-1);
+    --label-yellow-bgColor-rest: var(--base-display-color-yellow-0);
+    --label-yellow-borderColor: var(--base-color-transparent);
+    --label-yellow-fgColor-active: var(--base-display-color-yellow-8);
+    --label-yellow-fgColor-hover: var(--base-display-color-yellow-7);
+    --label-yellow-fgColor-rest: var(--base-display-color-yellow-6);
+    --menu-bgColor-active: var(--base-color-transparent);
+    --overlay-backdrop-bgColor: #c8d1da66;
+    --prettylights-syntax-bracketHighlighterAngle: var(--base-color-neutral-9); /** Syntax highlighting color for angle brackets */
+    --prettylights-syntax-bracketHighlighterUnmatched: var(--base-color-red-7); /** Syntax highlighting color for unmatched brackets */
+    --prettylights-syntax-carriageReturn-bg: var(--base-color-red-5); /** Background color for carriage return characters in diffs */
+    --prettylights-syntax-carriageReturn-text: var(--base-color-neutral-1); /** Text color for carriage return characters in diffs */
+    --prettylights-syntax-comment: var(--base-color-neutral-9); /** Syntax highlighting color for code comments */
+    --prettylights-syntax-constant: var(--base-color-blue-6); /** Syntax highlighting color for constants and literal values */
+    --prettylights-syntax-constantOtherReferenceLink: var(--base-color-blue-8); /** Syntax highlighting color for reference links and URLs in code */
+    --prettylights-syntax-entity: var(--base-color-purple-6); /** Syntax highlighting color for class names, type definitions, and declarations */
+    --prettylights-syntax-entityTag: var(--base-color-blue-6); /** Syntax highlighting color for HTML/XML tags */
+    --prettylights-syntax-invalidIllegal-text: var(--fgColor-danger); /** Text color for invalid or illegal code syntax */
+    --prettylights-syntax-keyword: var(--base-color-red-5); /** Syntax highlighting color for language keywords (if, else, return) */
+    --prettylights-syntax-markup-changed-bg: var(--base-color-orange-1); /** Background color for changed lines in diff views */
+    --prettylights-syntax-markup-changed-text: var(--base-color-orange-6); /** Text color for changed lines in diff views */
+    --prettylights-syntax-markup-deleted-bg: var(--base-color-red-0); /** Background color for deleted lines in diff views */
+    --prettylights-syntax-markup-deleted-text: var(--base-color-red-7); /** Text color for deleted lines in diff views */
+    --prettylights-syntax-markup-heading: var(--base-color-blue-6); /** Syntax highlighting color for headings in markdown */
+    --prettylights-syntax-markup-ignored-bg: var(--base-color-blue-6); /** Background color for ignored content in diffs */
+    --prettylights-syntax-markup-ignored-text: var(--base-color-neutral-6); /** Text color for ignored content in diffs */
+    --prettylights-syntax-markup-inserted-bg: var(--base-color-green-0); /** Background color for inserted lines in diff views */
+    --prettylights-syntax-markup-inserted-text: var(--base-color-green-6); /** Text color for inserted lines in diff views */
+    --prettylights-syntax-markup-list: var(--base-color-yellow-9); /** Syntax highlighting color for list markers in markdown */
+    --prettylights-syntax-metaDiffRange: var(--base-color-purple-5); /** Syntax highlighting color for diff range information (@@ lines) */
+    --prettylights-syntax-string: var(--base-color-blue-8); /** Syntax highlighting color for string literals */
+    --prettylights-syntax-stringRegexp: var(--base-color-green-6); /** Syntax highlighting color for regular expression literals */
+    --prettylights-syntax-sublimeLinterGutterMark: var(--base-color-neutral-8); /** Color for linter gutter marks in code editors */
+    --prettylights-syntax-variable: var(--base-color-orange-6); /** Syntax highlighting color for variables and parameters */
+    --progressBar-bgColor-success: var(--bgColor-success-emphasis);
+    --progressBar-track-borderColor: var(--base-color-transparent);
+    --reactionButton-selected-bgColor-rest: var(--base-color-blue-0);
+    --reactionButton-selected-fgColor-hover: var(--base-color-blue-6);
+    --selectMenu-bgColor-active: var(--base-color-blue-1);
+    --selectMenu-borderColor: var(--base-color-transparent);
+    --shadow-resting-medium: 0 1px 1px 0 #25292e1a, 0 3px 6px 0 #25292e1f; /** Medium resting shadow for cards and elevated surfaces */
+    --skeletonLoader-bgColor: #818b981a;
+    --topicTag-borderColor: var(--base-color-transparent);
+    --treeViewItem-leadingVisual-iconColor-rest: var(--base-color-blue-3);
+    --underlineNav-borderColor-active: var(--base-color-coral-3);
+    --ansi-black: var(--base-color-neutral-13); /** ANSI black for terminal text and backgrounds */
+    --avatar-bgColor: var(--base-color-neutral-0);
+    --avatar-shadow: 0 0 0 2px #ffffffcc;
+    --base-color-inset: var(--base-color-neutral-0);
+    --bgColor-black: var(--base-color-neutral-13); /** Pure black background */
+    --bgColor-closed-emphasis: var(--bgColor-danger-emphasis); /** Strong background for closed state badges and labels */
+    --bgColor-closed-muted: var(--bgColor-danger-muted); /** Subtle background for closed state indicators (issues, PRs) */
+    --bgColor-default: var(--base-color-neutral-0); /** Default background color for pages and main content areas */
+    --bgColor-draft-emphasis: var(--bgColor-neutral-emphasis); /** Strong background for draft state badges and labels */
+    --bgColor-draft-muted: var(--bgColor-neutral-muted); /** Subtle background for draft state indicators */
+    --bgColor-inset: var(--bgColor-muted); /** Inset background for recessed content areas like wells or sunken panels */
+    --bgColor-open-muted: var(--bgColor-success-muted); /** Subtle background for open state indicators (issues, PRs) */
+    --bgColor-upsell-emphasis: var(--bgColor-done-emphasis); /** Strong background for prominent upsell elements */
+    --bgColor-upsell-muted: var(--bgColor-done-muted); /** Subtle background for upsell and promotional content */
+    --bgColor-white: var(--base-color-neutral-0); /** Pure white background */
+    --border-accent-emphasis: var(--borderWidth-default) solid var(--borderColor-accent-emphasis);
+    --border-accent-muted: var(--borderWidth-default) solid var(--borderColor-accent-muted);
+    --border-attention-emphasis: var(--borderWidth-default) solid var(--borderColor-attention-emphasis);
+    --border-attention-muted: var(--borderWidth-default) solid var(--borderColor-attention-muted);
+    --border-danger-emphasis: var(--borderWidth-default) solid var(--borderColor-danger-emphasis);
+    --border-danger-muted: var(--borderWidth-default) solid var(--borderColor-danger-muted);
+    --border-default: var(--borderWidth-default) solid var(--borderColor-default);
+    --border-disabled: var(--borderWidth-default) solid var(--borderColor-disabled);
+    --border-done-emphasis: var(--borderWidth-default) solid var(--borderColor-done-emphasis);
+    --border-done-muted: var(--borderWidth-default) solid var(--borderColor-done-muted);
+    --border-emphasis: var(--borderWidth-default) solid var(--borderColor-emphasis);
+    --border-neutral-emphasis: var(--borderWidth-default) solid var(--borderColor-neutral-emphasis);
+    --border-severe-emphasis: var(--borderWidth-default) solid var(--borderColor-severe-emphasis);
+    --border-severe-muted: var(--borderWidth-default) solid var(--borderColor-severe-muted);
+    --border-sponsors-emphasis: var(--borderWidth-default) solid var(--borderColor-sponsors-emphasis);
+    --border-sponsors-muted: var(--borderWidth-default) solid var(--borderColor-sponsors-muted);
+    --border-success-emphasis: var(--borderWidth-default) solid var(--borderColor-success-emphasis);
+    --border-success-muted: var(--borderWidth-default) solid var(--borderColor-success-muted);
+    --border-transparent: var(--borderWidth-default) solid var(--borderColor-transparent);
+    --borderColor-closed-emphasis: var(--borderColor-danger-emphasis); /** Strong border for closed state badges */
+    --borderColor-closed-muted: var(--borderColor-danger-muted); /** Subtle border for closed state indicators */
+    --borderColor-draft-emphasis: var(--borderColor-neutral-emphasis); /** Strong border for draft state badges */
+    --borderColor-muted: #d1d9e0b3; /** Subtle border for secondary elements and light separators */
+    --borderColor-open-emphasis: var(--borderColor-success-emphasis); /** Strong border for open state badges */
+    --borderColor-open-muted: var(--borderColor-success-muted); /** Subtle border for open state indicators */
+    --borderColor-translucent: #1f232826; /** Semi-transparent border for overlays and layered elements. Border-specific token — no bgColor-translucent counterpart exists by design. */
+    --borderColor-upsell-emphasis: var(--borderColor-done-emphasis); /** Strong border for prominent upsell elements */
+    --borderColor-upsell-muted: var(--borderColor-done-muted); /** Subtle border for upsell and promotional content */
+    --button-danger-bgColor-hover: var(--bgColor-danger-emphasis);
+    --button-danger-bgColor-rest: var(--control-bgColor-rest);
+    --button-danger-fgColor-active: var(--base-color-neutral-0);
+    --button-danger-fgColor-hover: var(--base-color-neutral-0);
+    --button-danger-iconColor-disabled: var(--button-danger-fgColor-disabled);
+    --button-danger-iconColor-hover: var(--base-color-neutral-0);
+    --button-danger-iconColor-rest: var(--button-danger-fgColor-rest);
+    --button-default-bgColor-active: var(--control-bgColor-active);
+    --button-default-bgColor-hover: var(--control-bgColor-hover);
+    --button-default-bgColor-rest: var(--control-bgColor-rest);
+    --button-default-bgColor-selected: var(--control-bgColor-active);
+    --button-default-fgColor-rest: var(--control-fgColor-rest);
+    --button-default-shadow-resting: 0 1px 0 0 #1f23280a;
+    --button-invisible-bgColor-active: var(--control-transparent-bgColor-active);
+    --button-invisible-bgColor-hover: var(--control-transparent-bgColor-hover);
+    --button-invisible-bgColor-rest: var(--control-transparent-bgColor-rest);
+    --button-invisible-borderColor-hover: var(--control-transparent-borderColor-hover);
+    --button-invisible-borderColor-rest: var(--control-transparent-borderColor-rest);
+    --button-invisible-fgColor-active: var(--control-fgColor-rest);
+    --button-invisible-fgColor-hover: var(--control-fgColor-rest);
+    --button-invisible-fgColor-rest: var(--control-fgColor-rest);
+    --button-invisible-iconColor-hover: var(--fgColor-muted);
+    --button-invisible-iconColor-rest: var(--fgColor-muted);
+    --button-outline-bgColor-hover: var(--bgColor-accent-emphasis);
+    --button-outline-bgColor-rest: var(--control-bgColor-rest);
+    --button-outline-fgColor-active: var(--base-color-neutral-0);
+    --button-outline-fgColor-disabled: #0969da80;
+    --button-outline-fgColor-hover: var(--base-color-neutral-0);
+    --button-outline-fgColor-rest: var(--fgColor-accent);
+    --button-primary-fgColor-disabled: #ffffffcc;
+    --buttonCounter-danger-bgColor-disabled: #cf222e0d;
+    --buttonCounter-danger-bgColor-hover: #ffffff33;
+    --buttonCounter-danger-bgColor-rest: #cf222e1a;
+    --buttonCounter-danger-fgColor-hover: var(--base-color-neutral-0);
+    --buttonCounter-default-bgColor-rest: var(--bgColor-neutral-muted);
+    --buttonCounter-invisible-bgColor-rest: var(--bgColor-neutral-muted);
+    --buttonCounter-outline-bgColor-disabled: #0969da0d;
+    --buttonCounter-outline-bgColor-hover: #ffffff33;
+    --buttonCounter-outline-bgColor-rest: #0969da1a;
+    --buttonCounter-outline-fgColor-disabled: #0969da80;
+    --buttonCounter-outline-fgColor-hover: var(--base-color-neutral-0);
+    --buttonKeybindingHint-danger-bgColor-rest: var(--buttonKeybindingHint-default-bgColor-rest);
+    --buttonKeybindingHint-default-bgColor-disabled: var(--buttonKeybindingHint-default-bgColor-rest);
+    --buttonKeybindingHint-default-fgColor-rest: var(--fgColor-muted);
+    --buttonKeybindingHint-inactive-fgColor: var(--button-inactive-fgColor);
+    --buttonKeybindingHint-invisible-bgColor-active: var(--control-transparent-bgColor-active);
+    --buttonKeybindingHint-invisible-bgColor-disabled: var(--button-invisible-bgColor-disabled);
+    --buttonKeybindingHint-invisible-bgColor-hover: var(--control-transparent-bgColor-hover);
+    --buttonKeybindingHint-invisible-bgColor-rest: var(--buttonKeybindingHint-default-bgColor-rest);
+    --buttonKeybindingHint-invisible-fgColor-rest: var(--fgColor-muted);
+    --buttonKeybindingHint-primary-bgColor-disabled: #002d111a;
+    --buttonKeybindingHint-primary-bgColor-rest: var(--buttonCounter-primary-bgColor-rest);
+    --codeMirror-activeline-bgColor: var(--bgColor-neutral-muted);
+    --codeMirror-gutterMarker-fgColor-muted: var(--fgColor-muted);
+    --codeMirror-lineNumber-fgColor: var(--fgColor-muted);
+    --codeMirror-selection-bgColor: var(--borderColor-accent-muted);
+    --codeMirror-syntax-fgColor-comment: var(--base-color-neutral-13);
+    --color-ansi-black-bright: var(--ansi-blackBright); /** Deprecated. Use ansi.blackBright instead. */
+    --color-ansi-blue: var(--ansi-blue); /** Deprecated. Use ansi.blue instead. */
+    --color-ansi-blue-bright: var(--ansi-blueBright); /** Deprecated. Use ansi.blueBright instead. */
+    --color-ansi-gray: var(--ansi-gray); /** Deprecated. Use ansi.gray instead. */
+    --color-ansi-green: var(--ansi-green); /** Deprecated. Use ansi.green instead. */
+    --color-ansi-green-bright: var(--ansi-greenBright); /** Deprecated. Use ansi.greenBright instead. */
+    --color-ansi-magenta: var(--ansi-magenta); /** Deprecated. Use ansi.magenta instead. */
+    --color-ansi-magenta-bright: var(--ansi-magentaBright); /** Deprecated. Use ansi.magentaBright instead. */
+    --color-ansi-red: var(--ansi-red); /** Deprecated. Use ansi.red instead. */
+    --color-ansi-red-bright: var(--ansi-redBright); /** Deprecated. Use ansi.redBright instead. */
+    --color-ansi-white: var(--ansi-white); /** Deprecated. Use ansi.white instead. */
+    --color-ansi-white-bright: var(--ansi-whiteBright); /** Deprecated. Use ansi.whiteBright instead. */
+    --color-ansi-yellow: var(--ansi-yellow); /** Deprecated. Use ansi.yellow instead. */
+    --color-ansi-yellow-bright: var(--ansi-yellowBright); /** Deprecated. Use ansi.yellowBright instead. */
+    --color-prettylights-syntax-brackethighlighter-angle: var(--prettylights-syntax-bracketHighlighterAngle); /** Deprecated. Use prettylights.syntax.bracketHighlighterAngle instead. */
+    --color-prettylights-syntax-brackethighlighter-unmatched: var(--prettylights-syntax-bracketHighlighterUnmatched); /** Deprecated. Use prettylights.syntax.bracketHighlighterUnmatched instead. */
+    --color-prettylights-syntax-carriage-return-bg: var(--prettylights-syntax-carriageReturn-bg); /** Deprecated. Use prettylights.syntax.carriageReturn.bg instead. */
+    --color-prettylights-syntax-carriage-return-text: var(--prettylights-syntax-carriageReturn-text); /** Deprecated. Use prettylights.syntax.carriageReturn.text instead. */
+    --color-prettylights-syntax-comment: var(--prettylights-syntax-comment); /** Deprecated. Use prettylights.syntax.comment instead. */
+    --color-prettylights-syntax-constant: var(--prettylights-syntax-constant); /** Deprecated. Use prettylights.syntax.constant instead. */
+    --color-prettylights-syntax-constant-other-reference-link: var(--prettylights-syntax-constantOtherReferenceLink); /** Deprecated. Use prettylights.syntax.constantOtherReferenceLink instead. */
+    --color-prettylights-syntax-entity: var(--prettylights-syntax-entity); /** Deprecated. Use prettylights.syntax.entity instead. */
+    --color-prettylights-syntax-entity-tag: var(--prettylights-syntax-entityTag); /** Deprecated. Use prettylights.syntax.entityTag instead. */
+    --color-prettylights-syntax-invalid-illegal-text: var(--prettylights-syntax-invalidIllegal-text); /** Deprecated. Use prettylights.syntax.invalidIllegal.text instead. */
+    --color-prettylights-syntax-keyword: var(--prettylights-syntax-keyword); /** Deprecated. Use prettylights.syntax.keyword instead. */
+    --color-prettylights-syntax-markup-changed-bg: var(--prettylights-syntax-markup-changed-bg); /** Deprecated. Use prettylights.syntax.markup.changed.bg instead. */
+    --color-prettylights-syntax-markup-changed-text: var(--prettylights-syntax-markup-changed-text); /** Deprecated. Use prettylights.syntax.markup.changed.text instead. */
+    --color-prettylights-syntax-markup-deleted-bg: var(--prettylights-syntax-markup-deleted-bg); /** Deprecated. Use prettylights.syntax.markup.deleted.bg instead. */
+    --color-prettylights-syntax-markup-deleted-text: var(--prettylights-syntax-markup-deleted-text); /** Deprecated. Use prettylights.syntax.markup.deleted.text instead. */
+    --color-prettylights-syntax-markup-heading: var(--prettylights-syntax-markup-heading); /** Deprecated. Use prettylights.syntax.markup.heading instead. */
+    --color-prettylights-syntax-markup-ignored-bg: var(--prettylights-syntax-markup-ignored-bg); /** Deprecated. Use prettylights.syntax.markup.ignored.bg instead. */
+    --color-prettylights-syntax-markup-ignored-text: var(--prettylights-syntax-markup-ignored-text); /** Deprecated. Use prettylights.syntax.markup.ignored.text instead. */
+    --color-prettylights-syntax-markup-inserted-bg: var(--prettylights-syntax-markup-inserted-bg); /** Deprecated. Use prettylights.syntax.markup.inserted.bg instead. */
+    --color-prettylights-syntax-markup-inserted-text: var(--prettylights-syntax-markup-inserted-text); /** Deprecated. Use prettylights.syntax.markup.inserted.text instead. */
+    --color-prettylights-syntax-markup-list: var(--prettylights-syntax-markup-list); /** Deprecated. Use prettylights.syntax.markup.list instead. */
+    --color-prettylights-syntax-meta-diff-range: var(--prettylights-syntax-metaDiffRange); /** Deprecated. Use prettylights.syntax.metaDiffRange instead. */
+    --color-prettylights-syntax-string: var(--prettylights-syntax-string); /** Deprecated. Use prettylights.syntax.string instead. */
+    --color-prettylights-syntax-string-regexp: var(--prettylights-syntax-stringRegexp); /** Deprecated. Use prettylights.syntax.stringRegexp instead. */
+    --color-prettylights-syntax-sublimelinter-gutter-mark: var(--prettylights-syntax-sublimeLinterGutterMark); /** Deprecated. Use prettylights.syntax.sublimeLinterGutterMark instead. */
+    --color-prettylights-syntax-variable: var(--prettylights-syntax-variable); /** Deprecated. Use prettylights.syntax.variable instead. */
+    --contribution-default-borderColor-1: var(--contribution-default-borderColor-0);
+    --contribution-default-borderColor-2: var(--contribution-default-borderColor-0);
+    --contribution-default-borderColor-3: var(--contribution-default-borderColor-0);
+    --contribution-default-borderColor-4: var(--contribution-default-borderColor-0);
+    --control-bgColor-disabled: var(--bgColor-disabled);
+    --control-bgColor-selected: var(--control-bgColor-rest);
+    --control-borderColor-danger: var(--borderColor-danger-emphasis);
+    --control-borderColor-disabled: var(--borderColor-disabled);
+    --control-borderColor-emphasis: var(--borderColor-emphasis);
+    --control-borderColor-rest: var(--borderColor-default);
+    --control-borderColor-success: var(--borderColor-success-emphasis);
+    --control-borderColor-warning: var(--borderColor-attention-emphasis);
+    --control-checked-bgColor-disabled: var(--fgColor-disabled);
+    --control-checked-bgColor-rest: var(--bgColor-accent-emphasis);
+    --control-danger-bgColor-active: #ffebe966;
+    --control-danger-bgColor-hover: var(--bgColor-danger-muted);
+    --control-fgColor-disabled: var(--fgColor-disabled);
+    --control-fgColor-placeholder: var(--fgColor-muted);
+    --control-iconColor-rest: var(--fgColor-muted);
+    --control-transparent-bgColor-disabled: var(--bgColor-disabled);
+    --controlKnob-bgColor-checked: var(--base-color-neutral-0);
+    --controlKnob-bgColor-rest: var(--base-color-neutral-0);
+    --controlTrack-bgColor-disabled: var(--fgColor-disabled);
+    --controlTrack-borderColor-disabled: var(--fgColor-disabled);
+    --controlTrack-borderColor-rest: var(--borderColor-default);
+    --counter-bgColor-emphasis: var(--bgColor-neutral-emphasis);
+    --counter-bgColor-muted: var(--bgColor-neutral-muted);
+    --diffBlob-additionLine-bgColor: var(--bgColor-success-muted);
+    --diffBlob-deletionLine-bgColor: var(--bgColor-danger-muted);
+    --diffBlob-emptyLine-bgColor: var(--bgColor-muted);
+    --diffBlob-emptyNum-bgColor: var(--bgColor-muted);
+    --diffBlob-expander-iconColor: var(--fgColor-muted);
+    --diffBlob-hunkLine-bgColor: var(--bgColor-accent-muted);
+    --diffBlob-hunkLine-fgColor: var(--fgColor-muted);
+    --diffBlob-hunkNum-bgColor-hover: var(--bgColor-accent-emphasis);
+    --fgColor-black: var(--base-color-neutral-13); /** Pure black text */
+    --fgColor-default: var(--base-color-neutral-13); /** Default text color for primary content and headings */
+    --fgColor-draft: var(--fgColor-neutral); /** Text color for draft state indicators */
+    --fgColor-link: var(--fgColor-accent); /** Text color for hyperlinks */
+    --fgColor-onEmphasis: var(--base-color-neutral-0); /** Text color for use on emphasis backgrounds */
+    --fgColor-onInverse: var(--base-color-neutral-0); /** Text color for use on inverse backgrounds */
+    --fgColor-open: var(--fgColor-success); /** Text color for open state indicators (issues, PRs) */
+    --fgColor-upsell: var(--fgColor-done); /** Text color for upsell and promotional content */
+    --fgColor-white: var(--base-color-neutral-0); /** Pure white text */
+    --focus-outline-color: var(--borderColor-accent-emphasis); /** Outline color for focus states on interactive elements */
+    --header-fgColor-default: #ffffffb3;
+    --header-fgColor-logo: var(--base-color-neutral-0);
+    --overlay-bgColor: var(--base-color-neutral-0);
+    --page-header-bgColor: var(--bgColor-muted);
+    --prettylights-syntax-brackethighlighter-angle: var(--prettylights-syntax-bracketHighlighterAngle); /** Deprecated. Use prettylights.syntax.bracketHighlighterAngle instead. */
+    --prettylights-syntax-brackethighlighter-unmatched: var(--prettylights-syntax-bracketHighlighterUnmatched); /** Deprecated. Use prettylights.syntax.bracketHighlighterUnmatched instead. */
+    --prettylights-syntax-carriage-return-bg: var(--prettylights-syntax-carriageReturn-bg); /** Deprecated. Use prettylights.syntax.carriageReturn.bg instead. */
+    --prettylights-syntax-carriage-return-text: var(--prettylights-syntax-carriageReturn-text); /** Deprecated. Use prettylights.syntax.carriageReturn.text instead. */
+    --prettylights-syntax-constant-other-reference-link: var(--prettylights-syntax-constantOtherReferenceLink); /** Deprecated. Use prettylights.syntax.constantOtherReferenceLink instead. */
+    --prettylights-syntax-entity-tag: var(--prettylights-syntax-entityTag); /** Deprecated. Use prettylights.syntax.entityTag instead. */
+    --prettylights-syntax-invalid-illegal-text: var(--prettylights-syntax-invalidIllegal-text); /** Deprecated. Use prettylights.syntax.invalidIllegal.text instead. */
+    --prettylights-syntax-invalidIllegal-bg: var(--bgColor-danger-muted); /** Background color for invalid or illegal code syntax */
+    --prettylights-syntax-markup-bold: var(--base-color-neutral-13); /** Syntax highlighting color for bold text in markdown */
+    --prettylights-syntax-markup-italic: var(--base-color-neutral-13); /** Syntax highlighting color for italic text in markdown */
+    --prettylights-syntax-meta-diff-range: var(--prettylights-syntax-metaDiffRange); /** Deprecated. Use prettylights.syntax.metaDiffRange instead. */
+    --prettylights-syntax-storageModifierImport: var(--base-color-neutral-13); /** Syntax highlighting color for import and require statements */
+    --prettylights-syntax-string-regexp: var(--prettylights-syntax-stringRegexp); /** Deprecated. Use prettylights.syntax.stringRegexp instead. */
+    --prettylights-syntax-sublimelinter-gutter-mark: var(--prettylights-syntax-sublimeLinterGutterMark); /** Deprecated. Use prettylights.syntax.sublimeLinterGutterMark instead. */
+    --progressBar-bgColor-accent: var(--bgColor-accent-emphasis);
+    --progressBar-bgColor-attention: var(--bgColor-attention-emphasis);
+    --progressBar-bgColor-danger: var(--bgColor-danger-emphasis);
+    --progressBar-bgColor-done: var(--bgColor-done-emphasis);
+    --progressBar-bgColor-neutral: var(--bgColor-neutral-emphasis);
+    --progressBar-bgColor-severe: var(--bgColor-severe-emphasis);
+    --progressBar-bgColor-sponsors: var(--bgColor-sponsors-emphasis);
+    --progressBar-track-bgColor: var(--borderColor-default);
+    --selection-bgColor: #0969da33; /** Background color for text selection highlights */
+    --shadow-inset: inset 0 1px 0 0 #1f23280a; /** Inset shadow for recessed elements */
+    --shadow-resting-small: 0 1px 1px 0 #1f23280a, 0 1px 2px 0 #1f232808; /** Small resting shadow for buttons and interactive elements */
+    --shadow-resting-xsmall: 0 1px 1px 0 #1f23280d; /** Extra small resting shadow for minimal elevation */
+    --sideNav-bgColor-selected: var(--base-color-neutral-0);
+    --timelineBadge-bgColor: var(--bgColor-muted);
+    --tooltip-bgColor: var(--bgColor-emphasis);
+    --underlineNav-iconColor-rest: var(--fgColor-muted);
+    --avatar-borderColor: var(--borderColor-translucent);
+    --border-closed-emphasis: var(--border-danger-emphasis);
+    --border-closed-muted: var(--border-danger-muted);
+    --border-draft-emphasis: var(--borderWidth-default) solid var(--borderColor-draft-emphasis);
+    --border-muted: var(--borderWidth-default) solid var(--borderColor-muted);
+    --border-open-emphasis: var(--border-success-emphasis);
+    --border-open-muted: var(--border-success-muted);
+    --border-translucent: var(--borderWidth-default) solid var(--borderColor-translucent); /** Semi-transparent border shorthand for overlays and layered elements. Border-specific token — no bgColor-translucent counterpart exists by design. */
+    --border-upsell-emphasis: var(--borderWidth-default) solid var(--borderColor-upsell-emphasis);
+    --border-upsell-muted: var(--borderWidth-default) solid var(--borderColor-upsell-muted);
+    --borderColor-neutral-muted: var(--borderColor-muted); /** Subtle neutral semantic border */
+    --button-danger-bgColor-disabled: var(--control-bgColor-disabled);
+    --button-danger-borderColor-rest: var(--control-borderColor-rest);
+    --button-default-bgColor-disabled: var(--control-bgColor-disabled);
+    --button-default-borderColor-active: var(--control-borderColor-rest);
+    --button-default-borderColor-disabled: var(--control-borderColor-disabled);
+    --button-default-borderColor-rest: var(--control-borderColor-rest);
+    --button-default-fgColor-disabled: var(--control-fgColor-disabled);
+    --button-invisible-fgColor-disabled: var(--control-fgColor-disabled);
+    --button-invisible-iconColor-disabled: var(--control-fgColor-disabled);
+    --button-outline-bgColor-disabled: var(--control-bgColor-disabled);
+    --button-primary-borderColor-rest: var(--borderColor-translucent);
+    --button-primary-fgColor-rest: var(--fgColor-white);
+    --button-primary-iconColor-disabled: var(--button-primary-fgColor-disabled);
+    --button-primary-iconColor-rest: #ffffffcc;
+    --buttonKeybindingHint-danger-bgColor-disabled: var(--buttonKeybindingHint-default-bgColor-disabled);
+    --buttonKeybindingHint-danger-borderColor-hover: var(--borderColor-translucent);
+    --buttonKeybindingHint-danger-fgColor-active: var(--fgColor-onEmphasis);
+    --buttonKeybindingHint-danger-fgColor-hover: var(--fgColor-onEmphasis);
+    --buttonKeybindingHint-danger-fgColor-rest: var(--buttonKeybindingHint-default-fgColor-rest);
+    --buttonKeybindingHint-default-borderColor-disabled: var(--control-borderColor-disabled);
+    --buttonKeybindingHint-default-borderColor-rest: var(--borderColor-muted);
+    --buttonKeybindingHint-default-fgColor-disabled: var(--control-fgColor-disabled);
+    --buttonKeybindingHint-inactive-borderColor: var(--borderColor-muted);
+    --buttonKeybindingHint-invisible-borderColor-disabled: var(--control-borderColor-disabled);
+    --buttonKeybindingHint-invisible-fgColor-disabled: var(--control-fgColor-disabled);
+    --buttonKeybindingHint-primary-borderColor-disabled: var(--control-borderColor-disabled);
+    --buttonKeybindingHint-primary-borderColor-rest: var(--borderColor-translucent);
+    --buttonKeybindingHint-primary-fgColor-disabled: var(--button-primary-fgColor-disabled);
+    --buttonKeybindingHint-primary-fgColor-rest: var(--fgColor-onEmphasis);
+    --card-bgColor: var(--bgColor-default);
+    --codeMirror-bgColor: var(--bgColor-default);
+    --codeMirror-cursor-fgColor: var(--fgColor-default);
+    --codeMirror-fgColor: var(--fgColor-default);
+    --codeMirror-gutterMarker-fgColor-default: var(--bgColor-default);
+    --codeMirror-gutters-bgColor: var(--bgColor-default);
+    --codeMirror-lines-bgColor: var(--bgColor-default);
+    --codeMirror-matchingBracket-fgColor: var(--fgColor-default);
+    --color-ansi-black: var(--ansi-black); /** Deprecated. Use ansi.black instead. */
+    --color-prettylights-syntax-invalid-illegal-bg: var(--prettylights-syntax-invalidIllegal-bg); /** Deprecated. Use prettylights.syntax.invalidIllegal.bg instead. */
+    --color-prettylights-syntax-markup-bold: var(--prettylights-syntax-markup-bold); /** Deprecated. Use prettylights.syntax.markup.bold instead. */
+    --color-prettylights-syntax-markup-italic: var(--prettylights-syntax-markup-italic); /** Deprecated. Use prettylights.syntax.markup.italic instead. */
+    --color-prettylights-syntax-storage-modifier-import: var(--prettylights-syntax-storageModifierImport); /** Deprecated. Use prettylights.syntax.storageModifierImport instead. */
+    --control-borderColor-selected: var(--control-bgColor-selected);
+    --control-checked-borderColor-disabled: var(--control-checked-bgColor-disabled);
+    --control-checked-borderColor-rest: var(--control-checked-bgColor-rest);
+    --control-checked-fgColor-disabled: var(--fgColor-onEmphasis);
+    --control-checked-fgColor-rest: var(--fgColor-onEmphasis);
+    --controlKnob-bgColor-disabled: var(--control-bgColor-disabled);
+    --controlKnob-borderColor-checked: var(--control-checked-bgColor-rest);
+    --controlKnob-borderColor-disabled: var(--control-bgColor-disabled);
+    --controlKnob-borderColor-rest: var(--control-borderColor-rest);
+    --controlTrack-fgColor-disabled: var(--fgColor-onEmphasis);
+    --dashboard-bgColor: var(--bgColor-default);
+    --diffBlob-additionLine-fgColor: var(--fgColor-default);
+    --diffBlob-additionNum-fgColor: var(--fgColor-default);
+    --diffBlob-additionWord-fgColor: var(--fgColor-default);
+    --diffBlob-deletionLine-fgColor: var(--fgColor-default);
+    --diffBlob-deletionNum-fgColor: var(--fgColor-default);
+    --diffBlob-deletionWord-fgColor: var(--fgColor-default);
+    --diffBlob-hunkNum-fgColor-hover: var(--fgColor-onEmphasis);
+    --diffBlob-hunkNum-fgColor-rest: var(--fgColor-default);
+    --focus-outline: var(--focus-outline-width) solid var(--focus-outline-color); /** Focus ring outline for keyboard navigation and accessibility. */
+    --focus-outlineColor: var(--focus-outline-color); /** Deprecated. Use focus.outline-color instead. */
+    --overlay-borderColor: #d1d9e080;
+    --prettylights-syntax-invalid-illegal-bg: var(--prettylights-syntax-invalidIllegal-bg); /** Deprecated. Use prettylights.syntax.invalidIllegal.bg instead. */
+    --prettylights-syntax-storage-modifier-import: var(--prettylights-syntax-storageModifierImport); /** Deprecated. Use prettylights.syntax.storageModifierImport instead. */
+    --reactionButton-selected-fgColor-rest: var(--fgColor-link);
+    --tooltip-fgColor: var(--fgColor-onEmphasis);
+    --underlineNav-borderColor-hover: var(--borderColor-muted);
+    --border-neutral-muted: var(--borderWidth-default) solid var(--borderColor-neutral-muted);
+    --borderColor-draft-muted: var(--borderColor-neutral-muted); /** Subtle border for draft state indicators */
+    --button-danger-borderColor-hover: var(--button-primary-borderColor-rest);
+    --button-default-borderColor-hover: var(--button-default-borderColor-rest);
+    --button-primary-borderColor-active: var(--button-primary-borderColor-rest);
+    --button-primary-borderColor-hover: var(--button-primary-borderColor-rest);
+    --buttonKeybindingHint-danger-borderColor-active: var(--buttonKeybindingHint-danger-borderColor-hover);
+    --buttonKeybindingHint-danger-borderColor-disabled: var(--buttonKeybindingHint-default-borderColor-disabled);
+    --buttonKeybindingHint-danger-borderColor-rest: var(--buttonKeybindingHint-default-borderColor-rest);
+    --buttonKeybindingHint-danger-fgColor-disabled: var(--buttonKeybindingHint-default-fgColor-disabled);
+    --shadow-floating-large: 0 0 0 1px #d1d9e000, 0 40px 80px 0 #25292e3d; /** Large floating shadow for modals and dialogs */
+    --shadow-floating-medium: 0 0 0 1px #d1d9e000, 0 8px 16px -4px #25292e14, 0 4px 32px -4px #25292e14, 0 24px 48px -12px #25292e14, 0 48px 96px -24px #25292e14; /** Medium floating shadow for popovers and action menus */
+    --shadow-floating-small: 0 0 0 1px #d1d9e040, 0 6px 12px -3px #25292e0a, 0 6px 18px 0 #25292e1f; /** Small floating shadow for dropdowns, tooltips, and small overlays */
+    --shadow-floating-xlarge: 0 0 0 1px #d1d9e000, 0 56px 112px 0 #25292e52; /** Extra large floating shadow for full-screen overlays and sheets */
+    --border-draft-muted: var(--borderWidth-default) solid var(--borderColor-draft-muted);
+    --button-danger-borderColor-active: var(--button-danger-borderColor-hover);
+    --button-outline-borderColor-hover: var(--button-primary-borderColor-hover);
+    --button-outline-borderColor-active: var(--button-outline-borderColor-hover);
+  }
+}
