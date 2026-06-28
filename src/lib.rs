@@ -2864,25 +2864,45 @@ function uniqueAnchorBlockId(seen, base) {
   seen.add(candidate);
   return candidate;
 }
+// Address every anchor-addressable block with a hierarchical "legal" locus
+// number — its canonical position in the document tree, e.g. 1.3.2 = the second
+// block of the third sub-section of the first section. Headings open and nest
+// sections; every block (headings included) is a child of the currently open
+// section and consumes that section's next sibling number, so a paragraph and
+// the sub-heading next to it can never land on the same number. Content blocks
+// take their locus as the id, replacing the old word/letter slugs (top-p-0).
+// Headings keep the slug id the renderer gave them — the TOC and author-written
+// #slug links resolve against it — but they still advance the sibling counters
+// that prefix their children's numbers. Numbering is deterministic, so the ids
+// survive the document re-render that a fragment jump triggers.
 function ensureAnchorLinkTargets(body) {
   const seen = new Set(Array.from(body.querySelectorAll('[id]')).map((element) => element.id).filter(Boolean));
-  let sectionId = 'top';
-  let blockIndex = 0;
-  body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target, targetIndex) => {
+  const root = { childCounter: 0 };
+  const stack = []; // the open heading chain: [{ level, number, childCounter }]
+  body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
     if (target.classList.contains('footnote-definition')) return;
     const isHeading = /^H[1-6]$/.test(target.tagName);
-    if (!target.id) {
-      const tag = target.tagName.toLowerCase();
-      const preferred = isHeading ? 'section-' + (targetIndex + 1) : sectionId + '-' + tag + '-' + blockIndex;
-      target.id = uniqueAnchorBlockId(seen, preferred);
-    } else {
-      seen.add(target.id);
-    }
     if (isHeading) {
-      sectionId = target.id;
-      blockIndex = 0;
+      const level = Number(target.tagName.slice(1));
+      while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
+      const parent = stack.length ? stack[stack.length - 1] : root;
+      parent.childCounter += 1;
+      stack.push({ level, number: parent.childCounter, childCounter: 0 });
+      if (target.id) {
+        seen.add(target.id);
+      } else {
+        const preferred = stack.map((entry) => entry.number).join('.');
+        target.id = uniqueAnchorBlockId(seen, preferred);
+      }
     } else {
-      blockIndex += 1;
+      const container = stack.length ? stack[stack.length - 1] : root;
+      container.childCounter += 1;
+      if (target.id) {
+        seen.add(target.id);
+      } else {
+        const preferred = stack.map((entry) => entry.number).concat(container.childCounter).join('.');
+        target.id = uniqueAnchorBlockId(seen, preferred);
+      }
     }
   });
 }
@@ -2890,7 +2910,10 @@ function ensureAnchorLinkTargets(body) {
 // GitHub style. Done in JS, after sanitized HTML is in the DOM, so it catches
 // raw-HTML blocks uniformly without parsing strings in Rust. The button is a
 // real anchor link to the target id, so bindDocumentLinks (run right after this)
-// wires it into the same in-document fragment navigation as a TOC link.
+// wires it into the same in-document fragment navigation as a TOC link. Clicking
+// it also copies that #locus to the clipboard (without blocking the jump) so the
+// canonical number can be pasted out — the only way to read the locus on touch,
+// where there is no hover tooltip to reveal it.
 function decorateAnchorLinks() {
   const body = app.querySelector('.document-body');
   if (!body) return;
@@ -2906,6 +2929,12 @@ function decorateAnchorLinks() {
     link.setAttribute('aria-label', label);
     link.title = label;
     link.innerHTML = ANCHOR_LINK_ICON;
+    link.addEventListener('click', () => {
+      copyToClipboard('#' + target.id);
+      link.classList.add('is-copied');
+      window.clearTimeout(link.__copiedTimer);
+      link.__copiedTimer = window.setTimeout(() => link.classList.remove('is-copied'), 900);
+    });
     target.classList.add('has-anchor-link');
     target.insertBefore(link, target.firstChild);
   });
@@ -2973,6 +3002,16 @@ function legacyCopy(text) {
   }
   document.body.removeChild(area);
   return copied;
+}
+// Copy arbitrary text, preferring the async clipboard API and falling back to the
+// hidden-textarea path for webview contexts where it is blocked. Used by the
+// gutter permalink so a tapped locus number can be pasted out.
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => { legacyCopy(text); });
+    return;
+  }
+  legacyCopy(text);
 }
 // Briefly show the check mark and a "Copied" label, then revert.
 function flashCodeCopied(button) {
@@ -3838,7 +3877,7 @@ fn locale_bootstrap_script() -> &'static str {
       'actions.closeTab': 'Close tab',
       'actions.copyCode': 'Copy code',
       'actions.copiedCode': 'Copied',
-      'actions.anchorLink': 'Link to this section',
+      'actions.anchorLink': 'Copy link to this spot',
       'actions.home': 'Home',
       'actions.home.title': 'Show recent files',
       'actions.forward': 'Forward',
@@ -3913,7 +3952,7 @@ fn locale_bootstrap_script() -> &'static str {
       'actions.closeTab': '关闭标签页',
       'actions.copyCode': '复制代码',
       'actions.copiedCode': '已复制',
-      'actions.anchorLink': '链接到此章节',
+      'actions.anchorLink': '复制此处的链接',
       'actions.home': '主页',
       'actions.home.title': '显示最近文件',
       'actions.open': '打开',
@@ -9053,6 +9092,13 @@ body.library-resizing {
   opacity: 1;
 }
 .document-body .heading-anchor:hover {
+  background: var(--app-action-hover-background);
+  color: var(--app-action-foreground);
+}
+/* Brief confirmation that a click copied the #locus: hold the button lit and
+   green for the timeout decorateAnchorLinks sets, even after the jump scrolls. */
+.document-body .heading-anchor.is-copied {
+  opacity: 1;
   background: var(--app-action-hover-background);
   color: var(--app-action-foreground);
 }
@@ -14551,8 +14597,27 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
         assert!(html.contains("target.id = uniqueAnchorBlockId(seen, preferred);"));
         assert!(html.contains("target.classList.contains('footnote-definition')"));
 
+        // Content-block ids are hierarchical "legal" locus numbers built from the
+        // block's position in the heading tree (1.3.2), not word/letter slugs.
+        // Headings and the blocks beside them share one sibling counter so they
+        // never collide; headings keep their existing slug id (slug links resolve)
+        // but still advance the counters that prefix their children.
+        assert!(html.contains("const root = { childCounter: 0 };"));
+        assert!(
+            html.contains("stack.push({ level, number: parent.childCounter, childCounter: 0 });")
+        );
+        assert!(html.contains("const preferred = stack.map((entry) => entry.number).concat(container.childCounter).join('.');"));
+
         // The button is a real anchor link to the target id.
         assert!(html.contains("link.href = '#' + encodeURIComponent(target.id)"));
+
+        // Clicking the gutter button copies its #locus so the canonical number can
+        // be pasted out — the way to read the locus on touch, where there is no
+        // hover tooltip. The jump still happens (the copy listener does not
+        // preventDefault), and a brief is-copied flash confirms the copy.
+        assert!(html.contains("function copyToClipboard(text)"));
+        assert!(html.contains("copyToClipboard('#' + target.id);"));
+        assert!(html.contains(".document-body .heading-anchor.is-copied {"));
 
         // Gutter button styling exists and stays out of the horizontal scroll.
         assert!(html.contains(".document-body .heading-anchor {"));

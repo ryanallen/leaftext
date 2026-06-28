@@ -305,6 +305,8 @@ An `id` on any block element creates a named anchor with a stable, author-contro
 
 Link to it from anywhere on the same page: `[Foreword](#foreword)`. Hovering the block (or the gutter slot next to it) reveals a permalink button in the left margin — the same affordance every content block gets automatically, with or without an explicit `id`.
 
+Each automatically-addressed block gets a hierarchical *locus number* as its address — its canonical position in the document tree, like `1.3.2` (the second block of the third sub-section of the first section). Headings and the blocks beside them share one sibling counter, so a paragraph and a neighbouring sub-heading never collide. Clicking a gutter permalink jumps to the block **and** copies its `#locus` to the clipboard, so you can paste the canonical number out — the way to read it on touch, where there is no hover tooltip. A block with an explicit author `id` keeps that id; headings keep their text slug so `#slug` links stay valid.
+
 `<br>` forces a line break inside a paragraph without starting a new block:
 
 Line one.<br>Same paragraph, next line.
