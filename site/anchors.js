@@ -1,11 +1,11 @@
 // anchors.js
 // ---------------------------------------------------------------------------
-// Shared permalink decoration for the public site and /docs. It addresses body
-// blocks the way a translated sutra is cited — chapter:verse (e.g. 1:42) — and
-// makes that the in-page link target, then injects a GitHub-style permalink
-// button (the chain glyph, revealed on hover) for each block. This mirrors the
-// desktop app's scheme in src/lib.rs, so a #locus copied from one lands in the
-// other.
+// Shared permalink decoration for the public site and /docs. It numbers each
+// block — body blocks as chapter.verse with a dot (e.g. 1.42), headings as
+// h<chapter>.<n> so the leading "h" tells them apart from body blocks — makes
+// that the in-page link target, then injects a GitHub-style permalink button
+// (the chain glyph, revealed on hover) for each block. This mirrors the desktop
+// app's scheme in src/lib.rs, so a #locus copied from one lands in the other.
 // ---------------------------------------------------------------------------
 
 const ANCHOR_LINK_ICON =
@@ -86,15 +86,18 @@ function assignLocus(target, locus, seen) {
   }
 }
 
-// Number the document the way a translated sutra is cited: chapter:verse, one
-// colon. Each top-level heading (h1) opens a chapter and takes that bare chapter
-// number. Every body block after it — paragraphs, quotes, content list items,
-// tables — is the next running verse in that chapter (1:1, 1:2, 1:3 …); the
-// verse counter runs straight through sub-headings and resets only at the next
-// chapter. Sub-headings (h2–h6) are unnumbered titles: they keep their slug id
-// for the table of contents and #slug links but take no verse. The navigation
-// outline (a list of link-only items) is skipped. Numbering is deterministic, so
-// the ids survive the re-render a fragment jump triggers.
+// Number the document so each block has a citable address. Each top-level
+// heading (h1) opens a chapter. Headings (h1–h6) are addressed h<chapter>.<n> —
+// the leading "h" marks them as headings, distinct from body blocks — where n
+// runs 1, 2, 3 … through the headings in that chapter and resets at the next h1.
+// Every body block after a heading — paragraphs, quotes, content list items,
+// tables — is the next running verse in that chapter: chapter.verse with a dot
+// (1.1, 1.2, 1.3 …); the verse counter runs straight through sub-headings and
+// resets only at the next chapter. A heading keeps the slug id the renderer gave
+// it (so the TOC and #slug links resolve) and carries its number through a
+// hidden alias. The navigation outline (a list of link-only items) is skipped.
+// Numbering is deterministic, so the ids survive the re-render a fragment jump
+// triggers.
 function ensureAnchorLinkTargets(root) {
   const seen = new Set(
     Array.from(root.querySelectorAll('[id]'))
@@ -103,6 +106,7 @@ function ensureAnchorLinkTargets(root) {
   );
   let chapter = 0;
   let verse = 0;
+  let headingNum = 0;
   root.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
     if (target.classList.contains('footnote-definition') || target.classList.contains('footnotes')) {
       return;
@@ -112,17 +116,16 @@ function ensureAnchorLinkTargets(root) {
     if (tag === 'H1') {
       chapter += 1;
       verse = 0;
-      assignLocus(target, String(chapter), seen);
+      headingNum = 1;
+      assignLocus(target, 'h' + chapter + '.' + headingNum, seen);
     } else if (/^H[2-6]$/.test(tag)) {
-      // Unnumbered title: keep its slug id so the TOC and #slug links resolve.
-      if (target.id) {
-        seen.add(target.id);
-        target.dataset.locus = target.id;
-      }
+      if (chapter === 0) chapter = 1;
+      headingNum += 1;
+      assignLocus(target, 'h' + chapter + '.' + headingNum, seen);
     } else {
       if (chapter === 0) chapter = 1;
       verse += 1;
-      assignLocus(target, chapter + ':' + verse, seen);
+      assignLocus(target, chapter + '.' + verse, seen);
     }
   });
 }

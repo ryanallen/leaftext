@@ -2894,20 +2894,23 @@ function assignLocus(target, locus, seen) {
     target.dataset.locus = target.id;
   }
 }
-// Number the document the way a translated sutra is cited: chapter:verse, one
-// colon. Each top-level heading (h1) opens a chapter and takes that bare chapter
-// number. Every body block after it — paragraphs, quotes, content list items,
-// tables — is the next running verse in that chapter (1:1, 1:2, 1:3 …); the
-// verse counter runs straight through sub-headings and resets only at the next
-// chapter. Sub-headings (h2–h6) are unnumbered titles: they keep the slug id the
-// renderer gave them so the TOC and #slug links resolve, but take no verse. The
-// navigation outline (a list of link-only items) is skipped. Numbering is
-// deterministic, so the ids survive the document re-render a fragment jump
-// triggers.
+// Number the document so each block has a citable address. Each top-level
+// heading (h1) opens a chapter. Headings (h1–h6) are addressed h<chapter>.<n> —
+// the leading "h" marks them as headings, distinct from body blocks — where n
+// runs 1, 2, 3 … through the headings in that chapter and resets at the next h1.
+// Every body block after a heading — paragraphs, quotes, content list items,
+// tables — is the next running verse in that chapter: chapter.verse with a dot
+// (1.1, 1.2, 1.3 …); the verse counter runs straight through sub-headings and
+// resets only at the next chapter. A heading keeps the slug id the renderer gave
+// it (so the TOC and #slug links resolve) and carries its number through a
+// hidden alias. The navigation outline (a list of link-only items) is skipped.
+// Numbering is deterministic, so the ids survive the document re-render a
+// fragment jump triggers.
 function ensureAnchorLinkTargets(body) {
   const seen = new Set(Array.from(body.querySelectorAll('[id]')).map((element) => element.id).filter(Boolean));
   let chapter = 0;
   let verse = 0;
+  let headingNum = 0;
   body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
     if (target.classList.contains('footnote-definition')) return;
     if (isNavOutlineItem(target)) return;
@@ -2915,17 +2918,16 @@ function ensureAnchorLinkTargets(body) {
     if (tag === 'H1') {
       chapter += 1;
       verse = 0;
-      assignLocus(target, String(chapter), seen);
+      headingNum = 1;
+      assignLocus(target, 'h' + chapter + '.' + headingNum, seen);
     } else if (/^H[2-6]$/.test(tag)) {
-      // Unnumbered title: keep its slug id so the TOC and #slug links resolve.
-      if (target.id) {
-        seen.add(target.id);
-        target.dataset.locus = target.id;
-      }
+      if (chapter === 0) chapter = 1;
+      headingNum += 1;
+      assignLocus(target, 'h' + chapter + '.' + headingNum, seen);
     } else {
       if (chapter === 0) chapter = 1;
       verse += 1;
-      assignLocus(target, chapter + ':' + verse, seen);
+      assignLocus(target, chapter + '.' + verse, seen);
     }
   });
 }
@@ -14629,15 +14631,16 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
         assert!(html.contains("target.id = uniqueAnchorBlockId(seen, locus);"));
         assert!(html.contains("target.classList.contains('footnote-definition')"));
 
-        // Body blocks are numbered the way a sutra is cited: chapter:verse, one
-        // colon. An h1 opens a chapter and takes the bare chapter number; every
-        // following body block is the next running verse (1:1, 1:2, …); the verse
-        // counter runs through sub-headings and resets at the next chapter.
-        // Sub-headings (h2–h6) are unnumbered titles that keep their slug id, and
-        // the navigation outline (link-only list items) is skipped.
+        // Body blocks are numbered chapter.verse with a dot: an h1 opens a
+        // chapter, and every following body block is the next running verse (1.1,
+        // 1.2, …); the verse counter runs through sub-headings and resets at the
+        // next chapter. Headings (h1–h6) are numbered h<chapter>.<n> so the
+        // leading "h" tells them apart from body blocks, and the navigation
+        // outline (link-only list items) is skipped.
         assert!(html.contains("let chapter = 0;"));
         assert!(html.contains("if (tag === 'H1') {"));
-        assert!(html.contains("assignLocus(target, chapter + ':' + verse, seen);"));
+        assert!(html.contains("assignLocus(target, 'h' + chapter + '.' + headingNum, seen);"));
+        assert!(html.contains("assignLocus(target, chapter + '.' + verse, seen);"));
         assert!(html.contains("function isNavOutlineItem(el)"));
 
         // The button is a real anchor link to the block's locus (dataset.locus).
