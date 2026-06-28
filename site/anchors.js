@@ -130,6 +130,21 @@ function ensureAnchorLinkTargets(root) {
   });
 }
 
+// Build the shareable URL for a block — the one that must resolve when pasted
+// into a browser. On a single-page reader the fragment is the whole address
+// (#<locus>). On the hash-routed docs viewer the address is #/<route>#<locus>,
+// so keep the current route and append the locus as its section anchor, exactly
+// as the viewer rewrites the URL bar when the link is clicked. Without this the
+// copied link would drop the route and land on the docs home instead.
+function locusShareUrl(locus) {
+  const hash = location.hash || '';
+  if (hash.startsWith('#/')) {
+    const route = hash.split('#').slice(0, 2).join('#'); // '#/<route>', minus any stale anchor
+    return location.origin + location.pathname + route + '#' + locus;
+  }
+  return location.origin + location.pathname + location.search + '#' + encodeURIComponent(locus);
+}
+
 export function decorateAnchorLinks(root, label = 'Link to this section') {
   if (!root) return;
   ensureAnchorLinkTargets(root);
@@ -149,8 +164,7 @@ export function decorateAnchorLinks(root, label = 'Link to this section') {
     // Clicking copies the full deep link to this block (the canonical citation)
     // without blocking the in-page jump, and a brief is-copied flash confirms it.
     link.addEventListener('click', () => {
-      const url = location.origin + location.pathname + location.search + '#' + encodeURIComponent(locus);
-      copyAnchorLink(url);
+      copyAnchorLink(locusShareUrl(locus));
       link.classList.add('is-copied');
       window.clearTimeout(link.__copiedTimer);
       link.__copiedTimer = window.setTimeout(() => link.classList.remove('is-copied'), 900);
