@@ -2864,57 +2864,68 @@ function uniqueAnchorBlockId(seen, base) {
   seen.add(candidate);
   return candidate;
 }
-// Address every anchor-addressable block with a hierarchical "legal" locus
-// number — its canonical position in the document tree, e.g. 1.3.2 = the second
-// block of the third sub-section of the first section. Headings open and nest
-// sections; every block (headings included) is a child of the currently open
-// section and consumes that section's next sibling number, so a paragraph and
-// the sub-heading next to it can never land on the same number. Content blocks
-// take their locus as the id, replacing the old word/letter slugs (top-p-0).
-// Headings keep the slug id the renderer gave them — the TOC and author-written
-// #slug links resolve against it — but they still advance the sibling counters
-// that prefix their children's numbers, and they also get the locus: it is
-// recorded on the block (dataset.locus) and exposed through a hidden alias
-// anchor, so #<locus> reaches the heading too and the gutter can print its
-// number. Numbering is deterministic, so the ids survive the document re-render
-// that a fragment jump triggers.
+// A list item that is purely a link (or links) is a table-of-contents /
+// navigation entry, not body content, so it takes no verse number.
+function isNavOutlineItem(el) {
+  if (el.tagName !== 'LI') return false;
+  const text = (el.textContent || '').replace(/\s+/g, '');
+  if (!text) return false;
+  let linkText = '';
+  el.querySelectorAll('a').forEach((a) => {
+    linkText += a.textContent || '';
+  });
+  return text === linkText.replace(/\s+/g, '');
+}
+// Give `target` the address `locus`: if it already has an id (a heading slug or
+// an author anchor) keep that id and add a hidden alias carrying the locus, so
+// #<locus> still lands on it; otherwise the locus becomes the id. Either way the
+// locus is recorded on dataset.locus for the gutter permalink.
+function assignLocus(target, locus, seen) {
+  if (target.id) {
+    seen.add(target.id);
+    const alias = document.createElement('span');
+    alias.className = 'locus-alias';
+    alias.id = uniqueAnchorBlockId(seen, locus);
+    alias.setAttribute('aria-hidden', 'true');
+    target.insertBefore(alias, target.firstChild);
+    target.dataset.locus = alias.id;
+  } else {
+    target.id = uniqueAnchorBlockId(seen, locus);
+    target.dataset.locus = target.id;
+  }
+}
+// Number the document the way a translated sutra is cited: chapter:verse, one
+// colon. Each top-level heading (h1) opens a chapter and takes that bare chapter
+// number. Every body block after it — paragraphs, quotes, content list items,
+// tables — is the next running verse in that chapter (1:1, 1:2, 1:3 …); the
+// verse counter runs straight through sub-headings and resets only at the next
+// chapter. Sub-headings (h2–h6) are unnumbered titles: they keep the slug id the
+// renderer gave them so the TOC and #slug links resolve, but take no verse. The
+// navigation outline (a list of link-only items) is skipped. Numbering is
+// deterministic, so the ids survive the document re-render a fragment jump
+// triggers.
 function ensureAnchorLinkTargets(body) {
   const seen = new Set(Array.from(body.querySelectorAll('[id]')).map((element) => element.id).filter(Boolean));
-  const root = { childCounter: 0 };
-  const stack = []; // the open heading chain: [{ level, number, childCounter }]
+  let chapter = 0;
+  let verse = 0;
   body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
     if (target.classList.contains('footnote-definition')) return;
-    const isHeading = /^H[1-6]$/.test(target.tagName);
-    if (isHeading) {
-      const level = Number(target.tagName.slice(1));
-      while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
-      const parent = stack.length ? stack[stack.length - 1] : root;
-      parent.childCounter += 1;
-      stack.push({ level, number: parent.childCounter, childCounter: 0 });
-      const preferred = stack.map((entry) => entry.number).join('.');
+    if (isNavOutlineItem(target)) return;
+    const tag = target.tagName;
+    if (tag === 'H1') {
+      chapter += 1;
+      verse = 0;
+      assignLocus(target, String(chapter), seen);
+    } else if (/^H[2-6]$/.test(tag)) {
+      // Unnumbered title: keep its slug id so the TOC and #slug links resolve.
       if (target.id) {
         seen.add(target.id);
-        const alias = document.createElement('span');
-        alias.className = 'locus-alias';
-        alias.id = uniqueAnchorBlockId(seen, preferred);
-        alias.setAttribute('aria-hidden', 'true');
-        target.insertBefore(alias, target.firstChild);
-        target.dataset.locus = alias.id;
-      } else {
-        target.id = uniqueAnchorBlockId(seen, preferred);
         target.dataset.locus = target.id;
       }
     } else {
-      const container = stack.length ? stack[stack.length - 1] : root;
-      container.childCounter += 1;
-      if (target.id) {
-        seen.add(target.id);
-        target.dataset.locus = target.id;
-      } else {
-        const preferred = stack.map((entry) => entry.number).concat(container.childCounter).join('.');
-        target.id = uniqueAnchorBlockId(seen, preferred);
-        target.dataset.locus = target.id;
-      }
+      if (chapter === 0) chapter = 1;
+      verse += 1;
+      assignLocus(target, chapter + ':' + verse, seen);
     }
   });
 }
@@ -2941,12 +2952,7 @@ function decorateAnchorLinks() {
     link.href = '#' + encodeURIComponent(locus);
     link.setAttribute('aria-label', label);
     link.title = label;
-    // Print the locus the way a sutra prints its paragraph number ("1.3.2"),
-    // not a chain glyph.
-    const num = document.createElement('span');
-    num.className = 'anchor-num';
-    num.textContent = locus;
-    link.appendChild(num);
+    link.innerHTML = ANCHOR_LINK_ICON;
     link.addEventListener('click', () => {
       copyToClipboard('#' + locus);
       link.classList.add('is-copied');
@@ -9086,28 +9092,16 @@ body.library-resizing {
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  min-width: 40px;
+  justify-content: center;
+  width: 40px;
   height: 40px;
-  padding: 0 6px;
   border-radius: 8px;
   background: transparent;
   color: var(--preview-muted-foreground);
-  /* Printed sutras keep the paragraph number always in the margin; show it
-     faintly at rest and brighten it on hover/focus. */
-  opacity: 0.4;
+  opacity: 0;
   pointer-events: auto;
   user-select: none;
   transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
-}
-/* The locus the gutter prints, sutra style: small, muted, tabular so the dotted
-   numbers line up down the margin. */
-.document-body .anchor-num {
-  font-size: 0.72em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  pointer-events: none;
 }
 /* A zero-size alias that carries a heading's #locus without disturbing its
    layout (the heading keeps its slug id for the table of contents). */
@@ -14632,28 +14626,29 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
         // their own back-reference) are excluded.
         assert!(html.contains("const ANCHOR_LINK_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]'"));
         assert!(html.contains("function ensureAnchorLinkTargets(body)"));
-        assert!(html.contains("target.id = uniqueAnchorBlockId(seen, preferred);"));
+        assert!(html.contains("target.id = uniqueAnchorBlockId(seen, locus);"));
         assert!(html.contains("target.classList.contains('footnote-definition')"));
 
-        // Content-block ids are hierarchical "legal" locus numbers built from the
-        // block's position in the heading tree (1.3.2), not word/letter slugs.
-        // Headings and the blocks beside them share one sibling counter so they
-        // never collide; headings keep their existing slug id (slug links resolve)
-        // but still advance the counters that prefix their children.
-        assert!(html.contains("const root = { childCounter: 0 };"));
-        assert!(
-            html.contains("stack.push({ level, number: parent.childCounter, childCounter: 0 });")
-        );
-        assert!(html.contains("const preferred = stack.map((entry) => entry.number).concat(container.childCounter).join('.');"));
+        // Body blocks are numbered the way a sutra is cited: chapter:verse, one
+        // colon. An h1 opens a chapter and takes the bare chapter number; every
+        // following body block is the next running verse (1:1, 1:2, …); the verse
+        // counter runs through sub-headings and resets at the next chapter.
+        // Sub-headings (h2–h6) are unnumbered titles that keep their slug id, and
+        // the navigation outline (link-only list items) is skipped.
+        assert!(html.contains("let chapter = 0;"));
+        assert!(html.contains("if (tag === 'H1') {"));
+        assert!(html.contains("assignLocus(target, chapter + ':' + verse, seen);"));
+        assert!(html.contains("function isNavOutlineItem(el)"));
 
-        // The button is a real anchor link to the block's locus. Headings keep a
-        // slug id for the TOC, so the link targets the recorded locus (dataset),
-        // which a hidden alias anchor resolves, not the element id.
+        // The button is a real anchor link to the block's locus (dataset.locus).
+        // A block that already has an id (an h1 chapter, an author anchor) keeps
+        // it, and a hidden alias anchor resolves #<locus>, so the link can target
+        // the verse without disturbing the element's own id.
         assert!(html.contains("link.href = '#' + encodeURIComponent(locus)"));
 
-        // The gutter prints the locus the way a sutra prints a paragraph number
-        // ("p1.3.2"), and a hidden alias carries a heading's locus.
-        assert!(html.contains("num.textContent = locus;"));
+        // The gutter button shows the chain glyph (revealed on hover); a hidden
+        // alias carries the locus for blocks that already have an id.
+        assert!(html.contains("link.innerHTML = ANCHOR_LINK_ICON;"));
         assert!(html.contains("alias.className = 'locus-alias';"));
 
         // Clicking the gutter button copies its #locus so the canonical number can

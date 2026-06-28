@@ -624,27 +624,15 @@ body {
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  min-width: 40px;
+  justify-content: center;
+  width: 40px;
   height: 40px;
-  padding: 0 6px;
   border-radius: 8px;
   background: transparent;
   color: var(--text-muted);
-  /* Printed sutras keep the paragraph number always in the margin; show it
-     faintly at rest and brighten it on hover/focus. */
-  opacity: 0.4;
+  opacity: 0;
   user-select: none;
   transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
-}
-/* The locus the gutter prints, sutra style: small, muted, tabular so the dotted
-   numbers line up down the margin. */
-.markdown-body .anchor-num {
-  font-size: 0.72em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  pointer-events: none;
 }
 /* A zero-size alias that carries a heading's #locus without disturbing its
    layout (the heading keeps its slug id for the table of contents). */
