@@ -852,6 +852,12 @@ body {
   font-size: 0.85em;
   color: var(--text-muted);
 }
+/* Footnotes are numbered notes, not an outline: keep them Arabic (1, 2, 3) to
+   match the inline superscript references and APA/MLA/Chicago style, overriding
+   the upper-roman default used for ordinary ordered lists. */
+.markdown-body .footnotes > ol {
+  list-style-type: decimal;
+}
 .markdown-body .footnotes hr {
   margin-top: 32px;
 }
