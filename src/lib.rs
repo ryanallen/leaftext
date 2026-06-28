@@ -2873,8 +2873,11 @@ function uniqueAnchorBlockId(seen, base) {
 // take their locus as the id, replacing the old word/letter slugs (top-p-0).
 // Headings keep the slug id the renderer gave them — the TOC and author-written
 // #slug links resolve against it — but they still advance the sibling counters
-// that prefix their children's numbers. Numbering is deterministic, so the ids
-// survive the document re-render that a fragment jump triggers.
+// that prefix their children's numbers, and they also get the locus: it is
+// recorded on the block (dataset.locus) and exposed through a hidden alias
+// anchor, so #<locus> reaches the heading too and the gutter can print its
+// number. Numbering is deterministic, so the ids survive the document re-render
+// that a fragment jump triggers.
 function ensureAnchorLinkTargets(body) {
   const seen = new Set(Array.from(body.querySelectorAll('[id]')).map((element) => element.id).filter(Boolean));
   const root = { childCounter: 0 };
@@ -2888,20 +2891,29 @@ function ensureAnchorLinkTargets(body) {
       const parent = stack.length ? stack[stack.length - 1] : root;
       parent.childCounter += 1;
       stack.push({ level, number: parent.childCounter, childCounter: 0 });
+      const preferred = stack.map((entry) => entry.number).join('.');
       if (target.id) {
         seen.add(target.id);
+        const alias = document.createElement('span');
+        alias.className = 'locus-alias';
+        alias.id = uniqueAnchorBlockId(seen, preferred);
+        alias.setAttribute('aria-hidden', 'true');
+        target.insertBefore(alias, target.firstChild);
+        target.dataset.locus = alias.id;
       } else {
-        const preferred = stack.map((entry) => entry.number).join('.');
         target.id = uniqueAnchorBlockId(seen, preferred);
+        target.dataset.locus = target.id;
       }
     } else {
       const container = stack.length ? stack[stack.length - 1] : root;
       container.childCounter += 1;
       if (target.id) {
         seen.add(target.id);
+        target.dataset.locus = target.id;
       } else {
         const preferred = stack.map((entry) => entry.number).concat(container.childCounter).join('.');
         target.id = uniqueAnchorBlockId(seen, preferred);
+        target.dataset.locus = target.id;
       }
     }
   });
@@ -2920,17 +2932,23 @@ function decorateAnchorLinks() {
   ensureAnchorLinkTargets(body);
   const label = window.leafLocale.t('actions.anchorLink');
   body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
-    if (!target.id) return;
+    const locus = target.dataset.locus;
+    if (!locus) return;
     if (target.classList.contains('footnote-definition')) return;
     if (target.querySelector(':scope > .heading-anchor')) return;
     const link = document.createElement('a');
     link.className = 'heading-anchor';
-    link.href = '#' + encodeURIComponent(target.id);
+    link.href = '#' + encodeURIComponent(locus);
     link.setAttribute('aria-label', label);
     link.title = label;
-    link.innerHTML = ANCHOR_LINK_ICON;
+    // Print the locus the way a sutra prints its paragraph number ("1.3.2"),
+    // not a chain glyph.
+    const num = document.createElement('span');
+    num.className = 'anchor-num';
+    num.textContent = locus;
+    link.appendChild(num);
     link.addEventListener('click', () => {
-      copyToClipboard('#' + target.id);
+      copyToClipboard('#' + locus);
       link.classList.add('is-copied');
       window.clearTimeout(link.__copiedTimer);
       link.__copiedTimer = window.setTimeout(() => link.classList.remove('is-copied'), 900);
@@ -9068,16 +9086,36 @@ body.library-resizing {
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 40px;
+  justify-content: flex-end;
+  min-width: 40px;
   height: 40px;
+  padding: 0 6px;
   border-radius: 8px;
   background: transparent;
   color: var(--preview-muted-foreground);
-  opacity: 0;
+  /* Printed sutras keep the paragraph number always in the margin; show it
+     faintly at rest and brighten it on hover/focus. */
+  opacity: 0.4;
   pointer-events: auto;
   user-select: none;
   transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+/* The locus the gutter prints, sutra style: small, muted, tabular so the dotted
+   numbers line up down the margin. */
+.document-body .anchor-num {
+  font-size: 0.72em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+/* A zero-size alias that carries a heading's #locus without disturbing its
+   layout (the heading keeps its slug id for the table of contents). */
+.document-body .locus-alias {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 /* Anchorable blocks nest (a list item lives inside its parent list item, a
    paragraph inside its blockquote), so hovering a deep block also hovers every
@@ -14608,15 +14646,22 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
         );
         assert!(html.contains("const preferred = stack.map((entry) => entry.number).concat(container.childCounter).join('.');"));
 
-        // The button is a real anchor link to the target id.
-        assert!(html.contains("link.href = '#' + encodeURIComponent(target.id)"));
+        // The button is a real anchor link to the block's locus. Headings keep a
+        // slug id for the TOC, so the link targets the recorded locus (dataset),
+        // which a hidden alias anchor resolves, not the element id.
+        assert!(html.contains("link.href = '#' + encodeURIComponent(locus)"));
+
+        // The gutter prints the locus the way a sutra prints a paragraph number
+        // ("p1.3.2"), and a hidden alias carries a heading's locus.
+        assert!(html.contains("num.textContent = locus;"));
+        assert!(html.contains("alias.className = 'locus-alias';"));
 
         // Clicking the gutter button copies its #locus so the canonical number can
         // be pasted out — the way to read the locus on touch, where there is no
         // hover tooltip. The jump still happens (the copy listener does not
         // preventDefault), and a brief is-copied flash confirms the copy.
         assert!(html.contains("function copyToClipboard(text)"));
-        assert!(html.contains("copyToClipboard('#' + target.id);"));
+        assert!(html.contains("copyToClipboard('#' + locus);"));
         assert!(html.contains(".document-body .heading-anchor.is-copied {"));
 
         // Gutter button styling exists and stays out of the horizontal scroll.

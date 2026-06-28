@@ -1,12 +1,13 @@
 // anchors.js
 // ---------------------------------------------------------------------------
-// Shared permalink decoration for the public site and /docs. It assigns stable
-// ids to anchorable content blocks that do not already have one, then injects a
-// GitHub-style gutter link for each target.
+// Shared permalink decoration for the public site and /docs. It addresses every
+// anchorable content block with a hierarchical "locus" number (its position in
+// the document tree, e.g. 1.3.2), prints that number in the left gutter the way
+// a printed sutra prints paragraph numbers, and makes it the in-page link
+// target. This mirrors the desktop app's scheme in src/lib.rs, so a #locus
+// copied from one lands in the other.
 // ---------------------------------------------------------------------------
 
-const ANCHOR_LINK_ICON =
-  '<svg class="anchor-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"/></svg>';
 // `pre:not(.mermaid)` deliberately excludes Mermaid diagram fences: a permalink
 // gutter link makes no sense on a diagram, and inserting one as the pre's first
 // child corrupts the source Mermaid reads from innerHTML (it then sees no
@@ -25,33 +26,90 @@ function uniqueAnchorBlockId(seen, base) {
   return candidate;
 }
 
+// Copy text via the async clipboard API, falling back to a hidden textarea +
+// execCommand where the async API is unavailable (e.g. a non-secure context).
+function copyAnchorLink(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => legacyCopyAnchor(text));
+    return;
+  }
+  legacyCopyAnchor(text);
+}
+function legacyCopyAnchor(text) {
+  const area = document.createElement('textarea');
+  area.value = text;
+  area.setAttribute('aria-hidden', 'true');
+  area.style.position = 'fixed';
+  area.style.top = '-1000px';
+  area.style.opacity = '0';
+  document.body.appendChild(area);
+  area.select();
+  try {
+    document.execCommand('copy');
+  } catch (error) {
+    /* clipboard unavailable; the fragment jump still happens */
+  }
+  document.body.removeChild(area);
+}
+
+// Address every anchor-addressable block with a hierarchical "legal" locus
+// number — its canonical position in the document tree, e.g. 1.3.2 = the second
+// block of the third sub-section of the first section. Headings open and nest
+// sections; every block (headings included) is a child of the currently open
+// section and consumes that section's next sibling number, so a paragraph and
+// the sub-heading next to it can never land on the same number. Content blocks
+// take their locus as the id, replacing the old word/letter slugs (slug-p-0).
+// Headings keep the slug id the renderer gave them — the table of contents and
+// author-written #slug links resolve against it — but they also get the locus:
+// it is recorded on the block (dataset.locus) and exposed through a hidden alias
+// anchor, so #<locus> jumps to the heading too. Numbering is deterministic, so
+// the ids survive the re-render a fragment jump triggers.
 function ensureAnchorLinkTargets(root) {
   const seen = new Set(
     Array.from(root.querySelectorAll('[id]'))
       .map((element) => element.id)
       .filter(Boolean)
   );
-  let sectionId = 'top';
-  let blockIndex = 0;
-  root.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target, targetIndex) => {
+  const treeRoot = { childCounter: 0 };
+  const stack = []; // the open heading chain: [{ level, number, childCounter }]
+  root.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
     if (target.classList.contains('footnote-definition') || target.classList.contains('footnotes')) {
       return;
     }
     const isHeading = /^H[1-6]$/.test(target.tagName);
-    if (!target.id) {
-      const tag = target.tagName.toLowerCase();
-      const preferred = isHeading
-        ? 'section-' + (targetIndex + 1)
-        : sectionId + '-' + tag + '-' + blockIndex;
-      target.id = uniqueAnchorBlockId(seen, preferred);
-    } else {
-      seen.add(target.id);
-    }
     if (isHeading) {
-      sectionId = target.id;
-      blockIndex = 0;
+      const level = Number(target.tagName.slice(1));
+      while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
+      const parent = stack.length ? stack[stack.length - 1] : treeRoot;
+      parent.childCounter += 1;
+      stack.push({ level, number: parent.childCounter, childCounter: 0 });
+      const locus = stack.map((entry) => entry.number).join('.');
+      if (target.id) {
+        // Keep the slug id; expose the locus through a hidden alias anchor so
+        // both #slug and #<locus> resolve to this heading.
+        seen.add(target.id);
+        const aliasId = uniqueAnchorBlockId(seen, locus);
+        const alias = document.createElement('span');
+        alias.className = 'locus-alias';
+        alias.id = aliasId;
+        alias.setAttribute('aria-hidden', 'true');
+        target.insertBefore(alias, target.firstChild);
+        target.dataset.locus = aliasId;
+      } else {
+        target.id = uniqueAnchorBlockId(seen, locus);
+        target.dataset.locus = target.id;
+      }
     } else {
-      blockIndex += 1;
+      const container = stack.length ? stack[stack.length - 1] : treeRoot;
+      container.childCounter += 1;
+      if (target.id) {
+        seen.add(target.id);
+        target.dataset.locus = target.id;
+      } else {
+        const locus = stack.map((entry) => entry.number).concat(container.childCounter).join('.');
+        target.id = uniqueAnchorBlockId(seen, locus);
+        target.dataset.locus = target.id;
+      }
     }
   });
 }
@@ -60,17 +118,31 @@ export function decorateAnchorLinks(root, label = 'Link to this section') {
   if (!root) return;
   ensureAnchorLinkTargets(root);
   root.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
-    if (!target.id) return;
+    const locus = target.dataset.locus;
+    if (!locus) return;
     if (target.classList.contains('footnote-definition') || target.classList.contains('footnotes')) {
       return;
     }
     if (target.querySelector(':scope > .anchor-link')) return;
     const link = document.createElement('a');
     link.className = 'anchor-link';
-    link.href = '#' + encodeURIComponent(target.id);
+    link.href = '#' + encodeURIComponent(locus);
     link.setAttribute('aria-label', label);
     link.title = label;
-    link.innerHTML = ANCHOR_LINK_ICON;
+    // Print the locus the way a sutra prints its paragraph number: "1.3.2".
+    const num = document.createElement('span');
+    num.className = 'anchor-num';
+    num.textContent = locus;
+    link.appendChild(num);
+    // Clicking copies the full deep link to this block (the canonical citation)
+    // without blocking the in-page jump, and a brief is-copied flash confirms it.
+    link.addEventListener('click', () => {
+      const url = location.origin + location.pathname + location.search + '#' + encodeURIComponent(locus);
+      copyAnchorLink(url);
+      link.classList.add('is-copied');
+      window.clearTimeout(link.__copiedTimer);
+      link.__copiedTimer = window.setTimeout(() => link.classList.remove('is-copied'), 900);
+    });
     target.classList.add('has-anchor-link');
     target.insertBefore(link, target.firstChild);
   });

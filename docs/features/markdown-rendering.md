@@ -35,7 +35,7 @@ All six ATX heading levels render:
 ##### H5 heading
 ###### H6 heading
 
-Every heading gets a slug `id`. Every other content block — paragraphs, list items, blockquotes, code blocks, tables, and more — gets a stable auto-assigned `id` too. Hover any block, or the gutter spot beside it, to reveal a permalink button in the left margin; clicking it jumps to that exact block. On touch devices, which have no hover, the button stays faintly visible in the margin beside every block and brightens when tapped. Blocks with an explicit author-supplied `id` work the same way — see [Inline HTML](#inline-html).
+Every heading gets a slug `id`. Every other content block — paragraphs, list items, blockquotes, code blocks, tables, and more — gets a stable auto-assigned `id` too. Each block's number is printed faintly in the left margin, the way a printed sutra numbers its paragraphs; clicking it jumps to that exact block. The number brightens on hover or tap and stays visible on touch devices, which have no hover. Blocks with an explicit author-supplied `id` work the same way — see [Inline HTML](#inline-html).
 
 ## Text formatting
 
@@ -303,9 +303,9 @@ An `id` on any block element creates a named anchor with a stable, author-contro
 
 <h1 id="foreword" align="center">Foreword</h1>
 
-Link to it from anywhere on the same page: `[Foreword](#foreword)`. Hovering the block (or the gutter slot next to it) reveals a permalink button in the left margin — the same affordance every content block gets automatically, with or without an explicit `id`.
+Link to it from anywhere on the same page: `[Foreword](#foreword)`. The block's number, printed in the left margin, is a permalink to it — the same affordance every content block gets automatically, with or without an explicit `id`.
 
-Each automatically-addressed block gets a hierarchical *locus number* as its address — its canonical position in the document tree, like `1.3.2` (the second block of the third sub-section of the first section). Headings and the blocks beside them share one sibling counter, so a paragraph and a neighbouring sub-heading never collide. Clicking a gutter permalink jumps to the block **and** copies its `#locus` to the clipboard, so you can paste the canonical number out — the way to read it on touch, where there is no hover tooltip. A block with an explicit author `id` keeps that id; headings keep their text slug so `#slug` links stay valid.
+Each automatically-addressed block gets a hierarchical *locus number* as its address — its canonical position in the document tree, like `1.3.2` (the second block of the third sub-section of the first section). Headings and the blocks beside them share one sibling counter, so a paragraph and a neighbouring sub-heading never collide. The margin prints this number, sutra style; clicking it jumps to the block **and** copies its `#locus` to the clipboard, so you can paste the canonical number out — the way to read it on touch, where there is no hover tooltip. A block with an explicit author `id` keeps that id; headings are numbered too but also keep their text slug (carried by a hidden alias), so `#slug` links stay valid.
 
 `<br>` forces a line break inside a paragraph without starting a new block:
 
