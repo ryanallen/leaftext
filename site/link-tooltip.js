@@ -12,6 +12,14 @@ function decodePart(raw) {
   }
 }
 
+// What to print as the tooltip's detail line. The authored href may be
+// percent-encoded (a heading slug with diacritics becomes `#%C5%9B...`), which
+// is unreadable, so decode it for display and fall back to the raw href if it
+// is not valid percent-encoding.
+function detailText(rawHref) {
+  return decodePart(rawHref);
+}
+
 function glossaryAnchor(href) {
   if (!href) return '';
   const scheme = /^glossary:(.*)$/i.exec(href);
@@ -40,7 +48,7 @@ function describeLink(link) {
   if (/^glossary:\s*$/i.test(rawHref)) {
     return {
       kind: 'Full glossary',
-      detail: rawHref,
+      detail: detailText(rawHref),
     };
   }
 
@@ -48,7 +56,7 @@ function describeLink(link) {
   if (glossary) {
     return {
       kind: 'Glossary entry',
-      detail: rawHref,
+      detail: detailText(rawHref),
     };
   }
 
@@ -56,42 +64,42 @@ function describeLink(link) {
   if (fragment) {
     return {
       kind: 'In-page jump',
-      detail: rawHref,
+      detail: detailText(rawHref),
     };
   }
 
   if (/^mailto:/i.test(rawHref)) {
     return {
       kind: 'Email link',
-      detail: rawHref,
+      detail: detailText(rawHref),
     };
   }
 
   if (/^https?:\/\//i.test(rawHref)) {
     return {
       kind: 'External site',
-      detail: rawHref,
+      detail: detailText(rawHref),
     };
   }
 
   if (/^[a-z][a-z0-9+.-]*:/i.test(rawHref)) {
     return {
       kind: 'App link',
-      detail: rawHref,
+      detail: detailText(rawHref),
     };
   }
 
   if (/\.md(?:[#?].*)?$/i.test(rawHref)) {
     return {
       kind: 'Another page',
-      detail: rawHref,
+      detail: detailText(rawHref),
     };
   }
 
   if (rawHref.startsWith('/')) {
     return {
       kind: 'Site path',
-      detail: rawHref,
+      detail: detailText(rawHref),
     };
   }
 

@@ -1,11 +1,13 @@
 // anchors.js
 // ---------------------------------------------------------------------------
-// Shared permalink decoration for the public site and /docs. It numbers each
-// block — body blocks as chapter.verse with a dot (e.g. 1.42), headings as
-// h<chapter>.<n> so the leading "h" tells them apart from body blocks — makes
-// that the in-page link target, then injects a GitHub-style permalink button
-// (the chain glyph, revealed on hover) for each block. This mirrors the desktop
-// app's scheme in src/lib.rs, so a #locus copied from one lands in the other.
+// Shared permalink decoration for the public site and /docs. It gives each block
+// a stable id from its place in the document — a heading keeps the slug the
+// renderer made from its text (its content), and every body block after it takes
+// that heading's slug plus its running position in the section
+// (e.g. going-forth-p-3) — makes that the in-page link target, then injects a
+// GitHub-style permalink button (the chain glyph, revealed on hover) for each
+// block. This mirrors the desktop app's scheme in src/lib.rs, so a #locus copied
+// from one lands in the other.
 // ---------------------------------------------------------------------------
 
 const ANCHOR_LINK_ICON =
@@ -54,78 +56,42 @@ function legacyCopyAnchor(text) {
   document.body.removeChild(area);
 }
 
-// A list item that is purely a link (or links) is a table-of-contents /
-// navigation entry, not body content, so it takes no verse number.
-function isNavOutlineItem(el) {
-  if (el.tagName !== 'LI') return false;
-  const text = (el.textContent || '').replace(/\s+/g, '');
-  if (!text) return false;
-  let linkText = '';
-  el.querySelectorAll('a').forEach((a) => {
-    linkText += a.textContent || '';
-  });
-  return text === linkText.replace(/\s+/g, '');
-}
-
-// Give `target` the address `locus`: if it already has an id (a heading slug or
-// an author anchor) keep that id and add a hidden alias carrying the locus, so
-// #<locus> still lands on it; otherwise the locus becomes the id. Either way the
-// locus is recorded on dataset.locus for the gutter permalink.
-function assignLocus(target, locus, seen) {
-  if (target.id) {
-    seen.add(target.id);
-    const alias = document.createElement('span');
-    alias.className = 'locus-alias';
-    alias.id = uniqueAnchorBlockId(seen, locus);
-    alias.setAttribute('aria-hidden', 'true');
-    target.insertBefore(alias, target.firstChild);
-    target.dataset.locus = alias.id;
-  } else {
-    target.id = uniqueAnchorBlockId(seen, locus);
-    target.dataset.locus = target.id;
-  }
-}
-
-// Number the document so each block has a citable address. Each top-level
-// heading (h1) opens a chapter. Headings (h1–h6) are addressed h<chapter>.<n> —
-// the leading "h" marks them as headings, distinct from body blocks — where n
-// runs 1, 2, 3 … through the headings in that chapter and resets at the next h1.
-// Every body block after a heading — paragraphs, quotes, content list items,
-// tables — is the next running verse in that chapter: chapter.verse with a dot
-// (1.1, 1.2, 1.3 …); the verse counter runs straight through sub-headings and
-// resets only at the next chapter. A heading keeps the slug id the renderer gave
-// it (so the TOC and #slug links resolve) and carries its number through a
-// hidden alias. The navigation outline (a list of link-only items) is skipped.
-// Numbering is deterministic, so the ids survive the re-render a fragment jump
-// triggers.
+// Give every anchor-addressable block a stable id so it has a citable address,
+// then record that id on dataset.locus for the gutter permalink. A heading keeps
+// the slug id the renderer gave it (its text content) so the table of contents
+// and author-written #slug links resolve; a heading with no slug falls back to
+// section-<n>. Every body block after a heading takes that heading's slug plus
+// its running position in the section (<section>-<tag>-<index>), so paragraphs
+// are numbered under their heading. Numbering is deterministic, so the ids
+// survive the re-render a fragment jump triggers.
 function ensureAnchorLinkTargets(root) {
   const seen = new Set(
     Array.from(root.querySelectorAll('[id]'))
       .map((element) => element.id)
       .filter(Boolean)
   );
-  let chapter = 0;
-  let verse = 0;
-  let headingNum = 0;
-  root.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
+  let sectionId = 'top';
+  let blockIndex = 0;
+  root.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target, targetIndex) => {
     if (target.classList.contains('footnote-definition') || target.classList.contains('footnotes')) {
       return;
     }
-    if (isNavOutlineItem(target)) return;
-    const tag = target.tagName;
-    if (tag === 'H1') {
-      chapter += 1;
-      verse = 0;
-      headingNum = 1;
-      assignLocus(target, 'h' + chapter + '.' + headingNum, seen);
-    } else if (/^H[2-6]$/.test(tag)) {
-      if (chapter === 0) chapter = 1;
-      headingNum += 1;
-      assignLocus(target, 'h' + chapter + '.' + headingNum, seen);
+    const isHeading = /^H[1-6]$/.test(target.tagName);
+    if (!target.id) {
+      const tag = target.tagName.toLowerCase();
+      const preferred = isHeading
+        ? 'section-' + (targetIndex + 1)
+        : sectionId + '-' + tag + '-' + blockIndex;
+      target.id = uniqueAnchorBlockId(seen, preferred);
     } else {
-      if (chapter === 0) chapter = 1;
-      verse += 1;
-      assignLocus(target, chapter + '.' + verse, seen);
+      seen.add(target.id);
+    }
+    target.dataset.locus = target.id;
+    if (isHeading) {
+      sectionId = target.id;
+      blockIndex = 0;
+    } else {
+      blockIndex += 1;
     }
   });
 }

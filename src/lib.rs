@@ -2600,33 +2600,40 @@ function positionLinkHoverTip(event) {
   linkHoverTip.style.left = left + 'px';
   linkHoverTip.style.top = top + 'px';
 }
+// What to print as the tooltip's detail line. The authored href may be
+// percent-encoded (a heading slug with diacritics becomes `#%C5%9B...`), which
+// is unreadable, so decode it for display and fall back to the raw href if it is
+// not valid percent-encoding.
+function hoverDetail(rawHref) {
+  try { return decodeURIComponent(rawHref); } catch (e) { return rawHref; }
+}
 function linkHoverInfo(rawHref) {
   if (!rawHref) return null;
   if (/^glossary:\s*$/i.test(rawHref)) {
-    return { kind: 'Full glossary', detail: rawHref };
+    return { kind: 'Full glossary', detail: hoverDetail(rawHref) };
   }
   if (glossaryAnchorFromHref(rawHref)) {
-    return { kind: 'Glossary entry', detail: rawHref };
+    return { kind: 'Glossary entry', detail: hoverDetail(rawHref) };
   }
   if (sameDocumentFragmentHref(rawHref)) {
-    return { kind: 'In-page jump', detail: rawHref };
+    return { kind: 'In-page jump', detail: hoverDetail(rawHref) };
   }
   if (/^mailto:/i.test(rawHref)) {
-    return { kind: 'Email link', detail: rawHref };
+    return { kind: 'Email link', detail: hoverDetail(rawHref) };
   }
   if (/^https?:\/\//i.test(rawHref)) {
-    return { kind: 'External site', detail: rawHref };
+    return { kind: 'External site', detail: hoverDetail(rawHref) };
   }
   if (/^[a-z][a-z0-9+.-]*:/i.test(rawHref)) {
-    return { kind: 'App link', detail: rawHref };
+    return { kind: 'App link', detail: hoverDetail(rawHref) };
   }
   if (/\.md(?:[#?].*)?$/i.test(rawHref)) {
-    return { kind: 'Another page', detail: rawHref };
+    return { kind: 'Another page', detail: hoverDetail(rawHref) };
   }
   if (rawHref.startsWith('/')) {
-    return { kind: 'Local path', detail: rawHref };
+    return { kind: 'Local path', detail: hoverDetail(rawHref) };
   }
-  return { kind: 'Link', detail: rawHref };
+  return { kind: 'Link', detail: hoverDetail(rawHref) };
 }
 if (canHoverLinks) {
   document.addEventListener('pointerover', (event) => {
@@ -2864,70 +2871,36 @@ function uniqueAnchorBlockId(seen, base) {
   seen.add(candidate);
   return candidate;
 }
-// A list item that is purely a link (or links) is a table-of-contents /
-// navigation entry, not body content, so it takes no verse number.
-function isNavOutlineItem(el) {
-  if (el.tagName !== 'LI') return false;
-  const text = (el.textContent || '').replace(/\s+/g, '');
-  if (!text) return false;
-  let linkText = '';
-  el.querySelectorAll('a').forEach((a) => {
-    linkText += a.textContent || '';
-  });
-  return text === linkText.replace(/\s+/g, '');
-}
-// Give `target` the address `locus`: if it already has an id (a heading slug or
-// an author anchor) keep that id and add a hidden alias carrying the locus, so
-// #<locus> still lands on it; otherwise the locus becomes the id. Either way the
-// locus is recorded on dataset.locus for the gutter permalink.
-function assignLocus(target, locus, seen) {
-  if (target.id) {
-    seen.add(target.id);
-    const alias = document.createElement('span');
-    alias.className = 'locus-alias';
-    alias.id = uniqueAnchorBlockId(seen, locus);
-    alias.setAttribute('aria-hidden', 'true');
-    target.insertBefore(alias, target.firstChild);
-    target.dataset.locus = alias.id;
-  } else {
-    target.id = uniqueAnchorBlockId(seen, locus);
-    target.dataset.locus = target.id;
-  }
-}
-// Number the document so each block has a citable address. Each top-level
-// heading (h1) opens a chapter. Headings (h1–h6) are addressed h<chapter>.<n> —
-// the leading "h" marks them as headings, distinct from body blocks — where n
-// runs 1, 2, 3 … through the headings in that chapter and resets at the next h1.
-// Every body block after a heading — paragraphs, quotes, content list items,
-// tables — is the next running verse in that chapter: chapter.verse with a dot
-// (1.1, 1.2, 1.3 …); the verse counter runs straight through sub-headings and
-// resets only at the next chapter. A heading keeps the slug id the renderer gave
-// it (so the TOC and #slug links resolve) and carries its number through a
-// hidden alias. The navigation outline (a list of link-only items) is skipped.
-// Numbering is deterministic, so the ids survive the document re-render a
-// fragment jump triggers.
+// Give every anchor-addressable block a stable id so it has a citable address,
+// then record that id on dataset.locus for the gutter permalink. A heading keeps
+// the slug id the renderer gave it (its text content) so the table of contents
+// and author-written #slug links resolve; a heading with no slug falls back to
+// section-<n>. Every body block after a heading takes that heading's slug plus
+// its running position in the section (<section>-<tag>-<index>), so paragraphs
+// are numbered under their heading. Numbering is deterministic, so the ids
+// survive the document re-render a fragment jump triggers.
 function ensureAnchorLinkTargets(body) {
   const seen = new Set(Array.from(body.querySelectorAll('[id]')).map((element) => element.id).filter(Boolean));
-  let chapter = 0;
-  let verse = 0;
-  let headingNum = 0;
-  body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
+  let sectionId = 'top';
+  let blockIndex = 0;
+  body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target, targetIndex) => {
     if (target.classList.contains('footnote-definition')) return;
-    if (isNavOutlineItem(target)) return;
-    const tag = target.tagName;
-    if (tag === 'H1') {
-      chapter += 1;
-      verse = 0;
-      headingNum = 1;
-      assignLocus(target, 'h' + chapter + '.' + headingNum, seen);
-    } else if (/^H[2-6]$/.test(tag)) {
-      if (chapter === 0) chapter = 1;
-      headingNum += 1;
-      assignLocus(target, 'h' + chapter + '.' + headingNum, seen);
+    const isHeading = /^H[1-6]$/.test(target.tagName);
+    if (!target.id) {
+      const tag = target.tagName.toLowerCase();
+      const preferred = isHeading
+        ? 'section-' + (targetIndex + 1)
+        : sectionId + '-' + tag + '-' + blockIndex;
+      target.id = uniqueAnchorBlockId(seen, preferred);
     } else {
-      if (chapter === 0) chapter = 1;
-      verse += 1;
-      assignLocus(target, chapter + '.' + verse, seen);
+      seen.add(target.id);
+    }
+    target.dataset.locus = target.id;
+    if (isHeading) {
+      sectionId = target.id;
+      blockIndex = 0;
+    } else {
+      blockIndex += 1;
     }
   });
 }
@@ -14628,31 +14601,25 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
         // their own back-reference) are excluded.
         assert!(html.contains("const ANCHOR_LINK_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]'"));
         assert!(html.contains("function ensureAnchorLinkTargets(body)"));
-        assert!(html.contains("target.id = uniqueAnchorBlockId(seen, locus);"));
+        assert!(html.contains("target.id = uniqueAnchorBlockId(seen, preferred);"));
         assert!(html.contains("target.classList.contains('footnote-definition')"));
 
-        // Body blocks are numbered chapter.verse with a dot: an h1 opens a
-        // chapter, and every following body block is the next running verse (1.1,
-        // 1.2, …); the verse counter runs through sub-headings and resets at the
-        // next chapter. Headings (h1–h6) are numbered h<chapter>.<n> so the
-        // leading "h" tells them apart from body blocks, and the navigation
-        // outline (link-only list items) is skipped.
-        assert!(html.contains("let chapter = 0;"));
-        assert!(html.contains("if (tag === 'H1') {"));
-        assert!(html.contains("assignLocus(target, 'h' + chapter + '.' + headingNum, seen);"));
-        assert!(html.contains("assignLocus(target, chapter + '.' + verse, seen);"));
-        assert!(html.contains("function isNavOutlineItem(el)"));
+        // Each block gets a stable id from its place in the document: a heading
+        // keeps its slug (its text content), or falls back to section-<n>; every
+        // body block after it takes that heading's slug plus its running position
+        // in the section (<section>-<tag>-<index>), so paragraphs are numbered
+        // under their heading. The id is recorded on dataset.locus.
+        assert!(html.contains("let sectionId = 'top';"));
+        assert!(html.contains("const isHeading = /^H[1-6]$/.test(target.tagName);"));
+        assert!(html.contains("? 'section-' + (targetIndex + 1)"));
+        assert!(html.contains(": sectionId + '-' + tag + '-' + blockIndex;"));
+        assert!(html.contains("target.dataset.locus = target.id;"));
 
         // The button is a real anchor link to the block's locus (dataset.locus).
-        // A block that already has an id (an h1 chapter, an author anchor) keeps
-        // it, and a hidden alias anchor resolves #<locus>, so the link can target
-        // the verse without disturbing the element's own id.
         assert!(html.contains("link.href = '#' + encodeURIComponent(locus)"));
 
-        // The gutter button shows the chain glyph (revealed on hover); a hidden
-        // alias carries the locus for blocks that already have an id.
+        // The gutter button shows the chain glyph (revealed on hover).
         assert!(html.contains("link.innerHTML = ANCHOR_LINK_ICON;"));
-        assert!(html.contains("alias.className = 'locus-alias';"));
 
         // Clicking the gutter button copies its #locus so the canonical number can
         // be pasted out — the way to read the locus on touch, where there is no
