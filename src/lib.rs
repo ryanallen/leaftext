@@ -2871,36 +2871,59 @@ function uniqueAnchorBlockId(seen, base) {
   seen.add(candidate);
   return candidate;
 }
-// Give every anchor-addressable block a stable id so it has a citable address,
-// then record that id on dataset.locus for the gutter permalink. A heading keeps
-// the slug id the renderer gave it (its text content) so the table of contents
-// and author-written #slug links resolve; a heading with no slug falls back to
-// section-<n>. Every body block after a heading takes that heading's slug plus
-// its running position in the section (<section>-<tag>-<index>), so paragraphs
-// are numbered under their heading. Numbering is deterministic, so the ids
-// survive the document re-render a fragment jump triggers.
+// A list item that is purely a link (or links) is a table-of-contents /
+// navigation entry, not body content, so it takes no number.
+function isNavOutlineItem(el) {
+  if (el.tagName !== 'LI') return false;
+  const text = (el.textContent || '').replace(/\\s+/g, '');
+  if (!text) return false;
+  let linkText = '';
+  el.querySelectorAll('a').forEach((a) => { linkText += a.textContent || ''; });
+  return text === linkText.replace(/\\s+/g, '');
+}
+// Give `target` the address `locus`: if it already has an id (a heading slug or
+// an author anchor) keep that id and add a hidden alias carrying the locus, so
+// #<locus> still lands on it; otherwise the locus becomes the id. Either way the
+// locus is recorded on dataset.locus for the gutter permalink.
+function assignLocus(target, locus, seen) {
+  if (target.id) {
+    seen.add(target.id);
+    const alias = document.createElement('span');
+    alias.className = 'locus-alias';
+    alias.id = uniqueAnchorBlockId(seen, locus);
+    alias.setAttribute('aria-hidden', 'true');
+    target.insertBefore(alias, target.firstChild);
+    target.dataset.locus = alias.id;
+  } else {
+    target.id = uniqueAnchorBlockId(seen, locus);
+    target.dataset.locus = target.id;
+  }
+}
+// Number the document so each block has a short, citable address. Each top-level
+// heading (h1) opens a chapter, addressed h1, h2, h3 … in order. Every block
+// inside that chapter — sub-headings (h2–h6) and body blocks alike — is the next
+// decimal under it: h<chapter>.1, h<chapter>.2, … The counter resets at the next
+// h1. A heading keeps the slug id the renderer gave it (so the table of contents
+// and #slug links resolve) and carries its number through a hidden alias. The
+// navigation outline (link-only list items) is skipped. The address is pure
+// ASCII, so a heading with diacritics still reads cleanly in the link tooltip.
+// Numbering is deterministic, so the ids survive the re-render a fragment jump
+// triggers.
 function ensureAnchorLinkTargets(body) {
   const seen = new Set(Array.from(body.querySelectorAll('[id]')).map((element) => element.id).filter(Boolean));
-  let sectionId = 'top';
-  let blockIndex = 0;
-  body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target, targetIndex) => {
+  let chapter = 0;
+  let index = 0;
+  body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
     if (target.classList.contains('footnote-definition')) return;
-    const isHeading = /^H[1-6]$/.test(target.tagName);
-    if (!target.id) {
-      const tag = target.tagName.toLowerCase();
-      const preferred = isHeading
-        ? 'section-' + (targetIndex + 1)
-        : sectionId + '-' + tag + '-' + blockIndex;
-      target.id = uniqueAnchorBlockId(seen, preferred);
+    if (isNavOutlineItem(target)) return;
+    if (target.tagName === 'H1') {
+      chapter += 1;
+      index = 0;
+      assignLocus(target, 'h' + chapter, seen);
     } else {
-      seen.add(target.id);
-    }
-    target.dataset.locus = target.id;
-    if (isHeading) {
-      sectionId = target.id;
-      blockIndex = 0;
-    } else {
-      blockIndex += 1;
+      if (chapter === 0) chapter = 1;
+      index += 1;
+      assignLocus(target, 'h' + chapter + '.' + index, seen);
     }
   });
 }
@@ -14601,19 +14624,21 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
         // their own back-reference) are excluded.
         assert!(html.contains("const ANCHOR_LINK_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]'"));
         assert!(html.contains("function ensureAnchorLinkTargets(body)"));
-        assert!(html.contains("target.id = uniqueAnchorBlockId(seen, preferred);"));
+        assert!(html.contains("target.id = uniqueAnchorBlockId(seen, locus);"));
         assert!(html.contains("target.classList.contains('footnote-definition')"));
 
-        // Each block gets a stable id from its place in the document: a heading
-        // keeps its slug (its text content), or falls back to section-<n>; every
-        // body block after it takes that heading's slug plus its running position
-        // in the section (<section>-<tag>-<index>), so paragraphs are numbered
-        // under their heading. The id is recorded on dataset.locus.
-        assert!(html.contains("let sectionId = 'top';"));
-        assert!(html.contains("const isHeading = /^H[1-6]$/.test(target.tagName);"));
-        assert!(html.contains("? 'section-' + (targetIndex + 1)"));
-        assert!(html.contains(": sectionId + '-' + tag + '-' + blockIndex;"));
-        assert!(html.contains("target.dataset.locus = target.id;"));
+        // Each block gets a short numeric address from its place in the document:
+        // a top-level heading (h1) opens a chapter numbered h1, h2, h3 …, and every
+        // block inside that chapter is the next decimal under it (h<chapter>.<n>),
+        // resetting at the next h1. A heading keeps its slug id (so the table of
+        // contents and #slug links resolve) and carries its number through a hidden
+        // alias. Navigation-outline (link-only) list items are skipped.
+        assert!(html.contains("function assignLocus(target, locus, seen)"));
+        assert!(html.contains("function isNavOutlineItem(el)"));
+        assert!(html.contains("if (target.tagName === 'H1') {"));
+        assert!(html.contains("assignLocus(target, 'h' + chapter, seen);"));
+        assert!(html.contains("assignLocus(target, 'h' + chapter + '.' + index, seen);"));
+        assert!(html.contains("target.dataset.locus = alias.id;"));
 
         // The button is a real anchor link to the block's locus (dataset.locus).
         assert!(html.contains("link.href = '#' + encodeURIComponent(locus)"));
