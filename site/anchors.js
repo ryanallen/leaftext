@@ -1,14 +1,14 @@
 // anchors.js
 // ---------------------------------------------------------------------------
 // Shared permalink decoration for the public site and /docs. It gives each block
-// a short numeric address from its place in the document — each top-level heading
-// (h1) opens a chapter numbered h1, h2, h3 …, and every block inside that chapter
-// (sub-headings and body alike) is the next decimal under it (h1.1, h1.2, h1.3 …)
-// — makes that the in-page link target, then injects a GitHub-style permalink
-// button (the chain glyph, revealed on hover) for each block. The address is pure
-// ASCII, so it reads cleanly in the hover tooltip even when the heading text has
-// diacritics. This mirrors the desktop app's scheme in src/lib.rs, so a #locus
-// copied from one lands in the other.
+// a short numeric address from its place in the document — each heading (h1–h6)
+// is the next integer in document order (1, 2, 3 …), and every non-heading block
+// between two headings is the next decimal under the most recent heading
+// (1.1, 1.2 … 2.1 …) — makes that the in-page link target, then injects a
+// GitHub-style permalink button (the chain glyph, revealed on hover) for each
+// block. The address is pure ASCII, so it reads cleanly in the hover tooltip even
+// when the heading text has diacritics. This mirrors the desktop app's scheme in
+// src/lib.rs, so a #locus copied from one lands in the other.
 // ---------------------------------------------------------------------------
 
 const ANCHOR_LINK_ICON =
@@ -89,37 +89,38 @@ function assignLocus(target, locus, seen) {
   }
 }
 
-// Number the document so each block has a short, citable address. Each top-level
-// heading (h1) opens a chapter, addressed h1, h2, h3 … in order. Every block
-// inside that chapter — sub-headings (h2–h6) and body blocks (paragraphs, quotes,
-// content list items, tables) alike — is the next decimal under it: h<chapter>.1,
-// h<chapter>.2, … The counter resets at the next h1. A heading keeps the slug id
-// the renderer gave it (so the table of contents and #slug links resolve) and
-// carries its number through a hidden alias. The navigation outline (a list of
-// link-only items) is skipped. The address is pure ASCII, so a heading with
-// diacritics still reads cleanly in the link tooltip. Numbering is deterministic,
-// so the ids survive the re-render a fragment jump triggers.
+// Number the document so each block has a short, citable address. Every heading
+// (h1–h6) is the next integer in document order: 1, 2, 3 … A bare integer means
+// "heading". Every non-heading block between two headings is the next decimal
+// under the most recent heading: <heading>.<n>. The counter resets at each
+// heading. A heading keeps the slug id the renderer gave it (so the table of
+// contents and #slug links resolve) and carries its number through a hidden alias.
+// The navigation outline (link-only list items) is skipped. The address is pure
+// ASCII, so a heading with diacritics still reads cleanly in the link tooltip.
+// Numbering is deterministic, so the ids survive the re-render a fragment jump
+// triggers.
 function ensureAnchorLinkTargets(root) {
   const seen = new Set(
     Array.from(root.querySelectorAll('[id]'))
       .map((element) => element.id)
       .filter(Boolean)
   );
-  let chapter = 0;
+  let heading = 0;
   let index = 0;
   root.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
     if (target.classList.contains('footnote-definition') || target.classList.contains('footnotes')) {
       return;
     }
     if (isNavOutlineItem(target)) return;
-    if (target.tagName === 'H1') {
-      chapter += 1;
+    const tag = target.tagName;
+    if (tag === 'H1' || tag === 'H2' || tag === 'H3' || tag === 'H4' || tag === 'H5' || tag === 'H6') {
+      heading += 1;
       index = 0;
-      assignLocus(target, 'h' + chapter, seen);
+      assignLocus(target, '' + heading, seen);
     } else {
-      if (chapter === 0) chapter = 1;
+      if (heading === 0) heading = 1;
       index += 1;
-      assignLocus(target, 'h' + chapter + '.' + index, seen);
+      assignLocus(target, heading + '.' + index, seen);
     }
   });
 }

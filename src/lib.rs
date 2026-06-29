@@ -2899,31 +2899,32 @@ function assignLocus(target, locus, seen) {
     target.dataset.locus = target.id;
   }
 }
-// Number the document so each block has a short, citable address. Each top-level
-// heading (h1) opens a chapter, addressed h1, h2, h3 … in order. Every block
-// inside that chapter — sub-headings (h2–h6) and body blocks alike — is the next
-// decimal under it: h<chapter>.1, h<chapter>.2, … The counter resets at the next
-// h1. A heading keeps the slug id the renderer gave it (so the table of contents
-// and #slug links resolve) and carries its number through a hidden alias. The
+// Number the document so each block has a short, citable address. Every heading
+// (h1–h6) is the next integer in document order: 1, 2, 3 … A bare integer means
+// heading. Every non-heading block between two headings is the next decimal under
+// the most recent heading: <heading>.<n>. The counter resets at each heading. A
+// heading keeps the slug id the renderer gave it (so the table of contents and
+// #slug links resolve) and carries its number through a hidden alias. The
 // navigation outline (link-only list items) is skipped. The address is pure
 // ASCII, so a heading with diacritics still reads cleanly in the link tooltip.
 // Numbering is deterministic, so the ids survive the re-render a fragment jump
 // triggers.
 function ensureAnchorLinkTargets(body) {
   const seen = new Set(Array.from(body.querySelectorAll('[id]')).map((element) => element.id).filter(Boolean));
-  let chapter = 0;
+  let heading = 0;
   let index = 0;
   body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
     if (target.classList.contains('footnote-definition')) return;
     if (isNavOutlineItem(target)) return;
-    if (target.tagName === 'H1') {
-      chapter += 1;
+    const tag = target.tagName;
+    if (tag === 'H1' || tag === 'H2' || tag === 'H3' || tag === 'H4' || tag === 'H5' || tag === 'H6') {
+      heading += 1;
       index = 0;
-      assignLocus(target, 'h' + chapter, seen);
+      assignLocus(target, '' + heading, seen);
     } else {
-      if (chapter === 0) chapter = 1;
+      if (heading === 0) heading = 1;
       index += 1;
-      assignLocus(target, 'h' + chapter + '.' + index, seen);
+      assignLocus(target, heading + '.' + index, seen);
     }
   });
 }
@@ -14627,17 +14628,16 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
         assert!(html.contains("target.id = uniqueAnchorBlockId(seen, locus);"));
         assert!(html.contains("target.classList.contains('footnote-definition')"));
 
-        // Each block gets a short numeric address from its place in the document:
-        // a top-level heading (h1) opens a chapter numbered h1, h2, h3 …, and every
-        // block inside that chapter is the next decimal under it (h<chapter>.<n>),
-        // resetting at the next h1. A heading keeps its slug id (so the table of
-        // contents and #slug links resolve) and carries its number through a hidden
-        // alias. Navigation-outline (link-only) list items are skipped.
+        // Each block gets a short numeric address: every heading (h1–h6) is the
+        // next integer (1, 2, 3 …) and every non-heading block is the next decimal
+        // under the most recent heading (<heading>.<n>). A heading keeps its slug id
+        // and carries its number through a hidden alias. Navigation-outline
+        // (link-only) list items are skipped.
         assert!(html.contains("function assignLocus(target, locus, seen)"));
         assert!(html.contains("function isNavOutlineItem(el)"));
-        assert!(html.contains("if (target.tagName === 'H1') {"));
-        assert!(html.contains("assignLocus(target, 'h' + chapter, seen);"));
-        assert!(html.contains("assignLocus(target, 'h' + chapter + '.' + index, seen);"));
+        assert!(html.contains("tag === 'H1' || tag === 'H2' || tag === 'H3' || tag === 'H4' || tag === 'H5' || tag === 'H6'"));
+        assert!(html.contains("assignLocus(target, '' + heading, seen);"));
+        assert!(html.contains("assignLocus(target, heading + '.' + index, seen);"));
         assert!(html.contains("target.dataset.locus = alias.id;"));
 
         // The button is a real anchor link to the block's locus (dataset.locus).
