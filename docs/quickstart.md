@@ -1,13 +1,13 @@
 # Quickstart
 
-> Open a Markdown file, learn the core controls, and get comfortable with [tabs](features/navigation.md#tabs), [history](features/navigation.md#history), the [minimap](features/minimap.md), and the [library](features/library.md) in a few minutes.
+> Open a Markdown or TEI XML file, learn the core controls, and get comfortable with [tabs](features/navigation.md#tabs), [history](features/navigation.md#history), the [minimap](features/minimap.md), and the [library](features/library.md) in a few minutes.
 
 leaftext is meant to be usable immediately. This page shows the smallest useful path through the app: open a file, read it, move around, and reopen it later.
 
 ## Start
 
 1. Press `Ctrl+O` on Windows/Linux or `Cmd+O` on macOS.
-2. Pick any `.md` file.
+2. Pick any `.md` or `.xml` file.
 3. Scroll the document.
 4. Use the minimap on the right to jump.
 5. Open another file to create a new tab.
@@ -16,7 +16,7 @@ leaftext is meant to be usable immediately. This page shows the smallest useful 
 
 ```mermaid
 flowchart LR
-    A[Launch leaftext] --> B[Open a .md file]
+    A[Launch leaftext] --> B[Open a .md or .xml file]
     B --> C[Read in main pane]
     C --> D[Jump with minimap]
     C --> E[Open another file]
@@ -29,7 +29,7 @@ flowchart LR
 | Method | How |
 | --- | --- |
 | Keyboard | `Ctrl+O` / `Cmd+O` |
-| Drag and drop | Drop a `.md` file onto the window |
+| Drag and drop | Drop a `.md` or `.xml` file onto the window |
 | Recent files | Click a file on the no-file home screen |
 | Command line / Open with | Launch leaftext with a file path |
 
@@ -41,7 +41,7 @@ flowchart LR
 | Area | What it does |
 | --- | --- |
 | Tab bar | Keeps multiple documents open |
-| Main reader | Shows the rendered Markdown |
+| Main reader | Shows the rendered Markdown or TEI XML |
 | Minimap | Shows the whole document and your current viewport |
 | Back / Forward | Moves through document and scroll history |
 | Library pane | Lets you browse and search indexed Markdown files |

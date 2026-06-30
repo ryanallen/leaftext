@@ -74,13 +74,15 @@ export function renderTEI(xmlString) {
     renderNode(child, parts, 0, ctx);
   }
 
-  // Footnotes section
+  // Footnotes section — match markdown.js exactly so the same CSS applies:
+  // `.footnotes > ol` is forced back to Arabic numerals (overriding the
+  // upper-roman default), and the back-reference uses the shared SVG icon.
   if (ctx.footnotes.length > 0) {
-    parts.push('<section class="footnotes">\n<ol>\n');
+    parts.push('<section class="footnotes" aria-label="Footnotes">\n<hr>\n<ol>\n');
     ctx.footnotes.forEach((fnHtml, i) => {
       const n = i + 1;
       parts.push(
-        `<li id="fn${n}"><p>${fnHtml} <a href="#fnref${n}" aria-label="Back to reference ${n}">↩</a></p></li>\n`
+        `<li id="fn-${n}"><p>${fnHtml} <a href="#fnref-${n}" class="footnote-back" aria-label="Back to content"><svg class="footnote-back-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"/></svg></a></p></li>\n`
       );
     });
     parts.push('</ol>\n</section>\n');
@@ -179,8 +181,9 @@ function renderInline(node, ctx) {
         const n = ctx.fnCount;
         const fnHtml = renderInline(child, ctx);
         ctx.footnotes.push(fnHtml);
+        // Match markdown.js footnote reference markup (plain Arabic, no brackets).
         parts.push(
-          `<sup><a href="#fn${n}" id="fnref${n}" class="footnote-ref" aria-label="Footnote ${n}">[${n}]</a></sup>`
+          `<sup class="footnote-ref" id="fnref-${n}"><a href="#fn-${n}">${n}</a></sup>`
         );
       } else if (['milestone', 'lb', 'ptr', 'caesura'].includes(tag)) {
         // omit

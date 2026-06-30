@@ -70,7 +70,7 @@
 ## Meet leaftext
 - Page: https://leaftext.com/docs/#/introduction
 - Markdown: https://leaftext.com/docs/introduction.md
-- Summary: leaftext is a desktop app for reading local Markdown on macOS, Windows, and Linux. Open a file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searchable library.
+- Summary: leaftext is a desktop app for reading local Markdown and TEI XML on macOS, Windows, and Linux. Open a file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searc...
 
 ## Quickstart
 - Page: https://leaftext.com/docs/#/quickstart

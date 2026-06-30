@@ -2,7 +2,7 @@
 
 # Leaf Text
 
-> A desktop reader for Markdown. Open a file. Read it.
+> A desktop reader for Markdown and TEI XML. Open a file. Read it.
 
 ![Leaf Text — Markdown, made to read](imgs/leaftext.png)
 
@@ -17,7 +17,7 @@
 
 ---
 
-A leaf is a page. **Leaf Text** opens a Markdown file and [renders it for reading](docs/features/markdown-rendering.md) — [code](docs/features/markdown-rendering.md#code), [diagrams](docs/features/markdown-rendering.md#mermaid-diagrams), [math](docs/features/markdown-rendering.md#math), [emoji](docs/features/markdown-rendering.md#emoji), just as GitHub would, all on your own machine.
+A leaf is a page. **Leaf Text** opens a Markdown file and [renders it for reading](docs/features/markdown-rendering.md) — [code](docs/features/markdown-rendering.md#code), [diagrams](docs/features/markdown-rendering.md#mermaid-diagrams), [math](docs/features/markdown-rendering.md#math), [emoji](docs/features/markdown-rendering.md#emoji), just as GitHub would, all on your own machine. It also opens [TEI XML](docs/features/markdown-rendering.md#tei-xml-84000-translations) — the 84000 Buddhist-canon translation format — and renders it the same way.
 
 A [minimap](docs/features/minimap.md) for long pages, [tabs](docs/features/navigation.md#tabs) with [history](docs/features/navigation.md#history), [live reload on save](docs/features/navigation.md#reload), and a searchable [library](docs/features/library.md) of every Markdown file you own. [Light, dark, and Dracula](docs/features/themes.md).
 

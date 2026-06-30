@@ -462,6 +462,11 @@ pub fn opened_document_from_tei(xml: &str, path: impl AsRef<Path>) -> OpenedDocu
         None => body_html,
     };
 
+    // The minimap preview is a scaled clone of the rendered DOM, so the model's
+    // spans are unused here; the JS only needs a positive line_count to show the
+    // rail (see renderDocumentMinimap). Count the rendered block lines.
+    let minimap_line_count = body_html.lines().filter(|l| !l.trim().is_empty()).count();
+
     let article = format!(
         r#"{base_href}<article class="document-body">{body_html}{}</article>"#,
         pager_loading_html()
@@ -472,7 +477,7 @@ pub fn opened_document_from_tei(xml: &str, path: impl AsRef<Path>) -> OpenedDocu
         path: path.display().to_string(),
         html: article,
         minimap: DocumentMinimap {
-            line_count: 0,
+            line_count: minimap_line_count,
             spans: vec![],
         },
     }
@@ -925,10 +930,12 @@ fn tei_render_inline<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx) -> Str
                     let fn_html = tei_render_inline(child, ctx);
                     ctx.footnotes.push(fn_html);
                     // Avoid `ref{n}` in format strings (Rust 2021 lexer issue).
+                    // Match the markdown renderer's footnote reference markup so
+                    // CSS and numbering are identical (plain Arabic, no brackets).
                     let refid = format!("fnref{n}");
                     out.push_str(&format!(
-                        "<sup><a href=\"#fn{n}\" id=\"{refid}\" class=\"footnote-ref\" \
-                         aria-label=\"Footnote {n}\">[{n}]</a></sup>"
+                        "<sup class=\"footnote-reference\" id=\"{refid}\">\
+                         <a href=\"#fn{n}\">{n}</a></sup>"
                     ));
                 }
                 "milestone" | "lb" | "ptr" | "caesura" => {
@@ -1100,16 +1107,23 @@ fn render_tei_body(xml: &str) -> (Option<String>, String) {
     // Append footnotes — build as a separate string to avoid borrow conflicts
     // while iterating `ctx.footnotes` and mutating `ctx.out`.
     if !ctx.footnotes.is_empty() {
-        let mut fn_section = String::from("<section class=\"footnotes\">\n<ol>\n");
+        // Match the markdown renderer's footnote markup: `<div
+        // class="footnote-definition">` blocks (not an `<ol>`, which would inherit
+        // the upper-roman list style) with the shared SVG back-reference icon.
+        let icon = footnote_backref_icon_svg();
+        let mut fn_section = String::from("<section class=\"footnotes\">\n");
         for (i, fn_html) in ctx.footnotes.iter().enumerate() {
             let n = i + 1;
             // Avoid `ref{n}` in format strings (Rust 2021 lexer issue).
             let backref = format!("#fnref{n}");
             fn_section.push_str(&format!(
-                "<li id=\"fn{n}\"><p>{fn_html} <a href=\"{backref}\">↩</a></p></li>\n"
+                "<div class=\"footnote-definition\" id=\"fn{n}\">\
+                 <sup class=\"footnote-definition-label\">{n}</sup>\
+                 <p>{fn_html} <a class=\"footnote-backref\" href=\"{backref}\" \
+                 aria-label=\"Back to content\">{icon}</a></p></div>\n"
             ));
         }
-        fn_section.push_str("</ol>\n</section>\n");
+        fn_section.push_str("</section>\n");
         ctx.out.push_str(&fn_section);
     }
 
