@@ -13,6 +13,7 @@ leaftext parses Markdown in Rust with `pulldown-cmark`, applies a GitHub-like re
 | Extras | Syntax highlighting, Mermaid, math, alerts, footnotes, emoji, block permalinks |
 | Local content | Relative images |
 | Safety | Sanitized HTML allowlist |
+| TEI XML | 84000 Buddhist-translation format (`.xml`); headings, paragraphs, verse, footnotes |
 
 ## Pipeline
 
@@ -22,6 +23,9 @@ flowchart LR
     B --> C[GitHub-style extras]
     C --> D[ammonia sanitizer]
     D --> E[Rendered document in leaftext]
+    F[TEI XML file] --> G[roxmltree DOM]
+    G --> H[tei_render_body]
+    H --> E
 ```
 
 ## Headings
@@ -337,6 +341,26 @@ leaftext offers an English and a Simplified Chinese interface, and renders CJK c
 | :-- | :-- |
 | 全文搜索 | 支持中文前缀匹配 |
 | 前置元数据 | 可按字段筛选文库 |
+
+## TEI XML (84000 translations)
+
+leaftext opens `.xml` files in the 84000 Buddhist-translation TEI format alongside `.md` files. The same "Open Document" dialog accepts both; the renderer detects which pipeline to use from the file extension.
+
+**Supported TEI elements:**
+
+| Element | Rendered as |
+|---|---|
+| `<div type="chapter/section/subsection">` | Nested headings (`##` / `###` / `####`) |
+| `<head>` | Heading text at the div's depth |
+| `<p>` | Paragraph |
+| `<lg><l>…</l></lg>` | Verse stanza with line breaks |
+| `<note place="end">` | Inline footnote (collected at page foot) |
+| `<term>`, `<title>`, `<ref>` | Inline text (tags stripped) |
+| `<milestone>`, `<lb>`, `<ptr>` | Omitted |
+
+The Rust rendering path uses `roxmltree` to walk the DOM and produce the same HTML structure the Markdown pipeline outputs, so themes, footnotes, minimap, and pager all work unchanged for TEI documents.
+
+The web reader (`site/reader.js`) routes `.xml` content through `renderTEI()` from `tei-xml.js`, which uses `DOMParser` — the same semantics as the Rust side, fully offline.
 
 ## Next
 

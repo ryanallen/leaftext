@@ -241,3 +241,177 @@ export function installGlossary({ glossaryUrl, renderMarkdown, onNavigate }) {
     dismiss,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Dynamic auto-glossary linking
+//
+// After the document content is rendered, call this to asynchronously fetch
+// the glossary (GLOSSARY.md or GLOSSARY.xml / glossary.xml) and wrap every
+// occurrence of each glossary term in the content with a `glossary:slug` link.
+//
+// Terms from ## (h2) headings are used. Matching is whole-word, case-insensitive.
+// Text inside existing <a>, <code>, and <pre> elements is skipped.
+//
+// Usage:
+//   installAutoGlossary({ contentEl, renderMarkdown, renderTEI })
+//
+// Returns a promise that resolves when linking is done (or quietly fails).
+// ---------------------------------------------------------------------------
+
+const SKIP_TAGS = new Set(['a', 'code', 'pre', 'script', 'style', 'head']);
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Collect all text nodes in `root` that are not inside skipped elements.
+ * @param {Element} root
+ * @returns {Text[]}
+ */
+function collectTextNodes(root) {
+  const nodes = [];
+  const walker = document.createTreeWalker(
+    root,
+    NodeFilter.SHOW_TEXT,
+    (node) => {
+      let el = node.parentElement;
+      while (el && el !== root) {
+        if (SKIP_TAGS.has(el.tagName.toLowerCase())) return NodeFilter.FILTER_REJECT;
+        el = el.parentElement;
+      }
+      return node.textContent.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+    }
+  );
+  let node;
+  while ((node = walker.nextNode())) nodes.push(node);
+  return nodes;
+}
+
+/**
+ * Replace term occurrences in a single text node with glossary links.
+ * @param {Text} textNode
+ * @param {RegExp} pattern   — built from all terms
+ * @param {Map<string, string>} termMap — term.toLowerCase() → slug
+ */
+function linkTextNode(textNode, pattern, termMap) {
+  const text = textNode.textContent;
+  pattern.lastIndex = 0;
+  if (!pattern.test(text)) return;
+  pattern.lastIndex = 0;
+
+  const frag = document.createDocumentFragment();
+  let last = 0;
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > last) {
+      frag.appendChild(document.createTextNode(text.slice(last, match.index)));
+    }
+    const slug = termMap.get(match[0].toLowerCase());
+    if (slug) {
+      const a = document.createElement('a');
+      a.href = 'glossary:' + slug;
+      a.textContent = match[0];
+      frag.appendChild(a);
+    } else {
+      frag.appendChild(document.createTextNode(match[0]));
+    }
+    last = match.index + match[0].length;
+  }
+
+  if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+  textNode.parentNode.replaceChild(frag, textNode);
+}
+
+/**
+ * Extract glossary terms from rendered glossary HTML.
+ * Returns [{term, slug}], longest terms first.
+ * @param {string} html  — rendered HTML string
+ * @returns {{term: string, slug: string}[]}
+ */
+function extractTerms(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const terms = [];
+  for (const h of div.querySelectorAll('h2[id]')) {
+    const term = h.textContent.trim();
+    if (term) terms.push({ term, slug: h.id });
+  }
+  // longest first so multi-word terms match before their substrings
+  terms.sort((a, b) => b.term.length - a.term.length);
+  return terms;
+}
+
+/**
+ * Fetch the glossary (tries GLOSSARY.md then GLOSSARY.xml / glossary.xml).
+ * Returns rendered HTML string or null.
+ * @param {Function} renderMarkdown
+ * @param {Function|null} renderTEI
+ * @returns {Promise<string|null>}
+ */
+async function fetchGlossaryHtml(renderMarkdown, renderTEI) {
+  const candidates = ['GLOSSARY.md', 'GLOSSARY.xml', 'glossary.xml'];
+  for (const name of candidates) {
+    let res;
+    try {
+      res = await fetch(name, { cache: 'no-cache' });
+    } catch {
+      continue;
+    }
+    if (!res.ok) continue;
+    const text = await res.text();
+    if (name.endsWith('.xml') && renderTEI) {
+      return renderTEI(text);
+    }
+    return renderMarkdown(text);
+  }
+  return null;
+}
+
+/**
+ * Asynchronously scan `contentEl` and wrap every glossary term with a
+ * `glossary:slug` link. Safe to call; silently no-ops when no glossary found.
+ *
+ * @param {object} opts
+ * @param {Element} opts.contentEl     — the rendered document element
+ * @param {Function} opts.renderMarkdown
+ * @param {Function} [opts.renderTEI]  — optional; used for .xml glossary files
+ */
+export async function installAutoGlossary({ contentEl, renderMarkdown, renderTEI }) {
+  let glossaryHtml;
+  try {
+    glossaryHtml = await fetchGlossaryHtml(renderMarkdown, renderTEI || null);
+  } catch {
+    return;
+  }
+  if (!glossaryHtml) return;
+
+  const terms = extractTerms(glossaryHtml);
+  if (!terms.length) return;
+
+  // Build a single regex from all terms (whole-word boundaries)
+  const pattern = new RegExp(
+    '(?<![\\p{L}\\p{M}\\d])(' +
+      terms.map((t) => escapeRegex(t.term)).join('|') +
+      ')(?![\\p{L}\\p{M}\\d])',
+    'giu'
+  );
+
+  // Map lowercase term → slug for O(1) lookup during replacement
+  const termMap = new Map(terms.map((t) => [t.term.toLowerCase(), t.slug]));
+
+  // Collect text nodes first (modifying the DOM during traversal is unsafe)
+  const textNodes = collectTextNodes(contentEl);
+
+  // Process in small async batches so we don't block the UI thread
+  const BATCH = 50;
+  for (let i = 0; i < textNodes.length; i += BATCH) {
+    const batch = textNodes.slice(i, i + BATCH);
+    for (const node of batch) {
+      if (node.parentNode) linkTextNode(node, pattern, termMap);
+    }
+    // Yield to the browser between batches
+    await new Promise((r) => setTimeout(r, 0));
+  }
+}

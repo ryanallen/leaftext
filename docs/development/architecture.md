@@ -18,6 +18,7 @@ leaftext is a single Rust binary that embeds a WebView (via `wry`) inside a nati
 | `serde` / `serde_json`  | IPC message serialization                            |
 | `notify-debouncer-mini` | Filesystem watcher for live reload                   |
 | `blake3`                | File content hashing in the indexer                  |
+| `roxmltree`             | Read-only XML DOM parsing for TEI documents          |
 
 ## Source files
 
@@ -54,6 +55,34 @@ The raw rendered HTML is passed through `ammonia` with an allowlist of GFM-safe 
 **6. Load into the WebView**
 
 `app_shell_html()` generates the full HTML/CSS/JS shell. `reading_mode_css()` assembles the complete style block: Noto fonts + Primer CSS primitives + compiled theme CSS + application CSS. The rendered document HTML is injected into the shell via `workspace_state_script()` or `workspace_switch_script()`, which call the appropriate `window.leaf*` JavaScript entry points.
+
+## TEI XML rendering pipeline
+
+When a user opens a `.xml` file, `load_document()` detects the extension and calls `load_xml_document()` instead of the Markdown path:
+
+**1. Parse with roxmltree**
+
+`load_xml_document()` in `lib.rs` reads the XML source and parses it with `roxmltree` into a read-only DOM.
+
+**2. Find the TEI body**
+
+`render_tei_body()` locates the `<text> > <body>` element and walks its child `<div>` elements recursively.
+
+**3. Emit HTML**
+
+`tei_render_div()` / `tei_render_node()` convert TEI elements to HTML equivalents: `<div type="chapter">` → heading, `<p>` → paragraph, `<lg><l>` → verse, `<note place="end">` → footnote reference collected in a `TeiCtx`. Heading slugs are produced by `tei_slugify()` to match the same GitHub-style slug algorithm used for Markdown headings.
+
+**4. Append footnotes**
+
+After traversal, any collected footnotes are appended as a `<section class="footnotes"><ol>…</ol></section>`, identical to the Markdown footnote format so the same CSS styles them.
+
+**5. Auto-link glossary (optional)**
+
+If a `GLOSSARY.md` exists next to the document, `auto_link_glossary()` runs the same term-replacement pass used for Markdown documents, wrapping matched terms with `<a href="glossary:slug">` anchors.
+
+**6. Inject into shell**
+
+The finished HTML is handed to `app_shell_html()` and injected into the WebView exactly as Markdown output is — themes, minimap, pager, and scroll anchoring all apply unchanged.
 
 ## IPC bridge
 

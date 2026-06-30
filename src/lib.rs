@@ -420,8 +420,62 @@ fn normalize_recent_path(path: &Path) -> PathBuf {
 
 pub fn load_document(path: impl AsRef<Path>) -> io::Result<OpenedDocument> {
     let path = path.as_ref();
+    if path.extension().and_then(|e| e.to_str()) == Some("xml") {
+        return load_xml_document(path);
+    }
     let markdown = fs::read_to_string(path)?;
     Ok(opened_document_from_markdown(&markdown, path))
+}
+
+/// Load a TEI XML document from disk and render it to an `OpenedDocument`.
+pub fn load_xml_document(path: impl AsRef<Path>) -> io::Result<OpenedDocument> {
+    let path = path.as_ref();
+    let xml = fs::read_to_string(path)?;
+    Ok(opened_document_from_tei(&xml, path))
+}
+
+/// Render a TEI XML string into an `OpenedDocument`.
+pub fn opened_document_from_tei(xml: &str, path: impl AsRef<Path>) -> OpenedDocument {
+    let path = path.as_ref();
+    let render_path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+
+    let (title, body_html) = render_tei_body(xml);
+
+    let title = title
+        .or_else(|| {
+            render_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .and_then(plain_document_title)
+        })
+        .unwrap_or_else(|| "Untitled document".to_string());
+
+    let base_href = render_path
+        .parent()
+        .and_then(|parent| Url::from_directory_path(parent).ok())
+        .map(|url| format!(r#"<base href="{}">"#, encode_text(url.as_str())))
+        .unwrap_or_default();
+
+    // Optionally auto-link glossary terms from GLOSSARY.md next to the doc.
+    let body_html = match render_path.parent() {
+        Some(dir) => auto_link_glossary(body_html, dir),
+        None => body_html,
+    };
+
+    let article = format!(
+        r#"{base_href}<article class="document-body">{body_html}{}</article>"#,
+        pager_loading_html()
+    );
+
+    OpenedDocument {
+        title,
+        path: path.display().to_string(),
+        html: article,
+        minimap: DocumentMinimap {
+            line_count: 0,
+            spans: vec![],
+        },
+    }
 }
 
 /// Render an already-loaded markdown string into an `OpenedDocument`. Split out
@@ -795,6 +849,417 @@ pub fn render_markdown_document(markdown: &str, source_path: impl AsRef<Path>) -
             body = body
         ),
     }
+}
+
+// ---------------------------------------------------------------------------
+// TEI XML renderer
+// ---------------------------------------------------------------------------
+
+/// Heading level implied by a div's `type` attribute.
+fn tei_div_heading_level(div_type: &str, depth: usize) -> Option<u8> {
+    match div_type {
+        "translation" => None, // transparent container
+        "prelude" | "chapter" => Some(2),
+        "section" => Some(3),
+        "subsection" => Some(4),
+        _ => Some((2 + depth as u8).min(6)),
+    }
+}
+
+/// GitHub-compatible slug from plain text (matches slugger.js behaviour).
+fn tei_slugify(text: &str) -> String {
+    let lower = text.to_lowercase();
+    let cleaned: String = lower
+        .chars()
+        .filter(|c| c.is_alphabetic() || c.is_numeric() || *c == '-' || *c == '_' || *c == ' ')
+        .collect();
+    cleaned.replace(' ', "-")
+}
+
+struct TeiCtx {
+    out: String,
+    footnotes: Vec<String>,
+    fn_count: usize,
+    seen: HashMap<String, usize>,
+}
+
+impl TeiCtx {
+    fn new() -> Self {
+        Self {
+            out: String::new(),
+            footnotes: Vec::new(),
+            fn_count: 0,
+            seen: HashMap::new(),
+        }
+    }
+
+    fn unique_slug(&mut self, text: &str) -> String {
+        let base = tei_slugify(text);
+        let count = self.seen.entry(base.clone()).or_insert(0);
+        let slug = if *count == 0 {
+            base.clone()
+        } else {
+            format!("{base}-{count}")
+        };
+        *count += 1;
+        slug
+    }
+
+    fn push(&mut self, s: &str) {
+        self.out.push_str(s);
+    }
+}
+
+/// Render the inline content of a node (text + inline children).
+fn tei_render_inline<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx) -> String {
+    let mut out = String::new();
+    for child in node.children() {
+        if child.is_text() {
+            out.push_str(&encode_text(child.text().unwrap_or("")));
+        } else if child.is_element() {
+            let tag = child.tag_name().name().to_lowercase();
+            match tag.as_str() {
+                "note" if child.attribute("place") == Some("end") => {
+                    ctx.fn_count += 1;
+                    let n = ctx.fn_count;
+                    let fn_html = tei_render_inline(child, ctx);
+                    ctx.footnotes.push(fn_html);
+                    // Avoid `ref{n}` in format strings (Rust 2021 lexer issue).
+                    let refid = format!("fnref{n}");
+                    out.push_str(&format!(
+                        "<sup><a href=\"#fn{n}\" id=\"{refid}\" class=\"footnote-ref\" \
+                         aria-label=\"Footnote {n}\">[{n}]</a></sup>"
+                    ));
+                }
+                "milestone" | "lb" | "ptr" | "caesura" => {
+                    // omit
+                }
+                _ => {
+                    // term, title, ref, foreign, hi, quote, etc. → strip tag, keep text
+                    out.push_str(&tei_render_inline(child, ctx));
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Render a TEI `<div>` element.
+fn tei_render_div<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx, depth: usize) {
+    let div_type = node.attribute("type").unwrap_or("");
+
+    let heading_level = tei_div_heading_level(div_type, depth);
+
+    if heading_level.is_none() {
+        // transparent container (e.g. div[@type="translation"])
+        for child in node.children() {
+            if child.is_element() {
+                tei_render_node(child, ctx, depth);
+            }
+        }
+        return;
+    }
+    let level = heading_level.unwrap();
+
+    // Find and emit the <head> child first
+    let head_node = node
+        .children()
+        .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("head"));
+    if let Some(head) = head_node {
+        let text = head.text().unwrap_or("").trim().to_string();
+        let text = if text.is_empty() {
+            head.children()
+                .filter(|c| c.is_text())
+                .map(|c| c.text().unwrap_or(""))
+                .collect::<String>()
+                .trim()
+                .to_string()
+        } else {
+            text
+        };
+        if !text.is_empty() {
+            let id = ctx.unique_slug(&text);
+            ctx.push(&format!(
+                "<h{level} id=\"{}\">{}</h{level}>\n",
+                encode_double_quoted_attribute(&id),
+                encode_text(&text)
+            ));
+        }
+    }
+
+    // Render non-head children
+    for child in node.children() {
+        if child.is_element() && child.tag_name().name().eq_ignore_ascii_case("head") {
+            continue;
+        }
+        tei_render_node(child, ctx, depth + 1);
+    }
+}
+
+/// Dispatch rendering for any TEI element node.
+fn tei_render_node<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx, depth: usize) {
+    if !node.is_element() {
+        return;
+    }
+    let tag = node.tag_name().name().to_lowercase();
+    match tag.as_str() {
+        "div" => tei_render_div(node, ctx, depth),
+        "p" => {
+            let inner = tei_render_inline(node, ctx);
+            ctx.push(&format!("<p>{inner}</p>\n"));
+        }
+        "lg" => {
+            let lines: Vec<String> = node
+                .children()
+                .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("l"))
+                .map(|l| tei_render_inline(l, ctx))
+                .collect();
+            ctx.push(&format!(
+                "<p class=\"tei-verse\">{}</p>\n",
+                lines.join("<br>\n")
+            ));
+        }
+        "head" | "milestone" | "lb" | "ptr" | "caesura" => {
+            // omit at top level; head is handled by renderDiv
+        }
+        _ => {
+            // Recurse into unknown block elements
+            for child in node.children() {
+                tei_render_node(child, ctx, depth);
+            }
+        }
+    }
+}
+
+/// Parse TEI XML and return `(title, body_html)`.
+/// Title is extracted from the `<teiHeader>` if possible.
+fn render_tei_body(xml: &str) -> (Option<String>, String) {
+    let doc = match roxmltree::Document::parse(xml) {
+        Ok(d) => d,
+        Err(_) => return (None, "<p><strong>XML parse error.</strong></p>".to_string()),
+    };
+
+    let root = doc.root_element();
+
+    // Extract title from teiHeader
+    let title = root
+        .descendants()
+        .find(|n| {
+            n.is_element()
+                && n.tag_name().name().eq_ignore_ascii_case("title")
+                && n.parent()
+                    .map(|p| p.tag_name().name().eq_ignore_ascii_case("titleStmt"))
+                    .unwrap_or(false)
+        })
+        .and_then(|n| {
+            let t = n
+                .children()
+                .filter(|c| c.is_text())
+                .map(|c| c.text().unwrap_or(""))
+                .collect::<String>();
+            let t = t.trim().to_string();
+            if t.is_empty() {
+                None
+            } else {
+                Some(t)
+            }
+        });
+
+    // Find <text><body>
+    let body = root.descendants().find(|n| {
+        n.is_element()
+            && n.tag_name().name().eq_ignore_ascii_case("body")
+            && n.parent()
+                .map(|p| p.tag_name().name().eq_ignore_ascii_case("text"))
+                .unwrap_or(false)
+    });
+
+    let Some(body) = body else {
+        return (
+            title,
+            "<p><strong>No TEI body element found.</strong></p>".to_string(),
+        );
+    };
+
+    let mut ctx = TeiCtx::new();
+
+    // Title heading
+    if let Some(ref t) = title {
+        let id = ctx.unique_slug(t);
+        ctx.push(&format!(
+            "<h1 id=\"{}\">{}</h1>\n",
+            encode_double_quoted_attribute(&id),
+            encode_text(t)
+        ));
+    }
+
+    for child in body.children() {
+        tei_render_node(child, &mut ctx, 0);
+    }
+
+    // Append footnotes — build as a separate string to avoid borrow conflicts
+    // while iterating `ctx.footnotes` and mutating `ctx.out`.
+    if !ctx.footnotes.is_empty() {
+        let mut fn_section = String::from("<section class=\"footnotes\">\n<ol>\n");
+        for (i, fn_html) in ctx.footnotes.iter().enumerate() {
+            let n = i + 1;
+            // Avoid `ref{n}` in format strings (Rust 2021 lexer issue).
+            let backref = format!("#fnref{n}");
+            fn_section.push_str(&format!(
+                "<li id=\"fn{n}\"><p>{fn_html} <a href=\"{backref}\">↩</a></p></li>\n"
+            ));
+        }
+        fn_section.push_str("</ol>\n</section>\n");
+        ctx.out.push_str(&fn_section);
+    }
+
+    (title, ctx.out)
+}
+
+// ---------------------------------------------------------------------------
+// Glossary auto-linking (desktop: runs on rendered HTML before sending to view)
+// ---------------------------------------------------------------------------
+
+/// Parse `## Term` lines from a GLOSSARY.md file and return `(term, slug)` pairs,
+/// sorted longest-term-first so multi-word terms match before their substrings.
+fn parse_glossary_terms(path: &Path) -> Vec<(String, String)> {
+    let Ok(content) = fs::read_to_string(path) else {
+        return Vec::new();
+    };
+    let mut terms: Vec<(String, String)> = content
+        .lines()
+        .filter_map(|line| {
+            let text = line.strip_prefix("## ")?.trim();
+            if text.is_empty() {
+                return None;
+            }
+            let slug = tei_slugify(text);
+            Some((text.to_string(), slug))
+        })
+        .collect();
+    terms.sort_by(|a, b| b.0.len().cmp(&a.0.len())); // longest first
+    terms
+}
+
+/// Walk the HTML body string and wrap term occurrences in glossary links,
+/// skipping text inside `<a>`, `<code>`, or `<pre>` elements. Matches are
+/// whole-word (Unicode letter/digit boundaries) and case-insensitive.
+fn link_terms_in_html(html: &str, terms: &[(String, String)]) -> String {
+    if terms.is_empty() {
+        return html.to_string();
+    }
+
+    let mut result = String::with_capacity(html.len() + html.len() / 4);
+    let chars: &[u8] = html.as_bytes();
+    let len = chars.len();
+    let mut pos = 0;
+    let mut skip_depth: i32 = 0; // inside a skipped element when > 0
+
+    while pos < len {
+        if chars[pos] == b'<' {
+            // Find end of tag
+            let tag_start = pos;
+            let tag_end = html[pos..].find('>').map(|i| pos + i + 1).unwrap_or(len);
+            let tag_text = &html[tag_start..tag_end];
+
+            // Detect opening/closing of skip-tagged elements
+            let tag_lower = tag_text.to_ascii_lowercase();
+            for skip in &["<a", "<code", "<pre"] {
+                if tag_lower.starts_with(skip)
+                    && (tag_text.len() == skip.len()
+                        || matches!(
+                            tag_text.as_bytes().get(skip.len()),
+                            Some(b' ' | b'>' | b'\n' | b'\r' | b'\t')
+                        ))
+                {
+                    skip_depth += 1;
+                    break;
+                }
+            }
+            for skip in &["</a>", "</code>", "</pre>"] {
+                if tag_lower.starts_with(skip) {
+                    skip_depth = (skip_depth - 1).max(0);
+                    break;
+                }
+            }
+
+            result.push_str(tag_text);
+            pos = tag_end;
+        } else {
+            // Collect a text run up to the next '<'
+            let text_end = html[pos..].find('<').map(|i| pos + i).unwrap_or(len);
+            let text_run = &html[pos..text_end];
+
+            if skip_depth > 0 || text_run.is_empty() {
+                result.push_str(text_run);
+            } else {
+                // Replace term occurrences in this text run
+                result.push_str(&replace_terms_in_text(text_run, terms));
+            }
+            pos = text_end;
+        }
+    }
+    result
+}
+
+/// Replace term occurrences with `<a href="glossary:slug">term</a>` in a plain-text run.
+fn replace_terms_in_text(text: &str, terms: &[(String, String)]) -> String {
+    let mut result = text.to_string();
+    for (term, slug) in terms {
+        let lower_term = term.to_lowercase();
+        let lower_result = result.to_lowercase();
+        let mut new_result = String::with_capacity(result.len());
+        let mut search_start = 0;
+
+        while let Some(idx) = lower_result[search_start..].find(lower_term.as_str()) {
+            let abs_idx = search_start + idx;
+            let abs_end = abs_idx + term.len();
+
+            // Check word boundaries (preceding and following chars must not be word chars)
+            let before_ok = abs_idx == 0
+                || !lower_result[..abs_idx]
+                    .chars()
+                    .next_back()
+                    .map(|c| c.is_alphanumeric())
+                    .unwrap_or(false);
+            let after_ok = abs_end >= lower_result.len()
+                || !lower_result[abs_end..]
+                    .chars()
+                    .next()
+                    .map(|c| c.is_alphanumeric())
+                    .unwrap_or(false);
+
+            if before_ok && after_ok {
+                new_result.push_str(&result[search_start..abs_idx]);
+                let matched = &result[abs_idx..abs_end];
+                new_result.push_str(&format!(
+                    r#"<a href="glossary:{slug}">{}</a>"#,
+                    encode_text(matched)
+                ));
+                search_start = abs_end;
+            } else {
+                // Advance past this non-boundary match to avoid an infinite loop
+                new_result.push_str(&result[search_start..abs_idx + 1]);
+                search_start = abs_idx + 1;
+            }
+        }
+        new_result.push_str(&result[search_start..]);
+        result = new_result;
+    }
+    result
+}
+
+/// Look for GLOSSARY.md next to `doc_dir` and auto-link terms in `body_html`.
+fn auto_link_glossary(body_html: String, doc_dir: &Path) -> String {
+    let glossary_path = doc_dir.join("GLOSSARY.md");
+    if !glossary_path.exists() {
+        return body_html;
+    }
+    let terms = parse_glossary_terms(&glossary_path);
+    if terms.is_empty() {
+        return body_html;
+    }
+    link_terms_in_html(&body_html, &terms)
 }
 
 pub fn build_minimap_model(markdown: &str) -> DocumentMinimap {

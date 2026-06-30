@@ -9,11 +9,12 @@
 // ---------------------------------------------------------------------------
 
 import { renderMarkdown } from './markdown.js';
+import { renderTEI, isTEI } from './tei-xml.js';
 import { initMinimap } from './minimap.js';
 import { highlightCode, decorateCodeBlocks } from './codeblocks.js';
 import { decorateAnchorLinks } from './anchors.js';
 import { decorateBlockquoteLines } from './blockquotes.js';
-import { installGlossary } from './glossary.js';
+import { installGlossary, installAutoGlossary } from './glossary.js';
 import { installLinkTooltip } from './link-tooltip.js';
 import { installSettings } from './settings.js';
 import { applySpeedReaderIfEnabled } from './speed-reader.js';
@@ -139,13 +140,31 @@ function scrollToHash() {
   if (target) target.scrollIntoView();
 }
 
+/**
+ * Fetch the document to display. Tries README.md first; if that fails with 404
+ * tries README.xml (for TEI XML documents served next to this page).
+ * Returns { text, isXML }.
+ */
+async function fetchDocument() {
+  let res = await fetch('./README.md', { cache: 'no-cache' });
+  if (res.ok) {
+    const text = await res.text();
+    // Also check content for XML declaration in case file has wrong extension
+    return { text, isXML: isTEI(text) };
+  }
+  // Fallback: try README.xml
+  res = await fetch('./README.xml', { cache: 'no-cache' });
+  if (res.ok) {
+    return { text: await res.text(), isXML: true };
+  }
+  throw new Error('HTTP ' + res.status + ' — no README.md or README.xml found');
+}
+
 async function main() {
   try {
-    const res = await fetch('./README.md', { cache: 'no-cache' });
-    if (!res.ok) throw new Error('HTTP ' + res.status + ' fetching README.md');
-    const markdown = await res.text();
+    const { text, isXML } = await fetchDocument();
 
-    content.innerHTML = renderMarkdown(markdown);
+    content.innerHTML = isXML ? renderTEI(text) : renderMarkdown(text);
     decorateBlockquoteLines(content);
     if (statusEl) statusEl.hidden = true;
 
@@ -158,10 +177,12 @@ async function main() {
 
     // Render Mermaid diagrams and math (async; the minimap's resize observer
     // picks up height changes), build the minimap, then jump to any #anchor.
-    renderMermaidDiagrams();
-    renderMath();
-    highlightCode(content, HLJS_SRC);
-    decorateCodeBlocks(content);
+    if (!isXML) {
+      renderMermaidDiagrams();
+      renderMath();
+      highlightCode(content, HLJS_SRC);
+      decorateCodeBlocks(content);
+    }
     decorateAnchorLinks(content);
     // Clear any stale processed flag before anchoring the freshly rendered
     // document (the settings boot may have run against this element while it was
@@ -170,9 +191,13 @@ async function main() {
     applySpeedReaderIfEnabled(content);
     initMinimap(content);
     scrollToHash();
+
+    // Auto-link glossary terms asynchronously after the page is displayed,
+    // checking for GLOSSARY.md or GLOSSARY.xml next to the document.
+    installAutoGlossary({ contentEl: content, renderMarkdown, renderTEI });
   } catch (err) {
     showStatus(
-      'Could not load README.md (' +
+      'Could not load the document (' +
         err.message +
         '). This page must be served over http, not opened from a file path. ' +
         'For example, in this folder run:  python -m http.server  then open the printed address.'

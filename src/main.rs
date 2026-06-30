@@ -1171,8 +1171,10 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
 
 fn pick_markdown_file() -> Option<PathBuf> {
     FileDialog::new()
-        .set_title("Open Markdown")
+        .set_title("Open Document")
+        .add_filter("Documents", &["md", "markdown", "mdown", "xml"])
         .add_filter("Markdown", &["md", "markdown", "mdown"])
+        .add_filter("TEI XML", &["xml"])
         .add_filter("All files", &["*"])
         .pick_file()
 }
@@ -1193,7 +1195,7 @@ fn drag_drop_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(DragDropEvent)
     }
 }
 
-/// True when `path` has a Markdown extension we know how to open. Matches the
+/// True when `path` has an extension we know how to open. Matches the
 /// extensions offered by the file picker so drag-and-drop and Open agree.
 fn is_markdown_path(path: &Path) -> bool {
     path.extension()
@@ -1201,7 +1203,7 @@ fn is_markdown_path(path: &Path) -> bool {
         .is_some_and(|ext| {
             matches!(
                 ext.to_ascii_lowercase().as_str(),
-                "md" | "markdown" | "mdown"
+                "md" | "markdown" | "mdown" | "xml"
             )
         })
 }
