@@ -351,12 +351,13 @@ leaftext opens `.xml` files in the 84000 Buddhist-translation TEI format alongsi
 | Element | Rendered as |
 |---|---|
 | `<div type="chapter/section/subsection">` | Nested headings (`##` / `###` / `####`) |
-| `<head>` | Heading text at the div's depth |
+| `<head>` | Heading text at the div's depth, including inline children (e.g. a nested `<title>`) |
 | `<p>` | Paragraph |
 | `<lg><l>…</l></lg>` | Verse stanza with line breaks |
 | `<note place="end">` | Inline footnote (collected at page foot) |
+| `<ptr>` | Cross-reference label kept; linked when the target is an external URL, plain text for internal targets |
 | `<term>`, `<title>`, `<ref>` | Inline text (tags stripped) |
-| `<milestone>`, `<lb>`, `<ptr>` | Omitted |
+| `<milestone>`, `<lb>`, `<caesura>` | Omitted |
 
 The Rust rendering path uses `roxmltree` to walk the DOM and produce the same HTML structure the Markdown pipeline outputs, so themes, footnotes, minimap, and pager all work unchanged for TEI documents.
 

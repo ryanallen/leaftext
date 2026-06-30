@@ -13,7 +13,8 @@
 //   <p>                               — paragraph
 //   <lg><l>…</l></lg>                 — verse block; lines joined with <br>
 //   <note place="end">…</note>        — inline footnote ref + end notes list
-//   <milestone>, <lb>, <ptr>          — omitted
+//   <milestone>, <lb>, <caesura>      — omitted
+//   <ptr>                             — keep label text (link if external URL)
 //   <term>, <title>, <ref>, <quote>   — strip tag, keep text
 // ---------------------------------------------------------------------------
 
@@ -185,7 +186,20 @@ function renderInline(node, ctx) {
         parts.push(
           `<sup class="footnote-ref" id="fnref-${n}"><a href="#fn-${n}">${n}</a></sup>`
         );
-      } else if (['milestone', 'lb', 'ptr', 'caesura'].includes(tag)) {
+      } else if (tag === 'ptr') {
+        // 84000 TEI puts the visible cross-reference label INSIDE <ptr>
+        // (e.g. <ptr target="...">Going forth</ptr>). Keep the label; link it
+        // only for external URLs (internal #ids don't map to heading slugs).
+        const label = renderInline(child, ctx);
+        if (label) {
+          const target = child.getAttribute('target') || '';
+          if (target.startsWith('http://') || target.startsWith('https://')) {
+            parts.push(`<a href="${escAttr(target)}">${label}</a>`);
+          } else {
+            parts.push(label);
+          }
+        }
+      } else if (['milestone', 'lb', 'caesura'].includes(tag)) {
         // omit
       } else {
         // term, title, ref, quote, foreign, hi, etc. → inline text

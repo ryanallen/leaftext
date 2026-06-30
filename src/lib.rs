@@ -938,7 +938,27 @@ fn tei_render_inline<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx) -> Str
                          <a href=\"#fn{n}\">{n}</a></sup>"
                     ));
                 }
-                "milestone" | "lb" | "ptr" | "caesura" => {
+                "ptr" => {
+                    // 84000 TEI puts the visible cross-reference label INSIDE
+                    // <ptr> (e.g. <ptr target="...">Going forth</ptr>). Keep the
+                    // label text; link it only when the target is an external URL
+                    // (internal #ids don't map to our heading slugs).
+                    let label = tei_render_inline(child, ctx);
+                    if !label.is_empty() {
+                        match child.attribute("target") {
+                            Some(t)
+                                if t.starts_with("http://") || t.starts_with("https://") =>
+                            {
+                                out.push_str(&format!(
+                                    "<a href=\"{}\">{label}</a>",
+                                    encode_double_quoted_attribute(t)
+                                ));
+                            }
+                            _ => out.push_str(&label),
+                        }
+                    }
+                }
+                "milestone" | "lb" | "caesura" => {
                     // omit
                 }
                 _ => {
@@ -973,17 +993,17 @@ fn tei_render_div<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx, depth: us
         .children()
         .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("head"));
     if let Some(head) = head_node {
-        let text = head.text().unwrap_or("").trim().to_string();
-        let text = if text.is_empty() {
-            head.children()
-                .filter(|c| c.is_text())
-                .map(|c| c.text().unwrap_or(""))
-                .collect::<String>()
-                .trim()
-                .to_string()
-        } else {
-            text
-        };
+        // Collect ALL descendant text so inline children render too. Heads like
+        // `<head>Prologue to <title>The Chapter on Going Forth</title></head>`
+        // would otherwise keep only the leading "Prologue to " text node.
+        let text = head
+            .descendants()
+            .filter(|c| c.is_text())
+            .map(|c| c.text().unwrap_or(""))
+            .collect::<String>()
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
         if !text.is_empty() {
             let id = ctx.unique_slug(&text);
             ctx.push(&format!(
