@@ -117,7 +117,7 @@ A document draws its terms from a shared glossary file. You do not have to link 
 - Dismiss the sheet with its close button, by clicking outside it, or with the `Escape` key.
 - A link inside the sheet that points at another glossary term swaps the entry in place; any other link leaves the glossary and follows the link normally.
 - A link at the foot of the sheet opens the whole glossary as a page.
-- Glossary term links show a dotted underline in every theme and mode, so an expandable term is easy to spot.
+- Glossary term links take the surrounding text's colour and carry a quiet dotted underline in that same colour, in every theme and mode — enough to mark an expandable term without pulling the eye away from the prose.
 - The glossary lives at one file, so the whole document set can share a single set of definitions.
 
 ### Author a glossary

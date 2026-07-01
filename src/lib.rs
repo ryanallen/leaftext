@@ -9661,16 +9661,22 @@ body.library-resizing {
   color: var(--preview-foreground);
   font-weight: 700;
 }
-/* Glossary term links read as a dotted underline in every theme and mode
-   (including speed reader) so an expandable term is always visually distinct
-   from a plain link. Matches both the `glossary:slug` shorthand and a real
-   `…/GLOSSARY.md#slug` relative link. Placed last so it wins ties against the
-   generic link and hover rules above. */
+/* Glossary term links read as a quiet dotted underline in every theme and mode
+   (including speed reader). They take the surrounding text's colour — not the
+   accent link colour — and the underline is that same colour, so an expandable
+   term stays discoverable without standing out from the prose it sits in.
+   Matches both the `glossary:slug` shorthand and a real `…/GLOSSARY.md#slug`
+   relative link. Placed last so it wins ties against the generic link and hover
+   rules above (in every state, including :hover). */
 .document-body a[href^="glossary:" i],
 .document-body a[href*="GLOSSARY.md#" i],
+.document-body a[href^="glossary:" i]:hover,
+.document-body a[href*="GLOSSARY.md#" i]:hover,
 :root[data-speed-reader="true"] .document-body a[href^="glossary:" i],
 :root[data-speed-reader="true"] .document-body a[href*="GLOSSARY.md#" i] {
+  color: inherit;
   text-decoration: underline dotted;
+  text-decoration-color: currentColor;
   text-underline-offset: 0.18em;
 }
 .document-body .github-ref,
