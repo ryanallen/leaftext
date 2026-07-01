@@ -882,15 +882,23 @@ pub fn render_markdown_document(markdown: &str, source_path: impl AsRef<Path>) -
 // TEI XML renderer
 // ---------------------------------------------------------------------------
 
-/// Heading level implied by a div's `type` attribute.
+/// Heading level for a div, from its nesting depth.
+///
+/// `type="translation"` is a transparent wrapper — it holds the whole translated
+/// work but is not itself a titled section, so it emits no heading and leaves the
+/// depth of the sections inside it unchanged.
+///
+/// Every other div is a nested section whose heading level follows nesting depth
+/// alone (h2 at the top, one smaller per level, floored at h6). 84000 TEI nests
+/// these types in varying orders — a `section` may contain a `chapter` and a
+/// `chapter` may contain a `section` — so a fixed type→level table produces
+/// inversions where a nested heading renders *larger* than the heading above it.
+/// Depth-based levels keep a child heading always at or below its parent's size.
 fn tei_div_heading_level(div_type: &str, depth: usize) -> Option<u8> {
-    match div_type {
-        "translation" => None, // transparent container
-        "prelude" | "chapter" => Some(2),
-        "section" => Some(3),
-        "subsection" => Some(4),
-        _ => Some((2 + depth as u8).min(6)),
+    if div_type.eq_ignore_ascii_case("translation") {
+        return None;
     }
+    Some((2 + depth as u8).min(6))
 }
 
 /// GitHub-compatible slug from plain text (matches slugger.js behaviour).
@@ -11548,6 +11556,37 @@ Paragraph after H6.
         assert_contains(&html, "<p>A prose paragraph.</p>");
         // No leftover plain verse paragraph markup.
         assert!(!html.contains("<p class=\"tei-verse\">"));
+    }
+
+    #[test]
+    fn tei_headings_shrink_with_nesting_never_invert() {
+        // 84000 TEI nests a `chapter` inside a `section`. A fixed type→level table
+        // (chapter=h2, section=h3) would render the nested chapter LARGER than the
+        // section above it. Heading level must follow nesting depth instead.
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0">
+  <text><body>
+    <div type="translation">
+      <div type="section">
+        <head>Outer Section</head>
+        <div type="chapter">
+          <head>Inner Chapter</head>
+          <div type="section">
+            <head>Deeper Section</head>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body></text>
+</TEI>"#;
+
+        let (_title, html) = render_tei_body(xml);
+
+        // Transparent `translation` adds no depth: top section is h2, the chapter
+        // inside it h3, the section inside that h4 — strictly shrinking, no inversion.
+        assert_contains(&html, r#"<h2 id="outer-section">Outer Section</h2>"#);
+        assert_contains(&html, r#"<h3 id="inner-chapter">Inner Chapter</h3>"#);
+        assert_contains(&html, r#"<h4 id="deeper-section">Deeper Section</h4>"#);
     }
 
     #[test]

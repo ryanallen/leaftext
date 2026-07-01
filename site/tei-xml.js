@@ -5,10 +5,9 @@
 // anchors.js work unchanged.
 //
 // Key TEI→HTML rules:
-//   div[@type="translation"]          — container; no heading
-//   div[@type="prelude"|"chapter"]    — h2 section
-//   div[@type="section"]              — h3 section
-//   div[@type="subsection"]           — h4 section
+//   div[@type="translation"]          — container; no heading, no added depth
+//   div[@type=…] (any other)          — nested section; heading level from depth
+//                                       (h2 at the top, one smaller per level, ≤ h6)
 //   <head>                            — heading at the parent div's level
 //   <p>                               — paragraph
 //   <lg><l>…</l></lg>                 — verse block; a blockquote, lines joined with <br>
@@ -20,14 +19,6 @@
 // ---------------------------------------------------------------------------
 
 import { slugify } from './slugger.js';
-
-// div[@type] → heading level (2 = h2, etc.)
-const DIV_HEADING_LEVEL = {
-  prelude: 2,
-  chapter: 2,
-  section: 3,
-  subsection: 4,
-};
 
 /** True when `text` looks like a TEI/XML document. */
 export function isTEI(text) {
@@ -159,7 +150,10 @@ function renderDiv(node, out, divDepth, ctx) {
     return;
   }
 
-  const level = DIV_HEADING_LEVEL[type] ?? Math.min(2 + divDepth, 6);
+  // Heading level follows nesting depth alone. 84000 TEI nests these types in
+  // varying orders (a `section` may hold a `chapter` and vice versa), so a fixed
+  // type→level table would render a nested heading larger than the one above it.
+  const level = Math.min(2 + divDepth, 6);
 
   // Emit the <head> child as a heading
   const headEl = [...node.children].find((c) => localName(c) === 'head');

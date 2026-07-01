@@ -93,6 +93,7 @@ Key details:
 
 - The file watcher debounces events with a 200 ms window.
 - leaftext hashes the file contents to skip duplicate reloads.
+- Reload re-renders through the same pipeline the file opened with — [TEI XML](markdown-rendering.md#tei-xml-84000-translations) stays TEI, Markdown stays Markdown.
 - The parent directory is watched instead of only the file, so atomic-save editors still work.
 - Other Markdown files changed in that same folder are indexed live, so the [library](library.md#live-updates) pane stays current too.
 

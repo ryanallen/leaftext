@@ -21,9 +21,9 @@ use leaftext::{
     fragment_scroll_script, glossary_sheet_script, initial_settings_script, initial_state_script,
     load_recent_files, load_settings, local_image_protocol_response, local_image_source_dir,
     navigation_state_script, open_document_with_recent, open_error_state_script,
-    opened_document_from_markdown, pager_loaded_script, render_markdown_document,
-    save_recent_files, save_settings, scroll_anchor_script, settings_file_path,
-    webview_user_data_dir, workspace_reload_script, workspace_state_script,
+    opened_document_from_markdown, opened_document_from_tei, pager_loaded_script,
+    render_markdown_document, save_recent_files, save_settings, scroll_anchor_script,
+    settings_file_path, webview_user_data_dir, workspace_reload_script, workspace_state_script,
     workspace_switch_script, LibraryView, RecentFiles, ScrollAnchor, Settings,
     LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
@@ -1502,8 +1502,8 @@ fn reload_active_document(
         return;
     };
 
-    let markdown = match fs::read_to_string(&path) {
-        Ok(markdown) => markdown,
+    let contents = match fs::read_to_string(&path) {
+        Ok(contents) => contents,
         // The file may be mid-save or briefly absent during an atomic rename; a
         // later event will deliver the settled contents, so skip this one.
         Err(error) => {
@@ -1512,13 +1512,24 @@ fn reload_active_document(
         }
     };
 
-    let hash = content_hash(&markdown);
+    let hash = content_hash(&contents);
     if file_watch.active_hash == Some(hash) {
         return;
     }
     file_watch.active_hash = Some(hash);
 
-    let document = opened_document_from_markdown(&markdown, &path);
+    // Render through the same path as an initial open: TEI XML files go through
+    // the TEI renderer, everything else through Markdown. Reuse the content we
+    // already read for the hash-gate so we don't hit disk twice.
+    let is_xml = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("xml"));
+    let document = if is_xml {
+        opened_document_from_tei(&contents, &path)
+    } else {
+        opened_document_from_markdown(&contents, &path)
+    };
     if let Some(tab) = workspace.tabs.get_mut(index) {
         tab.title = document.title.clone();
     }

@@ -350,7 +350,7 @@ leaftext opens `.xml` files in the 84000 Buddhist-translation TEI format alongsi
 
 | Element | Rendered as |
 |---|---|
-| `<div type="…">` | Nested headings by type: `prelude`/`chapter` → `##`, `section` → `###`, `subsection` → `####`; `translation` is a transparent wrapper (no heading); other types nest by depth (`##`–`######`) |
+| `<div type="…">` | A nested section. Heading level follows nesting depth (`##` at the top, one smaller per level, floored at `######`), so a nested heading is never larger than the one above it. `translation` is a transparent wrapper (no heading, no added depth) |
 | `<head>` | Heading text at the div's depth, including inline children (e.g. a nested `<title>`) |
 | `<p>` | Paragraph |
 | `<lg><l>…</l></lg>` | Verse stanza rendered as a [blockquote](#blockquotes-and-alerts) (left bar + hanging indent), one `<l>` line per row |
