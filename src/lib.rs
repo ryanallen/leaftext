@@ -1219,6 +1219,22 @@ fn link_terms_in_html(html: &str, terms: &[(String, String)]) -> String {
         return html.to_string();
     }
 
+    // Precompute each term's lowercased form and slug once (not per text run),
+    // sorted longest-first so multi-word terms win over their substrings, and
+    // index them by lowercased first byte so each scan position only tests the
+    // handful of terms that could possibly start there.
+    let mut prepared: Vec<(String, String)> = terms
+        .iter()
+        .map(|(term, slug)| (term.to_lowercase(), slug.clone()))
+        .collect();
+    prepared.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
+    let mut buckets: HashMap<u8, Vec<usize>> = HashMap::new();
+    for (i, (lower, _)) in prepared.iter().enumerate() {
+        if let Some(&first) = lower.as_bytes().first() {
+            buckets.entry(first).or_default().push(i);
+        }
+    }
+
     let mut result = String::with_capacity(html.len() + html.len() / 4);
     let chars: &[u8] = html.as_bytes();
     let len = chars.len();
@@ -1264,7 +1280,7 @@ fn link_terms_in_html(html: &str, terms: &[(String, String)]) -> String {
                 result.push_str(text_run);
             } else {
                 // Replace term occurrences in this text run
-                result.push_str(&replace_terms_in_text(text_run, terms));
+                result.push_str(&replace_terms_in_text(text_run, &prepared, &buckets));
             }
             pos = text_end;
         }
@@ -1272,49 +1288,87 @@ fn link_terms_in_html(html: &str, terms: &[(String, String)]) -> String {
     result
 }
 
-/// Replace term occurrences with `<a href="glossary:slug">term</a>` in a plain-text run.
-fn replace_terms_in_text(text: &str, terms: &[(String, String)]) -> String {
-    let mut result = text.to_string();
-    for (term, slug) in terms {
-        let lower_term = term.to_lowercase();
-        let lower_result = result.to_lowercase();
-        let mut new_result = String::with_capacity(result.len());
-        let mut search_start = 0;
+/// Replace term occurrences with `<a href="glossary:slug">term</a>` in a plain-text
+/// run. `prepared` is the lowercased `(term, slug)` list (longest-first) and
+/// `buckets` indexes it by lowercased first byte (both built once by the caller).
+///
+/// Matching is done against a lowercased copy of `text`, but every byte offset is
+/// mapped back to the original through `orig` so slices always land on real char
+/// boundaries. This matters because `to_lowercase()` can change a string's byte
+/// length (and boundaries), so indexing the original with offsets taken from the
+/// lowercased copy — as an earlier version did — panics on non-ASCII text, and
+/// these documents are full of diacritics (Aṅga, Mahāpadma, Tuṣita, …).
+fn replace_terms_in_text(
+    text: &str,
+    prepared: &[(String, String)],
+    buckets: &HashMap<u8, Vec<usize>>,
+) -> String {
+    // Build the lowercased run alongside `orig`, where `orig[i]` is the original
+    // byte offset that lowercased byte `i` came from. `orig` has one entry per
+    // lowercased byte plus a trailing sentinel (`text.len()`), so any offset in
+    // `0..=lower.len()` maps to a valid char boundary in `text`.
+    let mut lower = String::with_capacity(text.len());
+    let mut orig: Vec<usize> = Vec::with_capacity(text.len() + 1);
+    for (off, ch) in text.char_indices() {
+        let mut buf = [0u8; 4];
+        for lc in ch.to_lowercase() {
+            let s = lc.encode_utf8(&mut buf);
+            for _ in 0..s.len() {
+                orig.push(off);
+            }
+            lower.push_str(s);
+        }
+    }
+    orig.push(text.len());
+    let lower_bytes = lower.as_bytes();
 
-        while let Some(idx) = lower_result[search_start..].find(lower_term.as_str()) {
-            let abs_idx = search_start + idx;
-            let abs_end = abs_idx + term.len();
-
-            // Check word boundaries (preceding and following chars must not be word chars)
-            let before_ok = abs_idx == 0
-                || !lower_result[..abs_idx]
-                    .chars()
-                    .next_back()
-                    .map(|c| c.is_alphanumeric())
-                    .unwrap_or(false);
-            let after_ok = abs_end >= lower_result.len()
-                || !lower_result[abs_end..]
-                    .chars()
-                    .next()
-                    .map(|c| c.is_alphanumeric())
-                    .unwrap_or(false);
-
-            if before_ok && after_ok {
-                new_result.push_str(&result[search_start..abs_idx]);
-                let matched = &result[abs_idx..abs_end];
-                new_result.push_str(&format!(
-                    r#"<a href="glossary:{slug}">{}</a>"#,
-                    encode_text(matched)
-                ));
-                search_start = abs_end;
-            } else {
-                // Advance past this non-boundary match to avoid an infinite loop
-                new_result.push_str(&result[search_start..abs_idx + 1]);
-                search_start = abs_idx + 1;
+    let mut result = String::with_capacity(text.len());
+    let mut pos = 0usize; // byte offset into `lower`, always a char boundary
+    while pos < lower.len() {
+        let mut matched = false;
+        if let Some(candidates) = buckets.get(&lower_bytes[pos]) {
+            for &i in candidates {
+                let (lower_term, slug) = &prepared[i];
+                let end = pos + lower_term.len();
+                if end > lower.len() || &lower_bytes[pos..end] != lower_term.as_bytes() {
+                    continue;
+                }
+                // Whole-word: neither neighbour may be alphanumeric.
+                let before_ok = pos == 0
+                    || !lower[..pos]
+                        .chars()
+                        .next_back()
+                        .map(char::is_alphanumeric)
+                        .unwrap_or(false);
+                let after_ok = end == lower.len()
+                    || !lower[end..]
+                        .chars()
+                        .next()
+                        .map(char::is_alphanumeric)
+                        .unwrap_or(false);
+                if !(before_ok && after_ok) {
+                    continue;
+                }
+                // Emit the original (already HTML-encoded) span verbatim, so its
+                // casing and any entities are preserved.
+                let span = &text[orig[pos]..orig[end]];
+                result.push_str(&format!(r#"<a href="glossary:{slug}">{span}</a>"#));
+                pos = end;
+                matched = true;
+                break;
             }
         }
-        new_result.push_str(&result[search_start..]);
-        result = new_result;
+        if !matched {
+            // Advance one original char: skip past every lowercased byte that came
+            // from the same source char (a char may lowercase to several).
+            let src = orig[pos];
+            let mut next = pos + 1;
+            while next < lower.len() && orig[next] == src {
+                next += 1;
+            }
+            result.push_str(&text[src..orig[next]]);
+            pos = next;
+        }
     }
     result
 }
@@ -10750,6 +10804,52 @@ mod tests {
         assert_eq!(from_memory.html, from_disk.html);
         assert_eq!(from_memory.path, from_disk.path);
         assert_eq!(from_memory.minimap, from_disk.minimap);
+    }
+
+    #[test]
+    fn links_terms_with_diacritics_without_panicking() {
+        // Regression: matching used offsets from a lowercased copy to slice the
+        // original, which panics on non-ASCII text (lowercasing can shift byte
+        // boundaries). These documents are full of diacritics, so the linker
+        // crashed the app instantly. Terms are (term, slug) pairs, longest-first.
+        let terms = vec![
+            ("King of Aṅga".to_string(), "king-of-aṅga".to_string()),
+            ("Mahāpadma".to_string(), "mahāpadma".to_string()),
+            ("Aṅga".to_string(), "aṅga".to_string()),
+            ("Tuṣita".to_string(), "tuṣita".to_string()),
+        ];
+        let html = "<p>The King of Aṅga fought Mahāpadma near Aṅga, \
+            while dwelling in Tuṣita. king of aṅga again.</p>";
+        let linked = link_terms_in_html(html, &terms);
+
+        // Longest-first: "King of Aṅga" wins over the bare "Aṅga" inside it.
+        assert_contains(
+            &linked,
+            r#"<a href="glossary:king-of-aṅga">King of Aṅga</a>"#,
+        );
+        assert_contains(&linked, r#"<a href="glossary:mahāpadma">Mahāpadma</a>"#);
+        assert_contains(&linked, r#"<a href="glossary:tuṣita">Tuṣita</a>"#);
+        // The standalone "Aṅga" (comma after) still links via the short term.
+        assert_contains(&linked, r#"<a href="glossary:aṅga">Aṅga</a>"#);
+        // Case-insensitive match keeps the original casing in the link text.
+        assert_contains(
+            &linked,
+            r#"<a href="glossary:king-of-aṅga">king of aṅga</a>"#,
+        );
+    }
+
+    #[test]
+    fn does_not_link_substrings_inside_larger_words() {
+        let terms = vec![("go".to_string(), "go".to_string())];
+        // "go" must not match inside "going" or "ago".
+        let linked = link_terms_in_html("<p>going ago; go now</p>", &terms);
+        // "going" and "ago" are left untouched; only the standalone word links.
+        assert_contains(&linked, "<p>going ago; ");
+        assert_contains(&linked, r#"<a href="glossary:go">go</a> now</p>"#);
+        assert!(
+            !linked.contains(r#"<a href="glossary:go">go</a>ing"#),
+            "should not have linked the 'go' inside 'going'"
+        );
     }
 
     #[test]
