@@ -634,15 +634,21 @@ fn collect_pager_entries_into(dir: &Path, into: &mut Vec<PagerEntry>) {
         let path = entry.path();
         if path.is_dir() {
             subdirs.push(path);
-        } else if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-            let is_md = path
+        } else if path.file_name().and_then(|n| n.to_str()).is_some() {
+            // Markdown and TEI XML documents are both sequential pages. README
+            // (the folder's landing page, added by the parent) and GLOSSARY (the
+            // sheet, never a page) are excluded by stem so either extension drops.
+            let is_doc = path
                 .extension()
                 .and_then(|e| e.to_str())
-                .is_some_and(|e| e.eq_ignore_ascii_case("md"));
-            if is_md
-                && !name.eq_ignore_ascii_case("README.md")
-                && !name.eq_ignore_ascii_case("GLOSSARY.md")
-            {
+                .is_some_and(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("xml"));
+            let stem = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or_default();
+            let is_index =
+                stem.eq_ignore_ascii_case("README") || stem.eq_ignore_ascii_case("GLOSSARY");
+            if is_doc && !is_index {
                 files.push(path);
             }
         }
@@ -693,9 +699,12 @@ fn by_pager_name(a: &PathBuf, b: &PathBuf) -> std::cmp::Ordering {
 /// trailing `.md`, collapse runs of `-`/`_` to single spaces, and capitalise the
 /// first letter of each word. e.g. `book-1-words--kangyur` -> `Book 1 Words Kangyur`.
 fn pager_label(raw: &str) -> String {
+    // Drop a trailing `.md` or `.xml` (case-insensitively); leave any other name
+    // — including folders, which carry no such extension — untouched.
     let base = raw
-        .strip_suffix(".md")
-        .or_else(|| raw.strip_suffix(".MD"))
+        .rsplit_once('.')
+        .filter(|(_, ext)| ext.eq_ignore_ascii_case("md") || ext.eq_ignore_ascii_case("xml"))
+        .map(|(stem, _)| stem)
         .unwrap_or(raw);
     let mut spaced = String::with_capacity(base.len());
     let mut prev_sep = false;
@@ -10963,6 +10972,48 @@ mod tests {
         );
         assert_eq!(pager_label("going-forth.md"), "Going Forth");
         assert_eq!(pager_label("get_started"), "Get Started");
+        // TEI XML chapters are pager pages too; their extension is stripped.
+        assert_eq!(
+            pager_label("001-001_toh1-1_chapter_on_going_forth.xml"),
+            "001 001 Toh1 1 Chapter On Going Forth"
+        );
+    }
+
+    #[test]
+    fn pager_includes_tei_xml_documents() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time is after Unix epoch")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("leaf-pager-xml-{unique}"));
+        let book = root.join("book-1-going-forth--pravrajyavastu");
+        fs::create_dir_all(&book).expect("tree is created");
+        fs::write(root.join("README.md"), "# Root\n").expect("root README written");
+        fs::write(book.join("README.md"), "# Book\n").expect("book README written");
+        // Two XML chapters plus a Markdown one, to prove XML both appears in the
+        // order and pages to its neighbours.
+        let ch1 = book.join("001-going-forth.xml");
+        let ch2 = book.join("002-ordination.xml");
+        let notes = book.join("003-notes.md");
+        for (p, body) in [(&ch1, "<TEI/>"), (&ch2, "<TEI/>")] {
+            fs::write(p, body).expect("xml chapter written");
+        }
+        fs::write(&notes, "# Notes\n").expect("md chapter written");
+
+        // Standing on the first XML chapter: next is the second XML chapter.
+        let html = pager_html(&ch1);
+        // Standing on the second XML chapter: prev is the first, next is the md.
+        let html_mid = pager_html(&ch2);
+        fs::remove_dir_all(&root).expect("tree removed");
+
+        assert!(
+            html.contains(r#"class="docs-pager-next""#) && html.contains("002 Ordination"),
+            "an XML chapter should page to the next document: {html}"
+        );
+        assert!(
+            html_mid.contains("001 Going Forth") && html_mid.contains("003 Notes"),
+            "the XML chapter should sit between its neighbours: {html_mid}"
+        );
     }
 
     #[test]

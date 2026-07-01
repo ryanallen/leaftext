@@ -147,9 +147,9 @@ The `glossary:` link carries no file path, so the same text works from any page 
 
 ## Pager
 
-When you open a Markdown document that sits inside a folder tree connected by `README.md` files, leaftext appends a **Previous / Next** bar at the bottom of the page. Clicking a button opens the adjacent document in reading order without creating an extra history entry.
+When you open a Markdown or TEI XML document that sits inside a folder tree connected by `README.md` files, leaftext appends a **Previous / Next** bar at the bottom of the page. Clicking a button opens the adjacent document in reading order without creating an extra history entry.
 
-Reading order follows the same depth-first walk the docs viewer uses: inside each folder, non-README files come first (sorted by name), then each subfolder — its README acting as the folder's landing page — followed by that folder's own pages. `README.md` and `GLOSSARY.md` are never standalone entries in the sequence.
+Reading order follows the same depth-first walk the docs viewer uses: inside each folder, non-README documents come first (Markdown and XML together, sorted by name), then each subfolder — its README acting as the folder's landing page — followed by that folder's own pages. `README` and `GLOSSARY` files (either extension) are never standalone entries in the sequence.
 
 Working out the Previous / Next links means scanning the folder tree, so leaftext does it after the document is already on screen rather than blocking the initial render. A placeholder bar shows in its place for the moment it takes, then the real buttons fill in. In a folder with a great many files the page appears immediately and the pager simply arrives a beat later.
 
