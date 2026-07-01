@@ -111,6 +111,8 @@ function ensureAnchorLinkTargets(root) {
     if (target.classList.contains('footnote-definition') || target.classList.contains('footnotes')) {
       return;
     }
+    // The generated outline is navigation, not body content — no locus number.
+    if (target.closest('.document-outline')) return;
     if (isNavOutlineItem(target)) return;
     const tag = target.tagName;
     if (tag === 'H1' || tag === 'H2' || tag === 'H3' || tag === 'H4' || tag === 'H5' || tag === 'H6') {
@@ -149,6 +151,7 @@ export function decorateAnchorLinks(root, label = 'Link to this section') {
     if (target.classList.contains('footnote-definition') || target.classList.contains('footnotes')) {
       return;
     }
+    if (target.closest('.document-outline')) return;
     if (target.querySelector(':scope > .anchor-link')) return;
     const link = document.createElement('a');
     link.className = 'anchor-link';

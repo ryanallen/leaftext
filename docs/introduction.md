@@ -21,6 +21,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 - Read Markdown and [TEI XML](features/markdown-rendering.md#tei-xml-84000-translations) without opening an editor.
 - [Render](features/markdown-rendering.md) CommonMark, GFM, [Mermaid](features/markdown-rendering.md#mermaid-diagrams), [math](features/markdown-rendering.md#math), [alerts](features/markdown-rendering.md#blockquotes-and-alerts), [footnotes](features/markdown-rendering.md#footnotes), [emoji](features/markdown-rendering.md#emoji), and local images.
 - Keep multiple documents open in [tabs](features/navigation.md#tabs).
+- Jump to any section from the [outline](features/navigation.md#outline) — a collapsed table of contents at the top of each document.
 - Move [back and forward](features/navigation.md#history) through documents and in-page jumps.
 - Browse indexed Markdown files in the [library pane](features/library.md).
 - [Reload](features/navigation.md#reload) the current file when it changes on disk.

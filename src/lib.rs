@@ -3040,6 +3040,7 @@ function renderState() {
     const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';
     app.innerHTML = `<div class="${layoutClass}">${state.document.html}${minimapHtml}</div>`;
     decorateBlockquoteLines();
+    buildDocumentOutline();
     decorateAnchorLinks();
     bindDocumentLinks();
     requestDocumentPager(state.document.path || activeDocumentPath());
@@ -3541,6 +3542,8 @@ function ensureAnchorLinkTargets(body) {
   let index = 0;
   body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
     if (target.classList.contains('footnote-definition')) return;
+    // The generated outline is navigation, not body content — no locus number.
+    if (target.closest('.document-outline')) return;
     if (isNavOutlineItem(target)) return;
     const tag = target.tagName;
     if (tag === 'H1' || tag === 'H2' || tag === 'H3' || tag === 'H4' || tag === 'H5' || tag === 'H6') {
@@ -3553,6 +3556,63 @@ function ensureAnchorLinkTargets(body) {
       assignLocus(target, heading + '.' + index, seen);
     }
   });
+}
+// Build a collapsed "Outline" (table of contents) from the document's headings
+// and insert it just under the title. Mirrors site/outline.js: a pure DOM pass
+// over the <h1>–<h6> the renderer emits (each with a slug id), so it behaves the
+// same for Markdown and TEI XML. Entries nest as an ordered list — one step in
+// per step down in heading level — inside a <details> that starts closed so it
+// never crowds the top. Run before the anchor pass so its link-only entries stay
+// out of the block-numbering scheme, and before bindDocumentLinks so each entry's
+// #slug jump is wired into fragment navigation like any other TOC link.
+function buildDocumentOutline() {
+  const body = app.querySelector('.document-body');
+  if (!body) return;
+  const existing = body.querySelector(':scope > .document-outline');
+  if (existing) existing.remove();
+  const headings = Array.from(body.querySelectorAll('h1, h2, h3, h4, h5, h6')).filter(
+    (h) => !h.closest('.document-outline') && !h.closest('.footnotes')
+  );
+  if (headings.length < 2) return;
+  const title = headings[0];
+  const rest = headings.slice(1);
+  rest.forEach((h, i) => { if (!h.id) h.id = 'section-' + (i + 1); });
+  const readHeadingText = (h) => {
+    const clone = h.cloneNode(true);
+    clone.querySelectorAll('.heading-anchor, .anchor-link, .locus-alias, .footnote-ref').forEach((n) => n.remove());
+    return (clone.textContent || '').replace(/\s+/g, ' ').trim();
+  };
+  const rootList = document.createElement('ol');
+  const stack = [{ level: 0, ol: rootList }];
+  rest.forEach((h) => {
+    const level = Number(h.tagName.slice(1)) || 1;
+    while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
+    const parent = stack[stack.length - 1];
+    let container = parent.ol;
+    if (parent.level !== 0) {
+      const lastLi = parent.ol.lastElementChild;
+      let sub = lastLi ? lastLi.querySelector(':scope > ol') : null;
+      if (!sub) { sub = document.createElement('ol'); (lastLi || parent.ol).appendChild(sub); }
+      container = sub;
+    }
+    const li = document.createElement('li');
+    const link = document.createElement('a');
+    link.className = 'document-outline-link';
+    link.href = '#' + encodeURIComponent(h.id);
+    link.textContent = readHeadingText(h) || h.id;
+    li.appendChild(link);
+    container.appendChild(li);
+    stack.push({ level, ol: container });
+  });
+  const details = document.createElement('details');
+  details.className = 'document-outline';
+  const summary = document.createElement('summary');
+  summary.className = 'document-outline-summary';
+  summary.dataset.i18n = 'outline.title';
+  summary.textContent = window.leafLocale.t('outline.title');
+  details.appendChild(summary);
+  details.appendChild(rootList);
+  title.insertAdjacentElement('afterend', details);
 }
 // Give every anchor-addressable block a permalink button in the left gutter,
 // GitHub style. Done in JS, after sanitized HTML is in the DOM, so it catches
@@ -3571,6 +3631,7 @@ function decorateAnchorLinks() {
     const locus = target.dataset.locus;
     if (!locus) return;
     if (target.classList.contains('footnote-definition')) return;
+    if (target.closest('.document-outline')) return;
     if (target.querySelector(':scope > .heading-anchor')) return;
     const link = document.createElement('a');
     link.className = 'heading-anchor';
@@ -4575,6 +4636,7 @@ fn locale_bootstrap_script() -> &'static str {
       'recent.headingWithCount': 'Recent ({count})',
       'recent.openTitle': 'Open {path}',
       'minimap.aria': 'Document minimap',
+      'outline.title': 'Outline',
       'settings.heading': 'Settings',
       'settings.indexing.label': 'Index entire device',
       'settings.indexing.help': 'Crawl this device for Markdown files and rescan each time you open the app.',
@@ -4648,6 +4710,7 @@ fn locale_bootstrap_script() -> &'static str {
       'recent.headingWithCount': '最近文件（{count}）',
       'recent.openTitle': '打开 {path}',
       'minimap.aria': '文档缩略图',
+      'outline.title': '大纲',
       'settings.heading': '设置',
       'settings.indexing.label': '索引整个设备',
       'settings.indexing.help': '扫描此设备上的 Markdown 文件，并在每次打开应用时重新扫描。',
@@ -9402,6 +9465,63 @@ body.library-resizing {
 .document-body strong {
   font-weight: 600;
 }
+/* Outline (table of contents): a collapsed <details> built from the document's
+   headings and dropped in just under the title (see buildDocumentOutline).
+   Closed by default so it never crowds the top; open it to jump to any heading. */
+.document-body .document-outline {
+  margin: 1.5em 0;
+  border: 1px solid var(--preview-border);
+  border-radius: 6px;
+  background: var(--code-block-background);
+}
+.document-body .document-outline-summary {
+  cursor: pointer;
+  padding: 0.5em 0.9em;
+  font-weight: 600;
+  color: var(--preview-foreground);
+  list-style: none;
+  user-select: none;
+}
+.document-body .document-outline-summary::-webkit-details-marker {
+  display: none;
+}
+.document-body .document-outline-summary::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-right: 0.55em;
+  border-left: 0.4em solid currentColor;
+  border-top: 0.32em solid transparent;
+  border-bottom: 0.32em solid transparent;
+  vertical-align: middle;
+  transition: transform 0.15s ease;
+}
+.document-body .document-outline[open] > .document-outline-summary::before {
+  transform: rotate(90deg);
+}
+.document-body .document-outline-summary:hover {
+  color: var(--markdown-link-hover);
+}
+.document-body .document-outline > ol {
+  margin: 0;
+  padding: 0 1.4em 0.7em 2.4em;
+}
+.document-body .document-outline ol {
+  margin: 0;
+  padding-left: 1.6em;
+  list-style: decimal;
+}
+.document-body .document-outline li {
+  margin: 0.15em 0;
+  color: var(--preview-muted-foreground);
+}
+.document-body .document-outline-link {
+  color: var(--preview-muted-foreground);
+}
+.document-body .document-outline-link:hover {
+  color: var(--markdown-link-hover);
+}
 :root[data-speed-reader="true"] .document-body {
   color: color-mix(in srgb, var(--preview-foreground) 80%, var(--reading-background));
   font-weight: 400;
@@ -12424,6 +12544,32 @@ const label = "<button onclick=alert(3)>copy</button>";
         assert_contains(&html, "line.className = 'blockquote-line';");
         assert_contains(&html, "paragraph.classList.add('blockquote-lines');");
         assert_contains(&html, "decorateBlockquoteLines();");
+    }
+
+    #[test]
+    fn app_shell_builds_collapsed_heading_outline_under_the_title() {
+        let html = app_shell_html();
+
+        // The builder exists, is wired into the render pipeline before the anchor
+        // pass, and the anchor pass skips the outline so its link-only entries
+        // never take a locus number.
+        assert_contains(&html, "function buildDocumentOutline() {");
+        assert_contains(&html, "buildDocumentOutline();");
+        assert_contains(&html, "if (target.closest('.document-outline')) return;");
+        // A title plus at least one section, inserted just under the title.
+        assert_contains(&html, "if (headings.length < 2) return;");
+        assert_contains(&html, "title.insertAdjacentElement('afterend', details);");
+        // Collapsed <details> with a localized "Outline" summary, entries nested
+        // as an ordered list that links each heading by its slug id.
+        assert_contains(&html, "details.className = 'document-outline';");
+        assert_contains(&html, "summary.dataset.i18n = 'outline.title';");
+        assert_contains(&html, "link.className = 'document-outline-link';");
+        assert_contains(&html, "link.href = '#' + encodeURIComponent(h.id);");
+        // The outline never opens on its own — closed until the reader expands it.
+        assert!(!html.contains("details.open = true"));
+        // Localized label present in both shipped languages.
+        assert_contains(&html, "'outline.title': 'Outline'");
+        assert_contains(&html, "'outline.title': '大纲'");
     }
 
     #[test]

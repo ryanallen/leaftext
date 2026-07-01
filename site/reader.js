@@ -11,6 +11,7 @@
 import { renderMarkdown } from './markdown.js';
 import { renderTEI, isTEI } from './tei-xml.js';
 import { initMinimap } from './minimap.js';
+import { buildOutline } from './outline.js';
 import { highlightCode, decorateCodeBlocks } from './codeblocks.js';
 import { decorateAnchorLinks } from './anchors.js';
 import { decorateBlockquoteLines } from './blockquotes.js';
@@ -166,6 +167,10 @@ async function main() {
 
     content.innerHTML = isXML ? renderTEI(text) : renderMarkdown(text);
     decorateBlockquoteLines(content);
+    // A collapsed outline (table of contents) built from the document's
+    // headings, tucked just under the title. Built before the anchor pass so its
+    // link-only entries stay out of the block-numbering scheme.
+    buildOutline(content, { label: 'Outline' });
     if (statusEl) statusEl.hidden = true;
 
     // Use the first heading as the tab title, if there is one.

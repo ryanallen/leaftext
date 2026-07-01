@@ -322,6 +322,68 @@ body {
   font-weight: 600;
 }
 
+/* ---- Outline (table of contents) ------------------------------------ */
+/* A collapsed <details> built from the document's headings, sitting just under
+   the title (see site/outline.js). Closed by default so it never crowds the
+   top; open it to jump to any heading. */
+.markdown-body .document-outline {
+  margin: var(--type-spacing) 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+}
+.markdown-body .document-outline-summary {
+  cursor: pointer;
+  padding: 0.5em 0.9em;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+  user-select: none;
+}
+/* Draw our own disclosure triangle so it sits inline with the label in every
+   engine (Safari/WebKit hides the default marker when list-style is none). */
+.markdown-body .document-outline-summary::-webkit-details-marker {
+  display: none;
+}
+.markdown-body .document-outline-summary::before {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-right: 0.55em;
+  border-left: 0.4em solid currentColor;
+  border-top: 0.32em solid transparent;
+  border-bottom: 0.32em solid transparent;
+  vertical-align: middle;
+  transition: transform 0.15s ease;
+}
+.markdown-body .document-outline[open] > .document-outline-summary::before {
+  transform: rotate(90deg);
+}
+.markdown-body .document-outline-summary:hover {
+  color: var(--link-hover);
+}
+.markdown-body .document-outline > ol {
+  margin: 0;
+  padding: 0 1.4em 0.7em 2.4em;
+}
+.markdown-body .document-outline ol {
+  margin: 0;
+  padding-left: 1.6em;
+  list-style: decimal;
+}
+.markdown-body .document-outline li {
+  margin: 0.15em 0;
+  color: var(--text-muted);
+}
+.markdown-body .document-outline-link {
+  color: var(--text-muted);
+}
+.markdown-body .document-outline-link:hover {
+  color: var(--link-hover);
+}
+
 :root[data-speed-reader='true'] .markdown-body {
   color: var(--speed-reader-dim);
   font-weight: 400;

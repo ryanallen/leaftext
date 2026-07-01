@@ -24,6 +24,7 @@ import { renderMarkdown } from '../site/markdown.js';
 import { initMinimap } from '../site/minimap.js';
 import { highlightCode, decorateCodeBlocks } from '../site/codeblocks.js';
 import { decorateAnchorLinks } from '../site/anchors.js';
+import { buildOutline } from '../site/outline.js';
 import { loadDocsNav } from '../site/docs-nav.js';
 import { installGlossary } from '../site/glossary.js';
 import { installLinkTooltip } from '../site/link-tooltip.js';
@@ -469,6 +470,11 @@ async function render(route, anchor) {
     const markdown = await res.text();
 
     contentEl.innerHTML = renderMarkdown(markdown);
+    // An in-page outline (table of contents) from this page's headings, tucked
+    // just under the title — distinct from the left nav sidebar, which lists
+    // pages, not the sections within a page. Built before the anchor pass so its
+    // link-only entries stay out of the block-numbering scheme.
+    buildOutline(contentEl, { label: 'Outline' });
     statusEl.hidden = true;
     displayedRoute = route;
 

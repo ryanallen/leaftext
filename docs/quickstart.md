@@ -42,6 +42,7 @@ flowchart LR
 | --- | --- |
 | Tab bar | Keeps multiple documents open |
 | Main reader | Shows the rendered Markdown or TEI XML |
+| Outline | A collapsed list of the document's headings at the top, for jumping to a section |
 | Minimap | Shows the whole document and your current viewport |
 | Back / Forward | Moves through document and scroll history |
 | Library pane | Lets you browse and search indexed Markdown files |

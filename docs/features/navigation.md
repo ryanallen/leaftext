@@ -9,6 +9,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | Feature | What it means |
 | --- | --- |
 | Tabs | Open multiple documents at once |
+| Outline | A collapsed table of contents, built from the document's headings, at the top of each page |
 | Back / Forward | Move through file history and in-page jumps |
 | Scroll anchors | Restore the same reading spot after rerenders |
 | Live reload | Reload a changed file without losing your place |
@@ -147,6 +148,17 @@ The `glossary:` link carries no file path, so the same text works from any page 
 
 > [!TIP]
 > These docs ship their own glossary. The links in the [Introduction](../introduction.md) — like [minimap](../GLOSSARY.md#minimap) — open this set's [GLOSSARY.md](../GLOSSARY.md); click one to see the sheet in action.
+
+## Outline
+
+Every document opens with an **Outline** — a table of contents built automatically from the document's headings — tucked just under the title. It starts collapsed, so it never crowds the top of the page; click it to expand.
+
+- Entries nest as a numbered list that mirrors the heading levels, so the shape of the document is visible at a glance.
+- Each entry links to its heading, so clicking one jumps straight there.
+- It is built from the rendered headings, so it behaves the same for Markdown and [TEI XML](markdown-rendering.md#tei-xml-84000-translations).
+- It appears whenever a document has a title plus at least one more heading; a document with only a title shows none.
+
+The outline lists the sections within the current document, which makes it a companion to the [minimap](minimap.md): the outline is the document's structure as clickable text, the minimap a scaled picture of the whole page.
 
 ## Pager
 
