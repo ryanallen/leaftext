@@ -16,6 +16,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | Glossary sheet | Open a glossary term over the page without leaving it |
 | Link hints | Hover a link to see what kind it is and where it points |
 | Pager | Previous / Next buttons at the bottom of each document for reading a folder in order |
+| Single window | A second launch opens the file as a tab in the running window instead of a new copy |
 
 ## Model
 
@@ -48,6 +49,7 @@ Mouse side buttons also trigger Back and Forward on Windows and Linux.
 - Each tab also keeps its own scroll history.
 - Tabs can be dragged to reorder them.
 - Closing the last tab returns to the home screen.
+- Opening a file while leaftext is already running (e.g. Explorer "Open with", or double-clicking a `.md`/`.xml`) reuses the running window — the file opens as a new tab and the window comes to the front, rather than launching a second copy of the app.
 
 ## History
 

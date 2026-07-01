@@ -1,5 +1,7 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
+mod single_instance;
+
 use std::{
     borrow::Cow,
     collections::HashMap,
@@ -53,6 +55,9 @@ enum UserEvent {
     /// now exist. Sent once on boot to flush a file passed on the command line
     /// (e.g. Explorer "Open with"), whose render would otherwise race the load.
     WebviewReady,
+    /// A second launch of the app forwarded a request to this (primary) instance
+    /// but carried no file — bring the existing window to the front.
+    FocusWindow,
     RevealPath(PathBuf),
     CopyFileToClipboard {
         path: PathBuf,
@@ -394,6 +399,20 @@ fn persist_settings(settings: &Settings, settings_path: Option<&PathBuf>) {
 }
 
 fn run_app() -> Result<(), Box<dyn Error>> {
+    // A file passed on the command line (Explorer "Open with", double-click, or a
+    // shell invocation). Used both to hand off to an already-running instance and,
+    // if we are the first instance, to open on boot.
+    let arg_path = env::args_os().nth(1).map(PathBuf::from);
+
+    // Claim the single-instance slot. If another instance is already running, the
+    // path above was forwarded to it — exit quietly without building any UI.
+    // Held for the whole process lifetime; dropping it frees the slot. The
+    // underscore keeps it bound (a bare `_` would drop it immediately).
+    let _instance_guard = match single_instance::acquire(arg_path.as_deref()) {
+        single_instance::Acquire::Primary(guard) => guard,
+        single_instance::Acquire::Forwarded => return Ok(()),
+    };
+
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
     let window = WindowBuilder::new()
         .with_title("Leaf Text")
@@ -403,6 +422,19 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .build(&event_loop)?;
 
     let proxy = event_loop.create_proxy();
+
+    // Later launches forward their request here over the single-instance pipe:
+    // open the file they carried, or just focus when they carried none.
+    single_instance::serve({
+        let proxy = proxy.clone();
+        move |maybe_path| {
+            let _ = proxy.send_event(match maybe_path {
+                Some(path) => UserEvent::OpenPath(path),
+                None => UserEvent::FocusWindow,
+            });
+        }
+    });
+
     let handler = ipc_handler(proxy.clone());
     let drag_drop_handler = drag_drop_handler(proxy.clone());
     let local_image_source_dir = Arc::new(Mutex::new(None::<PathBuf>));
@@ -454,6 +486,30 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             }
         });
 
+    // Trim WebView2's process/background footprint for a single-window, fully
+    // offline reader. Setting this replaces wry's own default arg string, so its
+    // defaults (disabling msWebOOUI/msPdfOOUI/SmartScreen, the autoplay policy)
+    // are folded back in here. Site isolation only spawns extra renderers for
+    // cross-origin content, which Leaf never has, so disabling it keeps one
+    // renderer per window without proliferation. GPU is deliberately left on —
+    // it is what keeps scrolling smooth. The renderer is kept un-backgrounded so
+    // it stays responsive even when the window is occluded or unfocused.
+    #[cfg(windows)]
+    let builder = {
+        use wry::WebViewBuilderExtWindows;
+        builder.with_additional_browser_args(concat!(
+            "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,",
+            "IsolateOrigins,site-per-process",
+            " --disable-site-isolation-trials",
+            " --disable-background-networking",
+            " --disable-component-update",
+            " --disable-domain-reliability",
+            " --disable-renderer-backgrounding",
+            " --disable-backgrounding-occluded-windows",
+            " --autoplay-policy=no-user-gesture-required",
+        ))
+    };
+
     #[cfg(any(
         target_os = "windows",
         target_os = "macos",
@@ -485,7 +541,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     // finished. Sending OpenPath now would render the document via evaluate_script
     // before the page's JS hooks exist, so it would silently land on the home
     // screen. WebviewReady flushes it once the page is ready.
-    let mut pending_open_path = env::args_os().nth(1).map(PathBuf::from);
+    let mut pending_open_path = arg_path;
 
     let mut webview = Some(webview);
     let _web_context = web_context;
@@ -554,11 +610,18 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                     &local_image_source_dir,
                     ScrollIntent::Reset,
                 );
+                // A forwarded open from a second launch should surface the window.
+                window.set_minimized(false);
+                window.set_focus();
             }
             Event::UserEvent(UserEvent::WebviewReady) => {
                 if let Some(path) = pending_open_path.take() {
                     let _ = proxy.send_event(UserEvent::OpenPath(path));
                 }
+            }
+            Event::UserEvent(UserEvent::FocusWindow) => {
+                window.set_minimized(false);
+                window.set_focus();
             }
             Event::UserEvent(UserEvent::RevealPath(path)) => {
                 if let Err(error) = reveal_in_file_manager(&path) {

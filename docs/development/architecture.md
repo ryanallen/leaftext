@@ -19,14 +19,16 @@ leaftext is a single Rust binary that embeds a WebView (via `wry`) inside a nati
 | `notify-debouncer-mini` | Filesystem watcher for live reload                   |
 | `blake3`                | File content hashing in the indexer                  |
 | `roxmltree`             | Read-only XML DOM parsing for TEI documents          |
+| `windows-sys` (Windows) | Named mutex + pipe for the single-instance guard     |
 
 ## Source files
 
-leaftext's Rust source is organized into three files:
+leaftext's Rust source is organized into four files:
 
-- **`src/main.rs`** — Entry point. Owns the `tao` event loop, the `Workspace` and `Tab` state, the IPC handler dispatch, the `FileWatch` live-reload watcher, and navigation history. Every `UserEvent` variant that drives the UI (open, close tab, switch tab, go back/forward, settings changes, indexer results) is handled here.
+- **`src/main.rs`** — Entry point. Owns the `tao` event loop, the `Workspace` and `Tab` state, the IPC handler dispatch, the `FileWatch` live-reload watcher, and navigation history. Every `UserEvent` variant that drives the UI (open, close tab, switch tab, go back/forward, settings changes, indexer results) is handled here. It also tunes WebView2 with a trimmed browser-argument set (site isolation and background networking off, GPU and the renderer kept hot) to reduce the process/background footprint of a single-window offline reader.
 - **`src/lib.rs`** — Core document rendering and app-state helpers. Contains `render_markdown_document()`, the HTML/CSS/JS shell generation (`app_shell_html()`), theme compilation (`compiled_theme_css()`), settings persistence (`load_settings()` / `save_settings()`), the minimap model builder, and the `local_image_protocol_response()` handler for the `leaf-image://` custom URL scheme.
 - **`src/indexer.rs`** — Background SQLite-based library indexer. Implements a breadth-first filesystem walk with a parse/hash worker pool (`PARSE_WORKERS = 4`), incremental fast-path checks on `mtime + size`, missing-file detection, and a separate read-only connection so tree queries answer promptly during a full crawl. It also answers the library's full-text search: files are split into chunks indexed in a SQLite FTS5 table, queried with BM25 ranking and highlighted snippets, and frontmatter fields are parsed into a normalized table.
+- **`src/single_instance.rs`** — Single-instance guard (Windows). The first launch holds a per-user named mutex and listens on a named pipe; a later launch detects the mutex, forwards its file path to the running instance (which opens it as a new tab and comes to the front), and exits before building any UI — so a second document reuses the existing process instead of spawning a whole new window and WebView2 group. A no-op on other platforms.
 
 ## Rendering pipeline
 
