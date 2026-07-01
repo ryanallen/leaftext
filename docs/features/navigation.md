@@ -106,8 +106,10 @@ The no-file home screen shows the last 8 opened files.
 
 ## Glossary
 
-A document can link a term to a shared glossary file. The simplest form is a `glossary:` link that names just the term, such as `[minimap](glossary:minimap)`. Clicking one does not switch documents: it opens that single glossary entry in a sheet that slides up over the page you are reading, so you keep your place underneath.
+A document draws its terms from a shared glossary file. You do not have to link them yourself: wherever a defined term appears in the text, leaftext links it for you. Clicking one does not switch documents: it opens that single glossary entry in a sheet that slides up over the page you are reading, so you keep your place underneath.
 
+- Terms are matched automatically in both Markdown and TEI XML documents — whole words, ignoring case — so the same glossary covers every page with no per-page markup.
+- Text that is already a link, or inside code, is left alone, and the glossary file never links its own entries to themselves.
 - Dismiss the sheet with its close button, by clicking outside it, or with the `Escape` key.
 - A link inside the sheet that points at another glossary term swaps the entry in place; any other link leaves the glossary and follows the link normally.
 - A link at the foot of the sheet opens the whole glossary as a page.
@@ -116,7 +118,7 @@ A document can link a term to a shared glossary file. The simplest form is a `gl
 
 ### Author a glossary
 
-Write one `GLOSSARY.md` next to your documents, with a `##` heading per term:
+Write one `GLOSSARY.md` at or above your documents, with a `##` heading per term:
 
 ```md
 # Glossary
@@ -130,15 +132,15 @@ The overview rail down the right edge of the reading view.
 One open document, with its own Back/Forward history and scroll position.
 ```
 
-Then link a term from any page using the heading's slug (its text lowercased, spaces turned to hyphens — so `Bottom Sheet` becomes `bottom-sheet`):
+That is all the authoring you need: every mention of *Minimap* or *Tab* across your documents now opens its entry. The app finds the glossary by walking up from the open document to the nearest `GLOSSARY.md`, so it can sit right beside a page or many folders above at the root of a project, and each project's pages bind to that project's own glossary. Because every page draws on the same file, one glossary serves the whole set.
+
+You can still link a term by hand when you want to — using the heading's slug (its text lowercased, spaces turned to hyphens — so `Bottom Sheet` becomes `bottom-sheet`):
 
 ```md
 Keep your place with the [minimap](glossary:minimap).
 ```
 
-The `glossary:` link carries no file path, so the same text works from any page no matter how deeply it is nested. The app finds the glossary by walking up from the open document to the nearest `GLOSSARY.md`, so each project's pages bind to that project's own glossary. Because every page points at the same file, one glossary serves the whole set.
-
-A plain relative link to the file also works — `[minimap](GLOSSARY.md#minimap)`, or `[minimap](../GLOSSARY.md#minimap)` from a page one folder down — but you have to count the folders yourself. The `glossary:` form avoids that.
+The `glossary:` link carries no file path, so the same text works from any page no matter how deeply it is nested. A plain relative link to the file also works — `[minimap](GLOSSARY.md#minimap)`, or `[minimap](../GLOSSARY.md#minimap)` from a page one folder down — but you have to count the folders yourself. Both forms open the same sheet as the automatic links.
 
 > [!TIP]
 > These docs ship their own glossary. The links in the [Introduction](../introduction.md) — like [minimap](../GLOSSARY.md#minimap) — open this set's [GLOSSARY.md](../GLOSSARY.md); click one to see the sheet in action.

@@ -840,6 +840,19 @@ pub fn render_markdown_document(markdown: &str, source_path: impl AsRef<Path>) -
         markdown,
         source_path,
     });
+    // Auto-link glossary terms from the nearest GLOSSARY.md, so terms link even
+    // when the source markdown didn't spell out the links. Occurrences already
+    // inside a manual link (or code) are left untouched by the linker. Skip the
+    // glossary file itself, so its own entries don't get self-linked.
+    let is_glossary = source_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .map(|n| n.eq_ignore_ascii_case("GLOSSARY.md"))
+        .unwrap_or(false);
+    let body = match (is_glossary, source_path.parent()) {
+        (false, Some(dir)) => auto_link_glossary(body, dir),
+        _ => body,
+    };
     let base_href = source_path
         .parent()
         .and_then(|parent| Url::from_directory_path(parent).ok())
@@ -946,9 +959,7 @@ fn tei_render_inline<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx) -> Str
                     let label = tei_render_inline(child, ctx);
                     if !label.is_empty() {
                         match child.attribute("target") {
-                            Some(t)
-                                if t.starts_with("http://") || t.starts_with("https://") =>
-                            {
+                            Some(t) if t.starts_with("http://") || t.starts_with("https://") => {
                                 out.push_str(&format!(
                                     "<a href=\"{}\">{label}</a>",
                                     encode_double_quoted_attribute(t)
@@ -1308,12 +1319,32 @@ fn replace_terms_in_text(text: &str, terms: &[(String, String)]) -> String {
     result
 }
 
-/// Look for GLOSSARY.md next to `doc_dir` and auto-link terms in `body_html`.
-fn auto_link_glossary(body_html: String, doc_dir: &Path) -> String {
-    let glossary_path = doc_dir.join("GLOSSARY.md");
-    if !glossary_path.exists() {
-        return body_html;
+/// Find the nearest `GLOSSARY.md` by walking up from `doc_dir` (the folder the
+/// document lives in) toward the filesystem root. The glossary usually sits at a
+/// project root many folders above the document — the same convention the
+/// `glossary:` sheet links resolve against in `main.rs::nearest_glossary_file` —
+/// so checking only the document's own folder would almost always miss it. A
+/// lowercase `glossary.md` is accepted too, for case-sensitive trees.
+fn nearest_glossary_file(doc_dir: &Path) -> Option<PathBuf> {
+    let mut dir = Some(doc_dir);
+    while let Some(folder) = dir {
+        for name in ["GLOSSARY.md", "glossary.md"] {
+            let candidate = folder.join(name);
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+        dir = folder.parent();
     }
+    None
+}
+
+/// Find the nearest GLOSSARY.md at or above `doc_dir` and auto-link its terms in
+/// `body_html`.
+fn auto_link_glossary(body_html: String, doc_dir: &Path) -> String {
+    let Some(glossary_path) = nearest_glossary_file(doc_dir) else {
+        return body_html;
+    };
     let terms = parse_glossary_terms(&glossary_path);
     if terms.is_empty() {
         return body_html;
@@ -10719,6 +10750,72 @@ mod tests {
         assert_eq!(from_memory.html, from_disk.html);
         assert_eq!(from_memory.path, from_disk.path);
         assert_eq!(from_memory.minimap, from_disk.minimap);
+    }
+
+    #[test]
+    fn auto_links_glossary_terms_from_an_ancestor_folder() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time is after Unix epoch")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("leaf-glossary-walkup-{unique}"));
+        // Glossary lives at the project root; the document sits several folders down.
+        let deep = root.join("collection").join("volume").join("book");
+        fs::create_dir_all(&deep).expect("tree is created");
+        fs::write(
+            root.join("GLOSSARY.md"),
+            "# Glossary\n\n## Bodhisattva\n*byang chub sems dpa'*, a being bound for awakening.\n",
+        )
+        .expect("glossary written");
+
+        let md = deep.join("chapter.md");
+        fs::write(&md, "# Chapter\n\nThe Bodhisattva was dwelling there.\n")
+            .expect("markdown written");
+        let from_md = opened_document_from_markdown(
+            "# Chapter\n\nThe Bodhisattva was dwelling there.\n",
+            &md,
+        );
+
+        let xml = deep.join("chapter.xml");
+        let tei = "<TEI xmlns=\"http://www.tei-c.org/ns/1.0\"><text><body>\
+            <div type=\"translation\"><p>The Bodhisattva was dwelling there.</p></div>\
+            </body></text></TEI>";
+        fs::write(&xml, tei).expect("xml written");
+        let from_xml = opened_document_from_tei(tei, &xml);
+
+        fs::remove_dir_all(&root).expect("tree removed");
+
+        assert_contains(
+            &from_md.html,
+            r#"<a href="glossary:bodhisattva">Bodhisattva</a>"#,
+        );
+        assert_contains(
+            &from_xml.html,
+            r#"<a href="glossary:bodhisattva">Bodhisattva</a>"#,
+        );
+    }
+
+    #[test]
+    fn does_not_auto_link_terms_inside_the_glossary_file_itself() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time is after Unix epoch")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("leaf-glossary-self-{unique}"));
+        fs::create_dir_all(&root).expect("tree is created");
+        let glossary = root.join("GLOSSARY.md");
+        let text =
+            "# Glossary\n\n## Buddha\nan awakened one.\n\n## Dharma\nthe Buddha's teaching.\n";
+        fs::write(&glossary, text).expect("glossary written");
+
+        let rendered = opened_document_from_markdown(text, &glossary);
+        fs::remove_dir_all(&root).expect("tree removed");
+
+        // "Buddha" appears in the Dharma definition but must not be self-linked.
+        assert!(
+            !rendered.html.contains("glossary:buddha"),
+            "the glossary file should not auto-link its own terms"
+        );
     }
 
     #[test]

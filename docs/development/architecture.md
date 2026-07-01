@@ -78,7 +78,7 @@ After traversal, any collected footnotes are appended as a `<section class="foot
 
 **5. Auto-link glossary (optional)**
 
-If a `GLOSSARY.md` exists next to the document, `auto_link_glossary()` runs the same term-replacement pass used for Markdown documents, wrapping matched terms with `<a href="glossary:slug">` anchors.
+`auto_link_glossary()` walks up from the document's folder to the nearest `GLOSSARY.md` (the same lookup the `glossary:` sheet links use), then wraps matched terms with `<a href="glossary:slug">` anchors — skipping text already inside a link, `code`, or `pre`. The identical pass runs for Markdown documents (the glossary file itself is exempt, so its entries are not self-linked).
 
 **6. Inject into shell**
 
