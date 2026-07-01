@@ -2722,15 +2722,21 @@ renderLibrary();
 applyPaneLayout();
 send({ command: 'getFileTree' });
 let minimapViewportFrame = 0;
-let minimapPreviewFrame = 0;
+let minimapCanvasTimer = 0;
 let minimapPointerId = null;
 let minimapPointerOffsetY = null;
-let minimapBodyObserver = null;
 let minimapResizeObserver = null;
+let minimapThemeUnsubscribe = null;
 let readerLayoutFrame = 0;
 let readerScrollAnchor = null;
 let readerReflowObserver = null;
 let resetReaderScrollOnNextRender = false;
+// Cached list of the document's anchor blocks. Rebuilt when the document
+// changes (a new render, an async Mermaid/math swap, or the pager appending)
+// so the per-scroll position probe never re-runs querySelectorAll over tens of
+// thousands of blocks.
+let readerAnchorBlocks = null;
+let readerAnchorBlocksCount = -1;
 const READER_CONTENT_TOP_GAP = 88;
 const READER_ANCHOR_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, table, details, figure, hr';
 themeModeControl.value = window.leafTheme.getMode();
@@ -3030,8 +3036,9 @@ function renderTabs(state) {
 }
 function renderState() {
   const state = currentState || { recent: [], tabs: [], active: null, document: null };
-  disconnectMinimapPreviewObservers();
+  disconnectMinimapObservers();
   disconnectReaderReflowObserver();
+  readerAnchorBlocks = null;
   renderTabs(state);
   if (state.document) {
     document.title = window.leafLocale.t('titles.document', { title: state.document.title });
@@ -3050,7 +3057,7 @@ function renderState() {
     decorateCodeBlocks();
     applySpeedReaderToDocument();
     observeReaderReflow();
-    scheduleMinimapPreviewUpdate();
+    scheduleMinimapCanvasRedraw();
     if (resetReaderScrollOnNextRender) {
       resetReaderScrollOnNextRender = false;
       resetReaderScrollToContentStart();
@@ -3309,39 +3316,59 @@ window.leafShowGlossary = (html, anchor) => {
   glossarySheetBody.scrollTop = 0;
   showGlossary();
 };
+// One delegated click listener for every document link, bound once. The old
+// per-link binding attached a handler to each `a[href]` — tens of thousands of
+// them in a large document (every heading permalink is an `a`), a major slice of
+// open time. The sanitizer already sets `rel="noopener noreferrer"` and strips
+// `target`, so no per-link attribute fix-up is needed here. Delegation also means
+// links added later (the async pager) are handled with no rebinding.
+let documentLinksBound = false;
 function bindDocumentLinks() {
-  app.querySelectorAll('.document-body a[href]').forEach((link) => {
-    if (link.dataset.leafLinkBound === 'true') return;
-    link.dataset.leafLinkBound = 'true';
-    link.removeAttribute('target');
-    link.rel = 'noreferrer noopener';
-    link.addEventListener('click', (event) => {
-      if (event.defaultPrevented || event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
-        return;
+  if (documentLinksBound) {
+    return;
+  }
+  documentLinksBound = true;
+  app.addEventListener('click', (event) => {
+    const link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+    if (!link || !app.contains(link) || !link.closest('.document-body')) {
+      return;
+    }
+    // A tap/click on the gutter permalink copies its #locus (even with a modifier
+    // held) without blocking the jump; a brief is-copied flash confirms it.
+    if (link.classList.contains('heading-anchor')) {
+      const locus = link.parentElement && link.parentElement.dataset ? link.parentElement.dataset.locus : '';
+      if (locus) {
+        copyToClipboard('#' + locus);
+        link.classList.add('is-copied');
+        window.clearTimeout(link.__copiedTimer);
+        link.__copiedTimer = window.setTimeout(() => link.classList.remove('is-copied'), 900);
       }
-      const rawHref = link.getAttribute('href') || '';
-      if (!rawHref) {
-        return;
-      }
-      const glossaryTerm = glossaryAnchorFromHref(rawHref);
-      if (glossaryTerm) {
-        event.preventDefault();
-        // For a `glossary:` link keep the bare scheme as the base, so a jump to
-        // another term (glossaryHrefBase + '#' + term) and "open full glossary"
-        // both stay on the scheme and let the host re-resolve the nearest file.
-        glossaryHrefBase = /^glossary:/i.test(rawHref) ? 'glossary:' : rawHref.split('#')[0];
-        send({ command: 'openGlossary', href: rawHref });
-        return;
-      }
-      const fragmentHref = sameDocumentFragmentHref(rawHref);
-      if (fragmentHref) {
-        event.preventDefault();
-        send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });
-        return;
-      }
+    }
+    if (event.defaultPrevented || event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+      return;
+    }
+    const rawHref = link.getAttribute('href') || '';
+    if (!rawHref) {
+      return;
+    }
+    const glossaryTerm = glossaryAnchorFromHref(rawHref);
+    if (glossaryTerm) {
       event.preventDefault();
-      send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor() });
-    });
+      // For a `glossary:` link keep the bare scheme as the base, so a jump to
+      // another term (glossaryHrefBase + '#' + term) and "open full glossary"
+      // both stay on the scheme and let the host re-resolve the nearest file.
+      glossaryHrefBase = /^glossary:/i.test(rawHref) ? 'glossary:' : rawHref.split('#')[0];
+      send({ command: 'openGlossary', href: rawHref });
+      return;
+    }
+    const fragmentHref = sameDocumentFragmentHref(rawHref);
+    if (fragmentHref) {
+      event.preventDefault();
+      send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });
+      return;
+    }
+    event.preventDefault();
+    send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor() });
   });
 }
 function loadMermaid() {
@@ -3382,6 +3409,10 @@ function renderMermaidDiagrams() {
         themeVariables: { fontFamily: "'Noto Sans', sans-serif" },
       });
       return mermaid.run({ nodes: diagrams });
+    })
+    .then(() => {
+      // Diagrams changed the block layout; drop the cached anchor list.
+      readerAnchorBlocks = null;
     })
     .catch((error) => {
       console.error(error);
@@ -3484,6 +3515,15 @@ function decorateCodeBlocks() {
 // Heroicon "link", drawn the same way as the copy mark (no fill, currentColor
 // stroke) so it inherits theme colors. Sized by CSS.
 const ANCHOR_LINK_ICON = '<svg class="heading-anchor-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"/></svg>';
+// Built once and cloned per heading. Parsing the SVG string tens of thousands of
+// times (one innerHTML assignment per block) was a large slice of open time on a
+// big document; cloneNode copies the already-parsed node instead.
+const anchorLinkTemplate = (() => {
+  const link = document.createElement('a');
+  link.className = 'heading-anchor';
+  link.innerHTML = ANCHOR_LINK_ICON;
+  return link;
+})();
 // `pre:not(.mermaid)` excludes Mermaid diagrams: a permalink gutter link makes
 // no sense on a diagram, and inserting one as the pre's first child corrupts the
 // source Mermaid reads from innerHTML, yielding a "Syntax error" bomb.
@@ -3577,6 +3617,25 @@ function buildDocumentOutline() {
   const title = headings[0];
   const rest = headings.slice(1);
   rest.forEach((h, i) => { if (!h.id) h.id = 'section-' + (i + 1); });
+  const details = document.createElement('details');
+  details.className = 'document-outline';
+  const summary = document.createElement('summary');
+  summary.className = 'document-outline-summary';
+  summary.dataset.i18n = 'outline.title';
+  summary.textContent = window.leafLocale.t('outline.title');
+  details.appendChild(summary);
+  // The entry list can be enormous (one <li> per heading — ~25k on a glossary),
+  // so build it only when the reader first opens the outline instead of at every
+  // document render. bindDocumentLinks is delegated on the shell, so the entries'
+  // #slug jumps are wired the moment they exist, with no rebinding.
+  details.addEventListener('toggle', () => {
+    if (details.open) populateDocumentOutline(details, rest);
+  });
+  title.insertAdjacentElement('afterend', details);
+}
+function populateDocumentOutline(details, rest) {
+  if (details.dataset.outlinePopulated === 'true') return;
+  details.dataset.outlinePopulated = 'true';
   const readHeadingText = (h) => {
     const clone = h.cloneNode(true);
     clone.querySelectorAll('.heading-anchor, .anchor-link, .locus-alias, .footnote-ref').forEach((n) => n.remove());
@@ -3604,15 +3663,7 @@ function buildDocumentOutline() {
     container.appendChild(li);
     stack.push({ level, ol: container });
   });
-  const details = document.createElement('details');
-  details.className = 'document-outline';
-  const summary = document.createElement('summary');
-  summary.className = 'document-outline-summary';
-  summary.dataset.i18n = 'outline.title';
-  summary.textContent = window.leafLocale.t('outline.title');
-  details.appendChild(summary);
   details.appendChild(rootList);
-  title.insertAdjacentElement('afterend', details);
 }
 // Give every anchor-addressable block a permalink button in the left gutter,
 // GitHub style. Done in JS, after sanitized HTML is in the DOM, so it catches
@@ -3633,52 +3684,18 @@ function decorateAnchorLinks() {
     if (target.classList.contains('footnote-definition')) return;
     if (target.closest('.document-outline')) return;
     if (target.querySelector(':scope > .heading-anchor')) return;
-    const link = document.createElement('a');
-    link.className = 'heading-anchor';
+    const link = anchorLinkTemplate.cloneNode(true);
     link.href = '#' + encodeURIComponent(locus);
     link.setAttribute('aria-label', label);
     link.title = label;
-    link.innerHTML = ANCHOR_LINK_ICON;
-    link.addEventListener('click', () => {
-      copyToClipboard('#' + locus);
-      link.classList.add('is-copied');
-      window.clearTimeout(link.__copiedTimer);
-      link.__copiedTimer = window.setTimeout(() => link.classList.remove('is-copied'), 900);
-    });
     target.classList.add('has-anchor-link');
     target.insertBefore(link, target.firstChild);
   });
-  positionAnchorLinks(body);
-}
-// Park every permalink button in the document's left margin, lined up with where
-// a top-level heading's button sits, no matter how deeply its block is indented.
-// The button's right edge already meets its block's left edge (right: 100% in
-// CSS); here we shift it further left by the block's own indentation so it clears
-// the indented text instead of overlapping it. The indent can't be derived in
-// pure CSS — accumulating it through a custom property forms a self-referential
-// cycle that the engine discards — so we measure each block's left edge against
-// the body's and shift by the difference. Measuring also handles every list,
-// blockquote, padding, and text-indent combination exactly. Re-run on reflow and
-// resize (see scheduleReaderLayoutUpdate) because the indent is em-based and
-// scales with the viewport-driven font size. Reads are batched ahead of writes to
-// avoid layout thrash; the buttons are out of flow, so moving them never resizes
-// the body and so never loops the reflow observer.
-function positionAnchorLinks(body) {
-  body = body || app.querySelector('.document-body');
-  if (!body) return;
-  const blocks = body.querySelectorAll('.has-anchor-link');
-  if (!blocks.length) return;
-  const bodyLeft = body.getBoundingClientRect().left;
-  const indents = [];
-  blocks.forEach((block) => {
-    indents.push(block.getBoundingClientRect().left - bodyLeft);
-  });
-  blocks.forEach((block, index) => {
-    const link = block.querySelector(':scope > .heading-anchor');
-    if (!link) return;
-    const indent = indents[index];
-    link.style.right = indent > 0.5 ? `calc(100% + ${Math.round(indent)}px)` : '';
-  });
+  // The button no longer needs JS positioning: it lives in each block's own
+  // left-padding gutter (see the .has-anchor-link CSS), so a nested block's
+  // button sits beside that block rather than being measured back to a shared
+  // column. Clicks (copy + jump) are handled by the delegated body listener in
+  // bindDocumentLinks, so no per-button listener is attached here.
 }
 function setCodeCopyLabel(button, key) {
   const label = window.leafLocale.t(key);
@@ -3740,7 +3757,7 @@ function renderDocumentMinimap(model) {
   if (!model || !Number.isFinite(model.line_count) || model.line_count <= 0) {
     return '';
   }
-  return `<aside class="document-minimap" aria-label="${escapeAttr(window.leafLocale.t('minimap.aria'))}"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
+  return `<aside class="document-minimap" aria-label="${escapeAttr(window.leafLocale.t('minimap.aria'))}"><div class="document-minimap-track" aria-hidden="true"><canvas class="document-minimap-canvas" aria-hidden="true"></canvas><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
 }
 function bindDocumentMinimap() {
   const minimap = app.querySelector('.document-minimap');
@@ -3764,45 +3781,30 @@ function bindDocumentMinimap() {
     }
     return event.clientY - viewportRect.top;
   };
-  const dragMinimapViewportToPointer = (event, pointerOffsetY) => {
+  // Both dragging the handle and clicking the rail map proportionally: the box
+  // travels the track in lockstep with the reader's scroll fraction, so the
+  // canvas thumbnail (drawn from the line model) and the viewport box stay
+  // aligned regardless of content-visibility height estimates. `pointerOffsetY`
+  // is the grab point inside the box for a drag; a plain click centers the box.
+  const scrollReaderToMinimapPointer = (event, pointerOffsetY) => {
     const metrics = measureDocumentMinimap(track);
-    const rect = metrics.trackRect;
-    if (rect.height <= 0 || metrics.scrollable <= 0) {
+    const geo = minimapViewportGeometry(metrics);
+    if (metrics.scrollable <= 0 || geo.travel <= 0) {
       updateMinimapViewport();
       return;
     }
-    const previewScale = metrics.scrollHeight <= 0 ? 1 : minimapPreviewScale(track, metrics);
-    const scaledDocumentHeight = Math.max(1, metrics.scrollHeight * previewScale);
-    const viewportHeight = metrics.scrollHeight <= 0 ? metrics.trackHeight : Math.max(22, metrics.viewportHeight * previewScale);
-    const boundedViewportHeight = Math.min(metrics.trackHeight, viewportHeight);
-    const handleRange = Math.max(0, metrics.trackHeight - boundedViewportHeight);
-    const offsetY = Number.isFinite(pointerOffsetY) ? pointerOffsetY : boundedViewportHeight / 2;
-    const targetViewportTop = Math.min(handleRange, Math.max(0, event.clientY - rect.top - offsetY));
-    const previewTravel = Math.max(0, scaledDocumentHeight - metrics.trackHeight);
-    const viewportTopPerScrollPixel = previewScale - previewTravel / metrics.scrollable;
-    const targetViewportScrollTop = viewportTopPerScrollPixel > 0
-      ? targetViewportTop / viewportTopPerScrollPixel
-      : (handleRange <= 0 ? 0 : (targetViewportTop / handleRange) * metrics.scrollable);
-    setReaderScrollTop(metrics.topOffset + Math.min(metrics.scrollable, Math.max(0, targetViewportScrollTop)));
+    const offsetY = Number.isFinite(pointerOffsetY) ? pointerOffsetY : geo.boxHeight / 2;
+    const pointerY = event.clientY - metrics.trackRect.top;
+    const targetBoxTop = Math.min(geo.travel, Math.max(0, pointerY - offsetY));
+    const fraction = targetBoxTop / geo.travel;
+    setReaderScrollTop(metrics.topOffset + fraction * metrics.scrollable);
     updateMinimapViewport();
   };
+  const dragMinimapViewportToPointer = (event, pointerOffsetY) => {
+    scrollReaderToMinimapPointer(event, pointerOffsetY);
+  };
   const scrollToMinimapSnapshotPoint = (event) => {
-    const metrics = measureDocumentMinimap(track);
-    const content = track.querySelector('.document-minimap-content');
-    const contentRect = content ? content.getBoundingClientRect() : null;
-    if (!contentRect || contentRect.height <= 0 || metrics.scrollHeight <= 0 || metrics.scrollable <= 0) {
-      updateMinimapViewport();
-      return;
-    }
-    const previewScale = minimapPreviewScale(track, metrics);
-    if (!Number.isFinite(previewScale) || previewScale <= 0) {
-      updateMinimapViewport();
-      return;
-    }
-    const clickedDocumentY = (event.clientY - contentRect.top) / previewScale;
-    const targetViewportScrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));
-    setReaderScrollTop(metrics.topOffset + targetViewportScrollTop);
-    updateMinimapViewport();
+    scrollReaderToMinimapPointer(event, null);
   };
   track.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) {
@@ -3836,39 +3838,51 @@ function bindDocumentMinimap() {
   track.addEventListener('pointerup', endDrag);
   track.addEventListener('pointercancel', endDrag);
   track.addEventListener('lostpointercapture', endDrag);
-  bindDocumentMinimapPreview(track);
+  bindDocumentMinimapCanvas(track);
 }
-function bindDocumentMinimapPreview(track) {
-  disconnectMinimapPreviewObservers();
+// The minimap is a cheap pre-drawn thumbnail (the PDF-thumbnail equivalent): the
+// canvas is painted once from the Rust line-span model, then repainted only when
+// the rail resizes (debounced) or the theme palette changes. It never clones the
+// document DOM and never observes body mutations, so a big document renders once
+// instead of twice. Only the small viewport box moves on scroll (a CSS var).
+function bindDocumentMinimapCanvas(track) {
+  disconnectMinimapObservers();
   const source = app.querySelector('.document-body');
-  if (!source) {
-    return;
-  }
-  minimapBodyObserver = new MutationObserver(scheduleMinimapPreviewUpdate);
-  minimapBodyObserver.observe(source, {
-    attributes: true,
-    childList: true,
-    characterData: true,
-    subtree: true,
-  });
   if (window.ResizeObserver) {
-    minimapResizeObserver = new ResizeObserver(() => {
-      scheduleReaderLayoutUpdate();
-      scheduleMinimapPreviewUpdate();
+    minimapResizeObserver = new ResizeObserver((entries) => {
+      let trackResized = false;
+      for (const entry of entries) {
+        if (entry.target === track) {
+          trackResized = true;
+        }
+      }
+      if (trackResized) {
+        scheduleMinimapCanvasRedraw();
+      }
+      scheduleMinimapViewportUpdate();
     });
-    minimapResizeObserver.observe(source);
     minimapResizeObserver.observe(track);
+    if (source) {
+      minimapResizeObserver.observe(source);
+    }
   }
-  scheduleMinimapPreviewUpdate();
+  if (window.leafTheme && typeof window.leafTheme.subscribe === 'function') {
+    minimapThemeUnsubscribe = window.leafTheme.subscribe(() => scheduleMinimapCanvasRedraw());
+  }
+  drawDocumentMinimapCanvas();
 }
-function disconnectMinimapPreviewObservers() {
-  if (minimapBodyObserver) {
-    minimapBodyObserver.disconnect();
-    minimapBodyObserver = null;
-  }
+function disconnectMinimapObservers() {
   if (minimapResizeObserver) {
     minimapResizeObserver.disconnect();
     minimapResizeObserver = null;
+  }
+  if (minimapThemeUnsubscribe) {
+    minimapThemeUnsubscribe();
+    minimapThemeUnsubscribe = null;
+  }
+  if (minimapCanvasTimer) {
+    window.clearTimeout(minimapCanvasTimer);
+    minimapCanvasTimer = 0;
   }
 }
 function measureDocumentContent(source) {
@@ -3960,19 +3974,46 @@ function resetReaderScrollToContentStart() {
 // sits above the first block). Measuring the ordinal from the section, not the
 // document start, keeps the landing stable when content is added to earlier
 // sections (e.g. live reload after an edit).
+// The anchor blocks are in document order, so their vertical positions increase
+// monotonically down the list. That lets the topmost-visible block be found with
+// a binary search (~log2(n) rect reads) instead of scanning every block on every
+// scroll event — the difference between a handful of reads and ~25k deep in a
+// glossary.
+function readerAnchorBlockList(source) {
+  const count = source.childElementCount;
+  const stale =
+    !readerAnchorBlocks ||
+    readerAnchorBlocksCount !== count ||
+    !readerAnchorBlocks.length ||
+    !readerAnchorBlocks[0].isConnected;
+  if (stale) {
+    readerAnchorBlocks = Array.from(source.querySelectorAll(READER_ANCHOR_SELECTOR));
+    readerAnchorBlocksCount = count;
+  }
+  return readerAnchorBlocks;
+}
 function captureReaderScrollAnchor() {
   const source = app.querySelector('.document-body');
   if (!currentState?.document || !source) {
     return null;
   }
-  const blocks = Array.from(source.querySelectorAll(READER_ANCHOR_SELECTOR));
+  const blocks = readerAnchorBlockList(source);
   if (!blocks.length) {
     return null;
   }
   const shellRect = app.getBoundingClientRect();
-  let targetIndex = blocks.findIndex((element) => element.getBoundingClientRect().bottom > shellRect.top + 1);
-  if (targetIndex < 0) {
-    targetIndex = blocks.length - 1;
+  const topEdge = shellRect.top + 1;
+  let lo = 0;
+  let hi = blocks.length - 1;
+  let targetIndex = blocks.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (blocks[mid].getBoundingClientRect().bottom > topEdge) {
+      targetIndex = mid;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
   }
   let sectionIndex = -1;
   let section = null;
@@ -4032,7 +4073,6 @@ function scheduleReaderLayoutUpdate(anchor = readerScrollAnchor || captureReader
     restoreReaderScrollAnchor(anchor);
     readerScrollAnchor = captureReaderScrollAnchor();
     updateMinimapViewport();
-    positionAnchorLinks();
   });
 }
 function disconnectReaderReflowObserver() {
@@ -4068,20 +4108,14 @@ function syncMinimapTrackHeight(minimap) {
   const shellRect = app.getBoundingClientRect();
   const minimapRect = minimap.getBoundingClientRect();
   const availableHeight = Math.max(1, Math.floor(shellRect.bottom - minimapRect.top));
-  const content = minimap.querySelector('.document-minimap-content');
-  const contentRect = content ? content.getBoundingClientRect() : null;
-  const contentHeight = contentRect ? Math.ceil(contentRect.height) : 0;
-  const trackHeight = contentHeight > 0 ? Math.min(availableHeight, contentHeight) : availableHeight;
-  minimap.style.setProperty('--minimap-track-height', `${trackHeight}px`);
-  return { availableHeight, trackHeight };
+  minimap.style.setProperty('--minimap-track-height', `${availableHeight}px`);
+  return { availableHeight, trackHeight: availableHeight };
 }
 function measureDocumentMinimap(track) {
   const minimap = track.closest('.document-minimap');
   const source = app.querySelector('.document-body');
   const trackSize = minimap ? syncMinimapTrackHeight(minimap) : null;
   const shellHeight = trackSize ? trackSize.availableHeight : Math.max(1, app.clientHeight);
-  const sourceRect = source ? source.getBoundingClientRect() : null;
-  const sourceWidth = sourceRect ? Math.max(1, Math.ceil(sourceRect.width)) : 1;
   const documentContent = correctReaderScrollOrigin(source);
   const documentHeight = documentContent.height;
   const trackRect = track.getBoundingClientRect();
@@ -4091,46 +4125,104 @@ function measureDocumentMinimap(track) {
   const scrollHeight = scrollRange.scrollHeight;
   const scrollable = scrollRange.scrollable;
   const viewportScrollTop = Math.min(scrollable, Math.max(0, app.scrollTop - documentContent.topOffset));
-  return { source, sourceWidth, documentHeight, topOffset: documentContent.topOffset, trackRect, trackHeight, viewportHeight, scrollHeight, scrollable, viewportScrollTop };
+  return { source, documentHeight, topOffset: documentContent.topOffset, trackRect, trackHeight, viewportHeight, scrollHeight, scrollable, viewportScrollTop };
 }
-function minimapPreviewScale(track, metrics) {
-  const content = track.querySelector('.document-minimap-content');
-  const contentWidth = content ? Math.max(1, content.getBoundingClientRect().width) : metrics.sourceWidth;
-  return contentWidth / Math.max(1, metrics.sourceWidth);
+// The viewport box represents the reader window as a fraction of the whole
+// document, positioned proportionally along the track. Because both the box
+// height and its travel come from the reader's real scroll range, the box and
+// click-to-scroll stay exact even though the canvas thumbnail is drawn from the
+// (pixel-independent) line model.
+function minimapViewportGeometry(metrics) {
+  const trackHeight = metrics.trackHeight;
+  const boxHeight = metrics.scrollHeight <= 0
+    ? trackHeight
+    : Math.min(trackHeight, Math.max(22, trackHeight * metrics.viewportHeight / metrics.scrollHeight));
+  const travel = Math.max(0, trackHeight - boxHeight);
+  const scrollFraction = metrics.scrollable <= 0
+    ? 0
+    : Math.min(1, Math.max(0, metrics.viewportScrollTop / metrics.scrollable));
+  const boxTop = scrollFraction * travel;
+  return { trackHeight, boxHeight, travel, boxTop };
 }
-function scheduleMinimapPreviewUpdate() {
-  if (minimapPreviewFrame) {
-    return;
+function scheduleMinimapCanvasRedraw() {
+  if (minimapCanvasTimer) {
+    window.clearTimeout(minimapCanvasTimer);
   }
-  minimapPreviewFrame = window.requestAnimationFrame(() => {
-    minimapPreviewFrame = 0;
-    updateDocumentMinimapPreview();
-  });
+  minimapCanvasTimer = window.setTimeout(() => {
+    minimapCanvasTimer = 0;
+    drawDocumentMinimapCanvas();
+  }, 180);
 }
-function updateDocumentMinimapPreview() {
+// Paint the whole document once as a scaled shape: each source line maps to a
+// row of the canvas, body blocks drawn dimmed and headings painted over the top
+// so the outline stays legible even when tens of thousands of lines squeeze into
+// a few hundred pixels. Colors come from the theme's minimap tokens.
+function drawDocumentMinimapCanvas() {
   const minimap = app.querySelector('.document-minimap');
   const track = minimap ? minimap.querySelector('.document-minimap-track') : null;
-  const content = track ? track.querySelector('.document-minimap-content') : null;
-  const source = app.querySelector('.document-body');
-  if (!track || !content || !source) {
+  const canvas = track ? track.querySelector('.document-minimap-canvas') : null;
+  const model = currentState && currentState.document ? currentState.document.minimap : null;
+  if (!track || !canvas || !model || !Array.isArray(model.spans) || !(model.line_count > 0)) {
     return;
   }
-  const metrics = measureDocumentMinimap(track);
-  const contentRect = content.getBoundingClientRect();
-  const previewWidth = Math.max(1, Math.ceil(contentRect.width));
-  const previewScale = previewWidth / metrics.sourceWidth;
-  const scaledHeight = Math.max(1, metrics.scrollHeight * previewScale);
-  const preview = source.cloneNode(true);
-  preview.removeAttribute('id');
-  preview.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
-  preview.querySelectorAll('a[href]').forEach((link) => link.removeAttribute('href'));
-  preview.classList.add('document-minimap-preview');
-  preview.setAttribute('aria-hidden', 'true');
-  preview.style.width = `${metrics.sourceWidth}px`;
-  preview.style.minHeight = `${metrics.scrollHeight}px`;
-  preview.style.transform = `scale(${previewScale})`;
-  content.style.height = `${scaledHeight}px`;
-  content.replaceChildren(preview);
+  const cssWidth = Math.max(1, Math.floor(canvas.clientWidth));
+  const cssHeight = Math.max(1, Math.floor(canvas.clientHeight));
+  const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1));
+  canvas.width = Math.round(cssWidth * dpr);
+  canvas.height = Math.round(cssHeight * dpr);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return;
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssWidth, cssHeight);
+  const styles = getComputedStyle(minimap);
+  const readColor = (name, fallback) => {
+    const value = styles.getPropertyValue(name);
+    return value && value.trim() ? value.trim() : fallback;
+  };
+  const palette = {
+    heading: readColor('--minimap-heading', '#8884d8'),
+    paragraph: readColor('--minimap-paragraph', '#9aa0a6'),
+    list: readColor('--minimap-list', '#4caf50'),
+    blockquote: readColor('--minimap-blockquote', '#42a5f5'),
+    'code-fence': readColor('--minimap-code', '#ce9178'),
+  };
+  const scaleY = cssHeight / model.line_count;
+  ctx.globalAlpha = 0.5;
+  for (const span of model.spans) {
+    if (span.category === 'heading') {
+      continue;
+    }
+    const fill = palette[span.category];
+    if (!fill) {
+      continue;
+    }
+    let indent = 0;
+    let widthFraction = span.structure === 'short' ? 0.6 : 0.94;
+    if (span.category === 'list') {
+      indent = 0.1;
+    } else if (span.category === 'blockquote') {
+      indent = 0.07;
+    } else if (span.category === 'code-fence') {
+      indent = 0.05;
+      widthFraction = 0.9;
+    }
+    const y = span.start_line * scaleY;
+    const h = Math.max(0.6, span.line_count * scaleY);
+    ctx.fillStyle = fill;
+    ctx.fillRect(indent * cssWidth, y, Math.max(1, (widthFraction - indent) * cssWidth), h);
+  }
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = palette.heading;
+  for (const span of model.spans) {
+    if (span.category !== 'heading') {
+      continue;
+    }
+    const y = span.start_line * scaleY;
+    const h = Math.max(1.5, span.line_count * scaleY);
+    ctx.fillRect(0, y, cssWidth, h);
+  }
   updateMinimapViewport();
 }
 function scheduleMinimapViewportUpdate() {
@@ -4148,25 +4240,13 @@ function updateMinimapViewport() {
     return;
   }
   const track = minimap.querySelector('.document-minimap-track');
-  const content = minimap.querySelector('.document-minimap-content');
   if (!track) {
     return;
   }
   const metrics = measureDocumentMinimap(track);
-  const previewScale = metrics.scrollHeight <= 0 ? 1 : minimapPreviewScale(track, metrics);
-  const scaledDocumentHeight = Math.max(1, metrics.scrollHeight * previewScale);
-  if (content) {
-    content.style.height = `${scaledDocumentHeight}px`;
-  }
-  const scrollRatio = metrics.scrollable === 0 ? 0 : Math.min(1, Math.max(0, metrics.viewportScrollTop / metrics.scrollable));
-  const viewportHeight = metrics.scrollHeight <= 0 ? metrics.trackHeight : Math.max(22, metrics.viewportHeight * previewScale);
-  const boundedViewportHeight = Math.min(metrics.trackHeight, viewportHeight);
-  const previewTop = -scrollRatio * Math.max(0, scaledDocumentHeight - metrics.trackHeight);
-  const viewportDocumentTop = metrics.viewportScrollTop * previewScale;
-  const viewportTop = Math.min(Math.max(0, metrics.trackHeight - boundedViewportHeight), Math.max(0, previewTop + viewportDocumentTop));
-  minimap.style.setProperty('--minimap-viewport-top', `${viewportTop}px`);
-  minimap.style.setProperty('--minimap-viewport-height', `${boundedViewportHeight}px`);
-  minimap.style.setProperty('--minimap-preview-top', `${previewTop}px`);
+  const geometry = minimapViewportGeometry(metrics);
+  minimap.style.setProperty('--minimap-viewport-top', `${geometry.boxTop}px`);
+  minimap.style.setProperty('--minimap-viewport-height', `${geometry.boxHeight}px`);
 }
 app.addEventListener('scroll', () => {
   clampReaderScrollPosition();
@@ -4176,7 +4256,7 @@ app.addEventListener('scroll', () => {
 window.addEventListener('resize', () => {
   scheduleReaderLayoutUpdate();
   scheduleMinimapViewportUpdate();
-  scheduleMinimapPreviewUpdate();
+  scheduleMinimapCanvasRedraw();
 });
 window.leafShowError = (message) => {
   const existing = document.querySelector('.app-error');
@@ -9290,6 +9370,18 @@ body.library-resizing {
 :root[data-locale="zh-CN"] .document-body {
   line-height: var(--type-body-line);
 }
+/* Windowing, the PDF-viewer way: let the engine skip layout and paint for the
+   tens of thousands of entries that are off-screen in a large document, instead
+   of laying the whole tree out at once and repainting it on every scroll. Each
+   block keeps its real measured size once seen (the `auto` keyword remembers
+   it), so the total scroll height — and therefore the scrollbar and the minimap
+   viewport box — converge to exact as the reader moves through the document. The
+   full DOM stays intact, so find, #anchor jumps, the outline, and Back/Forward
+   all keep working untouched. */
+.document-body > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 48px;
+}
 .docs-pager {
   display: flex;
   justify-content: space-between;
@@ -9820,18 +9912,20 @@ body.library-resizing {
   display: block;
 }
 /* Permalink button for any anchor-addressable block. Out of flow (so it never
-   nudges the text) in the left gutter, hidden until its target is hovered or the
-   button itself is keyboard-focused. Its right edge meets the content's left edge
-   so the cursor can cross into it without a dead zone. positionAnchorLinks() then
-   shifts each button further left by its block's measured indentation, so deeply
-   nested blocks still land in the same gutter as a top-level heading's button
-   instead of overlapping their own indented text. */
+   nudges the text), hidden until its target is hovered or the button itself is
+   keyboard-focused. */
+/* The permalink sits in a gutter carved from the block's own left padding
+   (pulled back out with a matching negative margin so the text column does not
+   move). Keeping it inside the block's box is what lets `content-visibility`
+   apply paint containment to entries without clipping the button. */
 .document-body .has-anchor-link {
   position: relative;
+  padding-left: 40px;
+  margin-left: -40px;
 }
 .document-body .heading-anchor {
   position: absolute;
-  right: 100%;
+  left: 0;
   top: 0.7em;
   top: 0.5lh;
   transform: translateY(-50%);
@@ -10121,7 +10215,6 @@ body.library-resizing {
 .document-minimap {
   --minimap-viewport-top: 0%;
   --minimap-viewport-height: 100%;
-  --minimap-preview-top: 0px;
   --minimap-track-height: 100%;
   align-self: start;
   grid-area: 1 / 1;
@@ -10145,23 +10238,15 @@ body.library-resizing {
   touch-action: none;
   user-select: none;
 }
-.document-minimap-content {
+.document-minimap-canvas {
   position: absolute;
-  top: var(--minimap-preview-top);
+  top: 0;
+  bottom: 0;
   right: var(--minimap-padding-inline);
   left: var(--minimap-padding-inline);
-  overflow: visible;
+  width: auto;
+  height: 100%;
   pointer-events: none;
-}
-.document-minimap-preview {
-  box-sizing: border-box;
-  margin: 0 !important;
-  padding-top: 0 !important;
-  transform-origin: 0 0;
-}
-.document-minimap-preview,
-.document-minimap-preview * {
-  pointer-events: none !important;
 }
 .document-minimap-viewport {
   position: absolute;
@@ -12565,6 +12650,14 @@ const label = "<button onclick=alert(3)>copy</button>";
         assert_contains(&html, "summary.dataset.i18n = 'outline.title';");
         assert_contains(&html, "link.className = 'document-outline-link';");
         assert_contains(&html, "link.href = '#' + encodeURIComponent(h.id);");
+        // The (potentially ~25k-entry) list is built lazily, only when the reader
+        // first expands the outline — not at every document render.
+        assert_contains(&html, "function populateDocumentOutline(details, rest) {");
+        assert_contains(&html, "details.addEventListener('toggle', () => {");
+        assert_contains(
+            &html,
+            "if (details.open) populateDocumentOutline(details, rest);",
+        );
         // The outline never opens on its own — closed until the reader expands it.
         assert!(!html.contains("details.open = true"));
         // Localized label present in both shipped languages.
@@ -12675,23 +12768,25 @@ const label = "<button onclick=alert(3)>copy</button>";
             "renderDocumentMinimap(state.document.minimap)",
             "function renderDocumentMinimap(model) {",
             "document-minimap-track",
-            "document-minimap-content",
+            "document-minimap-canvas",
             "document-minimap-viewport",
             "window.leafLocale.t('minimap.aria')",
-            "aria-hidden=\"true\"><div class=\"document-minimap-content\" aria-hidden=\"true\"></div><div class=\"document-minimap-viewport\" aria-hidden=\"true\"",
+            "aria-hidden=\"true\"><canvas class=\"document-minimap-canvas\" aria-hidden=\"true\"></canvas><div class=\"document-minimap-viewport\" aria-hidden=\"true\"",
             "bindDocumentMinimap();",
             "function bindDocumentMinimap() {",
         ] {
             assert_contains(&html, expected);
         }
 
+        // The minimap is a pre-drawn canvas thumbnail painted from the Rust line
+        // model, never a second clone of the rendered document DOM.
         assert!(
-            !html.contains("document-minimap-mark"),
-            "minimap must render a scaled document preview, not synthetic line marks"
+            !html.contains(".document-minimap-content"),
+            "minimap no longer clones the document into a preview element"
         );
         assert!(
-            !html.contains("minimapToken("),
-            "minimap should not tokenize source-line categories for fake marks"
+            !html.contains("source.cloneNode(true)"),
+            "minimap must not clone the document body a second time"
         );
     }
 
@@ -12718,91 +12813,78 @@ const label = "<button onclick=alert(3)>copy</button>";
     }
 
     #[test]
-    fn app_shell_clones_rendered_document_into_minimap_preview() {
+    fn app_shell_paints_minimap_canvas_from_line_model() {
         let html = app_shell_html();
 
         for expected in [
-            "let minimapPreviewFrame = 0;",
-            "let minimapBodyObserver = null;",
+            "let minimapCanvasTimer = 0;",
             "let minimapResizeObserver = null;",
+            "let minimapThemeUnsubscribe = null;",
             "let readerLayoutFrame = 0;",
             "let readerScrollAnchor = null;",
-            "scheduleMinimapPreviewUpdate();",
-            "function bindDocumentMinimapPreview(track) {",
-            "minimapBodyObserver = new MutationObserver(scheduleMinimapPreviewUpdate);",
-            "minimapResizeObserver = new ResizeObserver(() => {",
-            "scheduleReaderLayoutUpdate();",
-            "function measureDocumentMinimap(track) {",
-            "function measureDocumentContent(source) {",
-            "function correctReaderScrollOrigin(source = app.querySelector('.document-body')) {",
-            "function updateDocumentMinimapPreview() {",
-            "const source = app.querySelector('.document-body');",
-            "const documentContent = correctReaderScrollOrigin(source);",
-            "const documentHeight = documentContent.height;",
-            "const contentRect = content.getBoundingClientRect();",
-            "const previewWidth = Math.max(1, Math.ceil(contentRect.width));",
-            "const previewScale = previewWidth / metrics.sourceWidth;",
-            "const scaledHeight = Math.max(1, metrics.scrollHeight * previewScale);",
-            "const preview = source.cloneNode(true);",
-            "preview.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));",
-            "preview.querySelectorAll('a[href]').forEach((link) => link.removeAttribute('href'));",
-            "preview.classList.add('document-minimap-preview');",
-            "preview.style.width = `${metrics.sourceWidth}px`;",
-            "preview.style.minHeight = `${metrics.scrollHeight}px`;",
-            "preview.style.transform = `scale(${previewScale})`;",
-            "content.style.height = `${scaledHeight}px`;",
-            "content.replaceChildren(preview);",
+            "function bindDocumentMinimapCanvas(track) {",
+            "minimapResizeObserver = new ResizeObserver((entries) => {",
+            "minimapResizeObserver.observe(track);",
+            "minimapThemeUnsubscribe = window.leafTheme.subscribe(() => scheduleMinimapCanvasRedraw());",
+            "function disconnectMinimapObservers() {",
+            "function scheduleMinimapCanvasRedraw() {",
+            "minimapCanvasTimer = window.setTimeout(() => {",
+            "function drawDocumentMinimapCanvas() {",
+            "const model = currentState && currentState.document ? currentState.document.minimap : null;",
+            "const canvas = track ? track.querySelector('.document-minimap-canvas') : null;",
+            "const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1));",
+            "ctx.setTransform(dpr, 0, 0, dpr, 0, 0);",
+            "const scaleY = cssHeight / model.line_count;",
+            "heading: readColor('--minimap-heading', '#8884d8'),",
+            "'code-fence': readColor('--minimap-code', '#ce9178'),",
+            "ctx.fillRect(0, y, cssWidth, h);",
             "updateMinimapViewport();",
         ] {
             assert_contains(&html, expected);
         }
 
-        assert!(
-            !html.contains("scale(${trackWidth / sourceWidth}, ${trackHeight / sourceHeight})"),
-            "minimap preview must preserve document proportions with a uniform scale"
-        );
-        assert!(
-            !html.contains("Math.min(trackWidth / sourceWidth, trackHeight / sourceHeight)"),
-            "minimap preview compression must stay width-based instead of shrinking tall documents to rail height"
-        );
+        // The canvas thumbnail replaces the old DOM clone entirely: no second
+        // render, no preview element, no per-mutation reclone.
+        for forbidden in [
+            "source.cloneNode(true)",
+            "document-minimap-preview",
+            "minimapPreviewScale",
+            "scheduleMinimapPreviewUpdate",
+            "updateDocumentMinimapPreview",
+            "new MutationObserver(scheduleMinimapPreviewUpdate)",
+        ] {
+            assert!(
+                !html.contains(forbidden),
+                "minimap canvas must not reintroduce the clone path: {forbidden}"
+            );
+        }
     }
 
     #[test]
-    fn app_shell_scales_minimap_preview_from_content_lane_not_gutter() {
+    fn app_shell_maps_minimap_geometry_proportionally() {
         let html = app_shell_html();
 
-        assert_contains(
-            &html,
-            "const contentRect = content.getBoundingClientRect();",
-        );
-        assert_contains(
-            &html,
-            "const previewWidth = Math.max(1, Math.ceil(contentRect.width));",
-        );
-        assert_contains(
-            &html,
-            "const previewScale = previewWidth / metrics.sourceWidth;",
-        );
-        assert_contains(
-            &html,
-            "const scaledHeight = Math.max(1, metrics.scrollHeight * previewScale);",
-        );
-        assert_contains(
-            &html,
-            "const viewportHeight = metrics.scrollHeight <= 0 ? metrics.trackHeight : Math.max(22, metrics.viewportHeight * previewScale);",
-        );
-        assert_contains(
-            &html,
-            "const targetViewportTop = Math.min(handleRange, Math.max(0, event.clientY - rect.top - offsetY));",
-        );
+        // The viewport box and click/drag mapping both derive from the reader's
+        // real scroll fraction, so they stay exact regardless of the canvas's
+        // pixel-independent line-model shape.
+        for expected in [
+            "function minimapViewportGeometry(metrics) {",
+            "Math.min(trackHeight, Math.max(22, trackHeight * metrics.viewportHeight / metrics.scrollHeight));",
+            "const travel = Math.max(0, trackHeight - boxHeight);",
+            "const boxTop = scrollFraction * travel;",
+            "const scrollReaderToMinimapPointer = (event, pointerOffsetY) => {",
+            "const geo = minimapViewportGeometry(metrics);",
+            "const targetBoxTop = Math.min(geo.travel, Math.max(0, pointerY - offsetY));",
+            "setReaderScrollTop(metrics.topOffset + fraction * metrics.scrollable);",
+            "minimap.style.setProperty('--minimap-viewport-top', `${geometry.boxTop}px`);",
+            "minimap.style.setProperty('--minimap-viewport-height', `${geometry.boxHeight}px`);",
+        ] {
+            assert_contains(&html, expected);
+        }
 
         assert!(
-            !html.contains("const previewScale = trackWidth / metrics.sourceWidth;"),
-            "minimap preview should exclude the gutter from rail-width scale"
-        );
-        assert!(
-            !html.contains("track.clientWidth - trackPaddingLeft"),
-            "minimap preview scale must preserve both left and right padding"
+            !html.contains("--minimap-preview-top"),
+            "the static canvas removes the preview-translate custom property"
         );
     }
 
@@ -12907,7 +12989,7 @@ const label = "<button onclick=alert(3)>copy</button>";
             "send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });",
             "send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor() });",
             "function bindDocumentLinks() {",
-            "link.removeAttribute('target');",
+            "const link = event.target && event.target.closest ? event.target.closest('a[href]') : null;",
             "window.leafSetNavigation({ canGoBack: false, canGoForward: false });",
         ] {
             assert_contains(&html, expected);
@@ -13066,7 +13148,7 @@ const label = "<button onclick=alert(3)>copy</button>";
             "window.addEventListener('resize', () => {",
             "scheduleReaderLayoutUpdate();",
             "scheduleMinimapViewportUpdate();",
-            "scheduleMinimapPreviewUpdate();",
+            "scheduleMinimapCanvasRedraw();",
         ] {
             assert_contains(&html, expected);
         }
@@ -13078,14 +13160,12 @@ const label = "<button onclick=alert(3)>copy</button>";
 
         for expected in [
             "const scrollToMinimapSnapshotPoint = (event) => {",
+            "scrollReaderToMinimapPointer(event, null);",
             "const metrics = measureDocumentMinimap(track);",
-            "const content = track.querySelector('.document-minimap-content');",
-            "const contentRect = content ? content.getBoundingClientRect() : null;",
-            "if (!contentRect || contentRect.height <= 0 || metrics.scrollHeight <= 0 || metrics.scrollable <= 0) {",
-            "const previewScale = minimapPreviewScale(track, metrics);",
-            "const clickedDocumentY = (event.clientY - contentRect.top) / previewScale;",
-            "const targetViewportScrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));",
-            "setReaderScrollTop(metrics.topOffset + targetViewportScrollTop);",
+            "const geo = minimapViewportGeometry(metrics);",
+            "const pointerY = event.clientY - metrics.trackRect.top;",
+            "const targetBoxTop = Math.min(geo.travel, Math.max(0, pointerY - offsetY));",
+            "setReaderScrollTop(metrics.topOffset + fraction * metrics.scrollable);",
             "track.addEventListener('pointerdown', (event) => {",
             "if (Number.isFinite(minimapPointerOffsetY)) {",
             "dragMinimapViewportToPointer(event, minimapPointerOffsetY);",
@@ -13094,33 +13174,6 @@ const label = "<button onclick=alert(3)>copy</button>";
         ] {
             assert_contains(&html, expected);
         }
-    }
-
-    #[test]
-    fn app_shell_maps_minimap_clicks_against_visible_preview_snapshot() {
-        let html = app_shell_html();
-
-        let snapshot_position = html
-            .find("const contentRect = content ? content.getBoundingClientRect() : null;")
-            .expect("minimap clicks read the currently visible preview snapshot");
-        let clicked_position = html
-            .find("const clickedDocumentY = (event.clientY - contentRect.top) / previewScale;")
-            .expect("minimap clicks convert the visible image/script landmark coordinate through the preview scale");
-        let target_position = html
-            .find("setReaderScrollTop(metrics.topOffset + targetViewportScrollTop);")
-            .expect("minimap clicks scroll the reader to the clicked document landmark");
-        let viewport_drag_position = html
-            .find("const targetViewportTop = Math.min(handleRange, Math.max(0, event.clientY - rect.top - offsetY));")
-            .expect("minimap handle dragging still clamps the target viewport position");
-
-        assert!(
-            snapshot_position < clicked_position && clicked_position < target_position,
-            "clicking a visible image or Tibetan-script minimap landmark must map from the pre-scroll preview coordinate, not from the post-scroll viewport position"
-        );
-        assert!(
-            viewport_drag_position < snapshot_position,
-            "viewport drag behavior should stay separate from snapshot-based content landmark clicks"
-        );
     }
 
     #[test]
@@ -13133,19 +13186,8 @@ const label = "<button onclick=alert(3)>copy</button>";
             "const minimapPointerOffset = (event) => {",
             "return event.clientY - viewportRect.top;",
             "const dragMinimapViewportToPointer = (event, pointerOffsetY) => {",
-            "const previewScale = metrics.scrollHeight <= 0 ? 1 : minimapPreviewScale(track, metrics);",
-            "const scaledDocumentHeight = Math.max(1, metrics.scrollHeight * previewScale);",
-            "const viewportHeight = metrics.scrollHeight <= 0 ? metrics.trackHeight : Math.max(22, metrics.viewportHeight * previewScale);",
-            "const boundedViewportHeight = Math.min(metrics.trackHeight, viewportHeight);",
-            "const handleRange = Math.max(0, metrics.trackHeight - boundedViewportHeight);",
-            "const offsetY = Number.isFinite(pointerOffsetY) ? pointerOffsetY : boundedViewportHeight / 2;",
-            "const targetViewportTop = Math.min(handleRange, Math.max(0, event.clientY - rect.top - offsetY));",
-            "const previewTravel = Math.max(0, scaledDocumentHeight - metrics.trackHeight);",
-            "const viewportTopPerScrollPixel = previewScale - previewTravel / metrics.scrollable;",
-            "const targetViewportScrollTop = viewportTopPerScrollPixel > 0",
-            "? targetViewportTop / viewportTopPerScrollPixel",
-            ": (handleRange <= 0 ? 0 : (targetViewportTop / handleRange) * metrics.scrollable);",
-            "setReaderScrollTop(metrics.topOffset + Math.min(metrics.scrollable, Math.max(0, targetViewportScrollTop)));",
+            "scrollReaderToMinimapPointer(event, pointerOffsetY);",
+            "const offsetY = Number.isFinite(pointerOffsetY) ? pointerOffsetY : geo.boxHeight / 2;",
             "minimapPointerOffsetY = minimapPointerOffset(event);",
             "track.setPointerCapture(event.pointerId);",
             "track.addEventListener('pointermove', (event) => {",
@@ -13158,38 +13200,23 @@ const label = "<button onclick=alert(3)>copy</button>";
         ] {
             assert_contains(&html, expected);
         }
-    }
 
-    #[test]
-    fn app_shell_maps_minimap_drag_to_rendered_viewport_coordinates() {
-        let html = app_shell_html();
-
+        // A grab inside the box preserves the offset (drag); a bare click centers
+        // the box on the pointer (snapshot). Both route through the same
+        // proportional mapping so the two stay consistent.
         let drag_position = html
             .find("const dragMinimapViewportToPointer = (event, pointerOffsetY) => {")
             .expect("minimap drag handler exists");
-        let preview_scale_position = html
-            .find("const previewScale = metrics.scrollHeight <= 0 ? 1 : minimapPreviewScale(track, metrics);")
-            .expect("drag mapping uses the live scaled preview height");
-        let target_position = html
-            .find("const targetViewportTop = Math.min(handleRange, Math.max(0, event.clientY - rect.top - offsetY));")
-            .expect("drag mapping clamps the pointer target in minimap coordinates");
-        let inverse_position = html
-            .find("const viewportTopPerScrollPixel = previewScale - previewTravel / metrics.scrollable;")
-            .expect("drag mapping uses the painted viewport travel model");
-        let scroll_position = html
-            .find("setReaderScrollTop(metrics.topOffset + Math.min(metrics.scrollable, Math.max(0, targetViewportScrollTop)));")
-            .expect("drag mapping clamps reader scroll before applying the measured top offset");
-
+        let mapping_position = html
+            .find("const scrollReaderToMinimapPointer = (event, pointerOffsetY) => {")
+            .expect("shared proportional pointer mapping exists");
         assert!(
-            drag_position < preview_scale_position
-                && preview_scale_position < target_position
-                && target_position < inverse_position
-                && inverse_position < scroll_position,
-            "minimap dragging should preserve the VS Code-like handle-range mapping rather than forcing 1:1 pointer tracking"
+            mapping_position < drag_position,
+            "drag and click should both delegate to the shared proportional mapping"
         );
         assert!(
-            !html.contains("minimapDragStartScrollTop"),
-            "minimap drag should not force stable-origin 1:1 preview-coordinate tracking"
+            !html.contains("minimapDragStartScrollTop") && !html.contains("previewScale"),
+            "minimap drag must use proportional mapping, not the old scaled-preview coordinates"
         );
     }
 
@@ -13204,7 +13231,6 @@ const label = "<button onclick=alert(3)>copy</button>";
             "event.preventDefault();",
             "minimap.style.setProperty('--minimap-viewport-top'",
             "minimap.style.setProperty('--minimap-viewport-height'",
-            "minimap.style.setProperty('--minimap-preview-top'",
             "updateMinimapViewport();",
         ] {
             assert_contains(&html, expected);
@@ -13212,56 +13238,34 @@ const label = "<button onclick=alert(3)>copy</button>";
     }
 
     #[test]
-    fn app_shell_translates_minimap_preview_without_rescaling_on_scroll() {
+    fn app_shell_sizes_minimap_viewport_from_scroll_fraction() {
         let html = app_shell_html();
 
-        for expected in [
-            "const track = minimap.querySelector('.document-minimap-track');",
-            "const content = minimap.querySelector('.document-minimap-content');",
-            "const metrics = measureDocumentMinimap(track);",
-            "const previewScale = metrics.scrollHeight <= 0 ? 1 : minimapPreviewScale(track, metrics);",
-            "const scaledDocumentHeight = Math.max(1, metrics.scrollHeight * previewScale);",
-            "const scrollRatio = metrics.scrollable === 0 ? 0 : Math.min(1, Math.max(0, metrics.viewportScrollTop / metrics.scrollable));",
-            "const viewportHeight = metrics.scrollHeight <= 0 ? metrics.trackHeight : Math.max(22, metrics.viewportHeight * previewScale);",
-            "const boundedViewportHeight = Math.min(metrics.trackHeight, viewportHeight);",
-            "const previewTop = -scrollRatio * Math.max(0, scaledDocumentHeight - metrics.trackHeight);",
-            "const viewportDocumentTop = metrics.viewportScrollTop * previewScale;",
-            "const viewportTop = Math.min(Math.max(0, metrics.trackHeight - boundedViewportHeight), Math.max(0, previewTop + viewportDocumentTop));",
-            "minimap.style.setProperty('--minimap-preview-top', `${previewTop}px`);",
-        ] {
-            assert_contains(&html, expected);
-        }
-    }
-
-    #[test]
-    fn app_shell_sizes_minimap_viewport_from_scaled_reader_window() {
-        let html = app_shell_html();
-
-        let preview_scale_position = html
-            .find(
-                "const previewScale = metrics.scrollHeight <= 0 ? 1 : minimapPreviewScale(track, metrics);",
-            )
-            .expect("minimap viewport derives scale from the rendered preview height");
-        let viewport_height_position = html
-            .find("const viewportHeight = metrics.scrollHeight <= 0 ? metrics.trackHeight : Math.max(22, metrics.viewportHeight * previewScale);")
-            .expect("minimap viewport uses the scaled reader viewport height");
-        let viewport_top_position = html
-            .find("const viewportTop = Math.min(Math.max(0, metrics.trackHeight - boundedViewportHeight), Math.max(0, previewTop + viewportDocumentTop));")
-            .expect("minimap viewport is positioned in scaled preview coordinates");
+        // The viewport box height is the reader window as a fraction of the whole
+        // document, and it travels the track in lockstep with the scroll
+        // fraction — no scaled-preview coordinates, no rail-height sliver.
+        let box_height_position = html
+            .find("Math.min(trackHeight, Math.max(22, trackHeight * metrics.viewportHeight / metrics.scrollHeight));")
+            .expect("viewport box height is a fraction of the document scroll height");
+        let travel_position = html
+            .find("const travel = Math.max(0, trackHeight - boxHeight);")
+            .expect("viewport box travel is the leftover track height");
+        let box_top_position = html
+            .find("const boxTop = scrollFraction * travel;")
+            .expect("viewport box top follows the reader scroll fraction");
 
         assert!(
-            preview_scale_position < viewport_height_position
-                && viewport_height_position < viewport_top_position,
-            "a tall reader viewport with a large image and adjacent text should draw a proportionally tall minimap viewport over the scaled preview, not a scrollHeight/trackHeight sliver"
+            box_height_position < travel_position && travel_position < box_top_position,
+            "viewport geometry should size the box, then derive its travel, then place it by scroll fraction"
         );
         assert!(
-            !html.contains("(metrics.viewportHeight / metrics.scrollHeight) * metrics.trackHeight"),
-            "minimap viewport height must not be tied to the rail-height ratio"
+            !html.contains("minimapPreviewScale") && !html.contains("scaledDocumentHeight"),
+            "viewport sizing must not depend on the removed scaled-preview model"
         );
     }
 
     #[test]
-    fn app_shell_sizes_minimap_track_from_content_with_reader_viewport_cap() {
+    fn app_shell_sizes_minimap_track_to_available_reader_height() {
         let html = app_shell_html();
 
         for expected in [
@@ -13269,30 +13273,29 @@ const label = "<button onclick=alert(3)>copy</button>";
             "const shellRect = app.getBoundingClientRect();",
             "const minimapRect = minimap.getBoundingClientRect();",
             "const availableHeight = Math.max(1, Math.floor(shellRect.bottom - minimapRect.top));",
-            "const content = minimap.querySelector('.document-minimap-content');",
-            "const contentRect = content ? content.getBoundingClientRect() : null;",
-            "const contentHeight = contentRect ? Math.ceil(contentRect.height) : 0;",
-            "const trackHeight = contentHeight > 0 ? Math.min(availableHeight, contentHeight) : availableHeight;",
-            "minimap.style.setProperty('--minimap-track-height', `${trackHeight}px`);",
-            "return { availableHeight, trackHeight };",
+            "minimap.style.setProperty('--minimap-track-height', `${availableHeight}px`);",
+            "return { availableHeight, trackHeight: availableHeight };",
             "const trackSize = minimap ? syncMinimapTrackHeight(minimap) : null;",
             "const shellHeight = trackSize ? trackSize.availableHeight : Math.max(1, app.clientHeight);",
             "const documentContent = correctReaderScrollOrigin(source);",
-            "const documentHeight = documentContent.height;",
             "const trackHeight = Math.max(1, Math.ceil(track.clientHeight || trackRect.height || trackSize?.trackHeight || shellHeight));",
             "const viewportHeight = Math.max(1, Math.ceil(app.clientHeight || shellHeight));",
             "const scrollRange = measureReaderScrollRange(documentContent, viewportHeight);",
-            "const scrollHeight = scrollRange.scrollHeight;",
-            "const scrollable = scrollRange.scrollable;",
             "const viewportScrollTop = Math.min(scrollable, Math.max(0, app.scrollTop - documentContent.topOffset));",
-            "return { source, sourceWidth, documentHeight, topOffset: documentContent.topOffset, trackRect, trackHeight, viewportHeight, scrollHeight, scrollable, viewportScrollTop };",
+            "return { source, documentHeight, topOffset: documentContent.topOffset, trackRect, trackHeight, viewportHeight, scrollHeight, scrollable, viewportScrollTop };",
         ] {
             assert_contains(&html, expected);
         }
 
+        // The canvas fills the rail, so the track no longer measures a cloned
+        // preview element to cap its height.
         assert!(
-            !html.contains("minimap.style.setProperty('--minimap-track-height', `${availableHeight}px`);"),
-            "short documents should shrink the minimap track to the rendered preview height instead of always using the full reader viewport"
+            !html.contains("const content = minimap.querySelector('.document-minimap-content');"),
+            "track sizing must not read a cloned preview element"
+        );
+        assert!(
+            !html.contains("metrics.sourceWidth"),
+            "the canvas draws from the line model, so the document width is no longer measured"
         );
     }
 
@@ -13433,16 +13436,11 @@ const label = "<button onclick=alert(3)>copy</button>";
             "--minimap-width: calc(var(--minimap-preview-width) + (var(--minimap-padding-inline) * 2));",
             "width: var(--minimap-width);",
             "margin-right: calc(-1 * (var(--reader-layout-padding-inline) + var(--minimap-width)));",
-            "--minimap-preview-top: 0px;",
             "--minimap-track-height: 100%;",
             "height: var(--minimap-track-height);",
-            ".document-minimap-content",
-            "top: var(--minimap-preview-top);",
+            ".document-minimap-canvas",
             "left: var(--minimap-padding-inline);",
             "right: var(--minimap-padding-inline);",
-            "overflow: visible;",
-            ".document-minimap-preview",
-            "transform-origin: 0 0;",
             "cursor: default;",
             "touch-action: none;",
             "user-select: none;",
@@ -13486,8 +13484,8 @@ const label = "<button onclick=alert(3)>copy</button>";
             "minimap viewport must span the full rail width"
         );
         assert!(
-            css.contains(".document-minimap-content {\n  position: absolute;\n  top: var(--minimap-preview-top);\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
-            "only minimap preview content should receive the exact 8px rail padding"
+            css.contains(".document-minimap-canvas {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
+            "the minimap canvas fills the rail inside the exact 8px padding on both edges"
         );
         assert!(
             css.contains("margin-right: calc(-1 * (var(--reader-layout-padding-inline) + var(--minimap-width)));"),
@@ -13584,9 +13582,8 @@ const label = "<button onclick=alert(3)>copy</button>";
             "minimapEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.minimap.aria'));",
             "aria-label=\"${escapeAttr(window.leafLocale.t('minimap.aria'))}\"",
             "document-minimap-track\" aria-hidden=\"true\"",
-            "document-minimap-content\" aria-hidden=\"true\"",
+            "document-minimap-canvas\" aria-hidden=\"true\"",
             "document-minimap-viewport\" aria-hidden=\"true\"",
-            "preview.setAttribute('aria-hidden', 'true');",
         ] {
             assert_contains(&html, expected);
         }
@@ -15635,8 +15632,11 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
         // The button is a real anchor link to the block's locus (dataset.locus).
         assert!(html.contains("link.href = '#' + encodeURIComponent(locus)"));
 
-        // The gutter button shows the chain glyph (revealed on hover).
+        // The chain glyph is parsed once into a template and cloned per block,
+        // instead of re-parsing the SVG string tens of thousands of times.
         assert!(html.contains("link.innerHTML = ANCHOR_LINK_ICON;"));
+        assert!(html.contains("const anchorLinkTemplate = (() => {"));
+        assert!(html.contains("const link = anchorLinkTemplate.cloneNode(true);"));
 
         // Clicking the gutter button copies its #locus so the canonical number can
         // be pasted out — the way to read the locus on touch, where there is no
@@ -15652,30 +15652,24 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
         assert!(html.contains("background: var(--app-action-hover-background);"));
         assert!(html.contains(".document-body .has-anchor-link > .heading-anchor:hover,"));
 
-        // Each button is shifted left by its block's measured indentation so a
-        // nested block's button lands in the same left gutter as a top-level
-        // heading's instead of overlapping its indented text. decorateAnchorLinks
-        // positions them once, and scheduleReaderLayoutUpdate repositions them on
-        // every reflow and resize since the indent is em-based.
-        assert!(html.contains("function positionAnchorLinks(body)"));
-        assert!(html.contains("block.getBoundingClientRect().left - bodyLeft"));
-        assert!(html.contains(
-            "link.style.right = indent > 0.5 ? `calc(100% + ${Math.round(indent)}px)` : '';"
-        ));
-        let decorate_body = html
-            .find("positionAnchorLinks(body);")
-            .expect("decorateAnchorLinks positions the buttons it injects");
-        let reflow = html
-            .find("readerLayoutFrame = 0;")
-            .expect("scheduleReaderLayoutUpdate exists");
-        let reflow_reposition = html[reflow..]
-            .find("positionAnchorLinks();")
-            .map(|offset| reflow + offset)
-            .expect("the reflow frame repositions the buttons");
+        // The button lives in a gutter carved from each block's own left padding
+        // (pulled back with a matching negative margin so the text column does not
+        // move). Anchoring it inside the block's box is what lets content-visibility
+        // apply paint containment to entries without clipping the button — and it
+        // removes the per-reflow JS measuring pass entirely.
+        assert!(html.contains(".document-body .has-anchor-link {\n  position: relative;\n  padding-left: 40px;\n  margin-left: -40px;\n}"));
         assert!(
-            decorate_body < reflow_reposition,
-            "buttons are positioned at decorate time and again on reflow"
+            html.contains(".document-body .heading-anchor {\n  position: absolute;\n  left: 0;")
         );
+        assert!(
+            !html.contains("positionAnchorLinks"),
+            "the per-reflow anchor-positioning pass is replaced by the CSS gutter"
+        );
+
+        // Off-screen entries skip layout and paint via content-visibility so a huge
+        // document renders like a PDF's visible pages, and each block keeps its real
+        // size once seen so the scroll height converges.
+        assert!(html.contains(".document-body > * {\n  content-visibility: auto;\n  contain-intrinsic-size: auto 48px;\n}"));
 
         // Only the innermost hovered/focused block reveals its button. Without the
         // :not(:has(...)) guard, hovering a nested block would also light up every
