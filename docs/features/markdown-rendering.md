@@ -353,7 +353,8 @@ leaftext opens `.xml` files in the 84000 Buddhist-translation TEI format alongsi
 | `<div type="…">` | Nested headings by type: `prelude`/`chapter` → `##`, `section` → `###`, `subsection` → `####`; `translation` is a transparent wrapper (no heading); other types nest by depth (`##`–`######`) |
 | `<head>` | Heading text at the div's depth, including inline children (e.g. a nested `<title>`) |
 | `<p>` | Paragraph |
-| `<lg><l>…</l></lg>` | Verse stanza with line breaks |
+| `<lg><l>…</l></lg>` | Verse stanza rendered as a [blockquote](#blockquotes-and-alerts) (left bar + hanging indent), one `<l>` line per row |
+| bare `<l>…</l>` | Verse lines with no `<lg>` wrapper — a run of adjacent `<l>` siblings is coalesced into a single blockquote, like consecutive `>` lines in Markdown |
 | `<note place="end">` | Inline footnote (collected at page foot) |
 | `<ptr>` | Cross-reference label kept; linked when the target is an external URL, plain text for internal targets |
 | `<term>`, `<title>`, `<ref>` | Inline text (tags stripped) |

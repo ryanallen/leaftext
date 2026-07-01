@@ -971,6 +971,40 @@ fn tei_render_inline<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx) -> Str
     out
 }
 
+/// Wrap verse lines in a blockquote so they render like a Markdown `>` quote
+/// (left bar + hanging indent), with each `<l>` line on its own row.
+fn tei_verse_blockquote(lines: &[String]) -> String {
+    format!(
+        "<blockquote class=\"tei-verse\">\n<p>{}</p>\n</blockquote>\n",
+        lines.join("<br>\n")
+    )
+}
+
+/// Render a run of block-level sibling elements, coalescing consecutive `<l>`
+/// lines (verse lines not wrapped in an `<lg>`) into a single quote block so
+/// they still render like a Markdown `>` quote when the `<lg>` group is absent.
+fn tei_render_block_sequence<'a>(
+    siblings: &[roxmltree::Node<'a, 'a>],
+    ctx: &mut TeiCtx,
+    depth: usize,
+) {
+    let is_line = |n: &roxmltree::Node| n.tag_name().name().eq_ignore_ascii_case("l");
+    let mut i = 0;
+    while i < siblings.len() {
+        if is_line(&siblings[i]) {
+            let mut lines = Vec::new();
+            while i < siblings.len() && is_line(&siblings[i]) {
+                lines.push(tei_render_inline(siblings[i], ctx));
+                i += 1;
+            }
+            ctx.push(&tei_verse_blockquote(&lines));
+        } else {
+            tei_render_node(siblings[i], ctx, depth);
+            i += 1;
+        }
+    }
+}
+
 /// Render a TEI `<div>` element.
 fn tei_render_div<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx, depth: usize) {
     let div_type = node.attribute("type").unwrap_or("");
@@ -979,11 +1013,8 @@ fn tei_render_div<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx, depth: us
 
     if heading_level.is_none() {
         // transparent container (e.g. div[@type="translation"])
-        for child in node.children() {
-            if child.is_element() {
-                tei_render_node(child, ctx, depth);
-            }
-        }
+        let children: Vec<_> = node.children().filter(|c| c.is_element()).collect();
+        tei_render_block_sequence(&children, ctx, depth);
         return;
     }
     let level = heading_level.unwrap();
@@ -1015,12 +1046,11 @@ fn tei_render_div<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx, depth: us
     }
 
     // Render non-head children
-    for child in node.children() {
-        if child.is_element() && child.tag_name().name().eq_ignore_ascii_case("head") {
-            continue;
-        }
-        tei_render_node(child, ctx, depth + 1);
-    }
+    let children: Vec<_> = node
+        .children()
+        .filter(|c| c.is_element() && !c.tag_name().name().eq_ignore_ascii_case("head"))
+        .collect();
+    tei_render_block_sequence(&children, ctx, depth + 1);
 }
 
 /// Dispatch rendering for any TEI element node.
@@ -1041,19 +1071,15 @@ fn tei_render_node<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx, depth: u
                 .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("l"))
                 .map(|l| tei_render_inline(l, ctx))
                 .collect();
-            ctx.push(&format!(
-                "<p class=\"tei-verse\">{}</p>\n",
-                lines.join("<br>\n")
-            ));
+            ctx.push(&tei_verse_blockquote(&lines));
         }
         "head" | "milestone" | "lb" | "ptr" | "caesura" => {
             // omit at top level; head is handled by renderDiv
         }
         _ => {
-            // Recurse into unknown block elements
-            for child in node.children() {
-                tei_render_node(child, ctx, depth);
-            }
+            // Recurse into unknown block elements, still coalescing bare `<l>`.
+            let children: Vec<_> = node.children().filter(|c| c.is_element()).collect();
+            tei_render_block_sequence(&children, ctx, depth);
         }
     }
 }
@@ -1120,9 +1146,8 @@ fn render_tei_body(xml: &str) -> (Option<String>, String) {
         ));
     }
 
-    for child in body.children() {
-        tei_render_node(child, &mut ctx, 0);
-    }
+    let body_children: Vec<_> = body.children().filter(|c| c.is_element()).collect();
+    tei_render_block_sequence(&body_children, &mut ctx, 0);
 
     // Append footnotes — build as a separate string to avoid borrow conflicts
     // while iterating `ctx.footnotes` and mutating `ctx.out`.
@@ -11240,6 +11265,41 @@ Paragraph after H6.
         assert_contains(&rendered.html, "<li>nested first</li>");
         assert_contains(&rendered.html, "<ul>");
         assert_contains(&rendered.html, "<li>plus</li>");
+    }
+
+    #[test]
+    fn tei_lg_and_bare_l_render_as_verse_blockquotes() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0">
+  <text><body>
+    <div type="translation">
+      <lg>
+        <l>When a tree rots,</l>
+        <l>What use has it for blossoms and boughs?</l>
+      </lg>
+      <l>Bare line one,</l>
+      <l>Bare line two.</l>
+      <p>A prose paragraph.</p>
+    </div>
+  </body></text>
+</TEI>"#;
+
+        let (_title, html) = render_tei_body(xml);
+
+        // The <lg> group becomes a blockquote with its lines joined by <br>.
+        assert_contains(
+            &html,
+            "<blockquote class=\"tei-verse\">\n<p>When a tree rots,<br>\nWhat use has it for blossoms and boughs?</p>\n</blockquote>",
+        );
+        // Consecutive bare <l> lines (no <lg>) coalesce into one blockquote too.
+        assert_contains(
+            &html,
+            "<blockquote class=\"tei-verse\">\n<p>Bare line one,<br>\nBare line two.</p>\n</blockquote>",
+        );
+        // A following non-<l> block ends the verse run and renders normally.
+        assert_contains(&html, "<p>A prose paragraph.</p>");
+        // No leftover plain verse paragraph markup.
+        assert!(!html.contains("<p class=\"tei-verse\">"));
     }
 
     #[test]

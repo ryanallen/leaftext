@@ -11,7 +11,8 @@
 //   div[@type="subsection"]           — h4 section
 //   <head>                            — heading at the parent div's level
 //   <p>                               — paragraph
-//   <lg><l>…</l></lg>                 — verse block; lines joined with <br>
+//   <lg><l>…</l></lg>                 — verse block; a blockquote, lines joined with <br>
+//   bare <l>…</l> runs                — coalesced into a blockquote (verse without <lg>)
 //   <note place="end">…</note>        — inline footnote ref + end notes list
 //   <milestone>, <lb>, <caesura>      — omitted
 //   <ptr>                             — keep label text (link if external URL)
@@ -71,9 +72,7 @@ export function renderTEI(xmlString) {
     parts.push(`<h1 id="${escAttr(id)}">${escHtml(title)}</h1>\n`);
   }
 
-  for (const child of body.children) {
-    renderNode(child, parts, 0, ctx);
-  }
+  renderBlockSequence([...body.children], parts, 0, ctx);
 
   // Footnotes section — match markdown.js exactly so the same CSS applies:
   // `.footnotes > ol` is forced back to Arabic numerals (overriding the
@@ -120,11 +119,35 @@ function renderNode(node, out, divDepth, ctx) {
       // omit
       break;
     default:
-      // Unknown block elements: recurse into children
-      for (const child of node.children) {
-        renderNode(child, out, divDepth, ctx);
-      }
+      // Unknown block elements: recurse, still coalescing bare <l> runs.
+      renderBlockSequence([...node.children], out, divDepth, ctx);
   }
+}
+
+// Render a run of block-level sibling elements, coalescing consecutive bare
+// <l> lines (verse lines with no <lg> wrapper) into one blockquote so they
+// still render like a Markdown `>` quote.
+function renderBlockSequence(children, out, divDepth, ctx) {
+  const isLine = (el) => localName(el) === 'l';
+  let i = 0;
+  while (i < children.length) {
+    if (isLine(children[i])) {
+      const lines = [];
+      while (i < children.length && isLine(children[i])) {
+        lines.push(renderInline(children[i], ctx));
+        i++;
+      }
+      out.push(verseBlockquote(lines));
+    } else {
+      renderNode(children[i], out, divDepth, ctx);
+      i++;
+    }
+  }
+}
+
+// Wrap verse lines in a blockquote (left bar + hanging indent), one <l> per row.
+function verseBlockquote(lines) {
+  return `<blockquote class="tei-verse">\n<p>${lines.join('<br>\n')}</p>\n</blockquote>\n`;
 }
 
 function renderDiv(node, out, divDepth, ctx) {
@@ -132,9 +155,7 @@ function renderDiv(node, out, divDepth, ctx) {
 
   if (type === 'translation') {
     // transparent container — just recurse
-    for (const child of node.children) {
-      renderNode(child, out, divDepth, ctx);
-    }
+    renderBlockSequence([...node.children], out, divDepth, ctx);
     return;
   }
 
@@ -149,10 +170,8 @@ function renderDiv(node, out, divDepth, ctx) {
   }
 
   // Recurse into non-head children
-  for (const child of node.children) {
-    if (localName(child) === 'head') continue;
-    renderNode(child, out, divDepth + 1, ctx);
-  }
+  const rest = [...node.children].filter((c) => localName(c) !== 'head');
+  renderBlockSequence(rest, out, divDepth + 1, ctx);
 }
 
 function renderP(node, out, ctx) {
@@ -165,9 +184,7 @@ function renderLg(node, out, ctx) {
   const lines = [...node.children]
     .filter((c) => localName(c) === 'l')
     .map((l) => renderInline(l, ctx));
-  out.push('<p class="tei-verse">');
-  out.push(lines.join('<br>\n'));
-  out.push('</p>\n');
+  out.push(verseBlockquote(lines));
 }
 
 function renderInline(node, ctx) {
