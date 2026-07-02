@@ -45,7 +45,7 @@
 ## Minimap
 - Page: https://leaftext.com/docs/#/features/minimap
 - Markdown: https://leaftext.com/docs/features/minimap.md
-- Summary: The minimap is a scaled side-rail showing the actual document beside the reading view. It gives you spatial orientation in long documents and lets you jump to any section by clicking or dragging. B...
+- Summary: The minimap is a scaled side-rail showing the full document structure beside the reading view. It gives you spatial orientation in long documents and lets you jump to any section by clicking or dra...
 
 ## Navigation
 - Page: https://leaftext.com/docs/#/features/navigation
