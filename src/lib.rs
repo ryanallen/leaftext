@@ -10159,6 +10159,55 @@ body.library-resizing {
   padding-left: 40px;
   margin-left: -40px;
 }
+/* A blockquote carries a left bar — the quote rule, or a GitHub alert's coloured
+   edge. The gutter carve above shifts the block's border-box 40px left to seat the
+   permalink, which drags that border out past the reading margin (the bar "breaks"
+   into the gutter, as the desktop app showed). A border cannot be inset, so zero the
+   real one and repaint the bar as a pseudo pinned to the gutter's right edge, then
+   pad the text past it, so the quote lines up on the column edge like the web. */
+.document-body blockquote.has-anchor-link {
+  border-left-width: 0;
+  padding-left: calc(40px + 1.25em);
+}
+.document-body blockquote.has-anchor-link::after {
+  content: "";
+  position: absolute;
+  left: 40px;
+  top: 0;
+  bottom: 0;
+  width: 0.25em;
+  background: var(--markdown-blockquote-border);
+  pointer-events: none;
+}
+.document-body .markdown-alert-note.has-anchor-link,
+.document-body .markdown-alert-tip.has-anchor-link,
+.document-body .markdown-alert-important.has-anchor-link,
+.document-body .markdown-alert-warning.has-anchor-link,
+.document-body .markdown-alert-caution.has-anchor-link {
+  padding-left: calc(40px + 1em);
+}
+.document-body .markdown-alert-note.has-anchor-link::after,
+.document-body .markdown-alert-tip.has-anchor-link::after,
+.document-body .markdown-alert-important.has-anchor-link::after,
+.document-body .markdown-alert-warning.has-anchor-link::after,
+.document-body .markdown-alert-caution.has-anchor-link::after {
+  width: 6px;
+}
+.document-body .markdown-alert-note.has-anchor-link::after {
+  background: var(--markdown-alert-note-border);
+}
+.document-body .markdown-alert-tip.has-anchor-link::after {
+  background: var(--markdown-alert-tip-border);
+}
+.document-body .markdown-alert-important.has-anchor-link::after {
+  background: var(--markdown-alert-important-border);
+}
+.document-body .markdown-alert-warning.has-anchor-link::after {
+  background: var(--markdown-alert-warning-border);
+}
+.document-body .markdown-alert-caution.has-anchor-link::after {
+  background: var(--markdown-alert-caution-border);
+}
 .document-body .heading-anchor {
   position: absolute;
   left: 0;
@@ -15993,6 +16042,20 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
             !html.contains("positionAnchorLinks"),
             "the per-reflow anchor-positioning pass is replaced by the CSS gutter"
         );
+
+        // The gutter carve shifts a block's whole border-box 40px left. A blockquote's
+        // left bar rides that border, so without this it juts 40px into the margin
+        // (a border cannot be inset). Zero the real border and repaint the bar as an
+        // inset ::after at the gutter's right edge so it lands on the column edge.
+        assert!(html.contains(
+            ".document-body blockquote.has-anchor-link {\n  border-left-width: 0;\n  padding-left: calc(40px + 1.25em);\n}"
+        ));
+        assert!(html.contains(
+            ".document-body blockquote.has-anchor-link::after {\n  content: \"\";\n  position: absolute;\n  left: 40px;"
+        ));
+        // GitHub alerts (the five typed callouts) carry the same coloured left edge and
+        // need the same repaint, tinted per type.
+        assert!(html.contains(".document-body .markdown-alert-note.has-anchor-link::after {\n  background: var(--markdown-alert-note-border);\n}"));
 
         // Off-screen entries skip layout and paint via content-visibility so a huge
         // document renders like a PDF's visible pages, and each block keeps its real
