@@ -39,7 +39,7 @@ All six ATX heading levels render:
 ##### H5 heading
 ###### H6 heading
 
-Every heading gets a slug `id`. Every other content block — paragraphs, list items, blockquotes, code blocks, tables, and more — gets a stable auto-assigned `id` too. Hover any block, or the gutter spot beside it, to reveal a permalink button in the left margin; clicking it jumps to that exact block. On touch devices, which have no hover, the button stays faintly visible in the margin beside every block and brightens when tapped. Blocks with an explicit author-supplied `id` work the same way — see [Inline HTML](#inline-html).
+Every heading gets a slug `id`. Every other content block — paragraphs, list items, blockquotes, code blocks, tables, and more — gets a stable auto-assigned `id` too. Hover any block, or the gutter spot beside it, to reveal a permalink button in the left margin; clicking it jumps to that exact block. On touch devices, which have no hover, the button stays faintly visible in the margin beside every block and brightens when tapped. A blockquote (or GitHub alert) is treated as a single citable unit: it carries one permalink button, and the paragraphs inside it share it — each still keeps its own `id`, so a direct `#`-link to an inner block resolves. Blocks with an explicit author-supplied `id` work the same way — see [Inline HTML](#inline-html).
 
 ## Text formatting
 

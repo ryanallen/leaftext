@@ -3907,6 +3907,14 @@ function decorateAnchorLinks() {
     if (target.classList.contains('footnote-definition')) return;
     if (target.closest('.document-outline')) return;
     if (target.querySelector(':scope > .heading-anchor')) return;
+    // A blockquote (or GitHub alert) is one citable unit: it carries the button,
+    // and the gutter carve on it drags its left bar 40px into the margin, which
+    // the .has-anchor-link CSS repaints inset. Its inner paragraphs must NOT also
+    // carve a gutter — a second -40px shift would drag the quote text off the
+    // column (the bug the repaint alone left behind). So skip the button on any
+    // block nested inside a blockquote; the block keeps its id, so #locus links to
+    // it still resolve, it just shares the blockquote's permalink.
+    if (target.tagName !== 'BLOCKQUOTE' && target.closest('blockquote')) return;
     const link = anchorLinkTemplate.cloneNode(true);
     link.href = '#' + encodeURIComponent(locus);
     link.setAttribute('aria-label', label);
@@ -3914,64 +3922,11 @@ function decorateAnchorLinks() {
     target.classList.add('has-anchor-link');
     target.insertBefore(link, target.firstChild);
   });
-  // The block never moves; the button is floated into the left margin and its
-  // offset is measured per block so it clears any blockquote/list indent that
-  // pure CSS can't derive. Reposition on any reflow. Clicks (copy + jump) are
-  // handled by the delegated body listener in bindDocumentLinks, so no
-  // per-button listener is attached here.
-  positionAnchorLinks(body);
-  observeAnchorLayout(body);
-}
-// Park every permalink button in the document's left margin, lined up with a
-// top-level block's button no matter how deeply its block is indented. The
-// button's right edge already meets its block's left edge (right: 100% in CSS);
-// here we shift it further left by the block's own indentation so it clears the
-// indented text instead of overlapping it. The indent can't be derived in pure
-// CSS — accumulating it through a custom property forms a self-referential cycle
-// the engine discards — so we measure each block's left edge against the root's
-// and shift by the difference, which also handles every list, blockquote,
-// padding, and text-indent combination exactly. Reads are batched ahead of
-// writes to avoid layout thrash; the buttons are out of flow, so moving them
-// never resizes the root and so never loops the layout observer.
-function positionAnchorLinks(root) {
-  if (!root) return;
-  const blocks = root.querySelectorAll('.has-anchor-link');
-  if (!blocks.length) return;
-  const rootLeft = root.getBoundingClientRect().left;
-  const indents = [];
-  blocks.forEach((block) => {
-    indents.push(block.getBoundingClientRect().left - rootLeft);
-  });
-  blocks.forEach((block, index) => {
-    const link = block.querySelector(':scope > .heading-anchor');
-    if (!link) return;
-    const indent = indents[index];
-    link.style.right = indent > 0.5 ? `calc(100% + ${Math.round(indent)}px)` : '';
-  });
-}
-// The indentation is em-based, so it scales with the viewport-driven font size;
-// reposition on any reflow or resize. Wire each root once: a ResizeObserver
-// catches font/width reflow (and image decoding), and the resize listeners catch
-// zoom and viewport changes. All are coalesced into a single animation frame.
-const observedAnchorRoots = new WeakSet();
-function observeAnchorLayout(root) {
-  if (!root || observedAnchorRoots.has(root)) return;
-  observedAnchorRoots.add(root);
-  let frame = 0;
-  const schedule = () => {
-    if (frame) return;
-    frame = requestAnimationFrame(() => {
-      frame = 0;
-      positionAnchorLinks(root);
-    });
-  };
-  window.addEventListener('resize', schedule);
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', schedule);
-  }
-  if (window.ResizeObserver) {
-    new ResizeObserver(schedule).observe(root);
-  }
+  // The button no longer needs JS positioning: it lives in each block's own
+  // left-padding gutter (see the .has-anchor-link CSS), so a nested block's
+  // button sits beside that block rather than being measured back to a shared
+  // column. Clicks (copy + jump) are handled by the delegated body listener in
+  // bindDocumentLinks, so no per-button listener is attached here.
 }
 function setCodeCopyLabel(button, key) {
   const label = window.leafLocale.t(key);
@@ -10203,18 +10158,69 @@ body.library-resizing {
 /* Permalink button for any anchor-addressable block. Out of flow (so it never
    nudges the text), hidden until its target is hovered or the button itself is
    keyboard-focused. */
-/* The block itself never moves — its text stays on the reading column and a
-   blockquote, list, or alert keeps its natural indent and left bar, so every
-   block aligns like the web reader. The permalink is floated into the left
-   margin (right: 100%) and its exact left offset is measured per block in
-   positionAnchorLinks(), which clears any blockquote/list indent that pure CSS
-   can't derive. */
+/* The permalink sits in a gutter carved from the block's own left padding
+   (pulled back out with a matching negative margin so the text column does not
+   move). Keeping it inside the block's box is what lets `content-visibility`
+   apply paint containment to entries without clipping the button. */
 .document-body .has-anchor-link {
   position: relative;
+  padding-left: 40px;
+  margin-left: -40px;
+}
+/* A blockquote carries a left bar — the quote rule, or a GitHub alert's coloured
+   edge. The gutter carve above shifts the block's border-box 40px left to seat the
+   permalink, which drags that border out past the reading margin (the bar "breaks"
+   into the gutter). A border cannot be inset, so zero the real one and repaint the
+   bar as a pseudo pinned to the gutter's right edge, then pad the text past it, so
+   the quote lines up on the column edge like the web. The paragraphs inside carry
+   no gutter of their own (decorateAnchorLinks skips their button), so the text is
+   shifted once, not twice, and lands at its natural quote indent. */
+.document-body blockquote.has-anchor-link {
+  border-left-width: 0;
+  padding-left: calc(40px + 1.25em);
+}
+.document-body blockquote.has-anchor-link::after {
+  content: "";
+  position: absolute;
+  left: 40px;
+  top: 0;
+  bottom: 0;
+  width: 0.25em;
+  background: var(--markdown-blockquote-border);
+  pointer-events: none;
+}
+.document-body .markdown-alert-note.has-anchor-link,
+.document-body .markdown-alert-tip.has-anchor-link,
+.document-body .markdown-alert-important.has-anchor-link,
+.document-body .markdown-alert-warning.has-anchor-link,
+.document-body .markdown-alert-caution.has-anchor-link {
+  padding-left: calc(40px + 1em);
+}
+.document-body .markdown-alert-note.has-anchor-link::after,
+.document-body .markdown-alert-tip.has-anchor-link::after,
+.document-body .markdown-alert-important.has-anchor-link::after,
+.document-body .markdown-alert-warning.has-anchor-link::after,
+.document-body .markdown-alert-caution.has-anchor-link::after {
+  width: 6px;
+}
+.document-body .markdown-alert-note.has-anchor-link::after {
+  background: var(--markdown-alert-note-border);
+}
+.document-body .markdown-alert-tip.has-anchor-link::after {
+  background: var(--markdown-alert-tip-border);
+}
+.document-body .markdown-alert-important.has-anchor-link::after {
+  background: var(--markdown-alert-important-border);
+}
+.document-body .markdown-alert-warning.has-anchor-link::after {
+  background: var(--markdown-alert-warning-border);
+}
+.document-body .markdown-alert-caution.has-anchor-link::after {
+  background: var(--markdown-alert-caution-border);
 }
 .document-body .heading-anchor {
   position: absolute;
-  right: 100%;
+  left: 0;
   top: 0.7em;
   top: 0.5lh;
   transform: translateY(-50%);
@@ -16033,23 +16039,39 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
         assert!(html.contains("background: var(--app-action-hover-background);"));
         assert!(html.contains(".document-body .has-anchor-link > .heading-anchor:hover,"));
 
-        // The block never moves — its text stays on the reading column and a
-        // blockquote/list keeps its natural indent — so every block aligns like the
-        // web reader. The button is floated into the left margin (right: 100%) and
-        // its exact offset is measured per block in positionAnchorLinks(), which
-        // clears any blockquote/list indent pure CSS can't derive.
-        assert!(html.contains(".document-body .has-anchor-link {\n  position: relative;\n}"));
-        assert!(html
-            .contains(".document-body .heading-anchor {\n  position: absolute;\n  right: 100%;"));
+        // The button lives in a gutter carved from each block's own left padding
+        // (pulled back with a matching negative margin so the text column does not
+        // move). Anchoring it inside the block's box is what lets content-visibility
+        // apply paint containment to entries without clipping the button — and it
+        // removes the per-reflow JS measuring pass entirely.
+        assert!(html.contains(".document-body .has-anchor-link {\n  position: relative;\n  padding-left: 40px;\n  margin-left: -40px;\n}"));
         assert!(
-            html.contains("function positionAnchorLinks(root)"),
-            "each block's permalink offset is measured like the web reader"
+            html.contains(".document-body .heading-anchor {\n  position: absolute;\n  left: 0;")
         );
         assert!(
-            html.contains("positionAnchorLinks(body);")
-                && html.contains("observeAnchorLayout(body);"),
-            "the measuring pass runs after decoration and re-runs on reflow"
+            !html.contains("positionAnchorLinks"),
+            "the per-reflow anchor-positioning pass is replaced by the CSS gutter"
         );
+
+        // A blockquote's left bar rides the border-box the gutter carve shifts 40px
+        // left, so it would jut into the margin. Zero the real border and repaint the
+        // bar as an inset ::after pinned to the gutter's right edge (the column edge),
+        // padding the quote text past it so it lands at its natural indent.
+        assert!(html.contains(".document-body blockquote.has-anchor-link {\n  border-left-width: 0;\n  padding-left: calc(40px + 1.25em);\n}"));
+        assert!(html.contains(
+            ".document-body blockquote.has-anchor-link::after {\n  content: \"\";\n  position: absolute;\n  left: 40px;"
+        ));
+        // GitHub alerts carry the same coloured left edge and get the same repaint,
+        // tinted per type.
+        assert!(html.contains(".document-body .markdown-alert-note.has-anchor-link::after {\n  background: var(--markdown-alert-note-border);\n}"));
+
+        // The blockquote is the citable unit and carries the only button; its inner
+        // blocks must not carve a second gutter or the quote text is dragged off the
+        // column. decorateAnchorLinks skips the button on anything nested in a
+        // blockquote (the block keeps its id, so #locus links still resolve).
+        assert!(html.contains(
+            "if (target.tagName !== 'BLOCKQUOTE' && target.closest('blockquote')) return;"
+        ));
 
         // Off-screen entries skip layout and paint via content-visibility so a huge
         // document renders like a PDF's visible pages, and each block keeps its real
