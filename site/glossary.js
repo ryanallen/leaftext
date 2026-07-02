@@ -16,6 +16,8 @@
 // host's content click handler and bail out when it returns true.
 // ---------------------------------------------------------------------------
 
+import { extractSectionMarkdown } from './markdown.js';
+
 // The on-disk convention is GLOSSARY.md (like README.md). This is the
 // comparison key only; the basename is lowercased before comparing, so a
 // link to GLOSSARY.md or a legacy glossary.md both match.
@@ -58,30 +60,6 @@ function glossaryAnchor(href) {
   return anchor;
 }
 
-function headingLevel(el) {
-  const match = /^H([1-6])$/.exec(el.tagName);
-  return match ? Number(match[1]) : 0;
-}
-
-// Pull one entry out of the rendered glossary: the heading whose id is `anchor`
-// plus every following sibling up to the next heading of the same or higher
-// level. Returns a DocumentFragment, or null when the anchor is not found.
-function extractEntry(root, anchor) {
-  const start = Array.from(root.querySelectorAll('[id]')).find((el) => el.id === anchor);
-  if (!start) return null;
-  const level = headingLevel(start) || 6;
-  const frag = document.createDocumentFragment();
-  frag.appendChild(start.cloneNode(true));
-  let node = start.nextElementSibling;
-  while (node) {
-    const lvl = headingLevel(node);
-    if (lvl && lvl <= level) break;
-    frag.appendChild(node.cloneNode(true));
-    node = node.nextElementSibling;
-  }
-  return frag;
-}
-
 // Wire up the glossary sheet for one reading view.
 //   glossaryUrl    where to fetch the glossary Markdown from (fetched once, lazily)
 //   renderMarkdown the shared Markdown -> HTML renderer
@@ -94,14 +72,18 @@ export function installGlossary({ glossaryUrl, renderMarkdown, onNavigate }) {
   let bodyEl = null;
   let lastFocus = null;
 
-  function loadGlossary() {
+  // Fetch the glossary Markdown once and cache the raw text. We deliberately do
+  // NOT render the whole glossary here: a large glossary is many megabytes of
+  // HTML and DOM nodes, and laying all of it out just to show one term is what
+  // made the sheet hang on memory-limited mobile browsers (a big glossary on an
+  // iPhone would never finish loading). open() renders only the one entry it
+  // needs, sliced straight out of the raw text (see extractSectionMarkdown).
+  function loadGlossaryText() {
     if (!loadPromise) {
       loadPromise = (async () => {
         const res = await fetch(glossaryUrl, { cache: 'no-cache' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
-        const root = document.createElement('div');
-        root.innerHTML = renderMarkdown(await res.text());
-        return root;
+        return res.text();
       })();
     }
     return loadPromise;
@@ -200,18 +182,23 @@ export function installGlossary({ glossaryUrl, renderMarkdown, onNavigate }) {
   async function open(anchor) {
     show();
     bodyEl.innerHTML = '<p class="glossary-sheet-status">Loading…</p>';
-    let root;
+    let text;
     try {
-      root = await loadGlossary();
+      text = await loadGlossaryText();
     } catch (err) {
       bodyEl.innerHTML =
         '<p class="glossary-sheet-status">Could not load the glossary (' + err.message + ').</p>';
       return;
     }
-    const entry = extractEntry(root, anchor);
-    bodyEl.innerHTML = '';
-    if (entry) bodyEl.appendChild(entry);
-    else bodyEl.innerHTML = '<p class="glossary-sheet-status">No glossary entry for “' + anchor + '”.</p>';
+    // Slice out just this entry's Markdown and render only that, so the sheet
+    // opens instantly and cheaply regardless of how large the glossary is.
+    const entryMarkdown = extractSectionMarkdown(text, anchor);
+    if (entryMarkdown != null) {
+      bodyEl.innerHTML = renderMarkdown(entryMarkdown);
+    } else {
+      bodyEl.innerHTML =
+        '<p class="glossary-sheet-status">No glossary entry for “' + anchor + '”.</p>';
+    }
     bodyEl.scrollTop = 0;
   }
 

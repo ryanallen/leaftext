@@ -737,3 +737,57 @@ export function renderMarkdown(src) {
 
   return frontmatterHtml + html;
 }
+
+// Extract one section's raw Markdown from a document by its heading slug: the
+// matching heading line plus every line down to the next heading of the same or
+// higher level. Returns null when no heading has that slug.
+//
+// Slugs are derived exactly as renderMarkdown() derives heading ids — same
+// leading-frontmatter strip, same fenced-code-block skipping, and the same
+// stripToText + slugify with a shared occurrence counter — so a caller can
+// render just this slice and get the same id and content it would have had in
+// the full document. That lets the glossary sheet render a single entry instead
+// of laying out the whole (potentially huge) glossary, which is what makes the
+// term sheet open on memory-limited mobile browsers.
+export function extractSectionMarkdown(src, slug) {
+  let text = String(src).replace(/\r\n?/g, '\n');
+  const frontmatter = splitLeadingFrontmatter(text);
+  if (frontmatter) text = frontmatter.rest;
+
+  const lines = text.split('\n');
+  const slugOcc = Object.create(null);
+  let inFence = false;
+  let fenceCh = '';
+  let start = -1;
+  let startLevel = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const fm = line.match(/^ {0,3}(`{3,}|~{3,})/);
+    if (fm) {
+      if (!inFence) {
+        inFence = true;
+        fenceCh = fm[1][0];
+      } else if (line.trim()[0] === fenceCh) {
+        inFence = false;
+      }
+      continue;
+    }
+    if (inFence) continue;
+
+    const h = line.match(/^ {0,3}(#{1,6})\s+(.*?)(?:\s+#+)?\s*$/);
+    if (!h) continue;
+    const level = h[1].length;
+    const id = slugify(stripToText(h[2]), slugOcc);
+    if (start === -1) {
+      if (id === slug) {
+        start = i;
+        startLevel = level;
+      }
+    } else if (level <= startLevel) {
+      return lines.slice(start, i).join('\n');
+    }
+  }
+
+  return start === -1 ? null : lines.slice(start).join('\n');
+}
