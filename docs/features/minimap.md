@@ -1,43 +1,28 @@
 # Minimap
 
-> leaftext's minimap paints a scaled thumbnail of the whole document to a canvas in a side rail, with a live viewport indicator. Click to jump to any section; drag the indicator to scroll.
+> leaftext's minimap is a shrunken clone of the rendered document in a side rail — real, tiny text, not abstract bars — with a live viewport indicator. Click to jump to any section; drag the indicator to scroll.
 
-The minimap is a scaled side-rail showing the full document structure beside the reading view. It gives you spatial orientation in long documents and lets you jump to any section by clicking or dragging.
+The minimap is a scaled side-rail showing the actual document beside the reading view. It gives you spatial orientation in long documents and lets you jump to any section by clicking or dragging. Because it is a real rendering of the page, you can recognize where you are from the shape of the text itself: a heading, a code block, a verse, a dense paragraph.
 
 ## How it works
 
-The minimap is a `<canvas>` painted once from the document's line model (see [Document model](#document-model)). Each source line maps to a row of the canvas: body blocks — paragraphs, lists, blockquotes, and code — are drawn as dim bars, and headings are painted over the top, so the document's structure stays legible even when tens of thousands of lines are compressed into a few hundred pixels. The bar colours come from the theme's minimap tokens. A viewport indicator overlays the portion currently visible; as you scroll, it moves in lockstep. Clicking anywhere on the rail scrolls the document to that position. Dragging the viewport indicator maps the pointer's position in the track proportionally to the document, so the reading view follows wherever you place the handle.
+The minimap clones the rendered document and shrinks it to the rail width with a CSS `transform: scale(...)`, the way a code editor's minimap does. What you see in the rail is a real (very small) copy of the page, so the text that is actually there is what shows up. The clone is stripped of ids and links so nothing in it is focusable or duplicated for assistive technology, and it inherits the active theme through the shared stylesheet — so switching light/dark needs no rebuild.
 
-Because the canvas is a static thumbnail, it is painted once per document and repainted only when the rail is resized (debounced) or the theme changes — never on every scroll, and never when the document's DOM changes. This is what keeps a large document from being rendered twice: the minimap draws from the line model instead of cloning the reading area. Only the lightweight viewport indicator updates as you scroll.
+A viewport indicator overlays the portion currently visible; as you scroll, it moves in lockstep. When the document is taller than the rail, the thumbnail itself slides inside the rail (again, like a code editor) so the region around your position stays in view. Clicking anywhere on the rail scrolls the reader to that point in the document; dragging the indicator keeps the grabbed point under the cursor.
 
-The indicator is driven by two CSS custom properties so it stays in sync without repainting the canvas:
+The clone is rebuilt only when it needs to be — when the document's content changes (live reload, or code highlighting, Mermaid diagrams, and math settling in), when images finish loading, or when the rail resizes. It is **never** rebuilt on scroll. Only two CSS custom properties are written as you scroll:
 
 - `--minimap-viewport-top` — positions the viewport indicator within the rail
 - `--minimap-viewport-height` — sizes the indicator proportionally to the reader window
 
-A `requestAnimationFrame`-throttled loop writes those properties on scroll, so the rail stays fluid without blocking the main thread. Both the indicator's height and how far it travels are derived from the reader's real scroll range, so click-to-scroll and the indicator stay exact regardless of the thumbnail's line-based shape.
+plus the thumbnail's `top` offset for the slide. A `requestAnimationFrame`-throttled loop writes those on scroll, so the rail stays fluid without blocking the main thread. The indicator's height and travel come from the reader's real scroll range and the clone's own measured height, so click-to-scroll and the indicator stay aligned with the thumbnail on documents of any length.
 
-## Document model
+> [!NOTE]
+> The reading view uses `content-visibility` to open and scroll large files quickly by skipping the layout of off-screen blocks. The thumbnail clone is deliberately exempt from that — it lays out in full so the rail shows real text at the right height. Showing real text means the document is laid out a second time, scaled down, for the rail. For a very large document that costs extra memory and a background layout pass when the clone is (re)built, but it is never on the scroll path. It is the deliberate trade for a legible, honest thumbnail.
 
-Internally, `build_minimap_model()` produces a `DocumentMinimap` from the raw Markdown source — a series of `MinimapSpan` entries that record each line's category and structure without storing any source text:
+## Whether the rail appears
 
-```rust
-pub struct DocumentMinimap {
-    pub line_count: usize,
-    pub spans: Vec<MinimapSpan>,
-}
-
-pub struct MinimapSpan {
-    pub start_line: usize,
-    pub line_count: usize,
-    pub category: MinimapLineCategory,
-    pub structure: MinimapLineStructure,
-}
-```
-
-Each span's `category` is one of `Heading`, `Paragraph`, `Blank`, `List`, `Blockquote`, or `CodeFence`. Adjacent lines that share the same category and structure are compressed into a single span, so even a 20 000-line document produces a compact model. The model is serialized as JSON and handed to the WebView alongside the rendered HTML — the frontend paints the minimap canvas directly from these spans, mapping each span to a row of the rail and colouring it by category. An empty or zero-line document skips the rail entirely.
-
-[TEI XML documents](markdown-rendering.md#tei-xml-84000-translations) have no Markdown source to line-scan, so a companion builder, `build_minimap_model_from_html()`, charts the same span model from the rendered block HTML instead — headings become full bars, paragraphs and blockquotes are sized by their text length, lists by item count, and code by line count. The canvas paints it identically, so an opened `.xml` translation gets the same structured rail as a Markdown file.
+The Rust side produces a small `DocumentMinimap` for each document whose only job now is to report a positive line count: an empty or zero-line document reports `0` and the rail is skipped entirely. [TEI XML documents](markdown-rendering.md#tei-xml-84000-translations) report their count from the rendered block HTML (they have no Markdown source to line-scan), so an opened `.xml` translation gets the same real-text rail as a Markdown file — the thumbnail itself is always the live clone, whatever the source format.
 
 ## Responsive behavior
 
@@ -58,4 +43,4 @@ The minimap can be toggled from **Settings** in the app bar. The setting is pers
 When the minimap is off, the reading layout switches from a two-column grid to a centred single-column layout (`reader-layout-no-minimap`) so no empty gutter remains to the right of the document.
 
 > [!TIP]
-> Use the minimap to quickly gauge document length and find dense sections at a glance. Because it is painted from the document's line structure, headings, paragraphs, lists, blockquotes, and code each carry their own tint — so you can pick out section breaks and dense passages in the rail without reading a word.
+> Use the minimap to quickly gauge document length and find dense sections at a glance. Because it is a real rendering of the page, headings, code blocks, verse, and dense paragraphs each keep their own shape — so you can pick out section breaks and dense passages in the rail from the layout itself, without reading a word.
