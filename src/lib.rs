@@ -4030,11 +4030,14 @@ function bindDocumentMinimap() {
     const handleRange = Math.max(0, metrics.trackHeight - boundedViewportHeight);
     const offsetY = Number.isFinite(pointerOffsetY) ? pointerOffsetY : boundedViewportHeight / 2;
     const targetViewportTop = Math.min(handleRange, Math.max(0, event.clientY - rect.top - offsetY));
+    // Inverse of updateMinimapViewport()'s box placement, which is
+    // viewportTop = scrollRatio * boxTravel: the full handle range on a thumbnail
+    // taller than the rail, or the short thumbnail's own travel when it fits. Both
+    // are driven by scrollRatio, so a box position maps straight back to a reader
+    // scroll offset.
     const previewTravel = Math.max(0, scaledDocumentHeight - metrics.trackHeight);
-    const viewportTopPerScrollPixel = previewScale - previewTravel / metrics.scrollable;
-    const targetViewportScrollTop = viewportTopPerScrollPixel > 0
-      ? targetViewportTop / viewportTopPerScrollPixel
-      : (handleRange <= 0 ? 0 : (targetViewportTop / handleRange) * metrics.scrollable);
+    const boxTravel = previewTravel > 0 ? handleRange : Math.max(0, scaledDocumentHeight - boundedViewportHeight);
+    const targetViewportScrollTop = boxTravel <= 0 ? 0 : (targetViewportTop / boxTravel) * metrics.scrollable;
     setReaderScrollTop(metrics.topOffset + Math.min(metrics.scrollable, Math.max(0, targetViewportScrollTop)));
     updateMinimapViewport();
   };
@@ -4476,7 +4479,15 @@ function updateMinimapViewport() {
   const viewportHeight = metrics.scrollHeight <= 0 ? metrics.trackHeight : Math.max(22, metrics.viewportHeight * previewScale);
   const boundedViewportHeight = Math.min(metrics.trackHeight, viewportHeight);
   const previewTop = -scrollRatio * Math.max(0, scaledDocumentHeight - metrics.trackHeight);
-  const viewportDocumentTop = metrics.viewportScrollTop * previewScale;
+  // The reading position within the scaled thumbnail. It must be derived from the
+  // same scrollRatio that slides the thumbnail (previewTop), NOT from
+  // viewportScrollTop * previewScale: the reader's scrollHeight is a
+  // content-visibility ESTIMATE that disagrees with the fully-laid-out clone's true
+  // height, so mixing the two puts the box off the top (previewTop + a too-small
+  // documentTop goes negative and clamps to 0 — the "stuck at top" bug). Driving both
+  // off scrollRatio keeps them consistent: box = scrollRatio * (trackHeight - box) for
+  // a tall thumbnail, and stays inside a short thumbnail that fits the rail.
+  const viewportDocumentTop = scrollRatio * Math.max(0, scaledDocumentHeight - boundedViewportHeight);
   const viewportTop = Math.min(Math.max(0, metrics.trackHeight - boundedViewportHeight), Math.max(0, previewTop + viewportDocumentTop));
   minimap.style.setProperty('--minimap-viewport-top', `${viewportTop}px`);
   minimap.style.setProperty('--minimap-viewport-height', `${boundedViewportHeight}px`);
@@ -13250,10 +13261,10 @@ const label = "<button onclick=alert(3)>copy</button>";
         for expected in [
             "function minimapPreviewScale(track, metrics) {",
             "const previewTop = -scrollRatio * Math.max(0, scaledDocumentHeight - metrics.trackHeight);",
-            "const viewportDocumentTop = metrics.viewportScrollTop * previewScale;",
+            "const viewportDocumentTop = scrollRatio * Math.max(0, scaledDocumentHeight - boundedViewportHeight);",
             "const viewportTop = Math.min(Math.max(0, metrics.trackHeight - boundedViewportHeight), Math.max(0, previewTop + viewportDocumentTop));",
             "const dragMinimapViewportToPointer = (event, pointerOffsetY) => {",
-            "const viewportTopPerScrollPixel = previewScale - previewTravel / metrics.scrollable;",
+            "const boxTravel = previewTravel > 0 ? handleRange : Math.max(0, scaledDocumentHeight - boundedViewportHeight);",
             "const clickedDocumentY = (event.clientY - contentRect.top) / previewScale;",
             "minimap.style.setProperty('--minimap-viewport-top', `${viewportTop}px`);",
             "minimap.style.setProperty('--minimap-viewport-height', `${boundedViewportHeight}px`);",
@@ -13564,7 +13575,8 @@ const label = "<button onclick=alert(3)>copy</button>";
             "return event.clientY - viewportRect.top;",
             "const dragMinimapViewportToPointer = (event, pointerOffsetY) => {",
             "const previewScale = metrics.scrollHeight <= 0 ? 1 : minimapPreviewScale(track, metrics);",
-            "const viewportTopPerScrollPixel = previewScale - previewTravel / metrics.scrollable;",
+            "const boxTravel = previewTravel > 0 ? handleRange : Math.max(0, scaledDocumentHeight - boundedViewportHeight);",
+            "const targetViewportScrollTop = boxTravel <= 0 ? 0 : (targetViewportTop / boxTravel) * metrics.scrollable;",
             "minimapPointerOffsetY = minimapPointerOffset(event);",
             "track.setPointerCapture(event.pointerId);",
             "track.addEventListener('pointermove', (event) => {",
