@@ -3914,11 +3914,64 @@ function decorateAnchorLinks() {
     target.classList.add('has-anchor-link');
     target.insertBefore(link, target.firstChild);
   });
-  // The button no longer needs JS positioning: it lives in each block's own
-  // left-padding gutter (see the .has-anchor-link CSS), so a nested block's
-  // button sits beside that block rather than being measured back to a shared
-  // column. Clicks (copy + jump) are handled by the delegated body listener in
-  // bindDocumentLinks, so no per-button listener is attached here.
+  // The block never moves; the button is floated into the left margin and its
+  // offset is measured per block so it clears any blockquote/list indent that
+  // pure CSS can't derive. Reposition on any reflow. Clicks (copy + jump) are
+  // handled by the delegated body listener in bindDocumentLinks, so no
+  // per-button listener is attached here.
+  positionAnchorLinks(body);
+  observeAnchorLayout(body);
+}
+// Park every permalink button in the document's left margin, lined up with a
+// top-level block's button no matter how deeply its block is indented. The
+// button's right edge already meets its block's left edge (right: 100% in CSS);
+// here we shift it further left by the block's own indentation so it clears the
+// indented text instead of overlapping it. The indent can't be derived in pure
+// CSS — accumulating it through a custom property forms a self-referential cycle
+// the engine discards — so we measure each block's left edge against the root's
+// and shift by the difference, which also handles every list, blockquote,
+// padding, and text-indent combination exactly. Reads are batched ahead of
+// writes to avoid layout thrash; the buttons are out of flow, so moving them
+// never resizes the root and so never loops the layout observer.
+function positionAnchorLinks(root) {
+  if (!root) return;
+  const blocks = root.querySelectorAll('.has-anchor-link');
+  if (!blocks.length) return;
+  const rootLeft = root.getBoundingClientRect().left;
+  const indents = [];
+  blocks.forEach((block) => {
+    indents.push(block.getBoundingClientRect().left - rootLeft);
+  });
+  blocks.forEach((block, index) => {
+    const link = block.querySelector(':scope > .heading-anchor');
+    if (!link) return;
+    const indent = indents[index];
+    link.style.right = indent > 0.5 ? `calc(100% + ${Math.round(indent)}px)` : '';
+  });
+}
+// The indentation is em-based, so it scales with the viewport-driven font size;
+// reposition on any reflow or resize. Wire each root once: a ResizeObserver
+// catches font/width reflow (and image decoding), and the resize listeners catch
+// zoom and viewport changes. All are coalesced into a single animation frame.
+const observedAnchorRoots = new WeakSet();
+function observeAnchorLayout(root) {
+  if (!root || observedAnchorRoots.has(root)) return;
+  observedAnchorRoots.add(root);
+  let frame = 0;
+  const schedule = () => {
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      positionAnchorLinks(root);
+    });
+  };
+  window.addEventListener('resize', schedule);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', schedule);
+  }
+  if (window.ResizeObserver) {
+    new ResizeObserver(schedule).observe(root);
+  }
 }
 function setCodeCopyLabel(button, key) {
   const label = window.leafLocale.t(key);
@@ -10150,18 +10203,18 @@ body.library-resizing {
 /* Permalink button for any anchor-addressable block. Out of flow (so it never
    nudges the text), hidden until its target is hovered or the button itself is
    keyboard-focused. */
-/* The permalink sits in a gutter carved from the block's own left padding
-   (pulled back out with a matching negative margin so the text column does not
-   move). Keeping it inside the block's box is what lets `content-visibility`
-   apply paint containment to entries without clipping the button. */
+/* The block itself never moves — its text stays on the reading column and a
+   blockquote, list, or alert keeps its natural indent and left bar, so every
+   block aligns like the web reader. The permalink is floated into the left
+   margin (right: 100%) and its exact left offset is measured per block in
+   positionAnchorLinks(), which clears any blockquote/list indent that pure CSS
+   can't derive. */
 .document-body .has-anchor-link {
   position: relative;
-  padding-left: 40px;
-  margin-left: -40px;
 }
 .document-body .heading-anchor {
   position: absolute;
-  left: 0;
+  right: 100%;
   top: 0.7em;
   top: 0.5lh;
   transform: translateY(-50%);
@@ -15980,18 +16033,22 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
         assert!(html.contains("background: var(--app-action-hover-background);"));
         assert!(html.contains(".document-body .has-anchor-link > .heading-anchor:hover,"));
 
-        // The button lives in a gutter carved from each block's own left padding
-        // (pulled back with a matching negative margin so the text column does not
-        // move). Anchoring it inside the block's box is what lets content-visibility
-        // apply paint containment to entries without clipping the button — and it
-        // removes the per-reflow JS measuring pass entirely.
-        assert!(html.contains(".document-body .has-anchor-link {\n  position: relative;\n  padding-left: 40px;\n  margin-left: -40px;\n}"));
+        // The block never moves — its text stays on the reading column and a
+        // blockquote/list keeps its natural indent — so every block aligns like the
+        // web reader. The button is floated into the left margin (right: 100%) and
+        // its exact offset is measured per block in positionAnchorLinks(), which
+        // clears any blockquote/list indent pure CSS can't derive.
+        assert!(html.contains(".document-body .has-anchor-link {\n  position: relative;\n}"));
+        assert!(html
+            .contains(".document-body .heading-anchor {\n  position: absolute;\n  right: 100%;"));
         assert!(
-            html.contains(".document-body .heading-anchor {\n  position: absolute;\n  left: 0;")
+            html.contains("function positionAnchorLinks(root)"),
+            "each block's permalink offset is measured like the web reader"
         );
         assert!(
-            !html.contains("positionAnchorLinks"),
-            "the per-reflow anchor-positioning pass is replaced by the CSS gutter"
+            html.contains("positionAnchorLinks(body);")
+                && html.contains("observeAnchorLayout(body);"),
+            "the measuring pass runs after decoration and re-runs on reflow"
         );
 
         // Off-screen entries skip layout and paint via content-visibility so a huge
