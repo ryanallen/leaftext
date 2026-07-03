@@ -4432,7 +4432,18 @@ function updateDocumentMinimapPreview() {
   const preview = source.cloneNode(true);
   preview.removeAttribute('id');
   preview.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
-  preview.querySelectorAll('a[href]').forEach((link) => link.removeAttribute('href'));
+  preview.querySelectorAll('a[href]').forEach((link) => {
+    // Glossary terms blend into the body text on the page (the a[href^="glossary:"]
+    // rule takes the surrounding colour, not the accent link colour). Stripping the
+    // href for a11y also drops that href-based blend, which would leave the terms on
+    // the generic accent colour in the thumbnail. Tag them first so a class-based
+    // rule can re-blend them in the clone, keeping the rail true to the page.
+    const href = link.getAttribute('href') || '';
+    if (/^glossary:/i.test(href) || /GLOSSARY\.md#/i.test(href)) {
+      link.classList.add('glossary-term');
+    }
+    link.removeAttribute('href');
+  });
   preview.classList.add('document-minimap-preview');
   preview.setAttribute('aria-hidden', 'true');
   preview.style.width = `${metrics.sourceWidth}px`;
@@ -10577,6 +10588,15 @@ body.library-resizing {
   content-visibility: visible !important;
   contain-intrinsic-size: auto !important;
 }
+/* The clone carries the .document-body class, so its links pick up the generic
+   accent link colour. Glossary terms are blended into the body text on the page
+   (via the href-based rule), but the clone strips hrefs, so that blend no longer
+   matches and the terms would show accent-blue in the rail. updateDocumentMinimapPreview
+   tags them with .glossary-term before stripping; re-blend them here so the
+   thumbnail matches the page — glossary terms read as body text, not links. */
+.document-minimap-preview a.glossary-term {
+  color: inherit;
+}
 .document-minimap-viewport {
   position: absolute;
   inset-inline: 0;
@@ -13227,9 +13247,19 @@ const label = "<button onclick=alert(3)>copy</button>";
             "preview.style.transform = `scale(${previewScale})`;",
             "content.replaceChildren(preview);",
             "updateMinimapViewport();",
+            // Glossary terms are tagged before their hrefs are stripped so the clone can
+            // re-blend them (the href-based body blend can't match once href is gone).
+            "link.classList.add('glossary-term');",
         ] {
             assert_contains(&html, expected);
         }
+
+        // The clone keeps glossary terms blended into body text like the page, instead
+        // of showing them on the generic accent link colour.
+        assert_contains(
+            &html,
+            ".document-minimap-preview a.glossary-term {\n  color: inherit;\n}",
+        );
 
         // The real-text clone replaces the old abstract canvas entirely (no 2D
         // context, palette, or line-model rows), and it is rebuilt only on content
