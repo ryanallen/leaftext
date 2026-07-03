@@ -672,10 +672,11 @@ body {
   display: block;
 }
 
-/* ---- Anchor links --------------------------------------------------- */
-/* Permalink button for any anchorable block. It lives in the left gutter so it
-   never shifts the text, and it wakes up both when the content block is hovered
-   and when the pointer moves directly over the gutter hit area itself. */
+/* ---- Anchor links (gutter line numbers) ----------------------------- */
+/* Every anchorable block shows its line number in the left gutter as faint
+   monospace text, like a code editor's line gutter. It lives in the gutter so it
+   never shifts the text; it is always visible but dim, brightens when its block
+   (or the number itself) is hovered, and clicking it copies the deep link. */
 .markdown-body .has-anchor-link {
   position: relative;
 }
@@ -686,15 +687,19 @@ body {
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: transparent;
+  height: 1.2em;
+  padding-right: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: var(--text-muted);
-  opacity: 0;
+  opacity: 0.4;
   user-select: none;
-  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+  transition: opacity 0.12s ease, color 0.12s ease;
 }
 /* A zero-size alias that carries a heading's #locus without disturbing its
    layout (the heading keeps its slug id for the table of contents). */
@@ -715,49 +720,27 @@ body {
 .markdown-body .has-anchor-link > .anchor-link:hover,
 .markdown-body .has-anchor-link > .anchor-link:focus-visible {
   opacity: 1;
+  color: var(--link);
 }
 .markdown-body .anchor-link:hover,
 .markdown-body .anchor-link:focus-visible {
-  color: var(--action-hover-fg);
-  background: var(--action-hover-bg);
+  color: var(--link);
   text-decoration: none;
 }
 /* Brief confirmation that a click copied the deep link: hold the gutter number
    lit for the timeout decorateAnchorLinks sets, even after the jump scrolls. */
 .markdown-body .anchor-link.is-copied {
   opacity: 1;
-  color: var(--action-hover-fg);
-  background: var(--action-hover-bg);
+  color: var(--link);
 }
-.anchor-link-icon {
-  width: 22px;
-  height: 22px;
-  pointer-events: none;
-}
-/* A narrow viewport (and any touch device, which has no true hover) can't host the
-   wide left gutter the permalink centers itself in — the mark lands off-screen, and
-   on touch the reveal-on-hover model double-taps (first tap reveals, second follows
-   the link). The block's left-shift already lines every mark's right edge up with
-   the content's left edge, so pin the glyph to that edge with flex-end and it stays
-   in the sliver of visible gutter for nested blocks too; shrink it, and show it
-   faintly at all times so it never needs a reveal. A direct tap/click still lights
-   it bright (the shared :hover state above, which a touch tap satisfies). */
+/* A narrow viewport (and any touch device) has little left margin to host the
+   number gutter, so tuck the numbers tighter to the content edge and shrink them.
+   They stay always-visible, so a single direct tap copies the deep link (and
+   jumps) with no reveal step to swallow the first tap. */
 @media (hover: none), (max-width: 600px) {
   .markdown-body .anchor-link {
-    justify-content: flex-end;
     padding-right: 3px;
-    opacity: 0.15;
-  }
-  .anchor-link-icon {
-    width: 12px;
-    height: 12px;
-  }
-  /* Hold the rest opacity through a block's sticky hover/focus so tapping body text
-     (or a link inside it) doesn't flash the permalink — that flash is what swallows
-     the first tap on touch. Only a direct tap/click on the mark lights it (above). */
-  .markdown-body .has-anchor-link:hover:not(:has(.has-anchor-link:hover)) > .anchor-link,
-  .markdown-body .has-anchor-link:focus-within:not(:has(.has-anchor-link:focus-within)) > .anchor-link {
-    opacity: 0.15;
+    font-size: 0.62rem;
   }
 }
 

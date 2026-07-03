@@ -3735,16 +3735,12 @@ function decorateCodeBlocks() {
     pre.appendChild(button);
   });
 }
-// Heroicon "link", drawn the same way as the copy mark (no fill, currentColor
-// stroke) so it inherits theme colors. Sized by CSS.
-const ANCHOR_LINK_ICON = '<svg class="heading-anchor-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"/></svg>';
-// Built once and cloned per heading. Parsing the SVG string tens of thousands of
-// times (one innerHTML assignment per block) was a large slice of open time on a
-// big document; cloneNode copies the already-parsed node instead.
+// Built once and cloned per block. Cloning a bare anchor and stamping its line
+// number in per block is far cheaper than building the element from scratch tens
+// of thousands of times on a big document.
 const anchorLinkTemplate = (() => {
   const link = document.createElement('a');
   link.className = 'heading-anchor';
-  link.innerHTML = ANCHOR_LINK_ICON;
   return link;
 })();
 // `pre:not(.mermaid)` excludes Mermaid diagrams: a permalink gutter link makes
@@ -3789,35 +3785,24 @@ function assignLocus(target, locus, seen) {
     target.dataset.locus = target.id;
   }
 }
-// Number the document so each block has a short, citable address. Every heading
-// (h1–h6) is the next integer in document order: 1, 2, 3 … A bare integer means
-// heading. Every non-heading block between two headings is the next decimal under
-// the most recent heading: <heading>.<n>. The counter resets at each heading. A
-// heading keeps the slug id the renderer gave it (so the table of contents and
-// #slug links resolve) and carries its number through a hidden alias. The
-// navigation outline (link-only list items) is skipped. The address is pure
-// ASCII, so a heading with diacritics still reads cleanly in the link tooltip.
-// Numbering is deterministic, so the ids survive the re-render a fragment jump
-// triggers.
+// Number the document so each block has a short, citable address: a flat running
+// count down the page — 1, 2, 3, 4 … — like a code editor's line gutter, with no
+// reset at headings. A heading keeps the slug id the renderer gave it (so the
+// table of contents and #slug links resolve) and carries its number through a
+// hidden alias. The navigation outline (link-only list items) is skipped. The
+// address is pure ASCII, so a heading with diacritics still reads cleanly in the
+// link tooltip. Numbering is deterministic, so the ids survive the re-render a
+// fragment jump triggers.
 function ensureAnchorLinkTargets(body) {
   const seen = new Set(Array.from(body.querySelectorAll('[id]')).map((element) => element.id).filter(Boolean));
-  let heading = 0;
-  let index = 0;
+  let line = 0;
   body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
     if (target.classList.contains('footnote-definition')) return;
     // The generated outline is navigation, not body content — no locus number.
     if (target.closest('.document-outline')) return;
     if (isNavOutlineItem(target)) return;
-    const tag = target.tagName;
-    if (tag === 'H1' || tag === 'H2' || tag === 'H3' || tag === 'H4' || tag === 'H5' || tag === 'H6') {
-      heading += 1;
-      index = 0;
-      assignLocus(target, '' + heading, seen);
-    } else {
-      if (heading === 0) heading = 1;
-      index += 1;
-      assignLocus(target, heading + '.' + index, seen);
-    }
+    line += 1;
+    assignLocus(target, '' + line, seen);
   });
 }
 // Build a collapsed "Outline" (table of contents) from the document's headings
@@ -3919,6 +3904,9 @@ function decorateAnchorLinks() {
     link.href = '#' + encodeURIComponent(locus);
     link.setAttribute('aria-label', label);
     link.title = label;
+    // The gutter shows the block's line number as faint monospace text; clicking
+    // it still copies the deep link (handled by the delegated body listener).
+    link.textContent = locus;
     target.classList.add('has-anchor-link');
     target.insertBefore(link, target.firstChild);
   });
@@ -10248,16 +10236,21 @@ body.library-resizing {
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  height: 1.2em;
+  padding-right: 8px;
+  font-family: var(--code-font);
+  font-size: 12px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   background: transparent;
   color: var(--preview-muted-foreground);
-  opacity: 0;
+  opacity: 0.4;
   pointer-events: auto;
   user-select: none;
-  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+  transition: opacity 0.12s ease, color 0.12s ease;
 }
 /* A zero-size alias that carries a heading's #locus without disturbing its
    layout (the heading keeps its slug id for the table of contents). */
@@ -10278,47 +10271,26 @@ body.library-resizing {
 .document-body .has-anchor-link > .heading-anchor:hover,
 .document-body .has-anchor-link > .heading-anchor:focus-visible {
   opacity: 1;
+  color: var(--reading-link);
 }
 .document-body .heading-anchor:hover {
-  background: var(--app-action-hover-background);
-  color: var(--app-action-foreground);
+  color: var(--reading-link);
 }
-/* Brief confirmation that a click copied the #locus: hold the button lit and
-   green for the timeout decorateAnchorLinks sets, even after the jump scrolls. */
+/* Brief confirmation that a click copied the #locus: hold the number lit in the
+   link color for the timeout decorateAnchorLinks sets, even after the jump scrolls. */
 .document-body .heading-anchor.is-copied {
   opacity: 1;
-  background: var(--app-action-hover-background);
-  color: var(--app-action-foreground);
+  color: var(--reading-link);
 }
-.heading-anchor-icon {
-  width: 22px;
-  height: 22px;
-  pointer-events: none;
-}
-/* A narrow window (and any touch device, which has no true hover) can't host the
-   wide left gutter the permalink centers itself in — the mark lands off-screen, and
-   on touch the reveal-on-hover model double-taps (first tap reveals, second follows
-   the link). The block's left-shift already lines every mark's right edge up with
-   the content's left edge, so pin the glyph to that edge with flex-end and it stays
-   in the sliver of visible gutter for nested blocks too; shrink it, and show it
-   faintly at all times so it never needs a reveal. A direct tap/click still lights
-   it bright green (the shared :hover state above, which a touch tap satisfies). */
+/* A narrow window (and any touch device) has little left margin to host the number
+   gutter, so tuck the numbers tighter to the content edge and shrink them. They
+   stay always-visible, so a single direct tap copies the deep link (and jumps) with
+   no reveal step to swallow the first tap. */
 @media (hover: none), (max-width: 600px) {
   .document-body .heading-anchor {
     justify-content: flex-end;
     padding-right: 3px;
-    opacity: 0.15;
-  }
-  .heading-anchor-icon {
-    width: 12px;
-    height: 12px;
-  }
-  /* Hold the rest opacity through a block's sticky hover/focus so tapping body text
-     (or a link inside it) doesn't flash the permalink — that flash is what swallows
-     the first tap on touch. Only a direct tap/click on the mark lights it (above). */
-  .document-body .has-anchor-link:hover:not(:has(.has-anchor-link:hover)) > .heading-anchor,
-  .document-body .has-anchor-link:focus-within:not(:has(.has-anchor-link:focus-within)) > .heading-anchor {
-    opacity: 0.15;
+    font-size: 11px;
   }
 }
 .document-body pre.mermaid[data-processed="true"] {
@@ -16046,24 +16018,23 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
         assert!(html.contains("target.id = uniqueAnchorBlockId(seen, locus);"));
         assert!(html.contains("target.classList.contains('footnote-definition')"));
 
-        // Each block gets a short numeric address: every heading (h1–h6) is the
-        // next integer (1, 2, 3 …) and every non-heading block is the next decimal
-        // under the most recent heading (<heading>.<n>). A heading keeps its slug id
-        // and carries its number through a hidden alias. Navigation-outline
-        // (link-only) list items are skipped.
+        // Each block gets a short numeric address: a flat running count down the
+        // page (1, 2, 3, 4 …), like a code editor's line gutter, with no reset at
+        // headings. A heading keeps its slug id and carries its number through a
+        // hidden alias. Navigation-outline (link-only) list items are skipped.
         assert!(html.contains("function assignLocus(target, locus, seen)"));
         assert!(html.contains("function isNavOutlineItem(el)"));
-        assert!(html.contains("tag === 'H1' || tag === 'H2' || tag === 'H3' || tag === 'H4' || tag === 'H5' || tag === 'H6'"));
-        assert!(html.contains("assignLocus(target, '' + heading, seen);"));
-        assert!(html.contains("assignLocus(target, heading + '.' + index, seen);"));
+        assert!(html.contains("let line = 0;"));
+        assert!(html.contains("line += 1;"));
+        assert!(html.contains("assignLocus(target, '' + line, seen);"));
         assert!(html.contains("target.dataset.locus = alias.id;"));
 
         // The button is a real anchor link to the block's locus (dataset.locus).
         assert!(html.contains("link.href = '#' + encodeURIComponent(locus)"));
 
-        // The chain glyph is parsed once into a template and cloned per block,
-        // instead of re-parsing the SVG string tens of thousands of times.
-        assert!(html.contains("link.innerHTML = ANCHOR_LINK_ICON;"));
+        // A bare anchor is cloned per block and its line number stamped in as text,
+        // instead of building the element from scratch tens of thousands of times.
+        assert!(html.contains("link.textContent = locus;"));
         assert!(html.contains("const anchorLinkTemplate = (() => {"));
         assert!(html.contains("const link = anchorLinkTemplate.cloneNode(true);"));
 
@@ -16130,11 +16101,9 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
             ".document-body .has-anchor-link:focus-within:not(:has(.has-anchor-link:focus-within)) > .heading-anchor,"
         ));
 
-        // A narrow window (and touch, which has no real hover) can't host the wide
-        // gutter the permalink centers in, so it would land off-screen. Pin the
-        // glyph to the gutter edge with flex-end, shrink it, and keep it faintly
-        // visible at all times — holding that opacity through a block's sticky hover
-        // so a tap on body text doesn't flash it and eat the tap.
+        // A narrow window (and touch) has little left margin for the number gutter,
+        // so the numbers tuck tighter to the content edge (flex-end) and shrink.
+        // They stay always-visible, so one direct tap copies the deep link.
         assert!(html.contains("@media (hover: none), (max-width: 600px) {"));
         let narrow = html
             .find("@media (hover: none), (max-width: 600px) {")

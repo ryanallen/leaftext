@@ -1,18 +1,17 @@
 // anchors.js
 // ---------------------------------------------------------------------------
-// Shared permalink decoration for the public site and /docs. It gives each block
-// a short numeric address from its place in the document — each heading (h1–h6)
-// is the next integer in document order (1, 2, 3 …), and every non-heading block
-// between two headings is the next decimal under the most recent heading
-// (1.1, 1.2 … 2.1 …) — makes that the in-page link target, then injects a
-// GitHub-style permalink button (the chain glyph, revealed on hover) for each
-// block. The address is pure ASCII, so it reads cleanly in the hover tooltip even
-// when the heading text has diacritics. This mirrors the desktop app's scheme in
-// src/lib.rs, so a #locus copied from one lands in the other.
+// Shared gutter line numbers + permalink decoration for the public site and
+// /docs. It gives each block a flat sequential address from its place in the
+// document — 1, 2, 3, 4 … counting straight down, like a code editor's line
+// gutter — makes that the in-page link target, then shows the number itself in
+// the left gutter as faint monospace text (Visual Studio style). The number is a
+// live permalink: it is always visible, brightens on hover, and clicking it
+// copies the deep link to that block. The address is pure ASCII, so it reads
+// cleanly in the hover tooltip even when the heading text has diacritics. This
+// mirrors the desktop app's scheme in src/lib.rs, so a #locus copied from one
+// lands in the other.
 // ---------------------------------------------------------------------------
 
-const ANCHOR_LINK_ICON =
-  '<svg class="anchor-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"/></svg>';
 // `pre:not(.mermaid)` deliberately excludes Mermaid diagram fences: a permalink
 // gutter link makes no sense on a diagram, and inserting one as the pre's first
 // child corrupts the source Mermaid reads from innerHTML (it then sees no
@@ -89,24 +88,21 @@ function assignLocus(target, locus, seen) {
   }
 }
 
-// Number the document so each block has a short, citable address. Every heading
-// (h1–h6) is the next integer in document order: 1, 2, 3 … A bare integer means
-// "heading". Every non-heading block between two headings is the next decimal
-// under the most recent heading: <heading>.<n>. The counter resets at each
-// heading. A heading keeps the slug id the renderer gave it (so the table of
-// contents and #slug links resolve) and carries its number through a hidden alias.
-// The navigation outline (link-only list items) is skipped. The address is pure
-// ASCII, so a heading with diacritics still reads cleanly in the link tooltip.
-// Numbering is deterministic, so the ids survive the re-render a fragment jump
-// triggers.
+// Number the document so each block has a short, citable address: a flat running
+// count down the page — 1, 2, 3, 4 … — like a code editor's line gutter, with no
+// reset at headings. A heading keeps the slug id the renderer gave it (so the
+// table of contents and #slug links resolve) and carries its number through a
+// hidden alias. The navigation outline (link-only list items) is skipped. The
+// address is pure ASCII, so a heading with diacritics still reads cleanly in the
+// link tooltip. Numbering is deterministic, so the ids survive the re-render a
+// fragment jump triggers.
 function ensureAnchorLinkTargets(root) {
   const seen = new Set(
     Array.from(root.querySelectorAll('[id]'))
       .map((element) => element.id)
       .filter(Boolean)
   );
-  let heading = 0;
-  let index = 0;
+  let line = 0;
   root.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
     if (target.classList.contains('footnote-definition') || target.classList.contains('footnotes')) {
       return;
@@ -114,16 +110,8 @@ function ensureAnchorLinkTargets(root) {
     // The generated outline is navigation, not body content — no locus number.
     if (target.closest('.document-outline')) return;
     if (isNavOutlineItem(target)) return;
-    const tag = target.tagName;
-    if (tag === 'H1' || tag === 'H2' || tag === 'H3' || tag === 'H4' || tag === 'H5' || tag === 'H6') {
-      heading += 1;
-      index = 0;
-      assignLocus(target, '' + heading, seen);
-    } else {
-      if (heading === 0) heading = 1;
-      index += 1;
-      assignLocus(target, heading + '.' + index, seen);
-    }
+    line += 1;
+    assignLocus(target, '' + line, seen);
   });
 }
 
@@ -158,7 +146,9 @@ export function decorateAnchorLinks(root, label = 'Link to this section') {
     link.href = '#' + encodeURIComponent(locus);
     link.setAttribute('aria-label', label);
     link.title = label;
-    link.innerHTML = ANCHOR_LINK_ICON;
+    // The gutter shows the block's line number as faint monospace text; clicking
+    // it still copies the deep link (handled below).
+    link.textContent = locus;
     // Clicking copies the full deep link to this block (the canonical citation)
     // without blocking the in-page jump, and a brief is-copied flash confirms it.
     link.addEventListener('click', () => {

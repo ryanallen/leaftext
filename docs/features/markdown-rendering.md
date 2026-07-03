@@ -307,9 +307,9 @@ An `id` on any block element creates a named anchor with a stable, author-contro
 
 <h1 id="foreword" align="center">Foreword</h1>
 
-Link to it from anywhere on the same page: `[Foreword](#foreword)`. Hovering the block (or the gutter slot next to it) reveals a permalink button in the left margin — the same affordance every content block gets automatically, with or without an explicit `id`.
+Link to it from anywhere on the same page: `[Foreword](#foreword)`. Every content block also carries a line number in the left gutter — the same affordance every block gets automatically, with or without an explicit `id`.
 
-Every block gets a short, citable address from its place in the document. Every heading (`#` through `######`) is the next integer in document order: `1`, `2`, `3` and so on. Every non-heading block between two headings is the next decimal under the most recent heading: `1.1`, `1.2`, `2.1`, resetting at each heading. The address is plain ASCII, so it stays readable in the hover tooltip even when the heading text has diacritics. A heading also keeps its text slug, so `#slug` links and the table of contents still resolve; it carries its number through a hidden alias. Clicking a gutter permalink jumps to the block **and** copies its `#<id>` to the clipboard, so you can paste the citation out — the way to read it on touch, where there is no hover tooltip. A block with an explicit author `id` keeps that id.
+Every block gets a short, citable address from its place in the document: a flat running count down the page — `1`, `2`, `3`, `4` and so on, like a code editor's line gutter, with no reset at headings. The number sits in the left margin as faint monospace text and stays visible as you read, brightening on hover. The address is plain ASCII, so it stays readable in the tooltip even when the heading text has diacritics. A heading also keeps its text slug, so `#slug` links and the table of contents still resolve; it carries its number through a hidden alias. Clicking a gutter number jumps to the block **and** copies its `#<id>` to the clipboard, so you can paste the citation out. A block with an explicit author `id` keeps that id.
 
 `<br>` forces a line break inside a paragraph without starting a new block:
 
