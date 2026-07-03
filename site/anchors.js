@@ -141,6 +141,11 @@ export function decorateAnchorLinks(root, label = 'Link to this section') {
     }
     if (target.closest('.document-outline')) return;
     if (target.querySelector(':scope > .anchor-link')) return;
+    // A blockquote (or GitHub alert) is one citable unit: it carries the number,
+    // and its inner blocks must not stack a second number in the same gutter. Skip
+    // the number on anything nested in a blockquote; the block keeps its id, so
+    // #locus links to it still resolve — it just shares the blockquote's number.
+    if (target.tagName !== 'BLOCKQUOTE' && target.closest('blockquote')) return;
     const link = document.createElement('a');
     link.className = 'anchor-link';
     link.href = '#' + encodeURIComponent(locus);
