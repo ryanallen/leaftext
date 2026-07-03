@@ -3164,7 +3164,20 @@ window.leafScrollToFragment = (fragment) => {
     target.focus({ preventScroll: true });
     target.scrollIntoView({ block: 'start' });
     setReaderScrollTop(app.scrollTop);
+    // Record where we landed as the reader anchor. content-visibility lays out
+    // only on-screen blocks, so their heights keep settling after the jump and
+    // the .document-body ResizeObserver fires scheduleReaderLayoutUpdate; without
+    // a fresh anchor that re-pins the PRE-jump position and yanks the page back
+    // (the "tries to jump but snaps back, and the outline stays open" bug). Re-pin
+    // on the next frame too, the way leafSwitchTab/leafReloadDocument do, so the
+    // landing converges on the target instead of an off-screen size estimate.
+    readerScrollAnchor = captureReaderScrollAnchor();
     updateMinimapViewport();
+    window.requestAnimationFrame(() => {
+      restoreReaderScrollAnchor(readerScrollAnchor);
+      readerScrollAnchor = captureReaderScrollAnchor();
+      updateMinimapViewport();
+    });
   });
 };
 window.leafRestoreScrollAnchor = (anchor) => {
@@ -9813,6 +9826,15 @@ body.library-resizing {
   border: 1px solid var(--preview-border);
   border-radius: 6px;
   background: var(--code-block-background);
+  /* Exempt from the .document-body > * content-visibility rule. This block is a
+     direct child, so it would otherwise be size-estimated when off-screen: the
+     estimate swings wildly between the closed ~48px stub and the fully expanded
+     list, which destabilizes the scroll height above the body content and can
+     leave the box stuck at its expanded size when toggled closed. Its entries
+     are plain list items (not direct children), so they never had the
+     optimization anyway — forcing full layout here costs nothing extra. */
+  content-visibility: visible;
+  contain-intrinsic-size: auto;
 }
 .document-body .document-outline-summary {
   cursor: pointer;
