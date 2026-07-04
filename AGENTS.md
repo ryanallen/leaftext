@@ -33,7 +33,8 @@ It is a Rust program. The window and the embedded web view come from the `tao` a
 
 ## Repo layout
 
-- `src/lib.rs` — the core: `render_markdown_document()` orchestration, document loading, glossary linking, minimap, settings, and `app_shell_html()` (which loads the page markup and script from `src/assets/`).
+- `src/lib.rs` — the core: `render_markdown_document()` orchestration, document loading, glossary linking, settings, WebView-state scripts, and `app_shell_html()` (which loads the page markup and script from `src/assets/`).
+- `src/minimap.rs` — the document minimap model (`build_minimap_model`, `DocumentMinimap`). `pub(crate)` internals with public model types re-exported from `lib.rs`.
 - `src/markdown.rs` — the Markdown pipeline: parsing, GitHub extras, code highlighting, image resolution, HTML sanitizing, title detection, and the `leaf-image://` protocol handler. `pub(crate)` and re-exported from `lib.rs`.
 - `src/tei.rs` — the TEI XML renderer (84000-style documents to HTML). `pub(crate)` and re-exported from `lib.rs`.
 - `src/assets.rs` — bundled-asset serving (`leaf-asset://` Mermaid/KaTeX runtimes) and SVG icon color normalization. `pub(crate)` (plus public `bundled_asset_response`) and re-exported from `lib.rs`. Distinct from the `src/assets/` directory it embeds.
