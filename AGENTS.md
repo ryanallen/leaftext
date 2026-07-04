@@ -33,7 +33,8 @@ It is a Rust program. The window and the embedded web view come from the `tao` a
 
 ## Repo layout
 
-- `src/lib.rs` — the core: Markdown parsing, sanitizing, HTML rendering, TEI/XML, glossary linking, minimap, settings, reference and badge handling, and `app_shell_html()` (which loads the page markup and script from `src/assets/`).
+- `src/lib.rs` — the core: `render_markdown_document()` orchestration, TEI/XML, glossary linking, minimap, settings, and `app_shell_html()` (which loads the page markup and script from `src/assets/`).
+- `src/markdown.rs` — the Markdown pipeline: parsing, GitHub extras, code highlighting, image resolution, HTML sanitizing, title detection, and the `leaf-image://` protocol handler. `pub(crate)` and re-exported from `lib.rs`.
 - `src/theme.rs` — the theme system: semantic token contract, Primer/Dracula token tables, `ThemeSource` types, and the CSS compiler (`compiled_theme_css()`, `reading_mode_css()`). `pub(crate)` and re-exported from `lib.rs`.
 - `src/tests.rs` — the crate's unit tests (a `#[cfg(test)] mod tests` file, not inline in `lib.rs`).
 - `src/main.rs` — the app shell: window, event loop, file open/close, history, and the per-user data directory.
