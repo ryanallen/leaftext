@@ -13,7 +13,7 @@ Handles all git operations for releases. Two kinds:
 - **App release** — any Rust/build code changed. Bump the version, update the lock file, tag, push, delete old tags. The `v*` tag triggers the CI builds (Windows MSI, macOS DMG, Linux).
 - **Site-only release** — only the static site / docs changed (no Rust). **Do not bump the version** (there's no app to rebuild). Just commit and push `main`; GitHub Pages redeploys automatically from the branch.
 
-Both kinds finish by **cleaning up GitHub Pages deployments**, keeping only the newest. Never co-authors commits. Only runs when explicitly instructed.
+Both kinds **prune old GitHub Pages deployments just before the push**, keeping the currently active one. Pruning before the push means the cleanup never touches the deployment the push is about to create, so it can't race the in-flight build (which is what made deploys intermittently fail with "try again later"). Never co-authors commits. Only runs when explicitly instructed.
 
 Repo: `ryanallen/leaftext`.
 
@@ -63,7 +63,7 @@ echo "$changed" | grep -Eq '^(src/|Cargo\.toml|Cargo\.lock|build\.rs|wix/|leaf\.
 - **App paths** (any of these → app release): `src/`, `Cargo.toml`, `Cargo.lock`, `build.rs`, `wix/`, `leaf.rc`, `scripts/`, `.github/workflows/release-*`.
 - **Everything else is site-only**: `README.md`, `index.html`, `site/`, `imgs/`, `.nojekyll`, other docs/config.
 
-If **site-only**, skip steps 2–6 and go straight to **step 7 (push)** then **step 8 (deployment cleanup)**. Do **not** touch `Cargo.toml`/`Cargo.lock` and do **not** create a tag.
+If **site-only**, skip steps 2–6 and go straight to **step 7 (deployment cleanup)** then **step 8 (push)**. Do **not** touch `Cargo.toml`/`Cargo.lock` and do **not** create a tag.
 
 If **app release**, do steps 2–8.
 
@@ -103,7 +103,30 @@ git tag | grep "^v" | grep -v "v<new-version>" | xargs -r git tag -d
 git tag v<version>
 ```
 
-### 7. Push
+### 7. Clean up GitHub Pages deployments (before the push — keep the active one)
+
+Every push redeploys the site, so old `github-pages` deployments pile up. Prune them **before** the push, not after. Pruning first means the newest deployment in the list is the one **currently serving the site** — you keep it and delete every older one. Crucially, the deployment the push is about to create does not exist yet, so the prune can never race or cancel it (running the prune right after a push is what made deploys intermittently fail with "Deployment failed, try again later").
+
+Older deployments are already inactive (they were superseded), so a plain `DELETE` removes them. Force `inactive` first anyway — it's harmless and covers the rare case where one is still marked active.
+
+```bash
+# Keep the NEWEST github-pages deployment (the one currently serving the site);
+# delete every older one. For each: POST state=inactive, then DELETE.
+ids=$(gh api "repos/ryanallen/leaftext/deployments?environment=github-pages&per_page=100" --jq '.[].id')
+keep=$(echo "$ids" | head -1)
+echo "keeping active: $keep"
+echo "$ids" | tail -n +2 | while read -r old; do
+  [ -z "$old" ] && continue
+  gh api -X POST "repos/ryanallen/leaftext/deployments/$old/statuses" -f state=inactive >/dev/null 2>&1
+  gh api -X DELETE "repos/ryanallen/leaftext/deployments/$old" >/dev/null 2>&1 \
+    && echo "deleted $old" || echo "FAILED to delete $old"
+done
+echo "remaining before push:"; gh api "repos/ryanallen/leaftext/deployments?environment=github-pages" --jq '.[].id'
+```
+
+After this the list holds just the active deployment; the push in step 8 then adds one new deployment, so you briefly have two. That is expected and correct — the still-serving old one keeps the site up until the new build flips over, and the **next** release's pre-push prune removes it. Never try to delete the active deployment to force the count to one: with no new deployment created yet, that would leave the site with nothing serving until the next build finishes.
+
+### 8. Push
 
 ```bash
 # app release:
@@ -118,32 +141,11 @@ For app releases, also delete old remote tags so GitHub shows only the latest:
 git push origin --delete <old-tag-1> <old-tag-2> ...
 ```
 
-### 8. Clean up GitHub Pages deployments (always — keep only the newest)
-
-Every push redeploys the site, leaving a pile of old `github-pages` deployments. **Do not wait for the new deployment to finish** — Pages always deploys fine here, and waiting just stalls the release. Run the prune immediately after the push: delete every deployment except the newest, ending with **exactly one**.
-
-GitHub refuses (HTTP 422) to `DELETE` a deployment while it is **active** — that is why a plain delete leaves the previous deploy behind (right after a push it is often still the active one, because the new build hasn't flipped over yet). The fix is to **mark each old deployment `inactive` first, then delete it**. That is GitHub's supported way to remove a deployment and needs no waiting: force it inactive, delete it, done.
+The push triggers a fresh Pages build+deploy. **Do not wait for it** — Pages deploys fine here, and the previous (kept) deployment serves the site until the new one flips over. Optionally confirm the site is still up:
 
 ```bash
-# Keep only the NEWEST github-pages deployment; delete every older one outright.
-# For each: POST state=inactive (so GitHub will allow the delete even if it is
-# currently active), then DELETE. No wait loop, no 422 skip — the old one goes.
-ids=$(gh api "repos/ryanallen/leaftext/deployments?environment=github-pages&per_page=100" --jq '.[].id')
-keep=$(echo "$ids" | head -1)
-echo "keeping newest: $keep"
-echo "$ids" | tail -n +2 | while read -r old; do
-  [ -z "$old" ] && continue
-  gh api -X POST "repos/ryanallen/leaftext/deployments/$old/statuses" -f state=inactive >/dev/null 2>&1
-  gh api -X DELETE "repos/ryanallen/leaftext/deployments/$old" >/dev/null 2>&1 \
-    && echo "deleted $old" || echo "FAILED to delete $old"
-done
-
-# Confirm exactly one deployment remains, and the site is still up.
-echo "remaining:"; gh api "repos/ryanallen/leaftext/deployments?environment=github-pages" --jq '.[].id'
 curl -s -o /dev/null -w "leaftext.com -> HTTP %{http_code}\n" -L http://leaftext.com/
 ```
-
-The list is newest-first, so `head -1` is the deploy to keep. Every older deployment is forced inactive and deleted, so the list ends with **one** entry — the active site. If the very newest build hasn't registered its deployment yet at prune time, you simply keep the current one and there is nothing older to remove; you never end with two.
 
 ## Examples
 
@@ -153,10 +155,10 @@ The list is newest-first, so `head -1` is the deploy to keep. Every older deploy
 1. Run `/sync-docs` first; let it finish (any doc edits stay uncommitted).
 2. Commit changes with a short message.
 3. Detect site-only (no app paths in the diff) → **no version bump, no tag**.
-4. `git push origin main` (Pages redeploys).
-5. Immediately delete all older github-pages deployments, keep the newest (do not wait for the build).
+4. Prune old github-pages deployments, keeping the currently active one.
+5. `git push origin main` (Pages redeploys; don't wait for the build).
 
-**Result:** site updated; version unchanged; deployments list shows one entry.
+**Result:** site updated; version unchanged; the old pile is gone, leaving the active deployment plus the new one.
 
 **User says:** "Bump to 0.1.104 and push" (Rust changed).
 
@@ -166,10 +168,10 @@ The list is newest-first, so `head -1` is the deploy to keep. Every older deploy
 3. Detect app release.
 4. `Cargo.toml` + `Cargo.lock` → `0.1.104`; commit `Release v0.1.104`.
 5. Delete old local tags; `git tag v0.1.104`.
-6. `git push origin main && git push origin v0.1.104`; delete old remote tags.
-7. Clean up github-pages deployments to the newest one.
+6. Prune github-pages deployments, keeping the currently active one.
+7. `git push origin main && git push origin v0.1.104`; delete old remote tags.
 
-**Result:** v0.1.104 released; GitHub shows only the latest tag; CI builds trigger; deployments list shows one entry.
+**Result:** v0.1.104 released; GitHub shows only the latest tag; CI builds trigger; the old deployment pile is gone.
 
 ## Troubleshooting
 
@@ -182,8 +184,11 @@ Cause: `Cargo.lock` wasn't updated to match `Cargo.toml`. Solution: set the `[[p
 **Old tags still show on GitHub.**
 Cause: remote tags weren't deleted. Solution: `git push origin --delete v<old-version> ...`.
 
-**Deployments keep piling up / an old one is left behind.**
-Cause: a plain `DELETE` was used and hit HTTP 422 because the old deployment was still active, so it was skipped. Re-run step 8 — it marks each old deployment `inactive` first, then deletes it, so the list collapses to exactly the newest with no waiting.
+**Deployments keep piling up.**
+Cause: the prune (step 7) was skipped. Re-run it any time — it marks each old deployment `inactive`, then deletes it, keeping only the currently active one. It's safe to run standalone, outside a release.
+
+**Deploy failed with "Deployment failed, try again later."**
+Cause: the prune raced the in-flight deployment — this is why step 7 now runs *before* the push, not after. If it still happens (a transient GitHub Pages error), just re-run the failed `pages-build-deployment` run: `gh run rerun <run-id>`. The site stays up on the previous deployment meanwhile.
 
 ## Reference
 
