@@ -1109,6 +1109,58 @@ fn tei_render_node<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx, depth: u
     }
 }
 
+/// Render `text > front` as a collapsed `<details>` so the summary,
+/// acknowledgements, and introduction are available but out of the way by
+/// default — the reader lands on the translation itself. The inner content uses
+/// the same block machinery as the body, so its headings and anchors work
+/// unchanged. Mirrors `renderFront` in site/tei-xml.js.
+fn render_tei_front<'a>(front: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx) {
+    // Render the front's children into `ctx.out`, then split that tail back off
+    // so it can be wrapped. Slug and footnote side effects stay recorded on ctx.
+    let start = ctx.out.len();
+    let children: Vec<_> = front.children().filter(|c| c.is_element()).collect();
+    tei_render_block_sequence(&children, ctx, 0);
+    let inner = ctx.out.split_off(start);
+    if inner.trim().is_empty() {
+        return;
+    }
+
+    // Label the toggle with the section names it holds (e.g. "Summary,
+    // Acknowledgements, Introduction"), falling back to a generic term.
+    let heads: Vec<String> = front
+        .children()
+        .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("div"))
+        .filter_map(|d| {
+            d.children()
+                .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("head"))
+        })
+        .map(|head| {
+            head.descendants()
+                .filter(|c| c.is_text())
+                .map(|c| c.text().unwrap_or(""))
+                .collect::<String>()
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ")
+        })
+        .filter(|t| !t.is_empty())
+        .collect();
+    let label = if heads.is_empty() {
+        "Front matter".to_string()
+    } else {
+        heads.join(", ")
+    };
+
+    ctx.push(&format!(
+        "<details class=\"tei-front\">\n\
+         <summary class=\"tei-front-summary\">{}</summary>\n\
+         <div class=\"tei-front-body\">\n",
+        encode_text(&label)
+    ));
+    ctx.push(&inner);
+    ctx.push("</div>\n</details>\n");
+}
+
 /// Parse TEI XML and return `(title, body_html)`.
 /// Title is extracted from the `<teiHeader>` if possible.
 fn render_tei_body(xml: &str) -> (Option<String>, String) {
@@ -1169,6 +1221,19 @@ fn render_tei_body(xml: &str) -> (Option<String>, String) {
             encode_double_quoted_attribute(&id),
             encode_text(t)
         ));
+    }
+
+    // Front matter (summary, acknowledgements, introduction) lives in
+    // `text > front`, a sibling of `body`. Render it collapsed by default, after
+    // the title and before the body.
+    if let Some(front) = root.descendants().find(|n| {
+        n.is_element()
+            && n.tag_name().name().eq_ignore_ascii_case("front")
+            && n.parent()
+                .map(|p| p.tag_name().name().eq_ignore_ascii_case("text"))
+                .unwrap_or(false)
+    }) {
+        render_tei_front(front, &mut ctx);
     }
 
     let body_children: Vec<_> = body.children().filter(|c| c.is_element()).collect();
@@ -3878,7 +3943,7 @@ function buildDocumentOutline() {
   const existing = body.querySelector(':scope > .document-outline');
   if (existing) existing.remove();
   const headings = Array.from(body.querySelectorAll('h1, h2, h3, h4, h5, h6')).filter(
-    (h) => !h.closest('.document-outline') && !h.closest('.footnotes')
+    (h) => !h.closest('.document-outline') && !h.closest('.footnotes') && !h.closest('.tei-front')
   );
   if (headings.length < 2) return;
   const title = headings[0];
@@ -9937,6 +10002,50 @@ body.library-resizing {
 .document-body .document-outline-link:hover {
   color: var(--markdown-link-hover);
 }
+/* TEI front matter (summary, acknowledgements, introduction) rendered as a
+   collapsed <details> before the body — mirrors the outline toggle above. */
+.document-body .tei-front {
+  margin: 1.5em 0;
+  border: 1px solid var(--preview-border);
+  border-radius: 6px;
+  background: var(--code-block-background);
+}
+.document-body .tei-front-summary {
+  cursor: pointer;
+  padding: 0.5em 0.9em;
+  font-weight: 600;
+  color: var(--preview-foreground);
+  list-style: none;
+  user-select: none;
+}
+.document-body .tei-front-summary::-webkit-details-marker {
+  display: none;
+}
+.document-body .tei-front-summary::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-right: 0.55em;
+  border-left: 0.4em solid currentColor;
+  border-top: 0.32em solid transparent;
+  border-bottom: 0.32em solid transparent;
+  vertical-align: middle;
+  transition: transform 0.15s ease;
+}
+.document-body .tei-front[open] > .tei-front-summary::before {
+  transform: rotate(90deg);
+}
+.document-body .tei-front-summary:hover {
+  color: var(--markdown-link-hover);
+}
+.document-body .tei-front-body {
+  padding: 0 1.4em 0.7em;
+  border-top: 1px solid var(--preview-border);
+}
+.document-body .tei-front-body > :first-child {
+  margin-top: 0.7em;
+}
 :root[data-speed-reader="true"] .document-body {
   color: color-mix(in srgb, var(--preview-foreground) 80%, var(--reading-background));
   font-weight: 400;
@@ -12225,6 +12334,49 @@ Paragraph after H6.
         assert_contains(&html, "<p>A prose paragraph.</p>");
         // No leftover plain verse paragraph markup.
         assert!(!html.contains("<p class=\"tei-verse\">"));
+    }
+
+    #[test]
+    fn tei_front_matter_renders_collapsed_before_the_body() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0">
+  <teiHeader><fileDesc><titleStmt><title>The Sutra</title></titleStmt></fileDesc></teiHeader>
+  <text>
+    <front>
+      <div type="summary">
+        <head>Summary</head>
+        <p>This is the summary.</p>
+      </div>
+      <div type="acknowledgment">
+        <head>Acknowledgements</head>
+        <p>Thanks to the team.</p>
+      </div>
+    </front>
+    <body>
+      <div type="translation">
+        <p>The body text.</p>
+      </div>
+    </body>
+  </text>
+</TEI>"#;
+
+        let (_title, html) = render_tei_body(xml);
+
+        // The front becomes a collapsed <details> (no `open` attribute) labelled
+        // with its section headings, and it holds the summary/acknowledgement text.
+        assert_contains(
+            &html,
+            "<details class=\"tei-front\">\n<summary class=\"tei-front-summary\">Summary, Acknowledgements</summary>",
+        );
+        assert!(
+            !html.contains("<details class=\"tei-front\" open"),
+            "front must start collapsed"
+        );
+        assert_contains(&html, "<p>This is the summary.</p>");
+        // The front closes before the body content, so the body is not inside it.
+        let front_end = html.find("</details>").expect("front details closes");
+        let body_at = html.find("<p>The body text.</p>").expect("body renders");
+        assert!(front_end < body_at, "front must render before the body");
     }
 
     #[test]

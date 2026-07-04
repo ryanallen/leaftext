@@ -120,29 +120,30 @@ git push origin --delete <old-tag-1> <old-tag-2> ...
 
 ### 8. Clean up GitHub Pages deployments (always — keep only the newest)
 
-Every push redeploys the site, leaving a pile of old `github-pages` deployments. **Do not wait for the new deployment to finish** — Pages always deploys fine here, and waiting just stalls the release. Run the prune immediately after the push: delete every deployment except the newest (the active site).
+Every push redeploys the site, leaving a pile of old `github-pages` deployments. **Do not wait for the new deployment to finish** — Pages always deploys fine here, and waiting just stalls the release. Run the prune immediately after the push: delete every deployment except the newest, ending with **exactly one**.
+
+GitHub refuses (HTTP 422) to `DELETE` a deployment while it is **active** — that is why a plain delete leaves the previous deploy behind (right after a push it is often still the active one, because the new build hasn't flipped over yet). The fix is to **mark each old deployment `inactive` first, then delete it**. That is GitHub's supported way to remove a deployment and needs no waiting: force it inactive, delete it, done.
 
 ```bash
-# Delete every github-pages deployment except the newest. No wait loop.
-# GitHub refuses (HTTP 422) to delete the deployment that is currently ACTIVE,
-# so right after a push you often end up with TWO left: the just-pushed deploy
-# (still building) and the previous one (still serving the live site until the
-# new build flips over). That is expected — the leftover becomes inactive once
-# the new build succeeds and the next release's prune removes it. Treat 422 as a
-# skip, not a failure.
+# Keep only the NEWEST github-pages deployment; delete every older one outright.
+# For each: POST state=inactive (so GitHub will allow the delete even if it is
+# currently active), then DELETE. No wait loop, no 422 skip — the old one goes.
 ids=$(gh api "repos/ryanallen/leaftext/deployments?environment=github-pages&per_page=100" --jq '.[].id')
 keep=$(echo "$ids" | head -1)
-echo "keeping $keep"
+echo "keeping newest: $keep"
 echo "$ids" | tail -n +2 | while read -r old; do
-  [ -n "$old" ] && (gh api -X DELETE "repos/ryanallen/leaftext/deployments/$old" >/dev/null 2>&1 \
-    && echo "deleted $old" || echo "skip $old (still active)")
+  [ -z "$old" ] && continue
+  gh api -X POST "repos/ryanallen/leaftext/deployments/$old/statuses" -f state=inactive >/dev/null 2>&1
+  gh api -X DELETE "repos/ryanallen/leaftext/deployments/$old" >/dev/null 2>&1 \
+    && echo "deleted $old" || echo "FAILED to delete $old"
 done
 
-# Verify the site is still up.
+# Confirm exactly one deployment remains, and the site is still up.
+echo "remaining:"; gh api "repos/ryanallen/leaftext/deployments?environment=github-pages" --jq '.[].id'
 curl -s -o /dev/null -w "leaftext.com -> HTTP %{http_code}\n" -L http://leaftext.com/
 ```
 
-The list is newest-first, so `head -1` is the deploy to keep. Older **inactive** ones are deleted; the still-active previous deploy is skipped (422) and cleaned up by the next release. Ending with one or two entries is normal — never block or retry-loop waiting to reach exactly one.
+The list is newest-first, so `head -1` is the deploy to keep. Every older deployment is forced inactive and deleted, so the list ends with **one** entry — the active site. If the very newest build hasn't registered its deployment yet at prune time, you simply keep the current one and there is nothing older to remove; you never end with two.
 
 ## Examples
 
@@ -181,8 +182,8 @@ Cause: `Cargo.lock` wasn't updated to match `Cargo.toml`. Solution: set the `[[p
 **Old tags still show on GitHub.**
 Cause: remote tags weren't deleted. Solution: `git push origin --delete v<old-version> ...`.
 
-**Deployments keep piling up.**
-Cause: step 8 skipped. Re-run it — it deletes every github-pages deployment except the newest, no waiting required.
+**Deployments keep piling up / an old one is left behind.**
+Cause: a plain `DELETE` was used and hit HTTP 422 because the old deployment was still active, so it was skipped. Re-run step 8 — it marks each old deployment `inactive` first, then deletes it, so the list collapses to exactly the newest with no waiting.
 
 ## Reference
 
