@@ -33,7 +33,9 @@ It is a Rust program. The window and the embedded web view come from the `tao` a
 
 ## Repo layout
 
-- `src/lib.rs` — the core: `render_markdown_document()` orchestration, document loading, glossary linking, settings, WebView-state scripts, and `app_shell_html()` (which loads the page markup and script from `src/assets/`).
+- `src/lib.rs` — the core: `render_markdown_document()` orchestration, document loading, glossary linking, recent files, settings, theme/locale bootstrap scripts, and `app_shell_html()` (which loads the page markup and script from `src/assets/`).
+- `src/scripts.rs` — generators for the `window.leaf*(...)` state/navigation JS snippets the host injects (`ScrollAnchor` lives here). Public and re-exported from `lib.rs`.
+- `src/pager.rs` — the Previous/Next pager (folder-tree reading order, pager HTML). `pub(crate)` internals with the public entry points re-exported from `lib.rs`.
 - `src/minimap.rs` — the document minimap model (`build_minimap_model`, `DocumentMinimap`). `pub(crate)` internals with public model types re-exported from `lib.rs`.
 - `src/markdown.rs` — the Markdown pipeline: parsing, GitHub extras, code highlighting, image resolution, HTML sanitizing, title detection, and the `leaf-image://` protocol handler. `pub(crate)` and re-exported from `lib.rs`.
 - `src/tei.rs` — the TEI XML renderer (84000-style documents to HTML). `pub(crate)` and re-exported from `lib.rs`.
