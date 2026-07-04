@@ -3446,11 +3446,44 @@ linkHoverTip.className = 'link-hover-tip';
 linkHoverTip.hidden = true;
 linkHoverTip.innerHTML =
   '<div class="link-hover-tip-kind"></div>' +
-  '<div class="link-hover-tip-detail"></div>';
+  '<div class="link-hover-tip-detail"></div>' +
+  '<div class="link-hover-tip-lines" hidden></div>';
 document.body.appendChild(linkHoverTip);
 const linkHoverTipKind = linkHoverTip.querySelector('.link-hover-tip-kind');
 const linkHoverTipDetail = linkHoverTip.querySelector('.link-hover-tip-detail');
+const linkHoverTipLines = linkHoverTip.querySelector('.link-hover-tip-lines');
 const canHoverLinks = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+// A hovered "Another page" link shows how many lines the target document is.
+// The webview can't read sibling files itself, so it asks the host (countLines
+// IPC) and the host answers by calling window.leafLineCount. Each hover gets a
+// token so a slow answer for a link you already left is ignored; answers are
+// cached by href so re-hovering the same link is instant.
+let activeHoverToken = 0;
+const lineCountCache = new Map();
+const pendingLineTokens = new Map();
+function formatLineCount(n) {
+  const num = window.leafLocale ? window.leafLocale.formatNumber(n) : String(n);
+  return num + ' ' + (n === 1 ? 'line' : 'lines');
+}
+function setLinkHoverLines(count) {
+  if (typeof count === 'number' && count >= 0) {
+    linkHoverTipLines.textContent = formatLineCount(count);
+    linkHoverTipLines.hidden = false;
+  } else {
+    linkHoverTipLines.textContent = '';
+    linkHoverTipLines.hidden = true;
+  }
+}
+window.leafLineCount = (token, lines) => {
+  const key = pendingLineTokens.get(token);
+  if (key !== undefined) {
+    pendingLineTokens.delete(token);
+    if (typeof lines === 'number' && lines >= 0) lineCountCache.set(key, lines);
+  }
+  if (token === activeHoverToken && typeof lines === 'number' && lines >= 0) {
+    setLinkHoverLines(lines);
+  }
+};
 let activeHoverLink = null;
 function hideLinkHoverTip() {
   activeHoverLink = null;
@@ -3518,6 +3551,19 @@ if (canHoverLinks) {
     activeHoverLink = link;
     linkHoverTipKind.textContent = info.kind;
     linkHoverTipDetail.textContent = info.detail;
+    const token = ++activeHoverToken;
+    setLinkHoverLines(null);
+    // Only links that open another document in-app (Markdown pages) carry a line
+    // count; everything else (glossary, in-page jumps, external, mail) does not.
+    if (info.kind === 'Another page') {
+      const key = link.href || rawHref;
+      if (lineCountCache.has(key)) {
+        setLinkHoverLines(lineCountCache.get(key));
+      } else {
+        pendingLineTokens.set(token, key);
+        send({ command: 'countLines', href: key, token });
+      }
+    }
     linkHoverTip.hidden = false;
     positionLinkHoverTip(event);
   });
@@ -5371,6 +5417,13 @@ pub fn open_error_state_script(path: &Path, reason: &str) -> String {
     let path = serde_json::to_string(&path.display().to_string()).expect("path serializes");
     let reason = serde_json::to_string(reason).expect("error reason serializes");
     format!("window.leafShowOpenError({path}, {reason});")
+}
+
+/// Answer a hover tooltip's `countLines` request: hand the webview the line count
+/// of the linked document for `token`. A negative count means "unknown" (the
+/// target wasn't a readable local document), and the page just shows no count.
+pub fn line_count_script(token: u64, lines: i64) -> String {
+    format!("window.leafLineCount({token}, {lines});")
 }
 
 pub fn config_file_path() -> Option<PathBuf> {
@@ -10771,6 +10824,13 @@ body.library-resizing {
   font-size: 0.76rem;
   line-height: 1.3;
   overflow-wrap: anywhere;
+}
+.link-hover-tip-lines {
+  margin-top: 4px;
+  color: var(--foreground);
+  font-weight: 600;
+  font-size: 0.74rem;
+  line-height: 1.2;
 }
 .glossary-sheet-grip {
   flex: none;

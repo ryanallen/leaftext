@@ -63,6 +63,13 @@ export function renderTEI(xmlString) {
     parts.push(`<h1 id="${escAttr(id)}">${escHtml(title)}</h1>\n`);
   }
 
+  // Front matter (summary, acknowledgements, introduction) lives in
+  // `text > front`, a sibling of `body`. Render it collapsed by default so the
+  // reader lands on the translation itself; the reader can open it to read the
+  // summary/introduction.
+  const front = xmlDoc.querySelector('text > front');
+  if (front) renderFront(front, parts, ctx);
+
   renderBlockSequence([...body.children], parts, 0, ctx);
 
   // Footnotes section — match markdown.js exactly so the same CSS applies:
@@ -139,6 +146,34 @@ function renderBlockSequence(children, out, divDepth, ctx) {
 // Wrap verse lines in a blockquote (left bar + hanging indent), one <l> per row.
 function verseBlockquote(lines) {
   return `<blockquote class="tei-verse">\n<p>${lines.join('<br>\n')}</p>\n</blockquote>\n`;
+}
+
+// Render `text > front` as a collapsed <details> so summary/acknowledgements/
+// introduction are available but out of the way by default. The inner content
+// uses the same block machinery as the body (headings, paragraphs, verse), so
+// its own CSS and anchors work unchanged; outline.js skips anything inside
+// `.tei-front` so these collapsed headings don't clutter the outline.
+function renderFront(front, out, ctx) {
+  const inner = [];
+  renderBlockSequence([...front.children], inner, 0, ctx);
+  const html = inner.join('').trim();
+  if (!html) return;
+
+  // Label the toggle with the section names it holds (e.g. "Summary,
+  // Acknowledgements, Introduction"), falling back to a generic term.
+  const heads = [...front.children]
+    .filter((c) => localName(c) === 'div')
+    .map((d) => [...d.children].find((c) => localName(c) === 'head'))
+    .filter(Boolean)
+    .map((h) => h.textContent.trim())
+    .filter(Boolean);
+  const label = heads.length ? heads.join(', ') : 'Front matter';
+
+  out.push(
+    `<details class="tei-front">\n<summary class="tei-front-summary">${escHtml(label)}</summary>\n<div class="tei-front-body">\n`
+  );
+  out.push(html);
+  out.push('</div>\n</details>\n');
 }
 
 function renderDiv(node, out, divDepth, ctx) {

@@ -384,6 +384,55 @@ body {
   color: var(--link-hover);
 }
 
+/* ---- TEI front matter ------------------------------------------------ */
+/* Summary, acknowledgements, and introduction from `text > front`, rendered
+   as a collapsed <details> (see site/tei-xml.js) so the reader lands on the
+   translation body. Mirrors the outline toggle above. */
+.markdown-body .tei-front {
+  margin: var(--type-spacing) 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+}
+.markdown-body .tei-front-summary {
+  cursor: pointer;
+  padding: 0.5em 0.9em;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+  user-select: none;
+}
+.markdown-body .tei-front-summary::-webkit-details-marker {
+  display: none;
+}
+.markdown-body .tei-front-summary::before {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-right: 0.55em;
+  border-left: 0.4em solid currentColor;
+  border-top: 0.32em solid transparent;
+  border-bottom: 0.32em solid transparent;
+  vertical-align: middle;
+  transition: transform 0.15s ease;
+}
+.markdown-body .tei-front[open] > .tei-front-summary::before {
+  transform: rotate(90deg);
+}
+.markdown-body .tei-front-summary:hover {
+  color: var(--link-hover);
+}
+.markdown-body .tei-front-body {
+  padding: 0 1.4em 0.7em;
+  border-top: 1px solid var(--border);
+}
+/* Keep the first inner heading tight against the divider. */
+.markdown-body .tei-front-body > :first-child {
+  margin-top: 0.7em;
+}
+
 :root[data-speed-reader='true'] .markdown-body {
   color: var(--speed-reader-dim);
   font-weight: 400;
@@ -1234,6 +1283,12 @@ body {
   color: var(--text-muted);
   font: 0.76rem/1.3 var(--font-mono);
   overflow-wrap: anywhere;
+}
+/* Line count of the linked document (only shown for document links). */
+.link-hover-tip-lines {
+  margin-top: 4px;
+  color: var(--text);
+  font: 600 0.74rem/1.2 var(--font-body);
 }
 
 .glossary-sheet-grip {

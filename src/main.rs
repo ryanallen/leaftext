@@ -21,13 +21,13 @@ use leaftext::indexer::{event_script, IndexerEvent, IndexerWorker};
 use leaftext::{
     app_data_dir, app_shell_html, bundled_asset_response, config_file_path, document_pager_html,
     fragment_scroll_script, glossary_sheet_script, initial_settings_script, initial_state_script,
-    load_recent_files, load_settings, local_image_protocol_response, local_image_source_dir,
-    navigation_state_script, open_document_with_recent, open_error_state_script,
-    opened_document_from_markdown, opened_document_from_tei, pager_loaded_script,
-    render_markdown_document, save_recent_files, save_settings, scroll_anchor_script,
-    settings_file_path, webview_user_data_dir, workspace_reload_script, workspace_state_script,
-    workspace_switch_script, LibraryView, RecentFiles, ScrollAnchor, Settings,
-    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    line_count_script, load_recent_files, load_settings, local_image_protocol_response,
+    local_image_source_dir, navigation_state_script, open_document_with_recent,
+    open_error_state_script, opened_document_from_markdown, opened_document_from_tei,
+    pager_loaded_script, render_markdown_document, save_recent_files, save_settings,
+    scroll_anchor_script, settings_file_path, webview_user_data_dir, workspace_reload_script,
+    workspace_state_script, workspace_switch_script, LibraryView, RecentFiles, ScrollAnchor,
+    Settings, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -91,6 +91,13 @@ enum UserEvent {
     /// glossary file plus the term's `#anchor`, relative to the active document.
     OpenGlossary {
         href: String,
+    },
+    /// The hover tooltip is over a link to another document and wants its line
+    /// count. `href` is resolved against the active document; `token` correlates
+    /// the answer with the hover that asked (a later hover bumps the token).
+    CountLines {
+        href: String,
+        token: u64,
     },
     GoBack {
         scroll_anchor: ScrollAnchor,
@@ -207,6 +214,8 @@ enum IpcCommand {
     },
     #[serde(rename = "openGlossary")]
     OpenGlossary { href: String },
+    #[serde(rename = "countLines")]
+    CountLines { href: String, token: u64 },
     #[serde(rename = "goBack")]
     GoBack { scroll_anchor: ScrollAnchor },
     #[serde(rename = "goForward")]
@@ -837,6 +846,29 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 };
                 show_glossary_entry(webview.as_ref(), &href, &current_path);
             }
+            Event::UserEvent(UserEvent::CountLines { href, token }) => {
+                // Count the lines of the linked document so the hover tooltip can
+                // show its length. Only in-app Markdown links resolve to a file we
+                // read; anything else answers -1 ("unknown") and shows no count.
+                let lines = workspace
+                    .active
+                    .and_then(|active| workspace.tabs[active].history.current().cloned())
+                    .and_then(|current_path| match classify_link_target(&href) {
+                        LinkTarget::LocalMarkdown(target) => {
+                            let path = path_from_local_link(&target, &current_path);
+                            fs::read_to_string(&path)
+                                .ok()
+                                .map(|contents| contents.lines().count() as i64)
+                        }
+                        _ => None,
+                    })
+                    .unwrap_or(-1);
+                if let Some(webview) = webview.as_ref() {
+                    if let Err(error) = webview.evaluate_script(&line_count_script(token, lines)) {
+                        eprintln!("Failed to send line count to the webview: {error}");
+                    }
+                }
+            }
             Event::UserEvent(UserEvent::GoBack { scroll_anchor }) => {
                 let Some(active) = workspace.active else {
                     return;
@@ -1164,6 +1196,9 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
             }
             IpcCommand::OpenGlossary { href } => {
                 let _ = proxy.send_event(UserEvent::OpenGlossary { href });
+            }
+            IpcCommand::CountLines { href, token } => {
+                let _ = proxy.send_event(UserEvent::CountLines { href, token });
             }
             IpcCommand::GoBack { scroll_anchor } => {
                 let _ = proxy.send_event(UserEvent::GoBack { scroll_anchor });

@@ -88,7 +88,24 @@ const mobileNavEl = document.getElementById('mobileNav');
 const contentEl = document.getElementById('content');
 const statusEl = document.getElementById('status');
 const pagerEl = document.getElementById('pager');
-installLinkTooltip(document);
+// The tooltip's line count needs the URL of the file a link points at. Here a
+// relative `.md` link resolves to a route against the page on screen, and the
+// file behind that route is `<route>.md` under this /docs base — not a URL under
+// the current `#/route` hash — so give the counter a resolver that knows that.
+installLinkTooltip(document, {
+  resolveDocUrl: (link) => {
+    const href = (link.getAttribute('href') || '').trim();
+    if (!href || href.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(href)) return null;
+    if (!/\.md(?:[#?].*)?$/i.test(href)) return null;
+    const { route } = routeAndAnchorFromHref(href, displayedRoute);
+    if (!route) return null;
+    try {
+      return new URL(route + '.md', location.href).href;
+    } catch (error) {
+      return null;
+    }
+  },
+});
 
 // Mermaid and KaTeX are vendored under ../site/vendor/ — loaded lazily (once)
 // only when a page actually contains a diagram or math.

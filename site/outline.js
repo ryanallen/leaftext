@@ -69,7 +69,10 @@ export function buildOutline(root, options = {}) {
   if (existing) existing.remove();
 
   const headings = Array.from(root.querySelectorAll('h1, h2, h3, h4, h5, h6')).filter(
-    (h) => !h.closest('.document-outline') && !h.closest('.footnotes')
+    (h) =>
+      !h.closest('.document-outline') &&
+      !h.closest('.footnotes') &&
+      !h.closest('.tei-front')
   );
   // A title plus at least one section is the minimum worth an outline for.
   if (headings.length < 2) return null;

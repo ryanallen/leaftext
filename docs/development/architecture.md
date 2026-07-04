@@ -102,6 +102,7 @@ Key `IpcCommand` variants include:
 | `goBack` / `goForward` | History buttons or keyboard shortcuts |
 | `openLink`             | In-document link click                |
 | `openGlossary`         | Glossary link click (opens the term in a bottom sheet) |
+| `countLines`           | Link hover: read the linked document and report its line count for the tooltip |
 | `setThemeMode`         | Theme picker in Settings menu         |
 | `setMinimapEnabled`    | Minimap toggle in Settings menu       |
 | `setPagerEnabled`      | Pager toggle in Settings menu         |

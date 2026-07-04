@@ -172,14 +172,14 @@ The pager is on by default and can be turned off in [Settings](settings.md#pager
 
 ## Link hints
 
-Hovering a link shows a small tooltip that names what kind of link it is and shows the exact href it was written with, so you can tell a [glossary](#glossary) term from an in-page jump from an outside site before you click.
+Hovering a link shows a small tooltip that names what kind of link it is and shows the exact href it was written with, so you can tell a [glossary](#glossary) term from an in-page jump from an outside site before you click. When the link opens another document, the tooltip also shows how long that document is, in lines, so you know whether you are about to open a short note or a long one.
 
 | Hint | When you see it |
 | --- | --- |
 | Glossary entry | A `glossary:` term link, or a link to `GLOSSARY.md#term` |
 | Full glossary | A bare `glossary:` link that opens the whole glossary |
 | In-page jump | A `#fragment` link to a heading on the current page |
-| Another page | A relative link to another `.md` document |
+| Another page | A relative link to another `.md` document (its line count is shown too) |
 | External site | An `http://` or `https://` link |
 | Email link | A `mailto:` link |
 | App link | Any other URL scheme |
