@@ -41,7 +41,7 @@ leaftext's Rust source is split by concern:
 The WebView front-end that `app_shell_html()` serves lives outside the Rust source as editable assets, embedded at build time with `include_str!`:
 
 - **`src/assets/app-shell.html`** — the page markup (app bar, library pane, glossary sheet, settings menu).
-- **`src/assets/app-shell.js`** — the in-page application script (tabs, history, minimap, library, theme and locale wiring). Keeping the markup and script as real `.html` / `.js` files means normal front-end tooling applies, while the binary stays self-contained.
+- **`src/assets/app-shell.js`** — the in-page application script (tabs, history, minimap, library, theme and locale wiring, and the progressive block-by-block insertion of a large document behind a determinate progress bar). Keeping the markup and script as real `.html` / `.js` files means normal front-end tooling applies, while the binary stays self-contained.
 
 ## Rendering pipeline
 

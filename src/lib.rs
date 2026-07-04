@@ -14,7 +14,6 @@ mod pager;
 pub(crate) use pager::*;
 pub use pager::{document_pager_html, pager_loaded_script};
 mod minimap;
-pub(crate) use minimap::*;
 pub use minimap::{
     build_minimap_model, build_minimap_model_from_html, DocumentMinimap, MinimapLineCategory,
     MinimapLineStructure, MinimapSpan,
@@ -872,6 +871,7 @@ fn locale_bootstrap_script() -> &'static str {
       'recent.headingWithCount': 'Recent ({count})',
       'recent.openTitle': 'Open {path}',
       'minimap.aria': 'Document minimap',
+      'reader.loading': 'Loading document…',
       'outline.title': 'Outline',
       'settings.heading': 'Settings',
       'settings.indexing.label': 'Index entire device',
@@ -946,6 +946,7 @@ fn locale_bootstrap_script() -> &'static str {
       'recent.headingWithCount': '最近文件（{count}）',
       'recent.openTitle': '打开 {path}',
       'minimap.aria': '文档缩略图',
+      'reader.loading': '正在加载文档…',
       'outline.title': '大纲',
       'settings.heading': '设置',
       'settings.indexing.label': '索引整个设备',

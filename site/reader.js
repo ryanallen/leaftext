@@ -19,6 +19,7 @@ import { installGlossary, installAutoGlossary } from './glossary.js';
 import { installLinkTooltip } from './link-tooltip.js';
 import { installSettings } from './settings.js';
 import { applySpeedReaderIfEnabled } from './speed-reader.js';
+import { applyDocumentHtml } from './progressive-render.js';
 
 const content = document.getElementById('content');
 const statusEl = document.getElementById('status');
@@ -165,41 +166,46 @@ async function main() {
   try {
     const { text, isXML } = await fetchDocument();
 
-    content.innerHTML = isXML ? renderTEI(text) : renderMarkdown(text);
-    decorateBlockquoteLines(content);
-    // A collapsed outline (table of contents) built from the document's
-    // headings, tucked just under the title. Built before the anchor pass so its
-    // link-only entries stay out of the block-numbering scheme.
-    buildOutline(content, { label: 'Outline' });
-    if (statusEl) statusEl.hidden = true;
+    // Put the document on the page. A large document streams in behind a
+    // determinate progress bar (see progressive-render.js); everything that
+    // depends on the finished DOM runs once it is fully inserted.
+    const html = isXML ? renderTEI(text) : renderMarkdown(text);
+    applyDocumentHtml(content, html, () => {
+      decorateBlockquoteLines(content);
+      // A collapsed outline (table of contents) built from the document's
+      // headings, tucked just under the title. Built before the anchor pass so its
+      // link-only entries stay out of the block-numbering scheme.
+      buildOutline(content, { label: 'Outline' });
+      if (statusEl) statusEl.hidden = true;
 
-    // Use the first heading as the tab title, if there is one.
-    const firstHeading = content.querySelector('h1, h2, h3');
-    if (firstHeading) {
-      const title = firstHeading.textContent.trim();
-      if (title) document.title = title.slice(0, 80);
-    }
+      // Use the first heading as the tab title, if there is one.
+      const firstHeading = content.querySelector('h1, h2, h3');
+      if (firstHeading) {
+        const title = firstHeading.textContent.trim();
+        if (title) document.title = title.slice(0, 80);
+      }
 
-    // Render Mermaid diagrams and math (async; the minimap's resize observer
-    // picks up height changes), build the minimap, then jump to any #anchor.
-    if (!isXML) {
-      renderMermaidDiagrams();
-      renderMath();
-      highlightCode(content, HLJS_SRC);
-      decorateCodeBlocks(content);
-    }
-    decorateAnchorLinks(content);
-    // Clear any stale processed flag before anchoring the freshly rendered
-    // document (the settings boot may have run against this element while it was
-    // still empty), the same as the docs viewer does on every render.
-    delete content.dataset.speedReaderProcessed;
-    applySpeedReaderIfEnabled(content);
-    initMinimap(content);
-    scrollToHash();
+      // Render Mermaid diagrams and math (async; the minimap's resize observer
+      // picks up height changes), build the minimap, then jump to any #anchor.
+      if (!isXML) {
+        renderMermaidDiagrams();
+        renderMath();
+        highlightCode(content, HLJS_SRC);
+        decorateCodeBlocks(content);
+      }
+      decorateAnchorLinks(content);
+      // Clear any stale processed flag before anchoring the freshly rendered
+      // document (the settings boot may have run against this element while it was
+      // still empty), the same as the docs viewer does on every render.
+      delete content.dataset.speedReaderProcessed;
+      applySpeedReaderIfEnabled(content);
+      initMinimap(content);
+      scrollToHash();
 
-    // Auto-link glossary terms asynchronously after the page is displayed,
-    // checking for GLOSSARY.md or GLOSSARY.xml next to the document.
-    installAutoGlossary({ contentEl: content, renderMarkdown, renderTEI });
+      // Auto-link glossary terms asynchronously after the page is displayed,
+      // checking for GLOSSARY.md or GLOSSARY.xml next to the document.
+      installAutoGlossary({ contentEl: content, renderMarkdown, renderTEI });
+    });
   } catch (err) {
     showStatus(
       'Could not load the document (' +

@@ -1169,6 +1169,15 @@ applyPaneLayout();
 send({ command: 'getFileTree' });
 let minimapViewportFrame = 0;
 let minimapPreviewFrame = 0;
+// Unscaled offsetTop of each READER_ANCHOR_SELECTOR block in the fully-laid-out
+// clone, in document order (parallel to readerAnchorBlocks). This is the ground
+// truth the viewport box reads its scroll position from: the reader's own
+// scrollTop/scrollHeight is a content-visibility estimate that is wrong whenever
+// blocks above the viewport were never rendered (a scrollbar jump, a find, an
+// #anchor), so mapping the top-visible reader block to its true clone offset is
+// what keeps the box on the content. Rebuilt whenever the clone is rebuilt.
+let minimapCloneOffsets = null;
+let minimapDragging = false;
 let minimapPointerId = null;
 let minimapPointerOffsetY = null;
 let minimapResizeObserver = null;
@@ -1502,27 +1511,7 @@ function renderState() {
   if (state.document) {
     document.title = window.leafLocale.t('titles.document', { title: state.document.title });
     app.className = 'reader-shell has-document';
-    const minimapHtml = renderDocumentMinimap(state.document.minimap);
-    const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';
-    app.innerHTML = `<div class="${layoutClass}">${state.document.html}${minimapHtml}</div>`;
-    decorateBlockquoteLines();
-    buildDocumentOutline();
-    decorateAnchorLinks();
-    bindDocumentLinks();
-    requestDocumentPager(state.document.path || activeDocumentPath());
-    bindDocumentMinimap();
-    renderMermaidDiagrams();
-    renderMathElements();
-    decorateCodeBlocks();
-    applySpeedReaderToDocument();
-    observeReaderReflow();
-    scheduleMinimapPreviewUpdate();
-    if (resetReaderScrollOnNextRender) {
-      resetReaderScrollOnNextRender = false;
-      resetReaderScrollToContentStart();
-    } else {
-      updateMinimapViewport();
-    }
+    applyDocumentMarkup(state);
     return;
   }
   resetReaderScrollOnNextRender = false;
@@ -1541,6 +1530,123 @@ function renderState() {
   app.querySelectorAll('[data-path]').forEach((button) => {
     button.addEventListener('click', () => send({ command: 'openRecent', path: button.dataset.path }));
   });
+}
+// Below this many top-level blocks a document is inserted in one shot (instant, no
+// progress bar). Above it, blocks stream in a batch per frame so the one-time layout
+// cost of a large web-like render is visible and interruptible.
+const PROGRESSIVE_BLOCK_THRESHOLD = 900;
+const PROGRESSIVE_BATCH = 120;
+// Bumped on every document render so an in-flight progressive insert abandons itself
+// when a newer render (navigation, live reload) supersedes it.
+let documentRenderToken = 0;
+// Put the document markup on screen. Small documents go through the original one-shot
+// innerHTML path. Large ones are parsed once (cheap) and their blocks streamed in
+// across frames behind a determinate progress bar (see the .reader-loading CSS), so a
+// big file lays out fully — like a web page — without freezing or looking stalled.
+function applyDocumentMarkup(state) {
+  documentRenderToken += 1;
+  const token = documentRenderToken;
+  const minimapHtml = renderDocumentMinimap(state.document.minimap);
+  const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';
+  const template = document.createElement('template');
+  template.innerHTML = state.document.html;
+  const bodyEl = template.content.querySelector('.document-body');
+  const blockCount = bodyEl ? bodyEl.childElementCount : 0;
+  if (!bodyEl || blockCount <= PROGRESSIVE_BLOCK_THRESHOLD) {
+    app.innerHTML = `<div class="${layoutClass}">${state.document.html}${minimapHtml}</div>`;
+    finishDocumentRender(state);
+    return;
+  }
+  const blocks = Array.from(bodyEl.childNodes);
+  bodyEl.replaceChildren();
+  const layout = document.createElement('div');
+  layout.className = layoutClass;
+  layout.append(...template.content.childNodes);
+  if (minimapHtml) {
+    const minimapTemplate = document.createElement('template');
+    minimapTemplate.innerHTML = minimapHtml;
+    layout.append(...minimapTemplate.content.childNodes);
+  }
+  const loading = buildReaderLoadingBar();
+  app.replaceChildren(layout, loading);
+  const total = blocks.length;
+  let inserted = 0;
+  const pump = () => {
+    if (token !== documentRenderToken) {
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    const end = Math.min(total, inserted + PROGRESSIVE_BATCH);
+    for (; inserted < end; inserted++) {
+      fragment.appendChild(blocks[inserted]);
+    }
+    bodyEl.appendChild(fragment);
+    setReaderLoadingProgress(loading, total === 0 ? 1 : inserted / total);
+    if (inserted < total) {
+      window.requestAnimationFrame(pump);
+    } else {
+      loading.remove();
+      finishDocumentRender(state);
+    }
+  };
+  window.requestAnimationFrame(pump);
+}
+// The post-insertion pipeline: decorate, wire links, kick off the pager, and bring the
+// minimap up. Shared by the one-shot and progressive paths so both end identically.
+function finishDocumentRender(state) {
+  decorateBlockquoteLines();
+  buildDocumentOutline();
+  decorateAnchorLinks();
+  bindDocumentLinks();
+  requestDocumentPager(state.document.path || activeDocumentPath());
+  bindDocumentMinimap();
+  renderMermaidDiagrams();
+  renderMathElements();
+  decorateCodeBlocks();
+  applySpeedReaderToDocument();
+  observeReaderReflow();
+  scheduleMinimapPreviewUpdate();
+  if (resetReaderScrollOnNextRender) {
+    resetReaderScrollOnNextRender = false;
+    resetReaderScrollToContentStart();
+  } else {
+    updateMinimapViewport();
+  }
+}
+function buildReaderLoadingBar() {
+  const el = document.createElement('div');
+  el.className = 'reader-loading';
+  el.setAttribute('role', 'progressbar');
+  el.setAttribute('aria-valuemin', '0');
+  el.setAttribute('aria-valuemax', '100');
+  el.setAttribute('aria-valuenow', '0');
+  const labelRow = document.createElement('div');
+  labelRow.className = 'reader-loading-label';
+  const text = document.createElement('span');
+  text.textContent = window.leafLocale.t('reader.loading');
+  const percent = document.createElement('span');
+  percent.className = 'reader-loading-percent';
+  percent.textContent = '0%';
+  labelRow.append(text, percent);
+  const track = document.createElement('div');
+  track.className = 'reader-loading-track';
+  const fill = document.createElement('div');
+  fill.className = 'reader-loading-fill';
+  track.appendChild(fill);
+  el.append(labelRow, track);
+  return el;
+}
+function setReaderLoadingProgress(el, ratio) {
+  const pct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
+  el.setAttribute('aria-valuenow', String(pct));
+  const fill = el.querySelector('.reader-loading-fill');
+  if (fill) {
+    fill.style.width = `${pct}%`;
+  }
+  const percent = el.querySelector('.reader-loading-percent');
+  if (percent) {
+    percent.textContent = `${pct}%`;
+  }
 }
 function renderNavigation() {
   backButton.disabled = !navigationState.canGoBack;
@@ -2309,7 +2415,21 @@ function bindDocumentMinimap() {
     const boxTravel = previewTravel > 0 ? handleRange : Math.max(0, scaledDocumentHeight - boundedViewportHeight);
     const targetViewportScrollTop = boxTravel <= 0 ? 0 : (targetViewportTop / boxTravel) * metrics.scrollable;
     setReaderScrollTop(metrics.topOffset + Math.min(metrics.scrollable, Math.max(0, targetViewportScrollTop)));
-    updateMinimapViewport();
+    // Pin the box (and thumbnail slide) to the cursor for the duration of the drag
+    // instead of recomputing from the reader's geometry. On a huge document the reader
+    // is still laying out under the drag (content-visibility), so a geometry-driven
+    // update mid-drag makes the box flicker to the top and back. The scroll handler
+    // skips its update while minimapDragging is set; pointerup settles to the true
+    // position once (see endDrag).
+    const minimap = track.closest('.document-minimap');
+    if (minimap) {
+      const dragRatio = boxTravel <= 0 ? 0 : Math.min(1, Math.max(0, targetViewportTop / boxTravel));
+      minimap.style.setProperty('--minimap-viewport-top', `${targetViewportTop}px`);
+      minimap.style.setProperty('--minimap-viewport-height', `${boundedViewportHeight}px`);
+      minimap.style.setProperty('--minimap-preview-top', `${-dragRatio * previewTravel}px`);
+    } else {
+      updateMinimapViewport();
+    }
   };
   // A plain click on the rail centers the reader on the clicked point of the
   // thumbnail (mapped straight through the preview scale).
@@ -2338,6 +2458,7 @@ function bindDocumentMinimap() {
     const focusAfterJump = restoreFocus();
     event.preventDefault();
     minimapPointerId = event.pointerId;
+    minimapDragging = true;
     minimapPointerOffsetY = minimapPointerOffset(event);
     track.setPointerCapture(event.pointerId);
     if (Number.isFinite(minimapPointerOffsetY)) {
@@ -2358,6 +2479,11 @@ function bindDocumentMinimap() {
     if (event.pointerId === minimapPointerId) {
       minimapPointerId = null;
       minimapPointerOffsetY = null;
+      minimapDragging = false;
+      // Settle the box/thumbnail onto the true reading position now that the drag is
+      // over. Content that streamed in under the drag keeps settling afterward via the
+      // reader's reflow observer, which also refreshes the box.
+      updateMinimapViewport();
     }
   };
   track.addEventListener('pointerup', endDrag);
@@ -2606,7 +2732,11 @@ function scheduleReaderLayoutUpdate(anchor = readerScrollAnchor || captureReader
     correctReaderScrollOrigin();
     restoreReaderScrollAnchor(anchor);
     readerScrollAnchor = captureReaderScrollAnchor();
-    updateMinimapViewport();
+    // Don't move the box off the cursor while the minimap is being dragged; the drag
+    // pins it and endDrag settles it.
+    if (!minimapDragging) {
+      updateMinimapViewport();
+    }
   });
 }
 function disconnectReaderReflowObserver() {
@@ -2723,6 +2853,15 @@ function updateDocumentMinimapPreview() {
   // clone's true unscaled height; scale it for the lane the box travels.
   const documentHeight = Math.max(1, metrics.scrollHeight, Math.ceil(preview.scrollHeight));
   content.style.height = `${documentHeight * previewScale}px`;
+  // Record each anchor block's true (unscaled) offset in the clone, in document
+  // order, so updateMinimapViewport can map the reader's top-visible block to its
+  // real document position. offsetTop is a layout value, unaffected by the scale
+  // transform, so it is already in the same unscaled space as documentHeight.
+  const cloneBlocks = preview.querySelectorAll(READER_ANCHOR_SELECTOR);
+  minimapCloneOffsets = new Float64Array(cloneBlocks.length);
+  for (let i = 0; i < cloneBlocks.length; i++) {
+    minimapCloneOffsets[i] = cloneBlocks[i].offsetTop;
+  }
   updateMinimapViewport();
 }
 function scheduleMinimapViewportUpdate() {
@@ -2734,10 +2873,45 @@ function scheduleMinimapViewportUpdate() {
     updateMinimapViewport();
   });
 }
+// The reader's true scroll distance (unscaled document px from the content start to
+// the viewport top), read from real geometry only. Find the topmost anchor block
+// still crossing the viewport top (binary search, same as the scroll anchor), then
+// add its own true offset in the clone to how far the viewport has scrolled into it.
+// The reader block is on screen so its rect is real; the clone offset is real; so the
+// result is exact even when app.scrollTop is a content-visibility estimate (blocks
+// above never rendered after a jump). Returns null when the clone/anchor lists are not
+// yet in sync, so the caller can fall back to the estimate.
+function minimapReaderTrueScrolled() {
+  const source = app.querySelector('.document-body');
+  if (!source || !minimapCloneOffsets || !minimapCloneOffsets.length) {
+    return null;
+  }
+  const blocks = readerAnchorBlockList(source);
+  if (blocks.length !== minimapCloneOffsets.length) {
+    return null;
+  }
+  const shellRect = app.getBoundingClientRect();
+  const topEdge = shellRect.top + 1;
+  let lo = 0;
+  let hi = blocks.length - 1;
+  let targetIndex = blocks.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (blocks[mid].getBoundingClientRect().bottom > topEdge) {
+      targetIndex = mid;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+  const rect = blocks[targetIndex].getBoundingClientRect();
+  const offsetIntoBlock = topEdge - rect.top;
+  return Math.max(0, minimapCloneOffsets[targetIndex] + offsetIntoBlock);
+}
 // Place the viewport box and, on documents taller than the rail, slide the
 // thumbnail inside the rail (the way a code editor's minimap does). The document
-// height is taken from the fully-rendered clone, so the box tracks the real
-// thumbnail; the box height and travel come from the reader's real scroll range.
+// height and the reading position both come from the fully-laid-out clone, so the
+// box tracks the real thumbnail; the box height comes from the reader viewport.
 function updateMinimapViewport() {
   const minimap = app.querySelector('.document-minimap');
   if (!minimap) {
@@ -2756,7 +2930,17 @@ function updateMinimapViewport() {
   if (content) {
     content.style.height = `${scaledDocumentHeight}px`;
   }
-  const scrollRatio = metrics.scrollable === 0 ? 0 : Math.min(1, Math.max(0, metrics.viewportScrollTop / metrics.scrollable));
+  // Scroll fraction lives entirely in the clone's true coordinate space: the reading
+  // position from minimapReaderTrueScrolled() (real block geometry) over the true
+  // scrollable range (clone height minus the viewport). Neither term uses the reader's
+  // scrollHeight, which is a content-visibility ESTIMATE that undershoots on a long
+  // document (lower blocks charged at their 48px placeholder) and is flat wrong after a
+  // scrollbar jump (blocks above never rendered). Falls back to the scroll-position
+  // estimate only until the clone's offsets are ready.
+  const trueScrollable = Math.max(0, documentHeight - metrics.viewportHeight);
+  const trueScrolled = minimapReaderTrueScrolled();
+  const scrolled = trueScrolled === null ? metrics.viewportScrollTop : trueScrolled;
+  const scrollRatio = trueScrollable === 0 ? 0 : Math.min(1, Math.max(0, scrolled / trueScrollable));
   const viewportHeight = metrics.scrollHeight <= 0 ? metrics.trackHeight : Math.max(22, metrics.viewportHeight * previewScale);
   const boundedViewportHeight = Math.min(metrics.trackHeight, viewportHeight);
   const previewTop = -scrollRatio * Math.max(0, scaledDocumentHeight - metrics.trackHeight);
@@ -2777,7 +2961,12 @@ function updateMinimapViewport() {
 app.addEventListener('scroll', () => {
   clampReaderScrollPosition();
   readerScrollAnchor = captureReaderScrollAnchor();
-  scheduleMinimapViewportUpdate();
+  // While dragging the minimap, the box is pinned to the cursor (see
+  // dragMinimapViewportToPointer); don't let the drag-induced scroll recompute it from
+  // the still-settling reader geometry and flicker it. endDrag settles it on release.
+  if (!minimapDragging) {
+    scheduleMinimapViewportUpdate();
+  }
 });
 window.addEventListener('resize', () => {
   scheduleReaderLayoutUpdate();
