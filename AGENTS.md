@@ -33,9 +33,12 @@ It is a Rust program. The window and the embedded web view come from the `tao` a
 
 ## Repo layout
 
-- `src/lib.rs` — the core: Markdown parsing, sanitizing, HTML rendering, theme tokens, reference and badge handling, plus most tests. This is the big file.
+- `src/lib.rs` — the core: Markdown parsing, sanitizing, HTML rendering, TEI/XML, glossary linking, minimap, settings, reference and badge handling, and `app_shell_html()` (which loads the page markup and script from `src/assets/`).
+- `src/theme.rs` — the theme system: semantic token contract, Primer/Dracula token tables, `ThemeSource` types, and the CSS compiler (`compiled_theme_css()`, `reading_mode_css()`). `pub(crate)` and re-exported from `lib.rs`.
+- `src/tests.rs` — the crate's unit tests (a `#[cfg(test)] mod tests` file, not inline in `lib.rs`).
 - `src/main.rs` — the app shell: window, event loop, file open/close, history, and the per-user data directory.
-- `src/assets/` — fonts and CSS used by the reader.
+- `src/indexer.rs` — background SQLite library indexer and full-text search.
+- `src/assets/` — fonts, CSS, and the WebView front-end (`app-shell.html`, `app-shell.js`) embedded via `include_str!`.
 - `wix/main.wxs` — the Windows installer recipe (used by cargo-wix to build the MSI).
 - `scripts/` — `prepare-release.mts` (cut a release), `build-windows-release.ps1`, `build-linux-release.sh`.
 - `.github/workflows/` — three release workflows (Windows, macOS, Linux).

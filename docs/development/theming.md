@@ -6,7 +6,7 @@ leaftext's theme system is built around a semantic token contract — a set of a
 
 ## The token contract
 
-`LEAF_SEMANTIC_TOKEN_CONTRACT` in `src/lib.rs` defines the authoritative list of required properties. Every theme source must map a value to each token in this list. The tokens are organized into semantic categories:
+`LEAF_SEMANTIC_TOKEN_CONTRACT` in `src/theme.rs` defines the authoritative list of required properties. Every theme source must map a value to each token in this list. The tokens are organized into semantic categories:
 
 ### Reader chrome
 
@@ -34,7 +34,7 @@ Button background, foreground, hover, and disabled states for the back/forward/o
 
 ## Theme sources
 
-Three theme sources are defined in `src/lib.rs`. Each is a `ThemeSource` struct with an `id`, a CSS `selector`, a `kind`, and a flat `tokens` slice mapping every contract property to a value:
+Three theme sources are defined in `src/theme.rs`. Each is a `ThemeSource` struct with an `id`, a CSS `selector`, a `kind`, and a flat `tokens` slice mapping every contract property to a value:
 
 | Theme ID       | Selector trigger                                                                                               | Token strategy                                                                                                                                 |
 | -------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -48,7 +48,7 @@ The `dracula` source uses `ThemeSourceKind::Dracula` and activates through the `
 
 ## Compile-time assertion
 
-`assert_theme_sources_cover_contract()` in `src/lib.rs` runs at startup (called from `compiled_theme_css()`, which is called from `reading_mode_css()`, which is called from `app_shell_html()`). It performs the following checks for every theme source:
+`assert_theme_sources_cover_contract()` in `src/theme.rs` runs at startup (called from `compiled_theme_css()`, which is called from `reading_mode_css()`, which is called from `app_shell_html()`). It performs the following checks for every theme source:
 
 - No duplicate theme source IDs.
 - Every source has a non-empty `display_name`.
@@ -91,7 +91,7 @@ The result is cached in a `OnceLock<String>` — computed once per process lifet
 
 **1. Define a new token map**
 
-In `src/lib.rs`, create a new `const` slice (e.g. `MY_THEME_TOKENS: &[(&str, &str)]`) that maps every property name in `LEAF_SEMANTIC_TOKEN_CONTRACT` to a value. Each entry is `("--leaf-property-name", "value")`.
+In `src/theme.rs`, create a new `const` slice (e.g. `MY_THEME_TOKENS: &[(&str, &str)]`) that maps every property name in `LEAF_SEMANTIC_TOKEN_CONTRACT` to a value. Each entry is `("--leaf-property-name", "value")`.
 
 **2. Register a ThemeSource**
 
@@ -118,7 +118,7 @@ If any token in `LEAF_SEMANTIC_TOKEN_CONTRACT` is missing from your new source, 
 
 **4. Add the option to the Settings menu**
 
-In `app_shell_html()` within `src/lib.rs`, add a new `<option>` element to the `#themeMode` `<select>` in the HTML shell, and add translation keys for both `en` and `zh-CN` in `locale_bootstrap_script()`.
+Add a new `<option>` element to the `#themeMode` `<select>` in the page markup at `src/assets/app-shell.html`, and add translation keys for both `en` and `zh-CN` in `locale_bootstrap_script()` in `src/lib.rs`.
 
 > [!WARNING]
 > The compile-time token check uses exact string matching against the names in `LEAF_SEMANTIC_TOKEN_CONTRACT`. Ensure every token name in your new theme map is spelled exactly as it appears in that list — a single typo (e.g. `--leaf-sytax-keyword` instead of `--leaf-syntax-keyword`) will not match and the assertion will fail at startup with a "missing required token" message.
