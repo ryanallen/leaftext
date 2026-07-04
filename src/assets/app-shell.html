@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: http://leaf-image.local leaf-image: data:; script-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset:; style-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset:; font-src 'self' data: http://leaf-asset.local leaf-asset:">
+<title>Leaf Text</title>
+<script>{{THEME_BOOTSTRAP_SCRIPT}}</script>
+<script>{{LOCALE_BOOTSTRAP_SCRIPT}}</script>
+<link rel="stylesheet" href="{{KATEX_CSS_URL}}">
+<style>{{READING_MODE_CSS}}</style>
+</head>
+<body>
+<header id="appBar" class="app-bar">
+  <button type="button" id="homeButton" class="brand-button" data-i18n-aria-label="actions.home" data-i18n-title="actions.home.title" aria-label="Home" title="Home">
+    <img class="brand" src="{{BRAND_LOGO}}" alt="Leaf Text" />
+  </button>
+  <nav class="history-actions" aria-label="Document history">
+    <button type="button" id="backButton" class="icon-button history-button" data-i18n-aria-label="actions.back" data-i18n-title="actions.back.title" aria-label="Back" title="Back" disabled>
+      {{BACK_ICON_SVG}}
+    </button>
+    <button type="button" id="forwardButton" class="icon-button history-button" data-i18n-aria-label="actions.forward" data-i18n-title="actions.forward.title" aria-label="Forward" title="Forward" disabled>
+      {{FORWARD_ICON_SVG}}
+    </button>
+  </nav>
+  <div class="tab-bar" id="tabBar" role="tablist" aria-label="Open documents"></div>
+  <div class="app-actions">
+    <details class="settings-menu" id="settingsMenu">
+      <summary id="settingsSummary" class="icon-button" data-i18n-aria-label="settings.heading" data-i18n-title="settings.heading" aria-label="Settings" title="Settings">
+        {{SETTINGS_ICON_SVG}}
+      </summary>
+      <div class="settings-panel" role="group" aria-labelledby="settingsSummary">
+        <label class="setting-control" for="themeMode">
+          <span class="setting-label" data-i18n="settings.theme.label">Theme</span>
+          <select id="themeMode" aria-label="Theme" aria-describedby="themeModeHelp">
+            <option value="system" data-i18n="settings.theme.system">System</option>
+            <option value="light" data-i18n="settings.theme.light">Light</option>
+            <option value="dark" data-i18n="settings.theme.dark">Dark</option>
+            <option value="dracula" data-i18n="settings.theme.dracula">Dracula</option>
+          </select>
+          <span class="setting-help" id="themeModeHelp" data-i18n="settings.theme.help">System follows device preference.</span>
+        </label>
+        <label class="setting-control setting-control-inline" for="minimapEnabled">
+          <input type="checkbox" id="minimapEnabled" aria-label="Show document minimap" aria-describedby="minimapEnabledHelp">
+          <span class="setting-label" data-i18n="settings.minimap.label">Show minimap</span>
+          <span class="setting-help" id="minimapEnabledHelp" data-i18n="settings.minimap.help">Show a scrollable document overview on wider windows.</span>
+        </label>
+        <label class="setting-control setting-control-inline" for="pagerEnabled">
+          <input type="checkbox" id="pagerEnabled" aria-label="Show next and previous links" aria-describedby="pagerEnabledHelp">
+          <span class="setting-label">Show next/previous</span>
+          <span class="setting-help" id="pagerEnabledHelp">Add Previous and Next links at the bottom of each document, ordered by the folder tree.</span>
+        </label>
+        <label class="setting-control setting-control-inline" for="speedReaderEnabled">
+          <input type="checkbox" id="speedReaderEnabled" aria-label="Speed Reader" aria-describedby="speedReaderEnabledHelp">
+          <span class="setting-label" data-i18n="settings.speedReader.label">Speed Reader</span>
+          <span class="setting-help" id="speedReaderEnabledHelp" data-i18n="settings.speedReader.help">Make prose quieter and add bold lead anchors for faster scanning.</span>
+        </label>
+        <label class="setting-control setting-control-inline" for="indexingEnabled">
+          <input type="checkbox" id="indexingEnabled" aria-describedby="indexingEnabledHelp">
+          <span class="setting-label" data-i18n="settings.indexing.label">Index entire device</span>
+          <span class="setting-help" id="indexingEnabledHelp" data-i18n="settings.indexing.help">Crawl this device for Markdown files and rescan each time you open the app.</span>
+        </label>
+      </div>
+    </details>
+    <button type="button" id="openButton" class="icon-button open-button" data-i18n-aria-label="actions.open" data-i18n-title="actions.open.title" aria-label="Open" title="Open Markdown file">{{OPEN_ICON_SVG}}</button>
+  </div>
+</header>
+<div id="libraryShell" class="library-shell">
+<aside id="libraryPane" class="library-pane">
+  <div class="library-scroll">
+    <div id="librarySearchResults" class="library-results" hidden></div>
+    <div id="libraryTree" class="library-tree"></div>
+    <div id="libraryScanProgress" class="library-progress" aria-live="polite" hidden></div>
+  </div>
+  <div class="library-header">
+    <div class="library-view-select" id="libraryViewSelect">
+      <button type="button" id="libraryViewToggle" data-i18n-title="library.view.toggle" title="Switch library view" aria-haspopup="listbox" aria-expanded="false">
+        <span id="libraryViewLabel">All files</span>
+        <span class="library-view-caret" aria-hidden="true">▾</span>
+      </button>
+      <ul id="libraryViewMenu" class="library-view-menu" role="listbox" hidden></ul>
+    </div>
+    <input id="librarySearch" class="library-search" type="search" autocomplete="off" spellcheck="false" data-i18n-placeholder="library.search.placeholder" placeholder="Search files...">
+  </div>
+  <div id="libraryDivider" class="library-divider" data-i18n-title="library.divider.resize" title="Resize library" role="separator" aria-orientation="vertical"></div>
+</aside>
+<main id="app" class="reader-shell"></main>
+<button type="button" id="libraryOpen" class="library-open" data-i18n-title="library.open" data-i18n-aria-label="library.open" title="Open library" aria-label="Open library">{{OPEN_LIBRARY_ICON_SVG}}</button>
+</div>
+<div id="glossaryBackdrop" class="glossary-backdrop" hidden></div>
+<aside id="glossarySheet" class="glossary-sheet" role="dialog" aria-modal="true" aria-label="Glossary" hidden>
+  <div class="glossary-sheet-grip"></div>
+  <button type="button" id="glossarySheetClose" class="glossary-sheet-close" aria-label="Close glossary"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
+  <div id="glossarySheetBody" class="glossary-sheet-body document-body"></div>
+  <div class="glossary-sheet-footer"><button type="button" id="glossaryFullLink" class="glossary-sheet-fulllink">Open the full glossary</button></div>
+</aside>
+<script>
+{{APP_SCRIPT}}
+</script>
+</body>
+</html>
