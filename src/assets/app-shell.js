@@ -2915,16 +2915,33 @@ function updateMinimapViewport() {
   minimap.style.setProperty('--minimap-viewport-height', `${boundedViewportHeight}px`);
   minimap.style.setProperty('--minimap-preview-top', `${previewTop}px`);
 }
+// The scroll listener must stay cheap: scroll fires many times per frame, so any
+// forced layout here stutters the whole page. clampReaderScrollPosition() and
+// captureReaderScrollAnchor() both read live geometry (getBoundingClientRect), which
+// forces a synchronous reflow — running them on every event is what made desktop
+// scrolling judder where the web reader (a passive, rAF-only listener — see
+// site/minimap.js) stays smooth. So mark the listener passive and coalesce that work
+// into one rAF per frame. scheduleMinimapViewportUpdate() is itself only a flag check
+// plus a rAF schedule, so it is safe to call on the event. The scroll anchor is only
+// consumed asynchronously (reflow re-pin, re-render, and navigation which recaptures
+// it fresh), so updating it a frame late costs nothing.
+let readerScrollFrame = 0;
 app.addEventListener('scroll', () => {
-  clampReaderScrollPosition();
-  readerScrollAnchor = captureReaderScrollAnchor();
   // While dragging the minimap, the box is pinned to the cursor (see
   // dragMinimapViewportToPointer); don't let the drag-induced scroll recompute it from
   // the still-settling reader geometry and flicker it. endDrag settles it on release.
   if (!minimapDragging) {
     scheduleMinimapViewportUpdate();
   }
-});
+  if (readerScrollFrame) {
+    return;
+  }
+  readerScrollFrame = window.requestAnimationFrame(() => {
+    readerScrollFrame = 0;
+    clampReaderScrollPosition();
+    readerScrollAnchor = captureReaderScrollAnchor();
+  });
+}, { passive: true });
 window.addEventListener('resize', () => {
   scheduleReaderLayoutUpdate();
   scheduleMinimapViewportUpdate();
