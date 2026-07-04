@@ -1718,18 +1718,14 @@ body.library-resizing {
 :root[data-locale="zh-CN"] .document-body {
   line-height: var(--type-body-line);
 }
-/* Windowing, the PDF-viewer way: let the engine skip layout and paint for the
-   tens of thousands of entries that are off-screen in a large document, instead
-   of laying the whole tree out at once and repainting it on every scroll. Each
-   block keeps its real measured size once seen (the `auto` keyword remembers
-   it), so the total scroll height — and therefore the scrollbar and the minimap
-   viewport box — converge to exact as the reader moves through the document. The
-   full DOM stays intact, so find, #anchor jumps, the outline, and Back/Forward
-   all keep working untouched. */
-.document-body > * {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 48px;
-}
+/* The reader lays the whole document out up front, exactly like the web reader
+   (site/), which is what keeps scrolling smooth. An earlier attempt let the
+   engine skip layout and paint for off-screen blocks in big files, but it
+   backfired: blocks laid out just-in-time flashed blank while scrolling, the
+   total height was a running per-block estimate that made the minimap viewport
+   box jump and re-correct, and every scroll re-evaluated it. Full up-front layout
+   costs more on open but scrolls the way the web does, and the same Chromium
+   engine handles it there without trouble. */
 .docs-pager {
   display: flex;
   justify-content: space-between;
@@ -1913,15 +1909,6 @@ body.library-resizing {
   border: 1px solid var(--preview-border);
   border-radius: 6px;
   background: var(--code-block-background);
-  /* Exempt from the .document-body > * content-visibility rule. This block is a
-     direct child, so it would otherwise be size-estimated when off-screen: the
-     estimate swings wildly between the closed ~48px stub and the fully expanded
-     list, which destabilizes the scroll height above the body content and can
-     leave the box stuck at its expanded size when toggled closed. Its entries
-     are plain list items (not direct children), so they never had the
-     optimization anyway — forcing full layout here costs nothing extra. */
-  content-visibility: visible;
-  contain-intrinsic-size: auto;
 }
 .document-body .document-outline-summary {
   cursor: pointer;
@@ -2323,8 +2310,7 @@ body.library-resizing {
    keyboard-focused. */
 /* The permalink sits in a gutter carved from the block's own left padding
    (pulled back out with a matching negative margin so the text column does not
-   move). Keeping it inside the block's box is what lets `content-visibility`
-   apply paint containment to entries without clipping the button. */
+   move), so it stays inside the block's box rather than floating in the margin. */
 .document-body .has-anchor-link {
   position: relative;
   padding-left: 40px;
@@ -2703,15 +2689,11 @@ body.library-resizing {
   transform-origin: 0 0;
   pointer-events: none;
 }
-/* The reader keeps content-visibility for fast scrolling of a big document, but
-   the clone must NOT: with content-visibility its off-screen blocks would collapse
-   to their 48px estimate, so the thumbnail would be a sparse sliver and the box
-   would drift. Force the clone (and everything in it) to lay out in full. */
+/* The clone is inert: it is a decorative thumbnail, so nothing inside it should
+   capture pointer events (clicks belong to the rail, which handles jump/drag). */
 .document-minimap-preview,
 .document-minimap-preview * {
   pointer-events: none !important;
-  content-visibility: visible !important;
-  contain-intrinsic-size: auto !important;
 }
 /* The clone carries the .document-body class, so its links pick up the generic
    accent link colour. Glossary terms are blended into the body text on the page

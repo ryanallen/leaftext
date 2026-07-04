@@ -3088,16 +3088,12 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
             css.contains(".document-minimap-content {\n  position: absolute;\n  top: var(--minimap-preview-top, 0px);\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
             "the minimap thumbnail lane fills the rail inside the exact 8px padding on both edges"
         );
-    // The reader keeps content-visibility for fast large-file scrolling, but the
-    // clone is exempted so it renders real text at full height (not 48px stubs).
+    // The reader renders the whole document up front like the web reader, so it
+    // must NOT use content-visibility: that made blocks flash blank while
+    // scrolling and the scroll-height estimate made the minimap box jump.
     assert!(
-            css.contains(".document-body > * {\n  content-visibility: auto;\n  contain-intrinsic-size: auto 48px;\n}"),
-            "the reader keeps content-visibility for fast large-file open and scroll"
-        );
-    assert!(
-        css.contains(".document-minimap-preview,\n.document-minimap-preview * {")
-            && css.contains("content-visibility: visible !important;"),
-        "the cloned thumbnail must be exempt from content-visibility so it renders in full"
+        !css.contains("content-visibility: auto"),
+        "the reader must render in full (no content-visibility) so scrolling matches the web"
     );
     assert!(
             css.contains("margin-right: calc(-1 * (var(--reader-layout-padding-inline) + var(--minimap-width)));"),
@@ -5287,10 +5283,10 @@ fn anchor_addressable_blocks_get_a_permalink_button() {
     assert!(html
         .contains("if (target.tagName !== 'BLOCKQUOTE' && target.closest('blockquote')) return;"));
 
-    // Off-screen entries skip layout and paint via content-visibility so a huge
-    // document renders like a PDF's visible pages, and each block keeps its real
-    // size once seen so the scroll height converges.
-    assert!(html.contains(".document-body > * {\n  content-visibility: auto;\n  contain-intrinsic-size: auto 48px;\n}"));
+    // The reader renders the whole document up front like the web reader — no
+    // content-visibility, whose off-screen size estimates made scrolling flash
+    // blank and the minimap viewport box jump.
+    assert!(!html.contains("content-visibility: auto"));
 
     // Only the innermost hovered/focused block reveals its button. Without the
     // :not(:has(...)) guard, hovering a nested block would also light up every

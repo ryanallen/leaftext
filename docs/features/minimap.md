@@ -18,7 +18,7 @@ The clone is rebuilt only when it needs to be — when the document's content ch
 plus the thumbnail's `top` offset for the slide. A `requestAnimationFrame`-throttled loop writes those on scroll, so the rail stays fluid without blocking the main thread. The indicator's height and travel come from the reader's real scroll range and the clone's own measured height, so click-to-scroll and the indicator stay aligned with the thumbnail on documents of any length.
 
 > [!NOTE]
-> The reading view uses `content-visibility` to open and scroll large files quickly by skipping the layout of off-screen blocks. The thumbnail clone is deliberately exempt from that — it lays out in full so the rail shows real text at the right height. Showing real text means the document is laid out a second time, scaled down, for the rail. For a very large document that costs extra memory and a background layout pass when the clone is (re)built, but it is never on the scroll path. It is the deliberate trade for a legible, honest thumbnail.
+> The thumbnail is a second, scaled-down layout of the whole document, built for the rail so it can show real text at the right height. For a very large document that costs extra memory and a background layout pass when the thumbnail is (re)built, but it is never on the scroll path. It is the deliberate trade for a legible, honest thumbnail.
 
 ## Whether the rail appears
 
