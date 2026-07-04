@@ -2407,15 +2407,25 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "let readerLayoutFrame = 0;",
         "let readerScrollAnchor = null;",
         "function bindDocumentMinimapPreview(track) {",
-        "minimapBodyObserver = new MutationObserver(scheduleMinimapPreviewUpdate);",
+        // Content changes bump the version so the clone is rebuilt; geometry-only
+        // triggers (resize) skip the rebuild unless a width changed.
+        "minimapBodyObserver = new MutationObserver(invalidateMinimapPreview);",
         "minimapResizeObserver = new ResizeObserver(() => {",
         "minimapResizeObserver.observe(track);",
-        "image.addEventListener('load', scheduleMinimapPreviewUpdate, { once: true });",
+        "image.addEventListener('load', invalidateMinimapPreview, { once: true });",
+        "function invalidateMinimapPreview() {",
+        "minimapContentVersion += 1;",
         "function disconnectMinimapPreviewObservers() {",
         "window.cancelAnimationFrame(minimapPreviewFrame);",
         "function scheduleMinimapPreviewUpdate() {",
         "minimapPreviewFrame = window.requestAnimationFrame(() => {",
         "function updateDocumentMinimapPreview() {",
+        // The whole-document clone is skipped when nothing that shapes the
+        // thumbnail changed (same content version, wrap width, and rail width),
+        // so a height-only resize no longer rebuilds the entire document.
+        "minimapBuiltVersion === minimapContentVersion &&",
+        "minimapBuiltSourceWidth === metrics.sourceWidth &&",
+        "minimapBuiltPreviewWidth === previewWidth",
         "const preview = source.cloneNode(true);",
         "preview.classList.add('document-minimap-preview');",
         "preview.style.transform = `scale(${previewScale})`;",

@@ -1169,6 +1169,17 @@ applyPaneLayout();
 send({ command: 'getFileTree' });
 let minimapViewportFrame = 0;
 let minimapPreviewFrame = 0;
+// Rebuilding the thumbnail means cloning the whole (possibly huge) document, so
+// only do it when something that changes the thumbnail actually moved: the
+// document content, its wrap width, or the rail width. minimapContentVersion is
+// bumped whenever the document mutates; the minimapBuilt* values record what the
+// last-built clone was for. A resize that only changed height, or any redundant
+// trigger, matches all three and reuses the existing clone. See
+// updateDocumentMinimapPreview.
+let minimapContentVersion = 0;
+let minimapBuiltVersion = -1;
+let minimapBuiltSourceWidth = -1;
+let minimapBuiltPreviewWidth = -1;
 // Unscaled offsetTop of each READER_ANCHOR_SELECTOR block in the fully-laid-out
 // clone, in document order (parallel to readerAnchorBlocks). This is the ground
 // truth the viewport box reads its scroll position from: the reader's own
@@ -1815,12 +1826,24 @@ if (canHoverLinks) {
   window.addEventListener('blur', hideLinkHoverTip);
   app.addEventListener('scroll', hideLinkHoverTip, true);
 }
+// The parsed glossary document, kept between calls. Parsing the fully rendered
+// glossary into a DOM just to lift out one entry is the dominant cost of opening
+// the sheet — the glossary is often multiple megabytes — and the file is the
+// same for every term you look up. Cache the parsed tree keyed by the exact html
+// the host sent, so repeat lookups reuse it; a different or edited glossary sends
+// different html and reparses once. extractGlossaryEntry only reads + clones from
+// the tree, so sharing it across calls is safe.
+let glossaryParsedHtml = null;
+let glossaryParsedRoot = null;
 // Called by the host with the fully rendered glossary document; pull out the
 // requested entry and slide the sheet up.
 window.leafShowGlossary = (html, anchor) => {
-  const root = document.createElement('div');
-  root.innerHTML = html;
-  const entry = extractGlossaryEntry(root, anchor);
+  if (html !== glossaryParsedHtml) {
+    glossaryParsedRoot = document.createElement('div');
+    glossaryParsedRoot.innerHTML = html;
+    glossaryParsedHtml = html;
+  }
+  const entry = extractGlossaryEntry(glossaryParsedRoot, anchor);
   glossarySheetBody.innerHTML = '';
   if (entry) {
     glossarySheetBody.appendChild(entry);
@@ -2409,7 +2432,7 @@ function bindDocumentMinimapPreview(track) {
   if (!source) {
     return;
   }
-  minimapBodyObserver = new MutationObserver(scheduleMinimapPreviewUpdate);
+  minimapBodyObserver = new MutationObserver(invalidateMinimapPreview);
   minimapBodyObserver.observe(source, {
     childList: true,
     characterData: true,
@@ -2429,8 +2452,8 @@ function bindDocumentMinimapPreview(track) {
     if (image.complete) {
       return;
     }
-    image.addEventListener('load', scheduleMinimapPreviewUpdate, { once: true });
-    image.addEventListener('error', scheduleMinimapPreviewUpdate, { once: true });
+    image.addEventListener('load', invalidateMinimapPreview, { once: true });
+    image.addEventListener('error', invalidateMinimapPreview, { once: true });
   });
   scheduleMinimapPreviewUpdate();
 }
@@ -2447,6 +2470,11 @@ function disconnectMinimapPreviewObservers() {
     window.cancelAnimationFrame(minimapPreviewFrame);
     minimapPreviewFrame = 0;
   }
+  // A different document is coming: force the next update to rebuild the clone
+  // rather than match the previous document's cached width/version by chance.
+  minimapBuiltVersion = -1;
+  minimapBuiltSourceWidth = -1;
+  minimapBuiltPreviewWidth = -1;
 }
 function measureDocumentContent(source) {
   if (!source) {
@@ -2714,6 +2742,14 @@ function scheduleMinimapPreviewUpdate() {
     updateDocumentMinimapPreview();
   });
 }
+// The document content changed (a mutation, an image finishing decode): the
+// cached clone is stale, so mark it for a rebuild and schedule one. Geometry-only
+// triggers (resize) call scheduleMinimapPreviewUpdate directly and let the
+// width check in updateDocumentMinimapPreview decide whether a rebuild is needed.
+function invalidateMinimapPreview() {
+  minimapContentVersion += 1;
+  scheduleMinimapPreviewUpdate();
+}
 // Build the thumbnail: clone the rendered document, strip ids/links (so nothing is
 // focusable or duplicated for assistive tech), and shrink it to the rail width with
 // a CSS transform. The clone is exempt from content-visibility (see the CSS), so it
@@ -2732,6 +2768,21 @@ function updateDocumentMinimapPreview() {
   const contentRect = content.getBoundingClientRect();
   const previewWidth = Math.max(1, Math.ceil(contentRect.width));
   const previewScale = previewWidth / metrics.sourceWidth;
+  // Skip the clone when nothing that shapes the thumbnail changed: same content
+  // (version), same wrap width (sourceWidth governs how the clone's text wraps),
+  // and same rail width (previewWidth governs the scale). This is the common
+  // resize — a height-only change, or a width change within the capped reading
+  // column — and any redundant trigger. Just reposition the box off the existing
+  // clone; the whole-document cloneNode below is what made resize feel like a reload.
+  if (
+    content.querySelector('.document-minimap-preview') &&
+    minimapBuiltVersion === minimapContentVersion &&
+    minimapBuiltSourceWidth === metrics.sourceWidth &&
+    minimapBuiltPreviewWidth === previewWidth
+  ) {
+    updateMinimapViewport();
+    return;
+  }
   const preview = source.cloneNode(true);
   preview.removeAttribute('id');
   preview.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
@@ -2765,6 +2816,9 @@ function updateDocumentMinimapPreview() {
   for (let i = 0; i < cloneBlocks.length; i++) {
     minimapCloneOffsets[i] = cloneBlocks[i].offsetTop;
   }
+  minimapBuiltVersion = minimapContentVersion;
+  minimapBuiltSourceWidth = metrics.sourceWidth;
+  minimapBuiltPreviewWidth = previewWidth;
   updateMinimapViewport();
 }
 function scheduleMinimapViewportUpdate() {

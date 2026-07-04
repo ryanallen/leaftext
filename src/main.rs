@@ -1895,17 +1895,56 @@ fn show_glossary_entry(webview: Option<&WebView>, href: &str, current_path: &Pat
             fragment_from_href(href).unwrap_or_default(),
         )
     };
-    let markdown = match fs::read_to_string(&path) {
-        Ok(markdown) => markdown,
-        Err(error) => {
-            eprintln!("Failed to read glossary {}: {error}", path.display());
-            return;
+    // A glossary is browsed term after term from the same (often multi-megabyte)
+    // file, and rendering it from scratch on every click froze the reader. Reuse
+    // the last render when the same file is looked up again and has not changed on
+    // disk; the modified-time check reloads it after an edit.
+    let modified = fs::metadata(&path).and_then(|meta| meta.modified()).ok();
+    let cached = GLOSSARY_RENDER_CACHE.with(|cache| {
+        cache
+            .borrow()
+            .as_ref()
+            .filter(|entry| entry.path == path && entry.modified == modified)
+            .map(|entry| entry.html.clone())
+    });
+    let html = match cached {
+        Some(html) => html,
+        None => {
+            let markdown = match fs::read_to_string(&path) {
+                Ok(markdown) => markdown,
+                Err(error) => {
+                    eprintln!("Failed to read glossary {}: {error}", path.display());
+                    return;
+                }
+            };
+            let html = render_markdown_document(&markdown, &path).html;
+            GLOSSARY_RENDER_CACHE.with(|cache| {
+                *cache.borrow_mut() = Some(GlossaryRender {
+                    path: path.clone(),
+                    modified,
+                    html: html.clone(),
+                });
+            });
+            html
         }
     };
-    let rendered = render_markdown_document(&markdown, &path);
-    if let Err(error) = webview.evaluate_script(&glossary_sheet_script(&rendered.html, &anchor)) {
+    if let Err(error) = webview.evaluate_script(&glossary_sheet_script(&html, &anchor)) {
         eprintln!("Failed to show glossary entry: {error}");
     }
+}
+
+// The last rendered glossary, reused across term lookups of the same unchanged
+// file so opening the sheet does not re-render the whole (large) document each
+// time. Keyed by path + modified time; a newer mtime forces a fresh render.
+struct GlossaryRender {
+    path: PathBuf,
+    modified: Option<std::time::SystemTime>,
+    html: String,
+}
+
+thread_local! {
+    static GLOSSARY_RENDER_CACHE: std::cell::RefCell<Option<GlossaryRender>> =
+        std::cell::RefCell::new(None);
 }
 
 fn restore_scroll_anchor(webview: Option<&WebView>, anchor: &ScrollAnchor) {
