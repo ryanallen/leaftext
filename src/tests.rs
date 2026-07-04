@@ -3078,13 +3078,12 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
             css.contains(".document-minimap-content {\n  position: absolute;\n  top: var(--minimap-preview-top, 0px);\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
             "the minimap thumbnail lane fills the rail inside the exact 8px padding on both edges"
         );
-    // The reader lays the whole document out up front (web-like) so its geometry is
-    // exact from the first frame; the content-visibility windowing rule is gone, its
-    // one-time layout cost covered by the progressive-load progress bar instead.
+    // The reader keeps content-visibility for fast large-file scrolling, but the
+    // clone is exempted so it renders real text at full height (not 48px stubs).
     assert!(
-        !css.contains(".document-body > * {\n  content-visibility: auto;"),
-        "the reader must not window blocks with content-visibility; it renders in full"
-    );
+            css.contains(".document-body > * {\n  content-visibility: auto;\n  contain-intrinsic-size: auto 48px;\n}"),
+            "the reader keeps content-visibility for fast large-file open and scroll"
+        );
     assert!(
         css.contains(".document-minimap-preview,\n.document-minimap-preview * {")
             && css.contains("content-visibility: visible !important;"),
@@ -5278,10 +5277,10 @@ fn anchor_addressable_blocks_get_a_permalink_button() {
     assert!(html
         .contains("if (target.tagName !== 'BLOCKQUOTE' && target.closest('blockquote')) return;"));
 
-    // The reader renders the whole document up front (web-like), so there is no
-    // content-visibility windowing rule; a large document is inserted progressively
-    // behind a determinate progress bar instead.
-    assert!(!html.contains(".document-body > * {\n  content-visibility: auto;"));
+    // Off-screen entries skip layout and paint via content-visibility so a huge
+    // document renders like a PDF's visible pages, and each block keeps its real
+    // size once seen so the scroll height converges.
+    assert!(html.contains(".document-body > * {\n  content-visibility: auto;\n  contain-intrinsic-size: auto 48px;\n}"));
 
     // Only the innermost hovered/focused block reveals its button. Without the
     // :not(:has(...)) guard, hovering a nested block would also light up every

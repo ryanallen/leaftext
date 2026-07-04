@@ -15,10 +15,10 @@ The clone is rebuilt only when it needs to be — when the document's content ch
 - `--minimap-viewport-top` — positions the viewport indicator within the rail
 - `--minimap-viewport-height` — sizes the indicator proportionally to the reader window
 
-plus the thumbnail's `top` offset for the slide. A `requestAnimationFrame`-throttled loop writes those on scroll, so the rail stays fluid without blocking the main thread. The indicator's position is read from the true position of the block at the top of the reading view, measured against the clone's own full height, so it points at the text you are actually on — the same whether you scrolled there, jumped from a link, or used find. Its height is sized to the reader window. Dragging the indicator pins it to the cursor and settles onto the exact reading position when you let go.
+plus the thumbnail's `top` offset for the slide. A `requestAnimationFrame`-throttled loop writes those on scroll, so the rail stays fluid without blocking the main thread. The indicator's height and travel come from the reader's real scroll range and the clone's own measured height, so click-to-scroll and the indicator stay aligned with the thumbnail on documents of any length.
 
 > [!NOTE]
-> The reading view lays the whole document out up front, the way a web page does, so the scroll range and the viewport indicator are exact from the first frame. A large document is inserted block by block behind a [determinate progress bar](navigation.md#loading-a-large-document) so its one-time layout is visible and never looks stalled. The thumbnail is a second, scaled layout of the same document for the rail: for a very large document that costs extra memory and a background layout pass when the clone is (re)built, but it is never on the scroll path. It is the deliberate trade for a legible, honest thumbnail.
+> The reading view uses `content-visibility` to open and scroll large files quickly by skipping the layout of off-screen blocks. The thumbnail clone is deliberately exempt from that — it lays out in full so the rail shows real text at the right height. Showing real text means the document is laid out a second time, scaled down, for the rail. For a very large document that costs extra memory and a background layout pass when the clone is (re)built, but it is never on the scroll path. It is the deliberate trade for a legible, honest thumbnail.
 
 ## Whether the rail appears
 

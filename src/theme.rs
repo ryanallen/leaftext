@@ -1663,50 +1663,6 @@ body.library-resizing {
 .reader-shell.has-document:has(.document-minimap) {
   background: var(--preview-background);
 }
-/* Determinate progress bar shown while a large document is inserted block by block
-   (see renderDocumentProgressively). Fixed to the reader viewport, centered, so the
-   user sees the load advancing and that it is not stalled. */
-.reader-loading {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: min(340px, 70vw);
-  padding: 18px 20px;
-  border: 1px solid var(--preview-border);
-  border-radius: 10px;
-  background: var(--app-surface-elevated, var(--preview-background));
-  box-shadow: var(--shadow);
-  color: var(--preview-foreground);
-  font: 600 13px/1.4 var(--app-font);
-}
-.reader-loading-label {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--app-muted-foreground);
-}
-.reader-loading-percent {
-  color: var(--preview-foreground);
-  font-variant-numeric: tabular-nums;
-}
-.reader-loading-track {
-  height: 6px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  overflow: hidden;
-}
-.reader-loading-fill {
-  height: 100%;
-  width: 0;
-  border-radius: inherit;
-  background: var(--accent);
-  transition: width 90ms linear;
-}
 .reader-layout {
   --reader-layout-padding-inline: var(--reader-content-pad);
   container-type: inline-size;
@@ -1762,11 +1718,18 @@ body.library-resizing {
 :root[data-locale="zh-CN"] .document-body {
   line-height: var(--type-body-line);
 }
-/* The reader lays the whole document out up front, the way a web page does, so
-   the scroll height, the scrollbar, and the minimap are exact from the first
-   frame (no content-visibility estimate to converge). Large documents are inserted
-   progressively behind a determinate progress bar (see renderDocumentProgressively
-   in the shell) so the one-time layout cost is visible and never looks stalled. */
+/* Windowing, the PDF-viewer way: let the engine skip layout and paint for the
+   tens of thousands of entries that are off-screen in a large document, instead
+   of laying the whole tree out at once and repainting it on every scroll. Each
+   block keeps its real measured size once seen (the `auto` keyword remembers
+   it), so the total scroll height — and therefore the scrollbar and the minimap
+   viewport box — converge to exact as the reader moves through the document. The
+   full DOM stays intact, so find, #anchor jumps, the outline, and Back/Forward
+   all keep working untouched. */
+.document-body > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 48px;
+}
 .docs-pager {
   display: flex;
   justify-content: space-between;
@@ -1950,6 +1913,15 @@ body.library-resizing {
   border: 1px solid var(--preview-border);
   border-radius: 6px;
   background: var(--code-block-background);
+  /* Exempt from the .document-body > * content-visibility rule. This block is a
+     direct child, so it would otherwise be size-estimated when off-screen: the
+     estimate swings wildly between the closed ~48px stub and the fully expanded
+     list, which destabilizes the scroll height above the body content and can
+     leave the box stuck at its expanded size when toggled closed. Its entries
+     are plain list items (not direct children), so they never had the
+     optimization anyway — forcing full layout here costs nothing extra. */
+  content-visibility: visible;
+  contain-intrinsic-size: auto;
 }
 .document-body .document-outline-summary {
   cursor: pointer;
@@ -2731,10 +2703,10 @@ body.library-resizing {
   transform-origin: 0 0;
   pointer-events: none;
 }
-/* Force the clone (and everything in it) to lay out in full. The reader no longer
-   windows blocks, but this is a cheap belt-and-braces guard so the thumbnail is
-   always a faithful full-height render regardless of any future block-level
-   content-visibility, keeping the viewport box aligned. */
+/* The reader keeps content-visibility for fast scrolling of a big document, but
+   the clone must NOT: with content-visibility its off-screen blocks would collapse
+   to their 48px estimate, so the thumbnail would be a sparse sliver and the box
+   would drift. Force the clone (and everything in it) to lay out in full. */
 .document-minimap-preview,
 .document-minimap-preview * {
   pointer-events: none !important;

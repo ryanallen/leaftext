@@ -1511,7 +1511,27 @@ function renderState() {
   if (state.document) {
     document.title = window.leafLocale.t('titles.document', { title: state.document.title });
     app.className = 'reader-shell has-document';
-    applyDocumentMarkup(state);
+    const minimapHtml = renderDocumentMinimap(state.document.minimap);
+    const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';
+    app.innerHTML = `<div class="${layoutClass}">${state.document.html}${minimapHtml}</div>`;
+    decorateBlockquoteLines();
+    buildDocumentOutline();
+    decorateAnchorLinks();
+    bindDocumentLinks();
+    requestDocumentPager(state.document.path || activeDocumentPath());
+    bindDocumentMinimap();
+    renderMermaidDiagrams();
+    renderMathElements();
+    decorateCodeBlocks();
+    applySpeedReaderToDocument();
+    observeReaderReflow();
+    scheduleMinimapPreviewUpdate();
+    if (resetReaderScrollOnNextRender) {
+      resetReaderScrollOnNextRender = false;
+      resetReaderScrollToContentStart();
+    } else {
+      updateMinimapViewport();
+    }
     return;
   }
   resetReaderScrollOnNextRender = false;
@@ -1530,123 +1550,6 @@ function renderState() {
   app.querySelectorAll('[data-path]').forEach((button) => {
     button.addEventListener('click', () => send({ command: 'openRecent', path: button.dataset.path }));
   });
-}
-// Below this many top-level blocks a document is inserted in one shot (instant, no
-// progress bar). Above it, blocks stream in a batch per frame so the one-time layout
-// cost of a large web-like render is visible and interruptible.
-const PROGRESSIVE_BLOCK_THRESHOLD = 900;
-const PROGRESSIVE_BATCH = 120;
-// Bumped on every document render so an in-flight progressive insert abandons itself
-// when a newer render (navigation, live reload) supersedes it.
-let documentRenderToken = 0;
-// Put the document markup on screen. Small documents go through the original one-shot
-// innerHTML path. Large ones are parsed once (cheap) and their blocks streamed in
-// across frames behind a determinate progress bar (see the .reader-loading CSS), so a
-// big file lays out fully — like a web page — without freezing or looking stalled.
-function applyDocumentMarkup(state) {
-  documentRenderToken += 1;
-  const token = documentRenderToken;
-  const minimapHtml = renderDocumentMinimap(state.document.minimap);
-  const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';
-  const template = document.createElement('template');
-  template.innerHTML = state.document.html;
-  const bodyEl = template.content.querySelector('.document-body');
-  const blockCount = bodyEl ? bodyEl.childElementCount : 0;
-  if (!bodyEl || blockCount <= PROGRESSIVE_BLOCK_THRESHOLD) {
-    app.innerHTML = `<div class="${layoutClass}">${state.document.html}${minimapHtml}</div>`;
-    finishDocumentRender(state);
-    return;
-  }
-  const blocks = Array.from(bodyEl.childNodes);
-  bodyEl.replaceChildren();
-  const layout = document.createElement('div');
-  layout.className = layoutClass;
-  layout.append(...template.content.childNodes);
-  if (minimapHtml) {
-    const minimapTemplate = document.createElement('template');
-    minimapTemplate.innerHTML = minimapHtml;
-    layout.append(...minimapTemplate.content.childNodes);
-  }
-  const loading = buildReaderLoadingBar();
-  app.replaceChildren(layout, loading);
-  const total = blocks.length;
-  let inserted = 0;
-  const pump = () => {
-    if (token !== documentRenderToken) {
-      return;
-    }
-    const fragment = document.createDocumentFragment();
-    const end = Math.min(total, inserted + PROGRESSIVE_BATCH);
-    for (; inserted < end; inserted++) {
-      fragment.appendChild(blocks[inserted]);
-    }
-    bodyEl.appendChild(fragment);
-    setReaderLoadingProgress(loading, total === 0 ? 1 : inserted / total);
-    if (inserted < total) {
-      window.requestAnimationFrame(pump);
-    } else {
-      loading.remove();
-      finishDocumentRender(state);
-    }
-  };
-  window.requestAnimationFrame(pump);
-}
-// The post-insertion pipeline: decorate, wire links, kick off the pager, and bring the
-// minimap up. Shared by the one-shot and progressive paths so both end identically.
-function finishDocumentRender(state) {
-  decorateBlockquoteLines();
-  buildDocumentOutline();
-  decorateAnchorLinks();
-  bindDocumentLinks();
-  requestDocumentPager(state.document.path || activeDocumentPath());
-  bindDocumentMinimap();
-  renderMermaidDiagrams();
-  renderMathElements();
-  decorateCodeBlocks();
-  applySpeedReaderToDocument();
-  observeReaderReflow();
-  scheduleMinimapPreviewUpdate();
-  if (resetReaderScrollOnNextRender) {
-    resetReaderScrollOnNextRender = false;
-    resetReaderScrollToContentStart();
-  } else {
-    updateMinimapViewport();
-  }
-}
-function buildReaderLoadingBar() {
-  const el = document.createElement('div');
-  el.className = 'reader-loading';
-  el.setAttribute('role', 'progressbar');
-  el.setAttribute('aria-valuemin', '0');
-  el.setAttribute('aria-valuemax', '100');
-  el.setAttribute('aria-valuenow', '0');
-  const labelRow = document.createElement('div');
-  labelRow.className = 'reader-loading-label';
-  const text = document.createElement('span');
-  text.textContent = window.leafLocale.t('reader.loading');
-  const percent = document.createElement('span');
-  percent.className = 'reader-loading-percent';
-  percent.textContent = '0%';
-  labelRow.append(text, percent);
-  const track = document.createElement('div');
-  track.className = 'reader-loading-track';
-  const fill = document.createElement('div');
-  fill.className = 'reader-loading-fill';
-  track.appendChild(fill);
-  el.append(labelRow, track);
-  return el;
-}
-function setReaderLoadingProgress(el, ratio) {
-  const pct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
-  el.setAttribute('aria-valuenow', String(pct));
-  const fill = el.querySelector('.reader-loading-fill');
-  if (fill) {
-    fill.style.width = `${pct}%`;
-  }
-  const percent = el.querySelector('.reader-loading-percent');
-  if (percent) {
-    percent.textContent = `${pct}%`;
-  }
 }
 function renderNavigation() {
   backButton.disabled = !navigationState.canGoBack;

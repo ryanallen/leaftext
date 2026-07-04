@@ -21,7 +21,6 @@
 // ---------------------------------------------------------------------------
 
 import { renderMarkdown } from '../site/markdown.js';
-import { applyDocumentHtml } from '../site/progressive-render.js';
 import { initMinimap } from '../site/minimap.js';
 import { highlightCode, decorateCodeBlocks } from '../site/codeblocks.js';
 import { decorateAnchorLinks } from '../site/anchors.js';
@@ -487,40 +486,36 @@ async function render(route, anchor) {
     if (!res.ok) throw new Error('HTTP ' + res.status + ' fetching ' + file);
     const markdown = await res.text();
 
-    // Put the page on screen. A large page (e.g. the full glossary) streams in
-    // behind a determinate progress bar (see progressive-render.js); everything
-    // that depends on the finished DOM runs once it is fully inserted.
-    applyDocumentHtml(contentEl, renderMarkdown(markdown), () => {
-      // An in-page outline (table of contents) from this page's headings, tucked
-      // just under the title — distinct from the left nav sidebar, which lists
-      // pages, not the sections within a page. Built before the anchor pass so its
-      // link-only entries stay out of the block-numbering scheme.
-      buildOutline(contentEl, { label: 'Outline' });
-      statusEl.hidden = true;
-      displayedRoute = route;
+    contentEl.innerHTML = renderMarkdown(markdown);
+    // An in-page outline (table of contents) from this page's headings, tucked
+    // just under the title — distinct from the left nav sidebar, which lists
+    // pages, not the sections within a page. Built before the anchor pass so its
+    // link-only entries stay out of the block-numbering scheme.
+    buildOutline(contentEl, { label: 'Outline' });
+    statusEl.hidden = true;
+    displayedRoute = route;
 
-      const firstHeading = contentEl.querySelector('h1, h2, h3');
-      const heading = firstHeading ? firstHeading.textContent.trim() : '';
-      document.title = (heading ? heading.slice(0, 70) + ' — ' : '') + BRAND;
-      setHeadMetadata(route, heading);
+    const firstHeading = contentEl.querySelector('h1, h2, h3');
+    const heading = firstHeading ? firstHeading.textContent.trim() : '';
+    document.title = (heading ? heading.slice(0, 70) + ' — ' : '') + BRAND;
+    setHeadMetadata(route, heading);
 
-      highlightActive(route);
-      buildPager(route);
+    highlightActive(route);
+    buildPager(route);
 
-      // Rebuild the minimap from scratch (initMinimap appends a fresh rail).
-      document.querySelectorAll('.document-minimap').forEach((el) => el.remove());
+    // Rebuild the minimap from scratch (initMinimap appends a fresh rail).
+    document.querySelectorAll('.document-minimap').forEach((el) => el.remove());
 
-      renderMermaidDiagrams();
-      renderMath();
-      highlightCode(contentEl, HLJS_SRC);
-      decorateCodeBlocks(contentEl);
-      decorateAnchorLinks(contentEl);
-      delete contentEl.dataset.speedReaderProcessed;
-      applySpeedReaderIfEnabled(contentEl);
-      initMinimap(contentEl);
+    renderMermaidDiagrams();
+    renderMath();
+    highlightCode(contentEl, HLJS_SRC);
+    decorateCodeBlocks(contentEl);
+    decorateAnchorLinks(contentEl);
+    delete contentEl.dataset.speedReaderProcessed;
+    applySpeedReaderIfEnabled(contentEl);
+    initMinimap(contentEl);
 
-      scrollToAnchor(anchor);
-    });
+    scrollToAnchor(anchor);
   } catch (err) {
     statusEl.hidden = false;
     statusEl.textContent =

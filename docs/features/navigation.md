@@ -18,7 +18,6 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | Link hints | Hover a link to see what kind it is and where it points |
 | Pager | Previous / Next buttons at the bottom of each document for reading a folder in order |
 | Single window | A second launch opens the file as a tab in the running window instead of a new copy |
-| Progressive loading | A determinate progress bar while a large document lays out, so the wait is visible |
 
 ## Model
 
@@ -76,16 +75,6 @@ leaftext stores a reading position as a `ScrollAnchor`:
 | `offsetY` | Pixel offset from that block |
 
 This is more stable than storing only raw scroll pixels, so the app can usually return to the same paragraph after rerendering.
-
-## Loading a large document
-
-The reading view lays a document out in full, the way a web page does, rather than skipping the off-screen parts. That keeps scrolling smooth and the [minimap](minimap.md) indicator exact from the first frame, but it means a very large document has one upfront layout to do when it opens.
-
-So that the wait is never a frozen blank screen, a large document is placed on the page a block at a time, behind a small centred bar that reads **Loading document…** with a percentage that fills as the blocks land. You can see how much is done and how much is left, and it is obvious the app is working rather than stalled. Small and medium documents skip the bar and appear at once.
-
-- The bar shows only past a threshold (~900 top-level blocks); below that, opening is instant.
-- Navigating away mid-load abandons the in-progress render cleanly, so a fast click-through never stacks half-loaded pages.
-- The same behaviour runs in the web reader at leaftext.com, so a long text reads the same in the app and in a browser.
 
 ## Reload
 
