@@ -1191,6 +1191,14 @@ let minimapCloneOffsets = null;
 let minimapDragging = false;
 let minimapPointerId = null;
 let minimapPointerOffsetY = null;
+// Document geometry captured once at the start of a minimap drag. It does not
+// change while dragging, so re-measuring on every pointermove is pure waste — and
+// worse, measureDocumentMinimap/setReaderScrollTop both call correctReaderScrollOrigin,
+// which writes a style then reads geometry (a forced synchronous layout). On a
+// large document that layout thrash on every move is what made minimap dragging
+// take many seconds. Measure once here, then map pointer -> scrollTop with pure math.
+let minimapDragMetrics = null;
+let minimapDragScale = 1;
 let minimapResizeObserver = null;
 let minimapBodyObserver = null;
 let readerLayoutFrame = 0;
@@ -2319,13 +2327,15 @@ function bindDocumentMinimap() {
   // of updateMinimapViewport()'s placement math, so the box and the thumbnail slide
   // stay under the cursor even on documents taller than the rail.
   const dragMinimapViewportToPointer = (event, pointerOffsetY) => {
-    const metrics = measureDocumentMinimap(track);
+    // Use the geometry captured at pointerdown — never re-measure mid-drag (that
+    // forces a full document layout each move; see minimapDragMetrics).
+    const metrics = minimapDragMetrics || measureDocumentMinimap(track);
     const rect = metrics.trackRect;
     if (rect.height <= 0 || metrics.scrollable <= 0) {
       updateMinimapViewport();
       return;
     }
-    const previewScale = metrics.scrollHeight <= 0 ? 1 : minimapPreviewScale(track, metrics);
+    const previewScale = metrics.scrollHeight <= 0 ? 1 : minimapDragScale;
     const scaledDocumentHeight = Math.max(1, metrics.scrollHeight * previewScale);
     const viewportHeight = metrics.scrollHeight <= 0 ? metrics.trackHeight : Math.max(22, metrics.viewportHeight * previewScale);
     const boundedViewportHeight = Math.min(metrics.trackHeight, viewportHeight);
@@ -2340,7 +2350,11 @@ function bindDocumentMinimap() {
     const previewTravel = Math.max(0, scaledDocumentHeight - metrics.trackHeight);
     const boxTravel = previewTravel > 0 ? handleRange : Math.max(0, scaledDocumentHeight - boundedViewportHeight);
     const targetViewportScrollTop = boxTravel <= 0 ? 0 : (targetViewportTop / boxTravel) * metrics.scrollable;
-    setReaderScrollTop(metrics.topOffset + Math.min(metrics.scrollable, Math.max(0, targetViewportScrollTop)));
+    // Set scrollTop directly against the cached range. The target is already bounded
+    // to [0, scrollable], so going through setReaderScrollTop (which re-derives the
+    // range via correctReaderScrollOrigin — a write+read layout) would only add the
+    // per-move thrash this drag path is built to avoid.
+    app.scrollTop = metrics.topOffset + Math.min(metrics.scrollable, Math.max(0, targetViewportScrollTop));
     // Pin the box (and thumbnail slide) to the cursor for the duration of the drag
     // instead of recomputing from the reader's geometry. On a huge document the reader
     // is still laying out under the drag (content-visibility), so a geometry-driven
@@ -2386,6 +2400,10 @@ function bindDocumentMinimap() {
     minimapPointerId = event.pointerId;
     minimapDragging = true;
     minimapPointerOffsetY = minimapPointerOffset(event);
+    // Measure the document geometry ONCE for the whole drag (see minimapDragMetrics).
+    minimapDragMetrics = measureDocumentMinimap(track);
+    minimapDragScale =
+      minimapDragMetrics.scrollHeight <= 0 ? 1 : minimapPreviewScale(track, minimapDragMetrics);
     track.setPointerCapture(event.pointerId);
     if (Number.isFinite(minimapPointerOffsetY)) {
       dragMinimapViewportToPointer(event, minimapPointerOffsetY);
@@ -2406,6 +2424,7 @@ function bindDocumentMinimap() {
       minimapPointerId = null;
       minimapPointerOffsetY = null;
       minimapDragging = false;
+      minimapDragMetrics = null;
       // Settle the box/thumbnail onto the true reading position now that the drag is
       // over. Content that streamed in under the drag keeps settling afterward via the
       // reader's reflow observer, which also refreshes the box.
@@ -2927,12 +2946,15 @@ function updateMinimapViewport() {
 // it fresh), so updating it a frame late costs nothing.
 let readerScrollFrame = 0;
 app.addEventListener('scroll', () => {
-  // While dragging the minimap, the box is pinned to the cursor (see
-  // dragMinimapViewportToPointer); don't let the drag-induced scroll recompute it from
-  // the still-settling reader geometry and flicker it. endDrag settles it on release.
-  if (!minimapDragging) {
-    scheduleMinimapViewportUpdate();
+  // A minimap drag owns the scroll entirely: it sets an already-clamped scrollTop
+  // and pins the box via CSS vars, and endDrag re-captures the anchor and box on
+  // release. So do NOTHING here during a drag — running clampReaderScrollPosition()
+  // and captureReaderScrollAnchor() (each a forced synchronous layout) once per
+  // frame while dragging a large document is exactly the stutter we are removing.
+  if (minimapDragging) {
+    return;
   }
+  scheduleMinimapViewportUpdate();
   if (readerScrollFrame) {
     return;
   }
