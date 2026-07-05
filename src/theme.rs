@@ -2065,8 +2065,10 @@ body.library-resizing {
 }
 /* Glossary term links read as a quiet dotted underline in every theme and mode
    (including speed reader). They take the surrounding text's colour — not the
-   accent link colour — and the underline is that same colour, so an expandable
-   term stays discoverable without standing out from the prose it sits in.
+   accent link colour — and the underline is a dimmed wash of that same colour,
+   so an expandable term stays discoverable without standing out from the prose
+   it sits in. Because the dim is relative to currentColor, prose that is
+   already muted (blockquotes, captions) gets a fainter underline still.
    Matches both the `glossary:slug` shorthand and a real `…/GLOSSARY.md#slug`
    relative link. Placed last so it wins ties against the generic link and hover
    rules above (in every state, including :hover). */
@@ -2078,7 +2080,7 @@ body.library-resizing {
 :root[data-speed-reader="true"] .document-body a[href*="GLOSSARY.md#" i] {
   color: inherit;
   text-decoration: underline dotted;
-  text-decoration-color: currentColor;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
   text-underline-offset: 0.18em;
 }
 .document-body .github-ref,
