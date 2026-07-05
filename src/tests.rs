@@ -5252,29 +5252,42 @@ fn anchor_addressable_blocks_get_a_permalink_button() {
     assert!(html.contains("background: var(--app-action-hover-background);"));
     assert!(html.contains(".document-body .has-anchor-link > .heading-anchor:hover,"));
 
-    // The button lives in a gutter carved from each block's own left padding
-    // (pulled back with a matching negative margin so the text column does not
-    // move). Anchoring it inside the block's box is what lets content-visibility
-    // apply paint containment to entries without clipping the button — and it
-    // removes the per-reflow JS measuring pass entirely.
-    assert!(html.contains(".document-body .has-anchor-link {\n  position: relative;\n  padding-left: 40px;\n  margin-left: -40px;\n}"));
-    assert!(html.contains(".document-body .heading-anchor {\n  position: absolute;\n  left: 0;"));
+    // The number hangs in the margin just left of its block (right: 100%), so
+    // the block's own box — and, for a list item, its ::marker — stays exactly
+    // where normal flow puts it. No per-reflow JS measuring pass, and no
+    // negative-margin carve dragging list markers into the page margin.
+    assert!(html.contains(".document-body .has-anchor-link {\n  position: relative;\n}"));
+    assert!(!html.contains(
+        ".document-body .has-anchor-link {\n  position: relative;\n  padding-left: 40px;"
+    ));
+    assert!(
+        html.contains(".document-body .heading-anchor {\n  position: absolute;\n  right: 100%;")
+    );
     assert!(
         !html.contains("positionAnchorLinks"),
         "the per-reflow anchor-positioning pass is replaced by the CSS gutter"
     );
 
-    // A blockquote's left bar rides the border-box the gutter carve shifts 40px
-    // left, so it would jut into the margin. Zero the real border and repaint the
-    // bar as an inset ::after pinned to the gutter's right edge (the column edge),
-    // padding the quote text past it so it lands at its natural indent.
-    assert!(html.contains(".document-body blockquote.has-anchor-link {\n  border-left-width: 0;\n  padding-left: calc(40px + 1.25em);\n}"));
+    // A list item's number steps one list indent further left so it clears the
+    // ::marker (I., II., •) and top-level list numbers share the gutter column.
     assert!(html.contains(
-            ".document-body blockquote.has-anchor-link::after {\n  content: \"\";\n  position: absolute;\n  left: 40px;"
-        ));
-    // GitHub alerts carry the same coloured left edge and get the same repaint,
-    // tinted per type.
-    assert!(html.contains(".document-body .markdown-alert-note.has-anchor-link::after {\n  background: var(--markdown-alert-note-border);\n}"));
+        ".document-body li.has-anchor-link > .heading-anchor {\n  right: calc(100% + 2em);\n}"
+    ));
+
+    // pre and table are overflow containers, so a number hung outside them would
+    // be clipped invisible; they alone keep the carved-gutter scheme (40px left
+    // padding pulled back with a matching negative margin, number seated inside).
+    assert!(html.contains(
+        ".document-body pre.has-anchor-link,\n.document-body table.has-anchor-link {\n  padding-left: 40px;\n  margin-left: -40px;\n}"
+    ));
+    assert!(html.contains(
+        ".document-body pre.has-anchor-link > .heading-anchor,\n.document-body table.has-anchor-link > .heading-anchor {\n  right: auto;\n  left: 0;\n}"
+    ));
+
+    // A blockquote keeps its native left bar: with the number hung outside the
+    // block there is no carve shifting the border-box, so no repaint is needed.
+    assert!(!html.contains("blockquote.has-anchor-link {"));
+    assert!(!html.contains("blockquote.has-anchor-link::after"));
 
     // The blockquote is the citable unit and carries the only button; its inner
     // blocks must not carve a second gutter or the quote text is dragged off the

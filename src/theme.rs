@@ -2305,71 +2305,23 @@ body.library-resizing {
 .code-copy.is-copied .code-copy-check {
   display: block;
 }
-/* Permalink button for any anchor-addressable block. Out of flow (so it never
-   nudges the text), hidden until its target is hovered or the button itself is
+/* Permalink number for any anchor-addressable block. Out of flow (so it never
+   nudges the text), dim until its target is hovered or the number itself is
    keyboard-focused. */
-/* The permalink sits in a gutter carved from the block's own left padding
-   (pulled back out with a matching negative margin so the text column does not
-   move), so it stays inside the block's box rather than floating in the margin. */
 .document-body .has-anchor-link {
   position: relative;
-  padding-left: 40px;
-  margin-left: -40px;
 }
-/* A blockquote carries a left bar — the quote rule, or a GitHub alert's coloured
-   edge. The gutter carve above shifts the block's border-box 40px left to seat the
-   permalink, which drags that border out past the reading margin (the bar "breaks"
-   into the gutter). A border cannot be inset, so zero the real one and repaint the
-   bar as a pseudo pinned to the gutter's right edge, then pad the text past it, so
-   the quote lines up on the column edge like the web. The paragraphs inside carry
-   no gutter of their own (decorateAnchorLinks skips their button), so the text is
-   shifted once, not twice, and lands at its natural quote indent. */
-.document-body blockquote.has-anchor-link {
-  border-left-width: 0;
-  padding-left: calc(40px + 1.25em);
-}
-.document-body blockquote.has-anchor-link::after {
-  content: "";
-  position: absolute;
-  left: 40px;
-  top: 0;
-  bottom: 0;
-  width: 0.25em;
-  background: var(--markdown-blockquote-border);
-  pointer-events: none;
-}
-.document-body .markdown-alert-note.has-anchor-link,
-.document-body .markdown-alert-tip.has-anchor-link,
-.document-body .markdown-alert-important.has-anchor-link,
-.document-body .markdown-alert-warning.has-anchor-link,
-.document-body .markdown-alert-caution.has-anchor-link {
-  padding-left: calc(40px + 1em);
-}
-.document-body .markdown-alert-note.has-anchor-link::after,
-.document-body .markdown-alert-tip.has-anchor-link::after,
-.document-body .markdown-alert-important.has-anchor-link::after,
-.document-body .markdown-alert-warning.has-anchor-link::after,
-.document-body .markdown-alert-caution.has-anchor-link::after {
-  width: 6px;
-}
-.document-body .markdown-alert-note.has-anchor-link::after {
-  background: var(--markdown-alert-note-border);
-}
-.document-body .markdown-alert-tip.has-anchor-link::after {
-  background: var(--markdown-alert-tip-border);
-}
-.document-body .markdown-alert-important.has-anchor-link::after {
-  background: var(--markdown-alert-important-border);
-}
-.document-body .markdown-alert-warning.has-anchor-link::after {
-  background: var(--markdown-alert-warning-border);
-}
-.document-body .markdown-alert-caution.has-anchor-link::after {
-  background: var(--markdown-alert-caution-border);
-}
+/* The number hangs in the margin just left of its block (right: 100%), so the
+   block's own box — and, for a list item, its ::marker — stays exactly where
+   normal flow puts it, and a blockquote keeps its native left bar. An earlier
+   scheme carved a 40px gutter out of each block's left padding with a matching
+   negative margin (needed while content-visibility paint containment could clip
+   anything outside the block; that windowing is gone) — on a list item the
+   negative margin dragged the I./II. marker into the page margin while the
+   number sat at the list indent, exactly backwards. */
 .document-body .heading-anchor {
   position: absolute;
-  left: 0;
+  right: 100%;
   top: 0.7em;
   top: 0.5lh;
   transform: translateY(-50%);
@@ -2390,6 +2342,28 @@ body.library-resizing {
   pointer-events: auto;
   user-select: none;
   transition: opacity 0.12s ease, color 0.12s ease;
+}
+/* A list item's number steps one list indent (2em) further left so it clears
+   the ::marker (I., II., •) and, on a top-level list, right-aligns on the same
+   gutter column as every other number. */
+.document-body li.has-anchor-link > .heading-anchor {
+  right: calc(100% + 2em);
+}
+/* pre and table are overflow containers (overflow: auto; pre also clip-paths
+   its rounded corners) and each is the containing block for its own absolutely
+   positioned number, so a number hung outside would be clipped invisible. These
+   two keep the carved-gutter scheme instead: seat the number inside a 40px left
+   padding pulled back out with a matching negative margin. Neither has a
+   ::marker, so nothing is dragged out of place. */
+.document-body pre.has-anchor-link,
+.document-body table.has-anchor-link {
+  padding-left: 40px;
+  margin-left: -40px;
+}
+.document-body pre.has-anchor-link > .heading-anchor,
+.document-body table.has-anchor-link > .heading-anchor {
+  right: auto;
+  left: 0;
 }
 /* A zero-size alias that carries a heading's #locus without disturbing its
    layout (the heading keeps its slug id for the table of contents). */
