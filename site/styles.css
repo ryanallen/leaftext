@@ -384,6 +384,22 @@ body {
   color: var(--link-hover);
 }
 
+/* ---- TEI document titles --------------------------------------------- */
+/* Alternate-language title lines under a TEI document's main title (the
+   Sanskrit main title, then the English and Sanskrit long titles). Muted and
+   tight so the stack reads as one title block; pulled up toward the h1 it
+   belongs to. */
+.markdown-body .tei-doc-subtitles {
+  margin: calc(-0.5 * var(--type-spacing)) 0 var(--type-spacing);
+  color: var(--text-muted);
+}
+.markdown-body .tei-doc-subtitles .tei-doc-subtitle {
+  margin: 0 0 0.3em;
+}
+.markdown-body .tei-doc-subtitles .tei-doc-subtitle:last-child {
+  margin-bottom: 0;
+}
+
 /* ---- TEI front matter ------------------------------------------------ */
 /* Summary, acknowledgements, and introduction from `text > front`, rendered
    as a collapsed <details> (see site/tei-xml.js) so the reader lands on the

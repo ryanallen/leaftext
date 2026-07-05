@@ -79,9 +79,9 @@ When a user opens a `.xml` file, `load_document()` detects the extension and cal
 
 `load_xml_document()` in `lib.rs` reads the XML source and parses it with `roxmltree` into a read-only DOM.
 
-**2. Find the TEI body**
+**2. Pick the title and find the TEI body**
 
-`render_tei_body()` locates the `<text> > <body>` element and walks its child `<div>` elements recursively.
+`render_tei_body()` first reads every `titleStmt > title` and picks the document title by `type` and `xml:lang` — English main title, falling back to the English long title, then the first non-Tibetan title. The Sanskrit main title and the English and Sanskrit long titles render beneath the heading as a muted subtitle block; Tibetan titles are never shown. It then locates the `<text> > <body>` element and walks its child `<div>` elements recursively.
 
 **3. Emit HTML**
 

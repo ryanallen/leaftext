@@ -1305,6 +1305,62 @@ fn tei_lg_and_bare_l_render_as_verse_blockquotes() {
 }
 
 #[test]
+fn tei_title_prefers_english_and_stacks_sanskrit_and_long_titles() {
+    // An 84000-style title matrix, deliberately listing Tibetan first to prove
+    // selection is by type + xml:lang, not document order. Lang casing varies
+    // in the wild (`Sa-Ltn`, `Bo-Ltn`), so the fixture uses the odd casing.
+    let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0">
+  <teiHeader><fileDesc><titleStmt>
+    <title type="mainTitle" xml:lang="Bo-Ltn">rab tu 'byung ba'i gzhi</title>
+    <title type="mainTitle" xml:lang="bo">bo-script-title</title>
+    <title type="mainTitle" xml:lang="en">The Chapter on Going Forth</title>
+    <title type="mainTitle" xml:lang="Sa-Ltn">Pravrajyāvastu</title>
+    <title type="longTitle" xml:lang="en">"Going Forth" from The Chapters on Monastic Discipline</title>
+    <title type="longTitle" xml:lang="Sa-Ltn">Vinayavastu Pravrajyāvastu</title>
+    <title type="longTitle" xml:lang="Bo-Ltn">'dul ba gzhi las</title>
+  </titleStmt></fileDesc></teiHeader>
+  <text><body><div type="translation"><p>Body.</p></div></body></text>
+</TEI>"#;
+
+    let (title, html) = render_tei_body(xml);
+
+    // The returned title (window/tab/library) is the English main title.
+    assert_eq!(title.as_deref(), Some("The Chapter on Going Forth"));
+    assert_contains(&html, ">The Chapter on Going Forth</h1>");
+
+    // Under the h1: Sanskrit main title, English long title, Sanskrit long
+    // title, in that order, with Sanskrit in italics.
+    assert_contains(&html, "<div class=\"tei-doc-subtitles\">");
+    assert_contains(
+        &html,
+        "<p class=\"tei-doc-subtitle\"><em>Pravrajyāvastu</em></p>",
+    );
+    assert_contains(
+        &html,
+        "<p class=\"tei-doc-subtitle\"><em>Vinayavastu Pravrajyāvastu</em></p>",
+    );
+    let main_sa = html
+        .find("<em>Pravrajyāvastu</em>")
+        .expect("Sanskrit main title rendered");
+    let long_en = html
+        .find("Going Forth\" from The Chapters")
+        .expect("English long title rendered");
+    let long_sa = html
+        .find("<em>Vinayavastu Pravrajyāvastu</em>")
+        .expect("Sanskrit long title rendered");
+    assert!(
+        main_sa < long_en && long_en < long_sa,
+        "subtitles keep the order: sa main, en long, sa long"
+    );
+
+    // Tibetan titles never appear, in any script.
+    assert!(!html.contains("rab tu"));
+    assert!(!html.contains("bo-script-title"));
+    assert!(!html.contains("'dul ba"));
+}
+
+#[test]
 fn tei_front_matter_renders_collapsed_before_the_body() {
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <TEI xmlns="http://www.tei-c.org/ns/1.0">

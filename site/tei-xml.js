@@ -39,12 +39,54 @@ export function renderTEI(xmlString) {
     return '<p><strong>XML parse error.</strong></p>';
   }
 
-  // Try to extract a title from the teiHeader
-  const titleEl =
-    xmlDoc.querySelector('titleStmt > title:not([type])') ||
-    xmlDoc.querySelector('teiHeader title');
+  // Collect every `titleStmt > title` in document order. 84000 headers carry a
+  // title matrix — `type` mainTitle/longTitle/otherTitle crossed with
+  // `xml:lang` en / Sa-Ltn / bo / Bo-Ltn (lang casing varies) — so taking the
+  // first title showed whichever language the file happened to list first.
+  const titles = [];
+  xmlDoc.querySelectorAll('titleStmt > title').forEach((el) => {
+    const text = (el.textContent || '').trim();
+    if (!text) return;
+    titles.push({
+      type: (el.getAttribute('type') || '').toLowerCase(),
+      lang: (
+        el.getAttribute('xml:lang') ||
+        el.getAttributeNS('http://www.w3.org/XML/1998/namespace', 'lang') ||
+        ''
+      ).toLowerCase(),
+      text,
+    });
+  });
+  const pick = (type, lang) => {
+    const hit = titles.find((t) => t.type === type && t.lang === lang);
+    return hit ? hit.text : '';
+  };
 
-  const title = titleEl ? titleEl.textContent.trim() : '';
+  // The document title is the English main title. Fall back to the English
+  // long title, then to the first title in any language except Tibetan (which
+  // also covers plain untyped <title> elements), then to any teiHeader title.
+  const nonTibetan = titles.find((t) => t.lang !== 'bo' && t.lang !== 'bo-ltn');
+  const headerTitleEl = xmlDoc.querySelector('teiHeader title');
+  const title =
+    pick('maintitle', 'en') ||
+    pick('longtitle', 'en') ||
+    (nonTibetan ? nonTibetan.text : '') ||
+    (headerTitleEl ? headerTitleEl.textContent.trim() : '');
+
+  // Alternate-language title lines rendered under the main title, in this
+  // order: Sanskrit main title, English long title, Sanskrit long title.
+  // Tibetan titles are never shown. Sanskrit is set in italics; duplicates of
+  // the main title or of an earlier line are dropped.
+  const subtitles = [];
+  [
+    { text: pick('maintitle', 'sa-ltn'), italic: true },
+    { text: pick('longtitle', 'en'), italic: false },
+    { text: pick('longtitle', 'sa-ltn'), italic: true },
+  ].forEach((line) => {
+    if (!line.text || line.text === title) return;
+    if (subtitles.some((s) => s.text === line.text)) return;
+    subtitles.push(line);
+  });
 
   const body = xmlDoc.querySelector('text > body');
   if (!body) {
@@ -61,6 +103,14 @@ export function renderTEI(xmlString) {
   if (title) {
     const id = slugify(title, ctx.seen);
     parts.push(`<h1 id="${escAttr(id)}">${escHtml(title)}</h1>\n`);
+  }
+  if (subtitles.length > 0) {
+    parts.push('<div class="tei-doc-subtitles">\n');
+    subtitles.forEach((line) => {
+      const inner = line.italic ? `<em>${escHtml(line.text)}</em>` : escHtml(line.text);
+      parts.push(`<p class="tei-doc-subtitle">${inner}</p>\n`);
+    });
+    parts.push('</div>\n');
   }
 
   // Front matter (summary, acknowledgements, introduction) lives in

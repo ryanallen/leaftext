@@ -296,29 +296,75 @@ pub(crate) fn render_tei_body(xml: &str) -> (Option<String>, String) {
 
     let root = doc.root_element();
 
-    // Extract title from teiHeader
-    let title = root
+    // Collect every `titleStmt > title` in document order. 84000 headers carry
+    // a title matrix — `type` mainTitle/longTitle/otherTitle crossed with
+    // `xml:lang` en / Sa-Ltn / bo / Bo-Ltn (lang casing varies) — so taking the
+    // first title showed whichever language the file happened to list first.
+    let titles: Vec<(String, String, String)> = root
         .descendants()
-        .find(|n| {
+        .filter(|n| {
             n.is_element()
                 && n.tag_name().name().eq_ignore_ascii_case("title")
                 && n.parent()
                     .map(|p| p.tag_name().name().eq_ignore_ascii_case("titleStmt"))
                     .unwrap_or(false)
         })
-        .and_then(|n| {
-            let t = n
+        .filter_map(|n| {
+            let text = n
                 .children()
                 .filter(|c| c.is_text())
                 .map(|c| c.text().unwrap_or(""))
-                .collect::<String>();
-            let t = t.trim().to_string();
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
+                .collect::<String>()
+                .trim()
+                .to_string();
+            if text.is_empty() {
+                return None;
             }
+            let kind = n.attribute("type").unwrap_or("").to_ascii_lowercase();
+            let lang = n
+                .attributes()
+                .find(|a| a.name().eq_ignore_ascii_case("lang"))
+                .map(|a| a.value())
+                .unwrap_or("")
+                .to_ascii_lowercase();
+            Some((kind, lang, text))
+        })
+        .collect();
+    let pick = |kind: &str, lang: &str| {
+        titles
+            .iter()
+            .find(|(k, l, _)| k == kind && l == lang)
+            .map(|(_, _, text)| text.clone())
+    };
+
+    // The document title is the English main title. Fall back to the English
+    // long title, then to the first title in any language except Tibetan
+    // (which also covers plain untyped `<title>` elements).
+    let title = pick("maintitle", "en")
+        .or_else(|| pick("longtitle", "en"))
+        .or_else(|| {
+            titles
+                .iter()
+                .find(|(_, l, _)| l != "bo" && l != "bo-ltn")
+                .map(|(_, _, text)| text.clone())
         });
+
+    // Alternate-language title lines rendered under the main title, in this
+    // order: Sanskrit main title, English long title, Sanskrit long title.
+    // Tibetan titles are never shown. Sanskrit is set in italics; duplicates
+    // of the main title or of an earlier line are dropped.
+    let mut subtitles: Vec<(String, bool)> = Vec::new();
+    for (text, italic) in [
+        (pick("maintitle", "sa-ltn"), true),
+        (pick("longtitle", "en"), false),
+        (pick("longtitle", "sa-ltn"), true),
+    ] {
+        let Some(text) = text else { continue };
+        if Some(&text) == title.as_ref() || subtitles.iter().any(|(t, _)| t == &text) {
+            continue;
+        }
+        subtitles.push((text, italic));
+    }
 
     // Find <text><body>
     let body = root.descendants().find(|n| {
@@ -338,7 +384,7 @@ pub(crate) fn render_tei_body(xml: &str) -> (Option<String>, String) {
 
     let mut ctx = TeiCtx::new();
 
-    // Title heading
+    // Title heading, then the alternate-language title lines beneath it.
     if let Some(ref t) = title {
         let id = ctx.unique_slug(t);
         ctx.push(&format!(
@@ -346,6 +392,19 @@ pub(crate) fn render_tei_body(xml: &str) -> (Option<String>, String) {
             encode_double_quoted_attribute(&id),
             encode_text(t)
         ));
+    }
+    if !subtitles.is_empty() {
+        ctx.push("<div class=\"tei-doc-subtitles\">\n");
+        for (text, italic) in &subtitles {
+            let inner = encode_text(text);
+            let inner = if *italic {
+                format!("<em>{inner}</em>")
+            } else {
+                inner.into_owned()
+            };
+            ctx.push(&format!("<p class=\"tei-doc-subtitle\">{inner}</p>\n"));
+        }
+        ctx.push("</div>\n");
     }
 
     // Front matter (summary, acknowledgements, introduction) lives in

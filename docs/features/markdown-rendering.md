@@ -350,6 +350,7 @@ leaftext opens `.xml` files in the 84000 Buddhist-translation TEI format alongsi
 
 | Element | Rendered as |
 |---|---|
+| `<titleStmt>` titles | The document title block. The English main title (`type="mainTitle" xml:lang="en"`) becomes the page heading and the tab/library title; beneath it, in muted text, come the Sanskrit main title (italic), the English long title, and the Sanskrit long title (italic). Tibetan titles are never shown. Files with no typed titles fall back to the first non-Tibetan `<title>` |
 | `<front>` | The front matter (summary, acknowledgements, introduction) that precedes the body, rendered as a collapsed disclosure (a `<details>` you click to open) so the reader lands on the translation itself. Its own section headings stay out of the outline |
 | `<div type="…">` | A nested section. Heading level follows nesting depth (`##` at the top, one smaller per level, floored at `######`), so a nested heading is never larger than the one above it. `translation` is a transparent wrapper (no heading, no added depth) |
 | `<head>` | Heading text at the div's depth, including inline children (e.g. a nested `<title>`) |

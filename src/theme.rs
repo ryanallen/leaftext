@@ -1958,6 +1958,20 @@ body.library-resizing {
 .document-body .document-outline-link:hover {
   color: var(--markdown-link-hover);
 }
+/* Alternate-language title lines under a TEI document's main title (the
+   Sanskrit main title, then the English and Sanskrit long titles). Muted and
+   tight so the stack reads as one title block; pulled up toward the h1 it
+   belongs to. */
+.document-body .tei-doc-subtitles {
+  margin: calc(-0.5 * var(--type-spacing)) 0 var(--type-spacing);
+  color: var(--preview-muted-foreground);
+}
+.document-body .tei-doc-subtitles .tei-doc-subtitle {
+  margin: 0 0 0.3em;
+}
+.document-body .tei-doc-subtitles .tei-doc-subtitle:last-child {
+  margin-bottom: 0;
+}
 /* TEI front matter (summary, acknowledgements, introduction) rendered as a
    collapsed <details> before the body — mirrors the outline toggle above. */
 .document-body .tei-front {
