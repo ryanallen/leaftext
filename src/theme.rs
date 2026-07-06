@@ -1939,14 +1939,22 @@ body.library-resizing {
 .document-body .document-outline-summary:hover {
   color: var(--markdown-link-hover);
 }
-.document-body .document-outline > ol {
+/* The document's total line count, stamped in after the numbering pass. */
+.document-body .document-outline-count {
+  margin-left: 0.45em;
+  font-weight: 400;
+  color: var(--preview-muted-foreground);
+}
+/* Bulleted, not numbered: a deep outline runs a counter into the hundreds and
+   the wide markers overflow the panel's left edge. */
+.document-body .document-outline > ul {
   margin: 0;
   padding: 0 1.4em 0.7em 2.4em;
 }
-.document-body .document-outline ol {
+.document-body .document-outline ul {
   margin: 0;
   padding-left: 1.6em;
-  list-style: decimal;
+  list-style: disc;
 }
 .document-body .document-outline li {
   margin: 0.15em 0;

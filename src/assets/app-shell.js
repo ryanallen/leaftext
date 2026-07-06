@@ -2126,13 +2126,15 @@ function ensureAnchorLinkTargets(body) {
     line += 1;
     assignLocus(target, '' + line, seen);
   });
+  return line;
 }
 // Build a collapsed "Outline" (table of contents) from the document's headings
 // and insert it just under the title. Mirrors site/outline.js: a pure DOM pass
 // over the <h1>–<h6> the renderer emits (each with a slug id), so it behaves the
-// same for Markdown and TEI XML. Entries nest as an ordered list — one step in
+// same for Markdown and TEI XML. Entries nest as a bulleted list — one step in
 // per step down in heading level — inside a <details> that starts closed so it
-// never crowds the top. Run before the anchor pass so its link-only entries stay
+// never crowds the top. Bullets, not numbers: a deep document runs the counter
+// into the hundreds and the wide markers overflow the panel's left edge. Run before the anchor pass so its link-only entries stay
 // out of the block-numbering scheme, and before bindDocumentLinks so each entry's
 // #slug jump is wired into fragment navigation like any other TOC link.
 function buildDocumentOutline() {
@@ -2151,8 +2153,16 @@ function buildDocumentOutline() {
   details.className = 'document-outline';
   const summary = document.createElement('summary');
   summary.className = 'document-outline-summary';
-  summary.dataset.i18n = 'outline.title';
-  summary.textContent = window.leafLocale.t('outline.title');
+  const summaryLabel = document.createElement('span');
+  summaryLabel.dataset.i18n = 'outline.title';
+  summaryLabel.textContent = window.leafLocale.t('outline.title');
+  summary.appendChild(summaryLabel);
+  // Filled in by decorateAnchorLinks once the numbering pass knows the
+  // document's total line count — a separate span so renderStaticText's
+  // [data-i18n] sweep never wipes the count.
+  const summaryCount = document.createElement('span');
+  summaryCount.className = 'document-outline-count';
+  summary.appendChild(summaryCount);
   details.appendChild(summary);
   // The entry list can be enormous (one <li> per heading — ~25k on a glossary),
   // so build it only when the reader first opens the outline instead of at every
@@ -2171,17 +2181,17 @@ function populateDocumentOutline(details, rest) {
     clone.querySelectorAll('.heading-anchor, .anchor-link, .locus-alias, .footnote-ref').forEach((n) => n.remove());
     return (clone.textContent || '').replace(/\s+/g, ' ').trim();
   };
-  const rootList = document.createElement('ol');
-  const stack = [{ level: 0, ol: rootList }];
+  const rootList = document.createElement('ul');
+  const stack = [{ level: 0, list: rootList }];
   rest.forEach((h) => {
     const level = Number(h.tagName.slice(1)) || 1;
     while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
     const parent = stack[stack.length - 1];
-    let container = parent.ol;
+    let container = parent.list;
     if (parent.level !== 0) {
-      const lastLi = parent.ol.lastElementChild;
-      let sub = lastLi ? lastLi.querySelector(':scope > ol') : null;
-      if (!sub) { sub = document.createElement('ol'); (lastLi || parent.ol).appendChild(sub); }
+      const lastLi = parent.list.lastElementChild;
+      let sub = lastLi ? lastLi.querySelector(':scope > ul') : null;
+      if (!sub) { sub = document.createElement('ul'); (lastLi || parent.list).appendChild(sub); }
       container = sub;
     }
     const li = document.createElement('li');
@@ -2191,7 +2201,7 @@ function populateDocumentOutline(details, rest) {
     link.textContent = readHeadingText(h) || h.id;
     li.appendChild(link);
     container.appendChild(li);
-    stack.push({ level, ol: container });
+    stack.push({ level, list: container });
   });
   details.appendChild(rootList);
 }
@@ -2206,7 +2216,14 @@ function populateDocumentOutline(details, rest) {
 function decorateAnchorLinks() {
   const body = app.querySelector('.document-body');
   if (!body) return;
-  ensureAnchorLinkTargets(body);
+  const lineTotal = ensureAnchorLinkTargets(body);
+  // The numbering pass just walked the whole document, so its final count is
+  // the document's line total — stamp it into the outline summary:
+  // "Outline (1234 lines)".
+  const outlineCount = body.querySelector('.document-outline-count');
+  if (outlineCount) {
+    outlineCount.textContent = window.leafLocale.t('outline.lineCount', { count: lineTotal });
+  }
   const label = window.leafLocale.t('actions.anchorLink');
   body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
     const locus = target.dataset.locus;

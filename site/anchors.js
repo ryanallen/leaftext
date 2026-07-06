@@ -113,6 +113,7 @@ function ensureAnchorLinkTargets(root) {
     line += 1;
     assignLocus(target, '' + line, seen);
   });
+  return line;
 }
 
 // Build the shareable URL for a block — the one that must resolve when pasted
@@ -132,7 +133,14 @@ function locusShareUrl(locus) {
 
 export function decorateAnchorLinks(root, label = 'Link to this section') {
   if (!root) return;
-  ensureAnchorLinkTargets(root);
+  const lineTotal = ensureAnchorLinkTargets(root);
+  // The numbering pass just walked the whole document, so its final count is
+  // the document's line total — stamp it into the outline summary:
+  // "Outline (1234 lines)".
+  const outlineCount = root.querySelector('.document-outline-count');
+  if (outlineCount) {
+    outlineCount.textContent = '(' + lineTotal + ' lines)';
+  }
   root.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
     const locus = target.dataset.locus;
     if (!locus) return;

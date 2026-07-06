@@ -2285,11 +2285,22 @@ fn app_shell_builds_collapsed_heading_outline_under_the_title() {
     assert_contains(&html, "if (headings.length < 2) return;");
     assert_contains(&html, "title.insertAdjacentElement('afterend', details);");
     // Collapsed <details> with a localized "Outline" summary, entries nested
-    // as an ordered list that links each heading by its slug id.
+    // as a bulleted list (numbers overflow the panel on deep documents) that
+    // links each heading by its slug id.
     assert_contains(&html, "details.className = 'document-outline';");
-    assert_contains(&html, "summary.dataset.i18n = 'outline.title';");
+    assert_contains(&html, "summaryLabel.dataset.i18n = 'outline.title';");
+    assert_contains(&html, "const rootList = document.createElement('ul');");
+    assert!(!html.contains("const rootList = document.createElement('ol');"));
     assert_contains(&html, "link.className = 'document-outline-link';");
     assert_contains(&html, "link.href = '#' + encodeURIComponent(h.id);");
+    // The summary carries the document's total line count, stamped in by the
+    // anchor pass (whose running count is the total) after the outline exists.
+    assert_contains(&html, "summaryCount.className = 'document-outline-count';");
+    assert_contains(&html, "const lineTotal = ensureAnchorLinkTargets(body);");
+    assert_contains(
+        &html,
+        "window.leafLocale.t('outline.lineCount', { count: lineTotal })",
+    );
     // The (potentially ~25k-entry) list is built lazily, only when the reader
     // first expands the outline — not at every document render.
     assert_contains(&html, "function populateDocumentOutline(details, rest) {");
@@ -2300,9 +2311,11 @@ fn app_shell_builds_collapsed_heading_outline_under_the_title() {
     );
     // The outline never opens on its own — closed until the reader expands it.
     assert!(!html.contains("details.open = true"));
-    // Localized label present in both shipped languages.
+    // Localized label and line-count suffix present in both shipped languages.
     assert_contains(&html, "'outline.title': 'Outline'");
     assert_contains(&html, "'outline.title': '大纲'");
+    assert_contains(&html, "'outline.lineCount': '({count} lines)'");
+    assert_contains(&html, "'outline.lineCount': '（{count} 行）'");
 }
 
 #[test]

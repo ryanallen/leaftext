@@ -364,14 +364,22 @@ body {
 .markdown-body .document-outline-summary:hover {
   color: var(--link-hover);
 }
-.markdown-body .document-outline > ol {
+/* The document's total line count, stamped in after the numbering pass. */
+.markdown-body .document-outline-count {
+  margin-left: 0.45em;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+/* Bulleted, not numbered: a deep outline runs a counter into the hundreds and
+   the wide markers overflow the panel's left edge. */
+.markdown-body .document-outline > ul {
   margin: 0;
   padding: 0 1.4em 0.7em 2.4em;
 }
-.markdown-body .document-outline ol {
+.markdown-body .document-outline ul {
   margin: 0;
   padding-left: 1.6em;
-  list-style: decimal;
+  list-style: disc;
 }
 .markdown-body .document-outline li {
   margin: 0.15em 0;
