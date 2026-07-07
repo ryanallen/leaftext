@@ -2477,9 +2477,15 @@ function bindDocumentMinimapPreview(track) {
   if (window.ResizeObserver) {
     // Watch the rail, not the document: the rail's width changes at the responsive
     // breakpoints (which the source's own resize would miss when the reading column
-    // is already at its max width), and it never fires on scroll.
+    // is already at its max width), and it never fires on scroll. Only the preview
+    // refreshes from here — NOT scheduleReaderLayoutUpdate: the track's height is
+    // written by syncMinimapTrackHeight, so this observer fires on our own writes,
+    // and feeding that back into a layout update (which writes scrollTop and the
+    // document margin) turned every resize into a self-sustaining relayout storm
+    // that blocked painting — the newly exposed window area stayed blank until the
+    // storm settled. The reader's own re-pin runs from the window resize listener
+    // and the document-body reflow observer, which don't watch anything we write.
     minimapResizeObserver = new ResizeObserver(() => {
-      scheduleReaderLayoutUpdate();
       scheduleMinimapPreviewUpdate();
     });
     minimapResizeObserver.observe(track);
@@ -2565,7 +2571,9 @@ function clampReaderScrollTop(scrollTop) {
   if (!currentState?.document || !source) {
     return Math.max(0, nextScrollTop);
   }
-  const content = correctReaderScrollOrigin(source);
+  // Read-only: clamping happens on jumps and re-pins, where the origin is already
+  // settled; writing it here would relayout the whole document mid-interaction.
+  const content = measureDocumentContent(source);
   const viewportHeight = Math.max(1, Math.ceil(app.clientHeight));
   const range = measureReaderScrollRange(content, viewportHeight);
   return Math.min(range.maxScrollTop, Math.max(range.minScrollTop, nextScrollTop));
@@ -2743,7 +2751,14 @@ function syncMinimapTrackHeight(minimap) {
   const contentRect = content ? content.getBoundingClientRect() : null;
   const contentHeight = contentRect ? Math.ceil(contentRect.height) : 0;
   const trackHeight = contentHeight > 0 ? Math.min(availableHeight, contentHeight) : availableHeight;
-  minimap.style.setProperty('--minimap-track-height', `${trackHeight}px`);
+  // Write only on change: this runs on every scroll frame (via
+  // measureDocumentMinimap), and an unconditional style write would dirty the
+  // minimap subtree — the full-document clone — and force it back through layout
+  // on the next rect read, every frame.
+  const nextTrackHeight = `${trackHeight}px`;
+  if (minimap.style.getPropertyValue('--minimap-track-height') !== nextTrackHeight) {
+    minimap.style.setProperty('--minimap-track-height', nextTrackHeight);
+  }
   return { availableHeight, trackHeight };
 }
 function measureDocumentMinimap(track) {
@@ -2753,7 +2768,11 @@ function measureDocumentMinimap(track) {
   const shellHeight = trackSize ? trackSize.availableHeight : Math.max(1, app.clientHeight);
   const sourceRect = source ? source.getBoundingClientRect() : null;
   const sourceWidth = sourceRect ? Math.max(1, Math.ceil(sourceRect.width)) : 1;
-  const documentContent = correctReaderScrollOrigin(source);
+  // Measure only — this runs on every scroll frame. Correcting the scroll origin
+  // here writes a margin on .document-body, which invalidates layout of the whole
+  // document and forces a full synchronous relayout on the very next rect read.
+  // Origin corrections belong to render/reflow time (scheduleReaderLayoutUpdate).
+  const documentContent = measureDocumentContent(source);
   const documentHeight = documentContent.height;
   const trackRect = track.getBoundingClientRect();
   const trackHeight = Math.max(1, Math.ceil(track.clientHeight || trackRect.height || trackSize?.trackHeight || shellHeight));
@@ -2921,7 +2940,12 @@ function updateMinimapViewport() {
   const documentHeight = Math.max(1, metrics.scrollHeight, preview ? Math.ceil(preview.scrollHeight) : 0);
   const scaledDocumentHeight = Math.max(1, documentHeight * previewScale);
   if (content) {
-    content.style.height = `${scaledDocumentHeight}px`;
+    // Guard the write: this runs per scroll frame, and re-setting the same height
+    // would dirty the clone's layout for nothing.
+    const nextContentHeight = `${scaledDocumentHeight}px`;
+    if (content.style.height !== nextContentHeight) {
+      content.style.height = nextContentHeight;
+    }
   }
   // Scroll fraction lives entirely in the clone's true coordinate space: the reading
   // position from minimapReaderTrueScrolled() (real block geometry) over the true
@@ -2952,15 +2976,16 @@ function updateMinimapViewport() {
   minimap.style.setProperty('--minimap-preview-top', `${previewTop}px`);
 }
 // The scroll listener must stay cheap: scroll fires many times per frame, so any
-// forced layout here stutters the whole page. clampReaderScrollPosition() and
-// captureReaderScrollAnchor() both read live geometry (getBoundingClientRect), which
-// forces a synchronous reflow — running them on every event is what made desktop
-// scrolling judder where the web reader (a passive, rAF-only listener — see
-// site/minimap.js) stays smooth. So mark the listener passive and coalesce that work
-// into one rAF per frame. scheduleMinimapViewportUpdate() is itself only a flag check
-// plus a rAF schedule, so it is safe to call on the event. The scroll anchor is only
-// consumed asynchronously (reflow re-pin, re-render, and navigation which recaptures
-// it fresh), so updating it a frame late costs nothing.
+// forced layout or style write here stutters the whole page. The listener is
+// passive and does two things, both coalesced to one rAF per frame: reposition
+// the minimap box (reads only — see measureDocumentMinimap) and re-capture the
+// scroll anchor (a binary search of rect reads). Nothing on the scroll path may
+// WRITE geometry — no scrollTop clamping, no --reader-scroll-origin correction —
+// because a single write invalidates the whole document's layout and the next
+// read forces a synchronous full relayout, which is what made big documents
+// judder where the web reader (site/minimap.js) stays smooth. The anchor is only
+// consumed asynchronously (reflow re-pin, re-render, navigation), so updating it
+// a frame late costs nothing.
 let readerScrollFrame = 0;
 app.addEventListener('scroll', () => {
   // A minimap drag owns the scroll entirely: it sets an already-clamped scrollTop
@@ -2977,7 +3002,9 @@ app.addEventListener('scroll', () => {
   }
   readerScrollFrame = window.requestAnimationFrame(() => {
     readerScrollFrame = 0;
-    clampReaderScrollPosition();
+    // No clamping here: native scrolling cannot leave the scroller's bounds, and
+    // clampReaderScrollPosition() writing scrollTop back mid-scroll fights the
+    // user's gesture. Programmatic jumps clamp themselves via setReaderScrollTop.
     readerScrollAnchor = captureReaderScrollAnchor();
   });
 }, { passive: true });

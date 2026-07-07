@@ -2665,16 +2665,19 @@ body.library-resizing {
   user-select: none;
 }
 /* Holds the scaled document clone. Absolutely positioned so it can slide within
-   the clipped track (JS sets its top via --minimap-preview-top) when the document
-   is taller than the rail, the way a code editor's minimap scrolls. */
+   the clipped track (JS drives --minimap-preview-top every scroll frame) when the
+   document is taller than the rail, the way a code editor's minimap scrolls. The
+   slide is a transform, not `top`: moving `top` re-lays-out the clone — a whole
+   document — on every frame, while a transform only moves the painted layer. */
 .document-minimap-content {
   position: absolute;
-  top: var(--minimap-preview-top, 0px);
+  top: 0;
   right: var(--minimap-padding-inline);
   left: var(--minimap-padding-inline);
   overflow: visible;
   pointer-events: none;
-  will-change: top;
+  transform: translateY(var(--minimap-preview-top, 0px));
+  will-change: transform;
 }
 /* The clone itself: a real, shrunken rendering of the document. JS sets its pixel
    width and the scale transform; transform-origin pins it to the top-left so the
@@ -2705,7 +2708,9 @@ body.library-resizing {
 .document-minimap-viewport {
   position: absolute;
   inset-inline: 0;
-  top: var(--minimap-viewport-top);
+  top: 0;
+  /* Moved with a transform for the same reason as the thumbnail slide above. */
+  transform: translateY(var(--minimap-viewport-top));
   z-index: 1;
   height: var(--minimap-viewport-height);
   min-height: 22px;

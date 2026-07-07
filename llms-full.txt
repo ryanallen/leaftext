@@ -12,6 +12,11 @@
 - Markdown: https://leaftext.com/docs/GLOSSARY.md
 - Summary: One shared glossary for the docs. Link into it with an ordinary Markdown link to this file plus the term's anchor, for example minimap from a page in this folder, or minimap from a page one level d...
 
+## leaftext documentation
+- Page: https://leaftext.com/docs/
+- Markdown: https://leaftext.com/docs/README.md
+- Summary: leaftext is a desktop reader for Markdown and TEI XML: open a local file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searchable library. These docs cover th...
+
 ## Architecture
 - Page: https://leaftext.com/docs/#/development/architecture
 - Markdown: https://leaftext.com/docs/development/architecture.md
