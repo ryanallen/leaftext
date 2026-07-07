@@ -16,7 +16,9 @@ Before building leaftext, make sure the following are installed:
   - **Windows** — WebView2 is provided by the OS via the Microsoft Edge WebView2 Runtime; no extra headers are needed.
 
 > [!NOTE]
-> On Linux, install `libwebkit2gtk-4.1-dev` (or the equivalent package for your distribution) before building. The `wry` crate requires it for the WebView. On Debian/Ubuntu this is: `sudo apt install libwebkit2gtk-4.1-dev`. On Arch Linux the package is `webkit2gtk-4.1`.
+> On Linux, `wry` needs the GTK/WebKitGTK development headers before building. On Debian/Ubuntu, install the same set the release workflow uses:
+> `sudo apt install pkg-config build-essential libgtk-3-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev libssl-dev librsvg2-dev libayatana-appindicator3-dev`.
+> On Arch Linux the core package is `webkit2gtk-4.1`. The authoritative, always-current list is the `apt install` step in `.github/workflows/release-linux.yml`.
 
 ## Clone and build
 
@@ -64,6 +66,7 @@ Each step in the verification pipeline can also be run on its own:
 
 | Task         | Command                     | What it does                                   |
 | ------------ | --------------------------- | ---------------------------------------------- |
+| Format       | `cargo fmt`                 | Reformat the code in place                     |
 | Format check | `cargo fmt --check`         | Verify code formatting without modifying files |
 | Type check   | `cargo check --all-targets` | Check all targets without producing a binary   |
 | Tests        | `cargo test`                | Run the full test suite                        |

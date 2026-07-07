@@ -1,8 +1,8 @@
 # Settings
 
-> leaftext stores preferences locally in JSON: theme, language, speed reader, minimap, indexing, and library layout state.
+> leaftext stores preferences locally: theme, speed reader, minimap, pager, indexing, and library layout state in a JSON file, plus the interface language in the WebView's local storage.
 
-Settings are owned by the Rust app, not by browser storage. That keeps them durable across restarts and consistent across the embedded WebView.
+Most settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView. The one exception is the interface language, kept in the WebView's local storage under `leaf.localeMode`.
 
 ## Options
 
@@ -14,7 +14,7 @@ Settings are owned by the Rust app, not by browser storage. That keeps them dura
 | Minimap | On / Off | On |
 | Pager | On / Off | On |
 | Indexing | On / Off | Off |
-| Library view | Project, Tree, Flat | Project |
+| Library view | Project, Tree, All files | Project |
 
 ## Open
 
@@ -24,10 +24,12 @@ Click **Settings** in the app bar. The panel opens as a dropdown and updates the
 
 | File | Purpose |
 | --- | --- |
-| `{config_dir}/leaftext/settings.json` | Preferences |
-| `{config_dir}/leaftext/recent-files.json` | Last 8 opened files |
-| `{local_data_dir}/leaftext/manifest.db` | Library index |
-| `%LOCALAPPDATA%\ryanallen\leaftext\data\webview2` | Windows WebView2 data |
+| `{config_dir}/settings.json` | Preferences |
+| `{config_dir}/recent-files.json` | Last 8 opened files |
+| `{data_dir}/manifest.db` | Library index |
+| `{data_dir}/webview2` | WebView2 data |
+
+Here `{config_dir}` and `{data_dir}` are the per-app directories the `directories` crate computes from the app id `com.ryanallen.leaftext` — they already include the vendor/app path segments (there is no extra `leaftext/` component to add). See [Paths](#paths) for the real per-platform locations.
 
 ## Example
 
@@ -101,17 +103,18 @@ The app ships both language dictionaries locally and applies changes without a r
 ### Indexing
 
 - Off by default
-- Enables whole-device background crawling on next launch
+- Enabling it starts a whole-device background crawl right away, and again on each launch while it stays on
 - Files you open manually are still indexed even if background indexing is off
 
 ## Paths
 
-- macOS `config_dir`: `~/Library/Application Support`
-- Windows `config_dir`: `%APPDATA%`
-- Linux `config_dir`: `$XDG_CONFIG_HOME` or `~/.config`
-- Linux `local_data_dir`: `$XDG_DATA_HOME` or `~/.local/share`
+The `directories` crate derives these per-app directories from the app id `com.ryanallen.leaftext`:
+
+- macOS: `config_dir` = `data_dir` = `~/Library/Application Support/com.ryanallen.leaftext`
+- Windows: `config_dir` = `%APPDATA%\ryanallen\leaftext\config`; `data_dir` = `%LOCALAPPDATA%\ryanallen\leaftext\data`
+- Linux: `config_dir` = `$XDG_CONFIG_HOME/leaftext` (or `~/.config/leaftext`); `data_dir` = `$XDG_DATA_HOME/leaftext` (or `~/.local/share/leaftext`)
 
 ## Next
 
-- [Library](library.md)
-- [Themes](themes.md)
+- [Library](03-library.md)
+- [Themes](06-themes.md)

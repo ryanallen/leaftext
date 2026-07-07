@@ -20,23 +20,40 @@
 //
 // Both strategies converge on the same shape:
 //   { hasIndex: boolean, nav: NavNode[] }
-//   NavNode = { route, label } | { group, items: NavNode[] }
-// where `route` is the file path under the docs folder without ".md", which is
-// also how it is fetched and how "#/<route>" addresses it.
+//   NavNode = { route, label, path } | { group, items: NavNode[] }
+// where `route` is the clean path under the docs folder without ".md" (how
+// "#/<route>" addresses it) and `path` is the real file to fetch. They match
+// unless a file/folder carries a numeric ordering prefix (see stripOrder).
 // ---------------------------------------------------------------------------
+
+// ---- ordering prefix -------------------------------------------------------
+// A leading numeric prefix ("01-", "02_") orders files and folders in the
+// sidebar without ever showing to the reader: it is stripped from the label AND
+// from the route (so URLs and cross-page links stay clean), while the real,
+// prefixed name is kept as the fetch `path`. Zero-pad so "10" sorts after "02".
+// Word prefixes like "book-1-" are intentionally NOT stripped — those exist for
+// sites that want the number visible in the title.
+const ORDER_PREFIX = /^\d+[-_]+/;
+const stripOrder = (name) => name.replace(ORDER_PREFIX, '');
 
 // ---- labels: mechanical, never hand-set ------------------------------------
 // A name like "markdown-rendering" or "get_started" becomes "Markdown
-// Rendering" / "Get Started". Pure transformation of the on-disk name.
+// Rendering" / "Get Started". Pure transformation of the on-disk name, with any
+// ordering prefix dropped first so it never reaches the label.
 function label(name) {
-  return name
-    .replace(/\.md$/i, '')
+  return stripOrder(name.replace(/\.md$/i, ''))
     .replace(/[-_]+/g, ' ')
     .trim()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 const isReadme = (name) => name.toLowerCase() === 'readme.md';
+// GLOSSARY.md is a bottom-sheet target reached by `GLOSSARY.md#term` links, not a
+// standalone page. Like README, it is never listed as an ordinary nav page (left
+// in, it sorts alphabetically to the very top and leads the sidebar ahead of the
+// Introduction). The bottom sheet fetches it by path directly, independent of nav.
+const isGlossary = (name) => name.toLowerCase() === 'glossary.md';
+const isPageFile = (name) => !isReadme(name) && !isGlossary(name);
 const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
 
 // ---- shared builder --------------------------------------------------------
@@ -49,10 +66,15 @@ const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
 // `hasIndex` (it has no folder heading to attach to). README files are never
 // listed as ordinary pages.
 //
+// `route` is the CLEAN path (ordering prefixes stripped from every segment) used
+// for "#/<route>" addressing and cross-page links; `path` is the REAL file path
+// (prefixes intact, ".md" included) used to fetch it. They differ only when a
+// file or folder carries an ordering prefix.
+//
 // NavNode shapes produced here:
-//   { route, label }                     a page (a non-README .md file)
+//   { route, label, path }               a page (a non-README .md file)
 //   { group, items }                     a folder heading with no index README
-//   { group, route, items }              a folder heading that links to its README
+//   { group, route, path, items }        a folder heading that links to its README
 function buildNav(relPaths) {
   const root = { dirs: new Map(), files: [] };
 
@@ -70,29 +92,42 @@ function buildNav(relPaths) {
 
   const hasIndex = root.files.some(isReadme);
 
-  const toNodes = (node, rel) => {
+  // `rawRel` accumulates the real (prefixed) folder path for fetching; `cleanRel`
+  // accumulates the prefix-stripped path used for routes and links.
+  const toNodes = (node, rawRel, cleanRel) => {
     const out = [];
     node.files
-      .filter((f) => !isReadme(f))
+      .filter(isPageFile)
       .sort(byName)
       .forEach((f) =>
-        out.push({ route: (rel ? rel + '/' : '') + f.replace(/\.md$/i, ''), label: label(f) })
+        out.push({
+          route: (cleanRel ? cleanRel + '/' : '') + stripOrder(f.replace(/\.md$/i, '')),
+          label: label(f),
+          path: (rawRel ? rawRel + '/' : '') + f,
+        })
       );
     [...node.dirs.keys()].sort(byName).forEach((d) => {
-      const childRel = (rel ? rel + '/' : '') + d;
+      const childRaw = (rawRel ? rawRel + '/' : '') + d;
+      const childClean = (cleanRel ? cleanRel + '/' : '') + stripOrder(d);
       const child = node.dirs.get(d);
-      const items = toNodes(child, childRel);
+      const items = toNodes(child, childRaw, childClean);
       const readme = child.files.find(isReadme);
       // A folder with a README becomes a clickable heading (its index); a folder
       // with no README is a plain heading. A folder with neither a README nor any
       // descendant pages is dropped (nothing to point at).
-      if (readme) out.push({ group: label(d), route: childRel + '/' + readme.replace(/\.md$/i, ''), items });
+      if (readme)
+        out.push({
+          group: label(d),
+          route: childClean + '/' + stripOrder(readme.replace(/\.md$/i, '')),
+          path: childRaw + '/' + readme,
+          items,
+        });
       else if (items.length) out.push({ group: label(d), items });
     });
     return out;
   };
 
-  return { hasIndex, nav: toNodes(root, '') };
+  return { hasIndex, nav: toNodes(root, '', '') };
 }
 
 // ---- strategy 1: directory autoindex --------------------------------------

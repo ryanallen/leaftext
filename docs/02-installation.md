@@ -1,6 +1,6 @@
 # Installation
 
-> Download the build for your platform from GitHub Releases, install it, and open a Markdown file.
+> Download the build for your platform from GitHub Releases, install it, and open a Markdown or TEI XML file.
 
 leaftext ships prebuilt binaries for macOS, Windows, and Linux. There is no account, no plugin setup, and no extra runtime to configure first.
 
@@ -72,7 +72,7 @@ cd leaftext-*-linux-x86_64
 ```mermaid
 flowchart LR
     A[Install leaftext] --> B[Launch app]
-    B --> C[Open .md file]
+    B --> C[Open .md or .xml file]
     C --> D[Read]
 ```
 
@@ -82,12 +82,12 @@ Use `Ctrl+O` on Windows/Linux or `Cmd+O` on macOS to open your first file.
 
 ### Admin rights
 
-No for normal use. On Windows, app data is stored in `%LOCALAPPDATA%`, not beside the executable in `Program Files`.
+No for normal use. On Windows, app data lives under your user profile — `%APPDATA%\ryanallen\leaftext` for settings and recent files, `%LOCALAPPDATA%\ryanallen\leaftext` for the WebView2 cache and the library index — not beside the executable in `Program Files`.
 
 ### Data paths
 
-See [Settings](features/settings.md#paths).
+See [Settings](01-features/05-settings.md#paths).
 
 ### Next
 
-Go to [Quickstart](quickstart.md).
+Go to [Quickstart](03-quickstart.md).

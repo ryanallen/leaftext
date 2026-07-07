@@ -1,6 +1,6 @@
 # Quickstart
 
-> Open a Markdown or TEI XML file, learn the core controls, and get comfortable with [tabs](features/navigation.md#tabs), [history](features/navigation.md#history), the [minimap](features/minimap.md), and the [library](features/library.md) in a few minutes.
+> Open a Markdown or TEI XML file, learn the core controls, and get comfortable with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), the [minimap](01-features/04-minimap.md), and the [library](01-features/03-library.md) in a few minutes.
 
 leaftext is meant to be usable immediately. This page shows the smallest useful path through the app: open a file, read it, move around, and reopen it later.
 
@@ -97,6 +97,6 @@ That single file lets you verify headings, task lists, callouts, and syntax high
 
 ## Next
 
-- [Markdown Rendering](features/markdown-rendering.md) for supported syntax and examples
-- [Navigation](features/navigation.md) for tabs, history, and live reload
-- [Library](features/library.md) for search and indexing
+- [Rendering](01-features/01-rendering.md) for supported syntax and examples
+- [Navigation](01-features/02-navigation.md) for tabs, history, and live reload
+- [Library](01-features/03-library.md) for search and indexing

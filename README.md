@@ -17,21 +17,21 @@
 
 ---
 
-A leaf is a page. **Leaf Text** opens a Markdown file and [renders it for reading](docs/features/markdown-rendering.md) — [code](docs/features/markdown-rendering.md#code), [diagrams](docs/features/markdown-rendering.md#mermaid-diagrams), [math](docs/features/markdown-rendering.md#math), [emoji](docs/features/markdown-rendering.md#emoji), just as GitHub would, all on your own machine. It also opens [TEI XML](docs/features/markdown-rendering.md#tei-xml-84000-translations) — the 84000 Buddhist-canon translation format — and renders it the same way.
+A leaf is a page. **Leaf Text** opens a Markdown file and [renders it for reading](docs/01-features/01-rendering.md) — [code](docs/01-features/01-rendering.md#code), [diagrams](docs/01-features/01-rendering.md#mermaid-diagrams), [math](docs/01-features/01-rendering.md#math), [emoji](docs/01-features/01-rendering.md#emoji), just as GitHub would, all on your own machine. It also opens [TEI XML](docs/01-features/01-rendering.md#tei-xml-84000-translations) — the 84000 Buddhist-canon translation format — and renders it the same way.
 
-A [minimap](docs/features/minimap.md) for long pages, [tabs](docs/features/navigation.md#tabs) with [history](docs/features/navigation.md#history), [live reload on save](docs/features/navigation.md#reload), and a searchable [library](docs/features/library.md) of every Markdown file you own. [Light, dark, and Dracula](docs/features/themes.md).
+A [minimap](docs/01-features/04-minimap.md) for long pages, [tabs](docs/01-features/02-navigation.md#tabs) with [history](docs/01-features/02-navigation.md#history), [live reload on save](docs/01-features/02-navigation.md#reload), and a searchable [library](docs/01-features/03-library.md) of every Markdown file you own. [Light, dark, and Dracula](docs/01-features/06-themes.md).
 
 No editor, no clutter — just the rendered page.
 
 ## Documentation
 
-New here? Start with the **[Quickstart](docs/quickstart.md)**, or browse the **[full documentation](docs/introduction.md)**.
+New here? Start with the **[Quickstart](docs/03-quickstart.md)**, or browse the **[full documentation](docs/01-introduction.md)**.
 
 The pages are plain Markdown under [`docs/`](docs/) — edit them there.
 
 ## Installation
 
-Full setup notes — including troubleshooting — live in the [Installation guide](docs/installation.md).
+Full setup notes — including troubleshooting — live in the [Installation guide](docs/02-installation.md).
 
 ### macOS
 
@@ -71,7 +71,7 @@ Linux builds are on the [Releases](https://github.com/ryanallen/leaftext/release
 
 ## Development
 
-See [Building](docs/development/building.md), [Architecture](docs/development/architecture.md), and [Releasing](docs/development/releasing.md) for the full developer docs.
+See [Building](docs/02-development/02-building.md), [Architecture](docs/02-development/01-architecture.md), and [Releasing](docs/02-development/03-releasing.md) for the full developer docs.
 
 Run the full verification suite before handing work back:
 

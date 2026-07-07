@@ -48,11 +48,17 @@ function rel(full) {
   return relative(ROOT, full).split('\\').join('/');
 }
 
+// A leading numeric ordering prefix ("01-", "02_") sorts files in the docs
+// sidebar but is invisible to the reader — strip it from routes and titles here
+// too, so canonical URLs match the SPA's clean routes. Mirrors site/docs-nav.js.
+const stripOrder = (seg) => seg.replace(/^\d+[-_]+/, '');
+
 // A readable title built from a file's path, used when the file has no heading.
 function titleFromPath(relPath) {
   let slug = relPath.replace(/\/README\.md$/i, '').replace(/\.md$/i, '');
   slug = slug.slice(slug.lastIndexOf('/') + 1);
   slug = slug.replace(/^(?:book|chapter|part|section|vol|volume)-\d+-/i, '');
+  slug = stripOrder(slug);
   const titleCase = (s) =>
     s
       .split('-')
@@ -121,8 +127,12 @@ function summaryOf(relPath) {
 function pageUrl(relPath) {
   if (relPath === 'README.md') return ORIGIN + '/';
   if (relPath.startsWith('docs/')) {
-    const route = relPath.slice('docs/'.length).replace(/\.md$/i, '');
-    if (route === 'README') return ORIGIN + '/docs/';
+    const rawRoute = relPath.slice('docs/'.length).replace(/\.md$/i, '');
+    if (rawRoute === 'README') return ORIGIN + '/docs/';
+    // Strip the ordering prefix from every path segment so the canonical URL is
+    // the clean route the SPA actually uses (e.g. "features/rendering", not
+    // "01-features/01-rendering").
+    const route = rawRoute.split('/').map(stripOrder).join('/');
     return ORIGIN + '/docs/#/' + route;
   }
   return ORIGIN + '/' + relPath;

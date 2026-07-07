@@ -1,6 +1,6 @@
 # Themes
 
-> leaftext ships four themes and applies them through a compiler-checked semantic token contract, so the reader, code blocks, alerts, and minimap stay visually consistent.
+> leaftext offers four theme modes — System, Light, Dark, and Dracula — built on three palettes, and applies them through a semantic token contract checked when the theme CSS is compiled at launch, so the reader, code blocks, alerts, and minimap stay visually consistent.
 
 From the user side, themes are simple: pick one in Settings and the app updates immediately. Under the hood, every theme has to cover the full `--leaf-*` token set.
 
@@ -83,5 +83,5 @@ On Windows, leaftext also repaints the native title bar to match the active them
 
 ## Next
 
-- [Settings](settings.md)
-- [Theming](../development/theming.md)
+- [Settings](05-settings.md)
+- [Theming](../02-development/04-theming.md)

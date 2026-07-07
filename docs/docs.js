@@ -69,6 +69,25 @@ async function deriveRepo() {
 let NAV = [];
 let PAGES = []; // flat list of every page, in sidebar order (for the pager)
 let HAS_INDEX = false; // is there a docs/README.md to use as the landing page?
+// Clean route -> real file path (with ".md"), for the pages whose on-disk name
+// carries a numeric ordering prefix. Built from the live tree in boot().
+let ROUTE_TO_PATH = new Map();
+
+// The file to fetch for a route. Prefers the nav's real path (which honors any
+// ordering prefix on disk); falls back to "<route>.md" so a hand-typed or
+// not-yet-in-nav route (and the GLOSSARY, fetched by literal path) still loads.
+function fileForRoute(route) {
+  if (route === '') return 'README.md';
+  return ROUTE_TO_PATH.get(route) || route + '.md';
+}
+
+function collectRoutePaths(nodes, map) {
+  for (const node of nodes) {
+    if (node.route && node.path) map.set(node.route, node.path);
+    if (node.items) collectRoutePaths(node.items, map);
+  }
+  return map;
+}
 
 // The route of the page whose content is currently on screen, set only when a
 // render SUCCEEDS. In-page relative links resolve against this, not the URL hash
@@ -100,7 +119,7 @@ installLinkTooltip(document, {
     const { route } = routeAndAnchorFromHref(href, displayedRoute);
     if (!route) return null;
     try {
-      return new URL(route + '.md', location.href).href;
+      return new URL(fileForRoute(route), location.href).href;
     } catch (error) {
       return null;
     }
@@ -213,7 +232,16 @@ function currentRoute() {
 function routeAndAnchorFromHref(href, fromRoute) {
   const dir = fromRoute.includes('/') ? fromRoute.slice(0, fromRoute.lastIndexOf('/') + 1) : '';
   const resolved = new URL(href, 'https://docs.local/' + dir);
-  const route = resolved.pathname.replace(/^\/+/, '').replace(/\.md$/i, '');
+  // Links point at the real files on disk, which may carry a numeric ordering
+  // prefix ("01-features/02-navigation.md"). Strip the prefix from every segment
+  // so the in-app route — and the URL — stays clean ("features/navigation");
+  // fileForRoute() maps it back to the real file to fetch.
+  const route = resolved.pathname
+    .replace(/^\/+/, '')
+    .replace(/\.md$/i, '')
+    .split('/')
+    .map((seg) => seg.replace(/^\d+[-_]+/, ''))
+    .join('/');
   const anchor = resolved.hash ? resolved.hash.slice(1) : '';
   // Any internal ".md" link becomes an in-app route. We do not check it against
   // the nav set — that set can be stale/incomplete; an actually-missing target
@@ -410,7 +438,7 @@ function breadcrumbItems(route, heading) {
 }
 
 function setHeadMetadata(route, heading) {
-  const file = route === '' ? 'README.md' : route + '.md';
+  const file = fileForRoute(route);
   const canonical = new URL(location.hash || '#/', location.href).href;
 
   upsertHead('link[rel="canonical"]', 'link', { rel: 'canonical', href: canonical });
@@ -478,7 +506,7 @@ async function render(route, anchor) {
     return;
   }
 
-  const file = route === '' ? 'README.md' : route + '.md';
+  const file = fileForRoute(route);
   try {
     statusEl.hidden = false;
     statusEl.textContent = 'Loading…';
@@ -550,6 +578,7 @@ let lastRoute = null;
   }
 
   PAGES = collectPages(NAV);
+  ROUTE_TO_PATH = collectRoutePaths(NAV, new Map());
 
   // A non-glossary link followed from inside the sheet (or "Open the full
   // glossary") routes through the docs router; an external link opens normally.

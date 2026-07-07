@@ -1,8 +1,8 @@
-# Markdown Rendering
+# Rendering
 
-> leaftext renders CommonMark, GFM, and the GitHub-style extras people actually use: code fences, Mermaid, math, alerts, footnotes, emoji, and local images.
+> leaftext reads two formats. It renders CommonMark and GFM Markdown with the GitHub-style extras people actually use — code fences, Mermaid, math, alerts, footnotes, emoji, and local images — and it renders 84000-style TEI XML translations.
 
-leaftext parses Markdown in Rust with `pulldown-cmark`, applies a GitHub-like rendering pipeline, sanitizes the HTML, and then hands the finished result to the WebView. Every feature below is shown with a live example, rendered by the same engine that draws your documents.
+leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`, `.mdown`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. TEI XML (`.xml`) takes a parallel path — parsed with `roxmltree` and rendered by `tei_render_body` into the same HTML shell (see [TEI XML](#tei-xml-84000-translations)). Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the TEI section is described rather than demonstrated, since a Markdown page cannot embed a live TEI document.
 
 ## Summary
 
@@ -160,8 +160,8 @@ GFM tables with a header row and a body:
 
 - Inline link: [the Leaf Text repo](https://github.com/ryanallen/leaftext)
 - Reference link: [CommonMark][cm]
-- Relative link to a sibling page: [Navigation](navigation.md)
-- In-page link back to the [top](#markdown-rendering)
+- Relative link to a sibling page: [Navigation](02-navigation.md)
+- In-page link back to the [top](#rendering)
 - Bare URL autolink: https://github.com/ryanallen/leaftext
 - www autolink: www.example.com
 - Email autolink: hello@example.com
@@ -303,7 +303,7 @@ Definition list:
 
 Accepted values: `left`, `center`, `right`, `justify`. Note: `align` is stripped from `<blockquote>` — it is not in the allowlist for that tag.
 
-An `id` on any block element creates a named anchor with a stable, author-controlled address for deep-linking:
+An `id` on a `<div>`, `<p>`, `<span>`, or a heading (`<h1>`–`<h6>`) creates a named anchor with a stable, author-controlled address for deep-linking (the sanitizer keeps `id` only on those tags):
 
 <h1 id="foreword" align="center">Foreword</h1>
 
@@ -368,6 +368,6 @@ The web reader (`site/reader.js`) routes `.xml` content through `renderTEI()` fr
 
 ## Next
 
-- [Navigation](navigation.md)
-- [Themes](themes.md)
-- [Architecture](../development/architecture.md)
+- [Navigation](02-navigation.md)
+- [Themes](06-themes.md)
+- [Architecture](../02-development/01-architecture.md)

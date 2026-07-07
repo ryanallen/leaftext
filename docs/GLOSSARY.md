@@ -1,7 +1,3 @@
----
-glossary: GLOSSARY.md
----
-
 # Glossary
 
 One shared glossary for the docs. Link into it with an ordinary Markdown link

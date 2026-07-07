@@ -1,6 +1,6 @@
 # Library
 
-> The library pane lets you browse and search Markdown files from a local SQLite index, with Project, Tree, and Flat views.
+> The library pane lets you browse and search Markdown files from a local SQLite index, with Project, Tree, and All files views.
 
 The library is the part of leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane and is backed by a local indexer.
 
@@ -10,7 +10,7 @@ The library is the part of leaftext that helps you find documents, not just read
 | --- | --- |
 | Project view | One folder at a time, drilled into the current project |
 | Tree view | Nested folder hierarchy |
-| Flat view | One alphabetized file list |
+| All files view | One alphabetized file list |
 | Search | Filename and content search |
 | File actions | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
 
@@ -20,7 +20,7 @@ The library is the part of leaftext that helps you find documents, not just read
 flowchart LR
     A[Library pane] --> B[Project]
     A --> C[Tree]
-    A --> D[Flat]
+    A --> D[All files]
 ```
 
 ### Project
@@ -39,9 +39,9 @@ Best when you want the whole hierarchy visible.
 - Expanded state is saved.
 - Folders with no Markdown files are pruned.
 
-### Flat
+### All files
 
-Best when you know the filename but not the path.
+Best when you know the filename but not the path. (Labelled **All files** in the view picker.)
 
 - One alphabetized list
 - No folder nesting
@@ -105,7 +105,7 @@ The library pane keeps up with changes on disk, so a file you just created shows
 flowchart LR
     A[Filesystem crawl] --> B[4 parse/hash workers]
     B --> C[SQLite manifest]
-    C --> D[Project / Tree / Flat views]
+    C --> D[Project / Tree / All files views]
     C --> E[Search results]
 ```
 
@@ -167,7 +167,7 @@ Indexing is off by default.
 
 When enabled:
 
-1. A background crawl starts on the next app launch.
+1. A background crawl starts right away — and again on each app launch while the setting stays on.
 2. Search and browse expand as the manifest fills in.
 
 When disabled:
@@ -178,6 +178,6 @@ When disabled:
 
 ## Next
 
-- [Settings](settings.md)
-- [Navigation](navigation.md)
-- [Architecture](../development/architecture.md)
+- [Settings](05-settings.md)
+- [Navigation](02-navigation.md)
+- [Architecture](../02-development/01-architecture.md)

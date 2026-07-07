@@ -10,19 +10,20 @@ The minimap clones the rendered document and shrinks it to the rail width with a
 
 A viewport indicator overlays the portion currently visible; as you scroll, it moves in lockstep. When the document is taller than the rail, the thumbnail itself slides inside the rail (again, like a code editor) so the region around your position stays in view. Clicking anywhere on the rail scrolls the reader to that point in the document; dragging the indicator keeps the grabbed point under the cursor.
 
-The clone is rebuilt only when it needs to be — when the document's content changes (live reload, or code highlighting, Mermaid diagrams, and math settling in), when images finish loading, or when the rail resizes. It is **never** rebuilt on scroll. Only two CSS custom properties are written as you scroll:
+The clone is rebuilt only when it needs to be — when the document's content changes (live reload, or code highlighting, Mermaid diagrams, and math settling in), when images finish loading, or when the rail resizes. It is **never** rebuilt on scroll. Only three CSS custom properties are written as you scroll:
 
 - `--minimap-viewport-top` — positions the viewport indicator within the rail
 - `--minimap-viewport-height` — sizes the indicator proportionally to the reader window
+- `--minimap-preview-top` — slides the thumbnail inside the rail on tall documents (the CSS maps it to the clone's `top`)
 
-plus the thumbnail's `top` offset for the slide. A `requestAnimationFrame`-throttled loop writes those on scroll, so the rail stays fluid without blocking the main thread. The indicator's height and travel come from the reader's real scroll range and the clone's own measured height, so click-to-scroll and the indicator stay aligned with the thumbnail on documents of any length.
+A `requestAnimationFrame`-throttled loop writes those on scroll, so the rail stays fluid without blocking the main thread. The indicator's height and travel come from the reader's real scroll range and the clone's own measured height, so click-to-scroll and the indicator stay aligned with the thumbnail on documents of any length.
 
 > [!NOTE]
 > The thumbnail is a second, scaled-down layout of the whole document, built for the rail so it can show real text at the right height. For a very large document that costs extra memory and a background layout pass when the thumbnail is (re)built, but it is never on the scroll path. It is the deliberate trade for a legible, honest thumbnail.
 
 ## Whether the rail appears
 
-The Rust side produces a small `DocumentMinimap` for each document whose only job now is to report a positive line count: an empty or zero-line document reports `0` and the rail is skipped entirely. [TEI XML documents](markdown-rendering.md#tei-xml-84000-translations) report their count from the rendered block HTML (they have no Markdown source to line-scan), so an opened `.xml` translation gets the same real-text rail as a Markdown file — the thumbnail itself is always the live clone, whatever the source format.
+The Rust side produces a small `DocumentMinimap` for each document whose only job now is to report a positive line count: an empty or zero-line document reports `0` and the rail is skipped entirely. [TEI XML documents](01-rendering.md#tei-xml-84000-translations) report their count from the rendered block HTML (they have no Markdown source to line-scan), so an opened `.xml` translation gets the same real-text rail as a Markdown file — the thumbnail itself is always the live clone, whatever the source format.
 
 ## Responsive behavior
 

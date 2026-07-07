@@ -7,6 +7,71 @@
 - Markdown: https://leaftext.com/README.md
 - Summary: Leaf Text — Markdown, made to read
 
+## Rendering
+- Page: https://leaftext.com/docs/#/features/rendering
+- Markdown: https://leaftext.com/docs/01-features/01-rendering.md
+- Summary: leaftext picks a pipeline from the file extension. Markdown (.md, .markdown, .mdown) is parsed in Rust with pulldown-cmark, run through a GitHub-like rendering pipeline, sanitized, and handed to th...
+
+## Navigation
+- Page: https://leaftext.com/docs/#/features/navigation
+- Markdown: https://leaftext.com/docs/01-features/02-navigation.md
+- Summary: The navigation model is simple from the outside and fairly careful under the hood. Each tab keeps its own file history and its own in-document scroll history.
+
+## Library
+- Page: https://leaftext.com/docs/#/features/library
+- Markdown: https://leaftext.com/docs/01-features/03-library.md
+- Summary: The library is the part of leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane and is backed by a local indexer.
+
+## Minimap
+- Page: https://leaftext.com/docs/#/features/minimap
+- Markdown: https://leaftext.com/docs/01-features/04-minimap.md
+- Summary: The minimap is a scaled side-rail showing the actual document beside the reading view. It gives you spatial orientation in long documents and lets you jump to any section by clicking or dragging. B...
+
+## Settings
+- Page: https://leaftext.com/docs/#/features/settings
+- Markdown: https://leaftext.com/docs/01-features/05-settings.md
+- Summary: Most settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView. The one exception is the interface language...
+
+## Themes
+- Page: https://leaftext.com/docs/#/features/themes
+- Markdown: https://leaftext.com/docs/01-features/06-themes.md
+- Summary: From the user side, themes are simple: pick one in Settings and the app updates immediately. Under the hood, every theme has to cover the full --leaf- token set.
+
+## Meet leaftext
+- Page: https://leaftext.com/docs/#/introduction
+- Markdown: https://leaftext.com/docs/01-introduction.md
+- Summary: leaftext is a desktop app for reading local Markdown and TEI XML on macOS, Windows, and Linux. Open a file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searc...
+
+## Architecture
+- Page: https://leaftext.com/docs/#/development/architecture
+- Markdown: https://leaftext.com/docs/02-development/01-architecture.md
+- Summary: leaftext is a single Rust binary that embeds a WebView (via wry) inside a native window (via tao). The Markdown rendering pipeline runs on the Rust side; the result is injected into the WebView as ...
+
+## Building
+- Page: https://leaftext.com/docs/#/development/building
+- Markdown: https://leaftext.com/docs/02-development/02-building.md
+- Summary: leaftext is a Rust application (edition 2021). Building from source requires the Rust toolchain and the just command runner.
+
+## Releasing
+- Page: https://leaftext.com/docs/#/development/releasing
+- Markdown: https://leaftext.com/docs/02-development/03-releasing.md
+- Summary: leaftext releases are managed with a single just release command — but it does not bump the version for you. You edit version in Cargo.toml to the new value and commit it first; just release then v...
+
+## Theming
+- Page: https://leaftext.com/docs/#/development/theming
+- Markdown: https://leaftext.com/docs/02-development/04-theming.md
+- Summary: leaftext's theme system is built around a semantic token contract — a set of approximately 100 --leaf- CSS custom properties that every theme must define. The contract is not enforced by the Rust c...
+
+## Installation
+- Page: https://leaftext.com/docs/#/installation
+- Markdown: https://leaftext.com/docs/02-installation.md
+- Summary: leaftext ships prebuilt binaries for macOS, Windows, and Linux. There is no account, no plugin setup, and no extra runtime to configure first.
+
+## Quickstart
+- Page: https://leaftext.com/docs/#/quickstart
+- Markdown: https://leaftext.com/docs/03-quickstart.md
+- Summary: leaftext is meant to be usable immediately. This page shows the smallest useful path through the app: open a file, read it, move around, and reopen it later.
+
 ## Glossary
 - Page: https://leaftext.com/docs/#/GLOSSARY
 - Markdown: https://leaftext.com/docs/GLOSSARY.md
@@ -16,68 +81,3 @@
 - Page: https://leaftext.com/docs/
 - Markdown: https://leaftext.com/docs/README.md
 - Summary: leaftext is a desktop reader for Markdown and TEI XML: open a local file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searchable library. These docs cover th...
-
-## Architecture
-- Page: https://leaftext.com/docs/#/development/architecture
-- Markdown: https://leaftext.com/docs/development/architecture.md
-- Summary: leaftext is a single Rust binary that embeds a WebView (via wry) inside a native window (via tao). The Markdown rendering pipeline runs on the Rust side; the result is injected into the WebView as ...
-
-## Building
-- Page: https://leaftext.com/docs/#/development/building
-- Markdown: https://leaftext.com/docs/development/building.md
-- Summary: leaftext is a Rust application (edition 2021). Building from source requires the Rust toolchain and the just command runner.
-
-## Releasing
-- Page: https://leaftext.com/docs/#/development/releasing
-- Markdown: https://leaftext.com/docs/development/releasing.md
-- Summary: leaftext releases are managed with a single just release command. It bumps the version in Cargo.toml, creates a git tag, and pushes to the remote — CI takes over from there to build all platform ar...
-
-## Theming
-- Page: https://leaftext.com/docs/#/development/theming
-- Markdown: https://leaftext.com/docs/development/theming.md
-- Summary: leaftext's theme system is built around a semantic token contract — a set of approximately 100 --leaf- CSS custom properties that every theme must define. This contract is verified at compile time,...
-
-## Library
-- Page: https://leaftext.com/docs/#/features/library
-- Markdown: https://leaftext.com/docs/features/library.md
-- Summary: The library is the part of leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane and is backed by a local indexer.
-
-## Markdown Rendering
-- Page: https://leaftext.com/docs/#/features/markdown-rendering
-- Markdown: https://leaftext.com/docs/features/markdown-rendering.md
-- Summary: leaftext parses Markdown in Rust with pulldown-cmark, applies a GitHub-like rendering pipeline, sanitizes the HTML, and then hands the finished result to the WebView. Every feature below is shown w...
-
-## Minimap
-- Page: https://leaftext.com/docs/#/features/minimap
-- Markdown: https://leaftext.com/docs/features/minimap.md
-- Summary: The minimap is a scaled side-rail showing the actual document beside the reading view. It gives you spatial orientation in long documents and lets you jump to any section by clicking or dragging. B...
-
-## Navigation
-- Page: https://leaftext.com/docs/#/features/navigation
-- Markdown: https://leaftext.com/docs/features/navigation.md
-- Summary: The navigation model is simple from the outside and fairly careful under the hood. Each tab keeps its own file history and its own in-document scroll history.
-
-## Settings
-- Page: https://leaftext.com/docs/#/features/settings
-- Markdown: https://leaftext.com/docs/features/settings.md
-- Summary: Settings are owned by the Rust app, not by browser storage. That keeps them durable across restarts and consistent across the embedded WebView.
-
-## Themes
-- Page: https://leaftext.com/docs/#/features/themes
-- Markdown: https://leaftext.com/docs/features/themes.md
-- Summary: From the user side, themes are simple: pick one in Settings and the app updates immediately. Under the hood, every theme has to cover the full --leaf- token set.
-
-## Installation
-- Page: https://leaftext.com/docs/#/installation
-- Markdown: https://leaftext.com/docs/installation.md
-- Summary: leaftext ships prebuilt binaries for macOS, Windows, and Linux. There is no account, no plugin setup, and no extra runtime to configure first.
-
-## Meet leaftext
-- Page: https://leaftext.com/docs/#/introduction
-- Markdown: https://leaftext.com/docs/introduction.md
-- Summary: leaftext is a desktop app for reading local Markdown and TEI XML on macOS, Windows, and Linux. Open a file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searc...
-
-## Quickstart
-- Page: https://leaftext.com/docs/#/quickstart
-- Markdown: https://leaftext.com/docs/quickstart.md
-- Summary: leaftext is meant to be usable immediately. This page shows the smallest useful path through the app: open a file, read it, move around, and reopen it later.

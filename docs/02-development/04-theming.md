@@ -1,8 +1,8 @@
 # Theming
 
-> leaftext enforces a compile-time semantic token contract of ~100 CSS custom properties. Learn how themes are defined, compiled, and validated.
+> leaftext enforces a semantic token contract of ~100 CSS custom properties, validated when the theme CSS is compiled at startup. Learn how themes are defined, compiled, and validated.
 
-leaftext's theme system is built around a semantic token contract — a set of approximately 100 `--leaf-*` CSS custom properties that every theme must define. This contract is verified at compile time, guaranteeing that no token is ever undefined in any theme. If a token is missing, the Rust build fails with an explicit assertion error.
+leaftext's theme system is built around a semantic token contract — a set of approximately 100 `--leaf-*` CSS custom properties that every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
 
 ## The token contract
 
@@ -34,7 +34,7 @@ Button background, foreground, hover, and disabled states for the back/forward/o
 
 ## Theme sources
 
-Three theme sources are defined in `src/theme.rs`. Each is a `ThemeSource` struct with an `id`, a CSS `selector`, a `kind`, and a flat `tokens` slice mapping every contract property to a value:
+Three theme sources are defined in `src/theme.rs`. Each is a `ThemeSource` struct with an `id`, a `display_name`, a CSS `selector`, a `kind`, a `selectable` flag, a flat `tokens` slice mapping every contract property to a value, and an `overrides` slice for per-source token nudges (empty for most themes):
 
 | Theme ID       | Selector trigger                                                                                               | Token strategy                                                                                                                                 |
 | -------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -42,11 +42,11 @@ Three theme sources are defined in `src/theme.rs`. Each is a `ThemeSource` struc
 | `primer-dark`  | `[data-color-mode="dark"][data-dark-theme="dark"]` and `[data-color-mode="auto"][data-light-theme="dark"]`     | Same Primer primitive variables; Primer's dark-mode cascade supplies different resolved values.                                                |
 | `dracula`      | `:root[data-leaf-theme-source="dracula"]`                                                                      | Maps every `--leaf-*` token directly to Dracula palette hex values (e.g. `#282a36`, `#f8f8f2`, `#bd93f9`). No dependency on Primer primitives. |
 
-The `primer-light` and `primer-dark` sources share the same `PRIMER_THEME_TOKENS` slice. Because they use CSS `var()` references into the Primer primitive cascade, the same token map produces the correct resolved color in both light and dark contexts.
+The `primer-light` and `primer-dark` sources share the same `PRIMER_THEME_TOKENS` slice. Because they use CSS `var()` references into the Primer primitive cascade, the same token map produces the correct resolved color in both light and dark contexts. `primer-dark` additionally layers `PRIMER_DARK_BORDER_OVERRIDES` on top through its `overrides` field — `theme_source_token_value()` checks `overrides` before `tokens`, so the dark source shifts its border family (a slate-blue nudge) while sharing the rest of the map.
 
 The `dracula` source uses `ThemeSourceKind::Dracula` and activates through the `data-leaf-theme-source="dracula"` attribute, deliberately isolated from the Primer color-mode selectors.
 
-## Compile-time assertion
+## Startup contract check
 
 `assert_theme_sources_cover_contract()` in `src/theme.rs` runs at startup (called from `compiled_theme_css()`, which is called from `reading_mode_css()`, which is called from `app_shell_html()`). It performs the following checks for every theme source:
 
@@ -55,6 +55,7 @@ The `dracula` source uses `ThemeSourceKind::Dracula` and activates through the `
 - Dracula-kind sources use the `data-leaf-theme-source` selector (not the shared Primer color-mode selectors).
 - No duplicate token declarations within a single source.
 - Every token in `LEAF_SEMANTIC_TOKEN_CONTRACT` is covered by the source.
+- At least two sources are `selectable`, so the picker always has a light and a dark option.
 
 Because `reading_mode_css()` is cached in a `OnceLock<String>` and called on the first paint, a missing token causes a `panic!` with a message like:
 
@@ -62,7 +63,7 @@ Because `reading_mode_css()` is cached in a `OnceLock<String>` and called on the
 theme source primer-light missing required token --leaf-syntax-changed-background
 ```
 
-This surfaces as a build-time or launch-time failure, never silently producing a broken theme.
+This surfaces as a test-time or launch-time failure (any run that compiles the theme CSS), never silently producing a broken theme.
 
 ## `compiled_theme_css()`
 
@@ -105,6 +106,7 @@ ThemeSource {
     kind: ThemeSourceKind::Dracula, // or a new kind if you add one
     selectable: true,
     tokens: MY_THEME_TOKENS,
+    overrides: &[], // per-source token nudges; empty for most themes
 }
 ```
 
@@ -121,4 +123,4 @@ If any token in `LEAF_SEMANTIC_TOKEN_CONTRACT` is missing from your new source, 
 Add a new `<option>` element to the `#themeMode` `<select>` in the page markup at `src/assets/app-shell.html`, and add translation keys for both `en` and `zh-CN` in `locale_bootstrap_script()` in `src/lib.rs`.
 
 > [!WARNING]
-> The compile-time token check uses exact string matching against the names in `LEAF_SEMANTIC_TOKEN_CONTRACT`. Ensure every token name in your new theme map is spelled exactly as it appears in that list — a single typo (e.g. `--leaf-sytax-keyword` instead of `--leaf-syntax-keyword`) will not match and the assertion will fail at startup with a "missing required token" message.
+> The startup token check uses exact string matching against the names in `LEAF_SEMANTIC_TOKEN_CONTRACT`. Ensure every token name in your new theme map is spelled exactly as it appears in that list — a single typo (e.g. `--leaf-sytax-keyword` instead of `--leaf-syntax-keyword`) will not match and the assertion will fail at startup with a "missing required token" message.

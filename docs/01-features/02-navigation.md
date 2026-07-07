@@ -40,8 +40,10 @@ flowchart LR
 | Close tab | `Ctrl+W` | `Cmd+W` |
 | Back | `Alt+Left` | `Cmd+Left` |
 | Forward | `Alt+Right` | `Cmd+Right` |
+| Next tab | `Ctrl+Tab` | `Ctrl+Tab` |
+| Previous tab | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` |
 
-Mouse side buttons also trigger Back and Forward on Windows and Linux.
+Tab cycling is `Ctrl`-based on every platform, including macOS. Mouse side buttons also trigger Back and Forward.
 
 ## Tabs
 
@@ -96,9 +98,9 @@ Key details:
 
 - The file watcher debounces events with a 200 ms window.
 - leaftext hashes the file contents to skip duplicate reloads.
-- Reload re-renders through the same pipeline the file opened with — [TEI XML](markdown-rendering.md#tei-xml-84000-translations) stays TEI, Markdown stays Markdown.
+- Reload re-renders through the same pipeline the file opened with — [TEI XML](01-rendering.md#tei-xml-84000-translations) stays TEI, Markdown stays Markdown.
 - The parent directory is watched instead of only the file, so atomic-save editors still work.
-- Other Markdown files changed in that same folder are indexed live, so the [library](library.md#live-updates) pane stays current too.
+- Other Markdown files changed in that same folder are indexed live, so the [library](03-library.md#live-updates) pane stays current too.
 
 ## Recent files
 
@@ -147,19 +149,19 @@ Keep your place with the [minimap](glossary:minimap).
 The `glossary:` link carries no file path, so the same text works from any page no matter how deeply it is nested. A plain relative link to the file also works — `[minimap](GLOSSARY.md#minimap)`, or `[minimap](../GLOSSARY.md#minimap)` from a page one folder down — but you have to count the folders yourself. Both forms open the same sheet as the automatic links.
 
 > [!TIP]
-> These docs ship their own glossary. The links in the [Introduction](../introduction.md) — like [minimap](../GLOSSARY.md#minimap) — open this set's [GLOSSARY.md](../GLOSSARY.md); click one to see the sheet in action.
+> These docs ship their own glossary. The links in the [Introduction](../01-introduction.md) — like [minimap](../GLOSSARY.md#minimap) — open this set's [GLOSSARY.md](../GLOSSARY.md); click one to see the sheet in action.
 
 ## Outline
 
 Every document opens with an **Outline** — a table of contents built automatically from the document's headings — tucked just under the title. It starts collapsed, so it never crowds the top of the page; click it to expand.
 
-- The collapsed header shows the document's total length — **Outline (312 lines)** — counted in the same running block numbers as the [line gutter](markdown-rendering.md#inline-html), so the count matches the last gutter number on the page.
+- The collapsed header shows the document's total length — **Outline (312 lines)** — counted in the same running block numbers as the [line gutter](01-rendering.md#inline-html), so the count matches the last gutter number on the page.
 - Entries nest as a bulleted list that mirrors the heading levels, so the shape of the document is visible at a glance.
 - Each entry links to its heading, so clicking one jumps straight there.
-- It is built from the rendered headings, so it behaves the same for Markdown and [TEI XML](markdown-rendering.md#tei-xml-84000-translations).
+- It is built from the rendered headings, so it behaves the same for Markdown and [TEI XML](01-rendering.md#tei-xml-84000-translations).
 - It appears whenever a document has a title plus at least one more heading; a document with only a title shows none.
 
-The outline lists the sections within the current document, which makes it a companion to the [minimap](minimap.md): the outline is the document's structure as clickable text, the minimap a scaled picture of the whole page.
+The outline lists the sections within the current document, which makes it a companion to the [minimap](04-minimap.md): the outline is the document's structure as clickable text, the minimap a scaled picture of the whole page.
 
 ## Pager
 
@@ -169,7 +171,7 @@ Reading order follows the same depth-first walk the docs viewer uses: inside eac
 
 Working out the Previous / Next links means scanning the folder tree, so leaftext does it after the document is already on screen rather than blocking the initial render. A placeholder bar shows in its place for the moment it takes, then the real buttons fill in. In a folder with a great many files the page appears immediately and the pager simply arrives a beat later.
 
-The pager is on by default and can be turned off in [Settings](settings.md#pager).
+The pager is on by default and can be turned off in [Settings](05-settings.md#pager).
 
 ## Link hints
 
@@ -190,6 +192,6 @@ This is a desktop affordance: it appears only with a mouse (a fine pointer that 
 
 ## Next
 
-- [Quickstart](../quickstart.md) if you want the basics first
-- [Library](library.md) if you want browsing and search
-- [Architecture](../development/architecture.md) if you want the implementation details
+- [Quickstart](../03-quickstart.md) if you want the basics first
+- [Library](03-library.md) if you want browsing and search
+- [Architecture](../02-development/01-architecture.md) if you want the implementation details
