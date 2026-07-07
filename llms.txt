@@ -6,7 +6,6 @@
 
 - [Leaf Text](https://leaftext.com/README.md)
 - [Glossary](https://leaftext.com/docs/GLOSSARY.md)
-- [leaftext documentation](https://leaftext.com/docs/README.md)
 - [Architecture](https://leaftext.com/docs/development/architecture.md)
 - [Building](https://leaftext.com/docs/development/building.md)
 - [Releasing](https://leaftext.com/docs/development/releasing.md)

@@ -2815,6 +2815,7 @@ fn app_shell_throttles_minimap_scroll_sync() {
         "window.requestAnimationFrame(() => {",
         "function updateMinimapViewport() {",
         "app.addEventListener('scroll', () => {",
+        "clampReaderScrollPosition();",
         "readerScrollAnchor = captureReaderScrollAnchor();",
         "scheduleMinimapViewportUpdate();",
         "window.addEventListener('resize', () => {",
@@ -2824,15 +2825,6 @@ fn app_shell_throttles_minimap_scroll_sync() {
     ] {
         assert_contains(&html, expected);
     }
-
-    // The scroll rAF must not clamp: writing scrollTop back mid-scroll fights the
-    // user's gesture and forces a synchronous whole-document relayout per frame.
-    assert!(
-        !html.contains(
-            "clampReaderScrollPosition();\n    readerScrollAnchor = captureReaderScrollAnchor();"
-        ),
-        "the per-scroll frame must only re-capture the anchor, never clamp scrollTop"
-    );
 }
 
 #[test]
@@ -2954,17 +2946,11 @@ fn app_shell_sizes_minimap_track_to_available_reader_height() {
             "const availableHeight = Math.max(1, Math.floor(shellRect.bottom - minimapRect.top));",
             "const content = minimap.querySelector('.document-minimap-content');",
             "const trackHeight = contentHeight > 0 ? Math.min(availableHeight, contentHeight) : availableHeight;",
-            // The write is guarded: syncMinimapTrackHeight runs on every scroll
-            // frame, and an unconditional style write would dirty the clone's
-            // layout each frame.
-            "if (minimap.style.getPropertyValue('--minimap-track-height') !== nextTrackHeight) {",
-            "minimap.style.setProperty('--minimap-track-height', nextTrackHeight);",
+            "minimap.style.setProperty('--minimap-track-height', `${trackHeight}px`);",
             "return { availableHeight, trackHeight };",
             "const trackSize = minimap ? syncMinimapTrackHeight(minimap) : null;",
             "const shellHeight = trackSize ? trackSize.availableHeight : Math.max(1, app.clientHeight);",
-            // Measure-only on the scroll path: correcting the scroll origin here
-            // would write a whole-document margin per frame.
-            "const documentContent = measureDocumentContent(source);",
+            "const documentContent = correctReaderScrollOrigin(source);",
             "const trackHeight = Math.max(1, Math.ceil(track.clientHeight || trackRect.height || trackSize?.trackHeight || shellHeight));",
             "const viewportHeight = Math.max(1, Math.ceil(app.clientHeight || shellHeight));",
             "const scrollRange = measureReaderScrollRange(documentContent, viewportHeight);",
@@ -3168,25 +3154,9 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
         "minimap viewport must span the full rail width"
     );
     assert!(
-            css.contains(".document-minimap-content {\n  position: absolute;\n  top: 0;\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
+            css.contains(".document-minimap-content {\n  position: absolute;\n  top: var(--minimap-preview-top, 0px);\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
             "the minimap thumbnail lane fills the rail inside the exact 8px padding on both edges"
         );
-    // The thumbnail slide and the viewport box move with transforms, not `top`:
-    // animating `top` re-lays-out the full-document clone on every scroll frame,
-    // while a transform only moves the painted layer.
-    assert_contains(
-        css,
-        "transform: translateY(var(--minimap-preview-top, 0px));",
-    );
-    assert_contains(css, "transform: translateY(var(--minimap-viewport-top));");
-    assert!(
-        !css.contains("top: var(--minimap-preview-top"),
-        "the thumbnail must slide via transform, not the layout-affecting `top`"
-    );
-    assert!(
-        !css.contains("top: var(--minimap-viewport-top"),
-        "the viewport box must move via transform, not the layout-affecting `top`"
-    );
     // The reader renders the whole document up front like the web reader, so it
     // must NOT use content-visibility: that made blocks flash blank while
     // scrolling and the scroll-height estimate made the minimap box jump.

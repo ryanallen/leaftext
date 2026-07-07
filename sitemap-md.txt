@@ -1,6 +1,5 @@
 https://leaftext.com/README.md
 https://leaftext.com/docs/GLOSSARY.md
-https://leaftext.com/docs/README.md
 https://leaftext.com/docs/development/architecture.md
 https://leaftext.com/docs/development/building.md
 https://leaftext.com/docs/development/releasing.md
