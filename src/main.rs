@@ -2323,11 +2323,20 @@ fn open_with_os(target: &str) -> io::Result<()> {
 fn reveal_in_file_manager(path: &Path) -> io::Result<()> {
     #[cfg(target_os = "windows")]
     {
+        use std::os::windows::process::CommandExt;
+
         // `explorer /select,<path>` highlights the file in a new window. Explorer
         // reports a non-zero exit code even on success, so spawning (rather than
         // waiting on the status) is the reliable way to treat it as done.
+        //
+        // Explorer only recognizes the switch when `/select,` sits *outside* the
+        // quotes and just the path is quoted (`/select,"C:\dir\file.md"`). The
+        // std arg escaper would quote the whole `/select,<path>` token whenever
+        // the path contains a space, which Explorer can't parse — it silently
+        // opens the default folder (Documents) instead of selecting the file.
+        // Build the argument verbatim with `raw_arg` so we control the quoting.
         Command::new("explorer")
-            .arg(format!("/select,{}", path.display()))
+            .raw_arg(format!("/select,\"{}\"", path.display()))
             .spawn()?;
         return Ok(());
     }
