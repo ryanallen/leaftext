@@ -34,7 +34,7 @@ A force-directed relationship map of your library: each **node** is a document, 
 - The document you are reading is highlighted in the accent colour and pulled larger, so you can always spot where you are.
 - **Click** a node to open that document. **Hover** a node to light up its direct links and dim the rest.
 - **Drag** a node to reposition it, **drag the background** to pan, and **scroll** to zoom.
-- **Click a document's tab** in the tab bar and the graph flies to that document's node and zooms in on it.
+- **Click a document's tab** in the tab bar and the graph flies to that document's node and zooms in on it. Clicking the tab you are already on rebuilds the map from the current index, so it always reflects the latest links rather than staying on a stale view.
 - Resizing the pane re-fits the map to the new size; it no longer waits for a view switch.
 
 How many documents the map draws is set by the [Graph size](05-settings.md#graph-size) setting — from a tight **Focus** neighborhood (the open document and its direct links) up to **Everything** (every indexed document). Smaller sizes render faster; the larger sizes are tuned to stay responsive by easing the layout and repainting less often as it settles.

@@ -5263,9 +5263,12 @@ fn library_follows_and_highlights_the_active_file() {
     // Going to a file (open, switch, click a tab) follows it; the tree
     // arriving later runs a queued reveal. Clicking a tab always flies the
     // graph to that node; opening/switching only does so when the doc changed.
+    // Clicking the tab you are already on forces a graph rebuild (resync) so a
+    // stale scene in memory can't leave the view stuck.
     assert!(html.contains("followFileInLibrary(openedPath,"));
     assert!(html.contains("followFileInLibrary(switchedPath,"));
-    assert!(html.contains("followFileInLibrary(tab ? tab.path || null : null, true);"));
+    assert!(html.contains("followFileInLibrary(tab ? tab.path || null : null, true, wasActive);"));
+    assert!(html.contains("const wasActive = index === (currentState && currentState.active);"));
     assert!(html.contains(
         "if (libraryRevealPending && libraryView !== 'graph' && revealSelectedInLibrary()) return;"
     ));

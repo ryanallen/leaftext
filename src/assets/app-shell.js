@@ -848,15 +848,15 @@ function revealSelectedInLibrary() {
 // Mark `path` as the library's current file and ask the next render to reveal
 // it. Passing null (the home screen, no active file) just clears the highlight;
 // the Project/Tree position is left exactly as the user last had it.
-function followFileInLibrary(path, focus) {
+function followFileInLibrary(path, focus, forceRefresh) {
   librarySelectedPath = path || null;
   libraryRevealPending = !!path;
-  // In graph mode there are no rows to reveal; just move the highlight to the
-  // node for the newly active document without rebuilding the scene. When the
-  // move came from a deliberate navigation (clicking/switching a tab), also fly
-  // the camera to that node and zoom in on it.
+  // In graph mode there are no rows to reveal; move the highlight to the node for
+  // the newly active document. When the move came from a deliberate navigation
+  // (clicking/switching a tab), also fly the camera to that node and zoom in;
+  // `forceRefresh` additionally rebuilds the slice so it can't stay stale.
   if (libraryView === 'graph') {
-    graphSetActive(librarySelectedPath, focus);
+    graphSetActive(librarySelectedPath, focus, forceRefresh);
     return;
   }
   if (libraryRevealPending) {
@@ -1126,6 +1126,7 @@ let graphScene = null; // live Pixi/d3 scene while the view is open
 let graphActivePath = null;
 let graphLibsPromise = null;
 let graphSeedKey = null; // scope+seeds of the last request, to skip redundant refetches
+let graphFocusPending = false; // fly to the active node once the next scene finishes building
 const GRAPH_NEIGHBOR_LABEL_CAP = 12;
 // Focus scope on the start screen seeds from the recent files; cap how many so a
 // long history does not balloon the neighborhood.
@@ -1404,6 +1405,14 @@ async function buildGraphScene() {
   graphScene = scene;
   applyGraphStyles();
   renderGraphFrame(scene);
+  // A rebuild triggered by a deliberate navigation (tab click/switch) flies to
+  // the active node now that its graphics exist; d3 seeds positions before the
+  // first tick, so focusGraphNode tracks it as the layout settles.
+  if (graphFocusPending && graphActivePath) {
+    graphFocusPending = false;
+    const activeNode = scene.nodeByPath.get(graphActivePath);
+    if (activeNode) focusGraphNode(scene, activeNode);
+  }
   } catch (err) {
     // Surface the real failure (e.g. WebGL unavailable in this WebView) on the
     // status line instead of hanging on "Building graph…", and log a breadcrumb.
@@ -1625,15 +1634,26 @@ function focusGraphNode(scene, node) {
 // is the neighborhood of the active document, so a changed document means a
 // refetch + rebuild rather than a recolour. In the fixed scopes we keep the scene
 // and just recolour, and when `focus` is true also fly the camera to that node.
-function graphSetActive(path, focus) {
+// `forceRefresh` is the deliberate "resync this file" gesture (clicking the tab
+// you are already on): it always rebuilds the slice so a graph that went stale in
+// memory catches up, instead of leaving you stuck on an old scene.
+function graphSetActive(path, focus, forceRefresh) {
   graphActivePath = path || null;
-  if (graphScope === 'small' && libraryView === 'graph') {
-    const seeds = graphSeeds();
-    const key = graphScope + '|' + seeds.join('\n');
-    if (key !== graphSeedKey) {
-      requestGraphData();
-      return;
-    }
+  if (libraryView !== 'graph') return;
+  // Focus scope's slice is the active document's neighborhood, so changed seeds
+  // (a different document) mean the scene in memory is for the wrong file.
+  const seedChanged =
+    graphScope === 'small' && graphScope + '|' + graphSeeds().join('\n') !== graphSeedKey;
+  // The current scene can't represent the active document when there is no scene
+  // or the document's node isn't in it (a new/re-indexed file). In every one of
+  // these cases — plus an explicit resync — fetch a fresh slice rather than
+  // silently doing nothing, and fly to the node once it builds.
+  const staleForActive =
+    focus && !!graphActivePath && (!graphScene || !graphScene.nodeByPath.has(graphActivePath));
+  if (forceRefresh || seedChanged || staleForActive) {
+    graphFocusPending = focus && !!graphActivePath;
+    requestGraphData();
+    return;
   }
   if (!graphScene) return;
   applyGraphStyles();
@@ -2107,12 +2127,15 @@ function renderTabs(state) {
     button.addEventListener('click', () => {
       if (suppressTabClick) return;
       const index = Number(button.dataset.tabIndex);
+      const wasActive = index === (currentState && currentState.active);
       send({ command: 'switchTab', index, scroll_anchor: currentScrollAnchor() });
       // Reveal even when this is already the active tab (no state round-trip
       // from the host): clicking a file's tab snaps the library back to it, and
-      // in graph mode flies the camera to that node and zooms in.
+      // in graph mode flies the camera to that node and zooms in. Clicking the
+      // tab you are already on is a deliberate resync — force the graph to
+      // rebuild so it can't stay stuck on a stale scene in memory.
       const tab = (currentState.tabs || [])[index];
-      followFileInLibrary(tab ? tab.path || null : null, true);
+      followFileInLibrary(tab ? tab.path || null : null, true, wasActive);
     });
   });
   tabBar.querySelectorAll('[data-tab-close]').forEach((button) => {
