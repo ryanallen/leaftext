@@ -448,12 +448,26 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         single_instance::Acquire::Forwarded => return Ok(()),
     };
 
+    // Load the persisted settings before building the window so it can reopen at
+    // the size (and maximized state) the user last left it, rather than always
+    // starting at the default. The rest of the settings ride along to the webview
+    // below via the initialization script.
+    let settings_path = settings_file_path();
+    let mut settings = settings_path
+        .as_ref()
+        .map(load_settings)
+        .unwrap_or_default();
+
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
     let window = WindowBuilder::new()
         .with_title("Leaf Text")
         .with_window_icon(load_window_icon())
-        .with_inner_size(LogicalSize::new(1080.0, 820.0))
+        .with_inner_size(LogicalSize::new(
+            settings.window_width as f64,
+            settings.window_height as f64,
+        ))
         .with_min_inner_size(LogicalSize::new(380.0, 480.0))
+        .with_maximized(settings.window_maximized)
         .build(&event_loop)?;
 
     let proxy = event_loop.create_proxy();
@@ -478,16 +492,11 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         eprintln!("Using WebView2 user data folder: {}", path.display());
     }
 
-    // Load the persisted UI toggles and hand them to the webview as an
+    // The persisted UI toggles (loaded above) are handed to the webview as an
     // initialization script, which runs before any page script. That lets the
     // theme bootstrap and library pane render from the saved state on the first
     // paint — no flash of defaults, no post-load re-apply.
-    let settings_path = settings_file_path();
-    let mut settings = settings_path
-        .as_ref()
-        .map(load_settings)
-        .unwrap_or_default();
-
+    //
     // Load the recent files now so they can ride in on the same initialization
     // script as the settings. Injecting them after the build (via
     // evaluate_script) raced the async page load and the recent list could come
@@ -607,14 +616,41 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         }
     }
 
+    // The size to restore next launch: the window's inner size the last time it
+    // was *not* maximized, in logical px. Seeded from the persisted value and
+    // updated on every windowed resize, so it holds the dimensions to return to
+    // even if the window is maximized at the moment it closes.
+    let mut last_windowed_size =
+        LogicalSize::new(settings.window_width as f64, settings.window_height as f64);
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
         match event {
             Event::WindowEvent {
+                event: WindowEvent::Resized(size),
+                ..
+            } => {
+                // Remember the size only while windowed (maximized/minimized sizes
+                // are transient); scale_factor converts the physical event size to
+                // the logical size with_inner_size expects on the next launch.
+                if !window.is_maximized()
+                    && !window.is_minimized()
+                    && size.width > 0
+                    && size.height > 0
+                {
+                    last_windowed_size = size.to_logical(window.scale_factor());
+                }
+            }
+            Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 ..
             } => {
+                // Capture the final window geometry so it reopens where it left off.
+                settings.window_width = last_windowed_size.width.round() as u32;
+                settings.window_height = last_windowed_size.height.round() as u32;
+                settings.window_maximized = window.is_maximized();
+                persist_settings(&settings, settings_path.as_ref());
                 let _ = webview.take();
                 *control_flow = ControlFlow::Exit;
             }

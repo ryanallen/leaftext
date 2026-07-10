@@ -1,6 +1,6 @@
 # Settings
 
-> leaftext stores preferences locally: theme, speed reader, minimap, pager, indexing, and library layout state in a JSON file, plus the interface language in the WebView's local storage.
+> leaftext stores preferences locally: theme, speed reader, minimap, pager, indexing, library layout, and window size in a JSON file, plus the interface language in the WebView's local storage.
 
 Most settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView. The one exception is the interface language, kept in the WebView's local storage under `leaf.localeMode`.
 
@@ -46,7 +46,10 @@ Here `{config_dir}` and `{data_dir}` are the per-app directories the `directorie
   "library_expanded": [],
   "library_project_path": "",
   "library_closed": false,
-  "library_width": 240
+  "library_width": 240,
+  "window_width": 1080,
+  "window_height": 820,
+  "window_maximized": false
 }
 ```
 
@@ -115,6 +118,13 @@ The app ships both language dictionaries locally and applies changes without a r
 - Off by default
 - Enabling it starts a whole-device background crawl right away, and again on each launch while it stays on
 - Files you open manually are still indexed even if background indexing is off
+
+### Window size
+
+- The window reopens at the size it had when it last closed, and maximized if it was maximized
+- Saved as `window_width` and `window_height` (in logical, DPI-independent pixels) plus `window_maximized`
+- The size is stored separately from the maximized state, so un-maximizing returns to the windowed dimensions rather than the full-screen ones
+- Window position is not restored — only the size and maximized state
 
 ## Paths
 

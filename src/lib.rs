@@ -1179,6 +1179,15 @@ pub struct Settings {
     /// The pane's last open width in CSS px, restored on reopen. The frontend
     /// re-clamps it to the current window, so it is a preference, not a command.
     pub library_width: u32,
+    /// The window's last inner size in logical (DPI-independent) px, so it reopens
+    /// at the size the user left it. Stored logically so it round-trips correctly
+    /// across monitors with different scale factors.
+    pub window_width: u32,
+    pub window_height: u32,
+    /// Whether the window was maximized when it last closed, restored on launch.
+    /// Tracked separately from the size so un-maximizing returns to the windowed
+    /// dimensions rather than the maximized ones.
+    pub window_maximized: bool,
 }
 
 impl Default for Settings {
@@ -1195,6 +1204,9 @@ impl Default for Settings {
             library_project_path: String::new(),
             library_closed: false,
             library_width: 240,
+            window_width: 1080,
+            window_height: 820,
+            window_maximized: false,
         }
     }
 }

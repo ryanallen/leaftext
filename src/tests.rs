@@ -4981,6 +4981,9 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
         library_project_path: "C:\\Users\\rwall".to_string(),
         library_closed: true,
         library_width: 312,
+        window_width: 1440,
+        window_height: 960,
+        window_maximized: true,
     };
 
     save_settings(&settings_path, &settings).expect("settings save");
@@ -5077,7 +5080,12 @@ fn initial_settings_script_defines_camelcase_global() {
         library_project_path: "docs".to_string(),
         library_closed: true,
         library_width: 312,
+        window_width: 1440,
+        window_height: 960,
+        window_maximized: true,
     });
+    // Window geometry is host-only (applied to the native window, not the
+    // webview), so it must not leak into the injected settings global.
     assert_eq!(
         script,
         r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryExpanded":["C:\\Users"],"libraryProjectPath":"docs","libraryView":"tree","libraryWidth":312,"minimapEnabled":false,"pagerEnabled":false,"speedReaderEnabled":true,"themeMode":"dracula"};"#
