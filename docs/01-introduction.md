@@ -23,7 +23,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 - Keep multiple documents open in [tabs](01-features/02-navigation.md#tabs).
 - Jump to any section from the [outline](01-features/02-navigation.md#outline) — a collapsed table of contents at the top of each document.
 - Move [back and forward](01-features/02-navigation.md#history) through documents and in-page jumps.
-- Browse indexed Markdown files in the [library pane](01-features/03-library.md).
+- Browse indexed Markdown files in the [library pane](01-features/03-library.md), or see how they connect in the [graph view](01-features/03-library.md#graph).
 - [Reload](01-features/02-navigation.md#reload) the current file when it changes on disk.
 - Enable [Speed Reader](01-features/05-settings.md#speed-reader) to dim prose text, quiet links, and add bold lead anchors so the reading path pops against the background.
 

@@ -31,6 +31,7 @@ pub fn initial_settings_script(settings: &Settings) -> String {
         "speedReaderEnabled": settings.speed_reader_enabled,
         "themeMode": settings.theme_mode,
         "libraryView": settings.library_view.as_str(),
+        "graphScope": settings.graph_scope.as_str(),
         "libraryExpanded": settings.library_expanded,
         "libraryProjectPath": settings.library_project_path,
         "libraryClosed": settings.library_closed,

@@ -25,8 +25,9 @@ use serde::Serialize;
 
 /// Latest applied schema migration. Migration version is the next free integer
 /// at merge time; the base indexer schema is version 1, full-text search
-/// (chunks + chunks_fts) is version 2, and frontmatter is version 3.
-const SCHEMA_VERSION: i64 = 3;
+/// (chunks + chunks_fts) is version 2, frontmatter is version 3, and the
+/// doc-to-doc link graph is version 4.
+const SCHEMA_VERSION: i64 = 4;
 
 /// Feature name recorded in `file_feature_state` for the chunk/FTS layer.
 const CHUNKS_FEATURE: &str = "chunks";
@@ -42,6 +43,14 @@ const FRONTMATTER_FEATURE: &str = "frontmatter";
 /// key/value shape changes so the next scan rebuilds stale rows even with
 /// unchanged bytes (the backfill path for files indexed before this feature).
 const FRONTMATTER_SCHEMA_VERSION: i64 = 1;
+
+/// Feature name recorded in `file_feature_state` for the doc-to-doc link layer.
+const LINKS_FEATURE: &str = "links";
+
+/// Schema version for the link extraction shape. Bump when the extracted link
+/// shape changes so the next scan rebuilds stale rows even with unchanged bytes
+/// (the backfill path for files indexed before the graph view shipped).
+const LINKS_SCHEMA_VERSION: i64 = 1;
 
 /// Soft cap on a single chunk's source length. A heading section under this size
 /// becomes one chunk; larger sections split at block boundaries so snippets and
@@ -129,6 +138,45 @@ pub enum NodeKind {
     File,
 }
 
+/// The library link graph delivered to the graph view: one node per indexed
+/// document, one undirected edge per resolved doc-to-doc link. `path` is the node
+/// identity the frontend opens and highlights the active document by. All strings
+/// are file-derived and untrusted; the frontend escapes them before the DOM.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentGraph {
+    pub nodes: Vec<GraphNode>,
+    pub edges: Vec<GraphEdge>,
+    /// Retained for the frontend contract; the graph is no longer capped, so this
+    /// is always `false`.
+    pub truncated: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphNode {
+    pub path: String,
+    pub label: String,
+    pub degree: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphEdge {
+    pub source: String,
+    pub target: String,
+}
+
+/// What slice of the link graph to build. When `focus` is `Some`, only the seed
+/// documents (paths as the frontend stored them) and their direct neighbors are
+/// kept — the "Focus" scope. Otherwise `limit` caps the result to the densest N
+/// documents (`None` = every document).
+#[derive(Debug, Clone, Default)]
+pub struct GraphRequest {
+    pub focus: Option<Vec<String>>,
+    pub limit: Option<usize>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ScanPhase {
@@ -161,6 +209,11 @@ pub enum IndexerEvent {
         hits: Vec<SearchHit>,
         error: Option<String>,
     },
+    /// The library link graph for the graph view (or an error for it).
+    Graph {
+        graph: DocumentGraph,
+        error: Option<String>,
+    },
     /// A backend error to surface in the pane.
     Error(String),
 }
@@ -188,6 +241,10 @@ pub fn required_features() -> &'static [FeatureSpec] {
         FeatureSpec {
             name: FRONTMATTER_FEATURE,
             schema_version: FRONTMATTER_SCHEMA_VERSION,
+        },
+        FeatureSpec {
+            name: LINKS_FEATURE,
+            schema_version: LINKS_SCHEMA_VERSION,
         },
     ];
     FEATURES
@@ -307,14 +364,28 @@ fn normal_path(path: &Path) -> PathBuf {
     path.to_path_buf()
 }
 
+fn lowercase_extension(path: &Path) -> Option<String> {
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.to_ascii_lowercase())
+}
+
 fn is_markdown_file(path: &Path) -> bool {
     matches!(
-        path.extension()
-            .and_then(|ext| ext.to_str())
-            .map(|ext| ext.to_ascii_lowercase())
-            .as_deref(),
+        lowercase_extension(path).as_deref(),
         Some("md" | "markdown" | "mdown")
     )
+}
+
+/// TEI XML documents (opened as `.xml`, rendered by the TEI pipeline).
+fn is_xml_file(path: &Path) -> bool {
+    matches!(lowercase_extension(path).as_deref(), Some("xml"))
+}
+
+/// Every document type the library indexes and the graph can node: Markdown plus
+/// TEI XML. Mirrors the file types the app knows how to open.
+fn is_indexable_file(path: &Path) -> bool {
+    is_markdown_file(path) || is_xml_file(path)
 }
 
 fn is_repo_noise_dir(name: &str) -> bool {
@@ -512,6 +583,29 @@ CREATE TABLE frontmatter (
 CREATE INDEX idx_frontmatter_key_value ON frontmatter(key, value);
 "#;
 
+/// Migration 4: the doc-to-doc link graph. One row per outgoing link found in a
+/// file. `target_abs` holds a resolved absolute path (for relative Markdown/HTML
+/// links); `target_name` holds a normalized note name (for `[[wiki]]` links).
+/// Both are resolution *hints* — a target is matched to a file id in Rust at
+/// graph-build time, so unresolved (external or dangling) links persist harmlessly
+/// and no rewrite is needed when the target file appears or moves. The composite
+/// primary key keeps ordinals stable per file; the cascade drops rows with the
+/// source file.
+const MIGRATION_4_SQL: &str = r#"
+CREATE TABLE links (
+    from_file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+    ordinal      INTEGER NOT NULL,
+    target_abs   TEXT,
+    target_name  TEXT,
+    raw          TEXT NOT NULL,
+    PRIMARY KEY (from_file_id, ordinal)
+);
+
+CREATE INDEX idx_links_from ON links(from_file_id);
+CREATE INDEX idx_links_target_abs ON links(target_abs);
+CREATE INDEX idx_links_target_name ON links(target_name);
+"#;
+
 /// Open (creating if needed) the manifest database, apply PRAGMAs, and migrate.
 /// Runs on the caller's thread so the schema is present before the reader thread
 /// opens its read-only connection.
@@ -602,6 +696,17 @@ fn run_migrations(conn: &mut Connection) -> DbResult<()> {
         tx.execute_batch(MIGRATION_3_SQL).map_err(to_err)?;
         tx.execute(
             "INSERT INTO schema_migrations (version, applied_at) VALUES (3, ?1)",
+            params![now_secs()],
+        )
+        .map_err(to_err)?;
+        tx.commit().map_err(to_err)?;
+    }
+
+    if current < 4 {
+        let tx = conn.transaction().map_err(to_err)?;
+        tx.execute_batch(MIGRATION_4_SQL).map_err(to_err)?;
+        tx.execute(
+            "INSERT INTO schema_migrations (version, applied_at) VALUES (4, ?1)",
             params![now_secs()],
         )
         .map_err(to_err)?;
@@ -1370,6 +1475,262 @@ fn frontmatter_fields(content: &str) -> Vec<FrontmatterField> {
 }
 
 // ---------------------------------------------------------------------------
+// Link extraction (doc-to-doc graph edges)
+// ---------------------------------------------------------------------------
+
+/// One outgoing link discovered in a document. Exactly one hint is set:
+/// `target_abs` is a resolved absolute path (relative Markdown / HTML / TEI
+/// links), `target_name` a normalized note name (`[[wiki]]` links). Both are
+/// *resolution hints* — matched to a real file id in Rust at graph-build time —
+/// so external and dangling links persist without a target row and nothing needs
+/// rewriting when the target file later appears or moves.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DocLink {
+    pub target_abs: Option<String>,
+    pub target_name: Option<String>,
+    pub raw: String,
+}
+
+/// Extract a document's outgoing doc-to-doc links, dispatching on file type.
+/// Markdown gets Markdown links, literal `<a href>`, and `[[wiki]]` links; TEI
+/// XML gets `target=`/`href=` attributes (`<ref>`, `<ptr>`, `<a>`). Returns links
+/// deduplicated by resolved target so one edge is drawn even when a file links a
+/// neighbour many times.
+fn document_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
+    let mut links = if is_xml_file(source_abs) {
+        xml_links(content, source_abs)
+    } else {
+        markdown_links(content, source_abs)
+    };
+    dedup_links(&mut links);
+    links
+}
+
+fn dedup_links(links: &mut Vec<DocLink>) {
+    let mut seen: HashSet<(Option<String>, Option<String>)> = HashSet::new();
+    links.retain(|link| seen.insert((link.target_abs.clone(), link.target_name.clone())));
+}
+
+/// Markdown link destinations (`[text](dest)`, autolinks, reference links) come
+/// from the real parser; literal `<a href>` and `[[wiki]]` links are not Markdown
+/// link tags, so they are scanned from the source separately.
+fn markdown_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
+    use pulldown_cmark::{Event, Parser, Tag};
+    let mut out = Vec::new();
+    for event in Parser::new(content) {
+        if let Event::Start(Tag::Link { dest_url, .. }) = event {
+            push_path_target(&mut out, &dest_url, source_abs);
+        }
+    }
+    collect_attr_targets(content, "href", source_abs, &mut out);
+    collect_wiki_links(content, &mut out);
+    out
+}
+
+/// TEI cross-references live in `target=` (`<ref>`, `<ptr>`) and `href=` (`<a>`)
+/// attributes.
+fn xml_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
+    let mut out = Vec::new();
+    collect_attr_targets(content, "target", source_abs, &mut out);
+    collect_attr_targets(content, "href", source_abs, &mut out);
+    out
+}
+
+/// Push a resolved path link, skipping empty, anchor-only, and external-URL
+/// targets (those never point at a local document).
+fn push_path_target(out: &mut Vec<DocLink>, raw: &str, source_abs: &Path) {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() || trimmed.starts_with('#') || has_url_scheme(trimmed) {
+        return;
+    }
+    if let Some(abs) = resolve_path_target(trimmed, source_abs) {
+        out.push(DocLink {
+            target_abs: Some(abs),
+            target_name: None,
+            raw: trimmed.to_string(),
+        });
+    }
+}
+
+/// Scan for `<... attr="value" ...>` (single or double quoted) and push each value
+/// as a path target. A lightweight lexical scan, not a full HTML/XML parse: enough
+/// for the anchor/ref/ptr elements documents actually use, and it never fails.
+fn collect_attr_targets(content: &str, attr: &str, source_abs: &Path, out: &mut Vec<DocLink>) {
+    let needle = format!("{attr}=");
+    let bytes = content.as_bytes();
+    let mut search_from = 0;
+    while let Some(rel) = content[search_from..].find(&needle) {
+        let eq = search_from + rel + needle.len();
+        // The char before the attribute name must be a tag delimiter (space, '<',
+        // '/', or a quote) so `data-href=` / `xtarget=` do not match `href=` /
+        // `target=`.
+        let start = search_from + rel;
+        let boundary_ok = start == 0
+            || matches!(
+                bytes[start - 1],
+                b' ' | b'\t' | b'\n' | b'\r' | b'<' | b'/' | b'"' | b'\''
+            );
+        search_from = eq;
+        if !boundary_ok || eq >= bytes.len() {
+            continue;
+        }
+        let quote = bytes[eq];
+        if quote != b'"' && quote != b'\'' {
+            continue;
+        }
+        let value_start = eq + 1;
+        if let Some(end_rel) = content[value_start..].find(quote as char) {
+            let value = &content[value_start..value_start + end_rel];
+            search_from = value_start + end_rel + 1;
+            push_path_target(out, value, source_abs);
+        }
+    }
+}
+
+/// Scan for `[[Note]]`, `[[Note|alias]]`, and `[[Note#heading]]` wiki links and
+/// push the note name (before any `|` or `#`) as a name target.
+fn collect_wiki_links(content: &str, out: &mut Vec<DocLink>) {
+    let mut search_from = 0;
+    while let Some(rel) = content[search_from..].find("[[") {
+        let open = search_from + rel + 2;
+        let Some(close_rel) = content[open..].find("]]") else {
+            break;
+        };
+        let inner = &content[open..open + close_rel];
+        search_from = open + close_rel + 2;
+        if inner.contains('\n') {
+            continue;
+        }
+        let name = inner.split(['|', '#']).next().unwrap_or("").trim();
+        if name.is_empty() {
+            continue;
+        }
+        out.push(DocLink {
+            target_abs: None,
+            target_name: Some(normalize_name_key(name)),
+            raw: format!("[[{inner}]]"),
+        });
+    }
+}
+
+/// True when `target` begins with a URL scheme (`http:`, `mailto:`, `data:`, …),
+/// meaning it does not point at a local document. Requires at least two scheme
+/// characters so a Windows drive path (`C:\...`) is treated as a path, not a URL.
+fn has_url_scheme(target: &str) -> bool {
+    let bytes = target.as_bytes();
+    for (i, &c) in bytes.iter().enumerate() {
+        if c == b':' {
+            return i >= 2;
+        }
+        let scheme_char = c.is_ascii_alphabetic()
+            || (i > 0 && (c.is_ascii_digit() || c == b'+' || c == b'-' || c == b'.'));
+        if !scheme_char {
+            return false;
+        }
+    }
+    false
+}
+
+/// Resolve a relative link target to an absolute path string in the same normal
+/// form the crawl stores, stripping any `#fragment`/`?query` and percent-decoding.
+/// Returns `None` for anchor-only or path-less targets.
+fn resolve_path_target(raw: &str, source_abs: &Path) -> Option<String> {
+    let without_fragment = raw.split(['#', '?']).next().unwrap_or("").trim();
+    if without_fragment.is_empty() {
+        return None;
+    }
+    let decoded = percent_decode(without_fragment);
+    let base = source_abs.parent()?;
+    Some(normalize_join(base, &decoded))
+}
+
+/// Lexically join `rel` onto `base`, resolving `.`/`..` without touching the
+/// filesystem (the target may not exist yet). Absolute `rel` replaces `base`.
+fn normalize_join(base: &Path, rel: &str) -> String {
+    use std::path::Component;
+    let rel_path = Path::new(rel);
+    let mut result = if rel_path.is_absolute() {
+        PathBuf::new()
+    } else {
+        base.to_path_buf()
+    };
+    for component in rel_path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                result.pop();
+            }
+            Component::Normal(part) => result.push(part),
+            Component::RootDir => {}
+            Component::Prefix(prefix) => result = PathBuf::from(prefix.as_os_str()),
+        }
+    }
+    path_to_string(&result)
+}
+
+/// Decode `%XX` escapes in a link target (e.g. `My%20Note.md` -> `My Note.md`),
+/// leaving anything that is not a valid escape untouched.
+fn percent_decode(value: &str) -> String {
+    let bytes = value.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            let hi = (bytes[i + 1] as char).to_digit(16);
+            let lo = (bytes[i + 2] as char).to_digit(16);
+            if let (Some(hi), Some(lo)) = (hi, lo) {
+                out.push((hi * 16 + lo) as u8);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(bytes[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+/// Normalize a note name (wiki link text, or a file's own name) to the key both
+/// sides match on: trimmed and lowercased.
+fn normalize_name_key(name: &str) -> String {
+    name.trim().to_lowercase()
+}
+
+/// Persist a file's outgoing links, replacing any prior rows. Ordinals are the
+/// vector index, giving stable per-file primary keys.
+fn replace_links(conn: &Connection, file_id: i64, links: &[DocLink]) -> DbResult<()> {
+    conn.execute(
+        "DELETE FROM links WHERE from_file_id = ?1",
+        params![file_id],
+    )
+    .map_err(to_err)?;
+    for (ordinal, link) in links.iter().enumerate() {
+        conn.execute(
+            "INSERT INTO links (from_file_id, ordinal, target_abs, target_name, raw)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![
+                file_id,
+                ordinal as i64,
+                link.target_abs,
+                link.target_name,
+                link.raw
+            ],
+        )
+        .map_err(to_err)?;
+    }
+    Ok(())
+}
+
+fn delete_links(conn: &Connection, file_id: i64) -> DbResult<()> {
+    conn.execute(
+        "DELETE FROM links WHERE from_file_id = ?1",
+        params![file_id],
+    )
+    .map_err(to_err)?;
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
 // Search
 // ---------------------------------------------------------------------------
 
@@ -1427,7 +1788,26 @@ fn like_escape(term: &str) -> String {
 /// Files whose name, title, or relative path contains every term. A filename
 /// match is a strong signal, so these lead the results. One hit per file, opened
 /// at the top (no heading anchor), with the relative path as the snippet.
-fn search_by_name(conn: &Connection, terms: &[String]) -> DbResult<Vec<SearchHit>> {
+/// Build a ` AND f.abs_path IN (…)` fragment plus its bound values that restricts
+/// results to `scope`. `None` scopes to the whole library (empty fragment); an
+/// empty slice matches nothing (`AND 0`) — SQLite rejects a literal `IN ()`.
+fn scope_clause(scope: Option<&[String]>) -> (String, Vec<Value>) {
+    match scope {
+        None => (String::new(), Vec::new()),
+        Some(paths) if paths.is_empty() => (" AND 0".to_string(), Vec::new()),
+        Some(paths) => {
+            let placeholders = vec!["?"; paths.len()].join(",");
+            let values = paths.iter().map(|p| Value::Text(p.clone())).collect();
+            (format!(" AND f.abs_path IN ({placeholders})"), values)
+        }
+    }
+}
+
+fn search_by_name(
+    conn: &Connection,
+    terms: &[String],
+    scope: Option<&[String]>,
+) -> DbResult<Vec<SearchHit>> {
     if terms.is_empty() {
         return Ok(Vec::new());
     }
@@ -1443,6 +1823,8 @@ fn search_by_name(conn: &Connection, terms: &[String]) -> DbResult<Vec<SearchHit
         values.push(Value::Text(pattern.clone()));
         values.push(Value::Text(pattern));
     }
+    let (scope_sql, scope_values) = scope_clause(scope);
+    values.extend(scope_values);
     values.push(Value::Integer(SEARCH_LIMIT));
 
     let sql = format!(
@@ -1450,10 +1832,11 @@ fn search_by_name(conn: &Connection, terms: &[String]) -> DbResult<Vec<SearchHit
                 COALESCE(NULLIF(f.title, ''), f.filename) AS title,
                 f.display_path
          FROM files f
-         WHERE f.status = 'ok' AND {}
+         WHERE f.status = 'ok' AND {}{}
          ORDER BY title COLLATE NOCASE, f.display_path COLLATE NOCASE
          LIMIT ?",
-        clauses.join(" AND ")
+        clauses.join(" AND "),
+        scope_sql,
     );
 
     let mut stmt = conn.prepare(&sql).map_err(to_err)?;
@@ -1479,25 +1862,34 @@ fn search_by_name(conn: &Connection, terms: &[String]) -> DbResult<Vec<SearchHit
 
 /// Rank chunks against the prepared `match_query` with FTS5 `bm25()` and return
 /// per-chunk snippets, scoped to `status = 'ok'` files.
-fn search_by_content(conn: &Connection, match_query: &str) -> DbResult<Vec<SearchHit>> {
-    let mut stmt = conn
-        .prepare(
-            "SELECT f.abs_path,
-                    COALESCE(NULLIF(f.title, ''), f.filename) AS title,
-                    c.start_line, c.end_line, c.anchor,
-                    snippet(chunks_fts, 0, char(2), char(3), '…', 12) AS snip,
-                    bm25(chunks_fts) AS score
-             FROM chunks_fts
-             JOIN chunks c ON c.id = chunks_fts.rowid
-             JOIN files f ON f.id = c.file_id
-             WHERE chunks_fts MATCH ?1 AND f.status = 'ok'
-             ORDER BY score
-             LIMIT ?2",
-        )
-        .map_err(to_err)?;
+fn search_by_content(
+    conn: &Connection,
+    match_query: &str,
+    scope: Option<&[String]>,
+) -> DbResult<Vec<SearchHit>> {
+    let (scope_sql, scope_values) = scope_clause(scope);
+    let sql = format!(
+        "SELECT f.abs_path,
+                COALESCE(NULLIF(f.title, ''), f.filename) AS title,
+                c.start_line, c.end_line, c.anchor,
+                snippet(chunks_fts, 0, char(2), char(3), '…', 12) AS snip,
+                bm25(chunks_fts) AS score
+         FROM chunks_fts
+         JOIN chunks c ON c.id = chunks_fts.rowid
+         JOIN files f ON f.id = c.file_id
+         WHERE chunks_fts MATCH ? AND f.status = 'ok'{}
+         ORDER BY score
+         LIMIT ?",
+        scope_sql,
+    );
+    let mut values: Vec<Value> = Vec::with_capacity(scope_values.len() + 2);
+    values.push(Value::Text(match_query.to_string()));
+    values.extend(scope_values);
+    values.push(Value::Integer(SEARCH_LIMIT));
+    let mut stmt = conn.prepare(&sql).map_err(to_err)?;
 
     let rows = stmt
-        .query_map(params![match_query, SEARCH_LIMIT], |row| {
+        .query_map(params_from_iter(values), |row| {
             Ok(SearchHit {
                 abs_path: row.get(0)?,
                 title: row.get(1)?,
@@ -1520,19 +1912,23 @@ fn search_by_content(conn: &Connection, match_query: &str) -> DbResult<Vec<Searc
 /// Search the library: filename/title/path matches first (a named file is a
 /// strong hit), then content matches for files not already shown by name.
 /// Scoped to `status = 'ok'`. Blank/operator queries return no hits.
-pub fn search(conn: &Connection, query: &str) -> DbResult<Vec<SearchHit>> {
+pub fn search(
+    conn: &Connection,
+    query: &str,
+    scope: Option<&[String]>,
+) -> DbResult<Vec<SearchHit>> {
     let terms = query_terms(query);
     if terms.is_empty() {
         return Ok(Vec::new());
     }
 
     let limit = SEARCH_LIMIT as usize;
-    let mut hits = search_by_name(conn, &terms)?;
+    let mut hits = search_by_name(conn, &terms, scope)?;
     let mut seen: HashSet<String> = hits.iter().map(|hit| hit.abs_path.clone()).collect();
 
     if hits.len() < limit {
         if let Some(match_query) = escape_fts_query(query) {
-            for hit in search_by_content(conn, &match_query)? {
+            for hit in search_by_content(conn, &match_query, scope)? {
                 if hits.len() >= limit {
                     break;
                 }
@@ -1606,6 +2002,7 @@ fn write_file_record(
     headings: &[Heading],
     chunks: &[Chunk],
     frontmatter: &[FrontmatterField],
+    links: &[DocLink],
     scan_run_id: Option<i64>,
 ) -> DbResult<i64> {
     let tx = conn.transaction().map_err(to_err)?;
@@ -1666,6 +2063,7 @@ fn write_file_record(
         // key/value rows; then both record readiness.
         replace_chunks(&tx, file_id, chunks)?;
         replace_frontmatter(&tx, file_id, frontmatter)?;
+        replace_links(&tx, file_id, links)?;
         if let Some(hash) = content_hash {
             mark_feature_ready(&tx, file_id, CHUNKS_FEATURE, CHUNKS_SCHEMA_VERSION, hash)?;
             mark_feature_ready(
@@ -1675,12 +2073,14 @@ fn write_file_record(
                 FRONTMATTER_SCHEMA_VERSION,
                 hash,
             )?;
+            mark_feature_ready(&tx, file_id, LINKS_FEATURE, LINKS_SCHEMA_VERSION, hash)?;
         }
     } else {
         // A file leaving `ok` (unreadable/too_large) loses its feature readiness
         // and its derived data in the same transaction that updates its status.
         delete_chunks(&tx, file_id)?;
         delete_frontmatter(&tx, file_id)?;
+        delete_links(&tx, file_id)?;
         tx.execute(
             "DELETE FROM file_feature_state WHERE file_id = ?1",
             params![file_id],
@@ -1718,6 +2118,14 @@ fn mark_missing_for_root(conn: &mut Connection, root_id: i64, scan_run_id: i64) 
     .map_err(to_err)?;
     tx.execute(
         "DELETE FROM frontmatter WHERE file_id IN (
+            SELECT id FROM files
+            WHERE scan_root_id = ?1 AND status = 'ok'
+              AND (last_seen_scan_id IS NULL OR last_seen_scan_id <> ?2))",
+        params![root_id, scan_run_id],
+    )
+    .map_err(to_err)?;
+    tx.execute(
+        "DELETE FROM links WHERE from_file_id IN (
             SELECT id FROM files
             WHERE scan_root_id = ?1 AND status = 'ok'
               AND (last_seen_scan_id IS NULL OR last_seen_scan_id <> ?2))",
@@ -1859,6 +2267,194 @@ pub fn build_tree(conn: &Connection) -> DbResult<Vec<FileTreeNode>> {
 }
 
 // ---------------------------------------------------------------------------
+// Graph building
+// ---------------------------------------------------------------------------
+
+/// The label shown on a graph node: the document title, else its filename with a
+/// Markdown extension stripped.
+fn graph_label(title: Option<&str>, filename: &str) -> String {
+    match title {
+        Some(t) if !t.trim().is_empty() => t.trim().to_string(),
+        _ => stem_of(filename),
+    }
+}
+
+/// Build the library link graph: one node per `ok` document, one undirected edge
+/// per doc-to-doc link that resolves to another indexed document. Path links match
+/// a file's stored `abs_path` (exact, then case-insensitively for Windows);
+/// `[[wiki]]` links match a file's name key (filename stem). External and dangling
+/// links contribute no edge. `request` chooses the slice: a focused neighborhood
+/// around seed documents, the densest N documents, or everything (see
+/// [`GraphRequest`]).
+pub fn build_graph(conn: &Connection, request: &GraphRequest) -> DbResult<DocumentGraph> {
+    // 1. Load every indexed document and index it by id + resolution keys.
+    struct Row {
+        id: i64,
+        path: String,
+        label: String,
+    }
+    let mut stmt = conn
+        .prepare("SELECT id, abs_path, filename, title FROM files WHERE status = 'ok'")
+        .map_err(to_err)?;
+    let rows: Vec<Row> = stmt
+        .query_map([], |row| {
+            let path: String = row.get(1)?;
+            let filename: String = row.get(2)?;
+            let title: Option<String> = row.get(3)?;
+            Ok(Row {
+                id: row.get(0)?,
+                label: graph_label(title.as_deref(), &filename),
+                path,
+            })
+        })
+        .map_err(to_err)?
+        .collect::<Result<_, _>>()
+        .map_err(to_err)?;
+
+    let mut path_to_id: HashMap<String, i64> = HashMap::with_capacity(rows.len());
+    let mut lower_path_to_id: HashMap<String, i64> = HashMap::with_capacity(rows.len());
+    // Name keys can collide across folders; first writer wins, which is a fine
+    // best-effort for wiki-style links in a flat vault.
+    let mut name_to_id: HashMap<String, i64> = HashMap::new();
+    for row in &rows {
+        path_to_id.insert(row.path.clone(), row.id);
+        lower_path_to_id
+            .entry(row.path.to_lowercase())
+            .or_insert(row.id);
+        let filename = Path::new(&row.path)
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+        name_to_id
+            .entry(normalize_name_key(&stem_of(&filename)))
+            .or_insert(row.id);
+    }
+
+    // 2. Resolve every link to a target document id, collecting undirected edges
+    //    keyed by the ordered id pair so A->B and B->A collapse to one edge.
+    let mut link_stmt = conn
+        .prepare("SELECT from_file_id, target_abs, target_name FROM links")
+        .map_err(to_err)?;
+    let resolved = link_stmt
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, Option<String>>(1)?,
+                row.get::<_, Option<String>>(2)?,
+            ))
+        })
+        .map_err(to_err)?;
+
+    let mut edge_set: HashSet<(i64, i64)> = HashSet::new();
+    for entry in resolved {
+        let (from_id, target_abs, target_name) = entry.map_err(to_err)?;
+        let to_id = target_abs
+            .as_deref()
+            .and_then(|abs| {
+                path_to_id
+                    .get(abs)
+                    .or_else(|| lower_path_to_id.get(&abs.to_lowercase()))
+                    .copied()
+            })
+            .or_else(|| {
+                target_name
+                    .as_deref()
+                    .and_then(|name| name_to_id.get(name).copied())
+            });
+        let Some(to_id) = to_id else { continue };
+        if to_id == from_id {
+            continue; // a document linking itself is not an edge
+        }
+        let key = if from_id < to_id {
+            (from_id, to_id)
+        } else {
+            (to_id, from_id)
+        };
+        edge_set.insert(key);
+    }
+
+    // 3. Degree per node, then choose which documents to keep for the requested
+    //    scope: a focused neighborhood, the densest N, or everything.
+    let mut degree: HashMap<i64, u32> = HashMap::new();
+    for (a, b) in &edge_set {
+        *degree.entry(*a).or_insert(0) += 1;
+        *degree.entry(*b).or_insert(0) += 1;
+    }
+
+    let (kept, truncated): (Vec<&Row>, bool) = if let Some(seeds) = &request.focus {
+        // Focus: the seed documents plus every document one link away. Seeds are
+        // paths the frontend stored as node ids; resolve them exactly, then
+        // case-insensitively (matching how links resolve on Windows).
+        let mut adjacency: HashMap<i64, Vec<i64>> = HashMap::new();
+        for (a, b) in &edge_set {
+            adjacency.entry(*a).or_default().push(*b);
+            adjacency.entry(*b).or_default().push(*a);
+        }
+        let mut included: HashSet<i64> = HashSet::new();
+        for seed in seeds {
+            let id = path_to_id
+                .get(seed)
+                .or_else(|| lower_path_to_id.get(&seed.to_lowercase()))
+                .copied();
+            if let Some(id) = id {
+                included.insert(id);
+                if let Some(neighbors) = adjacency.get(&id) {
+                    included.extend(neighbors.iter().copied());
+                }
+            }
+        }
+        (
+            rows.iter()
+                .filter(|row| included.contains(&row.id))
+                .collect(),
+            false,
+        )
+    } else if let Some(limit) = request.limit.filter(|limit| rows.len() > *limit) {
+        // Capped: keep the densest documents, flag the result as partial.
+        let mut ranked: Vec<&Row> = rows.iter().collect();
+        ranked.sort_by(|a, b| {
+            degree
+                .get(&b.id)
+                .unwrap_or(&0)
+                .cmp(degree.get(&a.id).unwrap_or(&0))
+                .then_with(|| a.label.to_lowercase().cmp(&b.label.to_lowercase()))
+        });
+        ranked.truncate(limit);
+        (ranked, true)
+    } else {
+        // Everything (the XL scope, or a capped scope under its limit).
+        (rows.iter().collect(), false)
+    };
+    let kept_ids: HashSet<i64> = kept.iter().map(|row| row.id).collect();
+    let id_to_path: HashMap<i64, &str> =
+        kept.iter().map(|row| (row.id, row.path.as_str())).collect();
+
+    let nodes: Vec<GraphNode> = kept
+        .iter()
+        .map(|row| GraphNode {
+            path: row.path.clone(),
+            label: row.label.clone(),
+            degree: *degree.get(&row.id).unwrap_or(&0),
+        })
+        .collect();
+
+    let edges: Vec<GraphEdge> = edge_set
+        .into_iter()
+        .filter(|(a, b)| kept_ids.contains(a) && kept_ids.contains(b))
+        .map(|(a, b)| GraphEdge {
+            source: id_to_path[&a].to_string(),
+            target: id_to_path[&b].to_string(),
+        })
+        .collect();
+
+    Ok(DocumentGraph {
+        nodes,
+        edges,
+        truncated,
+    })
+}
+
+// ---------------------------------------------------------------------------
 // Parse pool
 // ---------------------------------------------------------------------------
 
@@ -1878,6 +2474,7 @@ enum FileOutcome {
         headings: Vec<Heading>,
         chunks: Vec<Chunk>,
         frontmatter: Vec<FrontmatterField>,
+        links: Vec<DocLink>,
     },
     Unreadable,
     TooLarge,
@@ -1913,17 +2510,35 @@ fn process_file(job: &ParseJob, cancel: &AtomicBool) -> FileOutcome {
         Err(_) => return FileOutcome::Unreadable,
     };
     let content_hash = blake3::hash(content.as_bytes()).to_hex().to_string();
-    let parsed = parse_markdown(&content, &stem_of(&job.filename));
-    // Chunking and frontmatter parsing are pure CPU work, so they run here on the
-    // parse pool; the writer thread only persists the result transactionally.
-    let chunks = chunk_file(&content);
-    let frontmatter = frontmatter_fields(&content);
-    FileOutcome::Indexed {
-        content_hash,
-        title: parsed.title,
-        headings: parsed.headings,
-        chunks,
-        frontmatter,
+    // Parsing is pure CPU work, so it runs here on the parse pool; the writer
+    // thread only persists the result transactionally. Link extraction runs for
+    // every indexed type so the graph view can edge Markdown and TEI XML alike.
+    let links = document_links(&content, &job.abs_path);
+    if is_xml_file(&job.abs_path) {
+        // TEI XML: take the header title and the link graph. Full-text chunks and
+        // frontmatter stay empty for v1 — XML joins the library and graph, but its
+        // body is not chunked for search yet.
+        let (title, _body) = crate::render_tei_body(&content);
+        FileOutcome::Indexed {
+            content_hash,
+            title: title.unwrap_or_else(|| stem_of(&job.filename)),
+            headings: Vec::new(),
+            chunks: Vec::new(),
+            frontmatter: Vec::new(),
+            links,
+        }
+    } else {
+        let parsed = parse_markdown(&content, &stem_of(&job.filename));
+        let chunks = chunk_file(&content);
+        let frontmatter = frontmatter_fields(&content);
+        FileOutcome::Indexed {
+            content_hash,
+            title: parsed.title,
+            headings: parsed.headings,
+            chunks,
+            frontmatter,
+            links,
+        }
     }
 }
 
@@ -1941,6 +2556,7 @@ fn apply_result(
             headings,
             chunks,
             frontmatter,
+            links,
         } => {
             write_file_record(
                 conn,
@@ -1956,6 +2572,7 @@ fn apply_result(
                 &headings,
                 &chunks,
                 &frontmatter,
+                &links,
                 scan_run_id,
             )?;
         }
@@ -1974,6 +2591,7 @@ fn apply_result(
                 &[],
                 &[],
                 &[],
+                &[],
                 scan_run_id,
             )?;
         }
@@ -1989,6 +2607,7 @@ fn apply_result(
                 "too_large",
                 None,
                 None,
+                &[],
                 &[],
                 &[],
                 &[],
@@ -2121,7 +2740,7 @@ fn run_scan(
                         continue;
                     }
                     queue.push_back((child, depth + 1));
-                } else if file_type.is_file() && is_markdown_file(&child) {
+                } else if file_type.is_file() && is_indexable_file(&child) {
                     files_found += 1;
                     if last_progress.elapsed() >= PROGRESS_THROTTLE {
                         sink(IndexerEvent::Progress(ScanProgress {
@@ -2399,7 +3018,7 @@ fn sync_directory_tree(conn: &mut Connection, dir: &Path, sink: &dyn Fn(IndexerE
                 continue;
             }
 
-            if !file_type.is_file() || !is_markdown_file(&child) {
+            if !file_type.is_file() || !is_indexable_file(&child) {
                 continue;
             }
 
@@ -2459,7 +3078,7 @@ fn sync_single_file(conn: &mut Connection, path: &Path, sink: &dyn Fn(IndexerEve
         Ok(meta) if meta.is_dir() => {
             sync_directory_tree(conn, &abs, sink);
         }
-        Ok(meta) if meta.is_file() && is_markdown_file(&abs) => {
+        Ok(meta) if meta.is_file() && is_indexable_file(&abs) => {
             if let Err(error) = sync_markdown_file(conn, &abs) {
                 sink(IndexerEvent::Error(error));
                 return;
@@ -2467,7 +3086,7 @@ fn sync_single_file(conn: &mut Connection, path: &Path, sink: &dyn Fn(IndexerEve
             emit_tree(conn, sink);
         }
         Ok(_) => {}
-        Err(_) if is_markdown_file(&abs) => {
+        Err(_) if is_indexable_file(&abs) => {
             forget_single_file(conn, &abs, sink);
         }
         Err(_) => {
@@ -2507,7 +3126,13 @@ enum WriterCmd {
 
 enum ReaderCmd {
     Tree,
-    Search(String),
+    Search {
+        query: String,
+        /// When `Some`, restrict results to these document paths (the "Focus"
+        /// search scope); `None` searches the whole library.
+        scope: Option<Vec<String>>,
+    },
+    Graph(GraphRequest),
 }
 
 /// Owns the indexer's threads: a writer/coordinator (write connection + crawl)
@@ -2575,8 +3200,8 @@ impl IndexerWorker {
                         }),
                         Err(error) => reader_sink(IndexerEvent::Error(error)),
                     },
-                    ReaderCmd::Search(query) => {
-                        let event = match search(&conn, &query) {
+                    ReaderCmd::Search { query, scope } => {
+                        let event = match search(&conn, &query, scope.as_deref()) {
                             Ok(hits) => IndexerEvent::SearchResults {
                                 query,
                                 hits,
@@ -2585,6 +3210,20 @@ impl IndexerWorker {
                             Err(error) => IndexerEvent::SearchResults {
                                 query,
                                 hits: Vec::new(),
+                                error: Some(error),
+                            },
+                        };
+                        reader_sink(event);
+                    }
+                    ReaderCmd::Graph(request) => {
+                        let event = match build_graph(&conn, &request) {
+                            Ok(graph) => IndexerEvent::Graph { graph, error: None },
+                            Err(error) => IndexerEvent::Graph {
+                                graph: DocumentGraph {
+                                    nodes: Vec::new(),
+                                    edges: Vec::new(),
+                                    truncated: false,
+                                },
                                 error: Some(error),
                             },
                         };
@@ -2627,9 +3266,18 @@ impl IndexerWorker {
     /// Run a full-text search on the read-only connection. Results arrive through
     /// the sink as [`IndexerEvent::SearchResults`], so a long crawl never blocks
     /// the query.
-    pub fn search(&self, query: String) {
+    pub fn search(&self, query: String, scope: Option<Vec<String>>) {
         if let Some(tx) = &self.reader_tx {
-            let _ = tx.send(ReaderCmd::Search(query));
+            let _ = tx.send(ReaderCmd::Search { query, scope });
+        }
+    }
+
+    /// Build the library link graph on the read-only connection. The result
+    /// arrives through the sink as [`IndexerEvent::Graph`], so it never blocks the
+    /// UI thread or a running crawl.
+    pub fn request_graph(&self, request: GraphRequest) {
+        if let Some(tx) = &self.reader_tx {
+            let _ = tx.send(ReaderCmd::Graph(request));
         }
     }
 
@@ -2688,6 +3336,15 @@ pub fn event_script(event: &IndexerEvent) -> String {
                 "error": error.as_ref().map(|message| serde_json::json!({ "message": message })),
             });
             format!("window.leafSetSearchResults({payload});")
+        }
+        IndexerEvent::Graph { graph, error } => {
+            let payload = serde_json::json!({
+                "nodes": graph.nodes,
+                "edges": graph.edges,
+                "truncated": graph.truncated,
+                "error": error.as_ref().map(|message| serde_json::json!({ "message": message })),
+            });
+            format!("window.leafSetGraph({payload});")
         }
         IndexerEvent::Error(message) => {
             let payload = serde_json::json!({
@@ -3481,11 +4138,48 @@ final body
 
         // A content-only term (not in any filename) returns a chunk hit whose
         // snippet carries the STX/ETX highlight markers around the match.
-        let hits = search(&conn, "installer").expect("search ok");
+        let hits = search(&conn, "installer", None).expect("search ok");
         assert!(!hits.is_empty(), "query finds the install file");
         assert!(hits[0].abs_path.ends_with("install.md"));
         assert!(hits[0].snippet.contains('\u{2}') && hits[0].snippet.contains('\u{3}'));
         assert!(hits.iter().all(|h| !h.abs_path.ends_with("other.md")));
+
+        drop(conn);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn search_scope_restricts_results_to_given_paths() {
+        let dir = unique_dir("search-scope");
+        let root = dir.join("vault");
+        write_file(
+            &root.join("keep.md"),
+            "# Keep\n\nThe dharma teaching appears here.\n",
+        );
+        write_file(
+            &root.join("drop.md"),
+            "# Drop\n\nThe dharma teaching also appears here.\n",
+        );
+        let mut conn = open_db(&dir).expect("db opens");
+        scan(&mut conn, &root);
+
+        // Unscoped, both files match; capture keep.md's stored path.
+        let all = search(&conn, "dharma", None).expect("search ok");
+        assert_eq!(all.len(), 2);
+        let keep_path = all
+            .iter()
+            .find(|h| h.abs_path.ends_with("keep.md"))
+            .map(|h| h.abs_path.clone())
+            .expect("keep.md matches");
+
+        // Scoped to keep.md: drop.md is excluded even though it matches.
+        let scoped = search(&conn, "dharma", Some(&[keep_path])).expect("search ok");
+        assert_eq!(scoped.len(), 1);
+        assert!(scoped[0].abs_path.ends_with("keep.md"));
+
+        // An empty scope matches nothing (never a raw `IN ()`).
+        let empty = search(&conn, "dharma", Some(&[])).expect("search ok");
+        assert!(empty.is_empty());
 
         drop(conn);
         let _ = std::fs::remove_dir_all(&dir);
@@ -3508,7 +4202,7 @@ final body
         let mut conn = open_db(&dir).expect("db opens");
         scan(&mut conn, &root);
 
-        let hits = search(&conn, "skill").expect("search ok");
+        let hits = search(&conn, "skill", None).expect("search ok");
         // The name match leads, then the content match; the unrelated file is out.
         assert!(
             hits[0].abs_path.ends_with("SKILL.md"),
@@ -3539,16 +4233,16 @@ final body
 
         let mut conn = open_db(&dir).expect("db opens");
         scan(&mut conn, &root);
-        assert!(!search(&conn, "brown").expect("search").is_empty());
+        assert!(!search(&conn, "brown", None).expect("search").is_empty());
 
         write_file(&note, "# Note\n\nthe lazy green turtle\n");
         scan(&mut conn, &root);
         assert!(
-            search(&conn, "brown").expect("search").is_empty(),
+            search(&conn, "brown", None).expect("search").is_empty(),
             "old term gone"
         );
         assert!(
-            !search(&conn, "turtle").expect("search").is_empty(),
+            !search(&conn, "turtle", None).expect("search").is_empty(),
             "new term found"
         );
         // FTS rows still match chunk rows after the rewrite.
@@ -3630,7 +4324,7 @@ final body
             "\"unterminated",
             "words", // a real one too
         ] {
-            let result = search(&conn, query);
+            let result = search(&conn, query, None);
             assert!(result.is_ok(), "query {query:?} must not error");
         }
 
@@ -3648,7 +4342,7 @@ final body
         let mut conn = open_db(&dir).expect("db opens");
         scan(&mut conn, &root);
         let file_id = file_id_of(&conn, &path_to_string(&note));
-        assert!(!search(&conn, "findme").expect("search").is_empty());
+        assert!(!search(&conn, "findme", None).expect("search").is_empty());
 
         // Removing the file then rescanning demotes it to `missing`.
         std::fs::remove_file(&note).expect("removed");
@@ -3660,7 +4354,7 @@ final body
         );
         assert!(chunk_rows(&conn, file_id).is_empty(), "chunks dropped");
         assert!(
-            search(&conn, "findme").expect("search").is_empty(),
+            search(&conn, "findme", None).expect("search").is_empty(),
             "no stale hits"
         );
         let chunk_total: i64 = conn
@@ -3684,11 +4378,11 @@ final body
         scan(&mut conn, &root);
 
         assert!(
-            !search(&conn, "安装").expect("search").is_empty(),
+            !search(&conn, "安装", None).expect("search").is_empty(),
             "leading prefix of the run matches"
         );
         assert!(
-            search(&conn, "程序").expect("search").is_empty(),
+            search(&conn, "程序", None).expect("search").is_empty(),
             "mid-run substring does not match under unicode61"
         );
 
@@ -3949,6 +4643,180 @@ final body
             frontmatter_rows(&conn, file_id),
             vec![("status".to_string(), "done".to_string())]
         );
+
+        drop(conn);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    // -----------------------------------------------------------------------
+    // Link extraction + graph building
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn url_scheme_detection_separates_external_links_from_paths() {
+        assert!(has_url_scheme("https://example.com"));
+        assert!(has_url_scheme("mailto:a@b.com"));
+        assert!(has_url_scheme("data:text/plain,x"));
+        // A Windows drive is a path, not a URL (single-letter "scheme").
+        assert!(!has_url_scheme(r"C:\notes\a.md"));
+        assert!(!has_url_scheme("./b.md"));
+        assert!(!has_url_scheme("sub/c.md"));
+        assert!(!has_url_scheme("#section"));
+    }
+
+    #[test]
+    fn extracts_markdown_html_and_wiki_links_and_drops_external() {
+        let a = Path::new("root").join("notes").join("a.md");
+        let content = "[rel](./b.md)\n\
+             <a href=\"c.md\">c</a>\n\
+             see [[Note D]] and [[Note D#head|alias]]\n\
+             [ext](https://example.com)\n\
+             [anchor](#top)\n\
+             [space](My%20Note.md)\n";
+        let links = document_links(content, &a);
+
+        let names: Vec<String> = links.iter().filter_map(|l| l.target_name.clone()).collect();
+        assert!(names.contains(&"note d".to_string()));
+        // The two `[[Note D...]]` links dedupe to one name target.
+        assert_eq!(names.iter().filter(|n| *n == "note d").count(), 1);
+
+        let paths: Vec<String> = links.iter().filter_map(|l| l.target_abs.clone()).collect();
+        assert!(paths.iter().any(|p| p.ends_with("b.md")));
+        assert!(paths.iter().any(|p| p.ends_with("c.md")));
+        // Percent escapes are decoded so the target matches the on-disk name.
+        assert!(paths.iter().any(|p| p.ends_with("My Note.md")));
+        // The external URL and the pure anchor contribute no link.
+        assert!(!paths.iter().any(|p| p.contains("example.com")));
+        assert_eq!(links.len(), 4);
+    }
+
+    #[test]
+    fn xml_links_come_from_target_and_href_attributes() {
+        let a = Path::new("root").join("x.xml");
+        let content = "<ref target=\"other.xml\">x</ref>\
+             <ptr target=\"https://example.com\"/>\
+             <a href=\"deep/inner.xml\">y</a>";
+        let links = document_links(content, &a);
+        let paths: Vec<String> = links.iter().filter_map(|l| l.target_abs.clone()).collect();
+        assert!(paths.iter().any(|p| p.ends_with("other.xml")));
+        assert!(paths.iter().any(|p| p.ends_with("inner.xml")));
+        assert!(!paths.iter().any(|p| p.contains("example.com")));
+        assert_eq!(paths.len(), 2);
+    }
+
+    #[test]
+    fn build_graph_edges_linked_documents_and_indexes_xml_nodes() {
+        let dir = unique_dir("graph");
+        let root = dir.join("vault");
+        write_file(&root.join("a.md"), "# Alpha\n\nlink to [Beta](./b.md)\n");
+        // b links back to a with a wiki link (resolved by filename stem).
+        write_file(&root.join("b.md"), "# Beta\n\nback to [[a]]\n");
+        write_file(
+            &root.join("c.xml"),
+            "<TEI><teiHeader><fileDesc><titleStmt>\
+                <title type=\"mainTitle\" xml:lang=\"en\">Gamma</title>\
+             </titleStmt></fileDesc></teiHeader>\
+             <text><body><p>hello</p></body></text></TEI>",
+        );
+        let mut conn = open_db(&dir).expect("db opens");
+        scan(&mut conn, &root);
+
+        let graph = build_graph(&conn, &GraphRequest::default()).expect("graph builds");
+        // All three documents — including the TEI XML — are nodes.
+        assert_eq!(graph.nodes.len(), 3);
+        assert!(graph.nodes.iter().any(|n| n.label == "Gamma"));
+        assert!(!graph.truncated);
+
+        // The forward Markdown link and the backward wiki link collapse to one
+        // undirected edge between a.md and b.md; c.xml stays an isolated node.
+        assert_eq!(graph.edges.len(), 1);
+        let edge = &graph.edges[0];
+        let ends = [edge.source.as_str(), edge.target.as_str()];
+        assert!(ends.iter().any(|p| p.ends_with("a.md")));
+        assert!(ends.iter().any(|p| p.ends_with("b.md")));
+
+        drop(conn);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn build_graph_focus_scope_keeps_seed_and_its_neighbors() {
+        let dir = unique_dir("graph-focus");
+        let root = dir.join("vault");
+        write_file(&root.join("a.md"), "# Alpha\n\nlink to [Beta](./b.md)\n");
+        write_file(&root.join("b.md"), "# Beta\n\nback to [[a]]\n");
+        write_file(&root.join("c.md"), "# Gamma\n\nno links here\n");
+        let mut conn = open_db(&dir).expect("db opens");
+        scan(&mut conn, &root);
+
+        // The full graph gives us a.md's stored path to seed the focus request.
+        let all = build_graph(&conn, &GraphRequest::default()).expect("graph builds");
+        let a_path = all
+            .nodes
+            .iter()
+            .find(|n| n.path.ends_with("a.md"))
+            .map(|n| n.path.clone())
+            .expect("a.md is a node");
+
+        // Focused on a.md: the slice is a plus its one neighbor b, never the
+        // unlinked c.
+        let focus = build_graph(
+            &conn,
+            &GraphRequest {
+                focus: Some(vec![a_path]),
+                limit: None,
+            },
+        )
+        .expect("focus graph builds");
+        assert!(!focus.truncated);
+        assert_eq!(focus.nodes.len(), 2);
+        assert!(focus.nodes.iter().any(|n| n.path.ends_with("a.md")));
+        assert!(focus.nodes.iter().any(|n| n.path.ends_with("b.md")));
+        assert!(!focus.nodes.iter().any(|n| n.path.ends_with("c.md")));
+
+        drop(conn);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn build_graph_capped_scope_keeps_densest_and_flags_truncated() {
+        let dir = unique_dir("graph-capped");
+        let root = dir.join("vault");
+        // hub links to two leaves, so hub has degree 2 and each leaf degree 1.
+        write_file(
+            &root.join("hub.md"),
+            "# Hub\n\n[one](./one.md) and [two](./two.md)\n",
+        );
+        write_file(&root.join("one.md"), "# One\n");
+        write_file(&root.join("two.md"), "# Two\n");
+        let mut conn = open_db(&dir).expect("db opens");
+        scan(&mut conn, &root);
+
+        // Cap at 2: the densest documents win (hub, then a leaf) and the result
+        // is flagged partial.
+        let capped = build_graph(
+            &conn,
+            &GraphRequest {
+                focus: None,
+                limit: Some(2),
+            },
+        )
+        .expect("capped graph builds");
+        assert!(capped.truncated);
+        assert_eq!(capped.nodes.len(), 2);
+        assert!(capped.nodes.iter().any(|n| n.path.ends_with("hub.md")));
+
+        // A limit larger than the library drops nothing and is not flagged.
+        let uncapped = build_graph(
+            &conn,
+            &GraphRequest {
+                focus: None,
+                limit: Some(10),
+            },
+        )
+        .expect("graph builds");
+        assert!(!uncapped.truncated);
+        assert_eq!(uncapped.nodes.len(), 3);
 
         drop(conn);
         let _ = std::fs::remove_dir_all(&dir);

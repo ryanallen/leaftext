@@ -704,6 +704,15 @@ pub fn app_shell_html() -> String {
             "{{MERMAID_SCRIPT_URL}}",
             &bundled_asset_url("mermaid.min.js"),
         )
+        .replace("{{PIXI_SCRIPT_URL}}", &bundled_asset_url("pixi.min.js"))
+        .replace(
+            "{{PIXI_UNSAFE_EVAL_SCRIPT_URL}}",
+            &bundled_asset_url("pixi-unsafe-eval.min.js"),
+        )
+        .replace(
+            "{{D3_FORCE_SCRIPT_URL}}",
+            &bundled_asset_url("d3-force.min.js"),
+        )
         .replace(
             "{{KATEX_SCRIPT_URL}}",
             &bundled_asset_url("katex/katex.min.js"),
@@ -857,6 +866,11 @@ fn locale_bootstrap_script() -> &'static str {
       'library.view.project': 'Project',
       'library.view.tree': 'Tree',
       'library.view.all': 'All files',
+      'library.view.graph': 'Graph',
+      'library.graph.empty': 'No links to graph yet.',
+      'library.graph.loading': 'Building graph…',
+      'library.graph.error': 'Graph failed to load.',
+      'library.graph.truncated': 'Showing the {count} most-linked documents.',
       'library.up': 'Back',
       'library.scanning': 'Scanning…',
       'library.filesFound': '{count} files found',
@@ -868,6 +882,9 @@ fn locale_bootstrap_script() -> &'static str {
       'library.search.count': '{count} results',
       'library.search.loading': 'Searching…',
       'library.search.error': 'Search failed.',
+      'library.search.scope.title': 'Toggle between searching only the files shown here and the whole library',
+      'library.search.scope.all': 'All',
+      'library.search.scope.focus': 'Focus',
       'recent.headingWithCount': 'Recent ({count})',
       'recent.openTitle': 'Open {path}',
       'minimap.aria': 'Document minimap',
@@ -875,7 +892,7 @@ fn locale_bootstrap_script() -> &'static str {
       'outline.lineCount': '({count} lines)',
       'settings.heading': 'Settings',
       'settings.indexing.label': 'Index entire device',
-      'settings.indexing.help': 'Crawl this device for Markdown files and rescan each time you open the app.',
+      'settings.indexing.help': 'Crawl this device for Markdown and XML documents and rescan each time you open the app.',
       'settings.theme.aria': 'Theme',
       'settings.theme.dark': 'Dark',
       'settings.theme.dracula': 'Dracula',
@@ -886,6 +903,13 @@ fn locale_bootstrap_script() -> &'static str {
       'settings.minimap.aria': 'Show document minimap',
       'settings.minimap.help': 'Show a scrollable document overview on wider windows.',
       'settings.minimap.label': 'Show minimap',
+      'settings.graphScope.aria': 'Graph size',
+      'settings.graphScope.label': 'Graph size',
+      'settings.graphScope.help': 'How many documents the graph view draws. Smaller is faster.',
+      'settings.graphScope.small': 'Focus (open document + links)',
+      'settings.graphScope.medium': 'Medium (up to 2,000)',
+      'settings.graphScope.large': 'Large (up to 5,000)',
+      'settings.graphScope.xl': 'Everything',
       'settings.speedReader.aria': 'Speed Reader',
       'settings.speedReader.help': 'Make prose quieter and add bold lead anchors for faster scanning.',
       'settings.speedReader.label': 'Speed Reader',
@@ -932,6 +956,11 @@ fn locale_bootstrap_script() -> &'static str {
       'library.view.project': '项目',
       'library.view.tree': '目录树',
       'library.view.all': '全部文件',
+      'library.view.graph': '关系图',
+      'library.graph.empty': '暂无可用的链接关系。',
+      'library.graph.loading': '正在生成关系图…',
+      'library.graph.error': '关系图加载失败。',
+      'library.graph.truncated': '仅显示链接最多的 {count} 个文档。',
       'library.up': '返回',
       'library.scanning': '正在扫描…',
       'library.filesFound': '已找到 {count} 个文件',
@@ -943,6 +972,9 @@ fn locale_bootstrap_script() -> &'static str {
       'library.search.count': '{count} 条结果',
       'library.search.loading': '正在搜索…',
       'library.search.error': '搜索失败。',
+      'library.search.scope.title': '在仅搜索此处显示的文件与搜索整个文库之间切换',
+      'library.search.scope.all': '全部',
+      'library.search.scope.focus': '聚焦',
       'recent.headingWithCount': '最近文件（{count}）',
       'recent.openTitle': '打开 {path}',
       'minimap.aria': '文档缩略图',
@@ -950,7 +982,7 @@ fn locale_bootstrap_script() -> &'static str {
       'outline.lineCount': '（{count} 行）',
       'settings.heading': '设置',
       'settings.indexing.label': '索引整个设备',
-      'settings.indexing.help': '扫描此设备上的 Markdown 文件，并在每次打开应用时重新扫描。',
+      'settings.indexing.help': '扫描此设备上的 Markdown 和 XML 文档，并在每次打开应用时重新扫描。',
       'settings.theme.aria': '主题',
       'settings.theme.dark': '深色',
       'settings.theme.dracula': 'Dracula',
@@ -961,6 +993,13 @@ fn locale_bootstrap_script() -> &'static str {
       'settings.minimap.aria': '显示文档缩略图',
       'settings.minimap.help': '在较宽窗口中显示可滚动的文档概览。',
       'settings.minimap.label': '显示缩略图',
+      'settings.graphScope.aria': '关系图规模',
+      'settings.graphScope.label': '关系图规模',
+      'settings.graphScope.help': '关系图绘制的文档数量。规模越小越快。',
+      'settings.graphScope.small': '聚焦（当前文档及其链接）',
+      'settings.graphScope.medium': '中等（最多 2,000）',
+      'settings.graphScope.large': '大（最多 5,000）',
+      'settings.graphScope.xl': '全部',
       'settings.speedReader.aria': '快速阅读',
       'settings.speedReader.help': '弱化正文干扰，并为词首添加加粗引导，方便快速浏览。',
       'settings.speedReader.label': '快速阅读',
@@ -1128,6 +1167,8 @@ pub struct Settings {
     pub theme_mode: String,
     /// Which library view is showing: drill-in Project, expandable Tree, or flat.
     pub library_view: LibraryView,
+    /// How much of the link graph the graph view draws (see [`GraphScope`]).
+    pub graph_scope: GraphScope,
     /// Full paths of folders left expanded in Tree view, so the open/closed
     /// shape is restored across view switches and restarts.
     pub library_expanded: Vec<String>,
@@ -1149,6 +1190,7 @@ impl Default for Settings {
             speed_reader_enabled: false,
             theme_mode: "system".to_string(),
             library_view: LibraryView::default(),
+            graph_scope: GraphScope::default(),
             library_expanded: Vec::new(),
             library_project_path: String::new(),
             library_closed: false,
@@ -1157,12 +1199,14 @@ impl Default for Settings {
     }
 }
 
-/// The library pane's three layouts. Serialized lowercase (`"project"`,
-/// `"tree"`, `"flat"`) to match the frontend's `LIBRARY_VIEWS` strings.
+/// The library pane's layouts. Serialized lowercase (`"graph"`, `"project"`,
+/// `"tree"`, `"flat"`) to match the frontend's `LIBRARY_VIEWS` strings. Graph is
+/// the default view.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LibraryView {
     #[default]
+    Graph,
     Project,
     Tree,
     Flat,
@@ -1171,6 +1215,7 @@ pub enum LibraryView {
 impl LibraryView {
     pub fn as_str(self) -> &'static str {
         match self {
+            LibraryView::Graph => "graph",
             LibraryView::Project => "project",
             LibraryView::Tree => "tree",
             LibraryView::Flat => "flat",
@@ -1180,9 +1225,47 @@ impl LibraryView {
     /// Parse a value sent by the frontend, ignoring anything unrecognized.
     pub fn from_client(value: &str) -> Option<Self> {
         match value {
+            "graph" => Some(LibraryView::Graph),
             "project" => Some(LibraryView::Project),
             "tree" => Some(LibraryView::Tree),
             "flat" => Some(LibraryView::Flat),
+            _ => None,
+        }
+    }
+}
+
+/// How much of the link graph the graph view draws. `Small` focuses on the open
+/// document — or the recent files, on the start screen — plus everything one link
+/// away; the rest cap the densest documents at increasing sizes, up to `Xl`
+/// (every indexed document). Serialized lowercase to match the frontend's
+/// `GRAPH_SCOPES` strings. Small is the default so the graph opens fast.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum GraphScope {
+    #[default]
+    Small,
+    Medium,
+    Large,
+    Xl,
+}
+
+impl GraphScope {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            GraphScope::Small => "small",
+            GraphScope::Medium => "medium",
+            GraphScope::Large => "large",
+            GraphScope::Xl => "xl",
+        }
+    }
+
+    /// Parse a value sent by the frontend, ignoring anything unrecognized.
+    pub fn from_client(value: &str) -> Option<Self> {
+        match value {
+            "small" => Some(GraphScope::Small),
+            "medium" => Some(GraphScope::Medium),
+            "large" => Some(GraphScope::Large),
+            "xl" => Some(GraphScope::Xl),
             _ => None,
         }
     }

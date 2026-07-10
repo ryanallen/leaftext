@@ -1366,6 +1366,33 @@ body.library-resizing {
 .library-tree {
   padding: 0 6px 12px;
 }
+/* The graph view fills the pane below the header instead of scrolling. The Pixi
+   canvas owns pan/zoom, so the container itself never scrolls. */
+.library-graph {
+  position: absolute;
+  inset: 0;
+  top: calc(var(--library-app-bar) + var(--library-header-height));
+  overflow: hidden;
+}
+.library-graph-canvas {
+  width: 100%;
+  height: 100%;
+}
+.library-graph-canvas canvas {
+  display: block;
+}
+.library-graph-status {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  margin: 0;
+  padding: 0 12px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--app-muted-foreground);
+  pointer-events: none;
+}
 .library-results {
   padding: 0 6px 12px;
 }
@@ -1488,6 +1515,19 @@ body.library-resizing {
   position: relative;
   /* The view switcher keeps its size; only the search field beside it shrinks. */
   flex: 0 0 auto;
+}
+.library-search-scope {
+  /* Sits at the end of the header next to the search field, keeping its size. */
+  flex: 0 0 auto;
+}
+.library-search-scope[aria-pressed="true"] {
+  /* Focus mode on: tint the chip with the accent so the narrowed scope is
+     obvious at a glance. */
+  background: color-mix(in srgb, var(--app-action-background, #2f81f7) 32%, transparent);
+  color: var(--app-foreground);
+}
+.library-search-scope[aria-pressed="true"]:hover {
+  background: color-mix(in srgb, var(--app-action-background, #2f81f7) 42%, transparent);
 }
 .library-header button {
   display: inline-flex;

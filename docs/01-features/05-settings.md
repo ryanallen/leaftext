@@ -14,7 +14,8 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 | Minimap | On / Off | On |
 | Pager | On / Off | On |
 | Indexing | On / Off | Off |
-| Library view | Project, Tree, All files | Project |
+| Library view | Graph, Project, Tree, All files | Graph |
+| Graph size | Focus, Medium, Large, Everything | Focus |
 
 ## Open
 
@@ -40,7 +41,8 @@ Here `{config_dir}` and `{data_dir}` are the per-app directories the `directorie
   "pager_enabled": true,
   "speed_reader_enabled": false,
   "theme_mode": "system",
-  "library_view": "tree",
+  "library_view": "graph",
+  "graph_scope": "small",
   "library_expanded": [],
   "library_project_path": "",
   "library_closed": false,
@@ -78,6 +80,14 @@ leaftext removes broken entries automatically and collapses equivalent path spel
 The app ships both language dictionaries locally and applies changes without a restart.
 
 ## Behavior
+
+### Graph size
+
+- Controls how many documents the [Graph view](03-library.md#graph) draws
+- **Focus** (default) shows the open document and its direct links — or, on the start screen, the [recent files](02-navigation.md#recent-files) and theirs
+- **Medium** shows up to the 2,000 most-linked documents, **Large** up to 5,000, and **Everything** the whole indexed library with no cap
+- Smaller sizes open faster; the larger ones stay responsive by settling the layout sooner and repainting less often
+- Saved as `graph_scope`, stored as `small`, `medium`, `large`, or `xl`
 
 ### Minimap
 

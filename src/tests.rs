@@ -4951,7 +4951,7 @@ fn settings_default_keeps_minimap_on_and_indexing_off() {
     assert!(!settings.indexing_enabled);
     assert!(!settings.speed_reader_enabled);
     assert_eq!(settings.theme_mode, "system");
-    assert_eq!(settings.library_view, LibraryView::Project);
+    assert_eq!(settings.library_view, LibraryView::Graph);
     assert!(settings.library_expanded.is_empty());
     assert!(settings.library_project_path.is_empty());
     // The pane is open by default, with the 240px fallback width.
@@ -4976,6 +4976,7 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
         speed_reader_enabled: true,
         theme_mode: "dracula".to_string(),
         library_view: LibraryView::Tree,
+        graph_scope: GraphScope::Large,
         library_expanded: vec!["C:\\Users".to_string(), "C:\\Users\\rwall".to_string()],
         library_project_path: "C:\\Users\\rwall".to_string(),
         library_closed: true,
@@ -5010,7 +5011,7 @@ fn settings_load_tolerates_partial_json_via_serde_default() {
     assert!(loaded.indexing_enabled);
     assert!(loaded.minimap_enabled);
     assert_eq!(loaded.theme_mode, "system");
-    assert_eq!(loaded.library_view, LibraryView::Project);
+    assert_eq!(loaded.library_view, LibraryView::Graph);
     assert!(loaded.library_expanded.is_empty());
     assert!(!loaded.library_closed);
     assert_eq!(loaded.library_width, 240);
@@ -5071,6 +5072,7 @@ fn initial_settings_script_defines_camelcase_global() {
         speed_reader_enabled: true,
         theme_mode: "dracula".to_string(),
         library_view: LibraryView::Tree,
+        graph_scope: GraphScope::Large,
         library_expanded: vec!["C:\\Users".to_string()],
         library_project_path: "docs".to_string(),
         library_closed: true,
@@ -5078,7 +5080,7 @@ fn initial_settings_script_defines_camelcase_global() {
     });
     assert_eq!(
         script,
-        r#"window.__leafSettings = {"indexingEnabled":true,"libraryClosed":true,"libraryExpanded":["C:\\Users"],"libraryProjectPath":"docs","libraryView":"tree","libraryWidth":312,"minimapEnabled":false,"pagerEnabled":false,"speedReaderEnabled":true,"themeMode":"dracula"};"#
+        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryExpanded":["C:\\Users"],"libraryProjectPath":"docs","libraryView":"tree","libraryWidth":312,"minimapEnabled":false,"pagerEnabled":false,"speedReaderEnabled":true,"themeMode":"dracula"};"#
     );
 }
 
@@ -5122,8 +5124,8 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
     assert!(html.contains(r#"<input type="checkbox" id="indexingEnabled""#));
     assert!(html.contains("send({ command: 'setIndexingEnabled', enabled: indexingEnabled });"));
     assert!(html.contains("command: 'setLibraryState',"));
-    // The three view modes and the cycling toggle.
-    assert!(html.contains("const LIBRARY_VIEWS = ['project', 'tree', 'flat'];"));
+    // The four view modes (Project, Tree, All files, Graph) and the toggle.
+    assert!(html.contains("const LIBRARY_VIEWS = ['project', 'tree', 'flat', 'graph'];"));
     // Markdown rows carry the leaf mark; folders in Project view get a chevron.
     assert!(html.contains(r#"<img class="library-file-icon" src="${LEAF_FILE_ICON}""#));
     assert!(html.contains(r#"<span class="library-nav-chevron" aria-hidden="true">›</span>"#));
@@ -5139,7 +5141,7 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
     // The search field, its debounced request, and the result-open + jump.
     assert!(html.contains(r#"<input id="librarySearch" class="library-search""#));
     assert!(html.contains(r#"data-i18n-placeholder="library.search.placeholder""#));
-    assert!(html.contains("send({ command: 'search', query });"));
+    assert!(html.contains("send({ command: 'search', query, scope: librarySearchScopePaths() });"));
     assert!(html.contains("window.leafScrollToFragment('#' + jump.anchor);"));
 
     // File-derived strings are escaped before reaching the DOM (tree + hits).
@@ -5155,6 +5157,7 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
         "library.view.project",
         "library.view.tree",
         "library.view.all",
+        "library.view.graph",
         "library.up",
         "library.scanning",
         "library.filesFound",
@@ -5177,6 +5180,72 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
 }
 
 #[test]
+fn app_shell_wires_the_graph_view() {
+    let html = app_shell_html();
+
+    // The graph view is a fourth library view with its own pane container.
+    assert!(html.contains("const LIBRARY_VIEWS = ['project', 'tree', 'flat', 'graph'];"));
+    assert!(html.contains(r#"<div id="libraryGraph" class="library-graph""#));
+    assert!(html.contains(r#"id="libraryGraphCanvas""#));
+
+    // PixiJS + d3-force load lazily from the bundled-asset protocol (no CDN).
+    assert!(html.contains("const PIXI_SCRIPT_URL = '"));
+    assert!(html.contains("const D3_FORCE_SCRIPT_URL = '"));
+    assert!(html.contains("leaf-asset") && html.contains("pixi.min.js"));
+    assert!(html.contains("d3-force.min.js"));
+    assert!(html.contains("window.d3.forceSimulation"));
+    // The unsafe-eval companion keeps Pixi off `new Function` so the CSP stays
+    // tight; it must load after Pixi to patch it.
+    assert!(html.contains("const PIXI_UNSAFE_EVAL_SCRIPT_URL = '"));
+    assert!(html.contains("pixi-unsafe-eval.min.js"));
+    // The CSP itself never grants 'unsafe-eval'.
+    assert!(!html.contains("script-src 'self' 'unsafe-inline' 'unsafe-eval'"));
+
+    // Data flows over the existing command channel and back through a callback.
+    assert!(html.contains("send({ command: 'getGraph', scope: graphScope, seeds });"));
+    assert!(html.contains("window.leafSetGraph ="));
+
+    // The graph reuses the open command on node click and highlights the active
+    // document; every node label is escaped before it reaches a Pixi Text.
+    assert!(html.contains("send({ command: 'openRecent', path: node.path });"));
+    assert!(html.contains("function graphSetActive("));
+
+    // The i18n keys the graph surfaces exist in both dictionaries.
+    for key in [
+        "library.view.graph",
+        "library.graph.empty",
+        "library.graph.loading",
+        "library.graph.error",
+        "library.graph.truncated",
+    ] {
+        let needle = format!("'{key}':");
+        let count = html.matches(&needle).count();
+        assert!(
+            count >= 2,
+            "expected EN + ZH-CN entries for {key}, found {count}"
+        );
+    }
+}
+
+#[test]
+fn bundled_asset_serves_graph_runtimes() {
+    let pixi = bundled_asset_response("leaf-asset://local/pixi.min.js");
+    assert_eq!(pixi.status, 200);
+    assert!(pixi.content_type.contains("javascript"));
+    assert!(!pixi.body.is_empty());
+
+    let d3 = bundled_asset_response("leaf-asset://local/d3-force.min.js");
+    assert_eq!(d3.status, 200);
+    assert!(d3.content_type.contains("javascript"));
+    assert!(!d3.body.is_empty());
+
+    let unsafe_eval = bundled_asset_response("leaf-asset://local/pixi-unsafe-eval.min.js");
+    assert_eq!(unsafe_eval.status, 200);
+    assert!(unsafe_eval.content_type.contains("javascript"));
+    assert!(!unsafe_eval.body.is_empty());
+}
+
+#[test]
 fn library_follows_and_highlights_the_active_file() {
     let html = app_shell_html();
 
@@ -5192,10 +5261,14 @@ fn library_follows_and_highlights_the_active_file() {
     assert!(html.contains("function scrollSelectedLibraryRowIntoView()"));
 
     // Going to a file (open, switch, click a tab) follows it; the tree
-    // arriving later runs a queued reveal.
-    assert!(html.contains("followFileInLibrary(activeDocumentPath());"));
-    assert!(html.contains("followFileInLibrary(tab ? tab.path || null : null);"));
-    assert!(html.contains("if (libraryRevealPending && revealSelectedInLibrary()) return;"));
+    // arriving later runs a queued reveal. Clicking a tab always flies the
+    // graph to that node; opening/switching only does so when the doc changed.
+    assert!(html.contains("followFileInLibrary(openedPath,"));
+    assert!(html.contains("followFileInLibrary(switchedPath,"));
+    assert!(html.contains("followFileInLibrary(tab ? tab.path || null : null, true);"));
+    assert!(html.contains(
+        "if (libraryRevealPending && libraryView !== 'graph' && revealSelectedInLibrary()) return;"
+    ));
 }
 
 #[test]

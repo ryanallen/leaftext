@@ -17,7 +17,7 @@ use std::{
     time::Duration,
 };
 
-use leaftext::indexer::{event_script, IndexerEvent, IndexerWorker};
+use leaftext::indexer::{event_script, GraphRequest, IndexerEvent, IndexerWorker};
 use leaftext::{
     app_data_dir, app_shell_html, bundled_asset_response, config_file_path, document_pager_html,
     fragment_scroll_script, glossary_sheet_script, initial_settings_script, initial_state_script,
@@ -26,8 +26,8 @@ use leaftext::{
     open_error_state_script, opened_document_from_markdown, opened_document_from_tei,
     pager_loaded_script, render_markdown_document, save_recent_files, save_settings,
     scroll_anchor_script, settings_file_path, webview_user_data_dir, workspace_reload_script,
-    workspace_state_script, workspace_switch_script, LibraryView, RecentFiles, ScrollAnchor,
-    Settings, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    workspace_state_script, workspace_switch_script, GraphScope, LibraryView, RecentFiles,
+    ScrollAnchor, Settings, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -154,9 +154,22 @@ enum UserEvent {
     },
     /// Request the current library tree from the indexer's read connection.
     GetFileTree,
-    /// Run a full-text search on the indexer's read connection.
+    /// Request the library link graph from the indexer's read connection. `scope`
+    /// is the persisted graph size; `seeds` are the focus documents (open document,
+    /// or the recents on the start screen) used only by the Focus scope.
+    GetGraph {
+        scope: String,
+        seeds: Vec<String>,
+    },
+    /// Persist the graph size the frontend just selected.
+    SetGraphScope {
+        scope: String,
+    },
+    /// Run a full-text search on the indexer's read connection. `scope`, when
+    /// present, restricts results to those document paths (the Focus search scope).
     Search {
         query: String,
+        scope: Option<Vec<String>>,
     },
     /// Compute Previous/Next pager links without blocking the initial document
     /// render.
@@ -254,8 +267,21 @@ enum IpcCommand {
     SetLibraryLayout { closed: bool, width: u32 },
     #[serde(rename = "getFileTree")]
     GetFileTree,
+    #[serde(rename = "getGraph")]
+    GetGraph {
+        #[serde(default)]
+        scope: String,
+        #[serde(default)]
+        seeds: Vec<String>,
+    },
+    #[serde(rename = "setGraphScope")]
+    SetGraphScope { scope: String },
     #[serde(rename = "search")]
-    Search { query: String },
+    Search {
+        query: String,
+        #[serde(default)]
+        scope: Option<Vec<String>>,
+    },
     #[serde(rename = "loadPager")]
     LoadPager { path: PathBuf },
 }
@@ -1011,9 +1037,41 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                     indexer.request_tree();
                 }
             }
-            Event::UserEvent(UserEvent::Search { query }) => {
+            Event::UserEvent(UserEvent::GetGraph { scope, seeds }) => {
                 if let Some(indexer) = indexer.as_ref() {
-                    indexer.search(query);
+                    // Map the persisted scope to the slice of the graph to build:
+                    // Focus keeps the seed neighborhood; the rest cap the densest
+                    // documents, up to XL (no cap).
+                    let request = match GraphScope::from_client(&scope).unwrap_or_default() {
+                        GraphScope::Small => GraphRequest {
+                            focus: Some(seeds),
+                            limit: None,
+                        },
+                        GraphScope::Medium => GraphRequest {
+                            focus: None,
+                            limit: Some(2000),
+                        },
+                        GraphScope::Large => GraphRequest {
+                            focus: None,
+                            limit: Some(5000),
+                        },
+                        GraphScope::Xl => GraphRequest {
+                            focus: None,
+                            limit: None,
+                        },
+                    };
+                    indexer.request_graph(request);
+                }
+            }
+            Event::UserEvent(UserEvent::SetGraphScope { scope }) => {
+                if let Some(scope) = GraphScope::from_client(&scope) {
+                    settings.graph_scope = scope;
+                    persist_settings(&settings, settings_path.as_ref());
+                }
+            }
+            Event::UserEvent(UserEvent::Search { query, scope }) => {
+                if let Some(indexer) = indexer.as_ref() {
+                    indexer.search(query, scope);
                 }
             }
             Event::UserEvent(UserEvent::LoadPager { path }) => {
@@ -1257,8 +1315,14 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
             IpcCommand::GetFileTree => {
                 let _ = proxy.send_event(UserEvent::GetFileTree);
             }
-            IpcCommand::Search { query } => {
-                let _ = proxy.send_event(UserEvent::Search { query });
+            IpcCommand::GetGraph { scope, seeds } => {
+                let _ = proxy.send_event(UserEvent::GetGraph { scope, seeds });
+            }
+            IpcCommand::SetGraphScope { scope } => {
+                let _ = proxy.send_event(UserEvent::SetGraphScope { scope });
+            }
+            IpcCommand::Search { query, scope } => {
+                let _ = proxy.send_event(UserEvent::Search { query, scope });
             }
             IpcCommand::LoadPager { path } => {
                 let _ = proxy.send_event(UserEvent::LoadPager { path });

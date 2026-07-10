@@ -19,7 +19,7 @@
 
 A leaf is a page. **Leaf Text** opens a Markdown file and [renders it for reading](docs/01-features/01-rendering.md) — [code](docs/01-features/01-rendering.md#code), [diagrams](docs/01-features/01-rendering.md#mermaid-diagrams), [math](docs/01-features/01-rendering.md#math), [emoji](docs/01-features/01-rendering.md#emoji), just as GitHub would, all on your own machine. It also opens [TEI XML](docs/01-features/01-rendering.md#tei-xml-84000-translations) — the 84000 Buddhist-canon translation format — and renders it the same way.
 
-A [minimap](docs/01-features/04-minimap.md) for long pages, [tabs](docs/01-features/02-navigation.md#tabs) with [history](docs/01-features/02-navigation.md#history), [live reload on save](docs/01-features/02-navigation.md#reload), and a searchable [library](docs/01-features/03-library.md) of every Markdown file you own. [Light, dark, and Dracula](docs/01-features/06-themes.md).
+A [minimap](docs/01-features/04-minimap.md) for long pages, [tabs](docs/01-features/02-navigation.md#tabs) with [history](docs/01-features/02-navigation.md#history), [live reload on save](docs/01-features/02-navigation.md#reload), and a searchable [library](docs/01-features/03-library.md) — with a [graph view](docs/01-features/03-library.md#graph) of how your documents link — of every Markdown file you own. [Light, dark, and Dracula](docs/01-features/06-themes.md).
 
 No editor, no clutter — just the rendered page.
 

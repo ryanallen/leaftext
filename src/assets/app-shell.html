@@ -41,6 +41,16 @@
           </select>
           <span class="setting-help" id="themeModeHelp" data-i18n="settings.theme.help">System follows device preference.</span>
         </label>
+        <label class="setting-control" for="graphScope">
+          <span class="setting-label" data-i18n="settings.graphScope.label">Graph size</span>
+          <select id="graphScope" aria-label="Graph size" aria-describedby="graphScopeHelp">
+            <option value="small" data-i18n="settings.graphScope.small">Focus (open document + links)</option>
+            <option value="medium" data-i18n="settings.graphScope.medium">Medium (up to 2,000)</option>
+            <option value="large" data-i18n="settings.graphScope.large">Large (up to 5,000)</option>
+            <option value="xl" data-i18n="settings.graphScope.xl">Everything</option>
+          </select>
+          <span class="setting-help" id="graphScopeHelp" data-i18n="settings.graphScope.help">How many documents the graph view draws. Smaller is faster.</span>
+        </label>
         <label class="setting-control setting-control-inline" for="minimapEnabled">
           <input type="checkbox" id="minimapEnabled" aria-label="Show document minimap" aria-describedby="minimapEnabledHelp">
           <span class="setting-label" data-i18n="settings.minimap.label">Show minimap</span>
@@ -71,6 +81,10 @@
   <div class="library-scroll">
     <div id="librarySearchResults" class="library-results" hidden></div>
     <div id="libraryTree" class="library-tree"></div>
+    <div id="libraryGraph" class="library-graph" hidden>
+      <div id="libraryGraphCanvas" class="library-graph-canvas"></div>
+      <p id="libraryGraphStatus" class="library-graph-status" aria-live="polite" hidden></p>
+    </div>
     <div id="libraryScanProgress" class="library-progress" aria-live="polite" hidden></div>
   </div>
   <div class="library-header">
@@ -82,6 +96,7 @@
       <ul id="libraryViewMenu" class="library-view-menu" role="listbox" hidden></ul>
     </div>
     <input id="librarySearch" class="library-search" type="search" autocomplete="off" spellcheck="false" data-i18n-placeholder="library.search.placeholder" placeholder="Search files...">
+    <button type="button" id="librarySearchScope" class="library-search-scope" aria-pressed="false" data-i18n-title="library.search.scope.title" title="Limit search to the files shown here"><span id="librarySearchScopeLabel" data-i18n="library.search.scope.all">All</span></button>
   </div>
   <div id="libraryDivider" class="library-divider" data-i18n-title="library.divider.resize" title="Resize library" role="separator" aria-orientation="vertical"></div>
 </aside>

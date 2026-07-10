@@ -13,6 +13,18 @@ pub(crate) const FOOTNOTE_BACKREF_ICON_SVG: &str = include_str!("assets/arrow-ut
 // offline — no CDN. Loaded lazily by the page only when a document needs them.
 pub const LOCAL_ASSET_PROTOCOL: &str = "leaf-asset";
 pub(crate) const MERMAID_JS: &[u8] = include_bytes!("assets/vendor/mermaid.min.js");
+// PixiJS (WebGL renderer) + a d3-force bundle (dispatch/quadtree/timer/force
+// concatenated in dependency order, all attaching to the shared `d3` global)
+// power the library graph view. Loaded lazily by the page only when the graph
+// view is opened.
+pub(crate) const PIXI_JS: &[u8] = include_bytes!("assets/vendor/pixi.min.js");
+// PixiJS compiles shaders/uniform syncs with `new Function` by default, which the
+// app's CSP forbids (no 'unsafe-eval'). This official companion, loaded right
+// after Pixi, swaps those code paths for eval-free polyfills so the graph renders
+// without loosening the CSP for the whole (untrusted-Markdown-rendering) webview.
+pub(crate) const PIXI_UNSAFE_EVAL_JS: &[u8] =
+    include_bytes!("assets/vendor/pixi-unsafe-eval.min.js");
+pub(crate) const D3_FORCE_JS: &[u8] = include_bytes!("assets/vendor/d3-force.min.js");
 pub(crate) const KATEX_JS: &[u8] = include_bytes!("assets/vendor/katex/katex.min.js");
 pub(crate) const KATEX_CSS: &[u8] = include_bytes!("assets/vendor/katex/katex.min.css");
 pub(crate) const KATEX_FONTS: &[(&str, &[u8])] = &[
@@ -126,6 +138,9 @@ pub(crate) fn bundled_asset_bytes(uri: &str) -> Option<(&'static str, &'static [
     let path = url.path().trim_start_matches('/');
     match path {
         "mermaid.min.js" => Some(("text/javascript; charset=utf-8", MERMAID_JS)),
+        "pixi.min.js" => Some(("text/javascript; charset=utf-8", PIXI_JS)),
+        "pixi-unsafe-eval.min.js" => Some(("text/javascript; charset=utf-8", PIXI_UNSAFE_EVAL_JS)),
+        "d3-force.min.js" => Some(("text/javascript; charset=utf-8", D3_FORCE_JS)),
         "katex/katex.min.js" => Some(("text/javascript; charset=utf-8", KATEX_JS)),
         "katex/katex.min.css" => Some(("text/css; charset=utf-8", KATEX_CSS)),
         _ => {

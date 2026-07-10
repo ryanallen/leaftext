@@ -5,6 +5,7 @@ const backButton = document.getElementById('backButton');
 const forwardButton = document.getElementById('forwardButton');
 const themeModeControl = document.getElementById('themeMode');
 const minimapEnabledControl = document.getElementById('minimapEnabled');
+const graphScopeControl = document.getElementById('graphScope');
 const pagerEnabledControl = document.getElementById('pagerEnabled');
 const speedReaderEnabledControl = document.getElementById('speedReaderEnabled');
 const indexingEnabledControl = document.getElementById('indexingEnabled');
@@ -13,11 +14,16 @@ const libraryPane = document.getElementById('libraryPane');
 const libraryDivider = document.getElementById('libraryDivider');
 const libraryOpen = document.getElementById('libraryOpen');
 const libraryTree = document.getElementById('libraryTree');
+const libraryGraph = document.getElementById('libraryGraph');
+const libraryGraphCanvas = document.getElementById('libraryGraphCanvas');
+const libraryGraphStatus = document.getElementById('libraryGraphStatus');
 const libraryViewToggle = document.getElementById('libraryViewToggle');
 const libraryViewLabel = document.getElementById('libraryViewLabel');
 const libraryViewSelect = document.getElementById('libraryViewSelect');
 const libraryViewMenu = document.getElementById('libraryViewMenu');
 const librarySearch = document.getElementById('librarySearch');
+const librarySearchScope = document.getElementById('librarySearchScope');
+const librarySearchScopeLabel = document.getElementById('librarySearchScopeLabel');
 const librarySearchResults = document.getElementById('librarySearchResults');
 const libraryScanProgress = document.getElementById('libraryScanProgress');
 const settingsMenu = document.getElementById('settingsMenu');
@@ -108,6 +114,9 @@ document.addEventListener('pointercancel', () => endTabDrag(false));
 const send = (message) => window.ipc.postMessage(JSON.stringify(message));
 const MERMAID_SCRIPT_URL = '{{MERMAID_SCRIPT_URL}}';
 const KATEX_SCRIPT_URL = '{{KATEX_SCRIPT_URL}}';
+const PIXI_SCRIPT_URL = '{{PIXI_SCRIPT_URL}}';
+const PIXI_UNSAFE_EVAL_SCRIPT_URL = '{{PIXI_UNSAFE_EVAL_SCRIPT_URL}}';
+const D3_FORCE_SCRIPT_URL = '{{D3_FORCE_SCRIPT_URL}}';
 let mermaidLoadPromise = null;
 let katexLoadPromise = null;
 document.getElementById('openButton').addEventListener('click', () => send({ command: 'open' }));
@@ -590,13 +599,23 @@ speedReaderEnabledControl.addEventListener('change', () => {
 // All-files view. The host persists the chosen view, the Tree's open folders,
 // and the Project view's current folder; the frontend reports each change and
 // applies host values on boot. The "Index entire device" setting lives here too.
-const LIBRARY_VIEWS = ['project', 'tree', 'flat'];
-const VIEW_LABEL_KEY = { project: 'library.view.project', tree: 'library.view.tree', flat: 'library.view.all' };
+const LIBRARY_VIEWS = ['project', 'tree', 'flat', 'graph'];
+const VIEW_LABEL_KEY = { project: 'library.view.project', tree: 'library.view.tree', flat: 'library.view.all', graph: 'library.view.graph' };
 // Markdown files are badged with the app's own leaf mark; the host substitutes
 // the data URI into this string the same way it does in the header <img>.
 const LEAF_FILE_ICON = "{{BRAND_LOGO}}";
 let indexingEnabled = LEAF_SETTINGS.indexingEnabled === true;
-let libraryView = LIBRARY_VIEWS.includes(LEAF_SETTINGS.libraryView) ? LEAF_SETTINGS.libraryView : 'project';
+let libraryView = LIBRARY_VIEWS.includes(LEAF_SETTINGS.libraryView) ? LEAF_SETTINGS.libraryView : 'graph';
+const GRAPH_SCOPES = ['small', 'medium', 'large', 'xl'];
+let graphScope = GRAPH_SCOPES.includes(LEAF_SETTINGS.graphScope) ? LEAF_SETTINGS.graphScope : 'small';
+// Graph size: persist the choice and, if the graph is on screen, rebuild it for
+// the new scope right away.
+graphScopeControl.value = graphScope;
+graphScopeControl.addEventListener('change', () => {
+  graphScope = GRAPH_SCOPES.includes(graphScopeControl.value) ? graphScopeControl.value : 'small';
+  send({ command: 'setGraphScope', scope: graphScope });
+  if (libraryView === 'graph') requestGraphData();
+});
 let libraryProjectPath = typeof LEAF_SETTINGS.libraryProjectPath === 'string' ? LEAF_SETTINGS.libraryProjectPath : '';
 let expandedFolders = new Set(Array.isArray(LEAF_SETTINGS.libraryExpanded) ? LEAF_SETTINGS.libraryExpanded : []);
 // Library pane open/close + resize. The user's explicit closed preference and last
@@ -622,6 +641,12 @@ let librarySearchTimer = 0;
 let librarySearchHits = null;
 let librarySearchError = null;
 let librarySearchLoading = false;
+// Focus search: when on, restrict results to the files currently shown in the
+// library pane (the graph's nodes, or the listed files). Off = whole library.
+let librarySearchFocus = false;
+// A visible set larger than this is not a meaningful "focus", and a huge IN
+// clause is not worth it, so we fall back to searching everything.
+const SEARCH_SCOPE_CAP = 1500;
 // A heading anchor to scroll to once a clicked result's document has rendered.
 let pendingSearchJump = null;
 indexingEnabledControl.checked = indexingEnabled;
@@ -823,9 +848,17 @@ function revealSelectedInLibrary() {
 // Mark `path` as the library's current file and ask the next render to reveal
 // it. Passing null (the home screen, no active file) just clears the highlight;
 // the Project/Tree position is left exactly as the user last had it.
-function followFileInLibrary(path) {
+function followFileInLibrary(path, focus) {
   librarySelectedPath = path || null;
   libraryRevealPending = !!path;
+  // In graph mode there are no rows to reveal; just move the highlight to the
+  // node for the newly active document without rebuilding the scene. When the
+  // move came from a deliberate navigation (clicking/switching a tab), also fly
+  // the camera to that node and zoom in on it.
+  if (libraryView === 'graph') {
+    graphSetActive(librarySelectedPath, focus);
+    return;
+  }
   if (libraryRevealPending) {
     if (!revealSelectedInLibrary()) renderLibrary();
   } else {
@@ -863,6 +896,9 @@ libraryViewMenu.addEventListener('click', (event) => {
   closeLibraryViewMenu();
   persistLibraryState();
   renderLibrary();
+  // A Focus search is scoped to the files the view shows, so switching views
+  // changes the scope — re-run the active query against the new set.
+  if (librarySearchFocus && librarySearchQuery) runLibrarySearch(librarySearch.value);
 });
 document.addEventListener('click', (event) => {
   if (!libraryViewMenu.hidden && !libraryViewSelect.contains(event.target)) {
@@ -1020,6 +1056,17 @@ function bindLibraryRows() {
 function renderLibrary() {
   libraryViewLabel.textContent = window.leafLocale.t(VIEW_LABEL_KEY[libraryView]);
   if (!libraryViewMenu.hidden) renderLibraryViewMenu();
+  // The graph view replaces the tree list with an interactive canvas. It owns the
+  // whole pane body, so hide the list and let the graph module drive itself.
+  if (libraryView === 'graph') {
+    libraryTree.hidden = true;
+    libraryGraph.hidden = false;
+    showGraph();
+    return;
+  }
+  libraryGraph.hidden = true;
+  libraryTree.hidden = false;
+  teardownGraph();
   if (libraryError) {
     libraryTree.innerHTML = `<p class="library-empty">${escapeText(libraryError.message || '')}</p>`;
     return;
@@ -1052,14 +1099,549 @@ window.leafSetLibraryState = (state) => {
   if (next.progress) {
     applyScanProgress(next.progress);
   }
+  // The indexer just came online (or refreshed the tree). If the graph view is
+  // open but has no data yet — e.g. the app launched straight into it before the
+  // reader thread was ready and the first request was dropped — ask again.
+  if (libraryView === 'graph' && !graphData) {
+    graphRequested = false;
+  }
   // A reveal queued before the tree loaded (e.g. launching straight into a file)
   // runs here once the nodes are in hand; revealSelectedInLibrary renders itself.
-  if (libraryRevealPending && revealSelectedInLibrary()) return;
+  if (libraryRevealPending && libraryView !== 'graph' && revealSelectedInLibrary()) return;
   renderLibrary();
 };
 window.leafSetScanProgress = (progress) => {
   applyScanProgress(progress);
 };
+
+// ---------------------------------------------------------------------------
+// Graph view: an Obsidian-style force-directed map of how documents link to one
+// another, rendered with PixiJS (WebGL) and laid out with d3-force. Nodes are
+// documents; edges are resolved doc-to-doc links. The active document is the
+// highlighted centre; clicking a node opens it; hovering lights up its links.
+// ---------------------------------------------------------------------------
+let graphData = null; // last {nodes, edges, truncated} payload from the backend
+let graphRequested = false; // asked the backend since entering the graph view
+let graphScene = null; // live Pixi/d3 scene while the view is open
+let graphActivePath = null;
+let graphLibsPromise = null;
+let graphSeedKey = null; // scope+seeds of the last request, to skip redundant refetches
+const GRAPH_NEIGHBOR_LABEL_CAP = 12;
+// Focus scope on the start screen seeds from the recent files; cap how many so a
+// long history does not balloon the neighborhood.
+const GRAPH_RECENT_SEED_CAP = 50;
+// When we fly the graph to a node (clicking its tab), settle at least this zoom
+// so the node reads as focused; never zoom out from a closer view the user set.
+const GRAPH_FOCUS_ZOOM = 2.2;
+const GRAPH_FOCUS_DURATION_MS = 420;
+
+function setGraphStatus(message) {
+  if (!message) {
+    libraryGraphStatus.hidden = true;
+    libraryGraphStatus.textContent = '';
+    return;
+  }
+  libraryGraphStatus.hidden = false;
+  libraryGraphStatus.textContent = message;
+}
+
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+// Load PixiJS and the d3-force bundle once, lazily, only when the graph opens.
+function loadGraphLibs() {
+  const ready = () => window.PIXI && window.d3 && typeof window.d3.forceSimulation === 'function';
+  if (ready()) return Promise.resolve();
+  if (graphLibsPromise) return graphLibsPromise;
+  // Pixi must load before its unsafe-eval companion, which patches Pixi's shader
+  // and uniform systems to avoid `new Function` (blocked by the CSP). d3-force
+  // loads in parallel — it shares nothing with Pixi.
+  const pixiChain = window.PIXI
+    ? Promise.resolve()
+    : loadScriptOnce(PIXI_SCRIPT_URL).then(() => loadScriptOnce(PIXI_UNSAFE_EVAL_SCRIPT_URL));
+  graphLibsPromise = Promise.all([
+    pixiChain,
+    window.d3 && window.d3.forceSimulation ? Promise.resolve() : loadScriptOnce(D3_FORCE_SCRIPT_URL),
+  ]).then(() => {
+    if (!ready()) throw new Error('Graph runtimes loaded without exposing PIXI/d3');
+  });
+  return graphLibsPromise;
+}
+
+// Resolve a CSS custom property to a 0xRRGGBB number for Pixi tints.
+function cssVarColor(name, fallback) {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return parseCssColor(raw, fallback);
+}
+function parseCssColor(value, fallback) {
+  if (!value) return fallback;
+  if (value[0] === '#') {
+    let hex = value.slice(1);
+    if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+    const n = parseInt(hex, 16);
+    return Number.isNaN(n) ? fallback : n;
+  }
+  const match = value.match(/rgba?\(([^)]+)\)/);
+  if (match) {
+    const parts = match[1].split(',').map((x) => parseFloat(x));
+    return ((parts[0] & 255) << 16) | ((parts[1] & 255) << 8) | (parts[2] & 255);
+  }
+  return fallback;
+}
+
+function graphNodeRadius(degree) {
+  return Math.max(3, Math.min(14, 3 + Math.sqrt(degree || 0) * 1.1));
+}
+
+// The Focus scope seeds from the open document, or from the recent files when no
+// document is open (the start screen). Other scopes ignore seeds.
+function graphSeeds() {
+  const active = activeDocumentPath();
+  if (active) return [active];
+  return ((currentState && currentState.recent) || []).slice(0, GRAPH_RECENT_SEED_CAP);
+}
+
+// Ask the backend for the graph slice for the current scope + seeds, resetting any
+// existing scene so the view reads "loading" until fresh data arrives.
+function requestGraphData() {
+  const seeds = graphSeeds();
+  graphSeedKey = graphScope + '|' + seeds.join('\n');
+  graphRequested = true;
+  graphData = null;
+  teardownGraphScene();
+  setGraphStatus(window.leafLocale.t('library.graph.loading'));
+  send({ command: 'getGraph', scope: graphScope, seeds });
+}
+
+// Entry point when the graph view becomes visible. Requests fresh data the first
+// time, then either builds the scene (data already in hand) or just moves the
+// active-node highlight (scene already built).
+function showGraph() {
+  graphActivePath = activeDocumentPath();
+  if (!graphRequested) {
+    requestGraphData();
+  }
+  if (graphScene) {
+    applyGraphStyles();
+  } else if (graphData) {
+    buildGraphScene();
+  }
+}
+
+window.leafSetGraph = (payload) => {
+  if (payload && payload.error) {
+    graphData = null;
+    if (libraryView === 'graph') {
+      teardownGraphScene();
+      setGraphStatus((payload.error && payload.error.message) || window.leafLocale.t('library.graph.error'));
+    }
+    return;
+  }
+  graphData = payload || { nodes: [], edges: [], truncated: false };
+  if (libraryView === 'graph') buildGraphScene();
+};
+
+function teardownGraph() {
+  graphRequested = false;
+  teardownGraphScene();
+}
+
+function teardownGraphScene() {
+  if (graphScene) {
+    if (graphScene.focusRaf) { try { cancelAnimationFrame(graphScene.focusRaf); } catch (_) { /* noop */ } }
+    if (graphScene.resizeObserver) { try { graphScene.resizeObserver.disconnect(); } catch (_) { /* noop */ } }
+    try { graphScene.sim.stop(); } catch (_) { /* already gone */ }
+    try { graphScene.app.destroy(true, { children: true, texture: true }); } catch (_) { /* already gone */ }
+    graphScene = null;
+  }
+  libraryGraphCanvas.innerHTML = '';
+}
+
+async function buildGraphScene() {
+  teardownGraphScene();
+  const data = graphData;
+  if (!data || !data.nodes || !data.nodes.length) {
+    setGraphStatus(window.leafLocale.t('library.graph.empty'));
+    return;
+  }
+  try {
+    await loadGraphLibs();
+  } catch (err) {
+    console.error('Leaf graph runtimes failed to load', err);
+    setGraphStatus((err && err.message) ? String(err.message) : window.leafLocale.t('library.graph.error'));
+    return;
+  }
+  // The view may have changed while the runtimes loaded.
+  if (libraryView !== 'graph') return;
+
+  try {
+  const width = libraryGraphCanvas.clientWidth || 300;
+  const height = libraryGraphCanvas.clientHeight || 300;
+  const app = new PIXI.Application();
+  await app.init({
+    resizeTo: libraryGraphCanvas,
+    backgroundAlpha: 0,
+    antialias: true,
+    autoDensity: true,
+    resolution: window.devicePixelRatio || 1,
+    preference: 'webgl',
+  });
+  if (libraryView !== 'graph') {
+    try { app.destroy(true, { children: true }); } catch (_) { /* noop */ }
+    return;
+  }
+  // Pixi renders on demand (not every frame) to stay quiet once the layout settles.
+  app.ticker.stop();
+  libraryGraphCanvas.appendChild(app.canvas);
+  setGraphStatus(data.truncated
+    ? window.leafLocale.t('library.graph.truncated', { count: window.leafLocale.formatNumber(data.nodes.length) })
+    : '');
+
+  const colors = {
+    node: cssVarColor('--app-muted-foreground', 0x8b95a5),
+    active: cssVarColor('--accent', 0x8a63d2),
+    hot: cssVarColor('--app-foreground', 0xe6e6e6),
+    edge: cssVarColor('--app-border', 0x3a3f4b),
+  };
+
+  // Build node objects d3 will mutate with x/y, plus their Pixi graphics.
+  const nodes = data.nodes.map((n) => ({ path: n.path, label: n.label || n.path, degree: n.degree || 0 }));
+  const nodeByPath = new Map(nodes.map((n) => [n.path, n]));
+  const links = (data.edges || [])
+    .filter((e) => nodeByPath.has(e.source) && nodeByPath.has(e.target))
+    .map((e) => ({ source: e.source, target: e.target }));
+
+  const world = new PIXI.Container();
+  world.position.set(width / 2, height / 2);
+  app.stage.addChild(world);
+  const edgesGfx = new PIXI.Graphics();
+  world.addChild(edgesGfx);
+  const nodesLayer = new PIXI.Container();
+  world.addChild(nodesLayer);
+  const labelsLayer = new PIXI.Container();
+  world.addChild(labelsLayer);
+
+  const scene = {
+    app, world, edgesGfx, nodes, links, nodeByPath, colors, labelsLayer,
+    hoverNode: null, draggingNode: null, panning: false, panLast: null, pressGlobal: null,
+    lastWidth: width, lastHeight: height,
+  };
+
+  // Adjacency for hover highlighting.
+  const neighbors = new Map(nodes.map((n) => [n.path, new Set()]));
+  for (const link of links) {
+    neighbors.get(link.source).add(link.target);
+    neighbors.get(link.target).add(link.source);
+  }
+  scene.neighbors = neighbors;
+
+  for (const node of nodes) {
+    const gfx = new PIXI.Graphics();
+    // Drawn white so a tint shows the true state colour; radius set once.
+    gfx.circle(0, 0, graphNodeRadius(node.degree)).fill(0xffffff);
+    gfx.eventMode = 'static';
+    gfx.cursor = 'pointer';
+    gfx.hitArea = new PIXI.Circle(0, 0, graphNodeRadius(node.degree) + 3);
+    gfx.on('pointerover', () => {
+      scene.hoverNode = node;
+      // The same native tooltip the library rows, hits, and tabs use: the full
+      // document path on the canvas element under the cursor.
+      scene.app.canvas.title = node.path;
+      applyGraphStyles();
+    });
+    gfx.on('pointerout', () => {
+      if (scene.hoverNode === node) {
+        scene.hoverNode = null;
+        scene.app.canvas.title = '';
+        applyGraphStyles();
+      }
+    });
+    gfx.on('pointerdown', (event) => startNodeDrag(scene, node, event));
+    node.gfx = gfx;
+    node.labelText = null;
+    nodesLayer.addChild(gfx);
+  }
+
+  // Scale the layout to the node count so the bigger scopes stay responsive.
+  // Drawing every edge on every tick is the dominant cost, so on large graphs we
+  // paint only every Nth tick (plus a final paint when the layout settles), settle
+  // faster (higher alphaDecay), approximate charge more coarsely (higher theta),
+  // and drop the per-node collide force once it stops being affordable.
+  const nodeCount = nodes.length;
+  const heavy = nodeCount > 1500;
+  const veryHeavy = nodeCount > 4000;
+  const sim = window.d3.forceSimulation(nodes)
+    .velocityDecay(heavy ? 0.5 : 0.4)
+    .alphaDecay(veryHeavy ? 0.06 : heavy ? 0.045 : 0.0228)
+    .force('charge', window.d3.forceManyBody()
+      .strength(-90)
+      .distanceMax(heavy ? 300 : 400)
+      .theta(heavy ? 1.2 : 0.9))
+    .force('link', window.d3.forceLink(links).id((d) => d.path).distance(46).strength(0.6))
+    .force('center', window.d3.forceCenter(0, 0));
+  if (!veryHeavy) {
+    sim.force('collide', window.d3.forceCollide().radius((d) => graphNodeRadius(d.degree) + 3));
+  }
+  const renderEvery = veryHeavy ? 6 : heavy ? 3 : 1;
+  let tickCount = 0;
+  sim.on('tick', () => {
+    tickCount += 1;
+    if (tickCount % renderEvery === 0) renderGraphFrame(scene);
+  });
+  sim.on('end', () => renderGraphFrame(scene));
+  scene.sim = sim;
+
+  wireGraphPointer(scene);
+  wireGraphResize(scene);
+  graphScene = scene;
+  applyGraphStyles();
+  renderGraphFrame(scene);
+  } catch (err) {
+    // Surface the real failure (e.g. WebGL unavailable in this WebView) on the
+    // status line instead of hanging on "Building graph…", and log a breadcrumb.
+    console.error('Leaf graph build failed', err);
+    teardownGraphScene();
+    setGraphStatus((err && err.message) ? String(err.message) : window.leafLocale.t('library.graph.error'));
+  }
+}
+
+// Position node graphics + redraw edges for the current simulation state, then
+// draw one Pixi frame. Called on every d3 tick and after each interaction.
+function renderGraphFrame(scene) {
+  const { edgesGfx, colors, hoverNode } = scene;
+  edgesGfx.clear();
+  for (const link of scene.links) {
+    const s = link.source;
+    const t = link.target;
+    if (typeof s.x !== 'number' || typeof t.x !== 'number') continue;
+    const hot = hoverNode && (s === hoverNode || t === hoverNode);
+    edgesGfx.moveTo(s.x, s.y).lineTo(t.x, t.y);
+    edgesGfx.stroke({
+      width: hot ? 1.6 : 1,
+      color: hot ? colors.active : colors.edge,
+      alpha: hoverNode ? (hot ? 0.9 : 0.12) : 0.4,
+    });
+  }
+  for (const node of scene.nodes) {
+    if (typeof node.x === 'number') node.gfx.position.set(node.x, node.y);
+    if (node.labelText && node.labelText.visible) node.labelText.position.set(node.x, node.y + graphNodeRadius(node.degree) + 2);
+  }
+  scene.app.render();
+}
+
+// Recolour nodes and choose which labels to show for the current active/hover
+// state. Cheap and only called on state changes, not per frame.
+function applyGraphStyles() {
+  const scene = graphScene;
+  if (!scene) return;
+  const { colors, hoverNode } = scene;
+  const hoverSet = hoverNode ? scene.neighbors.get(hoverNode.path) : null;
+  let neighborLabels = 0;
+  for (const node of scene.nodes) {
+    let color = colors.node;
+    let alpha = 1;
+    let scale = 1;
+    let showLabel = false;
+    const isActive = graphActivePath && node.path === graphActivePath;
+    if (isActive) { color = colors.active; scale = 1.7; showLabel = true; }
+    if (hoverNode) {
+      if (node === hoverNode) { color = colors.hot; scale = 1.6; showLabel = true; }
+      else if (hoverSet && hoverSet.has(node.path)) { color = colors.hot; if (neighborLabels++ < GRAPH_NEIGHBOR_LABEL_CAP) showLabel = true; }
+      else if (!isActive) { alpha = 0.22; }
+    }
+    node.gfx.tint = color;
+    node.gfx.alpha = alpha;
+    node.gfx.scale.set(scale);
+    setNodeLabel(scene, node, showLabel, color);
+  }
+  renderGraphFrame(scene);
+}
+
+function setNodeLabel(scene, node, show, color) {
+  if (show && !node.labelText) {
+    const text = new PIXI.Text({
+      text: node.label,
+      style: { fontFamily: 'Noto Sans, sans-serif', fontSize: 11, fill: scene.colors.hot, align: 'center' },
+    });
+    text.anchor.set(0.5, 0);
+    text.resolution = window.devicePixelRatio || 1;
+    node.labelText = text;
+    scene.labelsLayer.addChild(text);
+  }
+  if (node.labelText) {
+    node.labelText.visible = show;
+    node.labelText.tint = color;
+  }
+}
+
+// Pixi "global" coordinates are logical (CSS) pixels measured from the canvas
+// origin, the same space the world container's position/scale live in — so a
+// global point maps to world space directly, no getBoundingClientRect needed.
+function graphGlobalToWorld(scene, gx, gy) {
+  return {
+    x: (gx - scene.world.position.x) / scene.world.scale.x,
+    y: (gy - scene.world.position.y) / scene.world.scale.y,
+  };
+}
+
+function startNodeDrag(scene, node, event) {
+  scene.draggingNode = node;
+  scene.pressGlobal = { x: event.global.x, y: event.global.y };
+  const p = graphGlobalToWorld(scene, event.global.x, event.global.y);
+  node.fx = p.x;
+  node.fy = p.y;
+  scene.sim.alphaTarget(0.3).restart();
+}
+
+// All pointer interaction runs through Pixi's own event graph so background vs.
+// node presses are disambiguated by event.target (deterministic), not listener
+// order. Wheel is the one exception — a DOM event on the canvas.
+function wireGraphPointer(scene) {
+  const stage = scene.app.stage;
+  stage.eventMode = 'static';
+  stage.hitArea = scene.app.screen; // a Rectangle Pixi keeps sized to the canvas
+  stage.on('pointerdown', (event) => {
+    if (event.target !== stage) return; // a node handled it
+    scene.panning = true;
+    scene.panLast = { x: event.global.x, y: event.global.y };
+  });
+  stage.on('globalpointermove', (event) => {
+    if (scene.draggingNode) {
+      const p = graphGlobalToWorld(scene, event.global.x, event.global.y);
+      scene.draggingNode.fx = p.x;
+      scene.draggingNode.fy = p.y;
+      renderGraphFrame(scene);
+    } else if (scene.panning && scene.panLast) {
+      scene.world.position.x += event.global.x - scene.panLast.x;
+      scene.world.position.y += event.global.y - scene.panLast.y;
+      scene.panLast = { x: event.global.x, y: event.global.y };
+      renderGraphFrame(scene);
+    }
+  });
+  const endPress = (event) => {
+    if (scene.draggingNode) {
+      const node = scene.draggingNode;
+      scene.draggingNode = null;
+      node.fx = null;
+      node.fy = null;
+      scene.sim.alphaTarget(0);
+      // A press that barely moved is a click: open that document.
+      const moved = scene.pressGlobal
+        && Math.hypot(event.global.x - scene.pressGlobal.x, event.global.y - scene.pressGlobal.y) > 4;
+      if (!moved) send({ command: 'openRecent', path: node.path });
+    }
+    scene.panning = false;
+    scene.panLast = null;
+  };
+  stage.on('pointerup', endPress);
+  stage.on('pointerupoutside', endPress);
+  scene.app.canvas.addEventListener('wheel', (event) => {
+    event.preventDefault();
+    const factor = event.deltaY < 0 ? 1.12 : 1 / 1.12;
+    graphZoomAt(scene, event.offsetX, event.offsetY, factor);
+    renderGraphFrame(scene);
+  }, { passive: false });
+}
+
+// Pixi's `resizeTo` only reacts to window resizes, and the ticker is stopped, so
+// dragging the pane splitter (an element resize, not a window one) neither
+// resizes the renderer nor repaints — the graph stays clustered in the old box.
+// Observe the canvas ourselves: resize the renderer to the new size, shift the
+// view by half the delta so the centred content stays centred (preserving any
+// pan/zoom), and repaint.
+function wireGraphResize(scene) {
+  const ro = new ResizeObserver(() => {
+    const w = libraryGraphCanvas.clientWidth;
+    const h = libraryGraphCanvas.clientHeight;
+    if (!w || !h || (w === scene.lastWidth && h === scene.lastHeight)) return;
+    const dx = (w - scene.lastWidth) / 2;
+    const dy = (h - scene.lastHeight) / 2;
+    scene.lastWidth = w;
+    scene.lastHeight = h;
+    try { scene.app.renderer.resize(w, h); } catch (_) { /* renderer gone */ }
+    scene.world.position.x += dx;
+    scene.world.position.y += dy;
+    renderGraphFrame(scene);
+  });
+  ro.observe(libraryGraphCanvas);
+  scene.resizeObserver = ro;
+}
+
+function graphZoomAt(scene, sx, sy, factor) {
+  const current = scene.world.scale.x;
+  const next = Math.max(0.15, Math.min(4, current * factor));
+  const ratio = next / current;
+  scene.world.position.x = sx - (sx - scene.world.position.x) * ratio;
+  scene.world.position.y = sy - (sy - scene.world.position.y) * ratio;
+  scene.world.scale.set(next);
+}
+
+// Smoothly pan+zoom the world so `node` ends centred and comfortably zoomed in.
+// The target recomputes each frame from the node's live position, so it lands
+// centred even while the force simulation is still nudging the layout. Any
+// in-flight focus animation is cancelled first so rapid tab clicks don't fight.
+function focusGraphNode(scene, node) {
+  if (!scene || !node || typeof node.x !== 'number') return;
+  if (scene.focusRaf) { cancelAnimationFrame(scene.focusRaf); scene.focusRaf = null; }
+  const width = scene.app.screen.width;
+  const height = scene.app.screen.height;
+  const startScale = scene.world.scale.x;
+  const startX = scene.world.position.x;
+  const startY = scene.world.position.y;
+  const targetScale = Math.min(4, Math.max(startScale, GRAPH_FOCUS_ZOOM));
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min(1, (now - start) / GRAPH_FOCUS_DURATION_MS);
+    // easeInOutCubic
+    const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const scale = startScale + (targetScale - startScale) * e;
+    // Where the world must sit for the node (at its current position) to be
+    // centred on the canvas at this scale; blend from the start position so the
+    // motion eases rather than snapping.
+    const wantX = width / 2 - node.x * scale;
+    const wantY = height / 2 - node.y * scale;
+    scene.world.scale.set(scale);
+    scene.world.position.x = startX + (wantX - startX) * e;
+    scene.world.position.y = startY + (wantY - startY) * e;
+    renderGraphFrame(scene);
+    if (t < 1) {
+      scene.focusRaf = requestAnimationFrame(step);
+    } else {
+      scene.focusRaf = null;
+    }
+  };
+  scene.focusRaf = requestAnimationFrame(step);
+}
+
+// Move the highlight to a newly active document. In Focus scope the visible slice
+// is the neighborhood of the active document, so a changed document means a
+// refetch + rebuild rather than a recolour. In the fixed scopes we keep the scene
+// and just recolour, and when `focus` is true also fly the camera to that node.
+function graphSetActive(path, focus) {
+  graphActivePath = path || null;
+  if (graphScope === 'small' && libraryView === 'graph') {
+    const seeds = graphSeeds();
+    const key = graphScope + '|' + seeds.join('\n');
+    if (key !== graphSeedKey) {
+      requestGraphData();
+      return;
+    }
+  }
+  if (!graphScene) return;
+  applyGraphStyles();
+  if (focus && graphActivePath) {
+    const node = graphScene.nodeByPath.get(graphActivePath);
+    if (node) focusGraphNode(graphScene, node);
+  }
+}
 // The snippet() markers from the backend are control characters (STX/ETX) that
 // cannot occur in normal Markdown, so we can escape the whole untrusted snippet
 // for the DOM first and only then swap the markers for <mark> tags.
@@ -1091,8 +1673,13 @@ function bindSearchHits() {
 // restores the tree exactly as it was, including the active view and filters.
 function renderLibrarySearch() {
   const active = !!librarySearchQuery;
-  libraryTree.hidden = active;
+  const graphMode = libraryView === 'graph';
+  // In graph mode the tree stays hidden; an active search shows results over the
+  // pane and hides the graph, and clearing the search restores the graph.
   librarySearchResults.hidden = !active;
+  libraryTree.hidden = active || graphMode;
+  libraryGraph.hidden = graphMode ? active : true;
+  if (graphMode && !active) showGraph();
   if (!active) {
     librarySearchResults.innerHTML = '';
     return;
@@ -1129,8 +1716,39 @@ function runLibrarySearch(value) {
   librarySearchLoading = true;
   librarySearchError = null;
   renderLibrarySearch();
-  send({ command: 'search', query });
+  send({ command: 'search', query, scope: librarySearchScopePaths() });
 }
+// The document paths to restrict a Focus search to, or null for the whole
+// library. Focus off, or a visible set too large to be a meaningful focus (or to
+// bind in one query), searches everything.
+function librarySearchScopePaths() {
+  if (!librarySearchFocus) return null;
+  let paths;
+  if (libraryView === 'graph') {
+    paths = (graphData && graphData.nodes) ? graphData.nodes.map((n) => n.path) : [];
+  } else {
+    let roots = libraryTreeData || [];
+    if (libraryView === 'project' && libraryProjectPath) {
+      const folder = findFolderByPath(roots, libraryProjectPath);
+      if (folder) roots = folder.children || [];
+    }
+    paths = collectLibraryFiles(roots, []).map((f) => f.path);
+  }
+  return paths.length > SEARCH_SCOPE_CAP ? null : paths;
+}
+// Reflect the current Focus state on the toggle chip.
+function renderLibrarySearchScope() {
+  librarySearchScope.setAttribute('aria-pressed', String(librarySearchFocus));
+  librarySearchScopeLabel.textContent = window.leafLocale.t(
+    librarySearchFocus ? 'library.search.scope.focus' : 'library.search.scope.all',
+  );
+}
+librarySearchScope.addEventListener('click', () => {
+  librarySearchFocus = !librarySearchFocus;
+  renderLibrarySearchScope();
+  // Re-run the active query under the new scope; nothing to do when idle.
+  if (librarySearchQuery) runLibrarySearch(librarySearch.value);
+});
 librarySearch.addEventListener('input', () => {
   const value = librarySearch.value;
   if (librarySearchTimer) clearTimeout(librarySearchTimer);
@@ -1330,7 +1948,10 @@ window.leafSetState = (state) => {
   renderState();
   // Opening a file lands on it; the home screen (no active tab) clears the
   // highlight and leaves the Project/Tree position as the user last saved it.
-  followFileInLibrary(activeDocumentPath());
+  // Fly the graph to it only when the active document actually changed, so a
+  // plain state refresh of the same file doesn't yank a panned-away view back.
+  const openedPath = activeDocumentPath();
+  followFileInLibrary(openedPath, !!openedPath && openedPath !== librarySelectedPath);
   // A search result was clicked: once its document is the active one, jump to the
   // matching heading. One-shot — cleared whether or not it applied this render.
   if (pendingSearchJump) {
@@ -1369,8 +1990,10 @@ window.leafSwitchTab = (state, anchor) => {
   }
   resetReaderScrollOnNextRender = false;
   renderState();
-  // Switching to a tab is "going to" that file: reveal and select it.
-  followFileInLibrary(activeDocumentPath());
+  // Switching to a tab is "going to" that file: reveal and select it, and in
+  // graph mode fly to its node when the switch changed the active document.
+  const switchedPath = activeDocumentPath();
+  followFileInLibrary(switchedPath, !!switchedPath && switchedPath !== librarySelectedPath);
   if (!anchor) {
     resetReaderScrollToContentStart();
     return;
@@ -1459,8 +2082,12 @@ function renderStaticText() {
     node.setAttribute('placeholder', window.leafLocale.t(node.dataset.i18nPlaceholder));
   });
   themeModeControl.setAttribute('aria-label', window.leafLocale.t('settings.theme.aria'));
+  graphScopeControl.setAttribute('aria-label', window.leafLocale.t('settings.graphScope.aria'));
   minimapEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.minimap.aria'));
   speedReaderEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.speedReader.aria'));
+  // The scope chip's label is state-dependent (All vs Focus), so re-derive it
+  // after the generic data-i18n pass has reset it.
+  renderLibrarySearchScope();
 }
 // Tabs and the library both show the file name (basename, minus a .md/.markdown
 // extension), not the document's heading title. Falls back to the title, then
@@ -1482,9 +2109,10 @@ function renderTabs(state) {
       const index = Number(button.dataset.tabIndex);
       send({ command: 'switchTab', index, scroll_anchor: currentScrollAnchor() });
       // Reveal even when this is already the active tab (no state round-trip
-      // from the host): clicking a file's tab snaps the library back to it.
+      // from the host): clicking a file's tab snaps the library back to it, and
+      // in graph mode flies the camera to that node and zooms in.
       const tab = (currentState.tabs || [])[index];
-      followFileInLibrary(tab ? tab.path || null : null);
+      followFileInLibrary(tab ? tab.path || null : null, true);
     });
   });
   tabBar.querySelectorAll('[data-tab-close]').forEach((button) => {
