@@ -1131,6 +1131,11 @@ const GRAPH_NEIGHBOR_LABEL_CAP = 12;
 // Focus scope on the start screen seeds from the recent files; cap how many so a
 // long history does not balloon the neighborhood.
 const GRAPH_RECENT_SEED_CAP = 50;
+// How far the world container can zoom in/out (mouse wheel and focus flights are
+// both clamped to this). Kept as constants so the label supersample below can be
+// tied to the same ceiling.
+const GRAPH_MIN_ZOOM = 0.15;
+const GRAPH_MAX_ZOOM = 4;
 // When we fly the graph to a node (clicking its tab), settle at least this zoom
 // so the node reads as focused; never zoom out from a closer view the user set.
 const GRAPH_FOCUS_ZOOM = 2.2;
@@ -1481,7 +1486,13 @@ function setNodeLabel(scene, node, show, color) {
       style: { fontFamily: 'Noto Sans, sans-serif', fontSize: 11, fill: scene.colors.hot, align: 'center' },
     });
     text.anchor.set(0.5, 0);
-    text.resolution = window.devicePixelRatio || 1;
+    // Pixi rasterizes the label to a bitmap texture once; zooming the world then
+    // magnifies that bitmap, which is what makes labels blur when you wheel in.
+    // Rasterize at the display density scaled up to the maximum zoom so the
+    // texture still has ~1:1 pixels when fully magnified — crisp at every zoom.
+    // Only a few labels are ever shown, so the extra texture size is negligible.
+    // Capped so a HiDPI display doesn't push the texture density absurdly high.
+    text.resolution = Math.min((window.devicePixelRatio || 1) * GRAPH_MAX_ZOOM, 8);
     node.labelText = text;
     scene.labelsLayer.addChild(text);
   }
@@ -1586,7 +1597,7 @@ function wireGraphResize(scene) {
 
 function graphZoomAt(scene, sx, sy, factor) {
   const current = scene.world.scale.x;
-  const next = Math.max(0.15, Math.min(4, current * factor));
+  const next = Math.max(GRAPH_MIN_ZOOM, Math.min(GRAPH_MAX_ZOOM, current * factor));
   const ratio = next / current;
   scene.world.position.x = sx - (sx - scene.world.position.x) * ratio;
   scene.world.position.y = sy - (sy - scene.world.position.y) * ratio;
@@ -1605,7 +1616,7 @@ function focusGraphNode(scene, node) {
   const startScale = scene.world.scale.x;
   const startX = scene.world.position.x;
   const startY = scene.world.position.y;
-  const targetScale = Math.min(4, Math.max(startScale, GRAPH_FOCUS_ZOOM));
+  const targetScale = Math.min(GRAPH_MAX_ZOOM, Math.max(startScale, GRAPH_FOCUS_ZOOM));
   const start = performance.now();
   const step = (now) => {
     const t = Math.min(1, (now - start) / GRAPH_FOCUS_DURATION_MS);
