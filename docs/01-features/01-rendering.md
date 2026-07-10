@@ -172,7 +172,7 @@ GFM tables with a header row and a body:
 
 Relative image paths work when they stay inside the opened file's allowed directory scope; the title shows on hover:
 
-![Leaf Text](../../imgs/leaftext.png "Leaf Text — Markdown, made to read")
+![Leaf Text](../../imgs/leaftext.png "Leaf Text — Readable XML and Markdown")
 
 Allowed image types include SVG, PNG, JPEG, GIF, APNG, AVIF, BMP, ICO, and WebP.
 

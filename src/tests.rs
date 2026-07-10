@@ -3712,7 +3712,7 @@ fn app_shell_locale_bootstrap_keeps_initial_text_nonblank() {
             "'actions.close': 'Close file'",
             "'empty.description': 'Open any Markdown file for a calm, focused read. Turn over a new leaf.'",
             "'empty.kicker': 'Leaf Text'",
-            "'empty.title': 'Markdown, made to read.'",
+            "'empty.title': 'Readable XML and Markdown'",
             "'empty.noRecent': 'Recent files will appear here after you open a document.'",
             "'settings.heading': 'Settings'",
             "TRANSLATIONS.en[key] || key",

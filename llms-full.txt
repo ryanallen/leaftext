@@ -5,7 +5,7 @@
 ## Leaf Text
 - Page: https://leaftext.com/
 - Markdown: https://leaftext.com/README.md
-- Summary: Leaf Text — Markdown, made to read
+- Summary: Leaf Text — Readable XML and Markdown
 
 ## Rendering
 - Page: https://leaftext.com/docs/#/features/rendering

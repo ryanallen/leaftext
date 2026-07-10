@@ -4,7 +4,7 @@
 
 > A desktop reader for Markdown and TEI XML. Open a file. Read it.
 
-![Leaf Text — Markdown, made to read](imgs/leaftext.png)
+![Leaf Text — Readable XML and Markdown](imgs/leaftext.png)
 
 <a href="https://github.com/ryanallen/leaftext/releases"><img alt="Download" src="https://img.shields.io/badge/download-latest-0ea5e9?style=flat&labelColor=4b5563"></a>
 <a href="https://github.com/ryanallen/leaftext/releases"><img alt="macOS" src="https://img.shields.io/badge/macOS-Universal-silver?style=flat&labelColor=4b5563"></a>
