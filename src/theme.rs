@@ -1703,6 +1703,44 @@ body.library-resizing {
 .reader-shell.has-document:has(.document-minimap) {
   background: var(--preview-background);
 }
+.reader-loading {
+  /* Overlays the reader cell of the library grid (column 2, same row as #app) so
+     it can show a spinner over the current document while a slow one loads,
+     without disturbing the library pane or the app bar. Purely visual: pointer
+     events pass through, and it sits below the app bar (z-index 10). */
+  grid-column: 2;
+  grid-row: 1;
+  align-self: stretch;
+  justify-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 56px;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--preview-background) 62%, transparent);
+  z-index: 6;
+}
+.reader-loading[hidden] {
+  display: none;
+}
+.reader-loading-spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--preview-foreground) 22%, transparent);
+  border-top-color: var(--accent);
+  animation: leaf-reader-spin 0.8s linear infinite;
+}
+@keyframes leaf-reader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reader-loading-spinner {
+    animation-duration: 1.6s;
+  }
+}
 .reader-layout {
   --reader-layout-padding-inline: var(--reader-content-pad);
   container-type: inline-size;

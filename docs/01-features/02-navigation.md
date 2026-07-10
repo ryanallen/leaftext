@@ -14,6 +14,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | Scroll anchors | Restore the same reading spot after rerenders |
 | Live reload | Reload a changed file without losing your place |
 | Recent files | Reopen the last 8 files quickly |
+| Loading spinner | A spinner appears over the reader while a slow document parses and renders |
 | Glossary sheet | Open a glossary term over the page without leaving it |
 | Link hints | Hover a link to see what kind it is and where it points |
 | Pager | Previous / Next buttons at the bottom of each document for reading a folder in order |
@@ -110,6 +111,15 @@ The no-file home screen shows the last 8 opened files.
 - Missing files are removed automatically.
 - Equivalent path spellings collapse to one entry.
 - Clicking a recent file opens it immediately.
+
+## Loading
+
+Opening a recent file or switching to a different tab hands the document to the Rust side to parse and render before the reading view comes back. For a large file that can take a moment, so leaftext shows a spinner over the reader while the host works and clears it the instant the new document arrives.
+
+- The spinner is deferred briefly, so a quick load never flashes it.
+- It overlays the reader without disturbing the [library](03-library.md) pane or the app bar, and lets clicks pass through.
+- Re-clicking the tab you are already on does nothing on the host side, so no spinner appears there.
+- A safety timeout lowers it even if a response never comes, so it can never get stuck on screen.
 
 ## Glossary
 

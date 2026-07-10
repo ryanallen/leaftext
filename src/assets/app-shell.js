@@ -27,6 +27,7 @@ const librarySearchScopeLabel = document.getElementById('librarySearchScopeLabel
 const librarySearchResults = document.getElementById('librarySearchResults');
 const libraryScanProgress = document.getElementById('libraryScanProgress');
 const settingsMenu = document.getElementById('settingsMenu');
+const readerLoading = document.getElementById('readerLoading');
 let tabDrag = null;
 let suppressTabClick = false;
 tabBar.addEventListener('wheel', (event) => {
@@ -111,7 +112,39 @@ function endTabDrag(commit) {
 }
 document.addEventListener('pointerup', () => endTabDrag(true));
 document.addEventListener('pointercancel', () => endTabDrag(false));
-const send = (message) => window.ipc.postMessage(JSON.stringify(message));
+// A slow document (a big XML/Markdown file) is parsed and rendered on the Rust
+// side before the reader HTML comes back, which can take several seconds with no
+// visible feedback. Show a spinner over the reader while that host work runs and
+// clear it the instant the new document state arrives. The spinner is deferred
+// briefly so quick loads never flash it, and a safety timeout guarantees it can
+// never get stuck on screen even if a response never comes.
+const READER_LOADING_DELAY_MS = 200;
+const READER_LOADING_SAFETY_MS = 30000;
+let readerLoadingDelay = 0;
+let readerLoadingSafety = 0;
+function beginReaderLoading() {
+  clearReaderLoading();
+  readerLoadingDelay = setTimeout(() => {
+    readerLoadingDelay = 0;
+    if (readerLoading) readerLoading.hidden = false;
+  }, READER_LOADING_DELAY_MS);
+  readerLoadingSafety = setTimeout(clearReaderLoading, READER_LOADING_SAFETY_MS);
+}
+function clearReaderLoading() {
+  if (readerLoadingDelay) { clearTimeout(readerLoadingDelay); readerLoadingDelay = 0; }
+  if (readerLoadingSafety) { clearTimeout(readerLoadingSafety); readerLoadingSafety = 0; }
+  if (readerLoading) readerLoading.hidden = true;
+}
+// Commands whose host handler always renders a document back (leafSetState),
+// so it is safe to raise the spinner here and rely on that reply to lower it.
+// switchTab is deliberately excluded: clicking the already-active tab is a host
+// no-op with no reply, so its spinner is raised at the call site only on a real
+// switch.
+const READER_LOADING_COMMANDS = new Set(['openRecent']);
+const send = (message) => {
+  if (message && READER_LOADING_COMMANDS.has(message.command)) beginReaderLoading();
+  window.ipc.postMessage(JSON.stringify(message));
+};
 const MERMAID_SCRIPT_URL = '{{MERMAID_SCRIPT_URL}}';
 const KATEX_SCRIPT_URL = '{{KATEX_SCRIPT_URL}}';
 const PIXI_SCRIPT_URL = '{{PIXI_SCRIPT_URL}}';
@@ -1950,6 +1983,9 @@ window.addEventListener('keydown', (event) => {
       if (next === 0) {
         send({ command: 'goHome' });
       } else {
+        // The keyboard cycle always lands on a different tab, so its document
+        // load may be slow — show the spinner while the host renders it.
+        beginReaderLoading();
         send({ command: 'switchTab', index: next - 1, scroll_anchor: currentScrollAnchor() });
       }
     }
@@ -1971,6 +2007,7 @@ window.addEventListener('keydown', (event) => {
   }
 });
 window.leafSetState = (state) => {
+  clearReaderLoading();
   currentState = state || { recent: [], tabs: [], active: null, document: null };
   if (!currentState.document) {
     emptyDescriptionKey = pickEmptyDescriptionKey();
@@ -1997,6 +2034,7 @@ window.leafSetState = (state) => {
 // scrolling back to the top: capture the current position, re-render, then put
 // the reader back where it was (clamped if the document got shorter).
 window.leafReloadDocument = (state) => {
+  clearReaderLoading();
   const anchor = captureReaderScrollAnchor();
   currentState = state || currentState || { recent: [], tabs: [], active: null, document: null };
   resetReaderScrollOnNextRender = false;
@@ -2015,6 +2053,7 @@ window.leafReloadDocument = (state) => {
 // skip the reset-to-content-start that leafSetState runs so clicking a tab never
 // jumps to the top.
 window.leafSwitchTab = (state, anchor) => {
+  clearReaderLoading();
   currentState = state || { recent: [], tabs: [], active: null, document: null };
   if (!currentState.document) {
     emptyDescriptionKey = pickEmptyDescriptionKey();
@@ -2139,6 +2178,9 @@ function renderTabs(state) {
       if (suppressTabClick) return;
       const index = Number(button.dataset.tabIndex);
       const wasActive = index === (currentState && currentState.active);
+      // A real switch renders the other document (which may be slow); show the
+      // spinner. Re-clicking the active tab is a host no-op, so skip it there.
+      if (!wasActive) beginReaderLoading();
       send({ command: 'switchTab', index, scroll_anchor: currentScrollAnchor() });
       // Reveal even when this is already the active tab (no state round-trip
       // from the host): clicking a file's tab snaps the library back to it, and
