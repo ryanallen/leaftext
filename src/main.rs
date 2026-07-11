@@ -1568,12 +1568,31 @@ struct Tab {
 }
 
 impl Tab {
-    /// The edit buffer for this tab, seeded from `contents` (the text on disk /
-    /// on screen) the first time it is needed. Re-entering the code view reuses
-    /// the existing buffer so unsaved edits are preserved.
-    fn edit_buffer(&mut self, path: &Path, contents: String) -> &mut EditableDocument {
+    /// Whether this tab holds an edit buffer for `path` specifically. A tab
+    /// navigates across documents (links, history), but its edit buffer belongs
+    /// to ONE file — treating a leftover buffer as if it were the current
+    /// document's is what once made link navigation re-render the old page.
+    fn has_edit_for(&self, path: &Path) -> bool {
         self.edit
-            .get_or_insert_with(|| EditableDocument::new(path.to_path_buf(), contents))
+            .as_ref()
+            .is_some_and(|edit| paths_refer_to_same_document(&edit.path, path))
+    }
+
+    /// Whether starting an edit of `path` needs the file read from disk first:
+    /// true when there is no buffer, or the buffer is for a different document.
+    fn needs_edit_seed(&self, path: &Path) -> bool {
+        !self.has_edit_for(path)
+    }
+
+    /// The edit buffer for `path`, seeded from `contents` (the text on disk /
+    /// on screen) when there is no buffer for this document yet. Re-editing the
+    /// same document reuses the buffer so unsaved edits are preserved; editing a
+    /// DIFFERENT document after navigating replaces the stale buffer.
+    fn edit_buffer(&mut self, path: &Path, contents: String) -> &mut EditableDocument {
+        if self.needs_edit_seed(path) {
+            self.edit = Some(EditableDocument::new(path.to_path_buf(), contents));
+        }
+        self.edit.as_mut().expect("edit buffer just ensured")
     }
 }
 
@@ -1862,14 +1881,12 @@ fn reload_active_document(
     };
 
     // An external change must not clobber unsaved edits. If the active tab has a
-    // dirty edit buffer, leave the buffer (and the view) alone — a proper
-    // conflict-resolution workflow is future work. A clean buffer is kept in
-    // step with the file below.
-    let has_dirty_buffer = workspace
-        .tabs
-        .get(index)
-        .and_then(|tab| tab.edit.as_ref())
-        .is_some_and(EditableDocument::is_dirty);
+    // dirty edit buffer FOR THIS DOCUMENT, leave the buffer (and the view) alone —
+    // a proper conflict-resolution workflow is future work. A clean buffer is kept
+    // in step with the file below; a stale buffer for another document is ignored.
+    let has_dirty_buffer = workspace.tabs.get(index).is_some_and(|tab| {
+        tab.has_edit_for(&path) && tab.edit.as_ref().is_some_and(EditableDocument::is_dirty)
+    });
     if has_dirty_buffer {
         return;
     }
@@ -1890,13 +1907,20 @@ fn reload_active_document(
     }
     file_watch.active_hash = Some(hash);
 
-    // Keep a clean edit buffer in step with the file. If the code view is open,
-    // refresh its source in place rather than dropping back to the reading view.
+    // Keep a clean edit buffer in step with the file — only when the buffer is
+    // for this document (a stale buffer for a previously viewed file is left
+    // alone). If the code view is open, refresh its source in place rather than
+    // dropping back to the reading view.
     let in_code_view = workspace.tabs.get(index).is_some_and(|tab| tab.code_view);
+    let buffer_is_current = workspace
+        .tabs
+        .get(index)
+        .is_some_and(|tab| tab.has_edit_for(&path));
     if let Some(edit) = workspace
         .tabs
         .get_mut(index)
         .and_then(|tab| tab.edit.as_mut())
+        .filter(|_| buffer_is_current)
     {
         edit.adopt_external(contents.clone());
         if in_code_view {
@@ -1997,12 +2021,13 @@ fn enter_code_view(webview: Option<&WebView>, workspace: &mut Workspace) {
         return;
     };
 
-    // Read the file only when there's no buffer yet; re-entering the code view
-    // reuses the existing buffer so unsaved edits are preserved.
+    // Read the file only when there's no buffer for this document yet;
+    // re-entering the code view reuses the existing buffer so unsaved edits are
+    // preserved, while a stale buffer from a previous document is re-seeded.
     let needs_seed = workspace
         .tabs
         .get(index)
-        .is_some_and(|tab| tab.edit.is_none());
+        .is_some_and(|tab| tab.needs_edit_seed(&path));
     let contents = if needs_seed {
         match fs::read_to_string(&path) {
             Ok(contents) => contents,
@@ -2121,7 +2146,7 @@ fn apply_block_edit(workspace: &mut Workspace, start: usize, end: usize, text: &
     let needs_seed = workspace
         .tabs
         .get(tab_index)
-        .is_some_and(|tab| tab.edit.is_none());
+        .is_some_and(|tab| tab.needs_edit_seed(&path));
     let contents = if needs_seed {
         match fs::read_to_string(&path) {
             Ok(contents) => contents,
@@ -2153,7 +2178,7 @@ fn toggle_task_marker(webview: Option<&WebView>, workspace: &mut Workspace, inde
     let needs_seed = workspace
         .tabs
         .get(tab_index)
-        .is_some_and(|tab| tab.edit.is_none());
+        .is_some_and(|tab| tab.needs_edit_seed(&path));
     let contents = if needs_seed {
         match fs::read_to_string(&path) {
             Ok(contents) => contents,
@@ -2174,16 +2199,19 @@ fn toggle_task_marker(webview: Option<&WebView>, workspace: &mut Workspace, inde
     let dirty = edit.is_dirty();
 
     if let Some(webview) = webview {
-        let script = blocks_resynced_script(&tasks, dirty, edit.can_undo(), edit.text());
+        // A toggle does NOT re-render, so the resync must carry the toggled
+        // source for the reader's raw-source editors to slice from.
+        let script = blocks_resynced_script(&tasks, dirty, edit.can_undo(), Some(edit.text()));
         if let Err(error) = webview.evaluate_script(&script) {
             eprintln!("Toggle task: failed to resync reading view: {error}");
         }
     }
 }
 
-/// Push the active buffer's editing state (task offsets, dirty flag, source
-/// text) back to the reading view — used after an undo, where the dirty flag may
-/// have gone in either direction and the frontend cannot infer it.
+/// Push the active buffer's editing state (task offsets, dirty flag, undo
+/// availability) back to the reading view — used after an edit or undo whose
+/// full re-render already delivered the buffer text, so the source is omitted
+/// rather than shipped a second time.
 fn resync_editing_state(webview: Option<&WebView>, workspace: &Workspace) {
     let Some(webview) = webview else {
         return;
@@ -2195,12 +2223,8 @@ fn resync_editing_state(webview: Option<&WebView>, workspace: &Workspace) {
     else {
         return;
     };
-    let script = blocks_resynced_script(
-        &edit.task_offsets(),
-        edit.is_dirty(),
-        edit.can_undo(),
-        edit.text(),
-    );
+    let script =
+        blocks_resynced_script(&edit.task_offsets(), edit.is_dirty(), edit.can_undo(), None);
     if let Err(error) = webview.evaluate_script(&script) {
         eprintln!("Editing: failed to resync reading view: {error}");
     }
@@ -2235,13 +2259,15 @@ fn render_active(
                     scroll,
                 );
             };
-            // Prefer the in-memory edit buffer so unsaved edits (made in the code
-            // view) are what the reading view shows; only touch disk — and record
-            // Recent — when the tab has no buffer yet.
+            // Prefer the in-memory edit buffer so unsaved edits (inline or from
+            // the code view) are what the reading view shows — but only when the
+            // buffer is for THIS document. A tab navigates across files; a
+            // leftover buffer from the previous document must not shadow the
+            // page being opened, or link clicks appear to do nothing.
             let has_edit = workspace
                 .tabs
                 .get(index)
-                .is_some_and(|tab| tab.edit.is_some());
+                .is_some_and(|tab| tab.has_edit_for(&path));
             let document = if has_edit {
                 let edit = workspace
                     .tabs
@@ -3471,6 +3497,36 @@ mod tests {
         assert!(history.can_go_back());
         assert!(!history.can_go_forward());
         assert_eq!(history.back(test_anchor(900)), Some(test_anchor(200)));
+    }
+
+    #[test]
+    fn edit_buffer_belongs_to_one_document_and_reseeds_after_navigation() {
+        let mut tab = Tab::default();
+        let first = PathBuf::from("/docs/a.md");
+        let second = PathBuf::from("/docs/b.md");
+
+        // Editing the first document creates its buffer.
+        assert!(tab.needs_edit_seed(&first));
+        tab.edit_buffer(&first, "# A\n".to_string()).toggle_task(0);
+        assert!(tab.has_edit_for(&first));
+        assert!(!tab.needs_edit_seed(&first));
+
+        // The buffer is NOT the second document's: rendering b.md must not use
+        // it (the stale-buffer bug that made link navigation re-render the old
+        // page), and editing b.md must re-seed from b's contents.
+        assert!(!tab.has_edit_for(&second));
+        assert!(tab.needs_edit_seed(&second));
+        let edit = tab.edit_buffer(&second, "# B\n".to_string());
+        assert_eq!(edit.text(), "# B\n");
+        assert!(tab.has_edit_for(&second));
+        assert!(!tab.has_edit_for(&first));
+
+        // Re-editing the same document reuses the buffer (unsaved edits kept).
+        let edit = tab.edit_buffer(&second, String::new());
+        edit.replace_range(2, 3, "Bee");
+        assert_eq!(edit.text(), "# Bee\n");
+        let edit = tab.edit_buffer(&second, String::new());
+        assert_eq!(edit.text(), "# Bee\n");
     }
 
     #[test]

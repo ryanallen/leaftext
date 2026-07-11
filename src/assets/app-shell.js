@@ -3056,6 +3056,9 @@ function blockDomToMarkdown(el) {
   if (kind === 'table') {
     return tableDomToMarkdown(el);
   }
+  if (kind === 'blockquote') {
+    return blockquoteDomToMarkdown(el);
+  }
   const text = inlineDomToMarkdown(el).trim();
   if (kind === 'heading') {
     const level = Number(el.tagName.substring(1)) || 1;
@@ -3100,6 +3103,36 @@ function listDomToMarkdown(listEl, indent) {
     });
   });
   return lines.join('\n');
+}
+
+// Serialize a rendered blockquote back to `> `-prefixed Markdown. Each child
+// paragraph is one quoted paragraph, separated by a bare `>` line. Hard-broken
+// lines appear in the DOM as `.blockquote-line` spans (decorateBlockquoteLines
+// consumed the <br>s), so those are re-joined with backslash hard breaks; soft
+// breaks survive inside the text and just get the `> ` prefix per line. Any
+// unexpected child (e.g. a native-Enter <div>) still serializes as a paragraph
+// rather than being dropped.
+function blockquoteDomToMarkdown(el) {
+  const paragraphs = [];
+  Array.from(el.children).forEach((child) => {
+    const tag = child.tagName.toLowerCase();
+    if (tag === 'a' && child.classList.contains('heading-anchor')) return;
+    const lines = Array.from(child.children).filter(
+      (node) => node.classList && node.classList.contains('blockquote-line'),
+    );
+    const text = lines.length
+      ? lines.map((line) => inlineDomToMarkdown(line).trim()).join('\\\n')
+      : inlineDomToMarkdown(child).trim();
+    if (text) paragraphs.push(text);
+  });
+  return paragraphs
+    .map((text) =>
+      text
+        .split('\n')
+        .map((line) => ('> ' + line).trimEnd())
+        .join('\n'),
+    )
+    .join('\n>\n');
 }
 
 // The delimiter row for a table being serialized. Column alignment (`:---:`)
@@ -3173,8 +3206,30 @@ function tableWysiwygSafe(el) {
   );
 }
 
+// A blockquote edits WYSIWYG when it is a plain quote of paragraphs. GitHub
+// alerts (`> [!NOTE]`) carry synthesized title markup, and quotes holding
+// nested blocks (lists, code, tables, another quote) need structure the
+// serializer doesn't rewrite — those keep the raw-source editor.
+function blockquoteWysiwygSafe(el) {
+  if (el.classList.contains('markdown-alert')) return false;
+  if (el.querySelector('blockquote, pre, table, ul, ol, img, sup.footnote-reference, .katex, .mermaid, input')) {
+    return false;
+  }
+  return Array.from(el.children).every((child) => {
+    const tag = child.tagName.toLowerCase();
+    return tag === 'p' || (tag === 'a' && child.classList.contains('heading-anchor'));
+  });
+}
+
 function utf8ByteLength(text) {
   return sourceByteEncoder.encode(text).length;
+}
+
+// Claim the caret for the next render, stamped with the document it belongs to
+// so a caret queued just before a navigation can never land in a coincidentally
+// matching block of the newly opened page.
+function setPendingCaret(next) {
+  pendingCaret = next ? { ...next, path: activeDocumentPath() } : null;
 }
 
 // Send a buffer-mutating reading-view command. Every such command lands exactly
@@ -3273,11 +3328,21 @@ function commitBlockEdit(el, text) {
     const activeStart = Number(active.dataset.srcStart);
     if (!Number.isFinite(activeStart)) return;
     const offset = caretTextOffsetIn(active);
-    pendingCaret = {
+    setPendingCaret({
       srcStart: activeStart >= end ? activeStart + delta : activeStart,
       textOffset: offset == null ? 0 : offset,
-    };
+    });
   }, 0);
+}
+
+// Commit whichever block currently holds an active editing session, if any.
+// Used before actions that bypass the normal focusout commit — e.g. clicking a
+// link, whose mousedown is swallowed so focus never leaves the edited block.
+function commitActiveEditingBlock() {
+  const active = document.activeElement;
+  if (!active || !active.__editingActive) return;
+  active.__editingActive = false;
+  commitBlockEdit(active, blockDomToMarkdown(active));
 }
 
 // Splice `text` over `[start, end)` for a STRUCTURAL edit (split/merge/insert).
@@ -3320,12 +3385,12 @@ function splitBlockAtCaret(el) {
     // headings at the same level, splitting a paragraph two paragraphs.
     const part2 = prefix + part2Inline;
     sendBlockSplice(el, start, end, part1 + '\n\n' + part2);
-    pendingCaret = { srcStart: start + utf8ByteLength(part1) + 2, textOffset: 0 };
+    setPendingCaret({ srcStart: start + utf8ByteLength(part1) + 2, textOffset: 0 });
   } else if (blockDomToMarkdown(el) !== el.__editBaseline) {
     // Enter at the end with unsaved text edits: commit them, then reopen the
     // empty insert paragraph on the far side of the re-render.
     sendBlockSplice(el, start, end, part1);
-    pendingCaret = { srcStart: start, insertBelow: true };
+    setPendingCaret({ srcStart: start, insertBelow: true });
   } else {
     openInsertBlockAfter(el);
   }
@@ -3342,7 +3407,7 @@ function mergeBlockIntoPrevious(el, prev) {
   const junction = visibleTextLength(prev);
   const merged = blockDomToMarkdown(prev) + inlineDomToMarkdown(el).trim();
   sendBlockSplice(el, start, end, merged);
-  pendingCaret = { srcStart: start, textOffset: junction };
+  setPendingCaret({ srcStart: start, textOffset: junction });
 }
 
 // A fresh empty paragraph below `el`, ready to type into. Markdown cannot hold
@@ -3366,7 +3431,7 @@ function openInsertBlockAfter(el) {
     if (!text) return false;
     block.__committed = true;
     sendEditCommand({ command: 'editBlock', start: insertAt, end: insertAt, text: '\n\n' + text });
-    if (chainBelow) pendingCaret = { srcStart: insertAt + 2, insertBelow: true };
+    if (chainBelow) setPendingCaret({ srcStart: insertAt + 2, insertBelow: true });
     return true;
   };
   block.addEventListener('keydown', (event) => {
@@ -3409,6 +3474,16 @@ function handleWysiwygKeydown(el, event) {
     if (event.key === 'Enter') event.preventDefault();
     return;
   }
+  if (kind === 'blockquote') {
+    // Enter inside a quote adds a quoted line (a hard break) rather than
+    // splitting the quote — a native Enter would create markup the quote's
+    // serializer has no `>`-form for.
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      document.execCommand('insertLineBreak');
+    }
+    return;
+  }
   if (kind === 'list') return;
   if (event.key === 'Enter') {
     if (event.shiftKey) {
@@ -3449,6 +3524,16 @@ function makeMarkdownEditable(el) {
   el.classList.add('leaf-editable');
   el.querySelectorAll('.heading-anchor').forEach((a) => a.setAttribute('contenteditable', 'false'));
   el.querySelectorAll('input[type="checkbox"]').forEach((box) => box.setAttribute('contenteditable', 'false'));
+  // A click on a link must read as navigation, not as "edit here": swallow the
+  // mousedown so the block never takes focus or shows a caret (the delegated
+  // click handler still navigates), and first commit whatever block was being
+  // edited — with focus never moving, no focusout would fire to commit it.
+  el.addEventListener('mousedown', (event) => {
+    if (event.target && event.target.closest && event.target.closest('a')) {
+      commitActiveEditingBlock();
+      event.preventDefault();
+    }
+  });
   el.addEventListener('focusin', () => {
     if (!el.__editingActive) {
       el.__editingActive = true;
@@ -3476,6 +3561,10 @@ function makeSourceEditable(el) {
   el.classList.add('leaf-editable');
   el.addEventListener('pointerdown', (event) => {
     if (el.dataset.editingSource === 'true') return;
+    // A link is a link first: let the click navigate (the delegated document
+    // handler picks it up) instead of swallowing it into a source-edit session.
+    // Source editing starts from a click on any non-link part of the block.
+    if (event.target && event.target.closest && event.target.closest('a')) return;
     event.preventDefault();
     const src = sliceSourceBytes(currentDocumentSource, start, end);
     el.__editBaseline = src;
@@ -3518,7 +3607,8 @@ function bindEditableBlocks(format) {
       format === 'markdown' &&
       (((kind === 'heading' || kind === 'paragraph') && markdownBlockWysiwygSafe(el)) ||
         (kind === 'list' && listWysiwygSafe(el)) ||
-        (kind === 'table' && tableWysiwygSafe(el)));
+        (kind === 'table' && tableWysiwygSafe(el)) ||
+        (kind === 'blockquote' && blockquoteWysiwygSafe(el)));
     if (wysiwyg) {
       makeMarkdownEditable(el);
     } else {
@@ -3536,6 +3626,9 @@ function placePendingCaret(body) {
   const pending = pendingCaret;
   pendingCaret = null;
   if (!pending) return;
+  // A caret queued for a different document (an edit committed just before a
+  // link navigation) must not grab focus in the page that actually rendered.
+  if (pending.path && pending.path !== activeDocumentPath()) return;
   const target = body.querySelector(`[data-src-start="${pending.srcStart}"]`);
   if (!target) return;
   if (pending.insertBelow) {
@@ -4007,8 +4100,38 @@ function loadMermaid() {
   });
   return mermaidLoadPromise;
 }
+// Rendered-diagram memo: diagram source (plus theme) → the finished SVG markup.
+// Inline editing re-renders the whole document on every commit, which resets
+// every diagram to raw text; re-laying out unchanged diagrams was the biggest
+// per-commit cost on diagram-heavy documents. Unchanged diagrams now restore
+// from this cache instantly and only genuinely new/edited ones re-render.
+const mermaidRenderCache = new Map();
+const MERMAID_CACHE_CAP = 200;
+function mermaidCacheKey(source) {
+  return (document.documentElement.dataset.theme === 'dark' ? 'dark\n' : 'light\n') + source;
+}
 function renderMermaidDiagrams() {
-  const diagrams = Array.from(app.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"])'));
+  const candidates = Array.from(app.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"])'));
+  if (!candidates.length) {
+    return;
+  }
+  const diagrams = [];
+  let restored = false;
+  candidates.forEach((diagram) => {
+    const source = diagram.textContent;
+    const cached = mermaidRenderCache.get(mermaidCacheKey(source));
+    if (cached) {
+      diagram.innerHTML = cached;
+      diagram.dataset.processed = 'true';
+      restored = true;
+      return;
+    }
+    diagram.__mermaidSource = source;
+    diagrams.push(diagram);
+  });
+  if (restored) {
+    readerAnchorBlocks = null;
+  }
   if (!diagrams.length) {
     return;
   }
@@ -4024,6 +4147,11 @@ function renderMermaidDiagrams() {
       return mermaid.run({ nodes: diagrams });
     })
     .then(() => {
+      diagrams.forEach((diagram) => {
+        if (diagram.dataset.mermaidRender === 'failed' || diagram.__mermaidSource == null) return;
+        if (mermaidRenderCache.size >= MERMAID_CACHE_CAP) mermaidRenderCache.clear();
+        mermaidRenderCache.set(mermaidCacheKey(diagram.__mermaidSource), diagram.innerHTML);
+      });
       // Diagrams changed the block layout; drop the cached anchor list.
       readerAnchorBlocks = null;
     })
@@ -4060,19 +4188,40 @@ function loadKatex() {
   });
   return katexLoadPromise;
 }
+// Typeset-math memo: TeX source (plus display mode) → the finished KaTeX
+// markup. Same reasoning as the Mermaid cache: full re-renders on every editing
+// commit re-typeset every formula; unchanged formulas restore instantly.
+const katexRenderCache = new Map();
+const KATEX_CACHE_CAP = 1000;
 function renderMathElements() {
   const nodes = Array.from(app.querySelectorAll('.math:not([data-math-rendered])'));
   if (!nodes.length) {
     return;
   }
+  const pending = [];
+  nodes.forEach((node) => {
+    const key = (node.classList.contains('math-display') ? 'D\n' : 'I\n') + node.textContent;
+    const cached = katexRenderCache.get(key);
+    if (cached != null) {
+      node.innerHTML = cached;
+      node.dataset.mathRendered = 'true';
+      return;
+    }
+    pending.push({ node, key });
+  });
+  if (!pending.length) {
+    return;
+  }
   loadKatex()
     .then((katex) => {
-      nodes.forEach((node) => {
+      pending.forEach(({ node, key }) => {
         try {
           katex.render(node.textContent, node, {
             displayMode: node.classList.contains('math-display'),
             throwOnError: false,
           });
+          if (katexRenderCache.size >= KATEX_CACHE_CAP) katexRenderCache.clear();
+          katexRenderCache.set(key, node.innerHTML);
         } catch (error) {
           console.error(error);
         }

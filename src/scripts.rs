@@ -237,15 +237,16 @@ pub fn source_updated_script(highlighted_html: &str, dirty: bool) -> String {
 
 /// Re-sync the reading view's editing state from the authoritative buffer: the
 /// refreshed task-marker offsets in document order, the dirty state (Save button
-/// + tab dot), whether an undo step exists (Undo button), and the buffer text
-/// itself so the reader's raw-source block editors keep slicing from the live
-/// source. Sent after every reading-view mutation and after each undo, so the
-/// chrome can never drift from the buffer's real state.
+/// + tab dot), whether an undo step exists (Undo button), and optionally the
+/// buffer text so the reader's raw-source block editors keep slicing from the
+/// live source. Pass `source: None` when a full re-render just delivered the
+/// same text via the document state — shipping it twice per edit doubles the
+/// payload on large files for nothing; the frontend keeps what it has.
 pub fn blocks_resynced_script(
     tasks: &[usize],
     dirty: bool,
     can_undo: bool,
-    source: &str,
+    source: Option<&str>,
 ) -> String {
     let state = serde_json::json!({
         "tasks": tasks,
