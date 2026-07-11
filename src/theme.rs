@@ -2743,6 +2743,14 @@ body.library-resizing {
   background: none;
   color: inherit;
 }
+/* One block per source line so a keystroke can recolour just the edited line
+   instead of the whole document. Inherits the wrapping/whitespace rules above, so
+   each line wraps exactly like the textarea and the gutter row beside it. */
+.cv-line {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
 .code-view-linenums {
   position: absolute;
   inset: 0;

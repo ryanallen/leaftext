@@ -3852,6 +3852,34 @@ Already linked [https://example.net](https://example.net) stays one link.
 }
 
 #[test]
+fn renders_task_markers_inside_table_cells_as_checkboxes() {
+    let markdown = r#"| Recipe | Learned | Notes |
+| --- | --- | --- |
+| Apple Fritters | [ ] | keep [ ] as text |
+| Apple Oatmeal | [x] | checked lower |
+| Beef Stew | [X] | checked upper |
+| Broth | `[ ]` | code marker |
+"#;
+
+    let rendered = render_markdown_document(markdown, "recipes.md");
+
+    assert_contains(&rendered.html, r#"<td><input disabled="" type="checkbox">"#);
+    assert_contains(
+        &rendered.html,
+        r#"<td><input disabled="" type="checkbox" checked="">"#,
+    );
+    assert_eq!(
+        rendered
+            .html
+            .matches(r#"<input disabled="" type="checkbox" checked="">"#)
+            .count(),
+        2
+    );
+    assert_contains(&rendered.html, "<td>keep [ ] as text</td>");
+    assert_contains(&rendered.html, "<td><code>[ ]</code></td>");
+}
+
+#[test]
 fn renders_github_issue_pull_request_and_commit_references_with_context() {
     let markdown = "Fixes #123, GH-456, ryanallen/leaf#789, and a1b2c3d.";
 
@@ -5578,6 +5606,36 @@ fn source_view_highlights_both_markdown_and_xml() {
         xml.contains("&lt;"),
         "angle brackets are escaped, not raw tags"
     );
+}
+
+#[test]
+fn app_shell_edits_code_view_incrementally_without_whole_document_reflow() {
+    // Typing in the code view must patch only the lines that changed, never
+    // rewrite the whole colour layer — that whole-document rewrite is what turned
+    // the document white on every keystroke and stuttered on large files.
+    let html = app_shell_html();
+
+    // The colour layer is built one block per source line, split from the flat
+    // highlighter output so a single line can be recoloured on its own.
+    assert!(html.contains("function highlightedHtmlToLines(html, expectedCount)"));
+    assert!(html.contains("function setCodeViewColourLines(codeEl, html, text)"));
+
+    // The per-keystroke handler diffs the lines and splices only the changed run,
+    // and does NOT set the whole colour layer's text.
+    assert!(html.contains("updateCodeViewLinesIncremental(code, linenums, prevText, codeViewText)"));
+    assert!(!html.contains("code.textContent = codeViewText"));
+
+    // The minimap's content observer is detached in the code view (so no
+    // whole-document clone runs per keystroke); the thumbnail refreshes on the
+    // debounced edit cycle instead.
+    assert!(html.contains("function refreshCodeViewMinimap()"));
+    assert!(html.contains("minimapBodyObserver.disconnect();"));
+
+    // A debounced re-highlight repaints only the colour lines that changed rather
+    // than rebuilding every line div, so recolour does not re-lay-out a large
+    // document. The recolour compares against the tracked per-line markup.
+    assert!(html.contains("function recolourCodeViewLines(codeEl, html, text)"));
+    assert!(html.contains("recolourCodeViewLines(code, state.html, codeViewText)"));
 }
 
 #[test]

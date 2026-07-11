@@ -2312,6 +2312,210 @@ function buildLineNumbers(container, text) {
     .join('');
 }
 
+// A zero-width space stands in for an empty source line so its box still takes a
+// full row's height, keeping the colour layer and the gutter aligned with the
+// textarea (which always shows the blank line). Matches buildLineNumbers.
+const CODE_VIEW_BLANK = '​';
+
+// Split the flat highlighter output — a stream of `<span class="…">`, `</span>`,
+// and HTML-escaped text where a single span may stay open across newlines — into
+// one HTML string per source line. Any span still open at a line break is closed
+// to end the line and re-opened at the start of the next, so colour carries
+// across a wrap without leaking markup. Returns null if the split does not yield
+// exactly `expectedCount` lines, so the caller can fall back to a plain render.
+function highlightedHtmlToLines(html, expectedCount) {
+  const lines = [];
+  const openStack = [];
+  let current = '';
+  const tokenRe = /<span\b[^>]*>|<\/span>|[^<]+/g;
+  let match;
+  while ((match = tokenRe.exec(html)) !== null) {
+    const token = match[0];
+    if (token[0] === '<') {
+      if (token[1] === '/') {
+        openStack.pop();
+        current += '</span>';
+      } else {
+        openStack.push(token);
+        current += token;
+      }
+    } else {
+      let start = 0;
+      for (let i = 0; i < token.length; i += 1) {
+        if (token[i] === '\n') {
+          current += token.slice(start, i);
+          current += '</span>'.repeat(openStack.length);
+          lines.push(current);
+          current = openStack.join('');
+          start = i + 1;
+        }
+      }
+      current += token.slice(start);
+    }
+  }
+  lines.push(current);
+  if (expectedCount != null && lines.length !== expectedCount) {
+    return null;
+  }
+  return lines;
+}
+
+// The inner HTML each colour-layer line currently shows, one entry per source
+// line. A recolour compares against this to touch only the lines that changed; a
+// keystroke sets an edited line's entry to its plain text so the next recolour is
+// sure to repaint it. Kept exactly in step with the colour layer's children.
+let codeViewColourHtml = [];
+
+// The inner markup for one colour-layer line: the highlighted line when the
+// per-line split lined up, a zero-width space for a blank line (so its box keeps a
+// row's height), or plain-escaped text as a fallback.
+function colourLineInner(lineText, colouredLine) {
+  if (lineText === '') {
+    return CODE_VIEW_BLANK;
+  }
+  return colouredLine != null ? colouredLine : escapeText(lineText);
+}
+
+// The per-line inner markup for a whole buffer, coloured from `html` (falling back
+// to plain-escaped text if the per-line split does not line up 1:1 with the source
+// lines). This is the single source of truth both the full build and the
+// incremental recolour compute their line HTML from, so their strings compare
+// equal for unchanged lines.
+function computeColourInner(html, text) {
+  const lineTexts = text.split('\n');
+  const coloured = highlightedHtmlToLines(html || '', lineTexts.length);
+  return lineTexts.map((lineText, index) =>
+    colourLineInner(lineText, coloured ? coloured[index] : null)
+  );
+}
+
+// Rebuild the whole colour layer as one `<div class="cv-line">` per source line.
+// Used on entry (and as a self-heal if the incremental state ever drifts); the
+// per-keystroke and recolour paths patch only the lines that changed instead.
+function setCodeViewColourLines(codeEl, html, text) {
+  const inner = computeColourInner(html, text);
+  codeEl.innerHTML = inner.map((line) => `<div class="cv-line">${line}</div>`).join('');
+  codeViewColourHtml = inner;
+}
+
+// Repaint after a debounced re-highlight by replacing only the colour lines whose
+// markup actually changed — the edited lines, plus any whose colour shifted
+// because an edit changed multi-line state (opening a fence, say). Every other
+// line is left in place, so a recolour never reparses or re-lays-out the whole
+// document. Correct by construction: it diffs against the authoritative full
+// highlight, so matching lines are already right and differing ones are repainted.
+function recolourCodeViewLines(codeEl, html, text) {
+  const inner = computeColourInner(html, text);
+  if (
+    codeViewColourHtml.length !== inner.length ||
+    codeEl.children.length !== inner.length
+  ) {
+    // The line structure drifted from the highlight (should not happen while the
+    // recolour guard holds); rebuild once to get back in step.
+    setCodeViewColourLines(codeEl, html, text);
+    return;
+  }
+  for (let i = 0; i < inner.length; i += 1) {
+    if (codeViewColourHtml[i] !== inner[i]) {
+      codeEl.children[i].innerHTML = inner[i];
+      codeViewColourHtml[i] = inner[i];
+    }
+  }
+}
+
+// A single colour-layer line element. Freshly typed lines are shown as plain text
+// (via textContent, so no markup can leak); the debounced re-highlight recolours
+// them shortly after.
+function makeColourLine(text) {
+  const div = document.createElement('div');
+  div.className = 'cv-line';
+  div.textContent = text === '' ? CODE_VIEW_BLANK : text;
+  return div;
+}
+
+// A single gutter row: the right-aligned number plus a transparent copy of the
+// line's text (so the row wraps to the same height as the colour line).
+function makeGutterRow(text, index) {
+  const row = document.createElement('div');
+  row.className = 'cv-lnrow';
+  const num = document.createElement('span');
+  num.className = 'cv-lnnum';
+  num.textContent = String(index + 1);
+  const txt = document.createElement('span');
+  txt.className = 'cv-lntxt';
+  txt.textContent = text === '' ? CODE_VIEW_BLANK : text;
+  row.append(num, txt);
+  return row;
+}
+
+// Replace a contiguous run of `container`'s children (its line elements are 1:1
+// with source lines) — remove `removeCount` starting at `start`, then insert one
+// element per entry in `newTexts`, built by `makeEl(text, index)`.
+function spliceLineElements(container, start, removeCount, newTexts, makeEl) {
+  let node = container.children[start] || null;
+  for (let i = 0; i < removeCount && node; i += 1) {
+    const next = node.nextSibling;
+    node.remove();
+    node = next;
+  }
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < newTexts.length; i += 1) {
+    frag.appendChild(makeEl(newTexts[i], start + i));
+  }
+  container.insertBefore(frag, node);
+}
+
+// Patch only the lines a keystroke actually changed. A textarea edit is always one
+// contiguous splice, so the shared prefix/suffix of the old and new line arrays is
+// untouched — we rebuild just the range between them in both the colour layer and
+// the gutter. This is what keeps large documents from re-rendering (and flashing)
+// on every keystroke: the rest of the document's coloured lines stay put.
+function updateCodeViewLinesIncremental(codeEl, gutterEl, prevText, nextText) {
+  const prev = prevText.split('\n');
+  const next = nextText.split('\n');
+  const maxCommon = Math.min(prev.length, next.length);
+  let prefix = 0;
+  while (prefix < maxCommon && prev[prefix] === next[prefix]) {
+    prefix += 1;
+  }
+  let suffix = 0;
+  while (
+    suffix < maxCommon - prefix &&
+    prev[prev.length - 1 - suffix] === next[next.length - 1 - suffix]
+  ) {
+    suffix += 1;
+  }
+  const removeCount = prev.length - suffix - prefix;
+  const inserted = next.slice(prefix, next.length - suffix);
+  spliceLineElements(codeEl, prefix, removeCount, inserted, makeColourLine);
+  spliceLineElements(gutterEl, prefix, removeCount, inserted, makeGutterRow);
+  // Keep the recolour bookkeeping in step: the edited lines now show plain text,
+  // so mark them (null) to guarantee the next recolour repaints them.
+  codeViewColourHtml.splice(prefix, removeCount, ...inserted.map(() => null));
+  // Inserting or removing lines shifts every following line's number; renumber the
+  // suffix rows the splice left in place. A same-line edit skips this entirely.
+  if (prev.length !== next.length) {
+    const rows = gutterEl.children;
+    for (let i = prefix; i < rows.length; i += 1) {
+      const num = rows[i].firstChild;
+      if (num) {
+        num.textContent = String(i + 1);
+      }
+    }
+  }
+}
+
+// Rebuild the code view's minimap thumbnail now. The per-keystroke DOM edits do
+// NOT drive the minimap — its content mutation observer is deliberately detached
+// in the code view (see renderCodeView) so a full-document clone does not run on
+// every character. Instead we refresh it on the debounced edit cycle.
+function refreshCodeViewMinimap() {
+  if (!codeViewActive) {
+    return;
+  }
+  invalidateMinimapPreview();
+}
+
 function scheduleSourceUpdate() {
   if (sourceUpdateTimer) clearTimeout(sourceUpdateTimer);
   sourceUpdateTimer = setTimeout(() => {
@@ -2395,7 +2599,7 @@ function renderCodeView(state) {
   app.innerHTML = `
     <div class="code-view" data-language="${escapeAttr(state.displayName || '')}">
       <div class="code-view-doc">
-        <pre class="code-view-highlight" aria-hidden="true"><code class="language-${escapeAttr(state.language || '')}">${state.html || ''}</code></pre>
+        <pre class="code-view-highlight" aria-hidden="true"><code class="language-${escapeAttr(state.language || '')}"></code></pre>
         <div class="code-view-linenums" aria-hidden="true"></div>
         <textarea class="code-view-input" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea>
       </div>
@@ -2406,6 +2610,7 @@ function renderCodeView(state) {
   const code = highlight.querySelector('code');
   const linenums = app.querySelector('.code-view-linenums');
   textarea.value = text;
+  setCodeViewColourLines(code, state.html, text);
   buildLineNumbers(linenums, text);
   // Tab edits the document — insert a tab character at the caret — instead of
   // moving focus to the next control. Inserted via execCommand so the
@@ -2418,21 +2623,29 @@ function renderCodeView(state) {
     }
   });
   textarea.addEventListener('input', () => {
+    const prevText = codeViewText;
     codeViewText = textarea.value;
-    // Mirror the raw text into the colour layer immediately so freshly typed
-    // characters are visible (and wrap correctly) before the debounced
-    // re-highlight recolours them. The minimap's mutation observer sees these
-    // DOM changes and rebuilds the thumbnail on its own frame.
-    code.textContent = codeViewText;
-    buildLineNumbers(linenums, codeViewText);
+    // Patch only the lines this keystroke changed into the colour layer and the
+    // gutter, leaving the rest of the document untouched. The edited line shows
+    // its raw text (uncoloured) until the debounced re-highlight recolours it —
+    // so only that one line, never the whole document, loses colour.
+    updateCodeViewLinesIncremental(code, linenums, prevText, codeViewText);
     const path = activeDocumentPath();
     if (path) setDirtyState(path, true);
     scheduleSourceUpdate();
   });
-  // Wire the reader's minimap to this DOM: rail drag/click, the mutation and
-  // resize observers, and the first thumbnail build. The global #app scroll
-  // listener already keeps the viewport box in sync while scrolling.
+  // Wire the reader's minimap to this DOM: rail drag/click, the resize observer,
+  // and the first thumbnail build. The global #app scroll listener keeps the
+  // viewport box in sync while scrolling.
   bindDocumentMinimap();
+  // Detach the minimap's content mutation observer: in the code view the document
+  // mutates on every keystroke, and cloning the whole document each time is what
+  // made editing stutter on large files. The thumbnail is instead refreshed on the
+  // debounced edit cycle (refreshCodeViewMinimap), which is plenty for an overview.
+  if (minimapBodyObserver) {
+    minimapBodyObserver.disconnect();
+    minimapBodyObserver = null;
+  }
   // Setting .value parked the caret at the END of the text, and a plain focus()
   // scrolls the caret into view — that is what yanked the view to the bottom on
   // entry. Park the caret at the start and focus without scrolling, then land
@@ -2466,10 +2679,13 @@ window.leafSourceUpdated = (state) => {
   if (!codeViewActive || !state) return;
   if (lastSentSourceText === null || codeViewText === lastSentSourceText) {
     const code = app.querySelector('.code-view-highlight code');
-    if (code) code.innerHTML = state.html || '';
+    if (code) recolourCodeViewLines(code, state.html, codeViewText);
   }
   const path = activeDocumentPath();
   if (path) setDirtyState(path, !!state.dirty);
+  // The document settled after an edit — refresh the minimap thumbnail once now,
+  // rather than on every intermediate keystroke.
+  refreshCodeViewMinimap();
 };
 
 // The host reports a save's outcome. On success the document is no longer dirty;
