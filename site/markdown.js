@@ -632,18 +632,27 @@ export function renderMarkdown(src) {
     const cols = Math.max(header.length, aligns.length);
     const th = [];
     for (let k = 0; k < cols; k++) {
-      th.push(`<th${alignAttr(aligns[k])}>${renderInline(header[k] != null ? header[k] : '')}</th>`);
+      th.push(`<th${alignAttr(aligns[k])}>${renderTableCell(header[k] != null ? header[k] : '')}</th>`);
     }
     const body = rows
       .map((r) => {
         let cells = '';
         for (let k = 0; k < cols; k++) {
-          cells += `<td${alignAttr(aligns[k])}>${renderInline(r[k] != null ? r[k] : '')}</td>`;
+          cells += `<td${alignAttr(aligns[k])}>${renderTableCell(r[k] != null ? r[k] : '')}</td>`;
         }
         return '<tr>' + cells + '</tr>';
       })
       .join('\n');
     return `<table>\n<thead>\n<tr>${th.join('')}</tr>\n</thead>\n<tbody>\n${body}\n</tbody>\n</table>`;
+  }
+
+  function renderTableCell(content) {
+    const marker = String(content).trim().match(/^\[([ xX])\]$/);
+    if (marker) {
+      const checked = marker[1].toLowerCase() === 'x' ? ' checked' : '';
+      return `<input type="checkbox" disabled${checked}>`;
+    }
+    return renderInline(content);
   }
 
   // Consume a list starting at line i whose items are indented `startIndent`

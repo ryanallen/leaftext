@@ -150,11 +150,19 @@ GFM tables with a header row and a body:
 | Task lists    | `- [ ] item`   | ✅        |
 | Autolinks     | bare URLs      | ✅        |
 
+A table cell whose entire content is a task-list marker — `[ ]` or `[x]` — renders as a checkbox, so a table can carry a status column:
+
+| Step            | Done  |
+| --------------- | ----- |
+| Render a page   | [x]   |
+| Search files    | [x]   |
+| Edit the source | [ ]   |
+
 ## Task lists
 
 - [x] Render a page
 - [x] Search the library
-- [ ] Edit anything (out of scope — Leaf Text is a reader)
+- [ ] Reformat the source on save (out of scope — edits are saved verbatim)
 
 ## Links and autolinks
 

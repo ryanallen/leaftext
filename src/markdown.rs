@@ -117,6 +117,7 @@ pub(crate) fn register_markdown_extensions(
     let repository = repository_context(source_path.parent().unwrap_or_else(|| Path::new(".")));
     let events = linkify_plain_text(events);
     let events = github_markdown_extras(events, repository.as_ref());
+    let events = table_cell_task_list_markers(events);
     let events = add_markdown_heading_ids(events);
     let events = resolve_absolute_markdown_image_urls(events, source_path);
     fill_image_titles_from_alt(events)
@@ -126,6 +127,71 @@ pub(crate) fn render_markdown_events_to_html(events: Vec<Event<'static>>) -> Str
     let mut body = String::new();
     html::push_html(&mut body, events.into_iter());
     body
+}
+
+pub(crate) fn table_cell_task_list_markers(events: Vec<Event<'static>>) -> Vec<Event<'static>> {
+    let mut transformed = Vec::with_capacity(events.len());
+    let mut table_cell: Option<Vec<Event<'static>>> = None;
+
+    for event in events {
+        if let Some(mut cell_events) = table_cell.take() {
+            match event {
+                Event::End(TagEnd::TableCell) => {
+                    if let Some(checked) = table_cell_task_marker(&cell_events) {
+                        transformed.push(Event::TaskListMarker(checked));
+                    } else {
+                        transformed.extend(cell_events);
+                    }
+                    transformed.push(Event::End(TagEnd::TableCell));
+                }
+                other => {
+                    cell_events.push(other);
+                    table_cell = Some(cell_events);
+                }
+            }
+            continue;
+        }
+
+        match event {
+            Event::Start(Tag::TableCell) => {
+                transformed.push(Event::Start(Tag::TableCell));
+                table_cell = Some(Vec::new());
+            }
+            other => transformed.push(other),
+        }
+    }
+
+    if let Some(cell_events) = table_cell {
+        transformed.extend(cell_events);
+    }
+
+    transformed
+}
+
+pub(crate) fn table_cell_task_marker(events: &[Event<'static>]) -> Option<bool> {
+    let mut text = String::new();
+    let mut saw_text = false;
+
+    for event in events {
+        match event {
+            Event::Text(value) => {
+                saw_text = true;
+                text.push_str(value.as_ref());
+            }
+            Event::SoftBreak | Event::HardBreak => text.push('\n'),
+            _ => return None,
+        }
+    }
+
+    if !saw_text {
+        return None;
+    }
+
+    match text.trim() {
+        "[ ]" => Some(false),
+        "[x]" | "[X]" => Some(true),
+        _ => None,
+    }
 }
 
 pub(crate) fn add_markdown_heading_ids(events: Vec<Event<'static>>) -> Vec<Event<'static>> {
