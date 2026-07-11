@@ -2465,6 +2465,106 @@ function spliceLineElements(container, start, removeCount, newTexts, makeEl) {
   container.insertBefore(frag, node);
 }
 
+// The text nodes of one colour-layer line, in document order. Their concatenated
+// data equals the line's text; the elements around them are the colour spans.
+function codeLineTextNodes(root) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  let node = walker.nextNode();
+  while (node) {
+    nodes.push(node);
+    node = walker.nextNode();
+  }
+  return nodes;
+}
+
+// Delete `len` characters starting at column `start` from a colour line's text
+// nodes, leaving the surrounding colour spans in place. Offsets are computed in
+// the original coordinate space (each node's length is read before it is edited),
+// so mutating one node does not disturb the others' positions.
+function deleteCodeLineRange(root, start, len) {
+  if (len <= 0) return;
+  const end = start + len;
+  let offset = 0;
+  for (const node of codeLineTextNodes(root)) {
+    const nodeStart = offset;
+    const nodeEnd = offset + node.data.length;
+    offset = nodeEnd;
+    if (nodeEnd <= start) continue;
+    if (nodeStart >= end) break;
+    const from = Math.max(start, nodeStart) - nodeStart;
+    const to = Math.min(end, nodeEnd) - nodeStart;
+    node.data = node.data.slice(0, from) + node.data.slice(to);
+  }
+}
+
+// Insert `str` at column `at`, landing inside the colour run to its left so typed
+// text inherits that run's colour — a character added inside a blue markdown link
+// stays blue instead of appearing as plain text.
+function insertCodeLineText(root, at, str) {
+  if (!str) return;
+  const nodes = codeLineTextNodes(root);
+  if (nodes.length === 0) {
+    root.appendChild(document.createTextNode(str));
+    return;
+  }
+  let offset = 0;
+  for (let i = 0; i < nodes.length; i += 1) {
+    const node = nodes[i];
+    const nodeStart = offset;
+    const nodeEnd = offset + node.data.length;
+    if (at <= nodeEnd && (at > nodeStart || i === 0)) {
+      const local = at - nodeStart;
+      node.data = node.data.slice(0, local) + str + node.data.slice(local);
+      return;
+    }
+    offset = nodeEnd;
+  }
+  const last = nodes[nodes.length - 1];
+  last.data += str;
+}
+
+// Edit one already-coloured line's DOM in place so its syntax colours survive the
+// keystroke. Diff the old and new line text down to the changed span, then delete
+// and insert only those characters among the line's text nodes — the untouched
+// coloured spans stay exactly as they were. The debounced full re-highlight still
+// runs afterward and corrects any colour-boundary shift, invisibly. This is what
+// stops the edited line (e.g. a blue link) from dropping to plain white text
+// between the keystroke and the re-highlight.
+function patchColourLineText(lineEl, oldText, newText) {
+  if (newText === '') {
+    lineEl.innerHTML = CODE_VIEW_BLANK;
+    return;
+  }
+  if (oldText === '') {
+    // The line was blank (its box held a zero-width space, not real text), so
+    // there is no colouring to preserve — show the typed text plainly.
+    lineEl.textContent = newText;
+    return;
+  }
+  const maxCommon = Math.min(oldText.length, newText.length);
+  let prefix = 0;
+  while (prefix < maxCommon && oldText[prefix] === newText[prefix]) {
+    prefix += 1;
+  }
+  let suffix = 0;
+  while (
+    suffix < maxCommon - prefix &&
+    oldText[oldText.length - 1 - suffix] === newText[newText.length - 1 - suffix]
+  ) {
+    suffix += 1;
+  }
+  deleteCodeLineRange(lineEl, prefix, oldText.length - prefix - suffix);
+  insertCodeLineText(lineEl, prefix, newText.slice(prefix, newText.length - suffix));
+}
+
+// The line text a colour-layer element is currently showing, mapping the blank
+// line's zero-width-space placeholder back to an empty string.
+function colourLineText(lineEl) {
+  const text = lineEl.textContent;
+  return text === CODE_VIEW_BLANK ? '' : text;
+}
+
 // Patch only the lines a keystroke actually changed. A textarea edit is always one
 // contiguous splice, so the shared prefix/suffix of the old and new line arrays is
 // untouched — we rebuild just the range between them in both the colour layer and
@@ -2487,6 +2587,25 @@ function updateCodeViewLinesIncremental(codeEl, gutterEl, prevText, nextText) {
   }
   const removeCount = prev.length - suffix - prefix;
   const inserted = next.slice(prefix, next.length - suffix);
+  // The overwhelmingly common edit — typing within a single line — replaces one
+  // line with one line. Keep that line's existing coloured element and edit only
+  // the changed characters into it, so its colours never drop to plain text. Fall
+  // back to a plain rebuild only if the element's text has drifted from what we
+  // expect (then the debounced recolour restores it).
+  if (removeCount === 1 && inserted.length === 1) {
+    const lineEl = codeEl.children[prefix];
+    if (lineEl && colourLineText(lineEl) === prev[prefix]) {
+      patchColourLineText(lineEl, prev[prefix], inserted[0]);
+      codeViewColourHtml[prefix] = lineEl.innerHTML;
+    } else {
+      spliceLineElements(codeEl, prefix, removeCount, inserted, makeColourLine);
+      codeViewColourHtml.splice(prefix, removeCount, ...inserted.map(() => null));
+    }
+    // The gutter mirror is transparent (it only sets each row's height), so a
+    // plain rebuild of the one changed row is fine.
+    spliceLineElements(gutterEl, prefix, removeCount, inserted, makeGutterRow);
+    return;
+  }
   spliceLineElements(codeEl, prefix, removeCount, inserted, makeColourLine);
   spliceLineElements(gutterEl, prefix, removeCount, inserted, makeGutterRow);
   // Keep the recolour bookkeeping in step: the edited lines now show plain text,
@@ -2626,9 +2745,10 @@ function renderCodeView(state) {
     const prevText = codeViewText;
     codeViewText = textarea.value;
     // Patch only the lines this keystroke changed into the colour layer and the
-    // gutter, leaving the rest of the document untouched. The edited line shows
-    // its raw text (uncoloured) until the debounced re-highlight recolours it —
-    // so only that one line, never the whole document, loses colour.
+    // gutter, leaving the rest of the document untouched. A within-line edit keeps
+    // the line's existing coloured spans and splices only the changed characters
+    // into them, so the line never drops to plain white text; the debounced
+    // re-highlight afterward corrects any colour-boundary shift.
     updateCodeViewLinesIncremental(code, linenums, prevText, codeViewText);
     const path = activeDocumentPath();
     if (path) setDirtyState(path, true);
