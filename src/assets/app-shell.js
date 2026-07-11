@@ -1938,6 +1938,12 @@ function reportWindowChrome(theme) {
 // that use it are defined further down (near the rest of the editing code).
 const codeViewButton = document.getElementById('codeViewButton');
 const saveButton = document.getElementById('saveButton');
+const undoButton = document.getElementById('undoButton');
+// Whether each document has a reading-view edit to undo. Set optimistically
+// when an edit is sent, then overwritten by the host's authoritative answer in
+// every leafBlocksResynced — the host owns the undo stack, so the button can
+// never linger after undoing all the way back.
+const undoableByPath = new Map();
 // Whether the reader is currently showing raw source instead of the rendered
 // document. Reset by renderState(), set by leafShowCodeView().
 let codeViewActive = false;
@@ -1953,6 +1959,19 @@ const dirtyByPath = new Map();
 // mid-document stays mid-document). Consumed (and cleared) by the next render.
 // Declared here, above the subscriptions that run renderState() on load.
 let pendingViewScrollFraction = null;
+// Live reading-view editing. The source buffer stays authoritative in Rust; the
+// reading view anchors each edit to a source byte range and asks the host to
+// splice it. These hold what the frontend needs between renders. Declared here,
+// above the subscriptions that run renderState() on load.
+let currentDocumentFormat = 'markdown';
+let currentDocumentSource = '';
+// Where the caret should land after the next render. Structural edits (Enter
+// splits a block, Backspace merges into the previous one) splice the source and
+// the host re-renders the document; this carries the caret across that re-render
+// so typing flows on without a click. `srcStart` names the destination block by
+// its post-splice source offset, `textOffset` the character position inside it;
+// `insertBelow` instead opens a fresh empty paragraph after that block.
+let pendingCaret = null;
 window.leafTheme.subscribe((theme) => {
   themeModeControl.value = theme.mode;
   reportWindowChrome(theme);
@@ -2291,6 +2310,21 @@ function updateEditingChrome() {
     // the active document has unsaved edits.
     saveButton.hidden = !(hasDocument && isDocumentDirty(path));
   }
+  if (undoButton) {
+    // Undo appears beside Save whenever the document has reading-view edits to
+    // step back through — including past a save, which just re-dirties.
+    undoButton.hidden = !(hasDocument && undoableByPath.get(path) === true);
+  }
+}
+
+// Ask the host to revert the most recent reading-view edit of the active
+// document. The host pops its buffer snapshot, re-renders, and resyncs the
+// chrome — dirty state and undo availability both come back authoritative, so
+// undoing the last edit hides both buttons.
+function undoLastEdit() {
+  const path = activeDocumentPath();
+  if (!path || undoableByPath.get(path) !== true) return;
+  send({ command: 'undoEdit' });
 }
 
 // The last buffer text handed to the host, so a stale re-highlight response
@@ -2689,6 +2723,9 @@ if (codeViewButton) {
 if (saveButton) {
   saveButton.addEventListener('click', saveActiveDocument);
 }
+if (undoButton) {
+  undoButton.addEventListener('click', undoLastEdit);
+}
 // Ctrl/Cmd+S saves the active document when there is something to save.
 window.addEventListener('keydown', (event) => {
   const saveKey = (event.ctrlKey || event.metaKey) && !event.altKey && (event.key === 's' || event.key === 'S');
@@ -2696,6 +2733,19 @@ window.addEventListener('keydown', (event) => {
   if (!activeDocumentPath() || !isDocumentDirty(activeDocumentPath())) return;
   event.preventDefault();
   saveActiveDocument();
+});
+// Ctrl/Cmd+Z steps back one committed reading-view edit — but only when the
+// keystroke is NOT inside a live editing surface, whose own native undo still
+// covers uncommitted typing keystroke by keystroke.
+window.addEventListener('keydown', (event) => {
+  const undoKey =
+    (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && (event.key === 'z' || event.key === 'Z');
+  if (!undoKey) return;
+  if (isEditableMouseTarget(event.target)) return;
+  const path = activeDocumentPath();
+  if (!path || undoableByPath.get(path) !== true) return;
+  event.preventDefault();
+  undoLastEdit();
 });
 
 // Build the wrapped raw-source code view: three exactly-aligned layers (colour,
@@ -2818,6 +2868,720 @@ window.leafSaved = (path, ok, error) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// Live editing in the reading view (source-anchored, both Markdown and XML).
+//
+// The source buffer is the single source of truth in Rust. Every editable block
+// carries the byte range it came from — Markdown ranges are attached here from
+// the `blocks` array (its sanitized HTML can't carry data-*), XML ranges are
+// stamped inline on the elements by the TEI renderer. An edit serializes a block
+// back to source and asks the host to splice that range; the host re-renders the
+// document from the buffer, so the reader always reflects the saved-or-unsaved
+// source. Markdown text blocks edit WYSIWYG (the rendered styling stays while you
+// type); XML blocks edit their exact source, since TEI can't be reconstructed
+// from the lossy rendered HTML. Anything not safely round-trippable stays
+// read-only and is still editable through the code view.
+// ---------------------------------------------------------------------------
+
+const sourceByteEncoder = new TextEncoder();
+const sourceByteDecoder = new TextDecoder();
+// The raw source between two UTF-8 byte offsets. Block ranges are byte offsets
+// (Rust), but JS strings are UTF-16, so slice on the encoded bytes.
+function sliceSourceBytes(source, start, end) {
+  const bytes = sourceByteEncoder.encode(source || '');
+  return sourceByteDecoder.decode(bytes.slice(start, end));
+}
+
+// Attach each Markdown block's source range to its rendered top-level element.
+// push_html emits exactly one top-level element per top-level block in order; the
+// only extra child is the trailing pager placeholder (last), so zipping the
+// blocks array to the element children by index is safe. If the counts disagree
+// (e.g. a raw-HTML block that expanded to several elements), skip attaching so a
+// misaligned range can never drive an edit. XML needs nothing here — its ranges
+// are already inline on the elements.
+function attachMarkdownBlockRanges(body, blocks) {
+  // Exclude elements the reader injects into the body that aren't source blocks:
+  // the outline (inserted after the title), and the pager placeholder (appended
+  // last). What remains is exactly the rendered source blocks, in order.
+  const children = Array.from(body.children).filter(
+    (el) =>
+      !el.classList.contains('document-outline') &&
+      !el.classList.contains('docs-pager') &&
+      !el.classList.contains('docs-pager-loading'),
+  );
+  if (children.length !== blocks.length) {
+    return;
+  }
+  blocks.forEach((block, i) => {
+    const el = children[i];
+    el.dataset.blockId = String(block.id);
+    el.dataset.srcStart = String(block.start);
+    el.dataset.srcEnd = String(block.end);
+    el.dataset.blockKind = block.kind;
+    if (block.editable) el.dataset.editable = 'true';
+  });
+}
+
+// The document-order task checkboxes the reader may toggle: every checkbox in the
+// rendered body that is NOT inside a table cell. Table-cell task markers are
+// synthesized during rendering and aren't `TaskListMarker`s in the raw Markdown,
+// so the host's task offsets exclude them; excluding them here keeps the Nth
+// checkbox aligned with the Nth source marker.
+function readingTaskCheckboxes() {
+  const body = app.querySelector('.document-body');
+  if (!body) return [];
+  return Array.from(body.querySelectorAll('input[type="checkbox"]')).filter((box) => !box.closest('td'));
+}
+
+function bindTaskCheckboxes(tasks) {
+  const boxes = readingTaskCheckboxes();
+  const count = Array.isArray(tasks) ? tasks.length : 0;
+  if (boxes.length !== count) {
+    // Alignment can't be trusted (e.g. a raw-HTML checkbox) — leave read-only.
+    return;
+  }
+  boxes.forEach((box, index) => {
+    box.removeAttribute('disabled');
+    box.dataset.taskIndex = String(index);
+    box.addEventListener('change', () => {
+      sendEditCommand({ command: 'toggleTask', index });
+    });
+  });
+}
+
+// Make table-cell checkboxes interactive too. Unlike list checkboxes they have
+// no `TaskListMarker` in the raw Markdown — the render synthesizes them from
+// `[ ]`/`[x]` cell text — so there is no marker offset to flip. Instead a click
+// re-serializes the whole table from the DOM (which reads the box's live checked
+// state) and splices it over the table's source range. Only WYSIWYG tables
+// qualify; a table that fell back to the raw-source editor edits its markers as
+// text. Runs after bindEditableBlocks so the table's ranges and editability are
+// already decided.
+function bindTableCheckboxes() {
+  const body = app.querySelector('.document-body');
+  if (!body) return;
+  body.querySelectorAll('[data-block-kind="table"]').forEach((table) => {
+    if (table.getAttribute('contenteditable') !== 'true') return;
+    const start = Number(table.dataset.srcStart);
+    const end = Number(table.dataset.srcEnd);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+    table.querySelectorAll('td input[type="checkbox"]').forEach((box) => {
+      box.removeAttribute('disabled');
+      box.addEventListener('change', () => {
+        sendBlockSplice(table, start, end, tableDomToMarkdown(table));
+      });
+    });
+  });
+}
+
+// Serialize an anchor back to its Markdown source form. The renderer produces
+// several kinds of `<a>` that must NOT all become `[text](href)`:
+//   - the gutter permalink decoration → nothing (not source at all);
+//   - glossary auto-links (`glossary:` scheme) and GitHub references
+//     (`.github-ref`) are injected from bare source (a term, `#123`, a commit
+//     sha), so emit their plain text, not a link;
+//   - autolinks render with their visible text equal to the URL (or the URL is
+//     `mailto:`/`http(s)://` + the text), so keep them bare;
+//   - everything else is a real Markdown link → `[text](href)`.
+function anchorToMarkdown(el) {
+  if (el.classList.contains('heading-anchor')) {
+    return '';
+  }
+  const href = el.getAttribute('href') || '';
+  const text = el.textContent;
+  if (href.startsWith('glossary:') || el.classList.contains('github-ref')) {
+    return text;
+  }
+  if (
+    href === text ||
+    href === 'mailto:' + text ||
+    href === 'http://' + text ||
+    href === 'https://' + text
+  ) {
+    return text;
+  }
+  return '[' + inlineDomToMarkdown(el) + '](' + href + ')';
+}
+
+// Serialize a block's inline DOM back to Markdown. Handles the inline set Leaf
+// renders — bold, italic, strikethrough, inline code, links, hard breaks — and
+// strips render-only decorations (the gutter permalink) back to nothing. Unknown
+// inline wrappers (speed-reader anchors, plain spans) contribute just their text.
+function inlineDomToMarkdown(node) {
+  let out = '';
+  node.childNodes.forEach((child) => {
+    if (child.nodeType === Node.TEXT_NODE) {
+      out += child.nodeValue;
+      return;
+    }
+    if (child.nodeType !== Node.ELEMENT_NODE) return;
+    const tag = child.tagName.toLowerCase();
+    if (tag === 'br') {
+      // A <br> is a Markdown HARD break. Serialize it as the backslash form —
+      // a bare newline would be a soft break, which renders as a space and
+      // silently downgrades the source's two-space/backslash breaks on edit.
+      out += '\\\n';
+      return;
+    }
+    if (tag === 'strong' || tag === 'b') {
+      out += '**' + inlineDomToMarkdown(child) + '**';
+      return;
+    }
+    if (tag === 'em' || tag === 'i') {
+      out += '*' + inlineDomToMarkdown(child) + '*';
+      return;
+    }
+    if (tag === 'del' || tag === 's') {
+      out += '~~' + inlineDomToMarkdown(child) + '~~';
+      return;
+    }
+    if (tag === 'code') {
+      out += '`' + child.textContent + '`';
+      return;
+    }
+    if (tag === 'a') {
+      out += anchorToMarkdown(child);
+      return;
+    }
+    out += inlineDomToMarkdown(child);
+  });
+  return out;
+}
+
+function blockDomToMarkdown(el) {
+  const kind = el.dataset.blockKind;
+  if (kind === 'list') {
+    return listDomToMarkdown(el, '');
+  }
+  if (kind === 'table') {
+    return tableDomToMarkdown(el);
+  }
+  const text = inlineDomToMarkdown(el).trim();
+  if (kind === 'heading') {
+    const level = Number(el.tagName.substring(1)) || 1;
+    return '#'.repeat(level) + ' ' + text;
+  }
+  return text;
+}
+
+// Serialize a rendered list back to Markdown, item by item. Task checkboxes are
+// read from their LIVE checked property (so a click that hasn't round-tripped
+// yet is still captured), nested lists recurse with the marker-width indent
+// CommonMark requires, and ordered lists renumber from their start attribute.
+// Only tight, inline-content lists are serialized this way — listWysiwygSafe
+// gates everything else to the raw-source editor.
+function listDomToMarkdown(listEl, indent) {
+  const ordered = listEl.tagName.toLowerCase() === 'ol';
+  const startNum = Number(listEl.getAttribute('start') || '1') || 1;
+  const lines = [];
+  let index = 0;
+  Array.from(listEl.children).forEach((li) => {
+    if (li.tagName.toLowerCase() !== 'li') return;
+    const marker = ordered ? String(startNum + index) + '. ' : '- ';
+    index += 1;
+    let task = '';
+    const box = Array.from(li.children).find(
+      (child) => child.tagName && child.tagName.toLowerCase() === 'input' && child.type === 'checkbox',
+    );
+    if (box) task = box.checked ? '[x] ' : '[ ] ';
+    // The item's own text: everything except its checkbox and nested lists,
+    // which are handled separately (the clone keeps the live DOM untouched).
+    const clone = li.cloneNode(true);
+    Array.from(clone.children).forEach((child) => {
+      const tag = child.tagName ? child.tagName.toLowerCase() : '';
+      if (tag === 'ul' || tag === 'ol' || tag === 'input') child.remove();
+    });
+    lines.push(indent + marker + task + inlineDomToMarkdown(clone).trim());
+    Array.from(li.children).forEach((child) => {
+      const tag = child.tagName ? child.tagName.toLowerCase() : '';
+      if (tag === 'ul' || tag === 'ol') {
+        lines.push(listDomToMarkdown(child, indent + ' '.repeat(marker.length)));
+      }
+    });
+  });
+  return lines.join('\n');
+}
+
+// The delimiter row for a table being serialized. Column alignment (`:---:`)
+// is stripped from the rendered HTML by the sanitizer, so it cannot be read
+// back from the DOM — instead reuse the ORIGINAL delimiter row from the block's
+// source whenever its column count still matches, so alignment survives
+// editing. Only a structural change (different column count) regenerates it.
+function tableDelimiterRow(el, columnCount) {
+  const start = Number(el.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  if (Number.isFinite(start) && Number.isFinite(end)) {
+    const src = sliceSourceBytes(currentDocumentSource, start, end);
+    for (const line of src.split('\n').slice(1, 3)) {
+      const trimmed = line.trim();
+      if (/^\|?[\s:|-]+\|?$/.test(trimmed) && trimmed.includes('-')) {
+        const cells = trimmed.replace(/^\|/, '').replace(/\|$/, '').split('|');
+        if (cells.length === columnCount) return trimmed;
+      }
+    }
+  }
+  return '| ' + Array.from({ length: columnCount }, () => '---').join(' | ') + ' |';
+}
+
+// Serialize a rendered table back to GFM pipes. Cell text collapses newlines
+// and escapes pipes; a cell that is just a task checkbox writes its live
+// checked state back as the `[ ]`/`[x]` marker the render synthesized it from.
+function tableDomToMarkdown(el) {
+  const cellText = (cell) => {
+    const box = cell.querySelector('input[type="checkbox"]');
+    const text = inlineDomToMarkdown(cell)
+      .trim()
+      .replace(/\|/g, '\\|')
+      .replace(/\\\n/g, ' ')
+      .replace(/\n+/g, ' ');
+    if (box && !text) return box.checked ? '[x]' : '[ ]';
+    return text;
+  };
+  const headCells = Array.from(el.querySelectorAll(':scope > thead > tr > th'));
+  const lines = ['| ' + headCells.map(cellText).join(' | ') + ' |'];
+  lines.push(tableDelimiterRow(el, headCells.length));
+  el.querySelectorAll(':scope > tbody > tr').forEach((tr) => {
+    const cells = Array.from(tr.querySelectorAll(':scope > td'));
+    lines.push('| ' + cells.map(cellText).join(' | ') + ' |');
+  });
+  return lines.join('\n');
+}
+
+// Whether a Markdown block can be edited WYSIWYG without risking its source.
+// Links are fine now — anchorToMarkdown reproduces each link's exact source form
+// (manual link, autolink, glossary term, or GitHub reference). What still can't
+// round-trip and so keeps a block read-only (editable via the code view) is
+// images, footnotes, math, and diagrams.
+function markdownBlockWysiwygSafe(el) {
+  return !el.querySelector('img, sup.footnote-reference, .katex, .mermaid, input');
+}
+
+// A list serializes back faithfully only when it is a tight list of inline
+// content (plus checkboxes and nested lists). A loose list (paragraphs inside
+// items) or one holding code, quotes, tables, images, footnotes, or math falls
+// back to the raw-source editor rather than risk rewriting its structure.
+function listWysiwygSafe(el) {
+  return !el.querySelector('p, pre, blockquote, table, img, sup.footnote-reference, .katex, .mermaid');
+}
+
+// A table serializes back faithfully when its cells hold only inline content
+// (checkbox cells included) and it has a real header row to key the pipes off.
+function tableWysiwygSafe(el) {
+  return (
+    !el.querySelector('img, pre, blockquote, table, sup.footnote-reference, .katex, .mermaid') &&
+    !!el.querySelector(':scope > thead > tr > th')
+  );
+}
+
+function utf8ByteLength(text) {
+  return sourceByteEncoder.encode(text).length;
+}
+
+// Send a buffer-mutating reading-view command. Every such command lands exactly
+// one snapshot on the host's undo stack, so this is the single place the Undo
+// button's counter ticks up; it also raises the dirty state (Save button + tab
+// dot) optimistically before the host round-trip.
+function sendEditCommand(message) {
+  const path = activeDocumentPath();
+  if (path) {
+    undoableByPath.set(path, true);
+    setDirtyState(path, true);
+  }
+  send(message);
+}
+
+// The length of a block's user-visible text — its text content minus the gutter
+// permalink's locus text, which is a decoration the caret never counts.
+function visibleTextLength(el) {
+  const clone = el.cloneNode(true);
+  clone.querySelectorAll('.heading-anchor').forEach((node) => node.remove());
+  return clone.textContent.length;
+}
+
+// The caret's character offset inside `el`'s visible text, or null when the
+// selection is missing, uncollapsed, or outside the block.
+function caretTextOffsetIn(el) {
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount || !selection.isCollapsed) return null;
+  const caret = selection.getRangeAt(0);
+  if (!el.contains(caret.startContainer)) return null;
+  const before = document.createRange();
+  before.selectNodeContents(el);
+  before.setEnd(caret.startContainer, caret.startOffset);
+  const fragment = before.cloneContents();
+  fragment.querySelectorAll('.heading-anchor').forEach((node) => node.remove());
+  return fragment.textContent.length;
+}
+
+// Put the caret at a character offset inside `el`'s visible text (clamped to the
+// end), walking text nodes and skipping the gutter permalink.
+function placeCaretInBlock(el, offset) {
+  const selection = window.getSelection();
+  if (!selection) return;
+  const range = document.createRange();
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      return node.parentElement && node.parentElement.closest('.heading-anchor')
+        ? NodeFilter.FILTER_REJECT
+        : NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  let remaining = Math.max(0, offset || 0);
+  let lastNode = null;
+  let placed = false;
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const length = node.nodeValue.length;
+    if (remaining <= length) {
+      range.setStart(node, remaining);
+      placed = true;
+      break;
+    }
+    remaining -= length;
+    lastNode = node;
+  }
+  if (!placed) {
+    if (lastNode) {
+      range.setStart(lastNode, lastNode.nodeValue.length);
+    } else {
+      range.selectNodeContents(el);
+    }
+  }
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+// Send an edit for `el`'s source range, but only if `text` differs from the
+// block's source baseline captured when editing began — so a focus with no edit
+// costs nothing. When the user has already clicked into ANOTHER editable block,
+// carry their new caret across the re-render this commit triggers (adjusting for
+// how the splice shifts source offsets), so committing one block never dumps
+// them out of the next.
+function commitBlockEdit(el, text) {
+  const start = Number(el.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  if (text === el.__editBaseline) return;
+  sendEditCommand({ command: 'editBlock', start, end, text });
+  const delta = utf8ByteLength(text) - (end - start);
+  window.setTimeout(() => {
+    if (pendingCaret) return; // a structural edit already claimed the caret
+    const active = document.activeElement;
+    if (!active || active === el || !active.dataset || active.dataset.srcStart == null) return;
+    if (active.getAttribute('contenteditable') !== 'true') return;
+    if (active.dataset.editingSource === 'true') return;
+    const activeStart = Number(active.dataset.srcStart);
+    if (!Number.isFinite(activeStart)) return;
+    const offset = caretTextOffsetIn(active);
+    pendingCaret = {
+      srcStart: activeStart >= end ? activeStart + delta : activeStart,
+      textOffset: offset == null ? 0 : offset,
+    };
+  }, 0);
+}
+
+// Splice `text` over `[start, end)` for a STRUCTURAL edit (split/merge/insert).
+// Unlike commitBlockEdit this always sends, and it neutralizes the block's blur
+// baseline afterwards: the DOM still shows the pre-splice content, and letting
+// the blur commit fire would replay a stale range against the new buffer.
+function sendBlockSplice(el, start, end, text) {
+  sendEditCommand({ command: 'editBlock', start, end, text });
+  el.__editBaseline = blockDomToMarkdown(el);
+}
+
+// Enter inside a paragraph/heading: split the block at the caret into two
+// blocks. The serialized halves replace the block's source range, joined by a
+// blank line; the caret carries over to the start of the second block. Enter at
+// the end instead opens a fresh empty paragraph below (Markdown has no empty
+// block, so it stays DOM-local until first commit); Enter at the very start is
+// a no-op.
+function splitBlockAtCaret(el) {
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) return;
+  const caret = selection.getRangeAt(0);
+  if (!el.contains(caret.startContainer)) return;
+  const start = Number(el.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  const beforeRange = document.createRange();
+  beforeRange.selectNodeContents(el);
+  beforeRange.setEnd(caret.startContainer, caret.startOffset);
+  const afterRange = document.createRange();
+  afterRange.selectNodeContents(el);
+  afterRange.setStart(caret.startContainer, caret.startOffset);
+  const part1Inline = inlineDomToMarkdown(beforeRange.cloneContents()).trim();
+  const part2Inline = inlineDomToMarkdown(afterRange.cloneContents()).trim();
+  if (!part1Inline) return;
+  const prefix =
+    el.dataset.blockKind === 'heading' ? '#'.repeat(Number(el.tagName.substring(1)) || 1) + ' ' : '';
+  const part1 = prefix + part1Inline;
+  if (part2Inline) {
+    // Both halves keep the block's own kind — splitting a heading yields two
+    // headings at the same level, splitting a paragraph two paragraphs.
+    const part2 = prefix + part2Inline;
+    sendBlockSplice(el, start, end, part1 + '\n\n' + part2);
+    pendingCaret = { srcStart: start + utf8ByteLength(part1) + 2, textOffset: 0 };
+  } else if (blockDomToMarkdown(el) !== el.__editBaseline) {
+    // Enter at the end with unsaved text edits: commit them, then reopen the
+    // empty insert paragraph on the far side of the re-render.
+    sendBlockSplice(el, start, end, part1);
+    pendingCaret = { srcStart: start, insertBelow: true };
+  } else {
+    openInsertBlockAfter(el);
+  }
+}
+
+// Backspace at the very start of a paragraph/heading: merge it into the previous
+// block, Notion-style — the two texts join at a caret that stays put. Only fires
+// when the previous sibling is itself a WYSIWYG paragraph/heading; anything else
+// (a list, a code block, a rule) leaves Backspace inert at the boundary.
+function mergeBlockIntoPrevious(el, prev) {
+  const start = Number(prev.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  const junction = visibleTextLength(prev);
+  const merged = blockDomToMarkdown(prev) + inlineDomToMarkdown(el).trim();
+  sendBlockSplice(el, start, end, merged);
+  pendingCaret = { srcStart: start, textOffset: junction };
+}
+
+// A fresh empty paragraph below `el`, ready to type into. Markdown cannot hold
+// an empty block, so it exists only in the DOM until its first commit, which
+// inserts `\n\n` + the typed text at the previous block's end offset. Enter
+// commits and chains another empty paragraph below (continuous writing flow);
+// Backspace on the empty block dissolves it back into the previous block's end;
+// clicking away commits, or dissolves it if nothing was typed.
+function openInsertBlockAfter(el) {
+  const insertAt = Number(el.dataset.srcEnd);
+  if (!Number.isFinite(insertAt)) return;
+  const block = document.createElement('p');
+  block.className = 'leaf-editable leaf-insert-block';
+  block.dataset.blockKind = 'paragraph';
+  block.setAttribute('contenteditable', 'true');
+  block.setAttribute('spellcheck', 'false');
+  el.insertAdjacentElement('afterend', block);
+  const commit = (chainBelow) => {
+    if (block.__committed) return true;
+    const text = inlineDomToMarkdown(block).trim();
+    if (!text) return false;
+    block.__committed = true;
+    sendEditCommand({ command: 'editBlock', start: insertAt, end: insertAt, text: '\n\n' + text });
+    if (chainBelow) pendingCaret = { srcStart: insertAt + 2, insertBelow: true };
+    return true;
+  };
+  block.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      commit(true);
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      block.blur();
+      return;
+    }
+    if (event.key === 'Backspace' && !inlineDomToMarkdown(block).trim()) {
+      event.preventDefault();
+      block.remove();
+      el.focus({ preventScroll: true });
+      placeCaretInBlock(el, visibleTextLength(el));
+    }
+  });
+  block.addEventListener('blur', () => {
+    if (!commit(false)) block.remove();
+  });
+  block.focus({ preventScroll: true });
+}
+
+// Structural keys for a WYSIWYG block, by kind. Paragraphs and headings get the
+// block-editor behaviours (Enter splits, Shift+Enter breaks the line, Backspace
+// at the start merges up); lists lean on the browser's native contenteditable
+// list handling (Enter makes a new item, Backspace joins items) and serialize
+// whatever structure results; table cells are single-line, so Enter is inert.
+function handleWysiwygKeydown(el, event) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    el.blur();
+    return;
+  }
+  const kind = el.dataset.blockKind;
+  if (kind === 'table') {
+    if (event.key === 'Enter') event.preventDefault();
+    return;
+  }
+  if (kind === 'list') return;
+  if (event.key === 'Enter') {
+    if (event.shiftKey) {
+      // Shift+Enter: a line break. Natural in a paragraph (Chromium inserts a
+      // <br>, serialized as a hard break); meaningless in a single-line heading.
+      if (kind === 'heading') event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    splitBlockAtCaret(el);
+    return;
+  }
+  if (event.key === 'Backspace') {
+    const selection = window.getSelection();
+    if (selection && selection.isCollapsed && caretTextOffsetIn(el) === 0) {
+      const prev = el.previousElementSibling;
+      if (
+        prev &&
+        prev.getAttribute &&
+        prev.getAttribute('contenteditable') === 'true' &&
+        (prev.dataset.blockKind === 'paragraph' || prev.dataset.blockKind === 'heading')
+      ) {
+        event.preventDefault();
+        mergeBlockIntoPrevious(el, prev);
+      }
+    }
+  }
+}
+
+// Turn `el` into a live Markdown editor: keep the rendered styling, edit in
+// place, commit the serialized block when focus leaves it. The gutter permalink
+// and any task checkboxes are frozen as non-editable islands — the permalink
+// stays a link, the checkboxes stay clickable toggles. Focus moving WITHIN the
+// block (e.g. onto a checkbox) neither resets the edit baseline nor commits.
+function makeMarkdownEditable(el) {
+  el.setAttribute('contenteditable', 'true');
+  el.setAttribute('spellcheck', 'false');
+  el.classList.add('leaf-editable');
+  el.querySelectorAll('.heading-anchor').forEach((a) => a.setAttribute('contenteditable', 'false'));
+  el.querySelectorAll('input[type="checkbox"]').forEach((box) => box.setAttribute('contenteditable', 'false'));
+  el.addEventListener('focusin', () => {
+    if (!el.__editingActive) {
+      el.__editingActive = true;
+      el.__editBaseline = blockDomToMarkdown(el);
+    }
+  });
+  el.addEventListener('focusout', (event) => {
+    if (event.relatedTarget && el.contains(event.relatedTarget)) return;
+    el.__editingActive = false;
+    commitBlockEdit(el, blockDomToMarkdown(el));
+  });
+  el.addEventListener('keydown', (event) => handleWysiwygKeydown(el, event));
+}
+
+// Turn `el` into a raw-source editor. Used for XML blocks (TEI can't be rebuilt
+// from the rendered HTML) and for Markdown blocks that don't round-trip WYSIWYG
+// (lists, tables, code, blockquotes, images, footnotes): the block swaps to its
+// exact source on focus and splices it back on blur — the faithful "edit the
+// source, live" model. On blur with no change the rendered view is restored; a
+// real change triggers a host re-render.
+function makeSourceEditable(el) {
+  const start = Number(el.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  el.classList.add('leaf-editable');
+  el.addEventListener('pointerdown', (event) => {
+    if (el.dataset.editingSource === 'true') return;
+    event.preventDefault();
+    const src = sliceSourceBytes(currentDocumentSource, start, end);
+    el.__editBaseline = src;
+    el.__renderedHtml = el.innerHTML;
+    el.dataset.editingSource = 'true';
+    el.textContent = src;
+    el.setAttribute('contenteditable', 'true');
+    el.setAttribute('spellcheck', 'false');
+    el.classList.add('leaf-editing-source');
+    el.focus();
+  });
+  el.addEventListener('blur', () => {
+    if (el.dataset.editingSource !== 'true') return;
+    const text = el.innerText;
+    el.removeAttribute('contenteditable');
+    el.classList.remove('leaf-editing-source');
+    delete el.dataset.editingSource;
+    if (text === el.__editBaseline) {
+      // No change: restore the rendered view (no host round-trip needed).
+      el.innerHTML = el.__renderedHtml;
+      return;
+    }
+    commitBlockEdit(el, text);
+    // The host re-renders the document from the buffer, which restores styling.
+  });
+}
+
+// Wire up every mapped block for the freshly rendered document. Clean Markdown
+// text blocks, tight lists, and tables edit WYSIWYG — the styling stays while
+// you type; every other block edits its exact source in place. A thematic break
+// has nothing to edit, so it is left alone.
+function bindEditableBlocks(format) {
+  const body = app.querySelector('.document-body');
+  if (!body) return;
+  body.querySelectorAll('[data-src-start]').forEach((el) => {
+    if (el.dataset.srcStart == null || el.dataset.srcEnd == null) return;
+    const kind = el.dataset.blockKind;
+    if (kind === 'rule') return;
+    const wysiwyg =
+      format === 'markdown' &&
+      (((kind === 'heading' || kind === 'paragraph') && markdownBlockWysiwygSafe(el)) ||
+        (kind === 'list' && listWysiwygSafe(el)) ||
+        (kind === 'table' && tableWysiwygSafe(el)));
+    if (wysiwyg) {
+      makeMarkdownEditable(el);
+    } else {
+      makeSourceEditable(el);
+    }
+  });
+}
+
+// Land the caret carried across a re-render by a structural edit: focus the
+// destination block (found by its post-splice source offset) and restore the
+// text position, or open the chained empty insert paragraph below it. A missing
+// target (the splice normalized differently than predicted) degrades to nothing
+// rather than guessing.
+function placePendingCaret(body) {
+  const pending = pendingCaret;
+  pendingCaret = null;
+  if (!pending) return;
+  const target = body.querySelector(`[data-src-start="${pending.srcStart}"]`);
+  if (!target) return;
+  if (pending.insertBelow) {
+    openInsertBlockAfter(target);
+    return;
+  }
+  if (target.getAttribute('contenteditable') !== 'true') return;
+  target.focus({ preventScroll: true });
+  placeCaretInBlock(target, pending.textOffset || 0);
+}
+
+// Orchestrate the reading view's editing layer after each render: remember the
+// source/format, attach Markdown ranges, make checkboxes interactive, and turn
+// editable blocks into live editors.
+function bindReadingEditor(doc) {
+  if (!doc) return;
+  const body = app.querySelector('.document-body');
+  if (!body) return;
+  currentDocumentFormat = doc.format || 'markdown';
+  currentDocumentSource = typeof doc.source === 'string' ? doc.source : '';
+  if (currentDocumentFormat === 'markdown') {
+    attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : []);
+    bindTaskCheckboxes(doc.tasks || []);
+  }
+  bindEditableBlocks(currentDocumentFormat);
+  if (currentDocumentFormat === 'markdown') {
+    bindTableCheckboxes();
+  }
+  placePendingCaret(body);
+}
+
+// Re-sync the reading view's editing state after a buffer edit that needs no
+// re-render (a task toggle updates its own checkbox in place). Refreshes the
+// dirty state so the Save button and tab dot stay correct, and adopts the
+// toggled buffer as the source the raw-source editors slice from — otherwise a
+// later source edit of the same list would revert the toggle.
+window.leafBlocksResynced = (state) => {
+  if (!state) return;
+  if (typeof state.source === 'string') currentDocumentSource = state.source;
+  const path = activeDocumentPath();
+  if (path) {
+    if (typeof state.canUndo === 'boolean') undoableByPath.set(path, state.canUndo);
+    setDirtyState(path, !!state.dirty);
+  }
+};
+
 function renderState() {
   const state = currentState || { recent: [], tabs: [], active: null, document: null };
   disconnectMinimapPreviewObservers();
@@ -2844,6 +3608,7 @@ function renderState() {
     renderMathElements();
     decorateCodeBlocks();
     applySpeedReaderToDocument();
+    bindReadingEditor(state.document);
     observeReaderReflow();
     scheduleMinimapPreviewUpdate();
     if (resetReaderScrollOnNextRender) {

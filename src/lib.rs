@@ -23,7 +23,8 @@ pub(crate) use assets::*;
 pub use assets::{bundled_asset_response, BundledAsset, LOCAL_ASSET_PROTOCOL};
 mod editing;
 pub use editing::{
-    block_source_map, render_source_view_html, BlockSpan, DocumentFormat, EditableDocument,
+    block_source_map, kind_is_editable, render_source_view_html, task_marker_offsets, BlockSpan,
+    DocumentFormat, EditableDocument,
 };
 
 use std::{
@@ -168,6 +169,26 @@ pub struct OpenedDocument {
     pub path: String,
     pub html: String,
     pub minimap: DocumentMinimap,
+    /// Source format, so the reading view knows how to anchor edits: Markdown
+    /// blocks carry their ranges in the `blocks` array (attached to the rendered
+    /// DOM positionally), while XML blocks carry `data-src-*` inline in `html`.
+    pub format: DocumentFormat,
+    /// Source byte ranges of the document's top-level blocks, in document order,
+    /// for source-anchored in-viewer editing. Populated for Markdown; empty for
+    /// XML (whose ranges are stamped inline on the HTML instead).
+    #[serde(default)]
+    pub blocks: Vec<BlockSpan>,
+    /// Source byte offset of each list task marker's state character, in document
+    /// order (see [`task_marker_offsets`]). Lets the reader make checkboxes
+    /// interactive. Empty for XML, which has no Markdown task markers.
+    #[serde(default)]
+    pub tasks: Vec<usize>,
+    /// The raw source text the blocks' byte ranges index into. Sent for XML so
+    /// the reading view can present a block's exact source for editing (TEI can't
+    /// be reconstructed from the rendered HTML). Empty for Markdown, whose blocks
+    /// round-trip from the rendered DOM instead.
+    #[serde(default)]
+    pub source: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -272,7 +293,7 @@ pub fn opened_document_from_tei(xml: &str, path: impl AsRef<Path>) -> OpenedDocu
     let path = path.as_ref();
     let render_path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
 
-    let (title, body_html) = render_tei_body(xml);
+    let (title, body_html, blocks) = render_tei_document(xml);
 
     let title = title
         .or_else(|| {
@@ -310,6 +331,10 @@ pub fn opened_document_from_tei(xml: &str, path: impl AsRef<Path>) -> OpenedDocu
         path: path.display().to_string(),
         html: article,
         minimap,
+        format: DocumentFormat::Xml,
+        blocks,
+        tasks: Vec::new(),
+        source: xml.to_string(),
     }
 }
 
@@ -334,6 +359,13 @@ pub fn opened_document_from_markdown(markdown: &str, path: impl AsRef<Path>) -> 
         path: path.display().to_string(),
         html,
         minimap: build_minimap_model(markdown),
+        format: DocumentFormat::Markdown,
+        blocks: block_source_map(markdown),
+        tasks: task_marker_offsets(markdown),
+        // Sent so blocks that don't round-trip from the rendered DOM (lists,
+        // tables, code, images, footnotes) can be edited as their exact Markdown
+        // source in place; clean text blocks still edit WYSIWYG and ignore this.
+        source: markdown.to_string(),
     }
 }
 
@@ -854,6 +886,8 @@ fn locale_bootstrap_script() -> &'static str {
       'actions.codeView.title': 'Toggle raw source view',
       'actions.save': 'Save',
       'actions.save.title': 'Save changes',
+      'actions.undo': 'Undo',
+      'actions.undo.title': 'Undo last edit',
       'reader.loading': 'Loading document…',
       'actions.revealFile': 'Reveal file',
       'actions.cut': 'Cut',
@@ -949,6 +983,8 @@ fn locale_bootstrap_script() -> &'static str {
       'actions.codeView.title': '切换源码视图',
       'actions.save': '保存',
       'actions.save.title': '保存更改',
+      'actions.undo': '撤销',
+      'actions.undo.title': '撤销上次编辑',
       'reader.loading': '正在加载文档…',
       'actions.revealFile': '在文件管理器中显示',
       'actions.cut': '剪切',

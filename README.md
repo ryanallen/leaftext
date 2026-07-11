@@ -21,7 +21,7 @@ A leaf is a page. **Leaf Text** opens a Markdown file and [renders it for readin
 
 A [minimap](docs/01-features/04-minimap.md) for long pages, [tabs](docs/01-features/02-navigation.md#tabs) with [history](docs/01-features/02-navigation.md#history), [live reload on save](docs/01-features/02-navigation.md#reload), and a searchable [library](docs/01-features/03-library.md) — with a [graph view](docs/01-features/03-library.md#graph) of how your documents link — of every Markdown file you own. [Light, dark, and Dracula](docs/01-features/06-themes.md).
 
-Reading first — just the rendered page. And when a file needs a fix, a [code view](docs/01-features/07-editing.md) shows its raw source to edit and save without leaving the app.
+Reading first — just the rendered page. And when a file needs a fix, [edit it right on that page](docs/01-features/07-editing.md#inline-editing-the-reading-view) — click into a sentence and type, toggle a checkbox — or drop to the raw source in the [code view](docs/01-features/07-editing.md#code-view), then save without leaving the app.
 
 ## Documentation
 

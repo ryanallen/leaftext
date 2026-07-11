@@ -1,13 +1,17 @@
 # Editing
 
-> A code view for every document: see the raw Markdown or XML source, edit it in place, and save explicitly — the reading view stays a reader.
+> Edit right in the rendered page, or drop to the raw source — both write back to the same file, and nothing saves until you say so.
 
-leaftext is reading-first, but sometimes the fastest fix is in the source. The code view swaps the rendered page for the file's actual text — syntax-highlighted, line-numbered, and editable — and a green **Save** button writes it back to disk. There is no autosave: nothing touches your file until you say so.
+leaftext is reading-first, but it is also editable. You can edit **in the reading view itself** — click into a sentence and type, toggle a checkbox — and the change is written back into the source at exactly that spot. When you would rather work in the raw text, the **code view** swaps the page for the file's actual Markdown or XML. Both paths share one source of truth and one green **Save** button. There is no autosave: nothing touches your file until you say so.
 
 ## Summary
 
 | Feature | What it means |
 | --- | --- |
+| Inline editing | Click into the rendered page and edit it directly — Markdown and XML both |
+| Block editing | `Enter` splits a block or starts a new one; `Backspace` at the start merges into the block above |
+| Interactive checkboxes | Click a task checkbox — in a list or a table cell — to check or uncheck it |
+| Undo | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits |
 | Code view | Toggle the rendered page to the raw source and back |
 | Highlighting | The source is coloured by the app's own highlighter — Markdown and XML both |
 | Line numbers | A gutter numbers each source line, staying pinned when long lines wrap |
@@ -16,6 +20,24 @@ leaftext is reading-first, but sometimes the fastest fix is in the source. The c
 | Editing | Type directly; native undo, `Tab` inserts a tab character |
 | Save | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears only with unsaved changes |
 | Unsaved marker | A tab with unsaved edits shows a dot beside its name |
+
+## Inline editing (the reading view)
+
+The rendered page is a live editor. The **source stays the single source of truth** — every edit is anchored to the exact byte range of the source it came from and spliced back there, so what you see and what is saved never drift apart. Editing is intentional per block and never rewrites parts of the file you did not touch.
+
+- **Click into a sentence and type.** Paragraphs, headings, **lists, and tables** edit in place with their styling intact — bold stays bold, links stay links, table pipes and list markers are rewritten for you — and your change is written back into the Markdown at that spot. Interactive **checkboxes** toggle their `[ ]` / `[x]` marker in the source, in task lists and [table cells](01-rendering.md#tables) alike.
+- **Blocks behave like a block editor.** `Enter` splits a block at the caret — a split heading stays a heading at the same level — or starts a fresh paragraph when pressed at the end (keep pressing to keep writing). `Shift+Enter` inserts a line break, and `Backspace` at the very start of a block merges it into the one above, with the caret staying put. In a list, `Enter` adds an item and `Backspace` joins items.
+- **Every other block edits its exact source.** Code blocks, block quotes, loose lists, and blocks with images, footnotes, or math open their raw source in place when you click them, then splice back on the way out. This is also how **[TEI XML](01-rendering.md#tei-xml-84000-translations)** edits: TEI carries meaning the rendered HTML cannot reconstruct, so an XML block is edited as its true source.
+- **Nothing is ever mangled.** A block only edits WYSIWYG when its rendered form can be turned back into the identical source; anything else edits its source directly. Either way the edit is a precise splice, and the [live reload](02-navigation.md#reload) watcher recognizes your own save so it never fights it.
+- Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way.
+
+## Undo
+
+Reading-view edits are undoable, step by step.
+
+- Every inline edit — a typed change, a block split or merge, a checkbox toggle — records one undo step. An **Undo** button appears beside Save whenever there is a step to take back, and disappears when there is nothing left to undo.
+- Click it, or press `Ctrl+Z` (`Cmd+Z` on macOS), to revert the most recent edit. While you are still typing inside a block, the platform's own undo handles keystrokes as usual; the app-level undo covers edits that have already been written into the buffer.
+- Undo works past a save too — stepping back below the last-saved state simply makes the document dirty again, and the Save button returns.
 
 ## Code view
 
@@ -53,7 +75,7 @@ The [live reload](02-navigation.md#reload) watcher keeps working alongside editi
 
 ## Formats
 
-The code view edits the raw source, so it works for both formats leaftext opens: Markdown (`.md`, `.markdown`, `.mdown`) and [TEI XML](01-rendering.md#tei-xml-84000-translations) (`.xml`). The *rendered* view remains read-only for both — editing happens in the source, and the reader shows the result.
+Both editing paths work for both formats leaftext opens: Markdown (`.md`, `.markdown`, `.mdown`) and [TEI XML](01-rendering.md#tei-xml-84000-translations) (`.xml`). Markdown text blocks edit WYSIWYG in the reading view; XML blocks — and Markdown blocks that can't round-trip losslessly — edit their exact source in place. The code view is always available as the whole-file source editor for either format.
 
 ## Next
 

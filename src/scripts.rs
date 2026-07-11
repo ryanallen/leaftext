@@ -235,6 +235,27 @@ pub fn source_updated_script(highlighted_html: &str, dirty: bool) -> String {
     format!("window.leafSourceUpdated({});", state)
 }
 
+/// Re-sync the reading view's editing state from the authoritative buffer: the
+/// refreshed task-marker offsets in document order, the dirty state (Save button
+/// + tab dot), whether an undo step exists (Undo button), and the buffer text
+/// itself so the reader's raw-source block editors keep slicing from the live
+/// source. Sent after every reading-view mutation and after each undo, so the
+/// chrome can never drift from the buffer's real state.
+pub fn blocks_resynced_script(
+    tasks: &[usize],
+    dirty: bool,
+    can_undo: bool,
+    source: &str,
+) -> String {
+    let state = serde_json::json!({
+        "tasks": tasks,
+        "dirty": dirty,
+        "canUndo": can_undo,
+        "source": source,
+    });
+    format!("window.leafBlocksResynced({});", state)
+}
+
 /// Report the outcome of a save for `path`: `error` is null on success and a
 /// message string when the write failed.
 pub fn save_result_script(path: &str, ok: bool, error: Option<&str>) -> String {

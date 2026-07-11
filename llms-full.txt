@@ -40,7 +40,7 @@
 ## Editing
 - Page: https://leaftext.com/docs/#/features/editing
 - Markdown: https://leaftext.com/docs/01-features/07-editing.md
-- Summary: leaftext is reading-first, but sometimes the fastest fix is in the source. The code view swaps the rendered page for the file's actual text — syntax-highlighted, line-numbered, and editable — and a...
+- Summary: leaftext is reading-first, but it is also editable. You can edit in the reading view itself — click into a sentence and type, toggle a checkbox — and the change is written back into the source at e...
 
 ## Meet leaftext
 - Page: https://leaftext.com/docs/#/introduction

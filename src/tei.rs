@@ -38,6 +38,13 @@ pub(crate) struct TeiCtx {
     footnotes: Vec<String>,
     fn_count: usize,
     seen: HashMap<String, usize>,
+    /// Source-anchored editing map: one entry per editable block, in render
+    /// (document) order, tying it to the byte range of its roxmltree node in the
+    /// XML source. Because the range is stamped inline on the element as it is
+    /// emitted, editing works regardless of how deeply the block is nested (front
+    /// matter lives inside a `<details>`, verse inside a `<blockquote>`).
+    blocks: Vec<BlockSpan>,
+    next_block_id: usize,
 }
 
 impl TeiCtx {
@@ -47,7 +54,31 @@ impl TeiCtx {
             footnotes: Vec::new(),
             fn_count: 0,
             seen: HashMap::new(),
+            blocks: Vec::new(),
+            next_block_id: 0,
         }
+    }
+
+    /// Record a `kind` block for `node` and return the `data-*` attribute string
+    /// to stamp on its opening tag, so the reading view can edit that block's XML
+    /// source in place. XML source ranges come from roxmltree's `Node::range()`,
+    /// the TEI counterpart to pulldown-cmark's Markdown offsets.
+    fn block_attrs(&mut self, kind: &'static str, node: roxmltree::Node) -> String {
+        let range = node.range();
+        let id = self.next_block_id;
+        self.next_block_id += 1;
+        self.blocks
+            .push(BlockSpan::new(id, kind, range.start, range.end));
+        format!(
+            " data-block-id=\"{id}\" data-src-start=\"{}\" data-src-end=\"{}\" data-block-kind=\"{kind}\"{}",
+            range.start,
+            range.end,
+            if kind_is_editable(kind) {
+                " data-editable=\"true\""
+            } else {
+                ""
+            }
+        )
     }
 
     fn unique_slug(&mut self, text: &str) -> String {
@@ -187,8 +218,9 @@ pub(crate) fn tei_render_div<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx
             .join(" ");
         if !text.is_empty() {
             let id = ctx.unique_slug(&text);
+            let attrs = ctx.block_attrs("heading", head);
             ctx.push(&format!(
-                "<h{level} id=\"{}\">{}</h{level}>\n",
+                "<h{level}{attrs} id=\"{}\">{}</h{level}>\n",
                 encode_double_quoted_attribute(&id),
                 encode_text(&text)
             ));
@@ -213,7 +245,8 @@ pub(crate) fn tei_render_node<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCt
         "div" => tei_render_div(node, ctx, depth),
         "p" => {
             let inner = tei_render_inline(node, ctx);
-            ctx.push(&format!("<p>{inner}</p>\n"));
+            let attrs = ctx.block_attrs("paragraph", node);
+            ctx.push(&format!("<p{attrs}>{inner}</p>\n"));
         }
         "lg" => {
             let lines: Vec<String> = node
@@ -286,12 +319,40 @@ pub(crate) fn render_tei_front<'a>(front: roxmltree::Node<'a, 'a>, ctx: &mut Tei
     ctx.push("</div>\n</details>\n");
 }
 
-/// Parse TEI XML and return `(title, body_html)`.
-/// Title is extracted from the `<teiHeader>` if possible.
+/// Parse TEI XML and return `(title, body_html)`. Title is extracted from the
+/// `<teiHeader>` if possible. Thin wrapper over [`render_tei_inner`].
 pub(crate) fn render_tei_body(xml: &str) -> (Option<String>, String) {
+    let (title, ctx) = render_tei_inner(xml);
+    (title, ctx.out)
+}
+
+/// The XML block source map: every editable TEI block tied to its byte range in
+/// the source, in document order. Built by the same traversal that renders the
+/// reading HTML (the ranges are recorded as each block is stamped), so the map
+/// and the rendered blocks can never disagree.
+pub(crate) fn tei_block_source_map(xml: &str) -> Vec<BlockSpan> {
+    render_tei_inner(xml).1.blocks
+}
+
+/// Render TEI XML and return `(title, html, blocks)` in one pass — the open path
+/// uses this so it renders the document only once while still getting the block
+/// source map. The HTML already carries the inline `data-src-*` attributes.
+pub(crate) fn render_tei_document(xml: &str) -> (Option<String>, String, Vec<BlockSpan>) {
+    let (title, ctx) = render_tei_inner(xml);
+    (title, ctx.out, ctx.blocks)
+}
+
+/// Render TEI XML into reading HTML and the block source map in a single
+/// traversal, returning the title and the fully populated context (`ctx.out` is
+/// the HTML, `ctx.blocks` the source map).
+fn render_tei_inner(xml: &str) -> (Option<String>, TeiCtx) {
+    let mut ctx = TeiCtx::new();
     let doc = match roxmltree::Document::parse(xml) {
         Ok(d) => d,
-        Err(_) => return (None, "<p><strong>XML parse error.</strong></p>".to_string()),
+        Err(_) => {
+            ctx.push("<p><strong>XML parse error.</strong></p>");
+            return (None, ctx);
+        }
     };
 
     let root = doc.root_element();
@@ -376,13 +437,9 @@ pub(crate) fn render_tei_body(xml: &str) -> (Option<String>, String) {
     });
 
     let Some(body) = body else {
-        return (
-            title,
-            "<p><strong>No TEI body element found.</strong></p>".to_string(),
-        );
+        ctx.push("<p><strong>No TEI body element found.</strong></p>");
+        return (title, ctx);
     };
-
-    let mut ctx = TeiCtx::new();
 
     // Title heading, then the alternate-language title lines beneath it.
     if let Some(ref t) = title {
@@ -446,5 +503,5 @@ pub(crate) fn render_tei_body(xml: &str) -> (Option<String>, String) {
         ctx.out.push_str(&fn_section);
     }
 
-    (title, ctx.out)
+    (title, ctx)
 }

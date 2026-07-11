@@ -67,12 +67,13 @@ Click a heading in the document or click a spot in the minimap. That jump is add
 | Forward | `Alt+Right` | `Cmd+Right` |
 | Close tab | `Ctrl+W` | `Cmd+W` |
 | Save ([unsaved edits](01-features/07-editing.md#save)) | `Ctrl+S` | `Cmd+S` |
+| [Undo](01-features/07-editing.md#undo) the last edit | `Ctrl+Z` | `Cmd+Z` |
 
 Mouse side buttons also trigger Back and Forward on Windows and Linux.
 
 ### Edit
 
-Click the code-brackets button left of Settings to see the document's raw source, edit it, and press the green **Save** button. The [Editing](01-features/07-editing.md) page covers the whole flow.
+Click into any sentence and type — the rendered page [edits in place](01-features/07-editing.md#inline-editing-the-reading-view), checkboxes toggle, and the green **Save** button appears. For the raw source instead, click the code-brackets button left of Settings. The [Editing](01-features/07-editing.md) page covers the whole flow.
 
 ### Reopen
 

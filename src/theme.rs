@@ -1214,8 +1214,22 @@ button {
   display: inline-flex;
 }
 .code-view-button[hidden],
-.save-button[hidden] {
+.save-button[hidden],
+.undo-button[hidden] {
   display: none;
+}
+/* Undo: Save's quieter sibling — the same brand green, dimmed well below the
+   solid Save fill so the pair reads as one action and its undo, not two equal
+   calls to action. Hover deepens to the shared toolbar hover green. */
+.undo-button {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--app-action-background) 45%, transparent);
+  color: var(--app-action-foreground);
+}
+.undo-button:hover {
+  background: var(--app-action-hover-background);
+  border-color: var(--app-action-hover-background);
+  color: var(--app-action-foreground);
 }
 /* Save: the affirmative action. Shown only when there are unsaved edits — a
    solid brand-green button with the word "Save", absent entirely otherwise —
@@ -2295,6 +2309,40 @@ body.library-resizing {
 .document-body input[type="checkbox"] {
   accent-color: var(--leaf-markdown-checkbox, #6e7681);
   margin-right: 0.4em;
+}
+/* A task checkbox the reading view has made interactive (its `disabled`
+   attribute removed) reads as clickable. */
+.document-body input[type="checkbox"]:not([disabled]) {
+  cursor: pointer;
+}
+/* Live editing affordances. An editable block shows a text caret on hover and a
+   soft focus ring while being edited; an XML block being edited as raw source is
+   set in the monospace source font so the tags read clearly. */
+.document-body .leaf-editable {
+  cursor: text;
+}
+.document-body .leaf-editable:focus,
+.document-body .leaf-editable:focus-visible {
+  outline: 2px solid var(--leaf-accent, var(--markdown-blockquote-border));
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+.document-body .leaf-editing-source {
+  font-family: var(--leaf-code-font, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  white-space: pre-wrap;
+  background: var(--markdown-code-background, rgba(127, 127, 127, 0.12));
+  border-radius: 4px;
+}
+/* The fresh empty paragraph Enter opens below a block. Markdown has no empty
+   block, so it lives in the DOM until first commit; give it a line's height so
+   the caret has somewhere visible to blink. */
+.document-body .leaf-insert-block {
+  min-height: 1.5em;
+}
+/* Links inside an editable block keep the pointer (hand) cursor even though the
+   block is a text-editing surface — they still read and behave as links. */
+.document-body .leaf-editable a {
+  cursor: pointer;
 }
 .document-body blockquote {
   border-left: 0.25em solid var(--markdown-blockquote-border);

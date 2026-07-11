@@ -19,10 +19,10 @@ use std::{
 
 use leaftext::indexer::{event_script, GraphRequest, IndexerEvent, IndexerWorker};
 use leaftext::{
-    app_data_dir, app_shell_html, bundled_asset_response, code_view_script, config_file_path,
-    document_pager_html, fragment_scroll_script, glossary_sheet_script, initial_settings_script,
-    initial_state_script, line_count_script, load_recent_files, load_settings,
-    local_image_protocol_response, local_image_source_dir, navigation_state_script,
+    app_data_dir, app_shell_html, blocks_resynced_script, bundled_asset_response, code_view_script,
+    config_file_path, document_pager_html, fragment_scroll_script, glossary_sheet_script,
+    initial_settings_script, initial_state_script, line_count_script, load_recent_files,
+    load_settings, local_image_protocol_response, local_image_source_dir, navigation_state_script,
     open_document_with_recent, open_error_state_script, opened_document_from_markdown,
     opened_document_from_tei, pager_loaded_script, render_markdown_document, save_recent_files,
     save_result_script, save_settings, scroll_anchor_script, settings_file_path,
@@ -193,6 +193,19 @@ enum UserEvent {
     },
     /// Write the active document's edit buffer to disk.
     SaveDocument,
+    /// Toggle the `index`-th task-list checkbox (reading view) in the buffer.
+    ToggleTask {
+        index: usize,
+    },
+    /// Splice an inline reading-view edit into the buffer over `[start, end)`
+    /// (source byte offsets), replacing that span with `text`.
+    EditBlock {
+        start: usize,
+        end: usize,
+        text: String,
+    },
+    /// Revert the most recent reading-view edit in the active document.
+    UndoEdit,
     /// A result/progress event from the background indexer worker, delivered to
     /// the webview through its library callbacks.
     Indexer(IndexerEvent),
@@ -308,6 +321,20 @@ enum IpcCommand {
     /// Write the active document's buffer to disk.
     #[serde(rename = "saveDocument")]
     SaveDocument,
+    /// Toggle a reading-view task checkbox, addressed by its document-order
+    /// position among list checkboxes.
+    #[serde(rename = "toggleTask")]
+    ToggleTask { index: usize },
+    /// Splice an inline reading-view edit into the buffer over a source range.
+    #[serde(rename = "editBlock")]
+    EditBlock {
+        start: usize,
+        end: usize,
+        text: String,
+    },
+    /// Revert the most recent reading-view edit in the active document.
+    #[serde(rename = "undoEdit")]
+    UndoEdit,
 }
 
 fn main() {
@@ -1066,6 +1093,51 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             Event::UserEvent(UserEvent::SaveDocument) => {
                 save_active_document(webview.as_ref(), &mut workspace, &mut file_watch);
             }
+            Event::UserEvent(UserEvent::ToggleTask { index }) => {
+                toggle_task_marker(webview.as_ref(), &mut workspace, index);
+            }
+            Event::UserEvent(UserEvent::EditBlock { start, end, text }) => {
+                // Splice the edit into the source buffer, then re-render the
+                // reading view from that buffer, preserving the reader's place.
+                // The source stays authoritative for both Markdown and XML.
+                if apply_block_edit(&mut workspace, start, end, &text) {
+                    render_active(
+                        &window,
+                        webview.as_ref(),
+                        &mut workspace,
+                        &mut recent,
+                        config_path.as_ref(),
+                        &local_image_source_dir,
+                        ScrollIntent::Preserve,
+                    );
+                    // Authoritative chrome state: whether the splice really
+                    // changed the buffer (dirty) and left an undo step decides
+                    // the Save and Undo buttons, not the frontend's guess.
+                    resync_editing_state(webview.as_ref(), &workspace);
+                }
+            }
+            Event::UserEvent(UserEvent::UndoEdit) => {
+                // Pop the buffer back one reading-view edit, re-render from it,
+                // then resync the dirty state — undoing the only edit must also
+                // take the Save button back down.
+                let undone = workspace
+                    .active
+                    .and_then(|index| workspace.tabs.get_mut(index))
+                    .and_then(|tab| tab.edit.as_mut())
+                    .is_some_and(EditableDocument::undo);
+                if undone {
+                    render_active(
+                        &window,
+                        webview.as_ref(),
+                        &mut workspace,
+                        &mut recent,
+                        config_path.as_ref(),
+                        &local_image_source_dir,
+                        ScrollIntent::Preserve,
+                    );
+                    resync_editing_state(webview.as_ref(), &workspace);
+                }
+            }
             Event::UserEvent(UserEvent::SetIndexingEnabled { enabled }) => {
                 if let Some(indexer) = indexer.as_ref() {
                     indexer.set_indexing_enabled(enabled);
@@ -1423,6 +1495,15 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
             }
             IpcCommand::SaveDocument => {
                 let _ = proxy.send_event(UserEvent::SaveDocument);
+            }
+            IpcCommand::ToggleTask { index } => {
+                let _ = proxy.send_event(UserEvent::ToggleTask { index });
+            }
+            IpcCommand::EditBlock { start, end, text } => {
+                let _ = proxy.send_event(UserEvent::EditBlock { start, end, text });
+            }
+            IpcCommand::UndoEdit => {
+                let _ = proxy.send_event(UserEvent::UndoEdit);
             }
         }
     }
@@ -2025,6 +2106,103 @@ fn save_active_document(
         if let Err(error) = webview.evaluate_script(&script) {
             eprintln!("Save: failed to report result: {error}");
         }
+    }
+}
+
+/// Seed the active tab's edit buffer from disk on the first edit (the same way
+/// [`enter_code_view`] does), then splice a reading-view inline edit into it over
+/// the source range `[start, end)`. Returns whether a buffer was available so the
+/// caller only re-renders when the buffer actually changed. The source buffer is
+/// authoritative, so the reading view re-renders from it afterwards.
+fn apply_block_edit(workspace: &mut Workspace, start: usize, end: usize, text: &str) -> bool {
+    let Some((tab_index, path)) = active_tab_path(workspace) else {
+        return false;
+    };
+    let needs_seed = workspace
+        .tabs
+        .get(tab_index)
+        .is_some_and(|tab| tab.edit.is_none());
+    let contents = if needs_seed {
+        match fs::read_to_string(&path) {
+            Ok(contents) => contents,
+            Err(error) => {
+                eprintln!("Edit block: failed to read {}: {error}", path.display());
+                return false;
+            }
+        }
+    } else {
+        String::new()
+    };
+    let Some(tab) = workspace.tabs.get_mut(tab_index) else {
+        return false;
+    };
+    let edit = tab.edit_buffer(&path, contents);
+    edit.replace_range(start, end, text);
+    true
+}
+
+/// Toggle a task-list checkbox from the reading view. Seeds the tab's edit buffer
+/// from disk on the first edit, flips the marker, then reports the refreshed task
+/// offsets and dirty state so the reading view stays in sync without a full
+/// re-render — the checkbox's own checked state is already flipped in the DOM by
+/// the frontend.
+fn toggle_task_marker(webview: Option<&WebView>, workspace: &mut Workspace, index: usize) {
+    let Some((tab_index, path)) = active_tab_path(workspace) else {
+        return;
+    };
+    let needs_seed = workspace
+        .tabs
+        .get(tab_index)
+        .is_some_and(|tab| tab.edit.is_none());
+    let contents = if needs_seed {
+        match fs::read_to_string(&path) {
+            Ok(contents) => contents,
+            Err(error) => {
+                eprintln!("Toggle task: failed to read {}: {error}", path.display());
+                return;
+            }
+        }
+    } else {
+        String::new()
+    };
+    let Some(tab) = workspace.tabs.get_mut(tab_index) else {
+        return;
+    };
+    let edit = tab.edit_buffer(&path, contents);
+    edit.toggle_task(index);
+    let tasks = edit.task_offsets();
+    let dirty = edit.is_dirty();
+
+    if let Some(webview) = webview {
+        let script = blocks_resynced_script(&tasks, dirty, edit.can_undo(), edit.text());
+        if let Err(error) = webview.evaluate_script(&script) {
+            eprintln!("Toggle task: failed to resync reading view: {error}");
+        }
+    }
+}
+
+/// Push the active buffer's editing state (task offsets, dirty flag, source
+/// text) back to the reading view — used after an undo, where the dirty flag may
+/// have gone in either direction and the frontend cannot infer it.
+fn resync_editing_state(webview: Option<&WebView>, workspace: &Workspace) {
+    let Some(webview) = webview else {
+        return;
+    };
+    let Some(edit) = workspace
+        .active
+        .and_then(|index| workspace.tabs.get(index))
+        .and_then(|tab| tab.edit.as_ref())
+    else {
+        return;
+    };
+    let script = blocks_resynced_script(
+        &edit.task_offsets(),
+        edit.is_dirty(),
+        edit.can_undo(),
+        edit.text(),
+    );
+    if let Err(error) = webview.evaluate_script(&script) {
+        eprintln!("Editing: failed to resync reading view: {error}");
     }
 }
 

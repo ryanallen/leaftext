@@ -1298,8 +1298,10 @@ fn tei_lg_and_bare_l_render_as_verse_blockquotes() {
             &html,
             "<blockquote class=\"tei-verse\">\n<p>Bare line one,<br>\nBare line two.</p>\n</blockquote>",
         );
-    // A following non-<l> block ends the verse run and renders normally.
-    assert_contains(&html, "<p>A prose paragraph.</p>");
+    // A following non-<l> block ends the verse run and renders normally. (Prose
+    // paragraphs now carry inline source-range attributes for editing, so match
+    // on the closing text rather than the exact opening tag.)
+    assert_contains(&html, ">A prose paragraph.</p>");
     // No leftover plain verse paragraph markup.
     assert!(!html.contains("<p class=\"tei-verse\">"));
 }
@@ -1396,10 +1398,10 @@ fn tei_front_matter_renders_collapsed_before_the_body() {
         !html.contains("<details class=\"tei-front\" open"),
         "front must start collapsed"
     );
-    assert_contains(&html, "<p>This is the summary.</p>");
+    assert_contains(&html, ">This is the summary.</p>");
     // The front closes before the body content, so the body is not inside it.
     let front_end = html.find("</details>").expect("front details closes");
-    let body_at = html.find("<p>The body text.</p>").expect("body renders");
+    let body_at = html.find(">The body text.</p>").expect("body renders");
     assert!(front_end < body_at, "front must render before the body");
 }
 
@@ -1429,9 +1431,11 @@ fn tei_headings_shrink_with_nesting_never_invert() {
 
     // Transparent `translation` adds no depth: top section is h2, the chapter
     // inside it h3, the section inside that h4 — strictly shrinking, no inversion.
-    assert_contains(&html, r#"<h2 id="outer-section">Outer Section</h2>"#);
-    assert_contains(&html, r#"<h3 id="inner-chapter">Inner Chapter</h3>"#);
-    assert_contains(&html, r#"<h4 id="deeper-section">Deeper Section</h4>"#);
+    // Headings now carry inline source-range attributes for editing, so match on
+    // the id + text rather than the exact opening tag.
+    assert_contains(&html, r#"id="outer-section">Outer Section</h2>"#);
+    assert_contains(&html, r#"id="inner-chapter">Inner Chapter</h3>"#);
+    assert_contains(&html, r#"id="deeper-section">Deeper Section</h4>"#);
 }
 
 #[test]
@@ -3877,6 +3881,199 @@ fn renders_task_markers_inside_table_cells_as_checkboxes() {
     );
     assert_contains(&rendered.html, "<td>keep [ ] as text</td>");
     assert_contains(&rendered.html, "<td><code>[ ]</code></td>");
+}
+
+// --- Source-anchored editing foundation (Markdown + XML) -------------------
+
+#[test]
+fn task_marker_offsets_map_only_list_markers_in_document_order() {
+    let markdown = "\
+- [ ] first
+- [x] second
+  - [X] nested
+- plain item
+
+| task | note |
+| --- | --- |
+| [ ] | table cell not a marker |
+";
+    let offsets = task_marker_offsets(markdown);
+    assert_eq!(offsets.len(), 3);
+    let bytes = markdown.as_bytes();
+    assert_eq!(bytes[offsets[0]], b' ');
+    assert_eq!(bytes[offsets[1]], b'x');
+    assert_eq!(bytes[offsets[2]], b'X');
+    assert!(offsets[0] < offsets[1] && offsets[1] < offsets[2]);
+}
+
+#[test]
+fn toggle_task_flips_the_addressed_marker_and_tracks_dirty() {
+    let markdown = "- [ ] one\n- [x] two\n";
+    let mut edit = EditableDocument::new(PathBuf::from("todo.md"), markdown.to_string());
+    assert!(!edit.is_dirty());
+
+    assert!(edit.toggle_task(0));
+    assert_eq!(edit.text(), "- [x] one\n- [x] two\n");
+    assert!(edit.is_dirty());
+
+    assert!(!edit.toggle_task(1)); // already dirty; state unchanged
+    assert_eq!(edit.text(), "- [x] one\n- [ ] two\n");
+
+    assert!(!edit.toggle_task(0));
+    assert_eq!(edit.text(), "- [ ] one\n- [ ] two\n");
+    assert!(edit.is_dirty());
+
+    assert!(edit.toggle_task(1)); // back to the saved baseline
+    assert_eq!(edit.text(), markdown);
+    assert!(!edit.is_dirty());
+
+    assert!(!edit.toggle_task(9)); // out of range is a no-op
+    assert_eq!(edit.text(), markdown);
+}
+
+#[test]
+fn toggle_task_is_a_noop_for_xml_documents() {
+    let mut edit = EditableDocument::new(PathBuf::from("doc.xml"), "<p>[ ]</p>".to_string());
+    assert!(!edit.toggle_task(0));
+    assert_eq!(edit.text(), "<p>[ ]</p>");
+}
+
+#[test]
+fn replace_range_splices_and_clamps_safely() {
+    let mut edit = EditableDocument::new(PathBuf::from("a.md"), "hello world".to_string());
+    assert!(edit.replace_range(6, 11, "there"));
+    assert_eq!(edit.text(), "hello there");
+
+    // Out-of-range end is clamped to the buffer length.
+    edit.replace_range(6, 9999, "friend");
+    assert_eq!(edit.text(), "hello friend");
+
+    // A start past end is treated as an insertion at start.
+    let mut edit2 = EditableDocument::new(PathBuf::from("b.md"), "abc".to_string());
+    edit2.replace_range(1, 0, "X");
+    assert_eq!(edit2.text(), "aXbc");
+
+    // A range that falls inside a multi-byte char snaps outward, never panics.
+    let mut edit3 = EditableDocument::new(PathBuf::from("c.md"), "café".to_string());
+    edit3.replace_range(3, 4, "e"); // 'é' is two bytes (3..5)
+    assert_eq!(edit3.text(), "cafe");
+}
+
+#[test]
+fn undo_reverts_reading_view_edits_newest_first() {
+    let markdown = "# Title\n\nBody.\n\n- [ ] task\n";
+    let mut edit = EditableDocument::new(PathBuf::from("doc.md"), markdown.to_string());
+    assert!(!edit.can_undo());
+
+    // An identity splice changes nothing and records no undo point.
+    edit.replace_range(0, 7, "# Title");
+    assert!(!edit.can_undo());
+
+    edit.replace_range(0, 7, "# Renamed");
+    edit.toggle_task(0);
+    assert!(edit.text().contains("# Renamed"));
+    assert!(edit.text().contains("[x]"));
+    assert!(edit.can_undo());
+
+    // Undo steps back newest-first: the toggle, then the splice.
+    assert!(edit.undo());
+    assert!(edit.text().contains("[ ]"));
+    assert!(edit.text().contains("# Renamed"));
+    assert!(edit.undo());
+    assert_eq!(edit.text(), markdown);
+    assert!(!edit.is_dirty());
+
+    // Nothing left to undo.
+    assert!(!edit.undo());
+    assert!(!edit.can_undo());
+}
+
+#[test]
+fn markdown_block_map_marks_paragraphs_and_headings_editable() {
+    let markdown = "# Title\n\nA paragraph.\n\n- a list item\n\n```\ncode\n```\n";
+    let spans = block_source_map(markdown);
+    let kinds: Vec<&str> = spans.iter().map(|s| s.kind).collect();
+    assert_eq!(kinds, vec!["heading", "paragraph", "list", "code_block"]);
+    for span in &spans {
+        let expected = matches!(span.kind, "heading" | "paragraph");
+        assert_eq!(span.editable, expected, "kind {}", span.kind);
+        // Every range slices back to real source.
+        assert!(markdown.get(span.start..span.end).is_some());
+    }
+    // The heading range slices to the heading source.
+    let heading = &spans[0];
+    assert_eq!(&markdown[heading.start..heading.end], "# Title");
+}
+
+#[test]
+fn opened_markdown_document_carries_editing_maps() {
+    let markdown = "# Title\n\nBody with a [ ] not a task.\n\n- [ ] real task\n";
+    let document = opened_document_from_markdown(markdown, "todo.md");
+    assert_eq!(document.format, DocumentFormat::Markdown);
+    // The raw source travels too, so blocks that don't round-trip WYSIWYG (lists,
+    // tables, code) can be edited as their exact Markdown source.
+    assert_eq!(document.source, markdown);
+    assert_eq!(document.tasks, task_marker_offsets(markdown));
+    assert_eq!(document.tasks.len(), 1);
+    assert!(document
+        .blocks
+        .iter()
+        .any(|b| b.kind == "heading" && b.editable));
+}
+
+#[test]
+fn tei_block_map_anchors_paragraphs_and_headings_to_xml_ranges() {
+    let xml = r#"<TEI><teiHeader><fileDesc><titleStmt>
+        <title type="mainTitle" xml:lang="en">The Work</title>
+        </titleStmt></fileDesc></teiHeader>
+        <text><body>
+        <div type="section"><head>A Section</head>
+        <p>First paragraph.</p>
+        <p>Second paragraph.</p>
+        </div>
+        </body></text></TEI>"#;
+
+    let spans = tei_block_source_map(xml);
+    // One heading (the section head) and two paragraphs, all editable.
+    assert!(spans.iter().any(|s| s.kind == "heading" && s.editable));
+    assert_eq!(spans.iter().filter(|s| s.kind == "paragraph").count(), 2);
+    // Ranges point at the real XML source for those nodes.
+    for span in &spans {
+        let slice = &xml[span.start..span.end];
+        if span.kind == "paragraph" {
+            assert!(
+                slice.starts_with("<p>") && slice.ends_with("</p>"),
+                "{slice}"
+            );
+        } else {
+            assert!(
+                slice.starts_with("<head>") && slice.ends_with("</head>"),
+                "{slice}"
+            );
+        }
+    }
+}
+
+#[test]
+fn opened_tei_document_stamps_inline_ranges_and_carries_source() {
+    let xml = r#"<TEI><teiHeader><fileDesc><titleStmt>
+        <title type="mainTitle" xml:lang="en">The Work</title>
+        </titleStmt></fileDesc></teiHeader>
+        <text><body>
+        <div type="section"><head>A Section</head>
+        <p>First paragraph.</p>
+        </div>
+        </body></text></TEI>"#;
+
+    let document = opened_document_from_tei(xml, "doc.xml");
+    assert_eq!(document.format, DocumentFormat::Xml);
+    assert_eq!(document.source, xml); // XML edits its exact source
+                                      // The rendered HTML carries inline source ranges the reader edits against.
+    assert_contains(&document.html, "data-src-start=");
+    assert_contains(&document.html, "data-editable=\"true\"");
+    assert_contains(&document.html, "data-block-kind=\"paragraph\"");
+    // And the block map agrees with what was stamped.
+    assert!(!document.blocks.is_empty());
 }
 
 #[test]
