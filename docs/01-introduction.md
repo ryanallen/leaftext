@@ -1,8 +1,8 @@
 # Meet leaftext
 
-> A desktop reader for Markdown and TEI XML files: fast to open, easy to scan, and focused on reading instead of editing.
+> A desktop reader for Markdown and TEI XML files: fast to open, easy to scan, and reading-first — with a source [code view](01-features/07-editing.md) for when a file needs a fix.
 
-leaftext is a desktop app for reading local Markdown and [TEI XML](01-features/01-rendering.md#tei-xml-84000-translations) on macOS, Windows, and Linux. Open a file, get a clean rendered view, and keep your place with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), a [minimap](01-features/04-minimap.md), and a searchable [library](01-features/03-library.md).
+leaftext is a desktop app for reading local Markdown and [TEI XML](01-features/01-rendering.md#tei-xml-84000-translations) on macOS, Windows, and Linux. Open a file, get a clean rendered view, and keep your place with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), a [minimap](01-features/04-minimap.md), and a searchable [library](01-features/03-library.md). When a document needs a change, toggle to its raw source, [edit, and save](01-features/07-editing.md) without leaving the app.
 
 New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GLOSSARY.md#frontmatter) link into the [glossary](GLOSSARY.md#glossary) — clicking one opens its entry in a [bottom sheet](GLOSSARY.md#bottom-sheet) over this page instead of taking you away from it.
 
@@ -25,6 +25,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 - Move [back and forward](01-features/02-navigation.md#history) through documents and in-page jumps.
 - Browse indexed Markdown files in the [library pane](01-features/03-library.md), or see how they connect in the [graph view](01-features/03-library.md#graph).
 - [Reload](01-features/02-navigation.md#reload) the current file when it changes on disk.
+- Toggle any document to its raw source in the [code view](01-features/07-editing.md#code-view) — highlighted, line-numbered, editable — and [save](01-features/07-editing.md#save) explicitly.
 - Enable [Speed Reader](01-features/05-settings.md#speed-reader) to dim prose text, quiet links, and add bold lead anchors so the reading path pops against the background.
 
 ## Layout

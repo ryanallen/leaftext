@@ -203,6 +203,49 @@ pub fn open_error_state_script(path: &Path, reason: &str) -> String {
     format!("window.leafShowOpenError({path}, {reason});")
 }
 
+/// Swap the reader over to the raw-source code view for the active document:
+/// the highlighted source (the colour layer painted behind the textarea), the
+/// exact buffer text (what the editable textarea holds), the language token and
+/// label, and whether the buffer has unsaved edits.
+pub fn code_view_script(
+    highlighted_html: &str,
+    text: &str,
+    language: &str,
+    display_name: &str,
+    dirty: bool,
+) -> String {
+    let state = serde_json::json!({
+        "html": highlighted_html,
+        "text": text,
+        "language": language,
+        "displayName": display_name,
+        "dirty": dirty,
+    });
+    format!("window.leafShowCodeView({});", state)
+}
+
+/// Refresh the code view's colour layer and dirty state after a debounced edit
+/// re-highlights the buffer. Only touches the highlight overlay; the textarea
+/// the user is typing in is left untouched.
+pub fn source_updated_script(highlighted_html: &str, dirty: bool) -> String {
+    let state = serde_json::json!({
+        "html": highlighted_html,
+        "dirty": dirty,
+    });
+    format!("window.leafSourceUpdated({});", state)
+}
+
+/// Report the outcome of a save for `path`: `error` is null on success and a
+/// message string when the write failed.
+pub fn save_result_script(path: &str, ok: bool, error: Option<&str>) -> String {
+    let path = serde_json::to_string(path).expect("path serializes");
+    let error = match error {
+        Some(message) => serde_json::to_string(message).expect("error serializes"),
+        None => "null".to_string(),
+    };
+    format!("window.leafSaved({path}, {ok}, {error});")
+}
+
 /// Answer a hover tooltip's `countLines` request: hand the webview the line count
 /// of the linked document for `token`. A negative count means "unknown" (the
 /// target wasn't a readable local document), and the page just shows no count.

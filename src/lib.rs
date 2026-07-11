@@ -21,6 +21,10 @@ pub use minimap::{
 mod assets;
 pub(crate) use assets::*;
 pub use assets::{bundled_asset_response, BundledAsset, LOCAL_ASSET_PROTOCOL};
+mod editing;
+pub use editing::{
+    block_source_map, render_source_view_html, BlockSpan, DocumentFormat, EditableDocument,
+};
 
 use std::{
     collections::{HashMap, HashSet},
@@ -742,6 +746,14 @@ pub fn app_shell_html() -> String {
             "{{OPEN_ICON_SVG}}",
             normalize_svg_icon_colors(OPEN_ICON_SVG).trim(),
         )
+        .replace(
+            "{{CODE_VIEW_ICON_SVG}}",
+            normalize_svg_icon_colors(CODE_VIEW_ICON_SVG).trim(),
+        )
+        .replace(
+            "{{DOCUMENT_ICON_SVG}}",
+            normalize_svg_icon_colors(DOCUMENT_ICON_SVG).trim(),
+        )
 }
 
 fn theme_bootstrap_script() -> &'static str {
@@ -838,6 +850,10 @@ fn locale_bootstrap_script() -> &'static str {
       'actions.forward.title': 'Go forward',
       'actions.open': 'Open',
       'actions.open.title': 'Open Markdown file',
+      'actions.codeView': 'View source',
+      'actions.codeView.title': 'Toggle raw source view',
+      'actions.save': 'Save',
+      'actions.save.title': 'Save changes',
       'reader.loading': 'Loading document…',
       'actions.revealFile': 'Reveal file',
       'actions.cut': 'Cut',
@@ -929,6 +945,10 @@ fn locale_bootstrap_script() -> &'static str {
       'actions.home.title': '显示最近文件',
       'actions.open': '打开',
       'actions.open.title': '打开 Markdown 文件',
+      'actions.codeView': '查看源码',
+      'actions.codeView.title': '切换源码视图',
+      'actions.save': '保存',
+      'actions.save.title': '保存更改',
       'reader.loading': '正在加载文档…',
       'actions.revealFile': '在文件管理器中显示',
       'actions.cut': '剪切',

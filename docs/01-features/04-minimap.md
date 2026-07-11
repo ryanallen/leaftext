@@ -25,6 +25,8 @@ A `requestAnimationFrame`-throttled loop writes those on scroll, so the rail sta
 
 The Rust side produces a small `DocumentMinimap` for each document whose only job now is to report a positive line count: an empty or zero-line document reports `0` and the rail is skipped entirely. [TEI XML documents](01-rendering.md#tei-xml-84000-translations) report their count from the rendered block HTML (they have no Markdown source to line-scan), so an opened `.xml` translation gets the same real-text rail as a Markdown file — the thumbnail itself is always the live clone, whatever the source format.
 
+The [code view](07-editing.md#code-view) uses this same minimap over the raw source: the identical rail, thumbnail clone, and drag/click behavior, mirroring the highlighted source text instead of the rendered page. There it renders regardless of the setting below, because with no native scrollbar it is the code view's vertical scroll affordance.
+
 ## Responsive behavior
 
 The minimap adjusts its preview lane width depending on the available space:

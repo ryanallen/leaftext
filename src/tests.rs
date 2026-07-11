@@ -5480,3 +5480,115 @@ fn anchor_addressable_blocks_get_a_permalink_button() {
         "expected EN + ZH-CN entries for actions.anchorLink, found {count}"
     );
 }
+
+#[test]
+fn block_source_map_covers_top_level_blocks_in_order() {
+    let markdown = "# Title\n\nA paragraph.\n\n- one\n- two\n\n```rust\nfn main() {}\n```\n";
+    let spans = block_source_map(markdown);
+    let kinds: Vec<&str> = spans.iter().map(|span| span.kind).collect();
+    assert_eq!(kinds, ["heading", "paragraph", "list", "code_block"]);
+
+    // Ids are assigned in document order, and every range slices back to the
+    // exact source that produced the block — the property later in-viewer
+    // editing depends on.
+    for (index, span) in spans.iter().enumerate() {
+        assert_eq!(span.id, index);
+        assert!(span.start < span.end);
+        assert!(span.end <= markdown.len());
+    }
+    let heading = &spans[0];
+    assert!(markdown[heading.start..heading.end].starts_with("# Title"));
+    let code = spans.last().expect("code block span");
+    assert!(markdown[code.start..code.end].contains("fn main() {}"));
+}
+
+#[test]
+fn block_source_map_maps_rules_and_ignores_nested_blocks() {
+    // A thematic break is a top-level block even though it has no Start/End
+    // pair; list items and inline emphasis are nested, so they fold into their
+    // enclosing block rather than getting their own top-level spans.
+    let markdown = "Para *one*.\n\n---\n\n> quote\n";
+    let kinds: Vec<&str> = block_source_map(markdown)
+        .iter()
+        .map(|span| span.kind)
+        .collect();
+    assert_eq!(kinds, ["paragraph", "rule", "blockquote"]);
+}
+
+#[test]
+fn document_format_follows_extension() {
+    assert_eq!(
+        DocumentFormat::from_path(Path::new("notes.md")),
+        DocumentFormat::Markdown
+    );
+    assert_eq!(
+        DocumentFormat::from_path(Path::new("book.XML")),
+        DocumentFormat::Xml
+    );
+    // Unknown / missing extensions route through the Markdown renderer, matching
+    // how the loader treats everything that is not `.xml`.
+    assert_eq!(
+        DocumentFormat::from_path(Path::new("README")),
+        DocumentFormat::Markdown
+    );
+}
+
+#[test]
+fn editable_document_tracks_dirty_and_save() {
+    let mut doc = EditableDocument::new(PathBuf::from("notes.md"), "# Hello\n".to_string());
+    assert!(!doc.is_dirty(), "a freshly opened document is clean");
+    assert_eq!(doc.version(), 0);
+
+    let flipped = doc.set_text("# Hello, edited\n".to_string());
+    assert!(flipped, "set_text reports the clean -> dirty transition");
+    assert!(doc.is_dirty());
+
+    // Editing back to the saved text clears dirty without a save.
+    assert!(doc.set_text("# Hello\n".to_string()));
+    assert!(!doc.is_dirty());
+
+    doc.set_text("# Hello, edited\n".to_string());
+    doc.mark_saved();
+    assert!(!doc.is_dirty(), "the buffer is the baseline after a save");
+    assert_eq!(doc.version(), 1, "each save advances the version");
+}
+
+#[test]
+fn editable_document_adopts_external_change_when_clean() {
+    let mut doc = EditableDocument::new(PathBuf::from("notes.md"), "original\n".to_string());
+    doc.adopt_external("changed on disk\n".to_string());
+    assert_eq!(doc.text(), "changed on disk\n");
+    assert!(
+        !doc.is_dirty(),
+        "adopting an external change leaves it clean"
+    );
+}
+
+#[test]
+fn source_view_highlights_both_markdown_and_xml() {
+    // The code view reuses the reader's Rust highlighter, which has both
+    // Markdown and XML in its language table — so both formats colour, not just
+    // Markdown. The output is escaped and wrapped in syntect `syn-*` spans.
+    let markdown = render_source_view_html("# Heading\n", DocumentFormat::Markdown);
+    assert!(markdown.contains("syn-"), "markdown source is highlighted");
+
+    let xml = render_source_view_html("<TEI><head>Title</head></TEI>", DocumentFormat::Xml);
+    assert!(xml.contains("syn-"), "xml source is highlighted");
+    assert!(
+        xml.contains("&lt;"),
+        "angle brackets are escaped, not raw tags"
+    );
+}
+
+#[test]
+fn data_leaf_attribute_prefixes_survive_sanitizing() {
+    // The editing model stamps blocks with source-range / identity markers; the
+    // sanitizer must let the `data-leaf-*` / `data-src-*` prefixes through so
+    // later in-viewer editing can find a block's source.
+    let cleaned = sanitize_rendered_html(
+        r#"<p data-leaf-edit-id="3" data-src-start="10" data-src-end="20">Body</p>"#,
+    );
+    assert!(cleaned.contains(r#"data-leaf-edit-id="3""#));
+    assert!(cleaned.contains(r#"data-src-start="10""#));
+    assert!(cleaned.contains(r#"data-src-end="20""#));
+}

@@ -31,6 +31,7 @@ leaftext's Rust source is split by concern:
 - **`src/pager.rs`** — The Previous/Next pager: walks the document's folder tree in reading order (`document_pager_html()`, `PagerEntry`, `pager_label()`) and builds the pager HTML plus the async `pager_loaded_script()` hand-off.
 - **`src/tei.rs`** — The TEI XML renderer: converts an 84000-style TEI document into the same HTML the Markdown pipeline produces (`render_tei_body()`, `tei_render_div()` / `tei_render_node()`, `TeiCtx`, `tei_slugify()`). `pub(crate)` and re-exported at the crate root.
 - **`src/minimap.rs`** — The document minimap model: `build_minimap_model()` / `build_minimap_model_from_html()` and the `DocumentMinimap` / `MinimapSpan` types that classify each line run (heading, paragraph, list, blockquote, code fence) for the scrollable overview. `pub(crate)` internals with the public model types re-exported at the crate root.
+- **`src/editing.rs`** — The [editing](../01-features/07-editing.md) model: `EditableDocument` (the per-tab source buffer with dirty tracking and a save version counter), `DocumentFormat` (Markdown vs XML by extension, which picks the code view's highlight language and the re-render path), `render_source_view_html()` (the code view's colour layer, reusing the reader's own highlighter), and `block_source_map()` — a `pulldown-cmark` `into_offset_iter()` pass mapping each top-level Markdown block to its exact source byte range, the foundation for future in-viewer editing. Public types re-exported at the crate root.
 - **`src/assets.rs`** — Bundled-asset serving and icon processing: the `include_bytes!` Mermaid/KaTeX runtimes and the PixiJS + d3-force bundles that power the [Graph view](../01-features/03-library.md#graph), `bundled_asset_response()` for the `leaf-asset://` scheme, the toolbar/brand SVG constants, and `normalize_svg_icon_colors()` (rewrites literal icon colors to `currentColor`). Not to be confused with the `src/assets/` directory it embeds. `pub(crate)` (plus the public `bundled_asset_response` / `BundledAsset` / `LOCAL_ASSET_PROTOCOL`), re-exported at the crate root.
 - **`src/markdown.rs`** — The Markdown rendering pipeline: `pulldown-cmark` parsing, GitHub extras (heading IDs, autolinks, issue/PR/commit references, emoji, footnotes), `syntect` code highlighting, image URL resolution, the `ammonia` HTML sanitizer, document-title detection, and the `local_image_protocol_response()` handler for the `leaf-image://` custom scheme. Its items are `pub(crate)` and re-exported at the crate root.
 - **`src/theme.rs`** — The theme system. The semantic token contract (`LEAF_SEMANTIC_TOKEN_CONTRACT`), the Primer and Dracula token tables, the `ThemeSource` / `ThemeSourceKind` types, and the CSS compiler: `theme_sources()`, `compiled_theme_css()`, `theme_source_token_value()`, `assert_theme_sources_cover_contract()`, and `reading_mode_css()`. Its items are `pub(crate)` and re-exported at the crate root. See [theming](04-theming.md).
@@ -41,7 +42,7 @@ leaftext's Rust source is split by concern:
 The WebView front-end that `app_shell_html()` serves lives outside the Rust source as editable assets, embedded at build time with `include_str!`:
 
 - **`src/assets/app-shell.html`** — the page markup (app bar, library pane, glossary sheet, settings menu).
-- **`src/assets/app-shell.js`** — the in-page application script (tabs, history, minimap, library, the PixiJS + d3-force [graph](../01-features/03-library.md#graph) scene, theme and locale wiring). Keeping the markup and script as real `.html` / `.js` files means normal front-end tooling applies, while the binary stays self-contained.
+- **`src/assets/app-shell.js`** — the in-page application script (tabs, history, minimap, library, the [code view](../01-features/07-editing.md#code-view) editor surface, the PixiJS + d3-force [graph](../01-features/03-library.md#graph) scene, theme and locale wiring). Keeping the markup and script as real `.html` / `.js` files means normal front-end tooling applies, while the binary stays self-contained.
 
 ## Rendering pipeline
 
@@ -61,7 +62,7 @@ A pipeline of event transformers adds heading IDs, linkifies plain URLs, resolve
 
 **4. Sanitize with ammonia**
 
-The raw rendered HTML is passed through `ammonia` with an allowlist of GFM-safe tags and attributes. Scripts, styles, event handlers, and dangerous URLs are stripped before the WebView ever sees the content.
+The raw rendered HTML is passed through `ammonia` with an allowlist of GFM-safe tags and attributes. Scripts, styles, event handlers, and dangerous URLs are stripped before the WebView ever sees the content. Attributes prefixed `data-leaf-` / `data-src-` are allowed through on every tag — the [editing](../01-features/07-editing.md) model's source-range markers, which carry no script and never reach a URL context.
 
 **5. Inject initial settings**
 
@@ -125,6 +126,10 @@ Key `IpcCommand` variants include:
 | `getGraph`             | Build the library link graph for the current scope + focus seeds |
 | `setGraphScope`        | Graph size picker in Settings menu    |
 | `loadPager`            | Request the Previous / Next pager after a document renders |
+| `enterCodeView`        | The [code view](../01-features/07-editing.md#code-view) toggle: show the document's raw source |
+| `exitCodeView`         | Toggle back from the code view to the rendered reading view |
+| `updateSource`         | Debounced code-view edit: the full buffer text, for re-highlight and dirty tracking |
+| `saveDocument`         | The green [Save](../01-features/07-editing.md#save) button or `Ctrl+S` / `Cmd+S`: write the edit buffer to disk |
 | `search`               | Library search box query (optionally scoped to the shown documents) |
 | `revealFile`           | File row context menu: reveal in file manager |
 | `copyFile`             | File row context menu: cut/copy the file to the clipboard |
@@ -137,14 +142,14 @@ Key `IpcCommand` variants include:
 | `setLibraryLayout`     | Library pane resize or collapse       |
 | `setWindowChrome`      | Theme change repainting the title bar and window border (Windows) |
 
-Results flow back from Rust to JavaScript via `webview.evaluate_script()`, calling `window.leafSetState()`, `window.leafSwitchTab()`, `window.leafReloadDocument()`, `window.leafSetNavigation()`, `window.leafSetLibraryState()`, `window.leafShowGlossary()`, and related entry points.
+Results flow back from Rust to JavaScript via `webview.evaluate_script()`, calling `window.leafSetState()`, `window.leafSwitchTab()`, `window.leafReloadDocument()`, `window.leafSetNavigation()`, `window.leafSetLibraryState()`, `window.leafShowGlossary()`, `window.leafShowCodeView()`, `window.leafSourceUpdated()`, `window.leafSaved()`, and related entry points.
 
 ## Key data structures
 
 The following types in `main.rs` model the reader's stateful document management:
 
 - **`Workspace`** — holds `Vec<Tab>` (all open tabs) and `active: Option<usize>` (the currently visible tab index, or `None` when the home screen is showing).
-- **`Tab`** — holds a `DocumentHistory`, a `ScrollHistory`, a `title` string (cached for the tab bar), and an `Option<ScrollAnchor>` (the last saved reading position).
+- **`Tab`** — holds a `DocumentHistory`, a `ScrollHistory`, a `title` string (cached for the tab bar), an `Option<ScrollAnchor>` (the last saved reading position), an `Option<EditableDocument>` (the [edit buffer](../01-features/07-editing.md#editing-the-source), created the first time the code view opens and kept so unsaved edits survive view toggles and tab switches), and a `code_view` flag for which view the tab is showing.
 - **`DocumentHistory`** — a `Vec<PathBuf>` of visited paths with a current index. Supports `go_back()`, `go_forward()`, and `forget_current()` (used when a file fails to open).
 - **`ScrollHistory`** — two `Vec<ScrollAnchor>` stacks (`back_entries` and `forward_entries`) that record in-document scroll jumps independently from document-level navigation.
 - **`ScrollAnchor`** — `{ section: Option<String>, block: u32, offset_y: f64 }`. A render-stable position: the nearest heading `id` above the reader's top edge, the block ordinal within that section, and the signed pixel offset. Survives a full re-render because the same Markdown always produces the same block sequence.

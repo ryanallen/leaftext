@@ -26,6 +26,7 @@
   </nav>
   <div class="tab-bar" id="tabBar" role="tablist" aria-label="Open documents"></div>
   <div class="app-actions">
+    <button type="button" id="codeViewButton" class="icon-button code-view-button" data-i18n-aria-label="actions.codeView" data-i18n-title="actions.codeView.title" aria-label="View source" title="View source" aria-pressed="false" hidden><span class="cv-icon cv-icon-code">{{CODE_VIEW_ICON_SVG}}</span><span class="cv-icon cv-icon-doc">{{DOCUMENT_ICON_SVG}}</span></button>
     <details class="settings-menu" id="settingsMenu">
       <summary id="settingsSummary" class="icon-button" data-i18n-aria-label="settings.heading" data-i18n-title="settings.heading" aria-label="Settings" title="Settings">
         {{SETTINGS_ICON_SVG}}
@@ -74,6 +75,7 @@
       </div>
     </details>
     <button type="button" id="openButton" class="icon-button open-button" data-i18n-aria-label="actions.open" data-i18n-title="actions.open.title" aria-label="Open" title="Open Markdown file">{{OPEN_ICON_SVG}}</button>
+    <button type="button" id="saveButton" class="save-button" data-i18n="actions.save" data-i18n-aria-label="actions.save" data-i18n-title="actions.save.title" aria-label="Save" title="Save" hidden>Save</button>
   </div>
 </header>
 <div id="libraryShell" class="library-shell">

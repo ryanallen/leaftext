@@ -37,6 +37,11 @@
 - Markdown: https://leaftext.com/docs/01-features/06-themes.md
 - Summary: From the user side, themes are simple: pick one in Settings and the app updates immediately. Under the hood, every theme has to cover the full --leaf- token set.
 
+## Editing
+- Page: https://leaftext.com/docs/#/features/editing
+- Markdown: https://leaftext.com/docs/01-features/07-editing.md
+- Summary: leaftext is reading-first, but sometimes the fastest fix is in the source. The code view swaps the rendered page for the file's actual text — syntax-highlighted, line-numbered, and editable — and a...
+
 ## Meet leaftext
 - Page: https://leaftext.com/docs/#/introduction
 - Markdown: https://leaftext.com/docs/01-introduction.md

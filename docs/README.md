@@ -17,6 +17,7 @@ flowchart LR
     D --> H[Minimap]
     D --> I[Themes]
     D --> J[Settings]
+    D --> P[Editing]
     C --> K[Development]
     K --> L[Architecture]
     K --> M[Building]
@@ -44,6 +45,7 @@ How the app behaves, page by page:
 | [Minimap](01-features/04-minimap.md) | The scaled real-text document clone in the side rail: how it renders, when it rebuilds, responsive widths, and the on/off toggle |
 | [Themes](01-features/06-themes.md) | The four theme modes — System, Light, Dark, Dracula — and how they apply through the semantic token contract |
 | [Settings](01-features/05-settings.md) | Every preference, its default, and the JSON files on disk that store them |
+| [Editing](01-features/07-editing.md) | The code view: raw highlighted source for any document, in-place editing, and the explicit Save flow |
 
 ## Development
 

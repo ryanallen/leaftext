@@ -1932,6 +1932,27 @@ function reportWindowChrome(theme) {
     dark: theme.resolvedTheme === 'dark',
   });
 }
+// Editing (code view + save) state. Declared here — before the subscriptions
+// below, which invoke renderState() synchronously on load — so it is out of the
+// temporal dead zone by the time renderState() first reads it. The functions
+// that use it are defined further down (near the rest of the editing code).
+const codeViewButton = document.getElementById('codeViewButton');
+const saveButton = document.getElementById('saveButton');
+// Whether the reader is currently showing raw source instead of the rendered
+// document. Reset by renderState(), set by leafShowCodeView().
+let codeViewActive = false;
+// The last textarea value, mirrored so a save (and the debounced re-highlight)
+// send the current buffer even if a keystroke is still within the debounce.
+let codeViewText = '';
+let sourceUpdateTimer = 0;
+// Unsaved-edits state per document path, so the tab dot and Save button survive
+// the tab bar being re-rendered. Absent / false means clean.
+const dirtyByPath = new Map();
+// Scroll fraction captured when toggling between the reading and code views, so
+// the destination view opens at the same relative position (top stays top,
+// mid-document stays mid-document). Consumed (and cleared) by the next render.
+// Declared here, above the subscriptions that run renderState() on load.
+let pendingViewScrollFraction = null;
 window.leafTheme.subscribe((theme) => {
   themeModeControl.value = theme.mode;
   reportWindowChrome(theme);
@@ -2172,7 +2193,7 @@ function tabDisplayName(tab) {
 function renderTabs(state) {
   const tabs = state.tabs || [];
   const active = state.active;
-  tabBar.innerHTML = tabs.map((tab, index) => `<span class="tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}"><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(tabDisplayName(tab))}</button><button type="button" class="tab-close" data-tab-close="${index}" aria-label="${escapeAttr(window.leafLocale.t('actions.closeTab'))}" title="${escapeAttr(window.leafLocale.t('actions.closeTab'))}"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></span>`).join('');
+  tabBar.innerHTML = tabs.map((tab, index) => `<span class="tab${index === active ? ' tab-active' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(tabDisplayName(tab))}</button><span class="tab-dirty-dot" aria-hidden="true"></span><button type="button" class="tab-close" data-tab-close="${index}" aria-label="${escapeAttr(window.leafLocale.t('actions.closeTab'))}" title="${escapeAttr(window.leafLocale.t('actions.closeTab'))}"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></span>`).join('');
   tabBar.querySelectorAll('[data-tab-index]').forEach((button) => {
     button.addEventListener('click', () => {
       if (suppressTabClick) return;
@@ -2225,11 +2246,251 @@ function renderTabs(state) {
     });
   });
 }
+// ---- Editing: code view + save -------------------------------------------
+// The reader is source-of-truth-in-Rust: the host owns the editable buffer and
+// re-highlights through the same Rust path the reading view uses. Here the JS
+// only drives the raw-source code view (a textarea over a highlight layer),
+// tracks which documents have unsaved edits, and relays intent to the host.
+//
+// The mutable state these functions read (codeViewActive, dirtyByPath, and the
+// two toolbar buttons) is declared earlier, above the leafLocale/leafMinimap
+// subscriptions, because those fire renderState() synchronously on load — which
+// reads this state before this point in the file executes.
+
+function isDocumentDirty(path) {
+  return !!(path && dirtyByPath.get(path));
+}
+
+// Reflect a document's dirty state into the tab dot and, when it is the active
+// document, the Save button — without forcing a full re-render.
+function setDirtyState(path, dirty) {
+  if (!path) return;
+  if (dirty) dirtyByPath.set(path, true);
+  else dirtyByPath.delete(path);
+  document.querySelectorAll('.tab').forEach((tabEl) => {
+    if (tabEl.dataset.tabPath === path) {
+      tabEl.classList.toggle('tab-modified', !!dirty);
+    }
+  });
+  updateEditingChrome();
+}
+
+// Show/hide and style the code-view toggle and Save button for the active
+// document. Both are hidden on the home screen; Save enables (and greens) only
+// when the active document has unsaved edits.
+function updateEditingChrome() {
+  const path = activeDocumentPath();
+  const hasDocument = !!path;
+  if (codeViewButton) {
+    codeViewButton.hidden = !hasDocument;
+    codeViewButton.setAttribute('aria-pressed', codeViewActive ? 'true' : 'false');
+    codeViewButton.classList.toggle('is-active', codeViewActive);
+  }
+  if (saveButton) {
+    // Nothing to save, nothing shown: the green "Save" button appears only when
+    // the active document has unsaved edits.
+    saveButton.hidden = !(hasDocument && isDocumentDirty(path));
+  }
+}
+
+// The last buffer text handed to the host, so a stale re-highlight response
+// (the user kept typing after it was sent) can be ignored instead of regressing
+// the colour layer to older text.
+let lastSentSourceText = null;
+
+// One right-aligned line number per SOURCE line, each paired with a transparent
+// copy of that line's text so the row wraps to exactly the same height as the
+// colour layer behind it — that is what keeps the numbers aligned once lines
+// wrap. Rebuilt whenever the text changes.
+function buildLineNumbers(container, text) {
+  const lines = text.split('\n');
+  container.innerHTML = lines
+    .map(
+      (line, index) =>
+        `<div class="cv-lnrow"><span class="cv-lnnum">${index + 1}</span><span class="cv-lntxt">${escapeText(line) || '​'}</span></div>`
+    )
+    .join('');
+}
+
+function scheduleSourceUpdate() {
+  if (sourceUpdateTimer) clearTimeout(sourceUpdateTimer);
+  sourceUpdateTimer = setTimeout(() => {
+    sourceUpdateTimer = 0;
+    lastSentSourceText = codeViewText;
+    send({ command: 'updateSource', text: codeViewText });
+  }, 180);
+}
+
+// Push the latest buffer to the host now, cancelling any pending debounce, so a
+// save writes exactly what is in the textarea.
+function flushSourceUpdate() {
+  if (!codeViewActive) return;
+  if (sourceUpdateTimer) {
+    clearTimeout(sourceUpdateTimer);
+    sourceUpdateTimer = 0;
+  }
+  lastSentSourceText = codeViewText;
+  send({ command: 'updateSource', text: codeViewText });
+}
+
+// The code view reuses the reader's own minimap (the scaled document clone in a
+// sticky rail, bound by bindDocumentMinimap / updated by updateMinimapViewport).
+// That machinery finds its content via minimapSourceElement(), which matches the
+// code view's document container too — no separate code-view minimap exists.
+
+function saveActiveDocument() {
+  const path = activeDocumentPath();
+  if (!path || !isDocumentDirty(path)) return;
+  flushSourceUpdate();
+  send({ command: 'saveDocument' });
+}
+
+// How far down the reader shell is scrolled, as a 0..1 fraction of its
+// scrollable range. Approximate by design — the two views wrap differently —
+// but it keeps "top is top" and "middle is middle" across the toggle.
+function viewScrollFraction() {
+  const scrollable = app.scrollHeight - app.clientHeight;
+  if (scrollable <= 0) return 0;
+  return Math.min(1, Math.max(0, app.scrollTop / scrollable));
+}
+
+if (codeViewButton) {
+  codeViewButton.addEventListener('click', () => {
+    if (!activeDocumentPath()) return;
+    // Carry the current position across the toggle; the destination view's
+    // render consumes it and lands at the same relative spot.
+    pendingViewScrollFraction = viewScrollFraction();
+    send({ command: codeViewActive ? 'exitCodeView' : 'enterCodeView' });
+  });
+}
+if (saveButton) {
+  saveButton.addEventListener('click', saveActiveDocument);
+}
+// Ctrl/Cmd+S saves the active document when there is something to save.
+window.addEventListener('keydown', (event) => {
+  const saveKey = (event.ctrlKey || event.metaKey) && !event.altKey && (event.key === 's' || event.key === 'S');
+  if (!saveKey) return;
+  if (!activeDocumentPath() || !isDocumentDirty(activeDocumentPath())) return;
+  event.preventDefault();
+  saveActiveDocument();
+});
+
+// Build the wrapped raw-source code view: three exactly-aligned layers (colour,
+// line-number mirror, transparent textarea) that the reader shell (#app)
+// scrolls as one — the same scroller the reading view uses, whose native
+// scrollbar is already hidden. The document never scrolls sideways: long lines
+// wrap, and the line numbers stay pinned to their lines.
+//
+// The rail on the right is the reader's own document minimap — identical markup
+// and machinery (bindDocumentMinimap, updateMinimapViewport, the clone-based
+// thumbnail). It renders here regardless of the reading view's minimap setting
+// because it is the code view's vertical scroll affordance.
+function renderCodeView(state) {
+  disconnectMinimapPreviewObservers();
+  disconnectReaderReflowObserver();
+  readerAnchorBlocks = null;
+  app.className = 'reader-shell has-document code-view-shell';
+  const text = state.text || '';
+  lastSentSourceText = text;
+  app.innerHTML = `
+    <div class="code-view" data-language="${escapeAttr(state.displayName || '')}">
+      <div class="code-view-doc">
+        <pre class="code-view-highlight" aria-hidden="true"><code class="language-${escapeAttr(state.language || '')}">${state.html || ''}</code></pre>
+        <div class="code-view-linenums" aria-hidden="true"></div>
+        <textarea class="code-view-input" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea>
+      </div>
+      <aside class="document-minimap" aria-label="${escapeAttr(window.leafLocale.t('minimap.aria'))}"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>
+    </div>`;
+  const textarea = app.querySelector('.code-view-input');
+  const highlight = app.querySelector('.code-view-highlight');
+  const code = highlight.querySelector('code');
+  const linenums = app.querySelector('.code-view-linenums');
+  textarea.value = text;
+  buildLineNumbers(linenums, text);
+  // Tab edits the document — insert a tab character at the caret — instead of
+  // moving focus to the next control. Inserted via execCommand so the
+  // textarea's native undo stack keeps working. Shift+Tab is left alone as the
+  // standard keyboard escape out of the editor.
+  textarea.addEventListener('keydown', (event) => {
+    if (event.key === 'Tab' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      event.preventDefault();
+      document.execCommand('insertText', false, '\t');
+    }
+  });
+  textarea.addEventListener('input', () => {
+    codeViewText = textarea.value;
+    // Mirror the raw text into the colour layer immediately so freshly typed
+    // characters are visible (and wrap correctly) before the debounced
+    // re-highlight recolours them. The minimap's mutation observer sees these
+    // DOM changes and rebuilds the thumbnail on its own frame.
+    code.textContent = codeViewText;
+    buildLineNumbers(linenums, codeViewText);
+    const path = activeDocumentPath();
+    if (path) setDirtyState(path, true);
+    scheduleSourceUpdate();
+  });
+  // Wire the reader's minimap to this DOM: rail drag/click, the mutation and
+  // resize observers, and the first thumbnail build. The global #app scroll
+  // listener already keeps the viewport box in sync while scrolling.
+  bindDocumentMinimap();
+  // Setting .value parked the caret at the END of the text, and a plain focus()
+  // scrolls the caret into view — that is what yanked the view to the bottom on
+  // entry. Park the caret at the start and focus without scrolling, then land
+  // at the same relative position the reading view was at.
+  textarea.setSelectionRange(0, 0);
+  textarea.focus({ preventScroll: true });
+  const fraction = pendingViewScrollFraction;
+  pendingViewScrollFraction = null;
+  const scrollable = Math.max(0, app.scrollHeight - app.clientHeight);
+  app.scrollTop = (fraction || 0) * scrollable;
+  window.requestAnimationFrame(() => updateMinimapViewport());
+}
+
+// Enter the code view: the host sends the highlighted source, the exact buffer
+// text, the language, and the dirty state.
+window.leafShowCodeView = (state) => {
+  clearReaderLoading();
+  codeViewActive = true;
+  codeViewText = (state && state.text) || '';
+  renderCodeView(state || {});
+  const path = activeDocumentPath();
+  if (path) setDirtyState(path, !!(state && state.dirty));
+  updateEditingChrome();
+};
+
+// Refresh the code view's colour layer and dirty state after a debounced edit
+// re-highlights the buffer. Only recolour when the buffer still matches what was
+// sent — if the user kept typing, applying this stale HTML would hide the newer
+// characters, so leave the plain mirror in place until the next round-trip.
+window.leafSourceUpdated = (state) => {
+  if (!codeViewActive || !state) return;
+  if (lastSentSourceText === null || codeViewText === lastSentSourceText) {
+    const code = app.querySelector('.code-view-highlight code');
+    if (code) code.innerHTML = state.html || '';
+  }
+  const path = activeDocumentPath();
+  if (path) setDirtyState(path, !!state.dirty);
+};
+
+// The host reports a save's outcome. On success the document is no longer dirty;
+// on failure, keep the edits and surface the error.
+window.leafSaved = (path, ok, error) => {
+  if (ok) {
+    setDirtyState(path, false);
+  } else if (error) {
+    window.leafShowOpenError(path, error);
+  }
+};
+
 function renderState() {
   const state = currentState || { recent: [], tabs: [], active: null, document: null };
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
   readerAnchorBlocks = null;
+  // Any full render shows the reading view, so we are no longer in the code
+  // view (the host re-renders the reading view when a document changes, a tab
+  // switches, or the code view is toggled off).
+  codeViewActive = false;
   renderTabs(state);
   if (state.document) {
     document.title = window.leafLocale.t('titles.document', { title: state.document.title });
@@ -2255,11 +2516,13 @@ function renderState() {
     } else {
       updateMinimapViewport();
     }
+    updateEditingChrome();
     return;
   }
   resetReaderScrollOnNextRender = false;
   document.title = window.leafLocale.t('titles.app');
   app.className = 'reader-shell empty';
+  updateEditingChrome();
   const recent = state.recent || [];
   app.innerHTML = `
     <section class="empty-state">
@@ -3166,9 +3429,16 @@ function bindDocumentMinimap() {
 // observe the source's SIZE: rebuilding a whole-document clone on every scroll is
 // exactly what stuttered on large files. Only the small viewport box (and, on tall
 // documents, the thumbnail's slide) moves on scroll.
+// The element the minimap mirrors: the reading view's document body, or the
+// code view's document container (which holds the highlighted source). Keeping
+// this one lookup shared is what lets the whole minimap pipeline serve both
+// views unchanged.
+function minimapSourceElement() {
+  return app.querySelector('.document-body, .code-view-doc');
+}
 function bindDocumentMinimapPreview(track) {
   disconnectMinimapPreviewObservers();
-  const source = app.querySelector('.document-body');
+  const source = minimapSourceElement();
   if (!source) {
     return;
   }
@@ -3292,7 +3562,18 @@ function resetReaderScrollToContentStart() {
   window.requestAnimationFrame(() => {
     const source = app.querySelector('.document-body');
     const content = correctReaderScrollOrigin(source);
-    setReaderScrollTop(content.topOffset);
+    // Leaving the code view carries its scroll fraction here, so the reading
+    // view lands at the same relative position instead of the top. Any other
+    // reset (opening a document, going home) has no pending fraction.
+    const fraction = pendingViewScrollFraction;
+    pendingViewScrollFraction = null;
+    if (fraction) {
+      const viewportHeight = Math.max(1, Math.ceil(app.clientHeight));
+      const range = measureReaderScrollRange(content, viewportHeight);
+      setReaderScrollTop(content.topOffset + fraction * range.scrollable);
+    } else {
+      setReaderScrollTop(content.topOffset);
+    }
     readerScrollAnchor = captureReaderScrollAnchor();
     updateMinimapViewport();
   });
@@ -3452,7 +3733,7 @@ function syncMinimapTrackHeight(minimap) {
 }
 function measureDocumentMinimap(track) {
   const minimap = track.closest('.document-minimap');
-  const source = app.querySelector('.document-body');
+  const source = minimapSourceElement();
   const trackSize = minimap ? syncMinimapTrackHeight(minimap) : null;
   const shellHeight = trackSize ? trackSize.availableHeight : Math.max(1, app.clientHeight);
   const sourceRect = source ? source.getBoundingClientRect() : null;
@@ -3500,7 +3781,7 @@ function updateDocumentMinimapPreview() {
   const minimap = app.querySelector('.document-minimap');
   const track = minimap ? minimap.querySelector('.document-minimap-track') : null;
   const content = track ? track.querySelector('.document-minimap-content') : null;
-  const source = app.querySelector('.document-body');
+  const source = minimapSourceElement();
   if (!track || !content || !source) {
     return;
   }
@@ -3525,6 +3806,9 @@ function updateDocumentMinimapPreview() {
   }
   const preview = source.cloneNode(true);
   preview.removeAttribute('id');
+  // The code view's clone would otherwise carry a focusable textarea into the
+  // decorative thumbnail; its text is invisible anyway (the colour layer shows).
+  preview.querySelectorAll('textarea').forEach((node) => node.remove());
   preview.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
   preview.querySelectorAll('a[href]').forEach((link) => {
     // Glossary terms blend into the body text on the page (the a[href^="glossary:"]
@@ -3579,7 +3863,7 @@ function scheduleMinimapViewportUpdate() {
 // above never rendered after a jump). Returns null when the clone/anchor lists are not
 // yet in sync, so the caller can fall back to the estimate.
 function minimapReaderTrueScrolled() {
-  const source = app.querySelector('.document-body');
+  const source = minimapSourceElement();
   if (!source || !minimapCloneOffsets || !minimapCloneOffsets.length) {
     return null;
   }

@@ -5,6 +5,7 @@ https://leaftext.com/docs/01-features/03-library.md
 https://leaftext.com/docs/01-features/04-minimap.md
 https://leaftext.com/docs/01-features/05-settings.md
 https://leaftext.com/docs/01-features/06-themes.md
+https://leaftext.com/docs/01-features/07-editing.md
 https://leaftext.com/docs/01-introduction.md
 https://leaftext.com/docs/02-development/01-architecture.md
 https://leaftext.com/docs/02-development/02-building.md

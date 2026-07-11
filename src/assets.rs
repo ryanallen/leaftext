@@ -5,6 +5,8 @@ pub(crate) const FORWARD_ICON_SVG: &str = include_str!("assets/arrow-right.svg")
 pub(crate) const SETTINGS_ICON_SVG: &str = include_str!("assets/adjustments-vertical.svg");
 pub(crate) const OPEN_LIBRARY_ICON_SVG: &str = include_str!("assets/library.svg");
 pub(crate) const OPEN_ICON_SVG: &str = include_str!("assets/folder-open.svg");
+pub(crate) const CODE_VIEW_ICON_SVG: &str = include_str!("assets/code-bracket.svg");
+pub(crate) const DOCUMENT_ICON_SVG: &str = include_str!("assets/document.svg");
 pub(crate) const BRAND_LOGO_DATA_URI: &str = include_str!("assets/brand-logo.txt");
 pub(crate) const FOOTNOTE_BACKREF_ICON_SVG: &str = include_str!("assets/arrow-uturn-left.svg");
 

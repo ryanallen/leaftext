@@ -45,6 +45,8 @@ flowchart LR
 | Outline | A collapsed list of the document's headings at the top, labelled with the document's line count, for jumping to a section |
 | Minimap | Shows the whole document and your current viewport |
 | Back / Forward | Moves through document and scroll history |
+| Code view | Toggles the page to its raw, editable source — see [Editing](01-features/07-editing.md) |
+| Save | A green button that appears when the source has [unsaved edits](01-features/07-editing.md#save) |
 | Library pane | Lets you browse, graph, and search indexed Markdown files |
 
 ## Basics
@@ -64,8 +66,13 @@ Click a heading in the document or click a spot in the minimap. That jump is add
 | Back | `Alt+Left` | `Cmd+Left` |
 | Forward | `Alt+Right` | `Cmd+Right` |
 | Close tab | `Ctrl+W` | `Cmd+W` |
+| Save ([unsaved edits](01-features/07-editing.md#save)) | `Ctrl+S` | `Cmd+S` |
 
 Mouse side buttons also trigger Back and Forward on Windows and Linux.
+
+### Edit
+
+Click the code-brackets button left of Settings to see the document's raw source, edit it, and press the green **Save** button. The [Editing](01-features/07-editing.md) page covers the whole flow.
 
 ### Reopen
 

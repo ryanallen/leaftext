@@ -2199,7 +2199,12 @@ pub(crate) fn configure_rendered_html_sanitizer(sanitizer: &mut Builder<'_>) {
         )
         .add_tag_attributes("input", &["checked", "disabled", "type"])
         .add_tag_attributes("td", &["align", "colspan"])
-        .add_tag_attributes("th", &["align", "colspan"]);
+        .add_tag_attributes("th", &["align", "colspan"])
+        // Leaf Text controls its own sanitizer, so the source-range / identity
+        // markers the editing model stamps onto blocks (`data-leaf-*`,
+        // `data-src-*`) are allowed through on every tag. They carry no script
+        // and never reach a URL context.
+        .add_generic_attribute_prefixes(&["data-leaf-", "data-src-"]);
 }
 
 pub(crate) fn markdown_title(markdown: &str) -> Option<String> {

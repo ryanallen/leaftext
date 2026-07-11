@@ -19,6 +19,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | Link hints | Hover a link to see what kind it is and where it points |
 | Pager | Previous / Next buttons at the bottom of each document for reading a folder in order |
 | Single window | A second launch opens the file as a tab in the running window instead of a new copy |
+| Code view | Toggle any document to its raw, editable source — see [Editing](07-editing.md) |
 
 ## Model
 
@@ -43,6 +44,7 @@ flowchart LR
 | Forward | `Alt+Right` | `Cmd+Right` |
 | Next tab | `Ctrl+Tab` | `Ctrl+Tab` |
 | Previous tab | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` |
+| Save (with [unsaved edits](07-editing.md#save)) | `Ctrl+S` | `Cmd+S` |
 
 Tab cycling is `Ctrl`-based on every platform, including macOS. Mouse side buttons also trigger Back and Forward.
 
@@ -51,6 +53,7 @@ Tab cycling is `Ctrl`-based on every platform, including macOS. Mouse side butto
 - Opening another file creates another tab.
 - Each tab keeps its own document history.
 - Each tab also keeps its own scroll history.
+- A tab with [unsaved edits](07-editing.md#save) shows a dot beside its name until they are saved.
 - Tabs can be dragged to reorder them.
 - Clicking a tab while the [Graph view](03-library.md#graph) is open flies the graph to that document's node and zooms in on it.
 - Closing the last tab returns to the home screen.
@@ -103,6 +106,7 @@ Key details:
 - Reload re-renders through the same pipeline the file opened with — [TEI XML](01-rendering.md#tei-xml-84000-translations) stays TEI, Markdown stays Markdown.
 - The parent directory is watched instead of only the file, so atomic-save editors still work.
 - Other Markdown files changed in that same folder are indexed live, so the [library](03-library.md#live-updates) pane stays current too.
+- Saving from the [code view](07-editing.md#save) does not trigger a reload — the watcher recognizes the app's own write — and a document with [unsaved edits](07-editing.md#external-changes) is never clobbered by an outside change.
 
 ## Recent files
 

@@ -19,15 +19,17 @@ use std::{
 
 use leaftext::indexer::{event_script, GraphRequest, IndexerEvent, IndexerWorker};
 use leaftext::{
-    app_data_dir, app_shell_html, bundled_asset_response, config_file_path, document_pager_html,
-    fragment_scroll_script, glossary_sheet_script, initial_settings_script, initial_state_script,
-    line_count_script, load_recent_files, load_settings, local_image_protocol_response,
-    local_image_source_dir, navigation_state_script, open_document_with_recent,
-    open_error_state_script, opened_document_from_markdown, opened_document_from_tei,
-    pager_loaded_script, render_markdown_document, save_recent_files, save_settings,
-    scroll_anchor_script, settings_file_path, webview_user_data_dir, workspace_reload_script,
-    workspace_state_script, workspace_switch_script, GraphScope, LibraryView, RecentFiles,
-    ScrollAnchor, Settings, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    app_data_dir, app_shell_html, bundled_asset_response, code_view_script, config_file_path,
+    document_pager_html, fragment_scroll_script, glossary_sheet_script, initial_settings_script,
+    initial_state_script, line_count_script, load_recent_files, load_settings,
+    local_image_protocol_response, local_image_source_dir, navigation_state_script,
+    open_document_with_recent, open_error_state_script, opened_document_from_markdown,
+    opened_document_from_tei, pager_loaded_script, render_markdown_document, save_recent_files,
+    save_result_script, save_settings, scroll_anchor_script, settings_file_path,
+    source_updated_script, webview_user_data_dir, workspace_reload_script, workspace_state_script,
+    workspace_switch_script, DocumentFormat, EditableDocument, GraphScope, LibraryView,
+    OpenedDocument, RecentFiles, ScrollAnchor, Settings, LOCAL_ASSET_PROTOCOL,
+    LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -181,6 +183,16 @@ enum UserEvent {
         path: PathBuf,
         html: String,
     },
+    /// Show the active document as raw editable source (the code view).
+    EnterCodeView,
+    /// Return the active document to the rendered reading view.
+    ExitCodeView,
+    /// The code-view textarea changed; the full buffer text (debounced).
+    UpdateSource {
+        text: String,
+    },
+    /// Write the active document's edit buffer to disk.
+    SaveDocument,
     /// A result/progress event from the background indexer worker, delivered to
     /// the webview through its library callbacks.
     Indexer(IndexerEvent),
@@ -284,6 +296,18 @@ enum IpcCommand {
     },
     #[serde(rename = "loadPager")]
     LoadPager { path: PathBuf },
+    /// Swap the active document to the raw-source code view.
+    #[serde(rename = "enterCodeView")]
+    EnterCodeView,
+    /// Swap the active document back to the rendered reading view.
+    #[serde(rename = "exitCodeView")]
+    ExitCodeView,
+    /// The code-view textarea changed; carries the full buffer text (debounced).
+    #[serde(rename = "updateSource")]
+    UpdateSource { text: String },
+    /// Write the active document's buffer to disk.
+    #[serde(rename = "saveDocument")]
+    SaveDocument,
 }
 
 fn main() {
@@ -1017,6 +1041,31 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                     index_opened_path(indexer.as_ref(), &changed);
                 }
             }
+            Event::UserEvent(UserEvent::EnterCodeView) => {
+                enter_code_view(webview.as_ref(), &mut workspace);
+            }
+            Event::UserEvent(UserEvent::ExitCodeView) => {
+                if let Some(index) = workspace.active {
+                    if let Some(tab) = workspace.tabs.get_mut(index) {
+                        tab.code_view = false;
+                    }
+                }
+                render_active(
+                    &window,
+                    webview.as_ref(),
+                    &mut workspace,
+                    &mut recent,
+                    config_path.as_ref(),
+                    &local_image_source_dir,
+                    ScrollIntent::Reset,
+                );
+            }
+            Event::UserEvent(UserEvent::UpdateSource { text }) => {
+                update_source_buffer(webview.as_ref(), &mut workspace, text);
+            }
+            Event::UserEvent(UserEvent::SaveDocument) => {
+                save_active_document(webview.as_ref(), &mut workspace, &mut file_watch);
+            }
             Event::UserEvent(UserEvent::SetIndexingEnabled { enabled }) => {
                 if let Some(indexer) = indexer.as_ref() {
                     indexer.set_indexing_enabled(enabled);
@@ -1363,6 +1412,18 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
             IpcCommand::LoadPager { path } => {
                 let _ = proxy.send_event(UserEvent::LoadPager { path });
             }
+            IpcCommand::EnterCodeView => {
+                let _ = proxy.send_event(UserEvent::EnterCodeView);
+            }
+            IpcCommand::ExitCodeView => {
+                let _ = proxy.send_event(UserEvent::ExitCodeView);
+            }
+            IpcCommand::UpdateSource { text } => {
+                let _ = proxy.send_event(UserEvent::UpdateSource { text });
+            }
+            IpcCommand::SaveDocument => {
+                let _ = proxy.send_event(UserEvent::SaveDocument);
+            }
         }
     }
 }
@@ -1414,6 +1475,25 @@ struct Tab {
     scroll_history: ScrollHistory,
     title: String,
     saved_scroll_anchor: Option<ScrollAnchor>,
+    /// The editable source buffer for this tab, created the first time the code
+    /// view is opened and kept afterwards so unsaved edits survive toggling
+    /// views and switching tabs. `None` until the file is edited. Rust owns the
+    /// source — this is the authoritative copy a save writes and the reading
+    /// view re-renders from once it exists.
+    edit: Option<EditableDocument>,
+    /// Whether this tab is currently showing the raw-source code view rather
+    /// than the rendered reading view.
+    code_view: bool,
+}
+
+impl Tab {
+    /// The edit buffer for this tab, seeded from `contents` (the text on disk /
+    /// on screen) the first time it is needed. Re-entering the code view reuses
+    /// the existing buffer so unsaved edits are preserved.
+    fn edit_buffer(&mut self, path: &Path, contents: String) -> &mut EditableDocument {
+        self.edit
+            .get_or_insert_with(|| EditableDocument::new(path.to_path_buf(), contents))
+    }
 }
 
 /// The set of open tabs plus which one is active. `active` is `None` when the
@@ -1700,6 +1780,19 @@ fn reload_active_document(
         return;
     };
 
+    // An external change must not clobber unsaved edits. If the active tab has a
+    // dirty edit buffer, leave the buffer (and the view) alone — a proper
+    // conflict-resolution workflow is future work. A clean buffer is kept in
+    // step with the file below.
+    let has_dirty_buffer = workspace
+        .tabs
+        .get(index)
+        .and_then(|tab| tab.edit.as_ref())
+        .is_some_and(EditableDocument::is_dirty);
+    if has_dirty_buffer {
+        return;
+    }
+
     let contents = match fs::read_to_string(&path) {
         Ok(contents) => contents,
         // The file may be mid-save or briefly absent during an atomic rename; a
@@ -1715,6 +1808,35 @@ fn reload_active_document(
         return;
     }
     file_watch.active_hash = Some(hash);
+
+    // Keep a clean edit buffer in step with the file. If the code view is open,
+    // refresh its source in place rather than dropping back to the reading view.
+    let in_code_view = workspace.tabs.get(index).is_some_and(|tab| tab.code_view);
+    if let Some(edit) = workspace
+        .tabs
+        .get_mut(index)
+        .and_then(|tab| tab.edit.as_mut())
+    {
+        edit.adopt_external(contents.clone());
+        if in_code_view {
+            let highlighted = edit.source_view_html();
+            let text = edit.text().to_string();
+            let language = edit.format.language_token().to_string();
+            let display = edit.format.display_name().to_string();
+            if let Some(webview) = webview {
+                if let Err(error) = webview.evaluate_script(&code_view_script(
+                    &highlighted,
+                    &text,
+                    &language,
+                    &display,
+                    false,
+                )) {
+                    eprintln!("Live reload: failed to refresh code view: {error}");
+                }
+            }
+            return;
+        }
+    }
 
     // Render through the same path as an initial open: TEI XML files go through
     // the TEI renderer, everything else through Markdown. Reuse the content we
@@ -1768,6 +1890,144 @@ enum ScrollIntent {
     Restore(Option<ScrollAnchor>),
 }
 
+/// The active tab's index and its current document path, when a document is open.
+fn active_tab_path(workspace: &Workspace) -> Option<(usize, PathBuf)> {
+    let index = workspace.active?;
+    let path = workspace.tabs.get(index)?.history.current()?.clone();
+    Some((index, path))
+}
+
+/// Render a tab's reading view from its edit buffer, so unsaved edits (made in
+/// the code view) are what the reader shows. Chooses the TEI or Markdown
+/// renderer by the buffer's format.
+fn reading_document_from_buffer(edit: &EditableDocument, path: &Path) -> OpenedDocument {
+    match edit.format {
+        DocumentFormat::Xml => opened_document_from_tei(edit.text(), path),
+        DocumentFormat::Markdown => opened_document_from_markdown(edit.text(), path),
+    }
+}
+
+/// Swap the active document to the raw-source code view. Seeds the tab's edit
+/// buffer from disk the first time (reusing it afterwards so unsaved edits
+/// survive), then hands the webview the highlighted source, the exact buffer
+/// text for the textarea, the language, and the dirty state.
+fn enter_code_view(webview: Option<&WebView>, workspace: &mut Workspace) {
+    let Some((index, path)) = active_tab_path(workspace) else {
+        return;
+    };
+
+    // Read the file only when there's no buffer yet; re-entering the code view
+    // reuses the existing buffer so unsaved edits are preserved.
+    let needs_seed = workspace
+        .tabs
+        .get(index)
+        .is_some_and(|tab| tab.edit.is_none());
+    let contents = if needs_seed {
+        match fs::read_to_string(&path) {
+            Ok(contents) => contents,
+            Err(error) => {
+                eprintln!("Code view: failed to read {}: {error}", path.display());
+                return;
+            }
+        }
+    } else {
+        String::new()
+    };
+
+    let Some(tab) = workspace.tabs.get_mut(index) else {
+        return;
+    };
+    let edit = tab.edit_buffer(&path, contents);
+    let highlighted = edit.source_view_html();
+    let text = edit.text().to_string();
+    let language = edit.format.language_token().to_string();
+    let display = edit.format.display_name().to_string();
+    let dirty = edit.is_dirty();
+    tab.code_view = true;
+
+    if let Some(webview) = webview {
+        if let Err(error) = webview.evaluate_script(&code_view_script(
+            &highlighted,
+            &text,
+            &language,
+            &display,
+            dirty,
+        )) {
+            eprintln!("Code view: failed to show source: {error}");
+        }
+    }
+}
+
+/// Apply a debounced code-view edit to the active tab's buffer, then re-highlight
+/// through the same Rust path the reader uses and refresh the code view's colour
+/// layer and dirty state.
+fn update_source_buffer(webview: Option<&WebView>, workspace: &mut Workspace, text: String) {
+    let Some(index) = workspace.active else {
+        return;
+    };
+    let Some(edit) = workspace
+        .tabs
+        .get_mut(index)
+        .and_then(|tab| tab.edit.as_mut())
+    else {
+        return;
+    };
+    edit.set_text(text);
+    let highlighted = edit.source_view_html();
+    let dirty = edit.is_dirty();
+    if let Some(webview) = webview {
+        if let Err(error) = webview.evaluate_script(&source_updated_script(&highlighted, dirty)) {
+            eprintln!("Code view: failed to refresh source: {error}");
+        }
+    }
+}
+
+/// Write the active tab's edit buffer to disk (explicit save). Sets the file
+/// watcher's content hash to the just-written text so the watcher's own
+/// FileChanged for this save is recognized as a no-op instead of fighting the
+/// save with a reload.
+fn save_active_document(
+    webview: Option<&WebView>,
+    workspace: &mut Workspace,
+    file_watch: &mut FileWatch,
+) {
+    let Some(index) = workspace.active else {
+        return;
+    };
+    let Some(edit) = workspace
+        .tabs
+        .get_mut(index)
+        .and_then(|tab| tab.edit.as_mut())
+    else {
+        return;
+    };
+    let path = edit.path.clone();
+    let text = edit.text().to_string();
+    let path_str = path.display().to_string();
+
+    let script = match fs::write(&path, &text) {
+        Ok(()) => {
+            edit.mark_saved();
+            // Self-save suppression: our write triggers a debounced FileChanged
+            // that reads back exactly this text; reload_active_document skips
+            // when the content hash matches, so it won't clobber the buffer.
+            file_watch.active_hash = Some(content_hash(&text));
+            save_result_script(&path_str, true, None)
+        }
+        Err(error) => {
+            let message = error.to_string();
+            eprintln!("Save failed for {}: {message}", path.display());
+            save_result_script(&path_str, false, Some(&message))
+        }
+    };
+
+    if let Some(webview) = webview {
+        if let Err(error) = webview.evaluate_script(&script) {
+            eprintln!("Save: failed to report result: {error}");
+        }
+    }
+}
+
 /// Render the active tab's document (or the home screen) into the webview and
 /// refresh the tab bar, window title, image source dir, and navigation buttons.
 fn render_active(
@@ -1797,90 +2057,102 @@ fn render_active(
                     scroll,
                 );
             };
-            match open_document_with_recent(&path, recent, config_path.map(PathBuf::as_path)) {
-                Ok(success) => {
-                    if let Some(tab) = workspace.tabs.get_mut(index) {
-                        tab.title = success.document.title.clone();
-                    }
-                    window.set_title(&format!("{} - Leaf Text", success.document.title));
-                    if let Some(error) = success.recent_save_error {
-                        eprintln!("Failed to save recent files: {}", error.source);
-                    }
-                    let image_source_path =
-                        fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
-                    update_local_image_source_dir(
-                        local_image_source_dir_state,
-                        local_image_source_dir(&image_source_path),
-                    );
-                    let tabs = workspace.tab_summaries();
-                    if let Some(webview) = webview {
-                        let script = match scroll {
-                            ScrollIntent::Preserve => workspace_reload_script(
-                                &recent.files,
-                                &tabs,
-                                Some(index),
-                                Some(&success.document),
-                            ),
-                            ScrollIntent::Restore(anchor) => workspace_switch_script(
-                                &recent.files,
-                                &tabs,
-                                Some(index),
-                                Some(&success.document),
-                                anchor.as_ref(),
-                            ),
-                            ScrollIntent::Reset => workspace_state_script(
-                                &recent.files,
-                                &tabs,
-                                Some(index),
-                                Some(&success.document),
-                            ),
-                        };
-                        if let Err(error) = webview.evaluate_script(&script) {
-                            eprintln!("Failed to update document view: {error}");
+            // Prefer the in-memory edit buffer so unsaved edits (made in the code
+            // view) are what the reading view shows; only touch disk — and record
+            // Recent — when the tab has no buffer yet.
+            let has_edit = workspace
+                .tabs
+                .get(index)
+                .is_some_and(|tab| tab.edit.is_some());
+            let document = if has_edit {
+                let edit = workspace
+                    .tabs
+                    .get(index)
+                    .and_then(|tab| tab.edit.as_ref())
+                    .expect("edit buffer present");
+                reading_document_from_buffer(edit, &path)
+            } else {
+                match open_document_with_recent(&path, recent, config_path.map(PathBuf::as_path)) {
+                    Ok(success) => {
+                        if let Some(error) = success.recent_save_error {
+                            eprintln!("Failed to save recent files: {}", error.source);
                         }
+                        success.document
                     }
-                }
-                Err(error) => {
-                    let failed_path = error.path().to_path_buf();
-                    let reason = error.reason().to_string();
-                    let missing = error.reason().kind() == io::ErrorKind::NotFound;
-                    eprintln!("Failed to open {}: {}", failed_path.display(), reason);
+                    Err(error) => {
+                        let failed_path = error.path().to_path_buf();
+                        let reason = error.reason().to_string();
+                        let missing = error.reason().kind() == io::ErrorKind::NotFound;
+                        eprintln!("Failed to open {}: {}", failed_path.display(), reason);
 
-                    // A file that no longer exists should stop being offered in
-                    // Recent so the user can't keep re-triggering the same error.
-                    if missing && recent.forget(&failed_path) {
-                        if let Some(config_path) = config_path {
-                            if let Err(save_error) = save_recent_files(config_path, recent) {
-                                eprintln!("Failed to save recent files: {save_error}");
+                        // A file that no longer exists should stop being offered in
+                        // Recent so the user can't keep re-triggering the same error.
+                        if missing && recent.forget(&failed_path) {
+                            if let Some(config_path) = config_path {
+                                if let Err(save_error) = save_recent_files(config_path, recent) {
+                                    eprintln!("Failed to save recent files: {save_error}");
+                                }
                             }
                         }
-                    }
 
-                    // Don't strand the user on a tab that can't render: drop the
-                    // failed entry and fall back to the previous document, or close
-                    // the tab (then a neighbour or the home screen) if it had none.
-                    let recovered = workspace
-                        .tabs
-                        .get_mut(index)
-                        .map(|tab| {
-                            tab.scroll_history.clear();
-                            tab.history.forget_current()
-                        })
-                        .unwrap_or(false);
-                    if !recovered {
-                        workspace.close_tab(index);
-                    }
+                        // Don't strand the user on a tab that can't render: drop the
+                        // failed entry and fall back to the previous document, or
+                        // close the tab (then a neighbour or the home screen).
+                        let recovered = workspace
+                            .tabs
+                            .get_mut(index)
+                            .map(|tab| {
+                                tab.scroll_history.clear();
+                                tab.history.forget_current()
+                            })
+                            .unwrap_or(false);
+                        if !recovered {
+                            workspace.close_tab(index);
+                        }
 
-                    render_active(
-                        window,
-                        webview,
-                        workspace,
-                        recent,
-                        config_path,
-                        local_image_source_dir_state,
-                        ScrollIntent::Reset,
-                    );
-                    show_open_error(webview, &failed_path, &reason);
+                        render_active(
+                            window,
+                            webview,
+                            workspace,
+                            recent,
+                            config_path,
+                            local_image_source_dir_state,
+                            ScrollIntent::Reset,
+                        );
+                        show_open_error(webview, &failed_path, &reason);
+                        return;
+                    }
+                }
+            };
+
+            if let Some(tab) = workspace.tabs.get_mut(index) {
+                tab.title = document.title.clone();
+            }
+            window.set_title(&format!("{} - Leaf Text", document.title));
+            let image_source_path = fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
+            update_local_image_source_dir(
+                local_image_source_dir_state,
+                local_image_source_dir(&image_source_path),
+            );
+            let tabs = workspace.tab_summaries();
+            if let Some(webview) = webview {
+                let script = match scroll {
+                    ScrollIntent::Preserve => {
+                        workspace_reload_script(&recent.files, &tabs, Some(index), Some(&document))
+                    }
+                    ScrollIntent::Restore(anchor) => workspace_switch_script(
+                        &recent.files,
+                        &tabs,
+                        Some(index),
+                        Some(&document),
+                        anchor.as_ref(),
+                    ),
+                    ScrollIntent::Reset => {
+                        workspace_state_script(&recent.files, &tabs, Some(index), Some(&document))
+                    }
+                };
+                if let Err(error) = webview.evaluate_script(&script) {
+                    eprintln!("Failed to update document view: {error}");
                 }
             }
         }

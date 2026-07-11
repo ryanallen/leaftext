@@ -1189,6 +1189,75 @@ button {
   border-color: var(--app-action-hover-background);
   color: var(--app-action-foreground);
 }
+/* Code-view toggle: rests muted like the other secondary icons and greens on
+   hover. The icon itself carries the state — the code brackets in the reading
+   view, a document while the code view is open — at the same muted colour, not
+   a colour change. */
+.code-view-button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--app-muted-foreground);
+}
+.code-view-button:hover {
+  background: var(--app-action-hover-background);
+  border-color: var(--app-action-hover-background);
+  color: var(--app-action-foreground);
+}
+.cv-icon {
+  display: inline-flex;
+}
+.code-view-button .cv-icon-doc,
+.code-view-button.is-active .cv-icon-code {
+  display: none;
+}
+.code-view-button.is-active .cv-icon-doc {
+  display: inline-flex;
+}
+.code-view-button[hidden],
+.save-button[hidden] {
+  display: none;
+}
+/* Save: the affirmative action. Shown only when there are unsaved edits — a
+   solid brand-green button with the word "Save", absent entirely otherwise —
+   deepening to the hover green (the same green the other toolbar buttons take
+   on hover) when pointed at. */
+.save-button {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--app-action-background);
+  color: var(--app-action-foreground);
+  font: 600 13px var(--app-font);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.save-button:hover {
+  background: var(--app-action-hover-background);
+  border-color: var(--app-action-hover-background);
+  color: var(--app-action-foreground);
+}
+/* Unsaved-edits dot on a tab. Sits between the label and the (active-tab-only)
+   close button; hidden unless the tab is modified. */
+.tab-dirty-dot {
+  display: none;
+  width: 7px;
+  height: 7px;
+  min-width: 7px;
+  margin: 0 3px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.tab-modified .tab-dirty-dot {
+  display: inline-block;
+}
+/* On the active tab the close button replaces the dot on hover, so the dot and
+   the X never crowd each other. */
+.tab-active:hover .tab-dirty-dot {
+  display: none;
+}
 button:hover {
   background: var(--app-action-hover-background);
   border-color: var(--app-action-hover-background);
@@ -2592,6 +2661,226 @@ body.library-resizing {
   background: var(--syntax-changed-bg);
   color: var(--syntax-changed);
   font-style: italic;
+}
+/* ---- Code view (raw source editing) -------------------------------------
+   Wrapped source (never scrolls sideways) drawn as three exactly-aligned
+   layers: the colour layer (the reader's own Rust highlighter), a transparent
+   per-line mirror that carries wrap-aware line numbers, and a transparent
+   textarea that owns the caret / selection / IME / undo. The whole document
+   scrolls as one, and a minimap rail on the right drives that scroll so no
+   native scrollbar is needed. Every text layer shares identical metrics so
+   their wrapping — and thus every line's vertical position — matches exactly. */
+/* The reader shell itself is the scroller (its native scrollbar is already
+   hidden, as in the reading view); the code view never scrolls sideways. */
+.reader-shell.code-view-shell {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+/* Laid out like .reader-layout: a single grid cell holding the document (which
+   the reader shell scrolls) with the reader's own .document-minimap overlaid at
+   the cell's right edge — the exact structure the reading view uses, so the
+   shared minimap machinery works unchanged. The --minimap-* variables mirror
+   .reader-layout's; the document reserves the rail's width with margin. */
+.code-view {
+  --cv-gutter: 3.75em;
+  --cv-pad-x: 20px;
+  --cv-pad-y: 16px;
+  --minimap-padding-inline: 8px;
+  --minimap-preview-width: 68px;
+  --minimap-width: calc(var(--minimap-preview-width) + (var(--minimap-padding-inline) * 2));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100%;
+  background: var(--code-block-background, var(--preview-background));
+  font-family: var(--code-font);
+  font-size: 13.5px;
+  line-height: 1.6;
+  tab-size: 4;
+}
+/* Tall as its content (the colour layer is the in-flow height authority), but at
+   least a viewport so short files still fill the pane. */
+.code-view-doc {
+  grid-area: 1 / 1;
+  min-width: 0;
+  margin-right: var(--minimap-width);
+  position: relative;
+  min-height: calc(100vh - 56px);
+}
+/* The reading view bleeds the rail across .reader-layout's reserved right
+   padding; here the document reserves space with margin instead, so the rail
+   sits flush at the cell edge with no bleed. */
+.code-view .document-minimap {
+  margin-right: 0;
+}
+.code-view-highlight,
+.code-view-highlight code,
+.code-view-linenums,
+.code-view-input {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  tab-size: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.code-view-highlight {
+  position: relative;
+  z-index: 0;
+  margin: 0;
+  /* Extra bottom room so the layer is always at least as tall as the textarea,
+     keeping the visible colour text from ever clipping the last line. */
+  padding: var(--cv-pad-y) var(--cv-pad-x) calc(var(--cv-pad-y) + 1.6em)
+    var(--cv-gutter);
+  color: var(--code-block-foreground, var(--preview-foreground));
+  background: transparent;
+  pointer-events: none;
+}
+.code-view-highlight code {
+  display: block;
+  margin: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+}
+.code-view-linenums {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: var(--cv-pad-y) var(--cv-pad-x) var(--cv-pad-y) 0;
+  color: transparent;
+  z-index: 1;
+  pointer-events: none;
+}
+.cv-lnrow {
+  display: flex;
+  align-items: flex-start;
+}
+.cv-lnnum {
+  box-sizing: border-box;
+  flex: 0 0 var(--cv-gutter);
+  padding-right: 14px;
+  text-align: right;
+  color: var(--preview-muted-foreground);
+  opacity: 0.5;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+.cv-lntxt {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.code-view-input {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  margin: 0;
+  border: 0;
+  padding: var(--cv-pad-y) var(--cv-pad-x) calc(var(--cv-pad-y) + 1.6em)
+    var(--cv-gutter);
+  box-sizing: border-box;
+  color: transparent;
+  caret-color: var(--preview-foreground);
+  background: transparent;
+  resize: none;
+  outline: none;
+  overflow: hidden;
+}
+.code-view-input::selection {
+  background: var(--code-block-selection-background);
+  color: transparent;
+}
+.code-view .syn-comment {
+  color: var(--syntax-comment);
+  font-style: italic;
+}
+.code-view .syn-keyword,
+.code-view .syn-storage,
+.code-view .syn-control {
+  color: var(--syntax-keyword);
+  font-weight: 700;
+}
+.code-view .syn-operator {
+  color: var(--syntax-operator);
+  font-weight: 700;
+}
+.code-view .syn-string {
+  color: var(--syntax-string);
+}
+.code-view .syn-constant,
+.code-view .syn-numeric,
+.code-view .syn-boolean,
+.code-view .syn-character,
+.code-view .syn-language {
+  color: var(--syntax-number);
+}
+.code-view .syn-entity,
+.code-view .syn-tag,
+.code-view .syn-attribute,
+.code-view .syn-heading {
+  color: var(--syntax-function);
+}
+.code-view .syn-function,
+.code-view .syn-method {
+  color: var(--syntax-function);
+}
+.code-view .syn-type,
+.code-view .syn-class,
+.code-view .syn-support {
+  color: var(--syntax-type);
+}
+.code-view .syn-variable,
+.code-view .syn-parameter,
+.code-view .syn-property {
+  color: var(--syntax-variable);
+}
+.code-view .syn-punctuation {
+  color: var(--syntax-punctuation);
+}
+.code-view .syn-invalid,
+.code-view .syn-illegal {
+  color: var(--syntax-deleted);
+  text-decoration: underline;
+}
+/* Markdown markup scopes. The rules above cover programming-language scopes
+   (which is why fenced code and XML colour), but raw Markdown itself is mostly
+   markup.* — bold, italic, links, inline code, quotes — which would otherwise
+   sit unstyled and make a prose document look unhighlighted. */
+.code-view .syn-markup.syn-heading,
+.code-view .syn-section {
+  color: var(--syntax-function);
+  font-weight: 700;
+}
+.code-view .syn-markup.syn-bold {
+  color: var(--syntax-keyword);
+  font-weight: 700;
+}
+.code-view .syn-markup.syn-italic {
+  color: var(--syntax-keyword);
+  font-style: italic;
+}
+.code-view .syn-markup.syn-raw {
+  color: var(--syntax-string);
+}
+.code-view .syn-markup.syn-underline.syn-link,
+.code-view .syn-meta.syn-link {
+  color: var(--syntax-number);
+}
+.code-view .syn-markup.syn-quote {
+  color: var(--syntax-comment);
+  font-style: italic;
+}
+/* The list marker itself (`-`, `*`, `1.`) is punctuation.definition.list_item —
+   the markup.list scopes wrap the whole item, so colouring those would tint the
+   item text too. */
+.code-view .syn-punctuation.syn-list_item {
+  color: var(--syntax-keyword);
+  font-weight: 700;
+}
+.code-view .syn-markup.syn-strikethrough {
+  text-decoration: line-through;
 }
 .document-body .math {
   font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
