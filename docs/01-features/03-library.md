@@ -32,6 +32,7 @@ flowchart LR
 A force-directed relationship map of your library: each **node** is a document, each **edge** is a link that resolves from one indexed document to another (a Markdown link, or a `[[wiki]]` link matched by filename). It answers "how does this fit with everything else?" rather than "where is this file?".
 
 - The document you are reading is highlighted in the accent colour and pulled larger, so you can always spot where you are.
+- **Names** float in dim grey beneath the nodes, so you can read the map without hovering. They stay a fixed size as you zoom and are decluttered by fit: where the layout is open every name shows, and where nodes crowd together only the ones that clear their neighbours do — most-connected documents keep their labels first. Zooming into a busy region spreads its nodes apart and reveals more names. The document you are on always keeps its name, and hovering always shows the hovered node's name and its neighbours'.
 - **Click** a node to open that document. **Hover** a node to light up its direct links and dim the rest.
 - **Drag** a node to reposition it, **drag the background** to pan, and **scroll** to zoom.
 - **Click a document's tab** in the tab bar and the graph flies to that document's node and zooms in on it. Clicking the tab you are already on rebuilds the map from the current index, so it always reflects the latest links rather than staying on a stale view.

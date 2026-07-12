@@ -1173,6 +1173,14 @@ const GRAPH_MAX_ZOOM = 4;
 // so the node reads as focused; never zoom out from a closer view the user set.
 const GRAPH_FOCUS_ZOOM = 2.2;
 const GRAPH_FOCUS_DURATION_MS = 420;
+// Ambient labels (the names floating by the nodes you are not on) render at a
+// fixed screen size and are decluttered by collision — see layoutGraphLabels.
+const GRAPH_LABEL_FONT_SIZE = 11;
+const GRAPH_LABEL_GAP = 4; // screen px between a node and the top of its label
+// Above this node count, skip ambient labels: the collision pass would rarely
+// place any in a dense overview and the per-relayout cost stops being free.
+// Active/hover labels still show at any size.
+const GRAPH_AMBIENT_LABEL_MAX = 400;
 
 function setGraphStatus(message) {
   if (!message) {
@@ -1349,6 +1357,9 @@ async function buildGraphScene() {
     active: cssVarColor('--accent', 0x8a63d2),
     hot: cssVarColor('--app-foreground', 0xe6e6e6),
     edge: cssVarColor('--app-border', 0x3a3f4b),
+    // Ambient labels for the documents you are not on: the muted-foreground token
+    // (a dim grey), so they read as secondary next to the active/hover labels.
+    dim: cssVarColor('--app-muted-foreground', 0x8b95a5),
   };
 
   // Build node objects d3 will mutate with x/y, plus their Pixi graphics.
@@ -1372,6 +1383,11 @@ async function buildGraphScene() {
     app, world, edgesGfx, nodes, links, nodeByPath, colors, labelsLayer,
     hoverNode: null, draggingNode: null, panning: false, panLast: null, pressGlobal: null,
     lastWidth: width, lastHeight: height,
+    // Ambient labels wait for the layout to settle so they resolve on stable
+    // positions instead of flickering as the simulation jiggles the nodes.
+    settled: false,
+    // A 2D context used only to measure label widths for the collision pass.
+    measureCtx: document.createElement('canvas').getContext('2d'),
   };
 
   // Adjacency for hover highlighting.
@@ -1435,7 +1451,13 @@ async function buildGraphScene() {
     tickCount += 1;
     if (tickCount % renderEvery === 0) renderGraphFrame(scene);
   });
-  sim.on('end', () => renderGraphFrame(scene));
+  sim.on('end', () => {
+    // The layout has stopped moving: let ambient labels resolve on the final
+    // positions, then paint.
+    scene.settled = true;
+    layoutGraphLabels(scene);
+    renderGraphFrame(scene);
+  });
   scene.sim = sim;
 
   wireGraphPointer(scene);
@@ -1479,53 +1501,154 @@ function renderGraphFrame(scene) {
   }
   for (const node of scene.nodes) {
     if (typeof node.x === 'number') node.gfx.position.set(node.x, node.y);
-    if (node.labelText && node.labelText.visible) node.labelText.position.set(node.x, node.y + graphNodeRadius(node.degree) + 2);
   }
+  // Labels keep a fixed on-screen size and stay anchored under their node; this
+  // only moves the labels already chosen visible, it does not re-decide the set.
+  positionGraphLabels(scene);
   scene.app.render();
 }
 
-// Recolour nodes and choose which labels to show for the current active/hover
-// state. Cheap and only called on state changes, not per frame.
+// Recolour and resize the node dots for the current active/hover state, then let
+// the label pass decide which names to show. Cheap and only called on state
+// changes, not per frame.
 function applyGraphStyles() {
   const scene = graphScene;
   if (!scene) return;
   const { colors, hoverNode } = scene;
   const hoverSet = hoverNode ? scene.neighbors.get(hoverNode.path) : null;
-  let neighborLabels = 0;
   for (const node of scene.nodes) {
     let color = colors.node;
     let alpha = 1;
     let scale = 1;
-    let showLabel = false;
     const isActive = graphActivePath && node.path === graphActivePath;
-    if (isActive) { color = colors.active; scale = 1.7; showLabel = true; }
+    if (isActive) { color = colors.active; scale = 1.7; }
     if (hoverNode) {
-      if (node === hoverNode) { color = colors.hot; scale = 1.6; showLabel = true; }
-      else if (hoverSet && hoverSet.has(node.path)) { color = colors.hot; if (neighborLabels++ < GRAPH_NEIGHBOR_LABEL_CAP) showLabel = true; }
+      if (node === hoverNode) { color = colors.hot; scale = 1.6; }
+      else if (hoverSet && hoverSet.has(node.path)) { color = colors.hot; }
       else if (!isActive) { alpha = 0.22; }
     }
     node.gfx.tint = color;
     node.gfx.alpha = alpha;
     node.gfx.scale.set(scale);
-    setNodeLabel(scene, node, showLabel, color);
   }
+  layoutGraphLabels(scene);
   renderGraphFrame(scene);
+}
+
+// Choose which labels are visible for the current state and place them.
+//
+// Active and hovered nodes (and a hovered node's neighbours) are forced labels.
+// When the layout has settled and there is no hover, every other node becomes an
+// ambient candidate: walked most-connected-first, each wins a label only if its
+// screen box clears every label already placed. So the visible set scales with
+// how much room there is — a handful of neighbours all get names, a dense sphere
+// of hundreds shows only the active node plus whatever fits, and zooming into a
+// region spreads its nodes apart on screen so more of their names appear.
+function layoutGraphLabels(scene) {
+  const { world, colors } = scene;
+  const ws = world.scale.x || 1;
+  const ox = world.position.x;
+  const oy = world.position.y;
+  const screenW = scene.app.screen.width;
+  const screenH = scene.app.screen.height;
+  const hoverNode = scene.hoverNode;
+  const hoverSet = hoverNode ? scene.neighbors.get(hoverNode.path) : null;
+  const activeNode = graphActivePath ? scene.nodeByPath.get(graphActivePath) : null;
+
+  // Build the priority-ordered candidate list. `forced` labels always show;
+  // ambient ones must clear the collision test. Nodes without a position yet
+  // (before the first tick) are skipped.
+  const candidates = [];
+  const seen = new Set();
+  const push = (node, color, forced) => {
+    if (!node || seen.has(node) || typeof node.x !== 'number') return;
+    seen.add(node);
+    candidates.push({ node, color, forced });
+  };
+  push(activeNode, colors.active, true);
+  if (hoverNode) {
+    push(hoverNode, colors.hot, true);
+    let n = 0;
+    for (const node of scene.nodes) {
+      if (n >= GRAPH_NEIGHBOR_LABEL_CAP) break;
+      if (hoverSet && hoverSet.has(node.path) && !seen.has(node)) { push(node, colors.hot, true); n++; }
+    }
+  } else if (scene.settled && scene.nodes.length <= GRAPH_AMBIENT_LABEL_MAX) {
+    const rest = scene.nodes.filter((node) => !seen.has(node) && typeof node.x === 'number');
+    // Hubs first, so the most-connected documents keep their names when space is tight.
+    rest.sort((a, b) => (b.degree - a.degree) || (a.path < b.path ? -1 : 1));
+    for (const node of rest) push(node, colors.dim, false);
+  }
+
+  const placed = [];
+  const PADX = 5;
+  const PADY = 2;
+  const visible = new Set();
+  for (const cand of candidates) {
+    const node = cand.node;
+    const sx = ox + node.x * ws;
+    const sy = oy + node.y * ws;
+    const w = labelScreenWidth(scene, node) + PADX * 2;
+    const h = GRAPH_LABEL_FONT_SIZE + PADY * 2 + 2;
+    const top = sy + graphNodeRadius(node.degree) * node.gfx.scale.y * ws + GRAPH_LABEL_GAP;
+    const left = sx - w / 2;
+    // Off-canvas labels are neither drawn nor allowed to block on-screen ones.
+    if (left > screenW || left + w < 0 || top > screenH || top + h < 0) continue;
+    const rect = { l: left, t: top, r: left + w, b: top + h };
+    if (!cand.forced) {
+      let hit = false;
+      for (const p of placed) {
+        if (rect.l < p.r && rect.r > p.l && rect.t < p.b && rect.b > p.t) { hit = true; break; }
+      }
+      if (hit) continue;
+    }
+    placed.push(rect);
+    visible.add(node);
+    setNodeLabel(scene, node, true, cand.color);
+  }
+  // Hide any label that did not win a slot this pass.
+  for (const node of scene.nodes) {
+    if (!visible.has(node) && node.labelText) node.labelText.visible = false;
+  }
+  positionGraphLabels(scene);
+}
+
+// Measure a label's on-screen width once (labels are a fixed screen size, so the
+// unscaled text width is the screen width) and cache it on the node.
+function labelScreenWidth(scene, node) {
+  if (node.labelWidth == null) {
+    scene.measureCtx.font = GRAPH_LABEL_FONT_SIZE + 'px "Noto Sans", sans-serif';
+    node.labelWidth = scene.measureCtx.measureText(node.label).width;
+  }
+  return node.labelWidth;
+}
+
+// Keep every visible label a constant on-screen size (counter-scaling the world
+// zoom) and anchored a fixed gap under its node. Positions live in world space;
+// the inverse scale cancels the world zoom so the text neither grows nor blurs.
+function positionGraphLabels(scene) {
+  const inv = 1 / (scene.world.scale.x || 1);
+  for (const node of scene.nodes) {
+    const label = node.labelText;
+    if (!label || !label.visible || typeof node.x !== 'number') continue;
+    label.scale.set(inv);
+    label.position.set(node.x, node.y + graphNodeRadius(node.degree) * node.gfx.scale.y + GRAPH_LABEL_GAP * inv);
+  }
 }
 
 function setNodeLabel(scene, node, show, color) {
   if (show && !node.labelText) {
     const text = new PIXI.Text({
       text: node.label,
-      style: { fontFamily: 'Noto Sans, sans-serif', fontSize: 11, fill: scene.colors.hot, align: 'center' },
+      // White base so the tint reproduces the target colour exactly, the same way
+      // the node dots are drawn white and tinted.
+      style: { fontFamily: 'Noto Sans, sans-serif', fontSize: GRAPH_LABEL_FONT_SIZE, fill: 0xffffff, align: 'center' },
     });
     text.anchor.set(0.5, 0);
-    // Pixi rasterizes the label to a bitmap texture once; zooming the world then
-    // magnifies that bitmap, which is what makes labels blur when you wheel in.
-    // Rasterize at the display density scaled up to the maximum zoom so the
-    // texture still has ~1:1 pixels when fully magnified — crisp at every zoom.
-    // Only a few labels are ever shown, so the extra texture size is negligible.
-    // Capped so a HiDPI display doesn't push the texture density absurdly high.
-    text.resolution = Math.min((window.devicePixelRatio || 1) * GRAPH_MAX_ZOOM, 8);
+    // Labels hold a fixed on-screen size (positionGraphLabels counter-scales the
+    // world zoom), so the bitmap never magnifies past its rasterized size — the
+    // display density alone keeps it crisp at every zoom.
+    text.resolution = window.devicePixelRatio || 1;
     node.labelText = text;
     scene.labelsLayer.addChild(text);
   }
@@ -1591,6 +1714,15 @@ function wireGraphPointer(scene) {
         && Math.hypot(event.global.x - scene.pressGlobal.x, event.global.y - scene.pressGlobal.y) > 4;
       if (!moved) send({ command: 'openRecent', path: node.path });
     }
+    if (scene.panning) {
+      // A pan slid nodes across the viewport edges; re-decide which labels are
+      // on screen (overlaps are translation-invariant, but culling is not).
+      scene.panning = false;
+      scene.panLast = null;
+      layoutGraphLabels(scene);
+      renderGraphFrame(scene);
+      return;
+    }
     scene.panning = false;
     scene.panLast = null;
   };
@@ -1600,6 +1732,9 @@ function wireGraphPointer(scene) {
     event.preventDefault();
     const factor = event.deltaY < 0 ? 1.12 : 1 / 1.12;
     graphZoomAt(scene, event.offsetX, event.offsetY, factor);
+    // Zoom changes how far apart the nodes sit on screen, so re-decide which
+    // ambient labels fit before repainting.
+    layoutGraphLabels(scene);
     renderGraphFrame(scene);
   }, { passive: false });
 }
@@ -1622,6 +1757,7 @@ function wireGraphResize(scene) {
     try { scene.app.renderer.resize(w, h); } catch (_) { /* renderer gone */ }
     scene.world.position.x += dx;
     scene.world.position.y += dy;
+    layoutGraphLabels(scene);
     renderGraphFrame(scene);
   });
   ro.observe(libraryGraphCanvas);
@@ -1669,6 +1805,9 @@ function focusGraphNode(scene, node) {
       scene.focusRaf = requestAnimationFrame(step);
     } else {
       scene.focusRaf = null;
+      // Settled at the focus zoom: re-decide labels for the final view.
+      layoutGraphLabels(scene);
+      renderGraphFrame(scene);
     }
   };
   scene.focusRaf = requestAnimationFrame(step);
