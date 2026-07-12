@@ -3100,13 +3100,14 @@ body.library-resizing {
   will-change: top;
 }
 /* The clone itself: a real, shrunken rendering of the document. JS sets its pixel
-   width and the scale transform; transform-origin pins it to the top-left so the
-   scaled height lines up. It carries the .document-body class, so zero that class's
-   scroll-origin margin here. */
+   width and a translateY(sourceTop) + scale transform; transform-origin pins it to
+   the top-left so the scaled height lines up and the nudge drops the thumbnail to
+   where the real content begins. It carries the .document-body class, so zero that
+   class's scroll-origin margin here (the JS translateY positions it instead) while
+   keeping its own padding, so the clone's internal layout matches the page. */
 .document-minimap-preview {
   box-sizing: border-box;
   margin: 0 !important;
-  padding-top: 0 !important;
   transform-origin: 0 0;
   pointer-events: none;
 }

@@ -6,7 +6,7 @@ The minimap is a scaled side-rail showing the actual document beside the reading
 
 ## How it works
 
-The minimap clones the rendered document and shrinks it to the rail width with a CSS `transform: scale(...)`, the way a code editor's minimap does. What you see in the rail is a real (very small) copy of the page, so the text that is actually there is what shows up. The clone is stripped of ids and links so nothing in it is focusable or duplicated for assistive technology, and it inherits the active theme through the shared stylesheet — so switching light/dark needs no rebuild.
+The minimap clones the rendered document and shrinks it to the rail width with a CSS transform — a `scale(...)` to the rail width, plus a vertical nudge so the thumbnail lines up with where the real content begins — the way a code editor's minimap does. What you see in the rail is a real (very small) copy of the page, so the text that is actually there is what shows up. The clone is stripped of ids and links so nothing in it is focusable or duplicated for assistive technology, and it inherits the active theme through the shared stylesheet — so switching light/dark needs no rebuild.
 
 A viewport indicator overlays the portion currently visible; as you scroll, it moves in lockstep. When the document is taller than the rail, the thumbnail itself slides inside the rail (again, like a code editor) so the region around your position stays in view. Clicking anywhere on the rail scrolls the reader to that point in the document; dragging the indicator keeps the grabbed point under the cursor.
 
@@ -16,7 +16,7 @@ The clone is rebuilt only when it needs to be — when the document's content ch
 - `--minimap-viewport-height` — sizes the indicator proportionally to the reader window
 - `--minimap-preview-top` — slides the thumbnail inside the rail on tall documents (the CSS maps it to the clone's `top`)
 
-A `requestAnimationFrame`-throttled loop writes those on scroll, so the rail stays fluid without blocking the main thread. The indicator's height and travel come from the reader's real scroll range and the clone's own measured height, so click-to-scroll and the indicator stay aligned with the thumbnail on documents of any length.
+A `requestAnimationFrame`-throttled loop writes those on scroll, so the rail stays fluid without blocking the main thread. The indicator's position and travel come from the reader's exact scroll position over its scrollable height, and the indicator's height is the reader window scaled to the rail — so click-to-scroll and the indicator stay aligned with the thumbnail on documents of any length.
 
 > [!NOTE]
 > The thumbnail is a second, scaled-down layout of the whole document, built for the rail so it can show real text at the right height. For a very large document that costs extra memory and a background layout pass when the thumbnail is (re)built, but it is never on the scroll path. It is the deliberate trade for a legible, honest thumbnail.
