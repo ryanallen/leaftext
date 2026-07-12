@@ -2903,28 +2903,52 @@ body.library-resizing {
 /* Markdown markup scopes. The rules above cover programming-language scopes
    (which is why fenced code and XML colour), but raw Markdown itself is mostly
    markup.* — bold, italic, links, inline code, quotes — which would otherwise
-   sit unstyled and make a prose document look unhighlighted. */
+   sit unstyled and make a prose document look unhighlighted.
+
+   Each construct also carries its own delimiter scope — the `#` of a heading,
+   the `[` `]` `(` `)` of a link, the `**`/`_` of emphasis, the `` ` `` of inline
+   code, the `>` of a quote — as punctuation.definition.*. Without a rule per
+   delimiter those markers match only the generic .syn-punctuation above and
+   render in the muted grey used for code punctuation, so they read as plain text
+   next to their coloured content (the "the brackets aren't coloured" problem).
+   Pairing each markup rule with its punctuation.definition sibling — at a higher
+   specificity than the generic .syn-punctuation — colours the marker to match the
+   construct it opens, the way an editor like VS Code does. */
 .code-view .syn-markup.syn-heading,
-.code-view .syn-section {
+.code-view .syn-section,
+.code-view .syn-punctuation.syn-definition.syn-heading {
   color: var(--syntax-function);
   font-weight: 700;
 }
-.code-view .syn-markup.syn-bold {
+.code-view .syn-markup.syn-bold,
+.code-view .syn-punctuation.syn-definition.syn-bold {
   color: var(--syntax-keyword);
   font-weight: 700;
 }
-.code-view .syn-markup.syn-italic {
+.code-view .syn-markup.syn-italic,
+.code-view .syn-punctuation.syn-definition.syn-italic {
   color: var(--syntax-keyword);
   font-style: italic;
 }
-.code-view .syn-markup.syn-raw {
+.code-view .syn-markup.syn-raw,
+.code-view .syn-punctuation.syn-definition.syn-raw {
   color: var(--syntax-string);
 }
 .code-view .syn-markup.syn-underline.syn-link,
 .code-view .syn-meta.syn-link {
   color: var(--syntax-number);
 }
-.code-view .syn-markup.syn-quote {
+/* Link/image delimiters: `[` `]` around the label (punctuation.definition.link)
+   and `(` `)` around the destination (punctuation.definition.metadata). Colour
+   them with the link hue so `[label](url)` reads as one coloured unit instead of
+   grey brackets bracketing coloured text. */
+.code-view .syn-punctuation.syn-definition.syn-link,
+.code-view .syn-punctuation.syn-definition.syn-metadata,
+.code-view .syn-punctuation.syn-definition.syn-image {
+  color: var(--syntax-number);
+}
+.code-view .syn-markup.syn-quote,
+.code-view .syn-punctuation.syn-definition.syn-blockquote {
   color: var(--syntax-comment);
   font-style: italic;
 }
@@ -2937,6 +2961,18 @@ body.library-resizing {
 }
 .code-view .syn-markup.syn-strikethrough {
   text-decoration: line-through;
+}
+/* XML: give attribute names their own hue so they read apart from the element
+   name (both are entity.* and would otherwise share the tag colour), and bold
+   the element name the way an editor does. The angle brackets stay on the muted
+   generic .syn-punctuation, which matches how editors keep XML/HTML tag
+   punctuation quiet against the coloured names. */
+.code-view .syn-entity.syn-name.syn-tag {
+  font-weight: 700;
+}
+.code-view .syn-entity.syn-attribute-name {
+  color: var(--syntax-variable);
+  font-weight: 400;
 }
 .document-body .math {
   font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;

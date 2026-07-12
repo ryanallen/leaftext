@@ -3348,6 +3348,29 @@ fn reading_mode_css_keeps_markdown_and_code_ready_for_theme_tokens() {
 }
 
 #[test]
+fn code_view_colours_markdown_and_xml_delimiters() {
+    // The code editor colours each Markdown/XML construct's delimiter — not just
+    // its content — so the `#`, `[] ()`, `**`, backticks and `>` don't fall through
+    // to the muted generic .syn-punctuation and read as plain grey text. Each rule
+    // targets the punctuation.definition.* scope at higher specificity than the
+    // generic .code-view .syn-punctuation rule.
+    let css = reading_mode_css();
+
+    for selector in [
+        ".code-view .syn-punctuation.syn-definition.syn-heading",
+        ".code-view .syn-punctuation.syn-definition.syn-bold",
+        ".code-view .syn-punctuation.syn-definition.syn-italic",
+        ".code-view .syn-punctuation.syn-definition.syn-raw",
+        ".code-view .syn-punctuation.syn-definition.syn-link",
+        ".code-view .syn-punctuation.syn-definition.syn-metadata",
+        ".code-view .syn-punctuation.syn-definition.syn-blockquote",
+        ".code-view .syn-entity.syn-attribute-name",
+    ] {
+        assert_contains(css, selector);
+    }
+}
+
+#[test]
 fn reading_mode_css_keeps_code_surfaces_readable_in_light_and_dark() {
     let css = reading_mode_css();
 
