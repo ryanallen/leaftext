@@ -78,6 +78,7 @@ enum UserEvent {
     SwitchTab {
         index: usize,
         scroll_anchor: ScrollAnchor,
+        code_scroll: Option<f64>,
     },
     MoveTab {
         from: usize,
@@ -243,6 +244,10 @@ enum IpcCommand {
     SwitchTab {
         index: usize,
         scroll_anchor: ScrollAnchor,
+        /// Code-view scroll fraction when the outgoing tab is showing source;
+        /// `None` for a reading-view tab.
+        #[serde(default)]
+        code_scroll: Option<f64>,
     },
     #[serde(rename = "moveTab")]
     MoveTab { from: usize, to: usize },
@@ -793,6 +798,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             Event::UserEvent(UserEvent::SwitchTab {
                 index,
                 scroll_anchor,
+                code_scroll,
             }) => {
                 // Clicking the active tab is a no-op; re-rendering would jump the
                 // reader.
@@ -802,6 +808,9 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 if let Some(active) = workspace.active {
                     if let Some(tab) = workspace.tabs.get_mut(active) {
                         tab.saved_scroll_anchor = Some(scroll_anchor);
+                        // Remember where the source editor was left; `None` for a
+                        // reading-view tab, which leaves nothing to restore.
+                        tab.saved_code_scroll = code_scroll;
                     }
                 }
                 if workspace.set_active(index) {
@@ -1040,7 +1049,9 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 }
             }
             Event::UserEvent(UserEvent::EnterCodeView) => {
-                enter_code_view(webview.as_ref(), &mut workspace);
+                // A fresh toggle carries its own position: the page stashed the
+                // reading view's scroll fraction before asking to enter.
+                enter_code_view(webview.as_ref(), &mut workspace, None);
             }
             Event::UserEvent(UserEvent::ExitCodeView) => {
                 if let Some(index) = workspace.active {
@@ -1361,10 +1372,12 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
             IpcCommand::SwitchTab {
                 index,
                 scroll_anchor,
+                code_scroll,
             } => {
                 let _ = proxy.send_event(UserEvent::SwitchTab {
                     index,
                     scroll_anchor,
+                    code_scroll,
                 });
             }
             IpcCommand::MoveTab { from, to } => {
@@ -1534,6 +1547,11 @@ struct Tab {
     scroll_history: ScrollHistory,
     title: String,
     saved_scroll_anchor: Option<ScrollAnchor>,
+    /// Where the code view was scrolled when this tab was last left, as a 0..1
+    /// fraction of the scrollable range. Restored on return so switching tabs
+    /// keeps the source editor's place, the way `saved_scroll_anchor` does for
+    /// the reading view. `None` until the tab has been left while in code view.
+    saved_code_scroll: Option<f64>,
     /// The editable source buffer, created on first edit and kept so unsaved
     /// edits survive view toggles and tab switches. `None` until edited. The
     /// authoritative copy a save writes and the reading view re-renders from.
@@ -1884,6 +1902,8 @@ fn reload_active_document(
                     &language,
                     &display,
                     false,
+                    // Live reload refreshes in place; the page keeps its scroll.
+                    None,
                 )) {
                     eprintln!("Live reload: failed to refresh code view: {error}");
                 }
@@ -1961,7 +1981,11 @@ fn reading_document_from_buffer(edit: &EditableDocument, path: &Path) -> OpenedD
 /// Swap the active document to the code view. Seeds the edit buffer from disk
 /// the first time, then hands the webview the highlighted source, buffer text,
 /// language, and dirty state.
-fn enter_code_view(webview: Option<&WebView>, workspace: &mut Workspace) {
+fn enter_code_view(
+    webview: Option<&WebView>,
+    workspace: &mut Workspace,
+    scroll_fraction: Option<f64>,
+) {
     let Some((index, path)) = active_tab_path(workspace) else {
         return;
     };
@@ -2002,6 +2026,7 @@ fn enter_code_view(webview: Option<&WebView>, workspace: &mut Workspace) {
             &language,
             &display,
             dirty,
+            scroll_fraction,
         )) {
             eprintln!("Code view: failed to show source: {error}");
         }
@@ -2196,6 +2221,29 @@ fn render_active(
                     scroll,
                 );
             };
+            // A tab left in code view must stay in code view when it is
+            // re-rendered (switching tabs away and back, reordering tabs). The
+            // reading-view render below would silently drop out of the source
+            // editor, so restore the code view from the tab's buffer instead.
+            if workspace.tabs.get(index).is_some_and(|tab| tab.code_view) {
+                if let Some(title) = workspace.tabs.get(index).map(|tab| tab.title.clone()) {
+                    window.set_title(&format!("{title} - Leaf Text"));
+                }
+                // Restoring a tab (switching back) lands at its saved code-view
+                // position; a reorder preserves the page's current scroll (None,
+                // handled page-side), and a reset starts at the top.
+                let scroll_fraction = match &scroll {
+                    ScrollIntent::Restore(_) => workspace
+                        .tabs
+                        .get(index)
+                        .and_then(|tab| tab.saved_code_scroll),
+                    ScrollIntent::Preserve => None,
+                    ScrollIntent::Reset => Some(0.0),
+                };
+                enter_code_view(webview, workspace, scroll_fraction);
+                return;
+            }
+
             // Prefer this document's edit buffer so unsaved edits show — but only
             // when the buffer is for THIS document, or a leftover buffer would
             // shadow a page opened by a link click.

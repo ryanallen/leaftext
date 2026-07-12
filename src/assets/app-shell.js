@@ -2125,7 +2125,12 @@ window.addEventListener('keydown', (event) => {
         // The keyboard cycle always lands on a different tab, so its document
         // load may be slow — show the spinner while the host renders it.
         beginReaderLoading();
-        send({ command: 'switchTab', index: next - 1, scroll_anchor: currentScrollAnchor() });
+        send({
+          command: 'switchTab',
+          index: next - 1,
+          scroll_anchor: currentScrollAnchor(),
+          code_scroll: codeViewActive ? viewScrollFraction() : null,
+        });
       }
     }
     return;
@@ -2313,7 +2318,12 @@ function renderTabs(state) {
       // A real switch renders the other document (which may be slow); show the
       // spinner. Re-clicking the active tab is a host no-op, so skip it there.
       if (!wasActive) beginReaderLoading();
-      send({ command: 'switchTab', index, scroll_anchor: currentScrollAnchor() });
+      send({
+        command: 'switchTab',
+        index,
+        scroll_anchor: currentScrollAnchor(),
+        code_scroll: codeViewActive ? viewScrollFraction() : null,
+      });
       // Reveal even when this is already the active tab (no state round-trip
       // from the host): clicking a file's tab snaps the library back to it, and
       // in graph mode flies the camera to that node and zooms in. Clicking the
@@ -2829,6 +2839,10 @@ function renderCodeView(state) {
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
   readerAnchorBlocks = null;
+  // If the code view is already on screen (live reload, tab reorder), remember
+  // where it sits so an in-place re-render doesn't jump to the top. An explicit
+  // restored fraction or a pending toggle fraction still wins over this.
+  const priorCodeScroll = app.querySelector('.code-view-input') ? viewScrollFraction() : null;
   app.className = 'reader-shell has-document code-view-shell';
   const text = state.text || '';
   lastSentSourceText = text;
@@ -2882,10 +2896,15 @@ function renderCodeView(state) {
   }
   // Setting .value parks the caret at the end, and focus() would scroll it into
   // view (yanking to the bottom). Park at the start, focus without scrolling,
-  // then land where the reading view was.
+  // then land where we should: an explicit restored position (returning to a
+  // tab left in code view), else a pending toggle fraction, else the position
+  // the code view already held (in-place re-render).
   textarea.setSelectionRange(0, 0);
   textarea.focus({ preventScroll: true });
-  const fraction = pendingViewScrollFraction;
+  const explicit = typeof state.scrollFraction === 'number' ? state.scrollFraction : null;
+  let fraction = explicit;
+  if (fraction == null) fraction = pendingViewScrollFraction;
+  if (fraction == null) fraction = priorCodeScroll;
   pendingViewScrollFraction = null;
   const scrollable = Math.max(0, app.scrollHeight - app.clientHeight);
   app.scrollTop = (fraction || 0) * scrollable;

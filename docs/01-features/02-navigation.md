@@ -54,6 +54,7 @@ Tab cycling is `Ctrl`-based on every platform, including macOS. Mouse side butto
 - Opening another file creates another tab.
 - Each tab keeps its own document history.
 - Each tab also keeps its own scroll history.
+- Switching away from a tab and back returns you to where you left it — the same reading position, or, for a tab in the [code view](07-editing.md#code-view), the same spot in the source.
 - A tab with [unsaved edits](07-editing.md#save) shows a dot beside its name until they are saved.
 - Tabs can be dragged to reorder them.
 - Clicking a tab while the [Graph view](03-library.md#graph) is open flies the graph to that document's node and zooms in on it.

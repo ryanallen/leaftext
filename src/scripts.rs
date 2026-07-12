@@ -199,14 +199,21 @@ pub fn code_view_script(
     language: &str,
     display_name: &str,
     dirty: bool,
+    scroll_fraction: Option<f64>,
 ) -> String {
-    let state = serde_json::json!({
+    let mut state = serde_json::json!({
         "html": highlighted_html,
         "text": text,
         "language": language,
         "displayName": display_name,
         "dirty": dirty,
     });
+    // A restored position (returning to a tab left in code view) rides along as
+    // a 0..1 scroll fraction; omit it entirely otherwise so the page keeps its
+    // own placement (fresh toggle, in-place live reload).
+    if let Some(fraction) = scroll_fraction {
+        state["scrollFraction"] = serde_json::json!(fraction);
+    }
     format!("window.leafShowCodeView({});", state)
 }
 
