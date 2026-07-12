@@ -13,6 +13,7 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::Metadata;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
@@ -63,9 +64,12 @@ const CHUNK_TARGET_BYTES: usize = 1500;
 /// even when `mtime + size` are unchanged.
 const CURRENT_DERIVED_VERSION: i64 = 1;
 
-/// Conservative v1 cap so one huge file cannot stall the crawl. Files over this
-/// are skipped, recorded `too_large`, and the walk continues.
-const MAX_MARKDOWN_BYTES: u64 = 2 * 1024 * 1024;
+/// How many bytes of any one file the indexer reads and indexes. Files at or
+/// under this are read whole; a larger file is indexed from its leading prefix
+/// (title, headings, chunks, frontmatter, links) and still appears in the
+/// library — the cap bounds crawl work and manifest size, it does not exclude
+/// the file. The reader opens the full file regardless of this cap.
+const MAX_INDEX_BYTES: u64 = 2 * 1024 * 1024;
 
 /// Parse/hash worker count. Parse + hash is the crawl bottleneck; many parsers
 /// funnel to one writer.
@@ -2076,7 +2080,7 @@ fn write_file_record(
             mark_feature_ready(&tx, file_id, LINKS_FEATURE, LINKS_SCHEMA_VERSION, hash)?;
         }
     } else {
-        // A file leaving `ok` (unreadable/too_large) loses its feature readiness
+        // A file leaving `ok` (unreadable) loses its feature readiness
         // and its derived data in the same transaction that updates its status.
         delete_chunks(&tx, file_id)?;
         delete_frontmatter(&tx, file_id)?;
@@ -2477,7 +2481,6 @@ enum FileOutcome {
         links: Vec<DocLink>,
     },
     Unreadable,
-    TooLarge,
     Cancelled,
 }
 
@@ -2492,21 +2495,31 @@ fn process_file(job: &ParseJob, cancel: &AtomicBool) -> FileOutcome {
     if cancel.load(Ordering::SeqCst) {
         return FileOutcome::Cancelled;
     }
-    if job.size as u64 > MAX_MARKDOWN_BYTES {
-        return FileOutcome::TooLarge;
-    }
-    let bytes = match std::fs::read(io_path(&job.abs_path)) {
-        Ok(bytes) => bytes,
+    // Read at most MAX_INDEX_BYTES so a huge file never loads whole into memory.
+    // A file over the cap is indexed from this leading prefix rather than skipped,
+    // so it still shows up in the library and is searchable up to the cap.
+    let mut bytes = Vec::new();
+    match std::fs::File::open(io_path(&job.abs_path)) {
+        Ok(file) => {
+            if file.take(MAX_INDEX_BYTES).read_to_end(&mut bytes).is_err() {
+                return FileOutcome::Unreadable;
+            }
+        }
         Err(_) => return FileOutcome::Unreadable,
-    };
-    if bytes.len() as u64 > MAX_MARKDOWN_BYTES {
-        return FileOutcome::TooLarge;
     }
+    // `take` stops at the cap, so a file at or beyond it was cut off mid-content
+    // and its trailing bytes may be a partial UTF-8 codepoint.
+    let truncated = bytes.len() as u64 >= MAX_INDEX_BYTES;
     if bytes.contains(&0u8) {
         return FileOutcome::Unreadable;
     }
-    let content = match String::from_utf8(bytes) {
-        Ok(text) => text,
+    let content = match std::str::from_utf8(&bytes) {
+        Ok(text) => text.to_string(),
+        // A truncated read can split a multibyte char at the end; keep the valid
+        // prefix. A file read whole must be valid UTF-8 or it cannot be rendered.
+        Err(error) if truncated => {
+            String::from_utf8_lossy(&bytes[..error.valid_up_to()]).into_owned()
+        }
         Err(_) => return FileOutcome::Unreadable,
     };
     let content_hash = blake3::hash(content.as_bytes()).to_hex().to_string();
@@ -2586,25 +2599,6 @@ fn apply_result(
                 job.size,
                 job.mtime,
                 "unreadable",
-                None,
-                None,
-                &[],
-                &[],
-                &[],
-                &[],
-                scan_run_id,
-            )?;
-        }
-        FileOutcome::TooLarge => {
-            write_file_record(
-                conn,
-                job.root_id,
-                &abs,
-                &job.display_path,
-                &job.filename,
-                job.size,
-                job.mtime,
-                "too_large",
                 None,
                 None,
                 &[],
@@ -3410,6 +3404,16 @@ mod tests {
         .ok()
     }
 
+    fn title_of(conn: &Connection, abs: &str) -> Option<String> {
+        conn.query_row(
+            "SELECT title FROM files WHERE abs_path = ?1",
+            params![abs],
+            |row| row.get::<_, Option<String>>(0),
+        )
+        .ok()
+        .flatten()
+    }
+
     #[test]
     fn migrations_create_schema_at_current_version() {
         let dir = unique_dir("migrate");
@@ -3664,14 +3668,14 @@ mod tests {
     }
 
     #[test]
-    fn marks_too_large_and_unreadable_and_keeps_them_out_of_the_tree() {
+    fn indexes_oversized_from_prefix_and_keeps_unreadable_out_of_the_tree() {
         let dir = unique_dir("status");
         let root = dir.join("vault");
         write_file(&root.join("ok.md"), "# Ok\n");
         // Binary-looking content (NUL byte) -> unreadable.
         write_file(&root.join("binary.md"), "before\u{0}after");
-        // Oversized -> too_large.
-        let big = "a".repeat((MAX_MARKDOWN_BYTES as usize) + 16);
+        // Oversized: a real H1 in the leading prefix, then filler past the cap.
+        let big = format!("# Huge\n\n{}", "a ".repeat(MAX_INDEX_BYTES as usize));
         write_file(&root.join("huge.md"), &big);
 
         let mut conn = open_db(&dir).expect("db opens");
@@ -3681,16 +3685,26 @@ mod tests {
             status_of(&conn, &path_to_string(&root.join("binary.md"))).as_deref(),
             Some("unreadable")
         );
+        // The oversized file is indexed (from its prefix), not skipped.
         assert_eq!(
             status_of(&conn, &path_to_string(&root.join("huge.md"))).as_deref(),
-            Some("too_large")
+            Some("ok")
         );
 
         let tree = build_tree(&conn).expect("tree built");
         let mut paths = Vec::new();
         flatten_paths(&tree, &mut paths);
-        assert_eq!(paths.len(), 1, "only the ok file shows");
-        assert!(paths[0].ends_with("ok.md"));
+        // Both the small and the oversized file show; only the binary one is hidden.
+        assert_eq!(paths.len(), 2, "the ok and oversized files show");
+        assert!(paths.iter().any(|p| p.ends_with("ok.md")));
+        assert!(paths.iter().any(|p| p.ends_with("huge.md")));
+        assert!(paths.iter().all(|p| !p.ends_with("binary.md")));
+
+        // Its title came from the H1 in the indexed prefix.
+        assert_eq!(
+            title_of(&conn, &path_to_string(&root.join("huge.md"))).as_deref(),
+            Some("Huge")
+        );
 
         drop(conn);
         let _ = std::fs::remove_dir_all(&dir);

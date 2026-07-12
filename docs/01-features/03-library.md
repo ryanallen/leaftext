@@ -145,7 +145,7 @@ flowchart LR
 | --- | --- |
 | Storage | `manifest.db` |
 | Worker pool | 4 parallel parse/hash workers |
-| Large-file cutoff | Files over 2 MB are skipped |
+| Large-file indexing | Files over 2 MB are indexed from their first 2 MB, not skipped |
 | DB mode | SQLite WAL |
 | Progress throttle | 150 ms |
 | Full tree refresh throttle | 1500 ms |
@@ -154,9 +154,10 @@ flowchart LR
 
 ### Status
 
-- unreadable files
-- files over 2 MB
+- unreadable files (binary or non-UTF-8)
 - missing files after a successful rescan
+
+A file over 2 MB is **not** skipped: it is indexed from its first 2 MB — so its title, headings, and the start of its content are searchable and it appears in every view — while the reader still opens the whole file. Only search coverage stops at the 2 MB mark.
 
 ### Folders
 
