@@ -160,8 +160,14 @@ export function decorateAnchorLinks(root, label = 'Link to this section') {
     link.setAttribute('aria-label', label);
     link.title = label;
     // The gutter shows the block's line number as faint monospace text; clicking
-    // it still copies the deep link (handled below).
-    link.textContent = locus;
+    // it still copies the deep link (handled below). The digits live in an inner
+    // span so the anchor can inherit the block's font metrics (matching its first
+    // line box) while the glyph stays a fixed small size, baseline-aligned to the
+    // block's text — see the .anchor-link CSS.
+    const num = document.createElement('span');
+    num.className = 'anchor-link-num';
+    num.textContent = locus;
+    link.appendChild(num);
     // Clicking copies the full deep link to this block (the canonical citation)
     // without blocking the in-page jump, and a brief is-copied flash confirms it.
     link.addEventListener('click', () => {

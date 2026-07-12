@@ -2525,8 +2525,9 @@ body.library-resizing {
   display: block;
 }
 /* Permalink number for any anchor-addressable block. Out of flow (so it never
-   nudges the text), dim until its target is hovered or the number itself is
-   keyboard-focused. */
+   nudges the text), hidden until its target is hovered or the number itself is
+   keyboard-focused — except on touch / narrow viewports, where it stays visible
+   (see the media query below) so a single tap copies the link. */
 .document-body .has-anchor-link {
   position: relative;
 }
@@ -2537,30 +2538,44 @@ body.library-resizing {
    negative margin (needed while content-visibility paint containment could clip
    anything outside the block; that windowing is gone) — on a list item the
    negative margin dragged the I./II. marker into the page margin while the
-   number sat at the list indent, exactly backwards. */
+   number sat at the list indent, exactly backwards.
+
+   The anchor inherits the block's font metrics (font-size / line-height), so its
+   first line box is exactly as tall as the block's first line. The small number
+   inside then sits on that line's baseline (.heading-anchor-num), i.e. flush with
+   the bottom of the text rather than floating up like a superscript on a tall
+   heading. */
 .document-body .heading-anchor {
   position: absolute;
   right: 100%;
-  top: 0.7em;
-  top: 0.5lh;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
+  top: 0;
+  display: block;
   width: 40px;
-  height: 1.2em;
   padding-right: 8px;
-  font-family: var(--code-font);
-  font-size: 12px;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
+  font-size: inherit;
+  line-height: inherit;
+  text-align: right;
   white-space: nowrap;
   background: transparent;
   color: var(--preview-muted-foreground);
-  opacity: 0.4;
+  opacity: 0;
   pointer-events: auto;
   user-select: none;
   transition: opacity 0.12s ease, color 0.12s ease;
+}
+/* The visible glyph: a fixed small monospace number, baseline-aligned onto the
+   block's first-line baseline by the inherited line box above. */
+.document-body .heading-anchor-num {
+  font-family: var(--code-font);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  vertical-align: baseline;
+}
+/* The "Line numbers" setting (off) hides the gutter permalink numbers. The blocks
+   keep their ids and hidden locus aliases, so #locus deep links still resolve —
+   only the visible number goes away. */
+:root[data-line-numbers-enabled="false"] .document-body .heading-anchor {
+  display: none;
 }
 /* A list item's number steps one list indent (2em) further left so it clears
    the ::marker (I., II., •) and, on a top-level list, right-aligns on the same
@@ -2616,12 +2631,15 @@ body.library-resizing {
 }
 /* A narrow window (and any touch device) has little left margin to host the number
    gutter, so tuck the numbers tighter to the content edge and shrink them. They
-   stay always-visible, so a single direct tap copies the deep link (and jumps) with
-   no reveal step to swallow the first tap. */
+   stay always-visible here (opacity restored) — there is no hover to reveal them —
+   so a single direct tap copies the deep link (and jumps) with no reveal step to
+   swallow the first tap. */
 @media (hover: none), (max-width: 600px) {
   .document-body .heading-anchor {
-    justify-content: flex-end;
     padding-right: 3px;
+    opacity: 0.4;
+  }
+  .document-body .heading-anchor-num {
     font-size: 11px;
   }
 }

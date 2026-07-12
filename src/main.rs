@@ -126,6 +126,14 @@ enum UserEvent {
     SetSpeedReaderEnabled {
         enabled: bool,
     },
+    /// Persist the reading-view gutter line-number toggle.
+    SetLineNumbersEnabled {
+        enabled: bool,
+    },
+    /// Persist the reading-view editing toggle.
+    SetReaderEditingEnabled {
+        enabled: bool,
+    },
     /// Persist the selected theme mode (`system`/`light`/`dark`/`dracula`).
     SetThemeMode {
         mode: String,
@@ -266,6 +274,10 @@ enum IpcCommand {
     SetPagerEnabled { enabled: bool },
     #[serde(rename = "setSpeedReaderEnabled")]
     SetSpeedReaderEnabled { enabled: bool },
+    #[serde(rename = "setLineNumbersEnabled")]
+    SetLineNumbersEnabled { enabled: bool },
+    #[serde(rename = "setReaderEditingEnabled")]
+    SetReaderEditingEnabled { enabled: bool },
     #[serde(rename = "setThemeMode")]
     SetThemeMode { mode: String },
     #[serde(rename = "setWindowChrome")]
@@ -1157,6 +1169,14 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 settings.speed_reader_enabled = enabled;
                 persist_settings(&settings, settings_path.as_ref());
             }
+            Event::UserEvent(UserEvent::SetLineNumbersEnabled { enabled }) => {
+                settings.line_numbers_enabled = enabled;
+                persist_settings(&settings, settings_path.as_ref());
+            }
+            Event::UserEvent(UserEvent::SetReaderEditingEnabled { enabled }) => {
+                settings.reader_editing_enabled = enabled;
+                persist_settings(&settings, settings_path.as_ref());
+            }
             Event::UserEvent(UserEvent::SetThemeMode { mode }) => {
                 settings.theme_mode = mode;
                 persist_settings(&settings, settings_path.as_ref());
@@ -1432,6 +1452,12 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
             }
             IpcCommand::SetSpeedReaderEnabled { enabled } => {
                 let _ = proxy.send_event(UserEvent::SetSpeedReaderEnabled { enabled });
+            }
+            IpcCommand::SetLineNumbersEnabled { enabled } => {
+                let _ = proxy.send_event(UserEvent::SetLineNumbersEnabled { enabled });
+            }
+            IpcCommand::SetReaderEditingEnabled { enabled } => {
+                let _ = proxy.send_event(UserEvent::SetReaderEditingEnabled { enabled });
             }
             IpcCommand::SetThemeMode { mode } => {
                 let _ = proxy.send_event(UserEvent::SetThemeMode { mode });

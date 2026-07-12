@@ -756,31 +756,46 @@ body {
 /* ---- Anchor links (gutter line numbers) ----------------------------- */
 /* Every anchorable block shows its line number in the left gutter as faint
    monospace text, like a code editor's line gutter. It lives in the gutter so it
-   never shifts the text; it is always visible but dim, brightens when its block
-   (or the number itself) is hovered, and clicking it copies the deep link. */
+   never shifts the text; it is hidden until its block (or the number itself) is
+   hovered on pointer devices — always shown on touch or narrow viewports (see the
+   media query below) — and clicking it copies the deep link.
+
+   The anchor inherits the block's font metrics (font-size / line-height), so its
+   first line box is exactly as tall as the block's first line. The small number
+   inside then sits on that line's baseline (.anchor-link-num), i.e. flush with the
+   bottom of the text rather than floating up like a superscript on a tall heading. */
 .markdown-body .has-anchor-link {
   position: relative;
 }
 .markdown-body .anchor-link {
   position: absolute;
   right: 100%;
-  top: 0.5lh;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
+  top: 0;
+  display: block;
   width: 40px;
-  height: 1.2em;
   padding-right: 8px;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
+  font-size: inherit;
+  line-height: inherit;
+  text-align: right;
   white-space: nowrap;
   color: var(--text-muted);
-  opacity: 0.4;
+  opacity: 0;
   user-select: none;
   transition: opacity 0.12s ease, color 0.12s ease;
+}
+/* The visible glyph: a fixed small monospace number, baseline-aligned onto the
+   block's first-line baseline by the inherited line box above. */
+.markdown-body .anchor-link-num {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  vertical-align: baseline;
+}
+/* The "Line numbers" setting (off) hides the gutter permalink numbers. Blocks keep
+   their ids and hidden locus aliases, so #locus deep links still resolve — only the
+   visible number goes away. */
+:root[data-line-numbers="off"] .markdown-body .anchor-link {
+  display: none;
 }
 /* A zero-size alias that carries a heading's #locus without disturbing its
    layout (the heading keeps its slug id for the table of contents). */
@@ -816,11 +831,15 @@ body {
 }
 /* A narrow viewport (and any touch device) has little left margin to host the
    number gutter, so tuck the numbers tighter to the content edge and shrink them.
-   They stay always-visible, so a single direct tap copies the deep link (and
-   jumps) with no reveal step to swallow the first tap. */
+   They stay always-visible here (opacity restored) — there is no hover to reveal
+   them — so a single direct tap copies the deep link (and jumps) with no reveal
+   step to swallow the first tap. */
 @media (hover: none), (max-width: 600px) {
   .markdown-body .anchor-link {
     padding-right: 3px;
+    opacity: 0.4;
+  }
+  .markdown-body .anchor-link-num {
     font-size: 0.62rem;
   }
 }

@@ -1,6 +1,6 @@
 # Settings
 
-> leaftext stores preferences locally: theme, speed reader, minimap, pager, indexing, library layout, and window size in a JSON file, plus the interface language in the WebView's local storage.
+> leaftext stores preferences locally: theme, speed reader, minimap, pager, line numbers, reading-view editing, indexing, library layout, and window size in a JSON file, plus the interface language in the WebView's local storage.
 
 Most settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView. The one exception is the interface language, kept in the WebView's local storage under `leaf.localeMode`.
 
@@ -13,6 +13,8 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 | Speed Reader | On / Off | Off |
 | Minimap | On / Off | On |
 | Pager | On / Off | On |
+| Line numbers | On / Off | On |
+| Reading-view editing | On / Off | On |
 | Indexing | On / Off | Off |
 | Library view | Graph, Project, Tree, All files | Graph |
 | Graph size | Focus, Medium, Large, Everything | Focus |
@@ -40,6 +42,8 @@ Here `{config_dir}` and `{data_dir}` are the per-app directories the `directorie
   "minimap_enabled": true,
   "pager_enabled": true,
   "speed_reader_enabled": false,
+  "line_numbers_enabled": true,
+  "reader_editing_enabled": true,
   "theme_mode": "system",
   "library_view": "graph",
   "graph_scope": "small",
@@ -112,6 +116,21 @@ The app ships both language dictionaries locally and applies changes without a r
 - Appends a Previous / Next bar at the bottom of documents in a folder tree connected by `README.md` files
 - Turn it off when you prefer clean document bottoms without navigation buttons
 - Saved as `pager_enabled`
+
+### Line numbers
+
+- On by default
+- Numbers each block in the left gutter as a copyable [block permalink](01-rendering.md#inline-html)
+- Hidden until you hover a block (or the number itself) on pointer devices; stays faintly visible on touch devices and narrow windows, where a single tap copies the link
+- Turning it off hides the numbers; blocks keep their ids, so `#id` deep links still resolve
+- Saved as `line_numbers_enabled`
+
+### Reading-view editing
+
+- On by default
+- Lets you edit the rendered page directly — click a block to edit it, toggle task checkboxes — as described in [Editing](07-editing.md#inline-editing-the-reading-view)
+- Turn it off to keep the reading view read-only; the [code view](07-editing.md#code-view) still edits the raw source
+- Saved as `reader_editing_enabled`
 
 ### Indexing
 

@@ -7,16 +7,18 @@ import { applySpeedReaderIfEnabled } from './speed-reader.js';
 // Opening it reveals a small panel — the same idea as the desktop app's
 // settings menu, ported to the static site.
 //
-// It controls four things:
+// It controls five things:
 //   - Theme: System / Light / Dark / Dracula (mirrors the desktop app).
 //   - Speed Reader: quiet links, regularized emphasis, and lead anchors.
 //   - Show minimap: hide the side-rail overview and reclaim its space.
+//   - Line numbers: hide the gutter permalink number beside each block (the
+//     blocks keep their ids, so #locus deep links still resolve).
 //   - Show library: hide the docs navigation sidebar (only offered on pages
 //     that have one — the /docs reader, not the single-README site).
 //
 // Choices persist in localStorage and apply to <html> via data- attributes that
 // styles.css keys off of (data-theme / data-speed-reader / data-minimap /
-// data-library). The same keys are read by a tiny inline script in each page's
+// data-line-numbers / data-library). The same keys are read by a tiny inline script in each page's
 // <head> so the right theme paints on first load with no flash. This module just
 // adds the UI and keeps the stored choice and the live page in sync.
 // ---------------------------------------------------------------------------
@@ -24,6 +26,7 @@ import { applySpeedReaderIfEnabled } from './speed-reader.js';
 const STORE_THEME = 'leaf.theme'; // 'system' | 'light' | 'dark' | 'dracula'
 const STORE_SPEED_READER = 'leaf.speedReader'; // '1' (on) | '0' (off)
 const STORE_MINIMAP = 'leaf.minimap'; // '1' (show) | '0' (hide)
+const STORE_LINE_NUMBERS = 'leaf.lineNumbers'; // '1' (show) | '0' (hide)
 const STORE_LIBRARY = 'leaf.library'; // '1' (show) | '0' (hide)
 
 // The adjustments-vertical icon, same glyph the desktop app uses for Settings.
@@ -71,6 +74,10 @@ function applyMinimap(show) {
   if (show) root.removeAttribute('data-minimap');
   else root.dataset.minimap = 'off';
 }
+function applyLineNumbers(show) {
+  if (show) root.removeAttribute('data-line-numbers');
+  else root.dataset.lineNumbers = 'off';
+}
 function applyLibrary(show) {
   if (show) root.removeAttribute('data-library');
   else root.dataset.library = 'off';
@@ -95,6 +102,7 @@ export function installSettings({ hasLibrary = false } = {}) {
   const themeMode = readStore(STORE_THEME, 'system');
   const speedReaderOn = readStore(STORE_SPEED_READER, '0') === '1';
   const minimapOn = readStore(STORE_MINIMAP, '1') !== '0';
+  const lineNumbersOn = readStore(STORE_LINE_NUMBERS, '1') !== '0';
   const libraryOn = readStore(STORE_LIBRARY, '1') !== '0';
 
   // Make sure the live page matches the stored choices (the head bootstrap
@@ -103,6 +111,7 @@ export function installSettings({ hasLibrary = false } = {}) {
   applyTheme(themeMode);
   applySpeedReader(speedReaderOn);
   applyMinimap(minimapOn);
+  applyLineNumbers(lineNumbersOn);
   if (hasLibrary) applyLibrary(libraryOn);
 
   const themeControl =
@@ -138,6 +147,12 @@ export function installSettings({ hasLibrary = false } = {}) {
       'Show the scrollable document overview on wider screens.',
       minimapOn
     ) +
+    checkbox(
+      'siteSettingsLineNumbers',
+      'Line numbers',
+      'Number each block in the left margin as a copyable permalink.',
+      lineNumbersOn
+    ) +
     (hasLibrary
       ? checkbox(
           'siteSettingsLibrary',
@@ -166,6 +181,12 @@ export function installSettings({ hasLibrary = false } = {}) {
   minimapCheck.addEventListener('change', () => {
     writeStore(STORE_MINIMAP, minimapCheck.checked ? '1' : '0');
     applyMinimap(minimapCheck.checked);
+  });
+
+  const lineNumbersCheck = details.querySelector('#siteSettingsLineNumbers');
+  lineNumbersCheck.addEventListener('change', () => {
+    writeStore(STORE_LINE_NUMBERS, lineNumbersCheck.checked ? '1' : '0');
+    applyLineNumbers(lineNumbersCheck.checked);
   });
 
   if (hasLibrary) {

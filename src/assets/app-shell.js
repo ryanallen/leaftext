@@ -8,6 +8,8 @@ const minimapEnabledControl = document.getElementById('minimapEnabled');
 const graphScopeControl = document.getElementById('graphScope');
 const pagerEnabledControl = document.getElementById('pagerEnabled');
 const speedReaderEnabledControl = document.getElementById('speedReaderEnabled');
+const lineNumbersEnabledControl = document.getElementById('lineNumbersEnabled');
+const readerEditingEnabledControl = document.getElementById('readerEditingEnabled');
 const indexingEnabledControl = document.getElementById('indexingEnabled');
 const libraryShell = document.getElementById('libraryShell');
 const libraryPane = document.getElementById('libraryPane');
@@ -456,6 +458,38 @@ pagerEnabledControl.addEventListener('change', () => {
   pagerEnabled = pagerEnabledControl.checked;
   applyPagerEnabled();
   send({ command: 'setPagerEnabled', enabled: pagerEnabled });
+});
+// Gutter permalink numbers in the reading view. A single data-attribute on <html>
+// shows or hides them via CSS, so toggling never needs a re-render — and hiding
+// them only drops the visible number; each block keeps its id, so #locus deep
+// links still resolve. On by default.
+let lineNumbersEnabled =
+  typeof LEAF_SETTINGS.lineNumbersEnabled === 'boolean' ? LEAF_SETTINGS.lineNumbersEnabled : true;
+function applyLineNumbersEnabled() {
+  document.documentElement.dataset.lineNumbersEnabled = String(lineNumbersEnabled);
+}
+applyLineNumbersEnabled();
+lineNumbersEnabledControl.checked = lineNumbersEnabled;
+lineNumbersEnabledControl.addEventListener('change', () => {
+  lineNumbersEnabled = lineNumbersEnabledControl.checked;
+  applyLineNumbersEnabled();
+  send({ command: 'setLineNumbersEnabled', enabled: lineNumbersEnabled });
+});
+// Whether the reading view ("preview") is a live editor. On by default; when off
+// the rendered page stays a pure reader — no click-to-edit, and task checkboxes
+// stay inert (the host renders them disabled and we skip re-enabling them). The
+// code view remains available as the explicit source editor. bindReadingEditor
+// reads this flag, so toggling just re-renders the open document to apply it.
+let readerEditingEnabled =
+  typeof LEAF_SETTINGS.readerEditingEnabled === 'boolean' ? LEAF_SETTINGS.readerEditingEnabled : true;
+readerEditingEnabledControl.checked = readerEditingEnabled;
+readerEditingEnabledControl.addEventListener('change', () => {
+  // Commit any block being edited before flipping, so turning editing off does
+  // not silently drop an in-progress change.
+  commitActiveEditingBlock();
+  readerEditingEnabled = readerEditingEnabledControl.checked;
+  send({ command: 'setReaderEditingEnabled', enabled: readerEditingEnabled });
+  renderState();
 });
 const SPEED_READER_SKIP_SELECTOR = [
   'code',
@@ -2323,6 +2357,8 @@ function renderStaticText() {
   graphScopeControl.setAttribute('aria-label', window.leafLocale.t('settings.graphScope.aria'));
   minimapEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.minimap.aria'));
   speedReaderEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.speedReader.aria'));
+  lineNumbersEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.lineNumbers.aria'));
+  readerEditingEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.readerEditing.aria'));
   // The scope chip's label is state-dependent (All vs Focus), so re-derive it
   // after the generic data-i18n pass has reset it.
   renderLibrarySearchScope();
@@ -3777,6 +3813,9 @@ function bindReadingEditor(doc) {
   if (!body) return;
   currentDocumentFormat = doc.format || 'markdown';
   currentDocumentSource = typeof doc.source === 'string' ? doc.source : '';
+  // With reader editing off the reading view stays read-only: no editable blocks,
+  // and task checkboxes keep the disabled state the host rendered them with.
+  if (!readerEditingEnabled) return;
   if (currentDocumentFormat === 'markdown') {
     attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : []);
     bindTaskCheckboxes(doc.tasks || []);
@@ -4408,6 +4447,12 @@ function decorateCodeBlocks() {
 const anchorLinkTemplate = (() => {
   const link = document.createElement('a');
   link.className = 'heading-anchor';
+  // The number lives in an inner span so the anchor itself can inherit the block's
+  // font metrics (matching its first line box) while the glyph stays a fixed small
+  // size, baseline-aligned to the block's text — see the .heading-anchor CSS.
+  const num = document.createElement('span');
+  num.className = 'heading-anchor-num';
+  link.appendChild(num);
   return link;
 })();
 // `pre:not(.mermaid)` excludes Mermaid diagrams: a permalink gutter link makes
@@ -4589,8 +4634,9 @@ function decorateAnchorLinks() {
     link.setAttribute('aria-label', label);
     link.title = label;
     // The gutter shows the block's line number as faint monospace text; clicking
-    // it still copies the deep link (handled by the delegated body listener).
-    link.textContent = locus;
+    // it still copies the deep link (handled by the delegated body listener). The
+    // digits live in the inner span (see anchorLinkTemplate).
+    link.firstChild.textContent = locus;
     target.classList.add('has-anchor-link');
     target.insertBefore(link, target.firstChild);
   });

@@ -121,6 +121,8 @@ Key `IpcCommand` variants include:
 | `setMinimapEnabled`    | Minimap toggle in Settings menu       |
 | `setPagerEnabled`      | Pager toggle in Settings menu         |
 | `setSpeedReaderEnabled` | Speed Reader toggle in Settings menu |
+| `setLineNumbersEnabled` | Line-numbers toggle in Settings menu |
+| `setReaderEditingEnabled` | Reading-view editing toggle in Settings menu |
 | `setIndexingEnabled`   | "Index entire device" toggle          |
 | `getFileTree`          | Boot-time library pane initialization |
 | `getGraph`             | Build the library link graph for the current scope + focus seeds |

@@ -20,6 +20,7 @@ leaftext is reading-first, but it is also editable. You can edit **in the readin
 | Editing | Type directly; native undo, `Tab` inserts a tab character |
 | Save | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears only with unsaved changes |
 | Unsaved marker | A tab with unsaved edits shows a dot beside its name |
+| Read-only | A [setting](05-settings.md#reading-view-editing) turns reading-view editing off, keeping the rendered page read-only |
 
 ## Inline editing (the reading view)
 
@@ -30,6 +31,7 @@ The rendered page is a live editor. The **source stays the single source of trut
 - **Every other block edits its exact source.** Code blocks, [alerts](01-rendering.md#blockquotes-and-alerts), loose lists, and blocks with images, footnotes, or math open their raw source in place when you click them, then splice back on the way out. This is also how **[TEI XML](01-rendering.md#tei-xml-84000-translations)** edits: TEI carries meaning the rendered HTML cannot reconstruct, so an XML block is edited as its true source.
 - **Nothing is ever mangled.** A block only edits WYSIWYG when its rendered form can be turned back into the identical source; anything else edits its source directly. Either way the edit is a precise splice, and the [live reload](02-navigation.md#reload) watcher recognizes your own save so it never fights it.
 - Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way.
+- Prefer a pure reading experience? Turn off **Reading-view editing** in [Settings](05-settings.md#reading-view-editing) and the rendered page becomes read-only — clicks no longer enter edit mode and task checkboxes stop toggling. The [code view](#code-view) still edits the source, so the file is never locked outright.
 
 ## Undo
 

@@ -964,6 +964,12 @@ fn locale_bootstrap_script() -> &'static str {
       'settings.speedReader.aria': 'Speed Reader',
       'settings.speedReader.help': 'Make prose quieter and add bold lead anchors for faster scanning.',
       'settings.speedReader.label': 'Speed Reader',
+      'settings.lineNumbers.aria': 'Show line numbers',
+      'settings.lineNumbers.help': 'Number each block in the left margin as a copyable permalink.',
+      'settings.lineNumbers.label': 'Line numbers',
+      'settings.readerEditing.aria': 'Edit in reading view',
+      'settings.readerEditing.help': 'Click into the rendered page to edit it. Turn off to keep the reading view read-only; the code view still edits the source.',
+      'settings.readerEditing.label': 'Edit in reading view',
       'titles.app': 'Leaf Text',
       'titles.document': '{title} - Leaf Text',
     },
@@ -1061,6 +1067,12 @@ fn locale_bootstrap_script() -> &'static str {
       'settings.speedReader.aria': '快速阅读',
       'settings.speedReader.help': '弱化正文干扰，并为词首添加加粗引导，方便快速浏览。',
       'settings.speedReader.label': '快速阅读',
+      'settings.lineNumbers.aria': '显示行号',
+      'settings.lineNumbers.help': '在左侧页边为每个区块标注可复制的固定链接编号。',
+      'settings.lineNumbers.label': '行号',
+      'settings.readerEditing.aria': '在阅读视图中编辑',
+      'settings.readerEditing.help': '点击渲染后的页面即可直接编辑。关闭后阅读视图为只读；源代码视图仍可编辑源文件。',
+      'settings.readerEditing.label': '在阅读视图中编辑',
       'titles.app': 'Leaf Text',
       'titles.document': '{title} - Leaf Text',
     },  };
@@ -1219,6 +1231,14 @@ pub struct Settings {
     /// Whether to visually quiet prose and add bold lead anchors at word starts.
     /// Off by default; this is a reversible view setting.
     pub speed_reader_enabled: bool,
+    /// Whether to show the gutter permalink number beside each block in the
+    /// reading view. On by default; turning it off hides the numbers (the blocks
+    /// keep their ids, so `#locus` deep links still resolve).
+    pub line_numbers_enabled: bool,
+    /// Whether the reading view is a live editor (click a block to edit it,
+    /// toggle task checkboxes). On by default; turning it off keeps the rendered
+    /// page read-only. The code view still edits the raw source regardless.
+    pub reader_editing_enabled: bool,
     /// The theme mode the frontend last selected: `system`, `light`, `dark`, or
     /// `dracula`. Stored as the raw mode string the frontend understands; the
     /// frontend normalizes anything unexpected back to `system`.
@@ -1255,6 +1275,8 @@ impl Default for Settings {
             minimap_enabled: true,
             pager_enabled: true,
             speed_reader_enabled: false,
+            line_numbers_enabled: true,
+            reader_editing_enabled: true,
             theme_mode: "system".to_string(),
             library_view: LibraryView::default(),
             graph_scope: GraphScope::default(),

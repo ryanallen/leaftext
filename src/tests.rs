@@ -3723,8 +3723,12 @@ fn app_shell_locale_bootstrap_keeps_initial_text_nonblank() {
     let static_text_position = html
         .find("  renderStaticText();")
         .expect("locale subscription refreshes static text");
-    let state_render_position = html
+    // The bootstrap's renderState() is the one right after renderStaticText();
+    // other renderState() calls (e.g. settings-change handlers) appear elsewhere,
+    // so anchor the search to the static-text refresh rather than the first match.
+    let state_render_position = html[static_text_position..]
         .find("  renderState();")
+        .map(|offset| static_text_position + offset)
         .expect("locale subscription renders reader state");
     let initial_state_position = html
         .find("window.leafSetState(window.__leafInitialState || { recent: [], document: null });")
@@ -5226,6 +5230,8 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
         minimap_enabled: false,
         pager_enabled: false,
         speed_reader_enabled: true,
+        line_numbers_enabled: false,
+        reader_editing_enabled: false,
         theme_mode: "dracula".to_string(),
         library_view: LibraryView::Tree,
         graph_scope: GraphScope::Large,
@@ -5325,6 +5331,8 @@ fn initial_settings_script_defines_camelcase_global() {
         minimap_enabled: false,
         pager_enabled: false,
         speed_reader_enabled: true,
+        line_numbers_enabled: false,
+        reader_editing_enabled: false,
         theme_mode: "dracula".to_string(),
         library_view: LibraryView::Tree,
         graph_scope: GraphScope::Large,
@@ -5340,7 +5348,7 @@ fn initial_settings_script_defines_camelcase_global() {
     // webview), so it must not leak into the injected settings global.
     assert_eq!(
         script,
-        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryExpanded":["C:\\Users"],"libraryProjectPath":"docs","libraryView":"tree","libraryWidth":312,"minimapEnabled":false,"pagerEnabled":false,"speedReaderEnabled":true,"themeMode":"dracula"};"#
+        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryExpanded":["C:\\Users"],"libraryProjectPath":"docs","libraryView":"tree","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeMode":"dracula"};"#
     );
 }
 
@@ -5637,10 +5645,12 @@ fn anchor_addressable_blocks_get_a_permalink_button() {
     // The button is a real anchor link to the block's locus (dataset.locus).
     assert!(html.contains("link.href = '#' + encodeURIComponent(locus)"));
 
-    // A bare anchor is cloned per block and its line number stamped in as text,
-    // instead of building the element from scratch tens of thousands of times.
-    assert!(html.contains("link.textContent = locus;"));
+    // A bare anchor (with an inner number span) is cloned per block and its line
+    // number stamped into that span, instead of building the element from scratch
+    // tens of thousands of times.
+    assert!(html.contains("link.firstChild.textContent = locus;"));
     assert!(html.contains("const anchorLinkTemplate = (() => {"));
+    assert!(html.contains("num.className = 'heading-anchor-num';"));
     assert!(html.contains("const link = anchorLinkTemplate.cloneNode(true);"));
 
     // Clicking the gutter button copies its #locus so the canonical number can
@@ -5716,14 +5726,21 @@ fn anchor_addressable_blocks_get_a_permalink_button() {
             ".document-body .has-anchor-link:focus-within:not(:has(.has-anchor-link:focus-within)) > .heading-anchor,"
         ));
 
-    // A narrow window (and touch) has little left margin for the number gutter,
-    // so the numbers tuck tighter to the content edge (flex-end) and shrink.
-    // They stay always-visible, so one direct tap copies the deep link.
+    // On pointer devices the numbers are hidden until their block is hovered
+    // (opacity 0 by default). A narrow window (and touch) has no hover to reveal
+    // them, so the media query restores their visibility (opacity 0.4), tucks
+    // them tighter to the content edge, and shrinks the glyph — one direct tap
+    // then copies the deep link.
+    assert!(html.contains(
+        ".document-body .heading-anchor {\n  position: absolute;\n  right: 100%;\n  top: 0;"
+    ));
+    assert!(html.contains("  opacity: 0;\n"));
     assert!(html.contains("@media (hover: none), (max-width: 600px) {"));
     let narrow = html
         .find("@media (hover: none), (max-width: 600px) {")
         .expect("small-screen permalink media query exists");
-    assert!(html[narrow..].contains("justify-content: flex-end;"));
+    assert!(html[narrow..].contains("opacity: 0.4;"));
+    assert!(html[narrow..].contains("font-size: 11px;"));
 
     // Label exists in both dictionaries.
     let count = html.matches("'actions.anchorLink':").count();
