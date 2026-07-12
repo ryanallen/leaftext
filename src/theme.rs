@@ -1775,9 +1775,6 @@ body.library-resizing {
   background: var(--preview-background);
   height: 100vh;
   overflow: auto;
-  /* The reader re-pins its own anchor on reflow; native scroll anchoring would
-     also react to --reader-scroll-origin margin writes and fight wheel input. */
-  overflow-anchor: none;
   padding-top: 56px;
   position: relative;
   scroll-padding-top: 56px;

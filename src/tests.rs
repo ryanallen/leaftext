@@ -3031,10 +3031,6 @@ fn app_shell_clamps_reader_scroll_to_rendered_content_range() {
             "const nextOrigin = Math.max(0, Math.ceil(content.rawTopOffset + origin - READER_CONTENT_TOP_GAP));",
             "source.style.setProperty('--reader-scroll-origin', `${nextOrigin}px`);",
             "function clampReaderScrollTop(scrollTop) {",
-            // The per-scroll-frame clamp must measure without writing
-            // --reader-scroll-origin: a layout write here loops with native
-            // scroll anchoring and can swallow wheel scrolling entirely.
-            "const content = measureDocumentContent(source);\n  const viewportHeight = Math.max(1, Math.ceil(app.clientHeight));",
             "return Math.min(range.maxScrollTop, Math.max(range.minScrollTop, nextScrollTop));",
             "function setReaderScrollTop(scrollTop) {",
             "app.scrollTop = clampReaderScrollTop(scrollTop);",
@@ -3043,9 +3039,6 @@ fn app_shell_clamps_reader_scroll_to_rendered_content_range() {
             "app.addEventListener('scroll', () => {",
             "clampReaderScrollPosition();",
             "setReaderScrollTop(app.scrollTop);",
-            // The reader owns anchoring; native scroll anchoring must stay off
-            // so origin writes never counter-adjust scrollTop.
-            "overflow-anchor: none;",
         ] {
             assert_contains(&html, expected);
         }

@@ -601,20 +601,12 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     // renderer per window without proliferation. GPU is deliberately left on —
     // it is what keeps scrolling smooth. The renderer is kept un-backgrounded so
     // it stays responsive even when the window is occluded or unfocused.
-    //
-    // CalculateNativeWinOcclusion is disabled too: on some machines Chromium's
-    // native-window occlusion check wrongly marks a *maximized* window as
-    // occluded and throttles the compositor's input path. That kills mouse-wheel
-    // scrolling (compositor-threaded) while JS-driven scrollTop — the minimap —
-    // keeps working, which is exactly the "can't wheel-scroll when maximized, but
-    // the minimap still moves, and it jitters" report. Turning the calculation off
-    // is the standard fix and costs nothing for a single-window reader.
     #[cfg(windows)]
     let builder = {
         use wry::WebViewBuilderExtWindows;
         builder.with_additional_browser_args(concat!(
             "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,",
-            "IsolateOrigins,site-per-process,CalculateNativeWinOcclusion",
+            "IsolateOrigins,site-per-process",
             " --disable-site-isolation-trials",
             " --disable-background-networking",
             " --disable-component-update",

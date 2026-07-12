@@ -4912,9 +4912,6 @@ function readerScrollOrigin(source) {
   const value = Number.parseFloat(source.style.getPropertyValue('--reader-scroll-origin'));
   return Number.isFinite(value) ? value : 0;
 }
-// Re-derives --reader-scroll-origin (the document body's negative top margin).
-// Layout-mutating: call from layout points only (document load, resize, reflow),
-// never from scroll frames — see clampReaderScrollTop.
 function correctReaderScrollOrigin(source = app.querySelector('.document-body')) {
   if (!currentState?.document || !source) {
     return { rawTopOffset: 0, topOffset: 0, height: 1 };
@@ -4946,12 +4943,7 @@ function clampReaderScrollTop(scrollTop) {
   if (!currentState?.document || !source) {
     return Math.max(0, nextScrollTop);
   }
-  // Measure only — never correct --reader-scroll-origin here. This runs on every
-  // scroll frame, and writing the origin mutates layout mid-scroll: at fractional
-  // display scales the rounded origin can flip-flop, and each write makes native
-  // scroll anchoring counter-adjust scrollTop — a feedback loop that fights (and
-  // on some machines swallows) wheel scrolling.
-  const content = measureDocumentContent(source);
+  const content = correctReaderScrollOrigin(source);
   const viewportHeight = Math.max(1, Math.ceil(app.clientHeight));
   const range = measureReaderScrollRange(content, viewportHeight);
   return Math.min(range.maxScrollTop, Math.max(range.minScrollTop, nextScrollTop));
