@@ -17,11 +17,51 @@
 
 ---
 
-A leaf is a page. **Leaf Text** opens a Markdown file and [renders it for reading](docs/01-features/01-rendering.md) — [code](docs/01-features/01-rendering.md#code), [diagrams](docs/01-features/01-rendering.md#mermaid-diagrams), [math](docs/01-features/01-rendering.md#math), [emoji](docs/01-features/01-rendering.md#emoji), just as GitHub would, all on your own machine. It also opens [TEI XML](docs/01-features/01-rendering.md#tei-xml-84000-translations) — the 84000 Buddhist-canon translation format — and renders it the same way.
+A leaf is a page. **Leaf Text** opens a Markdown or TEI XML file and renders it for reading — then gets out of the way. Everything below runs locally, on your own machine, with no account and no cloud.
 
-A [minimap](docs/01-features/04-minimap.md) for long pages, [tabs](docs/01-features/02-navigation.md#tabs) with [history](docs/01-features/02-navigation.md#history), [live reload on save](docs/01-features/02-navigation.md#reload), and a searchable [library](docs/01-features/03-library.md) — with a [graph view](docs/01-features/03-library.md#graph) of how your documents link — of every Markdown file you own. [Light, dark, and Dracula](docs/01-features/06-themes.md).
+## Features
 
-Reading first — just the rendered page. And when a file needs a fix, [edit it right on that page](docs/01-features/07-editing.md#inline-editing-the-reading-view) — click into a sentence and type, toggle a checkbox — or drop to the raw source in the [code view](docs/01-features/07-editing.md#code-view), then save without leaving the app.
+### Read Markdown and TEI XML
+
+![The Leaf Text reading view rendering a Markdown document](imgs/feature-rendering.png)
+
+Open a `.md` file and Leaf Text renders it exactly as GitHub would — CommonMark and GitHub Flavored Markdown with the extras people actually use: [syntax-highlighted code](docs/01-features/01-rendering.md#code), [Mermaid diagrams](docs/01-features/01-rendering.md#mermaid-diagrams), [math](docs/01-features/01-rendering.md#math), [GitHub alerts](docs/01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](docs/01-features/01-rendering.md#footnotes), [emoji](docs/01-features/01-rendering.md#emoji), task lists, and [local images](docs/01-features/01-rendering.md#images). It also opens [84000-style TEI XML](docs/01-features/01-rendering.md#tei-xml-84000-translations) — the Buddhist-canon translation format — through a parallel renderer into the same clean reading view. **[Rendering →](docs/01-features/01-rendering.md)**
+
+### Edit in place, save on your terms
+
+![Inline editing in the rendered page, with the green Save button](imgs/feature-editing.png)
+
+Reading-first, but editable. Click into a sentence in the rendered page and type, or toggle a checkbox — the change is written back to the source at exactly that spot. Prefer raw text? Drop to the [code view](docs/01-features/07-editing.md#code-view) for the file's actual Markdown or XML, with editor-style colouring of every delimiter. There's no autosave: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
+
+### Find every file
+
+![The library pane with the document graph view](imgs/feature-library.png)
+
+A left-side pane backed by a local SQLite index of every Markdown file you own — search it, or browse by Project, Tree, or All files. A [graph view](docs/01-features/03-library.md#graph) maps how your documents link to one another, so you can see the shape of your notes instead of just a list. **[Library →](docs/01-features/03-library.md)**
+
+### Stay oriented with the minimap
+
+![The minimap rail showing a scaled clone of the document](imgs/feature-minimap.png)
+
+A shrunken clone of the page in a side rail — real, tiny text, not abstract bars — with a live viewport indicator. Recognize where you are from the shape of the text itself, click any section to jump, or drag the indicator to scroll. **[Minimap →](docs/01-features/04-minimap.md)**
+
+### Navigate like a browser
+
+![Tabs and Back/Forward history in the app bar](imgs/feature-navigation.png)
+
+[Tabs](docs/01-features/02-navigation.md#tabs), Back/Forward [history](docs/01-features/02-navigation.md#history), in-document jumps, and scroll restoration after reloads. Save a file in your editor and Leaf Text [live-reloads](docs/01-features/02-navigation.md#reload) it, keeping your place. **[Navigation →](docs/01-features/02-navigation.md)**
+
+### Make it yours
+
+![The same document in Light, Dark, and Dracula themes](imgs/feature-themes.png)
+
+Four theme modes — System, Light, Dark, and [Dracula](docs/01-features/06-themes.md) — built on three palettes and applied through a semantic token contract, so the reader, code, alerts, and minimap always stay visually consistent. **[Themes →](docs/01-features/06-themes.md)**
+
+### Settings that stick
+
+![The Leaf Text settings panel](imgs/feature-settings.png)
+
+Theme, speed reader, minimap, pager, indexing, library layout, window size, and interface language (English or Simplified Chinese) — stored locally and durable across restarts. **[Settings →](docs/01-features/05-settings.md)**
 
 ## Documentation
 
