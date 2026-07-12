@@ -17,7 +17,7 @@
 
 ---
 
-A leaf is a page. **Leaf Text** opens a Markdown or TEI XML file and renders it for reading — then gets out of the way. Everything below runs locally, on your own machine, with no account and no cloud.
+**Leaf Text** opens your Markdown and TEI XML files to read, edit, and understand: a clean rendered view you can type straight into, and a [graph](docs/01-features/03-library.md#graph) that shows how your documents relate. Everything runs locally, on your own machine, with no account and no cloud.
 
 ## Features
 
