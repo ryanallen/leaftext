@@ -18,9 +18,8 @@ pub(crate) struct ThemeSource {
     pub(crate) kind: ThemeSourceKind,
     pub(crate) selectable: bool,
     pub(crate) tokens: &'static [(&'static str, &'static str)],
-    /// Per-source token replacements layered on top of `tokens`, used to nudge a
-    /// single palette without forking the whole shared token map. A token listed
-    /// here wins over the same token in `tokens`.
+    /// Per-source token replacements layered over `tokens` (and winning over
+    /// them), to nudge one palette without forking the shared token map.
     pub(crate) overrides: &'static [(&'static str, &'static str)],
 }
 
@@ -270,18 +269,14 @@ pub(crate) const PRIMER_THEME_TOKENS: &[(&str, &str)] = &[
         "--leaf-minimap-viewport-background",
         "rgba(110, 118, 129, 0.14)",
     ),
-    // Headings must read as a distinct accent, not the brand green: routing this
-    // to the primary-button color (bgColor-success-emphasis) made it the same
-    // green family as lists (--fgColor-success), so heading-dense documents (a
-    // glossary, an outline) collapsed into an illegible green wall. Purple keeps
-    // the outline legible and matches the Dracula theme + the JS fallback intent.
+    // Purple, so headings read apart from the green lists rather than collapsing
+    // into one green wall in heading-dense documents. Matches Dracula.
     ("--leaf-minimap-heading", "var(--fgColor-done)"),
     ("--leaf-minimap-paragraph", "var(--fgColor-muted)"),
     ("--leaf-minimap-blank", "var(--borderColor-default)"),
     ("--leaf-minimap-list", "var(--fgColor-success)"),
     ("--leaf-minimap-blockquote", "var(--fgColor-accent)"),
-    // Orange, so code blocks stay distinct from the (now purple) headings and the
-    // green lists — the same legible five-hue split the Dracula theme uses.
+    // Orange, so code stays distinct from the purple headings and green lists.
     ("--leaf-minimap-code", "var(--fgColor-severe)"),
     ("--leaf-navigation-border", "var(--borderColor-default)"),
     (
@@ -493,14 +488,9 @@ pub(crate) const DRACULA_THEME_TOKENS: &[(&str, &str)] = &[
     ("--leaf-syntax-changed-background", "#3e3f27"),
 ];
 
-// Primer Dark borrows GitHub's neutral grey borders (#3d444d / #656c76), which
-// read as flat grey against the near-black page — the window border, the title
-// bar tinted off it, and the document rules all look colorless. Shift the whole
-// border family to a desaturated slate blue at the same lightness so the chrome
-// reads as a cool, deliberate frame rather than grey. Light and Dracula keep
-// their own borders. Slate (#39435f) replaces --borderColor-default, a lighter
-// slate (#5b6788) replaces --borderColor-emphasis, and the muted rule keeps its
-// translucency (#39435fb3).
+// Primer Dark's neutral grey borders read as flat grey against the near-black
+// page, so shift the border family to a desaturated slate blue at the same
+// lightness for a cooler frame. Light and Dracula keep their own borders.
 pub(crate) const PRIMER_DARK_BORDER_OVERRIDES: &[(&str, &str)] = &[
     ("--leaf-app-border", "#39435f"),
     ("--leaf-app-border-strong", "#5b6788"),
@@ -589,9 +579,8 @@ pub(crate) fn assert_theme_sources_cover_contract(sources: &[ThemeSource]) {
             "theme source {} must have a display name",
             source.id
         );
-        // Dracula-kind palettes ship a complete token set and must activate
-        // through their own source attribute, never the shared Primer
-        // color-mode selectors that depend on the Primer primitive cascade.
+        // Dracula-kind palettes ship a full token set and activate through their
+        // own source attribute, not the Primer color-mode selectors.
         if source.kind == ThemeSourceKind::Dracula {
             assert!(
                 source.selector.contains("data-leaf-theme-source"),
@@ -1084,9 +1073,7 @@ body {
   height: 34px;
   border: 1px solid transparent;
   border-radius: 6px;
-  /* No resting fill — the container stays flat like the other icon buttons. The
-     icon is dimmed at rest so it reads as a quiet, secondary control, then lights
-     up to the green action treatment on hover. */
+  /* No resting fill; icon dimmed at rest, greens on hover like the other icons. */
   background: transparent;
   color: var(--app-muted-foreground);
   cursor: pointer;
@@ -1177,8 +1164,7 @@ button {
   height: 18px;
   pointer-events: none;
 }
-/* The Open action should rest in the same muted state as the other secondary
-   toolbar icons, then switch to the green action treatment on hover. */
+/* Rests muted like the other secondary toolbar icons, greens on hover. */
 .open-button {
   border-color: transparent;
   background: transparent;
@@ -1189,10 +1175,8 @@ button {
   border-color: var(--app-action-hover-background);
   color: var(--app-action-foreground);
 }
-/* Code-view toggle: rests muted like the other secondary icons and greens on
-   hover. The icon itself carries the state — the code brackets in the reading
-   view, a document while the code view is open — at the same muted colour, not
-   a colour change. */
+/* Code-view toggle: rests muted, greens on hover. The icon carries the state
+   (brackets in the reading view, a document while the code view is open). */
 .code-view-button {
   border-color: transparent;
   background: transparent;
@@ -1218,9 +1202,8 @@ button {
 .undo-button[hidden] {
   display: none;
 }
-/* Undo: Save's quieter sibling — the same brand green, dimmed well below the
-   solid Save fill so the pair reads as one action and its undo, not two equal
-   calls to action. Hover deepens to the shared toolbar hover green. */
+/* Undo: Save's quieter sibling — same green, dimmed below the solid Save fill
+   so the pair reads as one action and its undo. */
 .undo-button {
   border-color: transparent;
   background: color-mix(in srgb, var(--app-action-background) 45%, transparent);
@@ -1231,10 +1214,8 @@ button {
   border-color: var(--app-action-hover-background);
   color: var(--app-action-foreground);
 }
-/* Save: the affirmative action. Shown only when there are unsaved edits — a
-   solid brand-green button with the word "Save", absent entirely otherwise —
-   deepening to the hover green (the same green the other toolbar buttons take
-   on hover) when pointed at. */
+/* Save: the affirmative action. A solid green button shown only when there are
+   unsaved edits, deepening to the hover green when pointed at. */
 .save-button {
   display: inline-flex;
   align-items: center;
@@ -1267,8 +1248,7 @@ button {
 .tab-modified .tab-dirty-dot {
   display: inline-block;
 }
-/* On the active tab the close button replaces the dot on hover, so the dot and
-   the X never crowd each other. */
+/* On the active tab the close button replaces the dot on hover. */
 .tab-active:hover .tab-dirty-dot {
   display: none;
 }
@@ -1323,19 +1303,18 @@ summary:focus-visible {
   display: grid;
   grid-template-columns: var(--library-width, 240px) minmax(0, 1fr);
   height: 100vh;
-  /* Positioning context for the open-library button, which is pinned to the
-     shell's left edge so it stays reachable when the pane column collapses to 0. */
+  /* Positioning context for the open-library button, pinned to the left edge so
+     it stays reachable when the pane collapses to 0. */
   position: relative;
 }
 .library-shell.library-closed {
   grid-template-columns: 0 minmax(0, 1fr);
 }
 .library-pane {
-  /* Positioning context for the two overlays it stacks: the scrolling file list
-     (.library-scroll, pinned to fill the pane) and the view-switch header
-     (.library-header, pinned just under the app bar). The pane itself does NOT
-     scroll or clip — the inner .library-scroll owns the scroll, and leaving the
-     pane unclipped lets the view dropdown open past its edge (see de940e6). */
+  /* Positioning context for the overlays it stacks (.library-scroll and
+     .library-header). The pane itself doesn't scroll or clip; the inner
+     .library-scroll owns the scroll, and leaving it unclipped lets the view
+     dropdown open past its edge. */
   --library-app-bar: 56px;
   --library-header-height: 40px;
   position: relative;
@@ -1351,9 +1330,8 @@ summary:focus-visible {
   --library-pane-edge-shadow: inset -7px 0 8px -8px color-mix(in srgb, black 55%, transparent);
 }
 .library-divider {
-  /* An invisible grab strip straddling the pane's right edge (the column gap),
-     wide enough to catch the pointer without showing UI noise. The pane is
-     unclipped, so the strip can overhang into the reader a few px. */
+  /* An invisible grab strip straddling the pane's right edge, wide enough to
+     catch the pointer. Overhangs into the reader a few px. */
   position: absolute;
   top: 0;
   right: -3px;
@@ -1370,15 +1348,13 @@ summary:focus-visible {
   display: none;
 }
 .library-shell.library-closed .library-header {
-  /* The pane is unclipped, so its absolutely-positioned header would otherwise
-     bleed out past the 0px-wide collapsed column and show behind the open
-     button. Hide it whenever the pane is snapped shut. */
+  /* Hide the header when snapped shut, or the unclipped pane would bleed it past
+     the 0px column and show it behind the open button. */
   display: none;
 }
 .library-shell.library-closed .library-open {
-  /* Pinned to the shell's left edge, below the fixed app bar. left matches the
-     app bar's 22px padding so the button lines up with the leaf logo above it.
-     Stays reachable once the pane column is 0px wide and clips its own contents. */
+  /* Pinned to the left edge below the app bar; left: 22px matches the app bar's
+     padding so it lines up under the leaf logo. */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1395,10 +1371,8 @@ summary:focus-visible {
   color: var(--app-muted-foreground);
   cursor: pointer;
 }
-/* The button only shows while the pane is collapsed, and that collapsed rule
-   above outranks a bare `.library-open:hover`. Scope the hover/active states to
-   the same collapsed selector so the green action treatment actually wins,
-   matching the settings button. */
+/* Scope hover/active to the collapsed selector so they outrank the collapsed
+   display rule above, matching the settings button. */
 .library-shell.library-closed .library-open:hover {
   background: var(--app-action-hover-background);
   color: var(--app-action-foreground);
@@ -1411,21 +1385,17 @@ summary:focus-visible {
   width: 18px;
   height: 18px;
 }
-/* While dragging the divider, lock the cursor and kill text selection across the
-   whole window so the resize feels solid even past the thin grab strip. */
+/* While dragging the divider, lock the cursor and kill text selection window-wide. */
 body.library-resizing {
   cursor: col-resize;
   user-select: none;
   -webkit-user-select: none;
 }
 .library-scroll {
-  /* The scroll container, filling the pane. Top padding clears the fixed app bar
-     AND the header below it, so the list starts beneath both yet can scroll up
-     UNDER them — showing through the app bar's blur and the header's blur, the
-     same treatment as the top app bar.
-     NOTE: no `scrollbar-width`/`scrollbar-color` — in Chromium, setting either
-     standard property silently disables ALL `::-webkit-scrollbar` pseudo-elements,
-     which would discard both the track inset below and the thumb's min-height. */
+  /* Scroll container filling the pane. Top padding clears the app bar and the
+     header, so the list starts below both but scrolls up under their blur.
+     NOTE: no `scrollbar-width`/`scrollbar-color` — in Chromium either standard
+     property silently disables all `::-webkit-scrollbar` pseudo-elements. */
   position: absolute;
   inset: 0;
   overflow: auto;
@@ -1449,8 +1419,8 @@ body.library-resizing {
 .library-tree {
   padding: 0 6px 12px;
 }
-/* The graph view fills the pane below the header instead of scrolling. The Pixi
-   canvas owns pan/zoom, so the container itself never scrolls. */
+/* Fills the pane below the header; the Pixi canvas owns pan/zoom, so this never
+   scrolls. */
 .library-graph {
   position: absolute;
   inset: 0;
@@ -1543,10 +1513,8 @@ body.library-resizing {
   border-color: color-mix(in srgb, var(--app-action-background, #2f81f7) 60%, transparent);
 }
 .library-header {
-  /* Pinned just below the app bar, always — absolute against the pane rather than
-     sticky against the scroll, so it never drifts down with the list. The list
-     slides up under it and shows through the translucent blur, the same treatment
-     as the top app bar. */
+  /* Pinned below the app bar — absolute against the pane, not sticky, so it
+     never drifts with the list, which slides up under its blur. */
   position: absolute;
   top: var(--library-app-bar);
   left: 0;
@@ -1560,10 +1528,8 @@ body.library-resizing {
   gap: 8px;
   padding: 0 12px;
   font-weight: 600;
-  /* Continues the app bar's fade rather than restarting it: the app bar ramps from
-     opaque down to 85% surface, so this strip picks up at that 85% and keeps fading
-     to 75%. Stacked, the two headers read as one continuous translucent ramp, and
-     the list shows through progressively more toward the bottom edge. */
+  /* Continues the app bar's fade: it ends at 85% surface, so this picks up at
+     85% and fades to 75%, reading as one continuous ramp. */
   background: linear-gradient(to bottom, color-mix(in srgb, var(--library-surface) 85%, transparent) 0%, color-mix(in srgb, var(--library-surface) 75%, transparent) 100%);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
@@ -1616,8 +1582,7 @@ body.library-resizing {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  /* All-caps monospace label so the active view reads as a compact code-style
-     tag. */
+  /* All-caps monospace so the active view reads as a compact code-style tag. */
   font-family: var(--code-font, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace);
   font-size: 11px;
   letter-spacing: 0.04em;
@@ -1625,10 +1590,8 @@ body.library-resizing {
   padding: 3px 8px 3px 10px;
   border-radius: 6px;
   border: 0;
-  /* A filled chip that lifts off the pane it sits on; the same fill in every
-     view state so switching views never changes its look. A translucent neutral
-     reads as "a little lighter" on the dark surface and stays visible in light
-     themes too, where --app-surface-elevated would collapse to the surface. */
+  /* A filled chip, same fill in every view state. A translucent neutral reads
+     as "a little lighter" and stays visible in light themes too. */
   background: color-mix(in srgb, var(--app-muted-foreground) 14%, transparent);
   color: inherit;
   cursor: pointer;
@@ -1685,10 +1648,8 @@ body.library-resizing {
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
   mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
 }
-/* Shrink and dim the native disclosure triangle; the default marker reads
-   oversized and bright white next to 13px folder names. Match the muted tone
-   of the view caret and the project-view chevron. ::marker is modern Chromium,
-   the -webkit- form is the legacy fallback. */
+/* Shrink and dim the native disclosure triangle, which is oversized and bright
+   next to 13px folder names. (-webkit- form is the legacy fallback.) */
 .library-folder > summary::marker,
 .library-folder > summary::-webkit-details-marker {
   font-size: 0.65em;
@@ -1721,9 +1682,8 @@ body.library-resizing {
 .library-nav-up:hover {
   background: color-mix(in srgb, var(--app-muted-foreground) 12%, transparent);
 }
-/* The row for the file that's currently open. Accent-tinted so it reads as the
-   active document, and it outranks hover so the highlight holds while pointing
-   elsewhere in the list. */
+/* The currently-open file: accent-tinted, outranking hover so it holds while
+   pointing elsewhere. */
 .library-file.is-selected,
 .library-file.is-selected:hover {
   background: color-mix(in srgb, var(--accent) 22%, transparent);
@@ -1735,9 +1695,8 @@ body.library-resizing {
   object-fit: contain;
 }
 .library-file-label {
-  /* Fill the row so the fade lands on empty space, not on the text, until the
-     name is actually wider than the available room. Without flex:1 the label box
-     hugs its text and the mask would clip every name at a fixed width. */
+  /* Fill the row so the fade lands on empty space until the name overflows;
+     without flex:1 the label hugs its text and the mask clips every name. */
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -1787,10 +1746,8 @@ body.library-resizing {
   background: var(--preview-background);
 }
 .reader-loading {
-  /* Overlays the reader cell of the library grid (column 2, same row as #app) so
-     it can show a spinner over the current document while a slow one loads,
-     without disturbing the library pane or the app bar. Purely visual: pointer
-     events pass through, and it sits below the app bar (z-index 10). */
+  /* Overlays the reader cell so a spinner can show over the current document
+     during a slow load. Pointer events pass through; sits below the app bar. */
   grid-column: 2;
   grid-row: 1;
   align-self: stretch;
@@ -1836,16 +1793,13 @@ body.library-resizing {
   min-height: 100%;
   padding: 0 var(--reader-layout-padding-inline);
   position: relative;
-  /* Heading permalink buttons sit in the left gutter via negative positioning;
-     clip keeps them from widening the horizontal scroll on narrow windows
-     without turning this into a scroll container (wide content keeps its own
-     inner scroll). */
+  /* Heading permalinks sit in the left gutter via negative positioning; clip
+     stops them widening the horizontal scroll without making this a scroll
+     container. */
   overflow-x: clip;
 }
-/* Reserve the minimap's footprint as right-only padding so the centered
-   document sits midway between the reader's left edge (or the library pane)
-   and the minimap, instead of being centered across the whole reader width
-   with the minimap eating into only the right margin. */
+/* Reserve the minimap's footprint as right-only padding so the document centers
+   between the left edge and the minimap, not across the whole reader width. */
 .reader-layout:has(.document-minimap) {
   padding-right: calc(var(--reader-layout-padding-inline) + var(--minimap-width));
 }
@@ -1879,14 +1833,9 @@ body.library-resizing {
 :root[data-locale="zh-CN"] .document-body {
   line-height: var(--type-body-line);
 }
-/* The reader lays the whole document out up front, exactly like the web reader
-   (site/), which is what keeps scrolling smooth. An earlier attempt let the
-   engine skip layout and paint for off-screen blocks in big files, but it
-   backfired: blocks laid out just-in-time flashed blank while scrolling, the
-   total height was a running per-block estimate that made the minimap viewport
-   box jump and re-correct, and every scroll re-evaluated it. Full up-front layout
-   costs more on open but scrolls the way the web does, and the same Chromium
-   engine handles it there without trouble. */
+/* The reader lays the whole document out up front (like the web reader), which
+   keeps scrolling smooth: content-visibility skipping made off-screen blocks
+   flash blank and the minimap box jump as heights re-estimated. */
 .docs-pager {
   display: flex;
   justify-content: space-between;
@@ -2062,9 +2011,8 @@ body.library-resizing {
 .document-body strong {
   font-weight: 600;
 }
-/* Outline (table of contents): a collapsed <details> built from the document's
-   headings and dropped in just under the title (see buildDocumentOutline).
-   Closed by default so it never crowds the top; open it to jump to any heading. */
+/* Outline: a collapsed <details> built from the headings, dropped in under the
+   title (see buildDocumentOutline). Closed by default. */
 .document-body .document-outline {
   margin: 1.5em 0;
   border: 1px solid var(--preview-border);
@@ -2127,10 +2075,8 @@ body.library-resizing {
 .document-body .document-outline-link:hover {
   color: var(--markdown-link-hover);
 }
-/* Alternate-language title lines under a TEI document's main title (the
-   Sanskrit main title, then the English and Sanskrit long titles). Muted and
-   tight so the stack reads as one title block; pulled up toward the h1 it
-   belongs to. */
+/* Alternate-language title lines under a TEI main title. Muted and tight, and
+   pulled up toward the h1, so the stack reads as one title block. */
 .document-body .tei-doc-subtitles {
   margin: calc(-0.5 * var(--type-spacing)) 0 var(--type-spacing);
   color: var(--preview-muted-foreground);
@@ -2232,15 +2178,10 @@ body.library-resizing {
   color: var(--preview-foreground);
   font-weight: 700;
 }
-/* Glossary term links read as a quiet dotted underline in every theme and mode
-   (including speed reader). They take the surrounding text's colour — not the
-   accent link colour — and the underline is a dimmed wash of that same colour,
-   so an expandable term stays discoverable without standing out from the prose
-   it sits in. Because the dim is relative to currentColor, prose that is
-   already muted (blockquotes, captions) gets a fainter underline still.
-   Matches both the `glossary:slug` shorthand and a real `…/GLOSSARY.md#slug`
-   relative link. Placed last so it wins ties against the generic link and hover
-   rules above (in every state, including :hover). */
+/* Glossary term links: a quiet dotted underline in the surrounding text's
+   colour (not the accent), so a term stays discoverable without standing out.
+   Matches both `glossary:slug` and a `…/GLOSSARY.md#slug` link; placed last so
+   it wins ties against the generic link/hover rules above. */
 .document-body a[href^="glossary:" i],
 .document-body a[href*="GLOSSARY.md#" i],
 .document-body a[href^="glossary:" i]:hover,
@@ -2284,10 +2225,8 @@ body.library-resizing {
 .document-body li > ol {
   margin: 0.25em 0 0;
 }
-/* Ordered lists follow the classic outline sequence by nesting depth —
-   I, II, III then A, B, C then 1, 2, 3 then a, b, c then i, ii, iii — instead
-   of restarting at decimal on every level. Depth is counted by ordered-list
-   ancestors, so an <ol> nested inside a <ul> still reads as its own level. */
+/* Ordered lists follow the classic outline sequence by depth (I, A, 1, a, i)
+   rather than restarting at decimal each level. */
 .document-body ol {
   list-style-type: upper-roman;
 }
@@ -2315,9 +2254,8 @@ body.library-resizing {
 .document-body input[type="checkbox"]:not([disabled]) {
   cursor: pointer;
 }
-/* Live editing affordances. An editable block shows a text caret on hover and a
-   soft focus ring while being edited; an XML block being edited as raw source is
-   set in the monospace source font so the tags read clearly. */
+/* Live editing affordances: text caret on hover, a focus ring while editing,
+   and the monospace source font for XML blocks edited as raw source. */
 .document-body .leaf-editable {
   cursor: text;
 }
@@ -2333,14 +2271,12 @@ body.library-resizing {
   background: var(--markdown-code-background, rgba(127, 127, 127, 0.12));
   border-radius: 4px;
 }
-/* The fresh empty paragraph Enter opens below a block. Markdown has no empty
-   block, so it lives in the DOM until first commit; give it a line's height so
-   the caret has somewhere visible to blink. */
+/* The fresh empty paragraph Enter opens below a block: give it a line's height
+   so the caret has somewhere to blink (Markdown has no empty block). */
 .document-body .leaf-insert-block {
   min-height: 1.5em;
 }
-/* Links inside an editable block keep the pointer (hand) cursor even though the
-   block is a text-editing surface — they still read and behave as links. */
+/* Links inside an editable block keep the pointer cursor, not the text caret. */
 .document-body .leaf-editable a {
   cursor: pointer;
 }
@@ -2471,14 +2407,13 @@ body.library-resizing {
   letter-spacing: 0;
   text-transform: uppercase;
 }
-/* On highlighted blocks the copy button sits in the top-right corner, so nudge
-   the language label left to make room. Plain (unlanguaged) blocks have no label
-   and Mermaid blocks have no button, so neither needs the shift. */
+/* On highlighted blocks the copy button sits top-right, so nudge the language
+   label left to make room. */
 .document-body pre.highlight::before {
   right: 44px;
 }
-/* "Copy all" button on code blocks. Always present but muted at rest so it stays
-   calm, brightening on hover/focus; swaps to a check mark for a moment on copy. */
+/* "Copy all" button on code blocks: muted at rest, brightening on hover/focus,
+   swapping to a check mark briefly on copy. */
 .document-body pre > .code-copy {
   position: absolute;
   top: 6px;
@@ -2524,27 +2459,16 @@ body.library-resizing {
 .code-copy.is-copied .code-copy-check {
   display: block;
 }
-/* Permalink number for any anchor-addressable block. Out of flow (so it never
-   nudges the text), hidden until its target is hovered or the number itself is
-   keyboard-focused — except on touch / narrow viewports, where it stays visible
-   (see the media query below) so a single tap copies the link. */
+/* Permalink number for any anchor-addressable block. Out of flow, hidden until
+   the block is hovered or the number focused (always visible on touch/narrow —
+   see the media query below). */
 .document-body .has-anchor-link {
   position: relative;
 }
-/* The number hangs in the margin just left of its block (right: 100%), so the
-   block's own box — and, for a list item, its ::marker — stays exactly where
-   normal flow puts it, and a blockquote keeps its native left bar. An earlier
-   scheme carved a 40px gutter out of each block's left padding with a matching
-   negative margin (needed while content-visibility paint containment could clip
-   anything outside the block; that windowing is gone) — on a list item the
-   negative margin dragged the I./II. marker into the page margin while the
-   number sat at the list indent, exactly backwards.
-
-   The anchor inherits the block's font metrics (font-size / line-height), so its
-   first line box is exactly as tall as the block's first line. The small number
-   inside then sits on that line's baseline (.heading-anchor-num), i.e. flush with
-   the bottom of the text rather than floating up like a superscript on a tall
-   heading. */
+/* The number hangs in the margin left of its block (right: 100%) so the block's
+   box — and a list item's ::marker — stays where normal flow puts it. The anchor
+   inherits the block's font metrics, so the small number sits on the block's
+   first-line baseline rather than floating like a superscript. */
 .document-body .heading-anchor {
   position: absolute;
   right: 100%;
@@ -2563,32 +2487,26 @@ body.library-resizing {
   user-select: none;
   transition: opacity 0.12s ease, color 0.12s ease;
 }
-/* The visible glyph: a fixed small monospace number, baseline-aligned onto the
-   block's first-line baseline by the inherited line box above. */
+/* The visible glyph: a small monospace number on the block's first-line baseline. */
 .document-body .heading-anchor-num {
   font-family: var(--code-font);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   vertical-align: baseline;
 }
-/* The "Line numbers" setting (off) hides the gutter permalink numbers. The blocks
-   keep their ids and hidden locus aliases, so #locus deep links still resolve —
-   only the visible number goes away. */
+/* "Line numbers" off hides the visible number; blocks keep their ids and locus
+   aliases, so #locus deep links still resolve. */
 :root[data-line-numbers-enabled="false"] .document-body .heading-anchor {
   display: none;
 }
-/* A list item's number steps one list indent (2em) further left so it clears
-   the ::marker (I., II., •) and, on a top-level list, right-aligns on the same
-   gutter column as every other number. */
+/* A list item's number steps 2em further left to clear the ::marker and align
+   on the same gutter column as every other number. */
 .document-body li.has-anchor-link > .heading-anchor {
   right: calc(100% + 2em);
 }
-/* pre and table are overflow containers (overflow: auto; pre also clip-paths
-   its rounded corners) and each is the containing block for its own absolutely
-   positioned number, so a number hung outside would be clipped invisible. These
-   two keep the carved-gutter scheme instead: seat the number inside a 40px left
-   padding pulled back out with a matching negative margin. Neither has a
-   ::marker, so nothing is dragged out of place. */
+/* pre and table are overflow containers, so a number hung outside is clipped.
+   Seat it inside a 40px left padding pulled back with a negative margin instead;
+   neither has a ::marker to drag out of place. */
 .document-body pre.has-anchor-link,
 .document-body table.has-anchor-link {
   padding-left: 40px;
@@ -2607,12 +2525,9 @@ body.library-resizing {
   height: 0;
   overflow: hidden;
 }
-/* Anchorable blocks nest (a list item lives inside its parent list item, a
-   paragraph inside its blockquote), so hovering a deep block also hovers every
-   ancestor block — without the :not(:has(...)) guard each ancestor would light up
-   its own button and, since they all share one gutter column now, stack as ghost
-   buttons above the one you are pointing at. Reveal only the innermost hovered (or
-   focused) block's button: the one that contains no other hovered/focused block. */
+/* Anchorable blocks nest, so hovering a deep block also hovers its ancestors.
+   The :not(:has(...)) guard reveals only the innermost hovered/focused block's
+   number, not a stack of ghost numbers in the shared gutter. */
 .document-body .has-anchor-link:hover:not(:has(.has-anchor-link:hover)) > .heading-anchor,
 .document-body .has-anchor-link:focus-within:not(:has(.has-anchor-link:focus-within)) > .heading-anchor,
 .document-body .has-anchor-link > .heading-anchor:hover,
@@ -2623,17 +2538,14 @@ body.library-resizing {
 .document-body .heading-anchor:hover {
   color: var(--reading-link);
 }
-/* Brief confirmation that a click copied the #locus: hold the number lit in the
-   link color for the timeout decorateAnchorLinks sets, even after the jump scrolls. */
+/* Confirms a click copied the #locus: hold the number lit for the timeout
+   decorateAnchorLinks sets. */
 .document-body .heading-anchor.is-copied {
   opacity: 1;
   color: var(--reading-link);
 }
-/* A narrow window (and any touch device) has little left margin to host the number
-   gutter, so tuck the numbers tighter to the content edge and shrink them. They
-   stay always-visible here (opacity restored) — there is no hover to reveal them —
-   so a single direct tap copies the deep link (and jumps) with no reveal step to
-   swallow the first tap. */
+/* Narrow/touch has little left margin, so tuck the numbers tighter and shrink
+   them. Kept always-visible (no hover to reveal), so one tap copies and jumps. */
 @media (hover: none), (max-width: 600px) {
   .document-body .heading-anchor {
     padding-right: 3px;
@@ -2729,24 +2641,17 @@ body.library-resizing {
   font-style: italic;
 }
 /* ---- Code view (raw source editing) -------------------------------------
-   Wrapped source (never scrolls sideways) drawn as three exactly-aligned
-   layers: the colour layer (the reader's own Rust highlighter), a transparent
-   per-line mirror that carries wrap-aware line numbers, and a transparent
-   textarea that owns the caret / selection / IME / undo. The whole document
-   scrolls as one, and a minimap rail on the right drives that scroll so no
-   native scrollbar is needed. Every text layer shares identical metrics so
-   their wrapping — and thus every line's vertical position — matches exactly. */
-/* The reader shell itself is the scroller (its native scrollbar is already
-   hidden, as in the reading view); the code view never scrolls sideways. */
+   Wrapped source drawn as three aligned layers: the colour layer (the reader's
+   Rust highlighter), a transparent per-line mirror carrying wrap-aware line
+   numbers, and a transparent textarea owning caret/selection/IME/undo. All
+   share identical metrics so their wrapping and line positions match exactly. */
+/* The reader shell is the scroller (its scrollbar is hidden); no sideways scroll. */
 .reader-shell.code-view-shell {
   overflow-x: hidden;
   overflow-y: auto;
 }
-/* Laid out like .reader-layout: a single grid cell holding the document (which
-   the reader shell scrolls) with the reader's own .document-minimap overlaid at
-   the cell's right edge — the exact structure the reading view uses, so the
-   shared minimap machinery works unchanged. The --minimap-* variables mirror
-   .reader-layout's; the document reserves the rail's width with margin. */
+/* Laid out like .reader-layout: one grid cell with the reader's .document-minimap
+   overlaid at the right edge, so the shared minimap machinery works unchanged. */
 .code-view {
   --cv-gutter: 3.75em;
   --cv-pad-x: 20px;
@@ -2763,8 +2668,7 @@ body.library-resizing {
   line-height: 1.6;
   tab-size: 4;
 }
-/* Tall as its content (the colour layer is the in-flow height authority), but at
-   least a viewport so short files still fill the pane. */
+/* As tall as its content (the colour layer sets height), but at least a viewport. */
 .code-view-doc {
   grid-area: 1 / 1;
   min-width: 0;
@@ -2772,9 +2676,8 @@ body.library-resizing {
   position: relative;
   min-height: calc(100vh - 56px);
 }
-/* The reading view bleeds the rail across .reader-layout's reserved right
-   padding; here the document reserves space with margin instead, so the rail
-   sits flush at the cell edge with no bleed. */
+/* Here the document reserves the rail's space with margin, so the rail sits
+   flush at the cell edge (the reading view bleeds it across padding instead). */
 .code-view .document-minimap {
   margin-right: 0;
 }
@@ -2794,8 +2697,8 @@ body.library-resizing {
   position: relative;
   z-index: 0;
   margin: 0;
-  /* Extra bottom room so the layer is always at least as tall as the textarea,
-     keeping the visible colour text from ever clipping the last line. */
+  /* Extra bottom room so the layer stays at least as tall as the textarea and
+     never clips the last line. */
   padding: var(--cv-pad-y) var(--cv-pad-x) calc(var(--cv-pad-y) + 1.6em)
     var(--cv-gutter);
   color: var(--code-block-foreground, var(--preview-foreground));
@@ -2809,9 +2712,8 @@ body.library-resizing {
   background: none;
   color: inherit;
 }
-/* One block per source line so a keystroke can recolour just the edited line
-   instead of the whole document. Inherits the wrapping/whitespace rules above, so
-   each line wraps exactly like the textarea and the gutter row beside it. */
+/* One block per source line so a keystroke recolours only the edited line. Wraps
+   exactly like the textarea and gutter row beside it (rules inherited above). */
 .cv-line {
   display: block;
   margin: 0;
@@ -2918,20 +2820,12 @@ body.library-resizing {
   color: var(--syntax-deleted);
   text-decoration: underline;
 }
-/* Markdown markup scopes. The rules above cover programming-language scopes
-   (which is why fenced code and XML colour), but raw Markdown itself is mostly
-   markup.* — bold, italic, links, inline code, quotes — which would otherwise
-   sit unstyled and make a prose document look unhighlighted.
-
-   Each construct also carries its own delimiter scope — the `#` of a heading,
-   the `[` `]` `(` `)` of a link, the `**`/`_` of emphasis, the `` ` `` of inline
-   code, the `>` of a quote — as punctuation.definition.*. Without a rule per
-   delimiter those markers match only the generic .syn-punctuation above and
-   render in the muted grey used for code punctuation, so they read as plain text
-   next to their coloured content (the "the brackets aren't coloured" problem).
-   Pairing each markup rule with its punctuation.definition sibling — at a higher
-   specificity than the generic .syn-punctuation — colours the marker to match the
-   construct it opens, the way an editor like VS Code does. */
+/* Markdown markup scopes. The rules above cover programming-language scopes,
+   but raw Markdown is mostly markup.* (bold, italic, links, code, quotes),
+   which would otherwise sit unstyled. Each construct's delimiter carries a
+   punctuation.definition.* scope; pairing each markup rule with its sibling (at
+   higher specificity than the generic .syn-punctuation) colours the marker to
+   match its construct, the way an editor does. */
 .code-view .syn-markup.syn-heading,
 .code-view .syn-section,
 .code-view .syn-punctuation.syn-definition.syn-heading {
@@ -2956,10 +2850,8 @@ body.library-resizing {
 .code-view .syn-meta.syn-link {
   color: var(--syntax-number);
 }
-/* Link/image delimiters: `[` `]` around the label (punctuation.definition.link)
-   and `(` `)` around the destination (punctuation.definition.metadata). Colour
-   them with the link hue so `[label](url)` reads as one coloured unit instead of
-   grey brackets bracketing coloured text. */
+/* Link/image delimiters (`[ ]` label, `( )` destination): colour them the link
+   hue so `[label](url)` reads as one unit, not grey brackets. */
 .code-view .syn-punctuation.syn-definition.syn-link,
 .code-view .syn-punctuation.syn-definition.syn-metadata,
 .code-view .syn-punctuation.syn-definition.syn-image {
@@ -2970,9 +2862,8 @@ body.library-resizing {
   color: var(--syntax-comment);
   font-style: italic;
 }
-/* The list marker itself (`-`, `*`, `1.`) is punctuation.definition.list_item —
-   the markup.list scopes wrap the whole item, so colouring those would tint the
-   item text too. */
+/* The list marker (`-`, `*`, `1.`) is punctuation.definition.list_item; the
+   markup.list scopes wrap the whole item, so colouring those would tint text. */
 .code-view .syn-punctuation.syn-list_item {
   color: var(--syntax-keyword);
   font-weight: 700;
@@ -2980,11 +2871,8 @@ body.library-resizing {
 .code-view .syn-markup.syn-strikethrough {
   text-decoration: line-through;
 }
-/* XML: give attribute names their own hue so they read apart from the element
-   name (both are entity.* and would otherwise share the tag colour), and bold
-   the element name the way an editor does. The angle brackets stay on the muted
-   generic .syn-punctuation, which matches how editors keep XML/HTML tag
-   punctuation quiet against the coloured names. */
+/* XML: give attribute names their own hue (both name and tag are entity.* and
+   would otherwise share a colour) and bold the element name, editor-style. */
 .code-view .syn-entity.syn-name.syn-tag {
   font-weight: 700;
 }
@@ -3125,8 +3013,8 @@ body.library-resizing {
   position: sticky;
   top: 0;
   width: var(--minimap-width);
-  /* Bleed back across the reserved right padding so the rail stays flush to
-     the reader's right edge while the document centers in the space left of it. */
+  /* Bleed back across the reserved right padding so the rail stays flush to the
+     reader's right edge. */
   margin-right: calc(-1 * (var(--reader-layout-padding-inline) + var(--minimap-width)));
   z-index: 5;
 }
@@ -3141,9 +3029,8 @@ body.library-resizing {
   touch-action: none;
   user-select: none;
 }
-/* Holds the scaled document clone. Absolutely positioned so it can slide within
-   the clipped track (JS sets its top via --minimap-preview-top) when the document
-   is taller than the rail, the way a code editor's minimap scrolls. */
+/* Holds the scaled document clone; slides within the clipped track (JS sets top
+   via --minimap-preview-top) when the document is taller than the rail. */
 .document-minimap-content {
   position: absolute;
   top: var(--minimap-preview-top, 0px);
@@ -3153,30 +3040,24 @@ body.library-resizing {
   pointer-events: none;
   will-change: top;
 }
-/* The clone itself: a real, shrunken rendering of the document. JS sets its pixel
-   width and a translateY(sourceTop) + scale transform; transform-origin pins it to
-   the top-left so the scaled height lines up and the nudge drops the thumbnail to
-   where the real content begins. It carries the .document-body class, so zero that
-   class's scroll-origin margin here (the JS translateY positions it instead) while
-   keeping its own padding, so the clone's internal layout matches the page. */
+/* The clone: a shrunken rendering of the document. JS sets its width and a
+   translateY + scale transform (origin top-left). Zero the .document-body
+   scroll-origin margin (JS positions it) but keep its padding so the internal
+   layout matches the page. */
 .document-minimap-preview {
   box-sizing: border-box;
   margin: 0 !important;
   transform-origin: 0 0;
   pointer-events: none;
 }
-/* The clone is inert: it is a decorative thumbnail, so nothing inside it should
-   capture pointer events (clicks belong to the rail, which handles jump/drag). */
+/* The clone is inert; clicks belong to the rail, which handles jump/drag. */
 .document-minimap-preview,
 .document-minimap-preview * {
   pointer-events: none !important;
 }
-/* The clone carries the .document-body class, so its links pick up the generic
-   accent link colour. Glossary terms are blended into the body text on the page
-   (via the href-based rule), but the clone strips hrefs, so that blend no longer
-   matches and the terms would show accent-blue in the rail. updateDocumentMinimapPreview
-   tags them with .glossary-term before stripping; re-blend them here so the
-   thumbnail matches the page — glossary terms read as body text, not links. */
+/* The clone strips hrefs, so the href-based glossary blend no longer matches and
+   terms would show accent-blue. updateDocumentMinimapPreview tags them
+   .glossary-term before stripping; re-blend them to body text here. */
 .document-minimap-preview a.glossary-term {
   color: inherit;
 }
@@ -3397,9 +3278,8 @@ body.library-resizing {
   background: var(--surface-elevated);
 }
 .glossary-sheet-body {
-  /* Override .document-body's reading-measure width + scroll-origin margin so the
-     entry fills the sheet and its scrollbar sits at the right edge (under the
-     close button), not inset by an empty right strip. */
+  /* Override .document-body's reading-measure width + scroll-origin margin so
+     the entry fills the sheet and its scrollbar sits at the right edge. */
   width: auto;
   margin: 0;
   overflow-y: auto;
@@ -3423,8 +3303,7 @@ body.library-resizing {
   cursor: pointer;
 }
 .glossary-sheet-fulllink:hover {
-  /* Reset the global button:hover green fill (it out-specifies the plain
-     .glossary-sheet-fulllink rule) so this reads as a plain link, like the web. */
+  /* Reset the global button:hover green fill so this reads as a plain link. */
   background: none;
   border-color: transparent;
   color: var(--link-hover);

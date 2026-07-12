@@ -38,10 +38,9 @@ tabBar.addEventListener('wheel', (event) => {
   event.preventDefault();
   tabBar.scrollLeft += event.deltaY;
 }, { passive: false });
-// Manual pointer-based tab reordering. WebView2 does not fire HTML5 drag
-// events reliably for in-page elements, so we drive the drag ourselves and
-// send a moveTab command on drop, computing the insertion slot from the
-// pointer position relative to the other tabs' centers.
+// Manual pointer-based tab reordering (WebView2 doesn't fire HTML5 drag events
+// reliably in-page). Computes the insertion slot from the pointer vs. the other
+// tabs' centers and sends moveTab on drop.
 function tabDropIndex(clientX) {
   const before = tabDrag.others.findIndex((entry) => clientX < entry.mid);
   return before === -1 ? tabDrag.others.length : before;
@@ -84,12 +83,9 @@ function endTabDrag(commit) {
   tabDrag = null;
   const committing = drag.moved && commit && drag.to !== drag.filteredFrom;
   if (committing) {
-    // Settle the tab into its new slot immediately. The moveTab round-trip
-    // re-renders the tab bar a frame or two later; without this the dragged
-    // tab would first snap back to where it started and then jump to the new
-    // spot once the re-render lands. Reorder the DOM ourselves with all tab
-    // transitions suppressed so the slid layout from the drag cuts straight to
-    // the final order with no animation, matching what the re-render produces.
+    // Settle the tab into its new slot immediately (transitions suppressed), so
+    // it doesn't snap back and then jump when the moveTab re-render lands a frame
+    // or two later.
     const reference = drag.others[drag.to] ? drag.others[drag.to].el : null;
     tabBar.classList.add('tabs-settling');
     drag.el.style.transform = '';
@@ -114,12 +110,10 @@ function endTabDrag(commit) {
 }
 document.addEventListener('pointerup', () => endTabDrag(true));
 document.addEventListener('pointercancel', () => endTabDrag(false));
-// A slow document (a big XML/Markdown file) is parsed and rendered on the Rust
-// side before the reader HTML comes back, which can take several seconds with no
-// visible feedback. Show a spinner over the reader while that host work runs and
-// clear it the instant the new document state arrives. The spinner is deferred
-// briefly so quick loads never flash it, and a safety timeout guarantees it can
-// never get stuck on screen even if a response never comes.
+// A slow document renders on the Rust side before the HTML comes back. Show a
+// spinner over the reader during that work, cleared when the document state
+// arrives. Deferred briefly so quick loads don't flash it; a safety timeout
+// guarantees it never sticks.
 const READER_LOADING_DELAY_MS = 200;
 const READER_LOADING_SAFETY_MS = 30000;
 let readerLoadingDelay = 0;
@@ -137,11 +131,10 @@ function clearReaderLoading() {
   if (readerLoadingSafety) { clearTimeout(readerLoadingSafety); readerLoadingSafety = 0; }
   if (readerLoading) readerLoading.hidden = true;
 }
-// Commands whose host handler always renders a document back (leafSetState),
-// so it is safe to raise the spinner here and rely on that reply to lower it.
-// switchTab is deliberately excluded: clicking the already-active tab is a host
-// no-op with no reply, so its spinner is raised at the call site only on a real
-// switch.
+// Commands whose host handler always renders a document back, so raising the
+// spinner here and letting that reply lower it is safe. switchTab is excluded:
+// clicking the active tab is a host no-op, so it raises the spinner at the call
+// site only on a real switch.
 const READER_LOADING_COMMANDS = new Set(['openRecent']);
 const send = (message) => {
   if (message && READER_LOADING_COMMANDS.has(message.command)) beginReaderLoading();
@@ -156,9 +149,8 @@ let mermaidLoadPromise = null;
 let katexLoadPromise = null;
 document.getElementById('openButton').addEventListener('click', () => send({ command: 'open' }));
 homeButton.addEventListener('click', () => send({ command: 'goHome' }));
-// Right-click menu for library file rows. Every item acts on the row's path.
-// Layout groups: open, clipboard (cut/copy/copy path), rename, locate
-// (reveal/properties), and the destructive delete last, set off by separators.
+// Right-click menu for library file rows, acting on the row's path. Groups:
+// open, clipboard, rename, locate, and destructive delete last.
 const contextMenu = document.createElement('div');
 contextMenu.className = 'context-menu';
 contextMenu.hidden = true;
@@ -249,12 +241,9 @@ document.addEventListener('contextmenu', (event) => {
     hideContextMenu();
   }
 });
-// On macOS a Control+click is a secondary click, but unlike a two-finger
-// trackpad click it also emits a trailing left-click (with ctrlKey still set)
-// once the button is released. That trailing click would otherwise reach the
-// dismiss handler below and close the menu the instant it appeared, or activate
-// whichever item sat under the cursor. Swallow it in the capture phase so the
-// menu stays put. Real follow-up clicks to pick an item are not Control-held.
+// On macOS a Control+click also emits a trailing left-click (ctrlKey still set)
+// that would reach the dismiss handler and close the menu instantly. Swallow it
+// in the capture phase; real item clicks aren't Control-held.
 document.addEventListener('click', (event) => {
   if (isMacPlatform && event.ctrlKey && !contextMenu.hidden) {
     event.preventDefault();
@@ -266,9 +255,8 @@ window.addEventListener('blur', hideContextMenu);
 window.addEventListener('resize', hideContextMenu);
 app.addEventListener('scroll', hideContextMenu, true);
 
-// Inline rename: a small floating input prefilled with the file name. It lives
-// outside the tree DOM so a live tree refresh cannot clobber it mid-edit. Enter
-// commits; Escape or losing focus cancels.
+// Inline rename: a floating input prefilled with the file name, outside the tree
+// DOM so a live refresh can't clobber it. Enter commits; Escape/blur cancels.
 const renameBox = document.createElement('div');
 renameBox.className = 'rename-box';
 renameBox.hidden = true;
@@ -349,9 +337,8 @@ window.addEventListener('keydown', (event) => {
     hideContextMenu();
   }
 });
-// The reader's place as a document-intrinsic anchor (heading + block + fraction)
-// rather than a pixel offset, so it survives the full re-render a tab switch or
-// history navigation performs. Falls back to the top when there is no document.
+// The reader's place as a document-intrinsic anchor (heading + block + fraction),
+// so it survives a full re-render. Falls back to the top with no document.
 function currentScrollAnchor() {
   return captureReaderScrollAnchor() || { section: null, block: 0, offsetY: 0 };
 }
@@ -397,10 +384,9 @@ document.addEventListener('click', (event) => {
 });
 let currentState = { recent: [], tabs: [], active: null, document: null };
 let navigationState = { canGoBack: false, canGoForward: false };
-// Subtext under the home-screen hero: the original invitation plus a handful of
-// palm-leaf manuscript facts (leaves as the original pages of knowledge). One is
-// chosen at random each time the home screen is shown, and the chosen key is
-// kept so a language switch re-translates the same fact rather than re-rolling.
+// Subtext under the home-screen hero: one of several palm-leaf facts, chosen at
+// random per showing. The chosen key is kept so a language switch re-translates
+// the same fact rather than re-rolling.
 const EMPTY_DESCRIPTION_KEYS = [
   'empty.description',
   'empty.description.incised',
@@ -417,12 +403,9 @@ function pickEmptyDescriptionKey() {
   return EMPTY_DESCRIPTION_KEYS[Math.floor(Math.random() * EMPTY_DESCRIPTION_KEYS.length)];
 }
 let emptyDescriptionKey = pickEmptyDescriptionKey();
-// UI toggles (theme, minimap, indexing, library view) are persisted by the Rust
-// host, which injects them as window.__leafSettings before any page script runs
-// (see initial_settings_script). The app shell's opaque origin makes localStorage
-// non-durable across launches, so the host owns these values: we seed from them
-// synchronously here — no post-load re-apply, no flash — and report every change
-// back so it can save them.
+// UI toggles are persisted by the host, injected as window.__leafSettings before
+// any page script (the app shell's opaque origin can't use localStorage). We seed
+// from them synchronously here and report every change back so it can save them.
 const LEAF_SETTINGS = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings : {};
 let minimapEnabled = typeof LEAF_SETTINGS.minimapEnabled === 'boolean' ? LEAF_SETTINGS.minimapEnabled : true;
 const minimapListeners = new Set();
@@ -445,9 +428,8 @@ minimapEnabledControl.addEventListener('change', () => {
   window.leafMinimap.setEnabled(minimapEnabledControl.checked);
   send({ command: 'setMinimapEnabled', enabled: minimapEnabledControl.checked });
 });
-// Previous/Next pager visibility. The pager markup is emitted into every
-// document by the host; a single data-attribute on <html> shows or hides it via
-// CSS, so toggling never needs a re-render. On by default.
+// Previous/Next pager visibility. A data-attribute on <html> shows/hides the
+// host-emitted markup via CSS, so toggling never re-renders. On by default.
 let pagerEnabled = typeof LEAF_SETTINGS.pagerEnabled === 'boolean' ? LEAF_SETTINGS.pagerEnabled : true;
 function applyPagerEnabled() {
   document.documentElement.dataset.pagerEnabled = String(pagerEnabled);
@@ -459,10 +441,9 @@ pagerEnabledControl.addEventListener('change', () => {
   applyPagerEnabled();
   send({ command: 'setPagerEnabled', enabled: pagerEnabled });
 });
-// Gutter permalink numbers in the reading view. A single data-attribute on <html>
-// shows or hides them via CSS, so toggling never needs a re-render — and hiding
-// them only drops the visible number; each block keeps its id, so #locus deep
-// links still resolve. On by default.
+// Gutter permalink numbers. A data-attribute on <html> shows/hides them via CSS
+// (no re-render); hiding drops only the visible number, blocks keep their ids so
+// #locus links still resolve. On by default.
 let lineNumbersEnabled =
   typeof LEAF_SETTINGS.lineNumbersEnabled === 'boolean' ? LEAF_SETTINGS.lineNumbersEnabled : true;
 function applyLineNumbersEnabled() {
@@ -475,17 +456,14 @@ lineNumbersEnabledControl.addEventListener('change', () => {
   applyLineNumbersEnabled();
   send({ command: 'setLineNumbersEnabled', enabled: lineNumbersEnabled });
 });
-// Whether the reading view ("preview") is a live editor. On by default; when off
-// the rendered page stays a pure reader — no click-to-edit, and task checkboxes
-// stay inert (the host renders them disabled and we skip re-enabling them). The
-// code view remains available as the explicit source editor. bindReadingEditor
-// reads this flag, so toggling just re-renders the open document to apply it.
+// Whether the reading view is a live editor. On by default; off keeps the page a
+// pure reader (no click-to-edit, checkboxes inert). The code view still edits
+// source. Toggling just re-renders the open document to apply it.
 let readerEditingEnabled =
   typeof LEAF_SETTINGS.readerEditingEnabled === 'boolean' ? LEAF_SETTINGS.readerEditingEnabled : true;
 readerEditingEnabledControl.checked = readerEditingEnabled;
 readerEditingEnabledControl.addEventListener('change', () => {
-  // Commit any block being edited before flipping, so turning editing off does
-  // not silently drop an in-progress change.
+  // Commit any block being edited before flipping, so it isn't silently dropped.
   commitActiveEditingBlock();
   readerEditingEnabled = readerEditingEnabledControl.checked;
   send({ command: 'setReaderEditingEnabled', enabled: readerEditingEnabled });
@@ -573,12 +551,9 @@ function appendSpeedReaderCandidate(fragment, token) {
 function isSpeedReaderWordChar(char) {
   return Boolean(char && /[\p{L}\p{N}]/u.test(char));
 }
-// A token is part of a code-like run — and so should not get a lead anchor —
-// only when a digit is fused to it (page2, COVID19) or a joiner punctuation
-// glues it to another word character on the joiner's far side (file.md, a@b,
-// x=y, v1.2). A joiner against whitespace, the end of the text, or sentence
-// punctuation (a trailing period, comma, colon, …) is ordinary prose, so words
-// ending a sentence still get anchored.
+// A token is code-like (no lead anchor) only when a digit is fused to it (page2)
+// or a joiner glues it to a word char on its far side (file.md, a@b, x=y). A
+// joiner against whitespace or sentence punctuation is ordinary prose.
 const SPEED_READER_JOINER = /[:/\\._@#?=&%+~]/;
 function speedReaderTouchesCode(text, start, end) {
   const before = text[start - 1];
@@ -662,10 +637,9 @@ speedReaderEnabledControl.addEventListener('change', () => {
   setSpeedReaderEnabled(speedReaderEnabledControl.checked);
   send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });
 });
-// Library pane: a drill-in Project view, an expandable Tree view, and a flat
-// All-files view. The host persists the chosen view, the Tree's open folders,
-// and the Project view's current folder; the frontend reports each change and
-// applies host values on boot. The "Index entire device" setting lives here too.
+// Library pane: drill-in Project, expandable Tree, and flat All-files views. The
+// host persists the chosen view, open folders, and Project folder; the frontend
+// reports each change and applies host values on boot.
 const LIBRARY_VIEWS = ['project', 'tree', 'flat', 'graph'];
 const VIEW_LABEL_KEY = { project: 'library.view.project', tree: 'library.view.tree', flat: 'library.view.all', graph: 'library.view.graph' };
 // Markdown files are badged with the app's own leaf mark; the host substitutes
@@ -685,10 +659,9 @@ graphScopeControl.addEventListener('change', () => {
 });
 let libraryProjectPath = typeof LEAF_SETTINGS.libraryProjectPath === 'string' ? LEAF_SETTINGS.libraryProjectPath : '';
 let expandedFolders = new Set(Array.isArray(LEAF_SETTINGS.libraryExpanded) ? LEAF_SETTINGS.libraryExpanded : []);
-// Library pane open/close + resize. The user's explicit closed preference and last
-// open width are host-persisted (window.__leafSettings + setLibraryLayout), the
-// same path as the other settings — the app shell's opaque origin makes
-// localStorage non-durable, so the host owns these too.
+// Library pane open/close + resize. The closed preference and last open width are
+// host-persisted (window.__leafSettings + setLibraryLayout), like the other
+// settings.
 const SNAP_SHUT = 40;           // drag narrower than this and the pane closes
 const DEFAULT_PANE_WIDTH = 240; // first-run fallback only
 const MIN_READER_WIDTH = 360;   // keep the document column usable as the pane grows
@@ -700,19 +673,19 @@ let libraryTreeData = [];
 let libraryError = null;
 let lastScanProgress = { phase: 'idle', filesFound: 0 };
 // Full-text search over the library. A non-empty query replaces the tree with
-// ranked results; clearing it restores the tree (and any active view). The query
-// is echoed by the backend so a slow response for an old query is dropped.
+// ranked results; clearing it restores the tree. The backend echoes the query so
+// a slow response for an old one is dropped.
 const SEARCH_DEBOUNCE_MS = 150;
 let librarySearchQuery = '';
 let librarySearchTimer = 0;
 let librarySearchHits = null;
 let librarySearchError = null;
 let librarySearchLoading = false;
-// Focus search: when on, restrict results to the files currently shown in the
-// library pane (the graph's nodes, or the listed files). Off = whole library.
+// Focus search: when on, restrict results to the files shown in the pane. Off =
+// whole library.
 let librarySearchFocus = false;
-// A visible set larger than this is not a meaningful "focus", and a huge IN
-// clause is not worth it, so we fall back to searching everything.
+// Above this, a "focus" isn't meaningful (and the IN clause too big), so search
+// everything instead.
 const SEARCH_SCOPE_CAP = 1500;
 // A heading anchor to scroll to once a clicked result's document has rendered.
 let pendingSearchJump = null;
@@ -732,17 +705,16 @@ function persistLibraryState() {
 function persistLibraryLayout() {
   send({ command: 'setLibraryLayout', closed: libraryUserClosed, width: Math.round(libraryWidth) });
 }
-// The widest the open pane may get while still leaving the reader usable. Floored
-// at SNAP_SHUT so an explicit open always shows a real pane even on a small window.
+// The widest the open pane may get while leaving the reader usable. Floored at
+// SNAP_SHUT so an explicit open always shows a real pane.
 function maxOpenPaneWidth() {
   return Math.max(SNAP_SHUT, libraryShell.clientWidth - MIN_READER_WIDTH);
 }
 function clampOpenPaneWidth(width) {
   return Math.min(Math.max(width, SNAP_SHUT), maxOpenPaneWidth());
 }
-// A window too narrow to hold both a usable reader and the pane shows the pane
-// closed regardless of preference — a small-window desktop fallback, not a saved
-// state. The user's explicit closed preference still wins when there IS room.
+// A window too narrow for both reader and pane shows the pane closed regardless
+// of preference — a display fallback, not a saved state.
 function libraryTooNarrow() {
   return libraryShell.clientWidth < SNAP_SHUT + MIN_READER_WIDTH;
 }
@@ -758,17 +730,14 @@ function applyPaneLayout() {
 }
 function openLibrary() {
   libraryUserClosed = false;
-  // Tapping the icon always reopens at the default width, not whatever sliver
-  // the pane was dragged down to before it snapped shut.
+  // Reopen at the default width, not the sliver it was dragged to before snapping.
   libraryWidth = DEFAULT_PANE_WIDTH;
   applyPaneLayout();
   persistLibraryLayout();
 }
 libraryOpen.addEventListener('click', openLibrary);
-// Drag-to-resize the pane from its right edge. We rAF-throttle the width writes:
-// the first pointermove of a frame stashes the target width and schedules a frame;
-// later moves just overwrite the target until the frame applies it. This keeps the
-// grid from relaying out on every pointer event.
+// Drag-to-resize the pane from its right edge, rAF-throttling width writes so the
+// grid doesn't relayout on every pointer event.
 let dividerDrag = null;
 function applyPendingDividerWidth() {
   if (!dividerDrag) return;
@@ -817,10 +786,9 @@ document.addEventListener('pointercancel', (event) => {
   endDividerDrag();
   persistLibraryLayout();
 });
-// On window resize, re-clamp the open width to the new window and re-evaluate the
-// too-narrow fallback so the pane hides/shows as the window crosses the threshold.
-// The auto-hide is a display state only; we never overwrite the saved preference,
-// so widening the window again restores the pane the user wanted open.
+// On resize, re-clamp the open width and re-evaluate the too-narrow fallback. The
+// auto-hide is display-only; the saved preference is never overwritten, so
+// widening restores the pane.
 let paneResizeFrame = 0;
 window.addEventListener('resize', () => {
   if (paneResizeFrame) return;
@@ -830,12 +798,10 @@ window.addEventListener('resize', () => {
     applyPaneLayout();
   });
 });
-// The file the library highlights as "current" (the active tab's path), plus a
-// one-shot request to reveal it on the next render: drill the Project view into
-// its folder, expand its Tree ancestors, and scroll the row into view. The flag
-// is only set when the user *goes to* a file (opens one, or switches/clicks a
-// tab) — never on a passive re-render — so manual library browsing while a file
-// is open is left where the user put it until they click that file's tab again.
+// The file the library highlights as "current" (active tab's path), plus a
+// one-shot request to reveal it on the next render (drill Project in, expand Tree
+// ancestors, scroll into view). Set only when the user goes to a file, never on a
+// passive re-render, so manual browsing isn't disturbed.
 let librarySelectedPath = null;
 let libraryRevealPending = false;
 function activeDocumentPath() {
@@ -871,9 +837,8 @@ window.leafSetPager = (state) => {
   bindDocumentLinks();
   scheduleReaderLayoutUpdate();
 };
-// The chain of folder paths from the tree root down to (and including) the
-// folder that directly contains `filePath`. Returns null when no file with that
-// path exists in the tree; an empty array means the file sits at the root.
+// The folder path chain from the tree root down to the folder containing
+// `filePath`. null when no such file is in the tree; empty array = at the root.
 function folderAncestorsOf(nodes, filePath) {
   const walk = (list, trail) => {
     for (const node of list || []) {
@@ -893,10 +858,9 @@ function scrollSelectedLibraryRowIntoView() {
   // Centered so a deeply nested file lands away from the app bar and bottom edge.
   if (row) row.scrollIntoView({ block: 'center' });
 }
-// Carry out a pending reveal. Returns false (still pending) until the tree is
-// loaded, so leafSetLibraryState can retry once it arrives. When the tree is
-// present we always render; if the file is found we first point the Project view
-// at its folder and open its Tree ancestors so the row shows in every view.
+// Carry out a pending reveal. Returns false (still pending) until the tree loads,
+// so leafSetLibraryState can retry. When present, points Project at the file's
+// folder and opens its Tree ancestors so the row shows in every view.
 function revealSelectedInLibrary() {
   if (!libraryRevealPending || !librarySelectedPath) return false;
   const nodes = libraryTreeData || [];
@@ -912,16 +876,14 @@ function revealSelectedInLibrary() {
   if (ancestors) scrollSelectedLibraryRowIntoView();
   return true;
 }
-// Mark `path` as the library's current file and ask the next render to reveal
-// it. Passing null (the home screen, no active file) just clears the highlight;
-// the Project/Tree position is left exactly as the user last had it.
+// Mark `path` the library's current file and ask the next render to reveal it.
+// null (home screen) just clears the highlight, leaving the browse position.
 function followFileInLibrary(path, focus, forceRefresh) {
   librarySelectedPath = path || null;
   libraryRevealPending = !!path;
-  // In graph mode there are no rows to reveal; move the highlight to the node for
-  // the newly active document. When the move came from a deliberate navigation
-  // (clicking/switching a tab), also fly the camera to that node and zoom in;
-  // `forceRefresh` additionally rebuilds the slice so it can't stay stale.
+  // In graph mode there are no rows; move the highlight to the active node. On a
+  // deliberate navigation, also fly the camera to it and zoom in; `forceRefresh`
+  // rebuilds the slice too.
   if (libraryView === 'graph') {
     graphSetActive(librarySelectedPath, focus, forceRefresh);
     return;
@@ -1459,11 +1421,9 @@ async function buildGraphScene() {
     nodesLayer.addChild(gfx);
   }
 
-  // Scale the layout to the node count so the bigger scopes stay responsive.
-  // Drawing every edge on every tick is the dominant cost, so on large graphs we
-  // paint only every Nth tick (plus a final paint when the layout settles), settle
-  // faster (higher alphaDecay), approximate charge more coarsely (higher theta),
-  // and drop the per-node collide force once it stops being affordable.
+  // Scale the layout to the node count. Edge drawing dominates, so large graphs
+  // paint every Nth tick, settle faster, approximate charge more coarsely, and
+  // drop the collide force once it's unaffordable.
   const nodeCount = nodes.length;
   const heavy = nodeCount > 1500;
   const veryHeavy = nodeCount > 4000;
@@ -1569,15 +1529,11 @@ function applyGraphStyles() {
   renderGraphFrame(scene);
 }
 
-// Choose which labels are visible for the current state and place them.
-//
-// Active and hovered nodes (and a hovered node's neighbours) are forced labels.
-// When the layout has settled and there is no hover, every other node becomes an
-// ambient candidate: walked most-connected-first, each wins a label only if its
-// screen box clears every label already placed. So the visible set scales with
-// how much room there is — a handful of neighbours all get names, a dense sphere
-// of hundreds shows only the active node plus whatever fits, and zooming into a
-// region spreads its nodes apart on screen so more of their names appear.
+// Choose which labels are visible and place them. Active/hovered nodes (and a
+// hover's neighbours) are forced; when settled with no hover, every other node
+// is an ambient candidate walked most-connected-first, each winning a label only
+// if its screen box clears the ones already placed. So the visible set scales
+// with available room, and zooming in surfaces more names.
 function layoutGraphLabels(scene) {
   const { world, colors } = scene;
   const ws = world.scale.x || 1;
@@ -1773,12 +1729,9 @@ function wireGraphPointer(scene) {
   }, { passive: false });
 }
 
-// Pixi's `resizeTo` only reacts to window resizes, and the ticker is stopped, so
-// dragging the pane splitter (an element resize, not a window one) neither
-// resizes the renderer nor repaints — the graph stays clustered in the old box.
-// Observe the canvas ourselves: resize the renderer to the new size, shift the
-// view by half the delta so the centred content stays centred (preserving any
-// pan/zoom), and repaint.
+// Pixi's `resizeTo` only reacts to window resizes, so a pane-splitter drag
+// (element resize) wouldn't resize or repaint. Observe the canvas ourselves:
+// resize, shift the view by half the delta to keep content centred, repaint.
 function wireGraphResize(scene) {
   const ro = new ResizeObserver(() => {
     const w = libraryGraphCanvas.clientWidth;
@@ -1807,10 +1760,9 @@ function graphZoomAt(scene, sx, sy, factor) {
   scene.world.scale.set(next);
 }
 
-// Smoothly pan+zoom the world so `node` ends centred and comfortably zoomed in.
-// The target recomputes each frame from the node's live position, so it lands
-// centred even while the force simulation is still nudging the layout. Any
-// in-flight focus animation is cancelled first so rapid tab clicks don't fight.
+// Smoothly pan+zoom so `node` ends centred and zoomed in. The target recomputes
+// each frame from the node's live position, so it lands centred even mid-settle.
+// Cancels any in-flight focus animation so rapid tab clicks don't fight.
 function focusGraphNode(scene, node) {
   if (!scene || !node || typeof node.x !== 'number') return;
   if (scene.focusRaf) { cancelAnimationFrame(scene.focusRaf); scene.focusRaf = null; }
@@ -1847,13 +1799,10 @@ function focusGraphNode(scene, node) {
   scene.focusRaf = requestAnimationFrame(step);
 }
 
-// Move the highlight to a newly active document. In Focus scope the visible slice
-// is the neighborhood of the active document, so a changed document means a
-// refetch + rebuild rather than a recolour. In the fixed scopes we keep the scene
-// and just recolour, and when `focus` is true also fly the camera to that node.
-// `forceRefresh` is the deliberate "resync this file" gesture (clicking the tab
-// you are already on): it always rebuilds the slice so a graph that went stale in
-// memory catches up, instead of leaving you stuck on an old scene.
+// Move the highlight to a newly active document. Focus scope refetches+rebuilds
+// (its slice is the active document's neighborhood); fixed scopes keep the scene
+// and recolour, flying the camera when `focus`. `forceRefresh` (resync gesture)
+// always rebuilds so a stale graph catches up.
 function graphSetActive(path, focus, forceRefresh) {
   graphActivePath = path || null;
   if (libraryView !== 'graph') return;
@@ -1861,10 +1810,8 @@ function graphSetActive(path, focus, forceRefresh) {
   // (a different document) mean the scene in memory is for the wrong file.
   const seedChanged =
     graphScope === 'small' && graphScope + '|' + graphSeeds().join('\n') !== graphSeedKey;
-  // The current scene can't represent the active document when there is no scene
-  // or the document's node isn't in it (a new/re-indexed file). In every one of
-  // these cases — plus an explicit resync — fetch a fresh slice rather than
-  // silently doing nothing, and fly to the node once it builds.
+  // No scene, or the document's node isn't in it (a new/re-indexed file), or an
+  // explicit resync: fetch a fresh slice and fly to the node once it builds.
   const staleForActive =
     focus && !!graphActivePath && (!graphScene || !graphScene.nodeByPath.has(graphActivePath));
   if (forceRefresh || seedChanged || staleForActive) {
@@ -2015,22 +1962,17 @@ window.leafSetSearchResults = (payload) => {
   }
   renderLibrarySearch();
 };
-// Paint the pane from the seeded settings right away (correct view + toggle
-// label), then ask for the tree. The host owns the indexing setting and starts
-// the launch rescan itself when enabled, so there is no JS-initiated crawl on
-// boot. Both are no-ops until the worker is ready.
+// Paint the pane from the seeded settings, then ask for the tree. The host owns
+// indexing and starts the rescan itself, so there's no JS-initiated crawl on boot.
 renderLibrary();
 applyPaneLayout();
 send({ command: 'getFileTree' });
 let minimapViewportFrame = 0;
 let minimapPreviewFrame = 0;
-// Rebuilding the thumbnail means cloning the whole (possibly huge) document, so
-// only do it when something that changes the thumbnail actually moved: the
-// document content, its wrap width, or the rail width. minimapContentVersion is
-// bumped whenever the document mutates; the minimapBuilt* values record what the
-// last-built clone was for. A resize that only changed height, or any redundant
-// trigger, matches all three and reuses the existing clone. See
-// updateDocumentMinimapPreview.
+// Rebuilding the thumbnail clones the whole document, so only rebuild when the
+// content, wrap width, or rail width changed. minimapContentVersion bumps on
+// mutation; the minimapBuilt* values record the last clone's inputs, so a
+// height-only resize reuses the existing clone.
 let minimapContentVersion = 0;
 let minimapBuiltVersion = -1;
 let minimapBuiltSourceWidth = -1;
@@ -2038,10 +1980,9 @@ let minimapBuiltPreviewWidth = -1;
 let minimapDragging = false;
 let minimapPointerId = null;
 let minimapPointerOffsetY = null;
-// Document geometry captured once at the start of a minimap drag. It does not
-// change while dragging, so re-measuring on every pointermove is pure waste and
-// the getBoundingClientRect reads it does force a synchronous layout. Measure
-// once here, then map pointer -> scrollTop with pure math.
+// Document geometry captured once at the start of a minimap drag (it doesn't
+// change while dragging, and re-measuring forces a synchronous layout). Then map
+// pointer -> scrollTop with pure math.
 let minimapDragMetrics = null;
 let minimapResizeObserver = null;
 let minimapBodyObserver = null;
@@ -2049,10 +1990,8 @@ let readerLayoutFrame = 0;
 let readerScrollAnchor = null;
 let readerReflowObserver = null;
 let resetReaderScrollOnNextRender = false;
-// Cached list of the document's anchor blocks. Rebuilt when the document
-// changes (a new render, an async Mermaid/math swap, or the pager appending)
-// so the per-scroll position probe never re-runs querySelectorAll over tens of
-// thousands of blocks.
+// Cached list of the document's anchor blocks, rebuilt when the document changes,
+// so the per-scroll probe never re-runs querySelectorAll over huge documents.
 let readerAnchorBlocks = null;
 let readerAnchorBlocksCount = -1;
 const READER_CONTENT_TOP_GAP = 88;
@@ -2127,12 +2066,10 @@ let pendingViewScrollFraction = null;
 // above the subscriptions that run renderState() on load.
 let currentDocumentFormat = 'markdown';
 let currentDocumentSource = '';
-// Where the caret should land after the next render. Structural edits (Enter
-// splits a block, Backspace merges into the previous one) splice the source and
-// the host re-renders the document; this carries the caret across that re-render
-// so typing flows on without a click. `srcStart` names the destination block by
-// its post-splice source offset, `textOffset` the character position inside it;
-// `insertBelow` instead opens a fresh empty paragraph after that block.
+// Where the caret should land after the next render, carrying it across the
+// re-render a structural edit (Enter/Backspace) triggers so typing flows on.
+// `srcStart` names the block by its post-splice source offset, `textOffset` the
+// position inside it; `insertBelow` opens a fresh empty paragraph after it.
 let pendingCaret = null;
 window.leafTheme.subscribe((theme) => {
   themeModeControl.value = theme.mode;
@@ -2232,9 +2169,8 @@ window.leafSetState = (state) => {
     }
   }
 };
-// Re-render the active document after it changed on disk (live reload) without
-// scrolling back to the top: capture the current position, re-render, then put
-// the reader back where it was (clamped if the document got shorter).
+// Re-render the active document after a live reload without scrolling to the top:
+// capture the position, re-render, restore it (clamped if the document shrank).
 window.leafReloadDocument = (state) => {
   clearReaderLoading();
   const anchor = captureReaderScrollAnchor();
@@ -2248,12 +2184,9 @@ window.leafReloadDocument = (state) => {
     updateMinimapViewport();
   });
 };
-// Switch to another tab's document and land where that tab was last left. The
-// position is a content anchor (heading + block + fraction), not a pixel, so it
-// survives the full re-render the switch performs. `anchor` is null the first
-// time a tab is opened, which starts at the top of the content. We deliberately
-// skip the reset-to-content-start that leafSetState runs so clicking a tab never
-// jumps to the top.
+// Switch to another tab and land where it was last left. `anchor` is a content
+// anchor that survives the re-render, null the first time (starts at the top).
+// Skips the reset-to-top that leafSetState runs so a tab click never jumps up.
 window.leafSwitchTab = (state, anchor) => {
   clearReaderLoading();
   currentState = state || { recent: [], tabs: [], active: null, document: null };
@@ -2275,9 +2208,8 @@ window.leafSwitchTab = (state, anchor) => {
   // document, so switching tabs never flashes at the top for a frame.
   restoreReaderScrollAnchor(anchor);
   updateMinimapViewport();
-  // Re-apply after layout settles. The reflow observer installed by renderState
-  // keeps re-pinning this anchor as images above it decode and grow, so the
-  // landing no longer drifts once they finish loading.
+  // Re-apply after layout settles; renderState's reflow observer keeps re-pinning
+  // the anchor as images above it decode and grow, so the landing doesn't drift.
   window.requestAnimationFrame(() => {
     restoreReaderScrollAnchor(anchor);
     readerScrollAnchor = captureReaderScrollAnchor();
@@ -2310,13 +2242,9 @@ window.leafScrollToFragment = (fragment) => {
     target.focus({ preventScroll: true });
     target.scrollIntoView({ block: 'start' });
     setReaderScrollTop(app.scrollTop);
-    // Record where we landed as the reader anchor. content-visibility lays out
-    // only on-screen blocks, so their heights keep settling after the jump and
-    // the .document-body ResizeObserver fires scheduleReaderLayoutUpdate; without
-    // a fresh anchor that re-pins the PRE-jump position and yanks the page back
-    // (the "tries to jump but snaps back, and the outline stays open" bug). Re-pin
-    // on the next frame too, the way leafSwitchTab/leafReloadDocument do, so the
-    // landing converges on the target instead of an off-screen size estimate.
+    // Record where we landed as the reader anchor, or the ResizeObserver's
+    // scheduleReaderLayoutUpdate would re-pin the pre-jump position and yank the
+    // page back. Re-pin next frame too so the landing converges on the target.
     readerScrollAnchor = captureReaderScrollAnchor();
     updateMinimapViewport();
     window.requestAnimationFrame(() => {
@@ -2430,15 +2358,10 @@ function renderTabs(state) {
   });
 }
 // ---- Editing: code view + save -------------------------------------------
-// The reader is source-of-truth-in-Rust: the host owns the editable buffer and
-// re-highlights through the same Rust path the reading view uses. Here the JS
-// only drives the raw-source code view (a textarea over a highlight layer),
-// tracks which documents have unsaved edits, and relays intent to the host.
-//
-// The mutable state these functions read (codeViewActive, dirtyByPath, and the
-// two toolbar buttons) is declared earlier, above the leafLocale/leafMinimap
-// subscriptions, because those fire renderState() synchronously on load — which
-// reads this state before this point in the file executes.
+// Source-of-truth is in Rust: the host owns the buffer and re-highlights. The JS
+// only drives the code view (a textarea over a highlight layer), tracks unsaved
+// edits, and relays intent. Its mutable state is declared earlier, above the
+// subscriptions that fire renderState() synchronously on load.
 
 function isDocumentDirty(path) {
   return !!(path && dirtyByPath.get(path));
@@ -2481,10 +2404,9 @@ function updateEditingChrome() {
   }
 }
 
-// Ask the host to revert the most recent reading-view edit of the active
-// document. The host pops its buffer snapshot, re-renders, and resyncs the
-// chrome — dirty state and undo availability both come back authoritative, so
-// undoing the last edit hides both buttons.
+// Ask the host to revert the most recent reading-view edit. The host pops its
+// snapshot, re-renders, and resyncs the chrome, so undoing the last edit hides
+// both buttons.
 function undoLastEdit() {
   const path = activeDocumentPath();
   if (!path || undoableByPath.get(path) !== true) return;
@@ -2492,14 +2414,12 @@ function undoLastEdit() {
 }
 
 // The last buffer text handed to the host, so a stale re-highlight response
-// (the user kept typing after it was sent) can be ignored instead of regressing
-// the colour layer to older text.
+// (typing continued after it was sent) is ignored rather than regressing.
 let lastSentSourceText = null;
 
-// One right-aligned line number per SOURCE line, each paired with a transparent
-// copy of that line's text so the row wraps to exactly the same height as the
-// colour layer behind it — that is what keeps the numbers aligned once lines
-// wrap. Rebuilt whenever the text changes.
+// One right-aligned number per source line, paired with a transparent copy of
+// the line's text so the row wraps to the same height as the colour layer —
+// keeping numbers aligned once lines wrap. Rebuilt when the text changes.
 function buildLineNumbers(container, text) {
   const lines = text.split('\n');
   container.innerHTML = lines
@@ -2510,17 +2430,14 @@ function buildLineNumbers(container, text) {
     .join('');
 }
 
-// A zero-width space stands in for an empty source line so its box still takes a
-// full row's height, keeping the colour layer and the gutter aligned with the
-// textarea (which always shows the blank line). Matches buildLineNumbers.
+// A zero-width space stands in for an empty source line so its box keeps a full
+// row's height, aligning the colour layer and gutter with the textarea.
 const CODE_VIEW_BLANK = '​';
 
-// Split the flat highlighter output — a stream of `<span class="…">`, `</span>`,
-// and HTML-escaped text where a single span may stay open across newlines — into
-// one HTML string per source line. Any span still open at a line break is closed
-// to end the line and re-opened at the start of the next, so colour carries
-// across a wrap without leaking markup. Returns null if the split does not yield
-// exactly `expectedCount` lines, so the caller can fall back to a plain render.
+// Split the flat highlighter output into one HTML string per source line, closing
+// and re-opening any span that straddles a line break so colour carries across
+// without leaking markup. Returns null unless the split yields exactly
+// `expectedCount` lines, so the caller can fall back to a plain render.
 function highlightedHtmlToLines(html, expectedCount) {
   const lines = [];
   const openStack = [];
@@ -2558,10 +2475,9 @@ function highlightedHtmlToLines(html, expectedCount) {
   return lines;
 }
 
-// The inner HTML each colour-layer line currently shows, one entry per source
-// line. A recolour compares against this to touch only the lines that changed; a
-// keystroke sets an edited line's entry to its plain text so the next recolour is
-// sure to repaint it. Kept exactly in step with the colour layer's children.
+// The inner HTML each colour-layer line currently shows, one per source line. A
+// recolour compares against this to touch only changed lines; a keystroke sets an
+// edited line's entry to plain text so the next recolour repaints it.
 let codeViewColourHtml = [];
 
 // The inner markup for one colour-layer line: the highlighted line when the
@@ -2575,10 +2491,8 @@ function colourLineInner(lineText, colouredLine) {
 }
 
 // The per-line inner markup for a whole buffer, coloured from `html` (falling back
-// to plain-escaped text if the per-line split does not line up 1:1 with the source
-// lines). This is the single source of truth both the full build and the
-// incremental recolour compute their line HTML from, so their strings compare
-// equal for unchanged lines.
+// to plain-escaped text if the split doesn't line up 1:1). The single source both
+// the full build and the incremental recolour compute their line HTML from.
 function computeColourInner(html, text) {
   const lineTexts = text.split('\n');
   const coloured = highlightedHtmlToLines(html || '', lineTexts.length);
@@ -2587,29 +2501,25 @@ function computeColourInner(html, text) {
   );
 }
 
-// Rebuild the whole colour layer as one `<div class="cv-line">` per source line.
-// Used on entry (and as a self-heal if the incremental state ever drifts); the
-// per-keystroke and recolour paths patch only the lines that changed instead.
+// Rebuild the whole colour layer, one `<div class="cv-line">` per source line.
+// Used on entry and as a self-heal; the keystroke/recolour paths patch instead.
 function setCodeViewColourLines(codeEl, html, text) {
   const inner = computeColourInner(html, text);
   codeEl.innerHTML = inner.map((line) => `<div class="cv-line">${line}</div>`).join('');
   codeViewColourHtml = inner;
 }
 
-// Repaint after a debounced re-highlight by replacing only the colour lines whose
-// markup actually changed — the edited lines, plus any whose colour shifted
-// because an edit changed multi-line state (opening a fence, say). Every other
-// line is left in place, so a recolour never reparses or re-lays-out the whole
-// document. Correct by construction: it diffs against the authoritative full
-// highlight, so matching lines are already right and differing ones are repainted.
+// Repaint after a debounced re-highlight by replacing only the lines whose markup
+// changed (edited lines, plus any whose colour shifted from multi-line state like
+// a fence). Diffs against the authoritative full highlight, so unchanged lines
+// stay in place and the whole document never re-lays-out.
 function recolourCodeViewLines(codeEl, html, text) {
   const inner = computeColourInner(html, text);
   if (
     codeViewColourHtml.length !== inner.length ||
     codeEl.children.length !== inner.length
   ) {
-    // The line structure drifted from the highlight (should not happen while the
-    // recolour guard holds); rebuild once to get back in step.
+    // Line structure drifted from the highlight; rebuild once to resync.
     setCodeViewColourLines(codeEl, html, text);
     return;
   }
@@ -2621,9 +2531,8 @@ function recolourCodeViewLines(codeEl, html, text) {
   }
 }
 
-// A single colour-layer line element. Freshly typed lines are shown as plain text
-// (via textContent, so no markup can leak); the debounced re-highlight recolours
-// them shortly after.
+// A single colour-layer line element. Freshly typed lines show as plain text (via
+// textContent, so no markup leaks); the debounced re-highlight recolours them.
 function makeColourLine(text) {
   const div = document.createElement('div');
   div.className = 'cv-line';
@@ -2676,10 +2585,9 @@ function codeLineTextNodes(root) {
   return nodes;
 }
 
-// Delete `len` characters starting at column `start` from a colour line's text
-// nodes, leaving the surrounding colour spans in place. Offsets are computed in
-// the original coordinate space (each node's length is read before it is edited),
-// so mutating one node does not disturb the others' positions.
+// Delete `len` chars at column `start` from a colour line's text nodes, leaving
+// the colour spans in place. Offsets are read before any node is edited, so
+// mutating one doesn't disturb the others.
 function deleteCodeLineRange(root, start, len) {
   if (len <= 0) return;
   const end = start + len;
@@ -2696,9 +2604,8 @@ function deleteCodeLineRange(root, start, len) {
   }
 }
 
-// Insert `str` at column `at`, landing inside the colour run to its left so typed
-// text inherits that run's colour — a character added inside a blue markdown link
-// stays blue instead of appearing as plain text.
+// Insert `str` at column `at`, inside the colour run to its left so typed text
+// inherits that colour (a char added in a blue link stays blue).
 function insertCodeLineText(root, at, str) {
   if (!str) return;
   const nodes = codeLineTextNodes(root);
@@ -2722,21 +2629,18 @@ function insertCodeLineText(root, at, str) {
   last.data += str;
 }
 
-// Edit one already-coloured line's DOM in place so its syntax colours survive the
-// keystroke. Diff the old and new line text down to the changed span, then delete
-// and insert only those characters among the line's text nodes — the untouched
-// coloured spans stay exactly as they were. The debounced full re-highlight still
-// runs afterward and corrects any colour-boundary shift, invisibly. This is what
-// stops the edited line (e.g. a blue link) from dropping to plain white text
-// between the keystroke and the re-highlight.
+// Edit one coloured line's DOM in place so its colours survive the keystroke:
+// diff old vs new text to the changed span, then delete/insert only those chars
+// among the text nodes. The debounced re-highlight corrects boundary shifts after.
+// Stops the edited line dropping to plain text between keystroke and re-highlight.
 function patchColourLineText(lineEl, oldText, newText) {
   if (newText === '') {
     lineEl.innerHTML = CODE_VIEW_BLANK;
     return;
   }
   if (oldText === '') {
-    // The line was blank (its box held a zero-width space, not real text), so
-    // there is no colouring to preserve — show the typed text plainly.
+    // The line was blank (a zero-width space), so there's no colouring to
+    // preserve — show the typed text plainly.
     lineEl.textContent = newText;
     return;
   }
@@ -2763,11 +2667,10 @@ function colourLineText(lineEl) {
   return text === CODE_VIEW_BLANK ? '' : text;
 }
 
-// Patch only the lines a keystroke actually changed. A textarea edit is always one
-// contiguous splice, so the shared prefix/suffix of the old and new line arrays is
-// untouched — we rebuild just the range between them in both the colour layer and
-// the gutter. This is what keeps large documents from re-rendering (and flashing)
-// on every keystroke: the rest of the document's coloured lines stay put.
+// Patch only the lines a keystroke changed. A textarea edit is one contiguous
+// splice, so the shared prefix/suffix of the old and new line arrays is untouched
+// and only the range between them is rebuilt — keeping large documents from
+// re-rendering on every keystroke.
 function updateCodeViewLinesIncremental(codeEl, gutterEl, prevText, nextText) {
   const prev = prevText.split('\n');
   const next = nextText.split('\n');
@@ -2958,11 +2861,9 @@ function renderCodeView(state) {
   textarea.addEventListener('input', () => {
     const prevText = codeViewText;
     codeViewText = textarea.value;
-    // Patch only the lines this keystroke changed into the colour layer and the
-    // gutter, leaving the rest of the document untouched. A within-line edit keeps
-    // the line's existing coloured spans and splices only the changed characters
-    // into them, so the line never drops to plain white text; the debounced
-    // re-highlight afterward corrects any colour-boundary shift.
+    // Patch only the changed lines into the colour layer and gutter. A within-line
+    // edit splices chars into the existing spans so the line never drops to plain
+    // text; the debounced re-highlight corrects boundary shifts after.
     updateCodeViewLinesIncremental(code, linenums, prevText, codeViewText);
     const path = activeDocumentPath();
     if (path) setDirtyState(path, true);
@@ -2972,18 +2873,16 @@ function renderCodeView(state) {
   // and the first thumbnail build. The global #app scroll listener keeps the
   // viewport box in sync while scrolling.
   bindDocumentMinimap();
-  // Detach the minimap's content mutation observer: in the code view the document
-  // mutates on every keystroke, and cloning the whole document each time is what
-  // made editing stutter on large files. The thumbnail is instead refreshed on the
-  // debounced edit cycle (refreshCodeViewMinimap), which is plenty for an overview.
+  // Detach the minimap's mutation observer: the document mutates on every
+  // keystroke here, and re-cloning it each time stuttered on large files. The
+  // thumbnail refreshes on the debounced edit cycle instead.
   if (minimapBodyObserver) {
     minimapBodyObserver.disconnect();
     minimapBodyObserver = null;
   }
-  // Setting .value parked the caret at the END of the text, and a plain focus()
-  // scrolls the caret into view — that is what yanked the view to the bottom on
-  // entry. Park the caret at the start and focus without scrolling, then land
-  // at the same relative position the reading view was at.
+  // Setting .value parks the caret at the end, and focus() would scroll it into
+  // view (yanking to the bottom). Park at the start, focus without scrolling,
+  // then land where the reading view was.
   textarea.setSelectionRange(0, 0);
   textarea.focus({ preventScroll: true });
   const fraction = pendingViewScrollFraction;
@@ -3005,10 +2904,9 @@ window.leafShowCodeView = (state) => {
   updateEditingChrome();
 };
 
-// Refresh the code view's colour layer and dirty state after a debounced edit
-// re-highlights the buffer. Only recolour when the buffer still matches what was
-// sent — if the user kept typing, applying this stale HTML would hide the newer
-// characters, so leave the plain mirror in place until the next round-trip.
+// Refresh the code view's colour layer and dirty state after a debounced
+// re-highlight. Only recolour when the buffer still matches what was sent, or
+// stale HTML would hide newer keystrokes.
 window.leafSourceUpdated = (state) => {
   if (!codeViewActive || !state) return;
   if (lastSentSourceText === null || codeViewText === lastSentSourceText) {
@@ -3017,8 +2915,7 @@ window.leafSourceUpdated = (state) => {
   }
   const path = activeDocumentPath();
   if (path) setDirtyState(path, !!state.dirty);
-  // The document settled after an edit — refresh the minimap thumbnail once now,
-  // rather than on every intermediate keystroke.
+  // The document settled — refresh the thumbnail once, not per keystroke.
   refreshCodeViewMinimap();
 };
 
@@ -3036,15 +2933,11 @@ window.leafSaved = (path, ok, error) => {
 // Live editing in the reading view (source-anchored, both Markdown and XML).
 //
 // The source buffer is the single source of truth in Rust. Every editable block
-// carries the byte range it came from — Markdown ranges are attached here from
-// the `blocks` array (its sanitized HTML can't carry data-*), XML ranges are
-// stamped inline on the elements by the TEI renderer. An edit serializes a block
-// back to source and asks the host to splice that range; the host re-renders the
-// document from the buffer, so the reader always reflects the saved-or-unsaved
-// source. Markdown text blocks edit WYSIWYG (the rendered styling stays while you
-// type); XML blocks edit their exact source, since TEI can't be reconstructed
-// from the lossy rendered HTML. Anything not safely round-trippable stays
-// read-only and is still editable through the code view.
+// carries its source byte range (Markdown ranges attached here from `blocks`,
+// XML ranges stamped inline by the TEI renderer); an edit serializes the block
+// back to source and asks the host to splice that range and re-render. Markdown
+// text edits WYSIWYG; XML edits its exact source (TEI can't be reconstructed from
+// the HTML). Anything not safely round-trippable stays read-only (code view only).
 // ---------------------------------------------------------------------------
 
 const sourceByteEncoder = new TextEncoder();
@@ -3056,17 +2949,13 @@ function sliceSourceBytes(source, start, end) {
   return sourceByteDecoder.decode(bytes.slice(start, end));
 }
 
-// Attach each Markdown block's source range to its rendered top-level element.
-// push_html emits exactly one top-level element per top-level block in order; the
-// only extra child is the trailing pager placeholder (last), so zipping the
-// blocks array to the element children by index is safe. If the counts disagree
-// (e.g. a raw-HTML block that expanded to several elements), skip attaching so a
-// misaligned range can never drive an edit. XML needs nothing here — its ranges
-// are already inline on the elements.
+// Attach each Markdown block's source range to its rendered element. push_html
+// emits one top-level element per block in order (plus the trailing pager
+// placeholder), so zipping by index is safe; if the counts disagree, skip
+// attaching so a misaligned range can't drive an edit. XML ranges are inline.
 function attachMarkdownBlockRanges(body, blocks) {
-  // Exclude elements the reader injects into the body that aren't source blocks:
-  // the outline (inserted after the title), and the pager placeholder (appended
-  // last). What remains is exactly the rendered source blocks, in order.
+  // Exclude reader-injected non-source elements (the outline and pager
+  // placeholder); what remains is the rendered source blocks, in order.
   const children = Array.from(body.children).filter(
     (el) =>
       !el.classList.contains('document-outline') &&
@@ -3086,11 +2975,9 @@ function attachMarkdownBlockRanges(body, blocks) {
   });
 }
 
-// The document-order task checkboxes the reader may toggle: every checkbox in the
-// rendered body that is NOT inside a table cell. Table-cell task markers are
-// synthesized during rendering and aren't `TaskListMarker`s in the raw Markdown,
-// so the host's task offsets exclude them; excluding them here keeps the Nth
-// checkbox aligned with the Nth source marker.
+// The document-order checkboxes the reader may toggle: every body checkbox not in
+// a table cell. Table-cell markers are synthesized (not `TaskListMarker`s), so the
+// host's offsets exclude them; excluding them here keeps the Nth checkbox aligned.
 function readingTaskCheckboxes() {
   const body = app.querySelector('.document-body');
   if (!body) return [];
@@ -3101,7 +2988,7 @@ function bindTaskCheckboxes(tasks) {
   const boxes = readingTaskCheckboxes();
   const count = Array.isArray(tasks) ? tasks.length : 0;
   if (boxes.length !== count) {
-    // Alignment can't be trusted (e.g. a raw-HTML checkbox) — leave read-only.
+    // Alignment can't be trusted — leave read-only.
     return;
   }
   boxes.forEach((box, index) => {
@@ -3113,14 +3000,10 @@ function bindTaskCheckboxes(tasks) {
   });
 }
 
-// Make table-cell checkboxes interactive too. Unlike list checkboxes they have
-// no `TaskListMarker` in the raw Markdown — the render synthesizes them from
-// `[ ]`/`[x]` cell text — so there is no marker offset to flip. Instead a click
-// re-serializes the whole table from the DOM (which reads the box's live checked
-// state) and splices it over the table's source range. Only WYSIWYG tables
-// qualify; a table that fell back to the raw-source editor edits its markers as
-// text. Runs after bindEditableBlocks so the table's ranges and editability are
-// already decided.
+// Make table-cell checkboxes interactive. They have no marker offset to flip
+// (synthesized from cell text), so a click re-serializes the whole table from the
+// DOM and splices it over the table's source range. WYSIWYG tables only; runs
+// after bindEditableBlocks so ranges and editability are decided.
 function bindTableCheckboxes() {
   const body = app.querySelector('.document-body');
   if (!body) return;
@@ -3138,15 +3021,12 @@ function bindTableCheckboxes() {
   });
 }
 
-// Serialize an anchor back to its Markdown source form. The renderer produces
-// several kinds of `<a>` that must NOT all become `[text](href)`:
-//   - the gutter permalink decoration → nothing (not source at all);
-//   - glossary auto-links (`glossary:` scheme) and GitHub references
-//     (`.github-ref`) are injected from bare source (a term, `#123`, a commit
-//     sha), so emit their plain text, not a link;
-//   - autolinks render with their visible text equal to the URL (or the URL is
-//     `mailto:`/`http(s)://` + the text), so keep them bare;
-//   - everything else is a real Markdown link → `[text](href)`.
+// Serialize an anchor back to Markdown. The renderer makes several kinds of `<a>`
+// that must NOT all become `[text](href)`:
+//   - the gutter permalink → nothing;
+//   - glossary links and GitHub refs (`.github-ref`) → their plain text;
+//   - autolinks (visible text == URL) → kept bare;
+//   - everything else → `[text](href)`.
 function anchorToMarkdown(el) {
   if (el.classList.contains('heading-anchor')) {
     return '';
@@ -3167,10 +3047,9 @@ function anchorToMarkdown(el) {
   return '[' + inlineDomToMarkdown(el) + '](' + href + ')';
 }
 
-// Serialize a block's inline DOM back to Markdown. Handles the inline set Leaf
-// renders — bold, italic, strikethrough, inline code, links, hard breaks — and
-// strips render-only decorations (the gutter permalink) back to nothing. Unknown
-// inline wrappers (speed-reader anchors, plain spans) contribute just their text.
+// Serialize a block's inline DOM back to Markdown (bold, italic, strikethrough,
+// code, links, hard breaks), stripping render-only decorations. Unknown wrappers
+// contribute just their text.
 function inlineDomToMarkdown(node) {
   let out = '';
   node.childNodes.forEach((child) => {
@@ -3181,9 +3060,8 @@ function inlineDomToMarkdown(node) {
     if (child.nodeType !== Node.ELEMENT_NODE) return;
     const tag = child.tagName.toLowerCase();
     if (tag === 'br') {
-      // A <br> is a Markdown HARD break. Serialize it as the backslash form —
-      // a bare newline would be a soft break, which renders as a space and
-      // silently downgrades the source's two-space/backslash breaks on edit.
+      // A <br> is a hard break; serialize the backslash form (a bare newline is
+      // a soft break, downgrading the source on edit).
       out += '\\\n';
       return;
     }
@@ -3231,12 +3109,10 @@ function blockDomToMarkdown(el) {
   return text;
 }
 
-// Serialize a rendered list back to Markdown, item by item. Task checkboxes are
-// read from their LIVE checked property (so a click that hasn't round-tripped
-// yet is still captured), nested lists recurse with the marker-width indent
-// CommonMark requires, and ordered lists renumber from their start attribute.
-// Only tight, inline-content lists are serialized this way — listWysiwygSafe
-// gates everything else to the raw-source editor.
+// Serialize a rendered list back to Markdown item by item. Checkboxes read their
+// live checked property, nested lists recurse with the marker-width indent, and
+// ordered lists renumber from `start`. Only tight inline-content lists reach here
+// (listWysiwygSafe gates the rest to the raw editor).
 function listDomToMarkdown(listEl, indent) {
   const ordered = listEl.tagName.toLowerCase() === 'ol';
   const startNum = Number(listEl.getAttribute('start') || '1') || 1;
@@ -3251,8 +3127,8 @@ function listDomToMarkdown(listEl, indent) {
       (child) => child.tagName && child.tagName.toLowerCase() === 'input' && child.type === 'checkbox',
     );
     if (box) task = box.checked ? '[x] ' : '[ ] ';
-    // The item's own text: everything except its checkbox and nested lists,
-    // which are handled separately (the clone keeps the live DOM untouched).
+    // The item's own text: everything but its checkbox and nested lists (handled
+    // separately; the clone keeps the live DOM untouched).
     const clone = li.cloneNode(true);
     Array.from(clone.children).forEach((child) => {
       const tag = child.tagName ? child.tagName.toLowerCase() : '';
@@ -3269,13 +3145,10 @@ function listDomToMarkdown(listEl, indent) {
   return lines.join('\n');
 }
 
-// Serialize a rendered blockquote back to `> `-prefixed Markdown. Each child
-// paragraph is one quoted paragraph, separated by a bare `>` line. Hard-broken
-// lines appear in the DOM as `.blockquote-line` spans (decorateBlockquoteLines
-// consumed the <br>s), so those are re-joined with backslash hard breaks; soft
-// breaks survive inside the text and just get the `> ` prefix per line. Any
-// unexpected child (e.g. a native-Enter <div>) still serializes as a paragraph
-// rather than being dropped.
+// Serialize a rendered blockquote to `> `-prefixed Markdown, one quoted paragraph
+// per child separated by a bare `>` line. `.blockquote-line` spans (from consumed
+// <br>s) re-join with backslash hard breaks. Any unexpected child still
+// serializes as a paragraph rather than being dropped.
 function blockquoteDomToMarkdown(el) {
   const paragraphs = [];
   Array.from(el.children).forEach((child) => {
@@ -3299,11 +3172,9 @@ function blockquoteDomToMarkdown(el) {
     .join('\n>\n');
 }
 
-// The delimiter row for a table being serialized. Column alignment (`:---:`)
-// is stripped from the rendered HTML by the sanitizer, so it cannot be read
-// back from the DOM — instead reuse the ORIGINAL delimiter row from the block's
-// source whenever its column count still matches, so alignment survives
-// editing. Only a structural change (different column count) regenerates it.
+// The delimiter row for a serialized table. Alignment (`:---:`) is stripped by
+// the sanitizer and can't be read from the DOM, so reuse the original delimiter
+// row when its column count still matches; only a column-count change regenerates it.
 function tableDelimiterRow(el, columnCount) {
   const start = Number(el.dataset.srcStart);
   const end = Number(el.dataset.srcEnd);
@@ -3320,9 +3191,8 @@ function tableDelimiterRow(el, columnCount) {
   return '| ' + Array.from({ length: columnCount }, () => '---').join(' | ') + ' |';
 }
 
-// Serialize a rendered table back to GFM pipes. Cell text collapses newlines
-// and escapes pipes; a cell that is just a task checkbox writes its live
-// checked state back as the `[ ]`/`[x]` marker the render synthesized it from.
+// Serialize a rendered table to GFM pipes. Cells collapse newlines and escape
+// pipes; a checkbox-only cell writes its live state as `[ ]`/`[x]`.
 function tableDomToMarkdown(el) {
   const cellText = (cell) => {
     const box = cell.querySelector('input[type="checkbox"]');
@@ -3344,19 +3214,16 @@ function tableDomToMarkdown(el) {
   return lines.join('\n');
 }
 
-// Whether a Markdown block can be edited WYSIWYG without risking its source.
-// Links are fine now — anchorToMarkdown reproduces each link's exact source form
-// (manual link, autolink, glossary term, or GitHub reference). What still can't
-// round-trip and so keeps a block read-only (editable via the code view) is
-// images, footnotes, math, and diagrams.
+// Whether a Markdown block edits WYSIWYG safely. Links are fine
+// (anchorToMarkdown reproduces each form); images, footnotes, math, and diagrams
+// still can't round-trip, so they stay read-only (code view only).
 function markdownBlockWysiwygSafe(el) {
   return !el.querySelector('img, sup.footnote-reference, .katex, .mermaid, input');
 }
 
-// A list serializes back faithfully only when it is a tight list of inline
-// content (plus checkboxes and nested lists). A loose list (paragraphs inside
-// items) or one holding code, quotes, tables, images, footnotes, or math falls
-// back to the raw-source editor rather than risk rewriting its structure.
+// A list serializes faithfully only when tight and inline-content (plus
+// checkboxes and nested lists). Loose lists or ones holding blocks fall back to
+// the raw-source editor.
 function listWysiwygSafe(el) {
   return !el.querySelector('p, pre, blockquote, table, img, sup.footnote-reference, .katex, .mermaid');
 }
@@ -3370,10 +3237,8 @@ function tableWysiwygSafe(el) {
   );
 }
 
-// A blockquote edits WYSIWYG when it is a plain quote of paragraphs. GitHub
-// alerts (`> [!NOTE]`) carry synthesized title markup, and quotes holding
-// nested blocks (lists, code, tables, another quote) need structure the
-// serializer doesn't rewrite — those keep the raw-source editor.
+// A blockquote edits WYSIWYG when it's a plain quote of paragraphs. GitHub alerts
+// and quotes holding nested blocks keep the raw-source editor.
 function blockquoteWysiwygSafe(el) {
   if (el.classList.contains('markdown-alert')) return false;
   if (el.querySelector('blockquote, pre, table, ul, ol, img, sup.footnote-reference, .katex, .mermaid, input')) {
@@ -3389,17 +3254,14 @@ function utf8ByteLength(text) {
   return sourceByteEncoder.encode(text).length;
 }
 
-// Claim the caret for the next render, stamped with the document it belongs to
-// so a caret queued just before a navigation can never land in a coincidentally
-// matching block of the newly opened page.
+// Claim the caret for the next render, stamped with its document so a caret
+// queued before a navigation can't land in the newly opened page.
 function setPendingCaret(next) {
   pendingCaret = next ? { ...next, path: activeDocumentPath() } : null;
 }
 
-// Send a buffer-mutating reading-view command. Every such command lands exactly
-// one snapshot on the host's undo stack, so this is the single place the Undo
-// button's counter ticks up; it also raises the dirty state (Save button + tab
-// dot) optimistically before the host round-trip.
+// Send a buffer-mutating reading-view command. Each lands one host undo snapshot,
+// and this raises the dirty state (Save button + tab dot) optimistically.
 function sendEditCommand(message) {
   const path = activeDocumentPath();
   if (path) {
@@ -3470,12 +3332,10 @@ function placeCaretInBlock(el, offset) {
   selection.addRange(range);
 }
 
-// Send an edit for `el`'s source range, but only if `text` differs from the
-// block's source baseline captured when editing began — so a focus with no edit
-// costs nothing. When the user has already clicked into ANOTHER editable block,
-// carry their new caret across the re-render this commit triggers (adjusting for
-// how the splice shifts source offsets), so committing one block never dumps
-// them out of the next.
+// Send an edit for `el`'s source range, only if `text` differs from the baseline
+// captured when editing began (so a no-edit focus costs nothing). If the caret
+// already moved into another block, carry it across this commit's re-render
+// (adjusting for the splice's offset shift) so it isn't dumped out.
 function commitBlockEdit(el, text) {
   const start = Number(el.dataset.srcStart);
   const end = Number(el.dataset.srcEnd);
@@ -3499,9 +3359,8 @@ function commitBlockEdit(el, text) {
   }, 0);
 }
 
-// Commit whichever block currently holds an active editing session, if any.
-// Used before actions that bypass the normal focusout commit — e.g. clicking a
-// link, whose mousedown is swallowed so focus never leaves the edited block.
+// Commit whichever block holds an active editing session. Used before actions
+// that bypass the focusout commit — e.g. a link click whose mousedown is swallowed.
 function commitActiveEditingBlock() {
   const active = document.activeElement;
   if (!active || !active.__editingActive) return;
@@ -3678,20 +3537,17 @@ function handleWysiwygKeydown(el, event) {
 }
 
 // Turn `el` into a live Markdown editor: keep the rendered styling, edit in
-// place, commit the serialized block when focus leaves it. The gutter permalink
-// and any task checkboxes are frozen as non-editable islands — the permalink
-// stays a link, the checkboxes stay clickable toggles. Focus moving WITHIN the
-// block (e.g. onto a checkbox) neither resets the edit baseline nor commits.
+// place, commit on blur. The gutter permalink and checkboxes stay non-editable
+// islands; focus moving within the block neither resets the baseline nor commits.
 function makeMarkdownEditable(el) {
   el.setAttribute('contenteditable', 'true');
   el.setAttribute('spellcheck', 'false');
   el.classList.add('leaf-editable');
   el.querySelectorAll('.heading-anchor').forEach((a) => a.setAttribute('contenteditable', 'false'));
   el.querySelectorAll('input[type="checkbox"]').forEach((box) => box.setAttribute('contenteditable', 'false'));
-  // A click on a link must read as navigation, not as "edit here": swallow the
-  // mousedown so the block never takes focus or shows a caret (the delegated
-  // click handler still navigates), and first commit whatever block was being
-  // edited — with focus never moving, no focusout would fire to commit it.
+  // A link click is navigation, not "edit here": swallow the mousedown so the
+  // block never takes focus (the delegated click still navigates), and commit the
+  // block being edited first, since no focusout will fire.
   el.addEventListener('mousedown', (event) => {
     if (event.target && event.target.closest && event.target.closest('a')) {
       commitActiveEditingBlock();
@@ -3712,12 +3568,10 @@ function makeMarkdownEditable(el) {
   el.addEventListener('keydown', (event) => handleWysiwygKeydown(el, event));
 }
 
-// Turn `el` into a raw-source editor. Used for XML blocks (TEI can't be rebuilt
-// from the rendered HTML) and for Markdown blocks that don't round-trip WYSIWYG
-// (lists, tables, code, blockquotes, images, footnotes): the block swaps to its
-// exact source on focus and splices it back on blur — the faithful "edit the
-// source, live" model. On blur with no change the rendered view is restored; a
-// real change triggers a host re-render.
+// Turn `el` into a raw-source editor, for XML blocks and Markdown blocks that
+// don't round-trip WYSIWYG. The block swaps to its exact source on focus and
+// splices it back on blur; no change restores the rendered view, a real change
+// triggers a host re-render.
 function makeSourceEditable(el) {
   const start = Number(el.dataset.srcStart);
   const end = Number(el.dataset.srcEnd);
@@ -3725,9 +3579,8 @@ function makeSourceEditable(el) {
   el.classList.add('leaf-editable');
   el.addEventListener('pointerdown', (event) => {
     if (el.dataset.editingSource === 'true') return;
-    // A link is a link first: let the click navigate (the delegated document
-    // handler picks it up) instead of swallowing it into a source-edit session.
-    // Source editing starts from a click on any non-link part of the block.
+    // Let a link click navigate; source editing starts from a click on any
+    // non-link part of the block.
     if (event.target && event.target.closest && event.target.closest('a')) return;
     event.preventDefault();
     const src = sliceSourceBytes(currentDocumentSource, start, end);
@@ -3756,10 +3609,9 @@ function makeSourceEditable(el) {
   });
 }
 
-// Wire up every mapped block for the freshly rendered document. Clean Markdown
-// text blocks, tight lists, and tables edit WYSIWYG — the styling stays while
-// you type; every other block edits its exact source in place. A thematic break
-// has nothing to edit, so it is left alone.
+// Wire up every mapped block. Clean text blocks, tight lists, and tables edit
+// WYSIWYG; every other block edits its source in place. A thematic break is left
+// alone.
 function bindEditableBlocks(format) {
   const body = app.querySelector('.document-body');
   if (!body) return;
@@ -3781,17 +3633,14 @@ function bindEditableBlocks(format) {
   });
 }
 
-// Land the caret carried across a re-render by a structural edit: focus the
-// destination block (found by its post-splice source offset) and restore the
-// text position, or open the chained empty insert paragraph below it. A missing
-// target (the splice normalized differently than predicted) degrades to nothing
-// rather than guessing.
+// Land the caret carried across a structural edit's re-render: focus the
+// destination block (by its post-splice offset) and restore the position, or open
+// the chained empty insert paragraph. A missing target degrades to nothing.
 function placePendingCaret(body) {
   const pending = pendingCaret;
   pendingCaret = null;
   if (!pending) return;
-  // A caret queued for a different document (an edit committed just before a
-  // link navigation) must not grab focus in the page that actually rendered.
+  // A caret queued for a different document must not grab focus in this page.
   if (pending.path && pending.path !== activeDocumentPath()) return;
   const target = body.querySelector(`[data-src-start="${pending.srcStart}"]`);
   if (!target) return;
@@ -3804,17 +3653,15 @@ function placePendingCaret(body) {
   placeCaretInBlock(target, pending.textOffset || 0);
 }
 
-// Orchestrate the reading view's editing layer after each render: remember the
-// source/format, attach Markdown ranges, make checkboxes interactive, and turn
-// editable blocks into live editors.
+// Orchestrate the reading view's editing layer after each render: remember
+// source/format, attach ranges, make checkboxes interactive, wire editors.
 function bindReadingEditor(doc) {
   if (!doc) return;
   const body = app.querySelector('.document-body');
   if (!body) return;
   currentDocumentFormat = doc.format || 'markdown';
   currentDocumentSource = typeof doc.source === 'string' ? doc.source : '';
-  // With reader editing off the reading view stays read-only: no editable blocks,
-  // and task checkboxes keep the disabled state the host rendered them with.
+  // Reader editing off: no editable blocks; checkboxes keep the host's disabled state.
   if (!readerEditingEnabled) return;
   if (currentDocumentFormat === 'markdown') {
     attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : []);
@@ -3827,11 +3674,9 @@ function bindReadingEditor(doc) {
   placePendingCaret(body);
 }
 
-// Re-sync the reading view's editing state after a buffer edit that needs no
-// re-render (a task toggle updates its own checkbox in place). Refreshes the
-// dirty state so the Save button and tab dot stay correct, and adopts the
-// toggled buffer as the source the raw-source editors slice from — otherwise a
-// later source edit of the same list would revert the toggle.
+// Re-sync editing state after a buffer edit that needs no re-render (a task
+// toggle). Refreshes the dirty state and adopts the toggled buffer as the source
+// the raw-source editors slice from, or a later edit would revert the toggle.
 window.leafBlocksResynced = (state) => {
   if (!state) return;
   if (typeof state.source === 'string') currentDocumentSource = state.source;
@@ -3847,9 +3692,7 @@ function renderState() {
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
   readerAnchorBlocks = null;
-  // Any full render shows the reading view, so we are no longer in the code
-  // view (the host re-renders the reading view when a document changes, a tab
-  // switches, or the code view is toggled off).
+  // Any full render shows the reading view, so we're no longer in the code view.
   codeViewActive = false;
   renderTabs(state);
   if (state.document) {
@@ -3915,10 +3758,9 @@ function sameDocumentFragmentHref(rawHref) {
   return null;
 }
 // ---- Glossary bottom sheet ------------------------------------------------
-// A glossary link (its file basename is GLOSSARY.md and it carries a #anchor)
-// opens the term in a sheet over the current document instead of navigating.
-// The webview cannot read the file itself, so the click asks the host, which
-// reads + renders the glossary and calls window.leafShowGlossary below.
+// A glossary link opens the term in a sheet over the current document. The
+// webview can't read the file, so the click asks the host, which reads + renders
+// the glossary and calls window.leafShowGlossary below.
 const glossarySheet = document.getElementById('glossarySheet');
 const glossaryBackdrop = document.getElementById('glossaryBackdrop');
 const glossarySheetBody = document.getElementById('glossarySheetBody');
@@ -3930,8 +3772,8 @@ let glossaryHrefBase = 'GLOSSARY.md';
 let glossaryLastFocus = null;
 function glossaryAnchorFromHref(rawHref) {
   if (!rawHref) return '';
-  // Preferred form: a fake `glossary:slug` URL. No file path, so it works at any
-  // folder depth. The host finds the nearest GLOSSARY.md when it opens the sheet.
+  // Preferred form: a `glossary:slug` URL with no file path; the host finds the
+  // nearest GLOSSARY.md.
   const scheme = /^glossary:(.*)$/i.exec(rawHref);
   if (scheme) {
     let anchor = scheme[1].replace(/^#/, '');
@@ -3939,8 +3781,7 @@ function glossaryAnchorFromHref(rawHref) {
     return anchor;
   }
   if (/^[a-z]+:\/\//i.test(rawHref) || rawHref.startsWith('mailto:')) return '';
-  // Real form: a `…/GLOSSARY.md#slug` relative link (what /check expands the
-  // shorthand into; also works in plain Markdown viewers). Matched case-insensitively.
+  // Real form: a `…/GLOSSARY.md#slug` relative link, matched case-insensitively.
   const hashAt = rawHref.indexOf('#');
   if (hashAt < 0) return '';
   const path = rawHref.slice(0, hashAt).split('?')[0];
@@ -4032,11 +3873,9 @@ const linkHoverTipKind = linkHoverTip.querySelector('.link-hover-tip-kind');
 const linkHoverTipDetail = linkHoverTip.querySelector('.link-hover-tip-detail');
 const linkHoverTipLines = linkHoverTip.querySelector('.link-hover-tip-lines');
 const canHoverLinks = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-// A hovered "Another page" link shows how many lines the target document is.
-// The webview can't read sibling files itself, so it asks the host (countLines
-// IPC) and the host answers by calling window.leafLineCount. Each hover gets a
-// token so a slow answer for a link you already left is ignored; answers are
-// cached by href so re-hovering the same link is instant.
+// A hovered cross-document link shows the target's line count. The webview asks
+// the host (countLines IPC); the host answers via window.leafLineCount. Each hover
+// gets a token so a stale answer is ignored, and answers are cached by href.
 let activeHoverToken = 0;
 const lineCountCache = new Map();
 const pendingLineTokens = new Map();
@@ -4082,10 +3921,8 @@ function positionLinkHoverTip(event) {
   linkHoverTip.style.left = left + 'px';
   linkHoverTip.style.top = top + 'px';
 }
-// What to print as the tooltip's detail line. The authored href may be
-// percent-encoded (a heading slug with diacritics becomes `#%C5%9B...`), which
-// is unreadable, so decode it for display and fall back to the raw href if it is
-// not valid percent-encoding.
+// The tooltip's detail line. Decodes the percent-encoded href for readability,
+// falling back to the raw href if it isn't valid percent-encoding.
 function hoverDetail(rawHref) {
   try { return decodeURIComponent(rawHref); } catch (e) { return rawHref; }
 }
@@ -4132,8 +3969,7 @@ if (canHoverLinks) {
     linkHoverTipDetail.textContent = info.detail;
     const token = ++activeHoverToken;
     setLinkHoverLines(null);
-    // Only links that open another document in-app (Markdown pages) carry a line
-    // count; everything else (glossary, in-page jumps, external, mail) does not.
+    // Only in-app Markdown page links carry a line count; nothing else does.
     if (info.kind === 'Another page') {
       const key = link.href || rawHref;
       if (lineCountCache.has(key)) {
@@ -4162,13 +3998,10 @@ if (canHoverLinks) {
   window.addEventListener('blur', hideLinkHoverTip);
   app.addEventListener('scroll', hideLinkHoverTip, true);
 }
-// The parsed glossary document, kept between calls. Parsing the fully rendered
-// glossary into a DOM just to lift out one entry is the dominant cost of opening
-// the sheet — the glossary is often multiple megabytes — and the file is the
-// same for every term you look up. Cache the parsed tree keyed by the exact html
-// the host sent, so repeat lookups reuse it; a different or edited glossary sends
-// different html and reparses once. extractGlossaryEntry only reads + clones from
-// the tree, so sharing it across calls is safe.
+// The parsed glossary document, cached between calls keyed by the exact html the
+// host sent — parsing the (often huge) glossary into a DOM to lift one entry is
+// the dominant cost of opening the sheet. A different glossary reparses once;
+// extractGlossaryEntry only reads/clones, so sharing is safe.
 let glossaryParsedHtml = null;
 let glossaryParsedRoot = null;
 // Called by the host with the fully rendered glossary document; pull out the
@@ -4189,12 +4022,9 @@ window.leafShowGlossary = (html, anchor) => {
   glossarySheetBody.scrollTop = 0;
   showGlossary();
 };
-// One delegated click listener for every document link, bound once. The old
-// per-link binding attached a handler to each `a[href]` — tens of thousands of
-// them in a large document (every heading permalink is an `a`), a major slice of
-// open time. The sanitizer already sets `rel="noopener noreferrer"` and strips
-// `target`, so no per-link attribute fix-up is needed here. Delegation also means
-// links added later (the async pager) are handled with no rebinding.
+// One delegated click listener for every document link, bound once — a per-link
+// binding cost a major slice of open time on large documents. Delegation also
+// handles links added later (the async pager) with no rebinding.
 let documentLinksBound = false;
 function bindDocumentLinks() {
   if (documentLinksBound) {
@@ -4227,9 +4057,8 @@ function bindDocumentLinks() {
     const glossaryTerm = glossaryAnchorFromHref(rawHref);
     if (glossaryTerm) {
       event.preventDefault();
-      // For a `glossary:` link keep the bare scheme as the base, so a jump to
-      // another term (glossaryHrefBase + '#' + term) and "open full glossary"
-      // both stay on the scheme and let the host re-resolve the nearest file.
+      // For a `glossary:` link keep the bare scheme as the base, so term jumps
+      // and "open full glossary" let the host re-resolve the nearest file.
       glossaryHrefBase = /^glossary:/i.test(rawHref) ? 'glossary:' : rawHref.split('#')[0];
       send({ command: 'openGlossary', href: rawHref });
       return;
@@ -4267,11 +4096,9 @@ function loadMermaid() {
   });
   return mermaidLoadPromise;
 }
-// Rendered-diagram memo: diagram source (plus theme) → the finished SVG markup.
-// Inline editing re-renders the whole document on every commit, which resets
-// every diagram to raw text; re-laying out unchanged diagrams was the biggest
-// per-commit cost on diagram-heavy documents. Unchanged diagrams now restore
-// from this cache instantly and only genuinely new/edited ones re-render.
+// Rendered-diagram memo: diagram source (+ theme) → finished SVG. Editing
+// re-renders the whole document per commit, resetting diagrams to raw text;
+// unchanged ones restore from here instantly, so only new/edited ones re-render.
 const mermaidRenderCache = new Map();
 const MERMAID_CACHE_CAP = 200;
 function mermaidCacheKey(source) {
@@ -4441,23 +4268,20 @@ function decorateCodeBlocks() {
     pre.appendChild(button);
   });
 }
-// Built once and cloned per block. Cloning a bare anchor and stamping its line
-// number in per block is far cheaper than building the element from scratch tens
-// of thousands of times on a big document.
+// Built once and cloned per block — far cheaper than building it from scratch
+// tens of thousands of times on a big document.
 const anchorLinkTemplate = (() => {
   const link = document.createElement('a');
   link.className = 'heading-anchor';
-  // The number lives in an inner span so the anchor itself can inherit the block's
-  // font metrics (matching its first line box) while the glyph stays a fixed small
-  // size, baseline-aligned to the block's text — see the .heading-anchor CSS.
+  // The number lives in an inner span so the anchor inherits the block's font
+  // metrics while the glyph stays a fixed small size — see the .heading-anchor CSS.
   const num = document.createElement('span');
   num.className = 'heading-anchor-num';
   link.appendChild(num);
   return link;
 })();
-// `pre:not(.mermaid)` excludes Mermaid diagrams: a permalink gutter link makes
-// no sense on a diagram, and inserting one as the pre's first child corrupts the
-// source Mermaid reads from innerHTML, yielding a "Syntax error" bomb.
+// `pre:not(.mermaid)` excludes diagrams: a gutter link inserted as the pre's
+// first child would corrupt the source Mermaid reads from innerHTML.
 const ANCHOR_LINK_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]';
 function uniqueAnchorBlockId(seen, base) {
   let candidate = base;
@@ -4479,10 +4303,9 @@ function isNavOutlineItem(el) {
   el.querySelectorAll('a').forEach((a) => { linkText += a.textContent || ''; });
   return text === linkText.replace(/\\s+/g, '');
 }
-// Give `target` the address `locus`: if it already has an id (a heading slug or
-// an author anchor) keep that id and add a hidden alias carrying the locus, so
-// #<locus> still lands on it; otherwise the locus becomes the id. Either way the
-// locus is recorded on dataset.locus for the gutter permalink.
+// Give `target` the address `locus`. If it already has an id, keep it and add a
+// hidden alias carrying the locus (so #<locus> still lands); otherwise the locus
+// becomes the id. Recorded on dataset.locus for the gutter permalink.
 function assignLocus(target, locus, seen) {
   if (target.id) {
     seen.add(target.id);
@@ -4497,14 +4320,10 @@ function assignLocus(target, locus, seen) {
     target.dataset.locus = target.id;
   }
 }
-// Number the document so each block has a short, citable address: a flat running
-// count down the page — 1, 2, 3, 4 … — like a code editor's line gutter, with no
-// reset at headings. A heading keeps the slug id the renderer gave it (so the
-// table of contents and #slug links resolve) and carries its number through a
-// hidden alias. The navigation outline (link-only list items) is skipped. The
-// address is pure ASCII, so a heading with diacritics still reads cleanly in the
-// link tooltip. Numbering is deterministic, so the ids survive the re-render a
-// fragment jump triggers.
+// Number the document so each block has a short citable address: a flat running
+// count down the page, no reset at headings. A heading keeps its slug id (so the
+// TOC and #slug links resolve) and carries its number through a hidden alias.
+// Link-only outline items are skipped. Deterministic, so ids survive a re-render.
 function ensureAnchorLinkTargets(body) {
   const seen = new Set(Array.from(body.querySelectorAll('[id]')).map((element) => element.id).filter(Boolean));
   let line = 0;
@@ -4518,15 +4337,10 @@ function ensureAnchorLinkTargets(body) {
   });
   return line;
 }
-// Build a collapsed "Outline" (table of contents) from the document's headings
-// and insert it just under the title. Mirrors site/outline.js: a pure DOM pass
-// over the <h1>–<h6> the renderer emits (each with a slug id), so it behaves the
-// same for Markdown and TEI XML. Entries nest as a bulleted list — one step in
-// per step down in heading level — inside a <details> that starts closed so it
-// never crowds the top. Bullets, not numbers: a deep document runs the counter
-// into the hundreds and the wide markers overflow the panel's left edge. Run before the anchor pass so its link-only entries stay
-// out of the block-numbering scheme, and before bindDocumentLinks so each entry's
-// #slug jump is wired into fragment navigation like any other TOC link.
+// Build a collapsed "Outline" from the headings and insert it under the title
+// (mirrors site/outline.js). A DOM pass over the <h1>–<h6>, nesting entries as a
+// bulleted list in a closed <details>. Run before the anchor pass (so its
+// link-only entries skip block-numbering) and before bindDocumentLinks.
 function buildDocumentOutline() {
   const body = app.querySelector('.document-body');
   if (!body) return;
@@ -4547,17 +4361,15 @@ function buildDocumentOutline() {
   summaryLabel.dataset.i18n = 'outline.title';
   summaryLabel.textContent = window.leafLocale.t('outline.title');
   summary.appendChild(summaryLabel);
-  // Filled in by decorateAnchorLinks once the numbering pass knows the
-  // document's total line count — a separate span so renderStaticText's
-  // [data-i18n] sweep never wipes the count.
+  // Filled in by decorateAnchorLinks once numbering knows the line count — a
+  // separate span so renderStaticText's [data-i18n] sweep never wipes it.
   const summaryCount = document.createElement('span');
   summaryCount.className = 'document-outline-count';
   summary.appendChild(summaryCount);
   details.appendChild(summary);
-  // The entry list can be enormous (one <li> per heading — ~25k on a glossary),
-  // so build it only when the reader first opens the outline instead of at every
-  // document render. bindDocumentLinks is delegated on the shell, so the entries'
-  // #slug jumps are wired the moment they exist, with no rebinding.
+  // The entry list can be enormous (one <li> per heading), so build it only when
+  // the outline first opens. bindDocumentLinks is delegated, so entry jumps wire
+  // up with no rebinding.
   details.addEventListener('toggle', () => {
     if (details.open) populateDocumentOutline(details, rest);
   });
@@ -4595,21 +4407,16 @@ function populateDocumentOutline(details, rest) {
   });
   details.appendChild(rootList);
 }
-// Give every anchor-addressable block a permalink button in the left gutter,
-// GitHub style. Done in JS, after sanitized HTML is in the DOM, so it catches
-// raw-HTML blocks uniformly without parsing strings in Rust. The button is a
-// real anchor link to the target id, so bindDocumentLinks (run right after this)
-// wires it into the same in-document fragment navigation as a TOC link. Clicking
-// it also copies that #locus to the clipboard (without blocking the jump) so the
-// canonical number can be pasted out — the only way to read the locus on touch,
-// where there is no hover tooltip to reveal it.
+// Give every anchor-addressable block a gutter permalink button, GitHub style.
+// A real anchor link to the target id, so bindDocumentLinks wires it into
+// fragment navigation like a TOC link. Clicking also copies the #locus (without
+// blocking the jump) — the only way to read the locus on touch.
 function decorateAnchorLinks() {
   const body = app.querySelector('.document-body');
   if (!body) return;
   const lineTotal = ensureAnchorLinkTargets(body);
-  // The numbering pass just walked the whole document, so its final count is
-  // the document's line total — stamp it into the outline summary:
-  // "Outline (1234 lines)".
+  // The numbering pass's final count is the line total; stamp it into the outline
+  // summary ("Outline (1234 lines)").
   const outlineCount = body.querySelector('.document-outline-count');
   if (outlineCount) {
     outlineCount.textContent = window.leafLocale.t('outline.lineCount', { count: lineTotal });
@@ -4621,30 +4428,22 @@ function decorateAnchorLinks() {
     if (target.classList.contains('footnote-definition')) return;
     if (target.closest('.document-outline')) return;
     if (target.querySelector(':scope > .heading-anchor')) return;
-    // A blockquote (or GitHub alert) is one citable unit: it carries the button,
-    // and the gutter carve on it drags its left bar 40px into the margin, which
-    // the .has-anchor-link CSS repaints inset. Its inner paragraphs must NOT also
-    // carve a gutter — a second -40px shift would drag the quote text off the
-    // column (the bug the repaint alone left behind). So skip the button on any
-    // block nested inside a blockquote; the block keeps its id, so #locus links to
-    // it still resolve, it just shares the blockquote's permalink.
+    // A blockquote is one citable unit and carries the button; skip it on blocks
+    // nested inside a blockquote (a second gutter carve would drag the quote text
+    // off the column). They keep their id, so #locus links still resolve.
     if (target.tagName !== 'BLOCKQUOTE' && target.closest('blockquote')) return;
     const link = anchorLinkTemplate.cloneNode(true);
     link.href = '#' + encodeURIComponent(locus);
     link.setAttribute('aria-label', label);
     link.title = label;
-    // The gutter shows the block's line number as faint monospace text; clicking
-    // it still copies the deep link (handled by the delegated body listener). The
-    // digits live in the inner span (see anchorLinkTemplate).
+    // The digits live in the inner span (see anchorLinkTemplate); clicks copy the
+    // deep link via the delegated body listener.
     link.firstChild.textContent = locus;
     target.classList.add('has-anchor-link');
     target.insertBefore(link, target.firstChild);
   });
-  // The button no longer needs JS positioning: it lives in each block's own
-  // left-padding gutter (see the .has-anchor-link CSS), so a nested block's
-  // button sits beside that block rather than being measured back to a shared
-  // column. Clicks (copy + jump) are handled by the delegated body listener in
-  // bindDocumentLinks, so no per-button listener is attached here.
+  // No JS positioning: the button lives in each block's own gutter (see the
+  // .has-anchor-link CSS), and clicks are handled by the delegated body listener.
 }
 function setCodeCopyLabel(button, key) {
   const label = window.leafLocale.t(key);
@@ -4747,19 +4546,16 @@ function bindDocumentMinimap() {
     const handleRange = Math.max(0, metrics.trackHeight - boundedViewportHeight);
     const offsetY = Number.isFinite(pointerOffsetY) ? pointerOffsetY : boundedViewportHeight / 2;
     const targetViewportTop = Math.min(handleRange, Math.max(0, event.clientY - rect.top - offsetY));
-    // Invert placeMinimapViewport()'s box placement. The box top there is
-    // scrollTop * previewScale - scrollRatio * previewTravel, i.e. scrollTop times
-    // (previewScale - previewTravel / scrollable), so a box position divides straight
-    // back into a scroll offset. When that slope is non-positive (a thumbnail much
-    // taller than the rail) fall back to the pure handle-range ratio.
+    // Invert placeMinimapViewport()'s box placement (box top = scrollTop times a
+    // slope), so a box position divides back into a scroll offset. Fall back to
+    // the handle-range ratio when that slope is non-positive.
     const previewTravel = Math.max(0, metrics.scaledDocumentHeight - metrics.trackHeight);
     const viewportTopPerScrollPixel = metrics.previewScale - previewTravel / metrics.scrollable;
     const targetViewportScrollTop = viewportTopPerScrollPixel > 0
       ? targetViewportTop / viewportTopPerScrollPixel
       : (handleRange <= 0 ? 0 : (targetViewportTop / handleRange) * metrics.scrollable);
-    // Set scrollTop directly against the cached range (already bounded below), then
-    // pin the box + thumbnail to that same position. The scroll handler skips its
-    // update while minimapDragging is set; pointerup settles once (see endDrag).
+    // Set scrollTop against the cached range, then pin the box + thumbnail. The
+    // scroll handler skips its update while dragging; pointerup settles once.
     const boundedScrollTop = Math.min(metrics.scrollable, Math.max(0, targetViewportScrollTop));
     app.scrollTop = boundedScrollTop;
     const minimap = track.closest('.document-minimap');
@@ -4815,9 +4611,8 @@ function bindDocumentMinimap() {
       minimapPointerOffsetY = null;
       minimapDragging = false;
       minimapDragMetrics = null;
-      // Settle the box/thumbnail onto the true reading position now that the drag is
-      // over. Content that streamed in under the drag keeps settling afterward via the
-      // reader's reflow observer, which also refreshes the box.
+      // Settle the box/thumbnail onto the true reading position; content that
+      // streamed in keeps settling via the reflow observer.
       updateMinimapViewport();
     }
   };
@@ -4826,17 +4621,11 @@ function bindDocumentMinimap() {
   track.addEventListener('lostpointercapture', endDrag);
   bindDocumentMinimapPreview(track);
 }
-// The minimap is a shrunken clone of the rendered document, so the rail shows the
-// real text — not abstract bars. The clone is rebuilt only when the document's
-// CONTENT changes (a new document, live reload, or code highlighting / Mermaid /
-// math settling — all real DOM mutations), never on scroll: rebuilding a
-// whole-document clone on every scroll is exactly what stuttered on large files.
-// Only the small viewport box (and, on tall documents, the thumbnail's slide)
-// moves on scroll.
-// The element the minimap mirrors: the reading view's document body, or the
-// code view's document container (which holds the highlighted source). Keeping
-// this one lookup shared is what lets the whole minimap pipeline serve both
-// views unchanged.
+// The minimap is a shrunken clone of the rendered document, so the rail shows
+// real text. The clone rebuilds only on content changes, never on scroll (which
+// only moves the viewport box and, on tall documents, the thumbnail's slide).
+// The element it mirrors: the reading view's document body, or the code view's
+// document container — one shared lookup lets the pipeline serve both views.
 function minimapSourceElement() {
   return app.querySelector('.document-body, .code-view-doc');
 }
@@ -4853,9 +4642,8 @@ function bindDocumentMinimapPreview(track) {
     subtree: true,
   });
   if (window.ResizeObserver) {
-    // Watch the rail, not the document: the rail's width changes at the responsive
-    // breakpoints (which the source's own resize would miss when the reading column
-    // is already at its max width), and it never fires on scroll.
+    // Watch the rail, not the document: its width changes at the responsive
+    // breakpoints (which the source's resize would miss), and it never fires on scroll.
     minimapResizeObserver = new ResizeObserver(() => {
       scheduleReaderLayoutUpdate();
       scheduleMinimapPreviewUpdate();
@@ -4884,8 +4672,7 @@ function disconnectMinimapPreviewObservers() {
     window.cancelAnimationFrame(minimapPreviewFrame);
     minimapPreviewFrame = 0;
   }
-  // A different document is coming: force the next update to rebuild the clone
-  // rather than match the previous document's cached width/version by chance.
+  // A different document is coming: force the next update to rebuild the clone.
   minimapBuiltVersion = -1;
   minimapBuiltSourceWidth = -1;
   minimapBuiltPreviewWidth = -1;
@@ -4966,9 +4753,8 @@ function resetReaderScrollToContentStart() {
   window.requestAnimationFrame(() => {
     const source = app.querySelector('.document-body');
     const content = correctReaderScrollOrigin(source);
-    // Leaving the code view carries its scroll fraction here, so the reading
-    // view lands at the same relative position instead of the top. Any other
-    // reset (opening a document, going home) has no pending fraction.
+    // Leaving the code view carries its scroll fraction here so the reading view
+    // lands at the same relative position; other resets have none.
     const fraction = pendingViewScrollFraction;
     pendingViewScrollFraction = null;
     if (fraction) {
@@ -4982,19 +4768,12 @@ function resetReaderScrollToContentStart() {
     updateMinimapViewport();
   });
 }
-// Describe the reader's current position as a serializable, render-independent
-// anchor: the nearest heading slug above the top edge, the ordinal of the block
-// within that section (the heading itself is block 0), and the signed pixel
-// offset of the top edge from that block's top. The offset is signed so it
-// preserves the reading-mode top gap at the start of a document (where the edge
-// sits above the first block). Measuring the ordinal from the section, not the
-// document start, keeps the landing stable when content is added to earlier
-// sections (e.g. live reload after an edit).
-// The anchor blocks are in document order, so their vertical positions increase
-// monotonically down the list. That lets the topmost-visible block be found with
-// a binary search (~log2(n) rect reads) instead of scanning every block on every
-// scroll event — the difference between a handful of reads and ~25k deep in a
-// glossary.
+// Describe the reader's position as a render-independent anchor: nearest heading
+// slug above the top edge, block ordinal within that section (heading = block 0),
+// and the signed offset from that block's top (signed to keep the reading-mode
+// top gap). Measuring from the section keeps the landing stable when earlier
+// sections grow (live reload). Anchor blocks are in document order, so the
+// topmost-visible one is found by binary search rather than scanning all ~25k.
 function readerAnchorBlockList(source) {
   const count = source.childElementCount;
   const stale =
@@ -5046,9 +4825,8 @@ function captureReaderScrollAnchor() {
   const offsetY = shellRect.top - rect.top;
   return { section, block: targetIndex - (sectionIndex < 0 ? 0 : sectionIndex), offsetY };
 }
-// Re-resolve a serializable anchor against the current DOM. The same Markdown
-// renders the same blocks, so the section heading and block ordinal point back
-// at the original element even after a full re-render.
+// Re-resolve a serializable anchor against the current DOM: the same Markdown
+// renders the same blocks, so it points at the original element after a re-render.
 function resolveReaderAnchorElement(anchor) {
   const source = app.querySelector('.document-body');
   if (!source || !anchor) {
@@ -5088,8 +4866,7 @@ function scheduleReaderLayoutUpdate(anchor = readerScrollAnchor || captureReader
     correctReaderScrollOrigin();
     restoreReaderScrollAnchor(anchor);
     readerScrollAnchor = captureReaderScrollAnchor();
-    // Don't move the box off the cursor while the minimap is being dragged; the drag
-    // pins it and endDrag settles it.
+    // Don't move the box off the cursor mid-drag; the drag pins it, endDrag settles.
     if (!minimapDragging) {
       updateMinimapViewport();
     }
@@ -5101,11 +4878,9 @@ function disconnectReaderReflowObserver() {
     readerReflowObserver = null;
   }
 }
-// Keep the reader pinned to its anchor as the document settles. Images decode a
-// few frames after a re-render and grow the content above the reader; without
-// this the saved anchor would be restored once into a still-collapsing layout
-// and then drift downward as the images land. Re-pinning on every reflow — and
-// on each image load — holds the reader on the same block until layout is final.
+// Keep the reader pinned to its anchor as the document settles: images decode a
+// few frames late and grow content above the reader, so re-pinning on every
+// reflow and image load holds the reader on the same block until layout is final.
 function observeReaderReflow() {
   disconnectReaderReflowObserver();
   const source = app.querySelector('.document-body');
@@ -5129,10 +4904,9 @@ function minimapAvailableHeight(minimap) {
   const minimapRect = minimap.getBoundingClientRect();
   return Math.max(1, Math.floor(shellRect.bottom - minimapRect.top));
 }
-// Everything the preview and viewport renderers need, gathered in one layout read.
-// The reader renders in full (no content-visibility windowing), so app.scrollTop,
-// app.scrollHeight, and app.clientHeight are exact — the same ground truth the web
-// minimap runs on (see site/minimap.js), so this mirrors its measure().
+// Everything the preview and viewport renderers need, in one layout read. The
+// reader renders in full, so app.scrollTop/scrollHeight/clientHeight are exact.
+// Mirrors the web minimap's measure() (site/minimap.js).
 function measureDocumentMinimap(track) {
   const minimap = track.closest('.document-minimap');
   const source = minimapSourceElement();
@@ -5146,15 +4920,13 @@ function measureDocumentMinimap(track) {
   const viewportHeight = Math.max(1, Math.ceil(app.clientHeight));
   const scrollable = Math.max(0, scrollHeight - viewportHeight);
   const scrollTop = Math.min(scrollable, Math.max(0, app.scrollTop));
-  // Where the document content begins within the scroll container (the reader's top
-  // gap included), in scroll-content coordinates. The thumbnail starts here too, so
-  // its top lines up with where the real content sits.
+  // Where the document content begins in the scroll container (top gap included);
+  // the thumbnail starts here too so its top lines up with the real content.
   const sourceTop = sourceRect ? Math.max(0, Math.round(sourceRect.top - appRect.top + app.scrollTop)) : 0;
   const previewScale = contentWidth / sourceWidth;
   const scaledDocumentHeight = Math.max(1, scrollHeight * previewScale);
-  // Size the rail to the thumbnail, capped at the space below the rail's top: a short
-  // document gets a short rail (no dead space that would strand the box near the top);
-  // a long one fills the screen and the thumbnail slides inside it.
+  // Size the rail to the thumbnail, capped at the space below its top: a short
+  // document gets a short rail, a long one fills the screen and slides inside.
   const availableHeight = minimap ? minimapAvailableHeight(minimap) : viewportHeight;
   const trackHeight = Math.max(1, Math.min(availableHeight, scaledDocumentHeight));
   if (minimap) {
@@ -5171,18 +4943,16 @@ function scheduleMinimapPreviewUpdate() {
     updateDocumentMinimapPreview();
   });
 }
-// The document content changed (a mutation, an image finishing decode): the
-// cached clone is stale, so mark it for a rebuild and schedule one. Geometry-only
-// triggers (resize) call scheduleMinimapPreviewUpdate directly and let the
-// width check in updateDocumentMinimapPreview decide whether a rebuild is needed.
+// The document content changed: mark the clone stale and schedule a rebuild.
+// Geometry-only triggers (resize) call scheduleMinimapPreviewUpdate directly and
+// let the width check decide whether a rebuild is needed.
 function invalidateMinimapPreview() {
   minimapContentVersion += 1;
   scheduleMinimapPreviewUpdate();
 }
-// Build the thumbnail: clone the rendered document, strip ids/links (so nothing is
-// focusable or duplicated for assistive tech), and shrink it to the rail width with
-// a CSS transform. Rebuilt only when the document's CONTENT changes (see the caller);
-// scroll just repositions the box and slides the existing clone.
+// Build the thumbnail: clone the document, strip ids/links (nothing focusable or
+// duplicated for a11y), shrink to the rail width with a transform. Rebuilt only on
+// content changes; scroll just repositions the box and slides the clone.
 function updateDocumentMinimapPreview() {
   const minimap = app.querySelector('.document-minimap');
   const track = minimap ? minimap.querySelector('.document-minimap-track') : null;
@@ -5195,12 +4965,10 @@ function updateDocumentMinimapPreview() {
   const contentRect = content.getBoundingClientRect();
   const previewWidth = Math.max(1, Math.ceil(contentRect.width));
   const previewScale = previewWidth / metrics.sourceWidth;
-  // Skip the clone when nothing that shapes the thumbnail changed: same content
-  // (version), same wrap width (sourceWidth governs how the clone's text wraps),
-  // and same rail width (previewWidth governs the scale). This is the common
-  // resize — a height-only change, or a width change within the capped reading
-  // column — and any redundant trigger. Just reposition the box off the existing
-  // clone; the whole-document cloneNode below is what made resize feel like a reload.
+  // Skip the clone when nothing shaping the thumbnail changed: same content
+  // version, wrap width, and rail width. The common resize (height-only, or a
+  // width change within the capped column) just repositions the box off the
+  // existing clone — the cloneNode below is what made resize feel like a reload.
   if (
     content.querySelector('.document-minimap-preview') &&
     minimapBuiltVersion === minimapContentVersion &&
@@ -5212,16 +4980,14 @@ function updateDocumentMinimapPreview() {
   }
   const preview = source.cloneNode(true);
   preview.removeAttribute('id');
-  // The code view's clone would otherwise carry a focusable textarea into the
-  // decorative thumbnail; its text is invisible anyway (the colour layer shows).
+  // Drop the code view's focusable textarea from the clone; its text is invisible
+  // anyway (the colour layer shows).
   preview.querySelectorAll('textarea').forEach((node) => node.remove());
   preview.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
   preview.querySelectorAll('a[href]').forEach((link) => {
-    // Glossary terms blend into the body text on the page (the a[href^="glossary:"]
-    // rule takes the surrounding colour, not the accent link colour). Stripping the
-    // href for a11y also drops that href-based blend, which would leave the terms on
-    // the generic accent colour in the thumbnail. Tag them first so a class-based
-    // rule can re-blend them in the clone, keeping the rail true to the page.
+    // Glossary terms blend into the body text via an href-based rule; stripping
+    // the href for a11y would drop that blend, so tag them first for a class-based
+    // rule to re-blend in the clone.
     const href = link.getAttribute('href') || '';
     if (/^glossary:/i.test(href) || /GLOSSARY\.md#/i.test(href)) {
       link.classList.add('glossary-term');
@@ -5231,9 +4997,8 @@ function updateDocumentMinimapPreview() {
   preview.classList.add('document-minimap-preview');
   preview.setAttribute('aria-hidden', 'true');
   preview.style.width = `${metrics.sourceWidth}px`;
-  // Scale to the rail width, then nudge the clone down by the document's top gap
-  // (sourceTop) so the thumbnail sits where the real content sits in the scroll
-  // range — the box's scroll position is measured in that same space.
+  // Scale to the rail width, then nudge the clone down by the top gap (sourceTop)
+  // so the thumbnail sits where the real content sits in the scroll range.
   preview.style.transform = `translateY(${metrics.sourceTop * previewScale}px) scale(${previewScale})`;
   content.replaceChildren(preview);
   content.style.height = `${metrics.scaledDocumentHeight}px`;
@@ -5262,13 +5027,11 @@ function updateMinimapViewport() {
   }
   placeMinimapViewport(minimap, measureDocumentMinimap(track), null);
 }
-// Place the viewport box and, on documents taller than the rail, slide the thumbnail
-// inside the rail (the way a code editor's minimap does). The position is driven by
-// the exact reader scroll (app.scrollTop over the scrollable range) and the box
-// height is the reader viewport at the thumbnail scale, so the box tracks the visible
-// region on documents of any length. Pass scrollTopOverride to pin to a specific
-// scroll offset (a drag in progress); null reads the live scrollTop. Mirrors the box
-// placement in site/minimap.js's updateViewport().
+// Place the viewport box and, on tall documents, slide the thumbnail inside the
+// rail. Position is driven by the exact reader scroll and the box height is the
+// viewport at thumbnail scale, so it tracks the visible region at any length.
+// scrollTopOverride pins to a specific offset (a drag); null reads live scrollTop.
+// Mirrors site/minimap.js's updateViewport().
 function placeMinimapViewport(minimap, metrics, scrollTopOverride) {
   const content = minimap.querySelector('.document-minimap-content');
   const scaledDocumentHeight = metrics.scaledDocumentHeight;
@@ -5286,23 +5049,17 @@ function placeMinimapViewport(minimap, metrics, scrollTopOverride) {
   minimap.style.setProperty('--minimap-viewport-height', `${boundedViewportHeight}px`);
   minimap.style.setProperty('--minimap-preview-top', `${previewTop}px`);
 }
-// The scroll listener must stay cheap: scroll fires many times per frame, so any
-// forced layout here stutters the whole page. clampReaderScrollPosition() and
-// captureReaderScrollAnchor() both read live geometry (getBoundingClientRect), which
-// forces a synchronous reflow — running them on every event is what made desktop
-// scrolling judder where the web reader (a passive, rAF-only listener — see
-// site/minimap.js) stays smooth. So mark the listener passive and coalesce that work
-// into one rAF per frame. scheduleMinimapViewportUpdate() is itself only a flag check
-// plus a rAF schedule, so it is safe to call on the event. The scroll anchor is only
-// consumed asynchronously (reflow re-pin, re-render, and navigation which recaptures
-// it fresh), so updating it a frame late costs nothing.
+// The scroll listener must stay cheap: scroll fires many times per frame, so a
+// forced layout here stutters the page. clampReaderScrollPosition() and
+// captureReaderScrollAnchor() both force a reflow, so the listener is passive and
+// coalesces that work into one rAF per frame. scheduleMinimapViewportUpdate() is
+// just a flag + rAF, safe on the event. The anchor is consumed asynchronously, so
+// updating it a frame late costs nothing.
 let readerScrollFrame = 0;
 app.addEventListener('scroll', () => {
-  // A minimap drag owns the scroll entirely: it sets an already-clamped scrollTop
-  // and pins the box via CSS vars, and endDrag re-captures the anchor and box on
-  // release. So do NOTHING here during a drag — running clampReaderScrollPosition()
-  // and captureReaderScrollAnchor() (each a forced synchronous layout) once per
-  // frame while dragging a large document is exactly the stutter we are removing.
+  // A minimap drag owns the scroll (clamped scrollTop, box pinned via CSS vars,
+  // endDrag re-captures on release), so do nothing here during a drag — the
+  // forced layouts would be exactly the stutter this avoids.
   if (minimapDragging) {
     return;
   }

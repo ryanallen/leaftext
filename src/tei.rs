@@ -4,18 +4,10 @@ use crate::*;
 // TEI XML renderer
 // ---------------------------------------------------------------------------
 
-/// Heading level for a div, from its nesting depth.
-///
-/// `type="translation"` is a transparent wrapper — it holds the whole translated
-/// work but is not itself a titled section, so it emits no heading and leaves the
-/// depth of the sections inside it unchanged.
-///
-/// Every other div is a nested section whose heading level follows nesting depth
-/// alone (h2 at the top, one smaller per level, floored at h6). 84000 TEI nests
-/// these types in varying orders — a `section` may contain a `chapter` and a
-/// `chapter` may contain a `section` — so a fixed type→level table produces
-/// inversions where a nested heading renders *larger* than the heading above it.
-/// Depth-based levels keep a child heading always at or below its parent's size.
+/// Heading level for a div, from nesting depth (h2 at top, one smaller per
+/// level, floored at h6). Depth-based rather than type-based because 84000 TEI
+/// nests div types in varying orders, so a type→level table would invert sizes.
+/// `type="translation"` is a transparent wrapper: no heading, depth unchanged.
 pub(crate) fn tei_div_heading_level(div_type: &str, depth: usize) -> Option<u8> {
     if div_type.eq_ignore_ascii_case("translation") {
         return None;
@@ -38,11 +30,9 @@ pub(crate) struct TeiCtx {
     footnotes: Vec<String>,
     fn_count: usize,
     seen: HashMap<String, usize>,
-    /// Source-anchored editing map: one entry per editable block, in render
-    /// (document) order, tying it to the byte range of its roxmltree node in the
-    /// XML source. Because the range is stamped inline on the element as it is
-    /// emitted, editing works regardless of how deeply the block is nested (front
-    /// matter lives inside a `<details>`, verse inside a `<blockquote>`).
+    /// Source-anchored editing map: one entry per editable block in document
+    /// order, tying it to its roxmltree node's byte range. The range is stamped
+    /// inline as the element is emitted, so nesting depth doesn't matter.
     blocks: Vec<BlockSpan>,
     next_block_id: usize,
 }
@@ -60,9 +50,7 @@ impl TeiCtx {
     }
 
     /// Record a `kind` block for `node` and return the `data-*` attribute string
-    /// to stamp on its opening tag, so the reading view can edit that block's XML
-    /// source in place. XML source ranges come from roxmltree's `Node::range()`,
-    /// the TEI counterpart to pulldown-cmark's Markdown offsets.
+    /// to stamp on its opening tag. Ranges come from roxmltree's `Node::range()`.
     fn block_attrs(&mut self, kind: &'static str, node: roxmltree::Node) -> String {
         let range = node.range();
         let id = self.next_block_id;
@@ -112,9 +100,8 @@ pub(crate) fn tei_render_inline<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut Tei
                     let n = ctx.fn_count;
                     let fn_html = tei_render_inline(child, ctx);
                     ctx.footnotes.push(fn_html);
-                    // Avoid `ref{n}` in format strings (Rust 2021 lexer issue).
-                    // Match the markdown renderer's footnote reference markup so
-                    // CSS and numbering are identical (plain Arabic, no brackets).
+                    // `fnref{n}` split out to avoid the Rust 2021 `ref{n}` lexer
+                    // issue; markup matches the markdown renderer's footnotes.
                     let refid = format!("fnref{n}");
                     out.push_str(&format!(
                         "<sup class=\"footnote-reference\" id=\"{refid}\">\
@@ -122,10 +109,9 @@ pub(crate) fn tei_render_inline<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut Tei
                     ));
                 }
                 "ptr" => {
-                    // 84000 TEI puts the visible cross-reference label INSIDE
-                    // <ptr> (e.g. <ptr target="...">Going forth</ptr>). Keep the
-                    // label text; link it only when the target is an external URL
-                    // (internal #ids don't map to our heading slugs).
+                    // 84000 puts the cross-reference label inside <ptr>. Keep the
+                    // text; link it only for external URLs (internal #ids don't
+                    // map to our heading slugs).
                     let label = tei_render_inline(child, ctx);
                     if !label.is_empty() {
                         match child.attribute("target") {
@@ -143,7 +129,7 @@ pub(crate) fn tei_render_inline<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut Tei
                     // omit
                 }
                 _ => {
-                    // term, title, ref, foreign, hi, quote, etc. → strip tag, keep text
+                    // term/title/ref/foreign/hi/quote/etc. → strip tag, keep text
                     out.push_str(&tei_render_inline(child, ctx));
                 }
             }
@@ -205,9 +191,8 @@ pub(crate) fn tei_render_div<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx
         .children()
         .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("head"));
     if let Some(head) = head_node {
-        // Collect ALL descendant text so inline children render too. Heads like
-        // `<head>Prologue to <title>The Chapter on Going Forth</title></head>`
-        // would otherwise keep only the leading "Prologue to " text node.
+        // Collect all descendant text so inline children (e.g. a nested
+        // `<title>`) render, not just the leading text node.
         let text = head
             .descendants()
             .filter(|c| c.is_text())
@@ -267,14 +252,12 @@ pub(crate) fn tei_render_node<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCt
     }
 }
 
-/// Render `text > front` as a collapsed `<details>` so the summary,
-/// acknowledgements, and introduction are available but out of the way by
-/// default — the reader lands on the translation itself. The inner content uses
-/// the same block machinery as the body, so its headings and anchors work
-/// unchanged. Mirrors `renderFront` in site/tei-xml.js.
+/// Render `text > front` as a collapsed `<details>` so front matter is out of
+/// the way by default and the reader lands on the translation. Uses the same
+/// block machinery as the body. Mirrors `renderFront` in site/tei-xml.js.
 pub(crate) fn render_tei_front<'a>(front: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx) {
-    // Render the front's children into `ctx.out`, then split that tail back off
-    // so it can be wrapped. Slug and footnote side effects stay recorded on ctx.
+    // Render into `ctx.out`, then split that tail off to wrap it; slug and
+    // footnote side effects stay recorded on ctx.
     let start = ctx.out.len();
     let children: Vec<_> = front.children().filter(|c| c.is_element()).collect();
     tei_render_block_sequence(&children, ctx, 0);
@@ -283,8 +266,7 @@ pub(crate) fn render_tei_front<'a>(front: roxmltree::Node<'a, 'a>, ctx: &mut Tei
         return;
     }
 
-    // Label the toggle with the section names it holds (e.g. "Summary,
-    // Acknowledgements, Introduction"), falling back to a generic term.
+    // Label the toggle with the section names it holds, or a generic fallback.
     let heads: Vec<String> = front
         .children()
         .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("div"))
@@ -326,17 +308,15 @@ pub(crate) fn render_tei_body(xml: &str) -> (Option<String>, String) {
     (title, ctx.out)
 }
 
-/// The XML block source map: every editable TEI block tied to its byte range in
-/// the source, in document order. Built by the same traversal that renders the
-/// reading HTML (the ranges are recorded as each block is stamped), so the map
-/// and the rendered blocks can never disagree.
+/// The XML block source map: every editable TEI block tied to its source byte
+/// range, in document order. Built by the same traversal that renders the HTML,
+/// so the map and the rendered blocks can't disagree.
 pub(crate) fn tei_block_source_map(xml: &str) -> Vec<BlockSpan> {
     render_tei_inner(xml).1.blocks
 }
 
-/// Render TEI XML and return `(title, html, blocks)` in one pass — the open path
-/// uses this so it renders the document only once while still getting the block
-/// source map. The HTML already carries the inline `data-src-*` attributes.
+/// Render TEI XML to `(title, html, blocks)` in one pass, so the open path
+/// renders only once. The HTML already carries the inline `data-src-*` attrs.
 pub(crate) fn render_tei_document(xml: &str) -> (Option<String>, String, Vec<BlockSpan>) {
     let (title, ctx) = render_tei_inner(xml);
     (title, ctx.out, ctx.blocks)
@@ -358,9 +338,8 @@ fn render_tei_inner(xml: &str) -> (Option<String>, TeiCtx) {
     let root = doc.root_element();
 
     // Collect every `titleStmt > title` in document order. 84000 headers carry
-    // a title matrix — `type` mainTitle/longTitle/otherTitle crossed with
-    // `xml:lang` en / Sa-Ltn / bo / Bo-Ltn (lang casing varies) — so taking the
-    // first title showed whichever language the file happened to list first.
+    // a matrix of titles (type × language), so we pick by type/lang below
+    // rather than taking whichever the file lists first.
     let titles: Vec<(String, String, String)> = root
         .descendants()
         .filter(|n| {
@@ -480,17 +459,16 @@ fn render_tei_inner(xml: &str) -> (Option<String>, TeiCtx) {
     let body_children: Vec<_> = body.children().filter(|c| c.is_element()).collect();
     tei_render_block_sequence(&body_children, &mut ctx, 0);
 
-    // Append footnotes — build as a separate string to avoid borrow conflicts
-    // while iterating `ctx.footnotes` and mutating `ctx.out`.
+    // Append footnotes — built as a separate string to avoid borrowing
+    // `ctx.footnotes` while mutating `ctx.out`.
     if !ctx.footnotes.is_empty() {
-        // Match the markdown renderer's footnote markup: `<div
-        // class="footnote-definition">` blocks (not an `<ol>`, which would inherit
-        // the upper-roman list style) with the shared SVG back-reference icon.
+        // `footnote-definition` blocks (not an `<ol>`, which would inherit the
+        // upper-roman list style), matching the markdown renderer.
         let icon = footnote_backref_icon_svg();
         let mut fn_section = String::from("<section class=\"footnotes\">\n");
         for (i, fn_html) in ctx.footnotes.iter().enumerate() {
             let n = i + 1;
-            // Avoid `ref{n}` in format strings (Rust 2021 lexer issue).
+            // Split out to avoid the Rust 2021 `ref{n}` lexer issue.
             let backref = format!("#fnref{n}");
             fn_section.push_str(&format!(
                 "<div class=\"footnote-definition\" id=\"fn{n}\">\

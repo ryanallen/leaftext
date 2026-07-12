@@ -1,15 +1,10 @@
 //! Single-instance guard with file hand-off.
 //!
-//! A second launch of Leaf Text (double-clicking another `.md`/`.xml`, or an
-//! Explorer "Open with") normally spins up a whole second process tree — its own
-//! window, webview, and WebView2 process group. This module makes the first
-//! instance the sole owner: it holds a named mutex, and a background thread
-//! listens on a named pipe. A later launch detects the mutex, forwards its file
-//! path over the pipe to the running instance (which opens it as a new tab), and
-//! exits before building any UI.
+//! The first instance owns a named mutex and listens on a named pipe. A later
+//! launch detects the mutex, forwards its file path over the pipe (the primary
+//! opens it as a new tab), and exits before building any UI.
 //!
-//! Windows-only. On other platforms every launch is treated as the primary, so
-//! behavior there is unchanged.
+//! Windows-only; elsewhere every launch is the primary.
 
 use std::path::PathBuf;
 

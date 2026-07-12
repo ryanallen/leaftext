@@ -10,20 +10,16 @@ pub(crate) const DOCUMENT_ICON_SVG: &str = include_str!("assets/document.svg");
 pub(crate) const BRAND_LOGO_DATA_URI: &str = include_str!("assets/brand-logo.txt");
 pub(crate) const FOOTNOTE_BACKREF_ICON_SVG: &str = include_str!("assets/arrow-uturn-left.svg");
 
-// Bundled JS/CSS/font assets (mermaid, KaTeX) are compiled into the binary and
-// served over a dedicated custom protocol, so diagrams and math render fully
-// offline — no CDN. Loaded lazily by the page only when a document needs them.
+// Bundled runtimes (mermaid, KaTeX, graph libs) compiled into the binary and
+// served over a custom protocol, so math/diagrams render offline. Loaded
+// lazily by the page only when a document needs them.
 pub const LOCAL_ASSET_PROTOCOL: &str = "leaf-asset";
 pub(crate) const MERMAID_JS: &[u8] = include_bytes!("assets/vendor/mermaid.min.js");
-// PixiJS (WebGL renderer) + a d3-force bundle (dispatch/quadtree/timer/force
-// concatenated in dependency order, all attaching to the shared `d3` global)
-// power the library graph view. Loaded lazily by the page only when the graph
-// view is opened.
+// PixiJS (WebGL) + d3-force power the library graph view.
 pub(crate) const PIXI_JS: &[u8] = include_bytes!("assets/vendor/pixi.min.js");
-// PixiJS compiles shaders/uniform syncs with `new Function` by default, which the
-// app's CSP forbids (no 'unsafe-eval'). This official companion, loaded right
-// after Pixi, swaps those code paths for eval-free polyfills so the graph renders
-// without loosening the CSP for the whole (untrusted-Markdown-rendering) webview.
+// Pixi compiles shaders with `new Function`, which the CSP forbids (no
+// 'unsafe-eval'). This official companion swaps those paths for eval-free
+// polyfills so the graph renders without loosening the CSP.
 pub(crate) const PIXI_UNSAFE_EVAL_JS: &[u8] =
     include_bytes!("assets/vendor/pixi-unsafe-eval.min.js");
 pub(crate) const D3_FORCE_JS: &[u8] = include_bytes!("assets/vendor/d3-force.min.js");
@@ -155,8 +151,7 @@ pub(crate) fn bundled_asset_bytes(uri: &str) -> Option<(&'static str, &'static [
     }
 }
 
-/// Webview URL for a bundled asset (mirrors the local-image URL rewrite so the
-/// same scheme works across platforms).
+/// Webview URL for a bundled asset (mirrors the local-image URL rewrite).
 pub(crate) fn bundled_asset_url(path: &str) -> String {
     let protocol_url = format!("{LOCAL_ASSET_PROTOCOL}://{LOCAL_IMAGE_HOST}/{path}");
     bundled_asset_webview_url_from_protocol_url(&protocol_url)

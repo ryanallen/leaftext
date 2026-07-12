@@ -577,10 +577,9 @@ fn opened_document_from_markdown_matches_loading_from_disk() {
 
 #[test]
 fn links_terms_with_diacritics_without_panicking() {
-    // Regression: matching used offsets from a lowercased copy to slice the
-    // original, which panics on non-ASCII text (lowercasing can shift byte
-    // boundaries). These documents are full of diacritics, so the linker
-    // crashed the app instantly. Terms are (term, slug) pairs, longest-first.
+    // Regression: slicing the original with lowercased-copy offsets panicked on
+    // the diacritics these documents are full of. Terms are (term, slug),
+    // longest-first.
     let terms = vec![
         ("King of Aṅga".to_string(), "king-of-aṅga".to_string()),
         ("Mahāpadma".to_string(), "mahāpadma".to_string()),
@@ -878,10 +877,8 @@ Body.
 
 #[test]
 fn raw_html_anchor_ids_survive_so_in_page_links_resolve() {
-    // GitHub authors anchor targets with explicit `id=` on raw-HTML elements
-    // (e.g. `<h1 id="forewordhhdl">`). Links like `[Foreword](#forewordhhdl)`
-    // only scroll if that id reaches the rendered DOM, so the sanitizers must
-    // keep `id` on the tags that carry these anchors.
+    // Raw-HTML anchor targets carry an explicit `id=`; the sanitizers must keep
+    // it so `[..](#id)` links still scroll.
     let rendered = render_markdown_document(
         r#"[Foreword](#forewordhhdl) [Plate](#guru-rinpoche-il) [Notice](#copyright) [Spearman](#black-spearman)
 
@@ -1298,9 +1295,8 @@ fn tei_lg_and_bare_l_render_as_verse_blockquotes() {
             &html,
             "<blockquote class=\"tei-verse\">\n<p>Bare line one,<br>\nBare line two.</p>\n</blockquote>",
         );
-    // A following non-<l> block ends the verse run and renders normally. (Prose
-    // paragraphs now carry inline source-range attributes for editing, so match
-    // on the closing text rather than the exact opening tag.)
+    // A following non-<l> block ends the verse run and renders normally. (Match
+    // the closing text, since paragraphs carry inline source-range attributes.)
     assert_contains(&html, ">A prose paragraph.</p>");
     // No leftover plain verse paragraph markup.
     assert!(!html.contains("<p class=\"tei-verse\">"));
@@ -1308,9 +1304,8 @@ fn tei_lg_and_bare_l_render_as_verse_blockquotes() {
 
 #[test]
 fn tei_title_prefers_english_and_stacks_sanskrit_and_long_titles() {
-    // An 84000-style title matrix, deliberately listing Tibetan first to prove
-    // selection is by type + xml:lang, not document order. Lang casing varies
-    // in the wild (`Sa-Ltn`, `Bo-Ltn`), so the fixture uses the odd casing.
+    // A title matrix listing Tibetan first, to prove selection is by type +
+    // xml:lang, not document order. Uses the odd lang casing seen in the wild.
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
   <teiHeader><fileDesc><titleStmt>
@@ -1407,9 +1402,8 @@ fn tei_front_matter_renders_collapsed_before_the_body() {
 
 #[test]
 fn tei_headings_shrink_with_nesting_never_invert() {
-    // 84000 TEI nests a `chapter` inside a `section`. A fixed type→level table
-    // (chapter=h2, section=h3) would render the nested chapter LARGER than the
-    // section above it. Heading level must follow nesting depth instead.
+    // A `chapter` nested in a `section`: a type→level table would render the
+    // nested chapter larger, so heading level must follow nesting depth.
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
   <text><body>
@@ -1429,10 +1423,8 @@ fn tei_headings_shrink_with_nesting_never_invert() {
 
     let (_title, html) = render_tei_body(xml);
 
-    // Transparent `translation` adds no depth: top section is h2, the chapter
-    // inside it h3, the section inside that h4 — strictly shrinking, no inversion.
-    // Headings now carry inline source-range attributes for editing, so match on
-    // the id + text rather than the exact opening tag.
+    // Transparent `translation` adds no depth: h2, h3, h4, strictly shrinking.
+    // Match on id + text, since headings carry inline source-range attributes.
     assert_contains(&html, r#"id="outer-section">Outer Section</h2>"#);
     assert_contains(&html, r#"id="inner-chapter">Inner Chapter</h3>"#);
     assert_contains(&html, r#"id="deeper-section">Deeper Section</h4>"#);
@@ -2449,10 +2441,8 @@ fn app_shell_renders_interactive_document_minimap() {
 
 #[test]
 fn app_shell_csp_allows_bundled_data_fonts() {
-    // The bundled @font-face fonts are embedded as `data:` URLs. The CSP must
-    // grant `font-src ... data:`, otherwise it falls back to `default-src 'self'`
-    // and WebView2 silently blocks every bundled font (headings drop to Georgia,
-    // body to the system sans). Guard against that regression.
+    // Bundled fonts are `data:` URLs, so the CSP must grant `font-src ... data:`
+    // or WebView2 silently blocks every one. Guard against that regression.
     let html = app_shell_html();
     let csp_line = html
         .lines()
@@ -2493,9 +2483,8 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "function scheduleMinimapPreviewUpdate() {",
         "minimapPreviewFrame = window.requestAnimationFrame(() => {",
         "function updateDocumentMinimapPreview() {",
-        // The whole-document clone is skipped when nothing that shapes the
-        // thumbnail changed (same content version, wrap width, and rail width),
-        // so a height-only resize no longer rebuilds the entire document.
+        // The clone is skipped when nothing shaping the thumbnail changed, so a
+        // height-only resize doesn't rebuild the whole document.
         "minimapBuiltVersion === minimapContentVersion &&",
         "minimapBuiltSourceWidth === metrics.sourceWidth &&",
         "minimapBuiltPreviewWidth === previewWidth",
@@ -2519,9 +2508,7 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
     );
 
     // The real-text clone replaces the old abstract canvas entirely (no 2D
-    // context, palette, or line-model rows), and it is rebuilt only on content
-    // mutations / resize / image load — never by observing the source's size,
-    // which would rebuild the whole-document clone on every scroll.
+    // context, palette, or line-model rows).
     for forbidden in [
         "document-minimap-canvas",
         "canvas.getContext('2d')",
@@ -2542,9 +2529,8 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
 fn app_shell_maps_minimap_geometry_proportionally() {
     let html = app_shell_html();
 
-    // The box and the click/drag mapping derive from the reader's real (full-render)
-    // scroll range — app.scrollTop over app.scrollHeight - app.clientHeight — so they
-    // track the thumbnail on documents of any length; on tall documents the thumbnail
+    // The box and click/drag mapping derive from the reader's real scroll range,
+    // so they track the thumbnail at any length; on tall documents the thumbnail
     // slides in the rail.
     for expected in [
             "const previewScale = contentWidth / sourceWidth;",
@@ -2923,9 +2909,8 @@ fn app_shell_preserves_focus_and_updates_minimap_viewport_indicator() {
 fn app_shell_sizes_minimap_viewport_from_scroll_fraction() {
     let html = app_shell_html();
 
-    // The box height is the reader window scaled to the thumbnail; it is placed
-    // from the thumbnail slide plus the scaled scroll top, so it tracks the
-    // visible region on documents of any length.
+    // The box height is the reader window at thumbnail scale, placed from the
+    // slide plus scaled scroll top, so it tracks the visible region at any length.
     let box_height_position = html
         .find("const boundedViewportHeight = Math.min(metrics.trackHeight, viewportHeight);")
         .expect("viewport box height is the reader window at the thumbnail scale");
@@ -3165,9 +3150,8 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
             css.contains(".document-minimap-content {\n  position: absolute;\n  top: var(--minimap-preview-top, 0px);\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
             "the minimap thumbnail lane fills the rail inside the exact 8px padding on both edges"
         );
-    // The reader renders the whole document up front like the web reader, so it
-    // must NOT use content-visibility: that made blocks flash blank while
-    // scrolling and the scroll-height estimate made the minimap box jump.
+    // The reader renders the whole document up front, so it must NOT use
+    // content-visibility (which flashed blocks blank and jumped the minimap box).
     assert!(
         !css.contains("content-visibility: auto"),
         "the reader must render in full (no content-visibility) so scrolling matches the web"
@@ -3349,11 +3333,9 @@ fn reading_mode_css_keeps_markdown_and_code_ready_for_theme_tokens() {
 
 #[test]
 fn code_view_colours_markdown_and_xml_delimiters() {
-    // The code editor colours each Markdown/XML construct's delimiter — not just
-    // its content — so the `#`, `[] ()`, `**`, backticks and `>` don't fall through
-    // to the muted generic .syn-punctuation and read as plain grey text. Each rule
-    // targets the punctuation.definition.* scope at higher specificity than the
-    // generic .code-view .syn-punctuation rule.
+    // The code editor colours each construct's delimiter too, via a
+    // punctuation.definition.* rule at higher specificity than the generic
+    // .code-view .syn-punctuation, so `#`/`[]()`/`**`/backticks/`>` aren't grey.
     let css = reading_mode_css();
 
     for selector in [
@@ -3575,10 +3557,9 @@ fn app_shell_theme_bootstrap_seeds_from_host_injected_settings() {
         assert_contains(&html, expected);
     }
 
-    // The theme path no longer touches the non-durable localStorage shim
-    // (its 'leaf.themeMode' key and modeStorage are gone); the host owns
-    // persistence via the setThemeMode IPC message. (The locale bootstrap
-    // keeps its own separate storage, so we check theme-specific markers.)
+    // The theme path no longer touches localStorage; the host owns persistence
+    // via setThemeMode. (The locale bootstrap keeps its own storage, so we check
+    // theme-specific markers.)
     assert!(!html.contains("leaf.themeMode"));
     assert!(!html.contains("modeStorage"));
     assert!(html.contains("send({ command: 'setThemeMode', mode: themeModeControl.value });"));
@@ -3723,9 +3704,8 @@ fn app_shell_locale_bootstrap_keeps_initial_text_nonblank() {
     let static_text_position = html
         .find("  renderStaticText();")
         .expect("locale subscription refreshes static text");
-    // The bootstrap's renderState() is the one right after renderStaticText();
-    // other renderState() calls (e.g. settings-change handlers) appear elsewhere,
-    // so anchor the search to the static-text refresh rather than the first match.
+    // Anchor to the renderState() right after renderStaticText(), since other
+    // renderState() calls appear elsewhere.
     let state_render_position = html[static_text_position..]
         .find("  renderState();")
         .map(|offset| static_text_position + offset)
@@ -4383,9 +4363,8 @@ fn strips_disallowed_raw_html_tags_and_attributes() {
 
     let rendered = render_markdown_document(markdown, "README.md");
 
-    // `<details>`/`<summary>` are allowed and the boolean `open` is kept (the
-    // sanitizer normalizes it to `open=""`, which browsers treat as expanded),
-    // but the dangerous bits (onclick, style, target, javascript:, class) go.
+    // `<details>`/`<summary>` are allowed and boolean `open` is kept (normalized
+    // to `open=""`), but the dangerous attributes go.
     assert_contains(&rendered.html, r#"<details open="">"#);
     assert_contains(&rendered.html, "<summary>Deploy notes</summary>");
     assert!(!rendered.html.contains("onclick"));

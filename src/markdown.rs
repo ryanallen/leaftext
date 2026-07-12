@@ -20,9 +20,8 @@ impl MarkdownParserConfig {
 }
 
 pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
-    // A leading `--- ... ---` frontmatter block renders as a small metadata table
-    // at the top of the document, not as raw Markdown (which would otherwise turn
-    // into a stray heading/thematic break). The rest of the file renders normally.
+    // A leading `--- ... ---` block renders as a metadata table, not raw
+    // Markdown (which would become a stray heading/thematic break).
     let (frontmatter_html, body_markdown) = match split_leading_frontmatter(source.markdown) {
         Some((inner, rest)) => (render_frontmatter_table(&inner), rest),
         None => (String::new(), source.markdown),
@@ -37,10 +36,10 @@ pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
     sanitize_rendered_html(&body)
 }
 
-/// Split a leading `--- ... ---` frontmatter block off the front of the document,
-/// returning the block's inner text and the Markdown that follows it. Detected
-/// only when `---` is the very first line (after an optional UTF-8 BOM) and a
-/// later `---` line closes it — the same rule the indexer uses.
+/// Split a leading `--- ... ---` frontmatter block off the front, returning its
+/// inner text and the Markdown that follows. Detected only when `---` is the
+/// first line (after an optional BOM) and a later `---` closes it, like the
+/// indexer.
 pub(crate) fn split_leading_frontmatter(markdown: &str) -> Option<(String, &str)> {
     let after_bom = markdown.strip_prefix('\u{feff}').unwrap_or(markdown);
     let first_end = after_bom
@@ -76,10 +75,8 @@ pub(crate) fn split_leading_frontmatter(markdown: &str) -> Option<(String, &str)
     None
 }
 
-/// Render a parsed frontmatter block as a compact `key`/`value` metadata table.
-/// Returns an empty string when nothing parses, so a malformed block just renders
-/// as no table (the body is still stripped of it). Every cell is file-derived and
-/// untrusted, so it is escaped before reaching the DOM.
+/// Render a parsed frontmatter block as a `key`/`value` metadata table, or an
+/// empty string when nothing parses. Cells are untrusted, so they're escaped.
 pub(crate) fn render_frontmatter_table(inner: &str) -> String {
     let block = crate::indexer::FrontmatterBlock {
         body: inner.to_string(),
@@ -427,10 +424,8 @@ pub(crate) fn github_markdown_extras(
     let mut code_block: Option<CodeBlockCapture> = None;
     let mut footnotes = FootnoteTracker::default();
     let mut current_footnote: Option<String> = None;
-    // Where each footnote definition's events landed in `transformed`, so they
-    // can be hoisted to the end of the document (as GitHub does) once every
-    // reference has been numbered. pulldown-cmark emits definitions wherever
-    // they appear in the source, which would otherwise strand them mid-document.
+    // Where each definition's events landed in `transformed`, so they can be
+    // hoisted to the end (as GitHub does) once every reference is numbered.
     let mut footnote_ranges: Vec<(String, usize, usize)> = Vec::new();
     let mut footnote_start = 0usize;
 
@@ -477,8 +472,8 @@ pub(crate) fn github_markdown_extras(
             Event::End(TagEnd::FootnoteDefinition) => {
                 if let Some(name) = current_footnote.take() {
                     let backlink = Event::Html(cowstr(&render_footnote_backlink(&name)));
-                    // Insert inside the last paragraph so the icon sits inline at the
-                    // end of the sentence rather than as a separate block below it.
+                    // Insert inside the last paragraph so the icon sits inline at
+                    // the sentence end, not as a separate block below it.
                     let last_para_end = (footnote_start..transformed.len())
                         .rev()
                         .find(|&i| matches!(transformed[i], Event::End(TagEnd::Paragraph)));
@@ -513,14 +508,10 @@ pub(crate) fn github_markdown_extras(
     relocate_footnote_definitions(transformed, footnote_ranges, &footnotes)
 }
 
-/// Move every footnote definition to the end of the document, ordered to match
-/// the numbers assigned to their references (first-referenced first), with any
-/// unreferenced definitions trailing in source order. This mirrors GitHub: notes
-/// collect in one block at the bottom regardless of where they were written.
-///
-/// pulldown-cmark's HTML writer labels each definition by the order it is
-/// emitted, so emitting them in reference order also makes the printed labels
-/// line up with the superscript reference numbers.
+/// Move every footnote definition to the end of the document in reference order
+/// (unreferenced ones trailing in source order), mirroring GitHub. Emitting them
+/// in reference order also lines up pulldown-cmark's printed labels with the
+/// superscript numbers, since its HTML writer labels by emission order.
 pub(crate) fn relocate_footnote_definitions(
     events: Vec<Event<'static>>,
     ranges: Vec<(String, usize, usize)>,
@@ -530,8 +521,7 @@ pub(crate) fn relocate_footnote_definitions(
         return events;
     }
 
-    // Stable sort keeps unreferenced definitions (usize::MAX key) in source
-    // order, and keeps the relative order of any definitions sharing a number.
+    // Stable sort keeps unreferenced definitions (usize::MAX key) in source order.
     let mut order: Vec<usize> = (0..ranges.len()).collect();
     order.sort_by_key(|&i| footnotes.number_of(&ranges[i].0).unwrap_or(usize::MAX));
 
@@ -1929,11 +1919,10 @@ pub(crate) fn is_allowed_raw_markdown_html_tag(tag_name: &str) -> bool {
             | "tr"
             | "td"
             | "th"
-            // Collapsible sections: `<details>`/`<summary>`, common in GitHub READMEs.
+            // Collapsible sections, common in GitHub READMEs.
             | "details"
             | "summary"
-            // Safe semantic/formatting inline elements (no scripting, no resource
-            // loads). The document body already styles `kbd`/`summary`/`figcaption`.
+            // Safe semantic/formatting inline elements (no scripting or loads).
             | "kbd"
             | "sub"
             | "sup"
@@ -1956,15 +1945,12 @@ pub(crate) fn allowed_raw_markdown_html_attributes(tag_name: &str) -> &'static [
         "div" | "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => &["align", "id"],
         "span" => &["id"],
         "td" | "th" => &["align", "colspan"],
-        // `title` is the abbr tooltip. `<details>`'s `open` is a boolean attribute,
-        // handled by `allowed_raw_markdown_html_boolean_attributes`.
         "abbr" => &["title"],
         _ => &[],
     }
 }
 
-/// Valueless (boolean) attributes kept on a tag when present, such as `open` on
-/// `<details>`. Their mere presence is the value, so they are emitted bare.
+/// Boolean attributes kept when present (e.g. `open` on `<details>`), emitted bare.
 pub(crate) fn allowed_raw_markdown_html_boolean_attributes(
     tag_name: &str,
 ) -> &'static [&'static str] {
@@ -1974,10 +1960,9 @@ pub(crate) fn allowed_raw_markdown_html_boolean_attributes(
     }
 }
 
-/// Whether `tag` carries `attribute_name` as an attribute, with or without a
-/// value (`open`, `open=""`, and `open="open"` all count). Uses the same
-/// attribute tokenization as [`find_html_attribute`] so a substring inside another
-/// attribute's value (e.g. `title="open sesame"`) does not false-positive.
+/// Whether `tag` carries `attribute_name`, with or without a value. Tokenizes
+/// like [`find_html_attribute`] so a substring inside another attribute's value
+/// (e.g. `title="open sesame"`) doesn't false-positive.
 pub(crate) fn html_has_boolean_attribute(tag: &str, attribute_name: &str) -> bool {
     let mut index = tag.find(char::is_whitespace).unwrap_or(tag.len());
 
@@ -2008,8 +1993,7 @@ pub(crate) fn html_has_boolean_attribute(tag: &str, attribute_name: &str) -> boo
         let name = &tag[name_start..index];
         index = skip_html_whitespace(tag, index);
 
-        // Skip an `="value"` (or unquoted value) so the scan stays aligned on the
-        // next attribute name; presence of the name is what matters here.
+        // Skip any `="value"` so the scan stays aligned on the next name.
         if tag[index..].starts_with('=') {
             index += 1;
             index = skip_html_whitespace(tag, index);
@@ -2266,10 +2250,8 @@ pub(crate) fn configure_rendered_html_sanitizer(sanitizer: &mut Builder<'_>) {
         .add_tag_attributes("input", &["checked", "disabled", "type"])
         .add_tag_attributes("td", &["align", "colspan"])
         .add_tag_attributes("th", &["align", "colspan"])
-        // Leaf Text controls its own sanitizer, so the source-range / identity
-        // markers the editing model stamps onto blocks (`data-leaf-*`,
-        // `data-src-*`) are allowed through on every tag. They carry no script
-        // and never reach a URL context.
+        // Editing-model block markers (`data-leaf-*`, `data-src-*`): no script,
+        // never a URL context, so allowed on every tag.
         .add_generic_attribute_prefixes(&["data-leaf-", "data-src-"]);
 }
 

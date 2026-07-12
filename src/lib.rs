@@ -169,24 +169,21 @@ pub struct OpenedDocument {
     pub path: String,
     pub html: String,
     pub minimap: DocumentMinimap,
-    /// Source format, so the reading view knows how to anchor edits: Markdown
-    /// blocks carry their ranges in the `blocks` array (attached to the rendered
-    /// DOM positionally), while XML blocks carry `data-src-*` inline in `html`.
+    /// Source format, so the reading view knows how to anchor edits. Markdown
+    /// blocks carry ranges in `blocks` (positional on the DOM); XML blocks carry
+    /// `data-src-*` inline in `html`.
     pub format: DocumentFormat,
-    /// Source byte ranges of the document's top-level blocks, in document order,
-    /// for source-anchored in-viewer editing. Populated for Markdown; empty for
-    /// XML (whose ranges are stamped inline on the HTML instead).
+    /// Top-level block source ranges in document order, for in-viewer editing.
+    /// Markdown only; empty for XML (ranges are stamped inline on the HTML).
     #[serde(default)]
     pub blocks: Vec<BlockSpan>,
-    /// Source byte offset of each list task marker's state character, in document
-    /// order (see [`task_marker_offsets`]). Lets the reader make checkboxes
-    /// interactive. Empty for XML, which has no Markdown task markers.
+    /// Source byte offset of each list task marker's state char, in document
+    /// order (see [`task_marker_offsets`]). Empty for XML.
     #[serde(default)]
     pub tasks: Vec<usize>,
-    /// The raw source text the blocks' byte ranges index into. Sent for XML so
-    /// the reading view can present a block's exact source for editing (TEI can't
-    /// be reconstructed from the rendered HTML). Empty for Markdown, whose blocks
-    /// round-trip from the rendered DOM instead.
+    /// The raw source the block ranges index into. Sent for XML (TEI can't be
+    /// reconstructed from the HTML); empty for Markdown, which round-trips from
+    /// the DOM.
     #[serde(default)]
     pub source: String,
 }
@@ -226,10 +223,8 @@ impl RecentFiles {
         before != self.files.len()
     }
 
-    /// Collapse stored entries to their normalized form, dropping duplicates
-    /// while preserving order. Used on load so an older list that recorded the
-    /// same file under different spellings (e.g. `app\README.md` and
-    /// `app\.tmp\..\README.md`) self-heals into one entry.
+    /// Collapse entries to normalized form, dropping duplicates in order. Run on
+    /// load so the same file recorded under different spellings self-heals.
     fn normalize_entries(&mut self) {
         let mut normalized: Vec<PathBuf> = Vec::with_capacity(self.files.len());
         for path in self.files.drain(..) {
@@ -242,11 +237,10 @@ impl RecentFiles {
     }
 }
 
-/// Resolve `.` and `..` in `path` lexically (without touching the filesystem)
-/// so that two spellings of the same file collapse to one Recent entry. We
-/// normalize lexically rather than canonicalizing so the stored path stays
-/// human-readable (no `\\?\` verbatim prefix on Windows) and keeps working with
-/// the OS file-reveal commands.
+/// Resolve `.` and `..` in `path` lexically (not via the filesystem) so two
+/// spellings of the same file collapse to one Recent entry. Lexical rather than
+/// canonicalized keeps the path human-readable (no `\\?\` prefix) and usable by
+/// OS file-reveal commands.
 fn normalize_recent_path(path: &Path) -> PathBuf {
     use std::path::Component;
 
@@ -254,8 +248,8 @@ fn normalize_recent_path(path: &Path) -> PathBuf {
     for component in path.components() {
         match component {
             Component::CurDir => {}
-            // Only pop a real segment; a `..` that would escape the prefix/root
-            // can't be resolved lexically, so keep it verbatim.
+            // Only pop a real segment; a `..` that escapes the root can't be
+            // resolved lexically, so keep it verbatim.
             Component::ParentDir => {
                 if !normalized.pop() {
                     normalized.push(component.as_os_str());
@@ -316,9 +310,8 @@ pub fn opened_document_from_tei(xml: &str, path: impl AsRef<Path>) -> OpenedDocu
         None => body_html,
     };
 
-    // The minimap canvas paints from the span model, so chart the rendered block
-    // HTML (there is no Markdown source to line-scan for TEI). Do this before the
-    // body is wrapped in the <article>/pager shell so the scan sees only content.
+    // Chart the rendered block HTML (no Markdown source to line-scan for TEI),
+    // before wrapping in the <article>/pager shell so the scan sees only content.
     let minimap = build_minimap_model_from_html(&body_html);
 
     let article = format!(
@@ -339,16 +332,15 @@ pub fn opened_document_from_tei(xml: &str, path: impl AsRef<Path>) -> OpenedDocu
 }
 
 /// Render an already-loaded markdown string into an `OpenedDocument`. Split out
-/// from [`load_document`] so the live-reload path can read the file once (to
-/// hash-gate against unchanged content) and reuse that same string to render,
-/// rather than reading the file a second time.
+/// from [`load_document`] so live-reload can read the file once and reuse the
+/// string rather than reading twice.
 pub fn opened_document_from_markdown(markdown: &str, path: impl AsRef<Path>) -> OpenedDocument {
     let path = path.as_ref();
     let render_path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
     let rendered = render_markdown_document(markdown, &render_path);
 
-    // Append a lightweight placeholder; the real Previous/Next pager scans the
-    // folder tree after the document is already on screen.
+    // Placeholder; the real Previous/Next pager scans the folder tree after the
+    // document is on screen.
     let html = match rendered.html.strip_suffix("</article>") {
         Some(body) => format!("{body}{}</article>", pager_loading_html()),
         None => rendered.html,
@@ -362,9 +354,8 @@ pub fn opened_document_from_markdown(markdown: &str, path: impl AsRef<Path>) -> 
         format: DocumentFormat::Markdown,
         blocks: block_source_map(markdown),
         tasks: task_marker_offsets(markdown),
-        // Sent so blocks that don't round-trip from the rendered DOM (lists,
-        // tables, code, images, footnotes) can be edited as their exact Markdown
-        // source in place; clean text blocks still edit WYSIWYG and ignore this.
+        // Lets blocks that don't round-trip from the DOM (lists, tables, code,
+        // images, footnotes) edit their exact source; text blocks ignore it.
         source: markdown.to_string(),
     }
 }
@@ -464,8 +455,8 @@ pub fn open_document_with_recent(
 
 pub fn render_markdown_document(markdown: &str, source_path: impl AsRef<Path>) -> RenderedDocument {
     let source_path = source_path.as_ref();
-    // Detect the title from the body, past any leading frontmatter block, so the
-    // tab title is the document's real heading and not the `---` metadata.
+    // Detect the title past any leading frontmatter, so the tab title is the
+    // document's real heading, not the `---` metadata.
     let title_markdown = split_leading_frontmatter(markdown)
         .map(|(_, rest)| rest)
         .unwrap_or(markdown);
@@ -481,10 +472,8 @@ pub fn render_markdown_document(markdown: &str, source_path: impl AsRef<Path>) -
         markdown,
         source_path,
     });
-    // Auto-link glossary terms from the nearest GLOSSARY.md, so terms link even
-    // when the source markdown didn't spell out the links. Occurrences already
-    // inside a manual link (or code) are left untouched by the linker. Skip the
-    // glossary file itself, so its own entries don't get self-linked.
+    // Auto-link glossary terms from the nearest GLOSSARY.md (occurrences already
+    // inside a link or code are left alone). Skip the glossary file itself.
     let is_glossary = source_path
         .file_name()
         .and_then(|n| n.to_str())
@@ -510,12 +499,10 @@ pub fn render_markdown_document(markdown: &str, source_path: impl AsRef<Path>) -
     }
 }
 
-// ---------------------------------------------------------------------------
-// Glossary auto-linking (desktop: runs on rendered HTML before sending to view)
-// ---------------------------------------------------------------------------
+// Glossary auto-linking: runs on rendered HTML before sending to the view.
 
-/// Parse `## Term` lines from a GLOSSARY.md file and return `(term, slug)` pairs,
-/// sorted longest-term-first so multi-word terms match before their substrings.
+/// Parse `## Term` lines from a GLOSSARY.md into `(term, slug)` pairs, sorted
+/// longest-first so multi-word terms match before their substrings.
 fn parse_glossary_terms(path: &Path) -> Vec<(String, String)> {
     let Ok(content) = fs::read_to_string(path) else {
         return Vec::new();
@@ -543,10 +530,9 @@ fn link_terms_in_html(html: &str, terms: &[(String, String)]) -> String {
         return html.to_string();
     }
 
-    // Precompute each term's lowercased form and slug once (not per text run),
-    // sorted longest-first so multi-word terms win over their substrings, and
-    // index them by lowercased first byte so each scan position only tests the
-    // handful of terms that could possibly start there.
+    // Precompute lowercased term + slug once (not per run), longest-first, and
+    // bucket by lowercased first byte so each scan position tests only the few
+    // terms that could start there.
     let mut prepared: Vec<(String, String)> = terms
         .iter()
         .map(|(term, slug)| (term.to_lowercase(), slug.clone()))
@@ -612,25 +598,19 @@ fn link_terms_in_html(html: &str, terms: &[(String, String)]) -> String {
     result
 }
 
-/// Replace term occurrences with `<a href="glossary:slug">term</a>` in a plain-text
-/// run. `prepared` is the lowercased `(term, slug)` list (longest-first) and
-/// `buckets` indexes it by lowercased first byte (both built once by the caller).
-///
-/// Matching is done against a lowercased copy of `text`, but every byte offset is
-/// mapped back to the original through `orig` so slices always land on real char
-/// boundaries. This matters because `to_lowercase()` can change a string's byte
-/// length (and boundaries), so indexing the original with offsets taken from the
-/// lowercased copy — as an earlier version did — panics on non-ASCII text, and
-/// these documents are full of diacritics (Aṅga, Mahāpadma, Tuṣita, …).
+/// Replace term occurrences with `<a href="glossary:slug">term</a>` in a plain
+/// text run. Matching runs against a lowercased copy of `text`, with every
+/// offset mapped back through `orig` to a real char boundary — `to_lowercase()`
+/// can change byte length, so indexing the original with lowercased offsets
+/// would panic on the diacritics these documents are full of.
 fn replace_terms_in_text(
     text: &str,
     prepared: &[(String, String)],
     buckets: &HashMap<u8, Vec<usize>>,
 ) -> String {
-    // Build the lowercased run alongside `orig`, where `orig[i]` is the original
-    // byte offset that lowercased byte `i` came from. `orig` has one entry per
-    // lowercased byte plus a trailing sentinel (`text.len()`), so any offset in
-    // `0..=lower.len()` maps to a valid char boundary in `text`.
+    // `orig[i]` is the original byte offset lowercased byte `i` came from, with
+    // a trailing sentinel, so any offset in `0..=lower.len()` maps to a valid
+    // char boundary in `text`.
     let mut lower = String::with_capacity(text.len());
     let mut orig: Vec<usize> = Vec::with_capacity(text.len() + 1);
     for (off, ch) in text.char_indices() {
@@ -673,8 +653,7 @@ fn replace_terms_in_text(
                 if !(before_ok && after_ok) {
                     continue;
                 }
-                // Emit the original (already HTML-encoded) span verbatim, so its
-                // casing and any entities are preserved.
+                // Emit the original span verbatim, preserving casing and entities.
                 let span = &text[orig[pos]..orig[end]];
                 result.push_str(&format!(r#"<a href="glossary:{slug}">{span}</a>"#));
                 pos = end;
@@ -683,8 +662,7 @@ fn replace_terms_in_text(
             }
         }
         if !matched {
-            // Advance one original char: skip past every lowercased byte that came
-            // from the same source char (a char may lowercase to several).
+            // Advance one original char (one source char may lowercase to several).
             let src = orig[pos];
             let mut next = pos + 1;
             while next < lower.len() && orig[next] == src {
@@ -697,12 +675,9 @@ fn replace_terms_in_text(
     result
 }
 
-/// Find the nearest `GLOSSARY.md` by walking up from `doc_dir` (the folder the
-/// document lives in) toward the filesystem root. The glossary usually sits at a
-/// project root many folders above the document — the same convention the
-/// `glossary:` sheet links resolve against in `main.rs::nearest_glossary_file` —
-/// so checking only the document's own folder would almost always miss it. A
-/// lowercase `glossary.md` is accepted too, for case-sensitive trees.
+/// Find the nearest `GLOSSARY.md` by walking up from `doc_dir` to the root (the
+/// glossary usually sits at a project root well above the document). A lowercase
+/// `glossary.md` is accepted too, for case-sensitive trees.
 fn nearest_glossary_file(doc_dir: &Path) -> Option<PathBuf> {
     let mut dir = Some(doc_dir);
     while let Some(folder) = dir {
@@ -797,17 +772,15 @@ fn theme_bootstrap_script() -> &'static str {
   const media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   const listeners = new Set();
   const normalizeMode = (value) => (VALID_MODES.has(value) ? value : MODE_FALLBACK);
-  // The Rust host injects the persisted mode as window.__leafSettings before
-  // this script runs, so we resolve the right theme on the first paint. The
-  // host owns persistence (the change handler reports back); there is no
-  // localStorage here because the app shell's opaque origin never persists it.
+  // The host injects the persisted mode as window.__leafSettings before this
+  // runs, so the theme resolves on the first paint. The host owns persistence;
+  // the app shell's opaque origin can't use localStorage.
   const injected = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings.themeMode : null;
   let mode = normalizeMode(injected);
 
   const resolvedTheme = () => {
     if (mode === 'light') return 'light';
-    // Dracula is a dark palette: it resolves dark for color-scheme and any
-    // dark/light consumers, and additionally flips on its own token source.
+    // Dracula is a dark palette, so it resolves dark here.
     if (mode === 'dark' || mode === 'dracula') return 'dark';
     return media && media.matches ? 'dark' : 'light';
   };
@@ -821,8 +794,8 @@ fn theme_bootstrap_script() -> &'static str {
     root.dataset.themeMode = mode;
     root.dataset.theme = theme.resolvedTheme;
     root.style.colorScheme = theme.resolvedTheme;
-    // Dracula supplies its own complete token set via this attribute; every
-    // other mode clears it so the Primer tokens drive the palette.
+    // Dracula supplies its own token set via this attribute; other modes clear
+    // it so the Primer tokens drive the palette.
     if (mode === 'dracula') {
       root.dataset.leafThemeSource = 'dracula';
     } else {
@@ -1191,8 +1164,8 @@ pub fn webview_user_data_dir() -> Option<PathBuf> {
 }
 
 /// The app data root for leaftext's own files (the indexer manifest lives here).
-/// Deliberately the local data dir itself, not the WebView2 cache subfolder, so
-/// the manifest database is not entangled with the embedded browser's storage.
+/// The local data dir itself, not the WebView2 cache subfolder, so the manifest
+/// isn't entangled with the browser's storage.
 pub fn app_data_dir() -> Option<PathBuf> {
     ProjectDirs::from("com", "ryanallen", "leaftext")
         .map(|dirs| dirs.data_local_dir().to_path_buf())
@@ -1216,55 +1189,47 @@ pub fn save_recent_files(config_path: impl AsRef<Path>, recent: &RecentFiles) ->
     fs::write(config_path, json)
 }
 
-/// User-facing UI toggles that must survive a restart. The webview's
-/// localStorage is not durable for the app shell's opaque origin, so the host
-/// owns these: they are injected on boot via [`initial_settings_script`] and saved
-/// (`save_settings`) whenever the frontend reports a change.
+/// UI toggles that survive a restart. The app shell's opaque origin can't use
+/// localStorage, so the host owns these: injected on boot via
+/// [`initial_settings_script`] and saved whenever the frontend reports a change.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
     pub indexing_enabled: bool,
     pub minimap_enabled: bool,
-    /// Whether to append the automatic Previous/Next pager at the bottom of every
-    /// document. On by default; the settings menu can turn it off.
+    /// Append the automatic Previous/Next pager to every document. On by default.
     pub pager_enabled: bool,
-    /// Whether to visually quiet prose and add bold lead anchors at word starts.
-    /// Off by default; this is a reversible view setting.
+    /// Quiet prose and add bold lead anchors at word starts. Off by default.
     pub speed_reader_enabled: bool,
-    /// Whether to show the gutter permalink number beside each block in the
-    /// reading view. On by default; turning it off hides the numbers (the blocks
-    /// keep their ids, so `#locus` deep links still resolve).
+    /// Show the gutter permalink number beside each block. On by default; the
+    /// blocks keep their ids either way, so `#locus` deep links still resolve.
     pub line_numbers_enabled: bool,
-    /// Whether the reading view is a live editor (click a block to edit it,
-    /// toggle task checkboxes). On by default; turning it off keeps the rendered
-    /// page read-only. The code view still edits the raw source regardless.
+    /// Make the reading view a live editor. On by default; off keeps it
+    /// read-only. The code view edits the raw source regardless.
     pub reader_editing_enabled: bool,
-    /// The theme mode the frontend last selected: `system`, `light`, `dark`, or
-    /// `dracula`. Stored as the raw mode string the frontend understands; the
-    /// frontend normalizes anything unexpected back to `system`.
+    /// Last theme mode: `system`/`light`/`dark`/`dracula`. Raw frontend string;
+    /// the frontend normalizes anything unexpected back to `system`.
     pub theme_mode: String,
-    /// Which library view is showing: drill-in Project, expandable Tree, or flat.
+    /// Which library view is showing: Project, Tree, or flat.
     pub library_view: LibraryView,
     /// How much of the link graph the graph view draws (see [`GraphScope`]).
     pub graph_scope: GraphScope,
-    /// Full paths of folders left expanded in Tree view, so the open/closed
-    /// shape is restored across view switches and restarts.
+    /// Full paths of folders left expanded in Tree view, restored across
+    /// view switches and restarts.
     pub library_expanded: Vec<String>,
-    /// The folder Project view is currently inside (empty string = the root).
+    /// The folder Project view is inside (empty string = the root).
     pub library_project_path: String,
-    /// Whether the user has collapsed the library pane shut. Open by default.
+    /// Whether the library pane is collapsed shut. Open by default.
     pub library_closed: bool,
-    /// The pane's last open width in CSS px, restored on reopen. The frontend
-    /// re-clamps it to the current window, so it is a preference, not a command.
+    /// The pane's last open width in CSS px. The frontend re-clamps it to the
+    /// window, so it's a preference, not a command.
     pub library_width: u32,
-    /// The window's last inner size in logical (DPI-independent) px, so it reopens
-    /// at the size the user left it. Stored logically so it round-trips correctly
-    /// across monitors with different scale factors.
+    /// The window's last inner size in logical px, so it reopens where the user
+    /// left it. Logical so it round-trips across monitors of different scale.
     pub window_width: u32,
     pub window_height: u32,
-    /// Whether the window was maximized when it last closed, restored on launch.
-    /// Tracked separately from the size so un-maximizing returns to the windowed
-    /// dimensions rather than the maximized ones.
+    /// Whether the window was maximized at last close. Tracked apart from the
+    /// size so un-maximizing returns to the windowed dimensions.
     pub window_maximized: bool,
 }
 
@@ -1291,9 +1256,8 @@ impl Default for Settings {
     }
 }
 
-/// The library pane's layouts. Serialized lowercase (`"graph"`, `"project"`,
-/// `"tree"`, `"flat"`) to match the frontend's `LIBRARY_VIEWS` strings. Graph is
-/// the default view.
+/// The library pane's layouts. Serialized lowercase to match the frontend's
+/// `LIBRARY_VIEWS` strings. Graph is the default.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LibraryView {
@@ -1327,10 +1291,9 @@ impl LibraryView {
 }
 
 /// How much of the link graph the graph view draws. `Small` focuses on the open
-/// document — or the recent files, on the start screen — plus everything one link
-/// away; the rest cap the densest documents at increasing sizes, up to `Xl`
-/// (every indexed document). Serialized lowercase to match the frontend's
-/// `GRAPH_SCOPES` strings. Small is the default so the graph opens fast.
+/// document (or recents on the start screen) plus everything one link away; the
+/// rest cap the densest documents at increasing sizes up to `Xl` (everything).
+/// Serialized lowercase to match `GRAPH_SCOPES`. Small is the default.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GraphScope {
@@ -1369,7 +1332,7 @@ pub fn settings_file_path() -> Option<PathBuf> {
 }
 
 /// Load the persisted UI toggles, falling back to defaults when the file is
-/// missing or corrupt (matching `load_recent_files`'s forgiving behavior).
+/// missing or corrupt.
 pub fn load_settings(settings_path: impl AsRef<Path>) -> Settings {
     fs::read_to_string(settings_path)
         .ok()

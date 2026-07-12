@@ -24,10 +24,8 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use rusqlite::{params, params_from_iter, types::Value, Connection, OpenFlags};
 use serde::Serialize;
 
-/// Latest applied schema migration. Migration version is the next free integer
-/// at merge time; the base indexer schema is version 1, full-text search
-/// (chunks + chunks_fts) is version 2, frontmatter is version 3, and the
-/// doc-to-doc link graph is version 4.
+/// Latest applied schema migration: 1 base, 2 full-text search, 3 frontmatter,
+/// 4 doc-to-doc link graph.
 const SCHEMA_VERSION: i64 = 4;
 
 /// Feature name recorded in `file_feature_state` for the chunk/FTS layer.
@@ -41,34 +39,28 @@ const CHUNKS_SCHEMA_VERSION: i64 = 1;
 const FRONTMATTER_FEATURE: &str = "frontmatter";
 
 /// Schema version for the frontmatter extraction shape. Bump when the parsed
-/// key/value shape changes so the next scan rebuilds stale rows even with
-/// unchanged bytes (the backfill path for files indexed before this feature).
+/// key/value shape changes so the next scan rebuilds stale rows.
 const FRONTMATTER_SCHEMA_VERSION: i64 = 1;
 
 /// Feature name recorded in `file_feature_state` for the doc-to-doc link layer.
 const LINKS_FEATURE: &str = "links";
 
 /// Schema version for the link extraction shape. Bump when the extracted link
-/// shape changes so the next scan rebuilds stale rows even with unchanged bytes
-/// (the backfill path for files indexed before the graph view shipped).
+/// shape changes so the next scan rebuilds stale rows.
 const LINKS_SCHEMA_VERSION: i64 = 1;
 
-/// Soft cap on a single chunk's source length. A heading section under this size
-/// becomes one chunk; larger sections split at block boundaries so snippets and
-/// jump targets stay tight. Not a hard limit: a single oversized block (e.g. a
-/// big code fence) still becomes one chunk.
+/// Soft cap on a chunk's source length. A heading section under this becomes one
+/// chunk; larger sections split at block boundaries. Not hard: an oversized
+/// block still becomes one chunk.
 const CHUNK_TARGET_BYTES: usize = 1500;
 
-/// Version of the base file parse pipeline (`files` + `headings`). Bump this when
-/// the base parsed shape changes; the next scan then reparses stale files once,
-/// even when `mtime + size` are unchanged.
+/// Version of the base parse pipeline (`files` + `headings`). Bump when the
+/// parsed shape changes so the next scan reparses stale files once.
 const CURRENT_DERIVED_VERSION: i64 = 1;
 
-/// How many bytes of any one file the indexer reads and indexes. Files at or
-/// under this are read whole; a larger file is indexed from its leading prefix
-/// (title, headings, chunks, frontmatter, links) and still appears in the
-/// library — the cap bounds crawl work and manifest size, it does not exclude
-/// the file. The reader opens the full file regardless of this cap.
+/// How many bytes of a file the indexer reads. Larger files are indexed from
+/// their leading prefix and still appear in the library; this bounds crawl work,
+/// not inclusion. The reader opens the full file regardless.
 const MAX_INDEX_BYTES: u64 = 2 * 1024 * 1024;
 
 /// Parse/hash worker count. Parse + hash is the crawl bottleneck; many parsers
@@ -122,9 +114,8 @@ const SYSTEM_DIRS: &[&str] = &[
 // Public data shapes
 // ---------------------------------------------------------------------------
 
-/// A node in the library tree: a folder (rendered as `<details>`) or a file
-/// (rendered as a button). All strings are file-derived and untrusted; the
-/// frontend escapes them before they reach the DOM.
+/// A node in the library tree: a folder or a file. All strings are file-derived
+/// and untrusted; the frontend escapes them before the DOM.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FileTreeNode {
@@ -142,17 +133,16 @@ pub enum NodeKind {
     File,
 }
 
-/// The library link graph delivered to the graph view: one node per indexed
-/// document, one undirected edge per resolved doc-to-doc link. `path` is the node
-/// identity the frontend opens and highlights the active document by. All strings
-/// are file-derived and untrusted; the frontend escapes them before the DOM.
+/// The library link graph: one node per document, one undirected edge per
+/// resolved doc-to-doc link. `path` is the node identity the frontend opens by.
+/// All strings are file-derived and untrusted; the frontend escapes them.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentGraph {
     pub nodes: Vec<GraphNode>,
     pub edges: Vec<GraphEdge>,
-    /// Retained for the frontend contract; the graph is no longer capped, so this
-    /// is always `false`.
+    /// Kept for the frontend contract; the graph is no longer capped, so always
+    /// `false`.
     pub truncated: bool,
 }
 
@@ -171,10 +161,9 @@ pub struct GraphEdge {
     pub target: String,
 }
 
-/// What slice of the link graph to build. When `focus` is `Some`, only the seed
-/// documents (paths as the frontend stored them) and their direct neighbors are
-/// kept — the "Focus" scope. Otherwise `limit` caps the result to the densest N
-/// documents (`None` = every document).
+/// What slice of the link graph to build. `focus` keeps only the seed documents
+/// and their direct neighbors (the "Focus" scope); otherwise `limit` caps to the
+/// densest N documents (`None` = all).
 #[derive(Debug, Clone, Default)]
 pub struct GraphRequest {
     pub focus: Option<Vec<String>>,
@@ -222,20 +211,17 @@ pub enum IndexerEvent {
     Error(String),
 }
 
-/// A later derived feature that must be current before a file can fast-path.
-/// Each feature records readiness in `file_feature_state` so a stale or failed
-/// feature forces a one-file reparse on the next scan even when bytes are
-/// unchanged (the backfill/recovery path from the indexer plan).
+/// A derived feature that must be current before a file can fast-path. Each
+/// records readiness in `file_feature_state`, so a stale feature forces a
+/// one-file reparse on the next scan even when bytes are unchanged.
 #[derive(Debug, Clone, Copy)]
 pub struct FeatureSpec {
     pub name: &'static str,
     pub schema_version: i64,
 }
 
-/// The enabled derived features that gate the crawl fast-path. Full-text search
-/// adds `chunks` and frontmatter adds `frontmatter`; a file with no current row
-/// for either (every file indexed before that feature shipped) is reparsed once
-/// to build it.
+/// The derived features that gate the crawl fast-path. A file with no current
+/// row for one (e.g. indexed before that feature shipped) is reparsed once.
 pub fn required_features() -> &'static [FeatureSpec] {
     const FEATURES: &[FeatureSpec] = &[
         FeatureSpec {
@@ -254,11 +240,9 @@ pub fn required_features() -> &'static [FeatureSpec] {
     FEATURES
 }
 
-/// A stable, searchable piece of one file. `id` (assigned by SQLite) is the
-/// durable identity embeddings reuse, so chunks are diffed by `(file_id,
-/// ordinal)` on reindex rather than recreated. `anchor` is the nearest heading's
-/// rendered slug so a result can jump to that section (see the renderer's
-/// `unique_heading_slug`); it is `None` for content above the first heading.
+/// A searchable piece of one file. Chunks are diffed by `(file_id, ordinal)` on
+/// reindex rather than recreated. `anchor` is the nearest heading's slug so a
+/// result can jump there; `None` for content above the first heading.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Chunk {
     pub ordinal: i64,
@@ -320,11 +304,9 @@ fn path_to_string(path: &Path) -> String {
     path.to_string_lossy().to_string()
 }
 
-/// The IO-time path. On Windows a device-wide crawl hits paths over 260 chars;
-/// the `\\?\` extended-length prefix keeps `read_dir`/`metadata`/`read` from
-/// erroring and silently dropping those files. The prefix is an IO detail only:
-/// stored `abs_path`/`display_path` and everything user-facing use the normal
-/// form, so child paths are always rebuilt by joining the normal-form directory.
+/// The IO-time path. On Windows the `\\?\` extended-length prefix keeps
+/// `read_dir`/`metadata`/`read` working on paths over 260 chars. IO-only:
+/// stored and user-facing paths use the normal form.
 #[cfg(windows)]
 fn io_path(path: &Path) -> PathBuf {
     let text = path.as_os_str().to_string_lossy();
@@ -345,13 +327,10 @@ fn io_path(path: &Path) -> PathBuf {
     path.to_path_buf()
 }
 
-/// The storage-side inverse of [`io_path`]: strip the Windows `\\?\` verbatim
-/// prefix so a path matches the normal form the crawl stores. The crawl walks
-/// from normal-form roots (`C:\`) and only adds the prefix for IO, but a path
-/// arriving from the file watcher carries it (the watcher watches a
-/// `fs::canonicalize`d directory). Storing it verbatim would file the entry under
-/// a duplicate `\\?\C:` scan root that the Project/Tree view never shows. Drive
-/// paths are simplified; UNC verbatim paths are left as-is, mirroring `io_path`.
+/// The storage-side inverse of [`io_path`]: strip the Windows `\\?\` prefix so a
+/// path matches the normal form the crawl stores. A path from the file watcher
+/// carries it (it watches a canonicalized dir); storing it verbatim would file
+/// the entry under a duplicate `\\?\C:` root. UNC verbatim paths are left as-is.
 #[cfg(windows)]
 fn normal_path(path: &Path) -> PathBuf {
     let text = path.as_os_str().to_string_lossy();
@@ -386,8 +365,7 @@ fn is_xml_file(path: &Path) -> bool {
     matches!(lowercase_extension(path).as_deref(), Some("xml"))
 }
 
-/// Every document type the library indexes and the graph can node: Markdown plus
-/// TEI XML. Mirrors the file types the app knows how to open.
+/// Document types the library indexes: Markdown plus TEI XML.
 fn is_indexable_file(path: &Path) -> bool {
     is_markdown_file(path) || is_xml_file(path)
 }
@@ -400,9 +378,8 @@ fn is_system_dir(name: &str) -> bool {
     SYSTEM_DIRS.contains(&name)
 }
 
-/// PermissionDenied / NotFound are expected on a whole-device walk: skip that one
-/// directory and keep going. Any other error signals a real problem (e.g. a
-/// drive going away), which the caller treats as a root-level failure.
+/// PermissionDenied / NotFound are expected on a whole-device walk: skip that
+/// directory. Any other error is treated as a root-level failure.
 fn is_benign_dir_error(error: &std::io::Error) -> bool {
     matches!(
         error.kind(),
@@ -531,12 +508,10 @@ CREATE INDEX idx_files_seen_scan ON files(last_seen_scan_id);
 CREATE INDEX idx_file_feature_state_feature ON file_feature_state(feature, status);
 "#;
 
-/// Migration 2: full-text search. A `chunks` table holds stable, searchable
-/// pieces of each file, and an external-content FTS5 table mirrors their text.
-/// `chunks.id` is the durable identity later features (embeddings) reuse, so
-/// `replace_chunks` diffs by `(file_id, ordinal)` rather than recreating rows.
-/// The triggers keep `chunks_fts` in sync; external-content tables need the
-/// special `'delete'` form so the index drops the old terms before reinsert.
+/// Migration 2: full-text search. A `chunks` table holds searchable pieces of
+/// each file; an external-content FTS5 table mirrors their text. The triggers
+/// keep `chunks_fts` in sync (external-content tables need the `'delete'` form
+/// to drop old terms before reinsert).
 const MIGRATION_2_SQL: &str = r#"
 CREATE TABLE chunks (
     id         INTEGER PRIMARY KEY,
@@ -572,10 +547,9 @@ CREATE TRIGGER chunks_au AFTER UPDATE ON chunks BEGIN
 END;
 "#;
 
-/// Migration 3: frontmatter. One row per normalized key/value of a file's leading
-/// `--- ... ---` block. Keys are stored lowercase so filters are case-insensitive
-/// by key; list values expand to one row each. The composite primary key dedupes
-/// repeated pairs, and the cascade drops rows when a file row is deleted.
+/// Migration 3: frontmatter. One row per key/value of a file's leading
+/// `--- ... ---` block. Keys stored lowercase for case-insensitive filters; list
+/// values expand to one row each. The composite key dedupes repeated pairs.
 const MIGRATION_3_SQL: &str = r#"
 CREATE TABLE frontmatter (
     file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
@@ -587,14 +561,10 @@ CREATE TABLE frontmatter (
 CREATE INDEX idx_frontmatter_key_value ON frontmatter(key, value);
 "#;
 
-/// Migration 4: the doc-to-doc link graph. One row per outgoing link found in a
-/// file. `target_abs` holds a resolved absolute path (for relative Markdown/HTML
-/// links); `target_name` holds a normalized note name (for `[[wiki]]` links).
-/// Both are resolution *hints* — a target is matched to a file id in Rust at
-/// graph-build time, so unresolved (external or dangling) links persist harmlessly
-/// and no rewrite is needed when the target file appears or moves. The composite
-/// primary key keeps ordinals stable per file; the cascade drops rows with the
-/// source file.
+/// Migration 4: the doc-to-doc link graph. One row per outgoing link.
+/// `target_abs` is a resolved absolute path (relative links); `target_name` a
+/// normalized note name (`[[wiki]]` links). Both are hints matched to a file id
+/// in Rust at graph-build time, so dangling links persist harmlessly.
 const MIGRATION_4_SQL: &str = r#"
 CREATE TABLE links (
     from_file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
@@ -611,8 +581,7 @@ CREATE INDEX idx_links_target_name ON links(target_name);
 "#;
 
 /// Open (creating if needed) the manifest database, apply PRAGMAs, and migrate.
-/// Runs on the caller's thread so the schema is present before the reader thread
-/// opens its read-only connection.
+/// Runs on the caller's thread so the schema exists before the reader connects.
 pub fn open_db(data_dir: &Path) -> DbResult<Connection> {
     std::fs::create_dir_all(data_dir).map_err(to_err)?;
     let mut conn = Connection::open(manifest_path(data_dir)).map_err(to_err)?;
@@ -628,9 +597,8 @@ pub fn open_db(data_dir: &Path) -> DbResult<Connection> {
     Ok(conn)
 }
 
-/// Fail loudly at startup if the bundled SQLite lacks FTS5, rather than silently
-/// shipping an empty search UI. Creating a throwaway in-memory FTS5 table is a
-/// cheap, definitive probe that does not touch the manifest.
+/// Fail loudly at startup if the bundled SQLite lacks FTS5. A throwaway
+/// in-memory FTS5 table is a cheap probe that doesn't touch the manifest.
 fn ensure_fts5_available(conn: &Connection) -> DbResult<()> {
     conn.execute_batch(
         "CREATE VIRTUAL TABLE temp.leaf_fts5_probe USING fts5(x);
@@ -717,19 +685,16 @@ fn run_migrations(conn: &mut Connection) -> DbResult<()> {
         tx.commit().map_err(to_err)?;
     }
 
-    // If chunk rows exist without matching FTS rows (e.g. a manifest where the
-    // external-content index drifted), rebuild the index once. Cheap no-op when
-    // the counts already agree.
+    // Rebuild the FTS index once if it drifted from the chunk rows. No-op when
+    // the counts agree.
     rebuild_fts_if_stale(conn)?;
 
-    // Future migrations slot in here as `if current < 4 { ... }`, etc.
     let _ = SCHEMA_VERSION;
     Ok(())
 }
 
-/// One-time `chunks_fts` rebuild when the index row count does not match the
-/// `chunks` row count. Guards against a manifest whose chunk rows predate the
-/// FTS index or whose index drifted.
+/// Rebuild `chunks_fts` when its row count doesn't match `chunks`, guarding
+/// against a drifted or predating index.
 fn rebuild_fts_if_stale(conn: &Connection) -> DbResult<()> {
     let chunk_count: i64 = conn
         .query_row("SELECT COUNT(*) FROM chunks", [], |row| row.get(0))
@@ -754,8 +719,7 @@ struct ScanRoot {
     path: PathBuf,
 }
 
-/// Accessible roots to crawl. On Windows, the existing drive roots; elsewhere the
-/// filesystem root. The user never picks a folder in v1.
+/// Accessible roots to crawl: existing drive roots on Windows, else `/`.
 pub fn detect_roots() -> Vec<PathBuf> {
     #[cfg(windows)]
     {
@@ -800,11 +764,11 @@ fn ensure_roots(conn: &Connection, roots: &[PathBuf]) -> DbResult<Vec<ScanRoot>>
 }
 
 // ---------------------------------------------------------------------------
-// Feature-state plumbing (used by later features; covered by tests in v1)
+// Feature-state plumbing
 // ---------------------------------------------------------------------------
 
-/// Whether a derived feature row is current for a file: the row exists with a
-/// matching feature name, `schema_version`, `content_hash`, and `status = 'ready'`.
+/// Whether a derived feature row is current: it exists with a matching feature
+/// name, `schema_version`, `content_hash`, and `status = 'ready'`.
 pub fn is_feature_current(
     conn: &Connection,
     file_id: i64,
@@ -827,8 +791,8 @@ pub fn is_feature_current(
     Ok(count > 0)
 }
 
-/// Record that a feature rebuild committed successfully. Callers must only call
-/// this after the feature's tables are updated in the same transaction.
+/// Record a successful feature rebuild. Call only after the feature's tables
+/// are updated in the same transaction.
 pub fn mark_feature_ready(
     conn: &Connection,
     file_id: i64,
@@ -1004,15 +968,10 @@ struct SourceBlock {
     anchor: Option<String>,
 }
 
-/// Split a document into stable, searchable chunks. Sections are delimited by
-/// headings: each heading starts a new section whose chunks carry that heading's
-/// slug as their anchor. A section longer than [`CHUNK_TARGET_BYTES`] is split at
-/// block boundaries so snippets and jump targets stay tight. Deterministic:
-/// the same input always yields the same chunks (ordinals, ranges, hashes).
-///
-/// Heading slugs are computed with the renderer's own `unique_heading_slug` over
-/// the renderer's parser options, so a chunk's anchor matches the `id` the reader
-/// gives that heading and `window.leafScrollToFragment` can land on it.
+/// Split a document into searchable chunks, delimited by headings; each chunk
+/// carries its heading's slug as its anchor. A section over [`CHUNK_TARGET_BYTES`]
+/// splits at block boundaries. Deterministic. Slugs match the renderer's own
+/// `unique_heading_slug`, so `leafScrollToFragment` can land on the heading.
 pub fn chunk_file(content: &str) -> Vec<Chunk> {
     let line_starts = line_starts_of(content);
     let blocks = collect_source_blocks(content);
@@ -1046,8 +1005,8 @@ pub fn chunk_file(content: &str) -> Vec<Chunk> {
 
     for block in blocks {
         if block.is_heading {
-            // A heading starts a new section: flush the previous one, then begin
-            // a fresh chunk that opens with the heading line itself.
+            // A heading starts a new section: flush the previous, then open a
+            // fresh chunk with the heading line.
             flush(
                 &mut chunks,
                 &mut ordinal,
@@ -1089,9 +1048,8 @@ pub fn chunk_file(content: &str) -> Vec<Chunk> {
     chunks
 }
 
-/// Walk the document at the renderer's parser options and record each top-level
-/// block's byte range, tagging headings with their rendered slug. Slugs use a
-/// per-document `seen` set so duplicates get the same `-1`/`-2` suffixes the
+/// Record each top-level block's byte range, tagging headings with their slug.
+/// A per-document `seen` set gives duplicates the same `-1`/`-2` suffixes the
 /// renderer assigns.
 fn collect_source_blocks(content: &str) -> Vec<SourceBlock> {
     use pulldown_cmark::{Event, Parser, Tag};
@@ -1150,11 +1108,9 @@ fn collect_source_blocks(content: &str) -> Vec<SourceBlock> {
     blocks
 }
 
-/// Transactionally replace one file's chunks, preserving `chunks.id` for surviving
-/// `(file_id, ordinal)` rows. Rows whose ordinal still exists are updated in place
-/// only when something changed (so embeddings keyed on `chunks.id`/`text_hash`
-/// keep their vectors); new ordinals are inserted; removed ordinals are deleted.
-/// The `chunks_ai`/`ad`/`au` triggers keep `chunks_fts` in sync.
+/// Replace one file's chunks, preserving `chunks.id` for surviving `(file_id,
+/// ordinal)` rows: surviving ordinals update in place only when changed, new
+/// ones insert, removed ones delete. The triggers keep `chunks_fts` in sync.
 pub fn replace_chunks(conn: &Connection, file_id: i64, chunks: &[Chunk]) -> DbResult<()> {
     struct ExistingChunk {
         start_line: i64,
@@ -1258,14 +1214,12 @@ fn delete_chunks(conn: &Connection, file_id: i64) -> DbResult<()> {
 // Frontmatter
 // ---------------------------------------------------------------------------
 //
-// Parser scope (the plan's documented-subset option, chosen over a YAML crate to
-// keep this pure-Rust and dependency-free):
+// Parser scope (a documented subset, kept pure-Rust rather than a YAML crate):
 //   - `key: value`
 //   - `key: [a, b, c]`
 //   - `key:` followed by `- item` block-list entries
-//   - strings, booleans, numbers, and dates are all stored as text
-// Unrecognized lines are skipped, not fatal: malformed frontmatter never fails
-// the file. Keys are normalized to lowercase so filters are case-insensitive.
+//   - all scalars stored as text
+// Unrecognized lines are skipped, never fatal. Keys are lowercased.
 
 /// The leading frontmatter block's inner text (between the `---` fences), with
 /// fences and any UTF-8 BOM stripped.
@@ -1275,16 +1229,14 @@ pub struct FrontmatterBlock {
 }
 
 /// One normalized frontmatter field. `key` is lowercase; a list value expands to
-/// one field per item. Both strings are file-derived and untrusted; the frontend
-/// escapes them before the DOM.
+/// one field per item. Untrusted; the frontend escapes before the DOM.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FrontmatterField {
     pub key: String,
     pub value: String,
 }
 
-/// The normalized output of parsing a frontmatter block: the storage and
-/// filtering path depends on this shape, so keep it stable.
+/// The normalized output of parsing a frontmatter block.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct ParsedFrontmatter {
     pub fields: Vec<FrontmatterField>,
@@ -1307,15 +1259,13 @@ impl std::fmt::Display for MetadataError {
     }
 }
 
-/// Extract the leading frontmatter block, if any. Detected only when `---` is the
-/// very first line of the file (after an optional UTF-8 BOM) and a later `---`
-/// line closes it. A `---` thematic break deeper in the document is body content,
-/// not metadata, because extraction stops at the first closing fence.
+/// Extract the leading frontmatter block, if any. Detected only when `---` is
+/// the first line (after an optional BOM) and a later `---` closes it; a `---`
+/// deeper in the document is body content.
 pub fn extract_frontmatter(text: &str) -> Option<FrontmatterBlock> {
     let text = text.strip_prefix('\u{feff}').unwrap_or(text);
     let mut lines = text.lines();
-    // `str::lines` strips a trailing `\r`, so CRLF files work; trailing spaces on
-    // the fence are tolerated.
+    // `str::lines` strips trailing `\r` (CRLF works); fence trailing spaces tolerated.
     if lines.next()?.trim_end() != "---" {
         return None;
     }
@@ -1354,10 +1304,9 @@ fn parse_inline_array(inner: &str) -> Vec<String> {
         .collect()
 }
 
-/// Parse a frontmatter block into normalized key/value fields using the
-/// documented subset. Unrecognized lines are skipped. Returns `Err` only when the
-/// block has content but nothing at all parsed as a mapping, so the caller can
-/// note the warning; the file is still indexed either way.
+/// Parse a frontmatter block into normalized key/value fields. Unrecognized
+/// lines are skipped. Returns `Err` only when the block has content but nothing
+/// parsed as a mapping (the file is still indexed either way).
 pub fn parse_frontmatter(block: &FrontmatterBlock) -> Result<ParsedFrontmatter, MetadataError> {
     let mut fields: Vec<FrontmatterField> = Vec::new();
     let mut bad_lines = 0usize;
@@ -1435,9 +1384,8 @@ pub fn parse_frontmatter(block: &FrontmatterBlock) -> Result<ParsedFrontmatter, 
     Ok(ParsedFrontmatter { fields })
 }
 
-/// Transactionally replace one file's frontmatter rows. `INSERT OR IGNORE`
-/// collapses any duplicate (key, value) pairs against the composite primary key.
-/// Keys are already lowercased by [`parse_frontmatter`].
+/// Replace one file's frontmatter rows. `INSERT OR IGNORE` collapses duplicate
+/// (key, value) pairs; keys are already lowercased by [`parse_frontmatter`].
 pub fn replace_frontmatter(
     conn: &Connection,
     file_id: i64,
@@ -1468,9 +1416,8 @@ fn delete_frontmatter(conn: &Connection, file_id: i64) -> DbResult<()> {
     Ok(())
 }
 
-/// Extract and parse a file's leading frontmatter into normalized fields. Always
-/// returns a (possibly empty) vector: a malformed block yields no fields but never
-/// fails the file.
+/// Extract and parse a file's frontmatter into fields; a malformed block yields
+/// no fields but never fails the file.
 fn frontmatter_fields(content: &str) -> Vec<FrontmatterField> {
     match extract_frontmatter(content) {
         Some(block) => parse_frontmatter(&block).unwrap_or_default().fields,
@@ -1482,12 +1429,9 @@ fn frontmatter_fields(content: &str) -> Vec<FrontmatterField> {
 // Link extraction (doc-to-doc graph edges)
 // ---------------------------------------------------------------------------
 
-/// One outgoing link discovered in a document. Exactly one hint is set:
-/// `target_abs` is a resolved absolute path (relative Markdown / HTML / TEI
-/// links), `target_name` a normalized note name (`[[wiki]]` links). Both are
-/// *resolution hints* — matched to a real file id in Rust at graph-build time —
-/// so external and dangling links persist without a target row and nothing needs
-/// rewriting when the target file later appears or moves.
+/// One outgoing link. Exactly one hint is set: `target_abs` (a resolved absolute
+/// path) or `target_name` (a `[[wiki]]` note name). Both are matched to a file id
+/// at graph-build time, so dangling links persist without rewriting.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DocLink {
     pub target_abs: Option<String>,
@@ -1495,11 +1439,9 @@ pub struct DocLink {
     pub raw: String,
 }
 
-/// Extract a document's outgoing doc-to-doc links, dispatching on file type.
-/// Markdown gets Markdown links, literal `<a href>`, and `[[wiki]]` links; TEI
-/// XML gets `target=`/`href=` attributes (`<ref>`, `<ptr>`, `<a>`). Returns links
-/// deduplicated by resolved target so one edge is drawn even when a file links a
-/// neighbour many times.
+/// Extract a document's outgoing links, dispatching on file type. Markdown gets
+/// Markdown links, `<a href>`, and `[[wiki]]`; XML gets `target=`/`href=` attrs.
+/// Deduplicated by resolved target so a repeated link draws one edge.
 fn document_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
     let mut links = if is_xml_file(source_abs) {
         xml_links(content, source_abs)
@@ -1515,9 +1457,8 @@ fn dedup_links(links: &mut Vec<DocLink>) {
     links.retain(|link| seen.insert((link.target_abs.clone(), link.target_name.clone())));
 }
 
-/// Markdown link destinations (`[text](dest)`, autolinks, reference links) come
-/// from the real parser; literal `<a href>` and `[[wiki]]` links are not Markdown
-/// link tags, so they are scanned from the source separately.
+/// Markdown link destinations come from the parser; `<a href>` and `[[wiki]]`
+/// aren't link tags, so they're scanned from the source separately.
 fn markdown_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
     use pulldown_cmark::{Event, Parser, Tag};
     let mut out = Vec::new();
@@ -1556,9 +1497,8 @@ fn push_path_target(out: &mut Vec<DocLink>, raw: &str, source_abs: &Path) {
     }
 }
 
-/// Scan for `<... attr="value" ...>` (single or double quoted) and push each value
-/// as a path target. A lightweight lexical scan, not a full HTML/XML parse: enough
-/// for the anchor/ref/ptr elements documents actually use, and it never fails.
+/// Scan for `<... attr="value" ...>` and push each value as a path target. A
+/// lexical scan, not a full parse: enough for the anchor/ref/ptr elements used.
 fn collect_attr_targets(content: &str, attr: &str, source_abs: &Path, out: &mut Vec<DocLink>) {
     let needle = format!("{attr}=");
     let bytes = content.as_bytes();
@@ -1617,9 +1557,8 @@ fn collect_wiki_links(content: &str, out: &mut Vec<DocLink>) {
     }
 }
 
-/// True when `target` begins with a URL scheme (`http:`, `mailto:`, `data:`, …),
-/// meaning it does not point at a local document. Requires at least two scheme
-/// characters so a Windows drive path (`C:\...`) is treated as a path, not a URL.
+/// True when `target` begins with a URL scheme (not a local document). Requires
+/// 2+ scheme chars so a Windows drive path (`C:\...`) reads as a path, not a URL.
 fn has_url_scheme(target: &str) -> bool {
     let bytes = target.as_bytes();
     for (i, &c) in bytes.iter().enumerate() {
@@ -1635,9 +1574,8 @@ fn has_url_scheme(target: &str) -> bool {
     false
 }
 
-/// Resolve a relative link target to an absolute path string in the same normal
-/// form the crawl stores, stripping any `#fragment`/`?query` and percent-decoding.
-/// Returns `None` for anchor-only or path-less targets.
+/// Resolve a relative link target to an absolute path string (crawl normal form),
+/// stripping `#fragment`/`?query` and percent-decoding. `None` for path-less targets.
 fn resolve_path_target(raw: &str, source_abs: &Path) -> Option<String> {
     let without_fragment = raw.split(['#', '?']).next().unwrap_or("").trim();
     if without_fragment.is_empty() {
@@ -1700,8 +1638,8 @@ fn normalize_name_key(name: &str) -> String {
     name.trim().to_lowercase()
 }
 
-/// Persist a file's outgoing links, replacing any prior rows. Ordinals are the
-/// vector index, giving stable per-file primary keys.
+/// Persist a file's outgoing links, replacing prior rows. Ordinal is the vector
+/// index, giving stable per-file primary keys.
 fn replace_links(conn: &Connection, file_id: i64, links: &[DocLink]) -> DbResult<()> {
     conn.execute(
         "DELETE FROM links WHERE from_file_id = ?1",
@@ -1738,10 +1676,8 @@ fn delete_links(conn: &Connection, file_id: i64) -> DbResult<()> {
 // Search
 // ---------------------------------------------------------------------------
 
-/// Split raw user input into plain search terms: whitespace-separated, with FTS
-/// structural characters dropped (treated as literal text, not operators) and
-/// empties removed. The shared basis for both the FTS `MATCH` query and the
-/// filename match.
+/// Split user input into plain search terms: whitespace-separated, FTS operator
+/// characters dropped. Shared by the FTS `MATCH` query and the filename match.
 fn query_terms(query: &str) -> Vec<String> {
     query
         .split_whitespace()
@@ -1760,11 +1696,9 @@ fn query_terms(query: &str) -> Vec<String> {
         .collect()
 }
 
-/// Turn raw user input into a safe FTS5 `MATCH` expression, or `None` for blank
-/// input or input that is nothing but operator punctuation. Each term becomes a
-/// quoted prefix token, so punctuation, stray quotes, and operators are literal
-/// text rather than interpreted — keyword search never collapses into one
-/// mandatory phrase.
+/// Turn user input into a safe FTS5 `MATCH` expression, or `None` for blank /
+/// operator-only input. Each term becomes a quoted prefix token, so punctuation
+/// and operators are literal text.
 pub fn escape_fts_query(query: &str) -> Option<String> {
     let terms = query_terms(query);
     if terms.is_empty() {
@@ -1780,21 +1714,16 @@ pub fn escape_fts_query(query: &str) -> Option<String> {
     }
 }
 
-/// Escape the LIKE metacharacters in a term so a query like `a_b` matches the
-/// literal characters rather than the single-char wildcard. Paired with
-/// `ESCAPE '\'` in the SQL.
+/// Escape LIKE metacharacters so `a_b` matches literally. Paired with `ESCAPE '\'`.
 fn like_escape(term: &str) -> String {
     term.replace('\\', "\\\\")
         .replace('%', "\\%")
         .replace('_', "\\_")
 }
 
-/// Files whose name, title, or relative path contains every term. A filename
-/// match is a strong signal, so these lead the results. One hit per file, opened
-/// at the top (no heading anchor), with the relative path as the snippet.
-/// Build a ` AND f.abs_path IN (…)` fragment plus its bound values that restricts
-/// results to `scope`. `None` scopes to the whole library (empty fragment); an
-/// empty slice matches nothing (`AND 0`) — SQLite rejects a literal `IN ()`.
+/// Build an ` AND f.abs_path IN (…)` fragment plus bound values restricting
+/// results to `scope`. `None` = whole library (empty fragment); an empty slice
+/// matches nothing (`AND 0`, since SQLite rejects a literal `IN ()`).
 fn scope_clause(scope: Option<&[String]>) -> (String, Vec<Value>) {
     match scope {
         None => (String::new(), Vec::new()),
@@ -2061,10 +1990,7 @@ fn write_file_record(
             )
             .map_err(to_err)?;
         }
-        // Rebuild derived features from the same contents, marking each ready
-        // only after its tables commit (here, within this same transaction).
-        // Full-text search diffs this file's chunks; frontmatter replaces its
-        // key/value rows; then both record readiness.
+        // Rebuild derived features and record readiness in this same transaction.
         replace_chunks(&tx, file_id, chunks)?;
         replace_frontmatter(&tx, file_id, frontmatter)?;
         replace_links(&tx, file_id, links)?;
@@ -2080,8 +2006,8 @@ fn write_file_record(
             mark_feature_ready(&tx, file_id, LINKS_FEATURE, LINKS_SCHEMA_VERSION, hash)?;
         }
     } else {
-        // A file leaving `ok` (unreadable) loses its feature readiness
-        // and its derived data in the same transaction that updates its status.
+        // A file leaving `ok` loses its derived data and feature readiness in the
+        // same transaction as the status update.
         delete_chunks(&tx, file_id)?;
         delete_frontmatter(&tx, file_id)?;
         delete_links(&tx, file_id)?;
@@ -2104,14 +2030,13 @@ fn mark_root_completed(conn: &Connection, scan_run_id: i64, root_id: i64) -> DbR
     Ok(())
 }
 
-/// Mark files under a completed root missing when they were not seen in this
-/// scan. Clears their feature readiness in the same transaction. Only ever
-/// touches `ok` rows, so permission-denied skips and failed roots never demote.
+/// Mark `ok` files under a completed root missing when they weren't seen this
+/// scan, clearing their derived data too. Only touches `ok` rows, so skipped or
+/// failed roots never demote.
 fn mark_missing_for_root(conn: &mut Connection, root_id: i64, scan_run_id: i64) -> DbResult<()> {
     let tx = conn.transaction().map_err(to_err)?;
-    // Drop derived data for the files about to be demoted, in the same
-    // transaction. The predicate matches the status update below (still `ok`,
-    // not seen this scan); `chunks_ad` clears their FTS rows.
+    // Drop derived data for the files about to be demoted (`chunks_ad` clears
+    // their FTS rows); the predicate matches the status update below.
     tx.execute(
         "DELETE FROM chunks WHERE file_id IN (
             SELECT id FROM files
@@ -2198,9 +2123,8 @@ fn folder_to_node(folder: FolderBuild) -> FileTreeNode {
     }
 }
 
-/// Build the pruned folder/file forest from the `ok` file rows. A folder node
-/// exists only as an ancestor of an included file, so empty branches never
-/// appear. Roots are top-level nodes labelled from `scan_roots.path`.
+/// Build the pruned folder/file forest from the `ok` file rows. A folder exists
+/// only as an ancestor of an included file, so empty branches never appear.
 pub fn build_tree(conn: &Connection) -> DbResult<Vec<FileTreeNode>> {
     let mut stmt = conn
         .prepare(
@@ -2284,11 +2208,9 @@ fn graph_label(title: Option<&str>, filename: &str) -> String {
 }
 
 /// Build the library link graph: one node per `ok` document, one undirected edge
-/// per doc-to-doc link that resolves to another indexed document. Path links match
-/// a file's stored `abs_path` (exact, then case-insensitively for Windows);
-/// `[[wiki]]` links match a file's name key (filename stem). External and dangling
-/// links contribute no edge. `request` chooses the slice: a focused neighborhood
-/// around seed documents, the densest N documents, or everything (see
+/// per link resolving to another indexed document. Path links match `abs_path`
+/// (exact, then case-insensitively); `[[wiki]]` links match a filename stem.
+/// Dangling links contribute no edge. `request` chooses the slice (see
 /// [`GraphRequest`]).
 pub fn build_graph(conn: &Connection, request: &GraphRequest) -> DbResult<DocumentGraph> {
     // 1. Load every indexed document and index it by id + resolution keys.
@@ -2495,9 +2417,8 @@ fn process_file(job: &ParseJob, cancel: &AtomicBool) -> FileOutcome {
     if cancel.load(Ordering::SeqCst) {
         return FileOutcome::Cancelled;
     }
-    // Read at most MAX_INDEX_BYTES so a huge file never loads whole into memory.
-    // A file over the cap is indexed from this leading prefix rather than skipped,
-    // so it still shows up in the library and is searchable up to the cap.
+    // Read at most MAX_INDEX_BYTES; a file over the cap is indexed from this
+    // prefix rather than skipped, so it still appears and is searchable.
     let mut bytes = Vec::new();
     match std::fs::File::open(io_path(&job.abs_path)) {
         Ok(file) => {
@@ -2507,30 +2428,26 @@ fn process_file(job: &ParseJob, cancel: &AtomicBool) -> FileOutcome {
         }
         Err(_) => return FileOutcome::Unreadable,
     }
-    // `take` stops at the cap, so a file at or beyond it was cut off mid-content
-    // and its trailing bytes may be a partial UTF-8 codepoint.
+    // A file at/beyond the cap was cut off and may end in a partial codepoint.
     let truncated = bytes.len() as u64 >= MAX_INDEX_BYTES;
     if bytes.contains(&0u8) {
         return FileOutcome::Unreadable;
     }
     let content = match std::str::from_utf8(&bytes) {
         Ok(text) => text.to_string(),
-        // A truncated read can split a multibyte char at the end; keep the valid
-        // prefix. A file read whole must be valid UTF-8 or it cannot be rendered.
+        // A truncated read may split a char at the end; keep the valid prefix.
         Err(error) if truncated => {
             String::from_utf8_lossy(&bytes[..error.valid_up_to()]).into_owned()
         }
         Err(_) => return FileOutcome::Unreadable,
     };
     let content_hash = blake3::hash(content.as_bytes()).to_hex().to_string();
-    // Parsing is pure CPU work, so it runs here on the parse pool; the writer
-    // thread only persists the result transactionally. Link extraction runs for
-    // every indexed type so the graph view can edge Markdown and TEI XML alike.
+    // Parsing runs here on the parse pool; the writer thread only persists.
+    // Link extraction runs for every type so the graph can edge MD and XML.
     let links = document_links(&content, &job.abs_path);
     if is_xml_file(&job.abs_path) {
-        // TEI XML: take the header title and the link graph. Full-text chunks and
-        // frontmatter stay empty for v1 — XML joins the library and graph, but its
-        // body is not chunked for search yet.
+        // TEI XML: take the header title and links; body isn't chunked for
+        // search yet, so chunks/frontmatter stay empty.
         let (title, _body) = crate::render_tei_body(&content);
         FileOutcome::Indexed {
             content_hash,
@@ -2697,9 +2614,8 @@ fn run_scan(
                 Ok(entries) => entries,
                 Err(error) => {
                     if depth == 0 || !is_benign_dir_error(&error) {
-                        // Cannot list the root, or a non-benign error deeper (a
-                        // drive going away): treat the root as failed so its
-                        // files are never demoted on this partial run.
+                        // Root unreadable, or a non-benign error deeper: fail the
+                        // root so its files aren't demoted on this partial run.
                         root_failed = true;
                         break;
                     }
@@ -2816,8 +2732,8 @@ fn run_scan(
             }
         }
 
-        // Drain every result dispatched for this root (workers always send one
-        // result per job, even when cancelling) before deciding completion.
+        // Drain every dispatched result for this root before deciding completion
+        // (workers always send one result per job, even when cancelling).
         while written < dispatched {
             match result_rx.recv() {
                 Ok(result) => {
@@ -2828,8 +2744,8 @@ fn run_scan(
             }
         }
 
-        // Missing-marking is gated on per-root completion: a cancelled or failed
-        // root keeps completed = 0 and never demotes its files.
+        // Missing-marking is gated on per-root completion, so a cancelled or
+        // failed root never demotes its files.
         if !cancel.load(Ordering::SeqCst) && !root_failed {
             mark_root_completed(conn, scan_run_id, root.id)?;
             mark_missing_for_root(conn, root.id, scan_run_id)?;
@@ -2877,10 +2793,9 @@ fn perform_scan(conn: &mut Connection, cancel: &Arc<AtomicBool>, sink: &dyn Fn(I
     }
 }
 
-/// Resolve a path to a normalized absolute form for manifest storage: make it
-/// absolute, then strip any `\\?\` verbatim prefix so it matches the crawl's
-/// convention. `None` when there is no current directory to anchor a relative
-/// path against.
+/// Normalize a path for manifest storage: make it absolute, then strip any
+/// `\\?\` prefix to match the crawl's convention. `None` when a relative path
+/// has no current directory to anchor against.
 fn resolve_for_manifest(path: &Path) -> Option<PathBuf> {
     let abs = if path.is_absolute() {
         path.to_path_buf()
@@ -2905,11 +2820,9 @@ fn emit_tree(conn: &Connection, sink: &dyn Fn(IndexerEvent)) {
     }
 }
 
-/// Bring one path in the manifest up to date with disk, outside any crawl: index
-/// it when it is a readable Markdown file, or forget it when it is gone. This is
-/// the live path for an opened file, a file created/edited in the watched folder,
-/// and the right-click delete/rename actions. The pane is refreshed only when the
-/// manifest actually changed.
+/// Bring one path up to date with disk, outside any crawl: index a readable
+/// file or forget a gone one. The live path for opened/edited files and the
+/// right-click actions.
 fn sync_markdown_file(conn: &mut Connection, abs: &Path) -> DbResult<()> {
     let Some(root) = abs.ancestors().last().map(Path::to_path_buf) else {
         return Ok(());
@@ -3089,10 +3002,9 @@ fn sync_single_file(conn: &mut Connection, path: &Path, sink: &dyn Fn(IndexerEve
     }
 }
 
-/// Drop one file from the manifest by its normalized absolute path. The foreign
-/// keys cascade to its headings, chunks, frontmatter, and feature state. The pane
-/// refreshes only when a row was actually removed, so a stray event for an
-/// untracked path is a cheap no-op.
+/// Drop one file from the manifest; foreign keys cascade to its headings,
+/// chunks, frontmatter, and feature state. Refreshes the pane only when a row
+/// was removed.
 fn forget_single_file(conn: &mut Connection, abs: &Path, sink: &dyn Fn(IndexerEvent)) {
     let removed = match conn.execute(
         "DELETE FROM files WHERE abs_path = ?1",
@@ -3130,10 +3042,8 @@ enum ReaderCmd {
 }
 
 /// Owns the indexer's threads: a writer/coordinator (write connection + crawl)
-/// and a reader (read-only connection) for tree queries. The host drives it with
-/// [`set_indexing_enabled`](IndexerWorker::set_indexing_enabled) and
-/// [`request_tree`](IndexerWorker::request_tree); results arrive through the sink
-/// passed to [`new`](IndexerWorker::new).
+/// and a reader (read-only connection) for tree/search/graph queries. Results
+/// arrive through the sink passed to [`new`](IndexerWorker::new).
 pub struct IndexerWorker {
     writer_tx: Option<mpsc::Sender<WriterCmd>>,
     reader_tx: Option<mpsc::Sender<ReaderCmd>>,
@@ -3165,8 +3075,8 @@ impl IndexerWorker {
                         perform_scan(&mut conn, &writer_cancel, &writer_sink);
                     }
                     WriterCmd::SyncPath(path) => {
-                        // Bring this one path up to date (index or forget) into the
-                        // manifest, even when the "Index entire device" toggle is off.
+                        // Index or forget this one path, even when the "Index
+                        // entire device" toggle is off.
                         sync_single_file(&mut conn, &path, &writer_sink);
                     }
                 }
@@ -3266,20 +3176,17 @@ impl IndexerWorker {
         }
     }
 
-    /// Build the library link graph on the read-only connection. The result
-    /// arrives through the sink as [`IndexerEvent::Graph`], so it never blocks the
-    /// UI thread or a running crawl.
+    /// Build the library link graph on the read-only connection; the result
+    /// arrives via the sink as [`IndexerEvent::Graph`].
     pub fn request_graph(&self, request: GraphRequest) {
         if let Some(tx) = &self.reader_tx {
             let _ = tx.send(ReaderCmd::Graph(request));
         }
     }
 
-    /// Bring one path up to date in the manifest now (index it if present, forget
-    /// it if gone), independent of the device-wide toggle. Used when a file is
-    /// opened, when one changes in the watched folder, and after a right-click
-    /// delete or rename — so the library pane stays current with "Index entire
-    /// device" off.
+    /// Bring one path up to date now (index if present, forget if gone),
+    /// independent of the device-wide toggle. Keeps the pane current with "Index
+    /// entire device" off.
     pub fn sync_path(&self, path: PathBuf) {
         if let Some(tx) = &self.writer_tx {
             let _ = tx.send(WriterCmd::SyncPath(path));
@@ -3549,9 +3456,8 @@ mod tests {
 
     #[test]
     fn manual_index_adds_a_single_file_in_normal_form() {
-        // The live-update path (a file created in the watched folder) indexes one
-        // file outside any crawl; it must land in the manifest at the exact path
-        // passed, ready for the tree.
+        // The live-update path indexes one file outside any crawl; it must land
+        // in the manifest at the exact path passed.
         let dir = unique_dir("manual");
         let file = dir.join("note.md");
         write_file(&file, "# Note\n");
@@ -3623,10 +3529,9 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn manual_index_normalizes_a_verbatim_watcher_path() {
-        // The file watcher watches a `fs::canonicalize`d directory, so it reports
-        // changed files with the `\\?\` verbatim prefix. Indexing that path must
-        // store normal form under the existing drive root — not a duplicate
-        // `\\?\C:` root the library views never show (the live-update bug).
+        // The file watcher reports paths with the `\\?\` prefix; indexing one
+        // must store normal form under the existing drive root, not a duplicate
+        // `\\?\C:` root.
         let dir = unique_dir("verbatim");
         let file = dir.join("note.md");
         write_file(&file, "# Note\n");
@@ -3770,9 +3675,8 @@ mod tests {
 
     #[test]
     fn version_bump_reparses_stale_files_with_unchanged_bytes() {
-        // Simulate a CURRENT_DERIVED_VERSION bump by ageing a row's
-        // derived_version: the next scan must reparse it even though mtime + size
-        // did not change, restoring derived_version to current.
+        // Age a row's derived_version: the next scan must reparse it despite
+        // unchanged mtime + size, restoring it to current.
         let dir = unique_dir("bump");
         let root = dir.join("vault");
         let note = root.join("note.md");
@@ -3994,9 +3898,8 @@ mod tests {
 
     #[test]
     fn sync_forgets_a_file_deleted_from_disk() {
-        // After a right-click delete (or an external delete) the file is gone from
-        // disk; syncing its path must drop it from the manifest and the tree so the
-        // pane reflects the removal without a full rescan.
+        // After a delete the file is gone from disk; syncing its path must drop
+        // it from the manifest and tree without a full rescan.
         let dir = unique_dir("forget");
         let root = dir.join("vault");
         let keep = root.join("keep.md");
@@ -4055,9 +3958,8 @@ mod tests {
 
     #[test]
     fn chunk_anchors_match_renderer_heading_slugs() {
-        // The anchor each chunk carries must equal the id the reader gives that
-        // heading, so a result can jump to it. Duplicate and punctuated headings
-        // exercise the slug dedup and character rules shared with the renderer.
+        // Each chunk's anchor must equal the id the reader gives that heading.
+        // Duplicate and punctuated headings exercise the shared slug rules.
         let content = "\
 # Hello World
 
@@ -4383,8 +4285,7 @@ final body
     #[test]
     fn cjk_search_matches_leading_prefix_documented_behavior() {
         // CJK is best-effort under unicode61: an unspaced Han run is one token, so
-        // a query matches when it is a leading prefix of that run but not when it
-        // sits mid-run. This pins the shipped behavior (Chinese is deprioritized).
+        // a query matches only as a leading prefix. Pins the shipped behavior.
         let dir = unique_dir("cjk");
         let root = dir.join("vault");
         write_file(&root.join("zh.md"), "# 测试\n\n安装程序很好用\n");
@@ -4629,9 +4530,8 @@ final body
 
     #[test]
     fn stale_frontmatter_feature_forces_a_reparse() {
-        // Backfill/recovery: a file whose frontmatter feature row is stale (a
-        // pre-feature file, or a schema bump) is reparsed once even though its
-        // mtime + size did not change.
+        // Backfill: a file with a stale frontmatter feature row is reparsed once
+        // despite unchanged mtime + size.
         let dir = unique_dir("fm-backfill");
         let root = dir.join("vault");
         let note = root.join("note.md");
@@ -4641,8 +4541,8 @@ final body
         let abs = path_to_string(&note);
         let file_id = file_id_of(&conn, &abs);
 
-        // Simulate a pre-feature file: drop the frontmatter rows and its feature
-        // readiness without touching mtime/size.
+        // Simulate a pre-feature file: drop its frontmatter rows and readiness
+        // without touching mtime/size.
         conn.execute(
             "DELETE FROM frontmatter WHERE file_id = ?1",
             params![file_id],

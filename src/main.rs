@@ -53,9 +53,9 @@ use wry::{
 enum UserEvent {
     OpenPicker,
     OpenPath(PathBuf),
-    /// The webview finished its first page load, so its JS document-render hooks
-    /// now exist. Sent once on boot to flush a file passed on the command line
-    /// (e.g. Explorer "Open with"), whose render would otherwise race the load.
+    /// The webview finished its first page load, so its render hooks now exist.
+    /// Sent once on boot to flush a file passed on the command line, whose render
+    /// would otherwise race the load.
     WebviewReady,
     /// A second launch of the app forwarded a request to this (primary) instance
     /// but carried no file — bring the existing window to the front.
@@ -88,15 +88,13 @@ enum UserEvent {
         href: String,
         scroll_anchor: ScrollAnchor,
     },
-    /// A glossary link was clicked: show the term in a bottom sheet over the
-    /// current document instead of opening it as a tab. `href` points at the
-    /// glossary file plus the term's `#anchor`, relative to the active document.
+    /// A glossary link was clicked: show the term in a bottom sheet, not a new
+    /// tab. `href` is the glossary file plus `#anchor`, relative to the doc.
     OpenGlossary {
         href: String,
     },
-    /// The hover tooltip is over a link to another document and wants its line
-    /// count. `href` is resolved against the active document; `token` correlates
-    /// the answer with the hover that asked (a later hover bumps the token).
+    /// A hover tooltip wants a linked document's line count. `href` resolves
+    /// against the active doc; `token` correlates the answer with the hover.
     CountLines {
         href: String,
         token: u64,
@@ -138,9 +136,8 @@ enum UserEvent {
     SetThemeMode {
         mode: String,
     },
-    /// Paint the native title bar to match the page and the window border to the
-    /// theme's divider color. The webview reports both resolved colors whenever
-    /// the theme changes.
+    /// Paint the native title bar to the page color and the window border to the
+    /// theme's divider color, both reported by the webview on theme change.
     SetWindowChrome {
         r: u8,
         g: u8,
@@ -150,8 +147,8 @@ enum UserEvent {
         border_b: u8,
         dark: bool,
     },
-    /// Persist the library view choice plus its restorable state: the Tree
-    /// view's expanded folders and the Project view's current folder.
+    /// Persist the library view choice plus the Tree view's expanded folders
+    /// and the Project view's current folder.
     SetLibraryState {
         view: String,
         expanded: Vec<String>,
@@ -164,9 +161,8 @@ enum UserEvent {
     },
     /// Request the current library tree from the indexer's read connection.
     GetFileTree,
-    /// Request the library link graph from the indexer's read connection. `scope`
-    /// is the persisted graph size; `seeds` are the focus documents (open document,
-    /// or the recents on the start screen) used only by the Focus scope.
+    /// Request the library link graph. `scope` is the persisted graph size;
+    /// `seeds` are the focus documents, used only by the Focus scope.
     GetGraph {
         scope: String,
         seeds: Vec<String>,
@@ -175,14 +171,13 @@ enum UserEvent {
     SetGraphScope {
         scope: String,
     },
-    /// Run a full-text search on the indexer's read connection. `scope`, when
-    /// present, restricts results to those document paths (the Focus search scope).
+    /// Run a full-text search. `scope`, when present, restricts results to those
+    /// document paths (the Focus search scope).
     Search {
         query: String,
         scope: Option<Vec<String>>,
     },
-    /// Compute Previous/Next pager links without blocking the initial document
-    /// render.
+    /// Compute Previous/Next pager links without blocking the initial render.
     LoadPager {
         path: PathBuf,
     },
@@ -205,8 +200,8 @@ enum UserEvent {
     ToggleTask {
         index: usize,
     },
-    /// Splice an inline reading-view edit into the buffer over `[start, end)`
-    /// (source byte offsets), replacing that span with `text`.
+    /// Splice an inline reading-view edit over `[start, end)` (source byte
+    /// offsets), replacing that span with `text`.
     EditBlock {
         start: usize,
         end: usize,
@@ -372,14 +367,10 @@ fn load_window_icon() -> Option<Icon> {
     Icon::from_rgba(buffer, info.width, info.height).ok()
 }
 
-/// Paint the native Windows title bar to match the in-app page background and the
-/// window border to the theme's divider color. `r`/`g`/`b` are the page's
-/// resolved background color, `border_r`/`border_g`/`border_b` the resolved
-/// divider color, and `dark` the resolved light/dark state — all reported by the
-/// webview on every theme change. Caption/border/text colors require Windows 11
-/// (build 22000+); on older builds `DwmSetWindowAttribute` returns an error we
-/// ignore, so the call is a harmless no-op there (immersive dark mode still
-/// applies on Windows 10 1809+).
+/// Paint the native Windows title bar to the page background and the window
+/// border to the theme's divider color, all reported by the webview on theme
+/// change. Caption/border/text colors need Windows 11 (build 22000+); older
+/// builds ignore the error, so it's a no-op there (dark mode still applies).
 #[cfg(windows)]
 #[allow(clippy::too_many_arguments)]
 fn apply_window_chrome(
@@ -416,19 +407,15 @@ fn apply_window_chrome(
         return;
     }
 
-    // Nudge the caption only a little off the page color so the drag bar is
-    // findable — just a touch lighter than the page on dark themes (including
-    // Dracula), a touch darker on light ones — and bias the nudge toward blue so
-    // the bar reads cooler and a bit more saturated than the page. Blend the red
-    // and green channels by a small amount and the blue channel by more, toward
-    // white on dark themes or black on light ones.
+    // Nudge the caption slightly off the page color so the drag bar is findable
+    // (lighter on dark themes, darker on light), biased toward blue for a cooler
+    // cast: blend r/g a little and b more, toward white on dark or black on light.
     let tint = |channel: u8, t: f32| -> u32 {
         let target = if dark { 255.0 } else { 0.0 };
         let value = f32::from(channel);
         (value + (target - value) * t).round().clamp(0.0, 255.0) as u32
     };
-    // Lift red/green only slightly (keep the bar close to the page and darker
-    // than a flat tint) while pushing blue further for the saturated-blue cast.
+    // Lift r/g slightly, push blue further for the saturated-blue cast.
     let (rg_t, b_t) = if dark { (0.06, 0.18) } else { (0.10, 0.02) };
     let (cap_r, cap_g, cap_b) = (tint(r, rg_t), tint(g, rg_t), tint(b, b_t));
     // COLORREF packs as 0x00BBGGRR.
@@ -441,9 +428,8 @@ fn apply_window_chrome(
     } else {
         0x0020_2020
     };
-    // The window border takes the theme's divider color so the app reads as a
-    // distinct surface against the desktop — a darker line on light themes, the
-    // blue rule on Dracula. The caption/title bar stays the page color.
+    // The window border takes the theme's divider color; the caption stays the
+    // page color.
     let border = (border_r as u32) | ((border_g as u32) << 8) | ((border_b as u32) << 16);
     let dark_flag: i32 = i32::from(dark);
 
@@ -486,8 +472,7 @@ fn apply_window_chrome(
 ) {
 }
 
-/// Write the UI toggles to disk, logging (but not propagating) any I/O error —
-/// a failed save must not take down the event loop.
+/// Write the UI toggles to disk, logging but not propagating I/O errors.
 fn persist_settings(settings: &Settings, settings_path: Option<&PathBuf>) {
     if let Some(path) = settings_path {
         if let Err(error) = save_settings(path, settings) {
@@ -497,24 +482,20 @@ fn persist_settings(settings: &Settings, settings_path: Option<&PathBuf>) {
 }
 
 fn run_app() -> Result<(), Box<dyn Error>> {
-    // A file passed on the command line (Explorer "Open with", double-click, or a
-    // shell invocation). Used both to hand off to an already-running instance and,
-    // if we are the first instance, to open on boot.
+    // A file passed on the command line. Used to hand off to a running instance,
+    // or to open on boot if we're the first instance.
     let arg_path = env::args_os().nth(1).map(PathBuf::from);
 
-    // Claim the single-instance slot. If another instance is already running, the
-    // path above was forwarded to it — exit quietly without building any UI.
-    // Held for the whole process lifetime; dropping it frees the slot. The
-    // underscore keeps it bound (a bare `_` would drop it immediately).
+    // Claim the single-instance slot. If another instance is running, the path
+    // was forwarded to it — exit without building UI. Held for the process
+    // lifetime (a bare `_` would drop it immediately, freeing the slot).
     let _instance_guard = match single_instance::acquire(arg_path.as_deref()) {
         single_instance::Acquire::Primary(guard) => guard,
         single_instance::Acquire::Forwarded => return Ok(()),
     };
 
-    // Load the persisted settings before building the window so it can reopen at
-    // the size (and maximized state) the user last left it, rather than always
-    // starting at the default. The rest of the settings ride along to the webview
-    // below via the initialization script.
+    // Load settings before building the window so it reopens at the size and
+    // maximized state the user left it. The rest ride to the webview below.
     let settings_path = settings_file_path();
     let mut settings = settings_path
         .as_ref()
@@ -555,15 +536,10 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         eprintln!("Using WebView2 user data folder: {}", path.display());
     }
 
-    // The persisted UI toggles (loaded above) are handed to the webview as an
-    // initialization script, which runs before any page script. That lets the
-    // theme bootstrap and library pane render from the saved state on the first
-    // paint — no flash of defaults, no post-load re-apply.
-    //
-    // Load the recent files now so they can ride in on the same initialization
-    // script as the settings. Injecting them after the build (via
-    // evaluate_script) raced the async page load and the recent list could come
-    // up empty when the page bootstrap ran last.
+    // The persisted toggles and recent files are handed to the webview as
+    // initialization scripts (run before any page script), so theme and library
+    // render from saved state on the first paint. Loaded here to ride in on the
+    // same scripts rather than being injected post-build, which raced the load.
     let config_path = config_file_path();
     let mut recent = config_path
         .as_ref()
@@ -593,14 +569,11 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             }
         });
 
-    // Trim WebView2's process/background footprint for a single-window, fully
-    // offline reader. Setting this replaces wry's own default arg string, so its
-    // defaults (disabling msWebOOUI/msPdfOOUI/SmartScreen, the autoplay policy)
-    // are folded back in here. Site isolation only spawns extra renderers for
-    // cross-origin content, which Leaf never has, so disabling it keeps one
-    // renderer per window without proliferation. GPU is deliberately left on —
-    // it is what keeps scrolling smooth. The renderer is kept un-backgrounded so
-    // it stays responsive even when the window is occluded or unfocused.
+    // Trim WebView2's footprint for a single-window offline reader. This replaces
+    // wry's default arg string, so its defaults (msWebOOUI/msPdfOOUI/SmartScreen
+    // off, autoplay policy) are folded back in. Site isolation is off (Leaf has
+    // no cross-origin content), GPU stays on for smooth scroll, and the renderer
+    // is un-backgrounded so it stays responsive when occluded.
     #[cfg(windows)]
     let builder = {
         use wry::WebViewBuilderExtWindows;
@@ -643,21 +616,17 @@ fn run_app() -> Result<(), Box<dyn Error>> {
 
     update_active_navigation(Some(&webview), &workspace);
 
-    // A file passed on the command line (Explorer "Open with", double-click, or a
-    // shell invocation) waits here until the webview reports its first page load
-    // finished. Sending OpenPath now would render the document via evaluate_script
-    // before the page's JS hooks exist, so it would silently land on the home
-    // screen. WebviewReady flushes it once the page is ready.
+    // A command-line file waits here until the webview reports its first page
+    // load; rendering it before the page's JS hooks exist would silently land on
+    // the home screen. WebviewReady flushes it once the page is ready.
     let mut pending_open_path = arg_path;
 
     let mut webview = Some(webview);
     let _web_context = web_context;
     let mut file_watch = FileWatch::new(proxy.clone());
 
-    // The background library indexer. It owns its own SQLite connections and
-    // threads; the worker posts results back as `UserEvent::Indexer`. The
-    // frontend requests the existing tree on boot; the host starts the launch
-    // rescan below when the persisted setting has indexing enabled.
+    // The background library indexer, owning its own SQLite connections and
+    // threads; results come back as `UserEvent::Indexer`.
     let indexer = app_data_dir().and_then(|data_dir| {
         let proxy = proxy.clone();
         match IndexerWorker::new(data_dir, move |event: IndexerEvent| {
@@ -671,18 +640,16 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         }
     });
 
-    // Start the launch rescan now if the user left indexing on. The host owns
-    // this setting, so it no longer waits for a JS round-trip on boot.
+    // Start the launch rescan now if the user left indexing on.
     if settings.indexing_enabled {
         if let Some(indexer) = indexer.as_ref() {
             indexer.set_indexing_enabled(true);
         }
     }
 
-    // The size to restore next launch: the window's inner size the last time it
-    // was *not* maximized, in logical px. Seeded from the persisted value and
-    // updated on every windowed resize, so it holds the dimensions to return to
-    // even if the window is maximized at the moment it closes.
+    // Size to restore next launch: the inner size the last time it was *not*
+    // maximized, in logical px, so a maximized-at-close window still returns to
+    // its windowed dimensions.
     let mut last_windowed_size =
         LogicalSize::new(settings.window_width as f64, settings.window_height as f64);
 
@@ -694,9 +661,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 event: WindowEvent::Resized(size),
                 ..
             } => {
-                // Remember the size only while windowed (maximized/minimized sizes
-                // are transient); scale_factor converts the physical event size to
-                // the logical size with_inner_size expects on the next launch.
+                // Remember the size only while windowed; convert the physical
+                // event size to the logical size the next launch expects.
                 if !window.is_maximized()
                     && !window.is_minimized()
                     && size.width > 0
@@ -828,9 +794,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 index,
                 scroll_anchor,
             }) => {
-                // Clicking the tab that is already active must be a no-op: no
-                // re-render, no scroll restore. Re-rendering the same document
-                // jumps the reader, which is exactly what the click shouldn't do.
+                // Clicking the active tab is a no-op; re-rendering would jump the
+                // reader.
                 if workspace.active == Some(index) {
                     return;
                 }
@@ -840,10 +805,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                     }
                 }
                 if workspace.set_active(index) {
-                    // Reopen the tab where the reader last left it. `None` the
-                    // first time we visit, which starts at the top. Restoring as
-                    // part of the render avoids racing a reset-to-top in a
-                    // separate frame.
+                    // Reopen where the reader left it (`None` starts at the top).
                     let saved = workspace
                         .tabs
                         .get(index)
@@ -896,8 +858,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 let Some(current_path) = workspace.tabs[active].history.current().cloned() else {
                     return;
                 };
-                // "Open the full glossary" sends a bare `glossary:` link; resolve it
-                // to the nearest GLOSSARY.md and open that file as an ordinary tab.
+                // A bare `glossary:` link ("open the full glossary"): resolve to
+                // the nearest GLOSSARY.md and open it as a tab.
                 if glossary_scheme_slug(&href).is_some() {
                     match nearest_glossary_file(&current_path) {
                         Some(path) if !paths_refer_to_same_document(&path, &current_path) => {
@@ -972,9 +934,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 show_glossary_entry(webview.as_ref(), &href, &current_path);
             }
             Event::UserEvent(UserEvent::CountLines { href, token }) => {
-                // Count the lines of the linked document so the hover tooltip can
-                // show its length. Only in-app Markdown links resolve to a file we
-                // read; anything else answers -1 ("unknown") and shows no count.
+                // Count the linked document's lines for the hover tooltip. Only
+                // in-app Markdown links resolve to a file; else -1 ("unknown").
                 let lines = workspace
                     .active
                     .and_then(|active| workspace.tabs[active].history.current().cloned())
@@ -1057,11 +1018,9 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 }
             }
             Event::UserEvent(UserEvent::FileChanged(changed)) => {
-                // A directory watch reports the active document and its siblings.
-                // The active document live-reloads its rendered view; a sibling
-                // change instead (re)indexes that path so the library pane stays
-                // in sync — this is how a file newly created in the folder shows
-                // up without waiting for a full device rescan.
+                // The active document live-reloads; a sibling change instead
+                // (re)indexes that path so the library pane stays in sync without
+                // a full rescan.
                 let is_active_document = workspace
                     .active
                     .and_then(|index| workspace.tabs.get(index))
@@ -1109,9 +1068,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 toggle_task_marker(webview.as_ref(), &mut workspace, index);
             }
             Event::UserEvent(UserEvent::EditBlock { start, end, text }) => {
-                // Splice the edit into the source buffer, then re-render the
-                // reading view from that buffer, preserving the reader's place.
-                // The source stays authoritative for both Markdown and XML.
+                // Splice into the source buffer, then re-render from it, keeping
+                // the reader's place. Source stays authoritative for MD and XML.
                 if apply_block_edit(&mut workspace, start, end, &text) {
                     render_active(
                         &window,
@@ -1122,16 +1080,14 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                         &local_image_source_dir,
                         ScrollIntent::Preserve,
                     );
-                    // Authoritative chrome state: whether the splice really
-                    // changed the buffer (dirty) and left an undo step decides
-                    // the Save and Undo buttons, not the frontend's guess.
+                    // Host decides the Save/Undo buttons from the real dirty and
+                    // undo state, not the frontend's guess.
                     resync_editing_state(webview.as_ref(), &workspace);
                 }
             }
             Event::UserEvent(UserEvent::UndoEdit) => {
-                // Pop the buffer back one reading-view edit, re-render from it,
-                // then resync the dirty state — undoing the only edit must also
-                // take the Save button back down.
+                // Pop the buffer back one edit, re-render, and resync so undoing
+                // the only edit also clears the Save button.
                 let undone = workspace
                     .active
                     .and_then(|index| workspace.tabs.get_mut(index))
@@ -1216,7 +1172,6 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             }
             Event::UserEvent(UserEvent::GetGraph { scope, seeds }) => {
                 if let Some(indexer) = indexer.as_ref() {
-                    // Map the persisted scope to the slice of the graph to build:
                     // Focus keeps the seed neighborhood; the rest cap the densest
                     // documents, up to XL (no cap).
                     let request = match GraphScope::from_client(&scope).unwrap_or_default() {
@@ -1284,10 +1239,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             _ => {}
         }
 
-        // Keep the watcher pointed at whatever document is now active and at the
-        // folder Project view is browsing, so the open file live-reloads and
-        // files added to the browsed folder appear without a relaunch. Cheap on
-        // every event: a no-op unless one of those changed since the last sync.
+        // Keep the watcher on the active document and the folder Project view is
+        // browsing, so both live-update. A no-op unless one changed since last sync.
         let active_path = workspace
             .active
             .and_then(|index| workspace.tabs.get(index))
@@ -1545,9 +1498,8 @@ fn pick_markdown_file() -> Option<PathBuf> {
         .pick_file()
 }
 
-/// Handle files dragged from the OS onto the window: open each Markdown file as
-/// a tab. We always return `true` to block the webview's default drop behavior,
-/// which otherwise shows a "copy" cursor and does nothing useful.
+/// Open each dropped Markdown file as a tab. Returns `true` to block the
+/// webview's default drop behavior (a useless "copy" cursor).
 fn drag_drop_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(DragDropEvent) -> bool {
     move |event| {
         if let DragDropEvent::Drop { paths, .. } = event {
@@ -1582,11 +1534,9 @@ struct Tab {
     scroll_history: ScrollHistory,
     title: String,
     saved_scroll_anchor: Option<ScrollAnchor>,
-    /// The editable source buffer for this tab, created the first time the code
-    /// view is opened and kept afterwards so unsaved edits survive toggling
-    /// views and switching tabs. `None` until the file is edited. Rust owns the
-    /// source — this is the authoritative copy a save writes and the reading
-    /// view re-renders from once it exists.
+    /// The editable source buffer, created on first edit and kept so unsaved
+    /// edits survive view toggles and tab switches. `None` until edited. The
+    /// authoritative copy a save writes and the reading view re-renders from.
     edit: Option<EditableDocument>,
     /// Whether this tab is currently showing the raw-source code view rather
     /// than the rendered reading view.
@@ -1595,9 +1545,7 @@ struct Tab {
 
 impl Tab {
     /// Whether this tab holds an edit buffer for `path` specifically. A tab
-    /// navigates across documents (links, history), but its edit buffer belongs
-    /// to ONE file — treating a leftover buffer as if it were the current
-    /// document's is what once made link navigation re-render the old page.
+    /// navigates across documents, but its edit buffer belongs to one file.
     fn has_edit_for(&self, path: &Path) -> bool {
         self.edit
             .as_ref()
@@ -1610,10 +1558,8 @@ impl Tab {
         !self.has_edit_for(path)
     }
 
-    /// The edit buffer for `path`, seeded from `contents` (the text on disk /
-    /// on screen) when there is no buffer for this document yet. Re-editing the
-    /// same document reuses the buffer so unsaved edits are preserved; editing a
-    /// DIFFERENT document after navigating replaces the stale buffer.
+    /// The edit buffer for `path`, seeded from `contents` when there's no buffer
+    /// yet. Re-editing the same document reuses it; a different document replaces it.
     fn edit_buffer(&mut self, path: &Path, contents: String) -> &mut EditableDocument {
         if self.needs_edit_seed(path) {
             self.edit = Some(EditableDocument::new(path.to_path_buf(), contents));
@@ -1670,9 +1616,8 @@ impl Workspace {
         };
     }
 
-    /// Reorder tabs by pulling the tab at `from` out and inserting it at `to`.
-    /// The active document follows its slot so the same tab stays selected.
-    /// Returns `false` when either index is out of range or nothing moves.
+    /// Move the tab at `from` to `to`, keeping the active tab selected. Returns
+    /// `false` when an index is out of range or nothing moves.
     fn move_tab(&mut self, from: usize, to: usize) -> bool {
         if from >= self.tabs.len() || to >= self.tabs.len() || from == to {
             return false;
@@ -1732,32 +1677,25 @@ fn tab_title_from_path(path: &Path) -> String {
         .unwrap_or_else(|| path.display().to_string())
 }
 
-/// Watches the folders whose changes matter and turns filesystem changes into
-/// `UserEvent::FileChanged`: the active document's directory (so the open file
-/// live-reloads) and, in Project view, the folder being browsed (so files added
-/// or removed there appear without waiting for the next launch crawl). Watching
-/// the parent directory rather than the file itself survives editors that save
-/// by writing a temp file and renaming over the original (the original file
-/// handle would otherwise go stale).
-///
-/// `active_hash` is the hash of the contents last rendered for the active
-/// document; it lets the reload path skip redundant work when a duplicate or
-/// spurious event arrives for contents that did not actually change.
+/// Turns filesystem changes into `UserEvent::FileChanged` for the active
+/// document's directory (live-reload) and, in Project view, the browsed folder.
+/// Watches the parent directory, not the file, to survive editors that save by
+/// renaming a temp file over the original.
 struct FileWatch {
     debouncer: Option<Debouncer<RecommendedWatcher>>,
     last_active: Option<PathBuf>,
-    /// Directories currently registered with the watcher, each mapped to the
-    /// recursive mode it was registered under. Recomputed on every `sync`; the
-    /// diff against the freshly desired set is what gets (un)watched.
+    /// Directories currently registered with the watcher and their recursive
+    /// mode; the diff against the desired set on each `sync` is (un)watched.
     watched: HashMap<PathBuf, RecursiveMode>,
+    /// Hash of the contents last rendered for the active document, so a reload
+    /// skips redundant work when a spurious event arrives for unchanged content.
     active_hash: Option<u64>,
 }
 
 impl FileWatch {
     fn new(proxy: EventLoopProxy<UserEvent>) -> Self {
-        // A short debounce coalesces the burst of events most editors emit for a
-        // single save into one reload. It is a coalescing window, not a throttle,
-        // so keep it small enough that the reload still feels immediate.
+        // A short debounce coalesces a save's burst of events into one reload;
+        // kept small so the reload still feels immediate.
         let debouncer = new_debouncer(
             Duration::from_millis(200),
             move |result: DebounceEventResult| {
@@ -1783,16 +1721,12 @@ impl FileWatch {
         }
     }
 
-    /// Point the watcher at the directories whose changes matter: the active
-    /// document's folder and, when given, the Project view's current folder
-    /// (watched recursively so files added in any subfolder surface too). Cheap
-    /// to call after every event: it diffs the desired set against what is
-    /// already watched and returns without touching the watcher when nothing
-    /// changed.
+    /// Point the watcher at the active document's folder and, when given, the
+    /// Project view's folder (recursively). Cheap after every event: diffs the
+    /// desired set against what's watched and no-ops when nothing changed.
     fn sync(&mut self, active_path: Option<&Path>, project_dir: Option<&Path>) {
         if active_path != self.last_active.as_deref() {
-            // The active document changed, so the stored hash no longer describes
-            // what is on screen; force the next reload to render.
+            // Active document changed, so the stored hash is stale; force a render.
             self.active_hash = None;
             self.last_active = active_path.map(Path::to_path_buf);
         }
@@ -1802,8 +1736,8 @@ impl FileWatch {
             return;
         }
 
-        // Collect the changes before borrowing the debouncer so the watcher's
-        // mutable borrow does not overlap the immutable borrow of `watched`.
+        // Collect changes before borrowing the debouncer, so its mutable borrow
+        // doesn't overlap the immutable borrow of `watched`.
         let to_unwatch: Vec<PathBuf> = self
             .watched
             .iter()
@@ -1830,11 +1764,8 @@ impl FileWatch {
     }
 }
 
-/// The set of directories to watch and the recursive mode for each: the Project
-/// view's folder recursively (so a file added anywhere under it surfaces), plus
-/// the active document's own folder when a recursive watch does not already
-/// cover it. Returning a map lets [`FileWatch::sync`] diff against what is
-/// currently watched and only touch what changed.
+/// The directories to watch and each one's recursive mode: the Project folder
+/// recursively, plus the active document's folder when not already covered.
 fn desired_watches(
     active_path: Option<&Path>,
     project_dir: Option<&Path>,
@@ -1854,9 +1785,8 @@ fn desired_watches(
     desired
 }
 
-/// The directory to watch for a document: its parent, canonicalized so repeated
-/// spellings of the same folder compare equal. `None` when the path has no
-/// usable parent (so we never fall back to watching a huge ancestor like root).
+/// The directory to watch for a document: its parent, canonicalized. `None`
+/// when the path has no usable parent (never falls back to a huge ancestor).
 fn watch_dir_for(path: &Path) -> Option<PathBuf> {
     let parent = path
         .parent()
@@ -1864,9 +1794,8 @@ fn watch_dir_for(path: &Path) -> Option<PathBuf> {
     Some(fs::canonicalize(parent).unwrap_or_else(|_| parent.to_path_buf()))
 }
 
-/// Canonicalize a folder to watch directly (not its parent). `None` for an empty
-/// path or one that is not a directory — e.g. the empty Project root or a stale
-/// folder that has since been removed — so a doomed watch is never attempted.
+/// Canonicalize a folder to watch directly (not its parent). `None` for an
+/// empty path or a non-directory, so a doomed watch is never attempted.
 fn watch_folder(path: &Path) -> Option<PathBuf> {
     if path.as_os_str().is_empty() || !path.is_dir() {
         return None;
@@ -1874,19 +1803,17 @@ fn watch_folder(path: &Path) -> Option<PathBuf> {
     Some(fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf()))
 }
 
-/// Stable-within-a-run hash of file contents, used only to detect whether a
-/// changed-on-disk document actually differs from what is already rendered.
-/// Not cryptographic and not persisted, so the standard hasher is sufficient.
+/// Hash of file contents, to detect whether a changed-on-disk document actually
+/// differs from what's rendered. Not cryptographic or persisted.
 fn content_hash(contents: &str) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     contents.hash(&mut hasher);
     hasher.finish()
 }
 
-/// Re-render the active document from its current on-disk contents while
-/// preserving the reader's scroll position. Reads the file once and hash-gates:
-/// if the contents match what was last rendered (a duplicate or spurious
-/// filesystem event), nothing is re-rendered.
+/// Re-render the active document from disk, preserving scroll position. Reads
+/// the file once and hash-gates, so a spurious event with unchanged contents
+/// re-renders nothing.
 fn reload_active_document(
     window: &tao::window::Window,
     webview: Option<&WebView>,
@@ -1906,10 +1833,8 @@ fn reload_active_document(
         return;
     };
 
-    // An external change must not clobber unsaved edits. If the active tab has a
-    // dirty edit buffer FOR THIS DOCUMENT, leave the buffer (and the view) alone —
-    // a proper conflict-resolution workflow is future work. A clean buffer is kept
-    // in step with the file below; a stale buffer for another document is ignored.
+    // An external change must not clobber unsaved edits: if this document's edit
+    // buffer is dirty, leave it and the view alone.
     let has_dirty_buffer = workspace.tabs.get(index).is_some_and(|tab| {
         tab.has_edit_for(&path) && tab.edit.as_ref().is_some_and(EditableDocument::is_dirty)
     });
@@ -1919,8 +1844,8 @@ fn reload_active_document(
 
     let contents = match fs::read_to_string(&path) {
         Ok(contents) => contents,
-        // The file may be mid-save or briefly absent during an atomic rename; a
-        // later event will deliver the settled contents, so skip this one.
+        // May be mid-save or briefly absent during an atomic rename; a later
+        // event delivers the settled contents.
         Err(error) => {
             eprintln!("Live reload: failed to read {}: {error}", path.display());
             return;
@@ -1933,10 +1858,8 @@ fn reload_active_document(
     }
     file_watch.active_hash = Some(hash);
 
-    // Keep a clean edit buffer in step with the file — only when the buffer is
-    // for this document (a stale buffer for a previously viewed file is left
-    // alone). If the code view is open, refresh its source in place rather than
-    // dropping back to the reading view.
+    // Keep this document's clean edit buffer in step with the file. If the code
+    // view is open, refresh its source in place rather than reverting to reading.
     let in_code_view = workspace.tabs.get(index).is_some_and(|tab| tab.code_view);
     let buffer_is_current = workspace
         .tabs
@@ -1969,9 +1892,8 @@ fn reload_active_document(
         }
     }
 
-    // Render through the same path as an initial open: TEI XML files go through
-    // the TEI renderer, everything else through Markdown. Reuse the content we
-    // already read for the hash-gate so we don't hit disk twice.
+    // Render through the same path as an initial open (XML → TEI, else Markdown),
+    // reusing the content already read for the hash-gate.
     let is_xml = path
         .extension()
         .and_then(|ext| ext.to_str())
@@ -2015,9 +1937,8 @@ enum ScrollIntent {
     /// Keep the reader exactly where it is. Used when the active document does
     /// not change, only its surroundings (e.g. reordering tabs).
     Preserve,
-    /// Restore a saved anchor after rendering. Used when switching to a tab so
-    /// it reopens where the reader last left it; `None` lands at the top, used
-    /// the first time a tab is visited.
+    /// Restore a saved anchor after rendering (switching tabs). `None` lands at
+    /// the top, used the first time a tab is visited.
     Restore(Option<ScrollAnchor>),
 }
 
@@ -2028,9 +1949,8 @@ fn active_tab_path(workspace: &Workspace) -> Option<(usize, PathBuf)> {
     Some((index, path))
 }
 
-/// Render a tab's reading view from its edit buffer, so unsaved edits (made in
-/// the code view) are what the reader shows. Chooses the TEI or Markdown
-/// renderer by the buffer's format.
+/// Render a tab's reading view from its edit buffer, so unsaved edits show.
+/// Picks the TEI or Markdown renderer by the buffer's format.
 fn reading_document_from_buffer(edit: &EditableDocument, path: &Path) -> OpenedDocument {
     match edit.format {
         DocumentFormat::Xml => opened_document_from_tei(edit.text(), path),
@@ -2038,18 +1958,16 @@ fn reading_document_from_buffer(edit: &EditableDocument, path: &Path) -> OpenedD
     }
 }
 
-/// Swap the active document to the raw-source code view. Seeds the tab's edit
-/// buffer from disk the first time (reusing it afterwards so unsaved edits
-/// survive), then hands the webview the highlighted source, the exact buffer
-/// text for the textarea, the language, and the dirty state.
+/// Swap the active document to the code view. Seeds the edit buffer from disk
+/// the first time, then hands the webview the highlighted source, buffer text,
+/// language, and dirty state.
 fn enter_code_view(webview: Option<&WebView>, workspace: &mut Workspace) {
     let Some((index, path)) = active_tab_path(workspace) else {
         return;
     };
 
-    // Read the file only when there's no buffer for this document yet;
-    // re-entering the code view reuses the existing buffer so unsaved edits are
-    // preserved, while a stale buffer from a previous document is re-seeded.
+    // Read the file only when there's no buffer for this document yet; re-entry
+    // reuses the buffer so unsaved edits survive.
     let needs_seed = workspace
         .tabs
         .get(index)
@@ -2090,9 +2008,8 @@ fn enter_code_view(webview: Option<&WebView>, workspace: &mut Workspace) {
     }
 }
 
-/// Apply a debounced code-view edit to the active tab's buffer, then re-highlight
-/// through the same Rust path the reader uses and refresh the code view's colour
-/// layer and dirty state.
+/// Apply a debounced code-view edit to the buffer, then re-highlight and refresh
+/// the code view's colour layer and dirty state.
 fn update_source_buffer(webview: Option<&WebView>, workspace: &mut Workspace, text: String) {
     let Some(index) = workspace.active else {
         return;
@@ -2114,10 +2031,8 @@ fn update_source_buffer(webview: Option<&WebView>, workspace: &mut Workspace, te
     }
 }
 
-/// Write the active tab's edit buffer to disk (explicit save). Sets the file
-/// watcher's content hash to the just-written text so the watcher's own
-/// FileChanged for this save is recognized as a no-op instead of fighting the
-/// save with a reload.
+/// Write the active tab's edit buffer to disk. Sets the watcher's content hash
+/// to the written text so its own FileChanged for this save is a no-op.
 fn save_active_document(
     webview: Option<&WebView>,
     workspace: &mut Workspace,
@@ -2140,9 +2055,8 @@ fn save_active_document(
     let script = match fs::write(&path, &text) {
         Ok(()) => {
             edit.mark_saved();
-            // Self-save suppression: our write triggers a debounced FileChanged
-            // that reads back exactly this text; reload_active_document skips
-            // when the content hash matches, so it won't clobber the buffer.
+            // Self-save suppression: reload_active_document skips when the hash
+            // matches, so our own write-back FileChanged won't clobber the buffer.
             file_watch.active_hash = Some(content_hash(&text));
             save_result_script(&path_str, true, None)
         }
@@ -2160,11 +2074,9 @@ fn save_active_document(
     }
 }
 
-/// Seed the active tab's edit buffer from disk on the first edit (the same way
-/// [`enter_code_view`] does), then splice a reading-view inline edit into it over
-/// the source range `[start, end)`. Returns whether a buffer was available so the
-/// caller only re-renders when the buffer actually changed. The source buffer is
-/// authoritative, so the reading view re-renders from it afterwards.
+/// Seed the edit buffer from disk on the first edit, then splice a reading-view
+/// inline edit over `[start, end)`. Returns whether a buffer was available (the
+/// caller re-renders from the now-authoritative buffer when so).
 fn apply_block_edit(workspace: &mut Workspace, start: usize, end: usize, text: &str) -> bool {
     let Some((tab_index, path)) = active_tab_path(workspace) else {
         return false;
@@ -2225,8 +2137,8 @@ fn toggle_task_marker(webview: Option<&WebView>, workspace: &mut Workspace, inde
     let dirty = edit.is_dirty();
 
     if let Some(webview) = webview {
-        // A toggle does NOT re-render, so the resync must carry the toggled
-        // source for the reader's raw-source editors to slice from.
+        // A toggle doesn't re-render, so carry the toggled source for the
+        // reader's raw-source editors to slice from.
         let script = blocks_resynced_script(&tasks, dirty, edit.can_undo(), Some(edit.text()));
         if let Err(error) = webview.evaluate_script(&script) {
             eprintln!("Toggle task: failed to resync reading view: {error}");
@@ -2234,10 +2146,9 @@ fn toggle_task_marker(webview: Option<&WebView>, workspace: &mut Workspace, inde
     }
 }
 
-/// Push the active buffer's editing state (task offsets, dirty flag, undo
-/// availability) back to the reading view — used after an edit or undo whose
-/// full re-render already delivered the buffer text, so the source is omitted
-/// rather than shipped a second time.
+/// Push the buffer's editing state (task offsets, dirty, undo availability) back
+/// to the reading view. The source is omitted since the caller's re-render
+/// already delivered it.
 fn resync_editing_state(webview: Option<&WebView>, workspace: &Workspace) {
     let Some(webview) = webview else {
         return;
@@ -2285,11 +2196,9 @@ fn render_active(
                     scroll,
                 );
             };
-            // Prefer the in-memory edit buffer so unsaved edits (inline or from
-            // the code view) are what the reading view shows — but only when the
-            // buffer is for THIS document. A tab navigates across files; a
-            // leftover buffer from the previous document must not shadow the
-            // page being opened, or link clicks appear to do nothing.
+            // Prefer this document's edit buffer so unsaved edits show — but only
+            // when the buffer is for THIS document, or a leftover buffer would
+            // shadow a page opened by a link click.
             let has_edit = workspace
                 .tabs
                 .get(index)
@@ -2315,8 +2224,7 @@ fn render_active(
                         let missing = error.reason().kind() == io::ErrorKind::NotFound;
                         eprintln!("Failed to open {}: {}", failed_path.display(), reason);
 
-                        // A file that no longer exists should stop being offered in
-                        // Recent so the user can't keep re-triggering the same error.
+                        // Drop a missing file from Recent so it can't re-trigger.
                         if missing && recent.forget(&failed_path) {
                             if let Some(config_path) = config_path {
                                 if let Err(save_error) = save_recent_files(config_path, recent) {
@@ -2325,9 +2233,8 @@ fn render_active(
                             }
                         }
 
-                        // Don't strand the user on a tab that can't render: drop the
-                        // failed entry and fall back to the previous document, or
-                        // close the tab (then a neighbour or the home screen).
+                        // Don't strand the user on a tab that can't render: fall
+                        // back to the previous document, or close the tab.
                         let recovered = workspace
                             .tabs
                             .get_mut(index)
@@ -2444,9 +2351,8 @@ fn scroll_to_fragment(webview: Option<&WebView>, fragment: &str) {
     }
 }
 
-/// If `href` uses the `glossary:slug` scheme, return the part after the colon
-/// (the slug), with any leading `#` stripped. The slug names a glossary term and
-/// carries no file path, so the file is found separately by walking up folders.
+/// For a `glossary:slug` href, return the slug (leading `#` stripped). It names
+/// a term with no file path; the file is found separately by walking up folders.
 fn glossary_scheme_slug(href: &str) -> Option<String> {
     let href = href.trim();
     let rest = href
@@ -2455,11 +2361,9 @@ fn glossary_scheme_slug(href: &str) -> Option<String> {
     Some(percent_decode_path(rest.trim_start_matches('#')))
 }
 
-/// Find the glossary file for `current_path` by walking up its folders to the
-/// nearest `GLOSSARY.md`. This lets a `glossary:` link bind to the glossary of
-/// whatever project the open document lives in, with no path written in the link.
-/// `GLOSSARY.md` is the convention (like `README.md`); a lowercase `glossary.md`
-/// is still accepted so older trees keep working on case-sensitive filesystems.
+/// Find the nearest `GLOSSARY.md` by walking up from `current_path`, so a
+/// `glossary:` link binds to the open document's project. A lowercase
+/// `glossary.md` is also accepted for case-sensitive trees.
 fn nearest_glossary_file(current_path: &Path) -> Option<PathBuf> {
     let mut dir = current_path.parent();
     while let Some(folder) = dir {
@@ -2474,11 +2378,9 @@ fn nearest_glossary_file(current_path: &Path) -> Option<PathBuf> {
     None
 }
 
-/// Read the glossary file for `href` (the nearest `GLOSSARY.md` for a `glossary:`
-/// link, or the path of a real `…/GLOSSARY.md#slug` link resolved against the
-/// active document) and show the matching term in the bottom sheet. Reading or
-/// render failures are logged and leave the sheet untouched, so a broken glossary
-/// link never disrupts the open document.
+/// Read the glossary file for `href` (nearest `GLOSSARY.md` for a `glossary:`
+/// link, or a real `…/GLOSSARY.md#slug` path) and show the term in the bottom
+/// sheet. Failures are logged and leave the sheet untouched.
 fn show_glossary_entry(webview: Option<&WebView>, href: &str, current_path: &Path) {
     let Some(webview) = webview else {
         return;
@@ -2497,10 +2399,8 @@ fn show_glossary_entry(webview: Option<&WebView>, href: &str, current_path: &Pat
             fragment_from_href(href).unwrap_or_default(),
         )
     };
-    // A glossary is browsed term after term from the same (often multi-megabyte)
-    // file, and rendering it from scratch on every click froze the reader. Reuse
-    // the last render when the same file is looked up again and has not changed on
-    // disk; the modified-time check reloads it after an edit.
+    // Glossary terms are browsed from the same (often large) file, so reuse the
+    // last render when the file is unchanged; the mtime check reloads after edits.
     let modified = fs::metadata(&path).and_then(|meta| meta.modified()).ok();
     let cached = GLOSSARY_RENDER_CACHE.with(|cache| {
         cache
@@ -2535,9 +2435,8 @@ fn show_glossary_entry(webview: Option<&WebView>, href: &str, current_path: &Pat
     }
 }
 
-// The last rendered glossary, reused across term lookups of the same unchanged
-// file so opening the sheet does not re-render the whole (large) document each
-// time. Keyed by path + modified time; a newer mtime forces a fresh render.
+// The last rendered glossary, reused across lookups of the same unchanged file.
+// Keyed by path + mtime; a newer mtime forces a fresh render.
 struct GlossaryRender {
     path: PathBuf,
     modified: Option<std::time::SystemTime>,
@@ -2863,16 +2762,10 @@ fn reveal_in_file_manager(path: &Path) -> io::Result<()> {
     {
         use std::os::windows::process::CommandExt;
 
-        // `explorer /select,<path>` highlights the file in a new window. Explorer
-        // reports a non-zero exit code even on success, so spawning (rather than
-        // waiting on the status) is the reliable way to treat it as done.
-        //
-        // Explorer only recognizes the switch when `/select,` sits *outside* the
-        // quotes and just the path is quoted (`/select,"C:\dir\file.md"`). The
-        // std arg escaper would quote the whole `/select,<path>` token whenever
-        // the path contains a space, which Explorer can't parse — it silently
-        // opens the default folder (Documents) instead of selecting the file.
-        // Build the argument verbatim with `raw_arg` so we control the quoting.
+        // `explorer /select,<path>` highlights the file. Spawn rather than wait
+        // (Explorer returns non-zero even on success). Explorer needs `/select,`
+        // outside the quotes with only the path quoted, so build the arg verbatim
+        // with `raw_arg`; the std escaper would quote the whole token and break it.
         Command::new("explorer")
             .raw_arg(format!("/select,\"{}\"", path.display()))
             .spawn()?;
@@ -2894,9 +2787,8 @@ fn reveal_in_file_manager(path: &Path) -> io::Result<()> {
 
     #[cfg(all(unix, not(target_os = "macos")))]
     {
-        // The freedesktop file manager interface selects the file inside its
-        // folder. Many environments provide it; when it is missing or fails,
-        // fall back to opening the containing folder with xdg-open.
+        // The freedesktop FileManager1 interface selects the file; fall back to
+        // opening the folder with xdg-open when it's missing or fails.
         if let Some(uri) = url::Url::from_file_path(path)
             .ok()
             .map(|url| url.to_string())
@@ -2930,17 +2822,14 @@ fn reveal_in_file_manager(path: &Path) -> io::Result<()> {
     }
 }
 
-/// Put the file itself on the system clipboard so it can be pasted into the OS
-/// file manager. `cut` requests move semantics (paste relocates the file) versus
-/// copy. Implemented with the platform's own tooling; best-effort on Linux, whose
-/// clipboard story varies by desktop.
+/// Put the file on the system clipboard for pasting into the OS file manager.
+/// `cut` requests move semantics. Uses platform tooling; best-effort on Linux.
 fn copy_file_to_clipboard(path: &Path, cut: bool) -> io::Result<()> {
     #[cfg(target_os = "windows")]
     {
-        // 2 = move (cut), 5 = copy, written as the "Preferred DropEffect" the shell
-        // reads on paste. `SetDataObject($_, $true)` flushes the data so it survives
-        // this short-lived PowerShell exiting; clipboard access needs an STA thread.
-        // Path and effect pass through env vars to avoid command-string quoting.
+        // "Preferred DropEffect" 2 = move (cut), 5 = copy, read by the shell on
+        // paste. SetDataObject(_, $true) flushes so it survives PowerShell
+        // exiting; clipboard needs STA. Path/effect via env to avoid quoting.
         const SCRIPT: &str = "Add-Type -AssemblyName System.Windows.Forms;\
             $files = New-Object System.Collections.Specialized.StringCollection;\
             [void]$files.Add($env:LEAF_CLIP_PATH);\
@@ -2964,8 +2853,8 @@ fn copy_file_to_clipboard(path: &Path, cut: bool) -> io::Result<()> {
 
     #[cfg(target_os = "macos")]
     {
-        // macOS has no clipboard "cut"; both put the file on the pasteboard (a move
-        // is the user's Cmd+Opt+V on paste). Set the clipboard to the POSIX file.
+        // macOS has no clipboard "cut"; both put the file on the pasteboard (the
+        // move is the user's Cmd+Opt+V on paste).
         let _ = cut;
         let escaped = path
             .to_string_lossy()
@@ -2987,8 +2876,8 @@ fn copy_file_to_clipboard(path: &Path, cut: bool) -> io::Result<()> {
 
     #[cfg(all(unix, not(target_os = "macos")))]
     {
-        // Best-effort: many file managers read `x-special/gnome-copied-files`, a
-        // leading `copy`/`cut` line followed by file URIs, via xclip.
+        // Best-effort: many file managers read `x-special/gnome-copied-files`
+        // (a `copy`/`cut` line plus file URIs) via xclip.
         use std::io::Write;
         use std::process::Stdio;
         let uri = url::Url::from_file_path(path)
@@ -3065,8 +2954,8 @@ fn delete_to_trash(path: &Path) -> Result<(), String> {
 fn show_properties(path: &Path) -> io::Result<()> {
     #[cfg(target_os = "windows")]
     {
-        // The shell Properties verb is modal to the calling process, so the helper
-        // must linger for the dialog to appear; best-effort. Path via env var.
+        // The shell Properties verb is modal to the caller, so the helper must
+        // linger for the dialog; best-effort. Path via env var.
         const SCRIPT: &str = "$p = $env:LEAF_TARGET;\
             $shell = New-Object -ComObject Shell.Application;\
             $folder = $shell.Namespace((Split-Path $p));\
@@ -3111,9 +3000,9 @@ fn show_properties(path: &Path) -> io::Result<()> {
     }
 }
 
-/// Add a manually opened file to the library index, regardless of the
-/// "Index entire device" toggle. The worker filters non-Markdown and unreadable
-/// files itself, so this is safe to call for every open attempt.
+/// Add a manually opened file to the library index, regardless of the "Index
+/// entire device" toggle. The worker filters what it can't index, so this is
+/// safe for every open.
 fn index_opened_path(indexer: Option<&IndexerWorker>, path: &Path) {
     if let Some(indexer) = indexer {
         indexer.sync_path(path.to_path_buf());

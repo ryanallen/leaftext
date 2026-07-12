@@ -64,15 +64,12 @@ pub fn build_minimap_model(markdown: &str) -> DocumentMinimap {
     }
 }
 
-/// Build a minimap model from rendered block HTML. TEI/XML documents are rendered
-/// straight to HTML with no Markdown source to line-scan, so [`build_minimap_model`]
-/// has nothing to work from; without this the rail's canvas painter (which draws
-/// from `spans`) had none and left the whole rail blank. Each top-level block
-/// becomes one or more synthetic rows so the canvas paints a faithful outline:
-/// headings as full bars, paragraphs and blockquotes sized to their text length,
-/// lists by item count, code by line count. The viewport box is positioned from
-/// the reader's real scroll range (see `measureDocumentMinimap` in the shell), so
-/// these row counts only shape the cosmetic thumbnail — never the box.
+/// Build a minimap model from rendered block HTML, for TEI/XML documents that
+/// have no Markdown source to line-scan. Each top-level block becomes synthetic
+/// rows: headings as full bars, paragraphs/blockquotes sized to text length,
+/// lists by item count, code by line count. These row counts only shape the
+/// cosmetic thumbnail; the viewport box comes from the reader's real scroll
+/// range (see `measureDocumentMinimap` in the shell).
 pub fn build_minimap_model_from_html(html: &str) -> DocumentMinimap {
     let mut spans: Vec<MinimapSpan> = Vec::new();
     let mut next_line: usize = 0;

@@ -1,11 +1,8 @@
 use crate::*;
 
-/// The initial workspace state as a `window.__leafInitialState` global. Like
-/// [`initial_settings_script`], this is run as the webview's initialization
-/// script — before any page script — so the page's boot bootstrap can apply it
-/// on the first render. Injecting it after load via `evaluate_script` raced the
-/// async page load: when the page won the race it ran its own empty bootstrap
-/// last, wiping out the recent files.
+/// Initial workspace state as `window.__leafInitialState`. Run as an init
+/// script (before any page script) so the boot bootstrap applies it on the
+/// first render.
 pub fn initial_state_script(recent: &[PathBuf]) -> String {
     let recent: Vec<String> = recent
         .iter()
@@ -18,11 +15,9 @@ pub fn initial_state_script(recent: &[PathBuf]) -> String {
     format!("window.__leafInitialState = {};", state)
 }
 
-/// The persisted UI toggles as a `window.__leafSettings` global. This is run as
-/// the webview's initialization script — before any page script — so the theme
-/// bootstrap and library pane render from the saved state on the first paint
-/// instead of flashing defaults and re-applying. Keys are camelCase to match
-/// what the frontend reads, independent of the snake_case on-disk format.
+/// Persisted UI toggles as `window.__leafSettings`. Run as an init script so
+/// theme and library pane render from saved state on the first paint. Keys are
+/// camelCase to match the frontend, not the snake_case on-disk format.
 pub fn initial_settings_script(settings: &Settings) -> String {
     let state = serde_json::json!({
         "minimapEnabled": settings.minimap_enabled,
@@ -54,9 +49,8 @@ pub fn document_state_script(document: &OpenedDocument, recent: &[PathBuf]) -> S
     format!("window.leafSetState({});", state)
 }
 
-/// Build the full workspace state for the webview: recent files, the open tab
-/// bar (title + path per tab), the active tab index (or `null` for the home
-/// screen), and the active document (or `null` when the home screen is shown).
+/// Full workspace state: recent files, tab bar (title + path), active tab
+/// index (`null` on the home screen), and active document (`null` on home).
 pub fn workspace_state_script(
     recent: &[PathBuf],
     tabs: &[(String, String)],
@@ -80,10 +74,8 @@ pub fn workspace_state_script(
     format!("window.leafSetState({});", state)
 }
 
-/// Like [`workspace_state_script`], but routes through `leafReloadDocument` so the
-/// webview re-renders the active document in place while preserving the reader's
-/// current scroll position. Used by the live-reload watcher when the open file
-/// changes on disk, where jumping back to the top would be jarring.
+/// Like [`workspace_state_script`] but via `leafReloadDocument`, which
+/// re-renders in place and preserves scroll position. Used by live-reload.
 pub fn workspace_reload_script(
     recent: &[PathBuf],
     tabs: &[(String, String)],
@@ -107,13 +99,10 @@ pub fn workspace_reload_script(
     format!("window.leafReloadDocument({});", state)
 }
 
-/// A document-intrinsic scroll position. Instead of a raw pixel offset — which
-/// points at different content every time the document is re-rendered and its
-/// images settle the layout — this names the nearest heading slug above the
-/// reader's top edge, the ordinal of the block within that section, and how far
-/// through that block the reader has scrolled. The same Markdown always renders
-/// the same blocks, so this survives a full re-render: switching tabs, history
-/// navigation, and live reload all land back on the same paragraph.
+/// A document-intrinsic scroll position that survives a full re-render (tab
+/// switch, history nav, live reload). Names the nearest heading above the top
+/// edge, the block ordinal within that section, and the offset into it —
+/// unlike a raw pixel offset, which drifts as images settle the layout.
 #[derive(Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ScrollAnchor {
     /// Heading slug the position sits under; `None` above the first heading.
@@ -122,8 +111,8 @@ pub struct ScrollAnchor {
     /// Zero-based block index within the section (the heading itself is 0).
     #[serde(default)]
     pub block: u32,
-    /// Signed pixel offset of the reader's top edge from the block's top. Stays
-    /// signed so the reading-mode top gap survives at the start of a document.
+    /// Signed offset of the top edge from the block's top; signed so the
+    /// reading-mode top gap survives at the start of a document.
     #[serde(default, rename = "offsetY")]
     pub offset_y: f64,
 }
@@ -134,12 +123,9 @@ fn scroll_anchor_json(anchor: &ScrollAnchor) -> String {
         .unwrap_or_else(|_| r#"{"section":null,"block":0,"offsetY":0}"#.to_string())
 }
 
-/// Like [`workspace_state_script`], but routes through `leafSwitchTab` so the
-/// webview renders the target tab's document and then restores the saved scroll
-/// anchor in the same frame. Switching tabs must never snap to the top, and
-/// restoring as part of the render avoids racing the reset-to-top that
-/// `leafSetState` performs. `anchor` is `None` the first time a tab is opened,
-/// which lands the reader at the top of the content.
+/// Like [`workspace_state_script`] but via `leafSwitchTab`, which renders the
+/// target tab and restores `anchor` in the same frame so the switch never
+/// snaps to the top. `anchor` is `None` the first time a tab is opened.
 pub fn workspace_switch_script(
     recent: &[PathBuf],
     tabs: &[(String, String)],
@@ -205,10 +191,8 @@ pub fn open_error_state_script(path: &Path, reason: &str) -> String {
     format!("window.leafShowOpenError({path}, {reason});")
 }
 
-/// Swap the reader over to the raw-source code view for the active document:
-/// the highlighted source (the colour layer painted behind the textarea), the
-/// exact buffer text (what the editable textarea holds), the language token and
-/// label, and whether the buffer has unsaved edits.
+/// Swap to the raw-source code view: highlighted source (the layer behind the
+/// textarea), the buffer text, language token and label, and dirty state.
 pub fn code_view_script(
     highlighted_html: &str,
     text: &str,
@@ -226,9 +210,8 @@ pub fn code_view_script(
     format!("window.leafShowCodeView({});", state)
 }
 
-/// Refresh the code view's colour layer and dirty state after a debounced edit
-/// re-highlights the buffer. Only touches the highlight overlay; the textarea
-/// the user is typing in is left untouched.
+/// Refresh the code view's highlight overlay and dirty state after a debounced
+/// re-highlight. Leaves the textarea untouched.
 pub fn source_updated_script(highlighted_html: &str, dirty: bool) -> String {
     let state = serde_json::json!({
         "html": highlighted_html,
@@ -237,13 +220,10 @@ pub fn source_updated_script(highlighted_html: &str, dirty: bool) -> String {
     format!("window.leafSourceUpdated({});", state)
 }
 
-/// Re-sync the reading view's editing state from the authoritative buffer: the
-/// refreshed task-marker offsets in document order, the dirty state (Save button
-/// + tab dot), whether an undo step exists (Undo button), and optionally the
-/// buffer text so the reader's raw-source block editors keep slicing from the
-/// live source. Pass `source: None` when a full re-render just delivered the
-/// same text via the document state — shipping it twice per edit doubles the
-/// payload on large files for nothing; the frontend keeps what it has.
+/// Re-sync the reading view's editing state from the buffer: task-marker
+/// offsets in document order, dirty state, whether an undo step exists, and
+/// optionally the buffer text for block editors. Pass `source: None` when a
+/// full re-render already delivered the same text, to avoid shipping it twice.
 pub fn blocks_resynced_script(
     tasks: &[usize],
     dirty: bool,
@@ -270,9 +250,8 @@ pub fn save_result_script(path: &str, ok: bool, error: Option<&str>) -> String {
     format!("window.leafSaved({path}, {ok}, {error});")
 }
 
-/// Answer a hover tooltip's `countLines` request: hand the webview the line count
-/// of the linked document for `token`. A negative count means "unknown" (the
-/// target wasn't a readable local document), and the page just shows no count.
+/// Answer a hover tooltip's `countLines` request for `token`. A negative count
+/// means "unknown" (not a readable local document); the page shows no count.
 pub fn line_count_script(token: u64, lines: i64) -> String {
     format!("window.leafLineCount({token}, {lines});")
 }

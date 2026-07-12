@@ -23,15 +23,11 @@ pub(crate) fn pager_loading_html() -> &'static str {
     r#"<nav class="docs-pager docs-pager-loading" aria-label="Document navigation" aria-busy="true"><span class="docs-pager-skeleton"><span class="docs-pager-label-skeleton"></span><span class="docs-pager-title-skeleton"></span></span><span class="docs-pager-skeleton docs-pager-next"><span class="docs-pager-label-skeleton"></span><span class="docs-pager-title-skeleton"></span></span></nav>"#
 }
 
-/// Build the Previous/Next pager for `current`, mirroring the web docs viewer's
-/// ordering: a depth-first walk of the document tree where, at each folder, the
-/// non-README files come first (sorted by name), then each subfolder — its
-/// README acting as the folder's landing page (labelled by the folder name),
-/// followed by that folder's own pages.
-///
-/// The tree root is the highest ancestor still covered by a chain of READMEs
-/// (so a nested chapter pages through its whole book). Returns an empty string
-/// when the file has no neighbours (nothing to page to).
+/// Build the Previous/Next pager for `current`. Ordering is a depth-first walk
+/// of the doc tree: at each folder, non-README files first (sorted by name),
+/// then each subfolder (its README as the landing page), then that folder's
+/// pages. The root is the highest ancestor still covered by a chain of READMEs.
+/// Empty string when the file has no neighbours.
 pub(crate) fn pager_html(current: &Path) -> String {
     let root = pager_doc_root(current);
     let entries = collect_pager_entries(&root);
@@ -128,9 +124,8 @@ pub(crate) fn collect_pager_entries_into(dir: &Path, into: &mut Vec<PagerEntry>)
         if path.is_dir() {
             subdirs.push(path);
         } else if path.file_name().and_then(|n| n.to_str()).is_some() {
-            // Markdown and TEI XML documents are both sequential pages. README
-            // (the folder's landing page, added by the parent) and GLOSSARY (the
-            // sheet, never a page) are excluded by stem so either extension drops.
+            // Markdown and TEI XML are both pages; README (landing page) and
+            // GLOSSARY (the sheet) are excluded by stem.
             let is_doc = path
                 .extension()
                 .and_then(|e| e.to_str())
@@ -188,12 +183,10 @@ pub(crate) fn by_pager_name(a: &PathBuf, b: &PathBuf) -> std::cmp::Ordering {
     an.cmp(&bn)
 }
 
-/// Turn an on-disk name into a display label, matching the web `label()`: drop a
-/// trailing `.md`, collapse runs of `-`/`_` to single spaces, and capitalise the
-/// first letter of each word. e.g. `book-1-words--kangyur` -> `Book 1 Words Kangyur`.
+/// Turn an on-disk name into a display label (matches the web `label()`): drop
+/// a trailing `.md`/`.xml`, collapse `-`/`_` runs to spaces, title-case each
+/// word. e.g. `book-1-words--kangyur` -> `Book 1 Words Kangyur`.
 pub(crate) fn pager_label(raw: &str) -> String {
-    // Drop a trailing `.md` or `.xml` (case-insensitively); leave any other name
-    // — including folders, which carry no such extension — untouched.
     let base = raw
         .rsplit_once('.')
         .filter(|(_, ext)| ext.eq_ignore_ascii_case("md") || ext.eq_ignore_ascii_case("xml"))
