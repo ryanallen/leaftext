@@ -4725,7 +4725,10 @@ function correctReaderScrollOrigin(source = app.querySelector('.document-body'))
   const content = measureDocumentContent(source);
   const origin = readerScrollOrigin(source);
   const nextOrigin = Math.max(0, Math.ceil(content.rawTopOffset + origin - READER_CONTENT_TOP_GAP));
-  if (Math.abs(nextOrigin - origin) >= 0.5) {
+  // >=2px dead-band: the ideal origin can fall on a half-pixel with no integer fixed
+  // point, flipping 1px each frame (e.g. 177<->178) and driving an endless relayout
+  // loop via the minimap ResizeObserver. Sub-2px jitter is invisible; ignore it.
+  if (Math.abs(nextOrigin - origin) >= 2) {
     source.style.setProperty('--reader-scroll-origin', `${nextOrigin}px`);
   }
   return measureDocumentContent(source);
