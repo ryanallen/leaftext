@@ -128,8 +128,8 @@ The app ships both language dictionaries locally and applies changes without a r
 ### Reading-view editing
 
 - On by default
-- Lets you edit the rendered page directly — click a block to edit it, toggle task checkboxes — as described in [Editing](07-editing.md#inline-editing-the-reading-view)
-- Turn it off to keep the reading view read-only; the [code view](07-editing.md#code-view) still edits the raw source
+- Lets you edit the rendered page directly — click a block to edit it — as described in [Editing](07-editing.md#inline-editing-the-reading-view)
+- Turn it off to keep the reading view read-only; task checkboxes still toggle (and auto-save), and the [code view](07-editing.md#code-view) still edits the raw source
 - Saved as `reader_editing_enabled`
 
 ### Indexing

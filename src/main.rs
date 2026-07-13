@@ -207,6 +207,8 @@ enum UserEvent {
         start: usize,
         end: usize,
         text: String,
+        /// Set by checkbox toggles: no undo step, written to disk immediately.
+        autosave: bool,
     },
     /// Revert the most recent reading-view edit in the active document.
     UndoEdit,
@@ -343,6 +345,10 @@ enum IpcCommand {
         start: usize,
         end: usize,
         text: String,
+        /// Set by checkbox toggles: splice with no undo step and write to disk
+        /// immediately, rather than the normal undoable, dirty-marking edit.
+        #[serde(default)]
+        autosave: bool,
     },
     /// Revert the most recent reading-view edit in the active document.
     #[serde(rename = "undoEdit")]
@@ -1076,12 +1082,22 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 save_active_document(webview.as_ref(), &mut workspace, &mut file_watch);
             }
             Event::UserEvent(UserEvent::ToggleTask { index }) => {
-                toggle_task_marker(webview.as_ref(), &mut workspace, index);
+                toggle_task_marker(webview.as_ref(), &mut workspace, &mut file_watch, index);
             }
-            Event::UserEvent(UserEvent::EditBlock { start, end, text }) => {
+            Event::UserEvent(UserEvent::EditBlock {
+                start,
+                end,
+                text,
+                autosave,
+            }) => {
                 // Splice into the source buffer, then re-render from it, keeping
                 // the reader's place. Source stays authoritative for MD and XML.
-                if apply_block_edit(&mut workspace, start, end, &text) {
+                // A checkbox toggle (autosave) splices without an undo step and
+                // writes to disk right away.
+                if apply_block_edit(&mut workspace, start, end, &text, !autosave) {
+                    if autosave {
+                        autosave_active_buffer(&mut workspace, &mut file_watch);
+                    }
                     render_active(
                         &window,
                         webview.as_ref(),
@@ -1491,8 +1507,18 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
             IpcCommand::ToggleTask { index } => {
                 let _ = proxy.send_event(UserEvent::ToggleTask { index });
             }
-            IpcCommand::EditBlock { start, end, text } => {
-                let _ = proxy.send_event(UserEvent::EditBlock { start, end, text });
+            IpcCommand::EditBlock {
+                start,
+                end,
+                text,
+                autosave,
+            } => {
+                let _ = proxy.send_event(UserEvent::EditBlock {
+                    start,
+                    end,
+                    text,
+                    autosave,
+                });
             }
             IpcCommand::UndoEdit => {
                 let _ = proxy.send_event(UserEvent::UndoEdit);
@@ -2102,7 +2128,13 @@ fn save_active_document(
 /// Seed the edit buffer from disk on the first edit, then splice a reading-view
 /// inline edit over `[start, end)`. Returns whether a buffer was available (the
 /// caller re-renders from the now-authoritative buffer when so).
-fn apply_block_edit(workspace: &mut Workspace, start: usize, end: usize, text: &str) -> bool {
+fn apply_block_edit(
+    workspace: &mut Workspace,
+    start: usize,
+    end: usize,
+    text: &str,
+    record_undo: bool,
+) -> bool {
     let Some((tab_index, path)) = active_tab_path(workspace) else {
         return false;
     };
@@ -2125,16 +2157,47 @@ fn apply_block_edit(workspace: &mut Workspace, start: usize, end: usize, text: &
         return false;
     };
     let edit = tab.edit_buffer(&path, contents);
-    edit.replace_range(start, end, text);
+    if record_undo {
+        edit.replace_range(start, end, text);
+    } else {
+        edit.replace_range_without_undo(start, end, text);
+    }
     true
 }
 
+/// Write the active buffer to disk for an auto-saving edit (a checkbox toggle):
+/// no Save-button round-trip. The version bump plus watcher-hash update keep our
+/// own write from bouncing back through the file watcher as an external change.
+fn autosave_active_buffer(workspace: &mut Workspace, file_watch: &mut FileWatch) {
+    let Some(edit) = workspace
+        .active
+        .and_then(|index| workspace.tabs.get_mut(index))
+        .and_then(|tab| tab.edit.as_mut())
+    else {
+        return;
+    };
+    let text = edit.text().to_string();
+    match fs::write(&edit.path, &text) {
+        Ok(()) => {
+            edit.mark_saved();
+            file_watch.active_hash = Some(content_hash(&text));
+        }
+        Err(error) => eprintln!("Auto-save failed for {}: {error}", edit.path.display()),
+    }
+}
+
 /// Toggle a task-list checkbox from the reading view. Seeds the tab's edit buffer
-/// from disk on the first edit, flips the marker, then reports the refreshed task
-/// offsets and dirty state so the reading view stays in sync without a full
-/// re-render — the checkbox's own checked state is already flipped in the DOM by
-/// the frontend.
-fn toggle_task_marker(webview: Option<&WebView>, workspace: &mut Workspace, index: usize) {
+/// from disk on the first edit, flips the marker, writes it straight to disk, then
+/// reports the refreshed task offsets and dirty state so the reading view stays in
+/// sync without a full re-render — the checkbox's own checked state is already
+/// flipped in the DOM by the frontend. A checkbox toggle auto-saves and records no
+/// undo step, so it works even with reading-view editing turned off.
+fn toggle_task_marker(
+    webview: Option<&WebView>,
+    workspace: &mut Workspace,
+    file_watch: &mut FileWatch,
+    index: usize,
+) {
     let Some((tab_index, path)) = active_tab_path(workspace) else {
         return;
     };
@@ -2157,14 +2220,26 @@ fn toggle_task_marker(webview: Option<&WebView>, workspace: &mut Workspace, inde
         return;
     };
     let edit = tab.edit_buffer(&path, contents);
-    edit.toggle_task(index);
+    edit.toggle_task_without_undo(index);
+    let text = edit.text().to_string();
+    match fs::write(&edit.path, &text) {
+        Ok(()) => {
+            edit.mark_saved();
+            file_watch.active_hash = Some(content_hash(&text));
+        }
+        Err(error) => eprintln!(
+            "Toggle task: auto-save failed for {}: {error}",
+            edit.path.display()
+        ),
+    }
     let tasks = edit.task_offsets();
     let dirty = edit.is_dirty();
+    let can_undo = edit.can_undo();
 
     if let Some(webview) = webview {
         // A toggle doesn't re-render, so carry the toggled source for the
         // reader's raw-source editors to slice from.
-        let script = blocks_resynced_script(&tasks, dirty, edit.can_undo(), Some(edit.text()));
+        let script = blocks_resynced_script(&tasks, dirty, can_undo, Some(&text));
         if let Err(error) = webview.evaluate_script(&script) {
             eprintln!("Toggle task: failed to resync reading view: {error}");
         }

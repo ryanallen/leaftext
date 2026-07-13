@@ -152,6 +152,21 @@ impl EditableDocument {
     /// panic or corrupt UTF-8; start past end is an insertion at `start`.
     /// Returns whether the dirty state changed.
     pub fn replace_range(&mut self, start: usize, end: usize, replacement: &str) -> bool {
+        self.splice(start, end, replacement, true)
+    }
+
+    /// Like [`replace_range`] but records no undo snapshot — for the auto-saving
+    /// checkbox path, which is deliberately not undoable.
+    pub fn replace_range_without_undo(
+        &mut self,
+        start: usize,
+        end: usize,
+        replacement: &str,
+    ) -> bool {
+        self.splice(start, end, replacement, false)
+    }
+
+    fn splice(&mut self, start: usize, end: usize, replacement: &str, record_undo: bool) -> bool {
         let len = self.text.len();
         let mut start = start.min(len);
         let mut end = end.min(len);
@@ -165,9 +180,11 @@ impl EditableDocument {
             end += 1;
         }
         let was_dirty = self.is_dirty();
-        let before = self.text.clone();
+        let before = record_undo.then(|| self.text.clone());
         self.text.replace_range(start..end, replacement);
-        self.push_undo(before);
+        if let Some(before) = before {
+            self.push_undo(before);
+        }
         was_dirty != self.is_dirty()
     }
 
@@ -176,6 +193,16 @@ impl EditableDocument {
     /// live buffer, and one ASCII byte replaces another so no offsets shift.
     /// Returns whether dirty changed; out-of-range is a no-op. Markdown only.
     pub fn toggle_task(&mut self, index: usize) -> bool {
+        self.flip_task(index, true)
+    }
+
+    /// Like [`toggle_task`] but records no undo snapshot — for the auto-saving
+    /// checkbox path, which is deliberately not undoable.
+    pub fn toggle_task_without_undo(&mut self, index: usize) -> bool {
+        self.flip_task(index, false)
+    }
+
+    fn flip_task(&mut self, index: usize, record_undo: bool) -> bool {
         if self.format != DocumentFormat::Markdown {
             return false;
         }
@@ -187,14 +214,12 @@ impl EditableDocument {
             .as_bytes()
             .get(offset)
             .is_some_and(|byte| *byte != b' ');
-        let was_dirty = self.is_dirty();
-        let before = self.text.clone();
-        self.text.replace_range(
-            offset..offset + 1,
+        self.splice(
+            offset,
+            offset + 1,
             if currently_checked { " " } else { "x" },
-        );
-        self.push_undo(before);
-        was_dirty != self.is_dirty()
+            record_undo,
+        )
     }
 
     /// The block source map for the live buffer: Markdown via pulldown-cmark

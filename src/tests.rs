@@ -3951,6 +3951,22 @@ fn toggle_task_is_a_noop_for_xml_documents() {
 }
 
 #[test]
+fn checkbox_edits_flip_the_marker_but_record_no_undo() {
+    // The auto-saving checkbox path flips the same byte as toggle_task, but leaves
+    // nothing on the undo stack — a checkbox toggle is deliberately not undoable.
+    let markdown = "- [ ] one\n- [ ] two\n";
+    let mut edit = EditableDocument::new(PathBuf::from("todo.md"), markdown.to_string());
+
+    assert!(edit.toggle_task_without_undo(0));
+    assert_eq!(edit.text(), "- [x] one\n- [ ] two\n");
+    assert!(!edit.can_undo());
+
+    edit.replace_range_without_undo(0, 5, "- [x]");
+    assert_eq!(edit.text(), "- [x] one\n- [ ] two\n");
+    assert!(!edit.can_undo());
+}
+
+#[test]
 fn replace_range_splices_and_clamps_safely() {
     let mut edit = EditableDocument::new(PathBuf::from("a.md"), "hello world".to_string());
     assert!(edit.replace_range(6, 11, "there"));

@@ -3013,28 +3013,30 @@ function bindTaskCheckboxes(tasks) {
   boxes.forEach((box, index) => {
     box.removeAttribute('disabled');
     box.dataset.taskIndex = String(index);
+    // A checkbox toggle auto-saves and records no undo, so it uses a plain send
+    // (not sendEditCommand, which would optimistically flag the doc dirty).
     box.addEventListener('change', () => {
-      sendEditCommand({ command: 'toggleTask', index });
+      send({ command: 'toggleTask', index });
     });
   });
 }
 
 // Make table-cell checkboxes interactive. They have no marker offset to flip
 // (synthesized from cell text), so a click re-serializes the whole table from the
-// DOM and splices it over the table's source range. WYSIWYG tables only; runs
-// after bindEditableBlocks so ranges and editability are decided.
+// DOM and splices it over the table's source range. WYSIWYG tables only — checked
+// directly, since these bind even when reader editing is off (no contenteditable).
 function bindTableCheckboxes() {
   const body = app.querySelector('.document-body');
   if (!body) return;
   body.querySelectorAll('[data-block-kind="table"]').forEach((table) => {
-    if (table.getAttribute('contenteditable') !== 'true') return;
+    if (!tableWysiwygSafe(table)) return;
     const start = Number(table.dataset.srcStart);
     const end = Number(table.dataset.srcEnd);
     if (!Number.isFinite(start) || !Number.isFinite(end)) return;
     table.querySelectorAll('td input[type="checkbox"]').forEach((box) => {
       box.removeAttribute('disabled');
       box.addEventListener('change', () => {
-        sendBlockSplice(table, start, end, tableDomToMarkdown(table));
+        sendCheckboxBlockEdit(table, start, end, tableDomToMarkdown(table));
       });
     });
   });
@@ -3396,6 +3398,14 @@ function sendBlockSplice(el, start, end, text) {
   el.__editBaseline = blockDomToMarkdown(el);
 }
 
+// A table checkbox toggle: autosave tells the host to write to disk with no undo
+// step, and the plain send avoids a dirty flash. Neutralizes the blur baseline
+// like sendBlockSplice, in case the table was also being edited.
+function sendCheckboxBlockEdit(el, start, end, text) {
+  send({ command: 'editBlock', start, end, text, autosave: true });
+  el.__editBaseline = blockDomToMarkdown(el);
+}
+
 // Enter inside a paragraph/heading: split the block at the caret into two
 // blocks. The serialized halves replace the block's source range, joined by a
 // blank line; the caret carries over to the start of the second block. Enter at
@@ -3686,13 +3696,16 @@ function bindReadingEditor(doc) {
   if (!body) return;
   currentDocumentFormat = doc.format || 'markdown';
   currentDocumentSource = typeof doc.source === 'string' ? doc.source : '';
-  // Reader editing off: no editable blocks; checkboxes keep the host's disabled state.
-  if (!readerEditingEnabled) return;
+  // Checkboxes stay interactive even with reader editing off: a task toggle is a
+  // quick action that auto-saves and records no undo, not text editing. Only the
+  // click-to-type editable blocks are gated behind the setting.
   if (currentDocumentFormat === 'markdown') {
     attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : []);
     bindTaskCheckboxes(doc.tasks || []);
   }
-  bindEditableBlocks(currentDocumentFormat);
+  if (readerEditingEnabled) {
+    bindEditableBlocks(currentDocumentFormat);
+  }
   if (currentDocumentFormat === 'markdown') {
     bindTableCheckboxes();
   }
