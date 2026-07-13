@@ -1734,6 +1734,9 @@ body.library-resizing {
   background: var(--preview-background);
   height: 100vh;
   overflow: auto;
+  /* The reader pins its own scroll anchor across re-renders; the browser's
+     native scroll anchoring fights that and causes transient jumps. */
+  overflow-anchor: none;
   padding-top: 56px;
   position: relative;
   scroll-padding-top: 56px;
@@ -2656,9 +2659,7 @@ body.library-resizing {
   --cv-gutter: 3.75em;
   --cv-pad-x: 20px;
   --cv-pad-y: 16px;
-  /* Larger top padding so the first lines start below the floating library-open
-     button (viewport top 64px, 32px tall) rather than under it. Content still
-     scrolls up beneath the button; it just doesn't begin there. */
+  /* Top padding clears the floating library-open button; lines still scroll up under it. */
   --cv-pad-top: 48px;
   --minimap-padding-inline: 8px;
   --minimap-preview-width: 68px;

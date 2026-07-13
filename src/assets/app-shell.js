@@ -3574,10 +3574,8 @@ function makeMarkdownEditable(el) {
       commitActiveEditingBlock();
       event.preventDefault();
     } else if (target.closest('input[type="checkbox"]')) {
-      // Toggling a checkbox is an action, not "edit here". Swallow the mousedown
-      // so the block never takes focus — focusing it scrolls the clicked row to
-      // the top of the reader (the "page jumps" bug). The click still fires and
-      // flips the box.
+      // Swallow the mousedown so a checkbox toggle doesn't focus the block (which
+      // scrolls the clicked row to the top). The click still fires and flips it.
       event.preventDefault();
     }
   });
@@ -3727,7 +3725,15 @@ function renderState() {
     app.className = 'reader-shell has-document';
     const minimapHtml = renderDocumentMinimap(state.document.minimap);
     const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';
+    // Carry the scroll origin onto the fresh body — losing it shifts the layout
+    // by the origin and the anchor restore lands off by exactly that.
+    const previousBody = app.querySelector('.document-body');
+    const previousScrollOrigin = previousBody ? previousBody.style.getPropertyValue('--reader-scroll-origin') : '';
     app.innerHTML = `<div class="${layoutClass}">${state.document.html}${minimapHtml}</div>`;
+    if (previousScrollOrigin) {
+      const freshBody = app.querySelector('.document-body');
+      if (freshBody) freshBody.style.setProperty('--reader-scroll-origin', previousScrollOrigin);
+    }
     decorateBlockquoteLines();
     buildDocumentOutline();
     decorateAnchorLinks();
@@ -4882,6 +4888,9 @@ function restoreReaderScrollAnchor(anchor) {
     clampReaderScrollPosition();
     return;
   }
+  // Settle the origin before measuring — the clamp's own correction would shift
+  // the layout after these rects are read and land off by the change.
+  correctReaderScrollOrigin();
   const shellRect = app.getBoundingClientRect();
   const rect = element.getBoundingClientRect();
   const offsetY = Number.isFinite(anchor?.offsetY) ? anchor.offsetY : 0;

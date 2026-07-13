@@ -34,6 +34,19 @@ Before doing anything else — for **both** app and site-only releases — run t
 
 Do not skip this even for app releases: a code change is exactly when the docs most often drift.
 
+### Pre-step: Trim verbose code comments (always, before committing)
+
+Before step 0 commits anything, review the comments **you** added or changed in this session's code edits and condense any that are too long. Fresh comments tend to over-explain — a 4-line block where 1–2 lines carry the point.
+
+1. See the uncommitted diff: `git diff -- 'src/*'` (add other code globs as needed). Focus on **added/changed** comment lines only — don't rewrite pre-existing comments.
+2. For each comment you introduced, apply the bar:
+   - **Keep the *why*, cut the *what*.** The code shows what it does; the comment explains why it's needed or what breaks without it.
+   - **Match the surrounding density.** A new comment should be no longer than nearby existing ones for similar code. If the block next door explains itself in one line, yours should too.
+   - **One line if it fits.** Collapse multi-line blocks that restate the same idea, drop incidental specifics (exact pixel values, obvious mechanics) unless load-bearing, and cut hedging.
+3. Edit them down in place. This makes the working tree dirty (or dirtier) — that's expected; step 0 commits the condensed versions.
+
+This is a quality gate, not a git operation — never commit, tag, or push here.
+
 ### 0. Commit any uncommitted changes
 
 ```bash
