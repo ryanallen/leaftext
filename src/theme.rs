@@ -2656,6 +2656,10 @@ body.library-resizing {
   --cv-gutter: 3.75em;
   --cv-pad-x: 20px;
   --cv-pad-y: 16px;
+  /* Larger top padding so the first lines start below the floating library-open
+     button (viewport top 64px, 32px tall) rather than under it. Content still
+     scrolls up beneath the button; it just doesn't begin there. */
+  --cv-pad-top: 48px;
   --minimap-padding-inline: 8px;
   --minimap-preview-width: 68px;
   --minimap-width: calc(var(--minimap-preview-width) + (var(--minimap-padding-inline) * 2));
@@ -2699,7 +2703,7 @@ body.library-resizing {
   margin: 0;
   /* Extra bottom room so the layer stays at least as tall as the textarea and
      never clips the last line. */
-  padding: var(--cv-pad-y) var(--cv-pad-x) calc(var(--cv-pad-y) + 1.6em)
+  padding: var(--cv-pad-top) var(--cv-pad-x) calc(var(--cv-pad-y) + 1.6em)
     var(--cv-gutter);
   color: var(--code-block-foreground, var(--preview-foreground));
   background: transparent;
@@ -2723,7 +2727,7 @@ body.library-resizing {
   position: absolute;
   inset: 0;
   margin: 0;
-  padding: var(--cv-pad-y) var(--cv-pad-x) var(--cv-pad-y) 0;
+  padding: var(--cv-pad-top) var(--cv-pad-x) var(--cv-pad-y) 0;
   color: transparent;
   z-index: 1;
   pointer-events: none;
@@ -2754,7 +2758,7 @@ body.library-resizing {
   width: 100%;
   margin: 0;
   border: 0;
-  padding: var(--cv-pad-y) var(--cv-pad-x) calc(var(--cv-pad-y) + 1.6em)
+  padding: var(--cv-pad-top) var(--cv-pad-x) calc(var(--cv-pad-y) + 1.6em)
     var(--cv-gutter);
   box-sizing: border-box;
   color: transparent;

@@ -3568,8 +3568,16 @@ function makeMarkdownEditable(el) {
   // block never takes focus (the delegated click still navigates), and commit the
   // block being edited first, since no focusout will fire.
   el.addEventListener('mousedown', (event) => {
-    if (event.target && event.target.closest && event.target.closest('a')) {
+    const target = event.target;
+    if (!target || !target.closest) return;
+    if (target.closest('a')) {
       commitActiveEditingBlock();
+      event.preventDefault();
+    } else if (target.closest('input[type="checkbox"]')) {
+      // Toggling a checkbox is an action, not "edit here". Swallow the mousedown
+      // so the block never takes focus — focusing it scrolls the clicked row to
+      // the top of the reader (the "page jumps" bug). The click still fires and
+      // flips the box.
       event.preventDefault();
     }
   });
