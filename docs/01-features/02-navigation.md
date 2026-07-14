@@ -14,7 +14,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | Scroll anchors | Restore the same reading spot after rerenders |
 | Live reload | Reload a changed file without losing your place |
 | Recent files | Reopen the last 8 files quickly |
-| Loading spinner | A spinner appears over the reader while a slow document parses and renders |
+| Loading spinner | A spinner appears over the reader while a slow document or view renders |
 | Glossary sheet | Open a glossary term over the page without leaving it |
 | Link hints | Hover a link to see what kind it is and where it points |
 | Pager | Previous / Next buttons at the bottom of each document for reading a folder in order |
@@ -120,11 +120,12 @@ The no-file home screen shows the last 8 opened files.
 
 ## Loading
 
-Opening a recent file or switching to a different tab hands the document to the Rust side to parse and render before the reading view comes back. For a large file that can take a moment, so leaftext shows a spinner over the reader while the host works and clears it the instant the new document arrives.
+Opening a document hands it to the Rust side to parse and render before the view comes back, and building the page in the reading view can itself take a moment for a large file. For a big document either half of that is slow, so leaftext shows a spinner over the reader while the work happens and clears it the instant the new view arrives.
 
-- The spinner is deferred briefly, so a quick load never flashes it.
+- The spinner covers every path that loads a view: opening a file (from [recent files](#recent-files), the [library](03-library.md), a link, the Open dialog, or drag-and-drop), Back/Forward, switching tabs, and toggling the [code view](07-editing.md#code-view) in either direction.
+- It appears immediately when a load starts, so a quick load may show it briefly rather than not at all.
 - It overlays the reader without disturbing the [library](03-library.md) pane or the app bar, and lets clicks pass through.
-- Re-clicking the tab you are already on does nothing on the host side, so no spinner appears there.
+- Re-clicking the tab you are already on does nothing on the host side, so no spinner appears there. Reading-view edits, such as ticking a checkbox, re-render in place without one.
 - A safety timeout lowers it even if a response never comes, so it can never get stuck on screen.
 
 ## Glossary

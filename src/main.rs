@@ -2037,6 +2037,8 @@ fn enter_code_view(
     let Some(tab) = workspace.tabs.get_mut(index) else {
         return;
     };
+    // Highlighting a big source takes a while; the code-view script clears it.
+    begin_reader_loading(webview);
     let edit = tab.edit_buffer(&path, contents);
     let highlighted = edit.source_view_html();
     let text = edit.text().to_string();
@@ -2278,6 +2280,13 @@ fn render_active(
     local_image_source_dir_state: &Arc<Mutex<Option<PathBuf>>>,
     scroll: ScrollIntent,
 ) {
+    // Pop the spinner for navigations (open, back/forward, tab switch), where
+    // the load below can be slow; the state script clears it. In-place
+    // re-renders (Preserve: edits, reorders) and the home screen skip it, so a
+    // checkbox click doesn't flash an overlay.
+    if workspace.active.is_some() && !matches!(scroll, ScrollIntent::Preserve) {
+        begin_reader_loading(webview);
+    }
     match workspace.active {
         Some(index) => {
             let Some(path) = workspace
@@ -2462,6 +2471,17 @@ fn update_active_navigation(webview: Option<&WebView>, workspace: &Workspace) {
                     eprintln!("Failed to update navigation state: {error}");
                 }
             }
+        }
+    }
+}
+
+/// Pop the reader loading spinner before a view renders on this thread. The
+/// state script the render sends back clears it; a page-side safety timeout
+/// covers anything that slips through.
+fn begin_reader_loading(webview: Option<&WebView>) {
+    if let Some(webview) = webview {
+        if let Err(error) = webview.evaluate_script("beginReaderLoading();") {
+            eprintln!("Failed to arm the reader loading spinner: {error}");
         }
     }
 }

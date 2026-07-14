@@ -111,30 +111,23 @@ function endTabDrag(commit) {
 document.addEventListener('pointerup', () => endTabDrag(true));
 document.addEventListener('pointercancel', () => endTabDrag(false));
 // A slow document renders on the Rust side before the HTML comes back. Show a
-// spinner over the reader during that work, cleared when the document state
-// arrives. Deferred briefly so quick loads don't flash it; a safety timeout
-// guarantees it never sticks.
-const READER_LOADING_DELAY_MS = 200;
+// spinner over the reader immediately during that work, cleared when the
+// document state arrives; a safety timeout guarantees it never sticks.
 const READER_LOADING_SAFETY_MS = 30000;
-let readerLoadingDelay = 0;
 let readerLoadingSafety = 0;
 function beginReaderLoading() {
   clearReaderLoading();
-  readerLoadingDelay = setTimeout(() => {
-    readerLoadingDelay = 0;
-    if (readerLoading) readerLoading.hidden = false;
-  }, READER_LOADING_DELAY_MS);
+  if (readerLoading) readerLoading.hidden = false;
   readerLoadingSafety = setTimeout(clearReaderLoading, READER_LOADING_SAFETY_MS);
 }
 function clearReaderLoading() {
-  if (readerLoadingDelay) { clearTimeout(readerLoadingDelay); readerLoadingDelay = 0; }
   if (readerLoadingSafety) { clearTimeout(readerLoadingSafety); readerLoadingSafety = 0; }
   if (readerLoading) readerLoading.hidden = true;
 }
 // Commands whose host handler always renders a document back, so raising the
-// spinner here and letting that reply lower it is safe. switchTab is excluded:
-// clicking the active tab is a host no-op, so it raises the spinner at the call
-// site only on a real switch.
+// spinner here and letting that reply lower it is safe. Tab switches and the
+// code-view toggle arm at their call sites (they need a no-op guard); other
+// paths (picker, drag-drop, links) are armed host-side before the render.
 const READER_LOADING_COMMANDS = new Set(['openRecent']);
 const send = (message) => {
   if (message && READER_LOADING_COMMANDS.has(message.command)) beginReaderLoading();
@@ -2150,75 +2143,101 @@ window.addEventListener('keydown', (event) => {
     sendNavigationCommand('goForward');
   }
 });
+// Above this many characters of view HTML, building the DOM (innerHTML plus
+// the layout-forcing decoration passes) blocks this thread long enough that
+// the spinner should be painted on screen before the work starts.
+const READER_LOADING_HEAVY_HTML = 250000;
+// Invalidates a deferred heavy render when a newer render supersedes it.
+let readerRenderToken = 0;
+// Run a blocking view render. The real stall on a big payload is the render
+// itself, so a heavy payload pops the spinner and yields two frames — one for
+// rAF callbacks, one so the compositor actually paints it — before blocking.
+function runViewRender(payload, render) {
+  const token = ++readerRenderToken;
+  const run = () => {
+    if (token !== readerRenderToken) return;
+    render();
+    clearReaderLoading();
+  };
+  if (payload && payload.length >= READER_LOADING_HEAVY_HTML) {
+    beginReaderLoading();
+    window.requestAnimationFrame(() => window.requestAnimationFrame(run));
+  } else {
+    run();
+  }
+}
 window.leafSetState = (state) => {
-  clearReaderLoading();
   currentState = state || { recent: [], tabs: [], active: null, document: null };
   if (!currentState.document) {
     emptyDescriptionKey = pickEmptyDescriptionKey();
   }
-  resetReaderScrollOnNextRender = true;
-  renderState();
-  // Opening a file lands on it; the home screen (no active tab) clears the
-  // highlight and leaves the Project/Tree position as the user last saved it.
-  // Fly the graph to it only when the active document actually changed, so a
-  // plain state refresh of the same file doesn't yank a panned-away view back.
-  const openedPath = activeDocumentPath();
-  followFileInLibrary(openedPath, !!openedPath && openedPath !== librarySelectedPath);
-  // A search result was clicked: once its document is the active one, jump to the
-  // matching heading. One-shot — cleared whether or not it applied this render.
-  if (pendingSearchJump) {
-    const jump = pendingSearchJump;
-    pendingSearchJump = null;
-    if (jump.anchor && activeDocumentPath() === jump.path) {
-      window.leafScrollToFragment('#' + jump.anchor);
+  runViewRender(currentState.document && currentState.document.html, () => {
+    resetReaderScrollOnNextRender = true;
+    renderState();
+    // Opening a file lands on it; the home screen (no active tab) clears the
+    // highlight and leaves the Project/Tree position as the user last saved it.
+    // Fly the graph to it only when the active document actually changed, so a
+    // plain state refresh of the same file doesn't yank a panned-away view back.
+    const openedPath = activeDocumentPath();
+    followFileInLibrary(openedPath, !!openedPath && openedPath !== librarySelectedPath);
+    // A search result was clicked: once its document is the active one, jump to the
+    // matching heading. One-shot — cleared whether or not it applied this render.
+    if (pendingSearchJump) {
+      const jump = pendingSearchJump;
+      pendingSearchJump = null;
+      if (jump.anchor && activeDocumentPath() === jump.path) {
+        window.leafScrollToFragment('#' + jump.anchor);
+      }
     }
-  }
+  });
 };
 // Re-render the active document after a live reload without scrolling to the top:
 // capture the position, re-render, restore it (clamped if the document shrank).
 window.leafReloadDocument = (state) => {
-  clearReaderLoading();
   const anchor = captureReaderScrollAnchor();
   currentState = state || currentState || { recent: [], tabs: [], active: null, document: null };
-  resetReaderScrollOnNextRender = false;
-  renderState();
-  readerScrollAnchor = anchor;
-  window.requestAnimationFrame(() => {
-    restoreReaderScrollAnchor(anchor);
-    readerScrollAnchor = captureReaderScrollAnchor();
-    updateMinimapViewport();
+  runViewRender(currentState.document && currentState.document.html, () => {
+    resetReaderScrollOnNextRender = false;
+    renderState();
+    readerScrollAnchor = anchor;
+    window.requestAnimationFrame(() => {
+      restoreReaderScrollAnchor(anchor);
+      readerScrollAnchor = captureReaderScrollAnchor();
+      updateMinimapViewport();
+    });
   });
 };
 // Switch to another tab and land where it was last left. `anchor` is a content
 // anchor that survives the re-render, null the first time (starts at the top).
 // Skips the reset-to-top that leafSetState runs so a tab click never jumps up.
 window.leafSwitchTab = (state, anchor) => {
-  clearReaderLoading();
   currentState = state || { recent: [], tabs: [], active: null, document: null };
   if (!currentState.document) {
     emptyDescriptionKey = pickEmptyDescriptionKey();
   }
-  resetReaderScrollOnNextRender = false;
-  renderState();
-  // Switching to a tab is "going to" that file: reveal and select it, and in
-  // graph mode fly to its node when the switch changed the active document.
-  const switchedPath = activeDocumentPath();
-  followFileInLibrary(switchedPath, !!switchedPath && switchedPath !== librarySelectedPath);
-  if (!anchor) {
-    resetReaderScrollToContentStart();
-    return;
-  }
-  readerScrollAnchor = anchor;
-  // Restore synchronously, before the browser paints the freshly rendered
-  // document, so switching tabs never flashes at the top for a frame.
-  restoreReaderScrollAnchor(anchor);
-  updateMinimapViewport();
-  // Re-apply after layout settles; renderState's reflow observer keeps re-pinning
-  // the anchor as images above it decode and grow, so the landing doesn't drift.
-  window.requestAnimationFrame(() => {
+  runViewRender(currentState.document && currentState.document.html, () => {
+    resetReaderScrollOnNextRender = false;
+    renderState();
+    // Switching to a tab is "going to" that file: reveal and select it, and in
+    // graph mode fly to its node when the switch changed the active document.
+    const switchedPath = activeDocumentPath();
+    followFileInLibrary(switchedPath, !!switchedPath && switchedPath !== librarySelectedPath);
+    if (!anchor) {
+      resetReaderScrollToContentStart();
+      return;
+    }
+    readerScrollAnchor = anchor;
+    // Restore synchronously, before the browser paints the freshly rendered
+    // document, so switching tabs never flashes at the top for a frame.
     restoreReaderScrollAnchor(anchor);
-    readerScrollAnchor = captureReaderScrollAnchor();
     updateMinimapViewport();
+    // Re-apply after layout settles; renderState's reflow observer keeps re-pinning
+    // the anchor as images above it decode and grow, so the landing doesn't drift.
+    window.requestAnimationFrame(() => {
+      restoreReaderScrollAnchor(anchor);
+      readerScrollAnchor = captureReaderScrollAnchor();
+      updateMinimapViewport();
+    });
   });
 };
 window.leafSetNavigation = (state) => {
@@ -2794,6 +2813,9 @@ if (codeViewButton) {
     // Carry the current position across the toggle; the destination view's
     // render consumes it and lands at the same relative spot.
     pendingViewScrollFraction = viewScrollFraction();
+    // Either direction re-renders the whole view (highlighting a big source or
+    // rebuilding a big document is slow), so arm the spinner for the wait.
+    beginReaderLoading();
     send({ command: codeViewActive ? 'exitCodeView' : 'enterCodeView' });
   });
 }
@@ -2914,13 +2936,14 @@ function renderCodeView(state) {
 // Enter the code view: the host sends the highlighted source, the exact buffer
 // text, the language, and the dirty state.
 window.leafShowCodeView = (state) => {
-  clearReaderLoading();
-  codeViewActive = true;
-  codeViewText = (state && state.text) || '';
-  renderCodeView(state || {});
-  const path = activeDocumentPath();
-  if (path) setDirtyState(path, !!(state && state.dirty));
-  updateEditingChrome();
+  runViewRender(state && state.html, () => {
+    codeViewActive = true;
+    codeViewText = (state && state.text) || '';
+    renderCodeView(state || {});
+    const path = activeDocumentPath();
+    if (path) setDirtyState(path, !!(state && state.dirty));
+    updateEditingChrome();
+  });
 };
 
 // Refresh the code view's colour layer and dirty state after a debounced
