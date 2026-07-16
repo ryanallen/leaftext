@@ -3258,11 +3258,30 @@ function tableDomToMarkdown(el) {
   return lines.join('\n');
 }
 
+const MARKDOWN_WYSIWYG_INLINE_TAGS = new Set(['a', 'br', 'strong', 'b', 'em', 'i', 'del', 's', 'code']);
+
+function inlineMarkdownDomWysiwygSafe(el) {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT, {
+    acceptNode(node) {
+      if (node.classList && node.classList.contains('heading-anchor')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const tag = node.tagName.toLowerCase();
+    if (!MARKDOWN_WYSIWYG_INLINE_TAGS.has(tag)) return false;
+  }
+  return true;
+}
+
 // Whether a Markdown block edits WYSIWYG safely. Links are fine
-// (anchorToMarkdown reproduces each form); images, footnotes, math, and diagrams
-// still can't round-trip, so they stay read-only (code view only).
+// (anchorToMarkdown reproduces each form), but raw HTML elements such as <sub>
+// cannot be reconstructed from their rendered DOM, so they use source editing.
 function markdownBlockWysiwygSafe(el) {
-  return !el.querySelector('img, sup.footnote-reference, .katex, .mermaid, input');
+  return (
+    inlineMarkdownDomWysiwygSafe(el) &&
+    !el.querySelector('img, sup.footnote-reference, .katex, .mermaid, input')
+  );
 }
 
 // A list serializes faithfully only when tight and inline-content (plus
