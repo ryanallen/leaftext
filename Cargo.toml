@@ -1,6 +1,6 @@
 [package]
 name = "leaftext"
-version = "0.1.328"
+version = "0.1.329"
 edition = "2021"
 
 [profile.release]
