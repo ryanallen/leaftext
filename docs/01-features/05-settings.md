@@ -13,7 +13,7 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 | Speed Reader | On / Off | Off |
 | Minimap | On / Off | On |
 | Pager | On / Off | On |
-| Line numbers | On / Off | On |
+| Line numbers | On / Off | Off |
 | Reading-view editing | On / Off | On |
 | Indexing | On / Off | Off |
 | Library view | Graph, Project, Tree, All files | Graph |
@@ -42,7 +42,7 @@ Here `{config_dir}` and `{data_dir}` are the per-app directories the `directorie
   "minimap_enabled": true,
   "pager_enabled": true,
   "speed_reader_enabled": false,
-  "line_numbers_enabled": true,
+  "line_numbers_enabled": false,
   "reader_editing_enabled": true,
   "theme_mode": "system",
   "library_view": "graph",
@@ -119,7 +119,7 @@ The app ships both language dictionaries locally and applies changes without a r
 
 ### Line numbers
 
-- On by default
+- Off by default
 - Numbers each block in the left gutter as a copyable [block permalink](01-rendering.md#inline-html)
 - Hidden until you hover a block (or the number itself) on pointer devices; stays faintly visible on touch devices and narrow windows, where a single tap copies the link
 - Turning it off hides the numbers; blocks keep their ids, so `#id` deep links still resolve

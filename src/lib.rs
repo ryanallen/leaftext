@@ -1201,7 +1201,7 @@ pub struct Settings {
     pub pager_enabled: bool,
     /// Quiet prose and add bold lead anchors at word starts. Off by default.
     pub speed_reader_enabled: bool,
-    /// Show the gutter permalink number beside each block. On by default; the
+    /// Show the gutter permalink number beside each block. Off by default; the
     /// blocks keep their ids either way, so `#locus` deep links still resolve.
     pub line_numbers_enabled: bool,
     /// Make the reading view a live editor. On by default; off keeps it
@@ -1240,7 +1240,7 @@ impl Default for Settings {
             minimap_enabled: true,
             pager_enabled: true,
             speed_reader_enabled: false,
-            line_numbers_enabled: true,
+            line_numbers_enabled: false,
             reader_editing_enabled: true,
             theme_mode: "system".to_string(),
             library_view: LibraryView::default(),

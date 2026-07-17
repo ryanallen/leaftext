@@ -102,7 +102,7 @@ export function installSettings({ hasLibrary = false } = {}) {
   const themeMode = readStore(STORE_THEME, 'system');
   const speedReaderOn = readStore(STORE_SPEED_READER, '0') === '1';
   const minimapOn = readStore(STORE_MINIMAP, '1') !== '0';
-  const lineNumbersOn = readStore(STORE_LINE_NUMBERS, '1') !== '0';
+  const lineNumbersOn = readStore(STORE_LINE_NUMBERS, '0') !== '0';
   const libraryOn = readStore(STORE_LIBRARY, '1') !== '0';
 
   // Make sure the live page matches the stored choices (the head bootstrap

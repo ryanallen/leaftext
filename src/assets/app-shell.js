@@ -436,9 +436,9 @@ pagerEnabledControl.addEventListener('change', () => {
 });
 // Gutter permalink numbers. A data-attribute on <html> shows/hides them via CSS
 // (no re-render); hiding drops only the visible number, blocks keep their ids so
-// #locus links still resolve. On by default.
+// #locus links still resolve. Off by default.
 let lineNumbersEnabled =
-  typeof LEAF_SETTINGS.lineNumbersEnabled === 'boolean' ? LEAF_SETTINGS.lineNumbersEnabled : true;
+  typeof LEAF_SETTINGS.lineNumbersEnabled === 'boolean' ? LEAF_SETTINGS.lineNumbersEnabled : false;
 function applyLineNumbersEnabled() {
   document.documentElement.dataset.lineNumbersEnabled = String(lineNumbersEnabled);
 }
@@ -3092,9 +3092,10 @@ function anchorToMarkdown(el) {
   return '[' + inlineDomToMarkdown(el) + '](' + href + ')';
 }
 
-const MARKDOWN_RAW_INLINE_TAGS = new Set(['abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span']);
+const MARKDOWN_RAW_INLINE_TAGS = new Set(['abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span', 'div']);
 const MARKDOWN_RAW_INLINE_ATTRIBUTES = {
   abbr: ['title'],
+  div: ['align', 'id'],
   span: ['id'],
 };
 
@@ -3296,7 +3297,7 @@ function tableDomToMarkdown(el) {
 
 const MARKDOWN_WYSIWYG_INLINE_TAGS = new Set([
   'a', 'br', 'strong', 'b', 'em', 'i', 'del', 's', 'code',
-  'abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span',
+  'abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span', 'div',
 ]);
 
 function inlineMarkdownDomWysiwygSafe(el) {

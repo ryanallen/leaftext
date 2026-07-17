@@ -2984,10 +2984,11 @@ fn app_shell_reader_editor_round_trips_safe_inline_html() {
     let html = app_shell_html();
 
     for expected in [
-        "const MARKDOWN_RAW_INLINE_TAGS = new Set(['abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span']);",
+        "const MARKDOWN_RAW_INLINE_TAGS = new Set(['abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span', 'div']);",
+        "div: ['align', 'id'],",
         "return '<' + tag + rawInlineHtmlAttributes(el, tag) + '>' + inlineDomToMarkdown(el) + '</' + tag + '>';",
         "out += '<br>';",
-        "'abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span',",
+        "'abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span', 'div',",
         "out += rawInlineHtmlToMarkdown(child, tag);",
     ] {
         assert_contains(&html, expected);
@@ -5225,6 +5226,7 @@ fn settings_default_keeps_minimap_on_and_indexing_off() {
     assert!(settings.minimap_enabled);
     assert!(!settings.indexing_enabled);
     assert!(!settings.speed_reader_enabled);
+    assert!(!settings.line_numbers_enabled);
     assert_eq!(settings.theme_mode, "system");
     assert_eq!(settings.library_view, LibraryView::Graph);
     assert!(settings.library_expanded.is_empty());
