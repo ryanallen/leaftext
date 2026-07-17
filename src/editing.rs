@@ -94,7 +94,8 @@ impl EditableDocument {
     }
 
     /// Revert the most recent reading-view edit; returns whether anything was
-    /// undone. Undoing past a save is allowed (the buffer goes dirty again).
+    /// undone. A successful save clears the stack, so undo only covers edits
+    /// made since the last saved baseline.
     pub fn undo(&mut self) -> bool {
         match self.undo_stack.pop() {
             Some(previous) => {
@@ -133,9 +134,11 @@ impl EditableDocument {
     }
 
     /// Record that the current buffer was written to disk: the buffer becomes
-    /// the saved baseline (so dirty clears) and the version advances.
+    /// the saved baseline (so dirty clears), reader-edit undo history resets,
+    /// and the version advances.
     pub fn mark_saved(&mut self) {
         self.saved = self.text.clone();
+        self.undo_stack.clear();
         self.version += 1;
     }
 

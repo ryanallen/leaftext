@@ -2035,8 +2035,8 @@ const saveButton = document.getElementById('saveButton');
 const undoButton = document.getElementById('undoButton');
 // Whether each document has a reading-view edit to undo. Set optimistically
 // when an edit is sent, then overwritten by the host's authoritative answer in
-// every leafBlocksResynced — the host owns the undo stack, so the button can
-// never linger after undoing all the way back.
+// leafBlocksResynced and cleared on save. The host owns the undo stack, so the
+// button can never linger after undoing all the way back or saving a baseline.
 const undoableByPath = new Map();
 // Whether the reader is currently showing raw source instead of the rendered
 // document. Reset by renderState(), set by leafShowCodeView().
@@ -2427,8 +2427,8 @@ function updateEditingChrome() {
     saveButton.hidden = !(hasDocument && isDocumentDirty(path));
   }
   if (undoButton) {
-    // Undo appears beside Save whenever the document has reading-view edits to
-    // step back through — including past a save, which just re-dirties.
+    // Undo appears whenever the document has reading-view edits since the last
+    // successful save.
     undoButton.hidden = !(hasDocument && undoableByPath.get(path) === true);
   }
 }
@@ -2965,6 +2965,7 @@ window.leafSourceUpdated = (state) => {
 // on failure, keep the edits and surface the error.
 window.leafSaved = (path, ok, error) => {
   if (ok) {
+    undoableByPath.delete(path);
     setDirtyState(path, false);
   } else if (error) {
     window.leafShowOpenError(path, error);

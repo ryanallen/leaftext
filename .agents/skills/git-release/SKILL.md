@@ -154,11 +154,9 @@ For app releases, also delete old remote tags so GitHub shows only the latest:
 git push origin --delete <old-tag-1> <old-tag-2> ...
 ```
 
-The push triggers a fresh Pages build+deploy. **Do not wait for it** — Pages deploys fine here, and the previous (kept) deployment serves the site until the new one flips over. Optionally confirm the site is still up:
+The push triggers a fresh Pages build+deploy. **Do not wait for it** — Pages deploys fine here, and the previous (kept) deployment serves the site until the new one flips over.
 
-```bash
-curl -s -o /dev/null -w "leaftext.com -> HTTP %{http_code}\n" -L http://leaftext.com/
-```
+**Stop after the push. Do not confirm anything.** No `curl` site check, no `gh run list`, no CI-triggered check, no closing summary of what shipped. The push is the last action — end the turn with a single one-line "Released v<version>." (or "Site updated." for site-only) and nothing more.
 
 ## Examples
 

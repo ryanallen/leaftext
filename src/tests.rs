@@ -2995,6 +2995,14 @@ fn app_shell_reader_editor_round_trips_safe_inline_html() {
 }
 
 #[test]
+fn app_shell_save_success_clears_reader_undo_state() {
+    let html = app_shell_html();
+
+    assert_contains(&html, "window.leafSaved = (path, ok, error) => {");
+    assert_contains(&html, "undoableByPath.delete(path);");
+}
+
+#[test]
 fn app_shell_resets_new_documents_to_rendered_content_top() {
     let html = app_shell_html();
 
@@ -5831,6 +5839,15 @@ fn editable_document_tracks_dirty_and_save() {
     doc.mark_saved();
     assert!(!doc.is_dirty(), "the buffer is the baseline after a save");
     assert_eq!(doc.version(), 1, "each save advances the version");
+
+    doc.replace_range(2, 7, "Hi");
+    assert!(doc.can_undo(), "reader edits create an undo step");
+    doc.mark_saved();
+    assert!(
+        !doc.can_undo(),
+        "saving makes the current buffer the undo baseline"
+    );
+    assert_eq!(doc.version(), 2, "a later save advances again");
 }
 
 #[test]
