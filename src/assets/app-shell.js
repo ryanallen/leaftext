@@ -3091,9 +3091,37 @@ function anchorToMarkdown(el) {
   return '[' + inlineDomToMarkdown(el) + '](' + href + ')';
 }
 
+const MARKDOWN_RAW_INLINE_TAGS = new Set(['abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span']);
+const MARKDOWN_RAW_INLINE_ATTRIBUTES = {
+  abbr: ['title'],
+  span: ['id'],
+};
+
+function htmlAttributeEscape(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function rawInlineHtmlAttributes(el, tag) {
+  const allowed = MARKDOWN_RAW_INLINE_ATTRIBUTES[tag] || [];
+  let out = '';
+  allowed.forEach((name) => {
+    if (!el.hasAttribute(name)) return;
+    out += ' ' + name + '="' + htmlAttributeEscape(el.getAttribute(name) || '') + '"';
+  });
+  return out;
+}
+
+function rawInlineHtmlToMarkdown(el, tag) {
+  return '<' + tag + rawInlineHtmlAttributes(el, tag) + '>' + inlineDomToMarkdown(el) + '</' + tag + '>';
+}
+
 // Serialize a block's inline DOM back to Markdown (bold, italic, strikethrough,
-// code, links, hard breaks), stripping render-only decorations. Unknown wrappers
-// contribute just their text.
+// code, links, and safe raw inline HTML), stripping render-only decorations.
+// Unknown wrappers contribute just their text.
 function inlineDomToMarkdown(node) {
   let out = '';
   node.childNodes.forEach((child) => {
@@ -3103,10 +3131,13 @@ function inlineDomToMarkdown(node) {
     }
     if (child.nodeType !== Node.ELEMENT_NODE) return;
     const tag = child.tagName.toLowerCase();
+    if (child.classList.contains('heading-anchor')) {
+      return;
+    }
     if (tag === 'br') {
-      // A <br> is a hard break; serialize the backslash form (a bare newline is
-      // a soft break, downgrading the source on edit).
-      out += '\\\n';
+      // Keep breaks inline. A backslash-newline hard break would end an ATX
+      // heading's source line and split the rendered heading apart on re-render.
+      out += '<br>';
       return;
     }
     if (tag === 'strong' || tag === 'b') {
@@ -3127,6 +3158,10 @@ function inlineDomToMarkdown(node) {
     }
     if (tag === 'a') {
       out += anchorToMarkdown(child);
+      return;
+    }
+    if (MARKDOWN_RAW_INLINE_TAGS.has(tag)) {
+      out += rawInlineHtmlToMarkdown(child, tag);
       return;
     }
     out += inlineDomToMarkdown(child);
@@ -3258,7 +3293,10 @@ function tableDomToMarkdown(el) {
   return lines.join('\n');
 }
 
-const MARKDOWN_WYSIWYG_INLINE_TAGS = new Set(['a', 'br', 'strong', 'b', 'em', 'i', 'del', 's', 'code']);
+const MARKDOWN_WYSIWYG_INLINE_TAGS = new Set([
+  'a', 'br', 'strong', 'b', 'em', 'i', 'del', 's', 'code',
+  'abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span',
+]);
 
 function inlineMarkdownDomWysiwygSafe(el) {
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT, {

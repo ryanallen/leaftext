@@ -2975,8 +2975,23 @@ fn app_shell_rebinds_minimap_after_document_updates() {
             "bindDocumentMinimap();",
             "updateMinimapViewport();",
         ] {
-            assert_contains(&html, expected);
-        }
+        assert_contains(&html, expected);
+    }
+}
+
+#[test]
+fn app_shell_reader_editor_round_trips_safe_inline_html() {
+    let html = app_shell_html();
+
+    for expected in [
+        "const MARKDOWN_RAW_INLINE_TAGS = new Set(['abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span']);",
+        "return '<' + tag + rawInlineHtmlAttributes(el, tag) + '>' + inlineDomToMarkdown(el) + '</' + tag + '>';",
+        "out += '<br>';",
+        "'abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span',",
+        "out += rawInlineHtmlToMarkdown(child, tag);",
+    ] {
+        assert_contains(&html, expected);
+    }
 }
 
 #[test]
