@@ -12,7 +12,7 @@ The library is the part of leaftext that helps you find documents, not just read
 | Project view | One folder at a time, drilled into the current project |
 | Tree view | Nested folder hierarchy |
 | All files view | One alphabetized file list |
-| Search | Filename and content search, optionally scoped to the files on screen |
+| Search | Filename and content search, scoped to whatever the current view shows |
 | File actions | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
 
 ## Views
@@ -84,16 +84,17 @@ Example:
 
 Opening a content result jumps to the nearest heading.
 
-### Focus vs All
+### Search scope
 
-A toggle beside the search box chooses how wide the search reaches:
+Search reaches exactly as far as the current view shows — there is no separate control:
 
-| Scope | What it searches |
+| View | What search covers |
 | --- | --- |
-| All | The whole indexed library (the default) |
-| Focus | Only the documents currently shown in the pane |
+| Project | The files in the current project folder |
+| Graph | The documents currently drawn (set by the [Graph size](05-settings.md#graph-size)) |
+| Tree, All files | The whole indexed library |
 
-In **Focus**, "the documents currently shown" means the [Graph](#graph)'s visible nodes in Graph view, or the listed files in Project, Tree, and All files views — so a search inside a graph focused on one document only turns up matches from that document's neighborhood. The filter runs in the query itself, so a Focus match ranked below the top 50 of a library-wide search still surfaces. Flipping the toggle re-runs the current query, and so does switching views while a Focus search is active. A shown set larger than 1,500 documents is treated as All.
+Because Project and Graph list a subset, searching from them stays inside that subset — a search in a graph focused on one document only turns up matches from that document's neighborhood. The filter runs in the query itself, so a scoped match ranked below the top 50 of a library-wide search still surfaces. Switching views re-runs the current query under the new view's reach. A scoped set larger than 1,500 documents searches the whole library instead.
 
 ## File actions
 

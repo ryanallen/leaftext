@@ -1481,10 +1481,12 @@ body.library-resizing {
   color: inherit;
   border-radius: 2px;
 }
-/* The search box fills the rest of the pinned header, beside the view chip. */
+/* The search box fills the rest of the pinned header, beside the view chip; its
+   min-width floors the controls so a narrow pane clips them (see .library-header)
+   rather than squashing the field away. */
 .library-search-wrap {
   flex: 1 1 auto;
-  min-width: 0;
+  min-width: 72px;
   display: flex;
   align-items: center;
   height: 24px;
@@ -1527,6 +1529,11 @@ body.library-resizing {
   right: 0;
   z-index: 2;
   box-sizing: border-box;
+  /* Clip the fixed-width controls at the pane's right edge (the divider) so a
+     narrow drag slides them under it instead of squashing or spilling past it;
+     overflow-y stays visible so the view dropdown can still open below. */
+  overflow-x: clip;
+  overflow-y: visible;
   height: var(--library-header-height);
   display: flex;
   align-items: center;
