@@ -1481,17 +1481,15 @@ body.library-resizing {
   color: inherit;
   border-radius: 2px;
 }
-/* The search box fills the rest of the pinned header, beside the view chip. It
-   wraps the input and the Focus toggle so the toggle rides inside the field. */
+/* The search box fills the rest of the pinned header, beside the view chip. */
 .library-search-wrap {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
   height: 24px;
   box-sizing: border-box;
-  padding: 0 4px 0 8px;
+  padding: 0 8px;
   border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--app-muted-foreground) 25%, transparent);
   background: var(--library-surface);
@@ -1548,60 +1546,6 @@ body.library-resizing {
   position: relative;
   /* The view switcher keeps its size; only the search field beside it shrinks. */
   flex: 0 0 auto;
-}
-/* The Focus toggle rides at the right end inside the search box: a short label
-   and a round on/off switch. Off = search the whole library; on = only the files
-   shown here. The `.library-header` scope outranks the shared header-button chip
-   styling so the switch stays borderless and unfilled. */
-.library-header .library-search-scope {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 2px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--app-muted-foreground);
-  font-family: var(--code-font, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.library-header .library-search-scope:hover {
-  background: transparent;
-  color: var(--app-foreground);
-}
-.library-search-scope[aria-pressed="true"] {
-  color: var(--app-foreground);
-}
-.library-search-scope-track {
-  position: relative;
-  flex: 0 0 auto;
-  width: 24px;
-  height: 14px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--app-muted-foreground) 35%, transparent);
-  transition: background 0.15s ease;
-}
-.library-search-scope-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-  transition: transform 0.15s ease;
-}
-.library-search-scope[aria-pressed="true"] .library-search-scope-track {
-  /* Switch on: fill the track with the accent and slide the knob right. */
-  background: var(--app-action-background, #2f81f7);
-}
-.library-search-scope[aria-pressed="true"] .library-search-scope-thumb {
-  transform: translateX(10px);
 }
 .library-header button {
   display: inline-flex;

@@ -24,8 +24,6 @@ const libraryViewLabel = document.getElementById('libraryViewLabel');
 const libraryViewSelect = document.getElementById('libraryViewSelect');
 const libraryViewMenu = document.getElementById('libraryViewMenu');
 const librarySearch = document.getElementById('librarySearch');
-const librarySearchScope = document.getElementById('librarySearchScope');
-const librarySearchScopeLabel = document.getElementById('librarySearchScopeLabel');
 const librarySearchResults = document.getElementById('librarySearchResults');
 const libraryScanProgress = document.getElementById('libraryScanProgress');
 const settingsMenu = document.getElementById('settingsMenu');
@@ -677,11 +675,9 @@ let librarySearchTimer = 0;
 let librarySearchHits = null;
 let librarySearchError = null;
 let librarySearchLoading = false;
-// Focus search: when on, restrict results to the files shown in the pane. Off =
-// whole library.
-let librarySearchFocus = false;
-// Above this, a "focus" isn't meaningful (and the IN clause too big), so search
-// everything instead.
+// Search scope follows the current view (see librarySearchScopePaths). Above
+// this many paths a scoped view can't bind its files in one IN clause, so it
+// searches the whole library instead.
 const SEARCH_SCOPE_CAP = 1500;
 // A heading anchor to scroll to once a clicked result's document has rendered.
 let pendingSearchJump = null;
@@ -921,9 +917,9 @@ libraryViewMenu.addEventListener('click', (event) => {
   closeLibraryViewMenu();
   persistLibraryState();
   renderLibrary();
-  // A Focus search is scoped to the files the view shows, so switching views
-  // changes the scope — re-run the active query against the new set.
-  if (librarySearchFocus && librarySearchQuery) runLibrarySearch(librarySearch.value);
+  // Search scope follows the view, so switching views changes the scope —
+  // re-run the active query against the new set.
+  if (librarySearchQuery) runLibrarySearch(librarySearch.value);
 });
 document.addEventListener('click', (event) => {
   if (!libraryViewMenu.hidden && !libraryViewSelect.contains(event.target)) {
@@ -1898,37 +1894,25 @@ function runLibrarySearch(value) {
   renderLibrarySearch();
   send({ command: 'search', query, scope: librarySearchScopePaths() });
 }
-// The document paths to restrict a Focus search to, or null for the whole
-// library. Focus off, or a visible set too large to be a meaningful focus (or to
-// bind in one query), searches everything.
+// The document paths to restrict a search to, following the current view, or
+// null to search the whole library. Project narrows to the open project folder
+// and Graph to the drawn nodes; Tree and All files list the whole library, so
+// they search everything. A scoped set too large to bind in one query also
+// searches everything.
 function librarySearchScopePaths() {
-  if (!librarySearchFocus) return null;
   let paths;
   if (libraryView === 'graph') {
-    paths = (graphData && graphData.nodes) ? graphData.nodes.map((n) => n.path) : [];
+    // Not yet loaded: search everything rather than an empty (match-nothing) set.
+    if (!graphData || !graphData.nodes) return null;
+    paths = graphData.nodes.map((n) => n.path);
+  } else if (libraryView === 'project' && libraryProjectPath) {
+    const folder = findFolderByPath(libraryTreeData || [], libraryProjectPath);
+    paths = collectLibraryFiles(folder ? (folder.children || []) : [], []).map((f) => f.path);
   } else {
-    let roots = libraryTreeData || [];
-    if (libraryView === 'project' && libraryProjectPath) {
-      const folder = findFolderByPath(roots, libraryProjectPath);
-      if (folder) roots = folder.children || [];
-    }
-    paths = collectLibraryFiles(roots, []).map((f) => f.path);
+    return null;
   }
   return paths.length > SEARCH_SCOPE_CAP ? null : paths;
 }
-// Reflect the current Focus state on the toggle chip.
-function renderLibrarySearchScope() {
-  librarySearchScope.setAttribute('aria-pressed', String(librarySearchFocus));
-  librarySearchScopeLabel.textContent = window.leafLocale.t(
-    librarySearchFocus ? 'library.search.scope.focus' : 'library.search.scope.all',
-  );
-}
-librarySearchScope.addEventListener('click', () => {
-  librarySearchFocus = !librarySearchFocus;
-  renderLibrarySearchScope();
-  // Re-run the active query under the new scope; nothing to do when idle.
-  if (librarySearchQuery) runLibrarySearch(librarySearch.value);
-});
 librarySearch.addEventListener('input', () => {
   const value = librarySearch.value;
   if (librarySearchTimer) clearTimeout(librarySearchTimer);
@@ -2314,9 +2298,6 @@ function renderStaticText() {
   speedReaderEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.speedReader.aria'));
   lineNumbersEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.lineNumbers.aria'));
   readerEditingEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.readerEditing.aria'));
-  // The scope chip's label is state-dependent (All vs Focus), so re-derive it
-  // after the generic data-i18n pass has reset it.
-  renderLibrarySearchScope();
 }
 // Tabs and the library both show the file name (basename, minus a .md/.markdown
 // extension), not the document's heading title. Falls back to the title, then
