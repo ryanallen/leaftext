@@ -2779,26 +2779,29 @@ fn app_shell_styles_open_button_like_other_secondary_toolbar_icons() {
 }
 
 #[test]
-fn app_shell_header_keeps_translucent_blur_with_divider() {
+fn app_shell_header_keeps_translucent_blur_with_dividers() {
     let css = reading_mode_css();
 
     for expected in [
         "background: linear-gradient(to bottom, var(--app-surface) 0%, color-mix(in srgb, var(--app-surface) 85%, transparent) 100%);",
         "backdrop-filter: blur(2px);",
         "-webkit-backdrop-filter: blur(2px);",
-        ".app-bar::before",
-        ".app-bar::after",
-        // The frosted bar keeps its translucent fill and gains a hairline
-        // divider along its bottom edge in the outer border color.
+        // The frosted bar keeps its translucent fill and is framed by hairline
+        // dividers top and bottom in the outer border color.
+        "border-top: 1px solid var(--app-border);",
         "border-bottom: 1px solid var(--app-border);",
     ] {
         assert_contains(css, expected);
     }
 
-    assert!(
-        !css.contains(".app-bar.is-scrolled"),
-        "app header must not draw a drop shadow on scroll"
-    );
+    // No blurred fade elements hanging below the bar, and no scroll shadow.
+    for absent in [
+        ".app-bar::before",
+        ".app-bar::after",
+        ".app-bar.is-scrolled",
+    ] {
+        assert!(!css.contains(absent), "app header must not draw {absent}");
+    }
 }
 
 #[test]

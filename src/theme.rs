@@ -840,36 +840,12 @@ body {
   background: linear-gradient(to bottom, var(--app-surface) 0%, color-mix(in srgb, var(--app-surface) 85%, transparent) 100%);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
-  /* Hairline divider along the bottom edge, in the window's outer border color,
-     matching the sidebar strokes. Background is left as the frosted fill. */
+  /* Hairline dividers top and bottom in the window's outer border color: the top
+     rule separates the reader from the native title bar above it, the bottom one
+     matches the sidebar strokes. Background is left as the frosted fill. */
+  border-top: 1px solid var(--app-border);
   border-bottom: 1px solid var(--app-border);
   font-family: var(--app-font);
-}
-.app-bar::before {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  height: 40px;
-  pointer-events: none;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%);
-}
-.app-bar::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  height: 64px;
-  pointer-events: none;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 65%);
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 65%);
 }
 .brand {
   width: 28px;
@@ -1546,32 +1522,6 @@ body.library-resizing {
   -webkit-backdrop-filter: blur(2px);
   /* Same hairline as the app bar and pane edge, in the outer border color. */
   border-bottom: 1px solid var(--app-border);
-}
-.library-header::before {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  height: 40px;
-  pointer-events: none;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%);
-}
-.library-header::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  height: 64px;
-  pointer-events: none;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 65%);
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 65%);
 }
 .library-view-select {
   position: relative;
