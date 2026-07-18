@@ -638,6 +638,9 @@ const VIEW_LABEL_KEY = { project: 'library.view.project', tree: 'library.view.tr
 // Markdown files are badged with the app's own leaf mark; the host substitutes
 // the data URI into this string the same way it does in the header <img>.
 const LEAF_FILE_ICON = "{{BRAND_LOGO}}";
+// Outline folder glyph shown before folder names in the library. Inherits the
+// row color via stroke="currentColor".
+const FOLDER_ICON_SVG = '<svg class="library-folder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" /></svg>';
 let indexingEnabled = LEAF_SETTINGS.indexingEnabled === true;
 let libraryView = LIBRARY_VIEWS.includes(LEAF_SETTINGS.libraryView) ? LEAF_SETTINGS.libraryView : 'graph';
 const GRAPH_SCOPES = ['small', 'medium', 'large', 'xl'];
@@ -958,7 +961,7 @@ function fileRowHtml(node) {
 function renderTreeNode(node) {
   if (node && node.kind === 'folder') {
     const open = expandedFolders.has(node.path) ? ' open' : '';
-    return `<details class="library-folder" data-folder-path="${escapeAttr(node.path)}"${open}><summary>${escapeText(node.name)}</summary><div class="library-children">${renderTreeNodes(node.children || [])}</div></details>`;
+    return `<details class="library-folder" data-folder-path="${escapeAttr(node.path)}"${open}><summary>${FOLDER_ICON_SVG}${escapeText(node.name)}</summary><div class="library-children">${renderTreeNodes(node.children || [])}</div></details>`;
   }
   return fileRowHtml(node);
 }
@@ -1038,7 +1041,7 @@ function renderProject(nodes) {
   }
   for (const node of projectChildrenSorted(children)) {
     if (node.kind === 'folder') {
-      rows.push(`<button type="button" class="library-nav-folder" data-nav-into="${escapeAttr(node.path)}" title="${escapeAttr(node.name)}"><span class="library-file-label">${escapeText(node.name)}</span><span class="library-nav-chevron" aria-hidden="true">›</span></button>`);
+      rows.push(`<button type="button" class="library-nav-folder" data-nav-into="${escapeAttr(node.path)}" title="${escapeAttr(node.name)}">${FOLDER_ICON_SVG}<span class="library-file-label">${escapeText(node.name)}</span><span class="library-nav-chevron" aria-hidden="true">›</span></button>`);
     } else {
       rows.push(fileRowHtml(node));
     }

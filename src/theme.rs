@@ -1481,23 +1481,44 @@ body.library-resizing {
   color: inherit;
   border-radius: 2px;
 }
-/* The search field fills the rest of the pinned header, beside the view chip. */
-.library-search {
+/* The search box fills the rest of the pinned header, beside the view chip. It
+   wraps the input and the Focus toggle so the toggle rides inside the field. */
+.library-search-wrap {
   flex: 1 1 auto;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   height: 24px;
   box-sizing: border-box;
-  padding: 0 8px;
+  padding: 0 4px 0 8px;
   border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--app-muted-foreground) 25%, transparent);
   background: var(--library-surface);
+}
+.library-search-wrap:focus-within {
+  /* A neutral white focus border rather than the accent, which reads green in
+     the Primer themes. */
+  border-color: color-mix(in srgb, #ffffff 85%, transparent);
+}
+:root[data-theme="light"] .library-search-wrap:focus-within {
+  /* White vanishes on the light field, so key the focus off the ink instead. */
+  border-color: color-mix(in srgb, var(--app-foreground) 45%, transparent);
+}
+.library-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: inherit;
   font-family: inherit;
   font-size: 12px;
 }
 .library-search:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--app-action-background, #2f81f7) 60%, transparent);
 }
 .library-header {
   /* Pinned below the app bar — absolute against the pane, not sticky, so it
@@ -1528,18 +1549,59 @@ body.library-resizing {
   /* The view switcher keeps its size; only the search field beside it shrinks. */
   flex: 0 0 auto;
 }
-.library-search-scope {
-  /* Sits at the end of the header next to the search field, keeping its size. */
+/* The Focus toggle rides at the right end inside the search box: a short label
+   and a round on/off switch. Off = search the whole library; on = only the files
+   shown here. The `.library-header` scope outranks the shared header-button chip
+   styling so the switch stays borderless and unfilled. */
+.library-header .library-search-scope {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-muted-foreground);
+  font-family: var(--code-font, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
 }
-.library-search-scope[aria-pressed="true"] {
-  /* Focus mode on: tint the chip with the accent so the narrowed scope is
-     obvious at a glance. */
-  background: color-mix(in srgb, var(--app-action-background, #2f81f7) 32%, transparent);
+.library-header .library-search-scope:hover {
+  background: transparent;
   color: var(--app-foreground);
 }
-.library-search-scope[aria-pressed="true"]:hover {
-  background: color-mix(in srgb, var(--app-action-background, #2f81f7) 42%, transparent);
+.library-search-scope[aria-pressed="true"] {
+  color: var(--app-foreground);
+}
+.library-search-scope-track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-muted-foreground) 35%, transparent);
+  transition: background 0.15s ease;
+}
+.library-search-scope-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease;
+}
+.library-search-scope[aria-pressed="true"] .library-search-scope-track {
+  /* Switch on: fill the track with the accent and slide the knob right. */
+  background: var(--app-action-background, #2f81f7);
+}
+.library-search-scope[aria-pressed="true"] .library-search-scope-thumb {
+  transform: translateX(10px);
 }
 .library-header button {
   display: inline-flex;
@@ -1656,6 +1718,20 @@ body.library-resizing {
   width: 14px;
   height: 14px;
   object-fit: contain;
+}
+/* Folder glyph before folder names in the Tree and Project views, dimmed to the
+   muted tone so the name stays primary. */
+.library-folder-icon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  margin-right: 5px;
+  color: var(--app-muted-foreground);
+}
+.library-nav-folder > .library-folder-icon {
+  /* The nav row is a flex box with its own gap; drop the inline margin there. */
+  margin-right: 0;
 }
 .library-file-label {
   /* Fill the row so the fade lands on empty space until the name overflows;
