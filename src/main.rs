@@ -418,19 +418,11 @@ fn apply_window_chrome(
         return;
     }
 
-    // Nudge the caption slightly off the page color so the drag bar is findable
-    // (lighter on dark themes, darker on light), biased toward blue for a cooler
-    // cast: blend r/g a little and b more, toward white on dark or black on light.
-    let tint = |channel: u8, t: f32| -> u32 {
-        let target = if dark { 255.0 } else { 0.0 };
-        let value = f32::from(channel);
-        (value + (target - value) * t).round().clamp(0.0, 255.0) as u32
-    };
-    // Lift r/g slightly, push blue further for the saturated-blue cast.
-    let (rg_t, b_t) = if dark { (0.06, 0.18) } else { (0.10, 0.02) };
-    let (cap_r, cap_g, cap_b) = (tint(r, rg_t), tint(g, rg_t), tint(b, b_t));
+    // Paint the caption the exact page color so the title bar reads as part of
+    // the background in every theme; the window's border color (below) still
+    // traces its outer edge, and the reader's own app bar carries a divider.
     // COLORREF packs as 0x00BBGGRR.
-    let caption = cap_r | (cap_g << 8) | (cap_b << 16);
+    let caption = u32::from(r) | (u32::from(g) << 8) | (u32::from(b) << 16);
     // Choose caption text by background luminance so the title stays legible
     // whatever the theme paints behind it.
     let luminance = 0.299 * f32::from(r) + 0.587 * f32::from(g) + 0.114 * f32::from(b);

@@ -840,6 +840,9 @@ body {
   background: linear-gradient(to bottom, var(--app-surface) 0%, color-mix(in srgb, var(--app-surface) 85%, transparent) 100%);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
+  /* Hairline divider along the bottom edge, in the window's outer border color,
+     matching the sidebar strokes. Background is left as the frosted fill. */
+  border-bottom: 1px solid var(--app-border);
   font-family: var(--app-font);
 }
 .app-bar::before {
@@ -1324,6 +1327,9 @@ summary:focus-visible {
   font-family: var(--app-font);
   font-size: 13px;
   box-shadow: var(--library-pane-edge-shadow);
+  /* Hairline in the outer border color marking the pane's right edge, so the
+     boundary against the reader is legible in every theme. */
+  border-right: 1px solid var(--app-border);
 }
 :root[data-theme="dark"]:not([data-leaf-theme-source="dracula"]) {
   --library-surface: color-mix(in srgb, var(--app-surface) 98%, black);
@@ -1340,6 +1346,11 @@ summary:focus-visible {
   z-index: 3;
   cursor: col-resize;
   touch-action: none;
+}
+.library-shell.library-closed .library-pane {
+  /* Drop the right-edge hairline when snapped shut, or it shows as a stray line
+     against the reader's left edge at 0 width. */
+  border-right: 0;
 }
 .library-shell.library-closed .library-divider {
   display: none;
@@ -1533,6 +1544,8 @@ body.library-resizing {
   background: linear-gradient(to bottom, color-mix(in srgb, var(--library-surface) 85%, transparent) 0%, color-mix(in srgb, var(--library-surface) 75%, transparent) 100%);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
+  /* Same hairline as the app bar and pane edge, in the outer border color. */
+  border-bottom: 1px solid var(--app-border);
 }
 .library-header::before {
   content: '';
