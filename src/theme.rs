@@ -713,7 +713,6 @@ pub(crate) fn reading_mode_css() -> &'static str {
   --app-surface-muted: var(--surface-muted);
   --app-surface-inset: var(--surface-inset);
   --library-surface: var(--app-surface);
-  --library-pane-edge-shadow: inset -7px 0 8px -8px color-mix(in srgb, black 40%, transparent);
   --app-muted-foreground: var(--muted-foreground);
   --app-action-background: var(--primary);
   --app-action-foreground: var(--primary-foreground);
@@ -799,6 +798,9 @@ pub(crate) fn reading_mode_css() -> &'static str {
   --code-block-border: var(--leaf-editor-code-border);
   --code-block-selection-background: var(--leaf-editor-code-selection-background);
   --code-block-selection-foreground: var(--leaf-editor-code-selection-foreground);
+  /* Cassette-style grain dot shared by the app bar and library surfaces: a faint
+     dark speckle on the light surface, overridden heavier for dark themes. */
+  --app-bar-grain: rgba(0, 0, 0, 0.1);
   --heading-font: "Noto Serif", Georgia, Cambria, "Times New Roman", serif;
   --app-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Microsoft YaHei UI", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Microsoft YaHei UI", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
@@ -825,6 +827,12 @@ body {
 :root[data-locale="zh-CN"] {
   --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
+:root[data-theme="dark"] {
+  /* Dark themes (Primer dark and Dracula) use a darker grain so the surface reads
+     as speckled darker, not lighter — needs a heavier alpha than light mode to
+     show against the already-dark surface. */
+  --app-bar-grain: rgba(0, 0, 0, 0.35);
+}
 .app-bar {
   position: fixed;
   top: 0;
@@ -832,20 +840,64 @@ body {
   right: 0;
   z-index: 10;
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
-  gap: 16px;
+  /* Three zones: a left lead sized to the library rail (so tabs begin at the
+     library's right edge and get pushed when it resizes), the tab strip, and the
+     app actions. Segments own their own inset padding so the lead's right edge
+     lands exactly on the rail boundary. */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0;
   align-items: center;
   height: 56px;
-  padding: 0 22px;
-  background: linear-gradient(to bottom, var(--app-surface) 0%, color-mix(in srgb, var(--app-surface) 85%, transparent) 100%);
+  padding: 0;
+  /* Two stacked background layers: a fine dithered dot grid on top for a rough,
+     old-cassette texture (a pixel-ish dark dot every 2px), over the frosted
+     translucent fill beneath it. */
+  background-image:
+    radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px),
+    linear-gradient(to bottom, var(--app-surface) 0%, color-mix(in srgb, var(--app-surface) 85%, transparent) 100%);
+  background-size: 2px 2px, 100% 100%;
+  background-repeat: repeat, no-repeat;
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
-  /* Hairline dividers top and bottom in the window's outer border color: the top
-     rule separates the reader from the native title bar above it, the bottom one
-     matches the sidebar strokes. Background is left as the frosted fill. */
+  /* Hairline top divider in the window's outer border color, separating the
+     reader from the native title bar above it. Background is left as the frosted
+     fill. The bottom divider is drawn by ::after (not border-bottom) so the
+     active tab can paint over it and appear connected to the page below. */
   border-top: 1px solid var(--app-border);
-  border-bottom: 1px solid var(--app-border);
   font-family: var(--app-font);
+}
+.app-bar::after {
+  /* The reader divider. Sits behind the tabs (z-index 0); the active tab, which
+     is page-colored and z-index 1, covers this line so it reads as joined to the
+     document, while inactive tabs meet it with their own bottom border. */
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--app-border);
+  z-index: 0;
+}
+.app-bar-lead {
+  /* The header's left zone, sized to the library rail so the tab strip begins at
+     the library's right edge and is pushed when the pane is resized. No right
+     border: the top bar reads as one continuous surface, with only the library
+     pane below carrying the rail's vertical stroke. */
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  align-self: stretch;
+  box-sizing: border-box;
+  width: var(--library-rail-width, 240px);
+  /* Never let the rail clip the brand + history controls: floor the zone at their
+     natural width when the library is narrow. */
+  min-width: fit-content;
+  padding: 0 16px 0 22px;
+}
+.app-bar:not(.has-rail) .app-bar-lead {
+  /* Library closed: no rail to align to, so the lead is just its controls. */
+  width: auto;
 }
 .brand {
   width: 28px;
@@ -872,10 +924,14 @@ body {
   display: flex;
   gap: 6px;
   min-width: 0;
-  align-items: center;
+  /* Fill the full header height so tabs read as full-height cells. */
+  align-self: stretch;
+  align-items: stretch;
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 2px 0;
+  /* Horizontal inset only (vertical stays 0 for full-height cells): space the
+     first tab off the rail stroke and hold a gap before the app actions. */
+  padding: 0 12px;
 }
 .tab-bar::-webkit-scrollbar {
   height: 0;
@@ -887,8 +943,18 @@ body {
   flex: 0 0 auto;
   max-width: 132px;
   padding: 0 4px;
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--app-surface-elevated) 70%, black);
+  /* Full-height cell: vertical strokes on both sides run the whole header,
+     and a bottom stroke meets the reader divider. Above the divider (z-index 1)
+     so the active tab can cover it. */
+  position: relative;
+  z-index: 1;
+  border-left: 1px solid var(--app-border);
+  border-right: 1px solid var(--app-border);
+  border-bottom: 1px solid var(--app-border);
+  /* Transparent fill so the header's textured surface shows through the tab body
+     (behind the label), like it does through the disabled history buttons. Only
+     the active tab paints an opaque page-colored fill (see .tab-active). */
+  background: transparent;
   cursor: grab;
   user-select: none;
   transition: max-width 0.12s ease, transform 0.12s ease;
@@ -908,7 +974,16 @@ body {
   transition: none;
 }
 .tab-active {
+  /* Drop the bottom stroke so the page-colored fill flows over the reader
+     divider and the tab looks joined to the document below. The transparent
+     border keeps the box height identical to inactive tabs. */
   background: var(--app-background);
+  border-bottom-color: transparent;
+}
+:root[data-code-view="true"] .tab-active {
+  /* In code view the page below is the code surface, not the reading background;
+     match it so the active tab still reads as joined to the document. */
+  background: var(--code-block-background, var(--preview-background));
 }
 .tab-label {
   flex: 1;
@@ -920,14 +995,16 @@ body {
   background: transparent;
   color: var(--app-muted-foreground);
   font: 600 13px var(--app-font);
-  padding: 5px 6px;
+  padding: 5px 14px;
   text-align: left;
   /* Long names fade out at the right edge instead of showing an ellipsis. */
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
   mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
 }
 .tab-active .tab-label {
-  color: #fff;
+  /* Full-strength foreground so the active tab's name stays legible in every
+     theme (a hardcoded white vanished on the light page-colored tab). */
+  color: var(--app-foreground);
   max-width: none;
   -webkit-mask-image: none;
   mask-image: none;
@@ -937,19 +1014,21 @@ body {
   border-color: transparent;
 }
 .tab-close {
-  display: none;
+  /* Pinned to the top-right corner of every tab, out of the label's flow, so it
+     no longer sits inline with the (vertically centered) name. */
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
-  min-width: 20px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
   padding: 0;
   border: 1px solid transparent;
   border-radius: 5px;
   background: transparent;
   color: var(--app-muted-foreground);
-}
-.tab-active .tab-close {
-  display: inline-grid;
 }
 .tab-close svg {
   width: 12px;
@@ -970,6 +1049,8 @@ body {
   display: flex;
   gap: 10px;
   align-items: center;
+  /* Header no longer pads itself; keep the actions inset from the window edge. */
+  padding-right: 22px;
 }
 .context-menu {
   position: fixed;
@@ -1298,18 +1379,20 @@ summary:focus-visible {
   --library-header-height: 40px;
   position: relative;
   height: 100vh;
-  background: var(--library-surface);
+  /* Same cassette grain as the app bar, tiled over the library surface so the
+     whole pane (the transparent tree rows sit on top) carries the texture. */
+  background-color: var(--library-surface);
+  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
   color: var(--preview-foreground);
   font-family: var(--app-font);
   font-size: 13px;
-  box-shadow: var(--library-pane-edge-shadow);
   /* Hairline in the outer border color marking the pane's right edge, so the
      boundary against the reader is legible in every theme. */
   border-right: 1px solid var(--app-border);
 }
 :root[data-theme="dark"]:not([data-leaf-theme-source="dracula"]) {
   --library-surface: color-mix(in srgb, var(--app-surface) 98%, black);
-  --library-pane-edge-shadow: inset -7px 0 8px -8px color-mix(in srgb, black 55%, transparent);
 }
 .library-divider {
   /* An invisible grab strip straddling the pane's right edge, wide enough to
@@ -1494,7 +1577,11 @@ body.library-resizing {
   padding: 0 8px;
   border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--app-muted-foreground) 25%, transparent);
-  background: var(--library-surface);
+  /* Grain over the field too, so the search box reads as the same textured
+     surface rather than a flat inset. */
+  background-color: var(--library-surface);
+  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
 }
 .library-search-wrap:focus-within {
   /* A neutral white focus border rather than the accent, which reads green in
@@ -1542,8 +1629,13 @@ body.library-resizing {
   padding: 0 12px;
   font-weight: 600;
   /* Continues the app bar's fade: it ends at 85% surface, so this picks up at
-     85% and fades to 75%, reading as one continuous ramp. */
-  background: linear-gradient(to bottom, color-mix(in srgb, var(--library-surface) 85%, transparent) 0%, color-mix(in srgb, var(--library-surface) 75%, transparent) 100%);
+     85% and fades to 75%, reading as one continuous ramp. The cassette grain is
+     layered on top, matching the app bar and pane. */
+  background-image:
+    radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--library-surface) 85%, transparent) 0%, color-mix(in srgb, var(--library-surface) 75%, transparent) 100%);
+  background-size: 2px 2px, 100% 100%;
+  background-repeat: repeat, no-repeat;
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   /* Same hairline as the app bar and pane edge, in the outer border color. */
@@ -1616,6 +1708,7 @@ body.library-resizing {
 .library-folder > summary {
   cursor: pointer;
   padding: 3px 6px;
+  margin-bottom: 2px;
   border-radius: 6px;
   white-space: nowrap;
   overflow: hidden;
@@ -1646,6 +1739,8 @@ body.library-resizing {
   width: 100%;
   text-align: left;
   padding: 3px 6px;
+  /* A hair of vertical space so adjacent row highlights don't touch. */
+  margin-bottom: 2px;
   border: 0;
   border-radius: 6px;
   background: transparent;

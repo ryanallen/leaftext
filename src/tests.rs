@@ -2073,7 +2073,7 @@ fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
     for rule in [
             "background: var(--app-background);",
             "color: var(--app-foreground);",
-            "background: linear-gradient(to bottom, var(--app-surface) 0%, color-mix(in srgb, var(--app-surface) 85%, transparent) 100%);",
+            "linear-gradient(to bottom, var(--app-surface) 0%, color-mix(in srgb, var(--app-surface) 85%, transparent) 100%);",
             "color: var(--settings-label-foreground);",
             "border: 1px solid var(--settings-control-border);",
             "background: var(--settings-control-background);",
@@ -2783,23 +2783,25 @@ fn app_shell_header_keeps_translucent_blur_with_dividers() {
     let css = reading_mode_css();
 
     for expected in [
-        "background: linear-gradient(to bottom, var(--app-surface) 0%, color-mix(in srgb, var(--app-surface) 85%, transparent) 100%);",
+        // The frosted translucent fill, now the lower of two stacked layers under
+        // a fine dithered dot grid for a rough, old-cassette texture.
+        "linear-gradient(to bottom, var(--app-surface) 0%, color-mix(in srgb, var(--app-surface) 85%, transparent) 100%);",
+        "radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px),",
+        "background-size: 2px 2px, 100% 100%;",
         "backdrop-filter: blur(2px);",
         "-webkit-backdrop-filter: blur(2px);",
-        // The frosted bar keeps its translucent fill and is framed by hairline
-        // dividers top and bottom in the outer border color.
+        // The frosted bar keeps a hairline top divider in the outer border color.
         "border-top: 1px solid var(--app-border);",
-        "border-bottom: 1px solid var(--app-border);",
+        // The bottom divider is drawn by ::after (not border-bottom) so the
+        // active tab can paint over it and read as joined to the page below.
+        ".app-bar::after {",
+        "background: var(--app-border);",
     ] {
         assert_contains(css, expected);
     }
 
     // No blurred fade elements hanging below the bar, and no scroll shadow.
-    for absent in [
-        ".app-bar::before",
-        ".app-bar::after",
-        ".app-bar.is-scrolled",
-    ] {
+    for absent in [".app-bar::before", ".app-bar.is-scrolled"] {
         assert!(!css.contains(absent), "app header must not draw {absent}");
     }
 }

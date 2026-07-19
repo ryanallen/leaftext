@@ -1,4 +1,5 @@
 const app = document.getElementById('app');
+const appBar = document.getElementById('appBar');
 const tabBar = document.getElementById('tabBar');
 const homeButton = document.getElementById('homeButton');
 const backButton = document.getElementById('backButton');
@@ -716,8 +717,15 @@ function libraryIsClosed() {
 function applyPaneLayout() {
   const closed = libraryIsClosed();
   libraryShell.classList.toggle('library-closed', closed);
+  // Mirror the pane state onto the header so its left zone (the tab rail) tracks
+  // the library width and its dividing stroke drops when the library is closed.
+  appBar.classList.toggle('has-rail', !closed);
   if (!closed) {
-    libraryShell.style.setProperty('--library-width', clampOpenPaneWidth(libraryWidth) + 'px');
+    const width = clampOpenPaneWidth(libraryWidth);
+    libraryShell.style.setProperty('--library-width', width + 'px');
+    document.documentElement.style.setProperty('--library-rail-width', width + 'px');
+  } else {
+    document.documentElement.style.setProperty('--library-rail-width', '0px');
   }
 }
 function openLibrary() {
@@ -737,6 +745,8 @@ function applyPendingDividerWidth() {
   if (dividerDrag.pendingWidth != null) {
     libraryWidth = dividerDrag.pendingWidth;
     libraryShell.style.setProperty('--library-width', libraryWidth + 'px');
+    // Push the header's tab rail live so the tabs track the pane during the drag.
+    document.documentElement.style.setProperty('--library-rail-width', libraryWidth + 'px');
   }
 }
 function endDividerDrag() {
@@ -2850,6 +2860,9 @@ function renderCodeView(state) {
   // restored fraction or a pending toggle fraction still wins over this.
   const priorCodeScroll = app.querySelector('.code-view-input') ? viewScrollFraction() : null;
   app.className = 'reader-shell has-document code-view-shell';
+  // Flag the code view at the document root so the header's active tab (a sibling
+  // of the reader, not a descendant) can match the code surface color.
+  document.documentElement.dataset.codeView = 'true';
   const text = state.text || '';
   lastSentSourceText = text;
   app.innerHTML = `
@@ -3798,6 +3811,7 @@ function renderState() {
   readerAnchorBlocks = null;
   // Any full render shows the reading view, so we're no longer in the code view.
   codeViewActive = false;
+  document.documentElement.dataset.codeView = 'false';
   renderTabs(state);
   if (state.document) {
     document.title = window.leafLocale.t('titles.document', { title: state.document.title });

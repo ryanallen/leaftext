@@ -79,7 +79,7 @@ That ordering lets the app swap themes quickly while keeping one stable semantic
 
 ## Windows
 
-On Windows, leaftext also repaints the native title bar to match the active theme where the OS allows it. The title bar is tinted just a touch off the page color — slightly lighter on dark themes (including Dracula), slightly darker on light ones — with a small blue bias so the bar reads a little cooler and more saturated than the page, keeping the draggable bar findable without pulling far from the page color. The window border is drawn a further step lighter or darker than the page so the app reads as a distinct surface against the desktop.
+On Windows, leaftext also repaints the native title bar to match the active theme where the OS allows it. The title bar is painted the exact page color so it reads as part of the background in every theme, with its text color chosen by the background's brightness to stay legible. The window border is drawn in the theme's divider color so the app still reads as a distinct surface against the desktop, and the reader's own app bar carries the divider below the caption.
 
 ## Next
 
