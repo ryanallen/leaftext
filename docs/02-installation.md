@@ -78,6 +78,10 @@ flowchart LR
 
 Use `Ctrl+O` on Windows/Linux or `Cmd+O` on macOS to open your first file.
 
+## Updates
+
+leaftext checks GitHub Releases for a newer version each time it launches. When one is available, a dot appears over the Settings button and a green **Update to v…** button appears at the top of the [Settings](01-features/05-settings.md) menu; clicking it opens that release's page so you can download the new build. The check is silent and skipped when offline, and it never blocks startup.
+
 ## FAQ
 
 ### Admin rights

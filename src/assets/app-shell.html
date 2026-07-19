@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: http://leaf-image.local leaf-image: data:; script-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset:; style-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset:; font-src 'self' data: http://leaf-asset.local leaf-asset:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: http://leaf-image.local leaf-image: data:; script-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset:; style-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset:; font-src 'self' data: http://leaf-asset.local leaf-asset:; connect-src 'self' https://api.github.com">
 <title>Leaf Text</title>
 <script>{{THEME_BOOTSTRAP_SCRIPT}}</script>
 <script>{{LOCALE_BOOTSTRAP_SCRIPT}}</script>
@@ -32,8 +32,10 @@
     <details class="settings-menu" id="settingsMenu">
       <summary id="settingsSummary" class="icon-button" data-i18n-aria-label="settings.heading" data-i18n-title="settings.heading" aria-label="Settings" title="Settings">
         {{SETTINGS_ICON_SVG}}
+        <span class="settings-alert-dot" id="settingsAlertDot" aria-hidden="true" hidden></span>
       </summary>
       <div class="settings-panel" role="group" aria-labelledby="settingsSummary">
+        <button type="button" class="settings-update" id="settingsUpdate" hidden></button>
         <label class="setting-control" for="themeMode">
           <span class="setting-label" data-i18n="settings.theme.label">Theme</span>
           <select id="themeMode" aria-label="Theme" aria-describedby="themeModeHelp">

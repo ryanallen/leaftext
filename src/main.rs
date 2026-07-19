@@ -21,15 +21,15 @@ use leaftext::indexer::{event_script, GraphRequest, IndexerEvent, IndexerWorker}
 use leaftext::{
     app_data_dir, app_shell_html, blocks_resynced_script, bundled_asset_response, code_view_script,
     config_file_path, document_pager_html, fragment_scroll_script, glossary_sheet_script,
-    initial_settings_script, initial_state_script, line_count_script, load_recent_files,
-    load_settings, local_image_protocol_response, local_image_source_dir, navigation_state_script,
-    open_document_with_recent, open_error_state_script, opened_document_from_markdown,
-    opened_document_from_tei, pager_loaded_script, render_markdown_document, save_recent_files,
-    save_result_script, save_settings, scroll_anchor_script, settings_file_path,
-    source_updated_script, webview_user_data_dir, workspace_reload_script, workspace_state_script,
-    workspace_switch_script, DocumentFormat, EditableDocument, GraphScope, LibraryView,
-    OpenedDocument, RecentFiles, ScrollAnchor, Settings, LOCAL_ASSET_PROTOCOL,
-    LOCAL_IMAGE_PROTOCOL,
+    initial_settings_script, initial_state_script, initial_version_script, line_count_script,
+    load_recent_files, load_settings, local_image_protocol_response, local_image_source_dir,
+    navigation_state_script, open_document_with_recent, open_error_state_script,
+    opened_document_from_markdown, opened_document_from_tei, pager_loaded_script,
+    render_markdown_document, save_recent_files, save_result_script, save_settings,
+    scroll_anchor_script, settings_file_path, source_updated_script, webview_user_data_dir,
+    workspace_reload_script, workspace_state_script, workspace_switch_script, DocumentFormat,
+    EditableDocument, GraphScope, LibraryView, OpenedDocument, RecentFiles, ScrollAnchor, Settings,
+    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -88,6 +88,11 @@ enum UserEvent {
     OpenLink {
         href: String,
         scroll_anchor: ScrollAnchor,
+    },
+    /// Open a URL in the system browser, unattached to any document (the update
+    /// button). Unlike `OpenLink`, it doesn't require an active tab.
+    OpenExternal {
+        url: String,
     },
     /// A glossary link was clicked: show the term in a bottom sheet, not a new
     /// tab. `href` is the glossary file plus `#anchor`, relative to the doc.
@@ -260,6 +265,8 @@ enum IpcCommand {
         href: String,
         scroll_anchor: ScrollAnchor,
     },
+    #[serde(rename = "openExternal")]
+    OpenExternal { url: String },
     #[serde(rename = "openGlossary")]
     OpenGlossary { href: String },
     #[serde(rename = "countLines")]
@@ -553,6 +560,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .with_html(app_shell_html())
         .with_initialization_script(initial_settings_script(&settings))
         .with_initialization_script(initial_state_script(&recent.files))
+        .with_initialization_script(initial_version_script())
         .with_custom_protocol(
             LOCAL_IMAGE_PROTOCOL.to_string(),
             local_image_protocol_handler(Arc::clone(&local_image_source_dir)),
@@ -929,6 +937,11 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                             scroll_to_fragment(webview.as_ref(), &fragment);
                         }
                     }
+                }
+            }
+            Event::UserEvent(UserEvent::OpenExternal { url }) => {
+                if let Err(error) = open_with_os(&url) {
+                    eprintln!("Failed to open {url} with the OS: {error}");
                 }
             }
             Event::UserEvent(UserEvent::OpenGlossary { href }) => {
@@ -1402,6 +1415,9 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
                     href,
                     scroll_anchor,
                 });
+            }
+            IpcCommand::OpenExternal { url } => {
+                let _ = proxy.send_event(UserEvent::OpenExternal { url });
             }
             IpcCommand::OpenGlossary { href } => {
                 let _ = proxy.send_event(UserEvent::OpenGlossary { href });

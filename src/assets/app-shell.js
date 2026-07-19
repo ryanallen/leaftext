@@ -1957,6 +1957,51 @@ window.leafSetSearchResults = (payload) => {
 renderLibrary();
 applyPaneLayout();
 send({ command: 'getFileTree' });
+// Async update check: compare the running version against the latest GitHub
+// release and, if newer, reveal the settings-button dot and the green update
+// button (which opens the release page in the system browser). Silent on any
+// failure — offline, rate-limited, or a malformed response just skips it.
+const settingsAlertDot = document.getElementById('settingsAlertDot');
+const settingsUpdate = document.getElementById('settingsUpdate');
+const LEAF_VERSION = typeof window.__leafVersion === 'string' ? window.__leafVersion : null;
+function parseVersion(value) {
+  return String(value || '').replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+}
+function isNewerVersion(candidate, current) {
+  const a = parseVersion(candidate);
+  const b = parseVersion(current);
+  for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+    const x = a[i] || 0;
+    const y = b[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return false;
+}
+function showUpdateAvailable(version, url) {
+  if (settingsAlertDot) settingsAlertDot.hidden = false;
+  if (!settingsUpdate) return;
+  settingsUpdate.textContent = window.leafLocale.t('update.available', { version });
+  settingsUpdate.title = window.leafLocale.t('update.title');
+  settingsUpdate.hidden = false;
+  settingsUpdate.onclick = () => send({ command: 'openExternal', url });
+}
+async function checkForUpdate() {
+  if (!LEAF_VERSION) return;
+  try {
+    const res = await fetch('https://api.github.com/repos/ryanallen/leaftext/releases/latest', {
+      headers: { Accept: 'application/vnd.github+json' },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const tag = data && data.tag_name;
+    if (tag && isNewerVersion(tag, LEAF_VERSION)) {
+      showUpdateAvailable(String(tag).replace(/^v/i, ''), data.html_url || 'https://github.com/ryanallen/leaftext/releases/latest');
+    }
+  } catch (_) {
+    // Offline or rate-limited: leave the UI as-is.
+  }
+}
+checkForUpdate();
 let minimapViewportFrame = 0;
 let minimapPreviewFrame = 0;
 // Rebuilding the thumbnail clones the whole document, so only rebuild when the

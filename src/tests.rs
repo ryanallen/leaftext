@@ -5377,6 +5377,37 @@ fn initial_settings_script_defines_camelcase_global() {
 }
 
 #[test]
+fn initial_version_script_exposes_the_package_version() {
+    // The frontend's update check reads window.__leafVersion to compare against
+    // the latest GitHub release, so it must carry the built package version.
+    let script = initial_version_script();
+    assert_eq!(
+        script,
+        format!("window.__leafVersion = {:?};", env!("CARGO_PKG_VERSION"))
+    );
+}
+
+#[test]
+fn app_shell_csp_allows_github_api_for_update_check() {
+    // The update check fetches api.github.com; without a connect-src grant the
+    // webview's default-src 'self' blocks it. Guard against that regression.
+    let html = app_shell_html();
+    let csp_line = html
+        .lines()
+        .find(|line| line.contains("Content-Security-Policy"))
+        .expect("shell declares a Content-Security-Policy");
+    let connect_src = csp_line
+        .split(';')
+        .map(str::trim)
+        .find(|directive| directive.starts_with("connect-src"))
+        .expect("CSP declares an explicit connect-src directive");
+    assert!(
+        connect_src.contains("https://api.github.com"),
+        "connect-src must allow the GitHub API for the update check: {connect_src}"
+    );
+}
+
+#[test]
 fn settings_file_path_lives_in_leaftext_config() {
     let path = settings_file_path().expect("project config directory is available");
     assert!(path.ends_with("settings.json"));

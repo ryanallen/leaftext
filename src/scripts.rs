@@ -37,6 +37,15 @@ pub fn initial_settings_script(settings: &Settings) -> String {
     format!("window.__leafSettings = {};", state)
 }
 
+/// The running app version as `window.__leafVersion`. Run as an init script so
+/// the frontend's update check can compare it against the latest GitHub release.
+pub fn initial_version_script() -> String {
+    format!(
+        "window.__leafVersion = {};",
+        serde_json::json!(env!("CARGO_PKG_VERSION"))
+    )
+}
+
 pub fn document_state_script(document: &OpenedDocument, recent: &[PathBuf]) -> String {
     let recent: Vec<String> = recent
         .iter()

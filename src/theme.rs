@@ -1150,6 +1150,24 @@ body {
   border-color: transparent;
   color: var(--app-action-foreground);
 }
+/* Update-available dot over the settings button, revealed by the frontend's
+   version check. The ring keeps it legible on the bar's textured/hover fill. */
+.settings-alert-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--app-action-background);
+  box-shadow: 0 0 0 2px var(--app-surface);
+}
+/* Green "update to vX" call-to-action pinned above the settings controls. Takes
+   the primary-action fill; spans the panel. */
+.settings-update {
+  width: 100%;
+  font-weight: 700;
+}
 .settings-panel {
   position: absolute;
   right: 0;
@@ -1585,8 +1603,9 @@ body.library-resizing {
 }
 .library-search-wrap:focus-within {
   /* A neutral white focus border rather than the accent, which reads green in
-     the Primer themes. */
+     the Primer themes. Drop the grain while typing so the field reads clean. */
   border-color: color-mix(in srgb, #ffffff 85%, transparent);
+  background-image: none;
 }
 :root[data-theme="light"] .library-search-wrap:focus-within {
   /* White vanishes on the light field, so key the focus off the ink instead. */
@@ -1666,6 +1685,11 @@ body.library-resizing {
 }
 .library-header button:hover {
   background: color-mix(in srgb, var(--app-muted-foreground) 22%, transparent);
+}
+.library-view-select button[aria-expanded="true"] {
+  /* While the menu is open, fill over an opaque surface so the header grain no
+     longer shows through the chip. */
+  background: color-mix(in srgb, var(--app-muted-foreground) 18%, var(--library-surface));
 }
 .library-view-caret {
   color: var(--app-muted-foreground);
