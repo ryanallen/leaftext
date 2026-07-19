@@ -766,49 +766,84 @@ pub fn app_shell_html() -> String {
 fn theme_bootstrap_script() -> &'static str {
     r#"
 (() => {
-  const VALID_MODES = new Set(['system', 'light', 'dark', 'dracula']);
+  // Themes are two axes: a family (github/dracula/obsidian) and an appearance
+  // mode. Light/dark pick a fixed variant, system follows the OS, and daylight
+  // is light between DAY_START and DAY_END local time, dark otherwise.
+  const VALID_FAMILIES = new Set(['github', 'dracula', 'obsidian']);
+  const VALID_MODES = new Set(['system', 'light', 'dark', 'daylight']);
+  const FAMILY_FALLBACK = 'github';
   const MODE_FALLBACK = 'system';
+  const DAY_START = 9;
+  const DAY_END = 18;
   const root = document.documentElement;
   const media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   const listeners = new Set();
+  const normalizeFamily = (value) => (VALID_FAMILIES.has(value) ? value : FAMILY_FALLBACK);
   const normalizeMode = (value) => (VALID_MODES.has(value) ? value : MODE_FALLBACK);
-  // The host injects the persisted mode as window.__leafSettings before this
+  // The host injects the persisted theme as window.__leafSettings before this
   // runs, so the theme resolves on the first paint. The host owns persistence;
   // the app shell's opaque origin can't use localStorage.
-  const injected = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings.themeMode : null;
-  let mode = normalizeMode(injected);
+  const settings = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings : {};
+  let family = normalizeFamily(settings.themeFamily);
+  let mode = normalizeMode(settings.themeMode);
 
+  const isDaytime = () => {
+    const hour = new Date().getHours();
+    return hour >= DAY_START && hour < DAY_END;
+  };
   const resolvedTheme = () => {
     if (mode === 'light') return 'light';
-    // Dracula is a dark palette, so it resolves dark here.
-    if (mode === 'dark' || mode === 'dracula') return 'dark';
+    if (mode === 'dark') return 'dark';
+    if (mode === 'daylight') return isDaytime() ? 'light' : 'dark';
     return media && media.matches ? 'dark' : 'light';
   };
-  const snapshot = () => ({ mode, resolvedTheme: resolvedTheme() });
+  const snapshot = () => ({ family, mode, resolvedTheme: resolvedTheme() });
   const apply = () => {
     const theme = snapshot();
-    root.dataset.colorMode = mode === 'system' ? 'auto' : (mode === 'dracula' ? 'dark' : mode);
+    // The Leaf-owned attributes that drive the compiled theme CSS.
+    root.dataset.leafTheme = family;
+    root.dataset.leafAppearance = theme.resolvedTheme;
+    // Primer primitives (the github family) resolve off these; harmless for the
+    // literal palettes, which ignore them.
+    root.dataset.colorMode = theme.resolvedTheme;
     root.dataset.lightTheme = 'light';
     root.dataset.darkTheme = 'dark';
     root.dataset.resolvedColorMode = theme.resolvedTheme;
     root.dataset.themeMode = mode;
+    root.dataset.themeFamily = family;
     root.dataset.theme = theme.resolvedTheme;
     root.style.colorScheme = theme.resolvedTheme;
-    // Dracula supplies its own token set via this attribute; other modes clear
-    // it so the Primer tokens drive the palette.
-    if (mode === 'dracula') {
-      root.dataset.leafThemeSource = 'dracula';
-    } else {
-      delete root.dataset.leafThemeSource;
-    }
     listeners.forEach((listener) => listener(theme));
+  };
+
+  // Daylight boundary timer: re-apply at the next DAY_START/DAY_END crossing so
+  // the appearance flips without a restart. Rescheduled after each fire, and
+  // cleared whenever the mode leaves daylight.
+  let daylightTimer = 0;
+  const scheduleDaylight = () => {
+    if (daylightTimer) { clearTimeout(daylightTimer); daylightTimer = 0; }
+    if (mode !== 'daylight') return;
+    const now = new Date();
+    const next = new Date(now);
+    const hour = now.getHours();
+    if (hour < DAY_START) { next.setHours(DAY_START, 0, 0, 0); }
+    else if (hour < DAY_END) { next.setHours(DAY_END, 0, 0, 0); }
+    else { next.setDate(next.getDate() + 1); next.setHours(DAY_START, 0, 0, 0); }
+    const delay = Math.max(1000, next.getTime() - now.getTime());
+    daylightTimer = setTimeout(() => { apply(); scheduleDaylight(); }, delay);
   };
 
   window.leafTheme = {
     getMode: () => mode,
+    getFamily: () => family,
     getResolvedTheme: resolvedTheme,
     setMode(nextMode) {
       mode = normalizeMode(nextMode);
+      apply();
+      scheduleDaylight();
+    },
+    setFamily(nextFamily) {
+      family = normalizeFamily(nextFamily);
       apply();
     },
     subscribe(listener) {
@@ -826,8 +861,12 @@ fn theme_bootstrap_script() -> &'static str {
       media.addListener(onSystemThemeChange);
     }
   }
+  // A machine that slept across a boundary wakes with a stale appearance; re-run
+  // the clock check (and reschedule) when the window regains focus.
+  window.addEventListener('focus', () => { if (mode === 'daylight') { apply(); scheduleDaylight(); } });
 
   apply();
+  scheduleDaylight();
 })();
 "#
 }
@@ -916,10 +955,14 @@ fn locale_bootstrap_script() -> &'static str {
       'update.title': 'A new version is available',
       'settings.indexing.label': 'Index entire device',
       'settings.indexing.help': 'Crawl this device for Markdown and XML documents and rescan each time you open the app.',
+      'settings.theme.appearance': 'Appearance',
       'settings.theme.aria': 'Theme',
       'settings.theme.dark': 'Dark',
-      'settings.theme.dracula': 'Dracula',
-      'settings.theme.help': 'System follows device preference.',
+      'settings.theme.daylight': 'Daylight',
+      'settings.theme.family.dracula': 'Dracula',
+      'settings.theme.family.github': 'GitHub',
+      'settings.theme.family.obsidian': 'Obsidian',
+      'settings.theme.help': 'System follows device preference; Daylight is light by day, dark at night.',
       'settings.theme.label': 'Theme',
       'settings.theme.light': 'Light',
       'settings.theme.system': 'System',
@@ -1018,10 +1061,14 @@ fn locale_bootstrap_script() -> &'static str {
       'update.title': '有新版本可用',
       'settings.indexing.label': '索引整个设备',
       'settings.indexing.help': '扫描此设备上的 Markdown 和 XML 文档，并在每次打开应用时重新扫描。',
+      'settings.theme.appearance': '外观',
       'settings.theme.aria': '主题',
       'settings.theme.dark': '深色',
-      'settings.theme.dracula': 'Dracula',
-      'settings.theme.help': '跟随系统显示偏好。',
+      'settings.theme.daylight': '日间自动',
+      'settings.theme.family.dracula': 'Dracula',
+      'settings.theme.family.github': 'GitHub',
+      'settings.theme.family.obsidian': 'Obsidian',
+      'settings.theme.help': '跟随系统显示偏好；“日间自动”白天浅色、夜间深色。',
       'settings.theme.label': '主题',
       'settings.theme.light': '浅色',
       'settings.theme.system': '跟随系统',
@@ -1205,8 +1252,11 @@ pub struct Settings {
     /// Make the reading view a live editor. On by default; off keeps it
     /// read-only. The code view edits the raw source regardless.
     pub reader_editing_enabled: bool,
-    /// Last theme mode: `system`/`light`/`dark`/`dracula`. Raw frontend string;
-    /// the frontend normalizes anything unexpected back to `system`.
+    /// Selected theme family: `github`/`dracula`/`obsidian`. Raw frontend
+    /// string; the frontend normalizes anything unexpected back to `github`.
+    pub theme_family: String,
+    /// Last appearance mode: `system`/`light`/`dark`/`daylight`. Raw frontend
+    /// string; the frontend normalizes anything unexpected back to `system`.
     pub theme_mode: String,
     /// Which library view is showing: Project, Tree, or flat.
     pub library_view: LibraryView,
@@ -1240,6 +1290,7 @@ impl Default for Settings {
             speed_reader_enabled: false,
             line_numbers_enabled: false,
             reader_editing_enabled: true,
+            theme_family: "github".to_string(),
             theme_mode: "system".to_string(),
             library_view: LibraryView::default(),
             graph_scope: GraphScope::default(),
@@ -1332,10 +1383,17 @@ pub fn settings_file_path() -> Option<PathBuf> {
 /// Load the persisted UI toggles, falling back to defaults when the file is
 /// missing or corrupt.
 pub fn load_settings(settings_path: impl AsRef<Path>) -> Settings {
-    fs::read_to_string(settings_path)
+    let mut settings: Settings = fs::read_to_string(settings_path)
         .ok()
         .and_then(|contents| serde_json::from_str(&contents).ok())
-        .unwrap_or_default()
+        .unwrap_or_default();
+    // Migrate the pre-family single-axis setting: Dracula used to be a theme
+    // "mode", now it's a family whose dark half matches the old palette.
+    if settings.theme_mode == "dracula" {
+        settings.theme_family = "dracula".to_string();
+        settings.theme_mode = "dark".to_string();
+    }
+    settings
 }
 
 pub fn save_settings(settings_path: impl AsRef<Path>, settings: &Settings) -> io::Result<()> {

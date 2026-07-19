@@ -1022,11 +1022,22 @@ fn highlighter_boundary_escapes_when_requested_language_has_no_syntax() {
 fn css_token(css: &str, theme: ResolvedTheme, name: &str) -> Rgb {
     let leaf_alias_block = css_block(css, ":root {");
     let mut blocks = vec![leaf_alias_block];
+    // The `:root` aliases point at `--leaf-*` tokens defined in the github
+    // family block, which in turn point at Primer primitives in the color-mode
+    // block. Load both so the var() chain resolves for the default theme.
     match theme {
         ResolvedTheme::Light => {
+            blocks.extend(css_blocks(
+                css,
+                r#":root[data-leaf-theme="github"][data-leaf-appearance="light"] {"#,
+            ));
             blocks.extend(css_blocks(css, &format!("{PRIMER_LIGHT_SELECTOR} {{")));
         }
         ResolvedTheme::Dark => {
+            blocks.extend(css_blocks(
+                css,
+                r#":root[data-leaf-theme="github"][data-leaf-appearance="dark"] {"#,
+            ));
             blocks.extend(css_blocks(css, &format!("{PRIMER_DARK_SELECTOR} {{")));
         }
     };
@@ -1044,9 +1055,11 @@ fn css_token(css: &str, theme: ResolvedTheme, name: &str) -> Rgb {
 fn css_token_for_source(css: &str, source: &ThemeSource, name: &str) -> Rgb {
     let mut blocks = css_blocks(css, &format!("{} {{", source.selector));
     if source.kind == ThemeSourceKind::Primer {
+        // The github family's tokens are var() refs into the Primer primitive
+        // cascade, so pull in the matching primitive block to resolve them.
         let selector = match source.id {
-            "primer-light" => PRIMER_LIGHT_SELECTOR,
-            "primer-dark" => PRIMER_DARK_SELECTOR,
+            "github-light" => PRIMER_LIGHT_SELECTOR,
+            "github-dark" => PRIMER_DARK_SELECTOR,
             _ => source.selector,
         };
         blocks.extend(css_blocks(css, &format!("{selector} {{")));
@@ -2038,10 +2051,16 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
     assert_contains(css, "--prettylights-syntax-comment:");
     assert_contains(css, "--prettylights-syntax-markup-inserted-text:");
     assert_contains(css, "/* Leaf semantic theme compiler output. */");
-    assert_contains(css, "--leaf-theme-source: primer-light;");
-    assert_contains(css, "--leaf-theme-source: primer-dark;");
-    assert_contains(css, "--leaf-theme-source: dracula;");
-    assert_contains(css, r#":root[data-leaf-theme-source="dracula"]"#);
+    assert_contains(css, "--leaf-theme-source: github-light;");
+    assert_contains(css, "--leaf-theme-source: github-dark;");
+    assert_contains(css, "--leaf-theme-source: dracula-light;");
+    assert_contains(css, "--leaf-theme-source: dracula-dark;");
+    assert_contains(css, "--leaf-theme-source: obsidian-light;");
+    assert_contains(css, "--leaf-theme-source: obsidian-dark;");
+    assert_contains(
+        css,
+        r#":root[data-leaf-theme="dracula"][data-leaf-appearance="dark"]"#,
+    );
     assert_contains(css, "--leaf-app-background: var(--bgColor-default);");
     assert_contains(
         css,
@@ -2320,8 +2339,9 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
     let sources = theme_sources();
 
     assert_theme_sources_cover_contract(sources);
-    assert_eq!(sources.len(), 3);
-    assert!(sources.iter().any(|source| source.id == "dracula"));
+    // Three families (github, dracula, obsidian), each a light/dark pair.
+    assert_eq!(sources.len(), 6);
+    assert!(sources.iter().any(|source| source.id == "dracula-dark"));
 
     for source in sources {
         for token in LEAF_SEMANTIC_TOKEN_CONTRACT {
@@ -2334,22 +2354,30 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
         assert_contains(css, source.selector);
     }
 
-    let selectable: Vec<&str> = sources
-        .iter()
-        .filter(|source| source.selectable)
-        .map(|source| source.id)
-        .collect();
-    assert_eq!(selectable, vec!["primer-light", "primer-dark", "dracula"]);
+    // The picker's families, in order, are derived from the registered sources.
+    assert_eq!(
+        theme_families(),
+        vec![
+            ("github", "GitHub"),
+            ("dracula", "Dracula"),
+            ("obsidian", "Obsidian"),
+        ]
+    );
 
     let html = app_shell_html();
     assert_contains(&html, r#"id="themeMode""#);
+    assert_contains(&html, r#"id="themeFamily""#);
     assert_contains(&html, "settings.theme.");
-    // Dracula is a deliberate manual choice in the theme picker.
-    assert_contains(
-        &html,
-        r#"<option value="dracula" data-i18n="settings.theme.dracula">Dracula</option>"#,
-    );
-    // It activates through its own token source attribute, not free-form CSS.
+    // Every registered family has a matching option in the Theme picker.
+    for (family, name) in theme_families() {
+        assert_contains(
+            &html,
+            &format!(
+                r#"<option value="{family}" data-i18n="settings.theme.family.{family}">{name}</option>"#
+            ),
+        );
+    }
+    // Palettes are data-only token maps, not free-form author CSS.
     assert!(!html.contains("customTheme"));
 }
 
@@ -3420,18 +3448,20 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
     assert_contains(&html, r#"<meta name="color-scheme" content="light dark">"#);
     assert_contains(
         &html,
-        "VALID_MODES = new Set(['system', 'light', 'dark', 'dracula'])",
+        "const VALID_FAMILIES = new Set(['github', 'dracula', 'obsidian']);",
+    );
+    assert_contains(
+        &html,
+        "const VALID_MODES = new Set(['system', 'light', 'dark', 'daylight']);",
     );
     // Seeded from the host-injected global, not localStorage (non-durable here).
-    assert_contains(&html, "window.__leafSettings.themeMode");
-    assert_contains(&html, "let mode = normalizeMode(injected);");
-    assert_contains(
-            &html,
-            "root.dataset.colorMode = mode === 'system' ? 'auto' : (mode === 'dracula' ? 'dark' : mode)",
-        );
-    // Dracula flips on its own token source; other modes clear it.
-    assert_contains(&html, "root.dataset.leafThemeSource = 'dracula'");
-    assert_contains(&html, "delete root.dataset.leafThemeSource");
+    assert_contains(&html, "let family = normalizeFamily(settings.themeFamily);");
+    assert_contains(&html, "let mode = normalizeMode(settings.themeMode);");
+    // The Leaf-owned attributes that drive the compiled theme CSS.
+    assert_contains(&html, "root.dataset.leafTheme = family;");
+    assert_contains(&html, "root.dataset.leafAppearance = theme.resolvedTheme;");
+    // Primer primitives still resolve off the color-mode attributes.
+    assert_contains(&html, "root.dataset.colorMode = theme.resolvedTheme;");
     assert_contains(&html, "root.dataset.lightTheme = 'light'");
     assert_contains(&html, "root.dataset.darkTheme = 'dark'");
     assert_contains(
@@ -3439,11 +3469,20 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
         "root.dataset.resolvedColorMode = theme.resolvedTheme",
     );
     assert_contains(&html, "root.dataset.themeMode = mode");
+    assert_contains(&html, "root.dataset.themeFamily = family;");
     assert_contains(&html, "root.dataset.theme = theme.resolvedTheme");
     assert_contains(&html, "root.style.colorScheme = theme.resolvedTheme");
     assert_contains(&html, "getMode: () => mode");
+    assert_contains(&html, "getFamily: () => family");
     assert_contains(&html, "getResolvedTheme: resolvedTheme");
     assert_contains(&html, "mode = normalizeMode(nextMode);");
+    assert_contains(&html, "family = normalizeFamily(nextFamily);");
+    // Daylight flips light/dark by the local clock, on a rescheduling timer.
+    assert_contains(
+        &html,
+        "if (mode === 'daylight') return isDaytime() ? 'light' : 'dark';",
+    );
+    assert_contains(&html, "const scheduleDaylight = () => {");
     assert_contains(&html, "subscribe(listener)");
     assert_contains(&html, "listeners.forEach((listener) => listener(theme))");
     assert_contains(
@@ -3451,13 +3490,12 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
         "media.addEventListener('change', onSystemThemeChange)",
     );
     assert_contains(&html, "media.addListener(onSystemThemeChange)");
-    assert_contains(&html, "catch (_) {}");
     assert_contains(&html, r#"id="themeMode""#);
+    assert_contains(&html, r#"id="themeFamily""#);
     assert_contains(&html, "settings.theme.");
     assert!(!html.contains("themeVariant"));
     assert!(!html.contains("customTheme"));
-    assert!(!html.contains("id=\"lightTheme\""));
-    assert!(!html.contains("id=\"darkTheme\""));
+    assert!(!html.contains("leafThemeSource"));
     assert!(!html.contains("getLightTheme"));
     assert!(!html.contains("getDarkTheme"));
 }
@@ -3484,7 +3522,7 @@ fn app_shell_groups_settings_menu_with_accessible_descriptions() {
     );
     assert_contains(
         &html,
-        r#"<span class="setting-help" id="themeModeHelp" data-i18n="settings.theme.help">System follows device preference.</span>"#,
+        r#"<span class="setting-help" id="themeModeHelp" data-i18n="settings.theme.help">System follows device preference; Daylight is light by day, dark at night.</span>"#,
     );
     assert_contains(
         &html,
@@ -3546,20 +3584,19 @@ fn app_shell_theme_bootstrap_resolves_manual_and_system_modes() {
     let html = app_shell_html();
 
     assert_contains(&html, "if (mode === 'light') return 'light';");
+    assert_contains(&html, "if (mode === 'dark') return 'dark';");
     assert_contains(
         &html,
-        "if (mode === 'dark' || mode === 'dracula') return 'dark';",
+        "if (mode === 'daylight') return isDaytime() ? 'light' : 'dark';",
     );
     assert_contains(&html, "return media && media.matches ? 'dark' : 'light';");
     assert_contains(&html, "setMode(nextMode) {");
+    assert_contains(&html, "setFamily(nextFamily) {");
     assert_contains(
         &html,
         "const onSystemThemeChange = () => { if (mode === 'system') { apply(); } };",
     );
-    assert_contains(
-            &html,
-            "root.dataset.colorMode = mode === 'system' ? 'auto' : (mode === 'dracula' ? 'dark' : mode);",
-        );
+    assert_contains(&html, "root.dataset.colorMode = theme.resolvedTheme;");
     assert_contains(&html, "root.dataset.lightTheme = 'light';");
     assert_contains(&html, "root.dataset.darkTheme = 'dark';");
     assert_contains(
@@ -3576,21 +3613,24 @@ fn app_shell_theme_bootstrap_seeds_from_host_injected_settings() {
     let html = app_shell_html();
 
     for expected in [
-        "const VALID_MODES = new Set(['system', 'light', 'dark', 'dracula']);",
-        "window.__leafSettings.themeMode",
-        "let mode = normalizeMode(injected);",
+        "const VALID_MODES = new Set(['system', 'light', 'dark', 'daylight']);",
+        "const settings = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings : {};",
+        "let family = normalizeFamily(settings.themeFamily);",
+        "let mode = normalizeMode(settings.themeMode);",
         "mode = normalizeMode(nextMode);",
+        "family = normalizeFamily(nextFamily);",
         "listeners.forEach((listener) => listener(theme));",
     ] {
         assert_contains(&html, expected);
     }
 
     // The theme path no longer touches localStorage; the host owns persistence
-    // via setThemeMode. (The locale bootstrap keeps its own storage, so we check
-    // theme-specific markers.)
+    // via setThemeMode / setThemeFamily. (The locale bootstrap keeps its own
+    // storage, so we check theme-specific markers.)
     assert!(!html.contains("leaf.themeMode"));
     assert!(!html.contains("modeStorage"));
     assert!(html.contains("send({ command: 'setThemeMode', mode: themeModeControl.value });"));
+    assert!(html.contains("send({ command: 'setThemeFamily', family: themeFamilyControl.value });"));
 }
 
 #[test]
@@ -5230,6 +5270,7 @@ fn settings_default_keeps_minimap_on_and_indexing_off() {
     assert!(!settings.indexing_enabled);
     assert!(!settings.speed_reader_enabled);
     assert!(!settings.line_numbers_enabled);
+    assert_eq!(settings.theme_family, "github");
     assert_eq!(settings.theme_mode, "system");
     assert_eq!(settings.library_view, LibraryView::Graph);
     assert!(settings.library_expanded.is_empty());
@@ -5256,7 +5297,8 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
         speed_reader_enabled: true,
         line_numbers_enabled: false,
         reader_editing_enabled: false,
-        theme_mode: "dracula".to_string(),
+        theme_family: "dracula".to_string(),
+        theme_mode: "dark".to_string(),
         library_view: LibraryView::Tree,
         graph_scope: GraphScope::Large,
         library_expanded: vec!["C:\\Users".to_string(), "C:\\Users\\rwall".to_string()],
@@ -5275,6 +5317,27 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
 
     fs::write(&settings_path, "{not json").expect("corrupt settings fixture is written");
     assert_eq!(load_settings(&settings_path), Settings::default());
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn settings_load_migrates_legacy_dracula_mode_to_the_dracula_family() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-settings-migrate-{unique}"));
+    let settings_path = dir.join("settings.json");
+    fs::create_dir_all(&dir).expect("test directory is created");
+
+    // Pre-family installs stored Dracula as a theme mode; it becomes the dark
+    // half of the Dracula family on load.
+    fs::write(&settings_path, r#"{"theme_mode": "dracula"}"#)
+        .expect("legacy settings fixture is written");
+    let loaded = load_settings(&settings_path);
+    assert_eq!(loaded.theme_family, "dracula");
+    assert_eq!(loaded.theme_mode, "dark");
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }
@@ -5357,7 +5420,8 @@ fn initial_settings_script_defines_camelcase_global() {
         speed_reader_enabled: true,
         line_numbers_enabled: false,
         reader_editing_enabled: false,
-        theme_mode: "dracula".to_string(),
+        theme_family: "dracula".to_string(),
+        theme_mode: "dark".to_string(),
         library_view: LibraryView::Tree,
         graph_scope: GraphScope::Large,
         library_expanded: vec!["C:\\Users".to_string()],
@@ -5372,7 +5436,7 @@ fn initial_settings_script_defines_camelcase_global() {
     // webview), so it must not leak into the injected settings global.
     assert_eq!(
         script,
-        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryExpanded":["C:\\Users"],"libraryProjectPath":"docs","libraryView":"tree","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeMode":"dracula"};"#
+        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryExpanded":["C:\\Users"],"libraryProjectPath":"docs","libraryView":"tree","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"dracula","themeMode":"dark"};"#
     );
 }
 

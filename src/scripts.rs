@@ -26,6 +26,7 @@ pub fn initial_settings_script(settings: &Settings) -> String {
         "speedReaderEnabled": settings.speed_reader_enabled,
         "lineNumbersEnabled": settings.line_numbers_enabled,
         "readerEditingEnabled": settings.reader_editing_enabled,
+        "themeFamily": settings.theme_family,
         "themeMode": settings.theme_mode,
         "libraryView": settings.library_view.as_str(),
         "graphScope": settings.graph_scope.as_str(),

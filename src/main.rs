@@ -138,7 +138,11 @@ enum UserEvent {
     SetReaderEditingEnabled {
         enabled: bool,
     },
-    /// Persist the selected theme mode (`system`/`light`/`dark`/`dracula`).
+    /// Persist the selected theme family (`github`/`dracula`/`obsidian`).
+    SetThemeFamily {
+        family: String,
+    },
+    /// Persist the selected appearance mode (`system`/`light`/`dark`/`daylight`).
     SetThemeMode {
         mode: String,
     },
@@ -287,6 +291,8 @@ enum IpcCommand {
     SetLineNumbersEnabled { enabled: bool },
     #[serde(rename = "setReaderEditingEnabled")]
     SetReaderEditingEnabled { enabled: bool },
+    #[serde(rename = "setThemeFamily")]
+    SetThemeFamily { family: String },
     #[serde(rename = "setThemeMode")]
     SetThemeMode { mode: String },
     #[serde(rename = "setWindowChrome")]
@@ -1165,6 +1171,10 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 settings.reader_editing_enabled = enabled;
                 persist_settings(&settings, settings_path.as_ref());
             }
+            Event::UserEvent(UserEvent::SetThemeFamily { family }) => {
+                settings.theme_family = family;
+                persist_settings(&settings, settings_path.as_ref());
+            }
             Event::UserEvent(UserEvent::SetThemeMode { mode }) => {
                 settings.theme_mode = mode;
                 persist_settings(&settings, settings_path.as_ref());
@@ -1448,6 +1458,9 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
             }
             IpcCommand::SetReaderEditingEnabled { enabled } => {
                 let _ = proxy.send_event(UserEvent::SetReaderEditingEnabled { enabled });
+            }
+            IpcCommand::SetThemeFamily { family } => {
+                let _ = proxy.send_event(UserEvent::SetThemeFamily { family });
             }
             IpcCommand::SetThemeMode { mode } => {
                 let _ = proxy.send_event(UserEvent::SetThemeMode { mode });

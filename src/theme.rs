@@ -1,22 +1,62 @@
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
+// The Primer primitive cascade selectors. The github family's tokens are
+// var() refs that resolve inside these blocks; the theme tests use them to
+// locate the right primitive block when checking resolved colors.
+#[allow(dead_code)]
 pub(crate) const PRIMER_LIGHT_SELECTOR: &str = "[data-color-mode=\"light\"][data-light-theme=\"light\"],\n[data-color-mode=\"auto\"][data-light-theme=\"light\"]";
+#[allow(dead_code)]
 pub(crate) const PRIMER_DARK_SELECTOR: &str = "[data-color-mode=\"dark\"][data-dark-theme=\"dark\"],\n[data-color-mode=\"auto\"][data-light-theme=\"dark\"]";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ThemeSourceKind {
+    /// Maps semantic tokens onto GitHub Primer CSS primitives (`var(--bgColor-*)`
+    /// etc.); light vs dark resolves through Primer's own `data-color-mode`
+    /// cascade, which the theme bootstrap sets from the resolved appearance.
     Primer,
-    Dracula,
+    /// Ships a complete literal palette (hex values), self-contained with no
+    /// Primer dependency. Used by the Dracula and Obsidian families.
+    Literal,
+}
+
+/// The light or dark half of a theme family. A family (GitHub, Dracula, Obsidian)
+/// pairs one of each; the appearance is chosen by the Appearance setting.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Appearance {
+    Light,
+    Dark,
+}
+
+impl Appearance {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Appearance::Light => "light",
+            Appearance::Dark => "dark",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ThemeSource {
+    /// Stable id for this exact palette, e.g. `github-light`.
     pub(crate) id: &'static str,
-    pub(crate) display_name: &'static str,
+    /// Family id shared by a light/dark pair, e.g. `github`. This is what the
+    /// Theme picker selects; the Appearance picker chooses which half shows.
+    pub(crate) family: &'static str,
+    /// Family display name shown in the picker, e.g. `GitHub`.
+    pub(crate) family_name: &'static str,
+    /// Whether this source is the family's light or dark variant.
+    pub(crate) appearance: Appearance,
+    /// The CSS selector that activates this source. Every source keys off the
+    /// Leaf-owned `data-leaf-theme` (family) and `data-leaf-appearance` attrs the
+    /// bootstrap stamps on `:root`.
     pub(crate) selector: &'static str,
+    /// Whether the palette is Primer-backed or literal. Read by the theme tests;
+    /// reserved for the future external theme loader, which must know whether a
+    /// palette depends on the Primer primitives.
+    #[allow(dead_code)]
     pub(crate) kind: ThemeSourceKind,
-    pub(crate) selectable: bool,
     pub(crate) tokens: &'static [(&'static str, &'static str)],
     /// Per-source token replacements layered over `tokens` (and winning over
     /// them), to nudge one palette without forking the shared token map.
@@ -507,36 +547,433 @@ pub(crate) const PRIMER_DARK_BORDER_OVERRIDES: &[(&str, &str)] = &[
     ("--leaf-navigation-recent-border", "#39435f"),
 ];
 
+// The light half of the Dracula family — "Alucard", the accepted name for a
+// light Dracula ("Dracula" reversed). No official free light Dracula exists, so
+// this is a Leaf-designed interpretation: the signature Dracula accent hues
+// (purple, pink, cyan, green) darkened for AA contrast on a warm cream ground,
+// over inverted neutrals. Every value is a literal, contract-validated at load.
+pub(crate) const DRACULA_LIGHT_THEME_TOKENS: &[(&str, &str)] = &[
+    ("--leaf-app-background", "#f7f5ef"),
+    ("--leaf-app-foreground", "#26222e"),
+    ("--leaf-app-surface", "#f7f5ef"),
+    ("--leaf-app-surface-raised", "#ffffff"),
+    ("--leaf-app-surface-elevated", "#ffffff"),
+    ("--leaf-app-surface-muted", "#efe9f7"),
+    ("--leaf-app-surface-sunken", "#e8e2f0"),
+    ("--leaf-app-surface-inset", "#e8e2f0"),
+    ("--leaf-app-surface-card", "#ffffff"),
+    ("--leaf-app-border", "#d8d0e6"),
+    ("--leaf-app-border-strong", "#b3a8cc"),
+    ("--leaf-app-muted-background", "#efe9f7"),
+    ("--leaf-app-muted-foreground", "#565070"),
+    ("--leaf-app-primary", "#7b3fe4"),
+    ("--leaf-app-primary-foreground", "#ffffff"),
+    ("--leaf-app-secondary", "#e7e0f5"),
+    ("--leaf-app-secondary-foreground", "#26222e"),
+    ("--leaf-app-accent", "#0c6f8c"),
+    ("--leaf-app-accent-foreground", "#ffffff"),
+    ("--leaf-app-danger", "#cf2e3f"),
+    ("--leaf-app-danger-foreground", "#ffffff"),
+    ("--leaf-app-warning", "#9a6a00"),
+    ("--leaf-app-warning-foreground", "#ffffff"),
+    ("--leaf-app-success", "#1c7d3f"),
+    ("--leaf-app-success-foreground", "#ffffff"),
+    ("--leaf-app-done", "#7b3fe4"),
+    ("--leaf-app-done-foreground", "#ffffff"),
+    ("--leaf-app-link", "#0c6f8c"),
+    ("--leaf-app-link-hover", "#7b3fe4"),
+    ("--leaf-app-shadow", "0 18px 42px rgba(40, 30, 60, 0.18)"),
+    ("--leaf-editor-background", "#f7f5ef"),
+    ("--leaf-editor-foreground", "#26222e"),
+    ("--leaf-editor-selection-background", "#d9cef0"),
+    ("--leaf-editor-selection-foreground", "#26222e"),
+    ("--leaf-editor-inline-code-background", "#efe9f7"),
+    ("--leaf-editor-inline-code-foreground", "#2b2340"),
+    ("--leaf-editor-code-background", "#f1ecf9"),
+    ("--leaf-editor-code-foreground", "#26222e"),
+    ("--leaf-editor-code-border", "#d8d0e6"),
+    ("--leaf-editor-code-selection-background", "#d9cef0"),
+    ("--leaf-editor-code-selection-foreground", "#26222e"),
+    ("--leaf-markdown-background", "#f7f5ef"),
+    ("--leaf-markdown-foreground", "#26222e"),
+    ("--leaf-markdown-heading", "#171320"),
+    ("--leaf-markdown-muted-foreground", "#565070"),
+    ("--leaf-markdown-border", "#d8d0e6"),
+    ("--leaf-markdown-rule", "#d8d0e6"),
+    ("--leaf-markdown-link", "#0c6f8c"),
+    ("--leaf-markdown-link-hover", "#7b3fe4"),
+    ("--leaf-markdown-inline-code-background", "#efe9f7"),
+    ("--leaf-markdown-inline-code-foreground", "#2b2340"),
+    ("--leaf-markdown-blockquote-background", "#efe9f7"),
+    ("--leaf-markdown-blockquote-border", "#7b3fe4"),
+    ("--leaf-markdown-blockquote-foreground", "#4a4360"),
+    ("--leaf-markdown-alert-note", "#0c6f8c"),
+    ("--leaf-markdown-alert-tip", "#1c7d3f"),
+    ("--leaf-markdown-alert-important", "#7b3fe4"),
+    ("--leaf-markdown-alert-warning", "#9a6a00"),
+    ("--leaf-markdown-alert-caution", "#cf2e3f"),
+    ("--leaf-markdown-alert-done", "#7b3fe4"),
+    ("--leaf-markdown-badge-background", "#e7e0f5"),
+    ("--leaf-markdown-badge-foreground", "#26222e"),
+    ("--leaf-markdown-table-border", "#d8d0e6"),
+    ("--leaf-markdown-table-header-background", "#efe9f7"),
+    ("--leaf-markdown-thematic-break", "#d8d0e6"),
+    ("--leaf-markdown-math-inline-background", "#e7e0f5"),
+    ("--leaf-markdown-keyboard-background", "#ffffff"),
+    ("--leaf-markdown-keyboard-border", "#d8d0e6"),
+    ("--leaf-minimap-background", "#efe9f7"),
+    ("--leaf-minimap-border", "#d8d0e6"),
+    ("--leaf-minimap-viewport-border", "#7b3fe4"),
+    (
+        "--leaf-minimap-viewport-background",
+        "rgba(123, 63, 228, 0.14)",
+    ),
+    ("--leaf-minimap-heading", "#7b3fe4"),
+    ("--leaf-minimap-paragraph", "#565070"),
+    ("--leaf-minimap-blank", "#d8d0e6"),
+    ("--leaf-minimap-list", "#1c7d3f"),
+    ("--leaf-minimap-blockquote", "#0c6f8c"),
+    ("--leaf-minimap-code", "#b0257f"),
+    ("--leaf-navigation-border", "#d8d0e6"),
+    ("--leaf-navigation-button-background", "#7b3fe4"),
+    ("--leaf-navigation-button-foreground", "#ffffff"),
+    ("--leaf-navigation-button-hover-background", "#8f57ef"),
+    ("--leaf-navigation-button-disabled-background", "#e7e0f5"),
+    ("--leaf-navigation-button-disabled-foreground", "#9a90b3"),
+    ("--leaf-navigation-recent-border", "#d8d0e6"),
+    ("--leaf-navigation-recent-item-foreground", "#26222e"),
+    ("--leaf-navigation-recent-item-hover-foreground", "#7b3fe4"),
+    ("--leaf-focus-ring", "#7b3fe4"),
+    ("--leaf-focus-selection-background", "#d9cef0"),
+    ("--leaf-focus-selection-foreground", "#26222e"),
+    ("--leaf-syntax-background", "#f1ecf9"),
+    ("--leaf-syntax-foreground", "#26222e"),
+    ("--leaf-syntax-comment", "#565070"),
+    ("--leaf-syntax-keyword", "#b0257f"),
+    ("--leaf-syntax-string", "#7a5a00"),
+    ("--leaf-syntax-number", "#6a30c0"),
+    ("--leaf-syntax-function", "#1c7a3d"),
+    ("--leaf-syntax-variable", "#26222e"),
+    ("--leaf-syntax-type", "#0c6f8c"),
+    ("--leaf-syntax-operator", "#b0257f"),
+    ("--leaf-syntax-punctuation", "#4a4560"),
+    ("--leaf-syntax-inserted", "#14632f"),
+    ("--leaf-syntax-inserted-background", "#d6f2df"),
+    ("--leaf-syntax-deleted", "#a3182a"),
+    ("--leaf-syntax-deleted-background", "#fbdde1"),
+    ("--leaf-syntax-changed", "#7a5200"),
+    ("--leaf-syntax-changed-background", "#f7ecc9"),
+];
+
+// Obsidian's default theme, light mode. Neutral gray page (its base ramp) with
+// the signature violet accent; named accent hues follow Obsidian's own light
+// palette, darkened where a token must read as text on a light ground.
+pub(crate) const OBSIDIAN_LIGHT_THEME_TOKENS: &[(&str, &str)] = &[
+    ("--leaf-app-background", "#ffffff"),
+    ("--leaf-app-foreground", "#222222"),
+    ("--leaf-app-surface", "#ffffff"),
+    ("--leaf-app-surface-raised", "#ffffff"),
+    ("--leaf-app-surface-elevated", "#ffffff"),
+    ("--leaf-app-surface-muted", "#f6f6f6"),
+    ("--leaf-app-surface-sunken", "#f0f0f0"),
+    ("--leaf-app-surface-inset", "#f0f0f0"),
+    ("--leaf-app-surface-card", "#ffffff"),
+    ("--leaf-app-border", "#e0e0e0"),
+    ("--leaf-app-border-strong", "#bdbdbd"),
+    ("--leaf-app-muted-background", "#f6f6f6"),
+    ("--leaf-app-muted-foreground", "#575757"),
+    ("--leaf-app-primary", "#6d45e0"),
+    ("--leaf-app-primary-foreground", "#ffffff"),
+    ("--leaf-app-secondary", "#eeeeee"),
+    ("--leaf-app-secondary-foreground", "#222222"),
+    ("--leaf-app-accent", "#086ddd"),
+    ("--leaf-app-accent-foreground", "#ffffff"),
+    ("--leaf-app-danger", "#d3243a"),
+    ("--leaf-app-danger-foreground", "#ffffff"),
+    ("--leaf-app-warning", "#8a6d00"),
+    ("--leaf-app-warning-foreground", "#ffffff"),
+    ("--leaf-app-success", "#087a34"),
+    ("--leaf-app-success-foreground", "#ffffff"),
+    ("--leaf-app-done", "#6d45e0"),
+    ("--leaf-app-done-foreground", "#ffffff"),
+    ("--leaf-app-link", "#086ddd"),
+    ("--leaf-app-link-hover", "#6d45e0"),
+    ("--leaf-app-shadow", "0 16px 40px rgba(0, 0, 0, 0.12)"),
+    ("--leaf-editor-background", "#ffffff"),
+    ("--leaf-editor-foreground", "#222222"),
+    ("--leaf-editor-selection-background", "#d9e5fb"),
+    ("--leaf-editor-selection-foreground", "#222222"),
+    ("--leaf-editor-inline-code-background", "#f2f2f2"),
+    ("--leaf-editor-inline-code-foreground", "#222222"),
+    ("--leaf-editor-code-background", "#f6f6f6"),
+    ("--leaf-editor-code-foreground", "#222222"),
+    ("--leaf-editor-code-border", "#e0e0e0"),
+    ("--leaf-editor-code-selection-background", "#d9e5fb"),
+    ("--leaf-editor-code-selection-foreground", "#222222"),
+    ("--leaf-markdown-background", "#ffffff"),
+    ("--leaf-markdown-foreground", "#222222"),
+    ("--leaf-markdown-heading", "#11111a"),
+    ("--leaf-markdown-muted-foreground", "#575757"),
+    ("--leaf-markdown-border", "#e0e0e0"),
+    ("--leaf-markdown-rule", "#e0e0e0"),
+    ("--leaf-markdown-link", "#086ddd"),
+    ("--leaf-markdown-link-hover", "#6d45e0"),
+    ("--leaf-markdown-inline-code-background", "#f2f2f2"),
+    ("--leaf-markdown-inline-code-foreground", "#333333"),
+    ("--leaf-markdown-blockquote-background", "#f6f6f6"),
+    ("--leaf-markdown-blockquote-border", "#6d45e0"),
+    ("--leaf-markdown-blockquote-foreground", "#444444"),
+    ("--leaf-markdown-alert-note", "#086ddd"),
+    ("--leaf-markdown-alert-tip", "#087a34"),
+    ("--leaf-markdown-alert-important", "#6d45e0"),
+    ("--leaf-markdown-alert-warning", "#8a6d00"),
+    ("--leaf-markdown-alert-caution", "#d3243a"),
+    ("--leaf-markdown-alert-done", "#6d45e0"),
+    ("--leaf-markdown-badge-background", "#eeeeee"),
+    ("--leaf-markdown-badge-foreground", "#222222"),
+    ("--leaf-markdown-table-border", "#e0e0e0"),
+    ("--leaf-markdown-table-header-background", "#f6f6f6"),
+    ("--leaf-markdown-thematic-break", "#e0e0e0"),
+    ("--leaf-markdown-math-inline-background", "#eeeeee"),
+    ("--leaf-markdown-keyboard-background", "#ffffff"),
+    ("--leaf-markdown-keyboard-border", "#d4d4d4"),
+    ("--leaf-minimap-background", "#f6f6f6"),
+    ("--leaf-minimap-border", "#e0e0e0"),
+    ("--leaf-minimap-viewport-border", "#6d45e0"),
+    (
+        "--leaf-minimap-viewport-background",
+        "rgba(109, 69, 224, 0.14)",
+    ),
+    ("--leaf-minimap-heading", "#6d45e0"),
+    ("--leaf-minimap-paragraph", "#575757"),
+    ("--leaf-minimap-blank", "#e0e0e0"),
+    ("--leaf-minimap-list", "#087a34"),
+    ("--leaf-minimap-blockquote", "#086ddd"),
+    ("--leaf-minimap-code", "#c02a6f"),
+    ("--leaf-navigation-border", "#e0e0e0"),
+    ("--leaf-navigation-button-background", "#6d45e0"),
+    ("--leaf-navigation-button-foreground", "#ffffff"),
+    ("--leaf-navigation-button-hover-background", "#7d58ef"),
+    ("--leaf-navigation-button-disabled-background", "#eeeeee"),
+    ("--leaf-navigation-button-disabled-foreground", "#999999"),
+    ("--leaf-navigation-recent-border", "#e0e0e0"),
+    ("--leaf-navigation-recent-item-foreground", "#222222"),
+    ("--leaf-navigation-recent-item-hover-foreground", "#6d45e0"),
+    ("--leaf-focus-ring", "#6d45e0"),
+    ("--leaf-focus-selection-background", "#d9e5fb"),
+    ("--leaf-focus-selection-foreground", "#222222"),
+    ("--leaf-syntax-background", "#f6f6f6"),
+    ("--leaf-syntax-foreground", "#222222"),
+    ("--leaf-syntax-comment", "#5c5c5c"),
+    ("--leaf-syntax-keyword", "#b0246a"),
+    ("--leaf-syntax-string", "#8a5a00"),
+    ("--leaf-syntax-number", "#6a30c0"),
+    ("--leaf-syntax-function", "#0a5fa0"),
+    ("--leaf-syntax-variable", "#222222"),
+    ("--leaf-syntax-type", "#0a5fa0"),
+    ("--leaf-syntax-operator", "#b0246a"),
+    ("--leaf-syntax-punctuation", "#4a4a4a"),
+    ("--leaf-syntax-inserted", "#0a6a2f"),
+    ("--leaf-syntax-inserted-background", "#d6f2de"),
+    ("--leaf-syntax-deleted", "#a01a2a"),
+    ("--leaf-syntax-deleted-background", "#fbdde1"),
+    ("--leaf-syntax-changed", "#7a5200"),
+    ("--leaf-syntax-changed-background", "#f7ecc9"),
+];
+
+// Obsidian's default theme, dark mode. Its base grayscale ramp with the violet
+// accent; named accent hues follow Obsidian's own dark palette, brightened where
+// a token must read as text on the near-black ground.
+pub(crate) const OBSIDIAN_DARK_THEME_TOKENS: &[(&str, &str)] = &[
+    ("--leaf-app-background", "#1e1e1e"),
+    ("--leaf-app-foreground", "#dadada"),
+    ("--leaf-app-surface", "#1e1e1e"),
+    ("--leaf-app-surface-raised", "#242424"),
+    ("--leaf-app-surface-elevated", "#262626"),
+    ("--leaf-app-surface-muted", "#2a2a2a"),
+    ("--leaf-app-surface-sunken", "#181818"),
+    ("--leaf-app-surface-inset", "#181818"),
+    ("--leaf-app-surface-card", "#242424"),
+    ("--leaf-app-border", "#363636"),
+    ("--leaf-app-border-strong", "#555555"),
+    ("--leaf-app-muted-background", "#2a2a2a"),
+    ("--leaf-app-muted-foreground", "#999999"),
+    ("--leaf-app-primary", "#a882ff"),
+    ("--leaf-app-primary-foreground", "#1e1e1e"),
+    ("--leaf-app-secondary", "#2a2a2a"),
+    ("--leaf-app-secondary-foreground", "#dadada"),
+    ("--leaf-app-accent", "#4c9dff"),
+    ("--leaf-app-accent-foreground", "#1e1e1e"),
+    ("--leaf-app-danger", "#fb464c"),
+    ("--leaf-app-danger-foreground", "#1e1e1e"),
+    ("--leaf-app-warning", "#e0de71"),
+    ("--leaf-app-warning-foreground", "#1e1e1e"),
+    ("--leaf-app-success", "#44cf6e"),
+    ("--leaf-app-success-foreground", "#1e1e1e"),
+    ("--leaf-app-done", "#a882ff"),
+    ("--leaf-app-done-foreground", "#1e1e1e"),
+    ("--leaf-app-link", "#4c9dff"),
+    ("--leaf-app-link-hover", "#a882ff"),
+    ("--leaf-app-shadow", "0 18px 42px rgba(0, 0, 0, 0.5)"),
+    ("--leaf-editor-background", "#1e1e1e"),
+    ("--leaf-editor-foreground", "#dadada"),
+    ("--leaf-editor-selection-background", "#2f3a54"),
+    ("--leaf-editor-selection-foreground", "#ffffff"),
+    ("--leaf-editor-inline-code-background", "#2a2a2a"),
+    ("--leaf-editor-inline-code-foreground", "#dadada"),
+    ("--leaf-editor-code-background", "#181818"),
+    ("--leaf-editor-code-foreground", "#dadada"),
+    ("--leaf-editor-code-border", "#363636"),
+    ("--leaf-editor-code-selection-background", "#2f3a54"),
+    ("--leaf-editor-code-selection-foreground", "#ffffff"),
+    ("--leaf-markdown-background", "#1e1e1e"),
+    ("--leaf-markdown-foreground", "#dadada"),
+    ("--leaf-markdown-heading", "#ffffff"),
+    ("--leaf-markdown-muted-foreground", "#999999"),
+    ("--leaf-markdown-border", "#363636"),
+    ("--leaf-markdown-rule", "#363636"),
+    ("--leaf-markdown-link", "#4c9dff"),
+    ("--leaf-markdown-link-hover", "#a882ff"),
+    ("--leaf-markdown-inline-code-background", "#2a2a2a"),
+    ("--leaf-markdown-inline-code-foreground", "#f6a5cf"),
+    ("--leaf-markdown-blockquote-background", "#242424"),
+    ("--leaf-markdown-blockquote-border", "#a882ff"),
+    ("--leaf-markdown-blockquote-foreground", "#dadada"),
+    ("--leaf-markdown-alert-note", "#4c9dff"),
+    ("--leaf-markdown-alert-tip", "#44cf6e"),
+    ("--leaf-markdown-alert-important", "#a882ff"),
+    ("--leaf-markdown-alert-warning", "#e0de71"),
+    ("--leaf-markdown-alert-caution", "#fb464c"),
+    ("--leaf-markdown-alert-done", "#a882ff"),
+    ("--leaf-markdown-badge-background", "#2a2a2a"),
+    ("--leaf-markdown-badge-foreground", "#dadada"),
+    ("--leaf-markdown-table-border", "#363636"),
+    ("--leaf-markdown-table-header-background", "#242424"),
+    ("--leaf-markdown-thematic-break", "#363636"),
+    ("--leaf-markdown-math-inline-background", "#2a2a2a"),
+    ("--leaf-markdown-keyboard-background", "#242424"),
+    ("--leaf-markdown-keyboard-border", "#363636"),
+    ("--leaf-minimap-background", "#242424"),
+    ("--leaf-minimap-border", "#363636"),
+    ("--leaf-minimap-viewport-border", "#a882ff"),
+    (
+        "--leaf-minimap-viewport-background",
+        "rgba(110, 118, 129, 0.14)",
+    ),
+    ("--leaf-minimap-heading", "#a882ff"),
+    ("--leaf-minimap-paragraph", "#999999"),
+    ("--leaf-minimap-blank", "#363636"),
+    ("--leaf-minimap-list", "#44cf6e"),
+    ("--leaf-minimap-blockquote", "#4c9dff"),
+    ("--leaf-minimap-code", "#fa99cd"),
+    ("--leaf-navigation-border", "#363636"),
+    ("--leaf-navigation-button-background", "#a882ff"),
+    ("--leaf-navigation-button-foreground", "#1e1e1e"),
+    ("--leaf-navigation-button-hover-background", "#b89bff"),
+    ("--leaf-navigation-button-disabled-background", "#2a2a2a"),
+    ("--leaf-navigation-button-disabled-foreground", "#6a6a6a"),
+    ("--leaf-navigation-recent-border", "#363636"),
+    ("--leaf-navigation-recent-item-foreground", "#dadada"),
+    ("--leaf-navigation-recent-item-hover-foreground", "#a882ff"),
+    ("--leaf-focus-ring", "#a882ff"),
+    ("--leaf-focus-selection-background", "#2f3a54"),
+    ("--leaf-focus-selection-foreground", "#ffffff"),
+    ("--leaf-syntax-background", "#181818"),
+    ("--leaf-syntax-foreground", "#dadada"),
+    ("--leaf-syntax-comment", "#8c8c8c"),
+    ("--leaf-syntax-keyword", "#fa99cd"),
+    ("--leaf-syntax-string", "#e0de71"),
+    ("--leaf-syntax-number", "#a882ff"),
+    ("--leaf-syntax-function", "#44cf6e"),
+    ("--leaf-syntax-variable", "#dadada"),
+    ("--leaf-syntax-type", "#53dfdd"),
+    ("--leaf-syntax-operator", "#fa99cd"),
+    ("--leaf-syntax-punctuation", "#bababa"),
+    ("--leaf-syntax-inserted", "#44cf6e"),
+    ("--leaf-syntax-inserted-background", "#143621"),
+    ("--leaf-syntax-deleted", "#ff8f92"),
+    ("--leaf-syntax-deleted-background", "#3a1d20"),
+    ("--leaf-syntax-changed", "#e0de71"),
+    ("--leaf-syntax-changed-background", "#33301a"),
+];
+
 pub(crate) fn theme_sources() -> &'static [ThemeSource] {
     &[
         ThemeSource {
-            id: "primer-light",
-            display_name: "Primer Light",
-            selector: PRIMER_LIGHT_SELECTOR,
+            id: "github-light",
+            family: "github",
+            family_name: "GitHub",
+            appearance: Appearance::Light,
+            selector: ":root[data-leaf-theme=\"github\"][data-leaf-appearance=\"light\"]",
             kind: ThemeSourceKind::Primer,
-            selectable: true,
             tokens: PRIMER_THEME_TOKENS,
             overrides: &[],
         },
         ThemeSource {
-            id: "primer-dark",
-            display_name: "Primer Dark",
-            selector: PRIMER_DARK_SELECTOR,
+            id: "github-dark",
+            family: "github",
+            family_name: "GitHub",
+            appearance: Appearance::Dark,
+            selector: ":root[data-leaf-theme=\"github\"][data-leaf-appearance=\"dark\"]",
             kind: ThemeSourceKind::Primer,
-            selectable: true,
             tokens: PRIMER_THEME_TOKENS,
             overrides: PRIMER_DARK_BORDER_OVERRIDES,
         },
         ThemeSource {
-            id: "dracula",
-            display_name: "Dracula",
-            selector: ":root[data-leaf-theme-source=\"dracula\"]",
-            kind: ThemeSourceKind::Dracula,
-            selectable: true,
+            id: "dracula-light",
+            family: "dracula",
+            family_name: "Dracula",
+            appearance: Appearance::Light,
+            selector: ":root[data-leaf-theme=\"dracula\"][data-leaf-appearance=\"light\"]",
+            kind: ThemeSourceKind::Literal,
+            tokens: DRACULA_LIGHT_THEME_TOKENS,
+            overrides: &[],
+        },
+        ThemeSource {
+            id: "dracula-dark",
+            family: "dracula",
+            family_name: "Dracula",
+            appearance: Appearance::Dark,
+            selector: ":root[data-leaf-theme=\"dracula\"][data-leaf-appearance=\"dark\"]",
+            kind: ThemeSourceKind::Literal,
             tokens: DRACULA_THEME_TOKENS,
             overrides: &[],
         },
+        ThemeSource {
+            id: "obsidian-light",
+            family: "obsidian",
+            family_name: "Obsidian",
+            appearance: Appearance::Light,
+            selector: ":root[data-leaf-theme=\"obsidian\"][data-leaf-appearance=\"light\"]",
+            kind: ThemeSourceKind::Literal,
+            tokens: OBSIDIAN_LIGHT_THEME_TOKENS,
+            overrides: &[],
+        },
+        ThemeSource {
+            id: "obsidian-dark",
+            family: "obsidian",
+            family_name: "Obsidian",
+            appearance: Appearance::Dark,
+            selector: ":root[data-leaf-theme=\"obsidian\"][data-leaf-appearance=\"dark\"]",
+            kind: ThemeSourceKind::Literal,
+            tokens: OBSIDIAN_DARK_THEME_TOKENS,
+            overrides: &[],
+        },
     ]
+}
+
+/// The theme families for the picker, in display order: `(family id, name)`,
+/// each appearing once. Derived from [`theme_sources`], so registering a new
+/// family's light/dark pair adds it here automatically.
+#[allow(dead_code)]
+pub(crate) fn theme_families() -> Vec<(&'static str, &'static str)> {
+    let mut families: Vec<(&'static str, &'static str)> = Vec::new();
+    for source in theme_sources() {
+        if !families.iter().any(|(id, _)| *id == source.family) {
+            families.push((source.family, source.family_name));
+        }
+    }
+    families
 }
 
 pub(crate) fn compiled_theme_css() -> String {
@@ -575,19 +1012,18 @@ pub(crate) fn assert_theme_sources_cover_contract(sources: &[ThemeSource]) {
             source.id
         );
         assert!(
-            !source.display_name.trim().is_empty(),
-            "theme source {} must have a display name",
+            !source.family_name.trim().is_empty(),
+            "theme source {} must have a family name",
             source.id
         );
-        // Dracula-kind palettes ship a full token set and activate through their
-        // own source attribute, not the Primer color-mode selectors.
-        if source.kind == ThemeSourceKind::Dracula {
-            assert!(
-                source.selector.contains("data-leaf-theme-source"),
-                "Dracula-kind source {} must use its dedicated token-source selector",
-                source.id
-            );
-        }
+        // Every source activates through the Leaf-owned family + appearance
+        // attributes, so its selector must name both.
+        assert!(
+            source.selector.contains(source.family)
+                && source.selector.contains(source.appearance.as_str()),
+            "theme source {} selector must key off its family and appearance",
+            source.id
+        );
         let mut seen = HashSet::new();
         for (token, _) in source.tokens {
             assert!(
@@ -605,11 +1041,30 @@ pub(crate) fn assert_theme_sources_cover_contract(sources: &[ThemeSource]) {
         }
     }
 
-    // The theme picker needs at least a light and a dark option to function.
+    // The picker needs at least two families, and every family must offer both a
+    // light and a dark variant so the Appearance control always has both to pick.
+    let mut families: Vec<&str> = Vec::new();
+    for source in sources {
+        if !families.contains(&source.family) {
+            families.push(source.family);
+        }
+    }
     assert!(
-        sources.iter().filter(|source| source.selectable).count() >= 2,
-        "expected at least two selectable theme sources for the picker"
+        families.len() >= 2,
+        "expected at least two theme families for the picker"
     );
+    for family in families {
+        let has_light = sources
+            .iter()
+            .any(|source| source.family == family && source.appearance == Appearance::Light);
+        let has_dark = sources
+            .iter()
+            .any(|source| source.family == family && source.appearance == Appearance::Dark);
+        assert!(
+            has_light && has_dark,
+            "theme family {family} must define both a light and a dark variant"
+        );
+    }
 }
 
 pub(crate) fn theme_source_token_value(source: &ThemeSource, token: &str) -> Option<&'static str> {
@@ -1409,7 +1864,7 @@ summary:focus-visible {
      boundary against the reader is legible in every theme. */
   border-right: 1px solid var(--app-border);
 }
-:root[data-theme="dark"]:not([data-leaf-theme-source="dracula"]) {
+:root[data-theme="dark"]:not([data-leaf-theme="dracula"]) {
   --library-surface: color-mix(in srgb, var(--app-surface) 98%, black);
 }
 .library-divider {

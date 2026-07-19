@@ -32,30 +32,35 @@ One token per syntactic role: `--leaf-syntax-background`, `--leaf-syntax-foregro
 
 Button background, foreground, hover, and disabled states for the back/forward/open controls and the recent-files list.
 
-## Theme sources
+## Theme families and sources
 
-Three theme sources are defined in `src/theme.rs`. Each is a `ThemeSource` struct with an `id`, a `display_name`, a CSS `selector`, a `kind`, a `selectable` flag, a flat `tokens` slice mapping every contract property to a value, and an `overrides` slice for per-source token nudges (empty for most themes):
+Themes are organized as **families**, each pairing a light and a dark **source**. The user picks a family (the Theme setting) and an appearance (the Appearance setting: Light, Dark, System, or Daylight); the two combine to select one source. Three families ship, so six `ThemeSource` structs are defined in `src/theme.rs`. Each has an `id`, a `family` id, a `family_name` (the picker label), an `appearance` (`Light`/`Dark`), a CSS `selector`, a `kind`, a flat `tokens` slice mapping every contract property to a value, and an `overrides` slice for per-source token nudges (empty for most sources):
 
-| Theme ID       | Selector trigger                                                                                               | Token strategy                                                                                                                                 |
-| -------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `primer-light` | `[data-color-mode="light"][data-light-theme="light"]` and `[data-color-mode="auto"][data-light-theme="light"]` | Maps `--leaf-*` tokens to GitHub Primer CSS primitive `var(--bgColor-*)`, `var(--fgColor-*)`, etc.                                             |
-| `primer-dark`  | `[data-color-mode="dark"][data-dark-theme="dark"]` and `[data-color-mode="auto"][data-light-theme="dark"]`     | Same Primer primitive variables; Primer's dark-mode cascade supplies different resolved values.                                                |
-| `dracula`      | `:root[data-leaf-theme-source="dracula"]`                                                                      | Maps every `--leaf-*` token directly to Dracula palette hex values (e.g. `#282a36`, `#f8f8f2`, `#bd93f9`). No dependency on Primer primitives. |
+| Source id        | Family (label)      | Appearance | Token strategy                                                                                    |
+| ---------------- | ------------------- | ---------- | ------------------------------------------------------------------------------------------------- |
+| `github-light`   | `github` (GitHub)   | Light      | Maps `--leaf-*` tokens to GitHub Primer CSS primitives (`var(--bgColor-*)`, `var(--fgColor-*)`).  |
+| `github-dark`    | `github` (GitHub)   | Dark       | Same Primer primitives; Primer's dark-mode cascade supplies different resolved values.            |
+| `dracula-light`  | `dracula` (Dracula) | Light      | Literal palette — a light "Alucard" interpretation of the Dracula accent hues on a cream ground.  |
+| `dracula-dark`   | `dracula` (Dracula) | Dark       | Literal palette — the classic Dracula hex values (`#282a36`, `#f8f8f2`, `#bd93f9`).               |
+| `obsidian-light` | `obsidian` (Obsidian) | Light    | Literal palette — Obsidian's default light base ramp with its violet accent.                      |
+| `obsidian-dark`  | `obsidian` (Obsidian) | Dark     | Literal palette — Obsidian's default dark base ramp with its violet accent.                       |
 
-The `primer-light` and `primer-dark` sources share the same `PRIMER_THEME_TOKENS` slice. Because they use CSS `var()` references into the Primer primitive cascade, the same token map produces the correct resolved color in both light and dark contexts. `primer-dark` additionally layers `PRIMER_DARK_BORDER_OVERRIDES` on top through its `overrides` field — `theme_source_token_value()` checks `overrides` before `tokens`, so the dark source shifts its border family (a slate-blue nudge) while sharing the rest of the map.
+Every source activates through the Leaf-owned attributes the theme bootstrap stamps on `:root`: `data-leaf-theme="<family>"` and `data-leaf-appearance="<light|dark>"`. So a source's selector is `:root[data-leaf-theme="github"][data-leaf-appearance="light"]`, and so on.
 
-The `dracula` source uses `ThemeSourceKind::Dracula` and activates through the `data-leaf-theme-source="dracula"` attribute, deliberately isolated from the Primer color-mode selectors.
+The two `github` sources share the same `PRIMER_THEME_TOKENS` slice. Because they use CSS `var()` references into the Primer primitive cascade, the same token map produces the correct resolved color in both contexts — the bootstrap also sets Primer's own `data-color-mode`/`data-light-theme` attributes from the resolved appearance, so the primitives resolve. `github-dark` additionally layers `PRIMER_DARK_BORDER_OVERRIDES` through its `overrides` field — `theme_source_token_value()` checks `overrides` before `tokens`, so the dark source shifts its border family (a slate-blue nudge) while sharing the rest of the map.
+
+The Dracula and Obsidian sources use `ThemeSourceKind::Literal`: each maps every `--leaf-*` token directly to a hex (or `rgba()`) value, with no dependency on the Primer primitives. `theme_families()` derives the ordered picker list from these sources, so registering a family's light/dark pair adds it to the picker automatically.
 
 ## Startup contract check
 
 `assert_theme_sources_cover_contract()` in `src/theme.rs` runs at startup (called from `compiled_theme_css()`, which is called from `reading_mode_css()`, which is called from `app_shell_html()`). It performs the following checks for every theme source:
 
 - No duplicate theme source IDs.
-- Every source has a non-empty `display_name`.
-- Dracula-kind sources use the `data-leaf-theme-source` selector (not the shared Primer color-mode selectors).
+- Every source has a non-empty `family_name`.
+- Every source's selector names both its `family` and its `appearance`.
 - No duplicate token declarations within a single source.
 - Every token in `LEAF_SEMANTIC_TOKEN_CONTRACT` is covered by the source.
-- At least two sources are `selectable`, so the picker always has a light and a dark option.
+- At least two families exist, and every family defines both a light and a dark variant, so the Appearance control always has both to resolve.
 
 Because `reading_mode_css()` is cached in a `OnceLock<String>` and called on the first paint, a missing token causes a `panic!` with a message like:
 
@@ -70,11 +75,10 @@ This surfaces as a test-time or launch-time failure (any run that compiles the t
 `compiled_theme_css()` generates the final CSS block that follows the Primer primitive stylesheets in the cascade. For each `ThemeSource`, it emits:
 
 ```css
-[data-color-mode="light"][data-light-theme="light"],
-[data-color-mode="auto"][data-light-theme="light"] {
-  --leaf-theme-source: primer-light;
+:root[data-leaf-theme="github"][data-leaf-appearance="light"] {
+  --leaf-theme-source: github-light;
   --leaf-app-background: var(--bgColor-default);
-  /* ... all ~100 contract tokens ... */
+  /* ... all contract tokens ... */
 }
 ```
 
@@ -88,26 +92,30 @@ This surfaces as a test-time or launch-time failure (any run that compiles the t
 
 The result is cached in a `OnceLock<String>` — computed once per process lifetime.
 
-## Adding a theme
+## Adding a theme family
 
-**1. Define a new token map**
+A family is a light/dark pair of sources. To add one (`myfamily`, "My Family"):
 
-In `src/theme.rs`, create a new `const` slice (e.g. `MY_THEME_TOKENS: &[(&str, &str)]`) that maps every property name in `LEAF_SEMANTIC_TOKEN_CONTRACT` to a value. Each entry is `("--leaf-property-name", "value")`.
+**1. Define two token maps**
 
-**2. Register a ThemeSource**
+In `src/theme.rs`, create two `const` slices — one per appearance (e.g. `MYFAMILY_LIGHT_THEME_TOKENS` and `MYFAMILY_DARK_THEME_TOKENS`) — each mapping every property name in `LEAF_SEMANTIC_TOKEN_CONTRACT` to a literal value. Each entry is `("--leaf-property-name", "value")`. Copy an existing literal palette (e.g. `DRACULA_THEME_TOKENS`) as a template so the token order and coverage match.
 
-Add a new `ThemeSource` entry to the slice returned by `theme_sources()`:
+**2. Register both ThemeSources**
+
+Add two `ThemeSource` entries to the slice returned by `theme_sources()`, one per appearance:
 
 ```rust
 ThemeSource {
-    id: "my-theme",
-    display_name: "My Theme",
-    selector: ":root[data-leaf-theme-source=\"my-theme\"]",
-    kind: ThemeSourceKind::Dracula, // or a new kind if you add one
-    selectable: true,
-    tokens: MY_THEME_TOKENS,
-    overrides: &[], // per-source token nudges; empty for most themes
-}
+    id: "myfamily-light",
+    family: "myfamily",
+    family_name: "My Family",
+    appearance: Appearance::Light,
+    selector: ":root[data-leaf-theme=\"myfamily\"][data-leaf-appearance=\"light\"]",
+    kind: ThemeSourceKind::Literal,
+    tokens: MYFAMILY_LIGHT_THEME_TOKENS,
+    overrides: &[],
+},
+// ...and the matching Appearance::Dark source with MYFAMILY_DARK_THEME_TOKENS.
 ```
 
 **3. Run the verification suite**
@@ -116,11 +124,23 @@ ThemeSource {
 just verify
 ```
 
-If any token in `LEAF_SEMANTIC_TOKEN_CONTRACT` is missing from your new source, `assert_theme_sources_cover_contract()` will panic and the test run will fail.
+`assert_theme_sources_cover_contract()` panics (failing the test run) if any contract token is missing, if the family lacks a light or dark variant, or if a selector doesn't name its family and appearance.
 
-**4. Add the option to the Settings menu**
+**4. Add the family to the Settings menu**
 
-Add a new `<option>` element to the `#themeMode` `<select>` in the page markup at `src/assets/app-shell.html`, and add translation keys for both `en` and `zh-CN` in `locale_bootstrap_script()` in `src/lib.rs`.
+Add a new `<option>` to the `#themeFamily` `<select>` in `src/assets/app-shell.html` (value = the family id), and add a `settings.theme.family.<family>` translation key for both `en` and `zh-CN` in `locale_bootstrap_script()` in `src/lib.rs`. The `theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled` test checks that every family returned by `theme_families()` has a matching option.
 
 > [!WARNING]
 > The startup token check uses exact string matching against the names in `LEAF_SEMANTIC_TOKEN_CONTRACT`. Ensure every token name in your new theme map is spelled exactly as it appears in that list — a single typo (e.g. `--leaf-sytax-keyword` instead of `--leaf-syntax-keyword`) will not match and the assertion will fail at startup with a "missing required token" message.
+
+## Appearance modes
+
+The theme bootstrap (`theme_bootstrap_script()` in `src/lib.rs`) resolves the Appearance setting to a concrete light/dark value, exposed via `window.leafTheme`:
+
+- **Light** / **Dark** — a fixed variant.
+- **System** — follows the OS `prefers-color-scheme`, updating live on change.
+- **Daylight** — light between 09:00 and 18:00 local time, dark otherwise. A rescheduling timer flips it at the next boundary without a restart, and it re-checks on window focus (covering a machine that slept across a boundary).
+
+## Data-only palettes and the future gallery
+
+Every palette is **data** — a map of contract tokens to values — not author CSS. That keeps a theme fully validatable against the contract and safe to load without injecting third-party CSS into the webview. The palettes currently live as Rust `const` slices, but the shape is deliberately the same one a `[meta]` + `[tokens]` theme file would deserialize into. The intended next step is an external theme loader (a user themes directory parsed at startup through the same contract check) plus a small in-repo registry (`themes/registry.json`) and an in-app browser, so community themes can be contributed by PR without touching Rust. Until then, adding a family means editing `theme.rs` as above.

@@ -36,15 +36,23 @@
       </summary>
       <div class="settings-panel" role="group" aria-labelledby="settingsSummary">
         <button type="button" class="settings-update" id="settingsUpdate" hidden></button>
-        <label class="setting-control" for="themeMode">
+        <label class="setting-control" for="themeFamily">
           <span class="setting-label" data-i18n="settings.theme.label">Theme</span>
-          <select id="themeMode" aria-label="Theme" aria-describedby="themeModeHelp">
+          <select id="themeFamily" aria-label="Theme" data-i18n-aria-label="settings.theme.aria">
+            <option value="github" data-i18n="settings.theme.family.github">GitHub</option>
+            <option value="dracula" data-i18n="settings.theme.family.dracula">Dracula</option>
+            <option value="obsidian" data-i18n="settings.theme.family.obsidian">Obsidian</option>
+          </select>
+        </label>
+        <label class="setting-control" for="themeMode">
+          <span class="setting-label" data-i18n="settings.theme.appearance">Appearance</span>
+          <select id="themeMode" aria-label="Appearance" data-i18n-aria-label="settings.theme.appearance" aria-describedby="themeModeHelp">
             <option value="system" data-i18n="settings.theme.system">System</option>
             <option value="light" data-i18n="settings.theme.light">Light</option>
             <option value="dark" data-i18n="settings.theme.dark">Dark</option>
-            <option value="dracula" data-i18n="settings.theme.dracula">Dracula</option>
+            <option value="daylight" data-i18n="settings.theme.daylight">Daylight</option>
           </select>
-          <span class="setting-help" id="themeModeHelp" data-i18n="settings.theme.help">System follows device preference.</span>
+          <span class="setting-help" id="themeModeHelp" data-i18n="settings.theme.help">System follows device preference; Daylight is light by day, dark at night.</span>
         </label>
         <label class="setting-control" for="graphScope">
           <span class="setting-label" data-i18n="settings.graphScope.label">Graph size</span>

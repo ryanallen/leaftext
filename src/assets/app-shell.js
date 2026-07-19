@@ -5,6 +5,7 @@ const homeButton = document.getElementById('homeButton');
 const backButton = document.getElementById('backButton');
 const forwardButton = document.getElementById('forwardButton');
 const themeModeControl = document.getElementById('themeMode');
+const themeFamilyControl = document.getElementById('themeFamily');
 const minimapEnabledControl = document.getElementById('minimapEnabled');
 const graphScopeControl = document.getElementById('graphScope');
 const pagerEnabledControl = document.getElementById('pagerEnabled');
@@ -2032,9 +2033,14 @@ let readerAnchorBlocksCount = -1;
 const READER_CONTENT_TOP_GAP = 88;
 const READER_ANCHOR_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, table, details, figure, hr';
 themeModeControl.value = window.leafTheme.getMode();
+themeFamilyControl.value = window.leafTheme.getFamily();
 themeModeControl.addEventListener('change', () => {
   window.leafTheme.setMode(themeModeControl.value);
   send({ command: 'setThemeMode', mode: themeModeControl.value });
+});
+themeFamilyControl.addEventListener('change', () => {
+  window.leafTheme.setFamily(themeFamilyControl.value);
+  send({ command: 'setThemeFamily', family: themeFamilyControl.value });
 });
 // Tell the host what the page background and divider color resolve to so it can
 // paint the native title bar to match the page and the window border to the
@@ -2108,6 +2114,7 @@ let currentDocumentSource = '';
 let pendingCaret = null;
 window.leafTheme.subscribe((theme) => {
   themeModeControl.value = theme.mode;
+  themeFamilyControl.value = theme.family;
   reportWindowChrome(theme);
 });
 window.leafLocale.subscribe(() => {
