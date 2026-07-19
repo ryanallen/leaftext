@@ -4,8 +4,15 @@ const tabBar = document.getElementById('tabBar');
 const homeButton = document.getElementById('homeButton');
 const backButton = document.getElementById('backButton');
 const forwardButton = document.getElementById('forwardButton');
-const themeModeControl = document.getElementById('themeMode');
-const themeFamilyControl = document.getElementById('themeFamily');
+const themeSheet = document.getElementById('themeSheet');
+const themeBackdrop = document.getElementById('themeBackdrop');
+const themeSheetOpen = document.getElementById('themeSheetOpen');
+const themeSheetClose = document.getElementById('themeSheetClose');
+const themeSheetModes = document.getElementById('themeSheetModes');
+const themeSheetGrid = document.getElementById('themeSheetGrid');
+const themeSheetBrowse = document.getElementById('themeSheetBrowse');
+const themeCurrentLabel = document.getElementById('themeCurrentLabel');
+const THEME_REPO_URL = 'https://github.com/ryanallen/leaftext';
 const minimapEnabledControl = document.getElementById('minimapEnabled');
 const graphScopeControl = document.getElementById('graphScope');
 const pagerEnabledControl = document.getElementById('pagerEnabled');
@@ -2032,16 +2039,85 @@ let readerAnchorBlocks = null;
 let readerAnchorBlocksCount = -1;
 const READER_CONTENT_TOP_GAP = 88;
 const READER_ANCHOR_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, table, details, figure, hr';
-themeModeControl.value = window.leafTheme.getMode();
-themeFamilyControl.value = window.leafTheme.getFamily();
-themeModeControl.addEventListener('change', () => {
-  window.leafTheme.setMode(themeModeControl.value);
-  send({ command: 'setThemeMode', mode: themeModeControl.value });
+// The theme selector: a bottom sheet reached from Settings, with an appearance
+// row (System/Light/Dark/Daylight) and the list of theme families. Picking
+// either applies it live and asks the host to persist it. The family list is
+// server-rendered into #themeSheetGrid from theme.rs, so it's the single source
+// of truth; this only wires interaction and reflects the current selection.
+function themeFamilyName(family) {
+  const item = themeSheetGrid.querySelector('.theme-item[data-family="' + family + '"]');
+  return item ? item.textContent.trim() : family;
+}
+function updateThemeSelection() {
+  const mode = window.leafTheme.getMode();
+  const family = window.leafTheme.getFamily();
+  if (themeCurrentLabel) {
+    themeCurrentLabel.textContent =
+      themeFamilyName(family) + ' · ' + window.leafLocale.t('settings.theme.' + mode);
+  }
+  themeSheetModes.querySelectorAll('.theme-mode-btn').forEach((btn) => {
+    const active = btn.dataset.mode === mode;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  themeSheetGrid.querySelectorAll('.theme-item').forEach((btn) => {
+    const active = btn.dataset.family === family;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+function openThemeSheet() {
+  const settingsMenu = document.getElementById('settingsMenu');
+  if (settingsMenu) {
+    settingsMenu.open = false;
+  }
+  themeBackdrop.hidden = false;
+  themeSheet.hidden = false;
+  requestAnimationFrame(() => {
+    themeBackdrop.classList.add('open');
+    themeSheet.classList.add('open');
+  });
+}
+function closeThemeSheet() {
+  themeBackdrop.classList.remove('open');
+  themeSheet.classList.remove('open');
+  setTimeout(() => {
+    themeBackdrop.hidden = true;
+    themeSheet.hidden = true;
+  }, 200);
+}
+if (themeSheetOpen) {
+  themeSheetOpen.addEventListener('click', openThemeSheet);
+}
+if (themeSheetClose) {
+  themeSheetClose.addEventListener('click', closeThemeSheet);
+}
+if (themeBackdrop) {
+  themeBackdrop.addEventListener('click', closeThemeSheet);
+}
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && themeSheet && !themeSheet.hidden) {
+    closeThemeSheet();
+  }
 });
-themeFamilyControl.addEventListener('change', () => {
-  window.leafTheme.setFamily(themeFamilyControl.value);
-  send({ command: 'setThemeFamily', family: themeFamilyControl.value });
+themeSheetModes.querySelectorAll('.theme-mode-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    window.leafTheme.setMode(btn.dataset.mode);
+    send({ command: 'setThemeMode', mode: btn.dataset.mode });
+  });
 });
+themeSheetGrid.querySelectorAll('.theme-item').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    window.leafTheme.setFamily(btn.dataset.family);
+    send({ command: 'setThemeFamily', family: btn.dataset.family });
+  });
+});
+if (themeSheetBrowse) {
+  themeSheetBrowse.addEventListener('click', (event) => {
+    event.preventDefault();
+    send({ command: 'openExternal', url: THEME_REPO_URL });
+  });
+}
 // Tell the host what the page background and divider color resolve to so it can
 // paint the native title bar to match the page and the window border to the
 // theme's divider color (a darker line on light themes, the blue rule on
@@ -2113,8 +2189,7 @@ let currentDocumentSource = '';
 // position inside it; `insertBelow` opens a fresh empty paragraph after it.
 let pendingCaret = null;
 window.leafTheme.subscribe((theme) => {
-  themeModeControl.value = theme.mode;
-  themeFamilyControl.value = theme.family;
+  updateThemeSelection();
   reportWindowChrome(theme);
 });
 window.leafLocale.subscribe(() => {
@@ -2122,6 +2197,7 @@ window.leafLocale.subscribe(() => {
   renderState();
   applyScanProgress(lastScanProgress);
   renderLibrary();
+  updateThemeSelection();
 });
 window.leafMinimap.subscribe((enabled) => {
   minimapEnabledControl.checked = enabled;
@@ -2354,7 +2430,6 @@ function renderStaticText() {
   document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {
     node.setAttribute('placeholder', window.leafLocale.t(node.dataset.i18nPlaceholder));
   });
-  themeModeControl.setAttribute('aria-label', window.leafLocale.t('settings.theme.aria'));
   graphScopeControl.setAttribute('aria-label', window.leafLocale.t('settings.graphScope.aria'));
   minimapEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.minimap.aria'));
   speedReaderEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.speedReader.aria'));

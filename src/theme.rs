@@ -897,6 +897,170 @@ pub(crate) const OBSIDIAN_DARK_THEME_TOKENS: &[(&str, &str)] = &[
     ("--leaf-syntax-changed-background", "#33301a"),
 ];
 
+// Fern — a green theme. Built on Obsidian's vetted neutrals, swapping the
+// violet/blue accents for leaf greens (light overrides layer over
+// OBSIDIAN_LIGHT_THEME_TOKENS; dark over OBSIDIAN_DARK_THEME_TOKENS).
+pub(crate) const FERN_LIGHT_OVERRIDES: &[(&str, &str)] = &[
+    ("--leaf-app-primary", "#1a7f37"),
+    ("--leaf-app-accent", "#1a7f37"),
+    ("--leaf-app-done", "#1a7f37"),
+    ("--leaf-app-link", "#1a7f37"),
+    ("--leaf-app-link-hover", "#0f5a27"),
+    ("--leaf-focus-ring", "#2da44e"),
+    ("--leaf-focus-selection-background", "#d6efdd"),
+    ("--leaf-editor-selection-background", "#d6efdd"),
+    ("--leaf-markdown-link", "#1a7f37"),
+    ("--leaf-markdown-link-hover", "#0f5a27"),
+    ("--leaf-markdown-blockquote-border", "#2da44e"),
+    ("--leaf-markdown-alert-note", "#1a7f37"),
+    ("--leaf-markdown-alert-important", "#1a7f37"),
+    ("--leaf-minimap-viewport-border", "#1a7f37"),
+    (
+        "--leaf-minimap-viewport-background",
+        "rgba(26, 127, 55, 0.14)",
+    ),
+    ("--leaf-minimap-heading", "#1a7f37"),
+    ("--leaf-minimap-blockquote", "#2da44e"),
+    ("--leaf-navigation-button-background", "#1a7f37"),
+    ("--leaf-navigation-button-hover-background", "#24a148"),
+    ("--leaf-navigation-recent-item-hover-foreground", "#1a7f37"),
+    ("--leaf-syntax-keyword", "#1a7f37"),
+    ("--leaf-syntax-function", "#0f6b4e"),
+    ("--leaf-syntax-type", "#0f6b4e"),
+    ("--leaf-syntax-operator", "#1a7f37"),
+];
+
+pub(crate) const FERN_DARK_OVERRIDES: &[(&str, &str)] = &[
+    ("--leaf-app-primary", "#3fb950"),
+    ("--leaf-app-accent", "#56d364"),
+    ("--leaf-app-done", "#3fb950"),
+    ("--leaf-app-link", "#56d364"),
+    ("--leaf-app-link-hover", "#6fdd8b"),
+    ("--leaf-focus-ring", "#3fb950"),
+    ("--leaf-focus-selection-background", "#1f3a26"),
+    ("--leaf-editor-selection-background", "#1f3a26"),
+    ("--leaf-markdown-link", "#56d364"),
+    ("--leaf-markdown-link-hover", "#6fdd8b"),
+    ("--leaf-markdown-blockquote-border", "#3fb950"),
+    ("--leaf-markdown-alert-note", "#56d364"),
+    ("--leaf-markdown-alert-important", "#3fb950"),
+    ("--leaf-markdown-inline-code-foreground", "#7ee787"),
+    ("--leaf-minimap-viewport-border", "#3fb950"),
+    ("--leaf-minimap-heading", "#3fb950"),
+    ("--leaf-minimap-blockquote", "#56d364"),
+    ("--leaf-navigation-button-background", "#3fb950"),
+    ("--leaf-navigation-button-hover-background", "#56d364"),
+    ("--leaf-navigation-recent-item-hover-foreground", "#56d364"),
+    ("--leaf-syntax-keyword", "#7ee787"),
+    ("--leaf-syntax-function", "#56d364"),
+    ("--leaf-syntax-type", "#56d364"),
+    ("--leaf-syntax-operator", "#7ee787"),
+];
+
+// Græy — a near-monochrome theme (after kepano's Minimal): a warm paper ground
+// in light, a neutral dark in dark, gray chrome, and grayscale syntax. Semantic
+// diff/alert colors are left as Obsidian's so errors and diffs stay legible.
+pub(crate) const GRAEY_LIGHT_OVERRIDES: &[(&str, &str)] = &[
+    ("--leaf-app-background", "#f7f6f4"),
+    ("--leaf-app-surface", "#f7f6f4"),
+    ("--leaf-app-surface-muted", "#eeece8"),
+    ("--leaf-app-surface-sunken", "#e7e5e0"),
+    ("--leaf-app-surface-inset", "#e7e5e0"),
+    ("--leaf-app-border", "#dcdad5"),
+    ("--leaf-app-border-strong", "#b3b1aa"),
+    ("--leaf-app-muted-background", "#eeece8"),
+    ("--leaf-app-primary", "#4a4a48"),
+    ("--leaf-app-accent", "#57534e"),
+    ("--leaf-app-done", "#4a4a48"),
+    ("--leaf-app-link", "#444a4a"),
+    ("--leaf-app-link-hover", "#1c1c1c"),
+    ("--leaf-focus-ring", "#767068"),
+    ("--leaf-focus-selection-background", "#e2e0da"),
+    ("--leaf-editor-background", "#f7f6f4"),
+    ("--leaf-editor-selection-background", "#e2e0da"),
+    ("--leaf-editor-inline-code-background", "#eeece8"),
+    ("--leaf-editor-code-background", "#eeece8"),
+    ("--leaf-markdown-background", "#f7f6f4"),
+    ("--leaf-markdown-link", "#444a4a"),
+    ("--leaf-markdown-link-hover", "#1c1c1c"),
+    ("--leaf-markdown-blockquote-border", "#b3b1aa"),
+    ("--leaf-markdown-blockquote-background", "#eeece8"),
+    ("--leaf-markdown-inline-code-background", "#eeece8"),
+    ("--leaf-markdown-table-header-background", "#eeece8"),
+    ("--leaf-markdown-math-inline-background", "#eeece8"),
+    ("--leaf-markdown-badge-background", "#eeece8"),
+    ("--leaf-markdown-alert-note", "#57534e"),
+    ("--leaf-markdown-alert-important", "#4a4a48"),
+    ("--leaf-minimap-background", "#eeece8"),
+    ("--leaf-minimap-viewport-border", "#57534e"),
+    (
+        "--leaf-minimap-viewport-background",
+        "rgba(74, 74, 72, 0.14)",
+    ),
+    ("--leaf-minimap-heading", "#57534e"),
+    ("--leaf-minimap-blockquote", "#767068"),
+    ("--leaf-navigation-button-background", "#4a4a48"),
+    ("--leaf-navigation-button-hover-background", "#333331"),
+    ("--leaf-navigation-recent-item-hover-foreground", "#444a4a"),
+    ("--leaf-syntax-background", "#f2f0ec"),
+    ("--leaf-syntax-comment", "#6a6660"),
+    ("--leaf-syntax-keyword", "#40403e"),
+    ("--leaf-syntax-string", "#5f5b54"),
+    ("--leaf-syntax-number", "#4a4644"),
+    ("--leaf-syntax-function", "#4a4a48"),
+    ("--leaf-syntax-type", "#4a4a48"),
+    ("--leaf-syntax-operator", "#57534e"),
+    ("--leaf-syntax-punctuation", "#57534e"),
+];
+
+pub(crate) const GRAEY_DARK_OVERRIDES: &[(&str, &str)] = &[
+    ("--leaf-app-background", "#1a1a1a"),
+    ("--leaf-app-surface", "#1a1a1a"),
+    ("--leaf-app-surface-raised", "#232323"),
+    ("--leaf-app-surface-card", "#232323"),
+    ("--leaf-app-foreground", "#d6d4d0"),
+    ("--leaf-app-muted-foreground", "#9a968f"),
+    ("--leaf-app-primary", "#c9c6c0"),
+    ("--leaf-app-accent", "#a8a49c"),
+    ("--leaf-app-done", "#c9c6c0"),
+    ("--leaf-app-link", "#b0b6bd"),
+    ("--leaf-app-link-hover", "#e0ddd8"),
+    ("--leaf-focus-ring", "#a8a49c"),
+    ("--leaf-focus-selection-background", "#33322f"),
+    ("--leaf-editor-background", "#1a1a1a"),
+    ("--leaf-editor-foreground", "#d6d4d0"),
+    ("--leaf-editor-selection-background", "#33322f"),
+    ("--leaf-editor-code-background", "#141414"),
+    ("--leaf-editor-code-foreground", "#d6d4d0"),
+    ("--leaf-markdown-background", "#1a1a1a"),
+    ("--leaf-markdown-foreground", "#d6d4d0"),
+    ("--leaf-markdown-link", "#b0b6bd"),
+    ("--leaf-markdown-link-hover", "#e0ddd8"),
+    ("--leaf-markdown-blockquote-border", "#555555"),
+    ("--leaf-markdown-blockquote-background", "#232323"),
+    ("--leaf-markdown-inline-code-foreground", "#d6d4d0"),
+    ("--leaf-markdown-alert-note", "#a8a49c"),
+    ("--leaf-markdown-alert-important", "#c9c6c0"),
+    ("--leaf-minimap-viewport-border", "#a8a49c"),
+    ("--leaf-minimap-heading", "#a8a49c"),
+    ("--leaf-minimap-blockquote", "#b0b6bd"),
+    ("--leaf-navigation-button-background", "#c9c6c0"),
+    ("--leaf-navigation-button-hover-background", "#e0ddd8"),
+    ("--leaf-navigation-recent-item-foreground", "#d6d4d0"),
+    ("--leaf-navigation-recent-item-hover-foreground", "#c9c6c0"),
+    ("--leaf-syntax-background", "#141414"),
+    ("--leaf-syntax-foreground", "#d6d4d0"),
+    ("--leaf-syntax-comment", "#949089"),
+    ("--leaf-syntax-keyword", "#c9c6c0"),
+    ("--leaf-syntax-string", "#b0ac9f"),
+    ("--leaf-syntax-number", "#c9c6c0"),
+    ("--leaf-syntax-function", "#b8b4ac"),
+    ("--leaf-syntax-variable", "#d6d4d0"),
+    ("--leaf-syntax-type", "#b8b4ac"),
+    ("--leaf-syntax-operator", "#a8a49c"),
+    ("--leaf-syntax-punctuation", "#bababa"),
+];
+
 pub(crate) fn theme_sources() -> &'static [ThemeSource] {
     &[
         ThemeSource {
@@ -958,6 +1122,46 @@ pub(crate) fn theme_sources() -> &'static [ThemeSource] {
             kind: ThemeSourceKind::Literal,
             tokens: OBSIDIAN_DARK_THEME_TOKENS,
             overrides: &[],
+        },
+        ThemeSource {
+            id: "fern-light",
+            family: "fern",
+            family_name: "Fern",
+            appearance: Appearance::Light,
+            selector: ":root[data-leaf-theme=\"fern\"][data-leaf-appearance=\"light\"]",
+            kind: ThemeSourceKind::Literal,
+            tokens: OBSIDIAN_LIGHT_THEME_TOKENS,
+            overrides: FERN_LIGHT_OVERRIDES,
+        },
+        ThemeSource {
+            id: "fern-dark",
+            family: "fern",
+            family_name: "Fern",
+            appearance: Appearance::Dark,
+            selector: ":root[data-leaf-theme=\"fern\"][data-leaf-appearance=\"dark\"]",
+            kind: ThemeSourceKind::Literal,
+            tokens: OBSIDIAN_DARK_THEME_TOKENS,
+            overrides: FERN_DARK_OVERRIDES,
+        },
+        ThemeSource {
+            id: "graey-light",
+            family: "graey",
+            family_name: "Græy",
+            appearance: Appearance::Light,
+            selector: ":root[data-leaf-theme=\"graey\"][data-leaf-appearance=\"light\"]",
+            kind: ThemeSourceKind::Literal,
+            tokens: OBSIDIAN_LIGHT_THEME_TOKENS,
+            overrides: GRAEY_LIGHT_OVERRIDES,
+        },
+        ThemeSource {
+            id: "graey-dark",
+            family: "graey",
+            family_name: "Græy",
+            appearance: Appearance::Dark,
+            selector: ":root[data-leaf-theme=\"graey\"][data-leaf-appearance=\"dark\"]",
+            kind: ThemeSourceKind::Literal,
+            tokens: OBSIDIAN_DARK_THEME_TOKENS,
+            overrides: GRAEY_DARK_OVERRIDES,
         },
     ]
 }
@@ -3786,6 +3990,195 @@ body.library-resizing {
 .glossary-sheet.open {
   transform: translateY(0);
 }
+/* Settings row that opens the theme selector: label on the left, the current
+   "Family · Appearance" summary and a chevron on the right. */
+.setting-theme-open {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--settings-control-border);
+  border-radius: 6px;
+  background: var(--settings-control-background);
+  color: var(--settings-control-foreground);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.setting-theme-open:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+}
+.setting-theme-open .setting-label {
+  font-size: 13px;
+  font-weight: 800;
+}
+.setting-theme-current {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--app-muted-foreground);
+  font-size: 12px;
+  text-align: right;
+}
+.setting-theme-chevron {
+  color: var(--app-muted-foreground);
+  font-size: 18px;
+  line-height: 1;
+}
+/* Theme selector bottom sheet — same slide-up pattern as the glossary sheet. */
+.theme-sheet-backdrop[hidden],
+.theme-sheet[hidden] {
+  display: none;
+}
+.theme-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 40;
+}
+.theme-sheet-backdrop.open {
+  opacity: 1;
+}
+.theme-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 78vh;
+  padding: 0 20px 24px;
+  background: var(--surface-elevated);
+  color: var(--foreground);
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+  font-family: var(--app-font);
+  transform: translateY(100%);
+  transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.theme-sheet.open {
+  transform: translateY(0);
+}
+.theme-sheet-grip {
+  width: 40px;
+  height: 4px;
+  margin: 10px auto 2px;
+  border-radius: 999px;
+  background: var(--border-strong);
+}
+.theme-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.theme-sheet-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--foreground);
+}
+.theme-sheet-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--app-muted-foreground);
+  cursor: pointer;
+}
+.theme-sheet-close:hover {
+  background: var(--surface-muted);
+  border-color: transparent;
+  color: var(--foreground);
+}
+.theme-sheet-close svg {
+  width: 18px;
+  height: 18px;
+}
+.theme-sheet-modes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.theme-mode-btn {
+  padding: 8px 6px;
+  border: 1px solid var(--settings-control-border);
+  border-radius: 8px;
+  background: var(--settings-control-background);
+  color: var(--settings-control-foreground);
+  font: 600 12px var(--app-font);
+  cursor: pointer;
+}
+.theme-mode-btn:hover {
+  background: var(--surface-muted);
+  border-color: var(--border-strong);
+}
+.theme-mode-btn.is-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+.theme-sheet-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  overflow-y: auto;
+}
+.theme-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--settings-control-border);
+  border-radius: 10px;
+  background: var(--settings-control-background);
+  color: var(--settings-control-foreground);
+  font: 700 14px var(--app-font);
+  text-align: left;
+  cursor: pointer;
+}
+.theme-item:hover {
+  background: var(--surface-muted);
+  border-color: var(--border-strong);
+}
+.theme-item.is-active {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.theme-item.is-active::after {
+  content: "✓";
+  color: var(--accent);
+  font-weight: 800;
+}
+.theme-sheet-footer {
+  display: flex;
+  justify-content: center;
+}
+.theme-sheet-browse {
+  color: var(--link);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.theme-sheet-browse:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
 .link-hover-tip {
   position: fixed;
   z-index: 60;
@@ -3879,13 +4272,15 @@ body.library-resizing {
   text-decoration: underline;
 }
 @media (min-width: 760px) {
-  .glossary-sheet {
+  .glossary-sheet,
+  .theme-sheet {
     left: 50%;
     right: auto;
     width: min(680px, 92vw);
     transform: translateX(-50%) translateY(100%);
   }
-  .glossary-sheet.open {
+  .glossary-sheet.open,
+  .theme-sheet.open {
     transform: translateX(-50%) translateY(0);
   }
 }

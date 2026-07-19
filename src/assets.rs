@@ -135,6 +135,15 @@ pub(crate) fn bundled_asset_bytes(uri: &str) -> Option<(&'static str, &'static [
     let url = Url::parse(uri).ok()?;
     let path = url.path().trim_start_matches('/');
     match path {
+        // The whole reading-mode stylesheet (fonts, Primer primitives, compiled
+        // theme tokens, and app layout) is served here as a linked stylesheet
+        // rather than inlined into the shell HTML. WebView2 loads the shell via
+        // `NavigateToString`, which rejects strings past ~2 MB (UTF-16) with
+        // E_INVALIDARG; keeping this ~1.3 MB of CSS out of that string is what
+        // stops the shell from tripping the cap as themes/fonts grow. Linked
+        // resources carry no such limit. `app_shell_size_stays_under_navigate_
+        // to_string_budget` guards the inlined shell against regressing.
+        "app.css" => Some(("text/css; charset=utf-8", reading_mode_css().as_bytes())),
         "mermaid.min.js" => Some(("text/javascript; charset=utf-8", MERMAID_JS)),
         "pixi.min.js" => Some(("text/javascript; charset=utf-8", PIXI_JS)),
         "pixi-unsafe-eval.min.js" => Some(("text/javascript; charset=utf-8", PIXI_UNSAFE_EVAL_JS)),

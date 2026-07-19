@@ -9,7 +9,7 @@
 <script>{{THEME_BOOTSTRAP_SCRIPT}}</script>
 <script>{{LOCALE_BOOTSTRAP_SCRIPT}}</script>
 <link rel="stylesheet" href="{{KATEX_CSS_URL}}">
-<style>{{READING_MODE_CSS}}</style>
+<link rel="stylesheet" href="{{APP_CSS_URL}}">
 </head>
 <body>
 <header id="appBar" class="app-bar">
@@ -36,24 +36,11 @@
       </summary>
       <div class="settings-panel" role="group" aria-labelledby="settingsSummary">
         <button type="button" class="settings-update" id="settingsUpdate" hidden></button>
-        <label class="setting-control" for="themeFamily">
+        <button type="button" class="setting-theme-open" id="themeSheetOpen" aria-haspopup="dialog">
           <span class="setting-label" data-i18n="settings.theme.label">Theme</span>
-          <select id="themeFamily" aria-label="Theme" data-i18n-aria-label="settings.theme.aria">
-            <option value="github" data-i18n="settings.theme.family.github">GitHub</option>
-            <option value="dracula" data-i18n="settings.theme.family.dracula">Dracula</option>
-            <option value="obsidian" data-i18n="settings.theme.family.obsidian">Obsidian</option>
-          </select>
-        </label>
-        <label class="setting-control" for="themeMode">
-          <span class="setting-label" data-i18n="settings.theme.appearance">Appearance</span>
-          <select id="themeMode" aria-label="Appearance" data-i18n-aria-label="settings.theme.appearance" aria-describedby="themeModeHelp">
-            <option value="system" data-i18n="settings.theme.system">System</option>
-            <option value="light" data-i18n="settings.theme.light">Light</option>
-            <option value="dark" data-i18n="settings.theme.dark">Dark</option>
-            <option value="daylight" data-i18n="settings.theme.daylight">Daylight</option>
-          </select>
-          <span class="setting-help" id="themeModeHelp" data-i18n="settings.theme.help">System follows device preference; Daylight is light by day, dark at night.</span>
-        </label>
+          <span class="setting-theme-current" id="themeCurrentLabel"></span>
+          <span class="setting-theme-chevron" aria-hidden="true">›</span>
+        </button>
         <label class="setting-control" for="graphScope">
           <span class="setting-label" data-i18n="settings.graphScope.label">Graph size</span>
           <select id="graphScope" aria-label="Graph size" aria-describedby="graphScopeHelp">
@@ -138,6 +125,24 @@
   <button type="button" id="glossarySheetClose" class="glossary-sheet-close" aria-label="Close glossary"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
   <div id="glossarySheetBody" class="glossary-sheet-body document-body"></div>
   <div class="glossary-sheet-footer"><button type="button" id="glossaryFullLink" class="glossary-sheet-fulllink">Open the full glossary</button></div>
+</aside>
+<div id="themeBackdrop" class="theme-sheet-backdrop" hidden></div>
+<aside id="themeSheet" class="theme-sheet" role="dialog" aria-modal="true" data-i18n-aria-label="settings.theme.sheet.title" aria-label="Themes" hidden>
+  <div class="theme-sheet-grip"></div>
+  <div class="theme-sheet-head">
+    <span class="theme-sheet-title" data-i18n="settings.theme.sheet.title">Themes</span>
+    <button type="button" id="themeSheetClose" class="theme-sheet-close" data-i18n-aria-label="settings.theme.sheet.close" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
+  </div>
+  <div class="theme-sheet-modes" id="themeSheetModes" role="group" data-i18n-aria-label="settings.theme.appearance" aria-label="Appearance">
+    <button type="button" class="theme-mode-btn" data-mode="system" data-i18n="settings.theme.system">System</button>
+    <button type="button" class="theme-mode-btn" data-mode="light" data-i18n="settings.theme.light">Light</button>
+    <button type="button" class="theme-mode-btn" data-mode="dark" data-i18n="settings.theme.dark">Dark</button>
+    <button type="button" class="theme-mode-btn" data-mode="daylight" data-i18n="settings.theme.daylight">Daylight</button>
+  </div>
+  <ul class="theme-sheet-grid" id="themeSheetGrid">{{THEME_ITEMS}}</ul>
+  <div class="theme-sheet-footer">
+    <a href="#" id="themeSheetBrowse" class="theme-sheet-browse" data-i18n="settings.theme.sheet.browse">Add your own theme on GitHub →</a>
+  </div>
 </aside>
 <script>
 {{APP_SCRIPT}}

@@ -710,7 +710,8 @@ pub fn app_shell_html() -> String {
         .replace("{{APP_SCRIPT}}", APP_SHELL_SCRIPT)
         .replace("{{THEME_BOOTSTRAP_SCRIPT}}", theme_bootstrap_script())
         .replace("{{LOCALE_BOOTSTRAP_SCRIPT}}", locale_bootstrap_script())
-        .replace("{{READING_MODE_CSS}}", reading_mode_css())
+        .replace("{{APP_CSS_URL}}", &bundled_asset_url("app.css"))
+        .replace("{{THEME_ITEMS}}", &theme_items_html())
         .replace(
             "{{MERMAID_SCRIPT_URL}}",
             &bundled_asset_url("mermaid.min.js"),
@@ -763,13 +764,30 @@ pub fn app_shell_html() -> String {
         )
 }
 
+/// The theme picker's family buttons for the selector bottom sheet, one per
+/// family, rendered from [`theme_families`] so the built-in list stays the
+/// single source of truth. Family names are trusted (proper nouns defined in
+/// `theme.rs`), ids are `[a-z0-9-]`.
+fn theme_items_html() -> String {
+    theme_families()
+        .into_iter()
+        .map(|(id, name)| {
+            format!(
+                "<li><button type=\"button\" class=\"theme-item\" data-family=\"{id}\" aria-pressed=\"false\">{name}</button></li>"
+            )
+        })
+        .collect()
+}
+
 fn theme_bootstrap_script() -> &'static str {
     r#"
 (() => {
   // Themes are two axes: a family (github/dracula/obsidian) and an appearance
   // mode. Light/dark pick a fixed variant, system follows the OS, and daylight
   // is light between DAY_START and DAY_END local time, dark otherwise.
-  const VALID_FAMILIES = new Set(['github', 'dracula', 'obsidian']);
+  // The built-in theme families. Must match the families in theme.rs
+  // (theme_sources); guarded by app_shell_bootstrap_lists_every_theme_family.
+  const VALID_FAMILIES = new Set(['github', 'dracula', 'obsidian', 'fern', 'graey']);
   const VALID_MODES = new Set(['system', 'light', 'dark', 'daylight']);
   const FAMILY_FALLBACK = 'github';
   const MODE_FALLBACK = 'system';
@@ -960,11 +978,16 @@ fn locale_bootstrap_script() -> &'static str {
       'settings.theme.dark': 'Dark',
       'settings.theme.daylight': 'Daylight',
       'settings.theme.family.dracula': 'Dracula',
+      'settings.theme.family.fern': 'Fern',
       'settings.theme.family.github': 'GitHub',
+      'settings.theme.family.graey': 'Græy',
       'settings.theme.family.obsidian': 'Obsidian',
       'settings.theme.help': 'System follows device preference; Daylight is light by day, dark at night.',
       'settings.theme.label': 'Theme',
       'settings.theme.light': 'Light',
+      'settings.theme.sheet.browse': 'Add your own theme on GitHub →',
+      'settings.theme.sheet.close': 'Close',
+      'settings.theme.sheet.title': 'Themes',
       'settings.theme.system': 'System',
       'settings.minimap.aria': 'Show document minimap',
       'settings.minimap.help': 'Show a scrollable document overview on wider windows.',
@@ -1066,11 +1089,16 @@ fn locale_bootstrap_script() -> &'static str {
       'settings.theme.dark': '深色',
       'settings.theme.daylight': '日间自动',
       'settings.theme.family.dracula': 'Dracula',
+      'settings.theme.family.fern': 'Fern',
       'settings.theme.family.github': 'GitHub',
+      'settings.theme.family.graey': 'Græy',
       'settings.theme.family.obsidian': 'Obsidian',
       'settings.theme.help': '跟随系统显示偏好；“日间自动”白天浅色、夜间深色。',
       'settings.theme.label': '主题',
       'settings.theme.light': '浅色',
+      'settings.theme.sheet.browse': '在 GitHub 上添加你的主题 →',
+      'settings.theme.sheet.close': '关闭',
+      'settings.theme.sheet.title': '主题',
       'settings.theme.system': '跟随系统',
       'settings.minimap.aria': '显示文档缩略图',
       'settings.minimap.help': '在较宽窗口中显示可滚动的文档概览。',

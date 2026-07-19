@@ -2339,8 +2339,8 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
     let sources = theme_sources();
 
     assert_theme_sources_cover_contract(sources);
-    // Three families (github, dracula, obsidian), each a light/dark pair.
-    assert_eq!(sources.len(), 6);
+    // Five families (github, dracula, obsidian, fern, graey), each a light/dark pair.
+    assert_eq!(sources.len(), 10);
     assert!(sources.iter().any(|source| source.id == "dracula-dark"));
 
     for source in sources {
@@ -2361,19 +2361,24 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
             ("github", "GitHub"),
             ("dracula", "Dracula"),
             ("obsidian", "Obsidian"),
+            ("fern", "Fern"),
+            ("graey", "Græy"),
         ]
     );
 
     let html = app_shell_html();
-    assert_contains(&html, r#"id="themeMode""#);
-    assert_contains(&html, r#"id="themeFamily""#);
+    // Theme controls live in a bottom-sheet selector, not inline dropdowns.
+    assert_contains(&html, r#"id="themeSheetOpen""#);
+    assert_contains(&html, r#"id="themeSheetGrid""#);
+    assert!(!html.contains(r#"id="themeMode""#));
+    assert!(!html.contains(r#"id="themeFamily""#));
     assert_contains(&html, "settings.theme.");
-    // Every registered family has a matching option in the Theme picker.
+    // Every registered family is a pickable item in the selector sheet.
     for (family, name) in theme_families() {
         assert_contains(
             &html,
             &format!(
-                r#"<option value="{family}" data-i18n="settings.theme.family.{family}">{name}</option>"#
+                r#"<button type="button" class="theme-item" data-family="{family}" aria-pressed="false">{name}</button>"#
             ),
         );
     }
@@ -2490,6 +2495,7 @@ fn app_shell_csp_allows_bundled_data_fonts() {
 #[test]
 fn app_shell_builds_minimap_preview_from_document_clone() {
     let html = app_shell_html();
+    let css = reading_mode_css();
 
     for expected in [
         "let minimapPreviewFrame = 0;",
@@ -2531,12 +2537,13 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
     // The clone keeps glossary terms blended into body text like the page, instead
     // of showing them on the generic accent link colour.
     assert_contains(
-        &html,
+        &css,
         ".document-minimap-preview a.glossary-term {\n  color: inherit;\n}",
     );
 
     // The real-text clone replaces the old abstract canvas entirely (no 2D
-    // context, palette, or line-model rows).
+    // context, palette, or line-model rows). Checked across both the shell
+    // markup/script and the linked stylesheet since styles no longer inline.
     for forbidden in [
         "document-minimap-canvas",
         "canvas.getContext('2d')",
@@ -2547,7 +2554,7 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "minimapResizeObserver.observe(source)",
     ] {
         assert!(
-            !html.contains(forbidden),
+            !html.contains(forbidden) && !css.contains(forbidden),
             "minimap preview must not reintroduce the canvas or scroll-churn path: {forbidden}"
         );
     }
@@ -2649,6 +2656,53 @@ fn bundled_asset_response_serves_known_assets_and_404s_unknown() {
 
     let missing = bundled_asset_response("leaf-asset://local/nope.js");
     assert_eq!(missing.status, 404);
+}
+
+#[test]
+fn app_css_is_served_over_the_asset_protocol_not_inlined() {
+    // The reading-mode stylesheet is delivered as a linked stylesheet, so the
+    // shell links it and the protocol serves the full CSS. Keeping it out of the
+    // inlined shell is what keeps `NavigateToString` under WebView2's size cap.
+    let html = app_shell_html();
+    assert!(
+        html.contains(r#"<link rel="stylesheet" href="#) && html.contains("app.css"),
+        "shell must link app.css rather than inline a <style> block"
+    );
+    assert!(
+        !html.contains("<style>"),
+        "reading-mode CSS must not be inlined into the shell"
+    );
+
+    let css = bundled_asset_response("http://leaf-asset.local/app.css");
+    assert_eq!(css.status, 200);
+    assert_eq!(css.content_type, "text/css; charset=utf-8");
+    // The route serves the whole compiled stylesheet: fonts, semantic tokens,
+    // and app layout all resolve here.
+    let body = std::str::from_utf8(&css.body).expect("app.css is utf-8");
+    assert_eq!(body, reading_mode_css());
+    assert!(body.contains("@font-face"));
+    assert!(body.contains("--leaf-app-background"));
+    assert!(body.contains(".app-bar"));
+}
+
+#[test]
+fn app_shell_stays_well_under_navigate_to_string_budget() {
+    // WebView2 loads the shell through `ICoreWebView2::NavigateToString`, which
+    // rejects content past ~2 MB with E_INVALIDARG (0x80070057) — the string is
+    // measured as UTF-16, so the real ceiling is ~1M ASCII chars. Inlining the
+    // ~1.3 MB reading-mode stylesheet blew past it (regression: "Leaf Text could
+    // not start"). All heavy CSS now loads via `app.css` over the asset
+    // protocol, so the shell is a small skeleton + inline bootstrap/app script.
+    // This test fails loudly if any large blob is inlined back into the shell.
+    let html = app_shell_html();
+    let utf16_bytes = html.encode_utf16().count() * 2;
+    const BUDGET_BYTES: usize = 1_400_000; // ~2/3 of the ~2 MB NavigateToString cap.
+    assert!(
+        utf16_bytes < BUDGET_BYTES,
+        "app shell is {utf16_bytes} UTF-16 bytes, over the {BUDGET_BYTES}-byte \
+         NavigateToString safety budget; do not inline large CSS/JS into the shell — \
+         serve it over the leaf-asset:// protocol instead"
+    );
 }
 
 #[test]
@@ -3338,9 +3392,9 @@ fn app_shell_reacts_to_minimap_and_theme_settings() {
         minimap_subscription_position < minimap_render_position,
         "minimap visibility should remain a WebView setting"
     );
-    assert_contains(&html, "themeModeControl");
     assert_contains(&html, "window.leafTheme.subscribe((theme) => {");
-    assert_contains(&html, "window.leafTheme.setMode(themeModeControl.value)");
+    assert_contains(&html, "window.leafTheme.setMode(btn.dataset.mode)");
+    assert_contains(&html, "window.leafTheme.setFamily(btn.dataset.family)");
 }
 
 #[test]
@@ -3448,7 +3502,7 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
     assert_contains(&html, r#"<meta name="color-scheme" content="light dark">"#);
     assert_contains(
         &html,
-        "const VALID_FAMILIES = new Set(['github', 'dracula', 'obsidian']);",
+        "const VALID_FAMILIES = new Set(['github', 'dracula', 'obsidian', 'fern', 'graey']);",
     );
     assert_contains(
         &html,
@@ -3490,8 +3544,8 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
         "media.addEventListener('change', onSystemThemeChange)",
     );
     assert_contains(&html, "media.addListener(onSystemThemeChange)");
-    assert_contains(&html, r#"id="themeMode""#);
-    assert_contains(&html, r#"id="themeFamily""#);
+    assert_contains(&html, r#"id="themeSheetOpen""#);
+    assert_contains(&html, r#"id="themeSheetGrid""#);
     assert_contains(&html, "settings.theme.");
     assert!(!html.contains("themeVariant"));
     assert!(!html.contains("customTheme"));
@@ -3520,9 +3574,10 @@ fn app_shell_groups_settings_menu_with_accessible_descriptions() {
         &html,
         r#"<div class="settings-panel" role="group" aria-labelledby="settingsSummary">"#,
     );
+    // Theme lives in a bottom sheet opened from a single settings row.
     assert_contains(
         &html,
-        r#"<span class="setting-help" id="themeModeHelp" data-i18n="settings.theme.help">System follows device preference; Daylight is light by day, dark at night.</span>"#,
+        r#"<button type="button" class="setting-theme-open" id="themeSheetOpen" aria-haspopup="dialog">"#,
     );
     assert_contains(
         &html,
@@ -3538,8 +3593,8 @@ fn app_shell_groups_settings_menu_with_accessible_descriptions() {
         &html,
         "if (settingsMenu.open && !settingsMenu.contains(event.target))",
     );
-    assert_contains(&html, r#"for="themeMode""#);
-    assert_contains(&html, "themeModeHelp");
+    assert_contains(&html, r#"id="themeSheet""#);
+    assert_contains(&html, r#"data-i18n="settings.theme.sheet.title""#);
     assert!(!html.contains("localeModeHelp"));
     assert!(!html.contains(r#"for="localeMode""#));
 }
@@ -3629,8 +3684,8 @@ fn app_shell_theme_bootstrap_seeds_from_host_injected_settings() {
     // storage, so we check theme-specific markers.)
     assert!(!html.contains("leaf.themeMode"));
     assert!(!html.contains("modeStorage"));
-    assert!(html.contains("send({ command: 'setThemeMode', mode: themeModeControl.value });"));
-    assert!(html.contains("send({ command: 'setThemeFamily', family: themeFamilyControl.value });"));
+    assert!(html.contains("send({ command: 'setThemeMode', mode: btn.dataset.mode });"));
+    assert!(html.contains("send({ command: 'setThemeFamily', family: btn.dataset.family });"));
 }
 
 #[test]
@@ -5370,6 +5425,7 @@ fn settings_load_tolerates_partial_json_via_serde_default() {
 #[test]
 fn app_shell_wires_library_pane_open_close_and_resize() {
     let html = app_shell_html();
+    let css = reading_mode_css();
 
     // Markup: the resize divider on the pane edge and the open button that
     // stays reachable (positioned against the shell) when the column is 0.
@@ -5384,12 +5440,12 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
 
     // CSS: the collapsed-grid override, the divider hit target, and the open
     // button pinned to the shell's left edge.
-    assert!(html.contains(
+    assert!(css.contains(
         ".library-shell.library-closed {\n  grid-template-columns: 0 minmax(0, 1fr);\n}"
     ));
-    assert!(html.contains(".library-divider {"));
-    assert!(html.contains("cursor: col-resize;"));
-    assert!(html.contains(".library-shell.library-closed .library-open {"));
+    assert!(css.contains(".library-divider {"));
+    assert!(css.contains("cursor: col-resize;"));
+    assert!(css.contains(".library-shell.library-closed .library-open {"));
 
     // Behavior constants and the host-persisted layout report.
     assert!(html.contains("const SNAP_SHUT = 40;"));
@@ -5499,10 +5555,11 @@ fn app_data_dir_is_the_local_data_root_not_the_webview_cache() {
 #[test]
 fn app_shell_includes_library_pane_settings_and_i18n() {
     let html = app_shell_html();
+    let css = reading_mode_css();
 
     // Layout: the two-column shell driven by the CSS variable.
     assert!(html.contains(r#"<div id="libraryShell" class="library-shell">"#));
-    assert!(html.contains("grid-template-columns: var(--library-width, 240px) minmax(0, 1fr);"));
+    assert!(css.contains("grid-template-columns: var(--library-width, 240px) minmax(0, 1fr);"));
     assert!(html.contains(r#"<aside id="libraryPane" class="library-pane">"#));
     assert!(html.contains(r#"<div id="libraryTree" class="library-tree"></div>"#));
     assert!(html.contains(r#"id="libraryScanProgress""#));
@@ -5635,12 +5692,13 @@ fn bundled_asset_serves_graph_runtimes() {
 #[test]
 fn library_follows_and_highlights_the_active_file() {
     let html = app_shell_html();
+    let css = reading_mode_css();
 
     // The active tab's path is what the library highlights as current.
     assert!(html.contains("function activeDocumentPath()"));
     // The selected row carries the marker class the CSS keys off of.
     assert!(html.contains(r#"class="library-file${selected}""#));
-    assert!(html.contains(".library-file.is-selected,"));
+    assert!(css.contains(".library-file.is-selected,"));
 
     // Reveal helpers: locate the file in the tree, drill/expand to it.
     assert!(html.contains("function folderAncestorsOf(nodes, filePath)"));
@@ -5699,6 +5757,7 @@ fn library_row_context_menu_offers_file_actions() {
 #[test]
 fn code_blocks_get_a_copy_button() {
     let html = app_shell_html();
+    let css = reading_mode_css();
 
     // Decoration runs after each document render, over code blocks but not
     // Mermaid diagrams, and copies the <code> text.
@@ -5709,8 +5768,8 @@ fn code_blocks_get_a_copy_button() {
     assert!(html.contains("navigator.clipboard.writeText(text)"));
     assert!(html.contains("document.execCommand('copy')"));
     // The button styling and copied-state swap exist.
-    assert!(html.contains(".document-body pre > .code-copy {"));
-    assert!(html.contains(".code-copy.is-copied .code-copy-check {"));
+    assert!(css.contains(".document-body pre > .code-copy {"));
+    assert!(css.contains(".code-copy.is-copied .code-copy-check {"));
 
     // Labels exist in both dictionaries.
     for key in ["actions.copyCode", "actions.copiedCode"] {
@@ -5726,6 +5785,7 @@ fn code_blocks_get_a_copy_button() {
 #[test]
 fn anchor_addressable_blocks_get_a_permalink_button() {
     let html = app_shell_html();
+    let css = reading_mode_css();
 
     // Decoration runs after each document render, before link binding so the
     // injected anchors get wired into in-document fragment navigation.
@@ -5778,25 +5838,23 @@ fn anchor_addressable_blocks_get_a_permalink_button() {
     // preventDefault), and a brief is-copied flash confirms the copy.
     assert!(html.contains("function copyToClipboard(text)"));
     assert!(html.contains("copyToClipboard('#' + locus);"));
-    assert!(html.contains(".document-body .heading-anchor.is-copied {"));
+    assert!(css.contains(".document-body .heading-anchor.is-copied {"));
 
     // Gutter button styling exists and stays out of the horizontal scroll.
-    assert!(html.contains(".document-body .heading-anchor {"));
-    assert!(html.contains("overflow-x: clip;"));
-    assert!(html.contains("background: var(--app-action-hover-background);"));
-    assert!(html.contains(".document-body .has-anchor-link > .heading-anchor:hover,"));
+    assert!(css.contains(".document-body .heading-anchor {"));
+    assert!(css.contains("overflow-x: clip;"));
+    assert!(css.contains("background: var(--app-action-hover-background);"));
+    assert!(css.contains(".document-body .has-anchor-link > .heading-anchor:hover,"));
 
     // The number hangs in the margin just left of its block (right: 100%), so
     // the block's own box — and, for a list item, its ::marker — stays exactly
     // where normal flow puts it. No per-reflow JS measuring pass, and no
     // negative-margin carve dragging list markers into the page margin.
-    assert!(html.contains(".document-body .has-anchor-link {\n  position: relative;\n}"));
-    assert!(!html.contains(
+    assert!(css.contains(".document-body .has-anchor-link {\n  position: relative;\n}"));
+    assert!(!css.contains(
         ".document-body .has-anchor-link {\n  position: relative;\n  padding-left: 40px;"
     ));
-    assert!(
-        html.contains(".document-body .heading-anchor {\n  position: absolute;\n  right: 100%;")
-    );
+    assert!(css.contains(".document-body .heading-anchor {\n  position: absolute;\n  right: 100%;"));
     assert!(
         !html.contains("positionAnchorLinks"),
         "the per-reflow anchor-positioning pass is replaced by the CSS gutter"
@@ -5804,24 +5862,24 @@ fn anchor_addressable_blocks_get_a_permalink_button() {
 
     // A list item's number steps one list indent further left so it clears the
     // ::marker (I., II., •) and top-level list numbers share the gutter column.
-    assert!(html.contains(
+    assert!(css.contains(
         ".document-body li.has-anchor-link > .heading-anchor {\n  right: calc(100% + 2em);\n}"
     ));
 
     // pre and table are overflow containers, so a number hung outside them would
     // be clipped invisible; they alone keep the carved-gutter scheme (40px left
     // padding pulled back with a matching negative margin, number seated inside).
-    assert!(html.contains(
+    assert!(css.contains(
         ".document-body pre.has-anchor-link,\n.document-body table.has-anchor-link {\n  padding-left: 40px;\n  margin-left: -40px;\n}"
     ));
-    assert!(html.contains(
+    assert!(css.contains(
         ".document-body pre.has-anchor-link > .heading-anchor,\n.document-body table.has-anchor-link > .heading-anchor {\n  right: auto;\n  left: 0;\n}"
     ));
 
     // A blockquote keeps its native left bar: with the number hung outside the
     // block there is no carve shifting the border-box, so no repaint is needed.
-    assert!(!html.contains("blockquote.has-anchor-link {"));
-    assert!(!html.contains("blockquote.has-anchor-link::after"));
+    assert!(!css.contains("blockquote.has-anchor-link {"));
+    assert!(!css.contains("blockquote.has-anchor-link::after"));
 
     // The blockquote is the citable unit and carries the only button; its inner
     // blocks must not carve a second gutter or the quote text is dragged off the
@@ -5833,15 +5891,15 @@ fn anchor_addressable_blocks_get_a_permalink_button() {
     // The reader renders the whole document up front like the web reader — no
     // content-visibility, whose off-screen size estimates made scrolling flash
     // blank and the minimap viewport box jump.
-    assert!(!html.contains("content-visibility: auto"));
+    assert!(!css.contains("content-visibility: auto"));
 
     // Only the innermost hovered/focused block reveals its button. Without the
     // :not(:has(...)) guard, hovering a nested block would also light up every
     // ancestor block's button, stacking ghost buttons in the shared gutter.
-    assert!(html.contains(
+    assert!(css.contains(
             ".document-body .has-anchor-link:hover:not(:has(.has-anchor-link:hover)) > .heading-anchor,"
         ));
-    assert!(html.contains(
+    assert!(css.contains(
             ".document-body .has-anchor-link:focus-within:not(:has(.has-anchor-link:focus-within)) > .heading-anchor,"
         ));
 
@@ -5850,16 +5908,16 @@ fn anchor_addressable_blocks_get_a_permalink_button() {
     // them, so the media query restores their visibility (opacity 0.4), tucks
     // them tighter to the content edge, and shrinks the glyph — one direct tap
     // then copies the deep link.
-    assert!(html.contains(
+    assert!(css.contains(
         ".document-body .heading-anchor {\n  position: absolute;\n  right: 100%;\n  top: 0;"
     ));
-    assert!(html.contains("  opacity: 0;\n"));
-    assert!(html.contains("@media (hover: none), (max-width: 600px) {"));
-    let narrow = html
+    assert!(css.contains("  opacity: 0;\n"));
+    assert!(css.contains("@media (hover: none), (max-width: 600px) {"));
+    let narrow = css
         .find("@media (hover: none), (max-width: 600px) {")
         .expect("small-screen permalink media query exists");
-    assert!(html[narrow..].contains("opacity: 0.4;"));
-    assert!(html[narrow..].contains("font-size: 11px;"));
+    assert!(css[narrow..].contains("opacity: 0.4;"));
+    assert!(css[narrow..].contains("font-size: 11px;"));
 
     // Label exists in both dictionaries.
     let count = html.matches("'actions.anchorLink':").count();
