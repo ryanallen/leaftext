@@ -146,6 +146,10 @@ enum UserEvent {
     SetThemeMode {
         mode: String,
     },
+    /// Persist the families already shown in the current random-theme cycle.
+    SetThemeRandomBag {
+        used: Vec<String>,
+    },
     /// Paint the native title bar to the page color and the window border to the
     /// theme's divider color, both reported by the webview on theme change.
     SetWindowChrome {
@@ -295,6 +299,8 @@ enum IpcCommand {
     SetThemeFamily { family: String },
     #[serde(rename = "setThemeMode")]
     SetThemeMode { mode: String },
+    #[serde(rename = "setThemeRandomBag")]
+    SetThemeRandomBag { used: Vec<String> },
     #[serde(rename = "setWindowChrome")]
     SetWindowChrome {
         r: u8,
@@ -1179,6 +1185,10 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 settings.theme_mode = mode;
                 persist_settings(&settings, settings_path.as_ref());
             }
+            Event::UserEvent(UserEvent::SetThemeRandomBag { used }) => {
+                settings.theme_random_used = used;
+                persist_settings(&settings, settings_path.as_ref());
+            }
             Event::UserEvent(UserEvent::SetWindowChrome {
                 r,
                 g,
@@ -1464,6 +1474,9 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
             }
             IpcCommand::SetThemeMode { mode } => {
                 let _ = proxy.send_event(UserEvent::SetThemeMode { mode });
+            }
+            IpcCommand::SetThemeRandomBag { used } => {
+                let _ = proxy.send_event(UserEvent::SetThemeRandomBag { used });
             }
             IpcCommand::SetWindowChrome {
                 r,

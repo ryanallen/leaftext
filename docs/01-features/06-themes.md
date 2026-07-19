@@ -16,6 +16,12 @@ Pick a family in the theme picker. Five ship, with **Fern** as the default:
 | Obsidian | Obsidian's default light/dark base ramps with a violet accent |
 | Græy | An Obsidian-based neutral greyscale palette |
 
+A sixth picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
+
+## Random
+
+The last entry in the theme picker is **Random**. It is not a palette; it is a preference that draws a concrete family at each launch, so the app opens in a different theme every time. The draw is a no-repeat cycle: every family shows once before any repeats, and when the cycle resets it avoids immediately repeating the family you just saw. The families already used in the current cycle are remembered across restarts (saved as `theme_random_used` in `settings.json`), so quitting and relaunching keeps the rotation going rather than starting over. The picker keeps showing Random as selected — the concrete family it resolved to for this session drives the actual colors.
+
 ## Appearance
 
 Each family has a light and a dark variant; the Appearance control picks which:
@@ -42,7 +48,7 @@ flowchart LR
 
 ## Choose
 
-Open **Settings**, then **Theme** to slide up the theme picker. It lists every family as a button, with an Appearance control (System / Light / Dark / Daylight) at the top. Changes apply immediately and are saved as `theme_family` and `theme_mode` in `settings.json` (see [Settings](05-settings.md#options)).
+Open **Settings**, then **Theme** to slide up the theme picker. It lists every family as a button — plus [Random](#random) at the end — with an Appearance control (System / Light / Dark / Daylight) at the top. Changes apply immediately and are saved as `theme_family` and `theme_mode` in `settings.json` (see [Settings](05-settings.md#options)).
 
 ## Fonts
 

@@ -28,6 +28,7 @@ pub fn initial_settings_script(settings: &Settings) -> String {
         "readerEditingEnabled": settings.reader_editing_enabled,
         "themeFamily": settings.theme_family,
         "themeMode": settings.theme_mode,
+        "themeRandomUsed": settings.theme_random_used,
         "libraryView": settings.library_view.as_str(),
         "graphScope": settings.graph_scope.as_str(),
         "libraryExpanded": settings.library_expanded,

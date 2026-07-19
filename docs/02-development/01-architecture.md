@@ -120,6 +120,7 @@ Key `IpcCommand` variants include:
 | `countLines`           | Link hover: read the linked document and report its line count for the tooltip |
 | `setThemeFamily`       | Theme family button in the theme picker |
 | `setThemeMode`         | Appearance control in the theme picker |
+| `setThemeRandomBag`    | The [Random theme](../01-features/06-themes.md#random) draw: persist the families already shown in the current no-repeat cycle |
 | `setMinimapEnabled`    | Minimap toggle in Settings menu       |
 | `setPagerEnabled`      | Pager toggle in Settings menu         |
 | `setSpeedReaderEnabled` | Speed Reader toggle in Settings menu |

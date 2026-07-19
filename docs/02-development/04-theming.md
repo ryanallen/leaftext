@@ -149,6 +149,14 @@ The new family also fetches the default **Noto** font automatically, since `them
 > [!WARNING]
 > The startup token check uses exact string matching against the names in `LEAF_SEMANTIC_TOKEN_CONTRACT`. Ensure every token name in your new theme map is spelled exactly as it appears in that list — a single typo (e.g. `--leaf-sytax-keyword` instead of `--leaf-syntax-keyword`) will not match and the assertion will fail at startup with a "missing required token" message.
 
+## The Random family preference
+
+The theme picker appends one entry that is not a real family: **Random** (`data-family="random"`, localized via `data-i18n`). `theme_items_html()` in `src/lib.rs` emits it after the family buttons, and it never appears in `theme_families()`, the font map, or the compiled CSS — the `theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled` test asserts exactly that.
+
+The bootstrap treats family state as two axes: `familyPreference` (the persisted picker choice, which may be `random`) and the concrete `family` actually applied to `:root`. When the preference is `random`, `drawRandomFamily()` picks a concrete family — a no-repeat cycle over `REAL_FAMILIES` that avoids an immediate repeat across a reset — on first paint and on each re-pick. `window.leafTheme.getFamily()` returns the preference (so the picker keeps Random selected), while the CSS attribute uses the drawn family.
+
+The cycle survives restarts: the used-family "bag" is persisted through the host via the `setThemeRandomBag` IPC command (see [Architecture](01-architecture.md#ipc-bridge)), which writes `theme_random_used` in `settings.json`. The host injects it back as `settings.themeRandomUsed` on the next launch, so `drawRandomFamily()` continues the rotation rather than starting over.
+
 ## Appearance modes
 
 The theme bootstrap (`theme_bootstrap_script()` in `src/lib.rs`) resolves the Appearance setting to a concrete light/dark value, exposed via `window.leafTheme`:

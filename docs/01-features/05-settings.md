@@ -8,7 +8,7 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 
 | Setting | Options | Default |
 | --- | --- | --- |
-| Theme | Fern, GitHub, Dracula, Obsidian, Græy | Fern |
+| Theme | Fern, GitHub, Dracula, Obsidian, Græy, Random | Fern |
 | Appearance | System, Light, Dark, Daylight | System |
 | Language | System, English, Simplified Chinese | System |
 | Speed Reader | On / Off | Off |
@@ -47,6 +47,7 @@ Here `{config_dir}` and `{data_dir}` are the per-app directories the `directorie
   "reader_editing_enabled": true,
   "theme_family": "fern",
   "theme_mode": "system",
+  "theme_random_used": [],
   "library_view": "graph",
   "graph_scope": "small",
   "library_expanded": [],
@@ -89,6 +90,11 @@ leaftext removes broken entries automatically and collapses equivalent path spel
 The app ships both language dictionaries locally and applies changes without a restart.
 
 ## Behavior
+
+### Theme
+
+- Saved as `theme_family` (family or `random`) and `theme_mode` (appearance)
+- Choosing [Random](06-themes.md#random) draws a fresh family at each launch; `theme_random_used` records the families already shown in the current no-repeat cycle so the rotation survives restarts
 
 ### Graph size
 

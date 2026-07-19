@@ -2384,6 +2384,13 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
             ),
         );
     }
+    // Plus the special "Random" preference, localized via data-i18n. It is not a
+    // real family, so it never appears in theme_families()/the font map/the CSS.
+    assert_contains(
+        &html,
+        r#"<button type="button" class="theme-item theme-item-random" data-family="random" aria-pressed="false" data-i18n="settings.theme.family.random">Random</button>"#,
+    );
+    assert!(!theme_families().iter().any(|(id, _)| *id == "random"));
     // Palettes are data-only token maps, not free-form author CSS.
     assert!(!html.contains("customTheme"));
 }
@@ -3578,8 +3585,24 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
         "const VALID_MODES = new Set(['system', 'light', 'dark', 'daylight']);",
     );
     // Seeded from the host-injected global, not localStorage (non-durable here).
-    assert_contains(&html, "let family = normalizeFamily(settings.themeFamily);");
+    assert_contains(
+        &html,
+        "let familyPreference = normalizePreference(settings.themeFamily);",
+    );
+    assert_contains(
+        &html,
+        "let family = familyPreference === RANDOM ? drawRandomFamily() : familyPreference;",
+    );
     assert_contains(&html, "let mode = normalizeMode(settings.themeMode);");
+    // The Random preference draws a non-repeating family per launch, persisting
+    // the bag through the host so the cycle survives restarts.
+    assert_contains(&html, "const REAL_FAMILIES = Array.from(VALID_FAMILIES);");
+    assert_contains(&html, "const RANDOM = 'random';");
+    assert_contains(&html, "const drawRandomFamily = () => {");
+    assert_contains(
+        &html,
+        "window.ipc.postMessage(JSON.stringify({ command: 'setThemeRandomBag', used: randomBag }));",
+    );
     // The Leaf-owned attributes that drive the compiled theme CSS.
     assert_contains(&html, "root.dataset.leafTheme = family;");
     assert_contains(&html, "root.dataset.leafAppearance = theme.resolvedTheme;");
@@ -3596,10 +3619,10 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
     assert_contains(&html, "root.dataset.theme = theme.resolvedTheme");
     assert_contains(&html, "root.style.colorScheme = theme.resolvedTheme");
     assert_contains(&html, "getMode: () => mode");
-    assert_contains(&html, "getFamily: () => family");
+    assert_contains(&html, "getFamily: () => familyPreference");
     assert_contains(&html, "getResolvedTheme: resolvedTheme");
     assert_contains(&html, "mode = normalizeMode(nextMode);");
-    assert_contains(&html, "family = normalizeFamily(nextFamily);");
+    assert_contains(&html, "familyPreference = normalizePreference(nextFamily);");
     // Daylight flips light/dark by the local clock, on a rescheduling timer.
     assert_contains(
         &html,
@@ -3739,10 +3762,10 @@ fn app_shell_theme_bootstrap_seeds_from_host_injected_settings() {
     for expected in [
         "const VALID_MODES = new Set(['system', 'light', 'dark', 'daylight']);",
         "const settings = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings : {};",
-        "let family = normalizeFamily(settings.themeFamily);",
+        "let familyPreference = normalizePreference(settings.themeFamily);",
         "let mode = normalizeMode(settings.themeMode);",
         "mode = normalizeMode(nextMode);",
-        "family = normalizeFamily(nextFamily);",
+        "familyPreference = normalizePreference(nextFamily);",
         "listeners.forEach((listener) => listener(theme));",
     ] {
         assert_contains(&html, expected);
@@ -5423,6 +5446,7 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
         reader_editing_enabled: false,
         theme_family: "dracula".to_string(),
         theme_mode: "dark".to_string(),
+        theme_random_used: vec!["fern".to_string(), "github".to_string()],
         library_view: LibraryView::Tree,
         graph_scope: GraphScope::Large,
         library_expanded: vec!["C:\\Users".to_string(), "C:\\Users\\rwall".to_string()],
@@ -5547,6 +5571,7 @@ fn initial_settings_script_defines_camelcase_global() {
         reader_editing_enabled: false,
         theme_family: "dracula".to_string(),
         theme_mode: "dark".to_string(),
+        theme_random_used: Vec::new(),
         library_view: LibraryView::Tree,
         graph_scope: GraphScope::Large,
         library_expanded: vec!["C:\\Users".to_string()],
@@ -5561,7 +5586,7 @@ fn initial_settings_script_defines_camelcase_global() {
     // webview), so it must not leak into the injected settings global.
     assert_eq!(
         script,
-        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryExpanded":["C:\\Users"],"libraryProjectPath":"docs","libraryView":"tree","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"dracula","themeMode":"dark"};"#
+        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryExpanded":["C:\\Users"],"libraryProjectPath":"docs","libraryView":"tree","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"dracula","themeMode":"dark","themeRandomUsed":[]};"#
     );
 }
 

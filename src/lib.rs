@@ -769,14 +769,21 @@ pub fn app_shell_html() -> String {
 /// single source of truth. Family names are trusted (proper nouns defined in
 /// `theme.rs`), ids are `[a-z0-9-]`.
 fn theme_items_html() -> String {
-    theme_families()
+    let mut items: String = theme_families()
         .into_iter()
         .map(|(id, name)| {
             format!(
                 "<li><button type=\"button\" class=\"theme-item\" data-family=\"{id}\" aria-pressed=\"false\">{name}</button></li>"
             )
         })
-        .collect()
+        .collect();
+    // "Random" is not a real family: it's a preference the bootstrap resolves to a
+    // concrete family at each launch, cycling through every family without repeat
+    // before resetting. Appended after the families; localized via data-i18n.
+    items.push_str(
+        "<li><button type=\"button\" class=\"theme-item theme-item-random\" data-family=\"random\" aria-pressed=\"false\" data-i18n=\"settings.theme.family.random\">Random</button></li>",
+    );
+    items
 }
 
 fn theme_bootstrap_script() -> String {
@@ -788,6 +795,10 @@ fn theme_bootstrap_script() -> String {
   // The built-in theme families. Must match the families in theme.rs
   // (theme_sources); guarded by app_shell_bootstrap_lists_every_theme_family.
   const VALID_FAMILIES = new Set(['github', 'dracula', 'obsidian', 'fern', 'graey']);
+  // The concrete families the 'random' preference draws from, in registration
+  // order. 'random' is a preference, never itself a concrete family.
+  const REAL_FAMILIES = Array.from(VALID_FAMILIES);
+  const RANDOM = 'random';
   const VALID_MODES = new Set(['system', 'light', 'dark', 'daylight']);
   const FAMILY_FALLBACK = 'fern';
   const MODE_FALLBACK = 'system';
@@ -801,12 +812,45 @@ fn theme_bootstrap_script() -> String {
   const media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   const listeners = new Set();
   const normalizeFamily = (value) => (VALID_FAMILIES.has(value) ? value : FAMILY_FALLBACK);
+  // The picker preference is a concrete family or the special 'random', which
+  // resolves to a concrete family at launch (and each time it is re-picked).
+  const normalizePreference = (value) => (value === RANDOM ? RANDOM : normalizeFamily(value));
   const normalizeMode = (value) => (VALID_MODES.has(value) ? value : MODE_FALLBACK);
   // The host injects the persisted theme as window.__leafSettings before this
   // runs, so the theme resolves on the first paint. The host owns persistence;
   // the app shell's opaque origin can't use localStorage.
   const settings = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings : {};
-  let family = normalizeFamily(settings.themeFamily);
+  // Families already shown in the current random cycle, persisted by the host so
+  // the no-repeat run survives restarts. Ask the host to save the bag whenever a
+  // draw mutates it; wry's window.ipc is ready before this inline script runs.
+  let randomBag = Array.isArray(settings.themeRandomUsed)
+    ? settings.themeRandomUsed.filter((fam) => VALID_FAMILIES.has(fam))
+    : [];
+  const persistRandomBag = () => {
+    if (window.ipc && typeof window.ipc.postMessage === 'function') {
+      window.ipc.postMessage(JSON.stringify({ command: 'setThemeRandomBag', used: randomBag }));
+    }
+  };
+  // Draw the next family at random, not repeating until every family has shown,
+  // then reset — while avoiding an immediate repeat of the just-shown family
+  // across the reset. Mutates and persists the bag.
+  const drawRandomFamily = () => {
+    let available = REAL_FAMILIES.filter((fam) => !randomBag.includes(fam));
+    if (available.length === 0) {
+      const last = randomBag[randomBag.length - 1];
+      randomBag = [];
+      available = REAL_FAMILIES.filter((fam) => fam !== last);
+      if (available.length === 0) { available = REAL_FAMILIES.slice(); }
+    }
+    const choice = available[Math.floor(Math.random() * available.length)];
+    randomBag = randomBag.concat([choice]);
+    persistRandomBag();
+    return choice;
+  };
+  // Two axes of family state: the persisted preference (drives the picker and may
+  // be 'random') and the concrete family actually applied (drives the CSS).
+  let familyPreference = normalizePreference(settings.themeFamily);
+  let family = familyPreference === RANDOM ? drawRandomFamily() : familyPreference;
   let mode = normalizeMode(settings.themeMode);
 
   const isDaytime = () => {
@@ -873,7 +917,7 @@ fn theme_bootstrap_script() -> String {
 
   window.leafTheme = {
     getMode: () => mode,
-    getFamily: () => family,
+    getFamily: () => familyPreference,
     getResolvedTheme: resolvedTheme,
     setMode(nextMode) {
       mode = normalizeMode(nextMode);
@@ -881,7 +925,8 @@ fn theme_bootstrap_script() -> String {
       scheduleDaylight();
     },
     setFamily(nextFamily) {
-      family = normalizeFamily(nextFamily);
+      familyPreference = normalizePreference(nextFamily);
+      family = familyPreference === RANDOM ? drawRandomFamily() : familyPreference;
       apply();
     },
     subscribe(listener) {
@@ -1003,6 +1048,7 @@ fn locale_bootstrap_script() -> &'static str {
       'settings.theme.family.github': 'GitHub',
       'settings.theme.family.graey': 'Græy',
       'settings.theme.family.obsidian': 'Obsidian',
+      'settings.theme.family.random': 'Random',
       'settings.theme.help': 'System follows device preference; Daylight is light by day, dark at night.',
       'settings.theme.label': 'Theme',
       'settings.theme.light': 'Light',
@@ -1114,6 +1160,7 @@ fn locale_bootstrap_script() -> &'static str {
       'settings.theme.family.github': 'GitHub',
       'settings.theme.family.graey': 'Græy',
       'settings.theme.family.obsidian': 'Obsidian',
+      'settings.theme.family.random': '随机',
       'settings.theme.help': '跟随系统显示偏好；“日间自动”白天浅色、夜间深色。',
       'settings.theme.label': '主题',
       'settings.theme.light': '浅色',
@@ -1307,6 +1354,10 @@ pub struct Settings {
     /// Last appearance mode: `system`/`light`/`dark`/`daylight`. Raw frontend
     /// string; the frontend normalizes anything unexpected back to `system`.
     pub theme_mode: String,
+    /// Families already shown in the current random-theme cycle. When the theme
+    /// family is `random`, the frontend draws a fresh family at each launch and
+    /// appends it here so none repeats until every family has shown, then resets.
+    pub theme_random_used: Vec<String>,
     /// Which library view is showing: Project, Tree, or flat.
     pub library_view: LibraryView,
     /// How much of the link graph the graph view draws (see [`GraphScope`]).
@@ -1341,6 +1392,7 @@ impl Default for Settings {
             reader_editing_enabled: true,
             theme_family: "fern".to_string(),
             theme_mode: "system".to_string(),
+            theme_random_used: Vec::new(),
             library_view: LibraryView::default(),
             graph_scope: GraphScope::default(),
             library_expanded: Vec::new(),
