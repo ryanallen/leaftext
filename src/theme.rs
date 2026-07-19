@@ -1296,6 +1296,14 @@ pub(crate) fn system_font_families() -> &'static [&'static str] {
 /// Family → Google Fonts stylesheet URL for the bootstrap's on-activation font
 /// loader. Every family loads Noto except the system-font families, which are
 /// omitted so the loader drops the link and the family falls to its system stack.
+/// The registered theme family ids as a JSON array (registration order),
+/// injected into the bootstrap so its `VALID_FAMILIES` set derives from the
+/// registry rather than a hand-kept literal that can drift.
+pub(crate) fn theme_family_ids_json() -> String {
+    let ids: Vec<&str> = theme_families().iter().map(|(id, _)| *id).collect();
+    serde_json::to_string(&ids).expect("theme family ids serialize")
+}
+
 pub(crate) fn theme_web_font_hrefs_json() -> String {
     let system: HashSet<&str> = system_font_families().iter().copied().collect();
     let map: serde_json::Map<String, serde_json::Value> = theme_families()
@@ -1491,6 +1499,23 @@ pub(crate) fn reading_mode_css() -> &'static str {
   /* Cassette-style grain dot shared by the app bar and library surfaces: a faint
      dark speckle on the light surface, overridden heavier for dark themes. */
   --app-bar-grain: rgba(0, 0, 0, 0.1);
+  /* Corner radii — one scale every surface pulls from, so rounding swaps in a
+     single place. Sizes map onto the values the components historically used. */
+  --leaf-radius-xs: 2px;
+  --leaf-radius-sm: 4px;
+  --leaf-radius-md: 6px;
+  --leaf-radius-lg: 8px;
+  --leaf-radius-xl: 10px;
+  --leaf-radius-2xl: 14px;
+  --leaf-radius-pill: 999px;
+  --leaf-radius-full: 50%;
+  /* Elevation shadows by role, so overlays swap in one place. The resting card
+     shadow stays per-theme as --shadow (from --leaf-app-shadow); these cover the
+     overlays that were previously baked inline. */
+  --leaf-shadow-popover: 0 6px 18px -6px color-mix(in srgb, black 55%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--app-muted-foreground) 20%, transparent);
+  --leaf-shadow-sheet: 0 -10px 40px rgba(0, 0, 0, 0.5);
+  --leaf-shadow-tooltip: 0 10px 24px rgba(0, 0, 0, 0.35);
   --heading-font: "Noto Serif", Georgia, Cambria, "Times New Roman", serif;
   --app-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Microsoft YaHei UI", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Microsoft YaHei UI", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
@@ -1610,7 +1635,7 @@ body {
   flex-shrink: 0;
   padding: 3px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--leaf-radius-lg);
   background: transparent;
   cursor: pointer;
 }
@@ -1724,7 +1749,7 @@ body {
   min-width: 18px;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: 5px;
+  border-radius: var(--leaf-radius-sm);
   background: transparent;
   color: var(--app-muted-foreground);
 }
@@ -1756,7 +1781,7 @@ body {
   min-width: 168px;
   padding: 4px;
   border: 1px solid var(--app-border);
-  border-radius: 8px;
+  border-radius: var(--leaf-radius-lg);
   background: var(--app-surface-elevated);
   box-shadow: var(--shadow);
   font-family: var(--app-font);
@@ -1769,7 +1794,7 @@ body {
   width: 100%;
   padding: 7px 12px;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--leaf-radius-sm);
   background: transparent;
   color: var(--settings-control-foreground);
   font: 600 13px var(--app-font);
@@ -1800,7 +1825,7 @@ body {
   width: 232px;
   padding: 4px;
   border: 1px solid var(--app-border);
-  border-radius: 8px;
+  border-radius: var(--leaf-radius-lg);
   background: var(--app-surface-elevated);
   box-shadow: var(--shadow);
 }
@@ -1812,7 +1837,7 @@ body {
   box-sizing: border-box;
   padding: 6px 8px;
   border: 1px solid var(--accent);
-  border-radius: 5px;
+  border-radius: var(--leaf-radius-sm);
   background: var(--app-surface);
   color: var(--settings-control-foreground);
   font: 600 13px var(--app-font);
@@ -1830,7 +1855,7 @@ body {
   width: 34px;
   height: 34px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   /* No resting fill; icon dimmed at rest, greens on hover like the other icons. */
   background: transparent;
   color: var(--app-muted-foreground);
@@ -1856,7 +1881,7 @@ body {
   right: 4px;
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--leaf-radius-full);
   background: var(--app-action-background);
   box-shadow: 0 0 0 2px var(--app-surface);
 }
@@ -1875,7 +1900,7 @@ body {
   gap: 14px;
   width: min(290px, calc(100vw - 28px));
   border: 1px solid var(--app-border);
-  border-radius: 8px;
+  border-radius: var(--leaf-radius-lg);
   background: var(--app-surface-elevated);
   box-shadow: var(--shadow);
   padding: 14px;
@@ -1912,7 +1937,7 @@ body {
 .setting-control select {
   width: 100%;
   border: 1px solid var(--settings-control-border);
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   background: var(--settings-control-background);
   color: var(--settings-control-foreground);
   font: 600 13px var(--app-font);
@@ -1920,7 +1945,7 @@ body {
 }
 button {
   border: 1px solid var(--app-action-background);
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   background: var(--app-action-background);
   color: var(--app-action-foreground);
   cursor: pointer;
@@ -1998,7 +2023,7 @@ button {
   height: 34px;
   padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   background: var(--app-action-background);
   color: var(--app-action-foreground);
   font: 600 13px var(--app-font);
@@ -2018,7 +2043,7 @@ button {
   height: 7px;
   min-width: 7px;
   margin: 0 3px;
-  border-radius: 50%;
+  border-radius: var(--leaf-radius-full);
   background: var(--accent);
 }
 .tab-modified .tab-dirty-dot {
@@ -2152,7 +2177,7 @@ summary:focus-visible {
   height: 32px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--leaf-radius-lg);
   background: var(--app-surface-elevated);
   color: var(--app-muted-foreground);
   cursor: pointer;
@@ -2197,7 +2222,7 @@ body.library-resizing {
   margin-top: calc(var(--library-app-bar) + var(--library-header-height));
 }
 .library-scroll::-webkit-scrollbar-thumb {
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   background: color-mix(in srgb, var(--app-muted-foreground) 35%, transparent);
   /* Floor the grabber so a huge file list can't shrink it to a sliver. */
   min-height: 128px;
@@ -2246,7 +2271,7 @@ body.library-resizing {
   width: 100%;
   text-align: left;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   padding: 6px 8px;
   margin: 0 0 2px;
   background: transparent;
@@ -2278,7 +2303,7 @@ body.library-resizing {
 .library-hit-mark {
   background: color-mix(in srgb, var(--app-action-background, #2f81f7) 40%, transparent);
   color: inherit;
-  border-radius: 2px;
+  border-radius: var(--leaf-radius-xs);
 }
 /* The search box fills the rest of the pinned header, beside the view chip; its
    min-width floors the controls so a narrow pane clips them (see .library-header)
@@ -2291,7 +2316,7 @@ body.library-resizing {
   height: 24px;
   box-sizing: border-box;
   padding: 0 8px;
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   border: 1px solid color-mix(in srgb, var(--app-muted-foreground) 25%, transparent);
   /* Grain over the field too, so the search box reads as the same textured
      surface rather than a flat inset. */
@@ -2373,7 +2398,7 @@ body.library-resizing {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 3px 8px 3px 10px;
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   border: 0;
   /* A filled chip, same fill in every view state. A translucent neutral reads
      as "a little lighter" and stays visible in light themes too. */
@@ -2403,17 +2428,16 @@ body.library-resizing {
   margin: 0;
   padding: 4px;
   list-style: none;
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   background: var(--library-surface);
-  box-shadow: 0 6px 18px -6px color-mix(in srgb, black 55%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--app-muted-foreground) 20%, transparent);
+  box-shadow: var(--leaf-shadow-popover);
 }
 .library-view-menu[hidden] {
   display: none;
 }
 .library-view-option {
   padding: 4px 10px;
-  border-radius: 4px;
+  border-radius: var(--leaf-radius-sm);
   font-family: var(--code-font, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace);
   font-size: 11px;
   letter-spacing: 0.04em;
@@ -2431,7 +2455,7 @@ body.library-resizing {
   cursor: pointer;
   padding: 3px 6px;
   margin-bottom: 2px;
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   white-space: nowrap;
   overflow: hidden;
   /* Long names fade out at the right edge instead of showing an ellipsis,
@@ -2464,7 +2488,7 @@ body.library-resizing {
   /* A hair of vertical space so adjacent row highlights don't touch. */
   margin-bottom: 2px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -2576,7 +2600,7 @@ body.library-resizing {
 .reader-loading-spinner {
   width: 34px;
   height: 34px;
-  border-radius: 50%;
+  border-radius: var(--leaf-radius-full);
   border: 3px solid color-mix(in srgb, var(--preview-foreground) 22%, transparent);
   border-top-color: var(--accent);
   animation: leaf-reader-spin 0.8s linear infinite;
@@ -2623,7 +2647,7 @@ body.library-resizing {
   z-index: 20;
   max-width: min(520px, calc(100vw - 36px));
   border: 1px solid var(--app-error-border);
-  border-radius: 8px;
+  border-radius: var(--leaf-radius-lg);
   background: var(--app-surface-elevated);
   box-shadow: var(--shadow);
   color: var(--app-error-foreground);
@@ -2663,7 +2687,7 @@ body.library-resizing {
   text-decoration: none;
   padding: 12px 16px;
   border: 1px solid var(--reading-rule);
-  border-radius: 8px;
+  border-radius: var(--leaf-radius-lg);
   color: var(--preview-foreground);
 }
 .docs-pager-skeleton {
@@ -2671,12 +2695,12 @@ body.library-resizing {
   min-width: 0;
   padding: 12px 16px;
   border: 1px solid var(--reading-rule);
-  border-radius: 8px;
+  border-radius: var(--leaf-radius-lg);
 }
 .docs-pager-label-skeleton,
 .docs-pager-title-skeleton {
   display: block;
-  border-radius: 999px;
+  border-radius: var(--leaf-radius-pill);
   background: var(--reading-rule);
   animation: pager-skeleton-pulse 1.25s ease-in-out infinite;
 }
@@ -2826,7 +2850,7 @@ body.library-resizing {
 .document-body .document-outline {
   margin: 1.5em 0;
   border: 1px solid var(--preview-border);
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   background: var(--code-block-background);
 }
 .document-body .document-outline-summary {
@@ -2902,7 +2926,7 @@ body.library-resizing {
 .document-body .tei-front {
   margin: 1.5em 0;
   border: 1px solid var(--preview-border);
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   background: var(--code-block-background);
 }
 .document-body .tei-front-summary {
@@ -3006,7 +3030,7 @@ body.library-resizing {
 .document-body .github-ref,
 .document-body .github-mention {
   border: 1px solid var(--preview-border);
-  border-radius: 999px;
+  border-radius: var(--leaf-radius-pill);
   background: var(--markdown-badge-background);
   color: var(--markdown-badge-foreground);
   font-family: var(--app-font);
@@ -3073,13 +3097,13 @@ body.library-resizing {
 .document-body .leaf-editable:focus-visible {
   outline: 2px solid var(--leaf-accent, var(--markdown-blockquote-border));
   outline-offset: 2px;
-  border-radius: 3px;
+  border-radius: var(--leaf-radius-xs);
 }
 .document-body .leaf-editing-source {
   font-family: var(--leaf-code-font, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   white-space: pre-wrap;
   background: var(--markdown-code-background, rgba(127, 127, 127, 0.12));
-  border-radius: 4px;
+  border-radius: var(--leaf-radius-sm);
 }
 /* The fresh empty paragraph Enter opens below a block: give it a line's height
    so the caret has somewhere to blink (Markdown has no empty block). */
@@ -3172,7 +3196,7 @@ body.library-resizing {
 }
 .document-body code {
   background: var(--markdown-inline-code-background);
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   color: var(--markdown-inline-code-foreground);
   font-family: var(--code-font);
   font-size: 0.875em;
@@ -3182,7 +3206,7 @@ body.library-resizing {
   position: relative;
   background: var(--code-block-background);
   background-clip: padding-box;
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   clip-path: inset(0 round 6px);
   color: var(--code-block-foreground);
   line-height: 1.45;
@@ -3234,7 +3258,7 @@ body.library-resizing {
   height: 28px;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   background: color-mix(in srgb, var(--code-block-background) 65%, transparent);
   color: var(--preview-muted-foreground);
   cursor: pointer;
@@ -3697,7 +3721,7 @@ body.library-resizing {
 }
 .document-body .math-inline {
   background: var(--math-inline-background);
-  border-radius: 4px;
+  border-radius: var(--leaf-radius-sm);
   padding: 0.08em 0.24em;
 }
 .document-body .math-display {
@@ -3758,7 +3782,7 @@ body.library-resizing {
 .document-body kbd {
   border: 1px solid var(--keyboard-border);
   border-bottom-width: 2px;
-  border-radius: 4px;
+  border-radius: var(--leaf-radius-sm);
   background: var(--keyboard-background);
   font-family: var(--code-font);
   font-size: 0.8em;
@@ -4020,9 +4044,9 @@ body.library-resizing {
   max-height: 78vh;
   background: var(--background);
   color: var(--foreground);
-  border-top-left-radius: 14px;
-  border-top-right-radius: 14px;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+  border-top-left-radius: var(--leaf-radius-2xl);
+  border-top-right-radius: var(--leaf-radius-2xl);
+  box-shadow: var(--leaf-shadow-sheet);
   transform: translateY(100%);
   transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -4039,7 +4063,7 @@ body.library-resizing {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--settings-control-border);
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   background: var(--settings-control-background);
   color: var(--settings-control-foreground);
   cursor: pointer;
@@ -4097,9 +4121,9 @@ body.library-resizing {
   padding: 0 20px 24px;
   background: var(--surface-elevated);
   color: var(--foreground);
-  border-top-left-radius: 14px;
-  border-top-right-radius: 14px;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+  border-top-left-radius: var(--leaf-radius-2xl);
+  border-top-right-radius: var(--leaf-radius-2xl);
+  box-shadow: var(--leaf-shadow-sheet);
   font-family: var(--app-font);
   transform: translateY(100%);
   transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
@@ -4111,7 +4135,7 @@ body.library-resizing {
   width: 40px;
   height: 4px;
   margin: 10px auto 2px;
-  border-radius: 999px;
+  border-radius: var(--leaf-radius-pill);
   background: var(--border-strong);
 }
 .theme-sheet-head {
@@ -4131,7 +4155,7 @@ body.library-resizing {
   height: 32px;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--leaf-radius-lg);
   background: transparent;
   color: var(--app-muted-foreground);
   cursor: pointer;
@@ -4153,7 +4177,7 @@ body.library-resizing {
 .theme-mode-btn {
   padding: 8px 6px;
   border: 1px solid var(--settings-control-border);
-  border-radius: 8px;
+  border-radius: var(--leaf-radius-lg);
   background: var(--settings-control-background);
   color: var(--settings-control-foreground);
   font: 600 12px var(--app-font);
@@ -4183,7 +4207,7 @@ body.library-resizing {
   width: 100%;
   padding: 11px 14px;
   border: 1px solid var(--settings-control-border);
-  border-radius: 10px;
+  border-radius: var(--leaf-radius-xl);
   background: var(--settings-control-background);
   color: var(--settings-control-foreground);
   font: 700 14px var(--app-font);
@@ -4224,10 +4248,10 @@ body.library-resizing {
   max-width: min(34rem, calc(100vw - 24px));
   padding: 8px 10px;
   border: 1px solid var(--border-strong);
-  border-radius: 10px;
+  border-radius: var(--leaf-radius-xl);
   background: color-mix(in srgb, var(--background) 92%, black);
   color: var(--foreground);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--leaf-shadow-tooltip);
   pointer-events: none;
 }
 .link-hover-tip-kind {
@@ -4255,7 +4279,7 @@ body.library-resizing {
   width: 36px;
   height: 4px;
   margin: 10px auto 2px;
-  border-radius: 2px;
+  border-radius: var(--leaf-radius-xs);
   background: var(--border-strong);
 }
 .glossary-sheet-close {
@@ -4265,7 +4289,7 @@ body.library-resizing {
   display: flex;
   padding: 6px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--leaf-radius-md);
   background: none;
   color: var(--muted-foreground);
   cursor: pointer;

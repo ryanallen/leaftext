@@ -792,9 +792,9 @@ fn theme_bootstrap_script() -> String {
   // Themes are two axes: a family (github/dracula/obsidian) and an appearance
   // mode. Light/dark pick a fixed variant, system follows the OS, and daylight
   // is light between DAY_START and DAY_END local time, dark otherwise.
-  // The built-in theme families. Must match the families in theme.rs
-  // (theme_sources); guarded by app_shell_bootstrap_lists_every_theme_family.
-  const VALID_FAMILIES = new Set(['github', 'dracula', 'obsidian', 'fern', 'graey']);
+  // The built-in theme families, injected from the theme registry (theme.rs
+  // theme_families) so this list can never drift from the registered sources.
+  const VALID_FAMILIES = new Set({{VALID_FAMILIES}});
   // The concrete families the 'random' preference draws from, in registration
   // order. 'random' is a preference, never itself a concrete family.
   const REAL_FAMILIES = Array.from(VALID_FAMILIES);
@@ -952,6 +952,7 @@ fn theme_bootstrap_script() -> String {
   scheduleDaylight();
 })();
 "#
+    .replace("{{VALID_FAMILIES}}", &theme_family_ids_json())
     .replace("{{FAMILY_FONTS}}", &theme_web_font_hrefs_json())
 }
 

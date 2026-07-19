@@ -3576,9 +3576,17 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
     let html = app_shell_html();
 
     assert_contains(&html, r#"<meta name="color-scheme" content="light dark">"#);
+    // Injected from the registry, so it can't drift from the registered sources.
     assert_contains(
         &html,
-        "const VALID_FAMILIES = new Set(['github', 'dracula', 'obsidian', 'fern', 'graey']);",
+        &format!(
+            "const VALID_FAMILIES = new Set({});",
+            theme_family_ids_json()
+        ),
+    );
+    assert_eq!(
+        theme_family_ids_json(),
+        r#"["fern","github","dracula","obsidian","graey"]"#
     );
     assert_contains(
         &html,
