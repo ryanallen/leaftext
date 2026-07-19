@@ -1064,6 +1064,26 @@ pub(crate) const GRAEY_DARK_OVERRIDES: &[(&str, &str)] = &[
 pub(crate) fn theme_sources() -> &'static [ThemeSource] {
     &[
         ThemeSource {
+            id: "fern-light",
+            family: "fern",
+            family_name: "Fern",
+            appearance: Appearance::Light,
+            selector: ":root[data-leaf-theme=\"fern\"][data-leaf-appearance=\"light\"]",
+            kind: ThemeSourceKind::Literal,
+            tokens: OBSIDIAN_LIGHT_THEME_TOKENS,
+            overrides: FERN_LIGHT_OVERRIDES,
+        },
+        ThemeSource {
+            id: "fern-dark",
+            family: "fern",
+            family_name: "Fern",
+            appearance: Appearance::Dark,
+            selector: ":root[data-leaf-theme=\"fern\"][data-leaf-appearance=\"dark\"]",
+            kind: ThemeSourceKind::Literal,
+            tokens: OBSIDIAN_DARK_THEME_TOKENS,
+            overrides: FERN_DARK_OVERRIDES,
+        },
+        ThemeSource {
             id: "github-light",
             family: "github",
             family_name: "GitHub",
@@ -1122,26 +1142,6 @@ pub(crate) fn theme_sources() -> &'static [ThemeSource] {
             kind: ThemeSourceKind::Literal,
             tokens: OBSIDIAN_DARK_THEME_TOKENS,
             overrides: &[],
-        },
-        ThemeSource {
-            id: "fern-light",
-            family: "fern",
-            family_name: "Fern",
-            appearance: Appearance::Light,
-            selector: ":root[data-leaf-theme=\"fern\"][data-leaf-appearance=\"light\"]",
-            kind: ThemeSourceKind::Literal,
-            tokens: OBSIDIAN_LIGHT_THEME_TOKENS,
-            overrides: FERN_LIGHT_OVERRIDES,
-        },
-        ThemeSource {
-            id: "fern-dark",
-            family: "fern",
-            family_name: "Fern",
-            appearance: Appearance::Dark,
-            selector: ":root[data-leaf-theme=\"fern\"][data-leaf-appearance=\"dark\"]",
-            kind: ThemeSourceKind::Literal,
-            tokens: OBSIDIAN_DARK_THEME_TOKENS,
-            overrides: FERN_DARK_OVERRIDES,
         },
         ThemeSource {
             id: "graey-light",
@@ -1279,6 +1279,38 @@ pub(crate) fn theme_source_token_value(source: &ThemeSource, token: &str) -> Opt
         .find_map(|(name, value)| (*name == token).then_some(*value))
 }
 
+/// The default web font — Noto Sans / Serif / Mono — fetched from Google Fonts
+/// when a theme activates. Nothing is bundled; WebView2 caches the woff2 on disk.
+/// The base `--reading-font`/`--heading-font`/`--code-font` name these faces, so
+/// once loaded they render wherever a theme hasn't overridden the fonts.
+pub(crate) fn noto_web_font_href() -> &'static str {
+    "https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Noto+Sans+Mono:wght@400;500;600;700&display=swap"
+}
+
+/// Families that render in system fonts and fetch nothing — GitHub mirrors
+/// github.com's native stack.
+pub(crate) fn system_font_families() -> &'static [&'static str] {
+    &["github"]
+}
+
+/// Family → Google Fonts stylesheet URL for the bootstrap's on-activation font
+/// loader. Every family loads Noto except the system-font families, which are
+/// omitted so the loader drops the link and the family falls to its system stack.
+pub(crate) fn theme_web_font_hrefs_json() -> String {
+    let system: HashSet<&str> = system_font_families().iter().copied().collect();
+    let map: serde_json::Map<String, serde_json::Value> = theme_families()
+        .iter()
+        .filter(|(family, _)| !system.contains(family))
+        .map(|(family, _)| {
+            (
+                family.to_string(),
+                serde_json::Value::String(noto_web_font_href().to_string()),
+            )
+        })
+        .collect();
+    serde_json::to_string(&map).expect("theme web font map serializes")
+}
+
 pub(crate) fn reading_mode_css() -> &'static str {
     static READING_MODE_CSS: OnceLock<String> = OnceLock::new();
 
@@ -1286,7 +1318,6 @@ pub(crate) fn reading_mode_css() -> &'static str {
         let mut css = String::new();
         css.push_str(
             concat!(
-        include_str!("assets/noto-fonts.css"),
         include_str!("assets/primer-primitives-11.9.0-light.css"),
         include_str!("assets/primer-primitives-11.9.0-dark.css"),
             ),
@@ -1482,6 +1513,14 @@ body {
 ::selection {
   background: var(--app-selection-background);
   color: var(--app-selection-foreground);
+}
+/* The GitHub family uses github.com's native font stack — system sans for text
+   and headings, system mono for code. Before the zh-CN rule so a Chinese reader's
+   CJK reading font still wins (equal specificity, later rule). */
+:root[data-leaf-theme="github"] {
+  --heading-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --reading-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --code-font: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }
 :root[data-locale="zh-CN"] {
   --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";

@@ -8,7 +8,8 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 
 | Setting | Options | Default |
 | --- | --- | --- |
-| Theme | System, Light, Dark, Dracula | System |
+| Theme | Fern, GitHub, Dracula, Obsidian, Græy | Fern |
+| Appearance | System, Light, Dark, Daylight | System |
 | Language | System, English, Simplified Chinese | System |
 | Speed Reader | On / Off | Off |
 | Minimap | On / Off | On |
@@ -44,6 +45,7 @@ Here `{config_dir}` and `{data_dir}` are the per-app directories the `directorie
   "speed_reader_enabled": false,
   "line_numbers_enabled": false,
   "reader_editing_enabled": true,
+  "theme_family": "fern",
   "theme_mode": "system",
   "library_view": "graph",
   "graph_scope": "small",

@@ -70,7 +70,7 @@ The raw rendered HTML is passed through `ammonia` with an allowlist of GFM-safe 
 
 **6. Load into the WebView**
 
-`app_shell_html()` generates the full HTML/CSS/JS shell. `reading_mode_css()` assembles the complete style block: Noto fonts + Primer CSS primitives + compiled theme CSS + application CSS. The rendered document HTML is injected into the shell via `workspace_state_script()` or `workspace_switch_script()`, which call the appropriate `window.leaf*` JavaScript entry points.
+`app_shell_html()` generates the full HTML/CSS/JS shell. `reading_mode_css()` assembles the complete style block: Primer CSS primitives + compiled theme CSS + application CSS. Fonts are not bundled — the active [theme](../01-features/06-themes.md#fonts) fetches its font from Google Fonts on demand. The rendered document HTML is injected into the shell via `workspace_state_script()` or `workspace_switch_script()`, which call the appropriate `window.leaf*` JavaScript entry points.
 
 ## TEI XML rendering pipeline
 
@@ -118,7 +118,8 @@ Key `IpcCommand` variants include:
 | `openGlossary`         | Glossary link click (opens the term in a bottom sheet) |
 | `openExternal`         | The "update available" button: open the release page in the system browser (unattached to any document) |
 | `countLines`           | Link hover: read the linked document and report its line count for the tooltip |
-| `setThemeMode`         | Theme picker in Settings menu         |
+| `setThemeFamily`       | Theme family button in the theme picker |
+| `setThemeMode`         | Appearance control in the theme picker |
 | `setMinimapEnabled`    | Minimap toggle in Settings menu       |
 | `setPagerEnabled`      | Pager toggle in Settings menu         |
 | `setSpeedReaderEnabled` | Speed Reader toggle in Settings menu |
@@ -169,4 +170,4 @@ Before serving any bytes, it validates that the requested path resolves to withi
 
 ## Bundled asset protocol
 
-A second custom scheme, `leaf-asset://` (`http://leaf-asset.local/` where custom protocols are restricted), served by `bundled_asset_response()` in `assets.rs`, provides the renderer's vendored runtimes — the Mermaid bundle, the KaTeX script and stylesheet, the KaTeX WOFF2 fonts, and the PixiJS + d3-force bundles behind the [Graph view](../01-features/03-library.md#graph) — straight from bytes compiled into the binary with `include_bytes!`. Diagrams, math, and the graph therefore render fully offline, with no CDN dependency, and the Content-Security-Policy restricts script, style, and font sources to `'self'` plus this protocol. The graph runtimes load lazily — only the first time the graph view opens — and a Pixi companion bundle swaps its `new Function` shader/uniform paths for eval-free polyfills so it runs under that CSP.
+A second custom scheme, `leaf-asset://` (`http://leaf-asset.local/` where custom protocols are restricted), served by `bundled_asset_response()` in `assets.rs`, provides the renderer's vendored runtimes — the Mermaid bundle, the KaTeX script and stylesheet, the KaTeX WOFF2 fonts, and the PixiJS + d3-force bundles behind the [Graph view](../01-features/03-library.md#graph) — straight from bytes compiled into the binary with `include_bytes!`. Diagrams, math, and the graph therefore render fully offline, with no CDN dependency. The Content-Security-Policy restricts script sources to `'self'` plus this protocol; style and font sources also allow Google Fonts (`fonts.googleapis.com` / `fonts.gstatic.com`), from which the active [theme](../01-features/06-themes.md#fonts) fetches its font. The graph runtimes load lazily — only the first time the graph view opens — and a Pixi companion bundle swaps its `new Function` shader/uniform paths for eval-free polyfills so it runs under that CSP.

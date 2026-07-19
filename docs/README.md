@@ -43,7 +43,7 @@ How the app behaves, page by page:
 | [Navigation](01-features/02-navigation.md) | Tabs, Back/Forward history, the outline, scroll anchors, live reload, recent files, link hints, the pager, and the single-window rule |
 | [Library](01-features/03-library.md) | The left-side pane backed by a local SQLite index: Project, Tree, and All files views, filename and content search, and file actions |
 | [Minimap](01-features/04-minimap.md) | The scaled real-text document clone in the side rail: how it renders, when it rebuilds, responsive widths, and the on/off toggle |
-| [Themes](01-features/06-themes.md) | The four theme modes — System, Light, Dark, Dracula — and how they apply through the semantic token contract |
+| [Themes](01-features/06-themes.md) | The five theme families (Fern, GitHub, Dracula, Obsidian, Græy), light/dark/System/Daylight appearance, on-demand Google Fonts, and the semantic token contract |
 | [Settings](01-features/05-settings.md) | Every preference, its default, and the JSON files on disk that store them |
 | [Editing](01-features/07-editing.md) | Inline editing in the rendered page (blocks, checkboxes, undo), the raw-source code view, and the explicit Save flow |
 

@@ -708,7 +708,7 @@ fn auto_link_glossary(body_html: String, doc_dir: &Path) -> String {
 pub fn app_shell_html() -> String {
     APP_SHELL_HTML
         .replace("{{APP_SCRIPT}}", APP_SHELL_SCRIPT)
-        .replace("{{THEME_BOOTSTRAP_SCRIPT}}", theme_bootstrap_script())
+        .replace("{{THEME_BOOTSTRAP_SCRIPT}}", &theme_bootstrap_script())
         .replace("{{LOCALE_BOOTSTRAP_SCRIPT}}", locale_bootstrap_script())
         .replace("{{APP_CSS_URL}}", &bundled_asset_url("app.css"))
         .replace("{{THEME_ITEMS}}", &theme_items_html())
@@ -779,7 +779,7 @@ fn theme_items_html() -> String {
         .collect()
 }
 
-fn theme_bootstrap_script() -> &'static str {
+fn theme_bootstrap_script() -> String {
     r#"
 (() => {
   // Themes are two axes: a family (github/dracula/obsidian) and an appearance
@@ -789,8 +789,12 @@ fn theme_bootstrap_script() -> &'static str {
   // (theme_sources); guarded by app_shell_bootstrap_lists_every_theme_family.
   const VALID_FAMILIES = new Set(['github', 'dracula', 'obsidian', 'fern', 'graey']);
   const VALID_MODES = new Set(['system', 'light', 'dark', 'daylight']);
-  const FAMILY_FALLBACK = 'github';
+  const FAMILY_FALLBACK = 'fern';
   const MODE_FALLBACK = 'system';
+  // Family -> Google Fonts stylesheet URL. Fonts are fetched from Google (never
+  // bundled); only the active family's font is requested and WebView2 caches it.
+  // Families absent from the map (e.g. github) use the OS's native fonts.
+  const FAMILY_FONTS = {{FAMILY_FONTS}};
   const DAY_START = 9;
   const DAY_END = 18;
   const root = document.documentElement;
@@ -816,6 +820,21 @@ fn theme_bootstrap_script() -> &'static str {
     return media && media.matches ? 'dark' : 'light';
   };
   const snapshot = () => ({ family, mode, resolvedTheme: resolvedTheme() });
+  // Point a single <link> at the active family's Google Fonts stylesheet, so the
+  // font is fetched and applied on activation and swaps when the theme changes.
+  // Families with no entry (system-font themes) get the link removed.
+  const applyFamilyFont = (fam) => {
+    const href = FAMILY_FONTS[fam];
+    let link = document.getElementById('leafThemeFont');
+    if (!href) { if (link) { link.remove(); } return; }
+    if (!link) {
+      link = document.createElement('link');
+      link.id = 'leafThemeFont';
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+    if (link.getAttribute('href') !== href) { link.setAttribute('href', href); }
+  };
   const apply = () => {
     const theme = snapshot();
     // The Leaf-owned attributes that drive the compiled theme CSS.
@@ -831,6 +850,7 @@ fn theme_bootstrap_script() -> &'static str {
     root.dataset.themeFamily = family;
     root.dataset.theme = theme.resolvedTheme;
     root.style.colorScheme = theme.resolvedTheme;
+    applyFamilyFont(family);
     listeners.forEach((listener) => listener(theme));
   };
 
@@ -887,6 +907,7 @@ fn theme_bootstrap_script() -> &'static str {
   scheduleDaylight();
 })();
 "#
+    .replace("{{FAMILY_FONTS}}", &theme_web_font_hrefs_json())
 }
 
 fn locale_bootstrap_script() -> &'static str {
@@ -1318,7 +1339,7 @@ impl Default for Settings {
             speed_reader_enabled: false,
             line_numbers_enabled: false,
             reader_editing_enabled: true,
-            theme_family: "github".to_string(),
+            theme_family: "fern".to_string(),
             theme_mode: "system".to_string(),
             library_view: LibraryView::default(),
             graph_scope: GraphScope::default(),

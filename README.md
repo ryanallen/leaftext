@@ -53,9 +53,9 @@ A shrunken clone of the page in a side rail — real, tiny text, not abstract ba
 
 ### Make it yours
 
-![The same document in Light, Dark, and Dracula themes](imgs/feature-themes.png)
+![The same document across leaftext themes](imgs/feature-themes.png)
 
-Four theme modes — System, Light, Dark, and [Dracula](docs/01-features/06-themes.md) — built on three palettes and applied through a semantic token contract, so the reader, code, alerts, and minimap always stay visually consistent. **[Themes →](docs/01-features/06-themes.md)**
+Five theme families — [Fern, GitHub, Dracula, Obsidian, and Græy](docs/01-features/06-themes.md#families) — each with light and dark variants plus System and Daylight appearance, applied through a semantic token contract so the reader, code, alerts, and minimap always stay visually consistent. Fonts load from Google Fonts on demand — nothing is bundled. **[Themes →](docs/01-features/06-themes.md)**
 
 ### Settings that stick
 

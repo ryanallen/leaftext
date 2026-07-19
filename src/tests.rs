@@ -2026,10 +2026,12 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
         assert_contains(css, token);
     }
 
-    assert_contains(css, "@font-face");
-    assert_contains(css, "font-family: 'Noto Sans';");
-    assert_contains(css, "font-family: 'Noto Sans Mono';");
-    assert_contains(css, "data:font/woff2;base64,");
+    // No fonts are bundled into the stylesheet anymore — the app uses system
+    // fonts, and web-font themes fetch from Google Fonts on activation.
+    assert!(
+        !css.contains("@font-face") && !css.contains("data:font/woff2"),
+        "reading-mode CSS must not embed bundled font faces"
+    );
     assert_contains(
         css,
         r#"[data-color-mode="light"][data-light-theme="light"]"#,
@@ -2358,10 +2360,10 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
     assert_eq!(
         theme_families(),
         vec![
+            ("fern", "Fern"),
             ("github", "GitHub"),
             ("dracula", "Dracula"),
             ("obsidian", "Obsidian"),
-            ("fern", "Fern"),
             ("graey", "Græy"),
         ]
     );
@@ -2384,6 +2386,74 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
     }
     // Palettes are data-only token maps, not free-form author CSS.
     assert!(!html.contains("customTheme"));
+}
+
+#[test]
+fn github_family_uses_github_markdown_fonts_not_noto() {
+    let css = reading_mode_css();
+    // The GitHub family swaps the document fonts for GitHub's own markdown stack:
+    // system sans (no serif) for body and headings, system mono for code.
+    let block = css
+        .split(":root[data-leaf-theme=\"github\"] {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("github family font override block exists");
+    assert!(block.contains("--heading-font: -apple-system"));
+    assert!(block.contains("--reading-font: -apple-system"));
+    assert!(block.contains("--code-font: ui-monospace"));
+    // The GitHub document fonts drop the app's bundled Noto serif/mono faces.
+    assert!(!block.contains("Noto Serif"));
+    assert!(!block.contains("Noto Sans Mono"));
+}
+
+#[test]
+fn web_font_mechanism_fetches_noto_by_default_and_swaps_on_theme_change() {
+    // Nothing is bundled: the stylesheet embeds no font faces.
+    let css = reading_mode_css();
+    assert!(
+        !css.contains("@font-face") && !css.contains("data:font/woff2"),
+        "fonts must be fetched from Google Fonts, not bundled into the stylesheet"
+    );
+
+    // The family -> Google Fonts URL map loads Noto for every family that isn't a
+    // system-font theme. GitHub is omitted, so its loader drops the font link and
+    // falls back to the OS stack.
+    let map: serde_json::Value =
+        serde_json::from_str(&theme_web_font_hrefs_json()).expect("font map is valid JSON");
+    let map = map.as_object().expect("font map is an object");
+    for (family, _) in theme_families() {
+        if system_font_families().contains(&family) {
+            assert!(
+                !map.contains_key(family),
+                "{family} should use system fonts"
+            );
+        } else {
+            let href = map.get(family).and_then(|v| v.as_str()).unwrap_or("");
+            assert!(
+                href.starts_with("https://fonts.googleapis.com/css2?family=Noto"),
+                "{family} should fetch Noto from Google Fonts, got {href:?}"
+            );
+        }
+    }
+    assert!(!map.contains_key("github"));
+    assert!(map.contains_key("fern"));
+
+    // The bootstrap injects the map and swaps a single <link> as the family
+    // changes (run on every apply — initial paint and switches alike).
+    let html = app_shell_html();
+    assert!(html.contains("const FAMILY_FONTS = {"));
+    assert!(html.contains("fonts.googleapis.com/css2?family=Noto"));
+    assert!(html.contains("const applyFamilyFont = (fam) => {"));
+    assert!(html.contains("document.getElementById('leafThemeFont')"));
+    assert!(html.contains("applyFamilyFont(family);"));
+
+    // The CSP admits Google Fonts (stylesheet host + font-file host) and no more.
+    assert!(html.contains(
+        "style-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset: https://fonts.googleapis.com"
+    ));
+    assert!(html.contains(
+        "font-src 'self' data: http://leaf-asset.local leaf-asset: https://fonts.gstatic.com"
+    ));
 }
 
 #[test]
@@ -2680,7 +2750,6 @@ fn app_css_is_served_over_the_asset_protocol_not_inlined() {
     // and app layout all resolve here.
     let body = std::str::from_utf8(&css.body).expect("app.css is utf-8");
     assert_eq!(body, reading_mode_css());
-    assert!(body.contains("@font-face"));
     assert!(body.contains("--leaf-app-background"));
     assert!(body.contains(".app-bar"));
 }
@@ -5325,7 +5394,7 @@ fn settings_default_keeps_minimap_on_and_indexing_off() {
     assert!(!settings.indexing_enabled);
     assert!(!settings.speed_reader_enabled);
     assert!(!settings.line_numbers_enabled);
-    assert_eq!(settings.theme_family, "github");
+    assert_eq!(settings.theme_family, "fern");
     assert_eq!(settings.theme_mode, "system");
     assert_eq!(settings.library_view, LibraryView::Graph);
     assert!(settings.library_expanded.is_empty());
