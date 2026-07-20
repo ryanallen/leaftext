@@ -3537,29 +3537,31 @@ body.library-resizing {
   list-style: none;
   margin: 0;
   padding: 2px;
-  /* Cards wrap and each row grows to fill the full width (flex-grow), so there
-     are never ragged trailing gaps — the last row stretches like the rest. */
-  display: flex;
-  flex-wrap: wrap;
+  /* Equal-column grid so every card is the same width. auto-fit (not auto-fill)
+     collapses empty tracks, so the cards grow to fill the row instead of sitting
+     at their min width with big gaps. */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 8px;
   overflow-y: auto;
 }
 .theme-item {
-  flex: 1 1 170px;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 54px;
-  padding: 14px 28px;
-  border: 1px solid var(--settings-control-border);
+  padding: 14px 18px;
+  border: 0;
   border-radius: var(--leaf-radius-xl);
-  background: var(--settings-control-background);
+  /* Flat tiles: a faint ink tint over the sheet fill (which the cards would
+     otherwise match exactly), so they read without a stroke. */
+  background: color-mix(in srgb, var(--foreground) 5%, var(--surface-elevated));
   color: var(--settings-control-foreground);
   font: 700 13.5px var(--app-font);
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+  transition: background 0.12s ease;
 }
 .theme-item-name {
   overflow: hidden;
@@ -3567,12 +3569,10 @@ body.library-resizing {
   white-space: nowrap;
 }
 .theme-item:hover {
-  background: var(--surface-muted);
-  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--foreground) 10%, var(--surface-elevated));
 }
 .theme-item.is-active {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-elevated));
 }
 /* Selected badge: the check-circle, tinted with the theme accent, pinned to the
    card's top-right corner. Hidden until the card is active. */

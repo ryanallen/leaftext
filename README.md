@@ -55,7 +55,7 @@ A shrunken clone of the page in a side rail — real, tiny text, not abstract ba
 
 ![The same document across leaftext themes](imgs/feature-themes.png)
 
-Five theme families — [Fern, GitHub, Dracula, Obsidian, and Græy](docs/01-features/06-themes.md#families) — each with light and dark variants plus System and Daylight appearance, applied through a semantic token contract so the reader, code, alerts, and minimap always stay visually consistent. Fonts load from Google Fonts on demand — nothing is bundled. **[Themes →](docs/01-features/06-themes.md)**
+Ten theme families — [Amaranth, Arabica, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) — each with light and dark variants plus System and Daylight appearance, applied through a semantic token contract so the reader, code, alerts, and minimap always stay visually consistent. Fonts load from Google Fonts on demand — nothing is bundled. **[Themes →](docs/01-features/06-themes.md)**
 
 ### Settings that stick
 

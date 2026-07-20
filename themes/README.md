@@ -5,7 +5,7 @@
 
 Every theme in Leaf Text is plain data — one Markdown file per family, right here in this folder. Because they are Markdown, they render as the color tables below in Leaf itself and at [leaftext.com/themes](https://leaftext.com/themes).
 
-7 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the table is a light-vs-dark preview of the key colors — every family also defines the full ~100-token contract inside its file.
+10 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the table is a light-vs-dark preview of the key colors — every family also defines the full ~100-token contract inside its file.
 
 ## Gallery
 
@@ -60,6 +60,23 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 | Danger     | `#d3243a` | `#fb464c` |
 | Border     | `#e0e0e0` | `#363636` |
 
+### Ginger
+
+[`ginger.md`](ginger.md) · Heading **Nunito** · Body **Nunito** · Code **Inconsolata** · Google Fonts
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#fdf7ef` | `#2a2d3d` |
+| Foreground | `#43382e` | `#c6ceef` |
+| Heading    | `#b5461a` | `#f2934e` |
+| Primary    | `#f0662e` | `#f2934e` |
+| Accent     | `#f0662e` | `#f2934e` |
+| Link       | `#b5461a` | `#f2934e` |
+| Success    | `#46671f` | `#38c68d` |
+| Warning    | `#8a5e12` | `#f9e2af` |
+| Danger     | `#c0392b` | `#ff626b` |
+| Border     | `#e6dac6` | `#414559` |
+
 ### GitHub
 
 [`github.md`](github.md) · Heading **-apple-system** · Body **-apple-system** · Code **ui-monospace** · System fonts
@@ -76,6 +93,23 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 | Warning    | `#9a6700` | `#d29922` |
 | Danger     | `#d1242f` | `#f85149` |
 | Border     | `#d1d9e0` | `#39435f` |
+
+### Goldenrod
+
+[`goldenrod.md`](goldenrod.md) · Heading **Space Grotesk** · Body **Space Grotesk** · Code **Space Mono** · Google Fonts
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#fffdf7` | `#131210` |
+| Foreground | `#1c1a15` | `#eceae2` |
+| Heading    | `#1c1a15` | `#ffc300` |
+| Primary    | `#f0b400` | `#ffc300` |
+| Accent     | `#f0b400` | `#ffc300` |
+| Link       | `#9a6800` | `#ffc300` |
+| Success    | `#46671f` | `#b7d38a` |
+| Warning    | `#8a6000` | `#ffce5a` |
+| Danger     | `#c0392b` | `#f0857a` |
+| Border     | `#e6ddc6` | `#2b2820` |
 
 ### Halcyon
 
@@ -110,6 +144,23 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 | Warning    | `#9a6a00` | `#f1fa8c` |
 | Danger     | `#cf2e3f` | `#ff8f8f` |
 | Border     | `#d8d0e6` | `#6272a4` |
+
+### Pippin
+
+[`pippin.md`](pippin.md) · Heading **DM Sans** · Body **DM Sans** · Code **DM Mono** · Google Fonts
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#ffffff` | `#1c1c1e` |
+| Foreground | `#1d1d1f` | `#f5f5f7` |
+| Heading    | `#1d1d1f` | `#f5f5f7` |
+| Primary    | `#0a6fe0` | `#4a9eff` |
+| Accent     | `#0a6fe0` | `#4a9eff` |
+| Link       | `#0a63c9` | `#4a9eff` |
+| Success    | `#1f7a34` | `#32d74b` |
+| Warning    | `#a05a00` | `#ffb340` |
+| Danger     | `#d70015` | `#ff453a` |
+| Border     | `#d8d8dd` | `#3a3a3c` |
 
 ### Sage
 
