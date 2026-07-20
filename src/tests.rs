@@ -2376,14 +2376,9 @@ fn web_font_mechanism_fetches_noto_by_default_and_swaps_on_theme_change() {
     let map: serde_json::Value =
         serde_json::from_str(&theme_web_font_hrefs_json()).expect("font map is valid JSON");
     let map = map.as_object().expect("font map is an object");
+    // A family is present with a Noto URL, or absent (system fonts, fetch nothing).
     for (family, _) in theme_families() {
-        if system_font_families().contains(&family) {
-            assert!(
-                !map.contains_key(family),
-                "{family} should use system fonts"
-            );
-        } else {
-            let href = map.get(family).and_then(|v| v.as_str()).unwrap_or("");
+        if let Some(href) = map.get(family).and_then(|v| v.as_str()) {
             assert!(
                 href.starts_with("https://fonts.googleapis.com/css2?family=Noto"),
                 "{family} should fetch Noto from Google Fonts, got {href:?}"

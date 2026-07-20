@@ -40,6 +40,28 @@ pub(crate) struct ThemeSource {
     /// Per-source token replacements layered over `tokens` (and winning over
     /// them), to nudge one palette without forking the shared token map.
     pub(crate) overrides: &'static [(&'static str, &'static str)],
+    /// The theme's fonts. `heading`/`body`/`code` are CSS font-family stacks;
+    /// `font_google` is a Google Fonts stylesheet URL fetched on activation, or
+    /// empty for families that render in the OS's own fonts (e.g. GitHub).
+    pub(crate) font_heading: &'static str,
+    pub(crate) font_body: &'static str,
+    pub(crate) font_code: &'static str,
+    pub(crate) font_google: &'static str,
+}
+
+/// A theme's fonts, as stored in `themes.json`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct ThemeFonts {
+    /// Font-family stack for headings.
+    pub(crate) heading: String,
+    /// Font-family stack for body/reading and app chrome text.
+    pub(crate) body: String,
+    /// Font-family stack for code.
+    pub(crate) code: String,
+    /// Google Fonts stylesheet URL to fetch on activation; empty = system fonts,
+    /// fetch nothing. For now custom fonts must be pointed at Google Fonts.
+    #[serde(default)]
+    pub(crate) google: String,
 }
 
 /// The on-disk / bundled form of a [`ThemeSource`]: the same data with owned
@@ -56,6 +78,7 @@ pub(crate) struct ThemeFile {
     pub(crate) tokens: Vec<(String, String)>,
     #[serde(default)]
     pub(crate) overrides: Vec<(String, String)>,
+    pub(crate) fonts: ThemeFonts,
 }
 
 pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
@@ -192,6 +215,10 @@ fn theme_source_from_file(file: ThemeFile) -> ThemeSource {
         selector: leak_str(file.selector),
         tokens: leak_pairs(file.tokens),
         overrides: leak_pairs(file.overrides),
+        font_heading: leak_str(file.fonts.heading),
+        font_body: leak_str(file.fonts.body),
+        font_code: leak_str(file.fonts.code),
+        font_google: leak_str(file.fonts.google),
     }
 }
 
@@ -244,6 +271,29 @@ pub(crate) fn compiled_theme_css() -> String {
             css.push_str(";\n");
         }
         css.push_str("}\n");
+    }
+    // Per-family font blocks, keyed on the family (not the light/dark source, since
+    // a family's fonts are shared). Emitted at family specificity so the locale
+    // `[data-locale="zh-CN"]` rule (equal specificity, later in the sheet) can
+    // still win the reading font for CJK readers.
+    let mut seen_families: Vec<&str> = Vec::new();
+    for source in sources {
+        if seen_families.contains(&source.family) {
+            continue;
+        }
+        seen_families.push(source.family);
+        css.push_str(":root[data-leaf-theme=\"");
+        css.push_str(source.family);
+        css.push_str("\"] {\n");
+        css.push_str("  --heading-font: ");
+        css.push_str(source.font_heading);
+        css.push_str(";\n  --reading-font: ");
+        css.push_str(source.font_body);
+        css.push_str(";\n  --app-font: ");
+        css.push_str(source.font_body);
+        css.push_str(";\n  --code-font: ");
+        css.push_str(source.font_code);
+        css.push_str(";\n}\n");
     }
     css
 }
@@ -321,23 +371,6 @@ pub(crate) fn theme_source_token_value(source: &ThemeSource, token: &str) -> Opt
         .find_map(|(name, value)| (*name == token).then_some(*value))
 }
 
-/// The default web font — Noto Sans / Serif / Mono — fetched from Google Fonts
-/// when a theme activates. Nothing is bundled; WebView2 caches the woff2 on disk.
-/// The base `--reading-font`/`--heading-font`/`--code-font` name these faces, so
-/// once loaded they render wherever a theme hasn't overridden the fonts.
-pub(crate) fn noto_web_font_href() -> &'static str {
-    "https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Noto+Sans+Mono:wght@400;500;600;700&display=swap"
-}
-
-/// Families that render in system fonts and fetch nothing — GitHub mirrors
-/// github.com's native stack.
-pub(crate) fn system_font_families() -> &'static [&'static str] {
-    &["github"]
-}
-
-/// Family → Google Fonts stylesheet URL for the bootstrap's on-activation font
-/// loader. Every family loads Noto except the system-font families, which are
-/// omitted so the loader drops the link and the family falls to its system stack.
 /// The registered theme family ids as a JSON array (registration order),
 /// injected into the bootstrap so its `VALID_FAMILIES` set derives from the
 /// registry rather than a hand-kept literal that can drift.
@@ -346,18 +379,18 @@ pub(crate) fn theme_family_ids_json() -> String {
     serde_json::to_string(&ids).expect("theme family ids serialize")
 }
 
+/// Family → Google Fonts stylesheet URL for the bootstrap's on-activation font
+/// loader, taken from each theme's declared `google` URL. Families that fetch
+/// nothing (empty URL) are omitted, so the loader drops the link and the family
+/// falls to its system stack.
 pub(crate) fn theme_web_font_hrefs_json() -> String {
-    let system: HashSet<&str> = system_font_families().iter().copied().collect();
-    let map: serde_json::Map<String, serde_json::Value> = theme_families()
-        .iter()
-        .filter(|(family, _)| !system.contains(family))
-        .map(|(family, _)| {
-            (
-                family.to_string(),
-                serde_json::Value::String(noto_web_font_href().to_string()),
-            )
-        })
-        .collect();
+    let mut map = serde_json::Map::new();
+    for source in theme_sources() {
+        if !source.font_google.is_empty() {
+            map.entry(source.family.to_string())
+                .or_insert_with(|| serde_json::Value::String(source.font_google.to_string()));
+        }
+    }
     serde_json::to_string(&map).expect("theme web font map serializes")
 }
 
@@ -575,14 +608,9 @@ body {
   background: var(--app-selection-background);
   color: var(--app-selection-foreground);
 }
-/* The GitHub family uses github.com's native font stack — system sans for text
-   and headings, system mono for code. Before the zh-CN rule so a Chinese reader's
-   CJK reading font still wins (equal specificity, later rule). */
-:root[data-leaf-theme="github"] {
-  --heading-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --reading-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --code-font: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-}
+/* Per-family fonts are emitted by the theme compiler (from themes.json) above.
+   This locale rule follows them so a Chinese reader's CJK reading font still wins
+   (equal specificity to the family rule, later in the sheet). */
 :root[data-locale="zh-CN"] {
   --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
