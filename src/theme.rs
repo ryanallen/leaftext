@@ -49,8 +49,8 @@ pub(crate) struct ThemeSource {
     pub(crate) font_google: &'static str,
 }
 
-/// A theme's fonts, as stored in `themes.json`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// A theme's fonts, as stored in the Markdown theme files.
+#[derive(Debug, Clone, Default)]
 pub(crate) struct ThemeFonts {
     /// Font-family stack for headings.
     pub(crate) heading: String,
@@ -60,15 +60,14 @@ pub(crate) struct ThemeFonts {
     pub(crate) code: String,
     /// Google Fonts stylesheet URL to fetch on activation; empty = system fonts,
     /// fetch nothing. For now custom fonts must be pointed at Google Fonts.
-    #[serde(default)]
     pub(crate) google: String,
 }
 
 /// The on-disk / bundled form of a [`ThemeSource`]: the same data with owned
-/// strings, so palettes live as data (`src/assets/themes.json`) instead of Rust
+/// strings, so palettes live as data (`src/assets/themes.md`) instead of Rust
 /// consts. Parsed once at startup and leaked to `&'static` by [`theme_sources`],
 /// which keeps every downstream consumer working against `&'static` fields.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub(crate) struct ThemeFile {
     pub(crate) id: String,
     pub(crate) family: String,
@@ -76,7 +75,6 @@ pub(crate) struct ThemeFile {
     pub(crate) appearance: Appearance,
     pub(crate) selector: String,
     pub(crate) tokens: Vec<(String, String)>,
-    #[serde(default)]
     pub(crate) overrides: Vec<(String, String)>,
     pub(crate) fonts: ThemeFonts,
 }
@@ -223,16 +221,214 @@ fn theme_source_from_file(file: ThemeFile) -> ThemeSource {
 }
 
 /// The registered theme sources (each family's light/dark pair). Parsed once
-/// from the bundled `src/assets/themes.json` and leaked to `&'static` so every
+/// from the bundled `src/assets/themes.md` and leaked to `&'static` so every
 /// consumer keeps working against `&'static` fields. Palettes are data now: to
-/// add or edit a theme, edit that file — this function only loads it.
+/// add or edit a theme, edit the per-family Markdown files under `themes/` and
+/// run `just bundle-themes` — this function only loads the compiled bundle.
 pub(crate) fn theme_sources() -> &'static [ThemeSource] {
     static SOURCES: OnceLock<Vec<ThemeSource>> = OnceLock::new();
     SOURCES.get_or_init(|| {
-        let files: Vec<ThemeFile> = serde_json::from_str(include_str!("assets/themes.json"))
-            .expect("bundled themes.json is valid");
+        let files = parse_theme_markdown(include_str!("assets/themes.md"));
         files.into_iter().map(theme_source_from_file).collect()
     })
+}
+
+/// The `--leaf-` prefix stripped from token names in the Markdown theme files
+/// (for readability) and re-added here so downstream code keeps seeing the full
+/// CSS custom-property names from [`LEAF_SEMANTIC_TOKEN_CONTRACT`].
+const TOKEN_PREFIX: &str = "--leaf-";
+
+/// Split a Markdown table row (`| a | b |`) into its trimmed cells, dropping the
+/// empty leading/trailing fields the surrounding pipes produce.
+fn table_row_cells(line: &str) -> Vec<&str> {
+    let mut cells: Vec<&str> = line.split('|').map(str::trim).collect();
+    if cells.first().is_some_and(|c| c.is_empty()) {
+        cells.remove(0);
+    }
+    if cells.last().is_some_and(|c| c.is_empty()) {
+        cells.pop();
+    }
+    cells
+}
+
+/// True for a table's separator row (`| --- | :---: |`): every non-empty cell is
+/// only dashes with optional alignment colons.
+fn is_table_separator(cells: &[&str]) -> bool {
+    let mut saw_dash = false;
+    for cell in cells {
+        if cell.is_empty() {
+            continue;
+        }
+        if !cell.chars().all(|c| c == '-' || c == ':') || !cell.contains('-') {
+            return false;
+        }
+        saw_dash = true;
+    }
+    saw_dash
+}
+
+/// Unwrap a value cell's inline-code backticks (``` `#fff` ``` → `#fff`); an
+/// empty cell (an unset Google URL) stays empty.
+fn unwrap_value(cell: &str) -> String {
+    let trimmed = cell.trim();
+    trimmed
+        .strip_prefix('`')
+        .and_then(|s| s.strip_suffix('`'))
+        .unwrap_or(trimmed)
+        .to_string()
+}
+
+/// Parse the bundled Markdown theme file (`themes/*.md` concatenated by
+/// `scripts/bundle-themes.mjs`) into one [`ThemeFile`] per light/dark source —
+/// see any `themes/*.md` for the shape. Token names are stored without the
+/// `--leaf-` prefix and get it back here; a malformed file fails loudly at the
+/// startup contract check ([`assert_theme_sources_cover_contract`]).
+fn parse_theme_markdown(md: &str) -> Vec<ThemeFile> {
+    /// One family's accumulated data before it is split into light/dark sources.
+    #[derive(Default)]
+    struct FamilyAcc {
+        name: String,
+        id: String,
+        fonts: ThemeFonts,
+        light_tokens: Vec<(String, String)>,
+        light_overrides: Vec<(String, String)>,
+        dark_tokens: Vec<(String, String)>,
+        dark_overrides: Vec<(String, String)>,
+    }
+
+    #[derive(Clone, Copy, PartialEq)]
+    enum Section {
+        None,
+        Fonts,
+        Light,
+        Dark,
+    }
+    #[derive(Clone, Copy, PartialEq)]
+    enum Bucket {
+        Tokens,
+        Overrides,
+    }
+
+    let mut families: Vec<FamilyAcc> = Vec::new();
+    let mut section = Section::None;
+    let mut bucket = Bucket::Tokens;
+    let mut in_table_body = false;
+
+    for raw in md.lines() {
+        let line = raw.trim_end();
+
+        if let Some(name) = line.strip_prefix("# ") {
+            families.push(FamilyAcc {
+                name: name.trim().to_string(),
+                ..Default::default()
+            });
+            section = Section::None;
+            bucket = Bucket::Tokens;
+            in_table_body = false;
+            continue;
+        }
+        let Some(family) = families.last_mut() else {
+            continue; // preamble before the first family heading (e.g. the comment)
+        };
+
+        if let Some(rest) = line.strip_prefix("**Family ID:**") {
+            family.id = unwrap_value(rest);
+            continue;
+        }
+        if let Some(heading) = line.strip_prefix("## ") {
+            in_table_body = false;
+            section = match heading.trim().to_ascii_lowercase().as_str() {
+                "fonts" => Section::Fonts,
+                "light" => {
+                    bucket = Bucket::Tokens;
+                    Section::Light
+                }
+                "dark" => {
+                    bucket = Bucket::Tokens;
+                    Section::Dark
+                }
+                _ => Section::None,
+            };
+            continue;
+        }
+        if let Some(heading) = line.strip_prefix("### ") {
+            in_table_body = false;
+            bucket = match heading.trim().to_ascii_lowercase().as_str() {
+                "overrides" => Bucket::Overrides,
+                _ => Bucket::Tokens,
+            };
+            continue;
+        }
+        if line.starts_with('|') {
+            let cells = table_row_cells(line);
+            if is_table_separator(&cells) {
+                in_table_body = true;
+                continue;
+            }
+            if !in_table_body {
+                continue; // the header row, above the separator
+            }
+            let key = cells.first().copied().unwrap_or("").trim();
+            let value = cells.get(1).map(|c| unwrap_value(c)).unwrap_or_default();
+            match section {
+                Section::Fonts => match key.to_ascii_lowercase().as_str() {
+                    "heading" => family.fonts.heading = value,
+                    "body" => family.fonts.body = value,
+                    "code" => family.fonts.code = value,
+                    "google" => family.fonts.google = value,
+                    _ => {}
+                },
+                Section::Light | Section::Dark => {
+                    let token = format!("{TOKEN_PREFIX}{key}");
+                    let target = match (section, bucket) {
+                        (Section::Light, Bucket::Tokens) => &mut family.light_tokens,
+                        (Section::Light, Bucket::Overrides) => &mut family.light_overrides,
+                        (Section::Dark, Bucket::Tokens) => &mut family.dark_tokens,
+                        (Section::Dark, Bucket::Overrides) => &mut family.dark_overrides,
+                        _ => unreachable!(),
+                    };
+                    target.push((token, value));
+                }
+                Section::None => {}
+            }
+            continue;
+        }
+        // Any other line (prose, blank) ends the current table.
+        in_table_body = false;
+    }
+
+    let mut files = Vec::with_capacity(families.len() * 2);
+    for family in families {
+        assert!(
+            !family.id.is_empty(),
+            "theme family {:?} is missing its **Family ID:** line",
+            family.name
+        );
+        for (appearance, tokens, overrides) in [
+            (
+                Appearance::Light,
+                family.light_tokens,
+                family.light_overrides,
+            ),
+            (Appearance::Dark, family.dark_tokens, family.dark_overrides),
+        ] {
+            let appearance_str = appearance.as_str();
+            files.push(ThemeFile {
+                id: format!("{}-{appearance_str}", family.id),
+                family: family.id.clone(),
+                family_name: family.name.clone(),
+                appearance,
+                selector: format!(
+                    ":root[data-leaf-theme=\"{}\"][data-leaf-appearance=\"{appearance_str}\"]",
+                    family.id
+                ),
+                tokens,
+                overrides,
+                fonts: family.fonts.clone(),
+            });
+        }
+    }
+    files
 }
 
 /// The theme families for the picker, in display order: `(family id, name)`,
@@ -611,7 +807,7 @@ body {
   background: var(--app-selection-background);
   color: var(--app-selection-foreground);
 }
-/* Per-family fonts are emitted by the theme compiler (from themes.json) above.
+/* Per-family fonts are emitted by the theme compiler (from themes.md) above.
    This locale rule follows them so a Chinese reader's CJK reading font still wins
    (equal specificity to the family rule, later in the sheet). */
 :root[data-locale="zh-CN"] {
@@ -655,6 +851,13 @@ body {
      active tab can paint over it and appear connected to the page below. */
   border-top: 1px solid var(--app-border);
   font-family: var(--app-font);
+}
+.frameless .app-bar {
+  /* On frameless Windows the app bar IS the title bar, so the OS already draws
+     the window's top edge. Our own border-top would stack on that native frame
+     and read as a double-thick (~2px) stroke at the top only, while the other
+     three sides show a single 1px frame. Drop it so all four edges match. */
+  border-top: 0;
 }
 .app-bar::after {
   /* The reader divider. Sits behind the tabs (z-index 0); the active tab, which
@@ -963,19 +1166,16 @@ body {
   font-family: var(--app-font);
 }
 .settings-menu summary {
-  display: inline-grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
+  /* Box size, radius, and icon come from .icon-button (which this also carries)
+     so every toolbar icon button matches; only the summary-specific bits and the
+     rest colors live here. `position: relative` anchors the update-alert dot. */
   border: 1px solid transparent;
-  border-radius: var(--leaf-radius-md);
   /* No resting fill; icon dimmed at rest, greens on hover like the other icons. */
   background: transparent;
   color: var(--app-muted-foreground);
   cursor: pointer;
   font: 700 13px var(--app-font);
   list-style: none;
-  padding: 0;
   position: relative;
 }
 .settings-menu summary::-webkit-details-marker {
@@ -1065,17 +1265,22 @@ button {
   font: 600 14px var(--app-font);
   padding: 8px 14px;
 }
+/* The one true toolbar icon button: every square icon control in the app bar
+   (history, code view, settings, open) shares this box, radius, and icon size so
+   their hover chips are identical. The floating library-open button matches it
+   too. */
 .icon-button {
   display: inline-grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: var(--leaf-radius-lg);
   padding: 0;
 }
 .icon-button svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   pointer-events: none;
 }
 /* Rests muted like the other secondary toolbar icons, greens on hover. */
@@ -1306,8 +1511,8 @@ summary:focus-visible {
   color: var(--app-action-foreground);
 }
 .library-open svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 /* While dragging the divider, lock the cursor and kill text selection window-wide. */
 body.library-resizing {

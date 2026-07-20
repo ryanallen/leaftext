@@ -1,10 +1,10 @@
 # Theming
 
-> leaftext enforces a semantic token contract of ~100 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.json` compiled from per-theme files — so adding a theme takes no Rust.
+> leaftext enforces a semantic token contract of ~100 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.md` compiled from per-family Markdown files — so adding a theme takes no Rust.
 
 leaftext's theme system is built around a semantic token contract — a set of approximately 100 `--leaf-*` CSS custom properties that every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
 
-Palettes are **data, not code**: every theme's values live in `src/assets/themes.json`, parsed once at startup — not in Rust `const` tables.
+Palettes are **data, not code**: every theme's values live in Markdown tables (`src/assets/themes.md`), parsed once at startup — not in Rust `const` tables.
 
 ## The token contract
 
@@ -59,16 +59,18 @@ Every source activates through the Leaf-owned attributes the theme bootstrap sta
 
 **Every theme is a self-contained literal palette** — each source maps every `--leaf-*` token to a hex (or `rgba()`) value. There is no Primer dependency and no separate theme "kind": GitHub was flattened to plain hex like the rest, so all themes share one uniform shape. The Fern and Græy families reuse Obsidian's literal token maps and re-tint them through their `overrides` maps, so they inherit Obsidian's full coverage and only restate the tokens they change (`theme_source_token_value()` checks `overrides` before `tokens`). `theme_families()` derives the ordered picker list from the loaded sources, so registering a family's light/dark pair adds it to the picker automatically.
 
-## Palettes are data (`themes.json`)
+## Palettes are data (`themes.md`)
 
-`theme_sources()` parses `src/assets/themes.json` — bundled into the binary with `include_str!` — **once** at startup via a `OnceLock`, then leaks the owned strings to `&'static` so every downstream consumer keeps working against `&'static` fields. Each entry deserializes into a `ThemeFile` (`id`, `family`, `family_name`, `appearance`, `selector`, `tokens`, `overrides`, `fonts`).
+`theme_sources()` parses `src/assets/themes.md` — bundled into the binary with `include_str!` — **once** at startup via a `OnceLock`, then leaks the owned strings to `&'static` so every downstream consumer keeps working against `&'static` fields. `parse_theme_markdown()` walks the Markdown headings and tables into one `ThemeFile` per source (`id`, `family`, `family_name`, `appearance`, `selector`, `tokens`, `overrides`, `fonts`); `id` and `selector` are derived from the family id and appearance, so the files never restate them.
 
-The editable source of truth is the **`themes/` folder at the repo root**, which is also served on the web at **leaftext.com/themes**:
+The editable source of truth is the **`themes/` folder at the repo root**. Being Markdown, each file renders as clean color tables right where it lives — start with the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), a self-updating index with a light-vs-dark palette table for every family, then open any family file directly: [Dracula](https://github.com/ryanallen/leaftext/blob/main/themes/dracula.md), [Fern](https://github.com/ryanallen/leaftext/blob/main/themes/fern.md), [GitHub](https://github.com/ryanallen/leaftext/blob/main/themes/github.md), [Græy](https://github.com/ryanallen/leaftext/blob/main/themes/graey.md), [Obsidian](https://github.com/ryanallen/leaftext/blob/main/themes/obsidian.md). There is one file per family — `themes/<family>.md` — laid out as:
 
-- `themes/manifest.json` — the roster of family files.
-- `themes/<family>.json` — one file per family, an array of its light/dark source objects.
+- `# Display Name` — the family's picker label (`Græy`, `GitHub`, …).
+- `**Family ID:** \`<family>\`` — the family id used in `data-leaf-theme` and in the `<family>.md` filename (the bundler checks they match).
+- `## Fonts` — a `Role | Stack` table with `Heading`, `Body`, `Code`, and `Google` rows.
+- `## Light` and `## Dark` — a `Token | Value` table covering every contract property, each optionally followed by a `### Overrides` table for per-source token nudges. **Token names drop the `--leaf-` prefix** (re-added at parse time) and values are wrapped in backticks (`` `#282a36` ``).
 
-`scripts/bundle-themes.mjs` compiles the folder into `src/assets/themes.json`, emitting the families **sorted by display name** so the picker and gallery stay alphabetical no matter what order they're added. `just bundle-themes` rebuilds the bundle; `just check-themes` (part of `just verify`) fails if `themes.json` has drifted from the folder — the same drift-guard pattern used for the vendored site assets.
+There is no manifest — the bundler globs `themes/*.md`. `scripts/bundle-themes.mjs` produces two outputs: it concatenates the family files into `src/assets/themes.md` (the embedded bundle) and regenerates [`themes/README.md`](https://github.com/ryanallen/leaftext/blob/main/themes/README.md) (the gallery above), both ordered **by display name** so the picker and gallery stay alphabetical no matter what order they're added. `just bundle-themes` rebuilds them; `just check-themes` (part of `just verify`) fails if either has drifted from the folder — the same drift-guard pattern used for the vendored site assets.
 
 ## Startup contract check
 
@@ -128,20 +130,20 @@ A theme is a light/dark pair of sources, authored as data — no Rust. To add on
 
 **1. Add the family file**
 
-Create `themes/myfamily.json` — an array of two source objects (light and dark). Copy an existing family file (e.g. `themes/dracula.json`) as a template so the token coverage and shape match. Each source needs `id`, `family`, `family_name`, `appearance`, `selector`, a `tokens` map covering every property in `LEAF_SEMANTIC_TOKEN_CONTRACT`, an `overrides` map (often `[]`), and a `fonts` block (set `google` to a Google Fonts `css2` URL, or `""` for system fonts).
+Create `themes/myfamily.md`. Copy an existing family file (e.g. `themes/dracula.md`) as a template so the token coverage and shape match, then edit:
 
-**2. Register it in the manifest**
+- the `# My Family` heading and the `**Family ID:** \`myfamily\`` line (it must match the filename);
+- the `## Fonts` table (set the `Google` row to a Google Fonts `css2` URL, or leave it blank for system fonts);
+- the `## Light` and `## Dark` `Token | Value` tables — every property in `LEAF_SEMANTIC_TOKEN_CONTRACT` (minus the `--leaf-` prefix), with an optional `### Overrides` table for tokens you nudge off the base.
 
-Add `"myfamily"` to the `themes` array in `themes/manifest.json`.
-
-**3. Bundle and verify**
+**2. Bundle and verify**
 
 ```sh
-just bundle-themes   # compile themes/ -> src/assets/themes.json
+just bundle-themes   # compile themes/ -> src/assets/themes.md
 just verify          # contract + contrast checks, and check-themes drift guard
 ```
 
-`assert_theme_sources_cover_contract()` fails the run if any contract token is missing, if the family lacks a light or dark variant, or if a selector doesn't name its family and appearance; the contrast tests fail it if any pair is unreadable.
+The folder is globbed, so there is no manifest to update. `assert_theme_sources_cover_contract()` fails the run if any contract token is missing, if the family lacks a light or dark variant, or if a selector doesn't name its family and appearance; the contrast tests fail it if any pair is unreadable.
 
 **4. Nothing to wire up in the UI**
 

@@ -6,15 +6,15 @@ From the user side, themes are simple: open the theme picker, tap a family, pick
 
 ## Families
 
-Pick a family in the theme picker. Five ship, listed alphabetically, with **Fern** as the default:
+Pick a family in the theme picker. Five ship, listed alphabetically, with **Fern** as the default. Each family is a plain Markdown file — browse them all in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows a light-vs-dark swatch table per family, or open one below:
 
 | Family | Palette |
 | --- | --- |
-| Dracula | The classic Dracula palette (light "Alucard" and dark) |
-| Fern | **Default.** An Obsidian-based palette with a fern-green cast |
-| GitHub | GitHub's light/dark palette, in its own system-font stack |
-| Græy | An Obsidian-based neutral greyscale palette |
-| Obsidian | Obsidian's default light/dark base ramps with a violet accent |
+| [Dracula](https://github.com/ryanallen/leaftext/blob/main/themes/dracula.md) | The classic Dracula palette (light "Alucard" and dark) |
+| [Fern](https://github.com/ryanallen/leaftext/blob/main/themes/fern.md) | **Default.** An Obsidian-based palette with a fern-green cast |
+| [GitHub](https://github.com/ryanallen/leaftext/blob/main/themes/github.md) | GitHub's light/dark palette, in its own system-font stack |
+| [Græy](https://github.com/ryanallen/leaftext/blob/main/themes/graey.md) | An Obsidian-based neutral greyscale palette |
+| [Obsidian](https://github.com/ryanallen/leaftext/blob/main/themes/obsidian.md) | Obsidian's default light/dark base ramps with a violet accent |
 
 A sixth picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
 
@@ -85,7 +85,7 @@ The compiled stylesheet is assembled in this order:
 2. The `:root` alias layer — the radius/shadow scales and the short component names the UI consumes
 3. App CSS for layout and components
 
-Every palette is pure data, compiled from [`themes.json`](../02-development/04-theming.md#palettes-are-data-themesjson); the font *files* still load separately from Google Fonts per the active theme. The ordering keeps one stable semantic layer so the app can swap themes quickly.
+Every palette is pure data, compiled from [`themes.md`](../02-development/04-theming.md#palettes-are-data-themesmd); the font *files* still load separately from Google Fonts per the active theme. The ordering keeps one stable semantic layer so the app can swap themes quickly.
 
 ## Windows
 

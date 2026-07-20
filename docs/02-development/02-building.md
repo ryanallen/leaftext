@@ -60,7 +60,7 @@ A passing `just verify` is the baseline requirement before handing any work back
 
 The Mermaid, KaTeX, and Noto assets are embedded in the binary from `src/assets` and also served as static files from `site/`. `src/assets` is the source of truth; `check-vendor` fails if the `site/` copies have drifted. Run `just sync-vendor` to recopy them and clear the drift.
 
-Theme palettes work the same way: `src/assets/themes.json` (embedded in the binary) is compiled from the editable `themes/` folder. `check-themes` fails if it has drifted; run `just bundle-themes` to recompile it. See [Theming](04-theming.md#palettes-are-data-themesjson).
+Theme palettes work the same way: `src/assets/themes.md` (embedded in the binary) is compiled from the editable `themes/` folder of per-family Markdown files. `check-themes` fails if it has drifted; run `just bundle-themes` to recompile it. See [Theming](04-theming.md#palettes-are-data-themesmd).
 
 ## Individual tasks
 
@@ -73,7 +73,7 @@ Each step in the verification pipeline can also be run on its own:
 | Type check   | `cargo check --all-targets` | Check all targets without producing a binary   |
 | Tests        | `cargo test`                | Run the full test suite                        |
 | Vendor check | `just check-vendor`         | Verify `site/` vendored assets match `src/assets` |
-| Themes check | `just check-themes`         | Verify `src/assets/themes.json` matches the `themes/` folder |
+| Themes check | `just check-themes`         | Verify `src/assets/themes.md` matches the `themes/` folder |
 | Full verify  | `just verify`               | All steps above in sequence                    |
 
-Additional convenience tasks are available via `just --list`, including `just sync-vendor` to recopy the vendored assets into `site/` and `just bundle-themes` to recompile `themes.json` from the `themes/` folder.
+Additional convenience tasks are available via `just --list`, including `just sync-vendor` to recopy the vendored assets into `site/` and `just bundle-themes` to recompile `themes.md` from the `themes/` folder.

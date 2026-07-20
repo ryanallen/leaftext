@@ -24,12 +24,12 @@ sync-vendor:
 check-vendor:
     node scripts/sync-vendor.mjs --check
 
-# Compile themes/ (per-family files + manifest) into src/assets/themes.json,
+# Compile the per-family Markdown files under themes/ into src/assets/themes.md,
 # the bundle the binary embeds. themes/ is also served at leaftext.com/themes.
 bundle-themes:
     node scripts/bundle-themes.mjs
 
-# Fail if src/assets/themes.json has drifted from the themes/ source files.
+# Fail if src/assets/themes.md has drifted from the themes/ source files.
 check-themes:
     node scripts/bundle-themes.mjs --check
 

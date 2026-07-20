@@ -3710,7 +3710,7 @@ fn app_shell_keeps_settings_menu_keyboard_and_pointer_polish() {
         "summary:focus-visible",
         ".icon-button {",
         "place-items: center;",
-        "min-width: 28px;",
+        "min-width: 32px;",
     ] {
         assert_contains(css, expected);
     }
