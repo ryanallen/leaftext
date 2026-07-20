@@ -59,36 +59,36 @@ pub(crate) struct ThemeFile {
 }
 
 pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
-    "--leaf-app-background",
-    "--leaf-app-foreground",
-    "--leaf-app-surface",
-    "--leaf-app-surface-raised",
-    "--leaf-app-surface-elevated",
-    "--leaf-app-surface-muted",
-    "--leaf-app-surface-sunken",
-    "--leaf-app-surface-inset",
-    "--leaf-app-surface-card",
-    "--leaf-app-border",
-    "--leaf-app-border-strong",
-    "--leaf-app-muted-background",
-    "--leaf-app-muted-foreground",
-    "--leaf-app-primary",
-    "--leaf-app-primary-foreground",
-    "--leaf-app-secondary",
-    "--leaf-app-secondary-foreground",
-    "--leaf-app-accent",
-    "--leaf-app-accent-foreground",
-    "--leaf-app-danger",
-    "--leaf-app-danger-foreground",
-    "--leaf-app-warning",
-    "--leaf-app-warning-foreground",
-    "--leaf-app-success",
-    "--leaf-app-success-foreground",
-    "--leaf-app-done",
-    "--leaf-app-done-foreground",
-    "--leaf-app-link",
-    "--leaf-app-link-hover",
-    "--leaf-app-shadow",
+    "--leaf-background",
+    "--leaf-foreground",
+    "--leaf-surface",
+    "--leaf-surface-raised",
+    "--leaf-surface-elevated",
+    "--leaf-surface-muted",
+    "--leaf-surface-sunken",
+    "--leaf-surface-inset",
+    "--leaf-surface-card",
+    "--leaf-border",
+    "--leaf-border-strong",
+    "--leaf-muted-background",
+    "--leaf-muted-foreground",
+    "--leaf-primary",
+    "--leaf-primary-foreground",
+    "--leaf-secondary",
+    "--leaf-secondary-foreground",
+    "--leaf-accent",
+    "--leaf-accent-foreground",
+    "--leaf-danger",
+    "--leaf-danger-foreground",
+    "--leaf-warning",
+    "--leaf-warning-foreground",
+    "--leaf-success",
+    "--leaf-success-foreground",
+    "--leaf-done",
+    "--leaf-done-foreground",
+    "--leaf-link",
+    "--leaf-link-hover",
+    "--leaf-shadow",
     "--leaf-editor-background",
     "--leaf-editor-foreground",
     "--leaf-editor-selection-background",
@@ -372,38 +372,38 @@ pub(crate) fn reading_mode_css() -> &'static str {
 :root {
   color-scheme: light dark;
   --surface-page: var(--leaf-markdown-background);
-  --surface-raised: var(--leaf-app-surface-raised);
-  --surface-card: var(--leaf-app-surface-card);
-  --surface-inset: var(--leaf-app-surface-inset);
-  --background: var(--leaf-app-background);
-  --foreground: var(--leaf-app-foreground);
-  --surface: var(--leaf-app-surface);
-  --surface-elevated: var(--leaf-app-surface-elevated);
-  --surface-muted: var(--leaf-app-surface-muted);
-  --surface-sunken: var(--leaf-app-surface-sunken);
-  --border: var(--leaf-app-border);
-  --border-strong: var(--leaf-app-border-strong);
-  --muted: var(--leaf-app-muted-background);
-  --muted-foreground: var(--leaf-app-muted-foreground);
-  --primary: var(--leaf-app-primary);
-  --primary-foreground: var(--leaf-app-primary-foreground);
-  --secondary: var(--leaf-app-secondary);
-  --secondary-foreground: var(--leaf-app-secondary-foreground);
-  --accent: var(--leaf-app-accent);
-  --accent-foreground: var(--leaf-app-accent-foreground);
-  --danger: var(--leaf-app-danger);
-  --danger-foreground: var(--leaf-app-danger-foreground);
-  --warning: var(--leaf-app-warning);
-  --warning-foreground: var(--leaf-app-warning-foreground);
-  --success: var(--leaf-app-success);
-  --success-foreground: var(--leaf-app-success-foreground);
-  --done: var(--leaf-app-done);
-  --done-foreground: var(--leaf-app-done-foreground);
-  --link: var(--leaf-app-link);
-  --link-hover: var(--leaf-app-link-hover);
+  --surface-raised: var(--leaf-surface-raised);
+  --surface-card: var(--leaf-surface-card);
+  --surface-inset: var(--leaf-surface-inset);
+  --background: var(--leaf-background);
+  --foreground: var(--leaf-foreground);
+  --surface: var(--leaf-surface);
+  --surface-elevated: var(--leaf-surface-elevated);
+  --surface-muted: var(--leaf-surface-muted);
+  --surface-sunken: var(--leaf-surface-sunken);
+  --border: var(--leaf-border);
+  --border-strong: var(--leaf-border-strong);
+  --muted: var(--leaf-muted-background);
+  --muted-foreground: var(--leaf-muted-foreground);
+  --primary: var(--leaf-primary);
+  --primary-foreground: var(--leaf-primary-foreground);
+  --secondary: var(--leaf-secondary);
+  --secondary-foreground: var(--leaf-secondary-foreground);
+  --accent: var(--leaf-accent);
+  --accent-foreground: var(--leaf-accent-foreground);
+  --danger: var(--leaf-danger);
+  --danger-foreground: var(--leaf-danger-foreground);
+  --warning: var(--leaf-warning);
+  --warning-foreground: var(--leaf-warning-foreground);
+  --success: var(--leaf-success);
+  --success-foreground: var(--leaf-success-foreground);
+  --done: var(--leaf-done);
+  --done-foreground: var(--leaf-done-foreground);
+  --link: var(--leaf-link);
+  --link-hover: var(--leaf-link-hover);
   --selection: var(--leaf-focus-selection-background);
   --focus-ring: var(--leaf-focus-ring);
-  --shadow: var(--leaf-app-shadow);
+  --shadow: var(--leaf-shadow);
   --reading-background: var(--leaf-markdown-background);
   --reading-ink: var(--leaf-markdown-foreground);
   --reading-heading: var(--leaf-markdown-heading);
@@ -546,7 +546,7 @@ pub(crate) fn reading_mode_css() -> &'static str {
   --leaf-radius-pill: 999px;
   --leaf-radius-full: 50%;
   /* Elevation shadows by role, so overlays swap in one place. The resting card
-     shadow stays per-theme as --shadow (from --leaf-app-shadow); these cover the
+     shadow stays per-theme as --shadow (from --leaf-shadow); these cover the
      overlays that were previously baked inline. */
   --leaf-shadow-popover: 0 6px 18px -6px color-mix(in srgb, black 55%, transparent),
     0 0 0 1px color-mix(in srgb, var(--app-muted-foreground) 20%, transparent);

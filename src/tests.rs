@@ -1036,7 +1036,7 @@ fn css_token(css: &str, theme: ResolvedTheme, name: &str) -> Rgb {
 
     parse_hex_color(&value)
         .or_else(|| {
-            let background = css_token_value(&blocks, "--leaf-app-background");
+            let background = css_token_value(&blocks, "--leaf-background");
             parse_hex_color(&background)
                 .and_then(|background| parse_hex_color_with_alpha(&value, background))
         })
@@ -1049,7 +1049,7 @@ fn css_token_for_source(css: &str, source: &ThemeSource, name: &str) -> Rgb {
 
     parse_hex_color(&value)
         .or_else(|| {
-            let background = css_token_value(&blocks, "--leaf-app-background");
+            let background = css_token_value(&blocks, "--leaf-background");
             parse_hex_color(&background)
                 .and_then(|background| parse_hex_color_with_alpha(&value, background))
         })
@@ -2017,7 +2017,7 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
         r#":root[data-leaf-theme="dracula"][data-leaf-appearance="dark"]"#,
     );
     // GitHub's tokens are concrete hex now, like every other family.
-    assert_contains(css, "--leaf-app-background: #ffffff;");
+    assert_contains(css, "--leaf-background: #ffffff;");
     assert_contains(css, "--leaf-syntax-comment: #59636e;");
     assert_contains(css, "--surface-page: var(--leaf-markdown-background);");
     assert_contains(css, "--syntax-comment: var(--leaf-syntax-comment);");
@@ -2417,9 +2417,9 @@ fn theme_compiler_gates_readable_pairs_for_every_source() {
 
     for source in theme_sources() {
         for (foreground, background) in [
-            ("--leaf-app-foreground", "--leaf-app-background"),
-            ("--leaf-app-muted-foreground", "--leaf-app-background"),
-            ("--leaf-app-primary-foreground", "--leaf-app-primary"),
+            ("--leaf-foreground", "--leaf-background"),
+            ("--leaf-muted-foreground", "--leaf-background"),
+            ("--leaf-primary-foreground", "--leaf-primary"),
             ("--leaf-markdown-foreground", "--leaf-markdown-background"),
             (
                 "--leaf-markdown-inline-code-foreground",
@@ -2705,7 +2705,7 @@ fn app_css_is_served_over_the_asset_protocol_not_inlined() {
     // and app layout all resolve here.
     let body = std::str::from_utf8(&css.body).expect("app.css is utf-8");
     assert_eq!(body, reading_mode_css());
-    assert!(body.contains("--leaf-app-background"));
+    assert!(body.contains("--leaf-background"));
     assert!(body.contains(".app-bar"));
 }
 

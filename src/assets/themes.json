@@ -7,123 +7,123 @@
     "selector": ":root[data-leaf-theme=\"fern\"][data-leaf-appearance=\"light\"]",
     "tokens": [
       [
-        "--leaf-app-background",
+        "--leaf-background",
         "#ffffff"
       ],
       [
-        "--leaf-app-foreground",
+        "--leaf-foreground",
         "#222222"
       ],
       [
-        "--leaf-app-surface",
+        "--leaf-surface",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-raised",
+        "--leaf-surface-raised",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-elevated",
+        "--leaf-surface-elevated",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-muted",
+        "--leaf-surface-muted",
         "#f6f6f6"
       ],
       [
-        "--leaf-app-surface-sunken",
+        "--leaf-surface-sunken",
         "#f0f0f0"
       ],
       [
-        "--leaf-app-surface-inset",
+        "--leaf-surface-inset",
         "#f0f0f0"
       ],
       [
-        "--leaf-app-surface-card",
+        "--leaf-surface-card",
         "#ffffff"
       ],
       [
-        "--leaf-app-border",
+        "--leaf-border",
         "#e0e0e0"
       ],
       [
-        "--leaf-app-border-strong",
+        "--leaf-border-strong",
         "#bdbdbd"
       ],
       [
-        "--leaf-app-muted-background",
+        "--leaf-muted-background",
         "#f6f6f6"
       ],
       [
-        "--leaf-app-muted-foreground",
+        "--leaf-muted-foreground",
         "#575757"
       ],
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#6d45e0"
       ],
       [
-        "--leaf-app-primary-foreground",
+        "--leaf-primary-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-secondary",
+        "--leaf-secondary",
         "#eeeeee"
       ],
       [
-        "--leaf-app-secondary-foreground",
+        "--leaf-secondary-foreground",
         "#222222"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#086ddd"
       ],
       [
-        "--leaf-app-accent-foreground",
+        "--leaf-accent-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-danger",
+        "--leaf-danger",
         "#d3243a"
       ],
       [
-        "--leaf-app-danger-foreground",
+        "--leaf-danger-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-warning",
+        "--leaf-warning",
         "#8a6d00"
       ],
       [
-        "--leaf-app-warning-foreground",
+        "--leaf-warning-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-success",
+        "--leaf-success",
         "#087a34"
       ],
       [
-        "--leaf-app-success-foreground",
+        "--leaf-success-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#6d45e0"
       ],
       [
-        "--leaf-app-done-foreground",
+        "--leaf-done-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#086ddd"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#6d45e0"
       ],
       [
-        "--leaf-app-shadow",
+        "--leaf-shadow",
         "0 16px 40px rgba(0, 0, 0, 0.12)"
       ],
       [
@@ -437,23 +437,23 @@
     ],
     "overrides": [
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#1a7f37"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#1a7f37"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#1a7f37"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#1a7f37"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#0f5a27"
       ],
       [
@@ -542,123 +542,123 @@
     "selector": ":root[data-leaf-theme=\"fern\"][data-leaf-appearance=\"dark\"]",
     "tokens": [
       [
-        "--leaf-app-background",
+        "--leaf-background",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-foreground",
+        "--leaf-foreground",
         "#dadada"
       ],
       [
-        "--leaf-app-surface",
+        "--leaf-surface",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-surface-raised",
+        "--leaf-surface-raised",
         "#242424"
       ],
       [
-        "--leaf-app-surface-elevated",
+        "--leaf-surface-elevated",
         "#262626"
       ],
       [
-        "--leaf-app-surface-muted",
+        "--leaf-surface-muted",
         "#2a2a2a"
       ],
       [
-        "--leaf-app-surface-sunken",
+        "--leaf-surface-sunken",
         "#181818"
       ],
       [
-        "--leaf-app-surface-inset",
+        "--leaf-surface-inset",
         "#181818"
       ],
       [
-        "--leaf-app-surface-card",
+        "--leaf-surface-card",
         "#242424"
       ],
       [
-        "--leaf-app-border",
+        "--leaf-border",
         "#363636"
       ],
       [
-        "--leaf-app-border-strong",
+        "--leaf-border-strong",
         "#555555"
       ],
       [
-        "--leaf-app-muted-background",
+        "--leaf-muted-background",
         "#2a2a2a"
       ],
       [
-        "--leaf-app-muted-foreground",
+        "--leaf-muted-foreground",
         "#999999"
       ],
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#a882ff"
       ],
       [
-        "--leaf-app-primary-foreground",
+        "--leaf-primary-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-secondary",
+        "--leaf-secondary",
         "#2a2a2a"
       ],
       [
-        "--leaf-app-secondary-foreground",
+        "--leaf-secondary-foreground",
         "#dadada"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#4c9dff"
       ],
       [
-        "--leaf-app-accent-foreground",
+        "--leaf-accent-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-danger",
+        "--leaf-danger",
         "#fb464c"
       ],
       [
-        "--leaf-app-danger-foreground",
+        "--leaf-danger-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-warning",
+        "--leaf-warning",
         "#e0de71"
       ],
       [
-        "--leaf-app-warning-foreground",
+        "--leaf-warning-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-success",
+        "--leaf-success",
         "#44cf6e"
       ],
       [
-        "--leaf-app-success-foreground",
+        "--leaf-success-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#a882ff"
       ],
       [
-        "--leaf-app-done-foreground",
+        "--leaf-done-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#4c9dff"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#a882ff"
       ],
       [
-        "--leaf-app-shadow",
+        "--leaf-shadow",
         "0 18px 42px rgba(0, 0, 0, 0.5)"
       ],
       [
@@ -972,23 +972,23 @@
     ],
     "overrides": [
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#3fb950"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#56d364"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#3fb950"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#56d364"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#6fdd8b"
       ],
       [
@@ -1077,123 +1077,123 @@
     "selector": ":root[data-leaf-theme=\"github\"][data-leaf-appearance=\"light\"]",
     "tokens": [
       [
-        "--leaf-app-background",
+        "--leaf-background",
         "#ffffff"
       ],
       [
-        "--leaf-app-foreground",
+        "--leaf-foreground",
         "#1f2328"
       ],
       [
-        "--leaf-app-surface",
+        "--leaf-surface",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-raised",
+        "--leaf-surface-raised",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-elevated",
+        "--leaf-surface-elevated",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-muted",
+        "--leaf-surface-muted",
         "#f6f8fa"
       ],
       [
-        "--leaf-app-surface-sunken",
+        "--leaf-surface-sunken",
         "#f6f8fa"
       ],
       [
-        "--leaf-app-surface-inset",
+        "--leaf-surface-inset",
         "#f6f8fa"
       ],
       [
-        "--leaf-app-surface-card",
+        "--leaf-surface-card",
         "#ffffff"
       ],
       [
-        "--leaf-app-border",
+        "--leaf-border",
         "#d1d9e0"
       ],
       [
-        "--leaf-app-border-strong",
+        "--leaf-border-strong",
         "#818b98"
       ],
       [
-        "--leaf-app-muted-background",
+        "--leaf-muted-background",
         "#f6f8fa"
       ],
       [
-        "--leaf-app-muted-foreground",
+        "--leaf-muted-foreground",
         "#59636e"
       ],
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#1f883d"
       ],
       [
-        "--leaf-app-primary-foreground",
+        "--leaf-primary-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-secondary",
+        "--leaf-secondary",
         "#f6f8fa"
       ],
       [
-        "--leaf-app-secondary-foreground",
+        "--leaf-secondary-foreground",
         "#25292e"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#0969da"
       ],
       [
-        "--leaf-app-accent-foreground",
+        "--leaf-accent-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-danger",
+        "--leaf-danger",
         "#d1242f"
       ],
       [
-        "--leaf-app-danger-foreground",
+        "--leaf-danger-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-warning",
+        "--leaf-warning",
         "#9a6700"
       ],
       [
-        "--leaf-app-warning-foreground",
+        "--leaf-warning-foreground",
         "#1f2328"
       ],
       [
-        "--leaf-app-success",
+        "--leaf-success",
         "#1a7f37"
       ],
       [
-        "--leaf-app-success-foreground",
+        "--leaf-success-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#8250df"
       ],
       [
-        "--leaf-app-done-foreground",
+        "--leaf-done-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#0969da"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#0969da"
       ],
       [
-        "--leaf-app-shadow",
+        "--leaf-shadow",
         "0 1px 1px 0 #25292e1a, 0 3px 6px 0 #25292e1f"
       ],
       [
@@ -1515,123 +1515,123 @@
     "selector": ":root[data-leaf-theme=\"github\"][data-leaf-appearance=\"dark\"]",
     "tokens": [
       [
-        "--leaf-app-background",
+        "--leaf-background",
         "#0d1117"
       ],
       [
-        "--leaf-app-foreground",
+        "--leaf-foreground",
         "#f0f6fc"
       ],
       [
-        "--leaf-app-surface",
+        "--leaf-surface",
         "#0d1117"
       ],
       [
-        "--leaf-app-surface-raised",
+        "--leaf-surface-raised",
         "#0d1117"
       ],
       [
-        "--leaf-app-surface-elevated",
+        "--leaf-surface-elevated",
         "#0d1117"
       ],
       [
-        "--leaf-app-surface-muted",
+        "--leaf-surface-muted",
         "#151b23"
       ],
       [
-        "--leaf-app-surface-sunken",
+        "--leaf-surface-sunken",
         "#010409"
       ],
       [
-        "--leaf-app-surface-inset",
+        "--leaf-surface-inset",
         "#010409"
       ],
       [
-        "--leaf-app-surface-card",
+        "--leaf-surface-card",
         "#0d1117"
       ],
       [
-        "--leaf-app-border",
+        "--leaf-border",
         "#3d444d"
       ],
       [
-        "--leaf-app-border-strong",
+        "--leaf-border-strong",
         "#656c76"
       ],
       [
-        "--leaf-app-muted-background",
+        "--leaf-muted-background",
         "#151b23"
       ],
       [
-        "--leaf-app-muted-foreground",
+        "--leaf-muted-foreground",
         "#9198a1"
       ],
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#238636"
       ],
       [
-        "--leaf-app-primary-foreground",
+        "--leaf-primary-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-secondary",
+        "--leaf-secondary",
         "#212830"
       ],
       [
-        "--leaf-app-secondary-foreground",
+        "--leaf-secondary-foreground",
         "#f0f6fc"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#4493f8"
       ],
       [
-        "--leaf-app-accent-foreground",
+        "--leaf-accent-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-danger",
+        "--leaf-danger",
         "#f85149"
       ],
       [
-        "--leaf-app-danger-foreground",
+        "--leaf-danger-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-warning",
+        "--leaf-warning",
         "#d29922"
       ],
       [
-        "--leaf-app-warning-foreground",
+        "--leaf-warning-foreground",
         "#f0f6fc"
       ],
       [
-        "--leaf-app-success",
+        "--leaf-success",
         "#3fb950"
       ],
       [
-        "--leaf-app-success-foreground",
+        "--leaf-success-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#ab7df8"
       ],
       [
-        "--leaf-app-done-foreground",
+        "--leaf-done-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#4493f8"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#4493f8"
       ],
       [
-        "--leaf-app-shadow",
+        "--leaf-shadow",
         "0 1px 1px 0 #01040966, 0 3px 6px 0 #010409cc"
       ],
       [
@@ -1945,11 +1945,11 @@
     ],
     "overrides": [
       [
-        "--leaf-app-border",
+        "--leaf-border",
         "#39435f"
       ],
       [
-        "--leaf-app-border-strong",
+        "--leaf-border-strong",
         "#5b6788"
       ],
       [
@@ -2006,123 +2006,123 @@
     "selector": ":root[data-leaf-theme=\"dracula\"][data-leaf-appearance=\"light\"]",
     "tokens": [
       [
-        "--leaf-app-background",
+        "--leaf-background",
         "#f7f5ef"
       ],
       [
-        "--leaf-app-foreground",
+        "--leaf-foreground",
         "#26222e"
       ],
       [
-        "--leaf-app-surface",
+        "--leaf-surface",
         "#f7f5ef"
       ],
       [
-        "--leaf-app-surface-raised",
+        "--leaf-surface-raised",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-elevated",
+        "--leaf-surface-elevated",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-muted",
+        "--leaf-surface-muted",
         "#efe9f7"
       ],
       [
-        "--leaf-app-surface-sunken",
+        "--leaf-surface-sunken",
         "#e8e2f0"
       ],
       [
-        "--leaf-app-surface-inset",
+        "--leaf-surface-inset",
         "#e8e2f0"
       ],
       [
-        "--leaf-app-surface-card",
+        "--leaf-surface-card",
         "#ffffff"
       ],
       [
-        "--leaf-app-border",
+        "--leaf-border",
         "#d8d0e6"
       ],
       [
-        "--leaf-app-border-strong",
+        "--leaf-border-strong",
         "#b3a8cc"
       ],
       [
-        "--leaf-app-muted-background",
+        "--leaf-muted-background",
         "#efe9f7"
       ],
       [
-        "--leaf-app-muted-foreground",
+        "--leaf-muted-foreground",
         "#565070"
       ],
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#7b3fe4"
       ],
       [
-        "--leaf-app-primary-foreground",
+        "--leaf-primary-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-secondary",
+        "--leaf-secondary",
         "#e7e0f5"
       ],
       [
-        "--leaf-app-secondary-foreground",
+        "--leaf-secondary-foreground",
         "#26222e"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#0c6f8c"
       ],
       [
-        "--leaf-app-accent-foreground",
+        "--leaf-accent-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-danger",
+        "--leaf-danger",
         "#cf2e3f"
       ],
       [
-        "--leaf-app-danger-foreground",
+        "--leaf-danger-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-warning",
+        "--leaf-warning",
         "#9a6a00"
       ],
       [
-        "--leaf-app-warning-foreground",
+        "--leaf-warning-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-success",
+        "--leaf-success",
         "#1c7d3f"
       ],
       [
-        "--leaf-app-success-foreground",
+        "--leaf-success-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#7b3fe4"
       ],
       [
-        "--leaf-app-done-foreground",
+        "--leaf-done-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#0c6f8c"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#7b3fe4"
       ],
       [
-        "--leaf-app-shadow",
+        "--leaf-shadow",
         "0 18px 42px rgba(40, 30, 60, 0.18)"
       ],
       [
@@ -2444,123 +2444,123 @@
     "selector": ":root[data-leaf-theme=\"dracula\"][data-leaf-appearance=\"dark\"]",
     "tokens": [
       [
-        "--leaf-app-background",
+        "--leaf-background",
         "#282a36"
       ],
       [
-        "--leaf-app-foreground",
+        "--leaf-foreground",
         "#f8f8f2"
       ],
       [
-        "--leaf-app-surface",
+        "--leaf-surface",
         "#282a36"
       ],
       [
-        "--leaf-app-surface-raised",
+        "--leaf-surface-raised",
         "#343746"
       ],
       [
-        "--leaf-app-surface-elevated",
+        "--leaf-surface-elevated",
         "#343746"
       ],
       [
-        "--leaf-app-surface-muted",
+        "--leaf-surface-muted",
         "#3d4050"
       ],
       [
-        "--leaf-app-surface-sunken",
+        "--leaf-surface-sunken",
         "#1e2029"
       ],
       [
-        "--leaf-app-surface-inset",
+        "--leaf-surface-inset",
         "#1e2029"
       ],
       [
-        "--leaf-app-surface-card",
+        "--leaf-surface-card",
         "#343746"
       ],
       [
-        "--leaf-app-border",
+        "--leaf-border",
         "#6272a4"
       ],
       [
-        "--leaf-app-border-strong",
+        "--leaf-border-strong",
         "#bdc6f4"
       ],
       [
-        "--leaf-app-muted-background",
+        "--leaf-muted-background",
         "#3d4050"
       ],
       [
-        "--leaf-app-muted-foreground",
+        "--leaf-muted-foreground",
         "#d6d6d0"
       ],
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#bd93f9"
       ],
       [
-        "--leaf-app-primary-foreground",
+        "--leaf-primary-foreground",
         "#1e2029"
       ],
       [
-        "--leaf-app-secondary",
+        "--leaf-secondary",
         "#44475a"
       ],
       [
-        "--leaf-app-secondary-foreground",
+        "--leaf-secondary-foreground",
         "#f8f8f2"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#8be9fd"
       ],
       [
-        "--leaf-app-accent-foreground",
+        "--leaf-accent-foreground",
         "#1e2029"
       ],
       [
-        "--leaf-app-danger",
+        "--leaf-danger",
         "#ff8f8f"
       ],
       [
-        "--leaf-app-danger-foreground",
+        "--leaf-danger-foreground",
         "#1e2029"
       ],
       [
-        "--leaf-app-warning",
+        "--leaf-warning",
         "#f1fa8c"
       ],
       [
-        "--leaf-app-warning-foreground",
+        "--leaf-warning-foreground",
         "#1e2029"
       ],
       [
-        "--leaf-app-success",
+        "--leaf-success",
         "#50fa7b"
       ],
       [
-        "--leaf-app-success-foreground",
+        "--leaf-success-foreground",
         "#1e2029"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#bd93f9"
       ],
       [
-        "--leaf-app-done-foreground",
+        "--leaf-done-foreground",
         "#1e2029"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#8be9fd"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#f1fa8c"
       ],
       [
-        "--leaf-app-shadow",
+        "--leaf-shadow",
         "0 18px 42px #00000066"
       ],
       [
@@ -2882,123 +2882,123 @@
     "selector": ":root[data-leaf-theme=\"obsidian\"][data-leaf-appearance=\"light\"]",
     "tokens": [
       [
-        "--leaf-app-background",
+        "--leaf-background",
         "#ffffff"
       ],
       [
-        "--leaf-app-foreground",
+        "--leaf-foreground",
         "#222222"
       ],
       [
-        "--leaf-app-surface",
+        "--leaf-surface",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-raised",
+        "--leaf-surface-raised",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-elevated",
+        "--leaf-surface-elevated",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-muted",
+        "--leaf-surface-muted",
         "#f6f6f6"
       ],
       [
-        "--leaf-app-surface-sunken",
+        "--leaf-surface-sunken",
         "#f0f0f0"
       ],
       [
-        "--leaf-app-surface-inset",
+        "--leaf-surface-inset",
         "#f0f0f0"
       ],
       [
-        "--leaf-app-surface-card",
+        "--leaf-surface-card",
         "#ffffff"
       ],
       [
-        "--leaf-app-border",
+        "--leaf-border",
         "#e0e0e0"
       ],
       [
-        "--leaf-app-border-strong",
+        "--leaf-border-strong",
         "#bdbdbd"
       ],
       [
-        "--leaf-app-muted-background",
+        "--leaf-muted-background",
         "#f6f6f6"
       ],
       [
-        "--leaf-app-muted-foreground",
+        "--leaf-muted-foreground",
         "#575757"
       ],
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#6d45e0"
       ],
       [
-        "--leaf-app-primary-foreground",
+        "--leaf-primary-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-secondary",
+        "--leaf-secondary",
         "#eeeeee"
       ],
       [
-        "--leaf-app-secondary-foreground",
+        "--leaf-secondary-foreground",
         "#222222"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#086ddd"
       ],
       [
-        "--leaf-app-accent-foreground",
+        "--leaf-accent-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-danger",
+        "--leaf-danger",
         "#d3243a"
       ],
       [
-        "--leaf-app-danger-foreground",
+        "--leaf-danger-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-warning",
+        "--leaf-warning",
         "#8a6d00"
       ],
       [
-        "--leaf-app-warning-foreground",
+        "--leaf-warning-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-success",
+        "--leaf-success",
         "#087a34"
       ],
       [
-        "--leaf-app-success-foreground",
+        "--leaf-success-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#6d45e0"
       ],
       [
-        "--leaf-app-done-foreground",
+        "--leaf-done-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#086ddd"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#6d45e0"
       ],
       [
-        "--leaf-app-shadow",
+        "--leaf-shadow",
         "0 16px 40px rgba(0, 0, 0, 0.12)"
       ],
       [
@@ -3320,123 +3320,123 @@
     "selector": ":root[data-leaf-theme=\"obsidian\"][data-leaf-appearance=\"dark\"]",
     "tokens": [
       [
-        "--leaf-app-background",
+        "--leaf-background",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-foreground",
+        "--leaf-foreground",
         "#dadada"
       ],
       [
-        "--leaf-app-surface",
+        "--leaf-surface",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-surface-raised",
+        "--leaf-surface-raised",
         "#242424"
       ],
       [
-        "--leaf-app-surface-elevated",
+        "--leaf-surface-elevated",
         "#262626"
       ],
       [
-        "--leaf-app-surface-muted",
+        "--leaf-surface-muted",
         "#2a2a2a"
       ],
       [
-        "--leaf-app-surface-sunken",
+        "--leaf-surface-sunken",
         "#181818"
       ],
       [
-        "--leaf-app-surface-inset",
+        "--leaf-surface-inset",
         "#181818"
       ],
       [
-        "--leaf-app-surface-card",
+        "--leaf-surface-card",
         "#242424"
       ],
       [
-        "--leaf-app-border",
+        "--leaf-border",
         "#363636"
       ],
       [
-        "--leaf-app-border-strong",
+        "--leaf-border-strong",
         "#555555"
       ],
       [
-        "--leaf-app-muted-background",
+        "--leaf-muted-background",
         "#2a2a2a"
       ],
       [
-        "--leaf-app-muted-foreground",
+        "--leaf-muted-foreground",
         "#999999"
       ],
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#a882ff"
       ],
       [
-        "--leaf-app-primary-foreground",
+        "--leaf-primary-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-secondary",
+        "--leaf-secondary",
         "#2a2a2a"
       ],
       [
-        "--leaf-app-secondary-foreground",
+        "--leaf-secondary-foreground",
         "#dadada"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#4c9dff"
       ],
       [
-        "--leaf-app-accent-foreground",
+        "--leaf-accent-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-danger",
+        "--leaf-danger",
         "#fb464c"
       ],
       [
-        "--leaf-app-danger-foreground",
+        "--leaf-danger-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-warning",
+        "--leaf-warning",
         "#e0de71"
       ],
       [
-        "--leaf-app-warning-foreground",
+        "--leaf-warning-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-success",
+        "--leaf-success",
         "#44cf6e"
       ],
       [
-        "--leaf-app-success-foreground",
+        "--leaf-success-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#a882ff"
       ],
       [
-        "--leaf-app-done-foreground",
+        "--leaf-done-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#4c9dff"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#a882ff"
       ],
       [
-        "--leaf-app-shadow",
+        "--leaf-shadow",
         "0 18px 42px rgba(0, 0, 0, 0.5)"
       ],
       [
@@ -3758,123 +3758,123 @@
     "selector": ":root[data-leaf-theme=\"graey\"][data-leaf-appearance=\"light\"]",
     "tokens": [
       [
-        "--leaf-app-background",
+        "--leaf-background",
         "#ffffff"
       ],
       [
-        "--leaf-app-foreground",
+        "--leaf-foreground",
         "#222222"
       ],
       [
-        "--leaf-app-surface",
+        "--leaf-surface",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-raised",
+        "--leaf-surface-raised",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-elevated",
+        "--leaf-surface-elevated",
         "#ffffff"
       ],
       [
-        "--leaf-app-surface-muted",
+        "--leaf-surface-muted",
         "#f6f6f6"
       ],
       [
-        "--leaf-app-surface-sunken",
+        "--leaf-surface-sunken",
         "#f0f0f0"
       ],
       [
-        "--leaf-app-surface-inset",
+        "--leaf-surface-inset",
         "#f0f0f0"
       ],
       [
-        "--leaf-app-surface-card",
+        "--leaf-surface-card",
         "#ffffff"
       ],
       [
-        "--leaf-app-border",
+        "--leaf-border",
         "#e0e0e0"
       ],
       [
-        "--leaf-app-border-strong",
+        "--leaf-border-strong",
         "#bdbdbd"
       ],
       [
-        "--leaf-app-muted-background",
+        "--leaf-muted-background",
         "#f6f6f6"
       ],
       [
-        "--leaf-app-muted-foreground",
+        "--leaf-muted-foreground",
         "#575757"
       ],
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#6d45e0"
       ],
       [
-        "--leaf-app-primary-foreground",
+        "--leaf-primary-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-secondary",
+        "--leaf-secondary",
         "#eeeeee"
       ],
       [
-        "--leaf-app-secondary-foreground",
+        "--leaf-secondary-foreground",
         "#222222"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#086ddd"
       ],
       [
-        "--leaf-app-accent-foreground",
+        "--leaf-accent-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-danger",
+        "--leaf-danger",
         "#d3243a"
       ],
       [
-        "--leaf-app-danger-foreground",
+        "--leaf-danger-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-warning",
+        "--leaf-warning",
         "#8a6d00"
       ],
       [
-        "--leaf-app-warning-foreground",
+        "--leaf-warning-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-success",
+        "--leaf-success",
         "#087a34"
       ],
       [
-        "--leaf-app-success-foreground",
+        "--leaf-success-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#6d45e0"
       ],
       [
-        "--leaf-app-done-foreground",
+        "--leaf-done-foreground",
         "#ffffff"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#086ddd"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#6d45e0"
       ],
       [
-        "--leaf-app-shadow",
+        "--leaf-shadow",
         "0 16px 40px rgba(0, 0, 0, 0.12)"
       ],
       [
@@ -4188,55 +4188,55 @@
     ],
     "overrides": [
       [
-        "--leaf-app-background",
+        "--leaf-background",
         "#f7f6f4"
       ],
       [
-        "--leaf-app-surface",
+        "--leaf-surface",
         "#f7f6f4"
       ],
       [
-        "--leaf-app-surface-muted",
+        "--leaf-surface-muted",
         "#eeece8"
       ],
       [
-        "--leaf-app-surface-sunken",
+        "--leaf-surface-sunken",
         "#e7e5e0"
       ],
       [
-        "--leaf-app-surface-inset",
+        "--leaf-surface-inset",
         "#e7e5e0"
       ],
       [
-        "--leaf-app-border",
+        "--leaf-border",
         "#dcdad5"
       ],
       [
-        "--leaf-app-border-strong",
+        "--leaf-border-strong",
         "#b3b1aa"
       ],
       [
-        "--leaf-app-muted-background",
+        "--leaf-muted-background",
         "#eeece8"
       ],
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#4a4a48"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#57534e"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#4a4a48"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#444a4a"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#1c1c1c"
       ],
       [
@@ -4385,123 +4385,123 @@
     "selector": ":root[data-leaf-theme=\"graey\"][data-leaf-appearance=\"dark\"]",
     "tokens": [
       [
-        "--leaf-app-background",
+        "--leaf-background",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-foreground",
+        "--leaf-foreground",
         "#dadada"
       ],
       [
-        "--leaf-app-surface",
+        "--leaf-surface",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-surface-raised",
+        "--leaf-surface-raised",
         "#242424"
       ],
       [
-        "--leaf-app-surface-elevated",
+        "--leaf-surface-elevated",
         "#262626"
       ],
       [
-        "--leaf-app-surface-muted",
+        "--leaf-surface-muted",
         "#2a2a2a"
       ],
       [
-        "--leaf-app-surface-sunken",
+        "--leaf-surface-sunken",
         "#181818"
       ],
       [
-        "--leaf-app-surface-inset",
+        "--leaf-surface-inset",
         "#181818"
       ],
       [
-        "--leaf-app-surface-card",
+        "--leaf-surface-card",
         "#242424"
       ],
       [
-        "--leaf-app-border",
+        "--leaf-border",
         "#363636"
       ],
       [
-        "--leaf-app-border-strong",
+        "--leaf-border-strong",
         "#555555"
       ],
       [
-        "--leaf-app-muted-background",
+        "--leaf-muted-background",
         "#2a2a2a"
       ],
       [
-        "--leaf-app-muted-foreground",
+        "--leaf-muted-foreground",
         "#999999"
       ],
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#a882ff"
       ],
       [
-        "--leaf-app-primary-foreground",
+        "--leaf-primary-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-secondary",
+        "--leaf-secondary",
         "#2a2a2a"
       ],
       [
-        "--leaf-app-secondary-foreground",
+        "--leaf-secondary-foreground",
         "#dadada"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#4c9dff"
       ],
       [
-        "--leaf-app-accent-foreground",
+        "--leaf-accent-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-danger",
+        "--leaf-danger",
         "#fb464c"
       ],
       [
-        "--leaf-app-danger-foreground",
+        "--leaf-danger-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-warning",
+        "--leaf-warning",
         "#e0de71"
       ],
       [
-        "--leaf-app-warning-foreground",
+        "--leaf-warning-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-success",
+        "--leaf-success",
         "#44cf6e"
       ],
       [
-        "--leaf-app-success-foreground",
+        "--leaf-success-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#a882ff"
       ],
       [
-        "--leaf-app-done-foreground",
+        "--leaf-done-foreground",
         "#1e1e1e"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#4c9dff"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#a882ff"
       ],
       [
-        "--leaf-app-shadow",
+        "--leaf-shadow",
         "0 18px 42px rgba(0, 0, 0, 0.5)"
       ],
       [
@@ -4815,47 +4815,47 @@
     ],
     "overrides": [
       [
-        "--leaf-app-background",
+        "--leaf-background",
         "#1a1a1a"
       ],
       [
-        "--leaf-app-surface",
+        "--leaf-surface",
         "#1a1a1a"
       ],
       [
-        "--leaf-app-surface-raised",
+        "--leaf-surface-raised",
         "#232323"
       ],
       [
-        "--leaf-app-surface-card",
+        "--leaf-surface-card",
         "#232323"
       ],
       [
-        "--leaf-app-foreground",
+        "--leaf-foreground",
         "#d6d4d0"
       ],
       [
-        "--leaf-app-muted-foreground",
+        "--leaf-muted-foreground",
         "#9a968f"
       ],
       [
-        "--leaf-app-primary",
+        "--leaf-primary",
         "#c9c6c0"
       ],
       [
-        "--leaf-app-accent",
+        "--leaf-accent",
         "#a8a49c"
       ],
       [
-        "--leaf-app-done",
+        "--leaf-done",
         "#c9c6c0"
       ],
       [
-        "--leaf-app-link",
+        "--leaf-link",
         "#b0b6bd"
       ],
       [
-        "--leaf-app-link-hover",
+        "--leaf-link-hover",
         "#e0ddd8"
       ],
       [
