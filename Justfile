@@ -24,7 +24,16 @@ sync-vendor:
 check-vendor:
     node scripts/sync-vendor.mjs --check
 
-verify: format-check check test check-vendor
+# Compile themes/ (per-family files + manifest) into src/assets/themes.json,
+# the bundle the binary embeds. themes/ is also served at leaftext.com/themes.
+bundle-themes:
+    node scripts/bundle-themes.mjs
+
+# Fail if src/assets/themes.json has drifted from the themes/ source files.
+check-themes:
+    node scripts/bundle-themes.mjs --check
+
+verify: format-check check test check-vendor check-themes
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

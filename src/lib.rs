@@ -884,12 +884,6 @@ fn theme_bootstrap_script() -> String {
     // The Leaf-owned attributes that drive the compiled theme CSS.
     root.dataset.leafTheme = family;
     root.dataset.leafAppearance = theme.resolvedTheme;
-    // Primer primitives (the github family) resolve off these; harmless for the
-    // literal palettes, which ignore them.
-    root.dataset.colorMode = theme.resolvedTheme;
-    root.dataset.lightTheme = 'light';
-    root.dataset.darkTheme = 'dark';
-    root.dataset.resolvedColorMode = theme.resolvedTheme;
     root.dataset.themeMode = mode;
     root.dataset.themeFamily = family;
     root.dataset.theme = theme.resolvedTheme;

@@ -2304,15 +2304,16 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
         assert_contains(css, source.selector);
     }
 
-    // The picker's families, in order, are derived from the registered sources.
+    // The picker's families come from the registered sources, sorted by display
+    // name (the theme bundle emits them alphabetically).
     assert_eq!(
         theme_families(),
         vec![
+            ("dracula", "Dracula"),
             ("fern", "Fern"),
             ("github", "GitHub"),
-            ("dracula", "Dracula"),
-            ("obsidian", "Obsidian"),
             ("graey", "Græy"),
+            ("obsidian", "Obsidian"),
         ]
     );
 
@@ -3529,7 +3530,7 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
     );
     assert_eq!(
         theme_family_ids_json(),
-        r#"["fern","github","dracula","obsidian","graey"]"#
+        r#"["dracula","fern","github","graey","obsidian"]"#
     );
     assert_contains(
         &html,
@@ -3557,15 +3558,10 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
     // The Leaf-owned attributes that drive the compiled theme CSS.
     assert_contains(&html, "root.dataset.leafTheme = family;");
     assert_contains(&html, "root.dataset.leafAppearance = theme.resolvedTheme;");
-    // Primer primitives still resolve off the color-mode attributes.
-    assert_contains(&html, "root.dataset.colorMode = theme.resolvedTheme;");
-    assert_contains(&html, "root.dataset.lightTheme = 'light'");
-    assert_contains(&html, "root.dataset.darkTheme = 'dark'");
-    assert_contains(
-        &html,
-        "root.dataset.resolvedColorMode = theme.resolvedTheme",
-    );
     assert_contains(&html, "root.dataset.themeMode = mode");
+    // The dead Primer color-mode attributes are gone from the bootstrap.
+    assert!(!html.contains("root.dataset.colorMode"));
+    assert!(!html.contains("root.dataset.resolvedColorMode"));
     assert_contains(&html, "root.dataset.themeFamily = family;");
     assert_contains(&html, "root.dataset.theme = theme.resolvedTheme");
     assert_contains(&html, "root.style.colorScheme = theme.resolvedTheme");
@@ -3693,13 +3689,6 @@ fn app_shell_theme_bootstrap_resolves_manual_and_system_modes() {
     assert_contains(
         &html,
         "const onSystemThemeChange = () => { if (mode === 'system') { apply(); } };",
-    );
-    assert_contains(&html, "root.dataset.colorMode = theme.resolvedTheme;");
-    assert_contains(&html, "root.dataset.lightTheme = 'light';");
-    assert_contains(&html, "root.dataset.darkTheme = 'dark';");
-    assert_contains(
-        &html,
-        "root.dataset.resolvedColorMode = theme.resolvedTheme;",
     );
     assert_contains(&html, "root.dataset.themeMode = mode;");
     assert_contains(&html, "root.dataset.theme = theme.resolvedTheme;");
