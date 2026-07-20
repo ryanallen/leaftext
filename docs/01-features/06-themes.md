@@ -6,18 +6,19 @@ From the user side, themes are simple: open the theme picker, tap a family, pick
 
 ## Families
 
-Pick a family in the theme picker. Six ship, listed alphabetically, with **Fern** as the default. Each family is a plain Markdown file — browse them all in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows a light-vs-dark swatch table per family, or open one below:
+Pick a family in the theme picker. Seven ship, listed alphabetically, with **Fern** as the default. Each family is a plain Markdown file — browse them all in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows a light-vs-dark swatch table per family, or open one below:
 
 | Family | Palette |
 | --- | --- |
 | [Amaranth](https://github.com/ryanallen/leaftext/blob/main/themes/amaranth.md) | Clean light/dark base ramps with a violet accent |
+| [Arabica](https://github.com/ryanallen/leaftext/blob/main/themes/arabica.md) | A coffee palette — creamy latte light, dark-roast espresso dark — with an AnuPpuccin mauve accent |
 | [Fern](https://github.com/ryanallen/leaftext/blob/main/themes/fern.md) | **Default.** An Amaranth-based palette with a fern-green cast |
 | [GitHub](https://github.com/ryanallen/leaftext/blob/main/themes/github.md) | GitHub's light/dark palette, in its own system-font stack |
 | [Halcyon](https://github.com/ryanallen/leaftext/blob/main/themes/halcyon.md) | A calm, clean palette with one blue accent and a cool blue-gray dark mode |
 | [Nightshade](https://github.com/ryanallen/leaftext/blob/main/themes/nightshade.md) | The classic Dracula palette (light "Alucard" and dark) |
 | [Sage](https://github.com/ryanallen/leaftext/blob/main/themes/sage.md) | A neutral greyscale palette with a muted-blue (Minimal-style) accent |
 
-A sixth picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
+An eighth picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
 
 ## Random
 
@@ -55,7 +56,7 @@ Open **Settings**, then **Theme** to slide up the theme picker. It lists every f
 
 leaftext does not bundle fonts. Instead, the active theme's font is fetched from **Google Fonts** when the theme activates, and the WebView caches it on disk so later launches are instant:
 
-- Each family carries its own type: **Fern** uses Noto (Sans/Serif/Sans Mono); **Nightshade** pairs Fraunces headings with Inter and Fira Code; **Halcyon** uses IBM Plex Sans/Mono; **Amaranth** uses the Source family (Serif 4 / Sans 3 / Code Pro); **Sage** uses Inter with JetBrains Mono.
+- Each family carries its own type: **Fern** uses Noto (Sans/Serif/Sans Mono); **Nightshade** pairs Fraunces headings with Inter and Fira Code; **Halcyon** uses IBM Plex Sans/Mono; **Amaranth** uses the Source family (Serif 4 / Sans 3 / Code Pro); **Sage** uses Inter with JetBrains Mono; **Arabica** pairs Rubik with JetBrains Mono.
 - The **GitHub** family is the exception: it uses your OS's native font stack (like github.com) and fetches nothing.
 - Switching families swaps the font link, so the font changes with the theme.
 - Every font stack lists system fallbacks, so text is readable immediately while the web font loads — and stays readable offline, falling back until you have loaded the font online once.

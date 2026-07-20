@@ -40,12 +40,14 @@ Corners and elevation are tokenized too, but as **global scales** in the compile
 
 ## Theme families and sources
 
-Themes are organized as **families**, each pairing a light and a dark **source**. The user picks a family (the Theme setting) and an appearance (the Appearance setting: Light, Dark, System, or Daylight); the two combine to select one source. Six families ship, so twelve sources are defined, **sorted by display name** in the picker (`Amaranth`, `Fern`, `GitHub`, `Halcyon`, `Nightshade`, `Sage`); `fern` is the default family (the bootstrap's fallback). Each source has an `id`, a `family` id, a `family_name` (the picker label), an `appearance` (`Light`/`Dark`), a CSS `selector`, a flat `tokens` map covering every contract property, an `overrides` map for per-source token nudges (empty for most sources), and a `fonts` block:
+Themes are organized as **families**, each pairing a light and a dark **source**. The user picks a family (the Theme setting) and an appearance (the Appearance setting: Light, Dark, System, or Daylight); the two combine to select one source. Seven families ship, so fourteen sources are defined, **sorted by display name** in the picker (`Amaranth`, `Arabica`, `Fern`, `GitHub`, `Halcyon`, `Nightshade`, `Sage`); `fern` is the default family (the bootstrap's fallback). Each source has an `id`, a `family` id, a `family_name` (the picker label), an `appearance` (`Light`/`Dark`), a CSS `selector`, a flat `tokens` map covering every contract property, an `overrides` map for per-source token nudges (empty for most sources), and a `fonts` block:
 
 | Source id        | Family (label)        | Appearance | Token strategy                                                                     |
 | ---------------- | --------------------- | ---------- | --------------------------------------------------------------------------------- |
 | `amaranth-light`   | `amaranth` (Amaranth)     | Light      | Clean light base ramp with a violet accent (the renamed Obsidian palette).         |
 | `amaranth-dark`    | `amaranth` (Amaranth)     | Dark       | Dark base ramp with a violet accent (the renamed Obsidian palette).                |
+| `arabica-light`    | `arabica` (Arabica)       | Light      | Creamy latte neutrals with an AnuPpuccin mauve accent and colored headings.         |
+| `arabica-dark`     | `arabica` (Arabica)       | Dark       | Dark-roast espresso neutrals with an AnuPpuccin mauve accent and colored headings.  |
 | `fern-light`       | `fern` (Fern)             | Light      | Default family. Amaranth's light tokens plus a fern-green override cast.            |
 | `fern-dark`        | `fern` (Fern)             | Dark       | Amaranth's dark tokens plus the fern-green overrides.                               |
 | `github-light`     | `github` (GitHub)         | Light      | GitHub's light palette, baked to literal hex (its own system-font stack).          |
@@ -124,7 +126,7 @@ Fonts are **per-theme data**. Each source's `fonts` block carries three CSS font
 - `theme_web_font_hrefs_json()` builds the family → `google` URL map (skipping any family whose `google` is empty) and injects it into the theme bootstrap as `FAMILY_FONTS`.
 - In `theme_bootstrap_script()`, `applyFamilyFont()` runs on every `apply()` (first paint and each switch): it points a single `<link id="leafThemeFont">` at the active family's URL, or removes it for a family that fetches nothing. Because each stack ends in system fallbacks, text is readable before the web font loads and while offline.
 
-Each family declares its own faces — Fern loads **Noto** (Sans / Serif / Sans Mono), Nightshade **Fraunces + Inter + Fira Code**, Halcyon **IBM Plex Sans/Mono**, Amaranth the **Source** family, Sage **Inter + JetBrains Mono**; **GitHub** declares an empty `google`, so it uses the OS's native font stack and fetches nothing. The Content-Security-Policy in `src/assets/app-shell.html` allows `https://fonts.googleapis.com` (the stylesheet) under `style-src` and `https://fonts.gstatic.com` (the woff2 files) under `font-src`.
+Each family declares its own faces — Fern loads **Noto** (Sans / Serif / Sans Mono), Nightshade **Fraunces + Inter + Fira Code**, Halcyon **IBM Plex Sans/Mono**, Amaranth the **Source** family, Sage **Inter + JetBrains Mono**, Arabica **Rubik + JetBrains Mono**; **GitHub** declares an empty `google`, so it uses the OS's native font stack and fetches nothing. The Content-Security-Policy in `src/assets/app-shell.html` allows `https://fonts.googleapis.com` (the stylesheet) under `style-src` and `https://fonts.gstatic.com` (the woff2 files) under `font-src`.
 
 ## Adding a theme
 

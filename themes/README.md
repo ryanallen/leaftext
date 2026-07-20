@@ -5,7 +5,7 @@
 
 Every theme in Leaf Text is plain data — one Markdown file per family, right here in this folder. Because they are Markdown, they render as the color tables below in Leaf itself and at [leaftext.com/themes](https://leaftext.com/themes).
 
-6 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the table is a light-vs-dark preview of the key colors — every family also defines the full ~100-token contract inside its file.
+7 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the table is a light-vs-dark preview of the key colors — every family also defines the full ~100-token contract inside its file.
 
 ## Gallery
 
@@ -25,6 +25,23 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 | Warning    | `#8a6d00` | `#e0de71` |
 | Danger     | `#d3243a` | `#fb464c` |
 | Border     | `#e0e0e0` | `#363636` |
+
+### Arabica
+
+[`arabica.md`](arabica.md) · Heading **Rubik** · Body **Rubik** · Code **JetBrains Mono** · Google Fonts
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#f5ece0` | `#241c17` |
+| Foreground | `#3d2f26` | `#ece0d2` |
+| Heading    | `#8839ef` | `#cba6f7` |
+| Primary    | `#8839ef` | `#cba6f7` |
+| Accent     | `#8839ef` | `#cba6f7` |
+| Link       | `#8839ef` | `#cba6f7` |
+| Success    | `#46671f` | `#b7d38a` |
+| Warning    | `#8a5a12` | `#e8c07a` |
+| Danger     | `#c0392b` | `#e8917f` |
+| Border     | `#dbcab4` | `#3a2d23` |
 
 ### Fern
 

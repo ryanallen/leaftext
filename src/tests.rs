@@ -2289,8 +2289,8 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
     let sources = theme_sources();
 
     assert_theme_sources_cover_contract(sources);
-    // Six families (github, nightshade, amaranth, fern, sage, halcyon), each a light/dark pair.
-    assert_eq!(sources.len(), 12);
+    // Seven families (github, nightshade, amaranth, fern, sage, halcyon, arabica), each a light/dark pair.
+    assert_eq!(sources.len(), 14);
     assert!(sources.iter().any(|source| source.id == "nightshade-dark"));
 
     for source in sources {
@@ -2310,6 +2310,7 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
         theme_families(),
         vec![
             ("amaranth", "Amaranth"),
+            ("arabica", "Arabica"),
             ("fern", "Fern"),
             ("github", "GitHub"),
             ("halcyon", "Halcyon"),
@@ -3582,7 +3583,7 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
     );
     assert_eq!(
         theme_family_ids_json(),
-        r#"["amaranth","fern","github","halcyon","nightshade","sage"]"#
+        r#"["amaranth","arabica","fern","github","halcyon","nightshade","sage"]"#
     );
     assert_contains(
         &html,
