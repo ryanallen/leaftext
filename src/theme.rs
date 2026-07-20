@@ -3,26 +3,6 @@ use std::sync::OnceLock;
 
 use serde::{Deserialize, Serialize};
 
-// The Primer primitive cascade selectors. The github family's tokens are
-// var() refs that resolve inside these blocks; the theme tests use them to
-// locate the right primitive block when checking resolved colors.
-#[allow(dead_code)]
-pub(crate) const PRIMER_LIGHT_SELECTOR: &str = "[data-color-mode=\"light\"][data-light-theme=\"light\"],\n[data-color-mode=\"auto\"][data-light-theme=\"light\"]";
-#[allow(dead_code)]
-pub(crate) const PRIMER_DARK_SELECTOR: &str = "[data-color-mode=\"dark\"][data-dark-theme=\"dark\"],\n[data-color-mode=\"auto\"][data-light-theme=\"dark\"]";
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub(crate) enum ThemeSourceKind {
-    /// Maps semantic tokens onto GitHub Primer CSS primitives (`var(--bgColor-*)`
-    /// etc.); light vs dark resolves through Primer's own `data-color-mode`
-    /// cascade, which the theme bootstrap sets from the resolved appearance.
-    Primer,
-    /// Ships a complete literal palette (hex values), self-contained with no
-    /// Primer dependency. Used by the Dracula and Obsidian families.
-    Literal,
-}
-
 /// The light or dark half of a theme family. A family (GitHub, Dracula, Obsidian)
 /// pairs one of each; the appearance is chosen by the Appearance setting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -56,11 +36,6 @@ pub(crate) struct ThemeSource {
     /// Leaf-owned `data-leaf-theme` (family) and `data-leaf-appearance` attrs the
     /// bootstrap stamps on `:root`.
     pub(crate) selector: &'static str,
-    /// Whether the palette is Primer-backed or literal. Read by the theme tests;
-    /// reserved for the future external theme loader, which must know whether a
-    /// palette depends on the Primer primitives.
-    #[allow(dead_code)]
-    pub(crate) kind: ThemeSourceKind,
     pub(crate) tokens: &'static [(&'static str, &'static str)],
     /// Per-source token replacements layered over `tokens` (and winning over
     /// them), to nudge one palette without forking the shared token map.
@@ -78,7 +53,6 @@ pub(crate) struct ThemeFile {
     pub(crate) family_name: String,
     pub(crate) appearance: Appearance,
     pub(crate) selector: String,
-    pub(crate) kind: ThemeSourceKind,
     pub(crate) tokens: Vec<(String, String)>,
     #[serde(default)]
     pub(crate) overrides: Vec<(String, String)>,
@@ -216,7 +190,6 @@ fn theme_source_from_file(file: ThemeFile) -> ThemeSource {
         family_name: leak_str(file.family_name),
         appearance: file.appearance,
         selector: leak_str(file.selector),
-        kind: file.kind,
         tokens: leak_pairs(file.tokens),
         overrides: leak_pairs(file.overrides),
     }
@@ -393,12 +366,6 @@ pub(crate) fn reading_mode_css() -> &'static str {
 
     READING_MODE_CSS.get_or_init(|| {
         let mut css = String::new();
-        css.push_str(
-            concat!(
-        include_str!("assets/primer-primitives-11.9.0-light.css"),
-        include_str!("assets/primer-primitives-11.9.0-dark.css"),
-            ),
-        );
         css.push_str(&compiled_theme_css());
         css.push_str(
             r#"

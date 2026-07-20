@@ -5,7 +5,6 @@
     "family_name": "Fern",
     "appearance": "light",
     "selector": ":root[data-leaf-theme=\"fern\"][data-leaf-appearance=\"light\"]",
-    "kind": "literal",
     "tokens": [
       [
         "--leaf-app-background",
@@ -541,7 +540,6 @@
     "family_name": "Fern",
     "appearance": "dark",
     "selector": ":root[data-leaf-theme=\"fern\"][data-leaf-appearance=\"dark\"]",
-    "kind": "literal",
     "tokens": [
       [
         "--leaf-app-background",
@@ -1077,291 +1075,290 @@
     "family_name": "GitHub",
     "appearance": "light",
     "selector": ":root[data-leaf-theme=\"github\"][data-leaf-appearance=\"light\"]",
-    "kind": "primer",
     "tokens": [
       [
         "--leaf-app-background",
-        "var(--bgColor-default)"
+        "#ffffff"
       ],
       [
         "--leaf-app-foreground",
-        "var(--fgColor-default)"
+        "#1f2328"
       ],
       [
         "--leaf-app-surface",
-        "var(--bgColor-default)"
+        "#ffffff"
       ],
       [
         "--leaf-app-surface-raised",
-        "var(--bgColor-default)"
+        "#ffffff"
       ],
       [
         "--leaf-app-surface-elevated",
-        "var(--bgColor-default)"
+        "#ffffff"
       ],
       [
         "--leaf-app-surface-muted",
-        "var(--bgColor-muted)"
+        "#f6f8fa"
       ],
       [
         "--leaf-app-surface-sunken",
-        "var(--bgColor-inset)"
+        "#f6f8fa"
       ],
       [
         "--leaf-app-surface-inset",
-        "var(--bgColor-inset)"
+        "#f6f8fa"
       ],
       [
         "--leaf-app-surface-card",
-        "var(--bgColor-default)"
+        "#ffffff"
       ],
       [
         "--leaf-app-border",
-        "var(--borderColor-default)"
+        "#d1d9e0"
       ],
       [
         "--leaf-app-border-strong",
-        "var(--borderColor-emphasis)"
+        "#818b98"
       ],
       [
         "--leaf-app-muted-background",
-        "var(--bgColor-muted)"
+        "#f6f8fa"
       ],
       [
         "--leaf-app-muted-foreground",
-        "var(--fgColor-muted)"
+        "#59636e"
       ],
       [
         "--leaf-app-primary",
-        "var(--button-primary-bgColor-rest)"
+        "#1f883d"
       ],
       [
         "--leaf-app-primary-foreground",
-        "var(--button-primary-fgColor-rest)"
+        "#ffffff"
       ],
       [
         "--leaf-app-secondary",
-        "var(--control-bgColor-rest)"
+        "#f6f8fa"
       ],
       [
         "--leaf-app-secondary-foreground",
-        "var(--control-fgColor-rest)"
+        "#25292e"
       ],
       [
         "--leaf-app-accent",
-        "var(--fgColor-accent)"
+        "#0969da"
       ],
       [
         "--leaf-app-accent-foreground",
-        "var(--fgColor-onEmphasis)"
+        "#ffffff"
       ],
       [
         "--leaf-app-danger",
-        "var(--fgColor-danger)"
+        "#d1242f"
       ],
       [
         "--leaf-app-danger-foreground",
-        "var(--fgColor-onEmphasis)"
+        "#ffffff"
       ],
       [
         "--leaf-app-warning",
-        "var(--fgColor-attention)"
+        "#9a6700"
       ],
       [
         "--leaf-app-warning-foreground",
-        "var(--fgColor-default)"
+        "#1f2328"
       ],
       [
         "--leaf-app-success",
-        "var(--fgColor-success)"
+        "#1a7f37"
       ],
       [
         "--leaf-app-success-foreground",
-        "var(--fgColor-onEmphasis)"
+        "#ffffff"
       ],
       [
         "--leaf-app-done",
-        "var(--fgColor-done)"
+        "#8250df"
       ],
       [
         "--leaf-app-done-foreground",
-        "var(--fgColor-onEmphasis)"
+        "#ffffff"
       ],
       [
         "--leaf-app-link",
-        "var(--fgColor-accent)"
+        "#0969da"
       ],
       [
         "--leaf-app-link-hover",
-        "var(--fgColor-accent)"
+        "#0969da"
       ],
       [
         "--leaf-app-shadow",
-        "var(--shadow-resting-medium)"
+        "0 1px 1px 0 #25292e1a, 0 3px 6px 0 #25292e1f"
       ],
       [
         "--leaf-editor-background",
-        "var(--bgColor-default)"
+        "#ffffff"
       ],
       [
         "--leaf-editor-foreground",
-        "var(--fgColor-default)"
+        "#1f2328"
       ],
       [
         "--leaf-editor-selection-background",
-        "var(--selection-bgColor)"
+        "#0969da33"
       ],
       [
         "--leaf-editor-selection-foreground",
-        "var(--fgColor-default)"
+        "#1f2328"
       ],
       [
         "--leaf-editor-inline-code-background",
-        "var(--bgColor-muted)"
+        "#f6f8fa"
       ],
       [
         "--leaf-editor-inline-code-foreground",
-        "var(--fgColor-default)"
+        "#1f2328"
       ],
       [
         "--leaf-editor-code-background",
-        "var(--bgColor-muted)"
+        "#f6f8fa"
       ],
       [
         "--leaf-editor-code-foreground",
-        "var(--fgColor-default)"
+        "#1f2328"
       ],
       [
         "--leaf-editor-code-border",
-        "var(--borderColor-default)"
+        "#d1d9e0"
       ],
       [
         "--leaf-editor-code-selection-background",
-        "var(--selection-bgColor)"
+        "#0969da33"
       ],
       [
         "--leaf-editor-code-selection-foreground",
-        "var(--fgColor-default)"
+        "#1f2328"
       ],
       [
         "--leaf-markdown-background",
-        "var(--bgColor-default)"
+        "#ffffff"
       ],
       [
         "--leaf-markdown-foreground",
-        "var(--fgColor-default)"
+        "#1f2328"
       ],
       [
         "--leaf-markdown-heading",
-        "var(--fgColor-default)"
+        "#1f2328"
       ],
       [
         "--leaf-markdown-muted-foreground",
-        "var(--fgColor-muted)"
+        "#59636e"
       ],
       [
         "--leaf-markdown-border",
-        "var(--borderColor-default)"
+        "#d1d9e0"
       ],
       [
         "--leaf-markdown-rule",
-        "var(--borderColor-muted)"
+        "#d1d9e0b3"
       ],
       [
         "--leaf-markdown-link",
-        "var(--fgColor-accent)"
+        "#0969da"
       ],
       [
         "--leaf-markdown-link-hover",
-        "var(--fgColor-accent)"
+        "#0969da"
       ],
       [
         "--leaf-markdown-inline-code-background",
-        "var(--bgColor-muted)"
+        "#f6f8fa"
       ],
       [
         "--leaf-markdown-inline-code-foreground",
-        "var(--fgColor-default)"
+        "#1f2328"
       ],
       [
         "--leaf-markdown-blockquote-background",
-        "var(--bgColor-muted)"
+        "#f6f8fa"
       ],
       [
         "--leaf-markdown-blockquote-border",
-        "var(--borderColor-default)"
+        "#d1d9e0"
       ],
       [
         "--leaf-markdown-blockquote-foreground",
-        "var(--fgColor-muted)"
+        "#59636e"
       ],
       [
         "--leaf-markdown-alert-note",
-        "var(--fgColor-accent)"
+        "#0969da"
       ],
       [
         "--leaf-markdown-alert-tip",
-        "var(--fgColor-success)"
+        "#1a7f37"
       ],
       [
         "--leaf-markdown-alert-important",
-        "var(--button-primary-bgColor-rest)"
+        "#1f883d"
       ],
       [
         "--leaf-markdown-alert-warning",
-        "var(--fgColor-attention)"
+        "#9a6700"
       ],
       [
         "--leaf-markdown-alert-caution",
-        "var(--fgColor-danger)"
+        "#d1242f"
       ],
       [
         "--leaf-markdown-alert-done",
-        "var(--fgColor-done)"
+        "#8250df"
       ],
       [
         "--leaf-markdown-badge-background",
-        "var(--control-bgColor-rest)"
+        "#f6f8fa"
       ],
       [
         "--leaf-markdown-badge-foreground",
-        "var(--control-fgColor-rest)"
+        "#25292e"
       ],
       [
         "--leaf-markdown-table-border",
-        "var(--borderColor-default)"
+        "#d1d9e0"
       ],
       [
         "--leaf-markdown-table-header-background",
-        "var(--bgColor-muted)"
+        "#f6f8fa"
       ],
       [
         "--leaf-markdown-thematic-break",
-        "var(--borderColor-muted)"
+        "#d1d9e0b3"
       ],
       [
         "--leaf-markdown-math-inline-background",
-        "var(--control-bgColor-rest)"
+        "#f6f8fa"
       ],
       [
         "--leaf-markdown-keyboard-background",
-        "var(--bgColor-default)"
+        "#ffffff"
       ],
       [
         "--leaf-markdown-keyboard-border",
-        "var(--borderColor-default)"
+        "#d1d9e0"
       ],
       [
         "--leaf-minimap-background",
-        "var(--bgColor-muted)"
+        "#f6f8fa"
       ],
       [
         "--leaf-minimap-border",
-        "var(--borderColor-default)"
+        "#d1d9e0"
       ],
       [
         "--leaf-minimap-viewport-border",
-        "var(--fgColor-accent)"
+        "#0969da"
       ],
       [
         "--leaf-minimap-viewport-background",
@@ -1369,143 +1366,143 @@
       ],
       [
         "--leaf-minimap-heading",
-        "var(--fgColor-done)"
+        "#8250df"
       ],
       [
         "--leaf-minimap-paragraph",
-        "var(--fgColor-muted)"
+        "#59636e"
       ],
       [
         "--leaf-minimap-blank",
-        "var(--borderColor-default)"
+        "#d1d9e0"
       ],
       [
         "--leaf-minimap-list",
-        "var(--fgColor-success)"
+        "#1a7f37"
       ],
       [
         "--leaf-minimap-blockquote",
-        "var(--fgColor-accent)"
+        "#0969da"
       ],
       [
         "--leaf-minimap-code",
-        "var(--fgColor-severe)"
+        "#bc4c00"
       ],
       [
         "--leaf-navigation-border",
-        "var(--borderColor-default)"
+        "#d1d9e0"
       ],
       [
         "--leaf-navigation-button-background",
-        "var(--button-primary-bgColor-rest)"
+        "#1f883d"
       ],
       [
         "--leaf-navigation-button-foreground",
-        "var(--button-primary-fgColor-rest)"
+        "#ffffff"
       ],
       [
         "--leaf-navigation-button-hover-background",
-        "var(--button-primary-bgColor-hover)"
+        "#1c8139"
       ],
       [
         "--leaf-navigation-button-disabled-background",
-        "var(--control-bgColor-disabled)"
+        "#eff2f5"
       ],
       [
         "--leaf-navigation-button-disabled-foreground",
-        "var(--control-fgColor-disabled)"
+        "#818b98"
       ],
       [
         "--leaf-navigation-recent-border",
-        "var(--borderColor-default)"
+        "#d1d9e0"
       ],
       [
         "--leaf-navigation-recent-item-foreground",
-        "var(--fgColor-default)"
+        "#1f2328"
       ],
       [
         "--leaf-navigation-recent-item-hover-foreground",
-        "var(--button-primary-bgColor-rest)"
+        "#1f883d"
       ],
       [
         "--leaf-focus-ring",
-        "var(--focus-outlineColor)"
+        "#0969da"
       ],
       [
         "--leaf-focus-selection-background",
-        "var(--selection-bgColor)"
+        "#0969da33"
       ],
       [
         "--leaf-focus-selection-foreground",
-        "var(--fgColor-default)"
+        "#1f2328"
       ],
       [
         "--leaf-syntax-background",
-        "var(--bgColor-muted)"
+        "#f6f8fa"
       ],
       [
         "--leaf-syntax-foreground",
-        "var(--fgColor-default)"
+        "#1f2328"
       ],
       [
         "--leaf-syntax-comment",
-        "var(--prettylights-syntax-comment)"
+        "#59636e"
       ],
       [
         "--leaf-syntax-keyword",
-        "var(--prettylights-syntax-keyword)"
+        "#cf222e"
       ],
       [
         "--leaf-syntax-string",
-        "var(--prettylights-syntax-string)"
+        "#0a3069"
       ],
       [
         "--leaf-syntax-number",
-        "var(--prettylights-syntax-constant)"
+        "#0550ae"
       ],
       [
         "--leaf-syntax-function",
-        "var(--prettylights-syntax-entity)"
+        "#6639ba"
       ],
       [
         "--leaf-syntax-variable",
-        "var(--prettylights-syntax-variable)"
+        "#953800"
       ],
       [
         "--leaf-syntax-type",
-        "var(--prettylights-syntax-entity)"
+        "#6639ba"
       ],
       [
         "--leaf-syntax-operator",
-        "var(--prettylights-syntax-keyword)"
+        "#cf222e"
       ],
       [
         "--leaf-syntax-punctuation",
-        "var(--fgColor-muted)"
+        "#59636e"
       ],
       [
         "--leaf-syntax-inserted",
-        "var(--prettylights-syntax-markup-inserted-text)"
+        "#116329"
       ],
       [
         "--leaf-syntax-inserted-background",
-        "var(--prettylights-syntax-markup-inserted-bg)"
+        "#dafbe1"
       ],
       [
         "--leaf-syntax-deleted",
-        "var(--prettylights-syntax-markup-deleted-text)"
+        "#82071e"
       ],
       [
         "--leaf-syntax-deleted-background",
-        "var(--prettylights-syntax-markup-deleted-bg)"
+        "#ffebe9"
       ],
       [
         "--leaf-syntax-changed",
-        "var(--prettylights-syntax-markup-changed-text)"
+        "#953800"
       ],
       [
         "--leaf-syntax-changed-background",
-        "var(--prettylights-syntax-markup-changed-bg)"
+        "#ffd8b5"
       ]
     ],
     "overrides": []
@@ -1516,291 +1513,290 @@
     "family_name": "GitHub",
     "appearance": "dark",
     "selector": ":root[data-leaf-theme=\"github\"][data-leaf-appearance=\"dark\"]",
-    "kind": "primer",
     "tokens": [
       [
         "--leaf-app-background",
-        "var(--bgColor-default)"
+        "#0d1117"
       ],
       [
         "--leaf-app-foreground",
-        "var(--fgColor-default)"
+        "#f0f6fc"
       ],
       [
         "--leaf-app-surface",
-        "var(--bgColor-default)"
+        "#0d1117"
       ],
       [
         "--leaf-app-surface-raised",
-        "var(--bgColor-default)"
+        "#0d1117"
       ],
       [
         "--leaf-app-surface-elevated",
-        "var(--bgColor-default)"
+        "#0d1117"
       ],
       [
         "--leaf-app-surface-muted",
-        "var(--bgColor-muted)"
+        "#151b23"
       ],
       [
         "--leaf-app-surface-sunken",
-        "var(--bgColor-inset)"
+        "#010409"
       ],
       [
         "--leaf-app-surface-inset",
-        "var(--bgColor-inset)"
+        "#010409"
       ],
       [
         "--leaf-app-surface-card",
-        "var(--bgColor-default)"
+        "#0d1117"
       ],
       [
         "--leaf-app-border",
-        "var(--borderColor-default)"
+        "#3d444d"
       ],
       [
         "--leaf-app-border-strong",
-        "var(--borderColor-emphasis)"
+        "#656c76"
       ],
       [
         "--leaf-app-muted-background",
-        "var(--bgColor-muted)"
+        "#151b23"
       ],
       [
         "--leaf-app-muted-foreground",
-        "var(--fgColor-muted)"
+        "#9198a1"
       ],
       [
         "--leaf-app-primary",
-        "var(--button-primary-bgColor-rest)"
+        "#238636"
       ],
       [
         "--leaf-app-primary-foreground",
-        "var(--button-primary-fgColor-rest)"
+        "#ffffff"
       ],
       [
         "--leaf-app-secondary",
-        "var(--control-bgColor-rest)"
+        "#212830"
       ],
       [
         "--leaf-app-secondary-foreground",
-        "var(--control-fgColor-rest)"
+        "#f0f6fc"
       ],
       [
         "--leaf-app-accent",
-        "var(--fgColor-accent)"
+        "#4493f8"
       ],
       [
         "--leaf-app-accent-foreground",
-        "var(--fgColor-onEmphasis)"
+        "#ffffff"
       ],
       [
         "--leaf-app-danger",
-        "var(--fgColor-danger)"
+        "#f85149"
       ],
       [
         "--leaf-app-danger-foreground",
-        "var(--fgColor-onEmphasis)"
+        "#ffffff"
       ],
       [
         "--leaf-app-warning",
-        "var(--fgColor-attention)"
+        "#d29922"
       ],
       [
         "--leaf-app-warning-foreground",
-        "var(--fgColor-default)"
+        "#f0f6fc"
       ],
       [
         "--leaf-app-success",
-        "var(--fgColor-success)"
+        "#3fb950"
       ],
       [
         "--leaf-app-success-foreground",
-        "var(--fgColor-onEmphasis)"
+        "#ffffff"
       ],
       [
         "--leaf-app-done",
-        "var(--fgColor-done)"
+        "#ab7df8"
       ],
       [
         "--leaf-app-done-foreground",
-        "var(--fgColor-onEmphasis)"
+        "#ffffff"
       ],
       [
         "--leaf-app-link",
-        "var(--fgColor-accent)"
+        "#4493f8"
       ],
       [
         "--leaf-app-link-hover",
-        "var(--fgColor-accent)"
+        "#4493f8"
       ],
       [
         "--leaf-app-shadow",
-        "var(--shadow-resting-medium)"
+        "0 1px 1px 0 #01040966, 0 3px 6px 0 #010409cc"
       ],
       [
         "--leaf-editor-background",
-        "var(--bgColor-default)"
+        "#0d1117"
       ],
       [
         "--leaf-editor-foreground",
-        "var(--fgColor-default)"
+        "#f0f6fc"
       ],
       [
         "--leaf-editor-selection-background",
-        "var(--selection-bgColor)"
+        "#1f6febb3"
       ],
       [
         "--leaf-editor-selection-foreground",
-        "var(--fgColor-default)"
+        "#f0f6fc"
       ],
       [
         "--leaf-editor-inline-code-background",
-        "var(--bgColor-muted)"
+        "#151b23"
       ],
       [
         "--leaf-editor-inline-code-foreground",
-        "var(--fgColor-default)"
+        "#f0f6fc"
       ],
       [
         "--leaf-editor-code-background",
-        "var(--bgColor-muted)"
+        "#151b23"
       ],
       [
         "--leaf-editor-code-foreground",
-        "var(--fgColor-default)"
+        "#f0f6fc"
       ],
       [
         "--leaf-editor-code-border",
-        "var(--borderColor-default)"
+        "#3d444d"
       ],
       [
         "--leaf-editor-code-selection-background",
-        "var(--selection-bgColor)"
+        "#1f6febb3"
       ],
       [
         "--leaf-editor-code-selection-foreground",
-        "var(--fgColor-default)"
+        "#f0f6fc"
       ],
       [
         "--leaf-markdown-background",
-        "var(--bgColor-default)"
+        "#0d1117"
       ],
       [
         "--leaf-markdown-foreground",
-        "var(--fgColor-default)"
+        "#f0f6fc"
       ],
       [
         "--leaf-markdown-heading",
-        "var(--fgColor-default)"
+        "#f0f6fc"
       ],
       [
         "--leaf-markdown-muted-foreground",
-        "var(--fgColor-muted)"
+        "#9198a1"
       ],
       [
         "--leaf-markdown-border",
-        "var(--borderColor-default)"
+        "#3d444d"
       ],
       [
         "--leaf-markdown-rule",
-        "var(--borderColor-muted)"
+        "#3d444db3"
       ],
       [
         "--leaf-markdown-link",
-        "var(--fgColor-accent)"
+        "#4493f8"
       ],
       [
         "--leaf-markdown-link-hover",
-        "var(--fgColor-accent)"
+        "#4493f8"
       ],
       [
         "--leaf-markdown-inline-code-background",
-        "var(--bgColor-muted)"
+        "#151b23"
       ],
       [
         "--leaf-markdown-inline-code-foreground",
-        "var(--fgColor-default)"
+        "#f0f6fc"
       ],
       [
         "--leaf-markdown-blockquote-background",
-        "var(--bgColor-muted)"
+        "#151b23"
       ],
       [
         "--leaf-markdown-blockquote-border",
-        "var(--borderColor-default)"
+        "#3d444d"
       ],
       [
         "--leaf-markdown-blockquote-foreground",
-        "var(--fgColor-muted)"
+        "#9198a1"
       ],
       [
         "--leaf-markdown-alert-note",
-        "var(--fgColor-accent)"
+        "#4493f8"
       ],
       [
         "--leaf-markdown-alert-tip",
-        "var(--fgColor-success)"
+        "#3fb950"
       ],
       [
         "--leaf-markdown-alert-important",
-        "var(--button-primary-bgColor-rest)"
+        "#238636"
       ],
       [
         "--leaf-markdown-alert-warning",
-        "var(--fgColor-attention)"
+        "#d29922"
       ],
       [
         "--leaf-markdown-alert-caution",
-        "var(--fgColor-danger)"
+        "#f85149"
       ],
       [
         "--leaf-markdown-alert-done",
-        "var(--fgColor-done)"
+        "#ab7df8"
       ],
       [
         "--leaf-markdown-badge-background",
-        "var(--control-bgColor-rest)"
+        "#212830"
       ],
       [
         "--leaf-markdown-badge-foreground",
-        "var(--control-fgColor-rest)"
+        "#f0f6fc"
       ],
       [
         "--leaf-markdown-table-border",
-        "var(--borderColor-default)"
+        "#3d444d"
       ],
       [
         "--leaf-markdown-table-header-background",
-        "var(--bgColor-muted)"
+        "#151b23"
       ],
       [
         "--leaf-markdown-thematic-break",
-        "var(--borderColor-muted)"
+        "#3d444db3"
       ],
       [
         "--leaf-markdown-math-inline-background",
-        "var(--control-bgColor-rest)"
+        "#212830"
       ],
       [
         "--leaf-markdown-keyboard-background",
-        "var(--bgColor-default)"
+        "#0d1117"
       ],
       [
         "--leaf-markdown-keyboard-border",
-        "var(--borderColor-default)"
+        "#3d444d"
       ],
       [
         "--leaf-minimap-background",
-        "var(--bgColor-muted)"
+        "#151b23"
       ],
       [
         "--leaf-minimap-border",
-        "var(--borderColor-default)"
+        "#3d444d"
       ],
       [
         "--leaf-minimap-viewport-border",
-        "var(--fgColor-accent)"
+        "#4493f8"
       ],
       [
         "--leaf-minimap-viewport-background",
@@ -1808,143 +1804,143 @@
       ],
       [
         "--leaf-minimap-heading",
-        "var(--fgColor-done)"
+        "#ab7df8"
       ],
       [
         "--leaf-minimap-paragraph",
-        "var(--fgColor-muted)"
+        "#9198a1"
       ],
       [
         "--leaf-minimap-blank",
-        "var(--borderColor-default)"
+        "#3d444d"
       ],
       [
         "--leaf-minimap-list",
-        "var(--fgColor-success)"
+        "#3fb950"
       ],
       [
         "--leaf-minimap-blockquote",
-        "var(--fgColor-accent)"
+        "#4493f8"
       ],
       [
         "--leaf-minimap-code",
-        "var(--fgColor-severe)"
+        "#db6d28"
       ],
       [
         "--leaf-navigation-border",
-        "var(--borderColor-default)"
+        "#3d444d"
       ],
       [
         "--leaf-navigation-button-background",
-        "var(--button-primary-bgColor-rest)"
+        "#238636"
       ],
       [
         "--leaf-navigation-button-foreground",
-        "var(--button-primary-fgColor-rest)"
+        "#ffffff"
       ],
       [
         "--leaf-navigation-button-hover-background",
-        "var(--button-primary-bgColor-hover)"
+        "#29903b"
       ],
       [
         "--leaf-navigation-button-disabled-background",
-        "var(--control-bgColor-disabled)"
+        "#212830"
       ],
       [
         "--leaf-navigation-button-disabled-foreground",
-        "var(--control-fgColor-disabled)"
+        "#656c76"
       ],
       [
         "--leaf-navigation-recent-border",
-        "var(--borderColor-default)"
+        "#3d444d"
       ],
       [
         "--leaf-navigation-recent-item-foreground",
-        "var(--fgColor-default)"
+        "#f0f6fc"
       ],
       [
         "--leaf-navigation-recent-item-hover-foreground",
-        "var(--button-primary-bgColor-rest)"
+        "#238636"
       ],
       [
         "--leaf-focus-ring",
-        "var(--focus-outlineColor)"
+        "#1f6feb"
       ],
       [
         "--leaf-focus-selection-background",
-        "var(--selection-bgColor)"
+        "#1f6febb3"
       ],
       [
         "--leaf-focus-selection-foreground",
-        "var(--fgColor-default)"
+        "#f0f6fc"
       ],
       [
         "--leaf-syntax-background",
-        "var(--bgColor-muted)"
+        "#151b23"
       ],
       [
         "--leaf-syntax-foreground",
-        "var(--fgColor-default)"
+        "#f0f6fc"
       ],
       [
         "--leaf-syntax-comment",
-        "var(--prettylights-syntax-comment)"
+        "#9198a1"
       ],
       [
         "--leaf-syntax-keyword",
-        "var(--prettylights-syntax-keyword)"
+        "#ff7b72"
       ],
       [
         "--leaf-syntax-string",
-        "var(--prettylights-syntax-string)"
+        "#a5d6ff"
       ],
       [
         "--leaf-syntax-number",
-        "var(--prettylights-syntax-constant)"
+        "#79c0ff"
       ],
       [
         "--leaf-syntax-function",
-        "var(--prettylights-syntax-entity)"
+        "#d2a8ff"
       ],
       [
         "--leaf-syntax-variable",
-        "var(--prettylights-syntax-variable)"
+        "#ffa657"
       ],
       [
         "--leaf-syntax-type",
-        "var(--prettylights-syntax-entity)"
+        "#d2a8ff"
       ],
       [
         "--leaf-syntax-operator",
-        "var(--prettylights-syntax-keyword)"
+        "#ff7b72"
       ],
       [
         "--leaf-syntax-punctuation",
-        "var(--fgColor-muted)"
+        "#9198a1"
       ],
       [
         "--leaf-syntax-inserted",
-        "var(--prettylights-syntax-markup-inserted-text)"
+        "#aff5b4"
       ],
       [
         "--leaf-syntax-inserted-background",
-        "var(--prettylights-syntax-markup-inserted-bg)"
+        "#033a16"
       ],
       [
         "--leaf-syntax-deleted",
-        "var(--prettylights-syntax-markup-deleted-text)"
+        "#ffdcd7"
       ],
       [
         "--leaf-syntax-deleted-background",
-        "var(--prettylights-syntax-markup-deleted-bg)"
+        "#67060c"
       ],
       [
         "--leaf-syntax-changed",
-        "var(--prettylights-syntax-markup-changed-text)"
+        "#ffdfb6"
       ],
       [
         "--leaf-syntax-changed-background",
-        "var(--prettylights-syntax-markup-changed-bg)"
+        "#5a1e02"
       ]
     ],
     "overrides": [
@@ -2008,7 +2004,6 @@
     "family_name": "Dracula",
     "appearance": "light",
     "selector": ":root[data-leaf-theme=\"dracula\"][data-leaf-appearance=\"light\"]",
-    "kind": "literal",
     "tokens": [
       [
         "--leaf-app-background",
@@ -2447,7 +2442,6 @@
     "family_name": "Dracula",
     "appearance": "dark",
     "selector": ":root[data-leaf-theme=\"dracula\"][data-leaf-appearance=\"dark\"]",
-    "kind": "literal",
     "tokens": [
       [
         "--leaf-app-background",
@@ -2886,7 +2880,6 @@
     "family_name": "Obsidian",
     "appearance": "light",
     "selector": ":root[data-leaf-theme=\"obsidian\"][data-leaf-appearance=\"light\"]",
-    "kind": "literal",
     "tokens": [
       [
         "--leaf-app-background",
@@ -3325,7 +3318,6 @@
     "family_name": "Obsidian",
     "appearance": "dark",
     "selector": ":root[data-leaf-theme=\"obsidian\"][data-leaf-appearance=\"dark\"]",
-    "kind": "literal",
     "tokens": [
       [
         "--leaf-app-background",
@@ -3764,7 +3756,6 @@
     "family_name": "Græy",
     "appearance": "light",
     "selector": ":root[data-leaf-theme=\"graey\"][data-leaf-appearance=\"light\"]",
-    "kind": "literal",
     "tokens": [
       [
         "--leaf-app-background",
@@ -4392,7 +4383,6 @@
     "family_name": "Græy",
     "appearance": "dark",
     "selector": ":root[data-leaf-theme=\"graey\"][data-leaf-appearance=\"dark\"]",
-    "kind": "literal",
     "tokens": [
       [
         "--leaf-app-background",

@@ -1022,30 +1022,21 @@ fn highlighter_boundary_escapes_when_requested_language_has_no_syntax() {
 fn css_token(css: &str, theme: ResolvedTheme, name: &str) -> Rgb {
     let leaf_alias_block = css_block(css, ":root {");
     let mut blocks = vec![leaf_alias_block];
-    // The `:root` aliases point at `--leaf-*` tokens defined in the github
-    // family block, which in turn point at Primer primitives in the color-mode
-    // block. Load both so the var() chain resolves for the default theme.
-    match theme {
+    // The `:root` aliases point at `--leaf-*` tokens defined in the github family
+    // block, which hold concrete hex now (no Primer indirection). Load it so the
+    // var() chain resolves for the default theme.
+    let family_block = match theme {
         ResolvedTheme::Light => {
-            blocks.extend(css_blocks(
-                css,
-                r#":root[data-leaf-theme="github"][data-leaf-appearance="light"] {"#,
-            ));
-            blocks.extend(css_blocks(css, &format!("{PRIMER_LIGHT_SELECTOR} {{")));
+            r#":root[data-leaf-theme="github"][data-leaf-appearance="light"] {"#
         }
-        ResolvedTheme::Dark => {
-            blocks.extend(css_blocks(
-                css,
-                r#":root[data-leaf-theme="github"][data-leaf-appearance="dark"] {"#,
-            ));
-            blocks.extend(css_blocks(css, &format!("{PRIMER_DARK_SELECTOR} {{")));
-        }
+        ResolvedTheme::Dark => r#":root[data-leaf-theme="github"][data-leaf-appearance="dark"] {"#,
     };
+    blocks.extend(css_blocks(css, family_block));
     let value = css_token_value(&blocks, name);
 
     parse_hex_color(&value)
         .or_else(|| {
-            let background = css_token_value(&blocks, "--bgColor-default");
+            let background = css_token_value(&blocks, "--leaf-app-background");
             parse_hex_color(&background)
                 .and_then(|background| parse_hex_color_with_alpha(&value, background))
         })
@@ -1053,17 +1044,7 @@ fn css_token(css: &str, theme: ResolvedTheme, name: &str) -> Rgb {
 }
 
 fn css_token_for_source(css: &str, source: &ThemeSource, name: &str) -> Rgb {
-    let mut blocks = css_blocks(css, &format!("{} {{", source.selector));
-    if source.kind == ThemeSourceKind::Primer {
-        // The github family's tokens are var() refs into the Primer primitive
-        // cascade, so pull in the matching primitive block to resolve them.
-        let selector = match source.id {
-            "github-light" => PRIMER_LIGHT_SELECTOR,
-            "github-dark" => PRIMER_DARK_SELECTOR,
-            _ => source.selector,
-        };
-        blocks.extend(css_blocks(css, &format!("{selector} {{")));
-    }
+    let blocks = css_blocks(css, &format!("{} {{", source.selector));
     let value = css_token_value(&blocks, name);
 
     parse_hex_color(&value)
@@ -1945,20 +1926,6 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
         "--link-hover:",
         "--selection:",
         "--focus-ring:",
-        "--bgColor-default:",
-        "--bgColor-muted:",
-        "--fgColor-default:",
-        "--fgColor-muted:",
-        "--fgColor-accent:",
-        "--fgColor-success:",
-        "--fgColor-attention:",
-        "--fgColor-danger:",
-        "--fgColor-done:",
-        "--borderColor-default:",
-        "--borderColor-muted:",
-        "--control-bgColor-rest:",
-        "--button-primary-bgColor-rest:",
-        "--focus-outlineColor:",
         "--shadow:",
         "--app-background:",
         "--app-foreground:",
@@ -2032,26 +1999,12 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
         !css.contains("@font-face") && !css.contains("data:font/woff2"),
         "reading-mode CSS must not embed bundled font faces"
     );
-    assert_contains(
-        css,
-        r#"[data-color-mode="light"][data-light-theme="light"]"#,
-    );
-    assert_contains(css, r#"[data-color-mode="auto"][data-light-theme="light"]"#);
-    assert_contains(css, r#"[data-color-mode="dark"][data-dark-theme="dark"]"#);
-    assert_contains(
-        css,
-        r#"[data-color-mode][data-color-mode="auto"][data-dark-theme="dark"]"#,
-    );
-    assert_contains(css, "--bgColor-default: var(--base-color-neutral-0);");
-    assert_contains(css, "--fgColor-default: var(--base-color-neutral-13);");
-    assert_contains(css, "--borderColor-default: var(--base-color-neutral-6);");
-    assert_contains(css, "--fgColor-accent: var(--base-color-blue-5);");
-    assert_contains(css, "--fgColor-success: var(--base-color-green-5);");
-    assert_contains(css, "--fgColor-attention: var(--base-color-yellow-5);");
-    assert_contains(css, "--fgColor-danger:");
-    assert_contains(css, "--fgColor-done: var(--base-color-purple-5);");
-    assert_contains(css, "--prettylights-syntax-comment:");
-    assert_contains(css, "--prettylights-syntax-markup-inserted-text:");
+    // The Primer primitive cascade is gone: every theme, github included, is now
+    // a self-contained literal palette, so the compiled CSS carries no Primer
+    // primitive blocks or `var(--bgColor-*)` indirection.
+    assert!(!css.contains("--base-color-neutral-0"));
+    assert!(!css.contains("var(--bgColor-default)"));
+    assert!(!css.contains("var(--prettylights-syntax-comment)"));
     assert_contains(css, "/* Leaf semantic theme compiler output. */");
     assert_contains(css, "--leaf-theme-source: github-light;");
     assert_contains(css, "--leaf-theme-source: github-dark;");
@@ -2063,17 +2016,12 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
         css,
         r#":root[data-leaf-theme="dracula"][data-leaf-appearance="dark"]"#,
     );
-    assert_contains(css, "--leaf-app-background: var(--bgColor-default);");
-    assert_contains(
-        css,
-        "--leaf-syntax-comment: var(--prettylights-syntax-comment);",
-    );
+    // GitHub's tokens are concrete hex now, like every other family.
+    assert_contains(css, "--leaf-app-background: #ffffff;");
+    assert_contains(css, "--leaf-syntax-comment: #59636e;");
     assert_contains(css, "--surface-page: var(--leaf-markdown-background);");
     assert_contains(css, "--syntax-comment: var(--leaf-syntax-comment);");
-    assert_contains(
-        css,
-        "--leaf-syntax-inserted: var(--prettylights-syntax-markup-inserted-text);",
-    );
+    assert_contains(css, "--leaf-syntax-inserted: #116329;");
     assert_contains(css, "--syntax-inserted: var(--leaf-syntax-inserted);");
     assert_contains(css, "--syntax-inserted-bg:");
     assert_contains(css, "--syntax-deleted-bg:");
