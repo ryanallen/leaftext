@@ -2464,6 +2464,49 @@ fn theme_compiler_gates_readable_pairs_for_every_source() {
 }
 
 #[test]
+fn theme_compiler_gates_interactive_chrome_contrast() {
+    // Icons/controls on filled backgrounds, incl. hover. WCAG 1.4.11 gates non-text
+    // contrast at 3:1 (text is 4.5:1). The tab-close hover regressed here once (white
+    // icon on a light accent), so gate every theme's chrome to catch that class.
+    let css = reading_mode_css();
+
+    for source in theme_sources() {
+        for (foreground, background) in [
+            // Filled action buttons and their hover state (the tab close X reuses
+            // the action foreground on the action hover background).
+            ("--leaf-primary-foreground", "--leaf-primary"),
+            (
+                "--leaf-primary-foreground",
+                "--leaf-navigation-button-hover-background",
+            ),
+            (
+                "--leaf-navigation-button-foreground",
+                "--leaf-navigation-button-background",
+            ),
+            (
+                "--leaf-navigation-button-foreground",
+                "--leaf-navigation-button-hover-background",
+            ),
+            (
+                "--leaf-markdown-badge-foreground",
+                "--leaf-markdown-badge-background",
+            ),
+            ("--leaf-secondary-foreground", "--leaf-secondary"),
+        ] {
+            let ratio = contrast_ratio(
+                css_token_for_source(css, source, foreground),
+                css_token_for_source(css, source, background),
+            );
+            assert!(
+                ratio >= 3.0,
+                "expected {} {foreground} on {background} contrast {ratio:.2} to be at least 3.0",
+                source.id
+            );
+        }
+    }
+}
+
+#[test]
 fn app_shell_renders_interactive_document_minimap() {
     let html = app_shell_html();
 
@@ -3667,7 +3710,7 @@ fn app_shell_keeps_settings_menu_keyboard_and_pointer_polish() {
         "summary:focus-visible",
         ".icon-button {",
         "place-items: center;",
-        "min-width: 34px;",
+        "min-width: 28px;",
     ] {
         assert_contains(css, expected);
     }

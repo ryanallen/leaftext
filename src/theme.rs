@@ -404,6 +404,9 @@ pub(crate) fn reading_mode_css() -> &'static str {
             r#"
 :root {
   color-scheme: light dark;
+  /* App bar height, shared by the bar itself and everything that offsets content
+     below the fixed bar (document padding, library pane, minimap). */
+  --app-bar-height: 40px;
   --surface-page: var(--leaf-markdown-background);
   --surface-raised: var(--leaf-surface-raised);
   --surface-card: var(--leaf-surface-card);
@@ -627,14 +630,14 @@ body {
   right: 0;
   z-index: 10;
   display: grid;
-  /* Three zones: a left lead sized to the library rail (so tabs begin at the
-     library's right edge and get pushed when it resizes), the tab strip, and the
-     app actions. Segments own their own inset padding so the lead's right edge
-     lands exactly on the rail boundary. */
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  /* Zones: a left lead sized to the library rail (so tabs begin at the library's
+     right edge and get pushed when it resizes), the tab strip, the app actions,
+     and — on frameless Windows — the custom window controls. The last column
+     collapses to 0 when the controls are hidden (native-decoration platforms). */
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 0;
   align-items: center;
-  height: 56px;
+  height: var(--app-bar-height);
   padding: 0;
   /* Two stacked background layers: a fine dithered dot grid on top for a rough,
      old-cassette texture (a pixel-ish dark dot every 2px), over the frosted
@@ -680,17 +683,22 @@ body {
   /* Never let the rail clip the brand + history controls: floor the zone at their
      natural width when the library is narrow. */
   min-width: fit-content;
-  padding: 0 16px 0 22px;
+  /* Left inset matches the library header's 12px so the logo lines up with the
+     GRAPH/search controls directly below it. */
+  padding: 0 16px 0 12px;
 }
 .app-bar:not(.has-rail) .app-bar-lead {
   /* Library closed: no rail to align to, so the lead is just its controls. */
   width: auto;
 }
 .brand {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   display: block;
   flex-shrink: 0;
+  /* The logomark is an inline SVG filled with currentColor, so it takes the
+     theme's primary color and recolors whenever the theme changes. */
+  color: var(--primary);
 }
 .brand-button {
   display: inline-flex;
@@ -825,7 +833,9 @@ body {
 .tab-close:hover {
   background: var(--app-action-hover-background);
   border-color: transparent;
-  color: var(--app-foreground);
+  /* The contrast color that pairs with the action background — white icons on a
+     light accent (Fern green, Dracula/Obsidian lavender) were unreadable. */
+  color: var(--app-action-foreground);
 }
 .history-actions {
   display: flex;
@@ -838,6 +848,45 @@ body {
   align-items: center;
   /* Header no longer pads itself; keep the actions inset from the window edge. */
   padding-right: 22px;
+}
+/* Custom window controls for frameless windows (Windows). Hidden until the
+   frontend reveals them; they sit flush in the top-right corner and act as the
+   native minimize/maximize/close buttons, since there's no OS title bar. */
+.window-controls {
+  display: flex;
+  align-self: stretch;
+  margin-left: 2px;
+}
+.window-control {
+  width: 46px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  /* Square, full-bleed hover fills (overriding the global button radius) so they
+     read as native caption buttons; the window's own rounded top-right corner
+     clips the close button's fill to the corner. */
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.window-control svg {
+  width: 12px;
+  height: 12px;
+}
+.window-control:hover {
+  background: var(--surface-muted);
+  color: var(--foreground);
+}
+.window-control-close:hover {
+  background: #e81123;
+  color: #ffffff;
+}
+/* Frameless: the controls own the right edge, so the actions group trades its
+   wide inset for a small gap before the window buttons. */
+.frameless .app-actions {
+  padding-right: 10px;
 }
 .context-menu {
   position: fixed;
@@ -1019,14 +1068,14 @@ button {
 .icon-button {
   display: inline-grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
   padding: 0;
 }
 .icon-button svg {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   pointer-events: none;
 }
 /* Rests muted like the other secondary toolbar icons, greens on hover. */
@@ -1180,7 +1229,7 @@ summary:focus-visible {
      .library-header). The pane itself doesn't scroll or clip; the inner
      .library-scroll owns the scroll, and leaving it unclipped lets the view
      dropdown open past its edge. */
-  --library-app-bar: 56px;
+  --library-app-bar: var(--app-bar-height);
   --library-header-height: 40px;
   position: relative;
   height: 100vh;
@@ -1632,9 +1681,9 @@ body.library-resizing {
   /* The reader pins its own scroll anchor across re-renders; the browser's
      native scroll anchoring fights that and causes transient jumps. */
   overflow-anchor: none;
-  padding-top: 56px;
+  padding-top: var(--app-bar-height);
   position: relative;
-  scroll-padding-top: 56px;
+  scroll-padding-top: var(--app-bar-height);
   scrollbar-width: none;
 }
 .reader-shell::-webkit-scrollbar {
@@ -1653,7 +1702,7 @@ body.library-resizing {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 56px;
+  padding-top: var(--app-bar-height);
   pointer-events: none;
   background: color-mix(in srgb, var(--preview-background) 62%, transparent);
   z-index: 6;
@@ -1738,7 +1787,7 @@ body.library-resizing {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  margin-top: 56px;
+  margin-top: var(--app-bar-height);
   padding-top: 24px;
   border-top: 1px solid var(--reading-rule);
 }
@@ -2574,7 +2623,7 @@ body.library-resizing {
   min-width: 0;
   margin-right: var(--minimap-width);
   position: relative;
-  min-height: calc(100vh - 56px);
+  min-height: calc(100vh - var(--app-bar-height));
 }
 /* Here the document reserves the rail's space with margin, so the rail sits
    flush at the cell edge (the reading view bleeds it across padding instead). */

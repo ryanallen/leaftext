@@ -6,15 +6,15 @@ From the user side, themes are simple: open the theme picker, tap a family, pick
 
 ## Families
 
-Pick a family in the theme picker. Five ship, with **Fern** as the default:
+Pick a family in the theme picker. Five ship, listed alphabetically, with **Fern** as the default:
 
 | Family | Palette |
 | --- | --- |
-| Fern | Default. An Obsidian-based palette with a fern-green cast |
-| GitHub | GitHub Primer light/dark primitives |
 | Dracula | The classic Dracula palette (light "Alucard" and dark) |
-| Obsidian | Obsidian's default light/dark base ramps with a violet accent |
+| Fern | **Default.** An Obsidian-based palette with a fern-green cast |
+| GitHub | GitHub's light/dark palette, in its own system-font stack |
 | Græy | An Obsidian-based neutral greyscale palette |
+| Obsidian | Obsidian's default light/dark base ramps with a violet accent |
 
 A sixth picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
 
@@ -75,21 +75,21 @@ If a theme source misses one required token, leaftext fails the contract check i
 
 ## Add your own
 
-The theme picker links to the project on GitHub for making your own theme. A theme is pure data — a map of contract tokens to values plus an optional font — so it can be validated against the contract without injecting third-party CSS. See [Theming → Adding a theme family](../02-development/04-theming.md#adding-a-theme-family) for how families are defined today and where community themes are headed.
+The theme picker links to the project on GitHub for making your own theme. A theme is pure data — a map of contract tokens to values plus a font block — authored as a file under `themes/` and compiled into the bundle, so it can be validated against the contract without injecting third-party CSS. See [Theming → Adding a theme](../02-development/04-theming.md#adding-a-theme) for the full recipe.
 
 ## CSS
 
 The compiled stylesheet is assembled in this order:
 
-1. Primer light/dark primitives
-2. Compiled `--leaf-*` theme mappings
+1. Compiled `--leaf-*` theme mappings (each family's palette, plus its font-family stacks)
+2. The `:root` alias layer — the radius/shadow scales and the short component names the UI consumes
 3. App CSS for layout and components
 
-Fonts are not part of this block — they load separately from Google Fonts per the active theme. The ordering keeps one stable semantic layer so the app can swap themes quickly.
+Every palette is pure data, compiled from [`themes.json`](../02-development/04-theming.md#palettes-are-data-themesjson); the font *files* still load separately from Google Fonts per the active theme. The ordering keeps one stable semantic layer so the app can swap themes quickly.
 
 ## Windows
 
-On Windows, leaftext also repaints the native title bar to match the active theme where the OS allows it. The title bar is painted the exact page color so it reads as part of the background in every theme, with its text color chosen by the background's brightness to stay legible. The window border is drawn in the theme's divider color so the app still reads as a distinct surface against the desktop, and the reader's own app bar carries the divider below the caption.
+On Windows, leaftext uses a frameless window with its own title bar rather than the native one, so nothing the OS draws sits above the app. The app bar doubles as the title bar: drag it to move the window, double-click to maximize or restore, and its right edge carries the minimize / maximize / close buttons (close turns red on hover). The taskbar still shows the leaf icon, and the window border follows the theme's divider color so the app reads as a distinct surface against the desktop.
 
 ## Next
 

@@ -1,16 +1,18 @@
 # Theming
 
-> leaftext enforces a semantic token contract of ~100 CSS custom properties, validated when the theme CSS is compiled at startup. Learn how themes are defined, compiled, and validated.
+> leaftext enforces a semantic token contract of ~100 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.json` compiled from per-theme files — so adding a theme takes no Rust.
 
 leaftext's theme system is built around a semantic token contract — a set of approximately 100 `--leaf-*` CSS custom properties that every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
+
+Palettes are **data, not code**: every theme's values live in `src/assets/themes.json`, parsed once at startup — not in Rust `const` tables.
 
 ## The token contract
 
 `LEAF_SEMANTIC_TOKEN_CONTRACT` in `src/theme.rs` defines the authoritative list of required properties. Every theme source must map a value to each token in this list. The tokens are organized into semantic categories:
 
-### Reader chrome
+### Core UI
 
-Core app surface and foreground colors: `--leaf-app-background`, `--leaf-app-foreground`, `--leaf-app-surface`, `--leaf-app-surface-raised`, `--leaf-app-surface-elevated`, `--leaf-app-surface-muted`, `--leaf-app-surface-sunken`, `--leaf-app-surface-inset`, `--leaf-app-surface-card`, `--leaf-app-border`, `--leaf-app-border-strong`, and semantic role tokens for primary, secondary, accent, danger, warning, success, done, link, shadow, and focus states.
+App surface and text colors, named by role (the `app-` prefix was dropped): `--leaf-background`, `--leaf-foreground`, `--leaf-surface`, `--leaf-surface-raised`, `--leaf-surface-elevated`, `--leaf-surface-muted`, `--leaf-surface-sunken`, `--leaf-surface-inset`, `--leaf-surface-card`, `--leaf-border`, `--leaf-border-strong`, `--leaf-muted-foreground`, and the semantic role tokens `--leaf-primary`, `--leaf-secondary`, `--leaf-accent`, `--leaf-danger`, `--leaf-warning`, `--leaf-success`, `--leaf-done`, `--leaf-link`, `--leaf-shadow`, and their `-foreground` partners plus focus/selection states.
 
 ### Editor and Markdown elements
 
@@ -32,28 +34,41 @@ One token per syntactic role: `--leaf-syntax-background`, `--leaf-syntax-foregro
 
 Button background, foreground, hover, and disabled states for the back/forward/open controls and the recent-files list.
 
+### Radius and shadow scales
+
+Corners and elevation are tokenized too, but as **global scales** in the compiled `:root` block rather than per-theme values: `--leaf-radius-xs/sm/md/lg/xl/2xl/pill/full` for corners, and `--leaf-shadow-sm`/`-popover`/`-sheet`/`-tooltip` for overlays (the per-theme resting shadow is `--leaf-shadow`). Every surface pulls from these, so rounding and elevation swap in one place.
+
 ## Theme families and sources
 
-Themes are organized as **families**, each pairing a light and a dark **source**. The user picks a family (the Theme setting) and an appearance (the Appearance setting: Light, Dark, System, or Daylight); the two combine to select one source. Five families ship, so ten `ThemeSource` structs are defined in `src/theme.rs`, listed in picker order with `fern` first (the default family). Each has an `id`, a `family` id, a `family_name` (the picker label), an `appearance` (`Light`/`Dark`), a CSS `selector`, a `kind`, a flat `tokens` slice mapping every contract property to a value, and an `overrides` slice for per-source token nudges (empty for most sources):
+Themes are organized as **families**, each pairing a light and a dark **source**. The user picks a family (the Theme setting) and an appearance (the Appearance setting: Light, Dark, System, or Daylight); the two combine to select one source. Five families ship, so ten sources are defined, **sorted by display name** in the picker (`Dracula`, `Fern`, `GitHub`, `Græy`, `Obsidian`); `fern` is the default family (the bootstrap's fallback). Each source has an `id`, a `family` id, a `family_name` (the picker label), an `appearance` (`Light`/`Dark`), a CSS `selector`, a flat `tokens` map covering every contract property, an `overrides` map for per-source token nudges (empty for most sources), and a `fonts` block:
 
-| Source id        | Family (label)      | Appearance | Token strategy                                                                                    |
-| ---------------- | ------------------- | ---------- | ------------------------------------------------------------------------------------------------- |
-| `fern-light`     | `fern` (Fern)       | Light      | Default family. Obsidian's light tokens plus `FERN_LIGHT_OVERRIDES` (a fern-green cast).           |
-| `fern-dark`      | `fern` (Fern)       | Dark       | Obsidian's dark tokens plus `FERN_DARK_OVERRIDES`.                                                 |
-| `github-light`   | `github` (GitHub)   | Light      | Maps `--leaf-*` tokens to GitHub Primer CSS primitives (`var(--bgColor-*)`, `var(--fgColor-*)`).  |
-| `github-dark`    | `github` (GitHub)   | Dark       | Same Primer primitives; Primer's dark-mode cascade supplies different resolved values.            |
-| `dracula-light`  | `dracula` (Dracula) | Light      | Literal palette — a light "Alucard" interpretation of the Dracula accent hues on a cream ground.  |
-| `dracula-dark`   | `dracula` (Dracula) | Dark       | Literal palette — the classic Dracula hex values (`#282a36`, `#f8f8f2`, `#bd93f9`).               |
-| `obsidian-light` | `obsidian` (Obsidian) | Light    | Literal palette — Obsidian's default light base ramp with its violet accent.                      |
-| `obsidian-dark`  | `obsidian` (Obsidian) | Dark     | Literal palette — Obsidian's default dark base ramp with its violet accent.                       |
-| `graey-light`    | `graey` (Græy)      | Light      | Obsidian's light tokens plus `GRAEY_LIGHT_OVERRIDES` (a neutral greyscale).                        |
-| `graey-dark`     | `graey` (Græy)      | Dark       | Obsidian's dark tokens plus `GRAEY_DARK_OVERRIDES`.                                                |
+| Source id        | Family (label)        | Appearance | Token strategy                                                                     |
+| ---------------- | --------------------- | ---------- | --------------------------------------------------------------------------------- |
+| `dracula-light`  | `dracula` (Dracula)   | Light      | A light "Alucard" interpretation of the Dracula accent hues on a cream ground.    |
+| `dracula-dark`   | `dracula` (Dracula)   | Dark       | The classic Dracula hex values (`#282a36`, `#f8f8f2`, `#bd93f9`).                  |
+| `fern-light`     | `fern` (Fern)         | Light      | Default family. Obsidian's light tokens plus a fern-green override cast.           |
+| `fern-dark`      | `fern` (Fern)         | Dark       | Obsidian's dark tokens plus the fern-green overrides.                              |
+| `github-light`   | `github` (GitHub)     | Light      | GitHub's light palette, baked to literal hex (its own system-font stack).         |
+| `github-dark`    | `github` (GitHub)     | Dark       | GitHub's dark palette, baked to literal hex.                                       |
+| `graey-light`    | `graey` (Græy)        | Light      | Obsidian's light tokens plus a neutral greyscale override.                         |
+| `graey-dark`     | `graey` (Græy)        | Dark       | Obsidian's dark tokens plus the greyscale overrides.                              |
+| `obsidian-light` | `obsidian` (Obsidian) | Light      | Obsidian's default light base ramp with its violet accent.                        |
+| `obsidian-dark`  | `obsidian` (Obsidian) | Dark       | Obsidian's default dark base ramp with its violet accent.                         |
 
 Every source activates through the Leaf-owned attributes the theme bootstrap stamps on `:root`: `data-leaf-theme="<family>"` and `data-leaf-appearance="<light|dark>"`. So a source's selector is `:root[data-leaf-theme="github"][data-leaf-appearance="light"]`, and so on.
 
-The two `github` sources share the same `PRIMER_THEME_TOKENS` slice. Because they use CSS `var()` references into the Primer primitive cascade, the same token map produces the correct resolved color in both contexts — the bootstrap also sets Primer's own `data-color-mode`/`data-light-theme` attributes from the resolved appearance, so the primitives resolve. `github-dark` additionally layers `PRIMER_DARK_BORDER_OVERRIDES` through its `overrides` field — `theme_source_token_value()` checks `overrides` before `tokens`, so the dark source shifts its border family (a slate-blue nudge) while sharing the rest of the map.
+**Every theme is a self-contained literal palette** — each source maps every `--leaf-*` token to a hex (or `rgba()`) value. There is no Primer dependency and no separate theme "kind": GitHub was flattened to plain hex like the rest, so all themes share one uniform shape. The Fern and Græy families reuse Obsidian's literal token maps and re-tint them through their `overrides` maps, so they inherit Obsidian's full coverage and only restate the tokens they change (`theme_source_token_value()` checks `overrides` before `tokens`). `theme_families()` derives the ordered picker list from the loaded sources, so registering a family's light/dark pair adds it to the picker automatically.
 
-The Dracula and Obsidian sources use `ThemeSourceKind::Literal`: each maps every `--leaf-*` token directly to a hex (or `rgba()`) value, with no dependency on the Primer primitives. The Fern and Græy families reuse Obsidian's literal token maps and re-tint them through their `overrides` slices, so they inherit Obsidian's full coverage and only restate the tokens they change. `theme_families()` derives the ordered picker list from these sources, so registering a family's light/dark pair adds it to the picker automatically.
+## Palettes are data (`themes.json`)
+
+`theme_sources()` parses `src/assets/themes.json` — bundled into the binary with `include_str!` — **once** at startup via a `OnceLock`, then leaks the owned strings to `&'static` so every downstream consumer keeps working against `&'static` fields. Each entry deserializes into a `ThemeFile` (`id`, `family`, `family_name`, `appearance`, `selector`, `tokens`, `overrides`, `fonts`).
+
+The editable source of truth is the **`themes/` folder at the repo root**, which is also served on the web at **leaftext.com/themes**:
+
+- `themes/manifest.json` — the roster of family files.
+- `themes/<family>.json` — one file per family, an array of its light/dark source objects.
+
+`scripts/bundle-themes.mjs` compiles the folder into `src/assets/themes.json`, emitting the families **sorted by display name** so the picker and gallery stay alphabetical no matter what order they're added. `just bundle-themes` rebuilds the bundle; `just check-themes` (part of `just verify`) fails if `themes.json` has drifted from the folder — the same drift-guard pattern used for the vendored site assets.
 
 ## Startup contract check
 
@@ -74,80 +89,66 @@ theme source fern-light missing required token --leaf-syntax-changed-background
 
 This surfaces as a test-time or launch-time failure (any run that compiles the theme CSS), never silently producing a broken theme.
 
+## Accessibility gate
+
+Two tests re-derive contrast across **every** theme so an unreadable palette fails `just verify` instead of shipping:
+
+- `theme_compiler_gates_readable_pairs_for_every_source` checks text pairs (foreground on background, code, selection, syntax) at **4.5:1** (WCAG AA for text).
+- `theme_compiler_gates_interactive_chrome_contrast` checks icons and controls on filled backgrounds — buttons, nav, badges, and the tab-close hover — at **3:1** (WCAG 1.4.11 for non-text UI).
+
 ## `compiled_theme_css()`
 
-`compiled_theme_css()` generates the final CSS block that follows the Primer primitive stylesheets in the cascade. For each `ThemeSource`, it emits:
+`compiled_theme_css()` generates the theme CSS block. For each `ThemeSource`, it emits:
 
 ```css
 :root[data-leaf-theme="github"][data-leaf-appearance="light"] {
   --leaf-theme-source: github-light;
-  --leaf-app-background: var(--bgColor-default);
+  --leaf-background: #ffffff;
   /* ... all contract tokens ... */
 }
 ```
 
-`reading_mode_css()` then assembles the full style block in this order:
+Then, per family, it emits a font block (`--heading-font`/`--reading-font`/`--app-font`/`--code-font`) from that family's `fonts`, placed before the locale rule so a CJK reader's reading font still wins.
 
-1. Primer primitives light CSS (`primer-primitives-11.9.0-light.css`)
-2. Primer primitives dark CSS (`primer-primitives-11.9.0-dark.css`)
-3. Compiled theme CSS from `compiled_theme_css()`
-4. Application layout and document body CSS
-
-No font faces are embedded — fonts load separately from Google Fonts (see [Theme fonts](#theme-fonts)). The result is cached in a `OnceLock<String>` — computed once per process lifetime.
+`reading_mode_css()` assembles the full style block — compiled theme CSS, then the `:root` alias layer (radius/shadow scales and short component names), then the application layout and document body CSS. No Primer primitives and no font faces are embedded — fonts load separately from Google Fonts (see [Theme fonts](#theme-fonts)). The result is cached in a `OnceLock<String>` — computed once per process lifetime.
 
 ## Theme fonts
 
-Fonts are not bundled into the binary. The active theme fetches its font from **Google Fonts** when it activates, and the WebView caches the woff2 on disk so later launches are instant.
+Fonts are **per-theme data**. Each source's `fonts` block carries three CSS font-family stacks (`heading`, `body`, `code`) and a `google` URL:
 
-- `noto_web_font_href()` in `src/theme.rs` returns the Google Fonts `css2` URL for the default font — Noto Sans, Noto Serif, and Noto Sans Mono, the faces the base `--reading-font`/`--heading-font`/`--code-font` name.
-- `system_font_families()` lists families that use the OS's native fonts and fetch nothing — currently just `github`, which mirrors github.com's stack via the `:root[data-leaf-theme="github"]` override in `reading_mode_css()`.
-- `theme_web_font_hrefs_json()` builds the family → URL map (every family except the system-font ones gets Noto) and injects it into the theme bootstrap as `FAMILY_FONTS`.
-- In `theme_bootstrap_script()`, `applyFamilyFont()` runs on every `apply()` (first paint and each switch): it points a single `<link id="leafThemeFont">` at the active family's URL, or removes it for a system-font family. Because each `--*-font` stack ends in system fallbacks, text is readable before the web font loads and while offline.
+- The compiler emits each family's stacks as `--heading-font`/`--reading-font`/`--app-font`/`--code-font`.
+- `theme_web_font_hrefs_json()` builds the family → `google` URL map (skipping any family whose `google` is empty) and injects it into the theme bootstrap as `FAMILY_FONTS`.
+- In `theme_bootstrap_script()`, `applyFamilyFont()` runs on every `apply()` (first paint and each switch): it points a single `<link id="leafThemeFont">` at the active family's URL, or removes it for a family that fetches nothing. Because each stack ends in system fallbacks, text is readable before the web font loads and while offline.
 
-The Content-Security-Policy in `src/assets/app-shell.html` therefore allows `https://fonts.googleapis.com` (the stylesheet) under `style-src` and `https://fonts.gstatic.com` (the woff2 files) under `font-src`.
+The shipping families load **Noto** (Sans / Serif / Sans Mono); **GitHub** declares an empty `google`, so it uses the OS's native font stack and fetches nothing. The Content-Security-Policy in `src/assets/app-shell.html` allows `https://fonts.googleapis.com` (the stylesheet) under `style-src` and `https://fonts.gstatic.com` (the woff2 files) under `font-src`.
 
-## Adding a theme family
+## Adding a theme
 
-A family is a light/dark pair of sources. To add one (`myfamily`, "My Family"):
+A theme is a light/dark pair of sources, authored as data — no Rust. To add one (`myfamily`, "My Family"):
 
-**1. Define two token maps**
+**1. Add the family file**
 
-In `src/theme.rs`, create two `const` slices — one per appearance (e.g. `MYFAMILY_LIGHT_THEME_TOKENS` and `MYFAMILY_DARK_THEME_TOKENS`) — each mapping every property name in `LEAF_SEMANTIC_TOKEN_CONTRACT` to a literal value. Each entry is `("--leaf-property-name", "value")`. Copy an existing literal palette (e.g. `DRACULA_THEME_TOKENS`) as a template so the token order and coverage match.
+Create `themes/myfamily.json` — an array of two source objects (light and dark). Copy an existing family file (e.g. `themes/dracula.json`) as a template so the token coverage and shape match. Each source needs `id`, `family`, `family_name`, `appearance`, `selector`, a `tokens` map covering every property in `LEAF_SEMANTIC_TOKEN_CONTRACT`, an `overrides` map (often `[]`), and a `fonts` block (set `google` to a Google Fonts `css2` URL, or `""` for system fonts).
 
-**2. Register both ThemeSources**
+**2. Register it in the manifest**
 
-Add two `ThemeSource` entries to the slice returned by `theme_sources()`, one per appearance:
+Add `"myfamily"` to the `themes` array in `themes/manifest.json`.
 
-```rust
-ThemeSource {
-    id: "myfamily-light",
-    family: "myfamily",
-    family_name: "My Family",
-    appearance: Appearance::Light,
-    selector: ":root[data-leaf-theme=\"myfamily\"][data-leaf-appearance=\"light\"]",
-    kind: ThemeSourceKind::Literal,
-    tokens: MYFAMILY_LIGHT_THEME_TOKENS,
-    overrides: &[],
-},
-// ...and the matching Appearance::Dark source with MYFAMILY_DARK_THEME_TOKENS.
-```
-
-**3. Run the verification suite**
+**3. Bundle and verify**
 
 ```sh
-just verify
+just bundle-themes   # compile themes/ -> src/assets/themes.json
+just verify          # contract + contrast checks, and check-themes drift guard
 ```
 
-`assert_theme_sources_cover_contract()` panics (failing the test run) if any contract token is missing, if the family lacks a light or dark variant, or if a selector doesn't name its family and appearance.
+`assert_theme_sources_cover_contract()` fails the run if any contract token is missing, if the family lacks a light or dark variant, or if a selector doesn't name its family and appearance; the contrast tests fail it if any pair is unreadable.
 
 **4. Nothing to wire up in the UI**
 
-The theme picker builds its buttons from `theme_families()` (`theme_items_html()` in `src/lib.rs` emits one `.theme-item` per family, labelled by `family_name`), and the bootstrap's family list is guarded against the sources — so a registered family appears in the picker automatically, with no HTML or translation edit. The `theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled` test asserts every family returned by `theme_families()` has a matching picker button.
-
-The new family also fetches the default **Noto** font automatically, since `theme_web_font_hrefs_json()` maps every non-system family to it (see [Theme fonts](#theme-fonts)). To make the family use the OS's native fonts instead — fetching nothing, like GitHub — add its id to `system_font_families()` and give it a `:root[data-leaf-theme="<family>"]` font override in `reading_mode_css()`.
+The theme picker builds its buttons from `theme_families()` (`theme_items_html()` in `src/lib.rs` emits one `.theme-item` per family), and the bootstrap's family list is injected from the registry — so a registered family appears in the picker automatically, with no HTML or translation edit.
 
 > [!WARNING]
-> The startup token check uses exact string matching against the names in `LEAF_SEMANTIC_TOKEN_CONTRACT`. Ensure every token name in your new theme map is spelled exactly as it appears in that list — a single typo (e.g. `--leaf-sytax-keyword` instead of `--leaf-syntax-keyword`) will not match and the assertion will fail at startup with a "missing required token" message.
+> The startup token check uses exact string matching against the names in `LEAF_SEMANTIC_TOKEN_CONTRACT`. Spell every token name exactly — a single typo (e.g. `--leaf-sytax-keyword`) will not match and the assertion will fail at startup with a "missing required token" message.
 
 ## The Random family preference
 
@@ -164,7 +165,3 @@ The theme bootstrap (`theme_bootstrap_script()` in `src/lib.rs`) resolves the Ap
 - **Light** / **Dark** — a fixed variant.
 - **System** — follows the OS `prefers-color-scheme`, updating live on change.
 - **Daylight** — light between 09:00 and 18:00 local time, dark otherwise. A rescheduling timer flips it at the next boundary without a restart, and it re-checks on window focus (covering a machine that slept across a boundary).
-
-## Data-only palettes and the future gallery
-
-Every palette is **data** — a map of contract tokens to values — not author CSS. That keeps a theme fully validatable against the contract and safe to load without injecting third-party CSS into the webview. The palettes currently live as Rust `const` slices, but the shape is deliberately the same one a `[meta]` + `[tokens]` theme file would deserialize into. The intended next step is an external theme loader (a user themes directory parsed at startup through the same contract check) plus a small in-repo registry (`themes/registry.json`) and an in-app browser, so community themes can be contributed by PR without touching Rust. Until then, adding a family means editing `theme.rs` as above.

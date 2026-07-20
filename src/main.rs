@@ -150,6 +150,11 @@ enum UserEvent {
     SetThemeRandomBag {
         used: Vec<String>,
     },
+    /// Custom title-bar controls (the app bar is the title bar on frameless Windows).
+    WindowDrag,
+    WindowMinimize,
+    WindowToggleMaximize,
+    WindowClose,
     /// Paint the native title bar to the page color and the window border to the
     /// theme's divider color, both reported by the webview on theme change.
     SetWindowChrome {
@@ -301,6 +306,14 @@ enum IpcCommand {
     SetThemeMode { mode: String },
     #[serde(rename = "setThemeRandomBag")]
     SetThemeRandomBag { used: Vec<String> },
+    #[serde(rename = "windowDrag")]
+    WindowDrag,
+    #[serde(rename = "windowMinimize")]
+    WindowMinimize,
+    #[serde(rename = "windowToggleMaximize")]
+    WindowToggleMaximize,
+    #[serde(rename = "windowClose")]
+    WindowClose,
     #[serde(rename = "setWindowChrome")]
     SetWindowChrome {
         r: u8,
@@ -382,8 +395,10 @@ fn main() {
     }
 }
 
-/// Decode the bundled leaf logo into a window icon (taskbar and title bar).
-/// Returns `None` if decoding fails so the window still opens icon-free.
+/// Decode the bundled leaf logo into a window icon. Used on non-Windows platforms;
+/// on Windows the taskbar rides the executable's embedded icon and the caption is
+/// left icon-free, so no window icon is set there (hence dead there).
+#[cfg_attr(windows, allow(dead_code))]
 fn load_window_icon() -> Option<Icon> {
     const ICON_PNG: &[u8] = include_bytes!("assets/leaf-256.png");
     let decoder = png::Decoder::new(ICON_PNG);
@@ -525,16 +540,32 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .unwrap_or_default();
 
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
-    let window = WindowBuilder::new()
+    // `mut` is used only by the non-Windows icon block below.
+    #[allow(unused_mut)]
+    let mut window_builder = WindowBuilder::new()
         .with_title("Leaf Text")
-        .with_window_icon(load_window_icon())
         .with_inner_size(LogicalSize::new(
             settings.window_width as f64,
             settings.window_height as f64,
         ))
         .with_min_inner_size(LogicalSize::new(380.0, 480.0))
-        .with_maximized(settings.window_maximized)
-        .build(&event_loop)?;
+        .with_maximized(settings.window_maximized);
+    // On Windows we drop the native title bar (removing just its icon always fell
+    // back to a placeholder) for a custom one: the app bar is the drag region and
+    // carries our own window controls (wired via IPC). undecorated_shadow keeps the
+    // shadow and edge resize; the taskbar leaf rides the exe icon. Others: native.
+    #[cfg(windows)]
+    {
+        use tao::platform::windows::WindowBuilderExtWindows;
+        window_builder = window_builder
+            .with_decorations(false)
+            .with_undecorated_shadow(true);
+    }
+    #[cfg(not(windows))]
+    {
+        window_builder = window_builder.with_window_icon(load_window_icon());
+    }
+    let window = window_builder.build(&event_loop)?;
 
     let proxy = event_loop.create_proxy();
 
@@ -573,6 +604,9 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .with_initialization_script(initial_settings_script(&settings))
         .with_initialization_script(initial_state_script(&recent.files))
         .with_initialization_script(initial_version_script())
+        // Whether the OS window is frameless (Windows), so the frontend shows its
+        // own title-bar chrome — drag region + minimize/maximize/close buttons.
+        .with_initialization_script(format!("window.__leafFrameless = {};", cfg!(windows)))
         .with_custom_protocol(
             LOCAL_IMAGE_PROTOCOL.to_string(),
             local_image_protocol_handler(Arc::clone(&local_image_source_dir)),
@@ -1189,6 +1223,24 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 settings.theme_random_used = used;
                 persist_settings(&settings, settings_path.as_ref());
             }
+            Event::UserEvent(UserEvent::WindowDrag) => {
+                let _ = window.drag_window();
+            }
+            Event::UserEvent(UserEvent::WindowMinimize) => {
+                window.set_minimized(true);
+            }
+            Event::UserEvent(UserEvent::WindowToggleMaximize) => {
+                window.set_maximized(!window.is_maximized());
+            }
+            Event::UserEvent(UserEvent::WindowClose) => {
+                // Same teardown as the native close button.
+                settings.window_width = last_windowed_size.width.round() as u32;
+                settings.window_height = last_windowed_size.height.round() as u32;
+                settings.window_maximized = window.is_maximized();
+                persist_settings(&settings, settings_path.as_ref());
+                let _ = webview.take();
+                *control_flow = ControlFlow::Exit;
+            }
             Event::UserEvent(UserEvent::SetWindowChrome {
                 r,
                 g,
@@ -1477,6 +1529,18 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
             }
             IpcCommand::SetThemeRandomBag { used } => {
                 let _ = proxy.send_event(UserEvent::SetThemeRandomBag { used });
+            }
+            IpcCommand::WindowDrag => {
+                let _ = proxy.send_event(UserEvent::WindowDrag);
+            }
+            IpcCommand::WindowMinimize => {
+                let _ = proxy.send_event(UserEvent::WindowMinimize);
+            }
+            IpcCommand::WindowToggleMaximize => {
+                let _ = proxy.send_event(UserEvent::WindowToggleMaximize);
+            }
+            IpcCommand::WindowClose => {
+                let _ = proxy.send_event(UserEvent::WindowClose);
             }
             IpcCommand::SetWindowChrome {
                 r,

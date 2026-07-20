@@ -50,15 +50,17 @@ Before submitting a contribution, run the full suite:
 just verify
 ```
 
-This runs `cargo fmt --check`, `cargo check --all-targets`, `cargo test`, and a vendored-asset drift check in sequence. All steps must pass. The `verify` recipe is defined in the project `Justfile` as:
+This runs `cargo fmt --check`, `cargo check --all-targets`, `cargo test`, and two drift checks in sequence. All steps must pass. The `verify` recipe is defined in the project `Justfile` as:
 
 ```text
-verify: format-check check test check-vendor
+verify: format-check check test check-vendor check-themes
 ```
 
 A passing `just verify` is the baseline requirement before handing any work back.
 
 The Mermaid, KaTeX, and Noto assets are embedded in the binary from `src/assets` and also served as static files from `site/`. `src/assets` is the source of truth; `check-vendor` fails if the `site/` copies have drifted. Run `just sync-vendor` to recopy them and clear the drift.
+
+Theme palettes work the same way: `src/assets/themes.json` (embedded in the binary) is compiled from the editable `themes/` folder. `check-themes` fails if it has drifted; run `just bundle-themes` to recompile it. See [Theming](04-theming.md#palettes-are-data-themesjson).
 
 ## Individual tasks
 
@@ -71,6 +73,7 @@ Each step in the verification pipeline can also be run on its own:
 | Type check   | `cargo check --all-targets` | Check all targets without producing a binary   |
 | Tests        | `cargo test`                | Run the full test suite                        |
 | Vendor check | `just check-vendor`         | Verify `site/` vendored assets match `src/assets` |
+| Themes check | `just check-themes`         | Verify `src/assets/themes.json` matches the `themes/` folder |
 | Full verify  | `just verify`               | All steps above in sequence                    |
 
-Additional convenience tasks are available via `just --list`, including `just sync-vendor` to recopy the vendored assets into `site/`.
+Additional convenience tasks are available via `just --list`, including `just sync-vendor` to recopy the vendored assets into `site/` and `just bundle-themes` to recompile `themes.json` from the `themes/` folder.

@@ -140,6 +140,35 @@ const send = (message) => {
   if (message && READER_LOADING_COMMANDS.has(message.command)) beginReaderLoading();
   window.ipc.postMessage(JSON.stringify(message));
 };
+
+// Custom title-bar chrome for frameless windows (Windows): there's no native
+// title bar, so the app bar is the drag region and carries our own window
+// controls. On decorated platforms this stays hidden and the OS chrome is used.
+if (window.__leafFrameless) {
+  document.body.classList.add('frameless');
+  const windowControls = document.getElementById('windowControls');
+  if (windowControls) {
+    windowControls.hidden = false;
+    windowControls.setAttribute('aria-hidden', 'false');
+  }
+  const winButton = (id, command) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', () => send({ command }));
+  };
+  winButton('winMinimize', 'windowMinimize');
+  winButton('winMaximize', 'windowToggleMaximize');
+  winButton('winClose', 'windowClose');
+  // Drag from empty app-bar space only — never from a control, tab, or field.
+  const isDragTarget = (target) =>
+    target &&
+    !target.closest('button, a, input, select, textarea, [role="tab"], .tab, .window-controls, .settings-menu');
+  appBar.addEventListener('mousedown', (event) => {
+    if (event.button === 0 && isDragTarget(event.target)) send({ command: 'windowDrag' });
+  });
+  appBar.addEventListener('dblclick', (event) => {
+    if (isDragTarget(event.target)) send({ command: 'windowToggleMaximize' });
+  });
+}
 const MERMAID_SCRIPT_URL = '{{MERMAID_SCRIPT_URL}}';
 const KATEX_SCRIPT_URL = '{{KATEX_SCRIPT_URL}}';
 const PIXI_SCRIPT_URL = '{{PIXI_SCRIPT_URL}}';
@@ -1250,6 +1279,20 @@ function parseCssColor(value, fallback) {
   return fallback;
 }
 
+// The graph's palette, read fresh from the theme tokens. Used at build time and
+// re-read on theme change so the canvas recolors with the rest of the app.
+function graphColors() {
+  return {
+    node: cssVarColor('--app-muted-foreground', 0x8b95a5),
+    active: cssVarColor('--accent', 0x8a63d2),
+    hot: cssVarColor('--app-foreground', 0xe6e6e6),
+    edge: cssVarColor('--app-border', 0x3a3f4b),
+    // Ambient labels for the documents you are not on: the muted-foreground token
+    // (a dim grey), so they read as secondary next to the active/hover labels.
+    dim: cssVarColor('--app-muted-foreground', 0x8b95a5),
+  };
+}
+
 function graphNodeRadius(degree) {
   return Math.max(3, Math.min(14, 3 + Math.sqrt(degree || 0) * 1.1));
 }
@@ -1358,15 +1401,7 @@ async function buildGraphScene() {
     ? window.leafLocale.t('library.graph.truncated', { count: window.leafLocale.formatNumber(data.nodes.length) })
     : '');
 
-  const colors = {
-    node: cssVarColor('--app-muted-foreground', 0x8b95a5),
-    active: cssVarColor('--accent', 0x8a63d2),
-    hot: cssVarColor('--app-foreground', 0xe6e6e6),
-    edge: cssVarColor('--app-border', 0x3a3f4b),
-    // Ambient labels for the documents you are not on: the muted-foreground token
-    // (a dim grey), so they read as secondary next to the active/hover labels.
-    dim: cssVarColor('--app-muted-foreground', 0x8b95a5),
-  };
+  const colors = graphColors();
 
   // Build node objects d3 will mutate with x/y, plus their Pixi graphics.
   const nodes = data.nodes.map((n) => ({ path: n.path, label: n.label || n.path, degree: n.degree || 0 }));
@@ -1537,6 +1572,14 @@ function applyGraphStyles() {
   }
   layoutGraphLabels(scene);
   renderGraphFrame(scene);
+}
+
+// Re-read the theme tokens into the live scene and repaint, so the open graph
+// recolors when the theme changes (the palette is captured at build time).
+function refreshGraphColors() {
+  if (!graphScene) return;
+  graphScene.colors = graphColors();
+  applyGraphStyles();
 }
 
 // Choose which labels are visible and place them. Active/hovered nodes (and a
@@ -2191,6 +2234,7 @@ let pendingCaret = null;
 window.leafTheme.subscribe((theme) => {
   updateThemeSelection();
   reportWindowChrome(theme);
+  refreshGraphColors();
 });
 window.leafLocale.subscribe(() => {
   renderStaticText();
@@ -5209,6 +5253,10 @@ function invalidateMinimapPreview() {
   minimapContentVersion += 1;
   scheduleMinimapPreviewUpdate();
 }
+// Any <details> open/close (outline, settings, library folders) changes document
+// height, so the minimap clone goes stale. The body MutationObserver misses the
+// bare `open` flip; `toggle` catches both — in capture phase, since it doesn't bubble.
+document.addEventListener('toggle', invalidateMinimapPreview, true);
 // Build the thumbnail: clone the document, strip ids/links (nothing focusable or
 // duplicated for a11y), shrink to the rail width with a transform. Rebuilt only on
 // content changes; scroll just repositions the box and slides the clone.
