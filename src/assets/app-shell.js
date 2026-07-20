@@ -2163,8 +2163,8 @@ if (themeSheetBrowse) {
 }
 // Tell the host what the page background and divider color resolve to so it can
 // paint the native title bar to match the page and the window border to the
-// theme's divider color (a darker line on light themes, the blue rule on
-// Dracula). Runs on every theme change, including system light/dark flips, so
+// theme's divider color (a darker line on light themes, a colored rule on
+// themes like Nightshade). Runs on every theme change, including system light/dark flips, so
 // the OS chrome always tracks the document.
 function reportWindowChrome(theme) {
   const shell = document.getElementById('app');

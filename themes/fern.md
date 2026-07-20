@@ -59,6 +59,11 @@
 | markdown-background                     | `#ffffff`                         |
 | markdown-foreground                     | `#222222`                         |
 | markdown-heading                        | `#11111a`                         |
+| markdown-heading-2                      | `#11111a`                         |
+| markdown-heading-3                      | `#11111a`                         |
+| markdown-heading-4                      | `#11111a`                         |
+| markdown-heading-5                      | `#11111a`                         |
+| markdown-heading-6                      | `#11111a`                         |
 | markdown-muted-foreground               | `#575757`                         |
 | markdown-border                         | `#e0e0e0`                         |
 | markdown-rule                           | `#e0e0e0`                         |
@@ -200,6 +205,11 @@
 | markdown-background                     | `#1e1e1e`                        |
 | markdown-foreground                     | `#dadada`                        |
 | markdown-heading                        | `#ffffff`                        |
+| markdown-heading-2                      | `#ffffff`                        |
+| markdown-heading-3                      | `#ffffff`                        |
+| markdown-heading-4                      | `#ffffff`                        |
+| markdown-heading-5                      | `#ffffff`                        |
+| markdown-heading-6                      | `#ffffff`                        |
 | markdown-muted-foreground               | `#999999`                        |
 | markdown-border                         | `#363636`                        |
 | markdown-rule                           | `#363636`                        |

@@ -1,15 +1,15 @@
-# Obsidian
+# Amaranth
 
-**Family ID:** `obsidian`
+**Family ID:** `amaranth`
 
 ## Fonts
 
 | Role    | Stack |
 | ------- | ----- |
-| Heading | `"Noto Serif", Georgia, Cambria, "Times New Roman", serif` |
-| Body    | `"Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Microsoft YaHei UI", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji"` |
-| Code    | `"Noto Sans Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace` |
-| Google  | `https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Noto+Sans+Mono:wght@400;500;600;700&display=swap` |
+| Heading | `"Source Serif 4", Georgia, Cambria, "Times New Roman", serif` |
+| Body    | `"Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Microsoft YaHei UI", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji"` |
+| Code    | `"Source Code Pro", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace` |
+| Google  | `https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;600;700&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;0,900;1,400&display=swap` |
 
 ## Light
 
@@ -59,6 +59,11 @@
 | markdown-background                     | `#ffffff`                         |
 | markdown-foreground                     | `#222222`                         |
 | markdown-heading                        | `#11111a`                         |
+| markdown-heading-2                      | `#11111a`                         |
+| markdown-heading-3                      | `#11111a`                         |
+| markdown-heading-4                      | `#11111a`                         |
+| markdown-heading-5                      | `#11111a`                         |
+| markdown-heading-6                      | `#11111a`                         |
 | markdown-muted-foreground               | `#575757`                         |
 | markdown-border                         | `#e0e0e0`                         |
 | markdown-rule                           | `#e0e0e0`                         |
@@ -171,6 +176,11 @@
 | markdown-background                     | `#1e1e1e`                        |
 | markdown-foreground                     | `#dadada`                        |
 | markdown-heading                        | `#ffffff`                        |
+| markdown-heading-2                      | `#ffffff`                        |
+| markdown-heading-3                      | `#ffffff`                        |
+| markdown-heading-4                      | `#ffffff`                        |
+| markdown-heading-5                      | `#ffffff`                        |
+| markdown-heading-6                      | `#ffffff`                        |
 | markdown-muted-foreground               | `#999999`                        |
 | markdown-border                         | `#363636`                        |
 | markdown-rule                           | `#363636`                        |

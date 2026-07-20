@@ -1,15 +1,15 @@
-# Græy
+# Sage
 
-**Family ID:** `graey`
+**Family ID:** `sage`
 
 ## Fonts
 
 | Role    | Stack |
 | ------- | ----- |
-| Heading | `"Noto Serif", Georgia, Cambria, "Times New Roman", serif` |
-| Body    | `"Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Microsoft YaHei UI", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji"` |
-| Code    | `"Noto Sans Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace` |
-| Google  | `https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Noto+Sans+Mono:wght@400;500;600;700&display=swap` |
+| Heading | `"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif` |
+| Body    | `"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Microsoft YaHei UI", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji"` |
+| Code    | `"JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace` |
+| Google  | `https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap` |
 
 ## Light
 
@@ -28,11 +28,11 @@
 | border-strong                           | `#bdbdbd`                         |
 | muted-background                        | `#f6f6f6`                         |
 | muted-foreground                        | `#575757`                         |
-| primary                                 | `#6d45e0`                         |
+| primary                                 | `#3f7aa8`                         |
 | primary-foreground                      | `#ffffff`                         |
 | secondary                               | `#eeeeee`                         |
 | secondary-foreground                    | `#222222`                         |
-| accent                                  | `#086ddd`                         |
+| accent                                  | `#3f7aa8`                         |
 | accent-foreground                       | `#ffffff`                         |
 | danger                                  | `#d3243a`                         |
 | danger-foreground                       | `#ffffff`                         |
@@ -40,10 +40,10 @@
 | warning-foreground                      | `#ffffff`                         |
 | success                                 | `#087a34`                         |
 | success-foreground                      | `#ffffff`                         |
-| done                                    | `#6d45e0`                         |
+| done                                    | `#3f7aa8`                         |
 | done-foreground                         | `#ffffff`                         |
-| link                                    | `#086ddd`                         |
-| link-hover                              | `#6d45e0`                         |
+| link                                    | `#3f7aa8`                         |
+| link-hover                              | `#33648c`                         |
 | shadow                                  | `0 16px 40px rgba(0, 0, 0, 0.12)` |
 | editor-background                       | `#ffffff`                         |
 | editor-foreground                       | `#222222`                         |
@@ -59,17 +59,22 @@
 | markdown-background                     | `#ffffff`                         |
 | markdown-foreground                     | `#222222`                         |
 | markdown-heading                        | `#11111a`                         |
+| markdown-heading-2                      | `#11111a`                         |
+| markdown-heading-3                      | `#11111a`                         |
+| markdown-heading-4                      | `#11111a`                         |
+| markdown-heading-5                      | `#11111a`                         |
+| markdown-heading-6                      | `#11111a`                         |
 | markdown-muted-foreground               | `#575757`                         |
 | markdown-border                         | `#e0e0e0`                         |
 | markdown-rule                           | `#e0e0e0`                         |
-| markdown-link                           | `#086ddd`                         |
-| markdown-link-hover                     | `#6d45e0`                         |
+| markdown-link                           | `#3f7aa8`                         |
+| markdown-link-hover                     | `#33648c`                         |
 | markdown-inline-code-background         | `#f2f2f2`                         |
 | markdown-inline-code-foreground         | `#333333`                         |
 | markdown-blockquote-background          | `#f6f6f6`                         |
 | markdown-blockquote-border              | `#6d45e0`                         |
 | markdown-blockquote-foreground          | `#444444`                         |
-| markdown-alert-note                     | `#086ddd`                         |
+| markdown-alert-note                     | `#3f7aa8`                         |
 | markdown-alert-tip                      | `#087a34`                         |
 | markdown-alert-important                | `#6d45e0`                         |
 | markdown-alert-warning                  | `#8a6d00`                         |
@@ -85,24 +90,24 @@
 | markdown-keyboard-border                | `#d4d4d4`                         |
 | minimap-background                      | `#f6f6f6`                         |
 | minimap-border                          | `#e0e0e0`                         |
-| minimap-viewport-border                 | `#6d45e0`                         |
+| minimap-viewport-border                 | `#3f7aa8`                         |
 | minimap-viewport-background             | `rgba(109, 69, 224, 0.14)`        |
-| minimap-heading                         | `#6d45e0`                         |
+| minimap-heading                         | `#3f7aa8`                         |
 | minimap-paragraph                       | `#575757`                         |
 | minimap-blank                           | `#e0e0e0`                         |
 | minimap-list                            | `#087a34`                         |
-| minimap-blockquote                      | `#086ddd`                         |
+| minimap-blockquote                      | `#3f7aa8`                         |
 | minimap-code                            | `#c02a6f`                         |
 | navigation-border                       | `#e0e0e0`                         |
-| navigation-button-background            | `#6d45e0`                         |
+| navigation-button-background            | `#3f7aa8`                         |
 | navigation-button-foreground            | `#ffffff`                         |
-| navigation-button-hover-background      | `#7d58ef`                         |
+| navigation-button-hover-background      | `#4a8ab8`                         |
 | navigation-button-disabled-background   | `#eeeeee`                         |
 | navigation-button-disabled-foreground   | `#999999`                         |
 | navigation-recent-border                | `#e0e0e0`                         |
 | navigation-recent-item-foreground       | `#222222`                         |
-| navigation-recent-item-hover-foreground | `#6d45e0`                         |
-| focus-ring                              | `#6d45e0`                         |
+| navigation-recent-item-hover-foreground | `#3f7aa8`                         |
+| focus-ring                              | `#3f7aa8`                         |
 | focus-selection-background              | `#d9e5fb`                         |
 | focus-selection-foreground              | `#222222`                         |
 | syntax-background                       | `#f6f6f6`                         |
@@ -135,36 +140,36 @@
 | border                                  | `#dcdad5`                |
 | border-strong                           | `#b3b1aa`                |
 | muted-background                        | `#eeece8`                |
-| primary                                 | `#4a4a48`                |
-| accent                                  | `#57534e`                |
-| done                                    | `#4a4a48`                |
-| link                                    | `#444a4a`                |
-| link-hover                              | `#1c1c1c`                |
-| focus-ring                              | `#767068`                |
+| primary                                 | `#3f7aa8`                |
+| accent                                  | `#3f7aa8`                |
+| done                                    | `#3f7aa8`                |
+| link                                    | `#3f7aa8`                |
+| link-hover                              | `#33648c`                |
+| focus-ring                              | `#3f7aa8`                |
 | focus-selection-background              | `#e2e0da`                |
 | editor-background                       | `#f7f6f4`                |
 | editor-selection-background             | `#e2e0da`                |
 | editor-inline-code-background           | `#eeece8`                |
 | editor-code-background                  | `#eeece8`                |
 | markdown-background                     | `#f7f6f4`                |
-| markdown-link                           | `#444a4a`                |
-| markdown-link-hover                     | `#1c1c1c`                |
+| markdown-link                           | `#3f7aa8`                |
+| markdown-link-hover                     | `#33648c`                |
 | markdown-blockquote-border              | `#b3b1aa`                |
 | markdown-blockquote-background          | `#eeece8`                |
 | markdown-inline-code-background         | `#eeece8`                |
 | markdown-table-header-background        | `#eeece8`                |
 | markdown-math-inline-background         | `#eeece8`                |
 | markdown-badge-background               | `#eeece8`                |
-| markdown-alert-note                     | `#57534e`                |
+| markdown-alert-note                     | `#3f7aa8`                |
 | markdown-alert-important                | `#4a4a48`                |
 | minimap-background                      | `#eeece8`                |
-| minimap-viewport-border                 | `#57534e`                |
+| minimap-viewport-border                 | `#3f7aa8`                |
 | minimap-viewport-background             | `rgba(74, 74, 72, 0.14)` |
-| minimap-heading                         | `#57534e`                |
-| minimap-blockquote                      | `#767068`                |
-| navigation-button-background            | `#4a4a48`                |
-| navigation-button-hover-background      | `#333331`                |
-| navigation-recent-item-hover-foreground | `#444a4a`                |
+| minimap-heading                         | `#3f7aa8`                |
+| minimap-blockquote                      | `#3f7aa8`                |
+| navigation-button-background            | `#3f7aa8`                |
+| navigation-button-hover-background      | `#4a8ab8`                |
+| navigation-recent-item-hover-foreground | `#3f7aa8`                |
 | syntax-background                       | `#f2f0ec`                |
 | syntax-comment                          | `#6a6660`                |
 | syntax-keyword                          | `#40403e`                |
@@ -192,11 +197,11 @@
 | border-strong                           | `#555555`                        |
 | muted-background                        | `#2a2a2a`                        |
 | muted-foreground                        | `#999999`                        |
-| primary                                 | `#a882ff`                        |
+| primary                                 | `#82a9c9`                        |
 | primary-foreground                      | `#1e1e1e`                        |
 | secondary                               | `#2a2a2a`                        |
 | secondary-foreground                    | `#dadada`                        |
-| accent                                  | `#4c9dff`                        |
+| accent                                  | `#82a9c9`                        |
 | accent-foreground                       | `#1e1e1e`                        |
 | danger                                  | `#fb464c`                        |
 | danger-foreground                       | `#1e1e1e`                        |
@@ -204,10 +209,10 @@
 | warning-foreground                      | `#1e1e1e`                        |
 | success                                 | `#44cf6e`                        |
 | success-foreground                      | `#1e1e1e`                        |
-| done                                    | `#a882ff`                        |
+| done                                    | `#82a9c9`                        |
 | done-foreground                         | `#1e1e1e`                        |
-| link                                    | `#4c9dff`                        |
-| link-hover                              | `#a882ff`                        |
+| link                                    | `#82a9c9`                        |
+| link-hover                              | `#9bbdd8`                        |
 | shadow                                  | `0 18px 42px rgba(0, 0, 0, 0.5)` |
 | editor-background                       | `#1e1e1e`                        |
 | editor-foreground                       | `#dadada`                        |
@@ -223,17 +228,22 @@
 | markdown-background                     | `#1e1e1e`                        |
 | markdown-foreground                     | `#dadada`                        |
 | markdown-heading                        | `#ffffff`                        |
+| markdown-heading-2                      | `#ffffff`                        |
+| markdown-heading-3                      | `#ffffff`                        |
+| markdown-heading-4                      | `#ffffff`                        |
+| markdown-heading-5                      | `#ffffff`                        |
+| markdown-heading-6                      | `#ffffff`                        |
 | markdown-muted-foreground               | `#999999`                        |
 | markdown-border                         | `#363636`                        |
 | markdown-rule                           | `#363636`                        |
-| markdown-link                           | `#4c9dff`                        |
-| markdown-link-hover                     | `#a882ff`                        |
+| markdown-link                           | `#82a9c9`                        |
+| markdown-link-hover                     | `#9bbdd8`                        |
 | markdown-inline-code-background         | `#2a2a2a`                        |
 | markdown-inline-code-foreground         | `#f6a5cf`                        |
 | markdown-blockquote-background          | `#242424`                        |
 | markdown-blockquote-border              | `#a882ff`                        |
 | markdown-blockquote-foreground          | `#dadada`                        |
-| markdown-alert-note                     | `#4c9dff`                        |
+| markdown-alert-note                     | `#82a9c9`                        |
 | markdown-alert-tip                      | `#44cf6e`                        |
 | markdown-alert-important                | `#a882ff`                        |
 | markdown-alert-warning                  | `#e0de71`                        |
@@ -249,24 +259,24 @@
 | markdown-keyboard-border                | `#363636`                        |
 | minimap-background                      | `#242424`                        |
 | minimap-border                          | `#363636`                        |
-| minimap-viewport-border                 | `#a882ff`                        |
+| minimap-viewport-border                 | `#82a9c9`                        |
 | minimap-viewport-background             | `rgba(110, 118, 129, 0.14)`      |
-| minimap-heading                         | `#a882ff`                        |
+| minimap-heading                         | `#82a9c9`                        |
 | minimap-paragraph                       | `#999999`                        |
 | minimap-blank                           | `#363636`                        |
 | minimap-list                            | `#44cf6e`                        |
-| minimap-blockquote                      | `#4c9dff`                        |
+| minimap-blockquote                      | `#82a9c9`                        |
 | minimap-code                            | `#fa99cd`                        |
 | navigation-border                       | `#363636`                        |
-| navigation-button-background            | `#a882ff`                        |
+| navigation-button-background            | `#82a9c9`                        |
 | navigation-button-foreground            | `#1e1e1e`                        |
-| navigation-button-hover-background      | `#b89bff`                        |
+| navigation-button-hover-background      | `#97b8d4`                        |
 | navigation-button-disabled-background   | `#2a2a2a`                        |
 | navigation-button-disabled-foreground   | `#6a6a6a`                        |
 | navigation-recent-border                | `#363636`                        |
 | navigation-recent-item-foreground       | `#dadada`                        |
-| navigation-recent-item-hover-foreground | `#a882ff`                        |
-| focus-ring                              | `#a882ff`                        |
+| navigation-recent-item-hover-foreground | `#82a9c9`                        |
+| focus-ring                              | `#82a9c9`                        |
 | focus-selection-background              | `#2f3a54`                        |
 | focus-selection-foreground              | `#ffffff`                        |
 | syntax-background                       | `#181818`                        |
@@ -297,12 +307,12 @@
 | surface-card                            | `#232323` |
 | foreground                              | `#d6d4d0` |
 | muted-foreground                        | `#9a968f` |
-| primary                                 | `#c9c6c0` |
-| accent                                  | `#a8a49c` |
-| done                                    | `#c9c6c0` |
-| link                                    | `#b0b6bd` |
-| link-hover                              | `#e0ddd8` |
-| focus-ring                              | `#a8a49c` |
+| primary                                 | `#82a9c9` |
+| accent                                  | `#82a9c9` |
+| done                                    | `#82a9c9` |
+| link                                    | `#82a9c9` |
+| link-hover                              | `#9bbdd8` |
+| focus-ring                              | `#82a9c9` |
 | focus-selection-background              | `#33322f` |
 | editor-background                       | `#1a1a1a` |
 | editor-foreground                       | `#d6d4d0` |
@@ -311,20 +321,20 @@
 | editor-code-foreground                  | `#d6d4d0` |
 | markdown-background                     | `#1a1a1a` |
 | markdown-foreground                     | `#d6d4d0` |
-| markdown-link                           | `#b0b6bd` |
-| markdown-link-hover                     | `#e0ddd8` |
+| markdown-link                           | `#82a9c9` |
+| markdown-link-hover                     | `#9bbdd8` |
 | markdown-blockquote-border              | `#555555` |
 | markdown-blockquote-background          | `#232323` |
 | markdown-inline-code-foreground         | `#d6d4d0` |
-| markdown-alert-note                     | `#a8a49c` |
+| markdown-alert-note                     | `#82a9c9` |
 | markdown-alert-important                | `#c9c6c0` |
-| minimap-viewport-border                 | `#a8a49c` |
-| minimap-heading                         | `#a8a49c` |
-| minimap-blockquote                      | `#b0b6bd` |
-| navigation-button-background            | `#c9c6c0` |
-| navigation-button-hover-background      | `#e0ddd8` |
+| minimap-viewport-border                 | `#82a9c9` |
+| minimap-heading                         | `#82a9c9` |
+| minimap-blockquote                      | `#82a9c9` |
+| navigation-button-background            | `#82a9c9` |
+| navigation-button-hover-background      | `#97b8d4` |
 | navigation-recent-item-foreground       | `#d6d4d0` |
-| navigation-recent-item-hover-foreground | `#c9c6c0` |
+| navigation-recent-item-hover-foreground | `#82a9c9` |
 | syntax-background                       | `#141414` |
 | syntax-foreground                       | `#d6d4d0` |
 | syntax-comment                          | `#949089` |

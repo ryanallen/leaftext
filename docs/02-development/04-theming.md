@@ -16,7 +16,7 @@ App surface and text colors, named by role (the `app-` prefix was dropped): `--l
 
 ### Editor and Markdown elements
 
-Tokens for inline code background/foreground, code block background/foreground/border, blockquote border and foreground, headings, muted foreground, links, tables, thematic breaks, math inline background, and keyboard key styling.
+Tokens for inline code background/foreground, code block background/foreground/border, blockquote border and foreground, headings (`--leaf-markdown-heading` for `h1`/the base, plus `--leaf-markdown-heading-2` through `-6` so deeper levels can be tinted — set them equal to the base to keep one heading color), muted foreground, links, tables, thematic breaks, math inline background, and keyboard key styling.
 
 ### Alert callout colors
 
@@ -40,32 +40,34 @@ Corners and elevation are tokenized too, but as **global scales** in the compile
 
 ## Theme families and sources
 
-Themes are organized as **families**, each pairing a light and a dark **source**. The user picks a family (the Theme setting) and an appearance (the Appearance setting: Light, Dark, System, or Daylight); the two combine to select one source. Five families ship, so ten sources are defined, **sorted by display name** in the picker (`Dracula`, `Fern`, `GitHub`, `Græy`, `Obsidian`); `fern` is the default family (the bootstrap's fallback). Each source has an `id`, a `family` id, a `family_name` (the picker label), an `appearance` (`Light`/`Dark`), a CSS `selector`, a flat `tokens` map covering every contract property, an `overrides` map for per-source token nudges (empty for most sources), and a `fonts` block:
+Themes are organized as **families**, each pairing a light and a dark **source**. The user picks a family (the Theme setting) and an appearance (the Appearance setting: Light, Dark, System, or Daylight); the two combine to select one source. Six families ship, so twelve sources are defined, **sorted by display name** in the picker (`Amaranth`, `Fern`, `GitHub`, `Halcyon`, `Nightshade`, `Sage`); `fern` is the default family (the bootstrap's fallback). Each source has an `id`, a `family` id, a `family_name` (the picker label), an `appearance` (`Light`/`Dark`), a CSS `selector`, a flat `tokens` map covering every contract property, an `overrides` map for per-source token nudges (empty for most sources), and a `fonts` block:
 
 | Source id        | Family (label)        | Appearance | Token strategy                                                                     |
 | ---------------- | --------------------- | ---------- | --------------------------------------------------------------------------------- |
-| `dracula-light`  | `dracula` (Dracula)   | Light      | A light "Alucard" interpretation of the Dracula accent hues on a cream ground.    |
-| `dracula-dark`   | `dracula` (Dracula)   | Dark       | The classic Dracula hex values (`#282a36`, `#f8f8f2`, `#bd93f9`).                  |
-| `fern-light`     | `fern` (Fern)         | Light      | Default family. Obsidian's light tokens plus a fern-green override cast.           |
-| `fern-dark`      | `fern` (Fern)         | Dark       | Obsidian's dark tokens plus the fern-green overrides.                              |
-| `github-light`   | `github` (GitHub)     | Light      | GitHub's light palette, baked to literal hex (its own system-font stack).         |
-| `github-dark`    | `github` (GitHub)     | Dark       | GitHub's dark palette, baked to literal hex.                                       |
-| `graey-light`    | `graey` (Græy)        | Light      | Obsidian's light tokens plus a neutral greyscale override.                         |
-| `graey-dark`     | `graey` (Græy)        | Dark       | Obsidian's dark tokens plus the greyscale overrides.                              |
-| `obsidian-light` | `obsidian` (Obsidian) | Light      | Obsidian's default light base ramp with its violet accent.                        |
-| `obsidian-dark`  | `obsidian` (Obsidian) | Dark       | Obsidian's default dark base ramp with its violet accent.                         |
+| `amaranth-light`   | `amaranth` (Amaranth)     | Light      | Clean light base ramp with a violet accent (the renamed Obsidian palette).         |
+| `amaranth-dark`    | `amaranth` (Amaranth)     | Dark       | Dark base ramp with a violet accent (the renamed Obsidian palette).                |
+| `fern-light`       | `fern` (Fern)             | Light      | Default family. Amaranth's light tokens plus a fern-green override cast.            |
+| `fern-dark`        | `fern` (Fern)             | Dark       | Amaranth's dark tokens plus the fern-green overrides.                               |
+| `github-light`     | `github` (GitHub)         | Light      | GitHub's light palette, baked to literal hex (its own system-font stack).          |
+| `github-dark`      | `github` (GitHub)         | Dark       | GitHub's dark palette, baked to literal hex.                                        |
+| `halcyon-light`    | `halcyon` (Halcyon)       | Light      | A clean white base with one blue accent (`#086ddd`) and Things-style level headings. |
+| `halcyon-dark`     | `halcyon` (Halcyon)       | Dark       | A cool blue-gray ramp (`#1c2127`) with a bright blue accent (`#4c9dff`).            |
+| `nightshade-light` | `nightshade` (Nightshade) | Light      | A light "Alucard" interpretation of the Dracula accent hues on a cream ground.     |
+| `nightshade-dark`  | `nightshade` (Nightshade) | Dark       | The classic Dracula hex values (`#282a36`, `#f8f8f2`, `#bd93f9`).                   |
+| `sage-light`       | `sage` (Sage)             | Light      | Amaranth's light tokens on neutral grey with a muted-blue (Minimal-style) accent.  |
+| `sage-dark`        | `sage` (Sage)             | Dark       | Amaranth's dark tokens on neutral grey with a muted-blue accent.                    |
 
 Every source activates through the Leaf-owned attributes the theme bootstrap stamps on `:root`: `data-leaf-theme="<family>"` and `data-leaf-appearance="<light|dark>"`. So a source's selector is `:root[data-leaf-theme="github"][data-leaf-appearance="light"]`, and so on.
 
-**Every theme is a self-contained literal palette** — each source maps every `--leaf-*` token to a hex (or `rgba()`) value. There is no Primer dependency and no separate theme "kind": GitHub was flattened to plain hex like the rest, so all themes share one uniform shape. The Fern and Græy families reuse Obsidian's literal token maps and re-tint them through their `overrides` maps, so they inherit Obsidian's full coverage and only restate the tokens they change (`theme_source_token_value()` checks `overrides` before `tokens`). `theme_families()` derives the ordered picker list from the loaded sources, so registering a family's light/dark pair adds it to the picker automatically.
+**Every theme is a self-contained literal palette** — each source maps every `--leaf-*` token to a hex (or `rgba()`) value. There is no Primer dependency and no separate theme "kind": GitHub was flattened to plain hex like the rest, so all themes share one uniform shape. The Fern and Sage families reuse Amaranth's literal token maps and re-tint them through their `overrides` maps, so they inherit Amaranth's full coverage and only restate the tokens they change (`theme_source_token_value()` checks `overrides` before `tokens`). `theme_families()` derives the ordered picker list from the loaded sources, so registering a family's light/dark pair adds it to the picker automatically.
 
 ## Palettes are data (`themes.md`)
 
 `theme_sources()` parses `src/assets/themes.md` — bundled into the binary with `include_str!` — **once** at startup via a `OnceLock`, then leaks the owned strings to `&'static` so every downstream consumer keeps working against `&'static` fields. `parse_theme_markdown()` walks the Markdown headings and tables into one `ThemeFile` per source (`id`, `family`, `family_name`, `appearance`, `selector`, `tokens`, `overrides`, `fonts`); `id` and `selector` are derived from the family id and appearance, so the files never restate them.
 
-The editable source of truth is the **`themes/` folder at the repo root**. Being Markdown, each file renders as clean color tables right where it lives — start with the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), a self-updating index with a light-vs-dark palette table for every family, then open any family file directly: [Dracula](https://github.com/ryanallen/leaftext/blob/main/themes/dracula.md), [Fern](https://github.com/ryanallen/leaftext/blob/main/themes/fern.md), [GitHub](https://github.com/ryanallen/leaftext/blob/main/themes/github.md), [Græy](https://github.com/ryanallen/leaftext/blob/main/themes/graey.md), [Obsidian](https://github.com/ryanallen/leaftext/blob/main/themes/obsidian.md). There is one file per family — `themes/<family>.md` — laid out as:
+The editable source of truth is the **`themes/` folder at the repo root**. Being Markdown, each file renders as clean color tables right where it lives — start with the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), a self-updating index with a light-vs-dark palette table for every family, then open any family file directly: [Amaranth](https://github.com/ryanallen/leaftext/blob/main/themes/amaranth.md), [Fern](https://github.com/ryanallen/leaftext/blob/main/themes/fern.md), [GitHub](https://github.com/ryanallen/leaftext/blob/main/themes/github.md), [Halcyon](https://github.com/ryanallen/leaftext/blob/main/themes/halcyon.md), [Nightshade](https://github.com/ryanallen/leaftext/blob/main/themes/nightshade.md), [Sage](https://github.com/ryanallen/leaftext/blob/main/themes/sage.md). There is one file per family — `themes/<family>.md` — laid out as:
 
-- `# Display Name` — the family's picker label (`Græy`, `GitHub`, …).
+- `# Display Name` — the family's picker label (`Sage`, `GitHub`, …).
 - `**Family ID:** \`<family>\`` — the family id used in `data-leaf-theme` and in the `<family>.md` filename (the bundler checks they match).
 - `## Fonts` — a `Role | Stack` table with `Heading`, `Body`, `Code`, and `Google` rows.
 - `## Light` and `## Dark` — a `Token | Value` table covering every contract property, each optionally followed by a `### Overrides` table for per-source token nudges. **Token names drop the `--leaf-` prefix** (re-added at parse time) and values are wrapped in backticks (`` `#282a36` ``).
@@ -122,7 +124,7 @@ Fonts are **per-theme data**. Each source's `fonts` block carries three CSS font
 - `theme_web_font_hrefs_json()` builds the family → `google` URL map (skipping any family whose `google` is empty) and injects it into the theme bootstrap as `FAMILY_FONTS`.
 - In `theme_bootstrap_script()`, `applyFamilyFont()` runs on every `apply()` (first paint and each switch): it points a single `<link id="leafThemeFont">` at the active family's URL, or removes it for a family that fetches nothing. Because each stack ends in system fallbacks, text is readable before the web font loads and while offline.
 
-The shipping families load **Noto** (Sans / Serif / Sans Mono); **GitHub** declares an empty `google`, so it uses the OS's native font stack and fetches nothing. The Content-Security-Policy in `src/assets/app-shell.html` allows `https://fonts.googleapis.com` (the stylesheet) under `style-src` and `https://fonts.gstatic.com` (the woff2 files) under `font-src`.
+Each family declares its own faces — Fern loads **Noto** (Sans / Serif / Sans Mono), Nightshade **Fraunces + Inter + Fira Code**, Halcyon **IBM Plex Sans/Mono**, Amaranth the **Source** family, Sage **Inter + JetBrains Mono**; **GitHub** declares an empty `google`, so it uses the OS's native font stack and fetches nothing. The Content-Security-Policy in `src/assets/app-shell.html` allows `https://fonts.googleapis.com` (the stylesheet) under `style-src` and `https://fonts.gstatic.com` (the woff2 files) under `font-src`.
 
 ## Adding a theme
 
@@ -130,7 +132,7 @@ A theme is a light/dark pair of sources, authored as data — no Rust. To add on
 
 **1. Add the family file**
 
-Create `themes/myfamily.md`. Copy an existing family file (e.g. `themes/dracula.md`) as a template so the token coverage and shape match, then edit:
+Create `themes/myfamily.md`. Copy an existing family file (e.g. `themes/amaranth.md`) as a template so the token coverage and shape match, then edit:
 
 - the `# My Family` heading and the `**Family ID:** \`myfamily\`` line (it must match the filename);
 - the `## Fonts` table (set the `Google` row to a Google Fonts `css2` URL, or leave it blank for system fonts);

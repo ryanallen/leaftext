@@ -768,12 +768,17 @@ pub fn app_shell_html() -> String {
 /// family, rendered from [`theme_families`] so the built-in list stays the
 /// single source of truth. Family names are trusted (proper nouns defined in
 /// `theme.rs`), ids are `[a-z0-9-]`.
+/// Selected-state check badge shown on the active theme card (Heroicons
+/// check-circle, stroked in the accent color via `currentColor`). Hidden until
+/// the card is `.is-active`.
+const THEME_ITEM_CHECK_SVG: &str = "<svg class=\"theme-item-check\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z\" /></svg>";
+
 fn theme_items_html() -> String {
     let mut items: String = theme_families()
         .into_iter()
         .map(|(id, name)| {
             format!(
-                "<li><button type=\"button\" class=\"theme-item\" data-family=\"{id}\" aria-pressed=\"false\">{name}</button></li>"
+                "<li><button type=\"button\" class=\"theme-item\" data-family=\"{id}\" aria-pressed=\"false\"><span class=\"theme-item-name\">{name}</span>{THEME_ITEM_CHECK_SVG}</button></li>"
             )
         })
         .collect();
@@ -781,7 +786,7 @@ fn theme_items_html() -> String {
     // concrete family at each launch, cycling through every family without repeat
     // before resetting. Appended after the families; localized via data-i18n.
     items.push_str(
-        "<li><button type=\"button\" class=\"theme-item theme-item-random\" data-family=\"random\" aria-pressed=\"false\" data-i18n=\"settings.theme.family.random\">Random</button></li>",
+        &format!("<li><button type=\"button\" class=\"theme-item theme-item-random\" data-family=\"random\" aria-pressed=\"false\"><span class=\"theme-item-name\" data-i18n=\"settings.theme.family.random\">Random</span>{THEME_ITEM_CHECK_SVG}</button></li>"),
     );
     items
 }
@@ -789,7 +794,7 @@ fn theme_items_html() -> String {
 fn theme_bootstrap_script() -> String {
     r#"
 (() => {
-  // Themes are two axes: a family (github/dracula/obsidian) and an appearance
+  // Themes are two axes: a family (github/nightshade/amaranth/…) and an appearance
   // mode. Light/dark pick a fixed variant, system follows the OS, and daylight
   // is light between DAY_START and DAY_END local time, dark otherwise.
   // The built-in theme families, injected from the theme registry (theme.rs
@@ -1038,11 +1043,12 @@ fn locale_bootstrap_script() -> &'static str {
       'settings.theme.aria': 'Theme',
       'settings.theme.dark': 'Dark',
       'settings.theme.daylight': 'Daylight',
-      'settings.theme.family.dracula': 'Dracula',
+      'settings.theme.family.amaranth': 'Amaranth',
       'settings.theme.family.fern': 'Fern',
       'settings.theme.family.github': 'GitHub',
-      'settings.theme.family.graey': 'Græy',
-      'settings.theme.family.obsidian': 'Obsidian',
+      'settings.theme.family.halcyon': 'Halcyon',
+      'settings.theme.family.nightshade': 'Nightshade',
+      'settings.theme.family.sage': 'Sage',
       'settings.theme.family.random': 'Random',
       'settings.theme.help': 'System follows device preference; Daylight is light by day, dark at night.',
       'settings.theme.label': 'Theme',
@@ -1150,11 +1156,12 @@ fn locale_bootstrap_script() -> &'static str {
       'settings.theme.aria': '主题',
       'settings.theme.dark': '深色',
       'settings.theme.daylight': '日间自动',
-      'settings.theme.family.dracula': 'Dracula',
+      'settings.theme.family.amaranth': 'Amaranth',
       'settings.theme.family.fern': 'Fern',
       'settings.theme.family.github': 'GitHub',
-      'settings.theme.family.graey': 'Græy',
-      'settings.theme.family.obsidian': 'Obsidian',
+      'settings.theme.family.halcyon': 'Halcyon',
+      'settings.theme.family.nightshade': 'Nightshade',
+      'settings.theme.family.sage': 'Sage',
       'settings.theme.family.random': '随机',
       'settings.theme.help': '跟随系统显示偏好；“日间自动”白天浅色、夜间深色。',
       'settings.theme.label': '主题',
@@ -1343,7 +1350,7 @@ pub struct Settings {
     /// Make the reading view a live editor. On by default; off keeps it
     /// read-only. The code view edits the raw source regardless.
     pub reader_editing_enabled: bool,
-    /// Selected theme family: `github`/`dracula`/`obsidian`. Raw frontend
+    /// Selected theme family: `github`/`nightshade`/`amaranth`/… Raw frontend
     /// string; the frontend normalizes anything unexpected back to `github`.
     pub theme_family: String,
     /// Last appearance mode: `system`/`light`/`dark`/`daylight`. Raw frontend
@@ -1484,9 +1491,10 @@ pub fn load_settings(settings_path: impl AsRef<Path>) -> Settings {
         .and_then(|contents| serde_json::from_str(&contents).ok())
         .unwrap_or_default();
     // Migrate the pre-family single-axis setting: Dracula used to be a theme
-    // "mode", now it's a family whose dark half matches the old palette.
+    // "mode"; it's now the dark half of the Nightshade family (the renamed
+    // Dracula palette).
     if settings.theme_mode == "dracula" {
-        settings.theme_family = "dracula".to_string();
+        settings.theme_family = "nightshade".to_string();
         settings.theme_mode = "dark".to_string();
     }
     settings

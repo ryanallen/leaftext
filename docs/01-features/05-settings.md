@@ -8,7 +8,7 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 
 | Setting | Options | Default |
 | --- | --- | --- |
-| Theme | Fern, GitHub, Dracula, Obsidian, Græy, Random | Fern |
+| Theme | Amaranth, Fern, GitHub, Halcyon, Nightshade, Sage, Random | Fern |
 | Appearance | System, Light, Dark, Daylight | System |
 | Language | System, English, Simplified Chinese | System |
 | Speed Reader | On / Off | Off |

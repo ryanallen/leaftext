@@ -59,6 +59,11 @@
 | markdown-background                     | `#ffffff`                                      |
 | markdown-foreground                     | `#1f2328`                                      |
 | markdown-heading                        | `#1f2328`                                      |
+| markdown-heading-2                      | `#1f2328`                                      |
+| markdown-heading-3                      | `#1f2328`                                      |
+| markdown-heading-4                      | `#1f2328`                                      |
+| markdown-heading-5                      | `#1f2328`                                      |
+| markdown-heading-6                      | `#1f2328`                                      |
 | markdown-muted-foreground               | `#59636e`                                      |
 | markdown-border                         | `#d1d9e0`                                      |
 | markdown-rule                           | `#d1d9e0b3`                                    |
@@ -171,6 +176,11 @@
 | markdown-background                     | `#0d1117`                                      |
 | markdown-foreground                     | `#f0f6fc`                                      |
 | markdown-heading                        | `#f0f6fc`                                      |
+| markdown-heading-2                      | `#f0f6fc`                                      |
+| markdown-heading-3                      | `#f0f6fc`                                      |
+| markdown-heading-4                      | `#f0f6fc`                                      |
+| markdown-heading-5                      | `#f0f6fc`                                      |
+| markdown-heading-6                      | `#f0f6fc`                                      |
 | markdown-muted-foreground               | `#9198a1`                                      |
 | markdown-border                         | `#3d444d`                                      |
 | markdown-rule                           | `#3d444db3`                                    |

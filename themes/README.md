@@ -5,26 +5,26 @@
 
 Every theme in Leaf Text is plain data — one Markdown file per family, right here in this folder. Because they are Markdown, they render as the color tables below in Leaf itself and at [leaftext.com/themes](https://leaftext.com/themes).
 
-5 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the table is a light-vs-dark preview of the key colors — every family also defines the full ~100-token contract inside its file.
+6 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the table is a light-vs-dark preview of the key colors — every family also defines the full ~100-token contract inside its file.
 
 ## Gallery
 
-### Dracula
+### Amaranth
 
-[`dracula.md`](dracula.md) · Heading **Noto Serif** · Body **Noto Sans** · Code **Noto Sans Mono** · Google Fonts
+[`amaranth.md`](amaranth.md) · Heading **Source Serif 4** · Body **Source Sans 3** · Code **Source Code Pro** · Google Fonts
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
-| Background | `#f7f5ef` | `#282a36` |
-| Foreground | `#26222e` | `#f8f8f2` |
-| Heading    | `#171320` | `#ffffff` |
-| Primary    | `#7b3fe4` | `#bd93f9` |
-| Accent     | `#0c6f8c` | `#8be9fd` |
-| Link       | `#0c6f8c` | `#8be9fd` |
-| Success    | `#1c7d3f` | `#50fa7b` |
-| Warning    | `#9a6a00` | `#f1fa8c` |
-| Danger     | `#cf2e3f` | `#ff8f8f` |
-| Border     | `#d8d0e6` | `#6272a4` |
+| Background | `#ffffff` | `#1e1e1e` |
+| Foreground | `#222222` | `#dadada` |
+| Heading    | `#11111a` | `#ffffff` |
+| Primary    | `#6d45e0` | `#a882ff` |
+| Accent     | `#086ddd` | `#4c9dff` |
+| Link       | `#086ddd` | `#4c9dff` |
+| Success    | `#087a34` | `#44cf6e` |
+| Warning    | `#8a6d00` | `#e0de71` |
+| Danger     | `#d3243a` | `#fb464c` |
+| Border     | `#e0e0e0` | `#363636` |
 
 ### Fern
 
@@ -60,39 +60,56 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 | Danger     | `#d1242f` | `#f85149` |
 | Border     | `#d1d9e0` | `#39435f` |
 
-### Græy
+### Halcyon
 
-[`graey.md`](graey.md) · Heading **Noto Serif** · Body **Noto Sans** · Code **Noto Sans Mono** · Google Fonts
+[`halcyon.md`](halcyon.md) · Heading **IBM Plex Sans** · Body **IBM Plex Sans** · Code **IBM Plex Mono** · Google Fonts
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#ffffff` | `#1c2127` |
+| Foreground | `#222222` | `#dadada` |
+| Heading    | `#11111a` | `#ffffff` |
+| Primary    | `#086ddd` | `#4c9dff` |
+| Accent     | `#086ddd` | `#4c9dff` |
+| Link       | `#086ddd` | `#4c9dff` |
+| Success    | `#087a34` | `#44cf6e` |
+| Warning    | `#8a6d00` | `#e0de71` |
+| Danger     | `#d3243a` | `#fb464c` |
+| Border     | `#e6e9ee` | `#353b44` |
+
+### Nightshade
+
+[`nightshade.md`](nightshade.md) · Heading **Fraunces** · Body **Inter** · Code **Fira Code** · Google Fonts
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#f7f5ef` | `#282a36` |
+| Foreground | `#26222e` | `#f8f8f2` |
+| Heading    | `#171320` | `#ffffff` |
+| Primary    | `#7b3fe4` | `#bd93f9` |
+| Accent     | `#0c6f8c` | `#8be9fd` |
+| Link       | `#0c6f8c` | `#8be9fd` |
+| Success    | `#1c7d3f` | `#50fa7b` |
+| Warning    | `#9a6a00` | `#f1fa8c` |
+| Danger     | `#cf2e3f` | `#ff8f8f` |
+| Border     | `#d8d0e6` | `#6272a4` |
+
+### Sage
+
+[`sage.md`](sage.md) · Heading **Inter** · Body **Inter** · Code **JetBrains Mono** · Google Fonts
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
 | Background | `#f7f6f4` | `#1a1a1a` |
 | Foreground | `#222222` | `#d6d4d0` |
 | Heading    | `#11111a` | `#ffffff` |
-| Primary    | `#4a4a48` | `#c9c6c0` |
-| Accent     | `#57534e` | `#a8a49c` |
-| Link       | `#444a4a` | `#b0b6bd` |
+| Primary    | `#3f7aa8` | `#82a9c9` |
+| Accent     | `#3f7aa8` | `#82a9c9` |
+| Link       | `#3f7aa8` | `#82a9c9` |
 | Success    | `#087a34` | `#44cf6e` |
 | Warning    | `#8a6d00` | `#e0de71` |
 | Danger     | `#d3243a` | `#fb464c` |
 | Border     | `#dcdad5` | `#363636` |
-
-### Obsidian
-
-[`obsidian.md`](obsidian.md) · Heading **Noto Serif** · Body **Noto Sans** · Code **Noto Sans Mono** · Google Fonts
-
-| Role       | Light     | Dark      |
-| ---------- | --------- | --------- |
-| Background | `#ffffff` | `#1e1e1e` |
-| Foreground | `#222222` | `#dadada` |
-| Heading    | `#11111a` | `#ffffff` |
-| Primary    | `#6d45e0` | `#a882ff` |
-| Accent     | `#086ddd` | `#4c9dff` |
-| Link       | `#086ddd` | `#4c9dff` |
-| Success    | `#087a34` | `#44cf6e` |
-| Warning    | `#8a6d00` | `#e0de71` |
-| Danger     | `#d3243a` | `#fb464c` |
-| Border     | `#e0e0e0` | `#363636` |
 
 ## Adding or editing a theme
 

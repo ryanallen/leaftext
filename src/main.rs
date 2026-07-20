@@ -138,7 +138,7 @@ enum UserEvent {
     SetReaderEditingEnabled {
         enabled: bool,
     },
-    /// Persist the selected theme family (`github`/`dracula`/`obsidian`).
+    /// Persist the selected theme family (`github`/`nightshade`/`amaranth`/…).
     SetThemeFamily {
         family: String,
     },

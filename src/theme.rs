@@ -3,7 +3,7 @@ use std::sync::OnceLock;
 
 use serde::{Deserialize, Serialize};
 
-/// The light or dark half of a theme family. A family (GitHub, Dracula, Obsidian)
+/// The light or dark half of a theme family. A family (GitHub, Nightshade, Sage)
 /// pairs one of each; the appearance is chosen by the Appearance setting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -124,6 +124,11 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
     "--leaf-markdown-background",
     "--leaf-markdown-foreground",
     "--leaf-markdown-heading",
+    "--leaf-markdown-heading-2",
+    "--leaf-markdown-heading-3",
+    "--leaf-markdown-heading-4",
+    "--leaf-markdown-heading-5",
+    "--leaf-markdown-heading-6",
     "--leaf-markdown-muted-foreground",
     "--leaf-markdown-border",
     "--leaf-markdown-rule",
@@ -697,6 +702,13 @@ pub(crate) fn reading_mode_css() -> &'static str {
   --preview-background: var(--reading-background);
   --preview-foreground: var(--reading-ink);
   --preview-heading: var(--reading-heading);
+  /* Per-level heading colors. h1 uses --preview-heading (the base); h2–h6 pull
+     their own token so a theme can tint deeper levels (or leave them equal). */
+  --preview-heading-2: var(--leaf-markdown-heading-2);
+  --preview-heading-3: var(--leaf-markdown-heading-3);
+  --preview-heading-4: var(--leaf-markdown-heading-4);
+  --preview-heading-5: var(--leaf-markdown-heading-5);
+  --preview-heading-6: var(--leaf-markdown-heading-6);
   --preview-rule: var(--reading-rule);
   --preview-border: var(--border);
   --preview-muted-foreground: var(--muted-foreground);
@@ -814,7 +826,7 @@ body {
   --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
 :root[data-theme="dark"] {
-  /* Dark themes (Primer dark and Dracula) use a darker grain so the surface reads
+  /* Dark themes use a darker grain so the surface reads
      as speckled darker, not lighter — needs a heavier alpha than light mode to
      show against the already-dark surface. */
   --app-bar-grain: rgba(0, 0, 0, 0.35);
@@ -1037,7 +1049,7 @@ body {
   background: var(--app-action-hover-background);
   border-color: transparent;
   /* The contrast color that pairs with the action background — white icons on a
-     light accent (Fern green, Dracula/Obsidian lavender) were unreadable. */
+     light accent (Fern green, Amaranth lavender) were unreadable. */
   color: var(--app-action-foreground);
 }
 .history-actions {
@@ -1450,7 +1462,7 @@ summary:focus-visible {
      boundary against the reader is legible in every theme. */
   border-right: 1px solid var(--app-border);
 }
-:root[data-theme="dark"]:not([data-leaf-theme="dracula"]) {
+:root[data-theme="dark"]:not([data-leaf-theme="nightshade"]) {
   --library-surface: color-mix(in srgb, var(--app-surface) 98%, black);
 }
 .library-divider {
@@ -2101,6 +2113,7 @@ body.library-resizing {
   line-height: var(--type-display-line);
 }
 .document-body h2 {
+  color: var(--preview-heading-2);
   border-bottom: 1px solid var(--preview-rule);
   font-size: var(--type-h2-size);
   font-weight: var(--type-h2-weight);
@@ -2108,21 +2121,25 @@ body.library-resizing {
   padding-bottom: 0.3em;
 }
 .document-body h3 {
+  color: var(--preview-heading-3);
   font-size: var(--type-h3-size);
   font-weight: var(--type-h3-weight);
   line-height: var(--type-h3-line);
 }
 .document-body h4 {
+  color: var(--preview-heading-4);
   font-size: var(--type-h4-size);
   font-weight: var(--type-h4-weight);
   line-height: var(--type-h4-line);
 }
 .document-body h5 {
+  color: var(--preview-heading-5);
   font-size: var(--type-h5-size);
   font-weight: var(--type-h5-weight);
   line-height: var(--type-h4-line);
 }
 .document-body h6 {
+  color: var(--preview-heading-6);
   font-size: var(--type-h6-size);
   font-weight: var(--type-h6-weight);
   line-height: var(--type-caption-line);
@@ -3510,27 +3527,44 @@ body.library-resizing {
   border-color: var(--primary);
   color: var(--primary-foreground);
 }
+.theme-sheet-divider {
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background: var(--border);
+}
 .theme-sheet-grid {
   list-style: none;
   margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
+  padding: 2px;
+  /* Cards wrap and each row grows to fill the full width (flex-grow), so there
+     are never ragged trailing gaps — the last row stretches like the rest. */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   overflow-y: auto;
 }
 .theme-item {
+  flex: 1 1 170px;
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 11px 14px;
+  justify-content: center;
+  min-height: 54px;
+  padding: 14px 28px;
   border: 1px solid var(--settings-control-border);
   border-radius: var(--leaf-radius-xl);
   background: var(--settings-control-background);
   color: var(--settings-control-foreground);
-  font: 700 14px var(--app-font);
-  text-align: left;
+  font: 700 13.5px var(--app-font);
+  text-align: center;
   cursor: pointer;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+.theme-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .theme-item:hover {
   background: var(--surface-muted);
@@ -3540,10 +3574,20 @@ body.library-resizing {
   border-color: var(--accent);
   box-shadow: inset 0 0 0 1px var(--accent);
 }
-.theme-item.is-active::after {
-  content: "✓";
+/* Selected badge: the check-circle, tinted with the theme accent, pinned to the
+   card's top-right corner. Hidden until the card is active. */
+.theme-item-check {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 16px;
+  height: 16px;
+  display: none;
   color: var(--accent);
-  font-weight: 800;
+  pointer-events: none;
+}
+.theme-item.is-active .theme-item-check {
+  display: block;
 }
 .theme-sheet-footer {
   display: flex;

@@ -2008,13 +2008,13 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
     assert_contains(css, "/* Leaf semantic theme compiler output. */");
     assert_contains(css, "--leaf-theme-source: github-light;");
     assert_contains(css, "--leaf-theme-source: github-dark;");
-    assert_contains(css, "--leaf-theme-source: dracula-light;");
-    assert_contains(css, "--leaf-theme-source: dracula-dark;");
-    assert_contains(css, "--leaf-theme-source: obsidian-light;");
-    assert_contains(css, "--leaf-theme-source: obsidian-dark;");
+    assert_contains(css, "--leaf-theme-source: nightshade-light;");
+    assert_contains(css, "--leaf-theme-source: nightshade-dark;");
+    assert_contains(css, "--leaf-theme-source: amaranth-light;");
+    assert_contains(css, "--leaf-theme-source: amaranth-dark;");
     assert_contains(
         css,
-        r#":root[data-leaf-theme="dracula"][data-leaf-appearance="dark"]"#,
+        r#":root[data-leaf-theme="nightshade"][data-leaf-appearance="dark"]"#,
     );
     // GitHub's tokens are concrete hex now, like every other family.
     assert_contains(css, "--leaf-background: #ffffff;");
@@ -2289,9 +2289,9 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
     let sources = theme_sources();
 
     assert_theme_sources_cover_contract(sources);
-    // Five families (github, dracula, obsidian, fern, graey), each a light/dark pair.
-    assert_eq!(sources.len(), 10);
-    assert!(sources.iter().any(|source| source.id == "dracula-dark"));
+    // Six families (github, nightshade, amaranth, fern, sage, halcyon), each a light/dark pair.
+    assert_eq!(sources.len(), 12);
+    assert!(sources.iter().any(|source| source.id == "nightshade-dark"));
 
     for source in sources {
         for token in LEAF_SEMANTIC_TOKEN_CONTRACT {
@@ -2309,11 +2309,12 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
     assert_eq!(
         theme_families(),
         vec![
-            ("dracula", "Dracula"),
+            ("amaranth", "Amaranth"),
             ("fern", "Fern"),
             ("github", "GitHub"),
-            ("graey", "Græy"),
-            ("obsidian", "Obsidian"),
+            ("halcyon", "Halcyon"),
+            ("nightshade", "Nightshade"),
+            ("sage", "Sage"),
         ]
     );
 
@@ -2324,20 +2325,22 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
     assert!(!html.contains(r#"id="themeMode""#));
     assert!(!html.contains(r#"id="themeFamily""#));
     assert_contains(&html, "settings.theme.");
-    // Every registered family is a pickable item in the selector sheet.
+    // Every registered family is a pickable card in the selector sheet (name in a
+    // span, with the selected-state check badge).
     for (family, name) in theme_families() {
         assert_contains(
             &html,
             &format!(
-                r#"<button type="button" class="theme-item" data-family="{family}" aria-pressed="false">{name}</button>"#
+                r#"<button type="button" class="theme-item" data-family="{family}" aria-pressed="false"><span class="theme-item-name">{name}</span>"#
             ),
         );
     }
-    // Plus the special "Random" preference, localized via data-i18n. It is not a
+    // Plus the special "Random" preference, localized via data-i18n on the name
+    // span (not the button, so localization can't wipe the check SVG). It is not a
     // real family, so it never appears in theme_families()/the font map/the CSS.
     assert_contains(
         &html,
-        r#"<button type="button" class="theme-item theme-item-random" data-family="random" aria-pressed="false" data-i18n="settings.theme.family.random">Random</button>"#,
+        r#"<button type="button" class="theme-item theme-item-random" data-family="random" aria-pressed="false"><span class="theme-item-name" data-i18n="settings.theme.family.random">Random</span>"#,
     );
     assert!(!theme_families().iter().any(|(id, _)| *id == "random"));
     // Palettes are data-only token maps, not free-form author CSS.
@@ -2371,18 +2374,18 @@ fn web_font_mechanism_fetches_noto_by_default_and_swaps_on_theme_change() {
         "fonts must be fetched from Google Fonts, not bundled into the stylesheet"
     );
 
-    // The family -> Google Fonts URL map loads Noto for every family that isn't a
-    // system-font theme. GitHub is omitted, so its loader drops the font link and
-    // falls back to the OS stack.
+    // The family -> Google Fonts URL map gives each non-system family its own web
+    // font (Fern keeps Noto; others pick their own vibe). GitHub is omitted, so its
+    // loader drops the font link and falls back to the OS stack.
     let map: serde_json::Value =
         serde_json::from_str(&theme_web_font_hrefs_json()).expect("font map is valid JSON");
     let map = map.as_object().expect("font map is an object");
-    // A family is present with a Noto URL, or absent (system fonts, fetch nothing).
+    // A family is present with a Google Fonts URL, or absent (system fonts, fetch nothing).
     for (family, _) in theme_families() {
         if let Some(href) = map.get(family).and_then(|v| v.as_str()) {
             assert!(
-                href.starts_with("https://fonts.googleapis.com/css2?family=Noto"),
-                "{family} should fetch Noto from Google Fonts, got {href:?}"
+                href.starts_with("https://fonts.googleapis.com/css2?family="),
+                "{family} should fetch its font from Google Fonts, got {href:?}"
             );
         }
     }
@@ -2417,6 +2420,12 @@ fn theme_compiler_gates_readable_pairs_for_every_source() {
             ("--leaf-muted-foreground", "--leaf-background"),
             ("--leaf-primary-foreground", "--leaf-primary"),
             ("--leaf-markdown-foreground", "--leaf-markdown-background"),
+            ("--leaf-markdown-heading", "--leaf-markdown-background"),
+            ("--leaf-markdown-heading-2", "--leaf-markdown-background"),
+            ("--leaf-markdown-heading-3", "--leaf-markdown-background"),
+            ("--leaf-markdown-heading-4", "--leaf-markdown-background"),
+            ("--leaf-markdown-heading-5", "--leaf-markdown-background"),
+            ("--leaf-markdown-heading-6", "--leaf-markdown-background"),
             (
                 "--leaf-markdown-inline-code-foreground",
                 "--leaf-markdown-inline-code-background",
@@ -3573,7 +3582,7 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
     );
     assert_eq!(
         theme_family_ids_json(),
-        r#"["dracula","fern","github","graey","obsidian"]"#
+        r#"["amaranth","fern","github","halcyon","nightshade","sage"]"#
     );
     assert_contains(
         &html,
@@ -5427,7 +5436,7 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
         speed_reader_enabled: true,
         line_numbers_enabled: false,
         reader_editing_enabled: false,
-        theme_family: "dracula".to_string(),
+        theme_family: "nightshade".to_string(),
         theme_mode: "dark".to_string(),
         theme_random_used: vec!["fern".to_string(), "github".to_string()],
         library_view: LibraryView::Tree,
@@ -5453,7 +5462,7 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
 }
 
 #[test]
-fn settings_load_migrates_legacy_dracula_mode_to_the_dracula_family() {
+fn settings_load_migrates_legacy_dracula_mode_to_the_nightshade_family() {
     let unique = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("system time is after Unix epoch")
@@ -5463,11 +5472,11 @@ fn settings_load_migrates_legacy_dracula_mode_to_the_dracula_family() {
     fs::create_dir_all(&dir).expect("test directory is created");
 
     // Pre-family installs stored Dracula as a theme mode; it becomes the dark
-    // half of the Dracula family on load.
+    // half of the Nightshade family (the renamed Dracula palette) on load.
     fs::write(&settings_path, r#"{"theme_mode": "dracula"}"#)
         .expect("legacy settings fixture is written");
     let loaded = load_settings(&settings_path);
-    assert_eq!(loaded.theme_family, "dracula");
+    assert_eq!(loaded.theme_family, "nightshade");
     assert_eq!(loaded.theme_mode, "dark");
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
@@ -5552,7 +5561,7 @@ fn initial_settings_script_defines_camelcase_global() {
         speed_reader_enabled: true,
         line_numbers_enabled: false,
         reader_editing_enabled: false,
-        theme_family: "dracula".to_string(),
+        theme_family: "nightshade".to_string(),
         theme_mode: "dark".to_string(),
         theme_random_used: Vec::new(),
         library_view: LibraryView::Tree,
@@ -5569,7 +5578,7 @@ fn initial_settings_script_defines_camelcase_global() {
     // webview), so it must not leak into the injected settings global.
     assert_eq!(
         script,
-        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryExpanded":["C:\\Users"],"libraryProjectPath":"docs","libraryView":"tree","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"dracula","themeMode":"dark","themeRandomUsed":[]};"#
+        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryExpanded":["C:\\Users"],"libraryProjectPath":"docs","libraryView":"tree","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[]};"#
     );
 }
 

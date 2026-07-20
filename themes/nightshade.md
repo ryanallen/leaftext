@@ -1,15 +1,15 @@
-# Dracula
+# Nightshade
 
-**Family ID:** `dracula`
+**Family ID:** `nightshade`
 
 ## Fonts
 
 | Role    | Stack |
 | ------- | ----- |
-| Heading | `"Noto Serif", Georgia, Cambria, "Times New Roman", serif` |
-| Body    | `"Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Microsoft YaHei UI", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji"` |
-| Code    | `"Noto Sans Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace` |
-| Google  | `https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Noto+Sans+Mono:wght@400;500;600;700&display=swap` |
+| Heading | `"Fraunces", Georgia, Cambria, "Times New Roman", serif` |
+| Body    | `"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Microsoft YaHei UI", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji"` |
+| Code    | `"Fira Code", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace` |
+| Google  | `https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Fraunces:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap` |
 
 ## Light
 
@@ -59,6 +59,11 @@
 | markdown-background                     | `#f7f5ef`                            |
 | markdown-foreground                     | `#26222e`                            |
 | markdown-heading                        | `#171320`                            |
+| markdown-heading-2                      | `#171320`                            |
+| markdown-heading-3                      | `#171320`                            |
+| markdown-heading-4                      | `#171320`                            |
+| markdown-heading-5                      | `#171320`                            |
+| markdown-heading-6                      | `#171320`                            |
 | markdown-muted-foreground               | `#565070`                            |
 | markdown-border                         | `#d8d0e6`                            |
 | markdown-rule                           | `#d8d0e6`                            |
@@ -171,6 +176,11 @@
 | markdown-background                     | `#282a36`                   |
 | markdown-foreground                     | `#f8f8f2`                   |
 | markdown-heading                        | `#ffffff`                   |
+| markdown-heading-2                      | `#ffffff`                   |
+| markdown-heading-3                      | `#ffffff`                   |
+| markdown-heading-4                      | `#ffffff`                   |
+| markdown-heading-5                      | `#ffffff`                   |
+| markdown-heading-6                      | `#ffffff`                   |
 | markdown-muted-foreground               | `#d6d6d0`                   |
 | markdown-border                         | `#6272a4`                   |
 | markdown-rule                           | `#6272a4`                   |
