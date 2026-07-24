@@ -779,6 +779,10 @@ pub(crate) fn reading_mode_css() -> &'static str {
   /* Cassette-style grain dot shared by the app bar and library surfaces: a faint
      dark speckle on the light surface, overridden heavier for dark themes. */
   --app-bar-grain: rgba(0, 0, 0, 0.1);
+  /* A heavier grain for the library search band, so it reads as a darker dotted
+     surface set apart from the pane without any divider hairlines. Overridden
+     darker still for dark themes. */
+  --library-header-grain: rgba(0, 0, 0, 0.18);
   /* Corner radii — one scale every surface pulls from, so rounding swaps in a
      single place. Sizes map onto the values the components historically used. */
   --leaf-radius-xs: 2px;
@@ -830,6 +834,7 @@ body {
      as speckled darker, not lighter — needs a heavier alpha than light mode to
      show against the already-dark surface. */
   --app-bar-grain: rgba(0, 0, 0, 0.35);
+  --library-header-grain: rgba(0, 0, 0, 0.5);
 }
 .app-bar {
   position: fixed;
@@ -883,6 +888,13 @@ body {
   height: 1px;
   background: var(--app-border);
   z-index: 0;
+}
+.app-bar.has-rail::after {
+  /* Don't run the reader divider across the library column. The search band just
+     below owns its own top edge (a darker grain, no hairline), so a line here
+     would box the header in. Start the divider at the rail's right edge, where it
+     meets the library pane's vertical border. */
+  left: var(--library-rail-width, 0px);
 }
 .app-bar-lead {
   /* The header's left zone, sized to the library rail so the tab strip begins at
@@ -1712,17 +1724,14 @@ body.library-resizing {
   padding: 0 8px;
   border-radius: var(--leaf-radius-md);
   border: 1px solid color-mix(in srgb, var(--app-muted-foreground) 25%, transparent);
-  /* Grain over the field too, so the search box reads as the same textured
-     surface rather than a flat inset. */
+  /* Solid fill, lighter than the header's darker dotted band, so the field reads
+     as a clean inset and the header grain never shows behind the search text. */
   background-color: var(--library-surface);
-  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
 }
 .library-search-wrap:focus-within {
   /* A neutral white focus border rather than the accent, which reads green in
-     the Primer themes. Drop the grain while typing so the field reads clean. */
+     the Primer themes. */
   border-color: color-mix(in srgb, #ffffff 85%, transparent);
-  background-image: none;
 }
 :root[data-theme="light"] .library-search-wrap:focus-within {
   /* White vanishes on the light field, so key the focus off the ink instead. */
@@ -1764,18 +1773,14 @@ body.library-resizing {
   gap: 8px;
   padding: 0 12px;
   font-weight: 600;
-  /* Continues the app bar's fade: it ends at 85% surface, so this picks up at
-     85% and fades to 75%, reading as one continuous ramp. The cassette grain is
-     layered on top, matching the app bar and pane. */
-  background-image:
-    radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--library-surface) 85%, transparent) 0%, color-mix(in srgb, var(--library-surface) 75%, transparent) 100%);
-  background-size: 2px 2px, 100% 100%;
-  background-repeat: repeat, no-repeat;
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  /* Same hairline as the app bar and pane edge, in the outer border color. */
-  border-bottom: 1px solid var(--app-border);
+  /* No divider hairlines: the band is set apart from the pane by a darker, denser
+     grain over a slightly darker fill. The fill is opaque (the list scrolls up
+     behind it, cleared by the scroll area's top padding) so nothing shows through
+     the search field or the view chip. */
+  background-color: color-mix(in srgb, var(--library-surface) 93%, black);
+  background-image: radial-gradient(circle, var(--library-header-grain) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
 }
 .library-view-select {
   position: relative;
@@ -1794,14 +1799,15 @@ body.library-resizing {
   padding: 3px 8px 3px 10px;
   border-radius: var(--leaf-radius-md);
   border: 0;
-  /* A filled chip, same fill in every view state. A translucent neutral reads
-     as "a little lighter" and stays visible in light themes too. */
-  background: color-mix(in srgb, var(--app-muted-foreground) 14%, transparent);
+  /* A filled chip, same fill in every view state. Opaque (mixed over the pane
+     surface, not transparent) so the header's darker grain never shows through
+     the GRAPH view changer. */
+  background: color-mix(in srgb, var(--app-muted-foreground) 14%, var(--library-surface));
   color: inherit;
   cursor: pointer;
 }
 .library-header button:hover {
-  background: color-mix(in srgb, var(--app-muted-foreground) 22%, transparent);
+  background: color-mix(in srgb, var(--app-muted-foreground) 22%, var(--library-surface));
 }
 .library-view-select button[aria-expanded="true"] {
   /* While the menu is open, fill over an opaque surface so the header grain no
