@@ -23,19 +23,19 @@
 
 ### Read Markdown and TEI XML
 
-![Leaf Text reading view rendering a Markdown document](imgs/feature-rendering.png)
+![Leaf Text reading view rendering a Markdown document](imgs/rendering.png)
 
 Open a `.md` file and Leaf Text renders it exactly as GitHub would — CommonMark and GitHub Flavored Markdown with the extras people actually use: [syntax-highlighted code](docs/01-features/01-rendering.md#code), [Mermaid diagrams](docs/01-features/01-rendering.md#mermaid-diagrams), [math](docs/01-features/01-rendering.md#math), [GitHub alerts](docs/01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](docs/01-features/01-rendering.md#footnotes), [emoji](docs/01-features/01-rendering.md#emoji), task lists, and [local images](docs/01-features/01-rendering.md#images). It also opens [84000-style TEI XML](docs/01-features/01-rendering.md#tei-xml-84000-translations) — the Buddhist-canon translation format — through a parallel renderer into the same clean reading view. **[Rendering →](docs/01-features/01-rendering.md)**
 
 ### Edit in place, save on your terms
 
-![Inline editing in the rendered page, with the green Save button](imgs/feature-editing.png)
+![Inline editing in the rendered page, with save and undo button](imgs/editing.png)
 
 Reading-first, but editable. Click into a sentence in the rendered page and type, split and merge blocks with `Enter` and `Backspace`, or toggle a checkbox — the change is written back to the source at exactly that spot, with step-by-step [undo](docs/01-features/07-editing.md#undo). Prefer raw text? Drop to the [code view](docs/01-features/07-editing.md#code-view) for the file's actual Markdown or XML, with editor-style colouring of every delimiter. There's no autosave: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
 
 ### Find every file, and see how they connect
 
-![The library pane with the document graph view](imgs/feature-library.png)
+![The library pane with the document graph view](imgs/graph.png)
 
 A left-side pane backed by a local SQLite index of every Markdown file you own — [full-text search](docs/01-features/03-library.md) it, or browse by Project, Tree, or All files. A [graph view](docs/01-features/03-library.md#graph) maps how your documents link to one another, so you can see the shape of your notes instead of just a list. **[Library →](docs/01-features/03-library.md)**
 
