@@ -4825,6 +4825,48 @@ fn renders_markdown_links_and_images_for_native_link_handling() {
 }
 
 #[test]
+fn renders_leaf_button_link_custom_markdown() {
+    let markdown = "go [{[Primary](https://example.com)}] now\n\nsee {[Secondary](https://example.com)} here\n\ntry [[Ghost](https://example.com)] out\n\nA plain [link](https://example.com) is untouched.\n\nInline `[[x](y)]` stays literal.\n";
+    let source_path = fixture_source_path("project/current.md");
+
+    let rendered = render_markdown_document(markdown, &source_path);
+
+    // Each wrapper becomes a button anchor of the matching variant.
+    assert_contains(&rendered.html, r#"class="leaf-md-button""#);
+    assert_contains(
+        &rendered.html,
+        r#"class="leaf-md-button leaf-md-button--secondary""#,
+    );
+    assert_contains(
+        &rendered.html,
+        r#"class="leaf-md-button leaf-md-button--ghost""#,
+    );
+    assert_contains(&rendered.html, ">Primary</a>");
+    assert_contains(&rendered.html, ">Secondary</a>");
+    assert_contains(&rendered.html, ">Ghost</a>");
+    assert_contains(&rendered.html, r#"href="https://example.com""#);
+    // The literal wrapper characters are consumed, not left around the anchor,
+    // and the surrounding prose survives.
+    assert!(!rendered.html.contains("[<a"));
+    assert!(!rendered.html.contains("{<a"));
+    assert!(!rendered.html.contains("</a>]"));
+    assert!(!rendered.html.contains("</a>}"));
+    assert_contains(&rendered.html, "go <a");
+    assert_contains(&rendered.html, "</a> now");
+    assert_contains(&rendered.html, "see <a");
+    assert_contains(&rendered.html, "</a> here");
+    assert_contains(&rendered.html, "try <a");
+    assert_contains(&rendered.html, "</a> out");
+    // A plain link stays a plain link (no button class).
+    assert_contains(
+        &rendered.html,
+        r#"<a href="https://example.com" rel="noopener noreferrer">link</a>"#,
+    );
+    // The same syntax inside inline code is left untouched (no Link event there).
+    assert_contains(&rendered.html, "<code>[[x](y)]</code>");
+}
+
+#[test]
 fn renders_heading_ids_and_preserves_markdown_and_html_fragment_links() {
     let markdown = r##"# Main Title
 

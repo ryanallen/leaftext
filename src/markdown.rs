@@ -112,6 +112,7 @@ pub(crate) fn register_markdown_extensions(
     source_path: &Path,
 ) -> Vec<Event<'static>> {
     let repository = repository_context(source_path.parent().unwrap_or_else(|| Path::new(".")));
+    let events = button_links(events);
     let events = linkify_plain_text(events);
     let events = github_markdown_extras(events, repository.as_ref());
     let events = table_cell_task_list_markers(events);
@@ -124,6 +125,134 @@ pub(crate) fn render_markdown_events_to_html(events: Vec<Event<'static>>) -> Str
     let mut body = String::new();
     html::push_html(&mut body, events.into_iter());
     body
+}
+
+/// Leaf custom Markdown: a link wrapped in an extra pair of brackets/braces
+/// renders as a button — an `<a class="leaf-md-button …">` styled like the app's
+/// action buttons. The more decorated the wrapper, the more prominent the button:
+///
+/// - `[{[Label](url)}]` → primary (filled)
+/// - `{[Label](url)}` → secondary (outline)
+/// - `[[Label](url)]` → ghost (no fill or outline until hover)
+///
+/// Links can't nest in CommonMark, so those wrapper characters stay literal: they
+/// arrive as the tail of the Text before the link and the head of the Text after
+/// it. We strip the matched wrapper from each side and wrap the link's label in
+/// the button anchor, keeping any inline formatting inside the label. Because it
+/// works on inline link events, the same syntax written inside code stays literal
+/// (code never produces a Link event).
+pub(crate) fn button_links(events: Vec<Event<'static>>) -> Vec<Event<'static>> {
+    let mut out: Vec<Event<'static>> = Vec::with_capacity(events.len());
+    let mut index = 0;
+    while index < events.len() {
+        if let Event::Start(Tag::Link { dest_url, .. }) = &events[index] {
+            if let Some(end) = link_end_index(&events, index) {
+                // The wrapper characters flank the link as literal text. Brackets
+                // (`[` `]`) are their own single-char events; braces (`{` `}`) can
+                // merge with adjacent prose, so we test one char at each boundary.
+                let open_inner = out_trailing_char(&out, 0);
+                let open_outer = out_trailing_char(&out, 1);
+                let close_inner = event_leading_char(events.get(end + 1));
+                let close_outer = event_leading_char(events.get(end + 2));
+
+                // The more decorated the wrapper, the more prominent the button:
+                // `[{…}]` = primary, `{…}` = secondary, `[…]` = ghost. The
+                // two-char primary is tested first so its `{`/`}` doesn't read as
+                // a secondary.
+                let variant = if open_outer == Some('[')
+                    && open_inner == Some('{')
+                    && close_inner == Some('}')
+                    && close_outer == Some(']')
+                {
+                    Some(("", 2usize))
+                } else if open_inner == Some('{') && close_inner == Some('}') {
+                    Some((" leaf-md-button--secondary", 1))
+                } else if open_inner == Some('[') && close_inner == Some(']') {
+                    Some((" leaf-md-button--ghost", 1))
+                } else {
+                    None
+                };
+
+                if let Some((variant, wrap_len)) = variant {
+                    // Drop the opening wrapper chars already emitted into `out`.
+                    for _ in 0..wrap_len {
+                        strip_out_trailing_char(&mut out);
+                    }
+                    out.push(Event::InlineHtml(cowstr(&format!(
+                        r#"<a class="leaf-md-button{variant}" href="{}">"#,
+                        encode_double_quoted_attribute(dest_url.as_ref())
+                    ))));
+                    out.extend(events[index + 1..end].iter().cloned());
+                    out.push(Event::InlineHtml(cowstr("</a>")));
+                    // Consume the closing wrapper events, keeping any prose that
+                    // merged onto the far side of a brace.
+                    for offset in 0..wrap_len {
+                        if let Some(Event::Text(text)) = events.get(end + 1 + offset) {
+                            let tail = &text.as_ref()[1..];
+                            if !tail.is_empty() {
+                                out.push(Event::Text(cowstr(tail)));
+                            }
+                        }
+                    }
+                    index = end + 1 + wrap_len;
+                    continue;
+                }
+            }
+        }
+        out.push(events[index].clone());
+        index += 1;
+    }
+    out
+}
+
+/// The text of `event`, if it is a `Text` event.
+fn event_text<'a>(event: &'a Event<'static>) -> Option<&'a str> {
+    match event {
+        Event::Text(text) => Some(text.as_ref()),
+        _ => None,
+    }
+}
+
+/// The first character of `event`'s text, if it is a `Text` event.
+fn event_leading_char(event: Option<&Event<'static>>) -> Option<char> {
+    event
+        .and_then(event_text)
+        .and_then(|text| text.chars().next())
+}
+
+/// The last character of the text event `back` positions from the end of `out`
+/// (0 = the last event), if that event is a `Text`.
+fn out_trailing_char(out: &[Event<'static>], back: usize) -> Option<char> {
+    out.iter()
+        .rev()
+        .nth(back)
+        .and_then(event_text)
+        .and_then(|text| text.chars().last())
+}
+
+/// Drop the last (single-byte wrapper) character from the final `Text` event in
+/// `out`, removing the event entirely if that empties it.
+fn strip_out_trailing_char(out: &mut Vec<Event<'static>>) {
+    if let Some(Event::Text(text)) = out.last() {
+        let trimmed = &text.as_ref()[..text.len() - 1];
+        if trimmed.is_empty() {
+            out.pop();
+        } else {
+            let replacement = Event::Text(cowstr(trimmed));
+            if let Some(last) = out.last_mut() {
+                *last = replacement;
+            }
+        }
+    }
+}
+
+/// Index of the `End(Link)` that closes the `Start(Link)` at `start`. Links can't
+/// nest, so it's the first link end after the start.
+fn link_end_index(events: &[Event<'static>], start: usize) -> Option<usize> {
+    events[start + 1..]
+        .iter()
+        .position(|event| matches!(event, Event::End(TagEnd::Link)))
+        .map(|offset| start + 1 + offset)
 }
 
 pub(crate) fn table_cell_task_list_markers(events: Vec<Event<'static>>) -> Vec<Event<'static>> {

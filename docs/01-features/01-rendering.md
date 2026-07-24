@@ -11,6 +11,7 @@ leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`,
 | Core Markdown | Headings, paragraphs, lists, links, images, blockquotes, rules, inline code |
 | GFM | Tables, task lists, strikethrough, autolinks |
 | Extras | Syntax highlighting, Mermaid, math, alerts, footnotes, emoji, block permalinks |
+| Leaf extensions | [Buttons](#buttons-leaf-extension) — a link wrapped in brackets/braces |
 | Local content | Relative images |
 | Safety | Sanitized HTML allowlist |
 | TEI XML | 84000 Buddhist-translation format (`.xml`); headings, paragraphs, verse, footnotes |
@@ -175,6 +176,29 @@ A table cell whose entire content is a task-list marker — `[ ]` or `[x]` — r
 - Email autolink: hello@example.com
 
 [cm]: https://commonmark.org
+
+## Buttons (Leaf extension)
+
+This one is a leaftext addition, not standard Markdown. Wrap an ordinary inline
+link in brackets or braces and it renders as a button styled like the app's
+action controls, linking wherever the link points. The wrapper picks the style:
+
+The more decorated the wrapper, the more prominent the button:
+
+| Style | Syntax | Looks like |
+| --- | --- | --- |
+| Primary | `[{[Label](url)}]` | Filled |
+| Secondary | `{[Label](url)}` | Outline, fills on hover |
+| Ghost | `[[Label](url)]` | No fill or outline until hover |
+
+[{[Primary](https://github.com/ryanallen/leaftext)}] {[Secondary](https://github.com/ryanallen/leaftext)} [[Ghost](https://github.com/ryanallen/leaftext)]
+
+Each is just a normal `[label](url)` link with a wrapper around the whole thing:
+`[{ }]` for primary, `{ }` for secondary, `[ ]` for ghost. The label may hold
+inline formatting, and the button follows a link like any other (external URLs
+open in your browser, relative `.md` paths open in the reader). Written inside
+code the wrapper stays literal, so this page can show the syntax without turning
+it into a button.
 
 ## Images
 

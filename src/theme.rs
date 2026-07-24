@@ -2253,6 +2253,50 @@ body.library-resizing {
   color: var(--markdown-link-hover);
   text-decoration: underline;
 }
+/* Leaf custom Markdown buttons: a link wrapped in brackets/braces renders as a
+   button styled like the app's action controls (the zero-state "Choose file").
+   The base rule is the primary (filled) variant, from `[{[Label](url)}]`. */
+.document-body a.leaf-md-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--app-action-background);
+  border-radius: var(--leaf-radius-md);
+  background: var(--app-action-background);
+  color: var(--app-action-foreground);
+  font: 600 15px var(--app-font);
+  padding: 11px 18px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.document-body a.leaf-md-button:hover {
+  background: var(--app-action-hover-background);
+  border-color: var(--app-action-hover-background);
+  color: var(--app-action-foreground);
+  text-decoration: none;
+}
+/* Secondary, from `{[Label](url)}`: an outline at rest that fills on hover. */
+.document-body a.leaf-md-button--secondary {
+  background: transparent;
+  border-color: var(--app-action-background);
+  color: var(--app-action-background);
+}
+.document-body a.leaf-md-button--secondary:hover {
+  background: var(--app-action-background);
+  border-color: var(--app-action-background);
+  color: var(--app-action-foreground);
+}
+/* Ghost, from `[[Label](url)]`: no fill or outline until hover, when it fills. */
+.document-body a.leaf-md-button--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--app-action-background);
+}
+.document-body a.leaf-md-button--ghost:hover {
+  background: var(--app-action-background);
+  border-color: var(--app-action-background);
+  color: var(--app-action-foreground);
+}
 .document-body strong {
   font-weight: 600;
 }
