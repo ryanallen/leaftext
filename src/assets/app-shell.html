@@ -28,7 +28,10 @@
     </nav>
   </div>
   <div class="tab-bar" id="tabBar" role="tablist" aria-label="Open documents"></div>
-  <div class="app-actions">
+  <div class="app-trailing">
+    <button type="button" id="overflowToggle" class="icon-button overflow-toggle" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="actions.more" data-i18n-title="actions.more" aria-label="More options" title="More options"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg></button>
+    <div class="app-trailing-items" id="appTrailingItems">
+    <div class="app-actions-items" id="appActionsItems">
     <button type="button" id="codeViewButton" class="icon-button code-view-button" data-i18n-aria-label="actions.codeView" data-i18n-title="actions.codeView.title" aria-label="View source" title="View source" aria-pressed="false" hidden><span class="cv-icon cv-icon-code">{{CODE_VIEW_ICON_SVG}}</span><span class="cv-icon cv-icon-doc">{{DOCUMENT_ICON_SVG}}</span></button>
     <details class="settings-menu" id="settingsMenu">
       <summary id="settingsSummary" class="icon-button" data-i18n-aria-label="settings.heading" data-i18n-title="settings.heading" aria-label="Settings" title="Settings">
@@ -87,11 +90,13 @@
     <button type="button" id="openButton" class="icon-button open-button" data-i18n-aria-label="actions.open" data-i18n-title="actions.open.title" aria-label="Open" title="Open Markdown file">{{OPEN_ICON_SVG}}</button>
     <button type="button" id="saveButton" class="save-button" data-i18n="actions.save" data-i18n-aria-label="actions.save" data-i18n-title="actions.save.title" aria-label="Save" title="Save" hidden>Save</button>
     <button type="button" id="undoButton" class="icon-button undo-button" data-i18n-aria-label="actions.undo" data-i18n-title="actions.undo.title" aria-label="Undo" title="Undo last edit" hidden><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" /></svg></button>
-  </div>
-  <div class="window-controls" id="windowControls" hidden aria-hidden="true">
-    <button type="button" class="window-control" id="winMinimize" tabindex="-1" aria-label="Minimize" title="Minimize"><svg viewBox="0 0 12 12" aria-hidden="true"><line x1="2.5" y1="6.5" x2="9.5" y2="6.5" stroke="currentColor" stroke-width="1"/></svg></button>
-    <button type="button" class="window-control" id="winMaximize" tabindex="-1" aria-label="Maximize" title="Maximize"><svg class="wc-maximize" viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2.5" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1"/></svg><svg class="wc-restore" viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="4" width="5.5" height="5.5" rx="1" fill="none" stroke="currentColor" stroke-width="1"/><path d="M4.5 4V2.5H9.5V7.5H8" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    <button type="button" class="window-control window-control-close" id="winClose" tabindex="-1" aria-label="Close" title="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.1" fill="none" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="window-controls" id="windowControls" hidden aria-hidden="true">
+      <button type="button" class="window-control" id="winMinimize" tabindex="-1" aria-label="Minimize" title="Minimize"><svg viewBox="0 0 12 12" aria-hidden="true"><line x1="2.5" y1="6.5" x2="9.5" y2="6.5" stroke="currentColor" stroke-width="1"/></svg></button>
+      <button type="button" class="window-control" id="winMaximize" tabindex="-1" aria-label="Maximize" title="Maximize"><svg class="wc-maximize" viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2.5" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1"/></svg><svg class="wc-restore" viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="4" width="5.5" height="5.5" rx="1" fill="none" stroke="currentColor" stroke-width="1"/><path d="M4.5 4V2.5H9.5V7.5H8" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button type="button" class="window-control window-control-close" id="winClose" tabindex="-1" aria-label="Close" title="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.1" fill="none" stroke-linecap="round"/></svg></button>
+    </div>
+    </div>
   </div>
 </header>
 <div id="libraryShell" class="library-shell">

@@ -839,10 +839,10 @@ body {
   z-index: 10;
   display: grid;
   /* Zones: a left lead sized to the library rail (so tabs begin at the library's
-     right edge and get pushed when it resizes), the tab strip, the app actions,
-     and — on frameless Windows — the custom window controls. The last column
-     collapses to 0 when the controls are hidden (native-decoration platforms). */
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+     right edge and get pushed when it resizes), the tab strip, and the trailing
+     group (actions + window controls, which fold into an overflow dropdown when
+     the bar is too narrow to show them inline). */
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 0;
   align-items: center;
   height: var(--app-bar-height);
@@ -1057,12 +1057,75 @@ body {
   gap: 8px;
   align-items: center;
 }
-.app-actions {
+/* The trailing group: the action buttons plus the window controls. Anchors the
+   collapsed overflow dropdown; padded off the window edge (frameless windows let
+   the flush window controls own that edge instead — see below). */
+.app-trailing {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  position: relative;
+  padding-right: 22px;
+}
+.app-trailing-items {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  gap: 8px;
+}
+.app-actions-items {
   display: flex;
   gap: 10px;
   align-items: center;
-  /* Header no longer pads itself; keep the actions inset from the window edge. */
-  padding-right: 22px;
+}
+/* Overflow chevron: hidden inline (the `.app-trailing` prefix outranks the
+   later `.icon-button { display: inline-grid }`), shown only when collapsed.
+   Rests muted, greens on hover like the other toolbar icons. */
+.app-trailing .overflow-toggle {
+  display: none;
+  border-color: transparent;
+  background: transparent;
+  color: var(--app-muted-foreground);
+}
+.overflow-toggle:hover {
+  background: var(--app-action-hover-background);
+  border-color: var(--app-action-hover-background);
+  color: var(--app-action-foreground);
+}
+.app-trailing.collapsed .overflow-toggle {
+  display: inline-grid;
+}
+/* Collapsed: everything trailing (actions + window controls) folds into a
+   dropdown, leaving just the chevron on the bar. */
+.app-trailing.collapsed .app-trailing-items {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--leaf-radius-lg);
+  background: var(--app-surface-elevated);
+  box-shadow: var(--shadow);
+  z-index: 30;
+}
+.app-trailing.collapsed.overflow-open .app-trailing-items {
+  display: flex;
+}
+.app-trailing.collapsed .app-actions-items {
+  gap: 4px;
+}
+/* In the dropdown the window controls are ordinary icon buttons, not the
+   full-height flush caption buttons they are on the bar. */
+.app-trailing.collapsed .window-controls {
+  margin-left: 0;
+}
+.app-trailing.collapsed .window-control {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--leaf-radius-lg);
 }
 /* Custom window controls for frameless windows (Windows). Hidden until the
    frontend reveals them; they sit flush in the top-right corner and act as the
@@ -1114,10 +1177,15 @@ body.is-maximized #winMaximize .wc-restore {
   background: #e81123;
   color: #ffffff;
 }
-/* Frameless: the controls own the right edge, so the actions group trades its
-   wide inset for a small gap before the window buttons. */
-.frameless .app-actions {
-  padding-right: 10px;
+/* Frameless: the flush window controls own the right edge, so the trailing group
+   drops its inset (the controls sit at the very corner). */
+.frameless .app-trailing {
+  padding-right: 0;
+}
+/* Only frameless windows carry the in-app window controls; hide them otherwise
+   so no empty gap shows where they'd sit. */
+.window-controls[hidden] {
+  display: none;
 }
 .context-menu {
   position: fixed;

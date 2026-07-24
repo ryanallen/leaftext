@@ -1,5 +1,8 @@
 const app = document.getElementById('app');
 const appBar = document.getElementById('appBar');
+const appTrailing = document.querySelector('.app-trailing');
+const appTrailingItems = document.getElementById('appTrailingItems');
+const overflowToggle = document.getElementById('overflowToggle');
 const tabBar = document.getElementById('tabBar');
 const homeButton = document.getElementById('homeButton');
 const backButton = document.getElementById('backButton');
@@ -182,6 +185,47 @@ window.leafSetWindowMaximized = (maximized) => {
   }
 };
 window.leafSetWindowMaximized(window.__leafMaximized);
+
+// --- App-bar overflow -------------------------------------------------------
+// Too narrow to show the trailing group (actions + window controls) inline? Fold
+// it into a chevron dropdown, leaving just the chevron. Fit is measured, not a
+// breakpoint, because the lead widens with the library rail.
+let appTrailingInlineWidth = 0;
+const APP_BAR_MIN_TABS = 56; // room kept for at least a sliver of the tab strip
+function closeOverflowMenu() {
+  appTrailing.classList.remove('overflow-open');
+  overflowToggle.setAttribute('aria-expanded', 'false');
+}
+function refitAppBar() {
+  const collapsed = appTrailing.classList.contains('collapsed');
+  // Measure the inline row only while expanded; collapsed it's an absolute
+  // dropdown whose width isn't what the fit compares against.
+  if (!collapsed) appTrailingInlineWidth = appTrailingItems.offsetWidth;
+  const lead = document.querySelector('.app-bar-lead');
+  const needed = (lead ? lead.offsetWidth : 0) + appTrailingInlineWidth + APP_BAR_MIN_TABS;
+  const shouldCollapse = needed > appBar.clientWidth;
+  if (shouldCollapse === collapsed) return;
+  appTrailing.classList.toggle('collapsed', shouldCollapse);
+  if (!shouldCollapse) closeOverflowMenu();
+}
+overflowToggle.addEventListener('click', (event) => {
+  event.stopPropagation();
+  const open = appTrailing.classList.toggle('overflow-open');
+  overflowToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+// Dismiss on outside click / Escape, like the other menus.
+document.addEventListener('click', (event) => {
+  if (appTrailing.classList.contains('overflow-open') && !appTrailing.contains(event.target)) {
+    closeOverflowMenu();
+  }
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeOverflowMenu();
+});
+if (typeof ResizeObserver !== 'undefined') {
+  new ResizeObserver(() => refitAppBar()).observe(appBar);
+}
+window.addEventListener('resize', refitAppBar);
 const MERMAID_SCRIPT_URL = '{{MERMAID_SCRIPT_URL}}';
 const KATEX_SCRIPT_URL = '{{KATEX_SCRIPT_URL}}';
 const PIXI_SCRIPT_URL = '{{PIXI_SCRIPT_URL}}';
@@ -777,6 +821,9 @@ function applyPaneLayout() {
   } else {
     document.documentElement.style.setProperty('--library-rail-width', '0px');
   }
+  // The lead grows/shrinks with the rail, changing how much room the actions
+  // have — re-evaluate the overflow fold.
+  refitAppBar();
 }
 // The panel button in the app bar toggles the library: closed → open at the
 // default width (never the sliver it was dragged to before snapping shut), open
@@ -2627,6 +2674,8 @@ function updateEditingChrome() {
     // successful save.
     undoButton.hidden = !(hasDocument && undoableByPath.get(path) === true);
   }
+  // Save/Undo/code-view visibility changes the action row's width — refold.
+  refitAppBar();
 }
 
 // Ask the host to revert the most recent reading-view edit. The host pops its
