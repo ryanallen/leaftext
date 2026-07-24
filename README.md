@@ -63,16 +63,16 @@ An optional mode that dims prose and links and adds bold lead anchors at word st
 
 ### Make it yours
 
-![Amaranth theme](imgs/amaranth.png)
+![Amaranth theme](imgs/themes/themes.png)
 
 
 Ten theme families — [Amaranth, Arabica, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) — each with light and dark variants plus System and Daylight appearance, applied through a semantic token contract so the reader, code, alerts, and minimap always stay visually consistent. Theme fonts load from Google Fonts on demand. **[Themes →](docs/01-features/06-themes.md)**
 
 ### Settings that stick, in two languages
 
-![The Leaf Text settings panel](imgs/feature-settings.png)
+![The Leaf Text settings panel](imgs/settings.png)
 
-Theme, Speed Reader, minimap, pager, gutter line numbers, reading-view editing, indexing, library layout, window size, and interface language (English or Simplified Chinese) — stored locally and durable across restarts. **[Settings →](docs/01-features/05-settings.md)**
+Theme, graph size (affects performance), navigation, speed reader, minimap, permalink line numbers, reading-view editing and indexing (affects performance) — stored locally and durable across restarts. **[Settings →](docs/01-features/05-settings.md)**
 
 ## Documentation
 

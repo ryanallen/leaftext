@@ -1,5 +1,7 @@
 # Pippin
 
+![Pippin — the same document in the light and dark variants](../imgs/themes/pippin.png)
+
 **Family ID:** `pippin`
 
 ## Fonts

@@ -2298,6 +2298,11 @@ let pendingCodeViewSrcOffset = null;
 // consumed by the next reading render so it lands on that block. Replaces a racy
 // fraction hand-off that dropped the reader to the top of the document.
 let pendingReadingSrcOffset = null;
+// True when the source view was scrolled to the very top as the toggle fired, so
+// the destination lands flush at the top instead of aligning the first block just
+// below the edge (which read as an unwanted little scroll-down). Consumed by the
+// next render in either direction.
+let pendingViewAtTop = false;
 // Live reading-view editing. The source buffer stays authoritative in Rust; the
 // reading view anchors each edit to a source byte range and asks the host to
 // splice it. These hold what the frontend needs between renders. Declared here,
@@ -3153,6 +3158,9 @@ if (codeViewButton) {
     // Carry the current position across the toggle; the destination view's
     // render consumes it and lands at the same relative spot.
     pendingViewScrollFraction = viewScrollFraction();
+    // At the very top, land flush at the top of the other view — don't align the
+    // first block below the edge, which reads as a stray scroll-down.
+    pendingViewAtTop = app.scrollTop <= 1;
     // Entering the code view: remember which source line the reader is on, so
     // it opens there. Leaving: remember which line the code view is on, so the
     // reading view lands on that block. The fraction stays as the fallback.
@@ -3280,11 +3288,14 @@ function renderCodeView(state) {
   const explicit = typeof state.scrollFraction === 'number' ? state.scrollFraction : null;
   const srcOffset = pendingCodeViewSrcOffset;
   pendingCodeViewSrcOffset = null;
+  const atTop = pendingViewAtTop;
+  pendingViewAtTop = false;
   let positioned = false;
   // Landing on the reader's exact source line wins over any fraction, but only
-  // when this render isn't restoring an explicit saved position (a tab
-  // reopened in the code view).
-  if (explicit == null && srcOffset != null) {
+  // when this render isn't restoring an explicit saved position (a tab reopened
+  // in the code view) and wasn't toggled from the very top — there we skip the
+  // block landing and let the fraction (0) fall through to a flush-top landing.
+  if (explicit == null && !atTop && srcOffset != null) {
     const lineIndex = lineIndexAtByteOffset(text, srcOffset);
     const row = linenums.children[Math.min(lineIndex, linenums.children.length - 1)];
     if (row) {
@@ -4276,7 +4287,14 @@ function renderState() {
     // the code view was scrolled to. This wins over the reset-to-top the
     // host's Reset intent would otherwise run, and doesn't depend on the racy
     // fraction hand-off.
-    if (pendingReadingSrcOffset != null) {
+    if (pendingViewAtTop) {
+      // Toggled from the very top of the code view: land flush at the reader's
+      // content start, not aligned on the first block below its top padding.
+      pendingViewAtTop = false;
+      pendingReadingSrcOffset = null;
+      resetReaderScrollOnNextRender = false;
+      resetReaderScrollToContentStart();
+    } else if (pendingReadingSrcOffset != null) {
       const srcOffset = pendingReadingSrcOffset;
       pendingReadingSrcOffset = null;
       resetReaderScrollOnNextRender = false;

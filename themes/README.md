@@ -5,13 +5,15 @@
 
 Every theme in Leaf Text is plain data — one Markdown file per family, right here in this folder. Because they are Markdown, they render as the color tables below in Leaf itself and at [leaftext.com/themes](https://leaftext.com/themes).
 
-10 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the table is a light-vs-dark preview of the key colors — every family also defines the full ~100-token contract inside its file.
+10 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full ~100-token contract inside its file.
 
 ## Gallery
 
 ### Amaranth
 
 [`amaranth.md`](amaranth.md) · Heading **Source Serif 4** · Body **Source Sans 3** · Code **Source Code Pro** · Google Fonts
+
+![Amaranth — the same document in the light and dark variants](../imgs/themes/amaranth.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -30,6 +32,8 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 
 [`arabica.md`](arabica.md) · Heading **Rubik** · Body **Rubik** · Code **JetBrains Mono** · Google Fonts
 
+![Arabica — the same document in the light and dark variants](../imgs/themes/arabica.png)
+
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
 | Background | `#f5ece0` | `#241c17` |
@@ -46,6 +50,8 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 ### Fern
 
 [`fern.md`](fern.md) · Heading **Noto Serif** · Body **Noto Sans** · Code **Noto Sans Mono** · Google Fonts
+
+![Fern — the same document in the light and dark variants](../imgs/themes/fern.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -64,6 +70,8 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 
 [`ginger.md`](ginger.md) · Heading **Nunito** · Body **Nunito** · Code **Inconsolata** · Google Fonts
 
+![Ginger — the same document in the light and dark variants](../imgs/themes/ginger.png)
+
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
 | Background | `#fdf7ef` | `#2a2d3d` |
@@ -80,6 +88,8 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 ### GitHub
 
 [`github.md`](github.md) · Heading **-apple-system** · Body **-apple-system** · Code **ui-monospace** · System fonts
+
+![GitHub — the same document in the light and dark variants](../imgs/themes/github.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -98,6 +108,8 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 
 [`goldenrod.md`](goldenrod.md) · Heading **Space Grotesk** · Body **Space Grotesk** · Code **Space Mono** · Google Fonts
 
+![Goldenrod — the same document in the light and dark variants](../imgs/themes/goldenrod.png)
+
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
 | Background | `#fffdf7` | `#131210` |
@@ -114,6 +126,8 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 ### Halcyon
 
 [`halcyon.md`](halcyon.md) · Heading **IBM Plex Sans** · Body **IBM Plex Sans** · Code **IBM Plex Mono** · Google Fonts
+
+![Halcyon — the same document in the light and dark variants](../imgs/themes/halcyon.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -132,6 +146,8 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 
 [`nightshade.md`](nightshade.md) · Heading **Fraunces** · Body **Inter** · Code **Fira Code** · Google Fonts
 
+![Nightshade — the same document in the light and dark variants](../imgs/themes/nightshade.png)
+
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
 | Background | `#f7f5ef` | `#282a36` |
@@ -148,6 +164,8 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 ### Pippin
 
 [`pippin.md`](pippin.md) · Heading **DM Sans** · Body **DM Sans** · Code **DM Mono** · Google Fonts
+
+![Pippin — the same document in the light and dark variants](../imgs/themes/pippin.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -166,6 +184,8 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 
 [`sage.md`](sage.md) · Heading **Inter** · Body **Inter** · Code **JetBrains Mono** · Google Fonts
 
+![Sage — the same document in the light and dark variants](../imgs/themes/sage.png)
+
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
 | Background | `#f7f6f4` | `#1a1a1a` |
@@ -181,4 +201,4 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 
 ## Adding or editing a theme
 
-Copy an existing file (say `dracula.md`), rename it to `<your-id>.md`, and edit the `# Name` heading, the `**Family ID:**` line (it must match the filename), the `## Fonts` table, and the `## Light` / `## Dark` token tables. Then run `just bundle-themes` to recompile the embedded bundle and regenerate this gallery, and `just verify` to run the contract and contrast checks. See [docs/02-development/04-theming.md](../docs/02-development/04-theming.md) for the full contract.
+Copy an existing file (say `dracula.md`), rename it to `<your-id>.md`, and edit the `# Name` heading, the `**Family ID:**` line (it must match the filename), the `## Fonts` table, and the `## Light` / `## Dark` token tables. Optionally add a preview screenshot as a standalone `![Your Family](../imgs/themes/<your-id>.png)` line under the heading — it shows up in the file itself and in this gallery. Then run `just bundle-themes` to recompile the embedded bundle and regenerate this gallery, and `just verify` to run the contract and contrast checks. See [docs/02-development/04-theming.md](../docs/02-development/04-theming.md) for the full contract.

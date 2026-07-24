@@ -1,5 +1,7 @@
 # Nightshade
 
+![Nightshade — the same document in the light and dark variants](../imgs/themes/nightshade.png)
+
 **Family ID:** `nightshade`
 
 ## Fonts

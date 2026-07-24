@@ -1,5 +1,7 @@
 # Arabica
 
+![Arabica — the same document in the light and dark variants](../imgs/themes/arabica.png)
+
 **Family ID:** `arabica`
 
 ## Fonts

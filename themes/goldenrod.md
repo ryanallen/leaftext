@@ -1,5 +1,7 @@
 # Goldenrod
 
+![Goldenrod — the same document in the light and dark variants](../imgs/themes/goldenrod.png)
+
 **Family ID:** `goldenrod`
 
 ## Fonts

@@ -6,7 +6,7 @@ From the user side, themes are simple: open the theme picker, tap a family, pick
 
 ## Families
 
-Pick a family in the theme picker. Ten ship, listed alphabetically, with **Fern** as the default. Each family is a plain Markdown file — browse them all in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows a light-vs-dark swatch table per family, or open one below:
+Pick a family in the theme picker. Ten ship, listed alphabetically, with **Fern** as the default. Each family is a plain Markdown file that opens with a screenshot of its own palette — browse them all in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview plus a light-vs-dark swatch table per family, or open one below:
 
 | Family | Palette |
 | --- | --- |
@@ -22,6 +22,50 @@ Pick a family in the theme picker. Ten ship, listed alphabetically, with **Fern*
 | [Sage](https://github.com/ryanallen/leaftext/blob/main/themes/sage.md) | A neutral greyscale palette with a muted-blue (Minimal-style) accent |
 
 An eleventh picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
+
+## Previews
+
+Every family rendering the same reference document, split diagonally so the light variant sits above the dark one. These are the previews each family file carries at the top.
+
+### Amaranth
+
+![Amaranth — the same document in the light and dark variants](../../imgs/themes/amaranth.png)
+
+### Arabica
+
+![Arabica — the same document in the light and dark variants](../../imgs/themes/arabica.png)
+
+### Fern
+
+![Fern — the same document in the light and dark variants](../../imgs/themes/fern.png)
+
+### Ginger
+
+![Ginger — the same document in the light and dark variants](../../imgs/themes/ginger.png)
+
+### GitHub
+
+![GitHub — the same document in the light and dark variants](../../imgs/themes/github.png)
+
+### Goldenrod
+
+![Goldenrod — the same document in the light and dark variants](../../imgs/themes/goldenrod.png)
+
+### Halcyon
+
+![Halcyon — the same document in the light and dark variants](../../imgs/themes/halcyon.png)
+
+### Nightshade
+
+![Nightshade — the same document in the light and dark variants](../../imgs/themes/nightshade.png)
+
+### Pippin
+
+![Pippin — the same document in the light and dark variants](../../imgs/themes/pippin.png)
+
+### Sage
+
+![Sage — the same document in the light and dark variants](../../imgs/themes/sage.png)
 
 ## Random
 

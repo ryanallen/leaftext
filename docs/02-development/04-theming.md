@@ -77,6 +77,7 @@ The editable source of truth is the **`themes/` folder at the repo root**. Being
 
 - `# Display Name` — the family's picker label (`Sage`, `GitHub`, …).
 - `**Family ID:** \`<family>\`` — the family id used in `data-leaf-theme` and in the `<family>.md` filename (the bundler checks they match).
+- An optional preview image — a standalone `![Display Name](../imgs/themes/<family>.png)` line in the header, above the `**Family ID:**` line. The Rust parser ignores it (only headings and tables carry data), while the bundler lifts it into the family's gallery entry and fails the run if the path does not resolve. Shipping families point at `imgs/themes/<family>.png`, one screenshot of the reference document split across the light and dark variants.
 - `## Fonts` — a `Role | Stack` table with `Heading`, `Body`, `Code`, and `Google` rows.
 - `## Light` and `## Dark` — a `Token | Value` table covering every contract property, each optionally followed by a `### Overrides` table for per-source token nudges. **Token names drop the `--leaf-` prefix** (re-added at parse time) and values are wrapped in backticks (`` `#282a36` ``).
 
@@ -143,6 +144,7 @@ A theme is a light/dark pair of sources, authored as data — no Rust. To add on
 Create `themes/myfamily.md`. Copy an existing family file (e.g. `themes/amaranth.md`) as a template so the token coverage and shape match, then edit:
 
 - the `# My Family` heading and the `**Family ID:** \`myfamily\`` line (it must match the filename);
+- optionally a preview screenshot — a standalone `![My Family](../imgs/themes/myfamily.png)` line between the heading and the `**Family ID:**` line. `bundle-themes` picks up the first such image in the header, copies it into the gallery entry in `themes/README.md`, and fails if the path does not resolve (relative to `themes/`);
 - the `## Fonts` table (set the `Google` row to a Google Fonts `css2` URL, or leave it blank for system fonts);
 - the `## Light` and `## Dark` `Token | Value` tables — every property in `LEAF_SEMANTIC_TOKEN_CONTRACT` (minus the `--leaf-` prefix), with an optional `### Overrides` table for tokens you nudge off the base.
 

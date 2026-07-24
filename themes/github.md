@@ -1,5 +1,7 @@
 # GitHub
 
+![GitHub — the same document in the light and dark variants](../imgs/themes/github.png)
+
 **Family ID:** `github`
 
 ## Fonts

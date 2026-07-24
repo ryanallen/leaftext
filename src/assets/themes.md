@@ -3,6 +3,8 @@
 
 # Amaranth
 
+![Amaranth — the same document in the light and dark variants](../imgs/themes/amaranth.png)
+
 **Family ID:** `amaranth`
 
 ## Fonts
@@ -250,6 +252,8 @@
 
 # Arabica
 
+![Arabica — the same document in the light and dark variants](../imgs/themes/arabica.png)
+
 **Family ID:** `arabica`
 
 ## Fonts
@@ -496,6 +500,8 @@
 | syntax-changed-background               | `#3a3018`                        |
 
 # Fern
+
+![Fern — the same document in the light and dark variants](../imgs/themes/fern.png)
 
 **Family ID:** `fern`
 
@@ -802,6 +808,8 @@
 
 # Ginger
 
+![Ginger — the same document in the light and dark variants](../imgs/themes/ginger.png)
+
 **Family ID:** `ginger`
 
 ## Fonts
@@ -1048,6 +1056,8 @@
 | syntax-changed-background               | `#3a3320`                        |
 
 # GitHub
+
+![GitHub — the same document in the light and dark variants](../imgs/themes/github.png)
 
 **Family ID:** `github`
 
@@ -1314,6 +1324,8 @@
 
 # Goldenrod
 
+![Goldenrod — the same document in the light and dark variants](../imgs/themes/goldenrod.png)
+
 **Family ID:** `goldenrod`
 
 ## Fonts
@@ -1560,6 +1572,8 @@
 | syntax-changed-background               | `#3a3018`                        |
 
 # Halcyon
+
+![Halcyon — the same document in the light and dark variants](../imgs/themes/halcyon.png)
 
 **Family ID:** `halcyon`
 
@@ -1808,6 +1822,8 @@
 
 # Nightshade
 
+![Nightshade — the same document in the light and dark variants](../imgs/themes/nightshade.png)
+
 **Family ID:** `nightshade`
 
 ## Fonts
@@ -2055,6 +2071,8 @@
 
 # Pippin
 
+![Pippin — the same document in the light and dark variants](../imgs/themes/pippin.png)
+
 **Family ID:** `pippin`
 
 ## Fonts
@@ -2301,6 +2319,8 @@
 | syntax-changed-background               | `#33280c`                        |
 
 # Sage
+
+![Sage — the same document in the light and dark variants](../imgs/themes/sage.png)
 
 **Family ID:** `sage`
 

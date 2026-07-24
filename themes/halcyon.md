@@ -1,5 +1,7 @@
 # Halcyon
 
+![Halcyon — the same document in the light and dark variants](../imgs/themes/halcyon.png)
+
 **Family ID:** `halcyon`
 
 ## Fonts

@@ -1,5 +1,7 @@
 # Ginger
 
+![Ginger — the same document in the light and dark variants](../imgs/themes/ginger.png)
+
 **Family ID:** `ginger`
 
 ## Fonts

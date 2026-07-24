@@ -1,5 +1,7 @@
 # Amaranth
 
+![Amaranth — the same document in the light and dark variants](../imgs/themes/amaranth.png)
+
 **Family ID:** `amaranth`
 
 ## Fonts

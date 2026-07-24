@@ -1,5 +1,7 @@
 # Fern
 
+![Fern — the same document in the light and dark variants](../imgs/themes/fern.png)
+
 **Family ID:** `fern`
 
 ## Fonts

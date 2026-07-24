@@ -12,6 +12,11 @@
 // itself. Each file names the family (# H1), states its family id, and lists its
 // Light/Dark token tables; see themes/README.md or any existing file for the shape.
 //
+// A family file may also open with a preview image — a standalone
+// `![alt](../imgs/themes/<id>.png)` line above the `**Family ID:**` line. It is
+// optional; when present the file must point at an image that exists, and the
+// gallery reuses it (README.md sits in themes/, so the same relative path works).
+//
 //   node scripts/bundle-themes.mjs          regenerate both outputs
 //   node scripts/bundle-themes.mjs --check  fail if either output has drifted
 //                                           (used by `just verify`)
@@ -20,7 +25,7 @@
 // Light/Dark tables) and run `just bundle-themes`. No manifest to maintain — the
 // folder is globbed, and README.md is regenerated to include it.
 
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -73,13 +78,15 @@ function firstFamily(stack) {
   return first.replace(/^["']|["']$/g, '');
 }
 
-// Parse one family file into { displayName, id, fonts, light, dark }, where
-// light/dark are the *effective* token maps (base tokens overlaid by overrides).
+// Parse one family file into { displayName, id, preview, fonts, light, dark },
+// where light/dark are the *effective* token maps (base tokens overlaid by
+// overrides) and preview is the optional `{ alt, src }` of the header image.
 // Mirrors parse_theme_markdown() in src/theme.rs, minus the --leaf- prefix.
 function parseFamily(file, body) {
   const fam = {
     displayName: null,
     id: null,
+    preview: null,
     fonts: { heading: '', body: '', code: '', google: '' },
     light: { tokens: {}, overrides: {} },
     dark: { tokens: {}, overrides: {} },
@@ -100,6 +107,14 @@ function parseFamily(file, body) {
     const idMatch = line.match(/^\*\*Family ID:\*\*\s*`([^`]+)`/);
     if (idMatch) {
       fam.id = idMatch[1];
+      continue;
+    }
+    // The optional preview image: a standalone image line in the header, above
+    // the first `##` section. Later images (inside a section) are left alone.
+    const previewMatch = line.match(/^!\[([^\]]*)\]\((\S+?)(?:\s+"([^"]*)")?\)$/);
+    if (previewMatch && section === 'none' && !fam.preview) {
+      fam.preview = { alt: previewMatch[1].trim(), src: previewMatch[2] };
+      inTableBody = false;
       continue;
     }
     if (line.startsWith('## ')) {
@@ -152,6 +167,16 @@ function parseFamily(file, body) {
       `themes/${file}: family id \`${fam.id}\` does not match the filename \`${expected}\``,
     );
   }
+  // A preview is optional, but a broken one is not: catch a typo'd path here
+  // rather than shipping a missing image to GitHub, the site, and the app.
+  if (fam.preview && !/^[a-z][a-z0-9+.-]*:/i.test(fam.preview.src)) {
+    if (!existsSync(join(themesDir, fam.preview.src))) {
+      throw new Error(
+        `themes/${file}: preview image \`${fam.preview.src}\` does not exist ` +
+          `(paths are relative to the themes/ folder)`,
+      );
+    }
+  }
   fam.effective = {
     light: { ...fam.light.tokens, ...fam.light.overrides },
     dark: { ...fam.dark.tokens, ...fam.dark.overrides },
@@ -174,8 +199,9 @@ function buildGallery(families) {
   lines.push('');
   lines.push(
     `${families.length} families ship today, listed alphabetically (the order the theme ` +
-      'picker uses). Each links to its full file; the table is a light-vs-dark preview of the ' +
-      'key colors — every family also defines the full ~100-token contract inside its file.',
+      'picker uses). Each links to its full file; the screenshot is the same document split ' +
+      'across the light and dark variants, and the table previews the key colors — every ' +
+      'family also defines the full ~100-token contract inside its file.',
   );
   lines.push('');
   lines.push('## Gallery');
@@ -190,6 +216,12 @@ function buildGallery(families) {
         `Body **${firstFamily(fam.fonts.body)}** · Code **${firstFamily(fam.fonts.code)}** · ${fontKind}`,
     );
     lines.push('');
+    if (fam.preview) {
+      // README.md lives in themes/ alongside the family files, so the preview
+      // path carries over verbatim.
+      lines.push(`![${fam.preview.alt}](${fam.preview.src})`);
+      lines.push('');
+    }
     lines.push('| Role       | Light     | Dark      |');
     lines.push('| ---------- | --------- | --------- |');
     for (const [key, label] of GALLERY_ROLES) {
@@ -205,7 +237,9 @@ function buildGallery(families) {
   lines.push(
     'Copy an existing file (say `dracula.md`), rename it to `<your-id>.md`, and edit the ' +
       '`# Name` heading, the `**Family ID:**` line (it must match the filename), the `## Fonts` ' +
-      'table, and the `## Light` / `## Dark` token tables. Then run `just bundle-themes` to ' +
+      'table, and the `## Light` / `## Dark` token tables. Optionally add a preview screenshot ' +
+      'as a standalone `![Your Family](../imgs/themes/<your-id>.png)` line under the heading — ' +
+      'it shows up in the file itself and in this gallery. Then run `just bundle-themes` to ' +
       'recompile the embedded bundle and regenerate this gallery, and `just verify` to run the ' +
       'contract and contrast checks. See ' +
       '[docs/02-development/04-theming.md](../docs/02-development/04-theming.md) for the full contract.',
