@@ -3160,30 +3160,67 @@ function sliceSourceBytes(source, start, end) {
   return sourceByteDecoder.decode(bytes.slice(start, end));
 }
 
-// Attach each Markdown block's source range to its rendered element. push_html
-// emits one top-level element per block in order (plus the trailing pager
-// placeholder), so zipping by index is safe; if the counts disagree, skip
-// attaching so a misaligned range can't drive an edit. XML ranges are inline.
-function attachMarkdownBlockRanges(body, blocks) {
-  // Exclude reader-injected non-source elements (the outline and pager
-  // placeholder); what remains is the rendered source blocks, in order.
-  const children = Array.from(body.children).filter(
-    (el) =>
-      !el.classList.contains('document-outline') &&
-      !el.classList.contains('docs-pager') &&
-      !el.classList.contains('docs-pager-loading'),
-  );
-  if (children.length !== blocks.length) {
-    return;
-  }
-  blocks.forEach((block, i) => {
-    const el = children[i];
+// Attach each Markdown block's source range to its rendered element. Blocks come
+// in document order, but a raw-HTML wrapper (e.g. `<div align="center">`) nests
+// the blocks that follow it, so they aren't all immediate children of the body.
+// Walk the tree instead: descend into wrappers to reach their blocks, and step
+// over a wrapper's closing tag (`</div>`), which renders to no element. If the
+// structure can't be matched cleanly, attach nothing so a misaligned range can't
+// drive an edit. XML ranges are stamped inline by the renderer, not here.
+function attachMarkdownBlockRanges(body, blocks, source) {
+  const src = typeof source === 'string' ? source : '';
+  // Reader-injected, non-source elements to skip while walking.
+  const isInjected = (el) =>
+    el.classList.contains('document-outline') ||
+    el.classList.contains('docs-pager') ||
+    el.classList.contains('docs-pager-loading') ||
+    el.classList.contains('frontmatter');
+  // A raw-HTML block whose source is a closing tag (`</div>`) closes a wrapper
+  // rather than opening an element, so it maps to no element and is stepped over.
+  const isClosingHtmlBlock = (block) =>
+    block.kind === 'html_block' &&
+    sliceSourceBytes(src, block.start, block.end).trimStart().startsWith('</');
+  const hasElementChild = (el) => Array.from(el.children).some((child) => child.nodeType === 1);
+
+  const pairs = [];
+  let cursor = 0;
+  let mismatch = false;
+  const nextBlock = () => {
+    while (cursor < blocks.length && isClosingHtmlBlock(blocks[cursor])) cursor += 1;
+    return cursor < blocks.length ? blocks[cursor] : null;
+  };
+  const walk = (elements) => {
+    for (const el of elements) {
+      if (el.nodeType !== 1 || isInjected(el)) continue;
+      const block = nextBlock();
+      if (!block) {
+        mismatch = true;
+        return;
+      }
+      cursor += 1;
+      // A raw-HTML wrapper is a transparent container, not an editable block:
+      // descend to its blocks but never stamp the wrapper itself, or source-
+      // editing it would replace its rendered children with raw tag text.
+      if (block.kind === 'html_block' && hasElementChild(el)) {
+        walk(el.children);
+      } else {
+        pairs.push([el, block]);
+      }
+    }
+  };
+  walk(body.children);
+  // Every non-closing block must have found an element, or the mapping drifted
+  // and none of it can be trusted.
+  if (nextBlock() !== null) mismatch = true;
+  if (mismatch) return;
+
+  for (const [el, block] of pairs) {
     el.dataset.blockId = String(block.id);
     el.dataset.srcStart = String(block.start);
     el.dataset.srcEnd = String(block.end);
     el.dataset.blockKind = block.kind;
     if (block.editable) el.dataset.editable = 'true';
-  });
+  }
 }
 
 // The document-order checkboxes the reader may toggle: every body checkbox not in
@@ -3950,7 +3987,7 @@ function bindReadingEditor(doc) {
   // quick action that auto-saves and records no undo, not text editing. Only the
   // click-to-type editable blocks are gated behind the setting.
   if (currentDocumentFormat === 'markdown') {
-    attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : []);
+    attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : [], currentDocumentSource);
     bindTaskCheckboxes(doc.tasks || []);
   }
   if (readerEditingEnabled) {

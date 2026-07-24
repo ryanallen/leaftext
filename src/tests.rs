@@ -6052,6 +6052,41 @@ fn block_source_map_maps_rules_and_ignores_nested_blocks() {
 }
 
 #[test]
+fn block_source_map_treats_html_wrapper_open_and_close_as_separate_blocks() {
+    // A `<div align="center">` wrapper (as the README uses) opens and closes with
+    // its own raw-HTML blocks, and the blocks between get their own spans. The
+    // reading-view editor relies on this: it descends into the rendered wrapper to
+    // reach those inner blocks, and recognizes the closing `</div>` block (which
+    // renders to no element) by its `</` source so it can step over it.
+    let markdown = "<div align=\"center\">\n\n# Title\n\nInside the box.\n\n</div>\n\nAfter.\n";
+    let spans = block_source_map(markdown);
+    let kinds: Vec<&str> = spans.iter().map(|span| span.kind).collect();
+    assert_eq!(
+        kinds,
+        [
+            "html_block",
+            "heading",
+            "paragraph",
+            "html_block",
+            "paragraph"
+        ]
+    );
+
+    // The opening wrapper slices back to just the `<div ...>` tag, and the closing
+    // wrapper to `</div>` — the two ends the editor tells apart by their source.
+    assert!(markdown[spans[0].start..spans[0].end].starts_with("<div"));
+    assert!(markdown[spans[3].start..spans[3].end]
+        .trim_start()
+        .starts_with("</div"));
+
+    // The inner heading and paragraph are ordinary editable blocks, unaffected by
+    // living inside the wrapper.
+    assert!(spans[1].editable);
+    assert!(markdown[spans[1].start..spans[1].end].starts_with("# Title"));
+    assert!(markdown[spans[2].start..spans[2].end].starts_with("Inside the box."));
+}
+
+#[test]
 fn document_format_follows_extension() {
     assert_eq!(
         DocumentFormat::from_path(Path::new("notes.md")),
