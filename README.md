@@ -1,8 +1,7 @@
-<div align="center">
+# Refine your mind.
+## Your thoughts, secure and free.
 
-# Leaf Text
-
-> A free desktop app for reading and editing Markdown and TEI XML. Open a file. Read it.
+Leaftext is a free desktop app for reading and editing Markdown and TEI XML. Open a file. Read it.
 
 ![Leaf Text — a readable Markdown and TEI XML document open in the app](imgs/leaftext.png)
 
@@ -12,8 +11,6 @@
 <a href="https://github.com/ryanallen/leaftext/releases"><img alt="Linux" src="https://img.shields.io/badge/Linux-available-f59e0b?style=flat&labelColor=4b5563"></a>
 
 **[Read the docs →](docs/)** · **[View the project on GitHub →](https://github.com/ryanallen/leaftext)**
-
-</div>
 
 ---
 
@@ -41,13 +38,13 @@ A left-side pane backed by a local SQLite index of every Markdown file you own �
 
 ### Navigate like a browser
 
-![Tabs and Back/Forward history in the app bar](imgs/feature-navigation.png)
+![Tabs and Back/Forward history in the app bar](imgs/navigation.png)
 
 [Tabs](docs/01-features/02-navigation.md#tabs), Back/Forward [history](docs/01-features/02-navigation.md#history), a collapsible [outline](docs/01-features/02-navigation.md#outline) (table of contents) at the top of every document, in-document jumps, and a Previous/Next [pager](docs/01-features/05-settings.md#pager) that walks a folder in reading order. Save a file in your editor and Leaf Text [live-reloads](docs/01-features/02-navigation.md#reload) it, keeping your place. **[Navigation →](docs/01-features/02-navigation.md)**
 
 ### Stay oriented with the minimap
 
-![The minimap rail showing a scaled clone of the document](imgs/feature-minimap.png)
+![The minimap rail showing a scaled clone of the document](imgs/minimap.png)
 
 A shrunken clone of the page in a side rail — real, tiny text, not abstract bars — with a live viewport indicator. Recognize where you are from the shape of the text itself, click any section to jump, or drag the indicator to scroll. **[Minimap →](docs/01-features/04-minimap.md)**
 
