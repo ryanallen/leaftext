@@ -3230,7 +3230,10 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
             "let readerReflowObserver = null;",
             "const READER_ANCHOR_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, table, details, figure, hr';",
             "function captureReaderScrollAnchor() {",
-            "const blocks = Array.from(source.querySelectorAll(READER_ANCHOR_SELECTOR));",
+            // Capture and restore share one cached block list so a serialized
+            // {section, block} anchor always resolves back to the element it named.
+            "readerAnchorBlocks = Array.from(source.querySelectorAll(READER_ANCHOR_SELECTOR));",
+            "const blocks = readerAnchorBlockList(source);",
             "return { section, block: targetIndex - (sectionIndex < 0 ? 0 : sectionIndex), offsetY };",
             "function resolveReaderAnchorElement(anchor) {",
             "function restoreReaderScrollAnchor(anchor) {",
@@ -3241,9 +3244,12 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
             "readerScrollAnchor = captureReaderScrollAnchor();",
             "window.addEventListener('resize', () => {",
             "scheduleReaderLayoutUpdate();",
-            // The reflow observer re-pins the anchor as images decode and grow.
+            // The reflow observer re-pins the anchor as images decode and grow,
+            // and drops the stale anchor-block cache so the re-pin resolves
+            // against the current DOM rather than detached, zero-rect entries.
             "function observeReaderReflow() {",
-            "readerReflowObserver = new ResizeObserver(() => scheduleReaderLayoutUpdate());",
+            "readerReflowObserver = new ResizeObserver(() => {",
+            "readerAnchorBlocks = null;",
             "image.addEventListener('load', () => scheduleReaderLayoutUpdate(), { once: true });",
         ] {
             assert_contains(&html, expected);
@@ -3258,6 +3264,28 @@ fn reading_mode_css_offsets_document_by_measured_scroll_origin() {
         css,
         "margin: calc(-1 * var(--reader-scroll-origin, 0px)) 0 0;",
     );
+}
+
+#[test]
+fn reading_mode_css_pins_reader_to_its_grid_cell() {
+    // The reader must be explicitly placed in the library-shell grid. When it
+    // was auto-placed, unhiding the .reader-loading overlay (explicitly at
+    // column 2, row 1) evicted the reader into an implicit row in the 0px
+    // library column, reflowing the whole document at zero width and turning
+    // every in-flight scroll computation into garbage — the "page jumps all
+    // over the place" bug.
+    let css = reading_mode_css();
+    let shell_rule_start = css
+        .find(".reader-shell {")
+        .expect("reading-mode CSS should define .reader-shell");
+    let shell_rule_end = css[shell_rule_start..]
+        .find('}')
+        .map(|offset| shell_rule_start + offset)
+        .expect(".reader-shell rule should close");
+    let shell_rule = &css[shell_rule_start..shell_rule_end];
+
+    assert_contains(shell_rule, "grid-column: 2;");
+    assert_contains(shell_rule, "grid-row: 1;");
 }
 
 #[test]

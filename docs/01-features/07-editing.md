@@ -48,7 +48,7 @@ The toggle is the code-brackets button in the app bar, left of Settings — it a
 - The source is coloured by the same Rust highlighter that colours fenced code blocks in the [reading view](01-rendering.md#code), with both Markdown and XML in its language table. Each construct's *delimiters* are coloured to match their content the way a code editor does — the `#` of a heading, the `[]` and `()` of a link, the `**` and backticks of bold and inline code, the `>` of a quote — rather than left as plain text, and headings and bold read in bold. A [TEI XML](01-rendering.md#tei-xml-84000-translations) file shows its tags, with element names in bold and attribute names in their own colour.
 - Long lines wrap instead of scrolling sideways, and the line-number gutter numbers *source* lines — a wrapped line keeps one number, pinned to its first row.
 - The rail on the right is the reader's own [minimap](04-minimap.md), showing a scaled thumbnail of the source; click or drag it to move, exactly as in the reading view.
-- Toggling keeps your place: the code view opens at the same relative position you were reading, and toggling back returns there. Switching to another tab and back does too — a tab left in the code view comes back in the code view, scrolled to where you left it.
+- Toggling keeps your place: the code view opens on the source line of the block you were reading, and toggling back lands the reading view on that same block. Switching to another tab and back does too — a tab left in the code view comes back in the code view, scrolled to where you left it.
 
 ## Editing the source
 

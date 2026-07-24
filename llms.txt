@@ -4,7 +4,7 @@
 
 ## Pages
 
-- [Leaf Text](https://leaftext.com/README.md)
+- [Refine your mind.](https://leaftext.com/README.md)
 - [Rendering](https://leaftext.com/docs/01-features/01-rendering.md)
 - [Navigation](https://leaftext.com/docs/01-features/02-navigation.md)
 - [Library](https://leaftext.com/docs/01-features/03-library.md)

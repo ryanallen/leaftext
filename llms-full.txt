@@ -2,10 +2,10 @@
 
 > A desktop reader for Markdown. Open a file. Read it. Every canonical page, its human URL, its raw Markdown source, and a short description. Fetch the .md URLs for clean, JS-free text.
 
-## Leaf Text
+## Refine your mind.
 - Page: https://leaftext.com/
 - Markdown: https://leaftext.com/README.md
-- Summary: Leaf Text — Readable XML and Markdown
+- Summary: Leaftext is a free desktop app for reading and editing Markdown and TEI XML. Open a file. Read it.
 
 ## Rendering
 - Page: https://leaftext.com/docs/#/features/rendering

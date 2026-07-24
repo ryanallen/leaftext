@@ -1893,6 +1893,12 @@ body.library-resizing {
 }
 .reader-shell {
   background: var(--preview-background);
+  /* Pin the reader to its grid cell. Auto-placed, it gets evicted into the 0px
+     library column when the .reader-loading overlay (which claims column 2, row 1)
+     is unhidden — the document then reflows at zero width and every scroll
+     computation made while the spinner is up lands wrong. */
+  grid-column: 2;
+  grid-row: 1;
   height: 100vh;
   overflow: auto;
   /* The reader pins its own scroll anchor across re-renders; the browser's

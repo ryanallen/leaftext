@@ -2080,6 +2080,10 @@ let resetReaderScrollOnNextRender = false;
 // so the per-scroll probe never re-runs querySelectorAll over huge documents.
 let readerAnchorBlocks = null;
 let readerAnchorBlocksCount = -1;
+// The `.document-body` the cache was built against. A re-render swaps in a fresh
+// body node, so comparing identity catches that immediately instead of relying
+// on the child-count heuristic alone.
+let readerAnchorBlocksSource = null;
 const READER_CONTENT_TOP_GAP = 88;
 const READER_ANCHOR_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, table, details, figure, hr';
 // The theme selector: a bottom sheet reached from Settings, with an appearance
@@ -2220,6 +2224,14 @@ const dirtyByPath = new Map();
 // mid-document stays mid-document). Consumed (and cleared) by the next render.
 // Declared here, above the subscriptions that run renderState() on load.
 let pendingViewScrollFraction = null;
+// Byte offset of the block at the top of the reading viewport when the code view
+// opens, so it lands on the line you were reading rather than a height fraction
+// (rendered height and source length diverge). Consumed by the next renderCodeView.
+let pendingCodeViewSrcOffset = null;
+// The mirror for leaving the code view: byte offset of the top source line,
+// consumed by the next reading render so it lands on that block. Replaces a racy
+// fraction hand-off that dropped the reader to the top of the document.
+let pendingReadingSrcOffset = null;
 // Live reading-view editing. The source buffer stays authoritative in Rust; the
 // reading view anchors each edit to a source byte range and asks the host to
 // splice it. These hold what the frontend needs between renders. Declared here,
@@ -2972,12 +2984,110 @@ function viewScrollFraction() {
   return Math.min(1, Math.max(0, app.scrollTop / scrollable));
 }
 
+// The source byte offset of the block at the top of the reading viewport, or
+// null when there's nothing to anchor to. Blocks carry their source range in
+// data-src-start (attached for every Markdown block, stamped inline on TEI
+// blocks), so the topmost visible block names where the reader is in the
+// source exactly — unlike the whole-document height fraction.
+function topReadingBlockSourceOffset() {
+  const anchorEl = resolveReaderAnchorElement(captureReaderScrollAnchor());
+  const block = anchorEl && anchorEl.closest ? anchorEl.closest('[data-src-start]') : null;
+  if (!block) return null;
+  const start = Number(block.dataset.srcStart);
+  return Number.isFinite(start) ? start : null;
+}
+
+// The 0-based source line containing a UTF-8 byte offset. Block source ranges
+// are byte offsets (pulldown-cmark / roxmltree), but the buffer is a UTF-16 JS
+// string, so walk code points accumulating byte lengths until the offset is
+// reached, counting the newlines passed. Only scans up to the offset.
+function lineIndexAtByteOffset(text, byteOffset) {
+  if (!Number.isFinite(byteOffset) || byteOffset <= 0) return 0;
+  let bytes = 0;
+  let line = 0;
+  for (let i = 0; i < text.length && bytes < byteOffset; ) {
+    const cp = text.codePointAt(i);
+    if (cp === 0x0a) line += 1;
+    bytes += cp <= 0x7f ? 1 : cp <= 0x7ff ? 2 : cp <= 0xffff ? 3 : 4;
+    i += cp > 0xffff ? 2 : 1;
+  }
+  return line;
+}
+
+// The inverse: UTF-8 byte offset of the start of a 0-based source line.
+function byteOffsetAtLineIndex(text, lineIndex) {
+  if (!Number.isFinite(lineIndex) || lineIndex <= 0) return 0;
+  let bytes = 0;
+  let line = 0;
+  for (let i = 0; i < text.length && line < lineIndex; ) {
+    const cp = text.codePointAt(i);
+    if (cp === 0x0a) line += 1;
+    bytes += cp <= 0x7f ? 1 : cp <= 0x7ff ? 2 : cp <= 0xffff ? 3 : 4;
+    i += cp > 0xffff ? 2 : 1;
+  }
+  return bytes;
+}
+
+// The 0-based index of the code view's top visible gutter line, by binary
+// search over the in-order line rows.
+function topVisibleCodeLineIndex() {
+  const rows = app.querySelectorAll('.cv-lnrow');
+  if (!rows.length) return null;
+  const topEdge = app.getBoundingClientRect().top + 1;
+  let lo = 0;
+  let hi = rows.length - 1;
+  let found = rows.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (rows[mid].getBoundingClientRect().bottom > topEdge) {
+      found = mid;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+  return found;
+}
+
+// Scroll the reading view so the block containing `srcOffset` sits at the top
+// edge: the deterministic landing for leaving the code view. Falls back to
+// no-op (caller keeps its own fallback) when the block map is missing.
+function scrollReadingToSrcOffset(srcOffset) {
+  const body = app.querySelector('.document-body');
+  if (!body) return false;
+  const blocks = body.querySelectorAll('[data-src-start]');
+  if (!blocks.length) return false;
+  let target = null;
+  for (const el of blocks) {
+    const start = Number(el.dataset.srcStart);
+    if (!Number.isFinite(start) || start > srcOffset) break;
+    target = el;
+  }
+  if (!target) target = blocks[0];
+  correctReaderScrollOrigin();
+  const shellRect = app.getBoundingClientRect();
+  const rect = target.getBoundingClientRect();
+  setReaderScrollTop(app.scrollTop + rect.top - shellRect.top);
+  return true;
+}
+
 if (codeViewButton) {
   codeViewButton.addEventListener('click', () => {
     if (!activeDocumentPath()) return;
     // Carry the current position across the toggle; the destination view's
     // render consumes it and lands at the same relative spot.
     pendingViewScrollFraction = viewScrollFraction();
+    // Entering the code view: remember which source line the reader is on, so
+    // it opens there. Leaving: remember which line the code view is on, so the
+    // reading view lands on that block. The fraction stays as the fallback.
+    if (codeViewActive) {
+      pendingCodeViewSrcOffset = null;
+      const lineIndex = topVisibleCodeLineIndex();
+      pendingReadingSrcOffset = lineIndex == null ? null : byteOffsetAtLineIndex(codeViewText, lineIndex);
+    } else {
+      pendingReadingSrcOffset = null;
+      pendingCodeViewSrcOffset = topReadingBlockSourceOffset();
+    }
     // Either direction re-renders the whole view (highlighting a big source or
     // rebuilding a big document is slow), so arm the spinner for the wait.
     beginReaderLoading();
@@ -3092,12 +3202,31 @@ function renderCodeView(state) {
   textarea.setSelectionRange(0, 0);
   textarea.focus({ preventScroll: true });
   const explicit = typeof state.scrollFraction === 'number' ? state.scrollFraction : null;
-  let fraction = explicit;
-  if (fraction == null) fraction = pendingViewScrollFraction;
-  if (fraction == null) fraction = priorCodeScroll;
+  const srcOffset = pendingCodeViewSrcOffset;
+  pendingCodeViewSrcOffset = null;
+  let positioned = false;
+  // Landing on the reader's exact source line wins over any fraction, but only
+  // when this render isn't restoring an explicit saved position (a tab
+  // reopened in the code view).
+  if (explicit == null && srcOffset != null) {
+    const lineIndex = lineIndexAtByteOffset(text, srcOffset);
+    const row = linenums.children[Math.min(lineIndex, linenums.children.length - 1)];
+    if (row) {
+      const shellRect = app.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+      // Land the target line just below the top edge, echoing the reading gap.
+      app.scrollTop = Math.max(0, app.scrollTop + (rowRect.top - shellRect.top) - 12);
+      positioned = true;
+    }
+  }
+  if (!positioned) {
+    let fraction = explicit;
+    if (fraction == null) fraction = pendingViewScrollFraction;
+    if (fraction == null) fraction = priorCodeScroll;
+    const scrollable = Math.max(0, app.scrollHeight - app.clientHeight);
+    app.scrollTop = (fraction || 0) * scrollable;
+  }
   pendingViewScrollFraction = null;
-  const scrollable = Math.max(0, app.scrollHeight - app.clientHeight);
-  app.scrollTop = (fraction || 0) * scrollable;
   window.requestAnimationFrame(() => updateMinimapViewport());
 }
 
@@ -4048,7 +4177,23 @@ function renderState() {
     bindReadingEditor(state.document);
     observeReaderReflow();
     scheduleMinimapPreviewUpdate();
-    if (resetReaderScrollOnNextRender) {
+    // Returning from the code view: land on the block holding the source line
+    // the code view was scrolled to. This wins over the reset-to-top the
+    // host's Reset intent would otherwise run, and doesn't depend on the racy
+    // fraction hand-off.
+    if (pendingReadingSrcOffset != null) {
+      const srcOffset = pendingReadingSrcOffset;
+      pendingReadingSrcOffset = null;
+      resetReaderScrollOnNextRender = false;
+      window.requestAnimationFrame(() => {
+        if (!scrollReadingToSrcOffset(srcOffset)) {
+          resetReaderScrollToContentStart();
+          return;
+        }
+        readerScrollAnchor = captureReaderScrollAnchor();
+        updateMinimapViewport();
+      });
+    } else if (resetReaderScrollOnNextRender) {
       resetReaderScrollOnNextRender = false;
       resetReaderScrollToContentStart();
     } else {
@@ -5086,8 +5231,16 @@ function clampReaderScrollPosition() {
   app.scrollTop = clampedScrollTop;
   return true;
 }
+let resetReaderScrollFrame = 0;
 function resetReaderScrollToContentStart() {
-  window.requestAnimationFrame(() => {
+  // Coalesce: back-to-back renders each scheduling a reset must not run it
+  // twice — the second pass would see the toggle fraction already consumed
+  // and hard-reset a mid-document reader to the top.
+  if (resetReaderScrollFrame) {
+    return;
+  }
+  resetReaderScrollFrame = window.requestAnimationFrame(() => {
+    resetReaderScrollFrame = 0;
     const source = app.querySelector('.document-body');
     const content = correctReaderScrollOrigin(source);
     // Leaving the code view carries its scroll fraction here so the reading view
@@ -5113,14 +5266,21 @@ function resetReaderScrollToContentStart() {
 // topmost-visible one is found by binary search rather than scanning all ~25k.
 function readerAnchorBlockList(source) {
   const count = source.childElementCount;
+  // Rebuild when the body was replaced, the child count shifted, or either end
+  // of the cached list detached. Checking the last block too catches async DOM
+  // swaps (Mermaid, KaTeX, code decoration) that leave detached, zero-rect
+  // entries — those break the binary search's document-order assumption.
   const stale =
     !readerAnchorBlocks ||
+    readerAnchorBlocksSource !== source ||
     readerAnchorBlocksCount !== count ||
     !readerAnchorBlocks.length ||
-    !readerAnchorBlocks[0].isConnected;
+    !readerAnchorBlocks[0].isConnected ||
+    !readerAnchorBlocks[readerAnchorBlocks.length - 1].isConnected;
   if (stale) {
     readerAnchorBlocks = Array.from(source.querySelectorAll(READER_ANCHOR_SELECTOR));
     readerAnchorBlocksCount = count;
+    readerAnchorBlocksSource = source;
   }
   return readerAnchorBlocks;
 }
@@ -5169,7 +5329,10 @@ function resolveReaderAnchorElement(anchor) {
   if (!source || !anchor) {
     return null;
   }
-  const blocks = Array.from(source.querySelectorAll(READER_ANCHOR_SELECTOR));
+  // Resolve against the same list capture used, so a serialized {section, block}
+  // pair always points back at the element it named. A divergent list here would
+  // shift the index and land the restore on the wrong block.
+  const blocks = readerAnchorBlockList(source);
   if (!blocks.length) {
     return null;
   }
@@ -5228,7 +5391,13 @@ function observeReaderReflow() {
     return;
   }
   if (typeof ResizeObserver !== 'undefined') {
-    readerReflowObserver = new ResizeObserver(() => scheduleReaderLayoutUpdate());
+    readerReflowObserver = new ResizeObserver(() => {
+      // A resize means the block set may have changed (images decoding,
+      // Mermaid/KaTeX/code decoration swapping nodes in). Drop the cached anchor
+      // list so the next capture reflects the current DOM. Cheap: resizes are rare.
+      readerAnchorBlocks = null;
+      scheduleReaderLayoutUpdate();
+    });
     readerReflowObserver.observe(source);
   }
   source.querySelectorAll('img').forEach((image) => {
