@@ -965,18 +965,19 @@ body {
   flex: 0 0 auto;
   max-width: 132px;
   padding: 0 4px;
-  /* Full-height cell: vertical strokes on both sides run the whole header,
-     and a bottom stroke meets the reader divider. Above the divider (z-index 1)
-     so the active tab can cover it. */
+  /* Full-height cell above the reader divider (z-index 1) so the active tab can
+     cover it. The transparent side borders reserve the width the active tab
+     paints in, keeping every tab the same size. */
   position: relative;
   z-index: 1;
-  border-left: 1px solid var(--app-border);
-  border-right: 1px solid var(--app-border);
+  border-left: 1px solid transparent;
+  border-right: 1px solid transparent;
   border-bottom: 1px solid var(--app-border);
-  /* Transparent fill so the header's textured surface shows through the tab body
-     (behind the label), like it does through the disabled history buttons. Only
-     the active tab paints an opaque page-colored fill (see .tab-active). */
-  background: transparent;
+  /* An inactive tab reads as a darker cell by tiling the header's cassette grain
+     at the heavier search-band weight — denser ink, no outline needed. */
+  background-image: radial-gradient(circle, var(--library-header-grain) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
   cursor: grab;
   user-select: none;
   transition: max-width 0.12s ease, transform 0.12s ease;
@@ -997,9 +998,11 @@ body {
 }
 .tab-active {
   /* Drop the bottom stroke so the page-colored fill flows over the reader
-     divider and the tab looks joined to the document below. The transparent
-     border keeps the box height identical to inactive tabs. */
+     divider and the tab looks joined to the document below. The side strokes
+     are the selection cue — only the active tab frames itself. */
   background: var(--app-background);
+  border-left-color: var(--app-border);
+  border-right-color: var(--app-border);
   border-bottom-color: transparent;
 }
 :root[data-code-view="true"] .tab-active {
@@ -1034,6 +1037,10 @@ body {
 .tab-label:hover {
   background: transparent;
   border-color: transparent;
+}
+.tab:hover .tab-label {
+  /* Text-only hover so the inactive grain and the active frame both stay put. */
+  color: var(--app-foreground);
 }
 .tab-close {
   /* Pinned to the top-right corner of every tab, out of the label's flow, so it
