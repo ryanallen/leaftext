@@ -7,7 +7,10 @@ pub(crate) const OPEN_LIBRARY_ICON_SVG: &str = include_str!("assets/panel.svg");
 pub(crate) const OPEN_ICON_SVG: &str = include_str!("assets/folder-open.svg");
 pub(crate) const CODE_VIEW_ICON_SVG: &str = include_str!("assets/code-bracket.svg");
 pub(crate) const DOCUMENT_ICON_SVG: &str = include_str!("assets/document.svg");
-pub(crate) const BRAND_LOGO_DATA_URI: &str = include_str!("assets/brand-logo.txt");
+// The one copy of the leaf mark. Both the header logomark and the library's
+// per-file badge inline this same glyph, so it takes the theme color from
+// `currentColor` at each site instead of carrying a color of its own.
+pub(crate) const LEAF_ICON_SVG: &str = include_str!("assets/leaf.svg");
 pub(crate) const FOOTNOTE_BACKREF_ICON_SVG: &str = include_str!("assets/arrow-uturn-left.svg");
 
 // Bundled runtimes (mermaid, KaTeX, graph libs) compiled into the binary and

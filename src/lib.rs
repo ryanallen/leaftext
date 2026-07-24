@@ -744,7 +744,10 @@ pub fn app_shell_html() -> String {
             "{{KATEX_CSS_URL}}",
             &bundled_asset_url("katex/katex.min.css"),
         )
-        .replace("{{BRAND_LOGO}}", BRAND_LOGO_DATA_URI.trim())
+        .replace(
+            "{{LEAF_ICON_SVG}}",
+            normalize_svg_icon_colors(LEAF_ICON_SVG).trim(),
+        )
         .replace(
             "{{BACK_ICON_SVG}}",
             normalize_svg_icon_colors(BACK_ICON_SVG).trim(),

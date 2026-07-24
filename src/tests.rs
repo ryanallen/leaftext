@@ -3062,6 +3062,52 @@ fn app_shell_renders_history_controls_and_intercepts_document_links() {
     );
 }
 
+/// The header logomark and the library's per-file badge are the same glyph, and
+/// neither may carry a color of its own: both inherit the theme through
+/// `currentColor`, which is what keeps the library leaves in step with the
+/// header when the theme changes.
+#[test]
+fn app_shell_inlines_one_leaf_mark_that_tracks_the_theme() {
+    let html = app_shell_html();
+    let leaf_path_prefix = r#"<path d="M59.7,60.1c-7.9-20.9"#;
+
+    assert_eq!(
+        html.matches(leaf_path_prefix).count(),
+        2,
+        "the leaf glyph should be inlined exactly twice: header logomark + library row template"
+    );
+    for (index, _) in html.match_indices(leaf_path_prefix) {
+        let element_end = html[index..]
+            .find("/>")
+            .map(|offset| index + offset)
+            .expect("inlined leaf path closes");
+        assert!(
+            html[index..element_end].contains(r#"fill="currentColor""#),
+            "every inlined leaf mark fills with currentColor so it inherits the theme"
+        );
+    }
+    assert!(
+        !html.contains("#3fb950"),
+        "the leaf mark must not ship a baked-in green; it inherits the theme color"
+    );
+
+    // Both sites point that inherited color at the theme's primary token.
+    let css = reading_mode_css();
+    for selector in [".brand-button > svg", ".library-file > svg"] {
+        let rule_start = css
+            .find(selector)
+            .unwrap_or_else(|| panic!("{selector} is styled"));
+        let rule_end = css[rule_start..]
+            .find('}')
+            .map(|offset| rule_start + offset)
+            .expect("rule closes");
+        assert!(
+            css[rule_start..rule_end].contains("color: var(--primary)"),
+            "{selector} should take the theme's primary color"
+        );
+    }
+}
+
 #[test]
 fn app_shell_normalizes_literal_svg_icon_colors_to_current_color() {
     let icon = r##"<svg><path fill="#fff" stroke="#FFFFFF"/><path fill='white' stroke='none'/><path fill="#fff0eb" stroke="currentColor"/><path fill="rgb(255, 255, 255)" stroke="rebeccapurple"/><path fill-rule="evenodd"/><path style="fill:#fff; stroke: hsl(0 0% 100%); fill-opacity: 0.5"/></svg>"##;
@@ -6092,7 +6138,7 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
     // The four view modes (Project, Tree, All files, Graph) and the toggle.
     assert!(html.contains("const LIBRARY_VIEWS = ['project', 'tree', 'flat', 'graph'];"));
     // Markdown rows carry the leaf mark; folders in Project view get a chevron.
-    assert!(html.contains(r#"<img class="library-file-icon" src="${LEAF_FILE_ICON}""#));
+    assert!(html.contains(r#"${LEAF_FILE_ICON}<span class="library-file-label">"#));
     assert!(html.contains(r#"<span class="library-nav-chevron" aria-hidden="true">›</span>"#));
 
     // Library callbacks, the host-injected settings global it seeds from, and

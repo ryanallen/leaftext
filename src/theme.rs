@@ -918,7 +918,7 @@ body {
   /* Library closed: no rail to align to, so the lead is just its controls. */
   width: auto;
 }
-.brand {
+.brand-button > svg {
   width: 22px;
   height: 22px;
   display: block;
@@ -1022,9 +1022,11 @@ body {
   font: 600 13px var(--app-font);
   padding: 5px 14px;
   text-align: left;
-  /* Long names fade out at the right edge instead of showing an ellipsis. */
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
-  mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
+  /* Long names fade out instead of showing an ellipsis. The fade ends at the
+     content edge, not the border box: overflow clips at the padding box, so
+     only the mask can keep text out of the right inset. */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 33px), transparent calc(100% - 15px));
+  mask-image: linear-gradient(to right, #000 calc(100% - 33px), transparent calc(100% - 15px));
 }
 .tab-active .tab-label {
   /* Full-strength foreground so the active tab's name stays legible in every
@@ -1912,11 +1914,13 @@ body.library-resizing {
 .library-file.is-selected:hover {
   background: color-mix(in srgb, var(--accent) 22%, transparent);
 }
-.library-file-icon {
+/* The leaf mark before Markdown file names. Same inline glyph as the header
+   logomark, so it tracks the theme's primary color instead of a baked-in one. */
+.library-file > svg {
   flex: none;
   width: 14px;
   height: 14px;
-  object-fit: contain;
+  color: var(--primary);
 }
 /* Folder glyph before folder names in the Tree and Project views, dimmed to the
    muted tone so the name stays primary. */

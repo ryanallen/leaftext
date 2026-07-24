@@ -728,9 +728,10 @@ speedReaderEnabledControl.addEventListener('change', () => {
 // reports each change and applies host values on boot.
 const LIBRARY_VIEWS = ['project', 'tree', 'flat', 'graph'];
 const VIEW_LABEL_KEY = { project: 'library.view.project', tree: 'library.view.tree', flat: 'library.view.all', graph: 'library.view.graph' };
-// Markdown files are badged with the app's own leaf mark; the host substitutes
-// the data URI into this string the same way it does in the header <img>.
-const LEAF_FILE_ICON = "{{BRAND_LOGO}}";
+// Markdown files are badged with the app's own leaf mark. The host inlines the
+// same glyph the header uses, so the row tints it via stroke/fill currentColor
+// rather than shipping a fixed color.
+const LEAF_FILE_ICON = `{{LEAF_ICON_SVG}}`;
 // Outline folder glyph shown before folder names in the library. Inherits the
 // row color via stroke="currentColor".
 const FOLDER_ICON_SVG = '<svg class="library-folder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" /></svg>';
@@ -1065,7 +1066,7 @@ function fileRowHtml(node) {
   const isSelected = librarySelectedPath && node.path === librarySelectedPath;
   const selected = isSelected ? ' is-selected' : '';
   const current = isSelected ? ' aria-current="true"' : '';
-  return `<button type="button" class="library-file${selected}"${current} data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(node.path)}"><img class="library-file-icon" src="${LEAF_FILE_ICON}" alt="" aria-hidden="true"><span class="library-file-label">${escapeText(label)}</span></button>`;
+  return `<button type="button" class="library-file${selected}"${current} data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(node.path)}">${LEAF_FILE_ICON}<span class="library-file-label">${escapeText(label)}</span></button>`;
 }
 function renderTreeNode(node) {
   if (node && node.kind === 'folder') {
