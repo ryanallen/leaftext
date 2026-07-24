@@ -2253,9 +2253,9 @@ body.library-resizing {
   color: var(--markdown-link-hover);
   text-decoration: underline;
 }
-/* Leaf custom Markdown buttons: a link wrapped in brackets/braces renders as a
-   button styled like the app's action controls (the zero-state "Choose file").
-   The base rule is the primary (filled) variant, from `[{[Label](url)}]`. */
+/* Leaf custom Markdown buttons: a link wrapped in braces renders as a button
+   styled like the app's action controls (the zero-state "Choose file"). The base
+   rule is the filled variant, from `{{{[Label](url)}}}`. */
 .document-body a.leaf-md-button {
   display: inline-flex;
   align-items: center;
@@ -2275,7 +2275,7 @@ body.library-resizing {
   color: var(--app-action-foreground);
   text-decoration: none;
 }
-/* Secondary, from `{[Label](url)}`: an outline at rest that fills on hover. */
+/* Outline, from `{{[Label](url)}}`: an outline at rest that fills on hover. */
 .document-body a.leaf-md-button--secondary {
   background: transparent;
   border-color: var(--app-action-background);
@@ -2286,7 +2286,7 @@ body.library-resizing {
   border-color: var(--app-action-background);
   color: var(--app-action-foreground);
 }
-/* Ghost, from `[[Label](url)]`: no fill or outline until hover, when it fills. */
+/* Ghost, from `{[Label](url)}`: no fill or outline until hover, when it fills. */
 .document-body a.leaf-md-button--ghost {
   background: transparent;
   border-color: transparent;

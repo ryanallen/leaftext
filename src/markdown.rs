@@ -127,74 +127,58 @@ pub(crate) fn render_markdown_events_to_html(events: Vec<Event<'static>>) -> Str
     body
 }
 
-/// Leaf custom Markdown: a link wrapped in an extra pair of brackets/braces
-/// renders as a button — an `<a class="leaf-md-button …">` styled like the app's
-/// action buttons. The more decorated the wrapper, the more prominent the button:
+/// Leaf custom Markdown: a link wrapped in braces renders as a button — an
+/// `<a class="leaf-md-button …">` styled like the app's action buttons. The more
+/// braces, the more prominent the button:
 ///
-/// - `[{[Label](url)}]` → primary (filled)
-/// - `{[Label](url)}` → secondary (outline)
-/// - `[[Label](url)]` → ghost (no fill or outline until hover)
+/// - `{[Label](url)}` → ghost (no fill or outline until hover)
+/// - `{{[Label](url)}}` → outline (fills on hover)
+/// - `{{{[Label](url)}}}` → filled
 ///
-/// Links can't nest in CommonMark, so those wrapper characters stay literal: they
-/// arrive as the tail of the Text before the link and the head of the Text after
-/// it. We strip the matched wrapper from each side and wrap the link's label in
-/// the button anchor, keeping any inline formatting inside the label. Because it
-/// works on inline link events, the same syntax written inside code stays literal
-/// (code never produces a Link event).
+/// Braces only: brackets would be read as link syntax, leaving the wrapper behind
+/// as literal text beside a plain link.
+///
+/// Links can't nest in CommonMark, so the braces stay literal: they arrive as the
+/// tail of the Text before the link and the head of the Text after it. We strip
+/// the matched run from each side and wrap the label in the button anchor. Working
+/// on Link events is what keeps the syntax literal inside code.
 pub(crate) fn button_links(events: Vec<Event<'static>>) -> Vec<Event<'static>> {
     let mut out: Vec<Event<'static>> = Vec::with_capacity(events.len());
     let mut index = 0;
     while index < events.len() {
         if let Event::Start(Tag::Link { dest_url, .. }) = &events[index] {
             if let Some(end) = link_end_index(&events, index) {
-                // The wrapper characters flank the link as literal text. Brackets
-                // (`[` `]`) are their own single-char events; braces (`{` `}`) can
-                // merge with adjacent prose, so we test one char at each boundary.
-                let open_inner = out_trailing_char(&out, 0);
-                let open_outer = out_trailing_char(&out, 1);
-                let close_inner = event_leading_char(events.get(end + 1));
-                let close_outer = event_leading_char(events.get(end + 2));
+                // Braces merge with adjacent prose, so each side is a run at one
+                // Text boundary.
+                let open = out_trailing_run(&out, '{');
+                let close = event_leading_run(events.get(end + 1), '}');
 
-                // The more decorated the wrapper, the more prominent the button:
-                // `[{…}]` = primary, `{…}` = secondary, `[…]` = ghost. The
-                // two-char primary is tested first so its `{`/`}` doesn't read as
-                // a secondary.
-                let variant = if open_outer == Some('[')
-                    && open_inner == Some('{')
-                    && close_inner == Some('}')
-                    && close_outer == Some(']')
-                {
-                    Some(("", 2usize))
-                } else if open_inner == Some('{') && close_inner == Some('}') {
-                    Some((" leaf-md-button--secondary", 1))
-                } else if open_inner == Some('[') && close_inner == Some(']') {
-                    Some((" leaf-md-button--ghost", 1))
-                } else {
-                    None
-                };
+                // Lopsided wrappers are prose, not a button, and are left alone.
+                let variant = (open == close)
+                    .then(|| match open {
+                        1 => Some(" leaf-md-button--ghost"),
+                        2 => Some(" leaf-md-button--secondary"),
+                        3 => Some(""),
+                        _ => None,
+                    })
+                    .flatten();
 
-                if let Some((variant, wrap_len)) = variant {
-                    // Drop the opening wrapper chars already emitted into `out`.
-                    for _ in 0..wrap_len {
-                        strip_out_trailing_char(&mut out);
-                    }
+                if let Some(variant) = variant {
+                    strip_out_trailing_chars(&mut out, open);
                     out.push(Event::InlineHtml(cowstr(&format!(
                         r#"<a class="leaf-md-button{variant}" href="{}">"#,
                         encode_double_quoted_attribute(dest_url.as_ref())
                     ))));
                     out.extend(events[index + 1..end].iter().cloned());
                     out.push(Event::InlineHtml(cowstr("</a>")));
-                    // Consume the closing wrapper events, keeping any prose that
-                    // merged onto the far side of a brace.
-                    for offset in 0..wrap_len {
-                        if let Some(Event::Text(text)) = events.get(end + 1 + offset) {
-                            let tail = &text.as_ref()[1..];
-                            if !tail.is_empty() {
-                                out.push(Event::Text(cowstr(tail)));
-                            }
+                    // Keep any prose that merged onto the far side of the braces.
+                    if let Some(Event::Text(text)) = events.get(end + 1) {
+                        let tail = &text.as_ref()[close..];
+                        if !tail.is_empty() {
+                            out.push(Event::Text(cowstr(tail)));
                         }
                     }
-                    index = end + 1 + wrap_len;
+                    index = end + 2;
                     continue;
                 }
             }
@@ -213,28 +197,27 @@ fn event_text<'a>(event: &'a Event<'static>) -> Option<&'a str> {
     }
 }
 
-/// The first character of `event`'s text, if it is a `Text` event.
-fn event_leading_char(event: Option<&Event<'static>>) -> Option<char> {
+/// How many `ch` in a row `event`'s text opens with, if it is a `Text` event.
+fn event_leading_run(event: Option<&Event<'static>>, ch: char) -> usize {
     event
         .and_then(event_text)
-        .and_then(|text| text.chars().next())
+        .map(|text| text.chars().take_while(|c| *c == ch).count())
+        .unwrap_or(0)
 }
 
-/// The last character of the text event `back` positions from the end of `out`
-/// (0 = the last event), if that event is a `Text`.
-fn out_trailing_char(out: &[Event<'static>], back: usize) -> Option<char> {
-    out.iter()
-        .rev()
-        .nth(back)
+/// How many `ch` in a row the last event in `out` ends with, if it is a `Text`.
+fn out_trailing_run(out: &[Event<'static>], ch: char) -> usize {
+    out.last()
         .and_then(event_text)
-        .and_then(|text| text.chars().last())
+        .map(|text| text.chars().rev().take_while(|c| *c == ch).count())
+        .unwrap_or(0)
 }
 
-/// Drop the last (single-byte wrapper) character from the final `Text` event in
-/// `out`, removing the event entirely if that empties it.
-fn strip_out_trailing_char(out: &mut Vec<Event<'static>>) {
+/// Drop the last `count` (single-byte wrapper) characters from the final `Text`
+/// event in `out`, removing the event entirely if that empties it.
+fn strip_out_trailing_chars(out: &mut Vec<Event<'static>>, count: usize) {
     if let Some(Event::Text(text)) = out.last() {
-        let trimmed = &text.as_ref()[..text.len() - 1];
+        let trimmed = &text.as_ref()[..text.len() - count];
         if trimmed.is_empty() {
             out.pop();
         } else {

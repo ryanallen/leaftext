@@ -4916,12 +4916,12 @@ fn renders_markdown_links_and_images_for_native_link_handling() {
 
 #[test]
 fn renders_leaf_button_link_custom_markdown() {
-    let markdown = "go [{[Primary](https://example.com)}] now\n\nsee {[Secondary](https://example.com)} here\n\ntry [[Ghost](https://example.com)] out\n\nA plain [link](https://example.com) is untouched.\n\nInline `[[x](y)]` stays literal.\n";
+    let markdown = "go {{{[Filled](https://example.com)}}} now\n\nsee {{[Outline](https://example.com)}} here\n\ntry {[Ghost](https://example.com)} out\n\nA plain [link](https://example.com) is untouched.\n\nBracket wrappers are prose: [[Bracketed](https://example.com)] stays a link.\n\nA lopsided {{[Lopsided](https://example.com)} wrapper stays literal too.\n\nInline `{[x](y)}` stays literal.\n";
     let source_path = fixture_source_path("project/current.md");
 
     let rendered = render_markdown_document(markdown, &source_path);
 
-    // Each wrapper becomes a button anchor of the matching variant.
+    // Brace depth picks the variant: one ghost, two outline, three filled.
     assert_contains(&rendered.html, r#"class="leaf-md-button""#);
     assert_contains(
         &rendered.html,
@@ -4931,16 +4931,18 @@ fn renders_leaf_button_link_custom_markdown() {
         &rendered.html,
         r#"class="leaf-md-button leaf-md-button--ghost""#,
     );
-    assert_contains(&rendered.html, ">Primary</a>");
-    assert_contains(&rendered.html, ">Secondary</a>");
+    assert_contains(&rendered.html, ">Filled</a>");
+    assert_contains(&rendered.html, ">Outline</a>");
     assert_contains(&rendered.html, ">Ghost</a>");
     assert_contains(&rendered.html, r#"href="https://example.com""#);
-    // The literal wrapper characters are consumed, not left around the anchor,
-    // and the surrounding prose survives.
-    assert!(!rendered.html.contains("[<a"));
-    assert!(!rendered.html.contains("{<a"));
-    assert!(!rendered.html.contains("</a>]"));
-    assert!(!rendered.html.contains("</a>}"));
+    // The literal braces are consumed, not left around the anchor, and the
+    // surrounding prose survives.
+    assert!(!rendered.html.contains("go {"));
+    assert!(!rendered.html.contains("see {"));
+    assert!(!rendered.html.contains("try {"));
+    assert!(!rendered.html.contains("</a>}}} now"));
+    assert!(!rendered.html.contains("</a>}} here"));
+    assert!(!rendered.html.contains("</a>} out"));
     assert_contains(&rendered.html, "go <a");
     assert_contains(&rendered.html, "</a> now");
     assert_contains(&rendered.html, "see <a");
@@ -4952,8 +4954,30 @@ fn renders_leaf_button_link_custom_markdown() {
         &rendered.html,
         r#"<a href="https://example.com" rel="noopener noreferrer">link</a>"#,
     );
+    // Brackets are link syntax, never a button wrapper: the old `[[…]()]` form now
+    // renders as what it literally is.
+    assert_contains(&rendered.html, ">Bracketed</a>]");
+    assert!(!rendered.html.contains(">Bracketed</a></a>"));
+    // An unbalanced wrapper is prose, and keeps both of its braces.
+    assert_contains(&rendered.html, "{{<a");
+    assert_contains(&rendered.html, "</a>} wrapper");
     // The same syntax inside inline code is left untouched (no Link event there).
-    assert_contains(&rendered.html, "<code>[[x](y)]</code>");
+    assert_contains(&rendered.html, "<code>{[x](y)}</code>");
+
+    // Buttons sitting side by side share one Text event between them, so each
+    // one's trailing braces are the next one's opening run.
+    let row = render_markdown_document(
+        "{[G](https://example.com)} {{[O](https://example.com)}} {{{[F](https://example.com)}}}\n",
+        &source_path,
+    );
+    assert_contains(&row.html, r#"class="leaf-md-button leaf-md-button--ghost""#);
+    assert_contains(
+        &row.html,
+        r#"class="leaf-md-button leaf-md-button--secondary""#,
+    );
+    assert_contains(&row.html, r#"class="leaf-md-button" href"#);
+    assert!(!row.html.contains('{'));
+    assert!(!row.html.contains('}'));
 }
 
 #[test]
