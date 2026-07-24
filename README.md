@@ -27,6 +27,7 @@ Open a `.md` file and Leaf Text renders it exactly as GitHub would — CommonMar
 ### Edit in place, save on your terms
 
 ![Inline editing in the rendered page, with save and undo button](imgs/editing.png)
+![Editing in code view, with save and undo button](imgs/code-view.png)
 
 Reading-first, but editable. Click into a sentence in the rendered page and type, split and merge blocks with `Enter` and `Backspace`, or toggle a checkbox — the change is written back to the source at exactly that spot, with step-by-step [undo](docs/01-features/07-editing.md#undo). Prefer raw text? Drop to the [code view](docs/01-features/07-editing.md#code-view) for the file's actual Markdown or XML, with editor-style colouring of every delimiter. There's no autosave: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
 
@@ -50,7 +51,7 @@ A shrunken clone of the page in a side rail — real, tiny text, not abstract ba
 
 ### Cite any block with a permalink
 
-![Block permalink numbers in the left-margin gutter](imgs/feature-permalinks.png)
+![Block permalink numbers in the left-margin gutter](imgs/permalink.png)
 
 Every block — heading, paragraph, list item, table, code fence — gets a stable address in a left-margin gutter. Click it to copy a deep link that lands on that exact spot, in both the app and on the website. Turn the gutter numbers on or off in Settings. **[Rendering →](docs/01-features/01-rendering.md)**
 
