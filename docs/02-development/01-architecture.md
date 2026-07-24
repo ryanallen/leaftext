@@ -153,7 +153,7 @@ Key `IpcCommand` variants include:
 | `windowDrag`           | Frameless title bar: start moving the window (mousedown on empty app-bar space) |
 | `windowMinimize` / `windowToggleMaximize` / `windowClose` | The custom minimize / maximize / close buttons on the frameless Windows title bar |
 
-Results flow back from Rust to JavaScript via `webview.evaluate_script()`, calling `window.leafSetState()`, `window.leafSwitchTab()`, `window.leafReloadDocument()`, `window.leafSetNavigation()`, `window.leafSetLibraryState()`, `window.leafShowGlossary()`, `window.leafShowCodeView()`, `window.leafSourceUpdated()`, `window.leafSaved()`, and related entry points.
+Results flow back from Rust to JavaScript via `webview.evaluate_script()`, calling `window.leafSetState()`, `window.leafSwitchTab()`, `window.leafReloadDocument()`, `window.leafSetNavigation()`, `window.leafSetLibraryState()`, `window.leafShowGlossary()`, `window.leafShowCodeView()`, `window.leafSourceUpdated()`, `window.leafSaved()`, `window.leafRefreshImages()`, and related entry points.
 
 ## Key data structures
 
@@ -171,6 +171,8 @@ The following types in `main.rs` model the reader's stateful document management
 `local_image_protocol_response()` in `markdown.rs` serves local image files under the `leaf-image://` custom URL scheme (or `http://leaf-image.local/` on platforms where custom protocols are restricted, such as Windows and Android).
 
 Before serving any bytes, it validates that the requested path resolves to within the **access root** — the parent of the currently opened document's directory. Requests that escape this scope return `403 Forbidden`; missing files return `404 Not Found`. This scoped access model lets documents reference sibling and parent-directory images via relative paths (including `../`) without exposing the full filesystem.
+
+Responses carry `Cache-Control: no-store`, and the page adds a `?leaf-epoch=<n>` query — bumped on every render, and again whenever `image_refresh_script()` reports a changed file — because the web view otherwise keeps showing the copy it already decoded for that URL until the process restarts. The handler resolves the path from the URL's segments alone, so the query is inert on the way in. `is_local_image_path()` is what tells the watcher an image changed rather than a document: the file bytes are unchanged, so the [live reload](../01-features/02-navigation.md#reload) would hash-gate itself out, and the images are refreshed in place instead.
 
 ## Bundled asset protocol
 

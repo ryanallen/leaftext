@@ -208,6 +208,8 @@ Relative image paths work when they stay inside the opened file's allowed direct
 
 Allowed image types include SVG, PNG, JPEG, GIF, APNG, AVIF, BMP, ICO, and WebP.
 
+Images always show the file that is on disk. Overwriting one refreshes it in the open document straight away ([Reload](02-navigation.md#reload)), and every rerender re-reads them, so a replaced picture never lingers as a cached copy.
+
 ## Math
 
 Inline math uses `$…$`: the mass–energy equivalence is $E = mc^2$.

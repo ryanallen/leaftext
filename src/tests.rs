@@ -2352,6 +2352,52 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
 }
 
 #[test]
+fn theme_preview_images_are_prose_the_parser_ignores() {
+    // Every family file opens with a preview screenshot (`![…](../imgs/themes/…)`),
+    // carried into the bundle verbatim by scripts/bundle-themes.mjs. The parser
+    // reads only headings and tables, so those lines must be inert: they are not
+    // families, not tokens, and not part of any display name.
+    let bundle = include_str!("assets/themes.md");
+    let preview_lines: Vec<&str> = bundle
+        .lines()
+        .filter(|line| line.starts_with("!["))
+        .collect();
+    assert_eq!(
+        preview_lines.len(),
+        theme_families().len(),
+        "expected one preview image per family in the bundle"
+    );
+
+    let sources = theme_sources();
+    for (family, name) in theme_families() {
+        assert!(
+            !name.contains('!') && !name.contains('['),
+            "family {family} display name picked up image markup: {name}"
+        );
+        assert!(
+            preview_lines
+                .iter()
+                .any(|line| line.contains(&format!("../imgs/themes/{family}.png"))),
+            "expected a preview image line for {family}"
+        );
+        // Both variants still parse, with the full contract intact.
+        for appearance in ["light", "dark"] {
+            let source = sources
+                .iter()
+                .find(|source| source.id == format!("{family}-{appearance}"))
+                .unwrap_or_else(|| panic!("{family}-{appearance} parses out of the bundle"));
+            for token in LEAF_SEMANTIC_TOKEN_CONTRACT {
+                assert!(
+                    theme_source_token_value(source, token).is_some(),
+                    "expected {} to keep required token {token}",
+                    source.id
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn github_family_uses_github_markdown_fonts_not_noto() {
     let css = reading_mode_css();
     // The GitHub family swaps the document fonts for GitHub's own markdown stack:
@@ -3802,6 +3848,50 @@ fn app_shell_theme_bootstrap_seeds_from_host_injected_settings() {
     assert!(!html.contains("modeStorage"));
     assert!(html.contains("send({ command: 'setThemeMode', mode: btn.dataset.mode });"));
     assert!(html.contains("send({ command: 'setThemeFamily', family: btn.dataset.family });"));
+}
+
+#[test]
+fn changed_image_files_refresh_without_a_document_re_render() {
+    // Only real image files take the refresh path; a changed .md is a document
+    // reload, and a stray file is neither.
+    assert!(is_local_image_path(Path::new("imgs/themes/sage.png")));
+    assert!(is_local_image_path(Path::new("/tmp/Diagram.SVG")));
+    assert!(!is_local_image_path(Path::new("themes/sage.md")));
+    assert!(!is_local_image_path(Path::new("notes.txt")));
+    assert!(!is_local_image_path(Path::new("imgs/themes")));
+
+    // The host asks the page to re-fetch, rather than re-rendering: the document
+    // text is unchanged, so a reload would hash-gate itself out anyway.
+    assert_eq!(image_refresh_script(), "window.leafRefreshImages();");
+
+    let html = app_shell_html();
+    for expected in [
+        "window.leafRefreshImages = () => {",
+        "localImageEpoch += 1;",
+        "const stamped = `${base}?leaf-epoch=${localImageEpoch}`;",
+        "if (img.getAttribute('src') !== stamped) img.setAttribute('src', stamped);",
+        // Every render stamps a fresh epoch, so reopening a document after an
+        // image was replaced on disk cannot show the cached copy.
+        "    stampLocalImages();\n    decorateBlockquoteLines();",
+    ] {
+        assert_contains(&html, expected);
+    }
+    // Only images served by the host's protocol are touched; remote and data URLs
+    // keep the src the document gave them.
+    assert_contains(
+        &html,
+        "const LOCAL_IMAGE_SRC_PREFIXES = ['leaf-image://', 'http://leaf-image.', 'https://leaf-image.'];",
+    );
+
+    // The cache-busting query is inert on the way back in: the protocol handler
+    // resolves the path from the URL's segments and ignores the query.
+    let source_dir = fixture_source_path("images");
+    let path = local_image_protocol_path(
+        &format!("{}?leaf-epoch=7", local_img("diagram.png")),
+        &source_dir,
+    )
+    .expect("stamped local image url resolves");
+    assert_eq!(path, source_dir.join("diagram.png"));
 }
 
 #[test]

@@ -108,6 +108,7 @@ Key details:
 - Reload re-renders through the same pipeline the file opened with — [TEI XML](01-rendering.md#tei-xml-84000-translations) stays TEI, Markdown stays Markdown.
 - The parent directory is watched instead of only the file, so atomic-save editors still work.
 - Other Markdown files changed in that same folder are indexed live, so the [library](03-library.md#live-updates) pane stays current too.
+- Replacing an [image](01-rendering.md#images) the document shows refreshes the picture in place, without a rerender, so the reader does not move.
 - Saving from the [code view](07-editing.md#save) does not trigger a reload — the watcher recognizes the app's own write — and a document with [unsaved edits](07-editing.md#external-changes) is never clobbered by an outside change.
 
 ## Recent files

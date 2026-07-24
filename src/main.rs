@@ -21,15 +21,16 @@ use leaftext::indexer::{event_script, GraphRequest, IndexerEvent, IndexerWorker}
 use leaftext::{
     app_data_dir, app_shell_html, blocks_resynced_script, bundled_asset_response, code_view_script,
     config_file_path, document_pager_html, fragment_scroll_script, glossary_sheet_script,
-    initial_settings_script, initial_state_script, initial_version_script, line_count_script,
-    load_recent_files, load_settings, local_image_protocol_response, local_image_source_dir,
-    navigation_state_script, open_document_with_recent, open_error_state_script,
-    opened_document_from_markdown, opened_document_from_tei, pager_loaded_script,
-    render_markdown_document, save_recent_files, save_result_script, save_settings,
-    scroll_anchor_script, settings_file_path, source_updated_script, webview_user_data_dir,
-    workspace_reload_script, workspace_state_script, workspace_switch_script, DocumentFormat,
-    EditableDocument, GraphScope, LibraryView, OpenedDocument, RecentFiles, ScrollAnchor, Settings,
-    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    image_refresh_script, initial_settings_script, initial_state_script, initial_version_script,
+    is_local_image_path, line_count_script, load_recent_files, load_settings,
+    local_image_protocol_response, local_image_source_dir, navigation_state_script,
+    open_document_with_recent, open_error_state_script, opened_document_from_markdown,
+    opened_document_from_tei, pager_loaded_script, render_markdown_document, save_recent_files,
+    save_result_script, save_settings, scroll_anchor_script, settings_file_path,
+    source_updated_script, webview_user_data_dir, workspace_reload_script, workspace_state_script,
+    workspace_switch_script, DocumentFormat, EditableDocument, GraphScope, LibraryView,
+    OpenedDocument, RecentFiles, ScrollAnchor, Settings, LOCAL_ASSET_PROTOCOL,
+    LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -1125,6 +1126,15 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                     );
                 } else {
                     index_opened_path(indexer.as_ref(), &changed);
+                    // An image, not a document: the text is unchanged, so the
+                    // reload above would hash-gate itself out.
+                    if is_local_image_path(&changed) {
+                        if let Some(webview) = webview.as_ref() {
+                            if let Err(error) = webview.evaluate_script(&image_refresh_script()) {
+                                eprintln!("Live reload: failed to refresh images: {error}");
+                            }
+                        }
+                    }
                 }
             }
             Event::UserEvent(UserEvent::EnterCodeView) => {

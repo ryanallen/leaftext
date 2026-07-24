@@ -187,6 +187,12 @@ pub fn glossary_sheet_script(body_html: &str, anchor: &str) -> String {
     format!("window.leafShowGlossary({body_html}, {anchor});")
 }
 
+/// Re-fetch the local images on screen. Sent when an image file changes: nothing
+/// to re-render, but the web view would otherwise keep the copy it decoded.
+pub fn image_refresh_script() -> String {
+    "window.leafRefreshImages();".to_string()
+}
+
 /// Restore a saved scroll anchor in the current document without re-rendering.
 /// Used by Back/Forward when the jump stays within the same document.
 pub fn scroll_anchor_script(anchor: &ScrollAnchor) -> String {

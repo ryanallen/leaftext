@@ -6,7 +6,7 @@ mod tei;
 pub(crate) use tei::*;
 mod theme;
 pub(crate) use markdown::*;
-pub use markdown::{local_image_protocol_response, local_image_source_dir};
+pub use markdown::{is_local_image_path, local_image_protocol_response, local_image_source_dir};
 pub(crate) use theme::*;
 mod scripts;
 pub use scripts::*;

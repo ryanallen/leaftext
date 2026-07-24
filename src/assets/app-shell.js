@@ -4152,6 +4152,7 @@ function makeSourceEditable(el) {
     if (text === el.__editBaseline) {
       // No change: restore the rendered view (no host round-trip needed).
       el.innerHTML = el.__renderedHtml;
+      stampLocalImages(el);
       if (aboveAnchor) {
         readerScrollAnchor = aboveAnchor;
         restoreReaderScrollAnchor(aboveAnchor);
@@ -4270,6 +4271,9 @@ function renderState() {
       const freshBody = app.querySelector('.document-body');
       if (freshBody) freshBody.style.setProperty('--reader-scroll-origin', previousScrollOrigin);
     }
+    // Fresh epoch per render, so a reopened document never shows a cached image.
+    localImageEpoch += 1;
+    stampLocalImages();
     decorateBlockquoteLines();
     buildDocumentOutline();
     decorateAnchorLinks();
@@ -4999,6 +5003,35 @@ function populateDocumentOutline(details, rest) {
   });
   details.appendChild(rootList);
 }
+// The host serves local images over leaf-image://, which arrives as
+// http://leaf-image.local/ where custom protocols are restricted.
+const LOCAL_IMAGE_SRC_PREFIXES = ['leaf-image://', 'http://leaf-image.', 'https://leaf-image.'];
+// The web view keeps a decoded image against its URL for the life of the process,
+// so a replaced file would show stale until a restart. A per-render token makes
+// each request a distinct URL.
+let localImageEpoch = 0;
+function isLocalImageSrc(src) {
+  return LOCAL_IMAGE_SRC_PREFIXES.some((prefix) => src.startsWith(prefix));
+}
+// The host resolves the path from the URL's segments, so the query is inert to it.
+function stampLocalImages(root = app) {
+  if (!root) return;
+  root.querySelectorAll('img[src]').forEach((img) => {
+    // getAttribute, not .src: the property is absolute and hides the prefix.
+    const src = img.getAttribute('src') || '';
+    if (!isLocalImageSrc(src)) return;
+    const base = src.split('?')[0];
+    const stamped = `${base}?leaf-epoch=${localImageEpoch}`;
+    if (img.getAttribute('src') !== stamped) img.setAttribute('src', stamped);
+  });
+}
+// An image changed on disk: re-fetch rather than re-render, so the reader keeps
+// its scroll position.
+window.leafRefreshImages = () => {
+  localImageEpoch += 1;
+  stampLocalImages();
+  scheduleMinimapPreviewUpdate();
+};
 // Give every anchor-addressable block a gutter permalink button, GitHub style.
 // A real anchor link to the target id, so bindDocumentLinks wires it into
 // fragment navigation like a TOC link. Clicking also copies the #locus (without
