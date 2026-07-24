@@ -1498,27 +1498,39 @@ pub(crate) fn resolve_image_destination(destination: &str, source_path: &Path) -
         return None;
     }
 
-    if let Ok(url) = Url::parse(destination) {
+    if let Some(url) = parse_image_destination_url(destination) {
         return match url.scheme() {
             "http" | "https" => Some(url.to_string()),
             "file" => url
                 .to_file_path()
                 .ok()
-                .zip(local_image_source_dir(source_path))
-                .and_then(|(path, source_dir)| {
-                    local_image_protocol_url_for_path(&path, &source_dir)
-                }),
+                .and_then(|path| local_image_url_for_absolute_path(&path, source_path)),
             _ => None,
         };
     }
 
-    let source_dir = local_image_source_dir(source_path)?;
-
     if Path::new(destination).is_absolute() {
-        return local_image_protocol_url_for_path(Path::new(destination), &source_dir);
+        let path = local_image_destination_path(destination)?;
+        return local_image_url_for_absolute_path(&path, source_path);
     }
 
+    let source_dir = local_image_source_dir(source_path)?;
+
     local_image_protocol_url_for_relative_destination(destination, &source_dir)
+}
+
+/// Parse a destination as a URL, except when the "scheme" is a lone letter — that
+/// is a Windows drive (`C:\imgs\pic.png`), which is a path, not a URL.
+pub(crate) fn parse_image_destination_url(destination: &str) -> Option<Url> {
+    let url = Url::parse(destination).ok()?;
+    (url.scheme().len() > 1).then_some(url)
+}
+
+pub(crate) fn local_image_url_for_absolute_path(path: &Path, source_path: &Path) -> Option<String> {
+    match local_image_source_dir(source_path) {
+        Some(source_dir) => local_image_protocol_url_for_path(path, &source_dir),
+        None => local_image_protocol_url_for_absolute_path(path),
+    }
 }
 
 pub(crate) fn is_safe_relative_image_destination(destination: &str) -> bool {
@@ -1562,9 +1574,26 @@ pub(crate) fn local_image_destination_path(destination: &str) -> Option<PathBuf>
 pub(crate) fn local_image_protocol_url_for_path(path: &Path, source_dir: &Path) -> Option<String> {
     let normalized_path = normalize_path_lexically(path);
     let normalized_source_dir = normalize_path_lexically(source_dir);
-    let relative = normalized_path.strip_prefix(&normalized_source_dir).ok()?;
 
-    local_image_protocol_url_for_relative_path(relative, &normalized_source_dir)
+    match normalized_path.strip_prefix(&normalized_source_dir) {
+        Ok(relative) => {
+            local_image_protocol_url_for_relative_path(relative, &normalized_source_dir)
+        }
+        // Anywhere else on disk: carry the whole path in the URL.
+        Err(_) => local_image_protocol_url_for_absolute_path(&normalized_path),
+    }
+}
+
+pub(crate) fn local_image_protocol_url_for_absolute_path(path: &Path) -> Option<String> {
+    let path = path.to_str()?;
+    if path.is_empty() {
+        return None;
+    }
+
+    Some(local_image_webview_url(&format!(
+        "{LOCAL_IMAGE_ABSOLUTE_SEGMENT}/{}",
+        percent_encode_url_path_segment(path)
+    )))
 }
 
 pub(crate) fn local_image_relative_url_for_path(path: &Path, source_dir: &Path) -> Option<String> {
@@ -1629,9 +1658,6 @@ pub fn local_image_protocol_response(uri: &str, source_dir: Option<&Path>) -> Lo
     let Some(path) = local_image_protocol_path(uri, source_dir) else {
         return empty_local_image_response(404);
     };
-    if !local_image_path_is_in_source_dir(&path, source_dir) {
-        return empty_local_image_response(403);
-    }
 
     match fs::read(&path) {
         Ok(body) => LocalImageResponse {
@@ -1653,12 +1679,16 @@ pub(crate) fn local_image_protocol_path(uri: &str, source_dir: &Path) -> Option<
         return None;
     }
 
+    let mut segments = url.path_segments()?.filter(|segment| !segment.is_empty());
+
+    // `__leaf_absolute__/<encoded path>`: the path stands on its own.
     let mut relative = PathBuf::new();
-    for segment in url.path_segments()? {
-        if segment.is_empty() {
-            continue;
-        }
+    for segment in segments.by_ref() {
         let decoded = percent_decode_path(segment);
+        if decoded == LOCAL_IMAGE_ABSOLUTE_SEGMENT && relative.as_os_str().is_empty() {
+            let absolute = PathBuf::from(percent_decode_path(segments.next()?));
+            return (!absolute.as_os_str().is_empty()).then(|| normalize_path_lexically(&absolute));
+        }
         if decoded == LOCAL_IMAGE_PARENT_SEGMENT {
             relative.push("..");
             continue;
@@ -1685,33 +1715,6 @@ pub(crate) fn is_local_image_request_url(url: &Url) -> bool {
             .host_str()
             .and_then(|host| host.strip_prefix(&format!("{LOCAL_IMAGE_PROTOCOL}.")))
             == Some(LOCAL_IMAGE_HOST)
-}
-
-pub(crate) fn local_image_path_is_in_source_dir(path: &Path, source_dir: &Path) -> bool {
-    let normalized_path = normalize_path_lexically(path);
-    let normalized_access_root = local_image_access_root(source_dir);
-    if !normalized_path.starts_with(&normalized_access_root) {
-        return false;
-    }
-
-    match (
-        fs::canonicalize(&normalized_path),
-        fs::canonicalize(&normalized_access_root),
-    ) {
-        (Ok(canonical_path), Ok(canonical_access_root)) => {
-            canonical_path.starts_with(canonical_access_root)
-        }
-        _ => true,
-    }
-}
-
-pub(crate) fn local_image_access_root(source_dir: &Path) -> PathBuf {
-    normalize_path_lexically(
-        source_dir
-            .parent()
-            .filter(|parent| !parent.as_os_str().is_empty())
-            .unwrap_or(source_dir),
-    )
 }
 
 pub(crate) fn local_image_webview_url(path: &str) -> String {

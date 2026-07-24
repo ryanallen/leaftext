@@ -56,6 +56,9 @@ const APP_SHELL_SCRIPT: &str = include_str!("assets/app-shell.js");
 pub const LOCAL_IMAGE_PROTOCOL: &str = "leaf-image";
 const LOCAL_IMAGE_HOST: &str = "local";
 const LOCAL_IMAGE_PARENT_SEGMENT: &str = "__leaf_parent__";
+/// Marks a `leaf-image://` URL carrying a whole absolute path, for an image that
+/// does not sit under the open document's folder.
+const LOCAL_IMAGE_ABSOLUTE_SEGMENT: &str = "__leaf_absolute__";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

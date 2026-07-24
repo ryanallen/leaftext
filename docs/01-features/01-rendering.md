@@ -12,7 +12,7 @@ leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`,
 | GFM | Tables, task lists, strikethrough, autolinks |
 | Extras | Syntax highlighting, Mermaid, math, alerts, footnotes, emoji, block permalinks |
 | Leaf extensions | [Buttons](#buttons-leaf-extension) — a link wrapped in braces |
-| Local content | Relative images |
+| Local content | [Images](#images) by relative, absolute, or `file://` path |
 | Safety | Sanitized HTML allowlist |
 | TEI XML | 84000 Buddhist-translation format (`.xml`); headings, paragraphs, verse, footnotes |
 
@@ -201,7 +201,7 @@ literal, so this page can show the syntax without turning it into a button.
 
 ## Images
 
-Relative image paths work when they stay inside the opened file's allowed directory scope; the title shows on hover:
+Image paths are resolved against the open file: relative paths (including `../` at any depth), absolute paths, and `file://` URLs all load. The title shows on hover:
 
 ![Leaf Text](../../imgs/leaftext.png "Leaf Text — Readable XML and Markdown")
 

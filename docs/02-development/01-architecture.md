@@ -170,7 +170,9 @@ The following types in `main.rs` model the reader's stateful document management
 
 `local_image_protocol_response()` in `markdown.rs` serves local image files under the `leaf-image://` custom URL scheme (or `http://leaf-image.local/` on platforms where custom protocols are restricted, such as Windows and Android).
 
-Before serving any bytes, it validates that the requested path resolves to within the **access root** — the parent of the currently opened document's directory. Requests that escape this scope return `403 Forbidden`; missing files return `404 Not Found`. This scoped access model lets documents reference sibling and parent-directory images via relative paths (including `../`) without exposing the full filesystem.
+A path is resolved against the open document's directory and then read: a relative destination at any depth (`../../imgs/pic.png`), an absolute path, or a `file://` URL all work, so a document's images can live anywhere on disk. Missing files return `404 Not Found`; a read the OS itself refuses returns `403 Forbidden`.
+
+URL segments carry the shape of the path. `__leaf_parent__` stands in for each `..` step, and `__leaf_absolute__/<encoded path>` carries a whole absolute path for images that do not sit under the document's directory. Because a Windows drive letter parses as a one-character URL scheme, `parse_image_destination_url()` treats a single-letter scheme as a path rather than a URL.
 
 Responses carry `Cache-Control: no-store`, and the page adds a `?leaf-epoch=<n>` query — bumped on every render, and again whenever `image_refresh_script()` reports a changed file — because the web view otherwise keeps showing the copy it already decoded for that URL until the process restarts. The handler resolves the path from the URL's segments alone, so the query is inert on the way in. `is_local_image_path()` is what tells the watcher an image changed rather than a document: the file bytes are unchanged, so the [live reload](../01-features/02-navigation.md#reload) would hash-gate itself out, and the images are refreshed in place instead.
 

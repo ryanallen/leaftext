@@ -5343,25 +5343,29 @@ fn local_image_protocol_serves_nested_document_image_paths() {
 }
 
 #[test]
-fn local_image_protocol_blocks_out_of_scope_and_reports_missing_images() {
+fn local_image_protocol_loads_any_depth_above_the_document_and_reports_missing_images() {
     let unique = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("system time is after Unix epoch")
         .as_nanos();
     let root = std::env::temp_dir().join(format!("leaf-local-image-scope-{unique}"));
-    let docs = root.join("docs");
-    let markdown_path = docs.join("README.md");
+    let nested = root.join("docs").join("01-features");
+    let markdown_path = nested.join("themes.md");
+    let png = tiny_png_bytes();
 
-    fs::create_dir_all(&docs).expect("test docs directory is created");
+    fs::create_dir_all(root.join("imgs")).expect("test image directory is created");
+    fs::create_dir_all(&nested).expect("test docs directory is created");
+    fs::write(root.join("imgs").join("pic.png"), png).expect("test image is written");
 
+    // Two levels up, as the shipped docs reference their screenshots.
     let rendered = render_markdown_document(
-        "![Secret](../../secret.png)\n![Missing](missing.png)",
+        "![Up two](../../imgs/pic.png)\n![Missing](missing.png)",
         &markdown_path,
     );
     let source_dir = local_image_source_dir(&markdown_path).expect("source dir resolves");
     let missing = local_image_protocol_response(&local_img("missing.png"), Some(&source_dir));
-    let escaped = local_image_protocol_response(
-        &local_img("__leaf_parent__/__leaf_parent__/secret.png"),
+    let up_two = local_image_protocol_response(
+        &local_img("__leaf_parent__/__leaf_parent__/imgs/pic.png"),
         Some(&source_dir),
     );
 
@@ -5370,8 +5374,8 @@ fn local_image_protocol_blocks_out_of_scope_and_reports_missing_images() {
     assert_contains(
         &rendered.html,
         &expected_img(
-            "__leaf_parent__/__leaf_parent__/secret.png",
-            r#"alt="Secret" title="Secret""#,
+            "__leaf_parent__/__leaf_parent__/imgs/pic.png",
+            r#"alt="Up two" title="Up two""#,
         ),
     );
     assert_contains(
@@ -5379,7 +5383,40 @@ fn local_image_protocol_blocks_out_of_scope_and_reports_missing_images() {
         &expected_img("missing.png", r#"alt="Missing" title="Missing""#),
     );
     assert_eq!(missing.status, 404);
-    assert_eq!(escaped.status, 403);
+    assert_eq!(up_two.status, 200, "an image two levels up must load");
+    assert_eq!(up_two.body, png);
+}
+
+#[test]
+fn local_image_protocol_loads_absolute_paths_outside_the_document_tree() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let root = std::env::temp_dir().join(format!("leaf-local-image-absolute-{unique}"));
+    let docs = root.join("docs");
+    let elsewhere = root.join("elsewhere");
+    let markdown_path = docs.join("README.md");
+    let image_path = elsewhere.join("pic.png");
+    let png = tiny_png_bytes();
+
+    fs::create_dir_all(&docs).expect("test docs directory is created");
+    fs::create_dir_all(&elsewhere).expect("test image directory is created");
+    fs::write(&image_path, png).expect("test image is written");
+
+    let source_dir = local_image_source_dir(&markdown_path).expect("source dir resolves");
+    let url = resolve_image_destination(&image_path.to_string_lossy(), &markdown_path)
+        .expect("an absolute path outside the document tree resolves to a URL");
+    let response = local_image_protocol_response(&url, Some(&source_dir));
+
+    fs::remove_dir_all(&root).expect("test directories are removed");
+
+    assert!(
+        url.contains("__leaf_absolute__"),
+        "expected an absolute-path URL, got {url}"
+    );
+    assert_eq!(response.status, 200, "an absolute path must load");
+    assert_eq!(response.body, png);
 }
 
 #[test]
