@@ -2,7 +2,7 @@
 
 > Everything in `docs/` — what each page covers, how the pages fit together, and how the folder becomes [leaftext.com/docs](https://leaftext.com/docs).
 
-leaftext is a desktop reader for Markdown and TEI XML: open a local file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searchable library. These docs cover the whole app, from installing a release build to the startup-validated theme contract.
+leaftext is a desktop reader for Markdown and XML: open a local file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searchable library. These docs cover the whole app, from installing a release build to the startup-validated theme contract.
 
 ## Map
 
@@ -39,7 +39,7 @@ How the app behaves, page by page:
 
 | Page | What it covers |
 | --- | --- |
-| [Rendering](01-features/01-rendering.md) | The full supported syntax with live examples: CommonMark, GFM, syntax highlighting, Mermaid, math, alerts, footnotes, emoji, block permalinks, Leaf buttons, local images, and TEI XML (84000 translations) |
+| [Rendering](01-features/01-rendering.md) | The full supported syntax with live examples: CommonMark, GFM, syntax highlighting, Mermaid, math, alerts, footnotes, emoji, block permalinks, Leaf buttons, local images, and XML (any file, plus 84000 TEI translations) |
 | [Navigation](01-features/02-navigation.md) | Tabs, Back/Forward history, the outline, scroll anchors, live reload, recent files, link hints, the pager, and the single-window rule |
 | [Library](01-features/03-library.md) | The left-side pane backed by a local SQLite index: Project, Tree, and All files views, filename and content search, and file actions |
 | [Minimap](01-features/04-minimap.md) | The scaled real-text document clone in the side rail: how it renders, when it rebuilds, responsive widths, and the on/off toggle |
@@ -53,7 +53,7 @@ For anyone building, extending, or releasing leaftext:
 
 | Page | What it covers |
 | --- | --- |
-| [Architecture](02-development/01-architecture.md) | The Rust binary end to end: tao windowing, wry WebView, the Markdown pipeline, the TEI XML renderer, the IPC bridge, the background indexer, and every source file's role |
+| [Architecture](02-development/01-architecture.md) | The Rust binary end to end: tao windowing, wry WebView, the Markdown pipeline, the XML renderers, the IPC bridge, the background indexer, and every source file's role |
 | [Building](02-development/02-building.md) | Toolchain prerequisites, platform WebView dependencies, and the `just verify` suite |
 | [Theming](02-development/04-theming.md) | The startup-validated contract of ~100 `--leaf-*` CSS custom properties, the theme sources, and how the CSS is compiled and validated |
 | [Releasing](02-development/03-releasing.md) | `just release <version>`: the version bump, the tag push, and the CI builds it triggers on all three platforms |

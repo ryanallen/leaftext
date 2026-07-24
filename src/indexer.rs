@@ -360,12 +360,12 @@ fn is_markdown_file(path: &Path) -> bool {
     )
 }
 
-/// TEI XML documents (opened as `.xml`, rendered by the TEI pipeline).
+/// XML documents (opened as `.xml`, rendered by the XML pipeline).
 fn is_xml_file(path: &Path) -> bool {
     matches!(lowercase_extension(path).as_deref(), Some("xml"))
 }
 
-/// Document types the library indexes: Markdown plus TEI XML.
+/// Document types the library indexes: Markdown plus XML.
 fn is_indexable_file(path: &Path) -> bool {
     is_markdown_file(path) || is_xml_file(path)
 }
@@ -2446,9 +2446,9 @@ fn process_file(job: &ParseJob, cancel: &AtomicBool) -> FileOutcome {
     // Link extraction runs for every type so the graph can edge MD and XML.
     let links = document_links(&content, &job.abs_path);
     if is_xml_file(&job.abs_path) {
-        // TEI XML: take the header title and links; body isn't chunked for
+        // XML: take the document title and links; body isn't chunked for
         // search yet, so chunks/frontmatter stay empty.
-        let (title, _body) = crate::render_tei_body(&content);
+        let (title, _body) = crate::render_xml_body(&content);
         FileOutcome::Indexed {
             content_hash,
             title: title.unwrap_or_else(|| stem_of(&job.filename)),

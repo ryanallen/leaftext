@@ -1,9 +1,9 @@
 # Refine your mind.
 ## Your thoughts, secure and free.
 
-Leaftext is a free desktop app for reading and editing Markdown and TEI XML. Open a file. Read it.
+Leaftext is a free desktop app for reading and editing Markdown and XML. Open a file. Read it.
 
-![Leaf Text — a readable Markdown and TEI XML document open in the app](imgs/leaftext.png)
+![Leaf Text — a readable Markdown and XML document open in the app](imgs/leaftext.png)
 
 <a href="https://github.com/ryanallen/leaftext/releases"><img alt="Download" src="https://img.shields.io/badge/download-latest-0ea5e9?style=flat&labelColor=4b5563"></a>
 <a href="https://github.com/ryanallen/leaftext/releases"><img alt="macOS" src="https://img.shields.io/badge/macOS-Universal-silver?style=flat&labelColor=4b5563"></a>
@@ -14,15 +14,15 @@ Leaftext is a free desktop app for reading and editing Markdown and TEI XML. Ope
 
 ---
 
-**Leaf Text** is a free desktop app for reading and editing [Markdown](docs/01-features/01-rendering.md) and [TEI XML](docs/01-features/01-rendering.md#tei-xml-84000-translations) on macOS, Windows, and Linux. It opens a local file into a clean, GitHub-accurate reading view you can type straight into, keeps your place with tabs and history, and maps how your documents relate in a [graph](docs/01-features/03-library.md#graph). Everything runs locally — no account, no cloud, no telemetry.
+**Leaf Text** is a free desktop app for reading and editing [Markdown](docs/01-features/01-rendering.md) and [XML](docs/01-features/01-rendering.md#xml) on macOS, Windows, and Linux. It opens a local file into a clean, GitHub-accurate reading view you can type straight into, keeps your place with tabs and history, and maps how your documents relate in a [graph](docs/01-features/03-library.md#graph). Everything runs locally — no account, no cloud, no telemetry.
 
 ## Features
 
-### Read Markdown and TEI XML
+### Read Markdown and XML
 
 ![Leaf Text reading view rendering a Markdown document](imgs/rendering.png)
 
-Open a `.md` file and Leaf Text renders it exactly as GitHub would — CommonMark and GitHub Flavored Markdown with the extras people actually use: [syntax-highlighted code](docs/01-features/01-rendering.md#code), [Mermaid diagrams](docs/01-features/01-rendering.md#mermaid-diagrams), [math](docs/01-features/01-rendering.md#math), [GitHub alerts](docs/01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](docs/01-features/01-rendering.md#footnotes), [emoji](docs/01-features/01-rendering.md#emoji), task lists, and [local images](docs/01-features/01-rendering.md#images). It also opens [84000-style TEI XML](docs/01-features/01-rendering.md#tei-xml-84000-translations) — the Buddhist-canon translation format — through a parallel renderer into the same clean reading view. **[Rendering →](docs/01-features/01-rendering.md)**
+Open a `.md` file and Leaf Text renders it exactly as GitHub would — CommonMark and GitHub Flavored Markdown with the extras people actually use: [syntax-highlighted code](docs/01-features/01-rendering.md#code), [Mermaid diagrams](docs/01-features/01-rendering.md#mermaid-diagrams), [math](docs/01-features/01-rendering.md#math), [GitHub alerts](docs/01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](docs/01-features/01-rendering.md#footnotes), [emoji](docs/01-features/01-rendering.md#emoji), task lists, and [local images](docs/01-features/01-rendering.md#images). It also opens [`.xml` files](docs/01-features/01-rendering.md#xml) through a parallel renderer into the same clean reading view: [any XML](docs/01-features/01-rendering.md#any-xml) — a sitemap, a feed, a config file — reads as sections, fields, and tables instead of tags, and [84000-style TEI](docs/01-features/01-rendering.md#tei-xml-84000-translations), the Buddhist-canon translation format, gets a renderer that knows its conventions. **[Rendering →](docs/01-features/01-rendering.md)**
 
 ### Edit in place, save on your terms
 

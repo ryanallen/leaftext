@@ -1,8 +1,8 @@
 # Meet leaftext
 
-> A desktop reader for Markdown and TEI XML files: fast to open, easy to scan, and reading-first — and when a file needs a fix, [edit it right on the page](01-features/07-editing.md).
+> A desktop reader for Markdown and XML files: fast to open, easy to scan, and reading-first — and when a file needs a fix, [edit it right on the page](01-features/07-editing.md).
 
-leaftext is a desktop app for reading local Markdown and [TEI XML](01-features/01-rendering.md#tei-xml-84000-translations) on macOS, Windows, and Linux. Open a file, get a clean rendered view, and keep your place with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), a [minimap](01-features/04-minimap.md), and a searchable [library](01-features/03-library.md). When a document needs a change, [edit it inline in the rendered page](01-features/07-editing.md#inline-editing-the-reading-view) — or drop to the raw source in the [code view](01-features/07-editing.md#code-view) — and [save](01-features/07-editing.md#save) without leaving the app.
+leaftext is a desktop app for reading local Markdown and [XML](01-features/01-rendering.md#xml) on macOS, Windows, and Linux. Open a file, get a clean rendered view, and keep your place with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), a [minimap](01-features/04-minimap.md), and a searchable [library](01-features/03-library.md). When a document needs a change, [edit it inline in the rendered page](01-features/07-editing.md#inline-editing-the-reading-view) — or drop to the raw source in the [code view](01-features/07-editing.md#code-view) — and [save](01-features/07-editing.md#save) without leaving the app.
 
 New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GLOSSARY.md#frontmatter) link into the [glossary](GLOSSARY.md#glossary) — clicking one opens its entry in a [bottom sheet](GLOSSARY.md#bottom-sheet) over this page instead of taking you away from it.
 
@@ -18,7 +18,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 
 ## Features
 
-- Read Markdown and [TEI XML](01-features/01-rendering.md#tei-xml-84000-translations) without opening an editor.
+- Read Markdown and [XML](01-features/01-rendering.md#xml) — [sitemaps, feeds, and config files](01-features/01-rendering.md#any-xml) as readable pages, [84000 TEI translations](01-features/01-rendering.md#tei-xml-84000-translations) as translations — without opening an editor.
 - [Render](01-features/01-rendering.md) CommonMark, GFM, [Mermaid](01-features/01-rendering.md#mermaid-diagrams), [math](01-features/01-rendering.md#math), [alerts](01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](01-features/01-rendering.md#footnotes), [emoji](01-features/01-rendering.md#emoji), and local images.
 - Keep multiple documents open in [tabs](01-features/02-navigation.md#tabs).
 - Jump to any section from the [outline](01-features/02-navigation.md#outline) — a collapsed table of contents at the top of each document.
@@ -33,7 +33,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 
 ```mermaid
 flowchart LR
-    A[Open Markdown or TEI XML file] --> B[Rendered reading view]
+    A[Open Markdown or XML file] --> B[Rendered reading view]
     B --> C[Minimap]
     B --> D[Tabs]
     B --> E[Back / Forward history]
@@ -61,5 +61,5 @@ That file opens as a formatted document, not as source code in an editor.
 ## Next
 
 - [Quickstart](03-quickstart.md) shows the actual reading flow.
-- [Rendering](01-features/01-rendering.md) shows what Markdown syntax and TEI XML structure the app renders.
+- [Rendering](01-features/01-rendering.md) shows what Markdown syntax and XML structure the app renders.
 - [Library](01-features/03-library.md) explains search, indexing, and the side pane.

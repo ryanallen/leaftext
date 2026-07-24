@@ -18,7 +18,7 @@ leaftext is a single Rust binary that embeds a WebView (via `wry`) inside a nati
 | `serde` / `serde_json`  | IPC message serialization                            |
 | `notify-debouncer-mini` | Filesystem watcher for live reload                   |
 | `blake3`                | File content hashing in the indexer                  |
-| `roxmltree`             | Read-only XML DOM parsing for TEI documents          |
+| `roxmltree`             | Read-only XML DOM parsing for TEI and other XML      |
 | `windows-sys` (Windows) | Named mutex + pipe for the single-instance guard     |
 
 ## Source files
@@ -29,7 +29,8 @@ leaftext's Rust source is split by concern:
 - **`src/lib.rs`** — Core document rendering and app-state helpers. Contains `render_markdown_document()` (which orchestrates the Markdown pipeline in `markdown.rs`), document loading, glossary auto-linking, recent-files and settings persistence, the theme/locale bootstrap scripts, and `app_shell_html()`, which assembles the WebView page by loading the shell markup and script from `src/assets/` (see below) and substituting runtime tokens.
 - **`src/scripts.rs`** — Generators for the small JS snippets the host injects to drive the WebView: initial/document/workspace state, navigation, scroll anchoring (`ScrollAnchor`), the glossary sheet, and error state. Each returns a `String` of `window.leaf*(...)` calls that `main.rs` hands to `webview.evaluate_script()`.
 - **`src/pager.rs`** — The Previous/Next pager: walks the document's folder tree in reading order (`document_pager_html()`, `PagerEntry`, `pager_label()`) and builds the pager HTML plus the async `pager_loaded_script()` hand-off.
-- **`src/tei.rs`** — The TEI XML renderer: converts an 84000-style TEI document into the same HTML the Markdown pipeline produces (`render_tei_body()`, `tei_render_div()` / `tei_render_node()`, `TeiCtx`, `tei_slugify()`). Stamps each editable block with inline `data-src-*` source byte ranges (from `roxmltree`'s `Node::range()`) and exposes `tei_block_source_map()`, so [inline editing](../01-features/07-editing.md#inline-editing-the-reading-view) works for XML too. `pub(crate)` and re-exported at the crate root.
+- **`src/xml.rs`** — The XML front door and the generic renderer. `render_xml_document()` / `render_xml_body()` / `xml_block_source_map()` parse once (`parse_xml()`, doctypes allowed) and route by content: a `<TEI>` root or a `<teiHeader>` goes to `src/tei.rs`, anything else renders here. The generic renderer has no schema to work from, so it reads the shape of the tree — an element holding only text becomes a label/value field, runs of them share one field list, repeated flat records become a table, an element holding other elements becomes a section headed by its `<title>`/`<name>` child or its humanized tag name, and mixed content becomes a paragraph. Blocks that come from exactly one element carry that element's byte range, so [inline editing](../01-features/07-editing.md#inline-editing-the-reading-view) anchors the same way TEI's does. `pub(crate)` and re-exported at the crate root.
+- **`src/tei.rs`** — The TEI XML renderer, reached through `src/xml.rs`: converts an 84000-style TEI document into the same HTML the Markdown pipeline produces (`render_tei_inner()`, `tei_render_div()` / `tei_render_node()`, `TeiCtx`, `tei_slugify()`). Stamps each editable block with inline `data-src-*` source byte ranges (from `roxmltree`'s `Node::range()`), so [inline editing](../01-features/07-editing.md#inline-editing-the-reading-view) works for XML too. `pub(crate)` and re-exported at the crate root.
 - **`src/minimap.rs`** — The document minimap model: `build_minimap_model()` / `build_minimap_model_from_html()` and the `DocumentMinimap` / `MinimapSpan` types that classify each line run (heading, paragraph, list, blockquote, code fence) for the scrollable overview. `pub(crate)` internals with the public model types re-exported at the crate root.
 - **`src/editing.rs`** — The [editing](../01-features/07-editing.md) model: `EditableDocument` (the per-tab source buffer with dirty tracking, a save version counter, `replace_range()` splices for inline edits, `toggle_task()` for checkbox flips, and the bounded [undo](../01-features/07-editing.md#undo) stack), `DocumentFormat` (Markdown vs XML by extension, which picks the code view's highlight language and the re-render path), `render_source_view_html()` (the code view's colour layer, reusing the reader's own highlighter), `block_source_map()` — a `pulldown-cmark` `into_offset_iter()` pass mapping each top-level Markdown block to its exact source byte range — and `task_marker_offsets()` for the interactive checkboxes. These source maps are what [inline editing](../01-features/07-editing.md#inline-editing-the-reading-view) anchors its splices to. Public types re-exported at the crate root.
 - **`src/assets.rs`** — Bundled-asset serving and icon processing: the `include_bytes!` Mermaid/KaTeX runtimes and the PixiJS + d3-force bundles that power the [Graph view](../01-features/03-library.md#graph), `bundled_asset_response()` for the `leaf-asset://` scheme, the toolbar/brand SVG constants, and `normalize_svg_icon_colors()` (rewrites literal icon colors to `currentColor`). Not to be confused with the `src/assets/` directory it embeds. `pub(crate)` (plus the public `bundled_asset_response` / `BundledAsset` / `LOCAL_ASSET_PROTOCOL`), re-exported at the crate root.
@@ -73,31 +74,42 @@ The raw rendered HTML is passed through `ammonia` with an allowlist of GFM-safe 
 
 `app_shell_html()` generates the full HTML/CSS/JS shell. `reading_mode_css()` assembles the complete style block: compiled theme CSS (from the bundled `themes.md`) + the `:root` alias layer + application CSS. Fonts are not bundled — the active [theme](../01-features/06-themes.md#fonts) fetches its font from Google Fonts on demand. The rendered document HTML is injected into the shell via `workspace_state_script()` or `workspace_switch_script()`, which call the appropriate `window.leaf*` JavaScript entry points.
 
-## TEI XML rendering pipeline
+## XML rendering pipeline
 
 When a user opens a `.xml` file, `load_document()` detects the extension and calls `load_xml_document()` instead of the Markdown path:
 
 **1. Parse with roxmltree**
 
-`load_xml_document()` in `lib.rs` reads the XML source and parses it with `roxmltree` into a read-only DOM.
+`load_xml_document()` in `lib.rs` reads the XML source and `parse_xml()` in `xml.rs` parses it with `roxmltree` into a read-only DOM. Doctypes are allowed through (plists, XHTML and DocBook all carry one); roxmltree reads only the internal subset and never fetches anything. A file that isn't well-formed renders as a parse-error line naming the position, so the reader can go fix it.
 
-**2. Pick the title and find the TEI body**
+**2. Route by content**
 
-`render_tei_body()` first reads every `titleStmt > title` and picks the document title by `type` and `xml:lang` — English main title, falling back to the English long title, then the first non-Tibetan title. The Sanskrit main title and the English and Sanskrit long titles render beneath the heading as a muted subtitle block; Tibetan titles are never shown. It then locates the `<text> > <body>` element and walks its child `<div>` elements recursively.
+`render_xml_document()` sends a document with a `<TEI>` root or a `<teiHeader>` to the TEI renderer below, and everything else — sitemaps, RSS and Atom feeds, POMs, plists, exports, config files — to the generic renderer in `xml.rs`. The generic renderer works from the shape of the tree rather than any schema:
 
-**3. Emit HTML**
+- an element holding only text (or only attributes) becomes a label/value field, and consecutive ones share a single two-column field list;
+- two or more sibling records with the same tag, made only of short leaf values, become one table — a sitemap's `<url>` entries, a POM's `<dependency>` list;
+- an element holding other elements becomes a section, headed by its own `<title>`/`<head>` child, by `Tag: name` for a `<name>` child or naming attribute, or by its humanized tag name (`lastBuildDate` reads as "Last build date");
+- an element mixing text and markup renders as a paragraph of its text.
+
+A document that names no title of its own — a sitemap has nowhere to say what it is — is headed and titled by its file name. Values that are entirely a URL become links.
+
+**3. Pick the title and find the TEI body** (TEI only)
+
+`render_tei_inner()` first reads every `titleStmt > title` and picks the document title by `type` and `xml:lang` — English main title, falling back to the English long title, then the first non-Tibetan title. The Sanskrit main title and the English and Sanskrit long titles render beneath the heading as a muted subtitle block; Tibetan titles are never shown. It then locates the `<text> > <body>` element and walks its child `<div>` elements recursively.
+
+**4. Emit HTML** (TEI only)
 
 `tei_render_div()` / `tei_render_node()` convert TEI elements to HTML equivalents: `<div type="chapter">` → heading, `<p>` → paragraph, `<lg><l>` → verse, `<note place="end">` → footnote reference collected in a `TeiCtx`. Heading slugs are produced by `tei_slugify()` to match the same GitHub-style slug algorithm used for Markdown headings.
 
-**4. Append footnotes**
+**5. Append footnotes** (TEI only)
 
 After traversal, any collected footnotes are appended as a `<section class="footnotes"><ol>…</ol></section>`, identical to the Markdown footnote format so the same CSS styles them.
 
-**5. Auto-link glossary (optional)**
+**6. Auto-link glossary (optional)**
 
 `auto_link_glossary()` walks up from the document's folder to the nearest `GLOSSARY.md` (the same lookup the `glossary:` sheet links use), then wraps matched terms with `<a href="glossary:slug">` anchors — skipping text already inside a link, `code`, or `pre`. The identical pass runs for Markdown documents (the glossary file itself is exempt, so its entries are not self-linked).
 
-**6. Inject into shell**
+**7. Inject into shell**
 
 The finished HTML is handed to `app_shell_html()` and injected into the WebView exactly as Markdown output is — themes, minimap, pager, and scroll anchoring all apply unchanged.
 

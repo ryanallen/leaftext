@@ -1,6 +1,6 @@
 # Library
 
-> The library pane lets you browse and search Markdown files from a local SQLite index, with a Graph relationship map plus Project, Tree, and All files views.
+> The library pane lets you browse and search your documents from a local SQLite index, with a Graph relationship map plus Project, Tree, and All files views.
 
 The library is the part of leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane and is backed by a local indexer.
 
@@ -57,7 +57,7 @@ Best when you want the whole hierarchy visible.
 
 - Folders expand and collapse independently.
 - Expanded state is saved.
-- Folders with no Markdown files are pruned.
+- Folders with no indexed documents are pruned.
 
 ### All files
 
@@ -125,8 +125,8 @@ Cut and Copy place the file itself on the system clipboard, so you paste it in y
 The library pane keeps up with changes on disk, so a file you just created shows up without a manual rescan.
 
 - The same file watcher that drives live reload watches two places: the open document's folder, and — while you are in [Project view](#project) — the folder you are browsing.
-- The Project-view folder is watched recursively, so a Markdown file added in it or any of its subfolders is indexed immediately and the pane refreshes, even when no document is open.
-- A Markdown file created or edited in the open document's folder is indexed the same way.
+- The Project-view folder is watched recursively, so a document added in it or any of its subfolders is indexed immediately and the pane refreshes, even when no document is open.
+- A document created or edited in the open document's folder is indexed the same way.
 - Renaming or deleting a file from the right-click menu updates the pane right away.
 - Moving, renaming, or deleting a folder outside the app syncs the affected subtree immediately — new files are indexed and removed files are forgotten without a manual rescan.
 - Folders outside both watched locations appear after the next full crawl, or as soon as you open a file from them.

@@ -241,7 +241,7 @@ fn html_minimap_model_charts_tei_blocks() {
             <p>A closing paragraph.</p>\
             </body></text></TEI>";
 
-    let model = opened_document_from_tei(xml, Path::new("sutra.xml")).minimap;
+    let model = opened_document_from_xml(xml, Path::new("sutra.xml")).minimap;
 
     assert!(model.line_count > 0, "TEI minimap must not be empty");
     assert!(
@@ -646,7 +646,7 @@ fn auto_links_glossary_terms_from_an_ancestor_folder() {
             <div type=\"translation\"><p>The Bodhisattva was dwelling there.</p></div>\
             </body></text></TEI>";
     fs::write(&xml, tei).expect("xml written");
-    let from_xml = opened_document_from_tei(tei, &xml);
+    let from_xml = opened_document_from_xml(tei, &xml);
 
     fs::remove_dir_all(&root).expect("tree removed");
 
@@ -1277,7 +1277,7 @@ fn tei_lg_and_bare_l_render_as_verse_blockquotes() {
   </body></text>
 </TEI>"#;
 
-    let (_title, html) = render_tei_body(xml);
+    let (_title, html) = render_xml_body(xml);
 
     // The <lg> group becomes a blockquote with its lines joined by <br>.
     assert_contains(
@@ -1314,7 +1314,7 @@ fn tei_title_prefers_english_and_stacks_sanskrit_and_long_titles() {
   <text><body><div type="translation"><p>Body.</p></div></body></text>
 </TEI>"#;
 
-    let (title, html) = render_tei_body(xml);
+    let (title, html) = render_xml_body(xml);
 
     // The returned title (window/tab/library) is the English main title.
     assert_eq!(title.as_deref(), Some("The Chapter on Going Forth"));
@@ -1375,7 +1375,7 @@ fn tei_front_matter_renders_collapsed_before_the_body() {
   </text>
 </TEI>"#;
 
-    let (_title, html) = render_tei_body(xml);
+    let (_title, html) = render_xml_body(xml);
 
     // The front becomes a collapsed <details> (no `open` attribute) labelled
     // with its section headings, and it holds the summary/acknowledgement text.
@@ -1415,13 +1415,184 @@ fn tei_headings_shrink_with_nesting_never_invert() {
   </body></text>
 </TEI>"#;
 
-    let (_title, html) = render_tei_body(xml);
+    let (_title, html) = render_xml_body(xml);
 
     // Transparent `translation` adds no depth: h2, h3, h4, strictly shrinking.
     // Match on id + text, since headings carry inline source-range attributes.
     assert_contains(&html, r#"id="outer-section">Outer Section</h2>"#);
     assert_contains(&html, r#"id="inner-chapter">Inner Chapter</h3>"#);
     assert_contains(&html, r#"id="deeper-section">Deeper Section</h4>"#);
+}
+
+// ---------------------------------------------------------------------------
+// Generic (non-TEI) XML
+// ---------------------------------------------------------------------------
+
+#[test]
+fn sitemap_records_render_as_a_table_of_links() {
+    let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://leaftext.com/</loc>
+    <lastmod>2026-07-24</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/</loc>
+    <lastmod>2026-07-11</lastmod>
+  </url>
+</urlset>"#;
+
+    let (title, html) = render_xml_body(xml);
+
+    // A sitemap names no title of its own; the file name heads it (see
+    // `opened_document_from_xml`), so the renderer reports none.
+    assert!(title.is_none(), "{title:?}");
+    // Repeated flat records become one table, with spelled-out column headings.
+    assert_contains(&html, "<table class=\"xml-table\"");
+    assert_contains(&html, "<th>URL</th><th>Last modified</th>");
+    assert_contains(
+        &html,
+        "<td><a href=\"https://leaftext.com/\">https://leaftext.com/</a></td><td>2026-07-24</td>",
+    );
+    // And nothing of the TEI renderer's leaks through.
+    assert!(!html.contains("No TEI body"), "{html}");
+}
+
+#[test]
+fn feed_renders_its_title_fields_and_entries() {
+    let xml = r#"<?xml version="1.0"?>
+<rss version="2.0"><channel>
+  <title>Leaf Notes</title>
+  <link>https://leaftext.com/feed</link>
+  <lastBuildDate>Mon, 20 Jul 2026 09:00:00 GMT</lastBuildDate>
+  <item>
+    <title>First post</title>
+    <link>https://leaftext.com/1</link>
+    <description>A paragraph of prose that is long enough to be read as prose rather than as a table cell, which is the whole point of the length limit the record table applies.</description>
+  </item>
+</channel></rss>"#;
+
+    let (title, html) = render_xml_body(xml);
+
+    // The channel title titles the document, and isn't repeated as a field or
+    // as a heading for the wrapper it came from.
+    assert_eq!(title.as_deref(), Some("Leaf Notes"));
+    assert_contains(&html, ">Leaf Notes</h1>");
+    assert_eq!(html.matches("Leaf Notes").count(), 1, "{html}");
+    assert!(!html.contains(">Channel</h2>"), "{html}");
+
+    // Leaf children become one label/value list, camelCase names read as words,
+    // and a lone URL value links.
+    assert_contains(&html, "<dl class=\"xml-fields\">");
+    assert_contains(&html, "<dt>Last built</dt>");
+    assert_contains(
+        &html,
+        "<a href=\"https://leaftext.com/feed\">https://leaftext.com/feed</a>",
+    );
+
+    // The item is a section headed by its own title — one record is not a table.
+    assert_contains(&html, ">First post</h3>");
+    assert!(!html.contains("<table"), "{html}");
+}
+
+#[test]
+fn atom_link_attributes_stand_in_for_missing_text() {
+    let xml = r#"<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Example Feed</title>
+  <link href="http://example.org/"/>
+  <author><name>Ada</name><email>ada@example.org</email></author>
+</feed>"#;
+
+    let (_title, html) = render_xml_body(xml);
+
+    // An empty element with one attribute shows that attribute as its value,
+    // unlabelled — the element's own label already names it. (Match around the
+    // inline source-range attributes.)
+    assert_contains(&html, "<dt>Link</dt><dd data-block-id=");
+    assert_contains(
+        &html,
+        "<a href=\"http://example.org/\">http://example.org/</a></dd>",
+    );
+    assert!(!html.contains("Link: <a"), "{html}");
+    // A section named by a `<name>` child is qualified by its tag, so a person's
+    // name doesn't read as a section title on its own.
+    assert_contains(&html, ">Author: Ada</h2>");
+}
+
+#[test]
+fn generic_xml_blocks_anchor_to_their_source_elements() {
+    let xml = "<config><name>Widget</name><timeout>30</timeout>\
+               <note>Some prose with <b>markup</b> in it.</note></config>";
+
+    let (_title, html, blocks) = render_xml_document(xml, None);
+
+    // Every stamped block slices back to the element it was rendered from.
+    assert!(!blocks.is_empty());
+    for block in &blocks {
+        let slice = &xml[block.start..block.end];
+        assert!(slice.starts_with('<') && slice.ends_with('>'), "{slice}");
+    }
+    // The map matches what the HTML carries, and matches the editing model's.
+    assert_eq!(blocks, xml_block_source_map(xml));
+    assert_contains(&html, "data-src-start=");
+    // Mixed text-and-markup content renders as a paragraph of its text.
+    assert_contains(&html, ">Some prose with markup in it.</p>");
+}
+
+#[test]
+fn xml_with_a_doctype_still_renders() {
+    let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key>
+  <string>Leaf Text</string>
+</dict></plist>"#;
+
+    let (_title, html) = render_xml_body(xml);
+
+    assert_contains(&html, "<dt>Key</dt>");
+    assert_contains(&html, ">CFBundleName</dd>");
+    assert!(!html.contains("parse error"), "{html}");
+}
+
+#[test]
+fn malformed_xml_reports_where_it_broke() {
+    let (title, html) = render_xml_body("<a><b></a>");
+
+    assert!(title.is_none());
+    assert_contains(&html, "<strong>XML parse error.</strong>");
+    assert_contains(&html, "1:7");
+}
+
+#[test]
+fn untitled_xml_is_headed_by_its_file_name() {
+    let xml = "<urlset><url><loc>https://leaftext.com/</loc><lastmod>2026-07-24</lastmod></url>\
+               <url><loc>https://leaftext.com/docs/</loc><lastmod>2026-07-11</lastmod></url></urlset>";
+
+    let document = opened_document_from_xml(xml, "sitemap.xml");
+
+    assert_eq!(document.format, DocumentFormat::Xml);
+    assert_eq!(document.title, "Sitemap");
+    assert_contains(&document.html, "<h1 id=\"sitemap\">Sitemap</h1>");
+    // The reading view can still edit the exact source it came from.
+    assert_eq!(document.source, xml);
+}
+
+#[test]
+fn tei_documents_keep_going_to_the_tei_renderer() {
+    let xml = r#"<TEI xmlns="http://www.tei-c.org/ns/1.0">
+  <teiHeader><fileDesc><titleStmt>
+    <title type="mainTitle" xml:lang="en">The Work</title>
+  </titleStmt></fileDesc></teiHeader>
+  <text><body><div type="translation"><lg><l>A verse line.</l></lg></div></body></text>
+</TEI>"#;
+
+    let (title, html) = render_xml_body(xml);
+
+    assert_eq!(title.as_deref(), Some("The Work"));
+    // TEI-only markup, so the routing (not just the title) went to `tei.rs`.
+    assert_contains(&html, "<blockquote class=\"tei-verse\">");
+    assert!(!html.contains("xml-fields"), "{html}");
 }
 
 #[test]
@@ -4389,7 +4560,7 @@ fn tei_block_map_anchors_paragraphs_and_headings_to_xml_ranges() {
         </div>
         </body></text></TEI>"#;
 
-    let spans = tei_block_source_map(xml);
+    let spans = xml_block_source_map(xml);
     // One heading (the section head) and two paragraphs, all editable.
     assert!(spans.iter().any(|s| s.kind == "heading" && s.editable));
     assert_eq!(spans.iter().filter(|s| s.kind == "paragraph").count(), 2);
@@ -4421,7 +4592,7 @@ fn opened_tei_document_stamps_inline_ranges_and_carries_source() {
         </div>
         </body></text></TEI>"#;
 
-    let document = opened_document_from_tei(xml, "doc.xml");
+    let document = opened_document_from_xml(xml, "doc.xml");
     assert_eq!(document.format, DocumentFormat::Xml);
     assert_eq!(document.source, xml); // XML edits its exact source
                                       // The rendered HTML carries inline source ranges the reader edits against.

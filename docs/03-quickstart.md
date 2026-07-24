@@ -1,6 +1,6 @@
 # Quickstart
 
-> Open a Markdown or TEI XML file, learn the core controls, and get comfortable with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), the [minimap](01-features/04-minimap.md), and the [library](01-features/03-library.md) in a few minutes.
+> Open a Markdown or XML file, learn the core controls, and get comfortable with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), the [minimap](01-features/04-minimap.md), and the [library](01-features/03-library.md) in a few minutes.
 
 leaftext is meant to be usable immediately. This page shows the smallest useful path through the app: open a file, read it, move around, and reopen it later.
 
@@ -41,7 +41,7 @@ flowchart LR
 | Area | What it does |
 | --- | --- |
 | Tab bar | Keeps multiple documents open |
-| Main reader | Shows the rendered Markdown or TEI XML |
+| Main reader | Shows the rendered Markdown or [XML](01-features/01-rendering.md#xml) |
 | Outline | A collapsed list of the document's headings at the top, labelled with the document's line count, for jumping to a section |
 | Minimap | Shows the whole document and your current viewport |
 | Back / Forward | Moves through document and scroll history |

@@ -5,7 +5,7 @@
 ## Refine your mind.
 - Page: https://leaftext.com/
 - Markdown: https://leaftext.com/README.md
-- Summary: Leaftext is a free desktop app for reading and editing Markdown and TEI XML. Open a file. Read it.
+- Summary: Leaftext is a free desktop app for reading and editing Markdown and XML. Open a file. Read it.
 
 ## Rendering
 - Page: https://leaftext.com/docs/#/features/rendering
@@ -45,7 +45,7 @@
 ## Meet leaftext
 - Page: https://leaftext.com/docs/#/introduction
 - Markdown: https://leaftext.com/docs/01-introduction.md
-- Summary: leaftext is a desktop app for reading local Markdown and TEI XML on macOS, Windows, and Linux. Open a file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searc...
+- Summary: leaftext is a desktop app for reading local Markdown and XML on macOS, Windows, and Linux. Open a file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searchabl...
 
 ## Architecture
 - Page: https://leaftext.com/docs/#/development/architecture
@@ -85,4 +85,4 @@
 ## leaftext documentation
 - Page: https://leaftext.com/docs/
 - Markdown: https://leaftext.com/docs/README.md
-- Summary: leaftext is a desktop reader for Markdown and TEI XML: open a local file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searchable library. These docs cover th...
+- Summary: leaftext is a desktop reader for Markdown and XML: open a local file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searchable library. These docs cover the wh...

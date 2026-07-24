@@ -231,7 +231,7 @@ impl EditableDocument {
     pub fn block_source_map(&self) -> Vec<BlockSpan> {
         match self.format {
             DocumentFormat::Markdown => block_source_map(&self.text),
-            DocumentFormat::Xml => tei_block_source_map(&self.text),
+            DocumentFormat::Xml => xml_block_source_map(&self.text),
         }
     }
 

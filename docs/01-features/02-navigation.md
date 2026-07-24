@@ -105,7 +105,7 @@ Key details:
 
 - The file watcher debounces events with a 200 ms window.
 - leaftext hashes the file contents to skip duplicate reloads.
-- Reload re-renders through the same pipeline the file opened with — [TEI XML](01-rendering.md#tei-xml-84000-translations) stays TEI, Markdown stays Markdown.
+- Reload re-renders through the same pipeline the file opened with — [XML](01-rendering.md#xml) stays XML, Markdown stays Markdown.
 - The parent directory is watched instead of only the file, so atomic-save editors still work.
 - Other Markdown files changed in that same folder are indexed live, so the [library](03-library.md#live-updates) pane stays current too.
 - Replacing an [image](01-rendering.md#images) the document shows refreshes the picture in place, without a rerender, so the reader does not move.
@@ -133,7 +133,7 @@ Opening a document hands it to the Rust side to parse and render before the view
 
 A document draws its terms from a shared glossary file. You do not have to link them yourself: wherever a defined term appears in the text, leaftext links it for you. Clicking one does not switch documents: it opens that single glossary entry in a sheet that slides up over the page you are reading, so you keep your place underneath.
 
-- Terms are matched automatically in both Markdown and TEI XML documents — whole words, ignoring case — so the same glossary covers every page with no per-page markup.
+- Terms are matched automatically in both Markdown and [XML](01-rendering.md#xml) documents — whole words, ignoring case — so the same glossary covers every page with no per-page markup.
 - Text that is already a link, or inside code, is left alone, and the glossary file never links its own entries to themselves.
 - Dismiss the sheet with its close button, by clicking outside it, or with the `Escape` key.
 - A link inside the sheet that points at another glossary term swaps the entry in place; any other link leaves the glossary and follows the link normally.
@@ -177,14 +177,14 @@ Every document opens with an **Outline** — a table of contents built automatic
 - The collapsed header shows the document's total length — **Outline (312 lines)** — counted in the same running block numbers as the [line gutter](01-rendering.md#inline-html), so the count matches the last gutter number on the page.
 - Entries nest as a bulleted list that mirrors the heading levels, so the shape of the document is visible at a glance.
 - Each entry links to its heading, so clicking one jumps straight there.
-- It is built from the rendered headings, so it behaves the same for Markdown and [TEI XML](01-rendering.md#tei-xml-84000-translations).
+- It is built from the rendered headings, so it behaves the same for Markdown and [XML](01-rendering.md#xml).
 - It appears whenever a document has a title plus at least one more heading; a document with only a title shows none.
 
 The outline lists the sections within the current document, which makes it a companion to the [minimap](04-minimap.md): the outline is the document's structure as clickable text, the minimap a scaled picture of the whole page.
 
 ## Pager
 
-When you open a Markdown or TEI XML document that sits inside a folder tree connected by `README.md` files, leaftext appends a **Previous / Next** bar at the bottom of the page. Clicking a button opens the adjacent document in reading order without creating an extra history entry.
+When you open a Markdown or [XML](01-rendering.md#xml) document that sits inside a folder tree connected by `README.md` files, leaftext appends a **Previous / Next** bar at the bottom of the page. Clicking a button opens the adjacent document in reading order without creating an extra history entry.
 
 Reading order follows the same depth-first walk the docs viewer uses: inside each folder, non-README documents come first (Markdown and XML together, sorted by name), then each subfolder — its README acting as the folder's landing page — followed by that folder's own pages. `README` and `GLOSSARY` files (either extension) are never standalone entries in the sequence.
 

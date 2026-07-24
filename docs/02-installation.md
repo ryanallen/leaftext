@@ -1,6 +1,6 @@
 # Installation
 
-> Download the build for your platform from GitHub Releases, install it, and open a Markdown or TEI XML file.
+> Download the build for your platform from GitHub Releases, install it, and open a Markdown or XML file.
 
 leaftext ships prebuilt binaries for macOS, Windows, and Linux. There is no account, no plugin setup, and no extra runtime to configure first.
 

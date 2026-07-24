@@ -2427,6 +2427,45 @@ body.library-resizing {
 .document-body .tei-front-body > :first-child {
   margin-top: 0.7em;
 }
+/* Generic (non-TEI) XML: label/value rows share one two-column grid, so the
+   labels line up down the page. */
+.document-body .xml-fields {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.3em 1.2em;
+  margin: var(--type-spacing) 0;
+}
+.document-body .xml-fields dt {
+  color: var(--preview-muted-foreground);
+  font-family: var(--app-font);
+  font-size: 0.9em;
+  font-weight: 600;
+  line-height: inherit;
+  padding-top: 0.12em;
+}
+.document-body .xml-fields dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+/* An element's attributes sit tighter under its heading than its content does. */
+.document-body .xml-attributes {
+  margin-top: calc(-0.4 * var(--type-spacing));
+}
+/* Attributes carried alongside a value, shown after it. */
+.document-body .xml-value-attrs {
+  color: var(--preview-muted-foreground);
+  font-size: 0.9em;
+}
+/* Repeated records (a sitemap's urls, a POM's dependencies) become a table.
+   Long URL cells wrap rather than pushing the table into a scroll. */
+.document-body .xml-table {
+  font-size: 0.95em;
+  width: 100%;
+}
+.document-body .xml-table td {
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
 :root[data-speed-reader="true"] .document-body {
   color: color-mix(in srgb, var(--preview-foreground) 80%, var(--reading-background));
   font-weight: 400;

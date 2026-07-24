@@ -1,8 +1,8 @@
 # Rendering
 
-> leaftext reads two formats. It renders CommonMark and GFM Markdown with the GitHub-style extras people actually use — code fences, Mermaid, math, alerts, footnotes, emoji, and local images — and it renders 84000-style TEI XML translations.
+> leaftext reads two formats. It renders CommonMark and GFM Markdown with the GitHub-style extras people actually use — code fences, Mermaid, math, alerts, footnotes, emoji, and local images — and it renders XML: 84000-style TEI translations through a renderer that knows the format, and any other XML through a generic one.
 
-leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`, `.mdown`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. TEI XML (`.xml`) takes a parallel path — parsed with `roxmltree` and rendered by `tei_render_body` into the same HTML shell (see [TEI XML](#tei-xml-84000-translations)). Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the TEI section is described rather than demonstrated, since a Markdown page cannot embed a live TEI document.
+leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`, `.mdown`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. `.xml` takes a parallel path — parsed with `roxmltree`, then routed by what the file contains: a TEI document goes to the [TEI renderer](#tei-xml-84000-translations), anything else to the [generic XML renderer](#any-xml). Both produce the same HTML shell. Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the XML sections are described rather than demonstrated, since a Markdown page cannot embed a live XML document.
 
 ## Summary
 
@@ -14,7 +14,8 @@ leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`,
 | Leaf extensions | [Buttons](#buttons-leaf-extension) — a link wrapped in braces |
 | Local content | [Images](#images) by relative, absolute, or `file://` path |
 | Safety | Sanitized HTML allowlist |
-| TEI XML | 84000 Buddhist-translation format (`.xml`); headings, paragraphs, verse, footnotes |
+| [XML](#any-xml) | Any `.xml` file: sections, label/value fields, record tables, links |
+| [TEI XML](#tei-xml-84000-translations) | 84000 Buddhist-translation format; headings, paragraphs, verse, footnotes |
 
 ## Pipeline
 
@@ -24,9 +25,12 @@ flowchart LR
     B --> C[GitHub-style extras]
     C --> D[ammonia sanitizer]
     D --> E[Rendered document in leaftext]
-    F[TEI XML file] --> G[roxmltree DOM]
-    G --> H[tei_render_body]
-    H --> E
+    F[XML file] --> G[roxmltree DOM]
+    G --> H{TEI?}
+    H -->|yes| I[TEI renderer]
+    H -->|no| J[Generic XML renderer]
+    I --> E
+    J --> E
 ```
 
 ## Headings
@@ -375,9 +379,33 @@ leaftext offers an English and a Simplified Chinese interface, and renders CJK c
 | 全文搜索 | 支持中文前缀匹配 |
 | 前置元数据 | 可按字段筛选文库 |
 
-## TEI XML (84000 translations)
+## XML
 
-leaftext opens `.xml` files in the 84000 Buddhist-translation TEI format alongside `.md` files. The same "Open Document" dialog accepts both; the renderer detects which pipeline to use from the file extension.
+leaftext opens `.xml` files alongside `.md` files — the same "Open Document" dialog accepts both, and the [library](03-library.md) indexes both. Which XML renderer runs is decided by the file itself, not by its name: a document with a `<TEI>` root or a `<teiHeader>` goes to the [TEI renderer](#tei-xml-84000-translations); everything else goes to the generic one.
+
+Doctypes are read and ignored, so plists, XHTML, and DocBook open normally. A file that is not well-formed renders as a single line naming the parse position — `XML parse error. expected 'b' tag, not 'a' at 1:7` — instead of a blank page.
+
+### Any XML
+
+Most XML carries no reading conventions to follow, so the generic renderer works from the shape of the tree:
+
+| Shape in the file | Rendered as |
+|---|---|
+| An element holding only text, or only attributes | A label/value field. Consecutive ones share one two-column list, so labels line up down the page |
+| Two or more sibling records with the same tag, made only of short values | A [table](#tables), one row per record, columns in first-seen order |
+| An element holding other elements | A section. Its heading is its own `<title>`/`<head>` child, or `Tag: name` when a `<name>` child or a naming attribute (`name`, `id`, `type`, `class`) is all there is, or the tag name itself |
+| An element mixing text and inline markup | A paragraph of its text |
+| A value that is entirely a URL | A link |
+
+Tag names are read as words, so `lastBuildDate` renders as "Last build date" and `group_id` as "Group id"; a few names common in feeds and sitemaps are spelled out (`loc` → "URL", `lastmod` → "Last modified", `pubDate` → "Published"). Headings get the same slugs Markdown headings do, so the [outline](02-navigation.md#outline) and the [minimap](04-minimap.md) work the same way.
+
+A file that names no title of its own — a sitemap has nowhere to say what it is — is headed and titled by its file name.
+
+A sitemap, for example, renders as a table of its `<url>` records; an RSS or Atom feed as its channel title, its channel fields, then one section per item; a Maven POM as its project fields plus a table of dependencies.
+
+### TEI XML (84000 translations)
+
+TEI documents have conventions worth following, so they get their own renderer.
 
 **Supported TEI elements:**
 
@@ -395,9 +423,9 @@ leaftext opens `.xml` files in the 84000 Buddhist-translation TEI format alongsi
 | `<term>`, `<title>`, `<ref>` | Inline text (tags stripped) |
 | `<milestone>`, `<lb>`, `<caesura>` | Omitted |
 
-The Rust rendering path uses `roxmltree` to walk the DOM and produce the same HTML structure the Markdown pipeline outputs, so themes, footnotes, minimap, and pager all work unchanged for TEI documents.
+Both XML renderers walk the `roxmltree` DOM and produce the same HTML structure the Markdown pipeline outputs, so themes, footnotes, minimap, pager, and [inline editing](07-editing.md#inline-editing-the-reading-view) all work unchanged for XML documents.
 
-The web reader (`site/reader.js`) routes `.xml` content through `renderTEI()` from `tei-xml.js`, which uses `DOMParser` — the same semantics as the Rust side, fully offline.
+The web reader on this site (`site/reader.js`) renders `.xml` through `renderTEI()` from `tei-xml.js`, which uses `DOMParser` — the TEI path only, fully offline. The generic XML renderer is app-side.
 
 ## Next
 

@@ -26,14 +26,14 @@ pub(crate) fn tei_slugify(text: &str) -> String {
 }
 
 pub(crate) struct TeiCtx {
-    out: String,
+    pub(crate) out: String,
     footnotes: Vec<String>,
     fn_count: usize,
     seen: HashMap<String, usize>,
     /// Source-anchored editing map: one entry per editable block in document
     /// order, tying it to its roxmltree node's byte range. The range is stamped
     /// inline as the element is emitted, so nesting depth doesn't matter.
-    blocks: Vec<BlockSpan>,
+    pub(crate) blocks: Vec<BlockSpan>,
     next_block_id: usize,
 }
 
@@ -301,40 +301,11 @@ pub(crate) fn render_tei_front<'a>(front: roxmltree::Node<'a, 'a>, ctx: &mut Tei
     ctx.push("</div>\n</details>\n");
 }
 
-/// Parse TEI XML and return `(title, body_html)`. Title is extracted from the
-/// `<teiHeader>` if possible. Thin wrapper over [`render_tei_inner`].
-pub(crate) fn render_tei_body(xml: &str) -> (Option<String>, String) {
-    let (title, ctx) = render_tei_inner(xml);
-    (title, ctx.out)
-}
-
-/// The XML block source map: every editable TEI block tied to its source byte
-/// range, in document order. Built by the same traversal that renders the HTML,
-/// so the map and the rendered blocks can't disagree.
-pub(crate) fn tei_block_source_map(xml: &str) -> Vec<BlockSpan> {
-    render_tei_inner(xml).1.blocks
-}
-
-/// Render TEI XML to `(title, html, blocks)` in one pass, so the open path
-/// renders only once. The HTML already carries the inline `data-src-*` attrs.
-pub(crate) fn render_tei_document(xml: &str) -> (Option<String>, String, Vec<BlockSpan>) {
-    let (title, ctx) = render_tei_inner(xml);
-    (title, ctx.out, ctx.blocks)
-}
-
-/// Render TEI XML into reading HTML and the block source map in a single
-/// traversal, returning the title and the fully populated context (`ctx.out` is
-/// the HTML, `ctx.blocks` the source map).
-fn render_tei_inner(xml: &str) -> (Option<String>, TeiCtx) {
+/// Render a parsed TEI document into reading HTML and the block source map in a
+/// single traversal, returning the title and the fully populated context
+/// (`ctx.out` is the HTML, `ctx.blocks` the source map).
+pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<String>, TeiCtx) {
     let mut ctx = TeiCtx::new();
-    let doc = match roxmltree::Document::parse(xml) {
-        Ok(d) => d,
-        Err(_) => {
-            ctx.push("<p><strong>XML parse error.</strong></p>");
-            return (None, ctx);
-        }
-    };
-
     let root = doc.root_element();
 
     // Collect every `titleStmt > title` in document order. 84000 headers carry

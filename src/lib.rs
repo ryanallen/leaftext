@@ -4,6 +4,8 @@ pub mod indexer;
 mod markdown;
 mod tei;
 pub(crate) use tei::*;
+mod xml;
+pub(crate) use xml::*;
 mod theme;
 pub(crate) use markdown::*;
 pub use markdown::{is_local_image_path, local_image_protocol_response, local_image_source_dir};
@@ -278,27 +280,33 @@ pub fn load_document(path: impl AsRef<Path>) -> io::Result<OpenedDocument> {
     Ok(opened_document_from_markdown(&markdown, path))
 }
 
-/// Load a TEI XML document from disk and render it to an `OpenedDocument`.
+/// Load an XML document from disk and render it to an `OpenedDocument`. TEI and
+/// everything else both come through here; the renderer picks by content.
 pub fn load_xml_document(path: impl AsRef<Path>) -> io::Result<OpenedDocument> {
     let path = path.as_ref();
     let xml = fs::read_to_string(path)?;
-    Ok(opened_document_from_tei(&xml, path))
+    Ok(opened_document_from_xml(&xml, path))
 }
 
-/// Render a TEI XML string into an `OpenedDocument`.
-pub fn opened_document_from_tei(xml: &str, path: impl AsRef<Path>) -> OpenedDocument {
+/// Render an XML string into an `OpenedDocument`: TEI through the TEI renderer,
+/// any other XML through the generic one.
+pub fn opened_document_from_xml(xml: &str, path: impl AsRef<Path>) -> OpenedDocument {
     let path = path.as_ref();
     let render_path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
 
-    let (title, body_html, blocks) = render_tei_document(xml);
+    // A document with no title of its own is titled by its file name, which the
+    // generic renderer also heads the page with (a sitemap has nowhere else to
+    // say what it is).
+    let fallback_title = render_path
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .and_then(plain_document_title)
+        .map(|stem| xml_fallback_title(&stem));
+
+    let (title, body_html, blocks) = render_xml_document(xml, fallback_title.as_deref());
 
     let title = title
-        .or_else(|| {
-            render_path
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .and_then(plain_document_title)
-        })
+        .or(fallback_title)
         .unwrap_or_else(|| "Untitled document".to_string());
 
     let base_href = render_path

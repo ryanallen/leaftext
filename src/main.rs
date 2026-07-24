@@ -25,7 +25,7 @@ use leaftext::{
     is_local_image_path, line_count_script, load_recent_files, load_settings,
     local_image_protocol_response, local_image_source_dir, navigation_state_script,
     open_document_with_recent, open_error_state_script, opened_document_from_markdown,
-    opened_document_from_tei, pager_loaded_script, render_markdown_document, save_recent_files,
+    opened_document_from_xml, pager_loaded_script, render_markdown_document, save_recent_files,
     save_result_script, save_settings, scroll_anchor_script, settings_file_path,
     source_updated_script, webview_user_data_dir, workspace_reload_script, workspace_state_script,
     workspace_switch_script, DocumentFormat, EditableDocument, GraphScope, LibraryView,
@@ -2068,14 +2068,14 @@ fn reload_active_document(
         }
     }
 
-    // Render through the same path as an initial open (XML → TEI, else Markdown),
+    // Render through the same path as an initial open (XML or Markdown by extension),
     // reusing the content already read for the hash-gate.
     let is_xml = path
         .extension()
         .and_then(|ext| ext.to_str())
         .is_some_and(|ext| ext.eq_ignore_ascii_case("xml"));
     let document = if is_xml {
-        opened_document_from_tei(&contents, &path)
+        opened_document_from_xml(&contents, &path)
     } else {
         opened_document_from_markdown(&contents, &path)
     };
@@ -2126,10 +2126,10 @@ fn active_tab_path(workspace: &Workspace) -> Option<(usize, PathBuf)> {
 }
 
 /// Render a tab's reading view from its edit buffer, so unsaved edits show.
-/// Picks the TEI or Markdown renderer by the buffer's format.
+/// Picks the XML or Markdown renderer by the buffer's format.
 fn reading_document_from_buffer(edit: &EditableDocument, path: &Path) -> OpenedDocument {
     match edit.format {
-        DocumentFormat::Xml => opened_document_from_tei(edit.text(), path),
+        DocumentFormat::Xml => opened_document_from_xml(edit.text(), path),
         DocumentFormat::Markdown => opened_document_from_markdown(edit.text(), path),
     }
 }
