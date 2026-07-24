@@ -5202,6 +5202,7 @@ function bindDocumentMinimap() {
     }
     const clickedDocumentY = (event.clientY - contentRect.top) / metrics.previewScale;
     app.scrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));
+    recordReaderScrollPosition();
     updateMinimapViewport();
   };
   track.addEventListener('pointerdown', (event) => {
@@ -5236,6 +5237,10 @@ function bindDocumentMinimap() {
       minimapPointerOffsetY = null;
       minimapDragging = false;
       minimapDragMetrics = null;
+      // A pass queued mid-drag holds the pre-drag anchor, so drop it before recording
+      // where the drag landed; either omission snaps the reader back to the start.
+      cancelReaderLayoutUpdate();
+      recordReaderScrollPosition();
       // Settle the box/thumbnail onto the true reading position; content that
       // streamed in keeps settling via the reflow observer.
       updateMinimapViewport();
@@ -5475,6 +5480,15 @@ function captureReaderScrollAnchor() {
   }
   return anchorForBlockIndex(blocks, targetIndex, shellRect);
 }
+// Settle the reader where it now sits and re-record that as the anchor. Every reflow
+// re-pin restores readerScrollAnchor, so anything moving app.scrollTop itself must
+// call this — a stale anchor turns the next late layout change (an image decoding,
+// the async pager landing) into a yank back to the pre-jump position. The scroll
+// listener covers user scrolls; the minimap, which it ignores, calls this instead.
+function recordReaderScrollPosition() {
+  clampReaderScrollPosition();
+  readerScrollAnchor = captureReaderScrollAnchor();
+}
 // Anchor to the nearest anchorable block strictly above `el`, keeping its offset
 // from the top edge. Blocks above a block never move when it resizes, so this
 // holds the reader steady while an image collapses to source and re-decodes on
@@ -5554,13 +5568,24 @@ function scheduleReaderLayoutUpdate(anchor = readerScrollAnchor || captureReader
   readerLayoutFrame = window.requestAnimationFrame(() => {
     readerLayoutFrame = 0;
     correctReaderScrollOrigin();
+    // A minimap drag owns the scroll: `anchor` predates it (the drag skips the
+    // refresh to keep layout reads off the pointer path), so re-pinning would throw
+    // the reader back to where the drag started. Leave the box alone too; endDrag
+    // settles both.
+    if (minimapDragging) {
+      return;
+    }
     restoreReaderScrollAnchor(anchor);
     readerScrollAnchor = captureReaderScrollAnchor();
-    // Don't move the box off the cursor mid-drag; the drag pins it, endDrag settles.
-    if (!minimapDragging) {
-      updateMinimapViewport();
-    }
+    updateMinimapViewport();
   });
+}
+// Drop a queued layout pass whose captured `anchor` has been superseded.
+function cancelReaderLayoutUpdate() {
+  if (readerLayoutFrame) {
+    window.cancelAnimationFrame(readerLayoutFrame);
+    readerLayoutFrame = 0;
+  }
 }
 function disconnectReaderReflowObserver() {
   if (readerReflowObserver) {

@@ -3474,6 +3474,46 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
 }
 
 #[test]
+fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
+    // The scroll listener is deliberately inert during a minimap drag, so the minimap
+    // must record the anchor itself. When it didn't, the anchor kept the pre-drag
+    // position and the next late reflow — most visibly the async bottom pager landing
+    // seconds after the document — restored it and threw the reader back up the page.
+    let html = app_shell_html();
+
+    for expected in [
+        "function recordReaderScrollPosition() {",
+        "clampReaderScrollPosition();\n  readerScrollAnchor = captureReaderScrollAnchor();",
+        // Rail click (pointerdown, so already flagged as dragging).
+        "app.scrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));\n    recordReaderScrollPosition();",
+        // Drag release: drop the queued pass built on the pre-drag anchor first,
+        // then record where the drag landed.
+        "cancelReaderLayoutUpdate();\n      recordReaderScrollPosition();",
+        "function cancelReaderLayoutUpdate() {",
+        "window.cancelAnimationFrame(readerLayoutFrame);",
+    ] {
+        assert_contains(&html, expected);
+    }
+
+    // Mid-drag, the queued pass must not re-pin at all: its anchor predates the
+    // drag, so restoring it would fight the pointer and undo the jump.
+    let update_start = html
+        .find("function scheduleReaderLayoutUpdate(")
+        .expect("app shell should schedule reader layout updates");
+    let update_body = &html[update_start..];
+    let drag_guard = update_body
+        .find("if (minimapDragging) {")
+        .expect("the layout pass should bail while a minimap drag owns the scroll");
+    let repin = update_body
+        .find("restoreReaderScrollAnchor(anchor);")
+        .expect("the layout pass should re-pin the reader anchor");
+    assert!(
+        drag_guard < repin,
+        "the minimap-drag bail must come before the anchor re-pin, or a drag gets yanked back to where it started"
+    );
+}
+
+#[test]
 fn reading_mode_css_offsets_document_by_measured_scroll_origin() {
     let css = reading_mode_css();
 

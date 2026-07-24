@@ -85,6 +85,8 @@ leaftext stores a reading position as a `ScrollAnchor`:
 
 This is more stable than storing only raw scroll pixels, so the app can usually return to the same paragraph after rerendering.
 
+The same anchor also holds your place while a document is still settling. Images decode, Mermaid diagrams and math render, and the Pager arrives a beat later; each changes the page height, and leaftext re-pins the reader to its anchor so the text you were reading stays where you left it. Anything that moves the reader therefore records a fresh anchor as it lands — including a click or drag on the [minimap](04-minimap.md) — or the next late arrival would restore the spot you jumped away from.
+
 ## Reload
 
 When the current file changes on disk, leaftext reloads it and tries to preserve your place.
