@@ -1090,9 +1090,25 @@ body {
   width: 12px;
   height: 12px;
 }
+/* Maximize shows a single square; when the window is maximized the restore-down
+   glyph (two offset squares) takes its place. Exactly one is ever displayed, so
+   the grid button keeps a single centered child. */
+.window-control .wc-restore {
+  display: none;
+}
+body.is-maximized #winMaximize .wc-maximize {
+  display: none;
+}
+body.is-maximized #winMaximize .wc-restore {
+  display: block;
+}
+/* Neutral, square caption-button hover — a translucent overlay so it stays
+   visible in every theme (a plain surface token read the same as the bar).
+   border-radius: 0 defeats the global button radius; close keeps its own. */
 .window-control:hover {
-  background: var(--surface-muted);
+  background: color-mix(in srgb, var(--foreground) 12%, transparent);
   color: var(--foreground);
+  border-radius: 0;
 }
 .window-control-close:hover {
   background: #e81123;

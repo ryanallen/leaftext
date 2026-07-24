@@ -607,6 +607,12 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         // Whether the OS window is frameless (Windows), so the frontend shows its
         // own title-bar chrome — drag region + minimize/maximize/close buttons.
         .with_initialization_script(format!("window.__leafFrameless = {};", cfg!(windows)))
+        // Initial maximized state, so the maximize button shows the restore-down
+        // icon from the first paint when the window opens maximized.
+        .with_initialization_script(format!(
+            "window.__leafMaximized = {};",
+            settings.window_maximized
+        ))
         .with_custom_protocol(
             LOCAL_IMAGE_PROTOCOL.to_string(),
             local_image_protocol_handler(Arc::clone(&local_image_source_dir)),
@@ -710,6 +716,11 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     let mut last_windowed_size =
         LogicalSize::new(settings.window_width as f64, settings.window_height as f64);
 
+    // Last maximized state pushed to the webview, so the custom title bar's
+    // maximize/restore icon tracks maximize changes from any source (the button,
+    // a double-click, snap, or Win+Up), not just the button.
+    let mut last_maximized = settings.window_maximized;
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
@@ -726,6 +737,17 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                     && size.height > 0
                 {
                     last_windowed_size = size.to_logical(window.scale_factor());
+                }
+                // Keep the custom title bar's maximize/restore icon in sync with
+                // the real window state whenever it changes.
+                let maximized = window.is_maximized();
+                if maximized != last_maximized {
+                    last_maximized = maximized;
+                    if let Some(view) = webview.as_ref() {
+                        let _ = view.evaluate_script(&format!(
+                            "window.leafSetWindowMaximized({maximized});"
+                        ));
+                    }
                 }
             }
             Event::WindowEvent {

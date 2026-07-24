@@ -169,6 +169,21 @@ if (window.__leafFrameless) {
     if (isDragTarget(event.target)) send({ command: 'windowToggleMaximize' });
   });
 }
+// Reflect the real maximized state: body.is-maximized swaps the maximize glyph
+// for restore-down (CSS) and the button's label follows. The host calls this on
+// every maximize change; the initial value rides in on __leafMaximized. Defined
+// unconditionally (not just frameless) so the host's call is always safe; it's a
+// harmless no-op where the controls are hidden.
+window.leafSetWindowMaximized = (maximized) => {
+  document.body.classList.toggle('is-maximized', !!maximized);
+  const el = document.getElementById('winMaximize');
+  if (el) {
+    const label = maximized ? 'Restore' : 'Maximize';
+    el.setAttribute('aria-label', label);
+    el.setAttribute('title', label);
+  }
+};
+window.leafSetWindowMaximized(window.__leafMaximized);
 const MERMAID_SCRIPT_URL = '{{MERMAID_SCRIPT_URL}}';
 const KATEX_SCRIPT_URL = '{{KATEX_SCRIPT_URL}}';
 const PIXI_SCRIPT_URL = '{{PIXI_SCRIPT_URL}}';
