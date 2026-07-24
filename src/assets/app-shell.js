@@ -2309,6 +2309,11 @@ let currentDocumentSource = '';
 // `srcStart` names the block by its post-splice source offset, `textOffset` the
 // position inside it; `insertBelow` opens a fresh empty paragraph after it.
 let pendingCaret = null;
+// A reader anchor the next leafReloadDocument should restore instead of its own
+// top-visible capture. Set when committing a source-edited block (e.g. an image)
+// whose own height swings across the re-render: it points at the stable block
+// ABOVE the edit, so the reader holds its place rather than snapping to the top.
+let pendingEditAnchor = null;
 window.leafTheme.subscribe((theme) => {
   updateThemeSelection();
   reportWindowChrome(theme);
@@ -2441,7 +2446,10 @@ window.leafSetState = (state) => {
 // Re-render the active document after a live reload without scrolling to the top:
 // capture the position, re-render, restore it (clamped if the document shrank).
 window.leafReloadDocument = (state) => {
-  const anchor = captureReaderScrollAnchor();
+  // A source-block commit leaves an above-edit anchor; prefer it over the
+  // top-visible capture, which would target the momentarily zero-height block.
+  const anchor = pendingEditAnchor || captureReaderScrollAnchor();
+  pendingEditAnchor = null;
   currentState = state || currentState || { recent: [], tabs: [], active: null, document: null };
   runViewRender(currentState.document && currentState.document.html, () => {
     resetReaderScrollOnNextRender = false;
@@ -4102,6 +4110,11 @@ function makeSourceEditable(el) {
     // non-link part of the block.
     if (event.target && event.target.closest && event.target.closest('a')) return;
     event.preventDefault();
+    // Swapping a rendered block (often a tall image) for its one-line source
+    // collapses its height; pin the reader to the block above first, or a near-top
+    // image shrinking the document would clamp the scroll to the top. focus() must
+    // not scroll either — preventScroll keeps the caret from yanking the view.
+    const aboveAnchor = anchorAboveElement(el);
     const src = sliceSourceBytes(currentDocumentSource, start, end);
     el.__editBaseline = src;
     el.__renderedHtml = el.innerHTML;
@@ -4110,7 +4123,11 @@ function makeSourceEditable(el) {
     el.setAttribute('contenteditable', 'true');
     el.setAttribute('spellcheck', 'false');
     el.classList.add('leaf-editing-source');
-    el.focus();
+    el.focus({ preventScroll: true });
+    if (aboveAnchor) {
+      readerScrollAnchor = aboveAnchor;
+      restoreReaderScrollAnchor(aboveAnchor);
+    }
   });
   el.addEventListener('blur', () => {
     if (el.dataset.editingSource !== 'true') return;
@@ -4118,11 +4135,21 @@ function makeSourceEditable(el) {
     el.removeAttribute('contenteditable');
     el.classList.remove('leaf-editing-source');
     delete el.dataset.editingSource;
+    // The block is about to grow back to its rendered height (an image re-decodes
+    // from zero). Anchor to the stable block above so the reader holds its place.
+    const aboveAnchor = anchorAboveElement(el);
     if (text === el.__editBaseline) {
       // No change: restore the rendered view (no host round-trip needed).
       el.innerHTML = el.__renderedHtml;
+      if (aboveAnchor) {
+        readerScrollAnchor = aboveAnchor;
+        restoreReaderScrollAnchor(aboveAnchor);
+      }
       return;
     }
+    // Hand the host re-render (leafReloadDocument) that same above-anchor: its own
+    // top-visible capture would target this block while it is momentarily zero-height.
+    pendingEditAnchor = aboveAnchor;
     commitBlockEdit(el, text);
     // The host re-renders the document from the buffer, which restores styling.
   });
@@ -5352,6 +5379,26 @@ function readerAnchorBlockList(source) {
   }
   return readerAnchorBlocks;
 }
+// Turn a block-list index into the serializable {section, block, offsetY} anchor:
+// nearest heading slug above it, the block's ordinal within that section, and its
+// signed offset from the reader's top edge. Shared by the top-visible capture and
+// the anchor-above fallback used while editing a block whose height swings.
+function anchorForBlockIndex(blocks, targetIndex, shellRect) {
+  let sectionIndex = -1;
+  let section = null;
+  for (let i = targetIndex; i >= 0; i--) {
+    const element = blocks[i];
+    if (/^H[1-6]$/.test(element.tagName) && element.id) {
+      section = element.id;
+      sectionIndex = i;
+      break;
+    }
+  }
+  const target = blocks[targetIndex];
+  const rect = target.getBoundingClientRect();
+  const offsetY = shellRect.top - rect.top;
+  return { section, block: targetIndex - (sectionIndex < 0 ? 0 : sectionIndex), offsetY };
+}
 function captureReaderScrollAnchor() {
   const source = app.querySelector('.document-body');
   if (!currentState?.document || !source) {
@@ -5375,20 +5422,41 @@ function captureReaderScrollAnchor() {
       lo = mid + 1;
     }
   }
-  let sectionIndex = -1;
-  let section = null;
-  for (let i = targetIndex; i >= 0; i--) {
-    const element = blocks[i];
-    if (/^H[1-6]$/.test(element.tagName) && element.id) {
-      section = element.id;
-      sectionIndex = i;
+  return anchorForBlockIndex(blocks, targetIndex, shellRect);
+}
+// Anchor to the nearest anchorable block strictly above `el`, keeping its offset
+// from the top edge. Blocks above a block never move when it resizes, so this
+// holds the reader steady while an image collapses to source and re-decodes on
+// commit — at worst landing on the line directly above the image, never the top.
+// Null when `el` is the first block (nothing above it to anchor to).
+function anchorAboveElement(el) {
+  const source = app.querySelector('.document-body');
+  if (!currentState?.document || !source || !el) {
+    return null;
+  }
+  const blocks = readerAnchorBlockList(source);
+  if (!blocks.length) {
+    return null;
+  }
+  const elTop = el.getBoundingClientRect().top;
+  let chosenIndex = -1;
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    // Skip the edited block itself and any nested anchor blocks it contains (a
+    // blockquote/table maps as one editable block but its rows are in the list).
+    if (el.contains(block) || block.contains(el)) {
+      continue;
+    }
+    if (block.getBoundingClientRect().top < elTop - 0.5) {
+      chosenIndex = i;
+    } else {
       break;
     }
   }
-  const target = blocks[targetIndex];
-  const rect = target.getBoundingClientRect();
-  const offsetY = shellRect.top - rect.top;
-  return { section, block: targetIndex - (sectionIndex < 0 ? 0 : sectionIndex), offsetY };
+  if (chosenIndex < 0) {
+    return null;
+  }
+  return anchorForBlockIndex(blocks, chosenIndex, app.getBoundingClientRect());
 }
 // Re-resolve a serializable anchor against the current DOM: the same Markdown
 // renders the same blocks, so it points at the original element after a re-render.
