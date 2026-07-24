@@ -1501,41 +1501,21 @@ summary:focus-visible {
 .library-shell.library-closed .library-divider {
   display: none;
 }
-.library-open {
-  display: none;
-}
 .library-shell.library-closed .library-header {
   /* Hide the header when snapped shut, or the unclipped pane would bleed it past
-     the 0px column and show it behind the open button. */
+     the 0px column and show it behind the reader. */
   display: none;
 }
-.library-shell.library-closed .library-open {
-  /* Pinned to the left edge below the app bar; left: 22px matches the app bar's
-     padding so it lines up under the leaf logo. */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  top: var(--library-open-top, 64px);
-  left: 22px;
-  z-index: 5;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--leaf-radius-lg);
-  background: var(--app-surface-elevated);
+/* The library toggle sits in the app bar's lead, left of Back. Rests muted like
+   the other secondary toolbar icons, greens on hover. */
+.library-open {
+  border-color: transparent;
+  background: transparent;
   color: var(--app-muted-foreground);
-  cursor: pointer;
 }
-/* Scope hover/active to the collapsed selector so they outrank the collapsed
-   display rule above, matching the settings button. */
-.library-shell.library-closed .library-open:hover {
+.library-open:hover {
   background: var(--app-action-hover-background);
-  color: var(--app-action-foreground);
-}
-.library-shell.library-closed .library-open:active {
-  background: var(--app-action-background);
+  border-color: var(--app-action-hover-background);
   color: var(--app-action-foreground);
 }
 .library-open svg {
@@ -2847,8 +2827,7 @@ body.library-resizing {
   --cv-gutter: 3.75em;
   --cv-pad-x: 20px;
   --cv-pad-y: 16px;
-  /* Top padding clears the floating library-open button; lines still scroll up under it. */
-  --cv-pad-top: 48px;
+  --cv-pad-top: 16px;
   --minimap-padding-inline: 8px;
   --minimap-preview-width: 68px;
   --minimap-width: calc(var(--minimap-preview-width) + (var(--minimap-padding-inline) * 2));

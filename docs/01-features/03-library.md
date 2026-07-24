@@ -182,6 +182,7 @@ Symlinks and Windows reparse points are not descended.
 
 | Behavior | Rule |
 | --- | --- |
+| Toggle | The panel button in the app bar, left of Back, opens and closes the pane |
 | Snap shut | Drag narrower than 40 px |
 | Reader minimum | Reader stays at least 360 px wide |
 | Small window | Pane auto-hides if space is too tight |

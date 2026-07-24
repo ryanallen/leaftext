@@ -5544,25 +5544,24 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
     let html = app_shell_html();
     let css = reading_mode_css();
 
-    // Markup: the resize divider on the pane edge and the open button that
-    // stays reachable (positioned against the shell) when the column is 0.
+    // Markup: the resize divider on the pane edge and the library toggle button,
+    // which lives in the app bar's lead (an .icon-button), left of Back.
     assert!(html.contains(r#"<div id="libraryDivider" class="library-divider" data-i18n-title="library.divider.resize" title="Resize library""#));
-    assert!(html.contains(r#"<button type="button" id="libraryOpen" class="library-open" data-i18n-title="library.open" data-i18n-aria-label="library.open""#));
+    assert!(html.contains(r#"<button type="button" id="libraryOpen" class="icon-button library-open" data-i18n-title="library.open" data-i18n-aria-label="library.open""#));
 
-    // The open icon is the bundled asset, normalized to currentColor like the
+    // The toggle icon is the bundled asset, normalized to currentColor like the
     // other toolbar icons (no stray literal stroke color survives).
     let open_icon = normalize_svg_icon_colors(OPEN_LIBRARY_ICON_SVG);
     assert!(open_icon.contains("stroke=\"currentColor\""));
     assert!(html.contains(open_icon.trim()));
 
-    // CSS: the collapsed-grid override, the divider hit target, and the open
-    // button pinned to the shell's left edge.
+    // CSS: the collapsed-grid override and the divider hit target.
     assert!(css.contains(
         ".library-shell.library-closed {\n  grid-template-columns: 0 minmax(0, 1fr);\n}"
     ));
     assert!(css.contains(".library-divider {"));
     assert!(css.contains("cursor: col-resize;"));
-    assert!(css.contains(".library-shell.library-closed .library-open {"));
+    assert!(css.contains(".library-open:hover {"));
 
     // Behavior constants and the host-persisted layout report.
     assert!(html.contains("const SNAP_SHUT = 40;"));
@@ -5578,8 +5577,8 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
     assert!(html.contains("if (raw < SNAP_SHUT) {"));
     assert!(html.contains("dividerDrag.frame = requestAnimationFrame(applyPendingDividerWidth);"));
 
-    // Open button restores the pane; layout applies on boot and on resize.
-    assert!(html.contains("libraryOpen.addEventListener('click', openLibrary);"));
+    // The toggle flips the pane open/closed; layout applies on boot and on resize.
+    assert!(html.contains("libraryOpen.addEventListener('click', toggleLibrary);"));
     assert!(html.contains("applyPaneLayout();\nsend({ command: 'getFileTree' });"));
     assert!(html.contains("window.addEventListener('resize', () => {"));
 }

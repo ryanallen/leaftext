@@ -170,10 +170,8 @@ if (window.__leafFrameless) {
   });
 }
 // Reflect the real maximized state: body.is-maximized swaps the maximize glyph
-// for restore-down (CSS) and the button's label follows. The host calls this on
-// every maximize change; the initial value rides in on __leafMaximized. Defined
-// unconditionally (not just frameless) so the host's call is always safe; it's a
-// harmless no-op where the controls are hidden.
+// for restore-down (CSS) and the label follows. Defined unconditionally (not just
+// frameless) so the host's call is always safe — a no-op where controls are hidden.
 window.leafSetWindowMaximized = (maximized) => {
   document.body.classList.toggle('is-maximized', !!maximized);
   const el = document.getElementById('winMaximize');
@@ -780,14 +778,20 @@ function applyPaneLayout() {
     document.documentElement.style.setProperty('--library-rail-width', '0px');
   }
 }
-function openLibrary() {
-  libraryUserClosed = false;
-  // Reopen at the default width, not the sliver it was dragged to before snapping.
-  libraryWidth = DEFAULT_PANE_WIDTH;
+// The panel button in the app bar toggles the library: closed → open at the
+// default width (never the sliver it was dragged to before snapping shut), open
+// → closed. On a too-narrow window the pane stays display-closed regardless.
+function toggleLibrary() {
+  if (libraryIsClosed()) {
+    libraryUserClosed = false;
+    libraryWidth = DEFAULT_PANE_WIDTH;
+  } else {
+    libraryUserClosed = true;
+  }
   applyPaneLayout();
   persistLibraryLayout();
 }
-libraryOpen.addEventListener('click', openLibrary);
+libraryOpen.addEventListener('click', toggleLibrary);
 // Drag-to-resize the pane from its right edge, rAF-throttling width writes so the
 // grid doesn't relayout on every pointer event.
 let dividerDrag = null;
