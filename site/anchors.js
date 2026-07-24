@@ -163,10 +163,16 @@ export function decorateAnchorLinks(root, label = 'Link to this section') {
     // it still copies the deep link (handled below). The digits live in an inner
     // span so the anchor can inherit the block's font metrics (matching its first
     // line box) while the glyph stays a fixed small size, baseline-aligned to the
-    // block's text — see the .anchor-link CSS.
+    // block's text — see the .anchor-link CSS. The number is written to a data
+    // attribute and drawn by CSS (::before content), NOT as a text node: that
+    // keeps the digit out of the document's text content, so a search crawler
+    // rendering the page never glues the gutter number onto the following
+    // sentence in the result snippet (e.g. "7Leaf Text opens…"). It stays
+    // aria-hidden for the same reason — it is a pointer affordance, not content.
     const num = document.createElement('span');
     num.className = 'anchor-link-num';
-    num.textContent = locus;
+    num.setAttribute('aria-hidden', 'true');
+    num.dataset.locusNum = locus;
     link.appendChild(num);
     // Clicking copies the full deep link to this block (the canonical citation)
     // without blocking the in-page jump, and a brief is-copied flash confirms it.

@@ -3,11 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Leaf Text</title>
-    <meta name="description" content="A desktop reader for Markdown. Open a file. Read it." />
+    <title>Leaf Text — a Markdown &amp; TEI XML reader for Mac, Windows &amp; Linux</title>
+    <meta
+      name="description"
+      content="Leaf Text is a free desktop app for reading and editing Markdown and TEI XML on macOS, Windows, and Linux. A clean, GitHub-accurate reading view you can type straight into — no account, no cloud."
+    />
     <link rel="canonical" href="https://leaftext.com/" />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#0d1117" />
+    <!-- Favicon / app icon: the green leaf mark shown in the browser tab and in
+         search results. Absolute path so it resolves the same from /docs/. -->
+    <link rel="icon" type="image/png" href="/assets/leaf-icon.png" />
+    <link rel="apple-touch-icon" href="/assets/leaf-icon.png" />
     <!-- The page renders this Markdown file client-side; expose it as the
          machine-readable alternate so crawlers and AI fetchers read the text
          without running JavaScript. -->
@@ -15,15 +22,15 @@
     <!-- Open Graph (link previews on social and chat apps). -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Leaf Text" />
-    <meta property="og:title" content="Leaf Text" />
-    <meta property="og:description" content="A desktop reader for Markdown. Open a file. Read it." />
+    <meta property="og:title" content="Leaf Text — a Markdown &amp; TEI XML reader" />
+    <meta property="og:description" content="A free desktop app for reading and editing Markdown and TEI XML on macOS, Windows, and Linux. Open a file. Read it." />
     <meta property="og:url" content="https://leaftext.com/" />
     <meta property="og:image" content="https://leaftext.com/imgs/leaftext.png" />
     <meta property="og:locale" content="en_US" />
     <!-- Twitter / X card. -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Leaf Text" />
-    <meta name="twitter:description" content="A desktop reader for Markdown. Open a file. Read it." />
+    <meta name="twitter:title" content="Leaf Text — a Markdown &amp; TEI XML reader" />
+    <meta name="twitter:description" content="A free desktop app for reading and editing Markdown and TEI XML on macOS, Windows, and Linux. Open a file. Read it." />
     <meta name="twitter:image" content="https://leaftext.com/imgs/leaftext.png" />
     <!-- Structured data: the site, its publisher, and the app it documents. -->
     <script type="application/ld+json">
@@ -43,6 +50,7 @@
             "@id": "https://leaftext.com/#org",
             "name": "Leaf Text",
             "url": "https://leaftext.com/",
+            "logo": "https://leaftext.com/assets/leaf-icon.png",
             "sameAs": ["https://github.com/ryanallen/leaftext"]
           },
           {
@@ -52,7 +60,9 @@
             "operatingSystem": "Windows, macOS, Linux",
             "url": "https://leaftext.com/",
             "downloadUrl": "https://github.com/ryanallen/leaftext/releases",
-            "description": "A desktop reader for Markdown. Open a file. Read it."
+            "image": "https://leaftext.com/assets/leaf-icon.png",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "description": "A free desktop app for reading and editing Markdown and TEI XML on macOS, Windows, and Linux."
           }
         ]
       }
@@ -81,6 +91,9 @@
           if (s.getItem('leaf.minimap') === '0') d.dataset.minimap = 'off';
           if (s.getItem('leaf.library') === '0') d.dataset.library = 'off';
           if (s.getItem('leaf.speedReader') === '1') d.dataset.speedReader = 'true';
+          // Gutter line numbers default OFF (matching the desktop app) so the
+          // landing page stays clean and crawlers never scrape a block's number.
+          if (s.getItem('leaf.lineNumbers') !== '1') d.dataset.lineNumbers = 'off';
         } catch (e) {}
       })();
     </script>

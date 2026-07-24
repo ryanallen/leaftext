@@ -2,9 +2,9 @@
 
 # Leaf Text
 
-> A desktop reader for Markdown and TEI XML. Open a file. Read it.
+> A free desktop app for reading and editing Markdown and TEI XML. Open a file. Read it.
 
-![Leaf Text — Readable XML and Markdown](imgs/leaftext.png)
+![Leaf Text — a readable Markdown and TEI XML document open in the app](imgs/leaftext.png)
 
 <a href="https://github.com/ryanallen/leaftext/releases"><img alt="Download" src="https://img.shields.io/badge/download-latest-0ea5e9?style=flat&labelColor=4b5563"></a>
 <a href="https://github.com/ryanallen/leaftext/releases"><img alt="macOS" src="https://img.shields.io/badge/macOS-Universal-silver?style=flat&labelColor=4b5563"></a>
@@ -17,51 +17,45 @@
 
 ---
 
-**Leaf Text** opens your Markdown and TEI XML files to read, edit, and understand: a clean rendered view you can type straight into, and a [graph](docs/01-features/03-library.md#graph) that shows how your documents relate. Everything runs locally, on your own machine, with no account and no cloud.
+**Leaf Text** is a free desktop app for reading and editing [Markdown](docs/01-features/01-rendering.md) and [TEI XML](docs/01-features/01-rendering.md#tei-xml-84000-translations) on macOS, Windows, and Linux. It opens a local file into a clean, GitHub-accurate reading view you can type straight into, keeps your place with tabs and history, and maps how your documents relate in a [graph](docs/01-features/03-library.md#graph). Everything runs locally — no account, no cloud, no telemetry.
 
 ## Features
 
 ### Read Markdown and TEI XML
 
-![Leaf Text reading view rendering a Markdown document](imgs/feature-rendering.png)
-
 Open a `.md` file and Leaf Text renders it exactly as GitHub would — CommonMark and GitHub Flavored Markdown with the extras people actually use: [syntax-highlighted code](docs/01-features/01-rendering.md#code), [Mermaid diagrams](docs/01-features/01-rendering.md#mermaid-diagrams), [math](docs/01-features/01-rendering.md#math), [GitHub alerts](docs/01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](docs/01-features/01-rendering.md#footnotes), [emoji](docs/01-features/01-rendering.md#emoji), task lists, and [local images](docs/01-features/01-rendering.md#images). It also opens [84000-style TEI XML](docs/01-features/01-rendering.md#tei-xml-84000-translations) — the Buddhist-canon translation format — through a parallel renderer into the same clean reading view. **[Rendering →](docs/01-features/01-rendering.md)**
 
 ### Edit in place, save on your terms
 
-![Inline editing in the rendered page, with the green Save button](imgs/feature-editing.png)
+Reading-first, but editable. Click into a sentence in the rendered page and type, split and merge blocks with `Enter` and `Backspace`, or toggle a checkbox — the change is written back to the source at exactly that spot, with step-by-step [undo](docs/01-features/07-editing.md#undo). Prefer raw text? Drop to the [code view](docs/01-features/07-editing.md#code-view) for the file's actual Markdown or XML, with editor-style colouring of every delimiter. There's no autosave: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
 
-Reading-first, but editable. Click into a sentence in the rendered page and type, or toggle a checkbox — the change is written back to the source at exactly that spot. Prefer raw text? Drop to the [code view](docs/01-features/07-editing.md#code-view) for the file's actual Markdown or XML, with editor-style colouring of every delimiter. There's no autosave: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
+### Find every file, and see how they connect
 
-### Find every file
-
-![The library pane with the document graph view](imgs/feature-library.png)
-
-A left-side pane backed by a local SQLite index of every Markdown file you own — search it, or browse by Project, Tree, or All files. A [graph view](docs/01-features/03-library.md#graph) maps how your documents link to one another, so you can see the shape of your notes instead of just a list. **[Library →](docs/01-features/03-library.md)**
-
-### Stay oriented with the minimap
-
-![The minimap rail showing a scaled clone of the document](imgs/feature-minimap.png)
-
-A shrunken clone of the page in a side rail — real, tiny text, not abstract bars — with a live viewport indicator. Recognize where you are from the shape of the text itself, click any section to jump, or drag the indicator to scroll. **[Minimap →](docs/01-features/04-minimap.md)**
+A left-side pane backed by a local SQLite index of every Markdown file you own — [full-text search](docs/01-features/03-library.md) it, or browse by Project, Tree, or All files. A [graph view](docs/01-features/03-library.md#graph) maps how your documents link to one another, so you can see the shape of your notes instead of just a list. **[Library →](docs/01-features/03-library.md)**
 
 ### Navigate like a browser
 
-![Tabs and Back/Forward history in the app bar](imgs/feature-navigation.png)
+[Tabs](docs/01-features/02-navigation.md#tabs), Back/Forward [history](docs/01-features/02-navigation.md#history), a collapsible [outline](docs/01-features/02-navigation.md#outline) (table of contents) at the top of every document, in-document jumps, and a Previous/Next [pager](docs/01-features/05-settings.md#pager) that walks a folder in reading order. Save a file in your editor and Leaf Text [live-reloads](docs/01-features/02-navigation.md#reload) it, keeping your place. **[Navigation →](docs/01-features/02-navigation.md)**
 
-[Tabs](docs/01-features/02-navigation.md#tabs), Back/Forward [history](docs/01-features/02-navigation.md#history), in-document jumps, and scroll restoration after reloads. Save a file in your editor and Leaf Text [live-reloads](docs/01-features/02-navigation.md#reload) it, keeping your place. **[Navigation →](docs/01-features/02-navigation.md)**
+### Stay oriented with the minimap
+
+A shrunken clone of the page in a side rail — real, tiny text, not abstract bars — with a live viewport indicator. Recognize where you are from the shape of the text itself, click any section to jump, or drag the indicator to scroll. **[Minimap →](docs/01-features/04-minimap.md)**
+
+### Cite any block with a permalink
+
+Every block — heading, paragraph, list item, table, code fence — gets a stable address in a left-margin gutter. Click it to copy a deep link that lands on that exact spot, in both the app and on the website. Turn the gutter numbers on or off in Settings. **[Rendering →](docs/01-features/01-rendering.md)**
+
+### Read faster with Speed Reader
+
+An optional mode that dims prose and links and adds bold lead anchors at word starts, so the reading path pops against the page and your eye moves down it quickly. **[Settings →](docs/01-features/05-settings.md#speed-reader)**
 
 ### Make it yours
 
-![The same document across leaftext themes](imgs/feature-themes.png)
+Ten theme families — [Amaranth, Arabica, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) — each with light and dark variants plus System and Daylight appearance, applied through a semantic token contract so the reader, code, alerts, and minimap always stay visually consistent. Theme fonts load from Google Fonts on demand. **[Themes →](docs/01-features/06-themes.md)**
 
-Ten theme families — [Amaranth, Arabica, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) — each with light and dark variants plus System and Daylight appearance, applied through a semantic token contract so the reader, code, alerts, and minimap always stay visually consistent. Fonts load from Google Fonts on demand — nothing is bundled. **[Themes →](docs/01-features/06-themes.md)**
+### Settings that stick, in two languages
 
-### Settings that stick
-
-![The Leaf Text settings panel](imgs/feature-settings.png)
-
-Theme, speed reader, minimap, pager, indexing, library layout, window size, and interface language (English or Simplified Chinese) — stored locally and durable across restarts. **[Settings →](docs/01-features/05-settings.md)**
+Theme, Speed Reader, minimap, pager, gutter line numbers, reading-view editing, indexing, library layout, window size, and interface language (English or Simplified Chinese) — stored locally and durable across restarts. **[Settings →](docs/01-features/05-settings.md)**
 
 ## Documentation
 

@@ -791,6 +791,11 @@ body {
   font-variant-numeric: tabular-nums;
   vertical-align: baseline;
 }
+/* The digit is drawn from a data attribute, never a DOM text node, so a crawler
+   rendering the page can't scrape the gutter number into a search snippet. */
+.markdown-body .anchor-link-num::before {
+  content: attr(data-locus-num);
+}
 /* The "Line numbers" setting (off) hides the gutter permalink numbers. Blocks keep
    their ids and hidden locus aliases, so #locus deep links still resolve — only the
    visible number goes away. */

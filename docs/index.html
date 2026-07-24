@@ -10,6 +10,8 @@
     <link rel="canonical" href="https://leaftext.com/docs/" />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#0d1117" />
+    <link rel="icon" type="image/png" href="/assets/leaf-icon.png" />
+    <link rel="apple-touch-icon" href="/assets/leaf-icon.png" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Leaf Text" />
     <meta property="og:title" content="Leaf Text — Documentation" />
@@ -46,6 +48,7 @@
           if (s.getItem('leaf.minimap') === '0') d.dataset.minimap = 'off';
           if (s.getItem('leaf.library') === '0') d.dataset.library = 'off';
           if (s.getItem('leaf.speedReader') === '1') d.dataset.speedReader = 'true';
+          if (s.getItem('leaf.lineNumbers') !== '1') d.dataset.lineNumbers = 'off';
         } catch (e) {}
       })();
     </script>
