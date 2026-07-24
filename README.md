@@ -57,13 +57,14 @@ Every block — heading, paragraph, list item, table, code fence — gets a stab
 
 ### Read faster with Speed Reader
 
-![Speed Reader dimming prose and adding bold lead anchors](imgs/feature-speed-reader.png)
+![Speed Reader dimming prose and adding bold lead anchors](imgs/speedreader.png)
 
 An optional mode that dims prose and links and adds bold lead anchors at word starts, so the reading path pops against the page and your eye moves down it quickly. **[Settings →](docs/01-features/05-settings.md#speed-reader)**
 
 ### Make it yours
 
-![The same document across Leaf Text themes](imgs/feature-themes.png)
+![Amaranth theme](imgs/amaranth.png)
+
 
 Ten theme families — [Amaranth, Arabica, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) — each with light and dark variants plus System and Daylight appearance, applied through a semantic token contract so the reader, code, alerts, and minimap always stay visually consistent. Theme fonts load from Google Fonts on demand. **[Themes →](docs/01-features/06-themes.md)**
 
