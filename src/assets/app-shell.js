@@ -823,6 +823,8 @@ function applyPaneLayout() {
   // The lead grows/shrinks with the rail, changing how much room the actions
   // have — re-evaluate the overflow fold.
   refitAppBar();
+  // Opening, closing, or re-clamping the pane changes the breadcrumb's room too.
+  scheduleCrumbFit();
 }
 // The panel button in the app bar toggles the library: closed → open at the
 // default width (never the sliver it was dragged to before snapping shut), open
@@ -849,6 +851,8 @@ function applyPendingDividerWidth() {
     libraryShell.style.setProperty('--library-width', libraryWidth + 'px');
     // Push the header's tab rail live so the tabs track the pane during the drag.
     document.documentElement.style.setProperty('--library-rail-width', libraryWidth + 'px');
+    // The breadcrumb shows as much of the path as fits, so it refits mid-drag.
+    scheduleCrumbFit();
   }
 }
 function endDividerDrag() {
@@ -1121,37 +1125,181 @@ function bindLibraryRows() {
   });
 }
 // The breadcrumb: the library root, then one crumb per folder entered, the last
-// being where you are. A deep path keeps its root and last two folders, eliding
-// the middle behind a "…" that names what it swallowed.
-const CRUMB_SEGMENT_MAX = 4;
+// being where you are. How many crumbs show is measured against the band's real
+// width, not a fixed count — widening the pane reveals more of the path. What
+// doesn't fit collapses into a "…" button that opens a menu of the folders it
+// swallowed, so a deep path is still one click from any ancestor.
 function crumbSegments(chain) {
-  const segments = [{ path: '', name: window.leafLocale.t('library.title') }]
+  return [{ path: '', name: window.leafLocale.t('library.title') }]
     .concat(chain.map((node) => ({ path: node.path, name: node.name || node.path })));
-  if (segments.length <= CRUMB_SEGMENT_MAX) return segments;
-  const hidden = segments.slice(1, segments.length - 2).map((segment) => segment.name);
-  return [segments[0], { elided: true, name: hidden.join(' › ') }].concat(segments.slice(-2));
+}
+// The chain the trail is currently drawing, kept so a resize can refit without
+// re-walking the tree.
+let libraryCrumbChain = [];
+const CRUMB_SEP_HTML = '<span class="library-crumb-sep" aria-hidden="true">›</span>';
+function crumbHtml(segment, current) {
+  if (current) {
+    return `<span class="library-crumb is-current" aria-current="true" title="${escapeAttr(segment.path || segment.name)}">${escapeText(segment.name)}</span>`;
+  }
+  const enter = escapeAttr(window.leafLocale.t('library.crumbs.enter', { name: segment.name }));
+  return `<button type="button" class="library-crumb" data-crumb-path="${escapeAttr(segment.path)}" title="${enter}">${escapeText(segment.name)}</button>`;
+}
+function crumbElisionHtml(hidden) {
+  const names = hidden.map((segment) => segment.name);
+  const label = escapeAttr(window.leafLocale.t('library.crumbs.more', { names: names.join(' › ') }));
+  return `<button type="button" class="library-crumb is-elided" data-crumb-more="1" title="${label}" aria-label="${label}" aria-haspopup="menu" aria-expanded="false">…</button>`;
+}
+// Lay the trail out for a pane of this width. One measuring pass renders every
+// crumb (plus the "…" button, so its cost is known) with shrinking disabled and
+// reads the natural widths; the fit is then arithmetic, and the final markup is
+// written once. Both writes happen inside the same task, so nothing intermediate
+// paints.
+function fitLibraryCrumbs() {
+  if (!libraryCrumbTrail || libraryView === 'graph') return;
+  const segments = crumbSegments(libraryCrumbChain);
+  const last = segments.length - 1;
+  const fullHtml = segments.map((segment, index) => crumbHtml(segment, index === last)).join(CRUMB_SEP_HTML);
+  let hidden = [];
+  let shown = segments;
+  // Measure with shrinking off and the "…" in the row, so every box reports the
+  // width it actually wants. A closed pane measures zero — draw the whole path and
+  // let the reopen (which resizes the band) refit it.
+  libraryCrumbTrail.classList.add('is-measuring');
+  libraryCrumbTrail.innerHTML = fullHtml + CRUMB_SEP_HTML + crumbElisionHtml([]);
+  const avail = libraryCrumbTrail.clientWidth;
+  const parts = Array.from(libraryCrumbTrail.children);
+  const widthOf = (el) => (el ? el.getBoundingClientRect().width : 0);
+  const crumbWidths = segments.map((_, index) => widthOf(parts[index * 2]));
+  const sepWidth = widthOf(parts[1]);
+  const moreWidth = widthOf(parts[parts.length - 1]);
+  const gap = parseFloat(getComputedStyle(libraryCrumbTrail).columnGap) || 0;
+  libraryCrumbTrail.classList.remove('is-measuring');
+  // Width of a row of boxes: the boxes plus the gaps between them.
+  const rowWidth = (boxes) => boxes.reduce((sum, w) => sum + w, 0) + Math.max(0, boxes.length - 1) * gap;
+  const full = rowWidth(crumbWidths.flatMap((w, index) => (index ? [sepWidth, w] : [w])));
+  if (avail > 0 && segments.length > 2 && full > avail) {
+    // Root and current folder always stay. Between them, keep as many of the
+    // nearest ancestors as fit behind the "…" — at least the current folder, which
+    // shrinks with an ellipsis of its own if even that overruns.
+    let keep = 1;
+    for (let first = segments.length - 2; first >= 2; first -= 1) {
+      const tail = segments.slice(first);
+      const boxes = [crumbWidths[0], sepWidth, moreWidth]
+        .concat(tail.flatMap((_, i) => [sepWidth, crumbWidths[first + i]]));
+      if (rowWidth(boxes) > avail) break;
+      keep = segments.length - first;
+    }
+    hidden = segments.slice(1, segments.length - keep);
+    shown = segments.slice(segments.length - keep);
+  }
+  const rendered = shown.map((segment, index) => crumbHtml(segment, index === shown.length - 1));
+  libraryCrumbTrail.innerHTML = hidden.length
+    ? [crumbHtml(segments[0], false), crumbElisionHtml(hidden)].concat(rendered).join(CRUMB_SEP_HTML)
+    : rendered.join(CRUMB_SEP_HTML);
+  libraryCrumbTrail.querySelectorAll('[data-crumb-path]').forEach((crumb) => {
+    crumb.addEventListener('click', () => setLibraryFolder(crumb.dataset.crumbPath));
+  });
+  const more = libraryCrumbTrail.querySelector('[data-crumb-more]');
+  if (more) {
+    more.addEventListener('click', (event) => {
+      event.stopPropagation();
+      toggleCrumbMenu(more, hidden);
+    });
+  }
 }
 function renderLibraryCrumbs(chain) {
   if (!libraryCrumbTrail) return;
+  hideCrumbMenu();
   if (libraryView === 'graph') {
     libraryCrumbTrail.innerHTML = `<span class="library-crumb is-current">${escapeText(window.leafLocale.t('library.view.graph'))}</span>`;
     return;
   }
-  const segments = crumbSegments(chain);
-  libraryCrumbTrail.innerHTML = segments.map((segment, index) => {
-    if (segment.elided) {
-      return `<span class="library-crumb is-elided" title="${escapeAttr(segment.name)}">…</span>`;
-    }
-    if (index === segments.length - 1) {
-      return `<span class="library-crumb is-current" aria-current="true" title="${escapeAttr(segment.path || segment.name)}">${escapeText(segment.name)}</span>`;
-    }
-    const enter = escapeAttr(window.leafLocale.t('library.crumbs.enter', { name: segment.name }));
-    return `<button type="button" class="library-crumb" data-crumb-path="${escapeAttr(segment.path)}" title="${enter}">${escapeText(segment.name)}</button>`;
-  }).join('<span class="library-crumb-sep" aria-hidden="true">›</span>');
-  libraryCrumbTrail.querySelectorAll('[data-crumb-path]').forEach((crumb) => {
-    crumb.addEventListener('click', () => setLibraryFolder(crumb.dataset.crumbPath));
+  libraryCrumbChain = chain;
+  fitLibraryCrumbs();
+}
+// The elided folders, as a menu under the "…". Same chrome as the file
+// right-click menu; each item enters that folder.
+const crumbMenu = document.createElement('div');
+crumbMenu.className = 'context-menu crumb-menu';
+crumbMenu.hidden = true;
+crumbMenu.setAttribute('role', 'menu');
+document.body.appendChild(crumbMenu);
+let crumbMenuOwner = null;
+function hideCrumbMenu() {
+  if (crumbMenu.hidden) return;
+  // Hand focus back to the "…" before hiding, or it would be stranded on a
+  // hidden item and keyboard travel would restart from the top of the page.
+  const returnFocus = crumbMenu.contains(document.activeElement);
+  crumbMenu.hidden = true;
+  if (crumbMenuOwner) {
+    crumbMenuOwner.setAttribute('aria-expanded', 'false');
+    if (returnFocus && crumbMenuOwner.isConnected) crumbMenuOwner.focus();
+  }
+  crumbMenuOwner = null;
+}
+function toggleCrumbMenu(button, hidden) {
+  if (!crumbMenu.hidden && crumbMenuOwner === button) {
+    hideCrumbMenu();
+    return;
+  }
+  hideCrumbMenu();
+  if (!hidden.length) return;
+  crumbMenu.textContent = '';
+  for (const segment of hidden) {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'context-menu-item crumb-menu-item';
+    item.setAttribute('role', 'menuitem');
+    item.title = segment.path || segment.name;
+    item.innerHTML = `${FOLDER_ICON_SVG}<span class="crumb-menu-label"></span>`;
+    item.querySelector('.crumb-menu-label').textContent = segment.name;
+    item.addEventListener('click', (event) => {
+      event.stopPropagation();
+      hideCrumbMenu();
+      setLibraryFolder(segment.path);
+    });
+    crumbMenu.appendChild(item);
+  }
+  crumbMenuOwner = button;
+  button.setAttribute('aria-expanded', 'true');
+  crumbMenu.hidden = false;
+  const anchor = button.getBoundingClientRect();
+  const left = Math.max(8, Math.min(anchor.left, window.innerWidth - crumbMenu.offsetWidth - 8));
+  const top = Math.max(8, Math.min(anchor.bottom + 4, window.innerHeight - crumbMenu.offsetHeight - 8));
+  crumbMenu.style.left = left + 'px';
+  crumbMenu.style.top = top + 'px';
+  const first = crumbMenu.querySelector('.context-menu-item');
+  if (first) first.focus();
+}
+window.addEventListener('click', (event) => {
+  if (!crumbMenu.contains(event.target)) hideCrumbMenu();
+});
+window.addEventListener('blur', hideCrumbMenu);
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') hideCrumbMenu();
+});
+// The band's width changes with a divider drag, a window resize, and the pane
+// opening — all of which change how much of the path fits. One rAF-throttled
+// refit covers every case.
+let crumbFitFrame = 0;
+function scheduleCrumbFit() {
+  if (crumbFitFrame) return;
+  crumbFitFrame = requestAnimationFrame(() => {
+    crumbFitFrame = 0;
+    hideCrumbMenu();
+    fitLibraryCrumbs();
   });
 }
+// Every pane-width change calls scheduleCrumbFit itself (the divider drag and
+// applyPaneLayout) — a ResizeObserver here proved unreliable in the web view,
+// delivering its first observation and nothing after. Keep one anyway, on the band
+// rather than the trail (the band's width comes from the pane, so a refit can't
+// feed back into what it measures), for the widths nothing else announces: a
+// zoom change, or a font arriving late and re-measuring every crumb.
+if (typeof ResizeObserver !== 'undefined' && libraryCrumbTrail && libraryCrumbTrail.parentElement) {
+  new ResizeObserver(scheduleCrumbFit).observe(libraryCrumbTrail.parentElement);
+}
+window.addEventListener('resize', scheduleCrumbFit);
 function renderLibraryGraphToggle() {
   if (!libraryGraphToggle) return;
   const on = libraryView === 'graph';

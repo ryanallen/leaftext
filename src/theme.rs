@@ -1931,9 +1931,45 @@ body.library-resizing {
   background: transparent;
   color: var(--app-foreground);
 }
+/* The "…" standing in for the folders that didn't fit. A real button: it opens a
+   menu of what it swallowed (see .crumb-menu). */
 .library-crumb.is-elided {
-  padding: 1px 2px;
-  cursor: default;
+  padding: 1px 3px;
+  cursor: pointer;
+}
+.library-crumb.is-elided[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--app-muted-foreground) 16%, transparent);
+  color: var(--app-foreground);
+}
+/* While the trail measures how much of the path fits, nothing shrinks or clips —
+   every crumb reports the width it actually wants. Held for one synchronous pass
+   inside a single task, so this state never paints. */
+.library-crumb-trail.is-measuring .library-crumb {
+  flex: 0 0 auto;
+  max-width: none;
+}
+/* The elided folders, listed under the "…". Rows carry a folder icon, so they read
+   as places rather than commands. */
+.crumb-menu {
+  min-width: 132px;
+  max-width: 300px;
+}
+.crumb-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.crumb-menu-item .library-folder-icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--app-muted-foreground);
+}
+.crumb-menu-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .library-crumb-sep {
   flex: none;

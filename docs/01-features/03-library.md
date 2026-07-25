@@ -9,7 +9,7 @@ The library is the part of leaftext that helps you find documents, not just read
 | Feature | What you get |
 | --- | --- |
 | Project view | One folder at a time, with a breadcrumb showing where you are (the default view) |
-| Breadcrumb | The folder path above the search box; every crumb steps back out to that level |
+| Breadcrumb | The folder path above the search box; every crumb steps back out to that level, and what does not fit collapses into a `…` menu |
 | Graph view | A force-directed map of how your documents link to each other, toggled by an icon |
 | Search | Filename and content search, scoped to the folder the pane is showing |
 | File actions | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
@@ -29,7 +29,7 @@ flowchart LR
 The file list. Folders are entered one at a time, so the pane shows one folder's contents rather than a whole hierarchy at once.
 
 - Click a folder row — or its `›` chevron — to go into it.
-- The **breadcrumb** above the search box is the path you are on: `Library › docs › features`. Click any crumb to step back out to that level. A long path keeps its root and last two folders and elides the middle behind a `…` that names what it swallowed.
+- The **breadcrumb** above the search box is the path you are on: `Library › docs › features`. Click any crumb to step back out to that level. It shows as much of the path as fits the band, so widening the pane reveals more crumbs and dragging the divider refits it mid-drag. Whatever does not fit collapses behind a `…` button that opens a menu of the skipped folders; pick one to enter it.
 - Folders sort before files, each alphabetized. Folders with no indexed documents are pruned.
 - Opening a file moves the pane into that file's folder and highlights the row, so the pane always shows where the document you are reading lives.
 - The folder you are in is saved, so a restart reopens it. If a rescan drops that folder, the pane falls back to the library root.

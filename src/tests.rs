@@ -6217,6 +6217,7 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
         "library.view.graph.off",
         "library.crumbs.label",
         "library.crumbs.enter",
+        "library.crumbs.more",
         "library.scanning",
         "library.filesFound",
         "library.empty",
@@ -6352,7 +6353,24 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     // you are. A deep path elides its middle rather than overflowing the pane.
     assert!(html.contains("setLibraryFolder(crumb.dataset.crumbPath)"));
     assert!(html.contains(r#"class="library-crumb is-current" aria-current="true""#));
-    assert!(html.contains("const CRUMB_SEGMENT_MAX = 4;"));
+    // How much of the path shows is measured against the band, so widening the
+    // pane reveals more crumbs; a resize refits.
+    assert!(html.contains("function fitLibraryCrumbs()"));
+    assert!(html.contains("libraryCrumbTrail.classList.add('is-measuring')"));
+    // Every width change asks for the refit outright — a ResizeObserver alone
+    // delivered its first observation in the web view and nothing after, so a
+    // divider drag never re-fit the trail.
+    assert!(html.contains("document.documentElement.style.setProperty('--library-rail-width', libraryWidth + 'px');\n    // The breadcrumb shows as much of the path as fits, so it refits mid-drag.\n    scheduleCrumbFit();"));
+    assert!(html.contains("refitAppBar();\n  // Opening, closing, or re-clamping the pane changes the breadcrumb's room too.\n  scheduleCrumbFit();"));
+    assert!(html.contains("window.addEventListener('resize', scheduleCrumbFit);"));
+    assert!(html.contains("new ResizeObserver(scheduleCrumbFit)"));
+    assert!(css.contains(".library-crumb-trail.is-measuring .library-crumb {"));
+    // What didn't fit hides behind a "…" button that opens a menu of those
+    // folders; picking one enters it.
+    assert!(html.contains("data-crumb-more=\"1\""));
+    assert!(html.contains("function toggleCrumbMenu(button, hidden)"));
+    assert!(html.contains("setLibraryFolder(segment.path)"));
+    assert!(css.contains(".crumb-menu {"));
     // Entering a folder is the same move as a crumb, so both go through one path.
     assert!(html.contains(
         "button.addEventListener('click', () => setLibraryFolder(button.dataset.navInto));"
