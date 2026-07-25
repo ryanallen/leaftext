@@ -71,31 +71,114 @@
             </Component>
         </DirectoryRef>
 
+        <!-- One feature, nothing optional, so there is no customize screen. -->
         <Feature
             Id='MainFeature'
             Title='Application'
             Description='Installs [ProductName].'
             Level='1'
-            ConfigurableDirectory='APPLICATIONFOLDER'
             AllowAdvertise='no'
-            Display='expand'
             Absent='disallow'>
             <ComponentRef Id='MainExecutable'/>
-            <Feature
-                Id='StartMenuShortcut'
-                Title='Start Menu Shortcut'
-                Description='Create a [ProductName] shortcut in the Start Menu.'
-                Level='1'
-                Absent='allow'>
-                <ComponentRef Id='ApplicationStartMenuShortcut'/>
-            </Feature>
+            <ComponentRef Id='ApplicationStartMenuShortcut'/>
         </Feature>
 
         <SetProperty Id='ARPINSTALLLOCATION' Value='[APPLICATIONFOLDER]' After='CostFinalize'/>
         <Property Id='ARPHELPLINK' Value='https://github.com/ryanallen/leaftext'/>
 
+        <!-- The leaf icon for Installed Apps / Add-Remove Programs. -->
+        <Icon Id='leaftext.ico' SourceFile='src\assets\leaf.ico'/>
+        <Property Id='ARPPRODUCTICON' Value='leaftext.ico'/>
+
+        <!-- Exactly one screen: pick the folder, then install. No stock WixUI
+             set is used because each one hardcodes a wizard around its dialogs
+             (WixUI_InstallDir wraps the folder picker in welcome, license, and
+             confirm screens; the license screen is where the placeholder lorem
+             ipsum RTF came from). Stock dialogs self-sequence, so referencing
+             only the folder dialog plus support dialogs leaves the rest out of
+             the MSI entirely.
+
+             The dialog is WiX's InstallDirDlg minus the Back button (nothing
+             precedes it) and the banner bitmap, with Install in place of Next. -->
         <UI>
-            <UIRef Id='WixUI_FeatureTree'/>
+            <UIRef Id='WixUI_Common'/>
+
+            <TextStyle Id='WixUI_Font_Normal' FaceName='Tahoma' Size='8'/>
+            <TextStyle Id='WixUI_Font_Bigger' FaceName='Tahoma' Size='12'/>
+            <TextStyle Id='WixUI_Font_Title' FaceName='Tahoma' Size='9' Bold='yes'/>
+            <Property Id='DefaultUIFont' Value='WixUI_Font_Normal'/>
+
+            <!-- Names the directory the path editor edits, indirectly. -->
+            <Property Id='WIXUI_INSTALLDIR' Value='APPLICATIONFOLDER'/>
+
+            <!-- Support dialogs: progress, plus browse, failure, cancel,
+                 resume, and locked-file prompts. -->
+            <DialogRef Id='PrepareDlg'/>
+            <DialogRef Id='ProgressDlg'/>
+            <DialogRef Id='BrowseDlg'/>
+            <DialogRef Id='InvalidDirDlg'/>
+            <DialogRef Id='CancelDlg'/>
+            <DialogRef Id='DiskCostDlg'/>
+            <DialogRef Id='ErrorDlg'/>
+            <DialogRef Id='FatalError'/>
+            <DialogRef Id='UserExit'/>
+            <DialogRef Id='ResumeDlg'/>
+            <DialogRef Id='FilesInUse'/>
+            <DialogRef Id='MsiRMFilesInUse'/>
+
+            <Dialog Id='LeafInstallDirDlg' Width='370' Height='270' Title='!(loc.InstallDirDlg_Title)'>
+                <Control Id='Title' Type='Text' X='15' Y='6' Width='200' Height='15'
+                         NoPrefix='yes' Text='!(loc.InstallDirDlgTitle)'/>
+                <Control Id='Description' Type='Text' X='25' Y='23' Width='280' Height='15'
+                         NoPrefix='yes' Text='Choose where to install [ProductName].'/>
+                <Control Id='BannerLine' Type='Line' X='0' Y='44' Width='370' Height='0'/>
+
+                <Control Id='FolderLabel' Type='Text' X='20' Y='60' Width='290' Height='30'
+                         NoPrefix='yes' Text='!(loc.InstallDirDlgFolderLabel)'/>
+                <Control Id='Folder' Type='PathEdit' X='20' Y='100' Width='320' Height='18'
+                         Property='WIXUI_INSTALLDIR' Indirect='yes'/>
+                <Control Id='ChangeFolder' Type='PushButton' X='20' Y='120' Width='56' Height='17'
+                         Text='!(loc.InstallDirDlgChange)'/>
+
+                <Control Id='BottomLine' Type='Line' X='0' Y='234' Width='370' Height='0'/>
+                <Control Id='Install' Type='PushButton' ElevationShield='yes'
+                         X='212' Y='243' Width='80' Height='17' Default='yes'
+                         Text='!(loc.VerifyReadyDlgInstall)'/>
+                <Control Id='Cancel' Type='PushButton' X='304' Y='243' Width='56' Height='17'
+                         Cancel='yes' Text='!(loc.WixUICancel)'>
+                    <Publish Event='SpawnDialog' Value='CancelDlg'>1</Publish>
+                </Control>
+            </Dialog>
+
+            <!-- Change... opens the browse dialog on the current path. -->
+            <Publish Dialog='LeafInstallDirDlg' Control='ChangeFolder'
+                     Property='_BrowseProperty' Value='[WIXUI_INSTALLDIR]' Order='1'>1</Publish>
+            <Publish Dialog='LeafInstallDirDlg' Control='ChangeFolder'
+                     Event='SpawnDialog' Value='BrowseDlg' Order='2'>1</Publish>
+
+            <!-- Install: set the path, validate, then run unless it is bad. -->
+            <Publish Dialog='LeafInstallDirDlg' Control='Install'
+                     Event='SetTargetPath' Value='[WIXUI_INSTALLDIR]' Order='1'>1</Publish>
+            <Publish Dialog='LeafInstallDirDlg' Control='Install'
+                     Event='DoAction' Value='WixUIValidatePath' Order='2'>NOT WIXUI_DONTVALIDATEPATH</Publish>
+            <Publish Dialog='LeafInstallDirDlg' Control='Install'
+                     Event='SpawnDialog' Value='InvalidDirDlg' Order='3'><![CDATA[NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID<>"1"]]></Publish>
+            <Publish Dialog='LeafInstallDirDlg' Control='Install'
+                     Event='EndDialog' Value='Return' Order='4'>WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID="1"</Publish>
+
+            <!-- Stock browse-dialog path validation. -->
+            <Publish Dialog='BrowseDlg' Control='OK'
+                     Event='DoAction' Value='WixUIValidatePath' Order='3'>1</Publish>
+            <Publish Dialog='BrowseDlg' Control='OK'
+                     Event='SpawnDialog' Value='InvalidDirDlg' Order='4'><![CDATA[NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID<>"1"]]></Publish>
+
+            <!-- Only fresh installs get a screen; uninstall and repair are silent. -->
+            <InstallUISequence>
+                <Show Dialog='LeafInstallDirDlg' Before='ProgressDlg'>NOT Installed</Show>
+            </InstallUISequence>
         </UI>
+
+        <!-- No maintenance UI, so hide the Modify button in Installed Apps. -->
+        <Property Id='ARPNOMODIFY' Value='1'/>
     </Product>
 </Wix>
