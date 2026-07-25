@@ -2996,6 +2996,12 @@ fn app_shell_stays_well_under_navigate_to_string_budget() {
          NavigateToString safety budget; do not inline large CSS/JS into the shell — \
          serve it over the leaf-asset:// protocol instead"
     );
+    // NavigateToString takes a NUL-terminated wide string, so one stray NUL in a
+    // string literal truncates the page there: a blank frame, no window controls.
+    assert!(
+        !html.contains('\0'),
+        "app shell contains a NUL byte; NavigateToString would truncate the page there"
+    );
 }
 
 #[test]
@@ -6371,6 +6377,10 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     assert!(html.contains("function toggleCrumbMenu(button, hidden)"));
     assert!(html.contains("setLibraryFolder(segment.path)"));
     assert!(css.contains(".crumb-menu {"));
+    // A fit that would draw the same crumbs at the same width leaves the DOM alone,
+    // or an indexer push would rebuild the trail under an open "…" menu.
+    assert!(html.contains("function crumbFitKey(segments)"));
+    assert!(html.contains("if (key === libraryCrumbFitKey) return;"));
     // Entering a folder is the same move as a crumb, so both go through one path.
     assert!(html.contains(
         "button.addEventListener('click', () => setLibraryFolder(button.dataset.navInto));"

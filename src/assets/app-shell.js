@@ -1149,6 +1149,13 @@ function crumbElisionHtml(hidden) {
   const label = escapeAttr(window.leafLocale.t('library.crumbs.more', { names: names.join(' › ') }));
   return `<button type="button" class="library-crumb is-elided" data-crumb-more="1" title="${label}" aria-label="${label}" aria-haspopup="menu" aria-expanded="false">…</button>`;
 }
+// What the trail was last laid out for. The library re-renders on every indexer
+// push, and rebuilding the crumbs threw away the "…" an open menu hangs off.
+let libraryCrumbFitKey = null;
+function crumbFitKey(segments) {
+  return segments.map((segment) => segment.path + '>' + segment.name).join('|')
+    + '@' + libraryCrumbTrail.clientWidth;
+}
 // Lay the trail out for a pane of this width. One measuring pass renders every
 // crumb (plus the "…" button, so its cost is known) with shrinking disabled and
 // reads the natural widths; the fit is then arithmetic, and the final markup is
@@ -1157,10 +1164,16 @@ function crumbElisionHtml(hidden) {
 function fitLibraryCrumbs() {
   if (!libraryCrumbTrail || libraryView === 'graph') return;
   const segments = crumbSegments(libraryCrumbChain);
+  // The trail fills the band whatever is in it, so its width keys the fit safely.
+  const key = crumbFitKey(segments);
+  if (key === libraryCrumbFitKey) return;
+  libraryCrumbFitKey = key;
   const last = segments.length - 1;
   const fullHtml = segments.map((segment, index) => crumbHtml(segment, index === last)).join(CRUMB_SEP_HTML);
   let hidden = [];
   let shown = segments;
+  // Past here the trail is rebuilt, so an open menu loses the "…" it hangs off.
+  hideCrumbMenu();
   // Measure with shrinking off and the "…" in the row, so every box reports the
   // width it actually wants. A closed pane measures zero — draw the whole path and
   // let the reopen (which resizes the band) refit it.
@@ -1209,9 +1222,11 @@ function fitLibraryCrumbs() {
 }
 function renderLibraryCrumbs(chain) {
   if (!libraryCrumbTrail) return;
-  hideCrumbMenu();
   if (libraryView === 'graph') {
+    hideCrumbMenu();
     libraryCrumbTrail.innerHTML = `<span class="library-crumb is-current">${escapeText(window.leafLocale.t('library.view.graph'))}</span>`;
+    // The graph took the band over; the next file-list render starts from scratch.
+    libraryCrumbFitKey = null;
     return;
   }
   libraryCrumbChain = chain;
@@ -1286,7 +1301,6 @@ function scheduleCrumbFit() {
   if (crumbFitFrame) return;
   crumbFitFrame = requestAnimationFrame(() => {
     crumbFitFrame = 0;
-    hideCrumbMenu();
     fitLibraryCrumbs();
   });
 }
