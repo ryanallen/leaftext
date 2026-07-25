@@ -98,6 +98,9 @@
     </div>
     </div>
   </div>
+  <!-- The card's top-right corner, where the bar's divider turns down into the
+       card's right border. See .reader-corner. -->
+  <div class="reader-corner reader-corner-tr" aria-hidden="true"></div>
 </header>
 <div id="libraryShell" class="library-shell">
 <aside id="libraryPane" class="library-pane">
@@ -122,6 +125,10 @@
     </div>
   </div>
   <div id="libraryDivider" class="library-divider" data-i18n-title="library.divider.resize" title="Resize library" role="separator" aria-orientation="vertical"></div>
+  <!-- The card's top-left corner. A child of the pane so it is placed by the same
+       grid line as the card's left border and can't drift off it. See
+       .reader-corner. -->
+  <div class="reader-corner reader-corner-tl" aria-hidden="true"></div>
 </aside>
 <main id="app" class="reader-shell"></main>
 <div id="readerLoading" class="reader-loading" role="status" aria-live="polite" data-i18n-aria-label="reader.loading" aria-label="Loading document…" hidden>

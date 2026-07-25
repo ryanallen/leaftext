@@ -6053,7 +6053,7 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
 
     // CSS: the collapsed-grid override and the divider hit target.
     assert!(css.contains(
-        ".library-shell.library-closed {\n  grid-template-columns: 0 minmax(0, 1fr);\n}"
+        ".library-shell.library-closed {\n  grid-template-columns: 0 minmax(0, 1fr) var(--reader-gutter);\n}"
     ));
     assert!(css.contains(".library-divider {"));
     assert!(css.contains("cursor: col-resize;"));
@@ -6169,9 +6169,12 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
     let html = app_shell_html();
     let css = reading_mode_css();
 
-    // Layout: the two-column shell driven by the CSS variable.
+    // Layout: the shell driven by the CSS variable — rail, reader, and the gutter
+    // track that holds the reader off the window frame.
     assert!(html.contains(r#"<div id="libraryShell" class="library-shell">"#));
-    assert!(css.contains("grid-template-columns: var(--library-width, 240px) minmax(0, 1fr);"));
+    assert!(css.contains(
+        "grid-template-columns: var(--library-width, 240px) minmax(0, 1fr) var(--reader-gutter);"
+    ));
     assert!(html.contains(r#"<aside id="libraryPane" class="library-pane">"#));
     assert!(html.contains(r#"<div id="libraryTree" class="library-tree"></div>"#));
     assert!(html.contains(r#"id="libraryScanProgress""#));

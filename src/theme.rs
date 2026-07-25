@@ -796,6 +796,10 @@ pub(crate) fn reading_mode_css() -> &'static str {
   --leaf-radius-2xl: 14px;
   --leaf-radius-pill: 999px;
   --leaf-radius-full: 50%;
+  /* How far the reading surface is held off the window frame. The chrome shows
+     through the gap, so the page reads as a card floating on the bar's texture
+     rather than something bleeding off the edge of the glass. */
+  --reader-gutter: 8px;
   /* Elevation shadows by role, so overlays swap in one place. The resting card
      shadow stays per-theme as --shadow (from --leaf-shadow); these cover the
      overlays that were previously baked inline. */
@@ -887,8 +891,12 @@ body {
      document, while inactive tabs meet it with their own bottom border. */
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
+  /* Only as wide as the card below it, then a radius shorter again at each end:
+     .reader-corner-tl / -tr arc from there down into the card's side borders. A
+     pixel of overlap with each arc's tangent, so a rounding difference between the
+     boxes can't open a gap. */
+  left: calc(var(--reader-gutter) + var(--leaf-radius-md) - 1px);
+  right: calc(var(--reader-gutter) + var(--leaf-radius-md) - 1px);
   bottom: 0;
   height: 1px;
   background: var(--app-border);
@@ -897,11 +905,9 @@ body {
 .app-bar.has-rail::after {
   /* Don't run the reader divider across the library column: the rail is one
      unbroken surface from the window's top edge down through the file list, so a
-     line here would cut it in two. Start the divider a radius clear of the rail's
-     right edge; .library-pane::after arcs across that gap down to the pane's
-     vertical border, rounding the reader's top-left corner instead of meeting it
-     at a hard 90°. A pixel of overlap with the arc's top tangent, so a rounding
-     difference between the two boxes can't open a gap at the join. */
+     line here would cut it in two. Push the divider's start past the rail so
+     .reader-corner-tl, which sits on the rail's right edge, arcs down to the pane's
+     vertical border from there. */
   left: calc(var(--library-rail-width, 0px) + var(--leaf-radius-md) - 1px);
 }
 .app-bar-lead {
@@ -1545,14 +1551,25 @@ summary:focus-visible {
 }
 .library-shell {
   display: grid;
-  grid-template-columns: var(--library-width, 240px) minmax(0, 1fr);
+  /* A trailing column and a bottom row hold the reader off the window frame; the
+     rail spans both so only the page is inset. */
+  grid-template-columns: var(--library-width, 240px) minmax(0, 1fr) var(--reader-gutter);
+  grid-template-rows: minmax(0, 1fr) var(--reader-gutter);
   height: 100vh;
   /* Positioning context for the open-library button, pinned to the left edge so
      it stays reachable when the pane collapses to 0. */
   position: relative;
+  /* The chrome shade and grain again, on the same window-anchored lattice as the
+     bar and the rail. What shows here is the gutter the reader is held off the
+     window frame by (see --reader-gutter), so the texture runs unbroken from the
+     bar, down the rail, and around the page. */
+  background-color: var(--chrome-surface);
+  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-attachment: fixed;
 }
 .library-shell.library-closed {
-  grid-template-columns: 0 minmax(0, 1fr);
+  grid-template-columns: 0 minmax(0, 1fr) var(--reader-gutter);
 }
 .library-pane {
   /* Positioning context for the overlays it stacks (.library-scroll,
@@ -1564,6 +1581,10 @@ summary:focus-visible {
      whatever the path is, so entering a folder never shifts the list. */
   --library-crumbs-height: 28px;
   --library-chrome-height: calc(var(--library-app-bar) + var(--library-crumbs-height) + var(--library-header-height));
+  /* Down the whole window, through the reader's bottom gutter row: the rail runs
+     to the frame, only the page is held off it. */
+  grid-column: 1;
+  grid-row: 1 / -1;
   position: relative;
   height: 100vh;
   /* The app bar's shade and grain, so the pane continues the bar rather than
@@ -1576,51 +1597,72 @@ summary:focus-visible {
   color: var(--preview-foreground);
   font-family: var(--app-font);
   font-size: 13px;
-  /* Hairline in the outer border color marking the pane's right edge, so the
-     boundary against the reader is legible in every theme. */
-  border-right: 1px solid var(--app-border);
+  /* No right-edge hairline: the reader's own left border, flush against this
+     column, is the stroke that marks the boundary. */
 }
-/* The reader's top-left corner, where the app bar's divider meets this pane's
-   right hairline. Both are straight 1px lines, so they used to land in a hard 90°.
-   ::before fills the corner wedge with the chrome surface and grain (the reader's
-   quarter disc masked out of it, which also hides the few px of pane border the
-   arc stands in for); ::after strokes the arc across it, at the same rounding the
-   search field carries.
-   Anchored to the pane's own padding box (left: 100%, i.e. the inner edge of its
-   right border) rather than to --library-rail-width: a fractional pane width
-   rounds to different device pixels in different containing blocks, which left the
-   arc a pixel off the border it is supposed to continue. */
-.library-pane::before,
-.library-pane::after {
-  content: "";
+/* The card's two top corners, where the app bar's divider turns down into the
+   card's side borders. The card can't round these itself: its top is square and
+   tucked under the bar, so the visible corner falls at the bar's bottom edge.
+   Each element covers the junction with the chrome surface and grain, masks the
+   page's quarter disc back out of it (which also hides the few px of straight
+   border the arc stands in for), and strokes the arc over the join with ::after.
+   The bottom corners need none of this — the card rounds those itself.
+   .reader-corner-tl is a child of .library-pane and hangs off `left: 100%`, the
+   grid line the card's left border starts on, rather than off
+   --library-rail-width: a fractional pane width rounds to different device pixels
+   in different containing blocks, which left the arc a pixel off the border it is
+   meant to continue. */
+.reader-corner {
+  /* Where the mask cuts the page back out: a half pixel inside the arc's inner
+     edge, so the stroke (which the mask also covers, being a child) survives whole
+     instead of having its inner edge nibbled off. */
+  --reader-corner-cut: calc(var(--leaf-radius-md) - 0.5px);
   position: absolute;
-  /* Over the app bar (z-index 10), whose grain the wedge has to sit on top of. */
+  /* Over the app bar (z-index 10), whose grain the top corners sit on. */
   z-index: 11;
-  top: calc(var(--library-app-bar) - 1px);
-  left: 100%;
   width: calc(var(--leaf-radius-md) + 1px);
   height: calc(var(--leaf-radius-md) + 1px);
-  pointer-events: none;
-}
-.library-pane::before {
   background-color: var(--chrome-surface);
   background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
-  /* The same window-anchored lattice as every other grained surface, so the wedge
-     stays in phase with the bar and the pane around it. */
+  /* The same window-anchored lattice as every other grained surface, so a corner
+     stays in phase with the bar and pane around it. */
   background-attachment: fixed;
-  -webkit-mask-image: radial-gradient(circle at 100% 100%, transparent 0 var(--leaf-radius-md), #000 var(--leaf-radius-md));
-  mask-image: radial-gradient(circle at 100% 100%, transparent 0 var(--leaf-radius-md), #000 var(--leaf-radius-md));
+  pointer-events: none;
 }
-.library-pane::after {
-  border-top: 1px solid var(--app-border);
-  border-left: 1px solid var(--app-border);
+.reader-corner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 0 solid var(--app-border);
+}
+.reader-corner-tl {
+  top: calc(var(--library-app-bar) - 1px);
+  left: 100%;
+  -webkit-mask-image: radial-gradient(circle at 100% 100%, transparent 0 var(--reader-corner-cut), #000 var(--reader-corner-cut));
+  mask-image: radial-gradient(circle at 100% 100%, transparent 0 var(--reader-corner-cut), #000 var(--reader-corner-cut));
+}
+.reader-corner-tl::after {
+  border-top-width: 1px;
+  border-left-width: 1px;
   border-top-left-radius: calc(var(--leaf-radius-md) + 1px);
 }
-.library-shell.library-closed .library-pane::before,
-.library-shell.library-closed .library-pane::after {
-  /* No rail, no corner: the divider runs the full width. */
-  display: none;
+/* In the app bar, so it tracks the bar's bottom edge whether or not the frameless
+   window drops the bar's top border. */
+.reader-corner-tr {
+  top: calc(100% - 1px);
+  right: var(--reader-gutter);
+  -webkit-mask-image: radial-gradient(circle at 0 100%, transparent 0 var(--reader-corner-cut), #000 var(--reader-corner-cut));
+  mask-image: radial-gradient(circle at 0 100%, transparent 0 var(--reader-corner-cut), #000 var(--reader-corner-cut));
+}
+.reader-corner-tr::after {
+  border-top-width: 1px;
+  border-right-width: 1px;
+  border-top-right-radius: calc(var(--leaf-radius-md) + 1px);
+}
+.library-shell.library-closed .reader-corner-tl {
+  /* No rail to sit against: follow the card out to its left gutter. */
+  left: calc(100% + var(--reader-gutter));
 }
 .library-divider {
   /* An invisible grab strip straddling the pane's right edge, wide enough to
@@ -1633,11 +1675,6 @@ summary:focus-visible {
   z-index: 3;
   cursor: col-resize;
   touch-action: none;
-}
-.library-shell.library-closed .library-pane {
-  /* Drop the right-edge hairline when snapped shut, or it shows as a stray line
-     against the reader's left edge at 0 width. */
-  border-right: 0;
 }
 .library-shell.library-closed .library-divider {
   display: none;
@@ -2003,6 +2040,14 @@ body.library-resizing {
   color: var(--app-muted-foreground);
   font-size: 12px;
 }
+/* The page: a card on the chrome, held off the window frame by --reader-gutter on
+   the sides and the bottom so the bar's texture runs around it. Its own hairline
+   and bottom rounding draw three of the four edges; the top stays flush and
+   square, tucked under the bar, because the active tab has to read as joined to
+   the document there — the bar's ::after divider is that edge, and
+   .reader-corner-tl / -tr round where it turns the corner.
+   Against an open library there is no left gutter: the card sits flush on the
+   rail, and its left border is the stroke that marks the rail's edge. */
 .reader-shell {
   background: var(--preview-background);
   /* Pin the reader to its grid cell. Auto-placed, it gets evicted into the 0px
@@ -2011,7 +2056,11 @@ body.library-resizing {
      computation made while the spinner is up lands wrong. */
   grid-column: 2;
   grid-row: 1;
-  height: 100vh;
+  box-sizing: border-box;
+  border-left: 1px solid var(--app-border);
+  border-right: 1px solid var(--app-border);
+  border-bottom: 1px solid var(--app-border);
+  border-radius: 0 0 var(--leaf-radius-md) var(--leaf-radius-md);
   overflow: auto;
   /* The reader pins its own scroll anchor across re-renders; the browser's
      native scroll anchoring fights that and causes transient jumps. */
@@ -2020,6 +2069,11 @@ body.library-resizing {
   position: relative;
   scroll-padding-top: var(--app-bar-height);
   scrollbar-width: none;
+}
+.library-shell.library-closed .reader-shell,
+.library-shell.library-closed .reader-loading {
+  /* No rail to sit against, so the card is held off the left frame too. */
+  margin-left: var(--reader-gutter);
 }
 .reader-shell::-webkit-scrollbar {
   width: 0;
@@ -2034,6 +2088,10 @@ body.library-resizing {
   grid-row: 1;
   align-self: stretch;
   justify-self: stretch;
+  /* Same rounding as the card it covers (the gutter tracks inset it already), so
+     the wash doesn't spill past the page's corners. */
+  box-sizing: border-box;
+  border-radius: 0 0 var(--leaf-radius-md) var(--leaf-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3045,7 +3103,7 @@ body.library-resizing {
   min-width: 0;
   margin-right: var(--minimap-width);
   position: relative;
-  min-height: calc(100vh - var(--app-bar-height));
+  min-height: calc(100vh - var(--app-bar-height) - var(--reader-gutter) - 1px);
 }
 /* Here the document reserves the rail's space with margin, so the rail sits
    flush at the cell edge (the reading view bleeds it across padding instead). */
@@ -3387,7 +3445,10 @@ body.library-resizing {
   /* Bleed back across the reserved right padding so the rail stays flush to the
      reader's right edge. */
   margin-right: calc(-1 * (var(--reader-layout-padding-inline) + var(--minimap-width)));
-  z-index: 5;
+  /* Above the app bar (10) and .reader-corner-tr (11, inside the bar's stacking
+     context), which lands on the rail's own top-right corner and hid it. The rail
+     sticks below the bar and never overlaps it. Under the toast (20) and menus (30+). */
+  z-index: 12;
 }
 .document-minimap-track {
   box-sizing: border-box;
@@ -3440,6 +3501,8 @@ body.library-resizing {
   height: var(--minimap-viewport-height);
   min-height: 22px;
   border: 1px solid var(--minimap-viewport-border);
+  /* All four corners at the page card's rounding. */
+  border-radius: var(--leaf-radius-md);
   background: var(--minimap-viewport-background);
   pointer-events: none;
 }
