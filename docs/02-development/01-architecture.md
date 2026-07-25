@@ -9,7 +9,7 @@ leaftext is a single Rust binary that embeds a WebView (via `wry`) inside a nati
 | Crate                   | Role                                                 |
 | ----------------------- | ---------------------------------------------------- |
 | `tao`                   | Native windowing and event loop                      |
-| `wry`                   | WebView embedding (WKWebView / WebView2 / WebKitGTK) |
+| `wry`                   | WebView embedding (WKWebView / WebView2)             |
 | `pulldown-cmark`        | CommonMark + GFM Markdown parser                     |
 | `syntect` + `two-face`  | Syntax highlighting for code blocks                 |
 | `ammonia`               | HTML sanitization (allowlist-based)                  |
@@ -17,9 +17,11 @@ leaftext is a single Rust binary that embeds a WebView (via `wry`) inside a nati
 | `rfd`                   | Native file dialogs                                  |
 | `serde` / `serde_json`  | IPC message serialization                            |
 | `notify-debouncer-mini` | Filesystem watcher for live reload                   |
-| `blake3`                | File content hashing in the indexer                  |
+| `blake3`                | Content hashing: change detection in the indexer, and verifying update downloads |
 | `roxmltree`             | Read-only XML DOM parsing for TEI and other XML      |
-| `windows-sys` (Windows) | Named mutex + pipe for the single-instance guard     |
+| `windows-sys` (Windows) | Win32 calls: single-instance guard, clipboard, Recycle Bin, installer queries |
+
+The list is deliberately short. Clipboard, Recycle Bin, per-user data paths, and update downloads are all done against the platform rather than through a crate — see [Dependencies](../../AGENTS.md) for the standing policy, and `src/platform.rs` for where the native code lives.
 
 ## Source files
 
@@ -38,6 +40,8 @@ leaftext's Rust source is split by concern:
 - **`src/theme.rs`** — The theme system. The semantic token contract (`LEAF_SEMANTIC_TOKEN_CONTRACT`), the `ThemeSource` / `ThemeFile` types, and the CSS compiler: `theme_sources()` (which parses the bundled `src/assets/themes.md` once via `parse_theme_markdown()` and leaks it to `&'static`), `compiled_theme_css()`, `theme_source_token_value()`, `assert_theme_sources_cover_contract()`, and `reading_mode_css()`. Palettes are data, not code — they live in `themes.md` as Markdown color tables, not Rust tables. Its items are `pub(crate)` and re-exported at the crate root. See [theming](04-theming.md).
 - **`src/indexer.rs`** — Background SQLite-based library indexer. Implements a breadth-first filesystem walk with a parse/hash worker pool (`PARSE_WORKERS = 4`), incremental fast-path checks on `mtime + size`, missing-file detection, and a separate read-only connection so tree queries answer promptly during a full crawl. It also answers the library's full-text search: files are split into chunks indexed in a SQLite FTS5 table, queried with BM25 ranking and highlighted snippets, optionally restricted to a set of document paths (the [search scope](../01-features/03-library.md#search-scope): the folder the pane is showing, or the nodes the graph drew), and frontmatter fields are parsed into a normalized table. `build_graph()` assembles the [Graph view](../01-features/03-library.md#graph)'s link map — one node per indexed document, one undirected edge per resolved doc-to-doc link — sliced by a `GraphRequest` (a focused neighborhood around seed documents, the densest N, or everything).
 - **`src/single_instance.rs`** — Single-instance guard (Windows). The first launch holds a per-user named mutex and listens on a named pipe; a later launch detects the mutex, forwards its file path to the running instance (which opens it as a new tab and comes to the front), and exits before building any UI — so a second document reuses the existing process instead of spawning a whole new window and WebView2 group. A no-op on other platforms.
+- **`src/platform.rs`** — Native OS integration, so no crate is carried for it: the clipboard and the Recycle Bin (Win32 `SetClipboardData` and `SHFileOperationW` on Windows, `pbcopy` and Finder on macOS), and the update applier — a detached copy of the binary that waits for the app to exit, re-verifies the staged installer, runs it, and relaunches. It also finds and retires a pre-per-user machine-wide install.
+- **`src/updater.rs`** — The staging model for [updates](../01-features/05-settings.md#updates): where a download lands, the digest it has to match, and the manifest a later launch reads it back from. The page does the fetching; this module decides what is allowed to be installed.
 - **`src/tests.rs`** — The crate's unit tests, kept in one `#[cfg(test)] mod tests` file rather than inline in `lib.rs`. They reach the crate's public and `pub(crate)` surface through `use super::*`.
 
 The WebView front-end that `app_shell_html()` serves lives outside the Rust source as editable assets, embedded at build time with `include_str!`:
@@ -129,7 +133,7 @@ Key `IpcCommand` variants include:
 | `goBack` / `goForward` | History buttons or keyboard shortcuts |
 | `openLink`             | In-document link click                |
 | `openGlossary`         | Glossary link click (opens the term in a bottom sheet) |
-| `openExternal`         | The "update available" button: open the release page in the system browser (unattached to any document) |
+| `openExternal`         | The update button in its notify-only state: open the release page in the system browser (unattached to any document) |
 | `countLines`           | Link hover: read the linked document and report its line count for the tooltip |
 | `setThemeFamily`       | Theme family button in the theme picker |
 | `setThemeMode`         | Appearance control in the theme picker |
@@ -140,6 +144,13 @@ Key `IpcCommand` variants include:
 | `setLineNumbersEnabled` | Line-numbers toggle in Settings menu |
 | `setReaderEditingEnabled` | Reading-view editing toggle in Settings menu |
 | `setIndexingEnabled`   | "Index entire device" toggle          |
+| `setAutoUpdateEnabled` | "Download updates" toggle in Settings menu |
+| `updateChecked`        | A release check finished: reset the six-hour throttle |
+| `updateDownloadBegin`  | Open a staging folder for a version, and the checksum and size to hold the download to |
+| `updateDownloadChunk`  | One base64 chunk of the installer, written and hashed as it arrives |
+| `updateDownloadFinish` | The page finished fetching: verify the digest and stage, or reject |
+| `updateDownloadFailed` | The page could not fetch the installer: discard the partial file |
+| `applyUpdate`          | The "Restart to update" button: launch the installer and exit |
 | `getFileTree`          | Boot-time library pane initialization |
 | `getGraph`             | Build the library link graph for the current scope + focus seeds |
 | `setGraphScope`        | Graph size picker in Settings menu    |

@@ -8,13 +8,12 @@ Leaftext is a free desktop app for reading and editing Markdown and XML. Open a 
 <a href="https://github.com/ryanallen/leaftext/releases"><img alt="Download" src="https://img.shields.io/badge/download-latest-0ea5e9?style=flat&labelColor=4b5563"></a>
 <a href="https://github.com/ryanallen/leaftext/releases"><img alt="macOS" src="https://img.shields.io/badge/macOS-Universal-silver?style=flat&labelColor=4b5563"></a>
 <a href="https://github.com/ryanallen/leaftext/releases"><img alt="Windows" src="https://img.shields.io/badge/Windows-x64-0078d4?style=flat&labelColor=4b5563"></a>
-<a href="https://github.com/ryanallen/leaftext/releases"><img alt="Linux" src="https://img.shields.io/badge/Linux-available-f59e0b?style=flat&labelColor=4b5563"></a>
 
 **[Read the docs →](docs/)** · **[View the project on GitHub →](https://github.com/ryanallen/leaftext)**
 
 ---
 
-**Leaf Text** is a free desktop app for reading and editing [Markdown](docs/01-features/01-rendering.md) and [XML](docs/01-features/01-rendering.md#xml) on macOS, Windows, and Linux. It opens a local file into a clean, GitHub-accurate reading view you can type straight into, keeps your place with tabs and history, and maps how your documents relate in a [graph](docs/01-features/03-library.md#graph). Everything runs locally — no account, no cloud, no telemetry.
+**Leaf Text** is a free desktop app for reading and editing [Markdown](docs/01-features/01-rendering.md) and [XML](docs/01-features/01-rendering.md#xml) on macOS and Windows. It opens a local file into a clean, GitHub-accurate reading view you can type straight into, keeps your place with tabs and history, and maps how your documents relate in a [graph](docs/01-features/03-library.md#graph). Everything runs locally — no account, no cloud, no telemetry.
 
 ## Features
 
@@ -72,7 +71,7 @@ Ten theme families — [Amaranth, Arabica, Fern, Ginger, GitHub, Goldenrod, Halc
 
 ![The Leaf Text settings panel](imgs/settings.png)
 
-Theme, graph size (affects performance), navigation, speed reader, minimap, permalink line numbers, reading-view editing and indexing (affects performance) — stored locally and durable across restarts. **[Settings →](docs/01-features/05-settings.md)**
+Theme, graph size (affects performance), navigation, speed reader, minimap, permalink line numbers, reading-view editing and indexing (affects performance) — stored locally and durable across restarts. Leaf Text also keeps itself current: new versions download in the background and are checked against a published digest, then wait for you to click **Restart to update** — nothing ever installs on its own. **[Settings →](docs/01-features/05-settings.md#updates)**
 
 ## Documentation
 
@@ -100,23 +99,21 @@ Then open the app normally.
 
 ### Windows
 
-Download the 64-bit MSI from [Releases](https://github.com/ryanallen/leaftext/releases). Default install path:
+Download the 64-bit MSI from [Releases](https://github.com/ryanallen/leaftext/releases). It installs for the current user, so there is no elevation prompt. Default install path:
 
 ```text
-C:\Program Files\leaftext\bin\leaftext.exe
+%LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe
 ```
 
-WebView2 browser data is stored in the current user's profile — not beside the executable — so it stays writable even under `Program Files`:
+WebView2 browser data and the library index live in the same profile:
 
 ```text
-%LOCALAPPDATA%\ryanallen\leaftext\data\webview2
+%LOCALAPPDATA%\ryanallen\leaftext\data
 ```
+
+Installing per-user is what lets Leaf Text [update itself](docs/01-features/05-settings.md#updates) without asking for administrator rights each time. Upgrading from an older build that installed into `C:\Program Files` clears that copy out once, with a single prompt.
 
 To find the installed executable path: right-click the Start Menu shortcut → **More** → **Open file location** → right-click the Leaf Text shortcut → **Properties** → **Target**.
-
-### Linux
-
-Linux builds are on the [Releases](https://github.com/ryanallen/leaftext/releases) page.
 
 ---
 
@@ -136,4 +133,4 @@ Other [`Justfile`](Justfile) tasks:
 |:--|:--|
 | Cut a release | `just release <version>` |
 
-`just release` commits the version bump, tags, and pushes — CI builds the Windows MSI, macOS DMG, and Linux artifacts.
+`just release` commits the version bump, tags, and pushes — CI builds the Windows MSI and the macOS DMG.

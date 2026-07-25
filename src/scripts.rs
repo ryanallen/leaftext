@@ -34,6 +34,9 @@ pub fn initial_settings_script(settings: &Settings) -> String {
         "libraryProjectPath": settings.library_project_path,
         "libraryClosed": settings.library_closed,
         "libraryWidth": settings.library_width,
+        "autoUpdateEnabled": settings.auto_update_enabled,
+        "updateLastChecked": settings.update_last_checked,
+        "updateStagedVersion": settings.update_staged_version,
     });
     format!("window.__leafSettings = {};", state)
 }
@@ -44,6 +47,16 @@ pub fn initial_version_script() -> String {
     format!(
         "window.__leafVersion = {};",
         serde_json::json!(env!("CARGO_PKG_VERSION"))
+    )
+}
+
+/// Which release asset this build can install, as a file-name suffix, so the
+/// page can pick its own platform's installer out of the release. Empty on a
+/// build with no installable artifact, which the page reads as notify-only.
+pub fn initial_update_script() -> String {
+    format!(
+        "window.__leafUpdateAsset = {};",
+        serde_json::json!(crate::platform_asset_suffix())
     )
 }
 
@@ -277,4 +290,16 @@ pub fn save_result_script(path: &str, ok: bool, error: Option<&str>) -> String {
 /// means "unknown" (not a readable local document); the page shows no count.
 pub fn line_count_script(token: u64, lines: i64) -> String {
     format!("window.leafLineCount({token}, {lines});")
+}
+
+/// Tell the page how a staged download ended: `staged` when an installer is
+/// verified and waiting, `failed` with a reason otherwise. Progress is reported
+/// by the page itself, which is the side doing the fetching.
+pub fn update_state_script(status: &str, version: &str, message: Option<&str>) -> String {
+    let state = serde_json::json!({
+        "status": status,
+        "version": version,
+        "message": message,
+    });
+    format!("window.leafUpdateState({});", state)
 }

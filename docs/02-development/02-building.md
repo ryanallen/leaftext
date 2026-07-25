@@ -10,15 +10,10 @@ Before building leaftext, make sure the following are installed:
 
 - **Rust (stable toolchain)** — install via [rustup](https://rustup.rs/). The project targets Rust 2021 edition as declared in `Cargo.toml`.
 - **`just` command runner** — install with `cargo install just`. leaftext uses a `Justfile` to orchestrate formatting, type-checking, testing, and releases.
-- **Platform-specific WebView dependency**:
-  - **Linux** — WebKit2GTK development headers are required for `wry`, the embedded WebView library. See the note below for installation instructions.
-  - **macOS** — WKWebView is provided by the OS; no extra headers are needed.
-  - **Windows** — WebView2 is provided by the OS via the Microsoft Edge WebView2 Runtime; no extra headers are needed.
+- **Platform-specific WebView dependency**: none to install. macOS provides WKWebView, and Windows provides WebView2 through the Microsoft Edge WebView2 Runtime.
 
 > [!NOTE]
-> On Linux, `wry` needs the GTK/WebKitGTK development headers before building. On Debian/Ubuntu, install the same set the release workflow uses:
-> `sudo apt install pkg-config build-essential libgtk-3-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev libssl-dev librsvg2-dev libayatana-appindicator3-dev`.
-> On Arch Linux the core package is `webkit2gtk-4.1`. The authoritative, always-current list is the `apt install` step in `.github/workflows/release-linux.yml`.
+> leaftext builds for Windows and macOS only. Any other target stops the build with a `compile_error!` in `src/main.rs` rather than failing later in a platform code path.
 
 ## Clone and build
 

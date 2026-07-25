@@ -30,7 +30,7 @@ flowchart LR
 | Page | What it covers |
 | --- | --- |
 | [Introduction](01-introduction.md) | What leaftext is, the feature overview, and where to go for each task |
-| [Installation](02-installation.md) | Prebuilt downloads for macOS (`.dmg`), Windows (`.msi`), and Linux (`.tar.gz`), plus data paths and first-launch notes |
+| [Installation](02-installation.md) | Prebuilt downloads for macOS (`.dmg`) and Windows (`.msi`), plus [updates](01-features/05-settings.md#updates), data paths, and first-launch notes |
 | [Quickstart](03-quickstart.md) | The smallest useful path through the app: open a file, read, jump, and reopen — with the core shortcuts |
 
 ## Features

@@ -28,6 +28,12 @@ pub use editing::{
     block_source_map, kind_is_editable, render_source_view_html, task_marker_offsets, BlockSpan,
     DocumentFormat, EditableDocument,
 };
+mod updater;
+pub use updater::{
+    decode_base64, hash_file, is_newer_version, now_unix, platform_asset_suffix, prune_staged,
+    read_staged, staging_dir, update_check_is_due, updates_dir, StagedUpdate, UpdateDownload,
+    CHECKSUM_EXTENSION, MAX_UPDATE_BYTES, UPDATE_CHECK_INTERVAL_SECS,
+};
 
 use std::{
     collections::{HashMap, HashSet},
@@ -38,7 +44,6 @@ use std::{
 };
 
 use ammonia::Builder;
-use directories::ProjectDirs;
 use html_escape::{decode_html_entities, encode_double_quoted_attribute, encode_text};
 use linkify::{LinkFinder, LinkKind};
 use pulldown_cmark::{
@@ -1055,7 +1060,13 @@ fn locale_bootstrap_script() -> &'static str {
       'outline.lineCount': '({count} lines)',
       'settings.heading': 'Settings',
       'update.available': 'Update to v{version}',
+      'update.downloading': 'Downloading v{version}… {percent}%',
+      'update.restart': 'Restart to update',
+      'update.failed': 'Update failed — open release page',
       'update.title': 'A new version is available',
+      'settings.autoUpdate.aria': 'Download updates',
+      'settings.autoUpdate.label': 'Download updates',
+      'settings.autoUpdate.help': 'Fetch new versions in the background and offer a restart. Installing always waits for you to click. Off checks for updates but only links to the download page.',
       'settings.indexing.label': 'Index entire device',
       'settings.indexing.help': 'Crawl this device for Markdown and XML documents and rescan each time you open the app.',
       'settings.theme.appearance': 'Appearance',
@@ -1169,7 +1180,13 @@ fn locale_bootstrap_script() -> &'static str {
       'outline.lineCount': '（{count} 行）',
       'settings.heading': '设置',
       'update.available': '更新到 v{version}',
+      'update.downloading': '正在下载 v{version}… {percent}%',
+      'update.restart': '重启以更新',
+      'update.failed': '更新失败 — 打开发布页面',
       'update.title': '有新版本可用',
+      'settings.autoUpdate.aria': '下载更新',
+      'settings.autoUpdate.label': '下载更新',
+      'settings.autoUpdate.help': '在后台获取新版本并提示重启。安装始终需要你点击确认。关闭后仍会检查更新，但只提供下载页面链接。',
       'settings.indexing.label': '索引整个设备',
       'settings.indexing.help': '扫描此设备上的 Markdown 和 XML 文档，并在每次打开应用时重新扫描。',
       'settings.theme.appearance': '外观',
@@ -1316,22 +1333,86 @@ fn locale_bootstrap_script() -> &'static str {
 "#
 }
 
+/// Reverse-DNS app id, and the two halves it is built from. macOS names the
+/// per-app folder with the whole id; Windows nests organization inside
+/// application. Both spellings are load-bearing: they are where every existing
+/// install already keeps its settings, recent files, and search index.
+/// Only macOS spells the qualifier into a path; Windows ignores it entirely.
+#[cfg(target_os = "macos")]
+const APP_QUALIFIER: &str = "com";
+const APP_ORGANIZATION: &str = "ryanallen";
+const APP_NAME: &str = "leaftext";
+
+/// Roaming per-user configuration root.
+///
+/// Windows: `%APPDATA%\ryanallen\leaftext\config`.
+/// macOS: `~/Library/Application Support/com.ryanallen.leaftext`.
+///
+/// These reproduce, exactly, the layout the `directories` crate produced for
+/// `ProjectDirs::from("com", "ryanallen", "leaftext")` — including the `config`
+/// leaf on Windows, which is easy to miss and would strand every existing
+/// user's settings if it were dropped. [`project_dirs_match_the_documented_layout`]
+/// pins both.
+pub fn project_config_dir() -> Option<PathBuf> {
+    #[cfg(windows)]
+    {
+        Some(
+            PathBuf::from(std::env::var_os("APPDATA")?)
+                .join(APP_ORGANIZATION)
+                .join(APP_NAME)
+                .join("config"),
+        )
+    }
+    #[cfg(target_os = "macos")]
+    {
+        Some(macos_application_support_dir()?)
+    }
+}
+
+/// Machine-local per-user data root (WebView2's cache and the search index).
+///
+/// Windows: `%LOCALAPPDATA%\ryanallen\leaftext\data`.
+/// macOS: `~/Library/Application Support/com.ryanallen.leaftext`, which is the
+/// same folder as the config root — the platform draws no roaming distinction.
+pub fn project_data_local_dir() -> Option<PathBuf> {
+    #[cfg(windows)]
+    {
+        Some(
+            PathBuf::from(std::env::var_os("LOCALAPPDATA")?)
+                .join(APP_ORGANIZATION)
+                .join(APP_NAME)
+                .join("data"),
+        )
+    }
+    #[cfg(target_os = "macos")]
+    {
+        Some(macos_application_support_dir()?)
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn macos_application_support_dir() -> Option<PathBuf> {
+    let home = std::env::var_os("HOME").filter(|home| !home.is_empty())?;
+    Some(
+        PathBuf::from(home)
+            .join("Library/Application Support")
+            .join(format!("{APP_QUALIFIER}.{APP_ORGANIZATION}.{APP_NAME}")),
+    )
+}
+
 pub fn config_file_path() -> Option<PathBuf> {
-    ProjectDirs::from("com", "ryanallen", "leaftext")
-        .map(|dirs| dirs.config_dir().join("recent-files.json"))
+    project_config_dir().map(|dir| dir.join("recent-files.json"))
 }
 
 pub fn webview_user_data_dir() -> Option<PathBuf> {
-    ProjectDirs::from("com", "ryanallen", "leaftext")
-        .map(|dirs| dirs.data_local_dir().join("webview2"))
+    project_data_local_dir().map(|dir| dir.join("webview2"))
 }
 
 /// The app data root for leaftext's own files (the indexer manifest lives here).
 /// The local data dir itself, not the WebView2 cache subfolder, so the manifest
 /// isn't entangled with the browser's storage.
 pub fn app_data_dir() -> Option<PathBuf> {
-    ProjectDirs::from("com", "ryanallen", "leaftext")
-        .map(|dirs| dirs.data_local_dir().to_path_buf())
+    project_data_local_dir()
 }
 
 pub fn load_recent_files(config_path: impl AsRef<Path>) -> RecentFiles {
@@ -1399,6 +1480,19 @@ pub struct Settings {
     /// Whether the window was maximized at last close. Tracked apart from the
     /// size so un-maximizing returns to the windowed dimensions.
     pub window_maximized: bool,
+    /// Download new releases in the background and offer a one-click restart.
+    /// Off falls back to notifying only: the button opens the release page and
+    /// nothing is ever fetched. On by default.
+    pub auto_update_enabled: bool,
+    /// Unix seconds of the last release check, so launches don't each spend a
+    /// request against GitHub's unauthenticated rate limit.
+    pub update_last_checked: u64,
+    /// Version of the verified installer waiting on disk, empty when none is.
+    pub update_staged_version: String,
+    /// How many times removing a leftover machine-wide install has been
+    /// offered. Capped, so someone who declines the elevation prompt is not
+    /// asked again forever.
+    pub legacy_uninstall_attempts: u32,
 }
 
 impl Default for Settings {
@@ -1421,6 +1515,10 @@ impl Default for Settings {
             window_width: 1080,
             window_height: 820,
             window_maximized: false,
+            auto_update_enabled: true,
+            update_last_checked: 0,
+            update_staged_version: String::new(),
+            legacy_uninstall_attempts: 0,
         }
     }
 }
@@ -1494,8 +1592,7 @@ impl GraphScope {
 }
 
 pub fn settings_file_path() -> Option<PathBuf> {
-    ProjectDirs::from("com", "ryanallen", "leaftext")
-        .map(|dirs| dirs.config_dir().join("settings.json"))
+    project_config_dir().map(|dir| dir.join("settings.json"))
 }
 
 /// Load the persisted UI toggles, falling back to defaults when the file is

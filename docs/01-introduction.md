@@ -2,7 +2,7 @@
 
 > A desktop reader for Markdown and XML files: fast to open, easy to scan, and reading-first — and when a file needs a fix, [edit it right on the page](01-features/07-editing.md).
 
-leaftext is a desktop app for reading local Markdown and [XML](01-features/01-rendering.md#xml) on macOS, Windows, and Linux. Open a file, get a clean rendered view, and keep your place with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), a [minimap](01-features/04-minimap.md), and a searchable [library](01-features/03-library.md). When a document needs a change, [edit it inline in the rendered page](01-features/07-editing.md#inline-editing-the-reading-view) — or drop to the raw source in the [code view](01-features/07-editing.md#code-view) — and [save](01-features/07-editing.md#save) without leaving the app.
+leaftext is a desktop app for reading local Markdown and [XML](01-features/01-rendering.md#xml) on macOS and Windows. Open a file, get a clean rendered view, and keep your place with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), a [minimap](01-features/04-minimap.md), and a searchable [library](01-features/03-library.md). When a document needs a change, [edit it inline in the rendered page](01-features/07-editing.md#inline-editing-the-reading-view) — or drop to the raw source in the [code view](01-features/07-editing.md#code-view) — and [save](01-features/07-editing.md#save) without leaving the app.
 
 New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GLOSSARY.md#frontmatter) link into the [glossary](GLOSSARY.md#glossary) — clicking one opens its entry in a [bottom sheet](GLOSSARY.md#bottom-sheet) over this page instead of taking you away from it.
 

@@ -10,14 +10,13 @@ codegen-units = 1
 
 [dependencies]
 ammonia = "4.1.2"
-arboard = "3.4"
 blake3 = "1"
-directories = "6.0.0"
 html-escape = "0.2.13"
 linkify = "0.11.0"
 notify-debouncer-mini = "0.4"
-png = "0.17.16"
-pulldown-cmark = "0.13.4"
+pulldown-cmark = { version = "0.13.4", default-features = false, features = [
+    "html",
+] }
 rfd = "0.17.2"
 roxmltree = "0.20"
 rusqlite = { version = "0.31", features = ["bundled"] }
@@ -25,10 +24,15 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 syntect = "5.3.0"
 tao = "0.35.3"
-trash = "5.2"
 two-face = "0.5.1"
 url = "2.5.8"
 wry = "0.55.1"
+
+# The window icon is decoded only where tao needs one handed to it. Windows
+# takes its icon from the executable's embedded resource instead, so the PNG
+# decoder is not part of that build at all.
+[target.'cfg(not(windows))'.dependencies]
+png = "0.17.16"
 
 [target.'cfg(windows)'.build-dependencies]
 embed-resource = "2.5"
@@ -36,9 +40,16 @@ embed-resource = "2.5"
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
+    "Win32_System_ApplicationInstallationAndServicing",
+    "Win32_System_DataExchange",
+    "Win32_System_Memory",
     "Win32_System_Threading",
     "Win32_System_Pipes",
     "Win32_System_IO",
     "Win32_Storage_FileSystem",
     "Win32_Security",
+    "Win32_UI_Shell",
+    # ShellExecuteW's signature names SHOW_WINDOW_CMD from this module, so the
+    # function is only compiled in when both features are on.
+    "Win32_UI_WindowsAndMessaging",
 ] }

@@ -2,15 +2,16 @@
 
 > Download the build for your platform from GitHub Releases, install it, and open a Markdown or XML file.
 
-leaftext ships prebuilt binaries for macOS, Windows, and Linux. There is no account, no plugin setup, and no extra runtime to configure first.
+leaftext ships prebuilt binaries for macOS and Windows. There is no account, no plugin setup, and no extra runtime to configure first.
 
 ## Platforms
 
 | Platform | Package | Notes |
 | --- | --- | --- |
 | macOS | `.dmg` | Universal (Apple Silicon + Intel) |
-| Windows | `.msi` | Windows 10+ 64-bit |
-| Linux | `.tar.gz` | Extract and run the binary inside |
+| Windows | `.msi` | Windows 10+ 64-bit, installs for the current user |
+
+Each release also carries a `.blake3` checksum beside every download, and a `.app.zip` of the macOS bundle. Those are what the [in-app updater](#updates) fetches and verifies; installing by hand needs only the `.dmg` or `.msi`.
 
 Download the latest build from [GitHub Releases](https://github.com/ryanallen/leaftext/releases).
 
@@ -52,21 +53,6 @@ WebView2 data lives here:
 
 That keeps runtime data writable without needing admin rights after install.
 
-### Linux
-
-1. Download the `.tar.gz` build.
-2. Extract it.
-3. Run the binary inside.
-
-```sh
-tar -xzf leaftext-*-linux-x86_64.tar.gz
-cd leaftext-*-linux-x86_64
-./leaftext
-```
-
-> [!NOTE]
-> leaftext uses WebKitGTK on Linux. If the app does not launch, check that your system has a compatible WebKitGTK runtime installed.
-
 ## Launch
 
 ```mermaid
@@ -76,11 +62,17 @@ flowchart LR
     C --> D[Read]
 ```
 
-Use `Ctrl+O` on Windows/Linux or `Cmd+O` on macOS to open your first file.
+Use `Ctrl+O` on Windows or `Cmd+O` on macOS to open your first file.
 
 ## Updates
 
-leaftext checks GitHub Releases for a newer version each time it launches. When one is available, a dot appears over the Settings button and a green **Update to v…** button appears at the top of the [Settings](01-features/05-settings.md) menu; clicking it opens that release's page so you can download the new build. The check is silent and skipped when offline, and it never blocks startup.
+leaftext checks GitHub Releases for a newer version, at most once every six hours. When one is available, a dot appears over the Settings button and a button appears at the top of the [Settings](01-features/05-settings.md#updates) menu.
+
+With **Download updates** on (the default), the new installer downloads in the background and is checked against the `.blake3` digest published with the release; a download that does not match is discarded. The button then reads **Restart to update**, and clicking it closes leaftext, installs, and reopens it.
+
+Nothing installs on its own. The download is automatic; the install is always a button you press. Turning **Download updates** off keeps the check but nothing is fetched — the button just opens the release page, and you install by hand.
+
+The check is silent and skipped when offline, and it never blocks startup.
 
 ## FAQ
 

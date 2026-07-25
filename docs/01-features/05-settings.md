@@ -1,6 +1,6 @@
 # Settings
 
-> leaftext stores preferences locally: theme, speed reader, minimap, pager, line numbers, reading-view editing, indexing, library layout, and window size in a JSON file, plus the interface language in the WebView's local storage.
+> leaftext stores preferences locally: theme, speed reader, minimap, pager, line numbers, reading-view editing, indexing, updates, library layout, and window size in a JSON file, plus the interface language in the WebView's local storage.
 
 Most settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView. The one exception is the interface language, kept in the WebView's local storage under `leaf.localeMode`.
 
@@ -17,6 +17,7 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 | Line numbers | On / Off | Off |
 | Reading-view editing | On / Off | On |
 | Indexing | On / Off | Off |
+| Download updates | On / Off | On |
 | Library view | Project, Graph | Project |
 | Graph size | Focus, Medium, Large, Everything | Focus |
 
@@ -32,8 +33,9 @@ Click **Settings** in the app bar. The panel opens as a dropdown and updates the
 | `{config_dir}/recent-files.json` | Last 8 opened files |
 | `{data_dir}/manifest.db` | Library index |
 | `{data_dir}/webview2` | WebView2 data |
+| `{data_dir}/updates` | Verified installer waiting to be applied ([Updates](#updates)) |
 
-Here `{config_dir}` and `{data_dir}` are the per-app directories the `directories` crate computes from the app id `com.ryanallen.leaftext` — they already include the vendor/app path segments (there is no extra `leaftext/` component to add). See [Paths](#paths) for the real per-platform locations.
+Here `{config_dir}` and `{data_dir}` are the per-app directories derived from the app id `com.ryanallen.leaftext` — they already include the vendor/app path segments (there is no extra `leaftext/` component to add). See [Paths](#paths) for the real per-platform locations.
 
 ## Example
 
@@ -55,7 +57,11 @@ Here `{config_dir}` and `{data_dir}` are the per-app directories the `directorie
   "library_width": 240,
   "window_width": 1080,
   "window_height": 820,
-  "window_maximized": false
+  "window_maximized": false,
+  "auto_update_enabled": true,
+  "update_last_checked": 0,
+  "update_staged_version": "",
+  "legacy_uninstall_attempts": 0
 }
 ```
 
@@ -145,6 +151,20 @@ The app ships both language dictionaries locally and applies changes without a r
 - Enabling it starts a whole-device background crawl right away, and again on each launch while it stays on
 - Files you open manually are still indexed even if background indexing is off
 
+### Updates
+
+- **Download updates** is on by default
+- leaftext asks GitHub for the latest release at most once every six hours; `update_last_checked` records when it last did, so launching repeatedly does not spend requests against the rate limit
+- When a newer release exists, its installer downloads in the background and is verified against the `.blake3` digest published beside it. A download that arrives short, oversized, or with the wrong digest is deleted rather than kept
+- A verified installer waits under `{data_dir}/updates`, and `update_staged_version` records which version it is. The Settings button becomes **Restart to update**; clicking it closes leaftext, installs, and reopens
+- **Installing is always a click.** Nothing is applied in the background, and a checksum published on the same server as the download proves the file arrived intact — not that it is trustworthy. That is why the last step is yours
+- Turning it off keeps the check but downloads nothing: the button opens the release page instead
+- Saved as `auto_update_enabled`, `update_last_checked`, and `update_staged_version`
+- On Windows, `legacy_uninstall_attempts` counts how many times leaftext has offered to remove a copy left by an older build that installed into `C:\Program Files`. It stops asking after two, so declining the prompt is not a recurring nag
+
+> [!NOTE]
+> Only one staged installer is kept. Skipping several releases does not accumulate several downloads, and once an update is applied the folder is cleared.
+
 ### Window size
 
 - The window reopens at the size it had when it last closed, and maximized if it was maximized
@@ -154,11 +174,12 @@ The app ships both language dictionaries locally and applies changes without a r
 
 ## Paths
 
-The `directories` crate derives these per-app directories from the app id `com.ryanallen.leaftext`:
+These per-app directories are derived from the app id `com.ryanallen.leaftext`:
 
 - macOS: `config_dir` = `data_dir` = `~/Library/Application Support/com.ryanallen.leaftext`
 - Windows: `config_dir` = `%APPDATA%\ryanallen\leaftext\config`; `data_dir` = `%LOCALAPPDATA%\ryanallen\leaftext\data`
-- Linux: `config_dir` = `$XDG_CONFIG_HOME/leaftext` (or `~/.config/leaftext`); `data_dir` = `$XDG_DATA_HOME/leaftext` (or `~/.local/share/leaftext`)
+
+Both live inside your user profile, so leaftext never needs administrator rights to run. They are also independent of where the app is installed — reinstalling or moving it keeps your settings, recent files, and library index.
 
 ## Next
 

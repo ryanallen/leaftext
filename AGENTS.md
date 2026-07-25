@@ -45,19 +45,27 @@ It is a Rust program. The window and the embedded web view come from the `tao` a
 - `src/theme.rs` — the theme system: semantic token contract, Primer/Dracula token tables, `ThemeSource` types, and the CSS compiler (`compiled_theme_css()`, `reading_mode_css()`). `pub(crate)` and re-exported from `lib.rs`.
 - `src/tests.rs` — the crate's unit tests (a `#[cfg(test)] mod tests` file, not inline in `lib.rs`).
 - `src/main.rs` — the app shell: window, event loop, file open/close, history, and the per-user data directory.
+- `src/platform.rs` — native clipboard and Recycle Bin/Trash access (Win32 on Windows, `pbcopy`/Finder on macOS). A binary-local module, like `src/single_instance.rs`.
 - `src/indexer.rs` — background SQLite library indexer and full-text search.
 - `src/assets/` — fonts, CSS, and the WebView front-end (`app-shell.html`, `app-shell.js`) embedded via `include_str!`.
 - `wix/main.wxs` — the Windows installer recipe (used by cargo-wix to build the MSI).
-- `scripts/` — `prepare-release.mts` (cut a release), `build-windows-release.ps1`, `build-linux-release.sh`.
-- `.github/workflows/` — three release workflows (Windows, macOS, Linux).
+- `scripts/` — `prepare-release.mts` (cut a release), `build-windows-release.ps1`.
+- `.github/workflows/` — two release workflows (Windows, macOS).
 - `Justfile` — task runner recipes.
 - `Cargo.toml` — package metadata. `version` here is the source of truth for the release version.
 
 ## App identity
 
 - App id: `com.ryanallen.leaftext`.
-- Windows per-user data (web view cache, recent files) lives under `%LOCALAPPDATA%\ryanallen\leaftext`.
+- Windows per-user data (web view cache, search index) lives under `%LOCALAPPDATA%\ryanallen\leaftext\data`; settings and recent files under `%APPDATA%\ryanallen\leaftext\config`.
+- macOS keeps both in `~/Library/Application Support/com.ryanallen.leaftext`.
 - Installed Windows path: `C:\Program Files\leaftext\bin\leaftext.exe`.
+
+These exact paths are a compatibility contract with every installed copy — `project_dirs_match_the_documented_layout` in `src/tests.rs` pins them. Changing one silently orphans user settings and the index.
+
+## Supported platforms
+
+**Windows and macOS only.** Linux was dropped: there is no Linux workflow, no GTK/`xdg-open`/`xclip` code path, and `src/main.rs` fails the build with a `compile_error!` on any other target. Do not re-add Linux branches to platform code.
 
 ## Everyday commands
 
@@ -72,17 +80,26 @@ Run from the repo root. These need the Rust toolchain (`rustup`), `just`, and `n
 2. `just verify` to confirm it builds and tests pass.
 3. **DO NOT TOUCH GIT.** Wait for explicit instruction to commit or release. Do not assume you should commit work. Do not ask if you should commit. Do not offer to commit. Only commit when told "commit this" or "release v0.x.x". When told to release: use `/git-release` skill to bump version, create tag, and push.
 
-Pushing a tag named `v*` is what starts the builds. The three workflows each build on a GitHub runner and attach the installers to the release for that tag:
+Pushing a tag named `v*` is what starts the builds. The two workflows each build on a GitHub runner and attach the installers to the release for that tag:
 
 - Windows (`release-windows.yml`, `windows-latest`): builds `leaftext.exe` and packages a single MSI installer with cargo-wix.
 - macOS (`release-distributions.yml`, `macos-14`): builds both chips, joins them into a universal binary, and makes a single universal DMG.
-- Linux (`release-linux.yml`, `ubuntu-latest`): builds and publishes a single bare `x86_64` binary.
 
 Each release also carries GitHub's automatic source archives (zip + tar.gz).
 
 The packaged version must equal the `Cargo.toml` version, or the build scripts stop with an error.
 
 **Never re-push the same version tag.** If a build fails or you need another iteration, bump to the next patch version and start over. Reusing a tag is unreliable — GitHub Actions may not re-trigger, and the old release artifacts create confusion.
+
+## Dependencies
+
+Every crate added here is code that ships to users and that nobody in this project reviews. Treat the dependency list as a security boundary, not a convenience.
+
+- **Do not add a dependency without asking first.** Report what it costs — `cargo tree` the *transitive* count, not just the one crate — and what the alternative is. A crate that pulls twenty others to do one thing is not a small change.
+- **Prefer the platform.** The app already embeds a web view with an OS-maintained TLS stack, and `windows-sys` is already present. Network, clipboard, shell, and filesystem work usually has a native path that costs nothing new. `src/platform.rs` is where that lives.
+- **Turn default features off** when only part of a crate is used. `arboard` shipped a JPEG/TIFF decoder here until its defaults were disabled; `pulldown-cmark` shipped an argument parser for its own CLI.
+- **Target-gate what only one platform needs**, so it never enters the other's build.
+- Some dependencies earn their keep and should stay: `ammonia` is the sanitizer standing between a malicious document's raw HTML and the web view — never hand-roll that. `rusqlite`, `syntect`, `wry`/`tao` are the app's substance.
 
 ## Conventions
 

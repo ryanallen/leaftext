@@ -6,7 +6,7 @@ leaftext is meant to be usable immediately. This page shows the smallest useful 
 
 ## Start
 
-1. Press `Ctrl+O` on Windows/Linux or `Cmd+O` on macOS.
+1. Press `Ctrl+O` on Windows or `Cmd+O` on macOS.
 2. Pick any `.md` or `.xml` file.
 3. Scroll the document.
 4. Use the minimap on the right to jump.
@@ -61,7 +61,7 @@ Click a heading in the document or click a spot in the minimap. That jump is add
 
 ### History
 
-| Action | Windows / Linux | macOS |
+| Action | Windows | macOS |
 | --- | --- | --- |
 | Back | `Alt+Left` | `Cmd+Left` |
 | Forward | `Alt+Right` | `Cmd+Right` |
@@ -69,7 +69,7 @@ Click a heading in the document or click a spot in the minimap. That jump is add
 | Save ([unsaved edits](01-features/07-editing.md#save)) | `Ctrl+S` | `Cmd+S` |
 | [Undo](01-features/07-editing.md#undo) the last edit | `Ctrl+Z` | `Cmd+Z` |
 
-Mouse side buttons also trigger Back and Forward on Windows and Linux.
+Mouse side buttons also trigger Back and Forward on Windows.
 
 ### Edit
 

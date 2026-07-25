@@ -5947,6 +5947,10 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
         window_width: 1440,
         window_height: 960,
         window_maximized: true,
+        auto_update_enabled: false,
+        update_last_checked: 1_780_000_000,
+        update_staged_version: "0.1.400".to_string(),
+        legacy_uninstall_attempts: 1,
     };
 
     save_settings(&settings_path, &settings).expect("settings save");
@@ -6105,12 +6109,17 @@ fn initial_settings_script_defines_camelcase_global() {
         window_width: 1440,
         window_height: 960,
         window_maximized: true,
+        auto_update_enabled: true,
+        update_last_checked: 1_780_000_000,
+        update_staged_version: "0.1.400".to_string(),
+        legacy_uninstall_attempts: 0,
     });
     // Window geometry is host-only (applied to the native window, not the
-    // webview), so it must not leak into the injected settings global.
+    // webview), so it must not leak into the injected settings global. The
+    // update fields do cross: the page owns the check throttle and the button.
     assert_eq!(
         script,
-        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryProjectPath":"docs","libraryView":"graph","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[]};"#
+        r#"window.__leafSettings = {"autoUpdateEnabled":true,"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryProjectPath":"docs","libraryView":"graph","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[],"updateLastChecked":1780000000,"updateStagedVersion":"0.1.400"};"#
     );
 }
 
@@ -6168,6 +6177,42 @@ fn app_data_dir_is_the_local_data_root_not_the_webview_cache() {
     assert!(path_display.contains("leaftext"));
     // The manifest must not live under the WebView2-specific subfolder.
     assert!(!path.ends_with("webview2"));
+}
+
+/// These paths are where every installed copy already keeps its settings,
+/// recent files, and search index, so they are a compatibility contract, not a
+/// preference. They were captured from the `directories` crate's
+/// `ProjectDirs::from("com", "ryanallen", "leaftext")` before that dependency
+/// was replaced with the plain environment lookups in `project_config_dir` and
+/// `project_data_local_dir`. Changing either shape silently orphans user data:
+/// the app would start up looking clean, with the old settings still on disk.
+#[test]
+fn project_dirs_match_the_documented_layout() {
+    let config = project_config_dir().expect("config directory is available");
+    let data = project_data_local_dir().expect("data directory is available");
+
+    #[cfg(windows)]
+    {
+        let roaming = PathBuf::from(std::env::var_os("APPDATA").expect("APPDATA is set"));
+        let local = PathBuf::from(std::env::var_os("LOCALAPPDATA").expect("LOCALAPPDATA is set"));
+        assert_eq!(
+            config,
+            roaming.join("ryanallen").join("leaftext").join("config")
+        );
+        assert_eq!(data, local.join("ryanallen").join("leaftext").join("data"));
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let home = PathBuf::from(std::env::var_os("HOME").expect("HOME is set"));
+        let support = home
+            .join("Library/Application Support")
+            .join("com.ryanallen.leaftext");
+        // macOS draws no roaming/local distinction, so both roots are the one
+        // Application Support folder.
+        assert_eq!(config, support);
+        assert_eq!(data, support);
+    }
 }
 
 #[test]
@@ -6795,4 +6840,418 @@ fn data_leaf_attribute_prefixes_survive_sanitizing() {
     assert!(cleaned.contains(r#"data-leaf-edit-id="3""#));
     assert!(cleaned.contains(r#"data-src-start="10""#));
     assert!(cleaned.contains(r#"data-src-end="20""#));
+}
+
+// ---------------------------------------------------------------------------
+// Updates
+//
+// The staging code decides whether downloaded bytes are allowed to reach an
+// installer, so its refusals matter more than its successes. Each test below
+// covers one way a download can be wrong.
+// ---------------------------------------------------------------------------
+
+/// A scratch data directory, named per test so parallel runs cannot collide.
+fn update_test_dir(name: &str) -> PathBuf {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-update-{name}-{unique}"));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("scratch data directory");
+    dir
+}
+
+fn blake3_hex(bytes: &[u8]) -> String {
+    blake3::hash(bytes).to_hex().to_string()
+}
+
+/// Minimal encoder, so the decoder is tested against something independent.
+fn base64_encode_for_test(bytes: &[u8]) -> String {
+    const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::new();
+    for chunk in bytes.chunks(3) {
+        let first = chunk[0];
+        let second = chunk.get(1).copied().unwrap_or(0);
+        let third = chunk.get(2).copied().unwrap_or(0);
+        let triple = (u32::from(first) << 16) | (u32::from(second) << 8) | u32::from(third);
+        out.push(ALPHABET[(triple >> 18) as usize & 63] as char);
+        out.push(ALPHABET[(triple >> 12) as usize & 63] as char);
+        out.push(if chunk.len() > 1 {
+            ALPHABET[(triple >> 6) as usize & 63] as char
+        } else {
+            '='
+        });
+        out.push(if chunk.len() > 2 {
+            ALPHABET[triple as usize & 63] as char
+        } else {
+            '='
+        });
+    }
+    out
+}
+
+#[test]
+fn version_comparison_ignores_v_prefix_and_compares_numerically() {
+    assert!(is_newer_version("v0.1.362", "0.1.361"));
+    assert!(is_newer_version("0.2.0", "0.1.999"));
+    // Not lexicographic: 370 beats 69.
+    assert!(is_newer_version("0.1.370", "0.1.69"));
+    assert!(!is_newer_version("0.1.361", "0.1.361"));
+    assert!(!is_newer_version("0.1.360", "0.1.361"));
+    // Missing segments read as zero, so an equal shorter prefix is not newer.
+    assert!(!is_newer_version("0.1", "0.1.0"));
+    assert!(is_newer_version("0.1.1", "0.1"));
+    // Garbage must not read as newer, or a malformed release would prompt.
+    assert!(!is_newer_version("banana", "0.1.361"));
+}
+
+#[test]
+fn update_checks_are_throttled_but_never_wedged() {
+    let now = 1_780_000_000;
+    assert!(update_check_is_due(0, now));
+    assert!(!update_check_is_due(now - 60, now));
+    assert!(!update_check_is_due(now, now));
+    assert!(update_check_is_due(now - UPDATE_CHECK_INTERVAL_SECS, now));
+    // A clock that jumped backwards, or a settings value from the future, must
+    // read as due rather than blocking every future check forever.
+    assert!(update_check_is_due(now + 10_000, now));
+}
+
+#[test]
+fn base64_decoding_round_trips_and_rejects_junk() {
+    // Every padding case, since chunk boundaries land on all three.
+    for original in [
+        &b""[..],
+        &b"a"[..],
+        &b"ab"[..],
+        &b"abc"[..],
+        &b"abcd"[..],
+        &[0u8, 255, 128, 1, 2, 3, 4][..],
+    ] {
+        let encoded = base64_encode_for_test(original);
+        assert_eq!(
+            decode_base64(&encoded).as_deref(),
+            Some(original),
+            "round trip failed for {original:?}"
+        );
+    }
+
+    // A corrupted message must fail the transfer, not quietly decode to
+    // different bytes than the sender hashed.
+    assert_eq!(decode_base64("!!!!"), None);
+    assert_eq!(decode_base64("YWJj*"), None);
+    assert_eq!(decode_base64("YWJ"), None);
+}
+
+#[test]
+fn a_verified_download_is_staged_and_readable_afterwards() {
+    let data_dir = update_test_dir("staged");
+    let payload = b"pretend this is a 6 MB installer".repeat(64);
+    let digest = blake3_hex(&payload);
+
+    let mut download = UpdateDownload::begin(
+        &data_dir,
+        "v0.1.362",
+        "leaftext-v0.1.362-windows-x86_64.msi",
+        &digest,
+        payload.len() as u64,
+    )
+    .expect("download opens");
+
+    // Delivered in pieces, the way the page streams it.
+    for chunk in payload.chunks(100) {
+        download.write_chunk(chunk).expect("chunk accepted");
+    }
+    let staged = download.finish().expect("download verifies");
+
+    assert_eq!(staged.version, "0.1.362", "the v prefix is stripped");
+    assert_eq!(staged.blake3, digest);
+    assert_eq!(staged.size, payload.len() as u64);
+
+    // The installer sits at its final name, with no .part left behind.
+    let installer = staged.installer_path(&data_dir);
+    assert_eq!(fs::read(&installer).expect("installer readable"), payload);
+    assert!(!staging_dir(&data_dir, "0.1.362")
+        .join("leaftext-v0.1.362-windows-x86_64.msi.part")
+        .exists());
+
+    // And a later launch can find it from the manifest alone.
+    let reread = read_staged(&data_dir, "0.1.362").expect("manifest round trips");
+    assert_eq!(reread, staged);
+    assert_eq!(hash_file(&installer).expect("rehash"), digest);
+
+    let _ = fs::remove_dir_all(&data_dir);
+}
+
+#[test]
+fn a_download_that_fails_its_checksum_is_refused_and_deleted() {
+    let data_dir = update_test_dir("badhash");
+    let payload = b"tampered installer".to_vec();
+    let expected = blake3_hex(b"the installer that was actually published");
+
+    let mut download = UpdateDownload::begin(
+        &data_dir,
+        "0.1.362",
+        "leaftext-v0.1.362-windows-x86_64.msi",
+        &expected,
+        payload.len() as u64,
+    )
+    .expect("download opens");
+    download.write_chunk(&payload).expect("chunk accepted");
+
+    let error = download.finish().expect_err("mismatched hash is refused");
+    assert!(error.contains("checksum"), "unhelpful message: {error}");
+
+    // Nothing installable may survive a failed verification.
+    assert!(read_staged(&data_dir, "0.1.362").is_none());
+    let leftovers: Vec<_> = fs::read_dir(staging_dir(&data_dir, "0.1.362"))
+        .expect("staging folder exists")
+        .flatten()
+        .map(|entry| entry.file_name())
+        .collect();
+    assert!(leftovers.is_empty(), "left behind {leftovers:?}");
+
+    let _ = fs::remove_dir_all(&data_dir);
+}
+
+#[test]
+fn a_truncated_download_is_refused() {
+    let data_dir = update_test_dir("short");
+    let payload = b"only the first half".to_vec();
+    let digest = blake3_hex(&payload);
+
+    let mut download = UpdateDownload::begin(
+        &data_dir,
+        "0.1.362",
+        "leaftext.msi",
+        &digest,
+        payload.len() as u64 + 100,
+    )
+    .expect("download opens");
+    download.write_chunk(&payload).expect("chunk accepted");
+
+    let error = download.finish().expect_err("short download is refused");
+    assert!(
+        error.contains("stopped early"),
+        "unhelpful message: {error}"
+    );
+    assert!(read_staged(&data_dir, "0.1.362").is_none());
+
+    let _ = fs::remove_dir_all(&data_dir);
+}
+
+#[test]
+fn a_download_may_not_grow_past_its_advertised_size() {
+    let data_dir = update_test_dir("oversize");
+    let mut download =
+        UpdateDownload::begin(&data_dir, "0.1.362", "leaftext.msi", &blake3_hex(b"x"), 4)
+            .expect("download opens");
+
+    assert!(download.write_chunk(b"aaaa").is_ok());
+    let error = download
+        .write_chunk(b"and then some more")
+        .expect_err("overrun is refused");
+    assert!(error.contains("larger"), "unhelpful message: {error}");
+
+    let _ = fs::remove_dir_all(&data_dir);
+}
+
+#[test]
+fn release_metadata_cannot_escape_the_staging_folder() {
+    let data_dir = update_test_dir("traversal");
+    let digest = blake3_hex(b"x");
+
+    // A hostile or broken tag_name becomes a directory name, so separators and
+    // dot segments must not survive into it.
+    let staging = staging_dir(&data_dir, "../../evil");
+    assert!(
+        staging.starts_with(updates_dir(&data_dir)),
+        "escaped to {}",
+        staging.display()
+    );
+
+    // Asset names become file names in that folder, and are rejected outright
+    // rather than rewritten: a name we had to launder is a bad sign by itself.
+    for hostile in [
+        "../outside.msi",
+        "..\\outside.msi",
+        "sub/dir.msi",
+        ".hidden",
+        "",
+    ] {
+        assert!(
+            UpdateDownload::begin(&data_dir, "0.1.362", hostile, &digest, 1).is_err(),
+            "accepted asset name {hostile:?}"
+        );
+    }
+
+    let _ = fs::remove_dir_all(&data_dir);
+}
+
+#[test]
+fn a_malformed_checksum_is_refused_before_anything_downloads() {
+    let data_dir = update_test_dir("digest");
+    for bad in [
+        "",
+        "not-a-hash",
+        &"a".repeat(63),
+        &"a".repeat(65),
+        &"z".repeat(64),
+    ] {
+        assert!(
+            UpdateDownload::begin(&data_dir, "0.1.362", "leaftext.msi", bad, 10).is_err(),
+            "accepted digest {bad:?}"
+        );
+    }
+
+    // Checksum files conventionally carry the file name after the digest, and
+    // hex is case-insensitive; both must be accepted.
+    let digest = blake3_hex(b"x");
+    assert!(UpdateDownload::begin(
+        &data_dir,
+        "0.1.362",
+        "leaftext.msi",
+        &format!("{digest}  leaftext.msi"),
+        10
+    )
+    .is_ok());
+    assert!(UpdateDownload::begin(
+        &data_dir,
+        "0.1.362",
+        "leaftext.msi",
+        &digest.to_uppercase(),
+        10
+    )
+    .is_ok());
+
+    let _ = fs::remove_dir_all(&data_dir);
+}
+
+#[test]
+fn an_absurd_download_size_is_refused() {
+    let data_dir = update_test_dir("huge");
+    let digest = blake3_hex(b"x");
+    assert!(UpdateDownload::begin(&data_dir, "0.1.362", "a.msi", &digest, 0).is_err());
+    assert!(
+        UpdateDownload::begin(&data_dir, "0.1.362", "a.msi", &digest, MAX_UPDATE_BYTES + 1)
+            .is_err()
+    );
+    let _ = fs::remove_dir_all(&data_dir);
+}
+
+#[test]
+fn pruning_keeps_only_the_pending_version() {
+    let data_dir = update_test_dir("prune");
+    for version in ["0.1.358", "0.1.359", "0.1.362"] {
+        fs::create_dir_all(staging_dir(&data_dir, version)).expect("staging folder");
+    }
+
+    prune_staged(&data_dir, Some("0.1.362"));
+    let left: Vec<_> = fs::read_dir(updates_dir(&data_dir))
+        .expect("updates folder")
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(left, vec!["0.1.362".to_string()]);
+
+    // Nothing pending clears the lot, which is what runs after an update lands
+    // and takes the leftover helper copy with it.
+    prune_staged(&data_dir, None);
+    assert_eq!(
+        fs::read_dir(updates_dir(&data_dir))
+            .expect("updates folder")
+            .count(),
+        0
+    );
+
+    let _ = fs::remove_dir_all(&data_dir);
+}
+
+#[test]
+fn a_staged_record_without_its_installer_reads_as_nothing_staged() {
+    let data_dir = update_test_dir("halfdeleted");
+    let payload = b"installer".to_vec();
+    let digest = blake3_hex(&payload);
+    let mut download = UpdateDownload::begin(
+        &data_dir,
+        "0.1.362",
+        "leaftext.msi",
+        &digest,
+        payload.len() as u64,
+    )
+    .expect("download opens");
+    download.write_chunk(&payload).expect("chunk accepted");
+    let staged = download.finish().expect("download verifies");
+
+    // Someone clearing out AppData must not leave the button offering a restart
+    // that cannot happen.
+    fs::remove_file(staged.installer_path(&data_dir)).expect("remove installer");
+    assert!(read_staged(&data_dir, "0.1.362").is_none());
+
+    let _ = fs::remove_dir_all(&data_dir);
+}
+
+#[test]
+fn the_app_shell_allows_the_release_download_hosts() {
+    // The page fetches release metadata from the API host and the installer
+    // from the download host, which redirects to a githubusercontent CDN.
+    // Without all three in connect-src the webview blocks the update silently.
+    let html = app_shell_html();
+    let csp_line = html
+        .lines()
+        .find(|line| line.contains("Content-Security-Policy"))
+        .expect("shell declares a Content-Security-Policy");
+    let connect_src = csp_line
+        .split(';')
+        .map(str::trim)
+        .find(|directive| directive.starts_with("connect-src"))
+        .expect("CSP declares an explicit connect-src directive");
+    for host in [
+        "https://api.github.com",
+        "https://github.com",
+        "https://*.githubusercontent.com",
+    ] {
+        assert!(
+            connect_src.contains(host),
+            "connect-src must allow {host}: {connect_src}"
+        );
+    }
+}
+
+#[test]
+fn the_settings_panel_exposes_the_auto_update_toggle() {
+    let html = app_shell_html();
+    assert!(html.contains(r#"<input type="checkbox" id="autoUpdateEnabled""#));
+    assert!(html.contains(r#"data-i18n="settings.autoUpdate.label""#));
+
+    // Both locale tables must carry every update string, or the button renders
+    // blank for one of them.
+    for key in [
+        "update.available",
+        "update.downloading",
+        "update.restart",
+        "update.failed",
+        "settings.autoUpdate.label",
+        "settings.autoUpdate.help",
+    ] {
+        assert_eq!(
+            html.matches(&format!("'{key}':")).count(),
+            2,
+            "{key} is missing from a locale table"
+        );
+    }
+}
+
+#[test]
+fn the_page_is_told_which_installer_this_build_takes() {
+    let script = initial_update_script();
+    assert!(script.starts_with("window.__leafUpdateAsset = "));
+    assert!(script.contains(platform_asset_suffix()));
+
+    // The suffix has to match what the release workflow actually publishes.
+    #[cfg(windows)]
+    assert_eq!(platform_asset_suffix(), "-windows-x86_64.msi");
+    #[cfg(target_os = "macos")]
+    assert_eq!(platform_asset_suffix(), "-macos-universal.app.zip");
 }

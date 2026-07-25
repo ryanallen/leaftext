@@ -1,6 +1,6 @@
 # Releasing
 
-> Bump `Cargo.toml` and commit it first, then run `just release <version>` to verify, tag, and push. CI automatically builds Windows MSI, macOS DMG, and Linux artifacts.
+> Bump `Cargo.toml` and commit it first, then run `just release <version>` to verify, tag, and push. CI automatically builds the Windows MSI and the macOS DMG.
 
 leaftext releases are managed with a single `just release <version>` command — but it does **not** bump the version for you. You edit `version` in `Cargo.toml` to the new value and commit it first; `just release <version>` then verifies that `Cargo.toml` already matches the version you pass, tags the release, and pushes. CI takes over from there to build all platform artifacts and attach them to the GitHub Release.
 
@@ -35,9 +35,13 @@ After the tag push, the CI pipeline produces release artifacts for all supported
 
 | Platform | Artifact             |
 | -------- | -------------------- |
-| Windows  | 64-bit MSI installer |
+| Windows  | 64-bit MSI installer (per-user) |
 | macOS    | Universal DMG (Apple Silicon + Intel) |
-| Linux    | `.tar.gz` archive    |
+| macOS    | Universal `.app.zip`, the bundle the [in-app updater](../01-features/05-settings.md#updates) installs |
+
+Every artifact is published with a `.blake3` file beside it holding its digest. The updater refuses to stage a download that does not match, so a release missing its checksum falls back to notify-only: the button opens the release page instead of downloading.
+
+The digests are produced by the binary CI just built (`leaftext --hash-file <artifact> --hash-out <file>`), so the hash CI publishes and the hash the app verifies against can never come from different implementations.
 
 All artifacts are automatically attached to the GitHub Release at [github.com/ryanallen/leaftext/releases](https://github.com/ryanallen/leaftext/releases).
 

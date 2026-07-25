@@ -1,10 +1,21 @@
 <?xml version='1.0' encoding='windows-1252'?>
-<?if $(sys.BUILDARCH) = x64 or $(sys.BUILDARCH) = arm64 ?>
-    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
-<?else ?>
-    <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
-<?endif ?>
+<!-- Leaf Text installs per-user, into %LOCALAPPDATA%\Programs\leaftext.
 
+     This is the Chrome and VS Code (user installer) model, and it exists so
+     updates need no elevation: the in-app updater can run this package with
+     /qn and the user never sees a UAC prompt. A per-machine install into
+     Program Files would raise one on every single update.
+
+     Consequences of the per-user scope, all of which are handled below:
+       - Components landing in the user profile take an HKCU registry keypath
+         rather than a file keypath (ICE38), and name their folders in
+         RemoveFolder so uninstall leaves nothing behind (ICE64).
+       - The Install button carries no elevation shield, because nothing is
+         elevated.
+       - A copy installed by an older, per-machine build is NOT removed by this
+         package's MajorUpgrade: a different install context is out of its
+         reach. `src/platform.rs` cleans that up separately, once, with an
+         explicit elevation prompt. -->
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
     <Product
         Id='*'
@@ -23,7 +34,7 @@
             InstallerVersion='450'
             Languages='1033'
             Compressed='yes'
-            InstallScope='perMachine'
+            InstallScope='perUser'
             SummaryCodepage='1252'/>
 
         <MajorUpgrade
@@ -33,17 +44,34 @@
         <Media Id='1' Cabinet='media1.cab' EmbedCab='yes'/>
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
-            <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
-                <Directory Id='APPLICATIONFOLDER' Name='leaftext'>
-                    <Directory Id='Bin' Name='bin'>
-                        <Component Id='MainExecutable' Guid='*'>
-                            <File
-                                Id='MainExecutableFile'
-                                Name='leaftext.exe'
-                                DiskId='1'
-                                Source='$(var.CargoTargetBinDir)\leaftext.exe'
-                                KeyPath='yes'/>
-                        </Component>
+            <Directory Id='LocalAppDataFolder'>
+                <!-- %LOCALAPPDATA%\Programs is where per-user app installers
+                     conventionally land, so leaftext sits beside them. -->
+                <Directory Id='LocalProgramsFolder' Name='Programs'>
+                    <Directory Id='APPLICATIONFOLDER' Name='leaftext'>
+                        <Directory Id='Bin' Name='bin'>
+                            <Component Id='MainExecutable' Guid='*'>
+                                <File
+                                    Id='MainExecutableFile'
+                                    Name='leaftext.exe'
+                                    DiskId='1'
+                                    Source='$(var.CargoTargetBinDir)\leaftext.exe'
+                                    KeyPath='no'/>
+                                <!-- Installing into the user profile means the
+                                     keypath has to be under HKCU, not the file
+                                     (ICE38), and every folder created has to be
+                                     named for removal (ICE64). -->
+                                <RegistryValue
+                                    Root='HKCU'
+                                    Key='Software\ryanallen\leaftext'
+                                    Name='executable'
+                                    Type='integer'
+                                    Value='1'
+                                    KeyPath='yes'/>
+                                <RemoveFolder Id='RemoveBinFolder' Directory='Bin' On='uninstall'/>
+                                <RemoveFolder Id='RemoveApplicationFolder' Directory='APPLICATIONFOLDER' On='uninstall'/>
+                            </Component>
+                        </Directory>
                     </Directory>
                 </Directory>
             </Directory>
@@ -145,7 +173,8 @@
                          Text='!(loc.InstallDirDlgChange)'/>
 
                 <Control Id='BottomLine' Type='Line' X='0' Y='234' Width='370' Height='0'/>
-                <Control Id='Install' Type='PushButton' ElevationShield='yes'
+                <!-- No elevation shield: a per-user install raises no UAC prompt. -->
+                <Control Id='Install' Type='PushButton'
                          X='212' Y='243' Width='80' Height='17' Default='yes'
                          Text='!(loc.VerifyReadyDlgInstall)'/>
                 <Control Id='Cancel' Type='PushButton' X='304' Y='243' Width='56' Height='17'

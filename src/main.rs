@@ -1,5 +1,9 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
+#[cfg(not(any(windows, target_os = "macos")))]
+compile_error!("leaftext builds for Windows and macOS only");
+
+mod platform;
 mod single_instance;
 
 use std::{
@@ -21,16 +25,16 @@ use leaftext::indexer::{event_script, GraphRequest, IndexerEvent, IndexerWorker}
 use leaftext::{
     app_data_dir, app_shell_html, blocks_resynced_script, bundled_asset_response, code_view_script,
     config_file_path, document_pager_html, fragment_scroll_script, glossary_sheet_script,
-    image_refresh_script, initial_settings_script, initial_state_script, initial_version_script,
-    is_local_image_path, line_count_script, load_recent_files, load_settings,
-    local_image_protocol_response, local_image_source_dir, navigation_state_script,
+    image_refresh_script, initial_settings_script, initial_state_script, initial_update_script,
+    initial_version_script, is_local_image_path, line_count_script, load_recent_files,
+    load_settings, local_image_protocol_response, local_image_source_dir, navigation_state_script,
     open_document_with_recent, open_error_state_script, opened_document_from_markdown,
     opened_document_from_xml, pager_loaded_script, render_markdown_document, save_recent_files,
     save_result_script, save_settings, scroll_anchor_script, settings_file_path,
-    source_updated_script, webview_user_data_dir, workspace_reload_script, workspace_state_script,
-    workspace_switch_script, DocumentFormat, EditableDocument, GraphScope, LibraryView,
-    OpenedDocument, RecentFiles, ScrollAnchor, Settings, LOCAL_ASSET_PROTOCOL,
-    LOCAL_IMAGE_PROTOCOL,
+    source_updated_script, update_state_script, webview_user_data_dir, workspace_reload_script,
+    workspace_state_script, workspace_switch_script, DocumentFormat, EditableDocument, GraphScope,
+    LibraryView, OpenedDocument, RecentFiles, ScrollAnchor, Settings, UpdateDownload,
+    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -39,11 +43,13 @@ use notify_debouncer_mini::{
 };
 use rfd::FileDialog;
 use serde::Deserialize;
+#[cfg(not(windows))]
+use tao::window::Icon;
 use tao::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy},
-    window::{Icon, WindowBuilder},
+    window::WindowBuilder,
 };
 use wry::{
     http::{Request, Response},
@@ -232,6 +238,35 @@ enum UserEvent {
     /// A result/progress event from the background indexer worker, delivered to
     /// the webview through its library callbacks.
     Indexer(IndexerEvent),
+    /// Persist the auto-update toggle.
+    SetAutoUpdateEnabled {
+        enabled: bool,
+    },
+    /// The page checked GitHub; record when, so the next launches don't.
+    UpdateChecked {
+        /// Version found, empty when already current. Only used for logging.
+        version: String,
+    },
+    /// Open a staging folder for `version` and expect `size` bytes hashing to
+    /// `blake3`. Any earlier attempt at the same version is discarded.
+    UpdateDownloadBegin {
+        version: String,
+        asset: String,
+        blake3: String,
+        size: u64,
+    },
+    /// One base64 chunk of the installer, in order.
+    UpdateDownloadChunk {
+        data: String,
+    },
+    /// The page finished fetching: verify and publish, or report why not.
+    UpdateDownloadFinish,
+    /// The page could not fetch the installer; drop the partial file.
+    UpdateDownloadFailed {
+        message: String,
+    },
+    /// Install the staged update and relaunch.
+    ApplyUpdate,
 }
 
 #[derive(Debug, Deserialize)]
@@ -383,9 +418,79 @@ enum IpcCommand {
     /// Revert the most recent reading-view edit in the active document.
     #[serde(rename = "undoEdit")]
     UndoEdit,
+    #[serde(rename = "setAutoUpdateEnabled")]
+    SetAutoUpdateEnabled { enabled: bool },
+    /// Sent after every release check, found or not, to reset the throttle.
+    #[serde(rename = "updateChecked")]
+    UpdateChecked {
+        #[serde(default)]
+        version: String,
+    },
+    #[serde(rename = "updateDownloadBegin")]
+    UpdateDownloadBegin {
+        version: String,
+        asset: String,
+        blake3: String,
+        size: u64,
+    },
+    #[serde(rename = "updateDownloadChunk")]
+    UpdateDownloadChunk { data: String },
+    #[serde(rename = "updateDownloadFinish")]
+    UpdateDownloadFinish,
+    #[serde(rename = "updateDownloadFailed")]
+    UpdateDownloadFailed {
+        #[serde(default)]
+        message: String,
+    },
+    #[serde(rename = "applyUpdate")]
+    ApplyUpdate,
+}
+
+/// Read `--name value` out of the command line.
+fn flag_value(name: &str) -> Option<String> {
+    let mut args = env::args();
+    while let Some(argument) = args.next() {
+        if argument == name {
+            return args.next();
+        }
+    }
+    None
+}
+
+/// Release-build helper: write `<digest>  <name>` for one file into another.
+///
+/// The release workflow publishes this beside each installer, and the updater
+/// verifies downloads against it. Hashing with the binary that was just built
+/// means CI and the app cannot disagree about the algorithm. It writes to a
+/// file rather than stdout because the Windows build is a GUI-subsystem
+/// executable with no console attached to print to.
+fn run_hash_mode(input: &Path, output: &Path) -> io::Result<()> {
+    let digest = leaftext::hash_file(input)?;
+    let name = input
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    fs::write(output, format!("{digest}  {name}\n"))
 }
 
 fn main() {
+    // A detached copy of this binary, spawned by the app to install a staged
+    // update after the app exits. It opens no window and touches no settings.
+    if let Some(request) = platform::parse_apply_request(env::args()) {
+        if let Err(error) = platform::run_update_apply(&request) {
+            eprintln!("Update failed: {error}");
+        }
+        return;
+    }
+
+    if let (Some(input), Some(output)) = (flag_value("--hash-file"), flag_value("--hash-out")) {
+        if let Err(error) = run_hash_mode(Path::new(&input), Path::new(&output)) {
+            eprintln!("Hashing {input} failed: {error}");
+            std::process::exit(1);
+        }
+        return;
+    }
+
     if let Err(error) = run_app() {
         let message = startup_failure_message(error.as_ref());
         eprintln!("{message}");
@@ -395,8 +500,9 @@ fn main() {
 
 /// Decode the bundled leaf logo into a window icon. Used on non-Windows platforms;
 /// on Windows the taskbar rides the executable's embedded icon and the caption is
-/// left icon-free, so no window icon is set there (hence dead there).
-#[cfg_attr(windows, allow(dead_code))]
+/// left icon-free, so no window icon is set there. Compiled out entirely there,
+/// which is what keeps the PNG decoder off the Windows dependency tree.
+#[cfg(not(windows))]
 fn load_window_icon() -> Option<Icon> {
     const ICON_PNG: &[u8] = include_bytes!("assets/leaf-256.png");
     let decoder = png::Decoder::new(ICON_PNG);
@@ -507,6 +613,57 @@ fn apply_window_chrome(
 ) {
 }
 
+/// Push a terminal update state to the page. Progress is reported by the page
+/// itself, so the host only ever sends `staged` or `failed`.
+fn report_update_state(
+    webview: Option<&WebView>,
+    status: &str,
+    version: &str,
+    message: Option<&str>,
+) {
+    if let Some(webview) = webview {
+        if let Err(error) = webview.evaluate_script(&update_state_script(status, version, message))
+        {
+            eprintln!("Failed to report update state: {error}");
+        }
+    }
+}
+
+/// Reconcile the staged-update bookkeeping at launch.
+///
+/// If the staged version is the version now running, the install worked and the
+/// record is stale — clear it. Then delete every staged folder except one still
+/// genuinely pending, which also cleans up the helper copy the last update left
+/// behind. Returns true when settings changed and need saving.
+fn reconcile_staged_update(settings: &mut Settings) -> bool {
+    let Some(data_dir) = app_data_dir() else {
+        return false;
+    };
+    let running = env!("CARGO_PKG_VERSION");
+    let mut changed = false;
+
+    if !settings.update_staged_version.is_empty()
+        && !leaftext::is_newer_version(&settings.update_staged_version, running)
+    {
+        settings.update_staged_version.clear();
+        changed = true;
+    }
+
+    // A record pointing at a folder that is gone is worse than no record: the
+    // button would offer a restart that cannot happen.
+    if !settings.update_staged_version.is_empty()
+        && leaftext::read_staged(&data_dir, &settings.update_staged_version).is_none()
+    {
+        settings.update_staged_version.clear();
+        changed = true;
+    }
+
+    let keep = (!settings.update_staged_version.is_empty())
+        .then_some(settings.update_staged_version.as_str());
+    leaftext::prune_staged(&data_dir, keep);
+    changed
+}
+
 /// Write the UI toggles to disk, logging but not propagating I/O errors.
 fn persist_settings(settings: &Settings, settings_path: Option<&PathBuf>) {
     if let Some(path) = settings_path {
@@ -536,6 +693,32 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .as_ref()
         .map(load_settings)
         .unwrap_or_default();
+
+    // Before the page can ask about updates, settle what happened to the last
+    // one: clear a record the running version already satisfies, and sweep away
+    // installers (and the helper copy) that are no longer needed.
+    let mut settings_dirty = reconcile_staged_update(&mut settings);
+
+    // Leaf Text installs per-user now. A copy from a machine-wide build may
+    // still be registered — either because this build arrived by an update that
+    // could not finish the cleanup, or because the MSI was run by hand. Offer
+    // to clear it out, at most LEGACY_UNINSTALL_MAX_ATTEMPTS times, so someone
+    // who keeps declining the elevation prompt stops being asked.
+    const LEGACY_UNINSTALL_MAX_ATTEMPTS: u32 = 2;
+    if settings.legacy_uninstall_attempts < LEGACY_UNINSTALL_MAX_ATTEMPTS
+        && platform::has_legacy_per_machine_install()
+    {
+        settings.legacy_uninstall_attempts += 1;
+        settings_dirty = true;
+        // Record the attempt before making it: a crash mid-uninstall must not
+        // reset the count and turn this into a prompt on every launch.
+        persist_settings(&settings, settings_path.as_ref());
+        platform::retire_legacy_install();
+    }
+
+    if settings_dirty {
+        persist_settings(&settings, settings_path.as_ref());
+    }
 
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
     // `mut` is used only by the non-Windows icon block below.
@@ -602,6 +785,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .with_initialization_script(initial_settings_script(&settings))
         .with_initialization_script(initial_state_script(&recent.files))
         .with_initialization_script(initial_version_script())
+        .with_initialization_script(initial_update_script())
         // Whether the OS window is frameless (Windows), so the frontend shows its
         // own title-bar chrome — drag region + minimize/maximize/close buttons.
         .with_initialization_script(format!("window.__leafFrameless = {};", cfg!(windows)))
@@ -651,27 +835,9 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         ))
     };
 
-    #[cfg(any(
-        target_os = "windows",
-        target_os = "macos",
-        target_os = "ios",
-        target_os = "android"
-    ))]
+    // Windows and macOS both host the web view in the window directly. (The GTK
+    // path wry offers for other Unix needs a vbox instead, and is not built.)
     let webview = builder.build(&window)?;
-
-    #[cfg(not(any(
-        target_os = "windows",
-        target_os = "macos",
-        target_os = "ios",
-        target_os = "android"
-    )))]
-    let webview = {
-        use tao::platform::unix::WindowExtUnix;
-        use wry::WebViewBuilderExtUnix;
-
-        let vbox = window.default_vbox().expect("GTK window vbox");
-        builder.build_gtk(vbox)?
-    };
 
     let mut workspace = Workspace::default();
 
@@ -718,6 +884,10 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     // maximize/restore icon tracks maximize changes from any source (the button,
     // a double-click, snap, or Win+Up), not just the button.
     let mut last_maximized = settings.window_maximized;
+
+    // The installer download in flight, if any. One at a time: the page only
+    // starts a new one after the previous finished or failed.
+    let mut update_download: Option<UpdateDownload> = None;
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -1364,6 +1534,122 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                     }
                 }
             }
+            Event::UserEvent(UserEvent::SetAutoUpdateEnabled { enabled }) => {
+                settings.auto_update_enabled = enabled;
+                persist_settings(&settings, settings_path.as_ref());
+            }
+            Event::UserEvent(UserEvent::UpdateChecked { version }) => {
+                settings.update_last_checked = leaftext::now_unix();
+                persist_settings(&settings, settings_path.as_ref());
+                if !version.is_empty() {
+                    eprintln!("Update available: {version}");
+                }
+            }
+            Event::UserEvent(UserEvent::UpdateDownloadBegin {
+                version,
+                asset,
+                blake3,
+                size,
+            }) => {
+                update_download = None;
+                let started = app_data_dir()
+                    .ok_or_else(|| "there is no app data folder to download into".to_string());
+                match started.and_then(|data_dir| {
+                    UpdateDownload::begin(&data_dir, &version, &asset, &blake3, size)
+                }) {
+                    Ok(download) => update_download = Some(download),
+                    Err(error) => {
+                        eprintln!("Update download refused: {error}");
+                        report_update_state(webview.as_ref(), "failed", &version, Some(&error));
+                    }
+                }
+            }
+            Event::UserEvent(UserEvent::UpdateDownloadChunk { data }) => {
+                if let Some(download) = update_download.as_mut() {
+                    let written = leaftext::decode_base64(&data)
+                        .ok_or_else(|| "a download chunk was malformed".to_string())
+                        .and_then(|bytes| download.write_chunk(&bytes));
+                    if let Err(error) = written {
+                        let version = download.version().to_string();
+                        download.discard();
+                        update_download = None;
+                        eprintln!("Update download failed: {error}");
+                        report_update_state(webview.as_ref(), "failed", &version, Some(&error));
+                    }
+                }
+            }
+            Event::UserEvent(UserEvent::UpdateDownloadFinish) => {
+                if let Some(download) = update_download.take() {
+                    let version = download.version().to_string();
+                    match download.finish() {
+                        Ok(staged) => {
+                            settings.update_staged_version = staged.version.clone();
+                            persist_settings(&settings, settings_path.as_ref());
+                            // Now that a newer one is ready, older staged
+                            // installers are just disk usage.
+                            if let Some(data_dir) = app_data_dir() {
+                                leaftext::prune_staged(&data_dir, Some(&staged.version));
+                            }
+                            report_update_state(webview.as_ref(), "staged", &staged.version, None);
+                        }
+                        Err(error) => {
+                            eprintln!("Update verification failed: {error}");
+                            report_update_state(webview.as_ref(), "failed", &version, Some(&error));
+                        }
+                    }
+                }
+            }
+            Event::UserEvent(UserEvent::UpdateDownloadFailed { message }) => {
+                let version = update_download
+                    .as_ref()
+                    .map(|download| download.version().to_string())
+                    .unwrap_or_default();
+                if let Some(download) = update_download.take() {
+                    download.discard();
+                }
+                eprintln!("Update download failed: {message}");
+                report_update_state(webview.as_ref(), "failed", &version, Some(&message));
+            }
+            Event::UserEvent(UserEvent::ApplyUpdate) => {
+                let staged = app_data_dir().and_then(|data_dir| {
+                    leaftext::read_staged(&data_dir, &settings.update_staged_version)
+                        .map(|staged| (data_dir, staged))
+                });
+                match staged {
+                    Some((data_dir, staged)) => {
+                        let directory = leaftext::staging_dir(&data_dir, &staged.version);
+                        match platform::spawn_update_helper(&directory) {
+                            Ok(()) => {
+                                // The helper waits for this process to exit
+                                // before installing, so shut down the same way
+                                // the close button does.
+                                settings.window_width = last_windowed_size.width.round() as u32;
+                                settings.window_height = last_windowed_size.height.round() as u32;
+                                settings.window_maximized = window.is_maximized();
+                                persist_settings(&settings, settings_path.as_ref());
+                                let _ = webview.take();
+                                *control_flow = ControlFlow::Exit;
+                            }
+                            Err(error) => {
+                                let message = format!("could not start the installer: {error}");
+                                eprintln!("{message}");
+                                report_update_state(
+                                    webview.as_ref(),
+                                    "failed",
+                                    &staged.version,
+                                    Some(&message),
+                                );
+                            }
+                        }
+                    }
+                    None => {
+                        let message = "the staged update is no longer on disk".to_string();
+                        settings.update_staged_version.clear();
+                        persist_settings(&settings, settings_path.as_ref());
+                        report_update_state(webview.as_ref(), "failed", "", Some(&message));
+                    }
+                }
+            }
             _ => {}
         }
 
@@ -1636,6 +1922,37 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
             }
             IpcCommand::UndoEdit => {
                 let _ = proxy.send_event(UserEvent::UndoEdit);
+            }
+            IpcCommand::SetAutoUpdateEnabled { enabled } => {
+                let _ = proxy.send_event(UserEvent::SetAutoUpdateEnabled { enabled });
+            }
+            IpcCommand::UpdateChecked { version } => {
+                let _ = proxy.send_event(UserEvent::UpdateChecked { version });
+            }
+            IpcCommand::UpdateDownloadBegin {
+                version,
+                asset,
+                blake3,
+                size,
+            } => {
+                let _ = proxy.send_event(UserEvent::UpdateDownloadBegin {
+                    version,
+                    asset,
+                    blake3,
+                    size,
+                });
+            }
+            IpcCommand::UpdateDownloadChunk { data } => {
+                let _ = proxy.send_event(UserEvent::UpdateDownloadChunk { data });
+            }
+            IpcCommand::UpdateDownloadFinish => {
+                let _ = proxy.send_event(UserEvent::UpdateDownloadFinish);
+            }
+            IpcCommand::UpdateDownloadFailed { message } => {
+                let _ = proxy.send_event(UserEvent::UpdateDownloadFailed { message });
+            }
+            IpcCommand::ApplyUpdate => {
+                let _ = proxy.send_event(UserEvent::ApplyUpdate);
             }
         }
     }
@@ -2998,9 +3315,6 @@ fn open_with_os(target: &str) -> io::Result<()> {
     #[cfg(target_os = "macos")]
     let status = Command::new("open").arg(target).status()?;
 
-    #[cfg(all(unix, not(target_os = "macos")))]
-    let status = Command::new("xdg-open").arg(target).status()?;
-
     if status.success() {
         Ok(())
     } else {
@@ -3012,8 +3326,7 @@ fn open_with_os(target: &str) -> io::Result<()> {
 }
 
 /// Open the OS file manager with `path` selected: Explorer on Windows, Finder
-/// on macOS, and the freedesktop file manager (falling back to the parent
-/// folder) on other Unix systems.
+/// on macOS.
 fn reveal_in_file_manager(path: &Path) -> io::Result<()> {
     #[cfg(target_os = "windows")]
     {
@@ -3041,46 +3354,10 @@ fn reveal_in_file_manager(path: &Path) -> io::Result<()> {
             ))
         };
     }
-
-    #[cfg(all(unix, not(target_os = "macos")))]
-    {
-        // The freedesktop FileManager1 interface selects the file; fall back to
-        // opening the folder with xdg-open when it's missing or fails.
-        if let Some(uri) = url::Url::from_file_path(path)
-            .ok()
-            .map(|url| url.to_string())
-        {
-            let dbus = Command::new("dbus-send")
-                .args([
-                    "--session",
-                    "--dest=org.freedesktop.FileManager1",
-                    "--type=method_call",
-                    "/org/freedesktop/FileManager1",
-                    "org.freedesktop.FileManager1.ShowItems",
-                ])
-                .arg(format!("array:string:{uri}"))
-                .arg("string:")
-                .status();
-            if matches!(dbus, Ok(status) if status.success()) {
-                return Ok(());
-            }
-        }
-
-        let folder = path.parent().unwrap_or(path);
-        let status = Command::new("xdg-open").arg(folder).status()?;
-        return if status.success() {
-            Ok(())
-        } else {
-            Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!("xdg-open exited with status {status}"),
-            ))
-        };
-    }
 }
 
 /// Put the file on the system clipboard for pasting into the OS file manager.
-/// `cut` requests move semantics. Uses platform tooling; best-effort on Linux.
+/// `cut` requests move semantics.
 fn copy_file_to_clipboard(path: &Path, cut: bool) -> io::Result<()> {
     #[cfg(target_os = "windows")]
     {
@@ -3130,42 +3407,11 @@ fn copy_file_to_clipboard(path: &Path, cut: bool) -> io::Result<()> {
             ))
         };
     }
-
-    #[cfg(all(unix, not(target_os = "macos")))]
-    {
-        // Best-effort: many file managers read `x-special/gnome-copied-files`
-        // (a `copy`/`cut` line plus file URIs) via xclip.
-        use std::io::Write;
-        use std::process::Stdio;
-        let uri = url::Url::from_file_path(path)
-            .map(|url| url.to_string())
-            .unwrap_or_default();
-        let verb = if cut { "cut" } else { "copy" };
-        let payload = format!("{verb}\n{uri}");
-        let mut child = Command::new("xclip")
-            .args([
-                "-i",
-                "-selection",
-                "clipboard",
-                "-t",
-                "x-special/gnome-copied-files",
-            ])
-            .stdin(Stdio::piped())
-            .spawn()?;
-        if let Some(mut stdin) = child.stdin.take() {
-            stdin.write_all(payload.as_bytes())?;
-        }
-        child.wait()?;
-        return Ok(());
-    }
 }
 
 /// Copy a file's path (as text) to the clipboard.
 fn copy_path_to_clipboard(path: &Path) -> io::Result<()> {
-    let text = path.display().to_string();
-    arboard::Clipboard::new()
-        .and_then(|mut clipboard| clipboard.set_text(text))
-        .map_err(|error| io::Error::new(io::ErrorKind::Other, error.to_string()))
+    platform::set_clipboard_text(&path.display().to_string())
 }
 
 /// Rename a file in place. The new name must be a bare file name: empty names,
@@ -3201,13 +3447,13 @@ fn rename_file(path: &Path, new_name: &str) -> io::Result<PathBuf> {
     Ok(target)
 }
 
-/// Move a file to the OS trash / Recycle Bin (reversible), via the `trash` crate.
+/// Move a file to the OS trash / Recycle Bin (reversible).
 fn delete_to_trash(path: &Path) -> Result<(), String> {
-    trash::delete(path).map_err(|error| error.to_string())
+    platform::move_to_trash(path)
 }
 
 /// Open the OS file-properties view: the Properties dialog on Windows, Finder's
-/// Get Info on macOS, and a Reveal fallback on other Unix (no universal dialog).
+/// Get Info on macOS.
 fn show_properties(path: &Path) -> io::Result<()> {
     #[cfg(target_os = "windows")]
     {
@@ -3249,11 +3495,6 @@ fn show_properties(path: &Path) -> io::Result<()> {
                 format!("osascript exited with status {status}"),
             ))
         };
-    }
-
-    #[cfg(all(unix, not(target_os = "macos")))]
-    {
-        return reveal_in_file_manager(path);
     }
 }
 

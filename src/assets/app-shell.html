@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: http://leaf-image.local leaf-image: data:; script-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset:; style-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset: https://fonts.googleapis.com; font-src 'self' data: http://leaf-asset.local leaf-asset: https://fonts.gstatic.com; connect-src 'self' https://api.github.com">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: http://leaf-image.local leaf-image: data:; script-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset:; style-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset: https://fonts.googleapis.com; font-src 'self' data: http://leaf-asset.local leaf-asset: https://fonts.gstatic.com; connect-src 'self' https://api.github.com https://github.com https://*.githubusercontent.com">
 <title>Leaf Text</title>
 <script>{{THEME_BOOTSTRAP_SCRIPT}}</script>
 <script>{{LOCALE_BOOTSTRAP_SCRIPT}}</script>
@@ -84,6 +84,11 @@
           <input type="checkbox" id="indexingEnabled" aria-describedby="indexingEnabledHelp">
           <span class="setting-label" data-i18n="settings.indexing.label">Index entire device</span>
           <span class="setting-help" id="indexingEnabledHelp" data-i18n="settings.indexing.help">Crawl this device for Markdown files and rescan each time you open the app.</span>
+        </label>
+        <label class="setting-control setting-control-inline" for="autoUpdateEnabled">
+          <input type="checkbox" id="autoUpdateEnabled" aria-describedby="autoUpdateEnabledHelp">
+          <span class="setting-label" data-i18n="settings.autoUpdate.label">Download updates</span>
+          <span class="setting-help" id="autoUpdateEnabledHelp" data-i18n="settings.autoUpdate.help">Fetch new versions in the background and offer a restart. Installing always waits for you to click. Off checks for updates but only links to the download page.</span>
         </label>
       </div>
     </details>

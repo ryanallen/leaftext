@@ -100,10 +100,6 @@ Cut and Copy place the file itself on the system clipboard, so you paste it in y
 
 - Windows: Explorer; the file Properties dialog.
 - macOS: Finder; Get Info.
-- Linux: the default file manager; Properties falls back to revealing the file.
-
-> [!NOTE]
-> Clipboard "Copy"/"Cut" and "Properties" are best-effort on Linux, where behavior varies by desktop.
 
 ## Live updates
 

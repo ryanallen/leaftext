@@ -36,7 +36,7 @@ flowchart LR
 
 ## Shortcuts
 
-| Action | Windows / Linux | macOS |
+| Action | Windows | macOS |
 | --- | --- | --- |
 | Open file | `Ctrl+O` | `Cmd+O` |
 | Close tab | `Ctrl+W` | `Cmd+W` |

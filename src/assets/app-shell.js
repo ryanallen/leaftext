@@ -2208,13 +2208,27 @@ window.leafSetSearchResults = (payload) => {
 renderLibrary();
 applyPaneLayout();
 send({ command: 'getFileTree' });
-// Async update check: compare the running version against the latest GitHub
-// release and, if newer, reveal the settings-button dot and the green update
-// button (which opens the release page in the system browser). Silent on any
-// failure — offline, rate-limited, or a malformed response just skips it.
+// Updates. The check compares the running version against the latest GitHub
+// release; if a newer one exists and publishes a checksum for this platform's
+// installer, the page downloads it and streams it to the host, which writes,
+// hashes, and stages it. The button then offers a restart. Silent on any
+// failure — offline, rate-limited, or a malformed response leaves the UI alone.
+//
+// The download lives here rather than in Rust because the web view already has
+// an OS-maintained TLS stack; the host owns everything that decides whether the
+// bytes are allowed to run.
 const settingsAlertDot = document.getElementById('settingsAlertDot');
 const settingsUpdate = document.getElementById('settingsUpdate');
+const autoUpdateControl = document.getElementById('autoUpdateEnabled');
 const LEAF_VERSION = typeof window.__leafVersion === 'string' ? window.__leafVersion : null;
+let autoUpdateEnabled = LEAF_SETTINGS.autoUpdateEnabled !== false;
+if (autoUpdateControl) {
+  autoUpdateControl.checked = autoUpdateEnabled;
+  autoUpdateControl.addEventListener('change', () => {
+    autoUpdateEnabled = autoUpdateControl.checked;
+    send({ command: 'setAutoUpdateEnabled', enabled: autoUpdateEnabled });
+  });
+}
 function parseVersion(value) {
   return String(value || '').replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
 }
@@ -2228,16 +2242,146 @@ function isNewerVersion(candidate, current) {
   }
   return false;
 }
-function showUpdateAvailable(version, url) {
-  if (settingsAlertDot) settingsAlertDot.hidden = false;
+const RELEASES_PAGE = 'https://github.com/ryanallen/leaftext/releases/latest';
+const UPDATE_ASSET_SUFFIX = typeof window.__leafUpdateAsset === 'string' ? window.__leafUpdateAsset : '';
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+// One IPC message per network chunk would be hundreds of messages for a 6 MB
+// installer, so bytes are pooled to roughly this much before being handed over.
+const UPDATE_CHUNK_BYTES = 256 * 1024;
+
+// What the update button is currently offering. `available` is the notify-only
+// state (auto-update off, or a release with no checksum to verify against);
+// `staged` means a verified installer is on disk and the app can restart into it.
+let updateState = { status: 'idle', version: '', url: RELEASES_PAGE, percent: 0, message: '' };
+
+function renderUpdateButton() {
   if (!settingsUpdate) return;
-  settingsUpdate.textContent = window.leafLocale.t('update.available', { version });
-  settingsUpdate.title = window.leafLocale.t('update.title');
-  settingsUpdate.hidden = false;
-  settingsUpdate.onclick = () => send({ command: 'openExternal', url });
+  const { status, version, percent } = updateState;
+  const idle = status === 'idle' || status === 'upToDate';
+  if (settingsAlertDot) settingsAlertDot.hidden = idle;
+  settingsUpdate.hidden = idle;
+  if (idle) return;
+
+  const labels = {
+    available: () => window.leafLocale.t('update.available', { version }),
+    downloading: () => window.leafLocale.t('update.downloading', { version, percent }),
+    staged: () => window.leafLocale.t('update.restart', { version }),
+    failed: () => window.leafLocale.t('update.failed'),
+  };
+  settingsUpdate.textContent = (labels[status] || labels.available)();
+  settingsUpdate.title = updateState.message || window.leafLocale.t('update.title');
+  // Only a staged, verified installer offers to install. Everything else falls
+  // back to the release page, which is what the app did before it could update
+  // itself, and is always a safe thing for the button to do.
+  settingsUpdate.disabled = status === 'downloading';
+  settingsUpdate.onclick = status === 'staged'
+    ? () => send({ command: 'applyUpdate' })
+    : () => send({ command: 'openExternal', url: updateState.url || RELEASES_PAGE });
 }
+
+function setUpdateState(next) {
+  updateState = Object.assign({}, updateState, next);
+  renderUpdateButton();
+}
+
+// Terminal states pushed by the host once it has written and verified (or
+// rejected) the download. Progress is tracked here, since this side is the one
+// doing the fetching.
+window.leafUpdateState = (state) => {
+  if (!state || typeof state !== 'object') return;
+  setUpdateState({
+    status: state.status || 'failed',
+    version: state.version || updateState.version,
+    message: state.message || '',
+  });
+};
+
+// Base64 without blowing the argument limit: btoa needs a binary string, and
+// String.fromCharCode.apply on a whole 256 KB buffer overflows the stack.
+function base64FromBytes(bytes) {
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += 8192) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(offset, offset + 8192));
+  }
+  return btoa(binary);
+}
+
+// Stream the installer to the host, which writes and hashes it. Chunks are
+// pooled first so the IPC channel carries tens of messages, not hundreds.
+async function streamInstaller(url, size) {
+  const response = await fetch(url);
+  if (!response.ok || !response.body) throw new Error(`download failed (${response.status})`);
+  const reader = response.body.getReader();
+  let pending = [];
+  let pendingBytes = 0;
+  let received = 0;
+
+  const flush = () => {
+    if (!pendingBytes) return;
+    const merged = new Uint8Array(pendingBytes);
+    let offset = 0;
+    for (const part of pending) {
+      merged.set(part, offset);
+      offset += part.length;
+    }
+    send({ command: 'updateDownloadChunk', data: base64FromBytes(merged) });
+    pending = [];
+    pendingBytes = 0;
+  };
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    pending.push(value);
+    pendingBytes += value.length;
+    received += value.length;
+    if (pendingBytes >= UPDATE_CHUNK_BYTES) flush();
+    if (size) {
+      setUpdateState({ status: 'downloading', percent: Math.min(99, Math.floor((received / size) * 100)) });
+    }
+  }
+  flush();
+}
+
+// Fetch the release's checksum file and stage the installer behind it. Anything
+// that goes wrong leaves the button pointing at the release page.
+async function downloadUpdate(version, installer, checksum) {
+  setUpdateState({ status: 'downloading', version, percent: 0 });
+  try {
+    const sums = await fetch(checksum.browser_download_url);
+    if (!sums.ok) throw new Error(`checksum unavailable (${sums.status})`);
+    const digest = (await sums.text()).trim().split(/\s+/)[0];
+
+    send({
+      command: 'updateDownloadBegin',
+      version,
+      asset: installer.name,
+      blake3: digest,
+      size: installer.size,
+    });
+    await streamInstaller(installer.browser_download_url, installer.size);
+    send({ command: 'updateDownloadFinish' });
+  } catch (error) {
+    send({ command: 'updateDownloadFailed', message: String((error && error.message) || error) });
+  }
+}
+
 async function checkForUpdate() {
   if (!LEAF_VERSION) return;
+
+  // An installer verified in an earlier session is still good; offer it before
+  // going anywhere near the network.
+  const staged = LEAF_SETTINGS.updateStagedVersion;
+  if (staged && isNewerVersion(staged, LEAF_VERSION)) {
+    setUpdateState({ status: 'staged', version: String(staged) });
+    return;
+  }
+
+  // Throttled: the app used to spend a request on every launch against an
+  // unauthenticated 60-per-hour limit, for an answer that changes at most daily.
+  const lastChecked = Number(LEAF_SETTINGS.updateLastChecked || 0) * 1000;
+  if (lastChecked && Date.now() - lastChecked < UPDATE_CHECK_INTERVAL_MS) return;
+
   try {
     const res = await fetch('https://api.github.com/repos/ryanallen/leaftext/releases/latest', {
       headers: { Accept: 'application/vnd.github+json' },
@@ -2245,9 +2389,28 @@ async function checkForUpdate() {
     if (!res.ok) return;
     const data = await res.json();
     const tag = data && data.tag_name;
-    if (tag && isNewerVersion(tag, LEAF_VERSION)) {
-      showUpdateAvailable(String(tag).replace(/^v/i, ''), data.html_url || 'https://github.com/ryanallen/leaftext/releases/latest');
+    send({ command: 'updateChecked', version: tag && isNewerVersion(tag, LEAF_VERSION) ? String(tag) : '' });
+    if (!tag || !isNewerVersion(tag, LEAF_VERSION)) return;
+
+    const version = String(tag).replace(/^v/i, '');
+    const url = data.html_url || RELEASES_PAGE;
+    const assets = Array.isArray(data.assets) ? data.assets : [];
+    const installer = UPDATE_ASSET_SUFFIX
+      ? assets.find((asset) => asset && typeof asset.name === 'string' && asset.name.endsWith(UPDATE_ASSET_SUFFIX))
+      : null;
+    const checksum = installer
+      ? assets.find((asset) => asset && asset.name === `${installer.name}.blake3`)
+      : null;
+
+    // No installer for this platform, no published checksum to verify it
+    // against, or the user turned auto-update off: notify only, which is what
+    // the button did before any of this existed.
+    if (!installer || !checksum || !autoUpdateEnabled) {
+      setUpdateState({ status: 'available', version, url });
+      return;
     }
+    setUpdateState({ status: 'available', version, url });
+    await downloadUpdate(version, installer, checksum);
   } catch (_) {
     // Offline or rate-limited: leave the UI as-is.
   }
@@ -2464,6 +2627,7 @@ window.leafLocale.subscribe(() => {
   applyScanProgress(lastScanProgress);
   renderLibrary();
   updateThemeSelection();
+  renderUpdateButton();
 });
 window.leafMinimap.subscribe((enabled) => {
   minimapEnabledControl.checked = enabled;
