@@ -897,9 +897,12 @@ body {
 .app-bar.has-rail::after {
   /* Don't run the reader divider across the library column: the rail is one
      unbroken surface from the window's top edge down through the file list, so a
-     line here would cut it in two. Start the divider at the rail's right edge,
-     where it meets the pane's vertical border. */
-  left: var(--library-rail-width, 0px);
+     line here would cut it in two. Start the divider a radius clear of the rail's
+     right edge; .library-pane::after arcs across that gap down to the pane's
+     vertical border, rounding the reader's top-left corner instead of meeting it
+     at a hard 90°. A pixel of overlap with the arc's top tangent, so a rounding
+     difference between the two boxes can't open a gap at the join. */
+  left: calc(var(--library-rail-width, 0px) + var(--leaf-radius-md) - 1px);
 }
 .app-bar-lead {
   /* The header's left zone, sized to the library rail so the tab strip begins at
@@ -1576,6 +1579,48 @@ summary:focus-visible {
   /* Hairline in the outer border color marking the pane's right edge, so the
      boundary against the reader is legible in every theme. */
   border-right: 1px solid var(--app-border);
+}
+/* The reader's top-left corner, where the app bar's divider meets this pane's
+   right hairline. Both are straight 1px lines, so they used to land in a hard 90°.
+   ::before fills the corner wedge with the chrome surface and grain (the reader's
+   quarter disc masked out of it, which also hides the few px of pane border the
+   arc stands in for); ::after strokes the arc across it, at the same rounding the
+   search field carries.
+   Anchored to the pane's own padding box (left: 100%, i.e. the inner edge of its
+   right border) rather than to --library-rail-width: a fractional pane width
+   rounds to different device pixels in different containing blocks, which left the
+   arc a pixel off the border it is supposed to continue. */
+.library-pane::before,
+.library-pane::after {
+  content: "";
+  position: absolute;
+  /* Over the app bar (z-index 10), whose grain the wedge has to sit on top of. */
+  z-index: 11;
+  top: calc(var(--library-app-bar) - 1px);
+  left: 100%;
+  width: calc(var(--leaf-radius-md) + 1px);
+  height: calc(var(--leaf-radius-md) + 1px);
+  pointer-events: none;
+}
+.library-pane::before {
+  background-color: var(--chrome-surface);
+  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  /* The same window-anchored lattice as every other grained surface, so the wedge
+     stays in phase with the bar and the pane around it. */
+  background-attachment: fixed;
+  -webkit-mask-image: radial-gradient(circle at 100% 100%, transparent 0 var(--leaf-radius-md), #000 var(--leaf-radius-md));
+  mask-image: radial-gradient(circle at 100% 100%, transparent 0 var(--leaf-radius-md), #000 var(--leaf-radius-md));
+}
+.library-pane::after {
+  border-top: 1px solid var(--app-border);
+  border-left: 1px solid var(--app-border);
+  border-top-left-radius: calc(var(--leaf-radius-md) + 1px);
+}
+.library-shell.library-closed .library-pane::before,
+.library-shell.library-closed .library-pane::after {
+  /* No rail, no corner: the divider runs the full width. */
+  display: none;
 }
 .library-divider {
   /* An invisible grab strip straddling the pane's right edge, wide enough to
