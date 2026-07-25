@@ -99,10 +99,10 @@ Then open the app normally.
 
 ### Windows
 
-Download the 64-bit MSI from [Releases](https://github.com/ryanallen/leaftext/releases). It installs for the current user, so there is no elevation prompt. Default install path:
+Download the 64-bit MSI from [Releases](https://github.com/ryanallen/leaftext/releases). Default install path:
 
 ```text
-%LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe
+C:\Program Files\leaftext\bin\leaftext.exe
 ```
 
 WebView2 browser data and the library index live in the same profile:
@@ -111,9 +111,7 @@ WebView2 browser data and the library index live in the same profile:
 %LOCALAPPDATA%\ryanallen\leaftext\data
 ```
 
-Installing per-user is what lets Leaf Text [update itself](docs/01-features/05-settings.md#updates) without asking for administrator rights each time. Upgrading from an older build that installed into `C:\Program Files` clears that copy out once, with a single prompt.
-
-To find the installed executable path: right-click the Start Menu shortcut → **More** → **Open file location** → right-click the Leaf Text shortcut → **Properties** → **Target**.
+The installer adds no Start Menu or desktop shortcut — pin `leaftext.exe` yourself if you want one. Applying an [update](docs/01-features/05-settings.md#updates) raises one elevation prompt, at the moment you click **Restart to update**.
 
 ---
 

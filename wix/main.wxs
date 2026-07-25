@@ -1,21 +1,22 @@
 <?xml version='1.0' encoding='windows-1252'?>
-<!-- Leaf Text installs per-user, into %LOCALAPPDATA%\Programs\leaftext.
+<?if $(sys.BUILDARCH) = x64 or $(sys.BUILDARCH) = arm64 ?>
+    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+<?else ?>
+    <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+<?endif ?>
 
-     This is the Chrome and VS Code (user installer) model, and it exists so
-     updates need no elevation: the in-app updater can run this package with
-     /qn and the user never sees a UAC prompt. A per-machine install into
-     Program Files would raise one on every single update.
+<!-- Leaf Text installs per-machine, into Program Files.
 
-     Consequences of the per-user scope, all of which are handled below:
-       - Components landing in the user profile take an HKCU registry keypath
-         rather than a file keypath (ICE38), and name their folders in
-         RemoveFolder so uninstall leaves nothing behind (ICE64).
-       - The Install button carries no elevation shield, because nothing is
-         elevated.
-       - A copy installed by an older, per-machine build is NOT removed by this
-         package's MajorUpgrade: a different install context is out of its
-         reach. `src/platform.rs` cleans that up separately, once, with an
-         explicit elevation prompt. -->
+     v0.1.363 tried per-user (%LOCALAPPDATA%\Programs) so updates would need no
+     elevation. It was reverted: a per-user package has no authority to remove a
+     per-machine one, so every existing install ended up with two copies and two
+     entries, and the cleanup could only run once the new copy was launched —
+     which the leftover shortcut made unlikely. Per-machine keeps MajorUpgrade
+     in charge of replacing the previous version, which is the path that has
+     worked for every release before it. The cost is one elevation prompt per
+     update, at a moment the user just asked for something to happen.
+
+     There is deliberately no Start Menu shortcut. -->
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
     <Product
         Id='*'
@@ -34,7 +35,7 @@
             InstallerVersion='450'
             Languages='1033'
             Compressed='yes'
-            InstallScope='perUser'
+            InstallScope='perMachine'
             SummaryCodepage='1252'/>
 
         <MajorUpgrade
@@ -44,72 +45,24 @@
         <Media Id='1' Cabinet='media1.cab' EmbedCab='yes'/>
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
-            <Directory Id='LocalAppDataFolder'>
-                <!-- %LOCALAPPDATA%\Programs is where per-user app installers
-                     conventionally land, so leaftext sits beside them. -->
-                <Directory Id='LocalProgramsFolder' Name='Programs'>
-                    <Directory Id='APPLICATIONFOLDER' Name='leaftext'>
-                        <Directory Id='Bin' Name='bin'>
-                            <!-- Fixed GUID, not '*'. Installing into the user
-                                 profile means the keypath must be an HKCU
-                                 registry value rather than the file (ICE38),
-                                 and candle refuses to generate a GUID for a
-                                 component holding both a file and a registry
-                                 keypath (CNDL0230) — so it is spelled out.
-                                 Never change it: MSI identifies the installed
-                                 component by this value across upgrades. -->
-                            <Component Id='MainExecutable' Guid='CBEF1B10-A237-4CBE-8204-58C026FB238F'>
-                                <File
-                                    Id='MainExecutableFile'
-                                    Name='leaftext.exe'
-                                    DiskId='1'
-                                    Source='$(var.CargoTargetBinDir)\leaftext.exe'
-                                    KeyPath='no'/>
-                                <RegistryValue
-                                    Root='HKCU'
-                                    Key='Software\ryanallen\leaftext'
-                                    Name='executable'
-                                    Type='integer'
-                                    Value='1'
-                                    KeyPath='yes'/>
-                                <!-- Every folder created inside the user profile
-                                     has to be named for removal (ICE64).
-                                     RemoveFolder only deletes empty folders, so
-                                     naming the shared Programs folder cannot
-                                     disturb anything else installed there. -->
-                                <RemoveFolder Id='RemoveBinFolder' Directory='Bin' On='uninstall'/>
-                                <RemoveFolder Id='RemoveApplicationFolder' Directory='APPLICATIONFOLDER' On='uninstall'/>
-                                <RemoveFolder Id='RemoveLocalProgramsFolder' Directory='LocalProgramsFolder' On='uninstall'/>
-                            </Component>
-                        </Directory>
+            <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
+                <Directory Id='APPLICATIONFOLDER' Name='leaftext'>
+                    <Directory Id='Bin' Name='bin'>
+                        <Component Id='MainExecutable' Guid='*'>
+                            <File
+                                Id='MainExecutableFile'
+                                Name='leaftext.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\leaftext.exe'
+                                KeyPath='yes'/>
+                        </Component>
                     </Directory>
                 </Directory>
             </Directory>
-            <Directory Id='ProgramMenuFolder'>
-                <Directory Id='ApplicationProgramsFolder' Name='leaftext'/>
-            </Directory>
         </Directory>
 
-        <DirectoryRef Id='ApplicationProgramsFolder'>
-            <Component Id='ApplicationStartMenuShortcut' Guid='*'>
-                <Shortcut
-                    Id='ApplicationStartMenuShortcut'
-                    Name='Leaf Text'
-                    Description='Launch Leaf Text'
-                    Target='[Bin]leaftext.exe'
-                    WorkingDirectory='Bin'/>
-                <RemoveFolder Id='ApplicationProgramsFolder' On='uninstall'/>
-                <RegistryValue
-                    Root='HKCU'
-                    Key='Software\ryanallen\leaftext'
-                    Name='installed'
-                    Type='integer'
-                    Value='1'
-                    KeyPath='yes'/>
-            </Component>
-        </DirectoryRef>
-
-        <!-- One feature, nothing optional, so there is no customize screen. -->
+        <!-- One feature, one file, nothing optional: no customize screen, and
+             no Start Menu shortcut. -->
         <Feature
             Id='MainFeature'
             Title='Application'
@@ -118,7 +71,6 @@
             AllowAdvertise='no'
             Absent='disallow'>
             <ComponentRef Id='MainExecutable'/>
-            <ComponentRef Id='ApplicationStartMenuShortcut'/>
         </Feature>
 
         <SetProperty Id='ARPINSTALLLOCATION' Value='[APPLICATIONFOLDER]' After='CostFinalize'/>
@@ -183,8 +135,7 @@
                          Text='!(loc.InstallDirDlgChange)'/>
 
                 <Control Id='BottomLine' Type='Line' X='0' Y='234' Width='370' Height='0'/>
-                <!-- No elevation shield: a per-user install raises no UAC prompt. -->
-                <Control Id='Install' Type='PushButton'
+                <Control Id='Install' Type='PushButton' ElevationShield='yes'
                          X='212' Y='243' Width='80' Height='17' Default='yes'
                          Text='!(loc.VerifyReadyDlgInstall)'/>
                 <Control Id='Cancel' Type='PushButton' X='304' Y='243' Width='56' Height='17'

@@ -35,7 +35,7 @@ After the tag push, the CI pipeline produces release artifacts for all supported
 
 | Platform | Artifact             |
 | -------- | -------------------- |
-| Windows  | 64-bit MSI installer (per-user) |
+| Windows  | 64-bit MSI installer |
 | macOS    | Universal DMG (Apple Silicon + Intel) |
 | macOS    | Universal `.app.zip`, the bundle the [in-app updater](../01-features/05-settings.md#updates) installs |
 

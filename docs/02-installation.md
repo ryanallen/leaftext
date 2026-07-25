@@ -9,7 +9,7 @@ leaftext ships prebuilt binaries for macOS and Windows. There is no account, no 
 | Platform | Package | Notes |
 | --- | --- | --- |
 | macOS | `.dmg` | Universal (Apple Silicon + Intel) |
-| Windows | `.msi` | Windows 10+ 64-bit, installs for the current user |
+| Windows | `.msi` | Windows 10+ 64-bit |
 
 Each release also carries a `.blake3` checksum beside every download, and a `.app.zip` of the macOS bundle. Those are what the [in-app updater](#updates) fetches and verifies; installing by hand needs only the `.dmg` or `.msi`.
 
@@ -37,7 +37,7 @@ xattr -cr /Applications/leaftext.app
 
 1. Download the latest `.msi`.
 2. Run the installer. It shows one screen: the install folder, with **Change...** to pick another. Click **Install** and approve the Windows elevation prompt. There is no confirmation screen — the window closes once the install finishes.
-3. Launch leaftext from the Start Menu.
+3. Launch `leaftext.exe` from the install folder, or open any `.md` file with it.
 
 Default installed path:
 
@@ -52,6 +52,12 @@ WebView2 data lives here:
 ```
 
 That keeps runtime data writable without needing admin rights after install.
+
+> [!NOTE]
+> The installer adds no Start Menu entry and no desktop shortcut. Pin `leaftext.exe` yourself if you want one.
+
+> [!IMPORTANT]
+> v0.1.363 briefly installed into `%LOCALAPPDATA%\Programs\leaftext` instead. That was withdrawn. If you installed it, a later version removes that copy for you automatically, with nothing to approve.
 
 ## Launch
 

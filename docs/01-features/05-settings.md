@@ -156,11 +156,11 @@ The app ships both language dictionaries locally and applies changes without a r
 - **Download updates** is on by default
 - leaftext asks GitHub for the latest release at most once every six hours; `update_last_checked` records when it last did, so launching repeatedly does not spend requests against the rate limit
 - When a newer release exists, its installer downloads in the background and is verified against the `.blake3` digest published beside it. A download that arrives short, oversized, or with the wrong digest is deleted rather than kept
-- A verified installer waits under `{data_dir}/updates`, and `update_staged_version` records which version it is. The Settings button becomes **Restart to update**; clicking it closes leaftext, installs, and reopens
+- A verified installer waits under `{data_dir}/updates`, and `update_staged_version` records which version it is. The Settings button becomes **Restart to update**; clicking it closes leaftext, installs, and reopens. Windows raises one elevation prompt at that point, because the app lives in `Program Files`
 - **Installing is always a click.** Nothing is applied in the background, and a checksum published on the same server as the download proves the file arrived intact — not that it is trustworthy. That is why the last step is yours
 - Turning it off keeps the check but downloads nothing: the button opens the release page instead
 - Saved as `auto_update_enabled`, `update_last_checked`, and `update_staged_version`
-- On Windows, `legacy_uninstall_attempts` counts how many times leaftext has offered to remove a copy left by an older build that installed into `C:\Program Files`. It stops asking after two, so declining the prompt is not a recurring nag
+- On Windows, `legacy_uninstall_attempts` counts attempts at removing the copy left by v0.1.363, which briefly installed into `%LOCALAPPDATA%\Programs`. Removing a per-user install needs no elevation, so this happens silently; it gives up after two tries
 
 > [!NOTE]
 > Only one staged installer is kept. Skipping several releases does not accumulate several downloads, and once an update is applied the folder is cleared.

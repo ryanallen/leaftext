@@ -129,31 +129,31 @@ pub fn run_update_apply(request: &ApplyRequest) -> Result<(), String> {
     // Relaunch either way: on success the new build, on failure the old one.
     let _ = relaunch(&request.relaunch);
 
-    // Only after the user has a working new copy in front of them. Ordered this
-    // way on purpose: if the elevation prompt is declined, or the uninstall
-    // errors, the update itself has already succeeded.
+    // Only once the user has a working new copy in front of them, so a failed
+    // cleanup cannot cost them the update.
     #[cfg(windows)]
     if outcome.is_ok() {
-        retire_legacy_install();
+        retire_stale_per_user_install();
     }
 
     outcome
 }
 
-/// Whether a machine-wide copy from an older build is still registered *and*
-/// this process is the per-user install that supersedes it. Checked at launch
-/// too, since running the MSI by hand also leaves the old copy behind.
+/// Whether a leftover per-user copy is registered *and* this process is the
+/// machine-wide install that supersedes it.
 ///
-/// That second condition is what stops a `target/debug` build — or the
-/// machine-wide copy itself — from raising an elevation prompt to uninstall the
-/// app the user actually has installed.
-pub fn has_legacy_per_machine_install() -> bool {
+/// v0.1.363 shipped a per-user installer, which left anyone who took it with
+/// two copies. This is how the per-machine build clears the other one out.
+///
+/// The second condition matters: without it a `target/debug` build, or the
+/// per-user copy itself, would try to uninstall the app out from under itself.
+pub fn has_stale_per_user_install() -> bool {
     #[cfg(windows)]
     {
-        if !running_from_per_user_install() {
+        if running_from_per_user_install() {
             return false;
         }
-        !windows_impl::legacy_per_machine_products().is_empty()
+        !windows_impl::stale_per_user_products().is_empty()
     }
     #[cfg(not(windows))]
     {
@@ -161,34 +161,28 @@ pub fn has_legacy_per_machine_install() -> bool {
     }
 }
 
-/// True when the running executable lives under `%LOCALAPPDATA%`, which is
-/// where the per-user package installs and where nothing else this app ships
-/// runs from.
+/// True when the running executable lives under `%LOCALAPPDATA%` — where the
+/// withdrawn per-user package installed, and where a normal install never is.
 #[cfg(windows)]
 fn running_from_per_user_install() -> bool {
     let (Ok(executable), Some(local)) = (
         std::env::current_exe(),
         std::env::var_os("LOCALAPPDATA").map(PathBuf::from),
     ) else {
-        return false;
+        return true; // Unknown location: do not touch anything.
     };
     executable.starts_with(&local)
 }
 
-/// Remove a pre-per-user copy from Program Files, if one is still registered.
-///
-/// Leaf Text used to install per-machine. A per-user package cannot remove that
-/// copy — a different install context is out of its reach — so it is done here,
-/// with the elevation prompt Windows requires for a machine-wide uninstall.
-/// Failure is fine and silent: the stale copy is inert. It never launches (both
-/// the shortcut and the executable that run are the per-user ones) and it never
-/// updates itself, because the updater inside it is not the one running.
-pub fn retire_legacy_install() {
+/// Remove the withdrawn per-user copy, if one is registered. Silent: a per-user
+/// uninstall needs no elevation, so there is nothing to approve. Failure is
+/// harmless — the leftover copy is inert and never updates itself.
+pub fn retire_stale_per_user_install() {
     #[cfg(windows)]
-    for product in windows_impl::legacy_per_machine_products() {
-        match windows_impl::remove_legacy_product(&product) {
-            Ok(()) => eprintln!("Removed the previous machine-wide install {product}"),
-            Err(error) => eprintln!("Left the previous install in place: {error}"),
+    for product in windows_impl::stale_per_user_products() {
+        match windows_impl::remove_stale_product(&product) {
+            Ok(()) => eprintln!("Removed the leftover per-user install {product}"),
+            Err(error) => eprintln!("Left the per-user install in place: {error}"),
         }
     }
 }
@@ -407,12 +401,14 @@ mod windows_impl {
     }
 
     /// ProductCodes of installed products sharing our UpgradeCode that were
-    /// installed for the whole machine.
+    /// installed for a single user rather than the machine.
     ///
-    /// Leaf Text installs per-user now, but copies from before that change sit
-    /// in Program Files, registered per-machine. This finds them so they can be
-    /// cleaned up. Enumerating needs no elevation; removing does.
-    pub fn legacy_per_machine_products() -> Vec<String> {
+    /// v0.1.363 installed per-user into `%LOCALAPPDATA%\Programs`. That was
+    /// reverted, but a machine that took it is left with that copy sitting
+    /// beside the per-machine one, because `MajorUpgrade` cannot reach across
+    /// install contexts. This finds it. Removing a per-user product needs no
+    /// elevation, so the cleanup is silent.
+    pub fn stale_per_user_products() -> Vec<String> {
         use windows_sys::Win32::System::ApplicationInstallationAndServicing::{
             MsiEnumRelatedProductsW, MsiGetProductInfoW,
         };
@@ -441,8 +437,8 @@ mod windows_impl {
             }
 
             // AssignmentType: "0" installed for a single user, "1" for the
-            // machine. Only the machine-wide ones are ours to clean up — and
-            // only those need elevation to remove.
+            // machine. Only the per-user ones are ours to clean up; the
+            // machine-wide one is this install.
             let property = wide("AssignmentType");
             let product_wide = wide(&product);
             let mut value = [0u16; 8];
@@ -456,7 +452,7 @@ mod windows_impl {
                 )
             };
             if read == ERROR_SUCCESS
-                && String::from_utf16_lossy(&value[..length as usize]).trim() == "1"
+                && String::from_utf16_lossy(&value[..length as usize]).trim() == "0"
             {
                 found.push(product);
             }
@@ -464,37 +460,21 @@ mod windows_impl {
         found
     }
 
-    /// Ask to remove a per-machine product, raising the UAC prompt that a
-    /// machine-wide uninstall requires.
-    ///
-    /// This is cleanup, not part of the update: by the time it runs, the new
-    /// per-user copy is installed and running. Declining leaves an inert stale
-    /// copy in Program Files, which never launches (the shortcut and the new
-    /// executable both point at the per-user install) and never updates itself.
-    pub fn remove_legacy_product(product_code: &str) -> Result<(), String> {
-        use windows_sys::Win32::UI::Shell::ShellExecuteW;
-        const SW_HIDE: i32 = 0;
+    /// Remove a per-user product. Needs no elevation and shows no UI, so this
+    /// runs silently in the background with nothing for the user to approve.
+    pub fn remove_stale_product(product_code: &str) -> Result<(), String> {
+        use std::os::windows::process::CommandExt;
 
-        let operation = wide("runas");
-        let file = wide("msiexec.exe");
-        let parameters = wide(&format!("/x {product_code} /qn /norestart"));
-        let result = unsafe {
-            ShellExecuteW(
-                ptr::null_mut(),
-                operation.as_ptr(),
-                file.as_ptr(),
-                parameters.as_ptr(),
-                ptr::null(),
-                SW_HIDE,
-            )
-        };
-        // ShellExecuteW reports failure as a "HINSTANCE" of 32 or less; 5 is
-        // the user declining the prompt.
-        let code = result as isize;
-        match code {
-            code if code > 32 => Ok(()),
-            5 => Err("the removal was declined".to_string()),
-            code => Err(format!("could not start the uninstaller (code {code})")),
+        let status = super::Command::new("msiexec")
+            .args(["/x", product_code, "/qn", "/norestart"])
+            // CREATE_NO_WINDOW: no console flash behind the reader.
+            .creation_flags(0x0800_0000)
+            .status()
+            .map_err(|error| format!("could not start the uninstaller: {error}"))?;
+        match status.code() {
+            Some(0) | Some(3010) => Ok(()),
+            Some(code) => Err(format!("the uninstaller failed with code {code}")),
+            None => Err("the uninstaller was interrupted".to_string()),
         }
     }
 
