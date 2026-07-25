@@ -1,6 +1,6 @@
 # Library
 
-> The library pane lets you browse and search your documents from a local SQLite index, with a Graph relationship map plus Project, Tree, and All files views.
+> The library pane lets you browse and search your documents from a local SQLite index: a Project file list with a breadcrumb path, plus a Graph relationship map behind one icon.
 
 The library is the part of leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane and is backed by a local indexer.
 
@@ -8,24 +8,31 @@ The library is the part of leaftext that helps you find documents, not just read
 
 | Feature | What you get |
 | --- | --- |
-| Graph view | A force-directed map of how your documents link to each other (the default view) |
-| Project view | One folder at a time, drilled into the current project |
-| Tree view | Nested folder hierarchy |
-| All files view | One alphabetized file list |
-| Search | Filename and content search, scoped to whatever the current view shows |
+| Project view | One folder at a time, with a breadcrumb showing where you are (the default view) |
+| Breadcrumb | The folder path above the search box; every crumb steps back out to that level |
+| Graph view | A force-directed map of how your documents link to each other, toggled by an icon |
+| Search | Filename and content search, scoped to the folder the pane is showing |
 | File actions | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
 
 ## Views
 
-Pick a view from the picker at the top of the pane. **Graph** is the default; the choice is remembered across restarts.
+The pane has two states: the **Project** file list, which is where it opens, and the **Graph**. The graph toggle sits at the right end of the breadcrumb band; the choice is remembered across restarts.
 
 ```mermaid
 flowchart LR
-    A[Library pane] --> G[Graph]
-    A --> B[Project]
-    A --> C[Tree]
-    A --> D[All files]
+    A[Library pane] --> B[Project]
+    A --> G[Graph]
 ```
+
+### Project
+
+The file list. Folders are entered one at a time, so the pane shows one folder's contents rather than a whole hierarchy at once.
+
+- Click a folder row — or its `›` chevron — to go into it.
+- The **breadcrumb** above the search box is the path you are on: `Library › docs › features`. Click any crumb to step back out to that level. A long path keeps its root and last two folders and elides the middle behind a `…` that names what it swallowed.
+- Folders sort before files, each alphabetized. Folders with no indexed documents are pruned.
+- Opening a file moves the pane into that file's folder and highlights the row, so the pane always shows where the document you are reading lives.
+- The folder you are in is saved, so a restart reopens it. If a rescan drops that folder, the pane falls back to the library root.
 
 ### Graph
 
@@ -37,34 +44,12 @@ A force-directed relationship map of your library: each **node** is a document, 
 - **Drag** a node to reposition it, **drag the background** to pan, and **scroll** to zoom.
 - **Click a document's tab** in the tab bar and the graph flies to that document's node and zooms in on it. Clicking the tab you are already on rebuilds the map from the current index, so it always reflects the latest links rather than staying on a stale view.
 - Resizing the pane re-fits the map to the new size; it no longer waits for a view switch.
+- Switching back to the file list lands on the open document's folder, not wherever the list was left.
 
 How many documents the map draws is set by the [Graph size](05-settings.md#graph-size) setting — from a tight **Focus** neighborhood (the open document and its direct links) up to **Everything** (every indexed document). Smaller sizes render faster; the larger sizes are tuned to stay responsive by easing the layout and repainting less often as it settles.
 
 > [!NOTE]
 > With nothing open — the start screen — the **Focus** size seeds the map from your [recent files](02-navigation.md#recent-files) and their links, so the graph is never empty just because no document is active.
-
-### Project
-
-Best when you want to stay focused on one folder.
-
-- Click folders to drill in.
-- Use the back arrow to move up.
-- Opening a file also points Project view at that file's folder.
-
-### Tree
-
-Best when you want the whole hierarchy visible.
-
-- Folders expand and collapse independently.
-- Expanded state is saved.
-- Folders with no indexed documents are pruned.
-
-### All files
-
-Best when you know the filename but not the path. (Labelled **All files** in the view picker.)
-
-- One alphabetized list
-- No folder nesting
 
 ## Search
 
@@ -86,15 +71,15 @@ Opening a content result jumps to the nearest heading.
 
 ### Search scope
 
-Search reaches exactly as far as the current view shows — there is no separate control:
+Search reaches exactly as far as the pane shows — there is no separate control:
 
-| View | What search covers |
+| Where you are | What search covers |
 | --- | --- |
-| Project | The files in the current project folder |
-| Graph | The documents currently drawn (set by the [Graph size](05-settings.md#graph-size)) |
-| Tree, All files | The whole indexed library |
+| Inside a folder | The files in that folder, including its subfolders |
+| At the library root | The whole indexed library |
+| [Graph](#graph) | The documents currently drawn (set by the [Graph size](05-settings.md#graph-size)) |
 
-Because Project and Graph list a subset, searching from them stays inside that subset — a search in a graph focused on one document only turns up matches from that document's neighborhood. The filter runs in the query itself, so a scoped match ranked below the top 50 of a library-wide search still surfaces. Switching views re-runs the current query under the new view's reach. A scoped set larger than 1,500 documents searches the whole library instead.
+Because a folder and the graph both show a subset, searching from them stays inside that subset — a search in a graph focused on one document only turns up matches from that document's neighborhood. The filter runs in the query itself, so a scoped match ranked below the top 50 of a library-wide search still surfaces. Entering a folder, stepping back out through a crumb, or switching views re-runs the current query under the new reach. A scoped set larger than 1,500 documents searches the whole library instead.
 
 ## File actions
 
@@ -124,8 +109,8 @@ Cut and Copy place the file itself on the system clipboard, so you paste it in y
 
 The library pane keeps up with changes on disk, so a file you just created shows up without a manual rescan.
 
-- The same file watcher that drives live reload watches two places: the open document's folder, and — while you are in [Project view](#project) — the folder you are browsing.
-- The Project-view folder is watched recursively, so a document added in it or any of its subfolders is indexed immediately and the pane refreshes, even when no document is open.
+- The same file watcher that drives live reload watches two places: the open document's folder, and — while the [file list](#project) is up — the folder you are browsing.
+- The browsed folder is watched recursively, so a document added in it or any of its subfolders is indexed immediately and the pane refreshes, even when no document is open.
 - A document created or edited in the open document's folder is indexed the same way.
 - Renaming or deleting a file from the right-click menu updates the pane right away.
 - Moving, renaming, or deleting a folder outside the app syncs the affected subtree immediately — new files are indexed and removed files are forgotten without a manual rescan.
@@ -137,7 +122,7 @@ The library pane keeps up with changes on disk, so a file you just created shows
 flowchart LR
     A[Filesystem crawl] --> B[4 parse/hash workers]
     B --> C[SQLite manifest]
-    C --> D[Graph / Project / Tree / All files views]
+    C --> D[Project list / Graph]
     C --> E[Search results]
 ```
 
@@ -194,7 +179,6 @@ Saved library state includes:
 - `library_view`
 - `graph_scope`
 - `library_project_path`
-- `library_expanded`
 
 ## Toggle
 

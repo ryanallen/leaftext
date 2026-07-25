@@ -31,10 +31,8 @@ const libraryTree = document.getElementById('libraryTree');
 const libraryGraph = document.getElementById('libraryGraph');
 const libraryGraphCanvas = document.getElementById('libraryGraphCanvas');
 const libraryGraphStatus = document.getElementById('libraryGraphStatus');
-const libraryViewToggle = document.getElementById('libraryViewToggle');
-const libraryViewLabel = document.getElementById('libraryViewLabel');
-const libraryViewSelect = document.getElementById('libraryViewSelect');
-const libraryViewMenu = document.getElementById('libraryViewMenu');
+const libraryCrumbTrail = document.getElementById('libraryCrumbTrail');
+const libraryGraphToggle = document.getElementById('libraryGraphToggle');
 const librarySearch = document.getElementById('librarySearch');
 const librarySearchResults = document.getElementById('librarySearchResults');
 const libraryScanProgress = document.getElementById('libraryScanProgress');
@@ -723,11 +721,11 @@ speedReaderEnabledControl.addEventListener('change', () => {
   setSpeedReaderEnabled(speedReaderEnabledControl.checked);
   send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });
 });
-// Library pane: drill-in Project, expandable Tree, and flat All-files views. The
-// host persists the chosen view, open folders, and Project folder; the frontend
-// reports each change and applies host values on boot.
-const LIBRARY_VIEWS = ['project', 'tree', 'flat', 'graph'];
-const VIEW_LABEL_KEY = { project: 'library.view.project', tree: 'library.view.tree', flat: 'library.view.all', graph: 'library.view.graph' };
+// Library pane: one file view (Project — folders entered one at a time, with the
+// breadcrumb above saying where you are) plus the graph, behind its own toggle.
+// The host persists the view and the folder; the frontend reports each change and
+// applies host values on boot.
+const LIBRARY_VIEWS = ['project', 'graph'];
 // Markdown files are badged with the app's own leaf mark. The host inlines the
 // same glyph the header uses, so the row tints it via stroke/fill currentColor
 // rather than shipping a fixed color.
@@ -736,7 +734,8 @@ const LEAF_FILE_ICON = `{{LEAF_ICON_SVG}}`;
 // row color via stroke="currentColor".
 const FOLDER_ICON_SVG = '<svg class="library-folder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" /></svg>';
 let indexingEnabled = LEAF_SETTINGS.indexingEnabled === true;
-let libraryView = LIBRARY_VIEWS.includes(LEAF_SETTINGS.libraryView) ? LEAF_SETTINGS.libraryView : 'graph';
+// The file list is where the pane opens, not the graph.
+let libraryView = LIBRARY_VIEWS.includes(LEAF_SETTINGS.libraryView) ? LEAF_SETTINGS.libraryView : 'project';
 const GRAPH_SCOPES = ['small', 'medium', 'large', 'xl'];
 let graphScope = GRAPH_SCOPES.includes(LEAF_SETTINGS.graphScope) ? LEAF_SETTINGS.graphScope : 'small';
 // Graph size: persist the choice and, if the graph is on screen, rebuild it for
@@ -747,8 +746,8 @@ graphScopeControl.addEventListener('change', () => {
   send({ command: 'setGraphScope', scope: graphScope });
   if (libraryView === 'graph') requestGraphData();
 });
+// The folder the pane is inside ('' is the root); the breadcrumb is this path.
 let libraryProjectPath = typeof LEAF_SETTINGS.libraryProjectPath === 'string' ? LEAF_SETTINGS.libraryProjectPath : '';
-let expandedFolders = new Set(Array.isArray(LEAF_SETTINGS.libraryExpanded) ? LEAF_SETTINGS.libraryExpanded : []);
 // Library pane open/close + resize. The closed preference and last open width are
 // host-persisted (window.__leafSettings + setLibraryLayout), like the other
 // settings.
@@ -771,9 +770,9 @@ let librarySearchTimer = 0;
 let librarySearchHits = null;
 let librarySearchError = null;
 let librarySearchLoading = false;
-// Search scope follows the current view (see librarySearchScopePaths). Above
-// this many paths a scoped view can't bind its files in one IN clause, so it
-// searches the whole library instead.
+// Search covers the folder the pane is showing (see librarySearchScopePaths).
+// Above this many paths it can't be bound in one IN clause, so the query runs
+// against the whole library instead.
 const SEARCH_SCOPE_CAP = 1500;
 // A heading anchor to scroll to once a clicked result's document has rendered.
 let pendingSearchJump = null;
@@ -786,7 +785,6 @@ function persistLibraryState() {
   send({
     command: 'setLibraryState',
     view: libraryView,
-    expanded: Array.from(expandedFolders),
     projectPath: libraryProjectPath,
   });
 }
@@ -964,9 +962,9 @@ function scrollSelectedLibraryRowIntoView() {
   // Centered so a deeply nested file lands away from the app bar and bottom edge.
   if (row) row.scrollIntoView({ block: 'center' });
 }
-// Carry out a pending reveal. Returns false (still pending) until the tree loads,
-// so leafSetLibraryState can retry. When present, points Project at the file's
-// folder and opens its Tree ancestors so the row shows in every view.
+// Carry out a pending reveal: move the pane into the open document's folder so
+// its row (and the breadcrumb to it) is on screen. Returns false (still pending)
+// until the tree loads, so leafSetLibraryState can retry.
 function revealSelectedInLibrary() {
   if (!libraryRevealPending || !librarySelectedPath) return false;
   const nodes = libraryTreeData || [];
@@ -975,7 +973,6 @@ function revealSelectedInLibrary() {
   const ancestors = folderAncestorsOf(nodes, librarySelectedPath);
   if (ancestors) {
     libraryProjectPath = ancestors.length ? ancestors[ancestors.length - 1] : '';
-    for (const folder of ancestors) expandedFolders.add(folder);
     persistLibraryState();
   }
   renderLibrary();
@@ -1000,46 +997,23 @@ function followFileInLibrary(path, focus, forceRefresh) {
     renderLibrary();
   }
 }
-// The view picker is a dropdown listbox: the button shows the active view and a
-// caret; clicking opens a menu of the three views, and choosing one switches.
-function closeLibraryViewMenu() {
-  libraryViewMenu.hidden = true;
-  libraryViewToggle.setAttribute('aria-expanded', 'false');
-}
-function openLibraryViewMenu() {
-  libraryViewMenu.hidden = false;
-  libraryViewToggle.setAttribute('aria-expanded', 'true');
-}
-function renderLibraryViewMenu() {
-  libraryViewMenu.innerHTML = LIBRARY_VIEWS.map((view) => {
-    const selected = view === libraryView;
-    return `<li role="option" class="library-view-option" data-view="${view}" aria-selected="${selected}">${escapeText(window.leafLocale.t(VIEW_LABEL_KEY[view]))}</li>`;
-  }).join('');
-}
-libraryViewToggle.addEventListener('click', () => {
-  if (libraryViewMenu.hidden) {
-    renderLibraryViewMenu();
-    openLibraryViewMenu();
-  } else {
-    closeLibraryViewMenu();
-  }
-});
-libraryViewMenu.addEventListener('click', (event) => {
-  const option = event.target.closest('[data-view]');
-  if (!option) return;
-  libraryView = option.dataset.view;
-  closeLibraryViewMenu();
+// Switching between the file list and the graph. One icon, pressed while the
+// graph is up, so the pane never hides which of the two you are looking at.
+function setLibraryView(view) {
+  if (!LIBRARY_VIEWS.includes(view) || view === libraryView) return;
+  libraryView = view;
   persistLibraryState();
-  renderLibrary();
-  // Search scope follows the view, so switching views changes the scope —
-  // re-run the active query against the new set.
+  // Leaving the graph lands on the open document, not wherever the list was left.
+  libraryRevealPending = view !== 'graph' && !!librarySelectedPath;
+  if (!libraryRevealPending || !revealSelectedInLibrary()) renderLibrary();
+  // The reach changed, so re-run the active query under the new one.
   if (librarySearchQuery) runLibrarySearch(librarySearch.value);
-});
-document.addEventListener('click', (event) => {
-  if (!libraryViewMenu.hidden && !libraryViewSelect.contains(event.target)) {
-    closeLibraryViewMenu();
-  }
-});
+}
+if (libraryGraphToggle) {
+  libraryGraphToggle.addEventListener('click', () => {
+    setLibraryView(libraryView === 'graph' ? 'project' : 'graph');
+  });
+}
 function applyScanProgress(progress) {
   lastScanProgress = progress || { phase: 'idle', filesFound: 0 };
   if (lastScanProgress.phase === 'scanning') {
@@ -1068,16 +1042,6 @@ function fileRowHtml(node) {
   const current = isSelected ? ' aria-current="true"' : '';
   return `<button type="button" class="library-file${selected}"${current} data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(node.path)}">${LEAF_FILE_ICON}<span class="library-file-label">${escapeText(label)}</span></button>`;
 }
-function renderTreeNode(node) {
-  if (node && node.kind === 'folder') {
-    const open = expandedFolders.has(node.path) ? ' open' : '';
-    return `<details class="library-folder" data-folder-path="${escapeAttr(node.path)}"${open}><summary>${FOLDER_ICON_SVG}${escapeText(node.name)}</summary><div class="library-children">${renderTreeNodes(node.children || [])}</div></details>`;
-  }
-  return fileRowHtml(node);
-}
-function renderTreeNodes(nodes) {
-  return (nodes || []).map(renderTreeNode).join('');
-}
 function collectLibraryFiles(nodes, out) {
   for (const node of nodes || []) {
     if (node.kind === 'file') {
@@ -1087,17 +1051,6 @@ function collectLibraryFiles(nodes, out) {
     }
   }
   return out;
-}
-function renderFlatList(nodes) {
-  const files = collectLibraryFiles(nodes, []);
-  files.sort((a, b) => {
-    const ta = nodeSortKey(a);
-    const tb = nodeSortKey(b);
-    if (ta < tb) return -1;
-    if (ta > tb) return 1;
-    return (a.path || '').localeCompare(b.path || '');
-  });
-  return `<div class="library-flat">${files.map(fileRowHtml).join('')}</div>`;
 }
 // Project (drill-in) view helpers. Folders are entered one level at a time; the
 // current folder is located in the tree by its full path.
@@ -1110,14 +1063,21 @@ function findFolderByPath(nodes, path) {
   }
   return null;
 }
-function findParentPath(nodes, path, parentPath) {
-  for (const node of nodes || []) {
-    if (node.kind !== 'folder') continue;
-    if (node.path === path) return parentPath;
-    const found = findParentPath(node.children, path, node.path);
-    if (found !== null) return found;
-  }
-  return null;
+// The chain of folder nodes from the tree root down to `path` — what the
+// breadcrumb draws. Empty at the root; null when the path isn't in the tree.
+function folderChainTo(nodes, path) {
+  if (!path) return [];
+  const walk = (list, trail) => {
+    for (const node of list || []) {
+      if (node.kind !== 'folder') continue;
+      const next = trail.concat(node);
+      if (node.path === path) return next;
+      const found = walk(node.children, next);
+      if (found) return found;
+    }
+    return null;
+  };
+  return walk(nodes, []);
 }
 function projectChildrenSorted(nodes) {
   const folders = [];
@@ -1130,25 +1090,11 @@ function projectChildrenSorted(nodes) {
   files.sort(byName);
   return folders.concat(files);
 }
-function renderProject(nodes) {
-  let children = nodes;
-  if (libraryProjectPath) {
-    const current = findFolderByPath(nodes, libraryProjectPath);
-    if (current) {
-      children = current.children || [];
-    } else {
-      // The saved folder is gone (e.g. after a rescan); fall back to the root.
-      libraryProjectPath = '';
-    }
-  }
+// The folder rows for the folder we're inside. Walking back out is the
+// breadcrumb's job, so no "up" row here.
+function renderProject(nodes, chain) {
+  const children = chain.length ? (chain[chain.length - 1].children || []) : nodes;
   const rows = [];
-  if (libraryProjectPath) {
-    const current = findFolderByPath(nodes, libraryProjectPath);
-    const parent = findParentPath(nodes, libraryProjectPath, '');
-    const parentPath = parent === null ? '' : parent;
-    const currentName = (current && current.name) || '';
-    rows.push(`<button type="button" class="library-nav-up" data-nav-path="${escapeAttr(parentPath)}" title="${escapeAttr(window.leafLocale.t('library.up'))}"><span class="library-nav-arrow" aria-hidden="true">←</span><span class="library-file-label">${escapeText(currentName)}</span></button>`);
-  }
   for (const node of projectChildrenSorted(children)) {
     if (node.kind === 'folder') {
       rows.push(`<button type="button" class="library-nav-folder" data-nav-into="${escapeAttr(node.path)}" title="${escapeAttr(node.name)}">${FOLDER_ICON_SVG}<span class="library-file-label">${escapeText(node.name)}</span><span class="library-nav-chevron" aria-hidden="true">›</span></button>`);
@@ -1158,40 +1104,74 @@ function renderProject(nodes) {
   }
   return `<div class="library-project">${rows.join('')}</div>`;
 }
+// Enter a folder (or, from a crumb, step back out to one). '' is the root.
+function setLibraryFolder(path) {
+  libraryProjectPath = path || '';
+  persistLibraryState();
+  renderLibrary();
+  // Search covers the folder on screen, so moving changes the result set.
+  if (librarySearchQuery) runLibrarySearch(librarySearch.value);
+}
 function bindLibraryRows() {
   libraryTree.querySelectorAll('[data-open-path]').forEach((button) => {
     button.addEventListener('click', () => send({ command: 'openRecent', path: button.dataset.openPath }));
   });
   libraryTree.querySelectorAll('[data-nav-into]').forEach((button) => {
-    button.addEventListener('click', () => {
-      libraryProjectPath = button.dataset.navInto;
-      persistLibraryState();
-      renderLibrary();
-    });
-  });
-  libraryTree.querySelectorAll('[data-nav-path]').forEach((button) => {
-    button.addEventListener('click', () => {
-      libraryProjectPath = button.dataset.navPath;
-      persistLibraryState();
-      renderLibrary();
-    });
-  });
-  libraryTree.querySelectorAll('details[data-folder-path]').forEach((details) => {
-    details.addEventListener('toggle', () => {
-      const path = details.dataset.folderPath;
-      if (details.open) {
-        expandedFolders.add(path);
-      } else {
-        expandedFolders.delete(path);
-      }
-      persistLibraryState();
-    });
+    button.addEventListener('click', () => setLibraryFolder(button.dataset.navInto));
   });
 }
+// The breadcrumb: the library root, then one crumb per folder entered, the last
+// being where you are. A deep path keeps its root and last two folders, eliding
+// the middle behind a "…" that names what it swallowed.
+const CRUMB_SEGMENT_MAX = 4;
+function crumbSegments(chain) {
+  const segments = [{ path: '', name: window.leafLocale.t('library.title') }]
+    .concat(chain.map((node) => ({ path: node.path, name: node.name || node.path })));
+  if (segments.length <= CRUMB_SEGMENT_MAX) return segments;
+  const hidden = segments.slice(1, segments.length - 2).map((segment) => segment.name);
+  return [segments[0], { elided: true, name: hidden.join(' › ') }].concat(segments.slice(-2));
+}
+function renderLibraryCrumbs(chain) {
+  if (!libraryCrumbTrail) return;
+  if (libraryView === 'graph') {
+    libraryCrumbTrail.innerHTML = `<span class="library-crumb is-current">${escapeText(window.leafLocale.t('library.view.graph'))}</span>`;
+    return;
+  }
+  const segments = crumbSegments(chain);
+  libraryCrumbTrail.innerHTML = segments.map((segment, index) => {
+    if (segment.elided) {
+      return `<span class="library-crumb is-elided" title="${escapeAttr(segment.name)}">…</span>`;
+    }
+    if (index === segments.length - 1) {
+      return `<span class="library-crumb is-current" aria-current="true" title="${escapeAttr(segment.path || segment.name)}">${escapeText(segment.name)}</span>`;
+    }
+    const enter = escapeAttr(window.leafLocale.t('library.crumbs.enter', { name: segment.name }));
+    return `<button type="button" class="library-crumb" data-crumb-path="${escapeAttr(segment.path)}" title="${enter}">${escapeText(segment.name)}</button>`;
+  }).join('<span class="library-crumb-sep" aria-hidden="true">›</span>');
+  libraryCrumbTrail.querySelectorAll('[data-crumb-path]').forEach((crumb) => {
+    crumb.addEventListener('click', () => setLibraryFolder(crumb.dataset.crumbPath));
+  });
+}
+function renderLibraryGraphToggle() {
+  if (!libraryGraphToggle) return;
+  const on = libraryView === 'graph';
+  const label = window.leafLocale.t(on ? 'library.view.graph.off' : 'library.view.graph.on');
+  libraryGraphToggle.setAttribute('aria-pressed', String(on));
+  libraryGraphToggle.title = label;
+  libraryGraphToggle.setAttribute('aria-label', label);
+}
 function renderLibrary() {
-  libraryViewLabel.textContent = window.leafLocale.t(VIEW_LABEL_KEY[libraryView]);
-  if (!libraryViewMenu.hidden) renderLibraryViewMenu();
-  // The graph view replaces the tree list with an interactive canvas. It owns the
+  const nodes = libraryTreeData || [];
+  // A saved folder this tree doesn't have (a rescan dropped it) falls back to the
+  // root. Only judge that with nodes in hand: empty means loading, not gone.
+  let chain = nodes.length ? folderChainTo(nodes, libraryProjectPath) : [];
+  if (!chain) {
+    chain = [];
+    libraryProjectPath = '';
+  }
+  renderLibraryGraphToggle();
+  renderLibraryCrumbs(chain);
+  // The graph view replaces the file list with an interactive canvas. It owns the
   // whole pane body, so hide the list and let the graph module drive itself.
   if (libraryView === 'graph') {
     libraryTree.hidden = true;
@@ -1206,18 +1186,11 @@ function renderLibrary() {
     libraryTree.innerHTML = `<p class="library-empty">${escapeText(libraryError.message || '')}</p>`;
     return;
   }
-  const nodes = libraryTreeData || [];
   if (!nodes.length) {
     libraryTree.innerHTML = `<p class="library-empty">${escapeText(window.leafLocale.t('library.empty'))}</p>`;
     return;
   }
-  if (libraryView === 'flat') {
-    libraryTree.innerHTML = renderFlatList(nodes);
-  } else if (libraryView === 'tree') {
-    libraryTree.innerHTML = renderTreeNodes(nodes);
-  } else {
-    libraryTree.innerHTML = renderProject(nodes);
-  }
+  libraryTree.innerHTML = renderProject(nodes, chain);
   bindLibraryRows();
 }
 window.leafSetLibraryState = (state) => {
@@ -2022,18 +1995,16 @@ function runLibrarySearch(value) {
   renderLibrarySearch();
   send({ command: 'search', query, scope: librarySearchScopePaths() });
 }
-// The document paths to restrict a search to, following the current view, or
-// null to search the whole library. Project narrows to the open project folder
-// and Graph to the drawn nodes; Tree and All files list the whole library, so
-// they search everything. A scoped set too large to bind in one query also
-// searches everything.
+// The document paths to restrict a search to, or null for the whole library. The
+// file list narrows to the folder it is inside (the root narrows to nothing) and
+// the graph to the nodes it drew; a set too large to bind also searches all.
 function librarySearchScopePaths() {
   let paths;
   if (libraryView === 'graph') {
     // Not yet loaded: search everything rather than an empty (match-nothing) set.
     if (!graphData || !graphData.nodes) return null;
     paths = graphData.nodes.map((n) => n.path);
-  } else if (libraryView === 'project' && libraryProjectPath) {
+  } else if (libraryProjectPath) {
     const folder = findFolderByPath(libraryTreeData || [], libraryProjectPath);
     paths = collectLibraryFiles(folder ? (folder.children || []) : [], []).map((f) => f.path);
   } else {

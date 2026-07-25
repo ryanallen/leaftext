@@ -167,11 +167,9 @@ enum UserEvent {
         border_b: u8,
         dark: bool,
     },
-    /// Persist the library view choice plus the Tree view's expanded folders
-    /// and the Project view's current folder.
+    /// Persist the library view choice and the folder Project view is inside.
     SetLibraryState {
         view: String,
-        expanded: Vec<String>,
         project_path: String,
     },
     /// Persist the library pane's open/closed state and last open width.
@@ -331,7 +329,6 @@ enum IpcCommand {
     #[serde(rename = "setLibraryState")]
     SetLibraryState {
         view: String,
-        expanded: Vec<String>,
         #[serde(rename = "projectPath")]
         project_path: String,
     },
@@ -1284,15 +1281,10 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             }) => {
                 apply_window_chrome(&window, r, g, b, border_r, border_g, border_b, dark);
             }
-            Event::UserEvent(UserEvent::SetLibraryState {
-                view,
-                expanded,
-                project_path,
-            }) => {
+            Event::UserEvent(UserEvent::SetLibraryState { view, project_path }) => {
                 if let Some(view) = LibraryView::from_client(&view) {
                     settings.library_view = view;
                 }
-                settings.library_expanded = expanded;
                 settings.library_project_path = project_path;
                 persist_settings(&settings, settings_path.as_ref());
             }
@@ -1593,16 +1585,8 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
                     dark,
                 });
             }
-            IpcCommand::SetLibraryState {
-                view,
-                expanded,
-                project_path,
-            } => {
-                let _ = proxy.send_event(UserEvent::SetLibraryState {
-                    view,
-                    expanded,
-                    project_path,
-                });
+            IpcCommand::SetLibraryState { view, project_path } => {
+                let _ = proxy.send_event(UserEvent::SetLibraryState { view, project_path });
             }
             IpcCommand::SetLibraryLayout { closed, width } => {
                 let _ = proxy.send_event(UserEvent::SetLibraryLayout { closed, width });

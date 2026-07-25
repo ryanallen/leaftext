@@ -41,7 +41,7 @@ How the app behaves, page by page:
 | --- | --- |
 | [Rendering](01-features/01-rendering.md) | The full supported syntax with live examples: CommonMark, GFM, syntax highlighting, Mermaid, math, alerts, footnotes, emoji, block permalinks, Leaf buttons, local images, and XML (any file, plus 84000 TEI translations) |
 | [Navigation](01-features/02-navigation.md) | Tabs, Back/Forward history, the outline, scroll anchors, live reload, recent files, link hints, the pager, and the single-window rule |
-| [Library](01-features/03-library.md) | The left-side pane backed by a local SQLite index: Project, Tree, and All files views, filename and content search, and file actions |
+| [Library](01-features/03-library.md) | The left-side pane backed by a local SQLite index: the Project file list with its breadcrumb path, the graph view, filename and content search, and file actions |
 | [Minimap](01-features/04-minimap.md) | The scaled real-text document clone in the side rail: how it renders, when it rebuilds, responsive widths, and the on/off toggle |
 | [Themes](01-features/06-themes.md) | The ten theme families (Amaranth, Arabica, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage), light/dark/System/Daylight appearance, on-demand Google Fonts, and the semantic token contract |
 | [Settings](01-features/05-settings.md) | Every preference, its default, and the JSON files on disk that store them |

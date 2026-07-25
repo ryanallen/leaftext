@@ -1547,12 +1547,15 @@ summary:focus-visible {
   grid-template-columns: 0 minmax(0, 1fr);
 }
 .library-pane {
-  /* Positioning context for the overlays it stacks (.library-scroll and
-     .library-header). The pane itself doesn't scroll or clip; the inner
-     .library-scroll owns the scroll, and leaving it unclipped lets the view
-     dropdown open past its edge. */
+  /* Positioning context for the overlays it stacks (.library-scroll,
+     .library-crumbs, .library-header). The pane itself doesn't scroll or clip;
+     the inner .library-scroll owns the scroll. */
   --library-app-bar: var(--app-bar-height);
   --library-header-height: 40px;
+  /* The breadcrumb band between the app bar and the search row. Fixed height
+     whatever the path is, so entering a folder never shifts the list. */
+  --library-crumbs-height: 28px;
+  --library-chrome-height: calc(var(--library-app-bar) + var(--library-crumbs-height) + var(--library-header-height));
   position: relative;
   height: 100vh;
   /* Same cassette grain as the app bar, tiled over the library surface so the
@@ -1590,9 +1593,10 @@ summary:focus-visible {
 .library-shell.library-closed .library-divider {
   display: none;
 }
-.library-shell.library-closed .library-header {
-  /* Hide the header when snapped shut, or the unclipped pane would bleed it past
-     the 0px column and show it behind the reader. */
+.library-shell.library-closed .library-header,
+.library-shell.library-closed .library-crumbs {
+  /* Hide the header bands when snapped shut, or the unclipped pane would bleed
+     them past the 0px column and show them behind the reader. */
   display: none;
 }
 /* The library toggle sits in the app bar's lead, left of Back. Rests muted like
@@ -1618,23 +1622,24 @@ body.library-resizing {
   -webkit-user-select: none;
 }
 .library-scroll {
-  /* Scroll container filling the pane. Top padding clears the app bar and the
-     header, so the list starts below both but scrolls up under their blur.
+  /* Scroll container filling the pane. Top padding clears the app bar, the
+     breadcrumb band, and the search row, so the list starts below all three but
+     scrolls up under their blur.
      NOTE: no `scrollbar-width`/`scrollbar-color` — in Chromium either standard
      property silently disables all `::-webkit-scrollbar` pseudo-elements. */
   position: absolute;
   inset: 0;
   overflow: auto;
   box-sizing: border-box;
-  padding-top: calc(var(--library-app-bar) + var(--library-header-height));
+  padding-top: var(--library-chrome-height);
 }
 .library-scroll::-webkit-scrollbar {
   width: 10px;
 }
 .library-scroll::-webkit-scrollbar-track {
   background: var(--library-surface);
-  /* Keep the bar clear of the app bar AND the header that sits under it. */
-  margin-top: calc(var(--library-app-bar) + var(--library-header-height));
+  /* Keep the bar clear of the app bar AND the two bands under it. */
+  margin-top: var(--library-chrome-height);
 }
 .library-scroll::-webkit-scrollbar-thumb {
   border-radius: var(--leaf-radius-md);
@@ -1650,7 +1655,7 @@ body.library-resizing {
 .library-graph {
   position: absolute;
   inset: 0;
-  top: calc(var(--library-app-bar) + var(--library-header-height));
+  top: var(--library-chrome-height);
   overflow: hidden;
 }
 .library-graph-canvas {
@@ -1761,133 +1766,125 @@ body.library-resizing {
 .library-search:focus {
   outline: none;
 }
+/* The two pinned bands: the breadcrumb directly under the app bar, the search row
+   under that. Both absolute against the pane (not sticky) so neither drifts with
+   the list, which slides up behind them. Same treatment on both — a darker,
+   denser grain over a slightly darker fill, opaque so nothing shows through. */
+.library-crumbs,
 .library-header {
-  /* Pinned below the app bar — absolute against the pane, not sticky, so it
-     never drifts with the list, which slides up under its blur. */
   position: absolute;
-  top: var(--library-app-bar);
   left: 0;
   right: 0;
   z-index: 2;
   box-sizing: border-box;
-  /* Clip the fixed-width controls at the pane's right edge (the divider) so a
-     narrow drag slides them under it instead of squashing or spilling past it;
-     overflow-y stays visible so the view dropdown can still open below. */
-  overflow-x: clip;
-  overflow-y: visible;
-  height: var(--library-header-height);
+  /* Clip at the pane's right edge (the divider) so a narrow drag slides the
+     controls under it instead of squashing or spilling past it. */
+  overflow: hidden;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  padding: 0 12px;
-  font-weight: 600;
-  /* No divider hairlines: the band is set apart from the pane by a darker, denser
-     grain over a slightly darker fill. The fill is opaque (the list scrolls up
-     behind it, cleared by the scroll area's top padding) so nothing shows through
-     the search field or the view chip. */
   background-color: color-mix(in srgb, var(--library-surface) 93%, black);
   background-image: radial-gradient(circle, var(--library-header-grain) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
 }
-.library-view-select {
-  position: relative;
-  /* The view switcher keeps its size; only the search field beside it shrinks. */
-  flex: 0 0 auto;
-}
-.library-header button {
-  display: inline-flex;
-  align-items: center;
+.library-crumbs {
+  top: var(--library-app-bar);
+  height: var(--library-crumbs-height);
   gap: 6px;
-  /* All-caps monospace so the active view reads as a compact code-style tag. */
-  font-family: var(--code-font, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 3px 8px 3px 10px;
-  border-radius: var(--leaf-radius-md);
+  padding: 0 6px 0 12px;
+}
+.library-header {
+  top: calc(var(--library-app-bar) + var(--library-crumbs-height));
+  height: var(--library-header-height);
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0 12px;
+  font-weight: 600;
+}
+/* A hairline between the two bands, so the path and the search box read as two
+   sections of chrome rather than one tall block. */
+.library-header {
+  border-top: 1px solid color-mix(in srgb, var(--app-border) 70%, transparent);
+}
+.library-crumb-trail {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+}
+.library-crumb {
+  flex: 0 0 auto;
+  max-width: 55%;
+  padding: 1px 4px;
   border: 0;
-  /* A filled chip, same fill in every view state. Opaque (mixed over the pane
-     surface, not transparent) so the header's darker grain never shows through
-     the GRAPH view changer. */
-  background: color-mix(in srgb, var(--app-muted-foreground) 14%, var(--library-surface));
-  color: inherit;
-  cursor: pointer;
-}
-.library-header button:hover {
-  background: color-mix(in srgb, var(--app-muted-foreground) 22%, var(--library-surface));
-}
-.library-view-select button[aria-expanded="true"] {
-  /* While the menu is open, fill over an opaque surface so the header grain no
-     longer shows through the chip. */
-  background: color-mix(in srgb, var(--app-muted-foreground) 18%, var(--library-surface));
-}
-.library-view-caret {
-  color: var(--app-muted-foreground);
-  font-size: 10px;
-  line-height: 1;
-}
-.library-view-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  z-index: 20;
-  min-width: 100%;
-  margin: 0;
-  padding: 4px;
-  list-style: none;
-  border-radius: var(--leaf-radius-md);
-  background: var(--library-surface);
-  box-shadow: var(--leaf-shadow-popover);
-}
-.library-view-menu[hidden] {
-  display: none;
-}
-.library-view-option {
-  padding: 4px 10px;
   border-radius: var(--leaf-radius-sm);
-  font-family: var(--code-font, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace);
+  background: transparent;
+  color: var(--app-muted-foreground);
+  font-family: inherit;
   font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.library-view-option:hover {
-  background: color-mix(in srgb, var(--app-muted-foreground) 14%, transparent);
-}
-.library-view-option[aria-selected="true"] {
-  background: color-mix(in srgb, var(--app-muted-foreground) 22%, transparent);
-}
-.library-folder > summary {
-  cursor: pointer;
-  padding: 3px 6px;
-  margin-bottom: 2px;
-  border-radius: var(--leaf-radius-md);
   white-space: nowrap;
   overflow: hidden;
-  /* Long names fade out at the right edge instead of showing an ellipsis,
-     matching the tab labels. */
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
-  mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
+  text-overflow: ellipsis;
+  cursor: pointer;
 }
-/* Shrink and dim the native disclosure triangle, which is oversized and bright
-   next to 13px folder names. (-webkit- form is the legacy fallback.) */
-.library-folder > summary::marker,
-.library-folder > summary::-webkit-details-marker {
-  font-size: 0.65em;
+.library-crumb:hover {
+  background: color-mix(in srgb, var(--app-muted-foreground) 16%, transparent);
+  color: var(--app-foreground);
+}
+/* The folder you are in: full ink, and it gets the leftover room — the ancestors
+   above it give way first. */
+.library-crumb.is-current {
+  flex: 0 1 auto;
+  max-width: none;
+  cursor: default;
+  color: var(--app-foreground);
+  font-weight: 600;
+}
+.library-crumb.is-current:hover {
+  background: transparent;
+  color: var(--app-foreground);
+}
+.library-crumb.is-elided {
+  padding: 1px 2px;
+  cursor: default;
+}
+.library-crumb-sep {
+  flex: none;
+  color: color-mix(in srgb, var(--app-muted-foreground) 60%, transparent);
+  font-size: 10px;
+}
+/* The graph toggle: muted at rest, accent-filled while the graph is up, so which
+   of the two views is on screen is legible without opening anything. */
+.library-graph-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--leaf-radius-sm);
+  background: transparent;
   color: var(--app-muted-foreground);
+  cursor: pointer;
 }
-.library-folder > summary:hover {
-  background: color-mix(in srgb, var(--app-muted-foreground) 12%, transparent);
+.library-graph-toggle svg {
+  width: 15px;
+  height: 15px;
 }
-.library-children {
-  padding-left: 2px;
+.library-graph-toggle:hover {
+  background: color-mix(in srgb, var(--app-muted-foreground) 18%, transparent);
+  color: var(--app-foreground);
+}
+.library-graph-toggle[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--app-foreground);
 }
 .library-file,
-.library-nav-folder,
-.library-nav-up {
+.library-nav-folder {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1904,8 +1901,7 @@ body.library-resizing {
   cursor: pointer;
 }
 .library-file:hover,
-.library-nav-folder:hover,
-.library-nav-up:hover {
+.library-nav-folder:hover {
   background: color-mix(in srgb, var(--app-muted-foreground) 12%, transparent);
 }
 /* The currently-open file: accent-tinted, outranking hover so it holds while
@@ -1922,19 +1918,13 @@ body.library-resizing {
   height: 14px;
   color: var(--primary);
 }
-/* Folder glyph before folder names in the Tree and Project views, dimmed to the
-   muted tone so the name stays primary. */
+/* Folder glyph before folder names, dimmed to the muted tone so the name stays
+   primary. The row is a flex box with its own gap, so it needs no margin. */
 .library-folder-icon {
   flex: none;
   width: 14px;
   height: 14px;
-  vertical-align: -2px;
-  margin-right: 5px;
   color: var(--app-muted-foreground);
-}
-.library-nav-folder > .library-folder-icon {
-  /* The nav row is a flex box with its own gap; drop the inline margin there. */
-  margin-right: 0;
 }
 .library-file-label {
   /* Fill the row so the fade lands on empty space until the name overflows;
@@ -1948,20 +1938,13 @@ body.library-resizing {
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
   mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
 }
-/* Folders in Project view: name left, a muted chevron pinned to the right edge
-   marking the row as something you can drill into. */
+/* Folder rows: name left, a muted chevron pinned to the right edge marking the
+   row as something you can enter. */
 .library-nav-chevron {
   margin-left: auto;
   padding-left: 8px;
   color: var(--app-muted-foreground);
 }
-.library-nav-up {
-  color: var(--app-muted-foreground);
-}
-.library-nav-arrow {
-  flex: none;
-}
-.library-flat,
 .library-project {
   display: flex;
   flex-direction: column;

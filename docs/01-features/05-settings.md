@@ -17,7 +17,7 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 | Line numbers | On / Off | Off |
 | Reading-view editing | On / Off | On |
 | Indexing | On / Off | Off |
-| Library view | Graph, Project, Tree, All files | Graph |
+| Library view | Project, Graph | Project |
 | Graph size | Focus, Medium, Large, Everything | Focus |
 
 ## Open
@@ -48,9 +48,8 @@ Here `{config_dir}` and `{data_dir}` are the per-app directories the `directorie
   "theme_family": "fern",
   "theme_mode": "system",
   "theme_random_used": [],
-  "library_view": "graph",
+  "library_view": "project",
   "graph_scope": "small",
-  "library_expanded": [],
   "library_project_path": "",
   "library_closed": false,
   "library_width": 240,

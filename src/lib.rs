@@ -776,6 +776,10 @@ pub fn app_shell_html() -> String {
             "{{DOCUMENT_ICON_SVG}}",
             normalize_svg_icon_colors(DOCUMENT_ICON_SVG).trim(),
         )
+        .replace(
+            "{{GRAPH_ICON_SVG}}",
+            normalize_svg_icon_colors(GRAPH_ICON_SVG).trim(),
+        )
 }
 
 /// The theme picker's family buttons for the selector bottom sheet, one per
@@ -1024,16 +1028,15 @@ fn locale_bootstrap_script() -> &'static str {
       'errors.openFailed': 'Failed to open {path}: {reason}',
       'format.fileSizeUnknown': 'Unknown size',
       'library.title': 'Library',
-      'library.view.toggle': 'Switch library view',
-      'library.view.project': 'Project',
-      'library.view.tree': 'Tree',
-      'library.view.all': 'All files',
       'library.view.graph': 'Graph',
+      'library.view.graph.on': 'Show how these documents link',
+      'library.view.graph.off': 'Back to the file list',
+      'library.crumbs.label': 'Folder path',
+      'library.crumbs.enter': 'Open {name}',
       'library.graph.empty': 'No links to graph yet.',
       'library.graph.loading': 'Building graph…',
       'library.graph.error': 'Graph failed to load.',
       'library.graph.truncated': 'Showing the {count} most-linked documents.',
-      'library.up': 'Back',
       'library.scanning': 'Scanning…',
       'library.filesFound': '{count} files found',
       'library.empty': 'No Markdown indexed yet.',
@@ -1138,16 +1141,15 @@ fn locale_bootstrap_script() -> &'static str {
       'errors.openFailed': '无法打开 {path}：{reason}',
       'format.fileSizeUnknown': '大小未知',
       'library.title': '文库',
-      'library.view.toggle': '切换文库视图',
-      'library.view.project': '项目',
-      'library.view.tree': '目录树',
-      'library.view.all': '全部文件',
       'library.view.graph': '关系图',
+      'library.view.graph.on': '查看这些文档的链接关系',
+      'library.view.graph.off': '返回文件列表',
+      'library.crumbs.label': '文件夹路径',
+      'library.crumbs.enter': '打开 {name}',
       'library.graph.empty': '暂无可用的链接关系。',
       'library.graph.loading': '正在生成关系图…',
       'library.graph.error': '关系图加载失败。',
       'library.graph.truncated': '仅显示链接最多的 {count} 个文档。',
-      'library.up': '返回',
       'library.scanning': '正在扫描…',
       'library.filesFound': '已找到 {count} 个文件',
       'library.empty': '尚未索引任何 Markdown 文件。',
@@ -1376,14 +1378,12 @@ pub struct Settings {
     /// family is `random`, the frontend draws a fresh family at each launch and
     /// appends it here so none repeats until every family has shown, then resets.
     pub theme_random_used: Vec<String>,
-    /// Which library view is showing: Project, Tree, or flat.
+    /// Which library view is showing: the Project file list or the Graph.
     pub library_view: LibraryView,
     /// How much of the link graph the graph view draws (see [`GraphScope`]).
     pub graph_scope: GraphScope,
-    /// Full paths of folders left expanded in Tree view, restored across
-    /// view switches and restarts.
-    pub library_expanded: Vec<String>,
-    /// The folder Project view is inside (empty string = the root).
+    /// The folder Project view is inside (empty string = the root). Restored on
+    /// launch, so the pane reopens where it was left.
     pub library_project_path: String,
     /// Whether the library pane is collapsed shut. Open by default.
     pub library_closed: bool,
@@ -1413,7 +1413,6 @@ impl Default for Settings {
             theme_random_used: Vec::new(),
             library_view: LibraryView::default(),
             graph_scope: GraphScope::default(),
-            library_expanded: Vec::new(),
             library_project_path: String::new(),
             library_closed: false,
             library_width: 240,
@@ -1424,35 +1423,33 @@ impl Default for Settings {
     }
 }
 
-/// The library pane's layouts. Serialized lowercase to match the frontend's
-/// `LIBRARY_VIEWS` strings. Graph is the default.
+/// The library pane's two states: Project browses the folders one at a time (the
+/// default), and Graph swaps the list for the link map. Serialized lowercase to
+/// match the frontend's `LIBRARY_VIEWS` strings. The retired Tree and Flat views
+/// alias to Project so an existing settings file still loads.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LibraryView {
     #[default]
-    Graph,
+    #[serde(alias = "tree", alias = "flat")]
     Project,
-    Tree,
-    Flat,
+    Graph,
 }
 
 impl LibraryView {
     pub fn as_str(self) -> &'static str {
         match self {
-            LibraryView::Graph => "graph",
             LibraryView::Project => "project",
-            LibraryView::Tree => "tree",
-            LibraryView::Flat => "flat",
+            LibraryView::Graph => "graph",
         }
     }
 
-    /// Parse a value sent by the frontend, ignoring anything unrecognized.
+    /// Parse a value sent by the frontend, ignoring anything unrecognized. The
+    /// retired `tree`/`flat` names both resolve to Project.
     pub fn from_client(value: &str) -> Option<Self> {
         match value {
+            "project" | "tree" | "flat" => Some(LibraryView::Project),
             "graph" => Some(LibraryView::Graph),
-            "project" => Some(LibraryView::Project),
-            "tree" => Some(LibraryView::Tree),
-            "flat" => Some(LibraryView::Flat),
             _ => None,
         }
     }

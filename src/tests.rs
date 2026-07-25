@@ -5893,8 +5893,9 @@ fn settings_default_keeps_minimap_on_and_indexing_off() {
     assert!(!settings.line_numbers_enabled);
     assert_eq!(settings.theme_family, "fern");
     assert_eq!(settings.theme_mode, "system");
-    assert_eq!(settings.library_view, LibraryView::Graph);
-    assert!(settings.library_expanded.is_empty());
+    // The pane opens on the file list, at the library root — not on a force graph
+    // of every indexed document.
+    assert_eq!(settings.library_view, LibraryView::Project);
     assert!(settings.library_project_path.is_empty());
     // The pane is open by default, with the 240px fallback width.
     assert!(!settings.library_closed);
@@ -5921,9 +5922,8 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
         theme_family: "nightshade".to_string(),
         theme_mode: "dark".to_string(),
         theme_random_used: vec!["fern".to_string(), "github".to_string()],
-        library_view: LibraryView::Tree,
+        library_view: LibraryView::Graph,
         graph_scope: GraphScope::Large,
-        library_expanded: vec!["C:\\Users".to_string(), "C:\\Users\\rwall".to_string()],
         library_project_path: "C:\\Users\\rwall".to_string(),
         library_closed: true,
         library_width: 312,
@@ -5981,10 +5981,45 @@ fn settings_load_tolerates_partial_json_via_serde_default() {
     assert!(loaded.indexing_enabled);
     assert!(loaded.minimap_enabled);
     assert_eq!(loaded.theme_mode, "system");
-    assert_eq!(loaded.library_view, LibraryView::Graph);
-    assert!(loaded.library_expanded.is_empty());
+    assert_eq!(loaded.library_view, LibraryView::Project);
     assert!(!loaded.library_closed);
     assert_eq!(loaded.library_width, 240);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn settings_load_migrates_the_retired_tree_and_flat_views_to_project() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-settings-library-view-{unique}"));
+    fs::create_dir_all(&dir).expect("test directory is created");
+
+    // Both retired views load as Project. The alias matters because an unknown
+    // enum value would fail the whole deserialize and reset every other setting.
+    for legacy in ["tree", "flat"] {
+        let settings_path = dir.join(format!("{legacy}.json"));
+        fs::write(
+            &settings_path,
+            format!(r#"{{"library_view": "{legacy}", "minimap_enabled": false}}"#),
+        )
+        .expect("legacy library view fixture is written");
+        let loaded = load_settings(&settings_path);
+        assert_eq!(loaded.library_view, LibraryView::Project);
+        assert!(!loaded.minimap_enabled);
+    }
+
+    // The frontend's own strings round-trip, and the retired names resolve too.
+    assert_eq!(
+        LibraryView::from_client("project"),
+        Some(LibraryView::Project)
+    );
+    assert_eq!(LibraryView::from_client("graph"), Some(LibraryView::Graph));
+    assert_eq!(LibraryView::from_client("tree"), Some(LibraryView::Project));
+    assert_eq!(LibraryView::from_client("flat"), Some(LibraryView::Project));
+    assert_eq!(LibraryView::from_client("nope"), None);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }
@@ -6045,9 +6080,8 @@ fn initial_settings_script_defines_camelcase_global() {
         theme_family: "nightshade".to_string(),
         theme_mode: "dark".to_string(),
         theme_random_used: Vec::new(),
-        library_view: LibraryView::Tree,
+        library_view: LibraryView::Graph,
         graph_scope: GraphScope::Large,
-        library_expanded: vec!["C:\\Users".to_string()],
         library_project_path: "docs".to_string(),
         library_closed: true,
         library_width: 312,
@@ -6059,7 +6093,7 @@ fn initial_settings_script_defines_camelcase_global() {
     // webview), so it must not leak into the injected settings global.
     assert_eq!(
         script,
-        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryExpanded":["C:\\Users"],"libraryProjectPath":"docs","libraryView":"tree","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[]};"#
+        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryProjectPath":"docs","libraryView":"graph","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[]};"#
     );
 }
 
@@ -6135,9 +6169,9 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
     assert!(html.contains(r#"<input type="checkbox" id="indexingEnabled""#));
     assert!(html.contains("send({ command: 'setIndexingEnabled', enabled: indexingEnabled });"));
     assert!(html.contains("command: 'setLibraryState',"));
-    // The four view modes (Project, Tree, All files, Graph) and the toggle.
-    assert!(html.contains("const LIBRARY_VIEWS = ['project', 'tree', 'flat', 'graph'];"));
-    // Markdown rows carry the leaf mark; folders in Project view get a chevron.
+    // Two states only: the Project file list and the Graph.
+    assert!(html.contains("const LIBRARY_VIEWS = ['project', 'graph'];"));
+    // Markdown rows carry the leaf mark; folder rows get the enter chevron.
     assert!(html.contains(r#"${LEAF_FILE_ICON}<span class="library-file-label">"#));
     assert!(html.contains(r#"<span class="library-nav-chevron" aria-hidden="true">›</span>"#));
 
@@ -6164,12 +6198,11 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
         "settings.indexing.label",
         "settings.indexing.help",
         "library.title",
-        "library.view.toggle",
-        "library.view.project",
-        "library.view.tree",
-        "library.view.all",
         "library.view.graph",
-        "library.up",
+        "library.view.graph.on",
+        "library.view.graph.off",
+        "library.crumbs.label",
+        "library.crumbs.enter",
         "library.scanning",
         "library.filesFound",
         "library.empty",
@@ -6194,8 +6227,12 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
 fn app_shell_wires_the_graph_view() {
     let html = app_shell_html();
 
-    // The graph view is a fourth library view with its own pane container.
-    assert!(html.contains("const LIBRARY_VIEWS = ['project', 'tree', 'flat', 'graph'];"));
+    // The graph is the second of the two library views, reached by the icon in the
+    // breadcrumb band, and owns its own pane container.
+    assert!(html.contains("const LIBRARY_VIEWS = ['project', 'graph'];"));
+    assert!(html
+        .contains(r#"<button type="button" id="libraryGraphToggle" class="library-graph-toggle""#));
+    assert!(html.contains("setLibraryView(libraryView === 'graph' ? 'project' : 'graph');"));
     assert!(html.contains(r#"<div id="libraryGraph" class="library-graph""#));
     assert!(html.contains(r#"id="libraryGraphCanvas""#));
 
@@ -6284,6 +6321,44 @@ fn library_follows_and_highlights_the_active_file() {
     assert!(html.contains(
         "if (libraryRevealPending && libraryView !== 'graph' && revealSelectedInLibrary()) return;"
     ));
+}
+
+#[test]
+fn library_breadcrumbs_sit_above_the_search_box() {
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    // Its own band, above the search row, with the graph toggle at its right.
+    assert!(html.contains(r#"<div class="library-crumbs" id="libraryCrumbs">"#));
+    assert!(html.contains(r#"<nav class="library-crumb-trail" id="libraryCrumbTrail""#));
+    assert!(html.contains("function renderLibraryCrumbs(chain)"));
+    assert!(html.contains("function folderChainTo(nodes, path)"));
+
+    // Every crumb but the last walks back out to that folder; the last is where
+    // you are. A deep path elides its middle rather than overflowing the pane.
+    assert!(html.contains("setLibraryFolder(crumb.dataset.crumbPath)"));
+    assert!(html.contains(r#"class="library-crumb is-current" aria-current="true""#));
+    assert!(html.contains("const CRUMB_SEGMENT_MAX = 4;"));
+    // Entering a folder is the same move as a crumb, so both go through one path.
+    assert!(html.contains(
+        "button.addEventListener('click', () => setLibraryFolder(button.dataset.navInto));"
+    ));
+    // A folder the current tree no longer has falls back to the root.
+    assert!(html.contains("chain = [];\n    libraryProjectPath = '';"));
+
+    // The two bands share one treatment (the darker dotted fill) and the list
+    // starts below both.
+    assert!(css.contains(".library-crumbs,\n.library-header {"));
+    assert!(css.contains("--library-crumbs-height: 28px;"));
+    assert!(css.contains("padding-top: var(--library-chrome-height);"));
+    assert!(css.contains("top: calc(var(--library-app-bar) + var(--library-crumbs-height));"));
+    assert!(css.contains(".library-graph-toggle[aria-pressed=\"true\"] {"));
+
+    // The toggle carries the bundled graph mark, normalized to currentColor like
+    // every other toolbar icon.
+    let graph_icon = normalize_svg_icon_colors(GRAPH_ICON_SVG);
+    assert!(graph_icon.contains("stroke=\"currentColor\""));
+    assert!(html.contains(graph_icon.trim()));
 }
 
 #[test]

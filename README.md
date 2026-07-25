@@ -35,7 +35,7 @@ Reading-first, but editable. Click into a sentence in the rendered page and type
 
 ![The library pane with the document graph view](imgs/graph.png)
 
-A left-side pane backed by a local SQLite index of every Markdown file you own — [full-text search](docs/01-features/03-library.md) it, or browse by Project, Tree, or All files. A [graph view](docs/01-features/03-library.md#graph) maps how your documents link to one another, so you can see the shape of your notes instead of just a list. **[Library →](docs/01-features/03-library.md)**
+A left-side pane backed by a local SQLite index of every Markdown file you own — [full-text search](docs/01-features/03-library.md#search) it, or walk the folders one at a time with a [breadcrumb](docs/01-features/03-library.md#project) that always says where you are. A [graph view](docs/01-features/03-library.md#graph) maps how your documents link to one another, so you can see the shape of your notes instead of just a list. **[Library →](docs/01-features/03-library.md)**
 
 ### Navigate like a browser
 

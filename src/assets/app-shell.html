@@ -110,14 +110,13 @@
     </div>
     <div id="libraryScanProgress" class="library-progress" aria-live="polite" hidden></div>
   </div>
+  <!-- Where you are: the folder path, one crumb per level, with the graph
+       toggle on the right. Its own band above the search row, same treatment. -->
+  <div class="library-crumbs" id="libraryCrumbs">
+    <nav class="library-crumb-trail" id="libraryCrumbTrail" data-i18n-aria-label="library.crumbs.label" aria-label="Folder path"></nav>
+    <button type="button" id="libraryGraphToggle" class="library-graph-toggle" aria-pressed="false" data-i18n-title="library.view.graph.on" data-i18n-aria-label="library.view.graph.on" title="Show how these documents link" aria-label="Show how these documents link">{{GRAPH_ICON_SVG}}</button>
+  </div>
   <div class="library-header">
-    <div class="library-view-select" id="libraryViewSelect">
-      <button type="button" id="libraryViewToggle" data-i18n-title="library.view.toggle" title="Switch library view" aria-haspopup="listbox" aria-expanded="false">
-        <span id="libraryViewLabel">All files</span>
-        <span class="library-view-caret" aria-hidden="true">▾</span>
-      </button>
-      <ul id="libraryViewMenu" class="library-view-menu" role="listbox" hidden></ul>
-    </div>
     <div class="library-search-wrap">
       <input id="librarySearch" class="library-search" type="search" autocomplete="off" spellcheck="false" data-i18n-placeholder="library.search.placeholder" placeholder="Search files...">
     </div>
