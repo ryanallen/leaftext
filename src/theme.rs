@@ -683,7 +683,10 @@ pub(crate) fn reading_mode_css() -> &'static str {
   --app-surface-elevated: var(--surface-elevated);
   --app-surface-muted: var(--surface-muted);
   --app-surface-inset: var(--surface-inset);
-  --library-surface: var(--app-surface);
+  /* One shade for every piece of app chrome — top bar, library pane, its two
+     bands, the search field. No per-surface tint or mix: any variant shows up as a
+     tone seam where two of them meet. */
+  --chrome-surface: var(--app-surface);
   --app-muted-foreground: var(--muted-foreground);
   --app-action-background: var(--primary);
   --app-action-foreground: var(--primary-foreground);
@@ -779,10 +782,10 @@ pub(crate) fn reading_mode_css() -> &'static str {
   /* Cassette-style grain dot shared by the app bar and library surfaces: a faint
      dark speckle on the light surface, overridden heavier for dark themes. */
   --app-bar-grain: rgba(0, 0, 0, 0.1);
-  /* A heavier grain for the library search band, so it reads as a darker dotted
-     surface set apart from the pane without any divider hairlines. Overridden
-     darker still for dark themes. */
-  --library-header-grain: rgba(0, 0, 0, 0.18);
+  /* A heavier grain for inactive tabs, so one reads as a darker dotted cell set
+     apart from its neighbours without any outline. Overridden darker still for
+     dark themes. */
+  --library-header-grain: rgba(0, 0, 0, 0.3);
   /* Corner radii — one scale every surface pulls from, so rounding swaps in a
      single place. Sizes map onto the values the components historically used. */
   --leaf-radius-xs: 2px;
@@ -834,7 +837,7 @@ body {
      as speckled darker, not lighter — needs a heavier alpha than light mode to
      show against the already-dark surface. */
   --app-bar-grain: rgba(0, 0, 0, 0.35);
-  --library-header-grain: rgba(0, 0, 0, 0.5);
+  --library-header-grain: rgba(0, 0, 0, 0.72);
 }
 .app-bar {
   position: fixed;
@@ -852,20 +855,22 @@ body {
   align-items: center;
   height: var(--app-bar-height);
   padding: 0;
-  /* Two stacked background layers: a fine dithered dot grid on top for a rough,
-     old-cassette texture (a pixel-ish dark dot every 2px), over the frosted
-     translucent fill beneath it. */
-  background-image:
-    radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px),
-    linear-gradient(to bottom, var(--app-surface) 0%, color-mix(in srgb, var(--app-surface) 85%, transparent) 100%);
-  background-size: 2px 2px, 100% 100%;
-  background-repeat: repeat, no-repeat;
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  /* The chrome shade under a fine dithered dot grid, for a rough old-cassette
+     texture. Flat and opaque, not the frosted translucent fill it used to be: a
+     translucent bar takes its tone from whatever sits behind it, so it can never
+     match the pane it meets. */
+  background-color: var(--chrome-surface);
+  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  /* Tile the grain from the window, not this element's box, so every grained
+     surface shares one lattice. Box-anchored grids fall out of phase wherever two
+     meet — a 1px border is enough — and the seam reads as a faint hairline. */
+  background-attachment: fixed;
   /* Hairline top divider in the window's outer border color, separating the
-     reader from the native title bar above it. Background is left as the frosted
-     fill. The bottom divider is drawn by ::after (not border-bottom) so the
-     active tab can paint over it and appear connected to the page below. */
+     reader from the native title bar above it. The bottom divider is drawn by
+     ::after (not border-bottom) so the active tab can paint over it and appear
+     connected to the page below. */
   border-top: 1px solid var(--app-border);
   font-family: var(--app-font);
 }
@@ -890,10 +895,10 @@ body {
   z-index: 0;
 }
 .app-bar.has-rail::after {
-  /* Don't run the reader divider across the library column. The search band just
-     below owns its own top edge (a darker grain, no hairline), so a line here
-     would box the header in. Start the divider at the rail's right edge, where it
-     meets the library pane's vertical border. */
+  /* Don't run the reader divider across the library column: the rail is one
+     unbroken surface from the window's top edge down through the file list, so a
+     line here would cut it in two. Start the divider at the rail's right edge,
+     where it meets the pane's vertical border. */
   left: var(--library-rail-width, 0px);
 }
 .app-bar-lead {
@@ -974,7 +979,7 @@ body {
   border-right: 1px solid transparent;
   border-bottom: 1px solid var(--app-border);
   /* An inactive tab reads as a darker cell by tiling the header's cassette grain
-     at the heavier search-band weight — denser ink, no outline needed. */
+     at its heavier weight — denser ink, no outline needed. */
   background-image: radial-gradient(circle, var(--library-header-grain) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
@@ -1558,20 +1563,19 @@ summary:focus-visible {
   --library-chrome-height: calc(var(--library-app-bar) + var(--library-crumbs-height) + var(--library-header-height));
   position: relative;
   height: 100vh;
-  /* Same cassette grain as the app bar, tiled over the library surface so the
-     whole pane (the transparent tree rows sit on top) carries the texture. */
-  background-color: var(--library-surface);
+  /* The app bar's shade and grain, so the pane continues the bar rather than
+     sitting under it. The tree rows on top are transparent, so the whole pane
+     carries the texture. */
+  background-color: var(--chrome-surface);
   background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
+  background-attachment: fixed;
   color: var(--preview-foreground);
   font-family: var(--app-font);
   font-size: 13px;
   /* Hairline in the outer border color marking the pane's right edge, so the
      boundary against the reader is legible in every theme. */
   border-right: 1px solid var(--app-border);
-}
-:root[data-theme="dark"]:not([data-leaf-theme="nightshade"]) {
-  --library-surface: color-mix(in srgb, var(--app-surface) 98%, black);
 }
 .library-divider {
   /* An invisible grab strip straddling the pane's right edge, wide enough to
@@ -1637,7 +1641,9 @@ body.library-resizing {
   width: 10px;
 }
 .library-scroll::-webkit-scrollbar-track {
-  background: var(--library-surface);
+  /* Transparent, not the pane color: an opaque track masks the grain and leaves an
+     ungrained strip down the pane's right edge. */
+  background: transparent;
   /* Keep the bar clear of the app bar AND the two bands under it. */
   margin-top: var(--library-chrome-height);
 }
@@ -1738,9 +1744,9 @@ body.library-resizing {
   padding: 0 8px;
   border-radius: var(--leaf-radius-md);
   border: 1px solid color-mix(in srgb, var(--app-muted-foreground) 25%, transparent);
-  /* Solid fill, lighter than the header's darker dotted band, so the field reads
-     as a clean inset and the header grain never shows behind the search text. */
-  background-color: var(--library-surface);
+  /* The chrome shade again, but flat: the border is what reads as the field, and
+     an ungrained fill keeps dots out from behind the search text. */
+  background-color: var(--chrome-surface);
 }
 .library-search-wrap:focus-within {
   /* A neutral white focus border rather than the accent, which reads green in
@@ -1768,8 +1774,9 @@ body.library-resizing {
 }
 /* The two pinned bands: the breadcrumb directly under the app bar, the search row
    under that. Both absolute against the pane (not sticky) so neither drifts with
-   the list, which slides up behind them. Same treatment on both — a darker,
-   denser grain over a slightly darker fill, opaque so nothing shows through. */
+   the list, which slides up behind them. Same treatment on both — the pane's own
+   surface and grain, on the same lattice — so the chrome is one continuous texture.
+   Opaque, so the list never shows through. */
 .library-crumbs,
 .library-header {
   position: absolute;
@@ -1782,10 +1789,11 @@ body.library-resizing {
   overflow: hidden;
   display: flex;
   align-items: center;
-  background-color: color-mix(in srgb, var(--library-surface) 93%, black);
-  background-image: radial-gradient(circle, var(--library-header-grain) 0 0.6px, transparent 0.7px);
+  background-color: var(--chrome-surface);
+  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
+  background-attachment: fixed;
 }
 .library-crumbs {
   top: var(--library-app-bar);
@@ -1800,11 +1808,6 @@ body.library-resizing {
   gap: 8px;
   padding: 0 12px;
   font-weight: 600;
-}
-/* A hairline between the two bands, so the path and the search box read as two
-   sections of chrome rather than one tall block. */
-.library-header {
-  border-top: 1px solid color-mix(in srgb, var(--app-border) 70%, transparent);
 }
 .library-crumb-trail {
   flex: 1 1 auto;

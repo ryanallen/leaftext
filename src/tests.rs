@@ -2211,38 +2211,38 @@ fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
     let css = reading_mode_css();
 
     for rule in [
-            "background: var(--app-background);",
-            "color: var(--app-foreground);",
-            "linear-gradient(to bottom, var(--app-surface) 0%, color-mix(in srgb, var(--app-surface) 85%, transparent) 100%);",
-            "color: var(--settings-label-foreground);",
-            "border: 1px solid var(--settings-control-border);",
-            "background: var(--settings-control-background);",
-            "outline: 3px solid var(--app-focus-ring);",
-            "background: var(--app-selection-background);",
-            "color: var(--app-selection-foreground);",
-            "background: var(--preview-background);",
-            "color: var(--preview-foreground);",
-            "color: var(--preview-heading);",
-            "background: var(--markdown-inline-code-background);",
-            "color: var(--markdown-inline-code-foreground);",
-            "border-left: 0.25em solid var(--markdown-blockquote-border);",
-            "color: var(--markdown-blockquote-foreground);",
-            "border-left-color: var(--markdown-alert-warning-border);",
-            "border: 1px solid var(--markdown-table-cell-border);",
-            "background: var(--markdown-table-heading-background);",
-            "background: var(--markdown-thematic-break);",
-            "background: var(--code-block-background);",
-            "background-clip: padding-box;",
-            "clip-path: inset(0 round 6px);",
-            "color: var(--code-block-foreground);",
-            "background: var(--code-block-selection-background);",
-            "color: var(--code-block-selection-foreground);",
-            "background: var(--keyboard-background);",
-            "border-top: 1px solid var(--recent-border);",
-            "border: 1px solid var(--minimap-viewport-border);",
-        ] {
-            assert_contains(css, rule);
-        }
+        "background: var(--app-background);",
+        "color: var(--app-foreground);",
+        "background-color: var(--chrome-surface);",
+        "color: var(--settings-label-foreground);",
+        "border: 1px solid var(--settings-control-border);",
+        "background: var(--settings-control-background);",
+        "outline: 3px solid var(--app-focus-ring);",
+        "background: var(--app-selection-background);",
+        "color: var(--app-selection-foreground);",
+        "background: var(--preview-background);",
+        "color: var(--preview-foreground);",
+        "color: var(--preview-heading);",
+        "background: var(--markdown-inline-code-background);",
+        "color: var(--markdown-inline-code-foreground);",
+        "border-left: 0.25em solid var(--markdown-blockquote-border);",
+        "color: var(--markdown-blockquote-foreground);",
+        "border-left-color: var(--markdown-alert-warning-border);",
+        "border: 1px solid var(--markdown-table-cell-border);",
+        "background: var(--markdown-table-heading-background);",
+        "background: var(--markdown-thematic-break);",
+        "background: var(--code-block-background);",
+        "background-clip: padding-box;",
+        "clip-path: inset(0 round 6px);",
+        "color: var(--code-block-foreground);",
+        "background: var(--code-block-selection-background);",
+        "color: var(--code-block-selection-foreground);",
+        "background: var(--keyboard-background);",
+        "border-top: 1px solid var(--recent-border);",
+        "border: 1px solid var(--minimap-viewport-border);",
+    ] {
+        assert_contains(css, rule);
+    }
 }
 
 #[test]
@@ -3200,18 +3200,19 @@ fn app_shell_styles_open_button_like_other_secondary_toolbar_icons() {
 }
 
 #[test]
-fn app_shell_header_keeps_translucent_blur_with_dividers() {
+fn app_shell_header_keeps_one_chrome_shade_with_dividers() {
     let css = reading_mode_css();
 
     for expected in [
-        // The frosted translucent fill, now the lower of two stacked layers under
-        // a fine dithered dot grid for a rough, old-cassette texture.
-        "linear-gradient(to bottom, var(--app-surface) 0%, color-mix(in srgb, var(--app-surface) 85%, transparent) 100%);",
-        "radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px),",
-        "background-size: 2px 2px, 100% 100%;",
-        "backdrop-filter: blur(2px);",
-        "-webkit-backdrop-filter: blur(2px);",
-        // The frosted bar keeps a hairline top divider in the outer border color.
+        // One flat chrome shade under the dot grid. No translucent fill or backdrop
+        // blur: either makes the bar's tone depend on what sits behind it.
+        "background-color: var(--chrome-surface);",
+        "radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);",
+        "background-size: 2px 2px;",
+        // The grain tiles from the window, so every grained surface shares one
+        // lattice and no seam between them reads as a hairline.
+        "background-attachment: fixed;",
+        // The bar keeps a hairline top divider in the outer border color.
         "border-top: 1px solid var(--app-border);",
         // The bottom divider is drawn by ::after (not border-bottom) so the
         // active tab can paint over it and read as joined to the page below.
@@ -3224,6 +3225,16 @@ fn app_shell_header_keeps_translucent_blur_with_dividers() {
     // No blurred fade elements hanging below the bar, and no scroll shadow.
     for absent in [".app-bar::before", ".app-bar.is-scrolled"] {
         assert!(!css.contains(absent), "app header must not draw {absent}");
+    }
+
+    // No surface derives its own shade from the token — a tint on one shows up as a
+    // tone seam where it meets its neighbour.
+    assert!(!css.contains("--library-surface"));
+    for tinted in [
+        "color-mix(in srgb, var(--chrome-surface)",
+        "color-mix(in srgb, var(--app-surface) 98%, black)",
+    ] {
+        assert!(!css.contains(tinted), "chrome must not tint {tinted}");
     }
 }
 
@@ -6346,8 +6357,8 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     // A folder the current tree no longer has falls back to the root.
     assert!(html.contains("chain = [];\n    libraryProjectPath = '';"));
 
-    // The two bands share one treatment (the darker dotted fill) and the list
-    // starts below both.
+    // The two bands share one treatment (the pane's own surface and grain) and
+    // the list starts below both.
     assert!(css.contains(".library-crumbs,\n.library-header {"));
     assert!(css.contains("--library-crumbs-height: 28px;"));
     assert!(css.contains("padding-top: var(--library-chrome-height);"));
