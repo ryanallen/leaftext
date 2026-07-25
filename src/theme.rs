@@ -786,6 +786,10 @@ pub(crate) fn reading_mode_css() -> &'static str {
      apart from its neighbours without any outline. Overridden darker still for
      dark themes. */
   --library-header-grain: rgba(0, 0, 0, 0.3);
+  /* The same grain for the reading view's tinted surfaces. Lighter than the
+     chrome's: body text sits on these, so it darkens the fill without competing
+     with the words. */
+  --reader-surface-grain: rgba(0, 0, 0, 0.08);
   /* Corner radii — one scale every surface pulls from, so rounding swaps in a
      single place. Sizes map onto the values the components historically used. */
   --leaf-radius-xs: 2px;
@@ -842,6 +846,7 @@ body {
      show against the already-dark surface. */
   --app-bar-grain: rgba(0, 0, 0, 0.35);
   --library-header-grain: rgba(0, 0, 0, 0.72);
+  --reader-surface-grain: rgba(0, 0, 0, 0.3);
 }
 .app-bar {
   position: fixed;
@@ -3422,6 +3427,23 @@ body.library-resizing {
 }
 .document-body tr:nth-child(2n) td {
   background: rgba(110, 118, 129, 0.08);
+}
+/* The chrome's grain over the reading view's tinted surfaces, so a code block or
+   table header reads as a dithered cell rather than a flat wash. Must stay after
+   the rules that set those fills: each uses the `background:` shorthand, which at
+   equal specificity would blank the image. A rendered Mermaid diagram and the
+   frontmatter table drop it on their own — both clear the fill at higher
+   specificity, taking the grain with it. */
+.document-body .document-outline,
+.document-body .tei-front,
+.document-body pre,
+.document-body th,
+.document-body tr:nth-child(2n) td,
+.code-view {
+  background-image: radial-gradient(circle, var(--reader-surface-grain) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
 }
 .document-body kbd {
   border: 1px solid var(--keyboard-border);

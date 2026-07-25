@@ -3245,6 +3245,45 @@ fn app_shell_header_keeps_one_chrome_shade_with_dividers() {
 }
 
 #[test]
+fn reading_surfaces_carry_the_chrome_dot_grain() {
+    let css = reading_mode_css();
+
+    // Its own token, lighter than the chrome's: body text sits on these.
+    assert_contains(css, "--reader-surface-grain: rgba(0, 0, 0, 0.08);");
+    assert_contains(css, "--reader-surface-grain: rgba(0, 0, 0, 0.3);");
+
+    // Every tinted reading surface takes the grain, on the chrome's lattice.
+    for expected in [
+        ".document-body .document-outline,",
+        ".document-body .tei-front,",
+        ".document-body pre,",
+        ".document-body th,",
+        ".document-body tr:nth-child(2n) td,",
+        ".code-view {",
+        "radial-gradient(circle, var(--reader-surface-grain) 0 0.6px, transparent 0.7px);",
+        "background-size: 2px 2px;",
+        "background-attachment: fixed;",
+    ] {
+        assert_contains(css, expected);
+    }
+
+    // The grain rule has to follow the fills it grains: at equal specificity a
+    // `background:` shorthand declared later blanks the image again.
+    let grain = css
+        .find("var(--reader-surface-grain)")
+        .expect("reader grain rule");
+    for fill in [
+        ".document-body .document-outline {",
+        ".document-body pre {",
+        ".document-body th {",
+        ".code-view {",
+    ] {
+        let at = css.find(fill).unwrap_or_else(|| panic!("{fill} rule"));
+        assert!(at < grain, "{fill} must be declared before the grain rule");
+    }
+}
+
+#[test]
 fn app_shell_throttles_minimap_scroll_sync() {
     let html = app_shell_html();
 

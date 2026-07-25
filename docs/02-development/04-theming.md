@@ -38,6 +38,12 @@ Button background, foreground, hover, and disabled states for the back/forward/o
 
 Corners and elevation are tokenized too, but as **global scales** in the compiled `:root` block rather than per-theme values: `--leaf-radius-xs/sm/md/lg/xl/2xl/pill/full` for corners, and `--leaf-shadow-sm`/`-popover`/`-sheet`/`-tooltip` for overlays (the per-theme resting shadow is `--leaf-shadow`). Every surface pulls from these, so rounding and elevation swap in one place.
 
+### Surface grain
+
+Tinted surfaces are not painted as flat fills. A fine dot grid — a 2px lattice of near-transparent dots — is tiled over them, so a surface reads as a dithered cell rather than a wash of color. Like the radius and shadow scales, the grain lives in the compiled `:root` block rather than per-theme, as three alpha values that darken for dark appearances: `--app-bar-grain` (app bar, library pane, and the reading card's corners), `--library-header-grain` (heavier, so an inactive tab reads as a darker cell without an outline), and `--reader-surface-grain` (lighter, for the reading view's code blocks, outline panel, table headers, and zebra rows — body text sits on these).
+
+Every grained surface tiles from the window (`background-attachment: fixed`), not from its own box, so they all share one lattice. Box-anchored grids fall out of phase wherever two surfaces meet and the seam between them reads as a hairline.
+
 ## Theme families and sources
 
 Themes are organized as **families**, each pairing a light and a dark **source**. The user picks a family (the Theme setting) and an appearance (the Appearance setting: Light, Dark, System, or Daylight); the two combine to select one source. Ten families ship, so twenty sources are defined, **sorted by display name** in the picker (`Amaranth`, `Arabica`, `Fern`, `Ginger`, `GitHub`, `Goldenrod`, `Halcyon`, `Nightshade`, `Pippin`, `Sage`); `fern` is the default family (the bootstrap's fallback). Each source has an `id`, a `family` id, a `family_name` (the picker label), an `appearance` (`Light`/`Dark`), a CSS `selector`, a flat `tokens` map covering every contract property, an `overrides` map for per-source token nudges (empty for most sources), and a `fonts` block:
