@@ -1489,10 +1489,6 @@ pub struct Settings {
     pub update_last_checked: u64,
     /// Version of the verified installer waiting on disk, empty when none is.
     pub update_staged_version: String,
-    /// How many times removing a leftover machine-wide install has been
-    /// offered. Capped, so someone who declines the elevation prompt is not
-    /// asked again forever.
-    pub legacy_uninstall_attempts: u32,
 }
 
 impl Default for Settings {
@@ -1518,7 +1514,6 @@ impl Default for Settings {
             auto_update_enabled: true,
             update_last_checked: 0,
             update_staged_version: String::new(),
-            legacy_uninstall_attempts: 0,
         }
     }
 }

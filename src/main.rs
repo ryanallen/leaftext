@@ -697,24 +697,10 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     // Before the page can ask about updates, settle what happened to the last
     // one: clear a record the running version already satisfies, and sweep away
     // installers (and the helper copy) that are no longer needed.
-    let mut settings_dirty = reconcile_staged_update(&mut settings);
-
-    // v0.1.363 shipped a per-user installer that was withdrawn; anyone who took
-    // it has that copy sitting beside this one, and MajorUpgrade cannot reach
-    // across install contexts to remove it. Do it here. A per-user uninstall
-    // needs no elevation, so this is silent — but cap the attempts anyway, so a
-    // copy that refuses to uninstall cannot retry on every single launch.
-    const STALE_UNINSTALL_MAX_ATTEMPTS: u32 = 2;
-    if settings.legacy_uninstall_attempts < STALE_UNINSTALL_MAX_ATTEMPTS
-        && platform::has_stale_per_user_install()
-    {
-        settings.legacy_uninstall_attempts += 1;
-        settings_dirty = true;
-        // Record the attempt before making it: a crash mid-uninstall must not
-        // reset the count and turn this into a retry on every launch.
-        persist_settings(&settings, settings_path.as_ref());
-        platform::retire_stale_per_user_install();
-    }
+    // Nothing here removes a copy left by an older per-machine build: both
+    // attempts at that (v0.1.363, v0.1.364) ended with the wrong copy running.
+    // The release notes ask people to uninstall the old version instead.
+    let settings_dirty = reconcile_staged_update(&mut settings);
 
     if settings_dirty {
         persist_settings(&settings, settings_path.as_ref());

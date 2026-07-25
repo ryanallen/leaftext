@@ -128,63 +128,7 @@ pub fn run_update_apply(request: &ApplyRequest) -> Result<(), String> {
     let outcome = install(&installer, &request.relaunch);
     // Relaunch either way: on success the new build, on failure the old one.
     let _ = relaunch(&request.relaunch);
-
-    // Only once the user has a working new copy in front of them, so a failed
-    // cleanup cannot cost them the update.
-    #[cfg(windows)]
-    if outcome.is_ok() {
-        retire_stale_per_user_install();
-    }
-
     outcome
-}
-
-/// Whether a leftover per-user copy is registered *and* this process is the
-/// machine-wide install that supersedes it.
-///
-/// v0.1.363 shipped a per-user installer, which left anyone who took it with
-/// two copies. This is how the per-machine build clears the other one out.
-///
-/// The second condition matters: without it a `target/debug` build, or the
-/// per-user copy itself, would try to uninstall the app out from under itself.
-pub fn has_stale_per_user_install() -> bool {
-    #[cfg(windows)]
-    {
-        if running_from_per_user_install() {
-            return false;
-        }
-        !windows_impl::stale_per_user_products().is_empty()
-    }
-    #[cfg(not(windows))]
-    {
-        false
-    }
-}
-
-/// True when the running executable lives under `%LOCALAPPDATA%` — where the
-/// withdrawn per-user package installed, and where a normal install never is.
-#[cfg(windows)]
-fn running_from_per_user_install() -> bool {
-    let (Ok(executable), Some(local)) = (
-        std::env::current_exe(),
-        std::env::var_os("LOCALAPPDATA").map(PathBuf::from),
-    ) else {
-        return true; // Unknown location: do not touch anything.
-    };
-    executable.starts_with(&local)
-}
-
-/// Remove the withdrawn per-user copy, if one is registered. Silent: a per-user
-/// uninstall needs no elevation, so there is nothing to approve. Failure is
-/// harmless — the leftover copy is inert and never updates itself.
-pub fn retire_stale_per_user_install() {
-    #[cfg(windows)]
-    for product in windows_impl::stale_per_user_products() {
-        match windows_impl::remove_stale_product(&product) {
-            Ok(()) => eprintln!("Removed the leftover per-user install {product}"),
-            Err(error) => eprintln!("Left the per-user install in place: {error}"),
-        }
-    }
 }
 
 /// Give the app that spawned us time to close its files and release the
@@ -236,21 +180,26 @@ fn bundle_root(executable: &Path) -> Option<PathBuf> {
 /// Windows: hand the MSI to the installer service. `wix/main.wxs` declares a
 /// `MajorUpgrade`, so this replaces the existing install rather than sitting
 /// beside it.
+///
+/// No elevation, and none needed: the package installs per-user, which is the
+/// entire reason for that scope. `/qn` on a per-machine package would fail with
+/// 1925 instead of prompting, because quiet mode suppresses the UAC dialog too.
 #[cfg(windows)]
 fn install(installer: &Path, _relaunch: &Path) -> Result<(), String> {
+    use std::os::windows::process::CommandExt;
+
     let status = Command::new("msiexec")
         .arg("/i")
         .arg(installer)
         .args(["/qn", "/norestart"])
+        // CREATE_NO_WINDOW: no console flash while it runs.
+        .creation_flags(0x0800_0000)
         .status()
         .map_err(|error| format!("could not start the installer: {error}"))?;
     match status.code() {
-        // 3010 is "success, a reboot would be needed" — for a single
+        // 3010 is "installed, a reboot would be needed" — for a single
         // executable it never actually is.
         Some(0) | Some(3010) => Ok(()),
-        // 1602 is the user declining the elevation prompt. Not an error worth
-        // shouting about; they can try again whenever.
-        Some(1602) => Err("the update was cancelled".to_string()),
         Some(code) => Err(format!("the installer failed with code {code}")),
         None => Err("the installer was interrupted".to_string()),
     }
@@ -389,93 +338,6 @@ mod windows_impl {
             CloseClipboard();
         }
         Ok(())
-    }
-
-    /// UpgradeCode from `wix/main.wxs`. Stable across every release, unlike the
-    /// ProductCode, which the installer regenerates on each build (`Product
-    /// Id='*'`) and so cannot be hardcoded.
-    const UPGRADE_CODE: &str = "{1A3F5501-5C62-44AC-AC64-CBC56702E3FD}";
-
-    fn wide(text: &str) -> Vec<u16> {
-        text.encode_utf16().chain(std::iter::once(0)).collect()
-    }
-
-    /// ProductCodes of installed products sharing our UpgradeCode that were
-    /// installed for a single user rather than the machine.
-    ///
-    /// v0.1.363 installed per-user into `%LOCALAPPDATA%\Programs`. That was
-    /// reverted, but a machine that took it is left with that copy sitting
-    /// beside the per-machine one, because `MajorUpgrade` cannot reach across
-    /// install contexts. This finds it. Removing a per-user product needs no
-    /// elevation, so the cleanup is silent.
-    pub fn stale_per_user_products() -> Vec<String> {
-        use windows_sys::Win32::System::ApplicationInstallationAndServicing::{
-            MsiEnumRelatedProductsW, MsiGetProductInfoW,
-        };
-        const ERROR_SUCCESS: u32 = 0;
-        // A ProductCode is a GUID in braces: 38 characters plus the terminator.
-        const PRODUCT_CODE_LEN: usize = 39;
-
-        let upgrade_code = wide(UPGRADE_CODE);
-        let mut found = Vec::new();
-        let mut index = 0;
-        loop {
-            let mut buffer = [0u16; PRODUCT_CODE_LEN];
-            let result = unsafe {
-                MsiEnumRelatedProductsW(upgrade_code.as_ptr(), 0, index, buffer.as_mut_ptr())
-            };
-            if result != ERROR_SUCCESS {
-                break;
-            }
-            index += 1;
-
-            let product = String::from_utf16_lossy(&buffer)
-                .trim_end_matches('\0')
-                .to_string();
-            if product.is_empty() {
-                continue;
-            }
-
-            // AssignmentType: "0" installed for a single user, "1" for the
-            // machine. Only the per-user ones are ours to clean up; the
-            // machine-wide one is this install.
-            let property = wide("AssignmentType");
-            let product_wide = wide(&product);
-            let mut value = [0u16; 8];
-            let mut length = value.len() as u32;
-            let read = unsafe {
-                MsiGetProductInfoW(
-                    product_wide.as_ptr(),
-                    property.as_ptr(),
-                    value.as_mut_ptr(),
-                    &mut length,
-                )
-            };
-            if read == ERROR_SUCCESS
-                && String::from_utf16_lossy(&value[..length as usize]).trim() == "0"
-            {
-                found.push(product);
-            }
-        }
-        found
-    }
-
-    /// Remove a per-user product. Needs no elevation and shows no UI, so this
-    /// runs silently in the background with nothing for the user to approve.
-    pub fn remove_stale_product(product_code: &str) -> Result<(), String> {
-        use std::os::windows::process::CommandExt;
-
-        let status = super::Command::new("msiexec")
-            .args(["/x", product_code, "/qn", "/norestart"])
-            // CREATE_NO_WINDOW: no console flash behind the reader.
-            .creation_flags(0x0800_0000)
-            .status()
-            .map_err(|error| format!("could not start the uninstaller: {error}"))?;
-        match status.code() {
-            Some(0) | Some(3010) => Ok(()),
-            Some(code) => Err(format!("the uninstaller failed with code {code}")),
-            None => Err("the uninstaller was interrupted".to_string()),
-        }
     }
 
     /// Send a file to the Recycle Bin.

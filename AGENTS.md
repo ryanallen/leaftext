@@ -59,8 +59,11 @@ It is a Rust program. The window and the embedded web view come from the `tao` a
 - App id: `com.ryanallen.leaftext`.
 - Windows per-user data (web view cache, search index) lives under `%LOCALAPPDATA%\ryanallen\leaftext\data`; settings and recent files under `%APPDATA%\ryanallen\leaftext\config`.
 - macOS keeps both in `~/Library/Application Support/com.ryanallen.leaftext`.
-- Installed Windows path: `C:\Program Files\leaftext\bin\leaftext.exe`. Per-machine, and it stays that way — v0.1.363 tried a per-user install under `%LOCALAPPDATA%\Programs` so updates would skip the elevation prompt, and it was reverted within the hour: a per-user package cannot remove a per-machine one, so every existing install ended up with two copies. Per-machine keeps `MajorUpgrade` in charge of replacing the previous version.
+- Installed Windows path: `%LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe`. Per-user, overridable at install time and remembered across upgrades.
+- **The install is per-user on purpose and must stay that way.** Windows will not let an unelevated process write to `Program Files`, so a per-machine install cannot replace itself without a UAC prompt every single time; a per-user one can, silently. That is the entire reason for the scope.
+- **Nothing in the app removes a copy from another install context.** v0.1.363 and v0.1.364 each attempted an automatic migration off the old per-machine install, and each ended with the wrong copy running or an unexplained elevation prompt. The release notes ask users to uninstall the old version; the app does not touch it.
 - **The installer creates no Start Menu entry and no desktop shortcut.** Do not add one back.
+- **Never change `wix/main.wxs` without running `.github/workflows/validate-installer.yml` on a branch first.** The WiX toolset cannot run on a dev machine, so that file ships unproven otherwise — which has already cost two version numbers.
 
 These exact paths are a compatibility contract with every installed copy — `project_dirs_match_the_documented_layout` in `src/tests.rs` pins them. Changing one silently orphans user settings and the index.
 

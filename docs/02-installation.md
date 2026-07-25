@@ -36,13 +36,13 @@ xattr -cr /Applications/leaftext.app
 ### Windows
 
 1. Download the latest `.msi`.
-2. Run the installer. It shows one screen: the install folder, with **Change...** to pick another. Click **Install** and approve the Windows elevation prompt. There is no confirmation screen — the window closes once the install finishes.
+2. Run the installer. It shows one screen: the install folder, with **Change...** to pick another. Click **Install**. There is no elevation prompt and no confirmation screen — leaftext installs for the current user, and the window closes once the install finishes.
 3. Launch `leaftext.exe` from the install folder, or open any `.md` file with it.
 
-Default installed path:
+Default installed path, though **Change...** puts it wherever you like and later updates keep it there:
 
 ```text
-C:\Program Files\leaftext\bin\leaftext.exe
+%LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe
 ```
 
 WebView2 data lives here:
@@ -51,13 +51,13 @@ WebView2 data lives here:
 %LOCALAPPDATA%\ryanallen\leaftext\data\webview2
 ```
 
-That keeps runtime data writable without needing admin rights after install.
+leaftext never needs administrator rights — not to install, not to update.
 
 > [!NOTE]
 > The installer adds no Start Menu entry and no desktop shortcut. Pin `leaftext.exe` yourself if you want one.
 
 > [!IMPORTANT]
-> v0.1.363 briefly installed into `%LOCALAPPDATA%\Programs\leaftext` instead. That was withdrawn. If you installed it, a later version removes that copy for you automatically, with nothing to approve.
+> **Upgrading from v0.1.364 or earlier: uninstall the old version first.** Those installed into `C:\Program Files` for the whole machine, and a per-user package has no authority to remove one. Install the new version without doing so and you will have two copies. Uninstall from **Settings → Apps**, then install.
 
 ## Launch
 
@@ -84,7 +84,7 @@ The check is silent and skipped when offline, and it never blocks startup.
 
 ### Admin rights
 
-No for normal use. On Windows, app data lives under your user profile — `%APPDATA%\ryanallen\leaftext` for settings and recent files, `%LOCALAPPDATA%\ryanallen\leaftext` for the WebView2 cache and the library index — not beside the executable in `Program Files`.
+No, never. leaftext installs into your user profile and runs from there, so neither installing nor updating needs administrator rights. App data lives alongside it: `%APPDATA%\ryanallen\leaftext\config` for settings and recent files, `%LOCALAPPDATA%\ryanallen\leaftext\data` for the WebView2 cache and the library index.
 
 ### Data paths
 

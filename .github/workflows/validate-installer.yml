@@ -1,0 +1,126 @@
+name: Validate Windows Installer
+
+# Compiles wix/main.wxs into an MSI and inspects it. Publishes nothing, tags
+# nothing, deletes nothing — it exists so installer changes can be proven
+# before they cost a version number.
+#
+# There is no way to run the WiX toolset on a dev machine without installing it,
+# so `wix/main.wxs` used to ship blind and two releases burned on installer
+# errors that only surfaced in the release build. Run this on a branch first.
+#
+# Triggered by hand, or automatically on any branch push that touches the
+# installer recipe or the build script that packages it.
+
+on:
+  workflow_dispatch:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - 'wix/**'
+      - 'scripts/build-windows-release.ps1'
+      - '.github/workflows/validate-installer.yml'
+
+# Read-only: this workflow must never be able to publish or delete a release.
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  validate:
+    name: Compile and inspect the MSI
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Cargo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/git
+            ~/.cargo/registry
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-release-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-release-
+
+      - name: Install cargo-wix
+        shell: pwsh
+        run: cargo install cargo-wix --locked
+
+      - name: Build the MSI
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path Cargo.toml -Pattern '^\s*version\s*=\s*"([^"]+)"' |
+            Select-Object -First 1).Matches[0].Groups[1].Value
+          ./scripts/build-windows-release.ps1 -Tag "v$version"
+
+      - name: Inspect the MSI
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $msi = Get-ChildItem dist -Filter *.msi | Select-Object -First 1
+          if (-not $msi) { throw "No MSI was produced." }
+          Write-Host "Inspecting $($msi.Name)"
+
+          $installer = New-Object -ComObject WindowsInstaller.Installer
+          $db = $installer.GetType().InvokeMember(
+            'OpenDatabase', 'InvokeMethod', $null, $installer, @($msi.FullName, 0))
+
+          function Get-Rows([string]$sql) {
+            $view = $db.GetType().InvokeMember('OpenView', 'InvokeMethod', $null, $db, @($sql))
+            $view.GetType().InvokeMember('Execute', 'InvokeMethod', $null, $view, $null)
+            $rows = @()
+            while ($record = $view.GetType().InvokeMember('Fetch', 'InvokeMethod', $null, $view, $null)) {
+              $rows += ,@(
+                $record.GetType().InvokeMember('StringData', 'GetProperty', $null, $record, @(1)),
+                $record.GetType().InvokeMember('StringData', 'GetProperty', $null, $record, @(2))
+              )
+            }
+            return $rows
+          }
+
+          # Scope decides whether an update can install without a UAC prompt.
+          # ALLUSERS=1 would mean per-machine, which cannot be written by an
+          # unelevated process — silently breaking auto-update.
+          $allUsers = (Get-Rows "SELECT Property, Value FROM Property WHERE Property = 'ALLUSERS'")
+          $scope = if ($allUsers.Count -and $allUsers[0][1] -eq '1') { 'PER-MACHINE' } else { 'per-user' }
+          Write-Host "Install scope: $scope"
+          if ($scope -ne 'per-user') {
+            throw "Expected a per-user install (ALLUSERS unset). Per-machine needs elevation, which msiexec /qn cannot prompt for, so auto-update would fail with 1925."
+          }
+
+          # The folder the user picked has to survive upgrades, which means
+          # AppSearch reading it back out of the registry.
+          $search = Get-Rows "SELECT Signature_, Registry FROM RegLocator"
+          if (-not $search.Count) {
+            throw "No RegistrySearch for the previous install folder: an upgrade would relocate a custom install."
+          }
+          Write-Host "Remembers the install folder: yes"
+
+          # No Start Menu or desktop shortcuts: deliberate, and easy to
+          # reintroduce by accident from a WiX sample.
+          $shortcuts = Get-Rows "SELECT Shortcut, Directory_ FROM Shortcut"
+          if ($shortcuts.Count -gt 0) {
+            $shortcuts | ForEach-Object { Write-Host "  shortcut: $($_[0]) in $($_[1])" }
+            throw "The installer must not create shortcuts."
+          }
+          Write-Host "Shortcuts: none"
+
+          Write-Host ""
+          Write-Host "Directories:"
+          Get-Rows "SELECT Directory, DefaultDir FROM Directory" | ForEach-Object {
+            Write-Host ("  {0,-32} {1}" -f $_[0], $_[1])
+          }
+
+          Write-Host ""
+          Write-Host "MSI validated."

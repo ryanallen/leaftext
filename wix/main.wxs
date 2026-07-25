@@ -1,22 +1,31 @@
 <?xml version='1.0' encoding='windows-1252'?>
-<?if $(sys.BUILDARCH) = x64 or $(sys.BUILDARCH) = arm64 ?>
-    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
-<?else ?>
-    <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
-<?endif ?>
+<!-- Leaf Text installs per-user, by default into %LOCALAPPDATA%\Programs\leaftext.
 
-<!-- Leaf Text installs per-machine, into Program Files.
+     This is what makes updates silent. Windows will not let an unelevated
+     process write to Program Files, so a per-machine install cannot be replaced
+     without a UAC prompt every single time; a per-user one can be replaced by
+     the app itself with no prompt at all. That is the whole reason for the
+     scope, and it is not negotiable against the install location.
 
-     v0.1.363 tried per-user (%LOCALAPPDATA%\Programs) so updates would need no
-     elevation. It was reverted: a per-user package has no authority to remove a
-     per-machine one, so every existing install ended up with two copies and two
-     entries, and the cleanup could only run once the new copy was launched —
-     which the leftover shortcut made unlikely. Per-machine keeps MajorUpgrade
-     in charge of replacing the previous version, which is the path that has
-     worked for every release before it. The cost is one elevation prompt per
-     update, at a moment the user just asked for something to happen.
+     Consequences, all handled below:
+       - Components landing in the user profile take an HKCU registry keypath
+         rather than a file keypath (ICE38), and every folder they create is
+         named in RemoveFolder so uninstall leaves nothing behind (ICE64).
+       - candle will not generate a GUID for a component holding both a file and
+         a registry keypath (CNDL0230), so MainExecutable's GUID is fixed.
+       - The Install button carries no elevation shield: nothing is elevated.
+       - A per-user package cannot remove a copy installed per-machine by
+         v0.1.364 or earlier. That is a deliberate clean break — the release
+         notes tell people to uninstall the old version first. Nothing in the
+         app tries to do it for them; the two attempts at an automatic migration
+         are what broke v0.1.363 and v0.1.364.
 
-     There is deliberately no Start Menu shortcut. -->
+     There is deliberately no Start Menu shortcut and no desktop shortcut.
+
+     `.github/workflows/validate-installer.yml` compiles this file and asserts
+     the scope and the absence of shortcuts. Run it on a branch before tagging;
+     the WiX toolset cannot be run on a dev machine, and shipping this file
+     unproven has already cost two version numbers. -->
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
     <Product
         Id='*'
@@ -35,7 +44,7 @@
             InstallerVersion='450'
             Languages='1033'
             Compressed='yes'
-            InstallScope='perMachine'
+            InstallScope='perUser'
             SummaryCodepage='1252'/>
 
         <MajorUpgrade
@@ -44,18 +53,55 @@
 
         <Media Id='1' Cabinet='media1.cab' EmbedCab='yes'/>
 
+        <!-- Reinstate the folder the user picked last time.
+             APPLICATIONFOLDER defaults to the Directory tree below, but AppSearch
+             overwrites it from the registry when a previous install recorded one,
+             so Change... is honored on every later upgrade instead of silently
+             relocating the app back to the default. This also runs for the
+             updater's silent `msiexec /qn`, which is where it matters most. -->
+        <Property Id='APPLICATIONFOLDER' Secure='yes'>
+            <RegistrySearch
+                Id='PreviousInstallFolder'
+                Root='HKCU'
+                Key='Software\ryanallen\leaftext'
+                Name='InstallFolder'
+                Type='raw'/>
+        </Property>
+
         <Directory Id='TARGETDIR' Name='SourceDir'>
-            <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
-                <Directory Id='APPLICATIONFOLDER' Name='leaftext'>
-                    <Directory Id='Bin' Name='bin'>
-                        <Component Id='MainExecutable' Guid='*'>
-                            <File
-                                Id='MainExecutableFile'
-                                Name='leaftext.exe'
-                                DiskId='1'
-                                Source='$(var.CargoTargetBinDir)\leaftext.exe'
-                                KeyPath='yes'/>
-                        </Component>
+            <Directory Id='LocalAppDataFolder'>
+                <!-- Where per-user installers conventionally land, so leaftext
+                     sits beside the other apps installed this way. -->
+                <Directory Id='LocalProgramsFolder' Name='Programs'>
+                    <Directory Id='APPLICATIONFOLDER' Name='leaftext'>
+                        <Directory Id='Bin' Name='bin'>
+                            <!-- Fixed GUID; see the CNDL0230 note at the top.
+                                 Never change it: MSI identifies the installed
+                                 component by this value across upgrades. -->
+                            <Component Id='MainExecutable' Guid='CBEF1B10-A237-4CBE-8204-58C026FB238F'>
+                                <File
+                                    Id='MainExecutableFile'
+                                    Name='leaftext.exe'
+                                    DiskId='1'
+                                    Source='$(var.CargoTargetBinDir)\leaftext.exe'
+                                    KeyPath='no'/>
+                                <!-- Doubles as the component's HKCU keypath and
+                                     as the folder the search above reads back. -->
+                                <RegistryValue
+                                    Root='HKCU'
+                                    Key='Software\ryanallen\leaftext'
+                                    Name='InstallFolder'
+                                    Type='string'
+                                    Value='[APPLICATIONFOLDER]'
+                                    KeyPath='yes'/>
+                                <RemoveFolder Id='RemoveBinFolder' Directory='Bin' On='uninstall'/>
+                                <RemoveFolder Id='RemoveApplicationFolder' Directory='APPLICATIONFOLDER' On='uninstall'/>
+                                <!-- RemoveFolder only deletes empty folders, so
+                                     naming the shared Programs folder cannot
+                                     disturb anything else installed there. -->
+                                <RemoveFolder Id='RemoveLocalProgramsFolder' Directory='LocalProgramsFolder' On='uninstall'/>
+                            </Component>
+                        </Directory>
                     </Directory>
                 </Directory>
             </Directory>
@@ -135,7 +181,8 @@
                          Text='!(loc.InstallDirDlgChange)'/>
 
                 <Control Id='BottomLine' Type='Line' X='0' Y='234' Width='370' Height='0'/>
-                <Control Id='Install' Type='PushButton' ElevationShield='yes'
+                <!-- No elevation shield: a per-user install raises no UAC prompt. -->
+                <Control Id='Install' Type='PushButton'
                          X='212' Y='243' Width='80' Height='17' Default='yes'
                          Text='!(loc.VerifyReadyDlgInstall)'/>
                 <Control Id='Cancel' Type='PushButton' X='304' Y='243' Width='56' Height='17'
