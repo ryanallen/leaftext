@@ -110,7 +110,9 @@ if ($LASTEXITCODE -ne 0) {
 if (Test-Path $dist) { Remove-Item $dist -Recurse -Force }
 New-Item -ItemType Directory -Path $dist | Out-Null
 
-& cargo wix --no-build --nocapture --package leaftext --output $msiPath
+# -L passes -sice:ICE20 to light: that check demands an exit dialog, and the
+# one-screen installer in wix/main.wxs deliberately has none.
+& cargo wix --no-build --nocapture --package leaftext --output $msiPath -L "-sice:ICE20"
 if ($LASTEXITCODE -ne 0) { throw "cargo wix failed." }
 if (-not (Test-Path $msiPath)) { throw "MSI not produced: $msiPath" }
 

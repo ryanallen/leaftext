@@ -35,7 +35,7 @@ xattr -cr /Applications/leaftext.app
 ### Windows
 
 1. Download the latest `.msi`.
-2. Run the installer. It shows one screen: the install folder, with **Change...** to pick another. Click **Install** and approve the Windows elevation prompt.
+2. Run the installer. It shows one screen: the install folder, with **Change...** to pick another. Click **Install** and approve the Windows elevation prompt. There is no confirmation screen — the window closes once the install finishes.
 3. Launch leaftext from the Start Menu.
 
 Default installed path:

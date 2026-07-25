@@ -99,7 +99,11 @@
              the MSI entirely.
 
              The dialog is WiX's InstallDirDlg minus the Back button (nothing
-             precedes it) and the banner bitmap, with Install in place of Next. -->
+             precedes it) and the banner bitmap, with Install in place of Next.
+
+             No ExitDialog either, so the window closes when the install ends.
+             ICE20 rejects that, which is why build-windows-release.ps1 passes
+             -sice:ICE20 to light. -->
         <UI>
             <UIRef Id='WixUI_Common'/>
 
