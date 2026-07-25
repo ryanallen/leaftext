@@ -50,17 +50,21 @@
                 <Directory Id='LocalProgramsFolder' Name='Programs'>
                     <Directory Id='APPLICATIONFOLDER' Name='leaftext'>
                         <Directory Id='Bin' Name='bin'>
-                            <Component Id='MainExecutable' Guid='*'>
+                            <!-- Fixed GUID, not '*'. Installing into the user
+                                 profile means the keypath must be an HKCU
+                                 registry value rather than the file (ICE38),
+                                 and candle refuses to generate a GUID for a
+                                 component holding both a file and a registry
+                                 keypath (CNDL0230) — so it is spelled out.
+                                 Never change it: MSI identifies the installed
+                                 component by this value across upgrades. -->
+                            <Component Id='MainExecutable' Guid='CBEF1B10-A237-4CBE-8204-58C026FB238F'>
                                 <File
                                     Id='MainExecutableFile'
                                     Name='leaftext.exe'
                                     DiskId='1'
                                     Source='$(var.CargoTargetBinDir)\leaftext.exe'
                                     KeyPath='no'/>
-                                <!-- Installing into the user profile means the
-                                     keypath has to be under HKCU, not the file
-                                     (ICE38), and every folder created has to be
-                                     named for removal (ICE64). -->
                                 <RegistryValue
                                     Root='HKCU'
                                     Key='Software\ryanallen\leaftext'
@@ -68,8 +72,14 @@
                                     Type='integer'
                                     Value='1'
                                     KeyPath='yes'/>
+                                <!-- Every folder created inside the user profile
+                                     has to be named for removal (ICE64).
+                                     RemoveFolder only deletes empty folders, so
+                                     naming the shared Programs folder cannot
+                                     disturb anything else installed there. -->
                                 <RemoveFolder Id='RemoveBinFolder' Directory='Bin' On='uninstall'/>
                                 <RemoveFolder Id='RemoveApplicationFolder' Directory='APPLICATIONFOLDER' On='uninstall'/>
+                                <RemoveFolder Id='RemoveLocalProgramsFolder' Directory='LocalProgramsFolder' On='uninstall'/>
                             </Component>
                         </Directory>
                     </Directory>
