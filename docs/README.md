@@ -56,7 +56,7 @@ For anyone building, extending, or releasing leaftext:
 | [Architecture](02-development/01-architecture.md) | The Rust binary end to end: tao windowing, wry WebView, the Markdown pipeline, the XML renderers, the IPC bridge, the background indexer, and every source file's role |
 | [Building](02-development/02-building.md) | Toolchain prerequisites, platform WebView dependencies, and the `just verify` suite |
 | [Theming](02-development/04-theming.md) | The startup-validated contract of ~100 `--leaf-*` CSS custom properties, the theme sources, and how the CSS is compiled and validated |
-| [Releasing](02-development/03-releasing.md) | `just release <version>`: the version bump, the tag push, and the CI builds it triggers on all three platforms |
+| [Releasing](02-development/03-releasing.md) | `just release <version>`: the version bump, the tag push, and the CI builds it triggers on Windows and macOS |
 
 ## Shared reference
 

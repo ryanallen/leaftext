@@ -2221,6 +2221,9 @@ const settingsAlertDot = document.getElementById('settingsAlertDot');
 const settingsUpdate = document.getElementById('settingsUpdate');
 const autoUpdateControl = document.getElementById('autoUpdateEnabled');
 const LEAF_VERSION = typeof window.__leafVersion === 'string' ? window.__leafVersion : null;
+// Running version at the foot of the settings panel: confirms an update landed.
+const settingsVersion = document.getElementById('settingsVersion');
+if (settingsVersion) settingsVersion.textContent = LEAF_VERSION ? `v${LEAF_VERSION}` : '';
 let autoUpdateEnabled = LEAF_SETTINGS.autoUpdateEnabled !== false;
 if (autoUpdateControl) {
   autoUpdateControl.checked = autoUpdateEnabled;

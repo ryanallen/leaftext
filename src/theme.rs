@@ -1335,6 +1335,21 @@ body.is-maximized #winMaximize .wc-restore {
   width: 100%;
   font-weight: 700;
 }
+/* Running version at the foot of the panel: quiet, one line, selectable so it
+   can be pasted into a bug report. */
+.settings-version {
+  margin: 0;
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  color: var(--app-muted-foreground);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  user-select: text;
+}
+.settings-version-number {
+  font-variant-numeric: tabular-nums;
+}
 .settings-panel {
   position: absolute;
   right: 0;

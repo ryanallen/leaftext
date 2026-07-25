@@ -7242,6 +7242,20 @@ fn the_settings_panel_exposes_the_auto_update_toggle() {
 }
 
 #[test]
+fn the_settings_panel_shows_the_running_version() {
+    let html = app_shell_html();
+    assert!(html.contains(r#"<span class="settings-version-number" id="settingsVersion">"#));
+    assert!(html.contains(r#"data-i18n="settings.version""#));
+    assert_eq!(
+        html.matches("'settings.version':").count(),
+        2,
+        "settings.version is missing from a locale table"
+    );
+    // The number itself comes from the init script, not the markup.
+    assert!(initial_version_script().contains(env!("CARGO_PKG_VERSION")));
+}
+
+#[test]
 fn the_page_is_told_which_installer_this_build_takes() {
     let script = initial_update_script();
     assert!(script.starts_with("window.__leafUpdateAsset = "));

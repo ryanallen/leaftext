@@ -23,7 +23,7 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 
 ## Open
 
-Click **Settings** in the app bar. The panel opens as a dropdown and updates the app immediately as you change values.
+Click **Settings** in the app bar. The panel opens as a dropdown and updates the app immediately as you change values. The version you are running is shown at the foot of the panel ([Updates](#updates)).
 
 ## Files
 
@@ -158,6 +158,7 @@ The app ships both language dictionaries locally and applies changes without a r
 - A verified installer waits under `{data_dir}/updates`, and `update_staged_version` records which version it is. The Settings button becomes **Restart to update**; clicking it closes leaftext, installs, and reopens. Nothing is prompted for: leaftext installs per-user, which is what lets it replace itself without administrator rights
 - **Installing is always a click.** Nothing is applied in the background, and a checksum published on the same server as the download proves the file arrived intact — not that it is trustworthy. That is why the last step is yours
 - Turning it off keeps the check but downloads nothing: the button opens the release page instead
+- The running version is printed at the foot of the panel, so after a restart you can confirm which build is installed
 - Saved as `auto_update_enabled`, `update_last_checked`, and `update_staged_version`
 
 > [!NOTE]
