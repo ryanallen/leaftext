@@ -68,6 +68,11 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
+          # Strict mode matters here: without it, indexing into an unexpected
+          # $null yields $null instead of failing, and a comparison against it
+          # quietly reads as "false" — which would turn a genuinely wrong
+          # install scope into a passing check.
+          Set-StrictMode -Version Latest
           $msi = Get-ChildItem dist -Filter *.msi | Select-Object -First 1
           if (-not $msi) { throw "No MSI was produced." }
           Write-Host "Inspecting $($msi.Name)"
@@ -83,7 +88,9 @@ jobs:
             $rows = @()
             try {
               $view = $db.GetType().InvokeMember('OpenView', 'InvokeMethod', $null, $db, @($sql))
-              $view.GetType().InvokeMember('Execute', 'InvokeMethod', $null, $view, $null)
+              # Discard Execute's return value: unassigned, it lands in the
+              # function's output and shifts every row index by one.
+              $null = $view.GetType().InvokeMember('Execute', 'InvokeMethod', $null, $view, $null)
             } catch {
               Write-Host "  (no table for: $sql)"
               return $rows
@@ -100,16 +107,17 @@ jobs:
           # Scope decides whether an update can install without a UAC prompt.
           # ALLUSERS=1 would mean per-machine, which cannot be written by an
           # unelevated process — silently breaking auto-update.
-          $allUsers = (Get-Rows 'SELECT `Property`, `Value` FROM `Property` WHERE `Property` = ''ALLUSERS''')
-          $scope = if ($allUsers.Count -and $allUsers[0][1] -eq '1') { 'PER-MACHINE' } else { 'per-user' }
-          Write-Host "Install scope: $scope"
-          if ($scope -ne 'per-user') {
-            throw "Expected a per-user install (ALLUSERS unset). Per-machine needs elevation, which msiexec /qn cannot prompt for, so auto-update would fail with 1925."
+          $allUsers = @(Get-Rows 'SELECT `Property`, `Value` FROM `Property` WHERE `Property` = ''ALLUSERS''')
+          $allUsersValue = if ($allUsers.Count -gt 0) { $allUsers[0][1] } else { '<unset>' }
+          Write-Host "ALLUSERS = $allUsersValue"
+          if ($allUsersValue -eq '1') {
+            throw "Expected a per-user install (ALLUSERS unset), got per-machine. Per-machine needs elevation, which msiexec /qn cannot prompt for, so auto-update would fail with 1925."
           }
+          Write-Host "Install scope: per-user"
 
           # The folder the user picked has to survive upgrades, which means
           # AppSearch reading it back out of the registry.
-          $search = Get-Rows 'SELECT `Signature_`, `Key` FROM `RegLocator`'
+          $search = @(Get-Rows 'SELECT `Signature_`, `Key` FROM `RegLocator`')
           if (-not $search.Count) {
             throw "No RegistrySearch for the previous install folder: an upgrade would relocate a custom install."
           }
@@ -117,7 +125,7 @@ jobs:
 
           # No Start Menu or desktop shortcuts: deliberate, and easy to
           # reintroduce by accident from a WiX sample.
-          $shortcuts = Get-Rows 'SELECT `Shortcut`, `Directory_` FROM `Shortcut`'
+          $shortcuts = @(Get-Rows 'SELECT `Shortcut`, `Directory_` FROM `Shortcut`')
           if ($shortcuts.Count -gt 0) {
             $shortcuts | ForEach-Object { Write-Host "  shortcut: $($_[0]) in $($_[1])" }
             throw "The installer must not create shortcuts."
@@ -126,8 +134,8 @@ jobs:
 
           Write-Host ""
           Write-Host "Directories:"
-          Get-Rows 'SELECT `Directory`, `DefaultDir` FROM `Directory`' | ForEach-Object {
-            Write-Host ("  {0,-32} {1}" -f $_[0], $_[1])
+          foreach ($row in @(Get-Rows 'SELECT `Directory`, `DefaultDir` FROM `Directory`')) {
+            Write-Host ("  {0,-32} {1}" -f $row[0], $row[1])
           }
 
           Write-Host ""
