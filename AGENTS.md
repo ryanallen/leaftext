@@ -62,7 +62,7 @@ It is a Rust program. The window and the embedded web view come from the `tao` a
 - Installed Windows path: `%LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe`. Per-user, overridable at install time and remembered across upgrades.
 - **The install is per-user on purpose and must stay that way.** Windows will not let an unelevated process write to `Program Files`, so a per-machine install cannot replace itself without a UAC prompt every single time; a per-user one can, silently. That is the entire reason for the scope.
 - **Nothing in the app removes a copy from another install context.** v0.1.363 and v0.1.364 each attempted an automatic migration off the old per-machine install, and each ended with the wrong copy running or an unexplained elevation prompt. The release notes ask users to uninstall the old version; the app does not touch it.
-- **The installer creates no Start Menu entry and no desktop shortcut.** Do not add one back.
+- **The installer creates exactly one Start Menu entry, and it is load-bearing.** It is the only way to launch the app or find it by typing its name — the exe lives in a folder nobody browses to. v0.1.365 shipped without one and the app was unreachable. No desktop shortcut. `validate-installer.yml` asserts the count is exactly 1.
 - **Never change `wix/main.wxs` without running `.github/workflows/validate-installer.yml` on a branch first.** The WiX toolset cannot run on a dev machine, so that file ships unproven otherwise — which has already cost two version numbers.
 
 These exact paths are a compatibility contract with every installed copy — `project_dirs_match_the_documented_layout` in `src/tests.rs` pins them. Changing one silently orphans user settings and the index.

@@ -20,10 +20,11 @@
          app tries to do it for them; the two attempts at an automatic migration
          are what broke v0.1.363 and v0.1.364.
 
-     There is deliberately no Start Menu shortcut and no desktop shortcut.
+     There is one Start Menu entry and no desktop shortcut. The Start Menu
+     entry is not optional: it is the only way to launch or find the app.
 
      `.github/workflows/validate-installer.yml` compiles this file and asserts
-     the scope and the absence of shortcuts. Run it on a branch before tagging;
+     the install scope, the remembered folder, and exactly one shortcut. Run it on a branch before tagging;
      the WiX toolset cannot be run on a dev machine, and shipping this file
      unproven has already cost two version numbers. -->
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
@@ -105,10 +106,38 @@
                     </Directory>
                 </Directory>
             </Directory>
+            <Directory Id='ProgramMenuFolder'/>
         </Directory>
 
-        <!-- One feature, one file, nothing optional: no customize screen, and
-             no Start Menu shortcut. -->
+        <!-- The Start Menu entry is how the app is launched and how it is found
+             by typing its name. Without it the install is unreachable: the exe
+             sits in a folder nobody browses to, with nothing to click and
+             nothing for Windows search to match. It goes straight into
+             ProgramMenuFolder rather than a subfolder, so there is one entry and
+             no leftover folder to clean up. A per-user install resolves
+             ProgramMenuFolder to this user's Start Menu, so there is exactly one
+             of them. -->
+        <DirectoryRef Id='ProgramMenuFolder'>
+            <Component Id='ApplicationStartMenuShortcut' Guid='*'>
+                <Shortcut
+                    Id='ApplicationStartMenuShortcut'
+                    Name='Leaf Text'
+                    Description='Launch Leaf Text'
+                    Target='[Bin]leaftext.exe'
+                    WorkingDirectory='Bin'/>
+                <!-- A non-advertised shortcut in the user profile needs an HKCU
+                     keypath (ICE38/ICE43). -->
+                <RegistryValue
+                    Root='HKCU'
+                    Key='Software\ryanallen\leaftext'
+                    Name='shortcut'
+                    Type='integer'
+                    Value='1'
+                    KeyPath='yes'/>
+            </Component>
+        </DirectoryRef>
+
+        <!-- One feature, nothing optional, so there is no customize screen. -->
         <Feature
             Id='MainFeature'
             Title='Application'
@@ -117,6 +146,7 @@
             AllowAdvertise='no'
             Absent='disallow'>
             <ComponentRef Id='MainExecutable'/>
+            <ComponentRef Id='ApplicationStartMenuShortcut'/>
         </Feature>
 
         <SetProperty Id='ARPINSTALLLOCATION' Value='[APPLICATIONFOLDER]' After='CostFinalize'/>

@@ -37,7 +37,7 @@ xattr -cr /Applications/leaftext.app
 
 1. Download the latest `.msi`.
 2. Run the installer. It shows one screen: the install folder, with **Change...** to pick another. Click **Install**. There is no elevation prompt and no confirmation screen — leaftext installs for the current user, and the window closes once the install finishes.
-3. Launch `leaftext.exe` from the install folder, or open any `.md` file with it.
+3. Launch **Leaf Text** from the Start Menu, or press the Windows key and type its name.
 
 Default installed path, though **Change...** puts it wherever you like and later updates keep it there:
 
@@ -54,7 +54,7 @@ WebView2 data lives here:
 leaftext never needs administrator rights — not to install, not to update.
 
 > [!NOTE]
-> The installer adds no Start Menu entry and no desktop shortcut. Pin `leaftext.exe` yourself if you want one.
+> The installer adds one Start Menu entry and no desktop shortcut. Drag it to the desktop or taskbar if you want it there too.
 
 > [!IMPORTANT]
 > **Upgrading from v0.1.364 or earlier: uninstall the old version first.** Those installed into `C:\Program Files` for the whole machine, and a per-user package has no authority to remove one. Install the new version without doing so and you will have two copies. Uninstall from **Settings → Apps**, then install.

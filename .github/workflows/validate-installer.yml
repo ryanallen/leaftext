@@ -123,14 +123,18 @@ jobs:
           }
           Write-Host "Remembers the install folder: yes"
 
-          # No Start Menu or desktop shortcuts: deliberate, and easy to
-          # reintroduce by accident from a WiX sample.
+          # Exactly one Start Menu entry. Zero means the app cannot be launched
+          # or found by name at all, which shipped in v0.1.365; more than one
+          # means duplicate entries, which shipped in v0.1.363.
           $shortcuts = @(Get-Rows 'SELECT `Shortcut`, `Directory_` FROM `Shortcut`')
-          if ($shortcuts.Count -gt 0) {
-            $shortcuts | ForEach-Object { Write-Host "  shortcut: $($_[0]) in $($_[1])" }
-            throw "The installer must not create shortcuts."
+          foreach ($row in $shortcuts) { Write-Host "  shortcut: $($row[0]) in $($row[1])" }
+          if ($shortcuts.Count -ne 1) {
+            throw "Expected exactly 1 shortcut, found $($shortcuts.Count). Zero leaves the app unlaunchable; more than one duplicates the Start Menu entry."
           }
-          Write-Host "Shortcuts: none"
+          if ($shortcuts[0][1] -ne 'ProgramMenuFolder') {
+            throw "The shortcut must live directly in ProgramMenuFolder, found '$($shortcuts[0][1])'."
+          }
+          Write-Host "Shortcuts: 1, in the Start Menu"
 
           Write-Host ""
           Write-Host "Directories:"

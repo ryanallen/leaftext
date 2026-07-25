@@ -111,7 +111,7 @@ WebView2 browser data and the library index live in the same profile:
 %LOCALAPPDATA%\ryanallen\leaftext\data
 ```
 
-The installer adds no Start Menu or desktop shortcut — pin `leaftext.exe` yourself if you want one.
+Launch it from the Start Menu, or press the Windows key and type **Leaf Text**. The installer adds one Start Menu entry and no desktop shortcut.
 
 > **Upgrading from v0.1.364 or earlier?** Uninstall the old version first, from **Settings → Apps**. Those installed machine-wide into `C:\Program Files`, and a per-user package cannot remove one, so you would end up with two copies.
 
