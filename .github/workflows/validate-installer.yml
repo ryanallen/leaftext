@@ -76,10 +76,18 @@ jobs:
           $db = $installer.GetType().InvokeMember(
             'OpenDatabase', 'InvokeMethod', $null, $installer, @($msi.FullName, 0))
 
+          # Returns @() both for "no rows" and for "no such table" — MSI omits a
+          # table entirely when nothing populates it, so an absent Shortcut
+          # table is the success case, not an error.
           function Get-Rows([string]$sql) {
-            $view = $db.GetType().InvokeMember('OpenView', 'InvokeMethod', $null, $db, @($sql))
-            $view.GetType().InvokeMember('Execute', 'InvokeMethod', $null, $view, $null)
             $rows = @()
+            try {
+              $view = $db.GetType().InvokeMember('OpenView', 'InvokeMethod', $null, $db, @($sql))
+              $view.GetType().InvokeMember('Execute', 'InvokeMethod', $null, $view, $null)
+            } catch {
+              Write-Host "  (no table for: $sql)"
+              return $rows
+            }
             while ($record = $view.GetType().InvokeMember('Fetch', 'InvokeMethod', $null, $view, $null)) {
               $rows += ,@(
                 $record.GetType().InvokeMember('StringData', 'GetProperty', $null, $record, @(1)),
@@ -92,7 +100,7 @@ jobs:
           # Scope decides whether an update can install without a UAC prompt.
           # ALLUSERS=1 would mean per-machine, which cannot be written by an
           # unelevated process — silently breaking auto-update.
-          $allUsers = (Get-Rows "SELECT Property, Value FROM Property WHERE Property = 'ALLUSERS'")
+          $allUsers = (Get-Rows 'SELECT `Property`, `Value` FROM `Property` WHERE `Property` = ''ALLUSERS''')
           $scope = if ($allUsers.Count -and $allUsers[0][1] -eq '1') { 'PER-MACHINE' } else { 'per-user' }
           Write-Host "Install scope: $scope"
           if ($scope -ne 'per-user') {
@@ -101,7 +109,7 @@ jobs:
 
           # The folder the user picked has to survive upgrades, which means
           # AppSearch reading it back out of the registry.
-          $search = Get-Rows "SELECT Signature_, Registry FROM RegLocator"
+          $search = Get-Rows 'SELECT `Signature_`, `Key` FROM `RegLocator`'
           if (-not $search.Count) {
             throw "No RegistrySearch for the previous install folder: an upgrade would relocate a custom install."
           }
@@ -109,7 +117,7 @@ jobs:
 
           # No Start Menu or desktop shortcuts: deliberate, and easy to
           # reintroduce by accident from a WiX sample.
-          $shortcuts = Get-Rows "SELECT Shortcut, Directory_ FROM Shortcut"
+          $shortcuts = Get-Rows 'SELECT `Shortcut`, `Directory_` FROM `Shortcut`'
           if ($shortcuts.Count -gt 0) {
             $shortcuts | ForEach-Object { Write-Host "  shortcut: $($_[0]) in $($_[1])" }
             throw "The installer must not create shortcuts."
@@ -118,7 +126,7 @@ jobs:
 
           Write-Host ""
           Write-Host "Directories:"
-          Get-Rows "SELECT Directory, DefaultDir FROM Directory" | ForEach-Object {
+          Get-Rows 'SELECT `Directory`, `DefaultDir` FROM `Directory`' | ForEach-Object {
             Write-Host ("  {0,-32} {1}" -f $_[0], $_[1])
           }
 
