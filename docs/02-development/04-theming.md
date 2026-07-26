@@ -40,9 +40,21 @@ Corners and elevation are tokenized too, but as **global scales** in the compile
 
 ### Surface grain
 
-Tinted surfaces are not painted as flat fills. A fine dot grid — a 2px lattice of near-transparent dots — is tiled over them, so a surface reads as a dithered cell rather than a wash of color. Like the radius and shadow scales, the grain lives in the compiled `:root` block rather than per-theme, as three alpha values that darken for dark appearances: `--app-bar-grain` (app bar, library pane, and the reading card's corners), `--library-header-grain` (heavier, so an inactive tab reads as a darker cell without an outline), and `--reader-surface-grain` (lighter, for the reading view's code blocks, outline panel, table headers, and zebra rows — body text sits on these).
+Tinted surfaces are not painted as flat fills. A fine dot grid — a 2px lattice of near-transparent dots — is tiled over them, so a surface reads as a dithered cell rather than a wash of color. Like the radius and shadow scales, the grain lives in the compiled `:root` block rather than per-theme, as four alpha values that darken for dark appearances:
 
-Every grained surface tiles from the window (`background-attachment: fixed`), not from its own box, so they all share one lattice. Box-anchored grids fall out of phase wherever two surfaces meet and the seam between them reads as a hairline.
+| Token | Where it grains |
+|---|---|
+| `--app-bar-grain` | App bar, library pane, and the reading card's corners |
+| `--library-header-grain` | Heavier, so an inactive tab reads as a darker cell without an outline |
+| `--reader-surface-grain` | Lighter, for the reading view's code blocks, outline panel, table headers, and the tinted table rows — body text sits on these |
+| `--reader-surface-grain-deep` | Heavier again, for the *untinted* table rows |
+
+Both table stripes are grained, not just the tinted one, so a table reads as a single texture banded light and dark rather than speckled rows alternating with flat ones. The untinted row needs the heavier value precisely because it carries no fill to speckle: at the tinted rows' weight its dots would barely register.
+
+Every grained surface tiles from the window (`background-attachment: fixed`), not from its own box, so they all share one lattice — including both table stripes, so the dots run straight down the page across a stripe instead of breaking at each row edge. Box-anchored grids fall out of phase wherever two surfaces meet and the seam between them reads as a hairline.
+
+> [!NOTE]
+> The frontmatter table is the one table that carries no chrome, and its opt-out ties with the row rules on specificity — it wins only by coming later in the stylesheet. A row rule added after it would put a speckled stripe through it.
 
 ## Theme families and sources
 

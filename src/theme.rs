@@ -790,6 +790,9 @@ pub(crate) fn reading_mode_css() -> &'static str {
      chrome's: body text sits on these, so it darkens the fill without competing
      with the words. */
   --reader-surface-grain: rgba(0, 0, 0, 0.08);
+  /* A heavier grain for the untinted table rows: with no fill to speckle, a dot at
+     the weight above barely registers on them. */
+  --reader-surface-grain-deep: rgba(0, 0, 0, 0.15);
   /* Corner radii — one scale every surface pulls from, so rounding swaps in a
      single place. Sizes map onto the values the components historically used. */
   --leaf-radius-xs: 2px;
@@ -861,6 +864,7 @@ body {
   --app-bar-grain: rgba(0, 0, 0, 0.35);
   --library-header-grain: rgba(0, 0, 0, 0.72);
   --reader-surface-grain: rgba(0, 0, 0, 0.3);
+  --reader-surface-grain-deep: rgba(0, 0, 0, 0.55);
 }
 .app-bar {
   position: fixed;
@@ -3704,6 +3708,15 @@ body.library-resizing {
   background-repeat: repeat;
   background-attachment: fixed;
 }
+/* Grain the untinted rows too, so a table reads as one texture banded light and
+   dark rather than speckled rows alternating with flat ones. Same fixed lattice as
+   every other grain, so the dots run straight down across the stripe. */
+.document-body tr:nth-child(2n + 1) td {
+  background-image: radial-gradient(circle, var(--reader-surface-grain-deep) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
 .document-body kbd {
   border: 1px solid var(--keyboard-border);
   border-bottom-width: 2px;
@@ -3730,8 +3743,11 @@ body.library-resizing {
   font-size: 12px;
   line-height: 1.5;
 }
-.document-body .frontmatter th,
-.document-body .frontmatter td {
+/* The `tr` is here to out-specify the striping and grain rules above, which are
+   one element deeper than a bare `.frontmatter td` and would otherwise put a
+   speckled stripe through the one table meant to carry no chrome at all. */
+.document-body .frontmatter tr th,
+.document-body .frontmatter tr td {
   text-align: left;
   vertical-align: top;
   padding: 1px 12px 1px 0;

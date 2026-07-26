@@ -2610,6 +2610,44 @@ fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
 }
 
 #[test]
+fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
+    let css = reading_mode_css();
+
+    // Both stripes carry the lattice, and the untinted one — with no fill to
+    // speckle — uses the heavier grain.
+    assert_contains(css, "--reader-surface-grain: rgba(0, 0, 0, 0.08);");
+    assert_contains(css, "--reader-surface-grain-deep: rgba(0, 0, 0, 0.15);");
+    assert_contains(css, "--reader-surface-grain: rgba(0, 0, 0, 0.3);");
+    assert_contains(css, "--reader-surface-grain-deep: rgba(0, 0, 0, 0.55);");
+
+    let even = css
+        .find("tr:nth-child(2n) td")
+        .expect("the tinted rows are grained");
+    let odd = css
+        .find("tr:nth-child(2n + 1) td")
+        .expect("the untinted rows are grained too");
+    let frontmatter = css
+        .find(".frontmatter tr td")
+        .expect("the frontmatter table opts out");
+
+    // The deep grain belongs to the untinted stripe, not the tinted one.
+    assert_contains(
+        &css[odd..],
+        "radial-gradient(circle, var(--reader-surface-grain-deep)",
+    );
+    // Same 2px lattice on both, so the dots line up down the page across a stripe.
+    assert_contains(&css[odd..], "background-size: 2px 2px;");
+
+    // Source order is load-bearing: the row rules and the frontmatter opt-out tie
+    // on specificity, so the opt-out wins only by coming last.
+    assert!(even < odd, "even-row grain should precede odd-row grain");
+    assert!(
+        odd < frontmatter,
+        "the frontmatter opt-out must come after both row rules to win the tie"
+    );
+}
+
+#[test]
 fn reading_mode_css_maps_role_aliases_to_released_tokens() {
     let css = reading_mode_css();
 
