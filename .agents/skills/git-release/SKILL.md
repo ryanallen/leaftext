@@ -10,7 +10,7 @@ user-invocable: true
 
 Handles all git operations for releases. Two kinds:
 
-- **App release** — any Rust/build code changed. Bump the version, update the lock file, tag, push, delete old tags. The `v*` tag triggers the CI builds (Windows MSI, macOS DMG, Linux).
+- **App release** — any Rust/build code changed. Bump the version, update the lock file, tag, push, delete old tags. The `v*` tag triggers the CI builds (Windows MSI, macOS DMG).
 - **Site-only release** — only the static site / docs changed (no Rust). **Do not bump the version** (there's no app to rebuild). Just commit and push `main`; GitHub Pages redeploys automatically from the branch.
 
 Both kinds **prune old GitHub Pages deployments just before the push**, keeping the currently active one. Pruning before the push means the cleanup never touches the deployment the push is about to create, so it can't race the in-flight build (which is what made deploys intermittently fail with "try again later"). Never co-authors commits. Only runs when explicitly instructed.
@@ -154,9 +154,7 @@ For app releases, also delete old remote tags so GitHub shows only the latest:
 git push origin --delete <old-tag-1> <old-tag-2> ...
 ```
 
-The push triggers a fresh Pages build+deploy. **Do not wait for it** — Pages deploys fine here, and the previous (kept) deployment serves the site until the new one flips over.
-
-**Stop after the push. Do not confirm anything.** No `curl` site check, no `gh run list`, no CI-triggered check, no closing summary of what shipped. The push is the last action — end the turn with a single one-line "Released v<version>." (or "Site updated." for site-only) and nothing more.
+**The push is the last action.** Never wait on or poll a build — no `gh run watch`/`view`/`list`, no validation branch, no sleeping until something is "proven". A failed build costs a patch bump, not a blocked release. End the turn with one line: "Released v<version>." (or "Site updated.")
 
 ## Examples
 
@@ -196,10 +194,7 @@ Cause: `Cargo.lock` wasn't updated to match `Cargo.toml`. Solution: set the `[[p
 Cause: remote tags weren't deleted. Solution: `git push origin --delete v<old-version> ...`.
 
 **Deployments keep piling up.**
-Cause: the prune (step 7) was skipped. Re-run it any time — it marks each old deployment `inactive`, then deletes it, keeping only the currently active one. It's safe to run standalone, outside a release.
-
-**Deploy failed with "Deployment failed, try again later."**
-Cause: the prune raced the in-flight deployment — this is why step 7 now runs *before* the push, not after. If it still happens (a transient GitHub Pages error), just re-run the failed `pages-build-deployment` run: `gh run rerun <run-id>`. The site stays up on the previous deployment meanwhile.
+Cause: the prune (step 7) was skipped. Re-run it any time — safe standalone, outside a release.
 
 ## Reference
 
