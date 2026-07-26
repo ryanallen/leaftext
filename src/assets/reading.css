@@ -2670,6 +2670,14 @@ body.library-resizing {
   padding: 1em;
   tab-size: 4;
 }
+/* Hand the horizontal scroll (and the corner clip with it) to the <code> inside,
+   so the gutter number hung outside is not clipped and the language label and
+   copy button hold still while the code scrolls. A raw-HTML <pre> with no <code>
+   keeps scrolling itself — there is nothing inside to hand the job to. */
+.document-body pre:has(> code) {
+  clip-path: none;
+  overflow: visible;
+}
 .document-body pre code {
   background: transparent;
   color: inherit;
@@ -2677,6 +2685,10 @@ body.library-resizing {
   padding: 0;
   white-space: pre;
   word-break: normal;
+}
+.document-body pre:has(> code) > code {
+  display: block;
+  overflow-x: auto;
 }
 .document-body pre ::selection {
   background: var(--code-block-selection-background);
@@ -2794,18 +2806,22 @@ body.library-resizing {
 .document-body li.has-anchor-link > .heading-anchor {
   right: calc(100% + 2em);
 }
-/* pre and table are overflow containers, so a number hung outside is clipped.
+/* A table is its own overflow container, so a number hung outside it is clipped.
    Seat it inside a 40px left padding pulled back with a negative margin instead;
-   neither has a ::marker to drag out of place. */
-.document-body pre.has-anchor-link,
+   a table has no ::marker to drag out of place. */
 .document-body table.has-anchor-link {
   padding-left: 40px;
   margin-left: -40px;
 }
-.document-body pre.has-anchor-link > .heading-anchor,
 .document-body table.has-anchor-link > .heading-anchor {
   right: auto;
   left: 0;
+}
+/* A code block's first line starts a padding-length down and a notch smaller
+   than body copy; the number follows both to sit on that line's baseline. */
+.document-body pre.has-anchor-link > .heading-anchor {
+  top: 1em;
+  font-size: 0.875em;
 }
 /* A zero-size alias that carries a heading's #locus without disturbing its
    layout (the heading keeps its slug id for the table of contents). */

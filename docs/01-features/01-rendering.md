@@ -120,6 +120,8 @@ Standard blockquotes also use a hanging indent for each authored line, so when a
 
 Language-tagged fenced code blocks get syntax coloring, a language badge, and a Copy button. Hover a block to reveal the button.
 
+A line too long for the column scrolls sideways inside the block; the badge, the Copy button, and the block's [gutter number](05-settings.md#line-numbers) all stay put while it does, and the block itself keeps the reading column's left edge.
+
 ```rust
 /// Extract the leading frontmatter block, if any.
 pub fn extract_frontmatter(text: &str) -> Option<FrontmatterBlock> {

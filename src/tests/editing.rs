@@ -257,14 +257,28 @@ fn anchor_addressable_blocks_get_a_permalink_button() {
         ".document-body li.has-anchor-link > .heading-anchor {\n  right: calc(100% + 2em);\n}"
     ));
 
-    // pre and table are overflow containers, so a number hung outside them would
-    // be clipped invisible; they alone keep the carved-gutter scheme (40px left
+    // A table is its own overflow container, so a number hung outside it would be
+    // clipped invisible; it alone keeps the carved-gutter scheme (40px left
     // padding pulled back with a matching negative margin, number seated inside).
     assert!(css.contains(
-        ".document-body pre.has-anchor-link,\n.document-body table.has-anchor-link {\n  padding-left: 40px;\n  margin-left: -40px;\n}"
+        ".document-body table.has-anchor-link {\n  padding-left: 40px;\n  margin-left: -40px;\n}"
     ));
     assert!(css.contains(
-        ".document-body pre.has-anchor-link > .heading-anchor,\n.document-body table.has-anchor-link > .heading-anchor {\n  right: auto;\n  left: 0;\n}"
+        ".document-body table.has-anchor-link > .heading-anchor {\n  right: auto;\n  left: 0;\n}"
+    ));
+
+    // A code block must not: the carve dragged its whole box off the reading
+    // column's left edge. Its scroll moves to the <code> so the number can hang in
+    // the shared gutter, sized and nudged to the code's first-line baseline.
+    assert!(!css.contains("pre.has-anchor-link {\n  padding-left: 40px;"));
+    assert!(!css.contains("pre.has-anchor-link,"));
+    assert!(css.contains(
+        ".document-body pre.has-anchor-link > .heading-anchor {\n  top: 1em;\n  font-size: 0.875em;\n}"
+    ));
+    assert!(css
+        .contains(".document-body pre:has(> code) {\n  clip-path: none;\n  overflow: visible;\n}"));
+    assert!(css.contains(
+        ".document-body pre:has(> code) > code {\n  display: block;\n  overflow-x: auto;\n}"
     ));
 
     // A blockquote keeps its native left bar: with the number hung outside the
