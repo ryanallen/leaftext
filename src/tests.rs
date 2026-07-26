@@ -6905,31 +6905,6 @@ fn blake3_hex(bytes: &[u8]) -> String {
     blake3::hash(bytes).to_hex().to_string()
 }
 
-/// Minimal encoder, so the decoder is tested against something independent.
-fn base64_encode_for_test(bytes: &[u8]) -> String {
-    const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut out = String::new();
-    for chunk in bytes.chunks(3) {
-        let first = chunk[0];
-        let second = chunk.get(1).copied().unwrap_or(0);
-        let third = chunk.get(2).copied().unwrap_or(0);
-        let triple = (u32::from(first) << 16) | (u32::from(second) << 8) | u32::from(third);
-        out.push(ALPHABET[(triple >> 18) as usize & 63] as char);
-        out.push(ALPHABET[(triple >> 12) as usize & 63] as char);
-        out.push(if chunk.len() > 1 {
-            ALPHABET[(triple >> 6) as usize & 63] as char
-        } else {
-            '='
-        });
-        out.push(if chunk.len() > 2 {
-            ALPHABET[triple as usize & 63] as char
-        } else {
-            '='
-        });
-    }
-    out
-}
-
 #[test]
 fn version_comparison_ignores_v_prefix_and_compares_numerically() {
     assert!(is_newer_version("v0.1.362", "0.1.361"));
@@ -6958,29 +6933,38 @@ fn update_checks_are_throttled_but_never_wedged() {
 }
 
 #[test]
-fn base64_decoding_round_trips_and_rejects_junk() {
-    // Every padding case, since chunk boundaries land on all three.
-    for original in [
-        &b""[..],
-        &b"a"[..],
-        &b"ab"[..],
-        &b"abc"[..],
-        &b"abcd"[..],
-        &[0u8, 255, 128, 1, 2, 3, 4][..],
-    ] {
-        let encoded = base64_encode_for_test(original);
-        assert_eq!(
-            decode_base64(&encoded).as_deref(),
-            Some(original),
-            "round trip failed for {original:?}"
-        );
-    }
+fn only_github_https_urls_may_be_downloaded() {
+    // What a real release hands us: the asset URL, and the storage host it
+    // redirects to.
+    assert!(update_url_is_allowed(
+        "https://github.com/ryanallen/leaftext/releases/download/v0.1.373/leaftext-v0.1.373-windows-x86_64.msi"
+    ));
+    assert!(update_url_is_allowed(
+        "https://release-assets.githubusercontent.com/github-production-release-asset/1/2?sig=abc"
+    ));
+    assert!(update_url_is_allowed(
+        "https://objects.githubusercontent.com/anything"
+    ));
 
-    // A corrupted message must fail the transfer, not quietly decode to
-    // different bytes than the sender hashed.
-    assert_eq!(decode_base64("!!!!"), None);
-    assert_eq!(decode_base64("YWJj*"), None);
-    assert_eq!(decode_base64("YWJ"), None);
+    // The URL reaches Rust from a network response by way of the page, and is
+    // handed to a native client with no same-origin rule behind it. Plain HTTP
+    // would hand the installer to anyone on the path.
+    assert!(!update_url_is_allowed(
+        "http://github.com/ryanallen/leaftext/releases/download/v1/x.msi"
+    ));
+    assert!(!update_url_is_allowed("https://example.com/x.msi"));
+    // A lookalike host must not pass on a suffix match alone.
+    assert!(!update_url_is_allowed(
+        "https://evilgithubusercontent.com/x"
+    ));
+    assert!(!update_url_is_allowed(
+        "https://githubusercontent.com.evil.test/x"
+    ));
+    assert!(!update_url_is_allowed("https://notgithub.com/x.msi"));
+    // Neither a non-web scheme nor unparseable junk is a download.
+    assert!(!update_url_is_allowed("file:///C:/Windows/System32/x.msi"));
+    assert!(!update_url_is_allowed("not a url at all"));
+    assert!(!update_url_is_allowed(""));
 }
 
 #[test]
@@ -7257,10 +7241,11 @@ fn a_staged_record_without_its_installer_reads_as_nothing_staged() {
 }
 
 #[test]
-fn the_app_shell_allows_the_release_download_hosts() {
-    // The page fetches release metadata from the API host and the installer
-    // from the download host, which redirects to a githubusercontent CDN.
-    // Without all three in connect-src the webview blocks the update silently.
+fn the_app_shell_reaches_the_release_api_and_nothing_else() {
+    // The page fetches release metadata and nothing more: the installer is
+    // downloaded natively, because the host GitHub redirects assets to sends no
+    // CORS header and no policy here can make that fetch succeed. Granting the
+    // asset hosts anyway would widen where the page may talk for no gain.
     let html = app_shell_html();
     let csp_line = html
         .lines()
@@ -7271,16 +7256,25 @@ fn the_app_shell_allows_the_release_download_hosts() {
         .map(str::trim)
         .find(|directive| directive.starts_with("connect-src"))
         .expect("CSP declares an explicit connect-src directive");
-    for host in [
-        "https://api.github.com",
-        "https://github.com",
-        "https://*.githubusercontent.com",
-    ] {
+    assert!(
+        connect_src.contains("https://api.github.com"),
+        "connect-src must allow the release API: {connect_src}"
+    );
+    for host in ["https://github.com", "githubusercontent.com"] {
         assert!(
-            connect_src.contains(host),
-            "connect-src must allow {host}: {connect_src}"
+            !connect_src.contains(host),
+            "the page no longer fetches installers, so {host} should be gone: {connect_src}"
         );
     }
+}
+
+#[test]
+fn download_progress_reaches_the_page_as_a_percentage() {
+    let script = update_progress_script("0.1.373", 42);
+    assert!(script.starts_with("window.leafUpdateState({"));
+    assert!(script.contains(r#""status":"downloading""#));
+    assert!(script.contains(r#""version":"0.1.373""#));
+    assert!(script.contains(r#""percent":42"#));
 }
 
 #[test]

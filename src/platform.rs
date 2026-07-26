@@ -1,7 +1,7 @@
-//! Native clipboard and Recycle Bin/Trash access.
+//! Native clipboard, Recycle Bin/Trash, and HTTPS download.
 //!
-//! Both operations are one system call on each platform, so they talk to the OS
-//! directly rather than through a cross-platform crate. That keeps two whole
+//! Each is one system call or one bundled tool on each platform, so they talk to
+//! the OS directly rather than through a cross-platform crate. That keeps whole
 //! dependency subtrees (and their transitive supply chain) out of the build for
 //! what amounts to a few dozen lines of platform code.
 //!
@@ -14,10 +14,14 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[cfg(windows)]
-pub use windows_impl::{move_to_trash, set_clipboard_text};
+pub use windows_impl::{download_to, move_to_trash, set_clipboard_text};
 
 #[cfg(target_os = "macos")]
-pub use macos_impl::{move_to_trash, set_clipboard_text};
+pub use macos_impl::{download_to, move_to_trash, set_clipboard_text};
+
+/// How much of a download to hold before handing it on. Large enough that a
+/// 6 MB installer is a hundred or so calls, small enough that progress moves.
+const DOWNLOAD_CHUNK_BYTES: usize = 64 * 1024;
 
 /// Flag that puts the binary into update-applier mode instead of opening a
 /// window. Not a user-facing option: the app passes it to a copy of itself.
@@ -335,12 +339,20 @@ fn install(installer: &Path, relaunch: &Path) -> Result<(), String> {
 
 #[cfg(windows)]
 mod windows_impl {
-    use super::{failed, io, Path};
+    use super::{failed, io, Path, DOWNLOAD_CHUNK_BYTES};
+    use core::ffi::c_void;
     use std::ptr;
+    use url::Url;
 
     // GlobalFree is declared in Foundation rather than Memory alongside its
     // siblings, which is a windows-sys quirk, not a mistake here.
     use windows_sys::Win32::Foundation::GlobalFree;
+    use windows_sys::Win32::Networking::WinHttp::{
+        WinHttpCloseHandle, WinHttpConnect, WinHttpOpen, WinHttpOpenRequest, WinHttpQueryHeaders,
+        WinHttpReadData, WinHttpReceiveResponse, WinHttpSendRequest, WinHttpSetTimeouts,
+        INTERNET_DEFAULT_HTTPS_PORT, WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_FLAG_SECURE,
+        WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_QUERY_STATUS_CODE,
+    };
     use windows_sys::Win32::System::DataExchange::{
         CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData,
     };
@@ -348,6 +360,156 @@ mod windows_impl {
         GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE,
     };
     use windows_sys::Win32::UI::Shell::{SHFileOperationW, SHFILEOPSTRUCTW};
+
+    /// A null-terminated UTF-16 string, which is what every W-suffixed call wants.
+    fn wide(value: &str) -> Vec<u16> {
+        value.encode_utf16().chain(std::iter::once(0)).collect()
+    }
+
+    /// Closes a WinHTTP handle on the way out. The three handles nest — session,
+    /// connection, request — and every error path has to unwind all of them.
+    struct WinHttpHandle(*mut c_void);
+
+    impl Drop for WinHttpHandle {
+        fn drop(&mut self) {
+            unsafe { WinHttpCloseHandle(self.0) };
+        }
+    }
+
+    /// Take ownership of a handle, or name what failed to produce one.
+    fn opened(handle: *mut c_void, operation: &str) -> Result<WinHttpHandle, String> {
+        if handle.is_null() {
+            return Err(format!("{operation}: {}", io::Error::last_os_error()));
+        }
+        Ok(WinHttpHandle(handle))
+    }
+
+    /// Stream an HTTPS GET to `sink`, one chunk at a time.
+    ///
+    /// WinHTTP ships with Windows and uses the system certificate store, so this
+    /// links no TLS stack in. It follows the redirect a release asset always
+    /// makes, and its default policy refuses an HTTPS-to-HTTP downgrade on the way.
+    pub fn download_to(
+        url: &str,
+        sink: &mut dyn FnMut(&[u8]) -> Result<(), String>,
+    ) -> Result<(), String> {
+        let parsed = Url::parse(url).map_err(|error| format!("unusable download URL: {error}"))?;
+        if parsed.scheme() != "https" {
+            return Err("refusing a download that is not HTTPS".to_string());
+        }
+        let host = parsed
+            .host_str()
+            .ok_or_else(|| "the download URL names no host".to_string())?;
+        let port = parsed.port().unwrap_or(INTERNET_DEFAULT_HTTPS_PORT);
+        // WinHTTP wants the path and query as one "object name"; it takes no URL.
+        let mut object = parsed.path().to_string();
+        if let Some(query) = parsed.query() {
+            object.push('?');
+            object.push_str(query);
+        }
+
+        let agent = wide("leaftext-updater");
+        let session = opened(
+            unsafe {
+                WinHttpOpen(
+                    agent.as_ptr(),
+                    WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+                    ptr::null(),
+                    ptr::null(),
+                    0,
+                )
+            },
+            "could not start an HTTPS session",
+        )?;
+
+        // Finite, so a stalled server cannot pin the download thread forever. The
+        // receive timeout covers the wait for the next chunk, not the whole
+        // transfer, so a slow connection is not cut off part way through.
+        unsafe { WinHttpSetTimeouts(session.0, 15_000, 15_000, 30_000, 60_000) };
+
+        let host_wide = wide(host);
+        let connection = opened(
+            unsafe { WinHttpConnect(session.0, host_wide.as_ptr(), port, 0) },
+            "could not reach the download host",
+        )?;
+
+        let verb = wide("GET");
+        let object_wide = wide(&object);
+        let request = opened(
+            unsafe {
+                WinHttpOpenRequest(
+                    connection.0,
+                    verb.as_ptr(),
+                    object_wide.as_ptr(),
+                    ptr::null(),
+                    ptr::null(),
+                    ptr::null(),
+                    WINHTTP_FLAG_SECURE,
+                )
+            },
+            "could not open the download request",
+        )?;
+
+        if unsafe { WinHttpSendRequest(request.0, ptr::null(), 0, ptr::null(), 0, 0, 0) } == 0 {
+            return Err(format!(
+                "could not send the download request: {}",
+                io::Error::last_os_error()
+            ));
+        }
+        if unsafe { WinHttpReceiveResponse(request.0, ptr::null_mut()) } == 0 {
+            return Err(format!(
+                "no answer to the download request: {}",
+                io::Error::last_os_error()
+            ));
+        }
+
+        // WINHTTP_QUERY_FLAG_NUMBER asks for the status as a u32 rather than text.
+        let mut status: u32 = 0;
+        let mut status_length = std::mem::size_of::<u32>() as u32;
+        if unsafe {
+            WinHttpQueryHeaders(
+                request.0,
+                WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+                ptr::null(),
+                ptr::addr_of_mut!(status).cast(),
+                &mut status_length,
+                ptr::null_mut(),
+            )
+        } == 0
+        {
+            return Err(format!(
+                "could not read the download response: {}",
+                io::Error::last_os_error()
+            ));
+        }
+        if !(200..300).contains(&status) {
+            return Err(format!("the download server answered {status}"));
+        }
+
+        let mut buffer = vec![0u8; DOWNLOAD_CHUNK_BYTES];
+        loop {
+            let mut read: u32 = 0;
+            if unsafe {
+                WinHttpReadData(
+                    request.0,
+                    buffer.as_mut_ptr().cast(),
+                    buffer.len() as u32,
+                    &mut read,
+                )
+            } == 0
+            {
+                return Err(format!(
+                    "the download stopped: {}",
+                    io::Error::last_os_error()
+                ));
+            }
+            // Zero bytes on a successful read is the end of the body.
+            if read == 0 {
+                return Ok(());
+            }
+            sink(&buffer[..read as usize])?;
+        }
+    }
 
     /// Clipboard format id for UTF-16 text, and the file-operation constants.
     /// Spelled out rather than imported so a windows-sys bump that reshuffles
@@ -451,9 +613,86 @@ mod windows_impl {
 
 #[cfg(target_os = "macos")]
 mod macos_impl {
-    use super::{failed, io, Path};
-    use std::io::Write;
+    use super::{failed, io, Path, DOWNLOAD_CHUNK_BYTES};
+    use std::io::{Read, Write};
     use std::process::{Command, Stdio};
+
+    /// Stream an HTTPS GET to `sink`, one chunk at a time, through the `curl` that
+    /// ships with macOS: it trusts the system keychain, so this links no TLS stack
+    /// in. `--proto`/`--proto-redir` hold the transfer to HTTPS across the redirect
+    /// a release asset always makes. The bytes come back over a pipe rather than
+    /// being written by curl, because a file the app writes carries no
+    /// `com.apple.quarantine`.
+    pub fn download_to(
+        url: &str,
+        sink: &mut dyn FnMut(&[u8]) -> Result<(), String>,
+    ) -> Result<(), String> {
+        let mut child = Command::new("/usr/bin/curl")
+            .args([
+                "--fail",
+                "--silent",
+                "--show-error",
+                "--location",
+                "--proto",
+                "=https",
+                "--proto-redir",
+                "=https",
+                "--max-redirs",
+                "10",
+                "--connect-timeout",
+                "15",
+                // Give up on a connection delivering less than a byte a second
+                // for a minute, rather than hanging on a dead socket.
+                "--speed-limit",
+                "1",
+                "--speed-time",
+                "60",
+                "--",
+                url,
+            ])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|error| format!("could not start the download: {error}"))?;
+
+        let mut stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| "the download produced no output".to_string())?;
+        let mut buffer = vec![0u8; DOWNLOAD_CHUNK_BYTES];
+        let streamed = loop {
+            match stdout.read(&mut buffer) {
+                Ok(0) => break Ok(()),
+                Ok(read) => {
+                    if let Err(error) = sink(&buffer[..read]) {
+                        break Err(error);
+                    }
+                }
+                Err(error) => break Err(format!("could not read the download: {error}")),
+            }
+        };
+        // Close the pipe before waiting. A sink that gave up leaves curl writing
+        // into a reader that is gone; it has to be allowed to die on that rather
+        // than block this thread forever.
+        drop(stdout);
+        let finished = child.wait_with_output();
+
+        // A sink or pipe failure is the more specific answer, so it wins over
+        // whatever exit code curl reported on its way out.
+        streamed?;
+
+        let finished =
+            finished.map_err(|error| format!("could not finish the download: {error}"))?;
+        if finished.status.success() {
+            return Ok(());
+        }
+        let detail = String::from_utf8_lossy(&finished.stderr).trim().to_string();
+        Err(if detail.is_empty() {
+            format!("the download failed with {}", finished.status)
+        } else {
+            detail
+        })
+    }
 
     /// Put text on the pasteboard through `pbcopy`, which ships with macOS.
     pub fn set_clipboard_text(text: &str) -> io::Result<()> {

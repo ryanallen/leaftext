@@ -32,10 +32,10 @@ use leaftext::{
     open_error_state_script, opened_document_from_markdown, opened_document_from_xml,
     pager_loaded_script, render_markdown_document, save_recent_files, save_result_script,
     save_settings, scroll_anchor_script, settings_file_path, source_updated_script,
-    update_state_script, webview_user_data_dir, workspace_reload_script, workspace_state_script,
-    workspace_switch_script, DocumentFormat, EditableDocument, GraphScope, LibraryView,
-    OpenedDocument, RecentFiles, ScrollAnchor, Settings, UpdateDownload, LOCAL_ASSET_PROTOCOL,
-    LOCAL_IMAGE_PROTOCOL,
+    update_progress_script, update_state_script, webview_user_data_dir, workspace_reload_script,
+    workspace_state_script, workspace_switch_script, DocumentFormat, EditableDocument, GraphScope,
+    LibraryView, OpenedDocument, RecentFiles, ScrollAnchor, Settings, UpdateDownload,
+    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -248,21 +248,26 @@ enum UserEvent {
         /// Version found, empty when already current. Only used for logging.
         version: String,
     },
-    /// Open a staging folder for `version` and expect exactly `size` bytes. Any
-    /// earlier attempt at the same version is discarded.
-    UpdateDownloadBegin {
+    /// Fetch `url` and stage it as the installer for `version`, expecting exactly
+    /// `size` bytes. Any earlier attempt at the same version is discarded.
+    UpdateDownload {
         version: String,
         asset: String,
         size: u64,
+        url: String,
     },
-    /// One base64 chunk of the installer, in order.
-    UpdateDownloadChunk {
-        data: String,
+    /// How far along the running download is, 0-100.
+    UpdateDownloadProgress {
+        version: String,
+        percent: u8,
     },
-    /// The page finished fetching: verify and publish, or report why not.
-    UpdateDownloadFinish,
-    /// The page could not fetch the installer; drop the partial file.
+    /// A verified installer is on disk and ready to apply.
+    UpdateDownloadStaged {
+        version: String,
+    },
+    /// The download or its verification failed; nothing is staged.
     UpdateDownloadFailed {
+        version: String,
         message: String,
     },
     /// Install the staged update and relaunch.
@@ -426,20 +431,12 @@ enum IpcCommand {
         #[serde(default)]
         version: String,
     },
-    #[serde(rename = "updateDownloadBegin")]
-    UpdateDownloadBegin {
+    #[serde(rename = "updateDownload")]
+    UpdateDownload {
         version: String,
         asset: String,
         size: u64,
-    },
-    #[serde(rename = "updateDownloadChunk")]
-    UpdateDownloadChunk { data: String },
-    #[serde(rename = "updateDownloadFinish")]
-    UpdateDownloadFinish,
-    #[serde(rename = "updateDownloadFailed")]
-    UpdateDownloadFailed {
-        #[serde(default)]
-        message: String,
+        url: String,
     },
     #[serde(rename = "applyUpdate")]
     ApplyUpdate,
@@ -591,6 +588,63 @@ fn report_update_state(
             eprintln!("Failed to report update state: {error}");
         }
     }
+}
+
+/// Fetch and stage an installer, then report how it went. Runs on its own
+/// thread: this is seconds to minutes of network I/O, and the event loop has a
+/// window to keep painting. The page cannot fetch it — `updater.rs` says why.
+fn run_update_download(
+    proxy: EventLoopProxy<UserEvent>,
+    version: String,
+    asset: String,
+    size: u64,
+    url: String,
+) {
+    let event = match stage_update_download(&proxy, &version, &asset, size, &url) {
+        Ok(staged) => UserEvent::UpdateDownloadStaged { version: staged },
+        Err(message) => UserEvent::UpdateDownloadFailed { version, message },
+    };
+    let _ = proxy.send_event(event);
+}
+
+/// The download proper, returning the version that was staged. A partial file is
+/// discarded on the way out, so a failure never leaves bytes that a later launch
+/// could mistake for a finished download.
+fn stage_update_download(
+    proxy: &EventLoopProxy<UserEvent>,
+    version: &str,
+    asset: &str,
+    size: u64,
+    url: &str,
+) -> Result<String, String> {
+    if !leaftext::update_url_is_allowed(url) {
+        return Err("the release points its download somewhere unexpected".to_string());
+    }
+    let data_dir =
+        app_data_dir().ok_or_else(|| "there is no app data folder to download into".to_string())?;
+    let mut download = UpdateDownload::begin(&data_dir, version, asset, size)?;
+
+    // Repaint on whole-percent changes only: the transfer hands back dozens of
+    // chunks per percent, and each one crosses to the web view.
+    let mut painted = 0;
+    let streamed = platform::download_to(url, &mut |bytes| {
+        download.write_chunk(bytes)?;
+        let percent = download.percent();
+        if percent != painted {
+            painted = percent;
+            let _ = proxy.send_event(UserEvent::UpdateDownloadProgress {
+                version: version.to_string(),
+                percent,
+            });
+        }
+        Ok(())
+    });
+    if let Err(error) = streamed {
+        download.discard();
+        return Err(error);
+    }
+
+    download.finish().map(|staged| staged.version)
 }
 
 /// Reconcile the staged-update bookkeeping at launch.
@@ -903,10 +957,6 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     // maximize/restore icon tracks maximize changes from any source (the button,
     // a double-click, snap, or Win+Up), not just the button.
     let mut last_maximized = settings.window_maximized;
-
-    // The installer download in flight, if any. One at a time: the page only
-    // starts a new one after the previous finished or failed.
-    let mut update_download: Option<UpdateDownload> = None;
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -1576,67 +1626,35 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                     eprintln!("Update available: {version}");
                 }
             }
-            Event::UserEvent(UserEvent::UpdateDownloadBegin {
+            Event::UserEvent(UserEvent::UpdateDownload {
                 version,
                 asset,
                 size,
+                url,
             }) => {
-                update_download = None;
-                let started = app_data_dir()
-                    .ok_or_else(|| "there is no app data folder to download into".to_string());
-                match started
-                    .and_then(|data_dir| UpdateDownload::begin(&data_dir, &version, &asset, size))
-                {
-                    Ok(download) => update_download = Some(download),
-                    Err(error) => {
-                        eprintln!("Update download refused: {error}");
-                        report_update_state(webview.as_ref(), "failed", &version, Some(&error));
+                let proxy = proxy.clone();
+                thread::spawn(move || run_update_download(proxy, version, asset, size, url));
+            }
+            Event::UserEvent(UserEvent::UpdateDownloadProgress { version, percent }) => {
+                if let Some(webview) = webview.as_ref() {
+                    if let Err(error) =
+                        webview.evaluate_script(&update_progress_script(&version, percent))
+                    {
+                        eprintln!("Failed to report download progress: {error}");
                     }
                 }
             }
-            Event::UserEvent(UserEvent::UpdateDownloadChunk { data }) => {
-                if let Some(download) = update_download.as_mut() {
-                    let written = leaftext::decode_base64(&data)
-                        .ok_or_else(|| "a download chunk was malformed".to_string())
-                        .and_then(|bytes| download.write_chunk(&bytes));
-                    if let Err(error) = written {
-                        let version = download.version().to_string();
-                        download.discard();
-                        update_download = None;
-                        eprintln!("Update download failed: {error}");
-                        report_update_state(webview.as_ref(), "failed", &version, Some(&error));
-                    }
+            Event::UserEvent(UserEvent::UpdateDownloadStaged { version }) => {
+                settings.update_staged_version = version.clone();
+                persist_settings(&settings, settings_path.as_ref());
+                // Now that a newer one is ready, older staged installers are
+                // just disk usage.
+                if let Some(data_dir) = app_data_dir() {
+                    leaftext::prune_staged(&data_dir, Some(&version));
                 }
+                report_update_state(webview.as_ref(), "staged", &version, None);
             }
-            Event::UserEvent(UserEvent::UpdateDownloadFinish) => {
-                if let Some(download) = update_download.take() {
-                    let version = download.version().to_string();
-                    match download.finish() {
-                        Ok(staged) => {
-                            settings.update_staged_version = staged.version.clone();
-                            persist_settings(&settings, settings_path.as_ref());
-                            // Now that a newer one is ready, older staged
-                            // installers are just disk usage.
-                            if let Some(data_dir) = app_data_dir() {
-                                leaftext::prune_staged(&data_dir, Some(&staged.version));
-                            }
-                            report_update_state(webview.as_ref(), "staged", &staged.version, None);
-                        }
-                        Err(error) => {
-                            eprintln!("Update verification failed: {error}");
-                            report_update_state(webview.as_ref(), "failed", &version, Some(&error));
-                        }
-                    }
-                }
-            }
-            Event::UserEvent(UserEvent::UpdateDownloadFailed { message }) => {
-                let version = update_download
-                    .as_ref()
-                    .map(|download| download.version().to_string())
-                    .unwrap_or_default();
-                if let Some(download) = update_download.take() {
-                    download.discard();
-                }
+            Event::UserEvent(UserEvent::UpdateDownloadFailed { version, message }) => {
                 eprintln!("Update download failed: {message}");
                 report_update_state(webview.as_ref(), "failed", &version, Some(&message));
             }
@@ -1959,25 +1977,18 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
             IpcCommand::UpdateChecked { version } => {
                 let _ = proxy.send_event(UserEvent::UpdateChecked { version });
             }
-            IpcCommand::UpdateDownloadBegin {
+            IpcCommand::UpdateDownload {
                 version,
                 asset,
                 size,
+                url,
             } => {
-                let _ = proxy.send_event(UserEvent::UpdateDownloadBegin {
+                let _ = proxy.send_event(UserEvent::UpdateDownload {
                     version,
                     asset,
                     size,
+                    url,
                 });
-            }
-            IpcCommand::UpdateDownloadChunk { data } => {
-                let _ = proxy.send_event(UserEvent::UpdateDownloadChunk { data });
-            }
-            IpcCommand::UpdateDownloadFinish => {
-                let _ = proxy.send_event(UserEvent::UpdateDownloadFinish);
-            }
-            IpcCommand::UpdateDownloadFailed { message } => {
-                let _ = proxy.send_event(UserEvent::UpdateDownloadFailed { message });
             }
             IpcCommand::ApplyUpdate => {
                 let _ = proxy.send_event(UserEvent::ApplyUpdate);

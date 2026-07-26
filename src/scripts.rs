@@ -307,14 +307,24 @@ pub fn line_count_script(token: u64, lines: i64) -> String {
     format!("window.leafLineCount({token}, {lines});")
 }
 
-/// Tell the page how a staged download ended: `staged` when an installer is
-/// verified and waiting, `failed` with a reason otherwise. Progress is reported
-/// by the page itself, which is the side doing the fetching.
+/// Tell the page how a download ended: `staged` when an installer is verified
+/// and waiting, `failed` with a reason otherwise.
 pub fn update_state_script(status: &str, version: &str, message: Option<&str>) -> String {
     let state = serde_json::json!({
         "status": status,
         "version": version,
         "message": message,
+    });
+    format!("window.leafUpdateState({});", state)
+}
+
+/// Move the download's progress bar, 0-100. Separate from `update_state_script`
+/// because it fires a hundred times a download and carries no message to read.
+pub fn update_progress_script(version: &str, percent: u8) -> String {
+    let state = serde_json::json!({
+        "status": "downloading",
+        "version": version,
+        "percent": percent,
     });
     format!("window.leafUpdateState({});", state)
 }

@@ -42,7 +42,7 @@ Library modules are `pub(crate)` with their public surface re-exported from `lib
 - `updater.rs` — update staging: where a download lands, the length it must reach, the manifest, the applier's verdict
 - `assets.rs` — `leaf-asset://` serving and SVG color normalization; not the `assets/` dir it embeds
 - `pager.rs` Prev/Next · `minimap.rs` model · `indexer.rs` SQLite index + search · `tests.rs` all unit tests
-- `main.rs` window, event loop, files, history · `platform.rs` clipboard, trash, update applier · `single_instance.rs`
+- `main.rs` window, event loop, files, history · `platform.rs` clipboard, trash, HTTPS download, update applier · `single_instance.rs`
 - `assets/` — fonts, CSS, WebView front-end (`app-shell.html`, `app-shell.js`) via `include_str!`
 - `wix/main.wxs` MSI recipe · `scripts/` build+release · `.github/workflows/` · `Justfile` · `Cargo.toml` (`version` is the release source of truth)
 
@@ -54,6 +54,7 @@ Library modules are `pub(crate)` with their public surface re-exported from `lib
 - **Exactly one Start Menu entry, and it's load-bearing** — the only way to find or launch the app. v0.1.365 shipped without one and was unreachable. No desktop shortcut; `validate-installer.yml` asserts 1.
 - **Never wait on a build.** `wix/main.wxs` ships unproven — WiX can't run locally, and a broken installer costs a patch bump, which beats blocking every release.
 - **Never re-push a tag.** Bump the patch: Actions may not re-trigger, and stale artifacts confuse the release.
+- **The web view must never download the installer.** GitHub redirects release assets to a host that sends no `Access-Control-Allow-Origin`, so `fetch` dies with "Failed to fetch" before the first byte — no CSP grant fixes it, and v0.1.373 shipped an updater that could only ever fail. The page finds the release (the API *is* CORS-clean); `platform::download_to` fetches it over WinHTTP/`curl`. Keep `connect-src` down to `api.github.com`.
 - **One artifact per platform.** MSI and DMG — the file a person downloads is the file the updater installs. No checksums, nothing updater-only; every extra file is one someone has to ask about. (GitHub's source archives can't be disabled.)
 - **Windows and macOS only.** Linux is gone: no workflow, no GTK/`xdg-open`/`xclip`, and `main.rs` `compile_error!`s elsewhere. Don't re-add it.
 

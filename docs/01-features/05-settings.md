@@ -60,7 +60,8 @@ Here `{config_dir}` and `{data_dir}` are the per-app directories derived from th
   "window_maximized": false,
   "auto_update_enabled": true,
   "update_last_checked": 0,
-  "update_staged_version": ""
+  "update_staged_version": "",
+  "update_auto_applied": ""
 }
 ```
 

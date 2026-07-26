@@ -1,11 +1,11 @@
 //! Staged updates: take delivery of a new installer, verify it, and keep it on
 //! disk until the user asks to restart into it.
 //!
-//! The download happens in the web view, which already has an OS-maintained TLS
-//! stack — linking a second one into the binary to fetch a file a month is not a
-//! trade worth making. The page streams bytes here in chunks; this module owns
-//! what matters: where the file lands, what it hashes to, and whether it may be
-//! installed.
+//! The page finds the release; `platform::download_to` fetches it. That split is
+//! forced: GitHub serves release assets from a host that sends no
+//! `Access-Control-Allow-Origin`, so a `fetch` for one fails in any web view
+//! before a byte arrives. Both platforms ship an HTTP client using the OS
+//! certificate store, so the native path costs no dependency.
 //!
 //! Rust writing the file also matters on macOS: what a browser engine downloads
 //! carries `com.apple.quarantine`, which Gatekeeper refuses to launch unless the
@@ -73,6 +73,28 @@ pub fn is_newer_version(candidate: &str, current: &str) -> bool {
         }
     }
     false
+}
+
+/// Whether an installer may be fetched from this URL.
+///
+/// Untrusted input aimed at a native HTTP client: the URL comes off the network
+/// by way of the page, which no longer has a content policy standing behind it.
+/// HTTPS only, and only hosts GitHub serves releases from.
+pub fn update_url_is_allowed(url: &str) -> bool {
+    let Ok(parsed) = url::Url::parse(url) else {
+        return false;
+    };
+    if parsed.scheme() != "https" {
+        return false;
+    }
+    // The asset URL starts on github.com and redirects to storage under
+    // githubusercontent.com; the leading dot is what stops a lookalike host
+    // ending in "githubusercontent.com" from matching.
+    parsed.host_str().is_some_and(|host| {
+        host == "github.com"
+            || host == "githubusercontent.com"
+            || host.ends_with(".githubusercontent.com")
+    })
 }
 
 /// The release asset this build can install, as a file-name suffix: the same file
@@ -382,59 +404,4 @@ pub fn hash_file(path: &Path) -> io::Result<String> {
     let mut file = File::open(path)?;
     io::copy(&mut file, &mut hasher)?;
     Ok(hasher.finalize().to_hex().to_string())
-}
-
-/// Decode standard base64, which is how the page hands binary chunks across the
-/// string-only IPC channel. Rejects any character outside the alphabet rather
-/// than skipping it, so a corrupted message fails the transfer instead of
-/// silently producing different bytes.
-pub fn decode_base64(encoded: &str) -> Option<Vec<u8>> {
-    const INVALID: u8 = 0xFF;
-    let value = |character: u8| -> u8 {
-        match character {
-            b'A'..=b'Z' => character - b'A',
-            b'a'..=b'z' => character - b'a' + 26,
-            b'0'..=b'9' => character - b'0' + 52,
-            b'+' => 62,
-            b'/' => 63,
-            _ => INVALID,
-        }
-    };
-
-    let bytes = encoded.as_bytes();
-    let body = bytes.strip_suffix(b"==").unwrap_or(bytes);
-    let body = body.strip_suffix(b"=").unwrap_or(body);
-    let padding = bytes.len() - body.len();
-    if padding > 2 || bytes.len() % 4 != 0 && !bytes.is_empty() {
-        return None;
-    }
-
-    let mut out = Vec::with_capacity(body.len() / 4 * 3 + 3);
-    let mut accumulator: u32 = 0;
-    let mut collected = 0;
-    for &character in body {
-        let decoded = value(character);
-        if decoded == INVALID {
-            return None;
-        }
-        accumulator = (accumulator << 6) | u32::from(decoded);
-        collected += 1;
-        if collected == 4 {
-            out.push((accumulator >> 16) as u8);
-            out.push((accumulator >> 8) as u8);
-            out.push(accumulator as u8);
-            accumulator = 0;
-            collected = 0;
-        }
-    }
-    match collected {
-        0 => {}
-        2 => out.push((accumulator >> 4) as u8),
-        3 => {
-            out.push((accumulator >> 10) as u8);
-            out.push((accumulator >> 2) as u8);
-        }
-        _ => return None,
-    }
-    Some(out)
 }

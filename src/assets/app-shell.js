@@ -2255,9 +2255,6 @@ function isNewerVersion(candidate, current) {
 const RELEASES_PAGE = 'https://github.com/ryanallen/leaftext/releases/latest';
 const UPDATE_ASSET_SUFFIX = typeof window.__leafUpdateAsset === 'string' ? window.__leafUpdateAsset : '';
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
-// One IPC message per network chunk would be hundreds of messages for a 6 MB
-// installer, so bytes are pooled to roughly this much before being handed over.
-const UPDATE_CHUNK_BYTES = 256 * 1024;
 
 // What the update controls are currently reporting.
 //
@@ -2406,80 +2403,22 @@ window.leafUpdateState = (state) => {
     status: state.status || 'failed',
     version: state.version || updateState.version,
     message: state.message || '',
-    percent: 0,
+    percent: typeof state.percent === 'number' ? state.percent : 0,
   });
 };
 
-// Base64 without blowing the argument limit: btoa needs a binary string, and
-// String.fromCharCode.apply on a whole 256 KB buffer overflows the stack.
-function base64FromBytes(bytes) {
-  let binary = '';
-  for (let offset = 0; offset < bytes.length; offset += 8192) {
-    binary += String.fromCharCode.apply(null, bytes.subarray(offset, offset + 8192));
-  }
-  return btoa(binary);
-}
-
-// Stream the installer to the host, which writes and hashes it. Chunks are
-// pooled first so the IPC channel carries tens of messages, not hundreds.
-async function streamInstaller(url, size) {
-  const response = await fetch(url);
-  if (!response.ok || !response.body) throw new Error(`download failed (${response.status})`);
-  const reader = response.body.getReader();
-  let pending = [];
-  let pendingBytes = 0;
-  let received = 0;
-  // Repaint on whole percent changes only: the reader hands back tens of chunks
-  // per percent, and each repaint rewrites the whole panel row.
-  let painted = -1;
-
-  const flush = () => {
-    if (!pendingBytes) return;
-    const merged = new Uint8Array(pendingBytes);
-    let offset = 0;
-    for (const part of pending) {
-      merged.set(part, offset);
-      offset += part.length;
-    }
-    send({ command: 'updateDownloadChunk', data: base64FromBytes(merged) });
-    pending = [];
-    pendingBytes = 0;
-  };
-
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    pending.push(value);
-    pendingBytes += value.length;
-    received += value.length;
-    if (pendingBytes >= UPDATE_CHUNK_BYTES) flush();
-    if (size) {
-      const percent = Math.min(99, Math.floor((received / size) * 100));
-      if (percent !== painted) {
-        painted = percent;
-        setUpdateState({ status: 'downloading', percent });
-      }
-    }
-  }
-  flush();
-}
-
-// Stream the installer to the host, which writes and hashes it. Anything that
-// goes wrong leaves the button pointing at the release page.
-async function downloadUpdate(version, installer) {
+// Hand the installer to the host, which fetches, hashes, and stages it. The page
+// cannot: GitHub serves release assets from a host that sends no
+// Access-Control-Allow-Origin, so fetch() fails before the first byte.
+function downloadUpdate(version, installer) {
   setUpdateState({ status: 'downloading', version, percent: 0 });
-  try {
-    send({
-      command: 'updateDownloadBegin',
-      version,
-      asset: installer.name,
-      size: installer.size,
-    });
-    await streamInstaller(installer.browser_download_url, installer.size);
-    send({ command: 'updateDownloadFinish' });
-  } catch (error) {
-    send({ command: 'updateDownloadFailed', message: String((error && error.message) || error) });
-  }
+  send({
+    command: 'updateDownload',
+    version,
+    asset: installer.name,
+    size: installer.size,
+    url: installer.browser_download_url,
+  });
 }
 
 // Guards two overlapping checks: the periodic tick firing while a manual check
@@ -2488,6 +2427,9 @@ let updateCheckInFlight = false;
 
 async function checkForUpdate(force) {
   if (!LEAF_VERSION || updateCheckInFlight) return;
+  // The host owns the download and it outlives this call, so the guard above no
+  // longer covers it; re-checking mid-download would reset the progress bar.
+  if (updateState.status === 'downloading') return;
 
   // An installer verified in an earlier session is still good; offer it before
   // going anywhere near the network.
@@ -2545,7 +2487,7 @@ async function checkForUpdate(force) {
       return;
     }
     setUpdateState({ status: 'available', version, url, checkedAt: Date.now(), message: '' });
-    await downloadUpdate(version, installer);
+    downloadUpdate(version, installer);
   } catch (error) {
     // Offline, rate-limited, or a malformed answer. `checkedAt` is deliberately
     // left alone so the next tick retries instead of waiting out the interval.
