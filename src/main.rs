@@ -25,16 +25,17 @@ use leaftext::indexer::{event_script, GraphRequest, IndexerEvent, IndexerWorker}
 use leaftext::{
     app_data_dir, app_shell_html, blocks_resynced_script, bundled_asset_response, code_view_script,
     config_file_path, document_pager_html, fragment_scroll_script, glossary_sheet_script,
-    image_refresh_script, initial_settings_script, initial_state_script, initial_update_script,
-    initial_version_script, is_local_image_path, line_count_script, load_recent_files,
-    load_settings, local_image_protocol_response, local_image_source_dir, navigation_state_script,
-    open_document_with_recent, open_error_state_script, opened_document_from_markdown,
-    opened_document_from_xml, pager_loaded_script, render_markdown_document, save_recent_files,
-    save_result_script, save_settings, scroll_anchor_script, settings_file_path,
-    source_updated_script, update_state_script, webview_user_data_dir, workspace_reload_script,
-    workspace_state_script, workspace_switch_script, DocumentFormat, EditableDocument, GraphScope,
-    LibraryView, OpenedDocument, RecentFiles, ScrollAnchor, Settings, UpdateDownload,
-    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    image_refresh_script, initial_apply_outcome_script, initial_settings_script,
+    initial_state_script, initial_update_script, initial_version_script, is_local_image_path,
+    line_count_script, load_recent_files, load_settings, local_image_protocol_response,
+    local_image_source_dir, navigation_state_script, open_document_with_recent,
+    open_error_state_script, opened_document_from_markdown, opened_document_from_xml,
+    pager_loaded_script, render_markdown_document, save_recent_files, save_result_script,
+    save_settings, scroll_anchor_script, settings_file_path, source_updated_script,
+    update_state_script, webview_user_data_dir, workspace_reload_script, workspace_state_script,
+    workspace_switch_script, DocumentFormat, EditableDocument, GraphScope, LibraryView,
+    OpenedDocument, RecentFiles, ScrollAnchor, Settings, UpdateDownload, LOCAL_ASSET_PROTOCOL,
+    LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -706,6 +707,19 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         persist_settings(&settings, settings_path.as_ref());
     }
 
+    // What the detached applier had to say about the last install, if it ran. Read
+    // once and deleted; the page reports a failure in the settings panel.
+    let apply_outcome = app_data_dir().and_then(|data_dir| {
+        let outcome = leaftext::take_apply_outcome(&data_dir);
+        if let Some(outcome) = outcome.as_ref().filter(|outcome| !outcome.ok) {
+            eprintln!(
+                "Installing v{} failed: {}",
+                outcome.version, outcome.message
+            );
+        }
+        outcome
+    });
+
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
     // `mut` is used only by the non-Windows icon block below.
     #[allow(unused_mut)]
@@ -772,6 +786,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .with_initialization_script(initial_state_script(&recent.files))
         .with_initialization_script(initial_version_script())
         .with_initialization_script(initial_update_script())
+        .with_initialization_script(initial_apply_outcome_script(apply_outcome.as_ref()))
         // Whether the OS window is frameless (Windows), so the frontend shows its
         // own title-bar chrome — drag region + minimize/maximize/close buttons.
         .with_initialization_script(format!("window.__leafFrameless = {};", cfg!(windows)))

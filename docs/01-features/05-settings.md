@@ -153,10 +153,14 @@ The app ships both language dictionaries locally and applies changes without a r
 ### Updates
 
 - **Download updates** is on by default
-- leaftext asks GitHub for the latest release at most once every six hours; `update_last_checked` records when it last did, so launching repeatedly does not spend requests against the rate limit
+- leaftext asks GitHub for the latest release at most once every six hours; `update_last_checked` records when it last did, so launching repeatedly does not spend requests against the rate limit. A window left open re-checks on the same interval rather than only at launch
+- **Check for updates**, at the foot of the panel beside the version, asks now and ignores the six-hour wait
+- The line under it reports what the last attempt found: *Up to date*, when it last checked, or why it could not — a refused request, a release with no verified installer for this platform, or a download that failed
 - When a newer release exists, its installer downloads in the background and is verified against the `.blake3` digest published beside it. A download that arrives short, oversized, or with the wrong digest is deleted rather than kept
+- While it downloads, the button carries a spinner and fills left to right with the percentage; the dot over the Settings button turns into a spinning ring
 - A verified installer waits under `{data_dir}/updates`, and `update_staged_version` records which version it is. The Settings button becomes **Restart to update**; clicking it closes leaftext, installs, and reopens. Nothing is prompted for: leaftext installs per-user, which is what lets it replace itself without administrator rights
 - **Installing is always a click.** Nothing is applied in the background, and a checksum published on the same server as the download proves the file arrived intact — not that it is trustworthy. That is why the last step is yours
+- If the install itself fails, the next launch says so and names the reason. The installer runs in a detached helper after leaftext exits, so its verdict is written to `{data_dir}/updates` and read back once on startup
 - Turning it off keeps the check but downloads nothing: the button opens the release page instead
 - The running version is printed at the foot of the panel, so after a restart you can confirm which build is installed
 - Saved as `auto_update_enabled`, `update_last_checked`, and `update_staged_version`

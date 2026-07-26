@@ -72,13 +72,13 @@ Use `Ctrl+O` on Windows or `Cmd+O` on macOS to open your first file.
 
 ## Updates
 
-leaftext checks GitHub Releases for a newer version, at most once every six hours. When one is available, a dot appears over the Settings button and a button appears at the top of the [Settings](01-features/05-settings.md#updates) menu.
+leaftext checks GitHub Releases for a newer version, at most once every six hours, and again on that interval while the window stays open. When one is available, a green dot appears over the Settings button and a button appears at the top of the [Settings](01-features/05-settings.md#updates) menu.
 
-With **Download updates** on (the default), the new installer downloads in the background and is checked against the `.blake3` digest published with the release; a download that does not match is discarded. The button then reads **Restart to update**, and clicking it closes leaftext, installs, and reopens it.
+With **Download updates** on (the default), the new installer downloads in the background and is checked against the `.blake3` digest published with the release; a download that does not match is discarded. While it runs, the button shows a spinner and its percentage and the dot becomes a spinning ring. The button then reads **Restart to update**, and clicking it closes leaftext, installs, and reopens it.
 
 Nothing installs on its own. The download is automatic; the install is always a button you press. Turning **Download updates** off keeps the check but nothing is fetched — the button just opens the release page, and you install by hand.
 
-The check is silent and skipped when offline, and it never blocks startup.
+To ask right now rather than wait out the six hours, use **Check for updates** at the foot of the Settings panel. The line beside it always reports the outcome — up to date, when it last checked, or what went wrong — including an install that failed after a restart, which is otherwise invisible because the installer runs after leaftext exits. Startup is never blocked by any of this, and being offline only changes what that line says.
 
 ## FAQ
 

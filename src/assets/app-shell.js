@@ -2219,6 +2219,13 @@ send({ command: 'getFileTree' });
 // bytes are allowed to run.
 const settingsAlertDot = document.getElementById('settingsAlertDot');
 const settingsUpdate = document.getElementById('settingsUpdate');
+const settingsUpdateLabel = document.getElementById('settingsUpdateLabel');
+const settingsUpdateFill = document.getElementById('settingsUpdateFill');
+const settingsUpdateSpinner = document.getElementById('settingsUpdateSpinner');
+const settingsUpdateNote = document.getElementById('settingsUpdateNote');
+const settingsCheck = document.getElementById('settingsCheck');
+const settingsCheckLabel = document.getElementById('settingsCheckLabel');
+const settingsCheckSpinner = document.getElementById('settingsCheckSpinner');
 const autoUpdateControl = document.getElementById('autoUpdateEnabled');
 const LEAF_VERSION = typeof window.__leafVersion === 'string' ? window.__leafVersion : null;
 // Running version at the foot of the settings panel: confirms an update landed.
@@ -2252,34 +2259,137 @@ const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 // installer, so bytes are pooled to roughly this much before being handed over.
 const UPDATE_CHUNK_BYTES = 256 * 1024;
 
-// What the update button is currently offering. `available` is the notify-only
-// state (auto-update off, or a release with no checksum to verify against);
-// `staged` means a verified installer is on disk and the app can restart into it.
-let updateState = { status: 'idle', version: '', url: RELEASES_PAGE, percent: 0, message: '' };
+// What the update controls are currently reporting.
+//
+//   idle         nothing asked yet (a throttled launch lands here)
+//   checking     a release request is in flight
+//   upToDate     GitHub answered and this is the newest version
+//   checkFailed  the check itself broke — offline, rate-limited, malformed
+//   available    a newer release exists but will not be installed for us:
+//                downloads are off, or it publishes no checksummed installer
+//   downloading  bytes are moving; `percent` is live
+//   staged       a verified installer is on disk and the app can restart into it
+//   failed       the download or its verification broke
+//
+// The last four raise the dot on the gear; the quiet ones only write the note,
+// since a permanent amber dot for a laptop that is merely offline would be noise.
+let updateState = {
+  status: 'idle',
+  version: '',
+  url: RELEASES_PAGE,
+  percent: 0,
+  message: '',
+  checkedAt: Number(LEAF_SETTINGS.updateLastChecked || 0) * 1000,
+};
+// Why the last install did not take, from the applier's record: `{ version,
+// message }`, or null. Kept raw so a locale change re-renders it, and sticky for
+// the session — a failed install stays true until the next one succeeds.
+const updateApplyFailure = (() => {
+  const applied = window.__leafUpdateApply;
+  if (!applied || typeof applied !== 'object' || applied.ok) return null;
+  return {
+    version: String(applied.version || '').replace(/^v/i, ''),
+    message: String(applied.message || ''),
+  };
+})();
+const UPDATE_NEWS_STATES = ['available', 'downloading', 'staged', 'failed'];
+
+// "Last checked 3 hours ago", from the coarsest unit that fits. Relative rather
+// than a timestamp: the only thing worth knowing is whether the answer is stale.
+function formatCheckedAgo(when) {
+  const seconds = Math.max(0, Math.round((Date.now() - when) / 1000));
+  const units = [['day', 86400], ['hour', 3600], ['minute', 60]];
+  for (const [unit, size] of units) {
+    if (seconds >= size) {
+      const ago = window.leafLocale.formatRelativeTime(-Math.floor(seconds / size), unit);
+      return window.leafLocale.t('update.lastChecked', { when: ago });
+    }
+  }
+  return window.leafLocale.t('update.checkedNow');
+}
+
+// The line under the check row: what the last attempt actually said.
+function updateNoteText() {
+  const { status, message, checkedAt } = updateState;
+  // This attempt's own failure first, then the last install's — a fresh error
+  // must not be masked by a stale one.
+  if (status === 'checkFailed') {
+    return window.leafLocale.t('update.checkFailed', { message: message || '' }).trim();
+  }
+  if (status === 'failed') {
+    return message
+      ? window.leafLocale.t('update.failedReason', { message })
+      : window.leafLocale.t('update.failed');
+  }
+  if (updateApplyFailure) {
+    return window.leafLocale.t('update.applyFailed', {
+      version: updateApplyFailure.version,
+      message: updateApplyFailure.message,
+    });
+  }
+  if (status === 'available' && message) return message;
+  if (status === 'upToDate') return window.leafLocale.t('update.upToDate');
+  if (checkedAt) return formatCheckedAgo(checkedAt);
+  return '';
+}
 
 function renderUpdateButton() {
   if (!settingsUpdate) return;
   const { status, version, percent } = updateState;
-  const idle = status === 'idle' || status === 'upToDate';
-  if (settingsAlertDot) settingsAlertDot.hidden = idle;
-  settingsUpdate.hidden = idle;
-  if (idle) return;
+  const news = UPDATE_NEWS_STATES.indexOf(status) !== -1;
+  const busy = status === 'checking' || status === 'downloading';
 
-  const labels = {
-    available: () => window.leafLocale.t('update.available', { version }),
-    downloading: () => window.leafLocale.t('update.downloading', { version, percent }),
-    staged: () => window.leafLocale.t('update.restart', { version }),
-    failed: () => window.leafLocale.t('update.failed'),
-  };
-  settingsUpdate.textContent = (labels[status] || labels.available)();
-  settingsUpdate.title = updateState.message || window.leafLocale.t('update.title');
-  // Only a staged, verified installer offers to install. Everything else falls
-  // back to the release page, which is what the app did before it could update
-  // itself, and is always a safe thing for the button to do.
-  settingsUpdate.disabled = status === 'downloading';
-  settingsUpdate.onclick = status === 'staged'
-    ? () => send({ command: 'applyUpdate' })
-    : () => send({ command: 'openExternal', url: updateState.url || RELEASES_PAGE });
+  // The dot on the gear, all a user sees with the panel shut: green for something
+  // to install, a spinning ring while it downloads, amber when the attempt broke.
+  if (settingsAlertDot) {
+    settingsAlertDot.hidden = !news;
+    settingsAlertDot.className = 'settings-alert-dot'
+      + (status === 'downloading' ? ' is-downloading' : '')
+      + (status === 'failed' ? ' is-failed' : '');
+  }
+
+  settingsUpdate.hidden = !news;
+  settingsUpdate.classList.toggle('is-failed', status === 'failed');
+  if (news) {
+    const labels = {
+      available: () => window.leafLocale.t('update.available', { version }),
+      downloading: () => window.leafLocale.t('update.downloading', { version, percent }),
+      staged: () => window.leafLocale.t('update.restart', { version }),
+      failed: () => window.leafLocale.t('update.failed'),
+    };
+    (settingsUpdateLabel || settingsUpdate).textContent = (labels[status] || labels.available)();
+    settingsUpdate.title = updateState.message || window.leafLocale.t('update.title');
+    if (settingsUpdateSpinner) settingsUpdateSpinner.hidden = status !== 'downloading';
+    if (settingsUpdateFill) {
+      settingsUpdateFill.style.width = status === 'downloading' ? `${percent}%` : '0';
+    }
+    // Only a staged, verified installer offers to install. Everything else falls
+    // back to the release page, which is what the app did before it could update
+    // itself, and is always a safe thing for the button to do.
+    settingsUpdate.disabled = status === 'downloading';
+    settingsUpdate.onclick = status === 'staged'
+      ? () => send({ command: 'applyUpdate' })
+      : () => send({ command: 'openExternal', url: updateState.url || RELEASES_PAGE });
+  }
+
+  // The check row reports every state, including the quiet ones.
+  if (settingsCheck) {
+    settingsCheck.disabled = busy;
+    settingsCheck.title = window.leafLocale.t('update.checkTitle');
+  }
+  if (settingsCheckLabel) {
+    settingsCheckLabel.textContent = window.leafLocale.t(busy ? 'update.checking' : 'update.check');
+  }
+  if (settingsCheckSpinner) settingsCheckSpinner.hidden = !busy;
+  if (settingsUpdateNote) {
+    const note = updateNoteText();
+    settingsUpdateNote.textContent = note;
+    settingsUpdateNote.hidden = !note;
+    settingsUpdateNote.classList.toggle(
+      'is-error',
+      Boolean(updateApplyFailure) || status === 'failed' || status === 'checkFailed',
+    );
+  }
 }
 
 function setUpdateState(next) {
@@ -2296,6 +2406,7 @@ window.leafUpdateState = (state) => {
     status: state.status || 'failed',
     version: state.version || updateState.version,
     message: state.message || '',
+    percent: 0,
   });
 };
 
@@ -2318,6 +2429,9 @@ async function streamInstaller(url, size) {
   let pending = [];
   let pendingBytes = 0;
   let received = 0;
+  // Repaint on whole percent changes only: the reader hands back tens of chunks
+  // per percent, and each repaint rewrites the whole panel row.
+  let painted = -1;
 
   const flush = () => {
     if (!pendingBytes) return;
@@ -2340,7 +2454,11 @@ async function streamInstaller(url, size) {
     received += value.length;
     if (pendingBytes >= UPDATE_CHUNK_BYTES) flush();
     if (size) {
-      setUpdateState({ status: 'downloading', percent: Math.min(99, Math.floor((received / size) * 100)) });
+      const percent = Math.min(99, Math.floor((received / size) * 100));
+      if (percent !== painted) {
+        painted = percent;
+        setUpdateState({ status: 'downloading', percent });
+      }
     }
   }
   flush();
@@ -2369,8 +2487,12 @@ async function downloadUpdate(version, installer, checksum) {
   }
 }
 
-async function checkForUpdate() {
-  if (!LEAF_VERSION) return;
+// Guards two overlapping checks: the periodic tick firing while a manual check
+// (or its download) is still running.
+let updateCheckInFlight = false;
+
+async function checkForUpdate(force) {
+  if (!LEAF_VERSION || updateCheckInFlight) return;
 
   // An installer verified in an earlier session is still good; offer it before
   // going anywhere near the network.
@@ -2382,18 +2504,31 @@ async function checkForUpdate() {
 
   // Throttled: the app used to spend a request on every launch against an
   // unauthenticated 60-per-hour limit, for an answer that changes at most daily.
-  const lastChecked = Number(LEAF_SETTINGS.updateLastChecked || 0) * 1000;
-  if (lastChecked && Date.now() - lastChecked < UPDATE_CHECK_INTERVAL_MS) return;
+  // A check the user clicked ignores it: one deliberate request is not what
+  // exhausts that budget, and waiting six hours for an answer is not an answer.
+  if (!force && updateState.checkedAt && Date.now() - updateState.checkedAt < UPDATE_CHECK_INTERVAL_MS) {
+    renderUpdateButton();
+    return;
+  }
 
+  updateCheckInFlight = true;
+  setUpdateState({ status: 'checking', message: '', percent: 0 });
   try {
+    // no-store: a cached 200 from the last check would make a forced one answer
+    // with yesterday's release.
     const res = await fetch('https://api.github.com/repos/ryanallen/leaftext/releases/latest', {
+      cache: 'no-store',
       headers: { Accept: 'application/vnd.github+json' },
     });
-    if (!res.ok) return;
+    if (!res.ok) throw new Error(window.leafLocale.t('update.httpError', { status: res.status }));
     const data = await res.json();
     const tag = data && data.tag_name;
-    send({ command: 'updateChecked', version: tag && isNewerVersion(tag, LEAF_VERSION) ? String(tag) : '' });
-    if (!tag || !isNewerVersion(tag, LEAF_VERSION)) return;
+    const newer = Boolean(tag) && isNewerVersion(tag, LEAF_VERSION);
+    send({ command: 'updateChecked', version: newer ? String(tag) : '' });
+    if (!newer) {
+      setUpdateState({ status: 'upToDate', version: '', checkedAt: Date.now() });
+      return;
+    }
 
     const version = String(tag).replace(/^v/i, '');
     const url = data.html_url || RELEASES_PAGE;
@@ -2407,18 +2542,45 @@ async function checkForUpdate() {
 
     // No installer for this platform, no published checksum to verify it
     // against, or the user turned auto-update off: notify only, which is what
-    // the button did before any of this existed.
+    // the button did before any of this existed. Say which, so a release that
+    // forgot to publish a checksum doesn't read as a broken updater.
     if (!installer || !checksum || !autoUpdateEnabled) {
-      setUpdateState({ status: 'available', version, url });
+      setUpdateState({
+        status: 'available',
+        version,
+        url,
+        checkedAt: Date.now(),
+        message: window.leafLocale.t(autoUpdateEnabled ? 'update.noInstaller' : 'update.downloadsOff'),
+      });
       return;
     }
-    setUpdateState({ status: 'available', version, url });
+    setUpdateState({ status: 'available', version, url, checkedAt: Date.now(), message: '' });
     await downloadUpdate(version, installer, checksum);
-  } catch (_) {
-    // Offline or rate-limited: leave the UI as-is.
+  } catch (error) {
+    // Offline, rate-limited, or a malformed answer. `checkedAt` is deliberately
+    // left alone so the next tick retries instead of waiting out the interval.
+    setUpdateState({ status: 'checkFailed', message: String((error && error.message) || error) });
+  } finally {
+    updateCheckInFlight = false;
   }
 }
+if (settingsCheck) {
+  settingsCheck.addEventListener('click', () => checkForUpdate(true));
+}
+// Opening the panel re-renders, so "last checked 3 hours ago" is current rather
+// than however stale it was when the page loaded.
+if (settingsMenu) {
+  settingsMenu.addEventListener('toggle', () => {
+    if (settingsMenu.open) renderUpdateButton();
+  });
+}
+// Paint the row before anything asks the network, so the panel is never blank on
+// a build with no version to compare.
+renderUpdateButton();
 checkForUpdate();
+// So a window left open for days notices a release. The tick is short; the
+// throttle above decides whether it actually reaches the network.
+window.setInterval(() => checkForUpdate(), 30 * 60 * 1000);
 let minimapViewportFrame = 0;
 let minimapPreviewFrame = 0;
 // Rebuilding the thumbnail clones the whole document, so only rebuild when the

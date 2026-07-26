@@ -109,7 +109,35 @@ fn failed(operation: &str, detail: impl std::fmt::Display) -> io::Error {
 /// sat in a user-writable folder since, and this is the last moment before the
 /// bytes are executed. Every failure path relaunches what was already
 /// installed — a failed update must never cost the user a working app.
+///
+/// The outcome is recorded before the relaunch, since this process has no way to
+/// report one itself. See `ApplyOutcome`.
 pub fn run_update_apply(request: &ApplyRequest) -> Result<(), String> {
+    let outcome = apply(request);
+    leaftext::record_apply_outcome(
+        &request.staging_dir,
+        &applying_version(request),
+        outcome.as_ref().err().map(String::as_str),
+    );
+    // Either way: on success the new build, on failure the old one. Last, so the
+    // app coming up cannot race the verdict it is about to read.
+    let _ = relaunch(&request.relaunch);
+    outcome
+}
+
+/// The version named by the staging folder. Read off the path, not the manifest,
+/// so an unreadable manifest is still attributed to a version.
+fn applying_version(request: &ApplyRequest) -> String {
+    request
+        .staging_dir
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_default()
+}
+
+/// The install itself. Relaunching is the caller's job, so every path out of here
+/// relaunches exactly once.
+fn apply(request: &ApplyRequest) -> Result<(), String> {
     let manifest = std::fs::read_to_string(request.staging_dir.join("manifest.json"))
         .map_err(|error| format!("no staged update to apply: {error}"))?;
     let staged: leaftext::StagedUpdate =
@@ -121,14 +149,10 @@ pub fn run_update_apply(request: &ApplyRequest) -> Result<(), String> {
     let digest = leaftext::hash_file(&installer)
         .map_err(|error| format!("could not re-read the installer: {error}"))?;
     if digest != staged.blake3 {
-        let _ = relaunch(&request.relaunch);
         return Err("the staged installer changed on disk since it was verified".to_string());
     }
 
-    let outcome = install(&installer, &request.relaunch);
-    // Relaunch either way: on success the new build, on failure the old one.
-    let _ = relaunch(&request.relaunch);
-    outcome
+    install(&installer, &request.relaunch)
 }
 
 /// Give the app that spawned us time to close its files and release the

@@ -1322,23 +1322,138 @@ body.is-maximized #winMaximize .wc-restore {
   border-color: transparent;
   color: var(--app-action-foreground);
 }
-/* Update-available dot over the settings button, revealed by the frontend's
-   version check. The ring keeps it legible on the bar's textured/hover fill. */
+/* Update dot over the settings button, revealed by the frontend's version check.
+   The ring keeps it legible on the bar's textured/hover fill. Green means there
+   is something to install, amber that the last attempt failed; while bytes are
+   moving it becomes a spinning ring, so the gear reports progress with the panel
+   shut. */
 .settings-alert-dot {
   position: absolute;
   top: 4px;
   right: 4px;
   width: 8px;
   height: 8px;
+  box-sizing: border-box;
   border-radius: var(--leaf-radius-full);
-  background: var(--app-action-background);
+  background: var(--success);
   box-shadow: 0 0 0 2px var(--app-surface);
 }
+.settings-alert-dot.is-failed {
+  background: var(--warning);
+}
+.settings-alert-dot.is-downloading {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+  border: 2px solid color-mix(in srgb, var(--success) 30%, transparent);
+  border-top-color: var(--success);
+  box-shadow: none;
+  animation: leaf-reader-spin 0.8s linear infinite;
+}
 /* Green "update to vX" call-to-action pinned above the settings controls. Takes
-   the primary-action fill; spans the panel. */
+   the primary-action fill; spans the panel. `position: relative` anchors the
+   download progress fill. */
 .settings-update {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
+  overflow: hidden;
   font-weight: 700;
+}
+.settings-update[hidden] {
+  display: none;
+}
+/* Progress behind the label, left to right. Zero width at rest, so a state with
+   no percent (available, staged, failed) shows nothing. */
+.settings-update-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: color-mix(in srgb, var(--app-action-foreground) 26%, transparent);
+  transition: width 120ms linear;
+  pointer-events: none;
+}
+.settings-update-label {
+  position: relative;
+}
+/* Failed: amber outline rather than the green go-ahead, since the click opens
+   the release page instead of installing. */
+.settings-update.is-failed {
+  border-color: var(--warning);
+  background: transparent;
+  color: var(--warning);
+}
+.settings-update.is-failed:hover {
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  border-color: var(--warning);
+}
+/* One spinner for both update controls: the panel button while it downloads and
+   the check row while it asks GitHub. */
+.settings-spinner {
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  box-sizing: border-box;
+  border-radius: var(--leaf-radius-full);
+  border: 2px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-top-color: currentColor;
+  animation: leaf-reader-spin 0.8s linear infinite;
+}
+.settings-spinner[hidden] {
+  display: none;
+}
+/* The check row: version on the right, a quiet text button on the left that
+   forces a check now. The scheduled check is throttled to a few hours, so this
+   is the only way to see the updater answer on demand. */
+.settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.settings-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--app-muted-foreground);
+  font: 600 11px var(--app-font);
+  letter-spacing: 0.02em;
+}
+.settings-check:hover:not(:disabled) {
+  background: transparent;
+  border-color: transparent;
+  color: var(--accent);
+  text-decoration: underline;
+}
+.settings-check:disabled {
+  background: transparent;
+  border-color: transparent;
+  color: var(--app-muted-foreground);
+  cursor: default;
+}
+/* What the last check actually said — up to date, when it ran, or why it broke.
+   Wraps, because a network error message can be long. */
+.settings-update-note {
+  margin: -8px 0 0;
+  color: var(--app-muted-foreground);
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.settings-update-note[hidden] {
+  display: none;
+}
+.settings-update-note.is-error {
+  color: var(--warning);
 }
 /* Running version at the foot of the panel: quiet, one line, selectable so it
    can be pasted into a bug report. */

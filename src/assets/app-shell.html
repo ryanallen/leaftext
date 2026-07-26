@@ -39,7 +39,13 @@
         <span class="settings-alert-dot" id="settingsAlertDot" aria-hidden="true" hidden></span>
       </summary>
       <div class="settings-panel" role="group" aria-labelledby="settingsSummary">
-        <button type="button" class="settings-update" id="settingsUpdate" hidden></button>
+        <button type="button" class="settings-update" id="settingsUpdate" hidden>
+          <!-- Progress fill behind the label: the download's only honest signal
+               that bytes are moving. Width is set from the percent. -->
+          <span class="settings-update-fill" id="settingsUpdateFill" aria-hidden="true"></span>
+          <span class="settings-spinner" id="settingsUpdateSpinner" aria-hidden="true" hidden></span>
+          <span class="settings-update-label" id="settingsUpdateLabel"></span>
+        </button>
         <button type="button" class="setting-theme-open" id="themeSheetOpen" aria-haspopup="dialog">
           <span class="setting-label" data-i18n="settings.theme.label">Theme</span>
           <span class="setting-theme-current" id="themeCurrentLabel"></span>
@@ -90,11 +96,22 @@
           <span class="setting-label" data-i18n="settings.autoUpdate.label">Download updates</span>
           <span class="setting-help" id="autoUpdateEnabledHelp" data-i18n="settings.autoUpdate.help">Fetch new versions in the background and offer a restart. Installing always waits for you to click. Off checks for updates but only links to the download page.</span>
         </label>
-        <p class="settings-version">
-          <span data-i18n="settings.version">Version</span>
-          <!-- Separate span so renderStaticText's [data-i18n] sweep never wipes the number. -->
-          <span class="settings-version-number" id="settingsVersion"></span>
-        </p>
+        <!-- Update status, always present. Without it a check that found nothing,
+             was throttled, or failed is indistinguishable from one that never
+             ran, and the only way to see the updater work is to wait. -->
+        <div class="settings-footer">
+          <button type="button" class="settings-check" id="settingsCheck">
+            <span class="settings-spinner" id="settingsCheckSpinner" aria-hidden="true" hidden></span>
+            <!-- Separate span so the spinner survives the text swap. -->
+            <span id="settingsCheckLabel" data-i18n="update.check">Check for updates</span>
+          </button>
+          <p class="settings-version">
+            <span data-i18n="settings.version">Version</span>
+            <!-- Separate span so renderStaticText's [data-i18n] sweep never wipes the number. -->
+            <span class="settings-version-number" id="settingsVersion"></span>
+          </p>
+        </div>
+        <p class="settings-update-note" id="settingsUpdateNote" hidden></p>
       </div>
     </details>
     <button type="button" id="openButton" class="icon-button open-button" data-i18n-aria-label="actions.open" data-i18n-title="actions.open.title" aria-label="Open" title="Open Markdown file">{{OPEN_ICON_SVG}}</button>

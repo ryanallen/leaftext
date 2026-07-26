@@ -7206,6 +7206,69 @@ fn pruning_keeps_only_the_pending_version() {
 }
 
 #[test]
+fn the_applier_verdict_survives_pruning_and_is_read_once() {
+    let data_dir = update_test_dir("applyoutcome");
+    let staging = staging_dir(&data_dir, "0.1.400");
+    fs::create_dir_all(&staging).expect("staging folder");
+
+    record_apply_outcome(
+        &staging,
+        "0.1.400",
+        Some("the installer failed with code 1603"),
+    );
+
+    // The record lives beside the staging folders, and the launch that reports it
+    // prunes them first — so pruning must leave it alone or the failure is lost.
+    prune_staged(&data_dir, None);
+
+    let outcome = take_apply_outcome(&data_dir).expect("the verdict survives pruning");
+    assert!(!outcome.ok);
+    assert_eq!(outcome.version, "0.1.400");
+    assert!(outcome.message.contains("1603"));
+
+    // Read once: reporting the same failed install on every launch afterwards
+    // would be a lie from the second time on.
+    assert!(take_apply_outcome(&data_dir).is_none());
+
+    let _ = fs::remove_dir_all(&data_dir);
+}
+
+#[test]
+fn a_successful_install_records_no_failure() {
+    let data_dir = update_test_dir("applyok");
+    let staging = staging_dir(&data_dir, "0.1.400");
+    fs::create_dir_all(&staging).expect("staging folder");
+
+    record_apply_outcome(&staging, "0.1.400", None);
+    let outcome = take_apply_outcome(&data_dir).expect("a verdict either way");
+    assert!(outcome.ok);
+    assert!(outcome.message.is_empty());
+
+    let _ = fs::remove_dir_all(&data_dir);
+}
+
+#[test]
+fn the_page_is_told_how_the_last_install_went() {
+    // Null when there is nothing to report, so the page has no note to show.
+    assert_eq!(
+        initial_apply_outcome_script(None),
+        "window.__leafUpdateApply = null;"
+    );
+
+    let outcome = ApplyOutcome {
+        version: "0.1.400".to_string(),
+        ok: false,
+        message: "the installer failed with code 1603".to_string(),
+        finished_at: 1_780_000_000,
+    };
+    let script = initial_apply_outcome_script(Some(&outcome));
+    assert!(script.starts_with("window.__leafUpdateApply = {"));
+    assert!(script.contains(r#""ok":false"#));
+    assert!(script.contains("0.1.400"));
+    assert!(script.contains("1603"));
+}
+
+#[test]
 fn a_staged_record_without_its_installer_reads_as_nothing_staged() {
     let data_dir = update_test_dir("halfdeleted");
     let payload = b"installer".to_vec();
@@ -7269,6 +7332,18 @@ fn the_settings_panel_exposes_the_auto_update_toggle() {
         "update.downloading",
         "update.restart",
         "update.failed",
+        "update.failedReason",
+        "update.check",
+        "update.checkTitle",
+        "update.checking",
+        "update.upToDate",
+        "update.lastChecked",
+        "update.checkedNow",
+        "update.checkFailed",
+        "update.applyFailed",
+        "update.httpError",
+        "update.downloadsOff",
+        "update.noInstaller",
         "settings.autoUpdate.label",
         "settings.autoUpdate.help",
     ] {
@@ -7278,6 +7353,29 @@ fn the_settings_panel_exposes_the_auto_update_toggle() {
             "{key} is missing from a locale table"
         );
     }
+}
+
+#[test]
+fn the_settings_panel_can_check_for_updates_on_demand() {
+    // The scheduled check is throttled to hours, so without a control that forces
+    // one there is no way to find out whether updating works — the symptom that
+    // made the whole updater look broken. The status line beside it is the other
+    // half: it reports a check that found nothing, or failed, either of which used
+    // to leave the panel looking untouched.
+    let html = app_shell_html();
+    assert!(html.contains(r#"<button type="button" class="settings-check" id="settingsCheck">"#));
+    assert!(html.contains(r#"id="settingsCheckLabel" data-i18n="update.check""#));
+    assert!(html.contains(r#"id="settingsUpdateNote""#));
+    // The download's progress signals: a spinner and a fill behind the label.
+    assert!(html.contains(r#"id="settingsUpdateSpinner""#));
+    assert!(html.contains(r#"id="settingsUpdateFill""#));
+
+    let css = reading_mode_css();
+    assert!(css.contains(".settings-spinner"));
+    // Green for news, amber for a failure: the dot is all a user sees with the
+    // panel shut.
+    assert!(css.contains(".settings-alert-dot.is-downloading"));
+    assert!(css.contains(".settings-alert-dot.is-failed"));
 }
 
 #[test]

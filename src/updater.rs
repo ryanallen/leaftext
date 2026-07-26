@@ -169,12 +169,18 @@ pub fn read_staged(data_dir: &Path, version: &str) -> Option<StagedUpdate> {
 
 /// Delete every staged version except `keep`. A user who skips five releases
 /// should not be carrying five installers around.
+///
+/// Directories only: the applier's outcome record sits beside them and has to
+/// survive until the next launch reads it.
 pub fn prune_staged(data_dir: &Path, keep: Option<&str>) {
     let keep = keep.map(sanitize_version);
     let Ok(entries) = fs::read_dir(updates_dir(data_dir)) else {
         return;
     };
     for entry in entries.flatten() {
+        if !entry.file_type().is_ok_and(|kind| kind.is_dir()) {
+            continue;
+        }
         let name = entry.file_name();
         let name = name.to_string_lossy();
         if keep.as_deref() == Some(name.as_ref()) {
@@ -182,6 +188,56 @@ pub fn prune_staged(data_dir: &Path, keep: Option<&str>) {
         }
         let _ = fs::remove_dir_all(entry.path());
     }
+}
+
+/// How the last install attempt went, written by the detached applier and read
+/// once by the next launch.
+///
+/// The applier is windowless and detached: its stderr goes nowhere, and the app
+/// that could have shown a message has already exited. Without this file, a failed
+/// install looks exactly like one that never happened.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ApplyOutcome {
+    /// Version the applier was installing.
+    pub version: String,
+    /// Whether the install reported success.
+    pub ok: bool,
+    /// Why it failed, when it did.
+    #[serde(default)]
+    pub message: String,
+    /// When the attempt finished, Unix seconds.
+    pub finished_at: u64,
+}
+
+/// Where the applier leaves its verdict: beside the staging folders, not inside
+/// one, since the folder it was installing from is the first thing pruned.
+fn apply_outcome_path(updates_dir: &Path) -> PathBuf {
+    updates_dir.join("last-apply.json")
+}
+
+/// Record how an install attempt ended. `staging_dir` is the folder the applier
+/// was handed; the record goes in its parent, which is the updates root.
+pub fn record_apply_outcome(staging_dir: &Path, version: &str, error: Option<&str>) {
+    let root = staging_dir.parent().unwrap_or(staging_dir);
+    let outcome = ApplyOutcome {
+        version: version.to_string(),
+        ok: error.is_none(),
+        message: error.unwrap_or_default().to_string(),
+        finished_at: now_unix(),
+    };
+    if let Ok(json) = serde_json::to_string_pretty(&outcome) {
+        let _ = fs::create_dir_all(root);
+        let _ = fs::write(apply_outcome_path(root), json);
+    }
+}
+
+/// Read and delete the applier's verdict. Deleted on read: it describes one
+/// attempt, and reporting it twice would be a lie the second time.
+pub fn take_apply_outcome(data_dir: &Path) -> Option<ApplyOutcome> {
+    let path = apply_outcome_path(&updates_dir(data_dir));
+    let json = fs::read_to_string(&path).ok();
+    let _ = fs::remove_file(&path);
+    serde_json::from_str(&json?).ok()
 }
 
 /// An in-progress download: bytes land in a `.part` file and are hashed as they
