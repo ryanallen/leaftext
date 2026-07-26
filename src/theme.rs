@@ -963,16 +963,20 @@ body {
 }
 .tab-bar {
   display: flex;
-  gap: 6px;
+  /* Must clear the active tab's --tab-flare on both sides, or a flare reaches an
+     inactive neighbour and the two tabs read as fused. Raise it with the flare. */
+  gap: 14px;
   min-width: 0;
-  /* Fill the full header height so tabs read as full-height cells. */
+  /* Full header height, but the tabs hang from the bar's bottom edge (where the
+     active one covers the reader divider) under a shoulder of chrome — which is
+     what gives their top corners room to round. */
   align-self: stretch;
   align-items: stretch;
   overflow-x: auto;
   scrollbar-width: none;
-  /* Horizontal inset only (vertical stays 0 for full-height cells): space the
-     first tab off the rail stroke and hold a gap before the app actions. */
-  padding: 0 12px;
+  /* Space the first tab off the rail stroke and hold a gap before the app actions.
+     No bottom inset — the tabs have to reach the divider. */
+  padding: 4px 12px 0;
 }
 .tab-bar::-webkit-scrollbar {
   height: 0;
@@ -984,14 +988,16 @@ body {
   flex: 0 0 auto;
   max-width: 132px;
   padding: 0 4px;
-  /* Full-height cell above the reader divider (z-index 1) so the active tab can
-     cover it. The transparent side borders reserve the width the active tab
-     paints in, keeping every tab the same size. */
+  /* A cell hanging off the reader divider (z-index 1) so the active tab can cover it,
+     top corners rounded to the page's radius. The transparent strokes reserve the
+     space the active tab's frame paints in, keeping every tab the same size. */
   position: relative;
   z-index: 1;
+  border-top: 1px solid transparent;
   border-left: 1px solid transparent;
   border-right: 1px solid transparent;
   border-bottom: 1px solid var(--app-border);
+  border-radius: var(--leaf-radius-md) var(--leaf-radius-md) 0 0;
   /* An inactive tab reads as a darker cell by tiling the header's cassette grain
      at its heavier weight — denser ink, no outline needed. */
   background-image: radial-gradient(circle, var(--library-header-grain) 0 0.6px, transparent 0.7px);
@@ -1017,9 +1023,15 @@ body {
 }
 .tab-active {
   /* Drop the bottom stroke so the page-colored fill flows over the reader
-     divider and the tab looks joined to the document below. The side strokes
-     are the selection cue — only the active tab frames itself. */
-  background: var(--app-background);
+     divider and the tab looks joined to the document below. The other three
+     strokes are the selection cue — only the active tab frames itself. The fill is
+     a variable because the flares below have to match it. */
+  --tab-fill: var(--app-background);
+  /* Bigger than the top corners: these carry the fill out over the divider rather
+     than just turning a stroke. Capped by the tab-bar's gap, which it grows into. */
+  --tab-flare: var(--leaf-radius-xl);
+  background: var(--tab-fill);
+  border-top-color: var(--app-border);
   border-left-color: var(--app-border);
   border-right-color: var(--app-border);
   border-bottom-color: transparent;
@@ -1027,7 +1039,38 @@ body {
 :root[data-code-view="true"] .tab-active {
   /* In code view the page below is the code surface, not the reading background;
      match it so the active tab still reads as joined to the document. */
-  background: var(--code-block-background, var(--preview-background));
+  --tab-fill: var(--code-block-background, var(--preview-background));
+}
+/* Inverse corners where the active tab meets the reader divider: the fill flares out
+   at each bottom corner and the frame arcs with it, so the tab joins the page on a
+   curve rather than a hard T. Drawn as a gradient because a concave arc needs its
+   stroke on the outer side of the curve, which border-radius — always painting
+   inward — can't give. Centered on the element's outer top corner, which lands the
+   arc tangent to the side stroke above and to the divider below. */
+.tab-active::before,
+.tab-active::after {
+  content: "";
+  position: absolute;
+  /* The tab's transparent bottom border leaves its padding box a pixel short of the
+     divider these have to reach. */
+  bottom: -1px;
+  width: var(--tab-flare);
+  height: var(--tab-flare);
+  pointer-events: none;
+  /* Shared stop list; only the center differs. The 0.6px ramps are the antialiasing:
+     a gradient is rasterized per pixel, so a hard stop stairs a curve this size. */
+  --tab-flare-arc:
+    transparent 0 calc(var(--tab-flare) - 1.3px),
+    var(--app-border) calc(var(--tab-flare) - 0.7px) calc(var(--tab-flare) - 0.3px),
+    var(--tab-fill) calc(var(--tab-flare) + 0.3px);
+}
+.tab-active::before {
+  left: calc(-1 * var(--tab-flare));
+  background: radial-gradient(circle at 0 0, var(--tab-flare-arc));
+}
+.tab-active::after {
+  right: calc(-1 * var(--tab-flare));
+  background: radial-gradient(circle at 100% 0, var(--tab-flare-arc));
 }
 .tab-label {
   flex: 1;
@@ -1064,11 +1107,11 @@ body {
   color: var(--app-foreground);
 }
 .tab-close {
-  /* Pinned to the top-right corner of every tab, out of the label's flow, so it
-     no longer sits inline with the (vertically centered) name. */
+  /* Tucked into the tab's top-right corner, out of the label's flow, close enough
+     that its hover chip clears both strokes by about 2px and no more. */
   position: absolute;
-  top: 3px;
-  right: 3px;
+  top: 2px;
+  right: 2px;
   display: grid;
   place-items: center;
   width: 18px;
