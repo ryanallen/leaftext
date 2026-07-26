@@ -7317,13 +7317,14 @@ fn the_settings_panel_exposes_the_auto_update_toggle() {
 fn the_settings_panel_can_check_for_updates_on_demand() {
     // The scheduled check is throttled to hours, so without a control that forces
     // one there is no way to find out whether updating works — the symptom that
-    // made the whole updater look broken. The status line beside it is the other
-    // half: it reports a check that found nothing, or failed, either of which used
-    // to leave the panel looking untouched.
+    // made the whole updater look broken. The button's label is the status itself,
+    // so one control both reports and re-checks; `update.check` is only the text
+    // before the first answer.
     let html = app_shell_html();
     assert!(html.contains(r#"<button type="button" class="settings-check" id="settingsCheck">"#));
     assert!(html.contains(r#"id="settingsCheckLabel" data-i18n="update.check""#));
-    assert!(html.contains(r#"id="settingsUpdateNote""#));
+    // No separate status line to fall back to, so the error color lives here.
+    assert!(reading_mode_css().contains(".settings-check.is-error"));
     // The download's progress signals: a spinner and a fill behind the label.
     assert!(html.contains(r#"id="settingsUpdateSpinner""#));
     assert!(html.contains(r#"id="settingsUpdateFill""#));

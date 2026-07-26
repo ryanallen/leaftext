@@ -92,7 +92,7 @@ With **Update automatically** on (the default), the new installer downloads in t
 
 Each version is installed automatically once. If an install fails, the next launch says so and names the reason, and that version then waits for a deliberate click instead of being retried forever. Turning **Update automatically** off keeps the check but fetches and installs nothing — the button just opens the release page, and you install by hand.
 
-**Check for updates** at the foot of the Settings panel forces one at any time. The line beside it always reports the outcome — up to date, when it last checked, or what went wrong — including an install that failed after a restart, which is otherwise invisible because the installer runs after leaftext exits. Startup is never blocked by any of this, and being offline only changes what that line says.
+The update status at the foot of the Settings panel always reports the outcome — up to date, when it last checked, or what went wrong — including an install that failed after a restart, which is otherwise invisible because the installer runs after leaftext exits. Clicking it forces a fresh check at any time. Startup is never blocked by any of this, and being offline only changes what that line says.
 
 ## FAQ
 

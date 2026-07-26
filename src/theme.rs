@@ -1455,16 +1455,26 @@ body.is-maximized #winMaximize .wc-restore {
   justify-content: space-between;
   gap: 10px;
 }
+/* Doubles as the update status, so its label can be a whole network error
+   message: wrap it and let it keep the version beside it uncrushed. */
 .settings-check {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
   padding: 0;
   border: none;
   background: transparent;
   color: var(--app-muted-foreground);
   font: 600 11px var(--app-font);
   letter-spacing: 0.02em;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+/* Before :disabled, so a check already running reads as busy rather than broken;
+   :hover outranks both, since a failed status is still the button you click. */
+.settings-check.is-error {
+  color: var(--warning);
 }
 .settings-check:hover:not(:disabled) {
   background: transparent;
@@ -1478,29 +1488,16 @@ body.is-maximized #winMaximize .wc-restore {
   color: var(--app-muted-foreground);
   cursor: default;
 }
-/* What the last check actually said — up to date, when it ran, or why it broke.
-   Wraps, because a network error message can be long. */
-.settings-update-note {
-  margin: -8px 0 0;
-  color: var(--app-muted-foreground);
-  font-size: 11px;
-  line-height: 1.45;
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-.settings-update-note[hidden] {
-  display: none;
-}
-.settings-update-note.is-error {
-  color: var(--warning);
-}
 /* Running version at the foot of the panel: quiet, one line, selectable so it
-   can be pasted into a bug report. */
+   can be pasted into a bug report. Never shrinks — the status beside it wraps
+   instead. */
 .settings-version {
   margin: 0;
   display: flex;
+  flex: none;
   gap: 4px;
   justify-content: flex-end;
+  white-space: nowrap;
   color: var(--app-muted-foreground);
   font-size: 11px;
   letter-spacing: 0.02em;

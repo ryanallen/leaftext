@@ -2222,7 +2222,6 @@ const settingsUpdate = document.getElementById('settingsUpdate');
 const settingsUpdateLabel = document.getElementById('settingsUpdateLabel');
 const settingsUpdateFill = document.getElementById('settingsUpdateFill');
 const settingsUpdateSpinner = document.getElementById('settingsUpdateSpinner');
-const settingsUpdateNote = document.getElementById('settingsUpdateNote');
 const settingsCheck = document.getElementById('settingsCheck');
 const settingsCheckLabel = document.getElementById('settingsCheckLabel');
 const settingsCheckSpinner = document.getElementById('settingsCheckSpinner');
@@ -2305,7 +2304,7 @@ function formatCheckedAgo(when) {
   return window.leafLocale.t('update.checkedNow');
 }
 
-// The line under the check row: what the last attempt actually said.
+// What the last attempt actually said — this is the check button's label.
 function updateNoteText() {
   const { status, message, checkedAt } = updateState;
   // This attempt's own failure first, then the last install's — a fresh error
@@ -2369,24 +2368,22 @@ function renderUpdateButton() {
       : () => send({ command: 'openExternal', url: updateState.url || RELEASES_PAGE });
   }
 
-  // The check row reports every state, including the quiet ones.
+  // The status is the button's own label, so one control reports and re-checks.
+  // Before the first answer it names what clicking does instead.
   if (settingsCheck) {
     settingsCheck.disabled = busy;
     settingsCheck.title = window.leafLocale.t('update.checkTitle');
-  }
-  if (settingsCheckLabel) {
-    settingsCheckLabel.textContent = window.leafLocale.t(busy ? 'update.checking' : 'update.check');
-  }
-  if (settingsCheckSpinner) settingsCheckSpinner.hidden = !busy;
-  if (settingsUpdateNote) {
-    const note = updateNoteText();
-    settingsUpdateNote.textContent = note;
-    settingsUpdateNote.hidden = !note;
-    settingsUpdateNote.classList.toggle(
+    settingsCheck.classList.toggle(
       'is-error',
       Boolean(updateApplyFailure) || status === 'failed' || status === 'checkFailed',
     );
   }
+  if (settingsCheckLabel) {
+    settingsCheckLabel.textContent = busy
+      ? window.leafLocale.t('update.checking')
+      : updateNoteText() || window.leafLocale.t('update.check');
+  }
+  if (settingsCheckSpinner) settingsCheckSpinner.hidden = !busy;
 }
 
 function setUpdateState(next) {

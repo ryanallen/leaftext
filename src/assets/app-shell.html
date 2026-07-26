@@ -98,7 +98,8 @@
         </label>
         <!-- Update status, always present. Without it a check that found nothing,
              was throttled, or failed is indistinguishable from one that never
-             ran, and the only way to see the updater work is to wait. -->
+             ran, and the only way to see the updater work is to wait. It is also
+             the button that forces one. -->
         <div class="settings-footer">
           <button type="button" class="settings-check" id="settingsCheck">
             <span class="settings-spinner" id="settingsCheckSpinner" aria-hidden="true" hidden></span>
@@ -111,7 +112,6 @@
             <span class="settings-version-number" id="settingsVersion"></span>
           </p>
         </div>
-        <p class="settings-update-note" id="settingsUpdateNote" hidden></p>
       </div>
     </details>
     <button type="button" id="openButton" class="icon-button open-button" data-i18n-aria-label="actions.open" data-i18n-title="actions.open.title" aria-label="Open" title="Open Markdown file">{{OPEN_ICON_SVG}}</button>
