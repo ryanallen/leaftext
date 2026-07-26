@@ -146,9 +146,16 @@ function bindDocumentMinimap() {
 // real text. The clone rebuilds only on content changes, never on scroll (which
 // only moves the viewport box and, on tall documents, the thumbnail's slide).
 // The element it mirrors: the reading view's document body, or the code view's
-// document container — one shared lookup lets the pipeline serve both views.
+// page wrapper — one shared lookup lets the pipeline serve both views.
+// It has to be `.code-view` and not the `.code-view-doc` inside it: the clone is
+// reparented into the rail, so only what sits on the cloned element survives, and
+// `.code-view` holds the editor's metrics, its --cv-* vars and the ancestor half of
+// every `.syn-*` rule. Cloning the inner element wrapped the thumbnail at the wrong
+// measure and rendered it shorter than the track the box is placed over.
+// Two queries, not a selector list: a list matches in document order, so a stray
+// `.document-body` behind the code view would win.
 function minimapSourceElement() {
-  return app.querySelector('.document-body, .code-view-doc');
+  return app.querySelector('.code-view') || app.querySelector('.document-body');
 }
 function bindDocumentMinimapPreview(track) {
   disconnectMinimapPreviewObservers();

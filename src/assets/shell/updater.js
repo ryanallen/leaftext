@@ -305,5 +305,8 @@ let readerAnchorBlocksCount = -1;
 // body node, so comparing identity catches that immediately instead of relying
 // on the child-count heuristic alone.
 let readerAnchorBlocksSource = null;
+// Where the reader parks the first block, from the shell's top edge (the app bar
+// overlays part of that). Keep equal to --reader-content-top-gap, which is how the
+// code view — no scroll origin — pays the same gap as padding.
 const READER_CONTENT_TOP_GAP = 88;
 const READER_ANCHOR_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, table, details, figure, hr';

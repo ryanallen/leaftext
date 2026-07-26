@@ -403,7 +403,7 @@ function flushSourceUpdate() {
 // The code view reuses the reader's own minimap (the scaled document clone in a
 // sticky rail, bound by bindDocumentMinimap / updated by updateMinimapViewport).
 // That machinery finds its content via minimapSourceElement(), which matches the
-// code view's document container too — no separate code-view minimap exists.
+// .code-view wrapper below too — no separate code-view minimap exists.
 
 function saveActiveDocument() {
   const path = activeDocumentPath();

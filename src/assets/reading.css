@@ -111,6 +111,11 @@
   --preview-border: var(--border);
   --preview-muted-foreground: var(--muted-foreground);
   --reader-content-pad: 32px;
+  /* Where a document's first line opens, from the reader shell's own top edge (so
+     the app bar's height is inside it). Has to clear --reader-edge-fade-depth or the
+     line starts half dissolved, and to equal READER_CONTENT_TOP_GAP in the shell
+     script, which is how the reading view reaches it. */
+  --reader-content-top-gap: 88px;
   --type-measure-body: 75ch;
   --type-base: max(0.875rem, calc(1rem + (100vw - 1280px) / 140));
   --type-spacing: calc(var(--type-base) * 1.5);
@@ -2941,7 +2946,10 @@ body.library-resizing {
   --cv-gutter: 3.75em;
   --cv-pad-x: 20px;
   --cv-pad-y: 16px;
-  --cv-pad-top: 16px;
+  /* Not --cv-pad-y's twin: the shell's own top padding sits under the app bar, so
+     matching it left line 1 inside the edge fade. No scroll origin here, so the rest
+     of --reader-content-top-gap is paid as padding. All three layers read this. */
+  --cv-pad-top: calc(var(--reader-content-top-gap) - var(--app-bar-height));
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   min-height: 100%;
@@ -3361,6 +3369,12 @@ body.library-resizing {
    .glossary-term before stripping; re-blend them to body text here. */
 .document-minimap-preview a.glossary-term {
   color: inherit;
+}
+/* The code-view clone is the whole .code-view — it has to be, for the editor's
+   metrics and syntax rules to survive the reparent — so it brings the page fill
+   with it. That belongs to the card; the rail shows text on the chrome. */
+.document-minimap-preview.code-view {
+  background: transparent;
 }
 .document-minimap-viewport {
   position: absolute;

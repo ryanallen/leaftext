@@ -165,6 +165,81 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
     }
 }
 
+// Both views open the first line at the same height by different means — scroll
+// origin in one, padding in the other — so the number lives in two files and has to
+// agree, and has to clear the top edge fade that 16px of padding left it inside.
+#[test]
+fn app_shell_opens_both_views_at_the_same_content_top_gap() {
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    assert_contains(&css, "--reader-content-top-gap: 88px;");
+    assert_contains(&html, "const READER_CONTENT_TOP_GAP = 88;");
+
+    // The code view has no scroll origin, so it pays the gap the shell's app-bar
+    // padding doesn't already cover. All three of its layers read the same var, so
+    // the colour layer, the line-number mirror and the textarea stay aligned.
+    assert_contains(
+        &css,
+        "--cv-pad-top: calc(var(--reader-content-top-gap) - var(--app-bar-height));",
+    );
+    assert_eq!(
+        css.matches("padding: var(--cv-pad-top)").count(),
+        3,
+        "the code view's three aligned layers must share --cv-pad-top"
+    );
+
+    // 88px from the shell's top edge is 48px of clear air below the 40px bar, which
+    // has to be more than the fade's reach or the first line opens dissolved.
+    let fade = css_block(&css, ".reader-edge-fade {");
+    assert!(
+        fade.contains("--reader-edge-fade-depth: 36px;"),
+        "the top fade's depth must stay under the content top gap's clearance"
+    );
+}
+
+// The clone keeps nothing it inherited, so the elected element has to be the one
+// carrying the code view's type ramp, --cv-* vars and `.syn-*` ancestor. Electing
+// the `.code-view-doc` inside it shipped a thumbnail shorter than its own track.
+// Pinning both halves here means moving one without the other fails.
+#[test]
+fn app_shell_clones_the_element_holding_the_code_views_metrics() {
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    // Two queries, not a selector list: a list returns the first match in document
+    // order, so a `.document-body` left in the DOM behind the code view would win.
+    assert_contains(
+        &html,
+        "return app.querySelector('.code-view') || app.querySelector('.document-body');",
+    );
+
+    let code_view = css_block(&css, ".code-view {");
+    for declaration in [
+        "--cv-gutter:",
+        "--cv-pad-x:",
+        "--cv-pad-y:",
+        "--cv-pad-top:",
+        "font-family: var(--code-font);",
+        "font-size:",
+        "line-height:",
+        "tab-size:",
+    ] {
+        assert!(
+            code_view.contains(declaration),
+            "the cloned element must carry the code view's {declaration} — \
+             move it and minimapSourceElement() has to follow"
+        );
+    }
+
+    // Cloning the page wrapper brings its fill along; the rail shows text on the
+    // chrome, as the reading view's clone does.
+    assert_contains(
+        &css,
+        ".document-minimap-preview.code-view {\n  background: transparent;\n}",
+    );
+}
+
 #[test]
 fn app_shell_maps_minimap_geometry_proportionally() {
     let html = app_shell_html();

@@ -25,7 +25,7 @@ A `requestAnimationFrame`-throttled loop writes those on scroll, so the rail sta
 
 The Rust side produces a small `DocumentMinimap` for each document whose only job now is to report a positive line count: an empty or zero-line document reports `0` and the rail is skipped entirely. [XML](01-rendering.md#xml) and [JSON/YAML](01-rendering.md#data-files-json-and-yaml) documents report their count from the rendered block HTML (they have no Markdown source to line-scan), so an opened `.xml`, `.json`, or `.yaml` file gets the same real-text rail as a Markdown file — the thumbnail itself is always the live clone, whatever the source format.
 
-The [code view](07-editing.md#code-view) uses this same minimap over the raw source: the identical rail, thumbnail clone, and drag/click behavior, mirroring the highlighted source text instead of the rendered page. There it renders regardless of the setting below, because with no native scrollbar it is the code view's vertical scroll affordance.
+The [code view](07-editing.md#code-view) uses this same minimap over the raw source: the identical rail, thumbnail clone, and drag/click behavior, mirroring the highlighted source text instead of the rendered page. There it renders regardless of the setting below, because with no native scrollbar it is the code view's vertical scroll affordance. What the rail clones is the code view's own container, the element the editor's type metrics and syntax colors are set on — the thumbnail is moved out of the page to build it, so anything it only inherited from a parent would be lost, and it would wrap at a different width than the source it is meant to mirror.
 
 ## Responsive behavior
 
