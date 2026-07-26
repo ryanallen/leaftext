@@ -703,10 +703,6 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
             }
-            Event::UserEvent(UserEvent::SetAutoUpdateEnabled { enabled }) => {
-                settings.auto_update_enabled = enabled;
-                persist_settings(&settings, settings_path.as_ref());
-            }
             Event::UserEvent(UserEvent::UpdateChecked { version }) => {
                 settings.update_last_checked = leaftext::now_unix();
                 persist_settings(&settings, settings_path.as_ref());

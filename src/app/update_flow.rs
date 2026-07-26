@@ -119,8 +119,7 @@ pub(crate) fn reconcile_staged_update(settings: &mut Settings) -> bool {
 /// Whether a launch should install the staged update by itself. Split out from the
 /// work so the one-attempt guard is testable.
 pub(crate) fn should_auto_apply(settings: &Settings, staged_present: bool) -> bool {
-    settings.auto_update_enabled
-        && staged_present
+    staged_present
         && !settings.update_staged_version.is_empty()
         && settings.update_auto_applied != settings.update_staged_version
 }

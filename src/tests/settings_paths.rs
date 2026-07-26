@@ -222,7 +222,6 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
         window_width: 1440,
         window_height: 960,
         window_maximized: true,
-        auto_update_enabled: false,
         update_last_checked: 1_780_000_000,
         update_staged_version: "0.1.400".to_string(),
         update_auto_applied: String::new(),
@@ -491,10 +490,13 @@ fn every_readable_format_is_a_pager_page_and_an_in_app_link() {
 }
 
 #[test]
-fn the_settings_panel_exposes_the_auto_update_toggle() {
+fn updating_is_not_a_setting() {
+    // Updating is what the app does, not an opt-in: no toggle, no string for one.
     let html = app_shell_html();
-    assert!(html.contains(r#"<input type="checkbox" id="autoUpdateEnabled""#));
-    assert!(html.contains(r#"data-i18n="settings.autoUpdate.label""#));
+    assert!(!html.contains("autoUpdateEnabled"));
+    assert!(!html.contains("settings.autoUpdate"));
+    assert!(!html.contains("setAutoUpdateEnabled"));
+    assert!(!html.contains("update.downloadsOff"));
 
     // Both locale tables must carry every update string, or the button renders
     // blank for one of them.
@@ -513,10 +515,7 @@ fn the_settings_panel_exposes_the_auto_update_toggle() {
         "update.checkFailed",
         "update.applyFailed",
         "update.httpError",
-        "update.downloadsOff",
         "update.noInstaller",
-        "settings.autoUpdate.label",
-        "settings.autoUpdate.help",
     ] {
         assert_eq!(
             html.matches(&format!("'{key}':")).count(),

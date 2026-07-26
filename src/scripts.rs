@@ -34,7 +34,6 @@ pub fn initial_settings_script(settings: &Settings) -> String {
         "libraryProjectPath": settings.library_project_path,
         "libraryClosed": settings.library_closed,
         "libraryWidth": settings.library_width,
-        "autoUpdateEnabled": settings.auto_update_enabled,
         "updateLastChecked": settings.update_last_checked,
         "updateStagedVersion": settings.update_staged_version,
     });

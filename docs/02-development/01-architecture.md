@@ -152,7 +152,6 @@ Key `IpcCommand` variants include:
 | `setLineNumbersEnabled` | Line-numbers toggle in Settings menu |
 | `setReaderEditingEnabled` | Reading-view editing toggle in Settings menu |
 | `setIndexingEnabled`   | "Index entire device" toggle          |
-| `setAutoUpdateEnabled` | "Download updates" toggle in Settings menu |
 | `updateChecked`        | A release check finished: reset the six-hour throttle |
 | `updateDownload`       | The release the check found: fetch that URL natively, hash it, and stage it |
 | `applyUpdate`          | The "Restart to update" button: launch the installer and exit |

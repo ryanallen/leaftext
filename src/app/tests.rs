@@ -14,7 +14,6 @@ fn a_staged_update_installs_itself_at_launch_but_only_once() {
     // The whole point of the updater: a version downloaded last session is
     // installed on the next launch, with nothing for the user to click.
     let mut settings = Settings {
-        auto_update_enabled: true,
         update_staged_version: "0.1.400".to_string(),
         update_auto_applied: String::new(),
         ..Settings::default()
@@ -31,12 +30,9 @@ fn a_staged_update_installs_itself_at_launch_but_only_once() {
     settings.update_staged_version = "0.1.401".to_string();
     assert!(should_auto_apply(&settings, true));
 
-    // Nothing on disk, nothing staged, or the user turned it off.
+    // Nothing on disk, or nothing staged. There is no off switch.
     assert!(!should_auto_apply(&settings, false));
     settings.update_staged_version.clear();
-    assert!(!should_auto_apply(&settings, true));
-    settings.update_staged_version = "0.1.401".to_string();
-    settings.auto_update_enabled = false;
     assert!(!should_auto_apply(&settings, true));
 }
 

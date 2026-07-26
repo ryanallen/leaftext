@@ -17,7 +17,6 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 | Line numbers | On / Off | Off |
 | Reading-view editing | On / Off | On |
 | Indexing | On / Off | Off |
-| Update automatically | On / Off | On |
 | Library view | Project, Graph | Project |
 | Graph size | Focus, Medium, Large, Everything | Focus |
 
@@ -58,7 +57,6 @@ Here `{config_dir}` and `{data_dir}` are the per-app directories derived from th
   "window_width": 1080,
   "window_height": 820,
   "window_maximized": false,
-  "auto_update_enabled": true,
   "update_last_checked": 0,
   "update_staged_version": "",
   "update_auto_applied": ""
@@ -153,7 +151,7 @@ The app ships both language dictionaries locally and applies changes without a r
 
 ### Updates
 
-- **Update automatically** is on by default, and it means what it says: **quit and reopen, and the app you get is the new one.** There is nothing to click
+- **Updating is not a setting.** It always happens, and it means what it says: **quit and reopen, and the app you get is the new one.** There is nothing to click and nothing to switch off
 - **Every launch asks GitHub for the latest release**, unthrottled — opening the app is when you expect it to know whether it is current. A window left open re-checks in the background at most every six hours; `update_last_checked` records when it last did, so a long session does not spend requests against the rate limit
 - When a newer release exists, its installer downloads in the background — the same `.dmg` or `.msi` published for hand-installing, since a release carries nothing else. A download that arrives short or oversized is deleted rather than kept, and the digest of what did land is recorded so the installer can be re-checked before it runs
 - While it downloads, the button carries a spinner and fills left to right with the percentage; the dot over the Settings button turns into a spinning ring
@@ -161,9 +159,8 @@ The app ships both language dictionaries locally and applies changes without a r
 - **Restart to update** is still on the button for anyone who does not want to wait for the next launch
 - Each staged version is installed automatically **once**. `update_auto_applied` records the attempt before the installer runs, so an installer that fails silently cannot be retried on every launch — that would be a boot loop. After one failed attempt the version waits for a deliberate click, and the next launch says what went wrong and names the reason
 - **The update status, at the foot of the panel beside the version, is itself the button.** It reports what the last attempt found — *Up to date*, when it last checked, or why it could not: a refused request, a release with no installer for this platform, or a download that failed — and clicking it forces a fresh check at any time, past the six-hour throttle. Before the first check of a session it reads *Check for updates*
-- Turning it off keeps the check but downloads and installs nothing: the button opens the release page instead
 - The running version is printed at the foot of the panel, so after a relaunch you can confirm which build is installed
-- Saved as `auto_update_enabled`, `update_last_checked`, `update_staged_version`, and `update_auto_applied`
+- Saved as `update_last_checked`, `update_staged_version`, and `update_auto_applied`
 
 > [!NOTE]
 > Only one staged installer is kept. Skipping several releases does not accumulate several downloads, and once an update is applied the folder is cleared.

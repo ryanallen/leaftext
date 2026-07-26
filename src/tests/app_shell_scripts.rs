@@ -133,7 +133,6 @@ fn initial_settings_script_defines_camelcase_global() {
         window_width: 1440,
         window_height: 960,
         window_maximized: true,
-        auto_update_enabled: true,
         update_last_checked: 1_780_000_000,
         update_staged_version: "0.1.400".to_string(),
         update_auto_applied: String::new(),
@@ -143,7 +142,7 @@ fn initial_settings_script_defines_camelcase_global() {
     // update fields do cross: the page owns the check throttle and the button.
     assert_eq!(
         script,
-        r#"window.__leafSettings = {"autoUpdateEnabled":true,"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryProjectPath":"docs","libraryView":"graph","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[],"updateLastChecked":1780000000,"updateStagedVersion":"0.1.400"};"#
+        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryProjectPath":"docs","libraryView":"graph","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[],"updateLastChecked":1780000000,"updateStagedVersion":"0.1.400"};"#
     );
 }
 

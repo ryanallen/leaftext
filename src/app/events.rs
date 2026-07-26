@@ -184,10 +184,6 @@ pub(crate) enum UserEvent {
     /// A result/progress event from the background indexer worker, delivered to
     /// the webview through its library callbacks.
     Indexer(IndexerEvent),
-    /// Persist the auto-update toggle.
-    SetAutoUpdateEnabled {
-        enabled: bool,
-    },
     /// The page checked GitHub; record when, so the next launches don't.
     UpdateChecked {
         /// Version found, empty when already current. Only used for logging.
@@ -368,8 +364,6 @@ pub(crate) enum IpcCommand {
     /// Revert the most recent reading-view edit in the active document.
     #[serde(rename = "undoEdit")]
     UndoEdit,
-    #[serde(rename = "setAutoUpdateEnabled")]
-    SetAutoUpdateEnabled { enabled: bool },
     /// Sent after every release check, found or not, to reset the throttle.
     #[serde(rename = "updateChecked")]
     UpdateChecked {
@@ -571,9 +565,6 @@ pub(crate) fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<S
             }
             IpcCommand::UndoEdit => {
                 let _ = proxy.send_event(UserEvent::UndoEdit);
-            }
-            IpcCommand::SetAutoUpdateEnabled { enabled } => {
-                let _ = proxy.send_event(UserEvent::SetAutoUpdateEnabled { enabled });
             }
             IpcCommand::UpdateChecked { version } => {
                 let _ = proxy.send_event(UserEvent::UpdateChecked { version });

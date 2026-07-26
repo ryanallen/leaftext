@@ -89,11 +89,11 @@ Use `Ctrl+O` on Windows or `Cmd+O` on macOS to open your first file.
 
 Leaf Text checks GitHub Releases for a newer version at every launch, and re-checks in the background at most every six hours while the window stays open. When one is available, a green dot appears over the Settings button and a button appears at the top of the [Settings](01-features/05-settings.md#updates) menu.
 
-With **Update automatically** on (the default), the new installer downloads in the background; a download that arrives short or oversized is discarded rather than kept. While it runs, the button shows a spinner and its percentage and the dot becomes a spinning ring.
+The new installer downloads in the background; a download that arrives short or oversized is discarded rather than kept. While it runs, the button shows a spinner and its percentage and the dot becomes a spinning ring.
 
 **Then quit and reopen, and you are on the new version.** The install happens at launch, before any window opens, because Windows cannot replace a running executable — the app hands off to a detached helper that waits for it to exit, installs, and starts the new build. On macOS that means mounting the disk image, copying the bundle out, and swapping it in. Nothing is prompted for, and nothing interrupts you mid-read. **Restart to update** remains on the button for anyone who would rather not wait for the next launch.
 
-Each version is installed automatically once. If an install fails, the next launch says so and names the reason, and that version then waits for a deliberate click instead of being retried forever. Turning **Update automatically** off keeps the check but fetches and installs nothing — the button just opens the release page, and you install by hand.
+Each version is installed automatically once. If an install fails, the next launch says so and names the reason, and that version then waits for a deliberate click instead of being retried forever. There is no setting for any of this: staying current is what the app does. If a release publishes no installer for your platform, the button opens the release page and you install by hand.
 
 The update status at the foot of the Settings panel always reports the outcome — up to date, when it last checked, or what went wrong — including an install that failed after a restart, which is otherwise invisible because the installer runs after Leaf Text exits. Clicking it forces a fresh check at any time. Startup is never blocked by any of this, and being offline only changes what that line says.
 

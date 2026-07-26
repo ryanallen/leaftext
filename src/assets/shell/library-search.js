@@ -142,5 +142,4 @@ const settingsUpdateSpinner = document.getElementById('settingsUpdateSpinner');
 const settingsCheck = document.getElementById('settingsCheck');
 const settingsCheckLabel = document.getElementById('settingsCheckLabel');
 const settingsCheckSpinner = document.getElementById('settingsCheckSpinner');
-const autoUpdateControl = document.getElementById('autoUpdateEnabled');
 const LEAF_VERSION = typeof window.__leafVersion === 'string' ? window.__leafVersion : null;

@@ -1,14 +1,6 @@
 // Running version at the foot of the settings panel: confirms an update landed.
 const settingsVersion = document.getElementById('settingsVersion');
 if (settingsVersion) settingsVersion.textContent = LEAF_VERSION ? `v${LEAF_VERSION}` : '';
-let autoUpdateEnabled = LEAF_SETTINGS.autoUpdateEnabled !== false;
-if (autoUpdateControl) {
-  autoUpdateControl.checked = autoUpdateEnabled;
-  autoUpdateControl.addEventListener('change', () => {
-    autoUpdateEnabled = autoUpdateControl.checked;
-    send({ command: 'setAutoUpdateEnabled', enabled: autoUpdateEnabled });
-  });
-}
 function parseVersion(value) {
   return String(value || '').replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
 }
@@ -32,8 +24,8 @@ const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 //   checking     a release request is in flight
 //   upToDate     GitHub answered and this is the newest version
 //   checkFailed  the check itself broke — offline, rate-limited, malformed
-//   available    a newer release exists but will not be installed for us:
-//                downloads are off, or it publishes no installer for this platform
+//   available    a newer release exists but publishes no installer for this
+//                platform, so it cannot be installed for us
 //   downloading  bytes are moving; `percent` is live
 //   staged       a verified installer is on disk and the app can restart into it
 //   failed       the download or its verification broke
@@ -241,16 +233,15 @@ async function checkForUpdate(force) {
       ? assets.find((asset) => asset && typeof asset.name === 'string' && asset.name.endsWith(UPDATE_ASSET_SUFFIX))
       : null;
 
-    // No installer for this platform, or the user turned auto-update off: notify
-    // only, which is what the button did before any of this existed. Say which,
-    // so a release that failed to publish one doesn't read as a broken updater.
-    if (!installer || !autoUpdateEnabled) {
+    // No installer for this platform: notify only, and say so, or a release that
+    // failed to publish one reads as a broken updater.
+    if (!installer) {
       setUpdateState({
         status: 'available',
         version,
         url,
         checkedAt: Date.now(),
-        message: window.leafLocale.t(autoUpdateEnabled ? 'update.noInstaller' : 'update.downloadsOff'),
+        message: window.leafLocale.t('update.noInstaller'),
       });
       return;
     }

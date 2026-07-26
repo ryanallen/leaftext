@@ -1056,10 +1056,6 @@ pub struct Settings {
     /// Whether the window was maximized at last close. Tracked apart from the
     /// size so un-maximizing returns to the windowed dimensions.
     pub window_maximized: bool,
-    /// Download new releases in the background and offer a one-click restart.
-    /// Off falls back to notifying only: the button opens the release page and
-    /// nothing is ever fetched. On by default.
-    pub auto_update_enabled: bool,
     /// Unix seconds of the last release check, so launches don't each spend a
     /// request against GitHub's unauthenticated rate limit.
     pub update_last_checked: u64,
@@ -1091,7 +1087,6 @@ impl Default for Settings {
             window_width: 1080,
             window_height: 820,
             window_maximized: false,
-            auto_update_enabled: true,
             update_last_checked: 0,
             update_staged_version: String::new(),
             update_auto_applied: String::new(),
