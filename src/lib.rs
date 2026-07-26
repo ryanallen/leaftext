@@ -1076,10 +1076,10 @@ fn locale_bootstrap_script() -> &'static str {
       'update.applyFailed': 'Installing v{version} failed: {message}',
       'update.httpError': 'GitHub answered {status}',
       'update.downloadsOff': 'Downloads are off — the button opens the release page.',
-      'update.noInstaller': 'This release has no verified installer for this platform — the button opens the release page.',
+      'update.noInstaller': 'This release publishes no installer for this platform — the button opens the release page.',
       'settings.autoUpdate.aria': 'Download updates',
-      'settings.autoUpdate.label': 'Download updates',
-      'settings.autoUpdate.help': 'Fetch new versions in the background and offer a restart. Installing always waits for you to click. Off checks for updates but only links to the download page.',
+      'settings.autoUpdate.label': 'Update automatically',
+      'settings.autoUpdate.help': 'Download new versions in the background and install them the next time you open the app. Off checks for updates but only links to the download page.',
       'settings.version': 'Version',
       'settings.indexing.label': 'Index entire device',
       'settings.indexing.help': 'Crawl this device for Markdown and XML documents and rescan each time you open the app.',
@@ -1209,10 +1209,10 @@ fn locale_bootstrap_script() -> &'static str {
       'update.applyFailed': '安装 v{version} 失败：{message}',
       'update.httpError': 'GitHub 返回 {status}',
       'update.downloadsOff': '下载已关闭 — 此按钮会打开发布页面。',
-      'update.noInstaller': '此版本没有适用于该平台的已校验安装包 — 此按钮会打开发布页面。',
+      'update.noInstaller': '此版本没有发布适用于该平台的安装包 — 此按钮会打开发布页面。',
       'settings.autoUpdate.aria': '下载更新',
-      'settings.autoUpdate.label': '下载更新',
-      'settings.autoUpdate.help': '在后台获取新版本并提示重启。安装始终需要你点击确认。关闭后仍会检查更新，但只提供下载页面链接。',
+      'settings.autoUpdate.label': '自动更新',
+      'settings.autoUpdate.help': '在后台下载新版本，并在下次打开应用时自动安装。关闭后仍会检查更新，但只提供下载页面链接。',
       'settings.version': '版本',
       'settings.indexing.label': '索引整个设备',
       'settings.indexing.help': '扫描此设备上的 Markdown 和 XML 文档，并在每次打开应用时重新扫描。',
@@ -1516,6 +1516,10 @@ pub struct Settings {
     pub update_last_checked: u64,
     /// Version of the verified installer waiting on disk, empty when none is.
     pub update_staged_version: String,
+    /// Version the app already tried to install by itself at launch: one automatic
+    /// attempt each, then the button. Without it, a failing installer boot-loops.
+    #[serde(default)]
+    pub update_auto_applied: String,
 }
 
 impl Default for Settings {
@@ -1541,6 +1545,7 @@ impl Default for Settings {
             auto_update_enabled: true,
             update_last_checked: 0,
             update_staged_version: String::new(),
+            update_auto_applied: String::new(),
         }
     }
 }

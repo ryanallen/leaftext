@@ -17,7 +17,7 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 | Line numbers | On / Off | Off |
 | Reading-view editing | On / Off | On |
 | Indexing | On / Off | Off |
-| Download updates | On / Off | On |
+| Update automatically | On / Off | On |
 | Library view | Project, Graph | Project |
 | Graph size | Focus, Medium, Large, Everything | Focus |
 
@@ -152,18 +152,17 @@ The app ships both language dictionaries locally and applies changes without a r
 
 ### Updates
 
-- **Download updates** is on by default
-- leaftext asks GitHub for the latest release at most once every six hours; `update_last_checked` records when it last did, so launching repeatedly does not spend requests against the rate limit. A window left open re-checks on the same interval rather than only at launch
-- **Check for updates**, at the foot of the panel beside the version, asks now and ignores the six-hour wait
-- The line under it reports what the last attempt found: *Up to date*, when it last checked, or why it could not — a refused request, a release with no verified installer for this platform, or a download that failed
+- **Update automatically** is on by default, and it means what it says: **quit and reopen, and the app you get is the new one.** There is nothing to click
+- **Every launch asks GitHub for the latest release**, unthrottled — opening the app is when you expect it to know whether it is current. A window left open re-checks in the background at most every six hours; `update_last_checked` records when it last did, so a long session does not spend requests against the rate limit
 - When a newer release exists, its installer downloads in the background — the same `.dmg` or `.msi` published for hand-installing, since a release carries nothing else. A download that arrives short or oversized is deleted rather than kept, and the digest of what did land is recorded so the installer can be re-checked before it runs
 - While it downloads, the button carries a spinner and fills left to right with the percentage; the dot over the Settings button turns into a spinning ring
-- A verified installer waits under `{data_dir}/updates`, and `update_staged_version` records which version it is. The Settings button becomes **Restart to update**; clicking it closes leaftext, installs, and reopens. Nothing is prompted for: leaftext installs per-user, which is what lets it replace itself without administrator rights
-- **Installing is always a click.** Nothing is applied in the background. The artifacts are not code signed, so nothing about the download can prove it is trustworthy — which is why the last step is yours
-- If the install itself fails, the next launch says so and names the reason. The installer runs in a detached helper after leaftext exits, so its verdict is written to `{data_dir}/updates` and read back once on startup
-- Turning it off keeps the check but downloads nothing: the button opens the release page instead
-- The running version is printed at the foot of the panel, so after a restart you can confirm which build is installed
-- Saved as `auto_update_enabled`, `update_last_checked`, and `update_staged_version`
+- **The next launch installs it, before any window opens.** Windows cannot replace a running executable, so this is the one moment it can happen without interrupting anything: the app hands off to a detached helper, which waits for it to exit, installs, and starts the new version. No prompt — leaftext installs per-user, which is what lets it replace itself without administrator rights
+- **Restart to update** is still on the button for anyone who does not want to wait for the next launch
+- Each staged version is installed automatically **once**. `update_auto_applied` records the attempt before the installer runs, so an installer that fails silently cannot be retried on every launch — that would be a boot loop. After one failed attempt the version waits for a deliberate click, and the next launch says what went wrong and names the reason
+- **Check for updates**, at the foot of the panel beside the version, forces a check at any time. The line under it reports what the last attempt found: *Up to date*, when it last checked, or why it could not — a refused request, a release with no installer for this platform, or a download that failed
+- Turning it off keeps the check but downloads and installs nothing: the button opens the release page instead
+- The running version is printed at the foot of the panel, so after a relaunch you can confirm which build is installed
+- Saved as `auto_update_enabled`, `update_last_checked`, `update_staged_version`, and `update_auto_applied`
 
 > [!NOTE]
 > Only one staged installer is kept. Skipping several releases does not accumulate several downloads, and once an update is applied the folder is cleared.

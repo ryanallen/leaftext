@@ -45,6 +45,18 @@ Default installed path, though **Change...** puts it wherever you like and later
 %LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe
 ```
 
+## File associations
+
+Installing registers leaftext as a handler for `.md`, `.markdown`, `.mdown`, and `.xml`, so those files carry the leaf icon and open in leaftext when double-clicked. On Windows the entries are per-user (`HKCU`), like the install itself.
+
+If an extension already has a default app, the operating system keeps that choice — neither installer overrides one you have made. To switch:
+
+- **Windows** — right-click a file, **Open with** → **Choose another app** → **Leaf Text** → *Always use this app*. Or **Settings** → **Apps** → **Default apps** → **Leaf Text**.
+- **macOS** — select a file, **Get Info** → **Open with** → **Leaf Text** → **Change All…**
+
+> [!NOTE]
+> Explorer and Finder cache icons. A newly registered icon sometimes only appears after the shell refreshes — signing out and back in is the reliable way to force it.
+
 WebView2 data lives here:
 
 ```text
@@ -72,13 +84,15 @@ Use `Ctrl+O` on Windows or `Cmd+O` on macOS to open your first file.
 
 ## Updates
 
-leaftext checks GitHub Releases for a newer version, at most once every six hours, and again on that interval while the window stays open. When one is available, a green dot appears over the Settings button and a button appears at the top of the [Settings](01-features/05-settings.md#updates) menu.
+leaftext checks GitHub Releases for a newer version at every launch, and re-checks in the background at most every six hours while the window stays open. When one is available, a green dot appears over the Settings button and a button appears at the top of the [Settings](01-features/05-settings.md#updates) menu.
 
-With **Download updates** on (the default), the new installer downloads in the background; a download that arrives short or oversized is discarded rather than kept. While it runs, the button shows a spinner and its percentage and the dot becomes a spinning ring. The button then reads **Restart to update**, and clicking it closes leaftext, installs, and reopens it — on macOS by mounting the disk image, copying the bundle out, and swapping it in.
+With **Update automatically** on (the default), the new installer downloads in the background; a download that arrives short or oversized is discarded rather than kept. While it runs, the button shows a spinner and its percentage and the dot becomes a spinning ring.
 
-Nothing installs on its own. The download is automatic; the install is always a button you press. Turning **Download updates** off keeps the check but nothing is fetched — the button just opens the release page, and you install by hand.
+**Then quit and reopen, and you are on the new version.** The install happens at launch, before any window opens, because Windows cannot replace a running executable — the app hands off to a detached helper that waits for it to exit, installs, and starts the new build. On macOS that means mounting the disk image, copying the bundle out, and swapping it in. Nothing is prompted for, and nothing interrupts you mid-read. **Restart to update** remains on the button for anyone who would rather not wait for the next launch.
 
-To ask right now rather than wait out the six hours, use **Check for updates** at the foot of the Settings panel. The line beside it always reports the outcome — up to date, when it last checked, or what went wrong — including an install that failed after a restart, which is otherwise invisible because the installer runs after leaftext exits. Startup is never blocked by any of this, and being offline only changes what that line says.
+Each version is installed automatically once. If an install fails, the next launch says so and names the reason, and that version then waits for a deliberate click instead of being retried forever. Turning **Update automatically** off keeps the check but fetches and installs nothing — the button just opens the release page, and you install by hand.
+
+**Check for updates** at the foot of the Settings panel forces one at any time. The line beside it always reports the outcome — up to date, when it last checked, or what went wrong — including an install that failed after a restart, which is otherwise invisible because the installer runs after leaftext exits. Startup is never blocked by any of this, and being offline only changes what that line says.
 
 ## FAQ
 

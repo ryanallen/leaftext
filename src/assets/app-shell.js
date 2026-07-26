@@ -2209,10 +2209,10 @@ renderLibrary();
 applyPaneLayout();
 send({ command: 'getFileTree' });
 // Updates. The check compares the running version against the latest GitHub
-// release; if a newer one exists and publishes a checksum for this platform's
-// installer, the page downloads it and streams it to the host, which writes,
-// hashes, and stages it. The button then offers a restart. Silent on any
-// failure — offline, rate-limited, or a malformed response leaves the UI alone.
+// release; if a newer one publishes this platform's installer, the page downloads
+// it and streams it to the host, which writes, hashes, and stages it. The button
+// then offers a restart. Every failure is reported in the panel — a check that
+// found nothing must not look like one that never ran.
 //
 // The download lives here rather than in Rust because the web view already has
 // an OS-maintained TLS stack; the host owns everything that decides whether the
@@ -2266,7 +2266,7 @@ const UPDATE_CHUNK_BYTES = 256 * 1024;
 //   upToDate     GitHub answered and this is the newest version
 //   checkFailed  the check itself broke — offline, rate-limited, malformed
 //   available    a newer release exists but will not be installed for us:
-//                downloads are off, or it publishes no checksummed installer
+//                downloads are off, or it publishes no installer for this platform
 //   downloading  bytes are moving; `percent` is live
 //   staged       a verified installer is on disk and the app can restart into it
 //   failed       the download or its verification broke
@@ -2497,10 +2497,9 @@ async function checkForUpdate(force) {
     return;
   }
 
-  // Throttled: the app used to spend a request on every launch against an
-  // unauthenticated 60-per-hour limit, for an answer that changes at most daily.
-  // A check the user clicked ignores it: one deliberate request is not what
-  // exhausts that budget, and waiting six hours for an answer is not an answer.
+  // Only the periodic tick is throttled; launching and clicking both ask GitHub
+  // at once. One request per launch is nothing against a 60-per-hour limit, and an
+  // update the app sat on until the interval elapsed reads as a broken updater.
   if (!force && updateState.checkedAt && Date.now() - updateState.checkedAt < UPDATE_CHECK_INTERVAL_MS) {
     renderUpdateButton();
     return;
@@ -2568,7 +2567,9 @@ if (settingsMenu) {
 // Paint the row before anything asks the network, so the panel is never blank on
 // a build with no version to compare.
 renderUpdateButton();
-checkForUpdate();
+// Every launch, unthrottled: opening the app is the moment a user expects it to
+// know whether it is current.
+checkForUpdate(true);
 // So a window left open for days notices a release. The tick is short; the
 // throttle above decides whether it actually reaches the network.
 window.setInterval(() => checkForUpdate(), 30 * 60 * 1000);

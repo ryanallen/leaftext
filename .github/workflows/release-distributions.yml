@@ -195,6 +195,51 @@ jobs:
             <string>Leaf Text indexes Markdown files on connected drives so they appear in the library and search.</string>
             <key>NSNetworkVolumesUsageDescription</key>
             <string>Leaf Text indexes Markdown files on network volumes so they appear in the library and search.</string>
+            <!-- Without this the bundle claims no documents: Finder shows a blank
+                 icon for .md files, leaftext is absent from Open With, and Get
+                 Info offers no way to make it the default. Viewer, not Editor:
+                 macOS reserves Editor for apps that own saving the format.
+                 Alternate rank so an existing editor keeps its default. The
+                 double-click itself arrives as an Apple Event, handled by the
+                 Event::Opened arm in src/main.rs. -->
+            <key>CFBundleDocumentTypes</key>
+            <array>
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>Markdown Document</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Alternate</string>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                  <string>md</string>
+                  <string>markdown</string>
+                  <string>mdown</string>
+                </array>
+                <key>LSItemContentTypes</key>
+                <array>
+                  <string>net.daringfireball.markdown</string>
+                  <string>public.plain-text</string>
+                </array>
+              </dict>
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>XML Document</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Alternate</string>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                  <string>xml</string>
+                </array>
+                <key>LSItemContentTypes</key>
+                <array>
+                  <string>public.xml</string>
+                </array>
+              </dict>
+            </array>
           </dict>
           </plist>
           PLIST

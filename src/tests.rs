@@ -5989,6 +5989,7 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
         auto_update_enabled: false,
         update_last_checked: 1_780_000_000,
         update_staged_version: "0.1.400".to_string(),
+        update_auto_applied: String::new(),
     };
 
     save_settings(&settings_path, &settings).expect("settings save");
@@ -6150,6 +6151,7 @@ fn initial_settings_script_defines_camelcase_global() {
         auto_update_enabled: true,
         update_last_checked: 1_780_000_000,
         update_staged_version: "0.1.400".to_string(),
+        update_auto_applied: String::new(),
     });
     // Window geometry is host-only (applied to the native window, not the
     // webview), so it must not leak into the injected settings global. The

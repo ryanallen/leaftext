@@ -622,10 +622,58 @@ fn reconcile_staged_update(settings: &mut Settings) -> bool {
         changed = true;
     }
 
+    // The install worked, so the one-attempt guard has nothing left to guard.
+    if settings.update_staged_version.is_empty() && !settings.update_auto_applied.is_empty() {
+        settings.update_auto_applied.clear();
+        changed = true;
+    }
+
     let keep = (!settings.update_staged_version.is_empty())
         .then_some(settings.update_staged_version.as_str());
     leaftext::prune_staged(&data_dir, keep);
     changed
+}
+
+/// Whether a launch should install the staged update by itself. Split out from the
+/// work so the one-attempt guard is testable.
+fn should_auto_apply(settings: &Settings, staged_present: bool) -> bool {
+    settings.auto_update_enabled
+        && staged_present
+        && !settings.update_staged_version.is_empty()
+        && settings.update_auto_applied != settings.update_staged_version
+}
+
+/// Install a staged update before opening a window: what makes updating automatic
+/// rather than merely offered. Returns true when the applier was launched and this
+/// process must exit without building any UI.
+///
+/// The attempt is recorded *before* the helper starts, so an installer that fails
+/// silently is tried exactly once and then left to the button in Settings.
+fn auto_apply_staged_update(settings: &mut Settings, settings_path: Option<&PathBuf>) -> bool {
+    let Some(data_dir) = app_data_dir() else {
+        return false;
+    };
+    let staged_version = settings.update_staged_version.clone();
+    let staged = leaftext::read_staged(&data_dir, &staged_version);
+    if !should_auto_apply(settings, staged.is_some()) {
+        return false;
+    }
+    let staged = staged.expect("should_auto_apply requires a staged installer");
+
+    settings.update_auto_applied = staged_version;
+    persist_settings(settings, settings_path);
+
+    let directory = leaftext::staging_dir(&data_dir, &staged.version);
+    match platform::spawn_update_helper(&directory) {
+        Ok(()) => true,
+        Err(error) => {
+            eprintln!(
+                "Could not start the installer for v{}: {error}",
+                staged.version
+            );
+            false
+        }
+    }
 }
 
 /// Write the UI toggles to disk, logging but not propagating I/O errors.
@@ -668,6 +716,13 @@ fn run_app() -> Result<(), Box<dyn Error>> {
 
     if settings_dirty {
         persist_settings(&settings, settings_path.as_ref());
+    }
+
+    // An update downloaded last session installs itself now, before any window
+    // exists — Windows cannot replace a running executable, so this is the only
+    // click-free moment. Quit and reopen, and the app that comes up is the new one.
+    if auto_apply_staged_update(&mut settings, settings_path.as_ref()) {
+        return Ok(());
     }
 
     // What the detached applier had to say about the last install, if it ran. Read
@@ -924,6 +979,18 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 // A forwarded open from a second launch should surface the window.
                 window.set_minimized(false);
                 window.set_focus();
+            }
+            // macOS delivers a double-clicked document as an Apple Event, not an
+            // argument, so file associations there are inert without this. Before
+            // the page is up the path waits with the command-line one.
+            Event::Opened { urls } => {
+                for path in urls.iter().filter_map(|url| url.to_file_path().ok()) {
+                    if webview.is_some() && pending_open_path.is_none() {
+                        let _ = proxy.send_event(UserEvent::OpenPath(path));
+                    } else {
+                        pending_open_path = Some(path);
+                    }
+                }
             }
             Event::UserEvent(UserEvent::WebviewReady) => {
                 if let Some(path) = pending_open_path.take() {
@@ -3485,6 +3552,55 @@ mod tests {
         std::env::temp_dir()
             .join("leaf-link-fixtures")
             .join(relative_path)
+    }
+
+    #[test]
+    fn a_staged_update_installs_itself_at_launch_but_only_once() {
+        // The whole point of the updater: a version downloaded last session is
+        // installed on the next launch, with nothing for the user to click.
+        let mut settings = Settings {
+            auto_update_enabled: true,
+            update_staged_version: "0.1.400".to_string(),
+            update_auto_applied: String::new(),
+            ..Settings::default()
+        };
+        assert!(should_auto_apply(&settings, true));
+
+        // Recorded before the installer runs, so an installer that fails silently
+        // is attempted once and then left to the button — not retried on every
+        // launch, which would be a boot loop.
+        settings.update_auto_applied = "0.1.400".to_string();
+        assert!(!should_auto_apply(&settings, true));
+
+        // A newer download supersedes the failed one and gets its own attempt.
+        settings.update_staged_version = "0.1.401".to_string();
+        assert!(should_auto_apply(&settings, true));
+
+        // Nothing on disk, nothing staged, or the user turned it off.
+        assert!(!should_auto_apply(&settings, false));
+        settings.update_staged_version.clear();
+        assert!(!should_auto_apply(&settings, true));
+        settings.update_staged_version = "0.1.401".to_string();
+        settings.auto_update_enabled = false;
+        assert!(!should_auto_apply(&settings, true));
+    }
+
+    #[test]
+    fn a_landed_update_clears_the_one_attempt_guard() {
+        // Once the staged record is gone the install worked, so the next download
+        // must not inherit a guard that blocks its automatic attempt.
+        let mut settings = Settings {
+            update_staged_version: String::new(),
+            update_auto_applied: "0.1.400".to_string(),
+            ..Settings::default()
+        };
+        // reconcile_staged_update needs the data dir; assert the narrow rule it
+        // enforces rather than reaching into the filesystem.
+        if settings.update_staged_version.is_empty() && !settings.update_auto_applied.is_empty() {
+            settings.update_auto_applied.clear();
+        }
+        settings.update_staged_version = "0.1.402".to_string();
+        assert!(should_auto_apply(&settings, true));
     }
 
     fn file_url_for_fixture(relative_path: &str) -> String {

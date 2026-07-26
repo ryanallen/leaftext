@@ -137,6 +137,68 @@
             </Component>
         </DirectoryRef>
 
+        <!-- File associations. A document class nobody claims gets Explorer's
+             generic page icon and cannot be opened by double-click, so a reader
+             that is not registered for .md is one nobody opens files with.
+             Everything is under HKCU: a per-user install cannot write HKLM and
+             does not need to.
+
+             Windows 8+ honours its own UserChoice above these keys, so claiming an
+             extension takes effect where nothing else has claimed it and is
+             ignored where the user already chose — which is the correct behaviour
+             in both cases. The Capabilities keys put the app in Settings > Default
+             apps so the choice can be made there in one click. -->
+        <DirectoryRef Id='Bin'>
+            <Component Id='FileAssociations' Guid='*'>
+                <RegistryValue
+                    Root='HKCU'
+                    Key='Software\ryanallen\leaftext'
+                    Name='associations'
+                    Type='integer'
+                    Value='1'
+                    KeyPath='yes'/>
+
+                <!-- The document class: name, icon, and how to open it. Index 0 is
+                     the exe's own leaf icon, so documents show it too. -->
+                <RegistryValue Root='HKCU' Key='Software\Classes\LeafText.Document' Type='string' Value='Leaf Text Document'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\LeafText.Document' Name='FriendlyTypeName' Type='string' Value='Leaf Text Document'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\LeafText.Document\DefaultIcon' Type='string' Value='&quot;[#MainExecutableFile]&quot;,0'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\LeafText.Document\shell\open\command' Type='string' Value='&quot;[#MainExecutableFile]&quot; &quot;%1&quot;'/>
+                <RemoveRegistryKey Root='HKCU' Key='Software\Classes\LeafText.Document' Action='removeOnUninstall'/>
+
+                <!-- The four extensions the app actually reads; see
+                     `is_markdown_path` / `is_xml_path` in src/indexer.rs. -->
+                <RegistryValue Root='HKCU' Key='Software\Classes\.md' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.md\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.markdown' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.markdown\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.mdown' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.mdown\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.xml' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.xml\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+
+                <!-- Puts leaftext in the "Open with" list even for extensions it
+                     does not own. -->
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe' Name='FriendlyAppName' Type='string' Value='Leaf Text'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\shell\open\command' Type='string' Value='&quot;[#MainExecutableFile]&quot; &quot;%1&quot;'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.md' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.markdown' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.mdown' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.xml' Type='string' Value=''/>
+                <RemoveRegistryKey Root='HKCU' Key='Software\Classes\Applications\leaftext.exe' Action='removeOnUninstall'/>
+
+                <!-- Default Programs registration, so the app is listed in
+                     Settings > Default apps rather than only reachable per-file. -->
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities' Name='ApplicationName' Type='string' Value='Leaf Text'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities' Name='ApplicationDescription' Type='string' Value='Read Markdown and XML documents.'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.md' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.markdown' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.mdown' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.xml' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\RegisteredApplications' Name='Leaf Text' Type='string' Value='Software\ryanallen\leaftext\Capabilities'/>
+            </Component>
+        </DirectoryRef>
+
         <!-- One feature, nothing optional, so there is no customize screen. -->
         <Feature
             Id='MainFeature'
@@ -147,6 +209,7 @@
             Absent='disallow'>
             <ComponentRef Id='MainExecutable'/>
             <ComponentRef Id='ApplicationStartMenuShortcut'/>
+            <ComponentRef Id='FileAssociations'/>
         </Feature>
 
         <SetProperty Id='ARPINSTALLLOCATION' Value='[APPLICATIONFOLDER]' After='CostFinalize'/>
