@@ -2,7 +2,7 @@
 
 > leaftext's minimap is a shrunken clone of the rendered document in a side rail — real, tiny text, not abstract bars — with a live viewport indicator. Click to jump to any section; drag the indicator to scroll.
 
-The minimap is a scaled side-rail showing the actual document beside the reading view. It gives you spatial orientation in long documents and lets you jump to any section by clicking or dragging. Because it is a real rendering of the page, you can recognize where you are from the shape of the text itself: a heading, a code block, a verse, a dense paragraph.
+The minimap is a scaled side-rail showing the actual document beside the reading view. It sits outside the page rather than on it — the page's border stops 8 px short and the rail stands on the same textured chrome as the [library](03-library.md) pane and the app bar. It gives you spatial orientation in long documents and lets you jump to any section by clicking or dragging. Because it is a real rendering of the page, you can recognize where you are from the shape of the text itself: a heading, a code block, a verse, a dense paragraph.
 
 ## How it works
 
@@ -43,7 +43,7 @@ On screens narrower than 600 px the minimap gutters shrink alongside the preview
 
 The minimap can be toggled from **Settings** in the app bar. The setting is persisted across restarts via `{config_dir}/leaftext/settings.json` as the `minimap_enabled` field, so leaftext reopens in the same state you left it.
 
-When the minimap is off, the reading layout switches from a two-column grid to a centred single-column layout (`reader-layout-no-minimap`) so no empty gutter remains to the right of the document.
+When the minimap is off, its column collapses to zero and the page widens back out to the window gutter, so no empty band remains to the right of the document. The reader's native scrollbar comes back as a thin one at that point: with no rail there would otherwise be nothing at all showing where you are in a long page. While the rail is present the scrollbar stays hidden, because the rail is that indicator.
 
 > [!TIP]
 > Use the minimap to quickly gauge document length and find dense sections at a glance. Because it is a real rendering of the page, headings, code blocks, verse, and dense paragraphs each keep their own shape — so you can pick out section breaks and dense passages in the rail from the layout itself, without reading a word.

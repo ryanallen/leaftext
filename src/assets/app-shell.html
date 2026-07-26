@@ -158,6 +158,12 @@
   <div class="reader-corner reader-corner-tl" aria-hidden="true"></div>
 </aside>
 <main id="app" class="reader-shell"></main>
+<!-- The minimap rail. Outside the card on purpose: it is chrome, so it sits on
+     the shell's texture in its own column and the page's border stops short of
+     it. Left empty rather than hidden when there is no minimap — the shell sizes
+     that column with :has(.document-minimap), which a hidden host would still
+     match. -->
+<div id="readerMinimap" class="reader-minimap" aria-hidden="true"></div>
 <div id="readerLoading" class="reader-loading" role="status" aria-live="polite" data-i18n-aria-label="reader.loading" aria-label="Loading document…" hidden>
   <div class="reader-loading-spinner" aria-hidden="true"></div>
 </div>

@@ -38,6 +38,7 @@ const librarySearchResults = document.getElementById('librarySearchResults');
 const libraryScanProgress = document.getElementById('libraryScanProgress');
 const settingsMenu = document.getElementById('settingsMenu');
 const readerLoading = document.getElementById('readerLoading');
+const readerMinimap = document.getElementById('readerMinimap');
 let tabDrag = null;
 let suppressTabClick = false;
 tabBar.addEventListener('wheel', (event) => {
@@ -3631,8 +3632,9 @@ function renderCodeView(state) {
         <div class="code-view-linenums" aria-hidden="true"></div>
         <textarea class="code-view-input" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea>
       </div>
-      <aside class="document-minimap" aria-label="${escapeAttr(window.leafLocale.t('minimap.aria'))}"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>
     </div>`;
+  // The code view always carries a rail, whatever the reading view's setting.
+  setMinimapMarkup(documentMinimapMarkup());
   const textarea = app.querySelector('.code-view-input');
   const highlight = app.querySelector('.code-view-highlight');
   const code = highlight.querySelector('code');
@@ -4660,7 +4662,8 @@ function renderState() {
     // by the origin and the anchor restore lands off by exactly that.
     const previousBody = app.querySelector('.document-body');
     const previousScrollOrigin = previousBody ? previousBody.style.getPropertyValue('--reader-scroll-origin') : '';
-    app.innerHTML = `<div class="${layoutClass}">${state.document.html}${minimapHtml}</div>`;
+    app.innerHTML = `<div class="${layoutClass}">${state.document.html}</div>`;
+    setMinimapMarkup(minimapHtml);
     if (previousScrollOrigin) {
       const freshBody = app.querySelector('.document-body');
       if (freshBody) freshBody.style.setProperty('--reader-scroll-origin', previousScrollOrigin);
@@ -4716,6 +4719,8 @@ function renderState() {
   resetReaderScrollOnNextRender = false;
   document.title = window.leafLocale.t('titles.app');
   app.className = 'reader-shell empty';
+  // No document, no rail — and the shell's column collapses with it.
+  setMinimapMarkup('');
   updateEditingChrome();
   const recent = state.recent || [];
   app.innerHTML = `
@@ -5517,6 +5522,9 @@ function flashCodeCopied(button) {
     setCodeCopyLabel(button, 'actions.copyCode');
   }, 1400);
 }
+function documentMinimapMarkup() {
+  return `<aside class="document-minimap" aria-label="${escapeAttr(window.leafLocale.t('minimap.aria'))}"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
+}
 function renderDocumentMinimap(model) {
   if (!window.leafMinimap.getEnabled()) {
     return '';
@@ -5524,10 +5532,19 @@ function renderDocumentMinimap(model) {
   if (!model || !Number.isFinite(model.line_count) || model.line_count <= 0) {
     return '';
   }
-  return `<aside class="document-minimap" aria-label="${escapeAttr(window.leafLocale.t('minimap.aria'))}"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
+  return documentMinimapMarkup();
+}
+// The rail lives beside the page rather than inside it, so every render has to
+// place it here instead of in its own markup. Empty means no rail at all — the
+// shell's :has(.document-minimap) collapses the column it would occupy.
+function setMinimapMarkup(html) {
+  if (readerMinimap) readerMinimap.innerHTML = html || '';
+}
+function currentMinimap() {
+  return readerMinimap ? readerMinimap.querySelector('.document-minimap') : null;
 }
 function bindDocumentMinimap() {
-  const minimap = app.querySelector('.document-minimap');
+  const minimap = currentMinimap();
   const track = minimap ? minimap.querySelector('.document-minimap-track') : null;
   if (!track) {
     return;
@@ -6073,7 +6090,7 @@ document.addEventListener('toggle', invalidateMinimapPreview, true);
 // duplicated for a11y), shrink to the rail width with a transform. Rebuilt only on
 // content changes; scroll just repositions the box and slides the clone.
 function updateDocumentMinimapPreview() {
-  const minimap = app.querySelector('.document-minimap');
+  const minimap = currentMinimap();
   const track = minimap ? minimap.querySelector('.document-minimap-track') : null;
   const content = track ? track.querySelector('.document-minimap-content') : null;
   const source = minimapSourceElement();
@@ -6136,7 +6153,7 @@ function scheduleMinimapViewportUpdate() {
   });
 }
 function updateMinimapViewport() {
-  const minimap = app.querySelector('.document-minimap');
+  const minimap = currentMinimap();
   if (!minimap) {
     return;
   }

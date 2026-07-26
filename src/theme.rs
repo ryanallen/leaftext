@@ -804,6 +804,19 @@ pub(crate) fn reading_mode_css() -> &'static str {
      through the gap, so the page reads as a card floating on the bar's texture
      rather than something bleeding off the edge of the glass. */
   --reader-gutter: 8px;
+  /* The minimap rail's metrics. Global because the rail sits outside the page
+     now: the shell sizes its column from them, and the rail itself reads them
+     from the other side of that boundary. */
+  --minimap-padding-inline: 8px;
+  --minimap-preview-width: 68px;
+  --minimap-width: calc(var(--minimap-preview-width) + (var(--minimap-padding-inline) * 2));
+  /* What separates the page's right border from the rail. */
+  --reader-minimap-gap: 8px;
+  /* How much width the rail takes out of the page's column. Zero until a
+     document actually has a minimap, or turning it off would leave a dead band.
+     Set from `body` (below) rather than the shell: the app bar's divider and
+     corner have to stop at the same place, and they sit outside the shell. */
+  --reader-minimap-column: 0px;
   /* Elevation shadows by role, so overlays swap in one place. The resting card
      shadow stays per-theme as --shadow (from --leaf-shadow); these cover the
      overlays that were previously baked inline. */
@@ -906,6 +919,11 @@ body {
   height: 1px;
   background: var(--app-border);
   z-index: 0;
+}
+/* The divider is the card's top edge, so it stops where the card does. Without
+   this it carries on over the rail's column and draws a line across the chrome. */
+body:has(.document-minimap) .app-bar::after {
+  right: calc(var(--reader-gutter) + var(--reader-minimap-column) + var(--leaf-radius-md) - 1px);
 }
 .app-bar.has-rail::after {
   /* Don't run the reader divider across the library column: the rail is one
@@ -1720,11 +1738,17 @@ summary:focus-visible {
   outline: 3px solid var(--app-focus-ring);
   outline-offset: 3px;
 }
+/* The minimap is chrome, not page: it gets its own column outside the card so
+   the page's right border stops short of it and the shell's texture runs behind
+   the rail. */
+body:has(.document-minimap) {
+  --reader-minimap-column: calc(var(--minimap-width) + var(--reader-minimap-gap));
+}
 .library-shell {
   display: grid;
   /* A trailing column and a bottom row hold the reader off the window frame; the
      rail spans both so only the page is inset. */
-  grid-template-columns: var(--library-width, 240px) minmax(0, 1fr) var(--reader-gutter);
+  grid-template-columns: var(--library-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
   grid-template-rows: minmax(0, 1fr) var(--reader-gutter);
   height: 100vh;
   /* Positioning context for the open-library button, pinned to the left edge so
@@ -1740,7 +1764,17 @@ summary:focus-visible {
   background-attachment: fixed;
 }
 .library-shell.library-closed {
-  grid-template-columns: 0 minmax(0, 1fr) var(--reader-gutter);
+  grid-template-columns: 0 minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
+}
+/* The rail's column: the 2px lead-in is the gap between the page's right border
+   and the rail, and the bar's height keeps its top level with the card's. */
+.reader-minimap {
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 0;
+  padding-left: var(--reader-minimap-gap);
+  padding-top: var(--app-bar-height);
+  overflow: hidden;
 }
 .library-pane {
   /* Positioning context for the overlays it stacks (.library-scroll,
@@ -1823,6 +1857,11 @@ summary:focus-visible {
 .reader-corner-tr {
   top: calc(100% - 1px);
   right: var(--reader-gutter);
+}
+/* The corner turns down into the card's right border, so it follows the card in
+   when the rail takes a column beside it. */
+body:has(.document-minimap) .reader-corner-tr {
+  right: calc(var(--reader-gutter) + var(--reader-minimap-column));
   -webkit-mask-image: radial-gradient(circle at 0 100%, transparent 0 var(--reader-corner-cut), #000 var(--reader-corner-cut));
   mask-image: radial-gradient(circle at 0 100%, transparent 0 var(--reader-corner-cut), #000 var(--reader-corner-cut));
 }
@@ -2275,18 +2314,37 @@ body.library-resizing {
   padding-top: var(--app-bar-height);
   position: relative;
   scroll-padding-top: var(--app-bar-height);
-  scrollbar-width: none;
 }
 .library-shell.library-closed .reader-shell,
 .library-shell.library-closed .reader-loading {
   /* No rail to sit against, so the card is held off the left frame too. */
   margin-left: var(--reader-gutter);
 }
-.reader-shell::-webkit-scrollbar {
+/* The rail is the reader's scroll affordance, so the native bar stays hidden
+   while there is one. Split across the two branches on purpose: in Chromium
+   setting `scrollbar-width` at all disables every ::-webkit-scrollbar rule on
+   the element (see .library-scroll), so the branch that wants a styled bar must
+   never see the standard property. */
+body:has(.document-minimap) .reader-shell {
+  scrollbar-width: none;
+}
+body:has(.document-minimap) .reader-shell::-webkit-scrollbar {
   width: 0;
 }
-.reader-shell.has-document:has(.document-minimap) {
-  background: var(--preview-background);
+/* No rail — the minimap is off, or there is no document — leaves nothing at all
+   showing where you are in a long page, so a thin bar comes back, styled like
+   the library's. */
+body:not(:has(.document-minimap)) .reader-shell::-webkit-scrollbar {
+  width: 8px;
+}
+body:not(:has(.document-minimap)) .reader-shell::-webkit-scrollbar-track {
+  /* Transparent, and held below the bar the page scrolls under. */
+  background: transparent;
+  margin-top: var(--app-bar-height);
+}
+body:not(:has(.document-minimap)) .reader-shell::-webkit-scrollbar-thumb {
+  border-radius: var(--leaf-radius-md);
+  background: color-mix(in srgb, var(--app-muted-foreground) 35%, transparent);
 }
 .reader-loading {
   /* Overlays the reader cell so a spinner can show over the current document
@@ -2331,9 +2389,6 @@ body.library-resizing {
 .reader-layout {
   --reader-layout-padding-inline: var(--reader-content-pad);
   container-type: inline-size;
-  --minimap-padding-inline: 8px;
-  --minimap-preview-width: 68px;
-  --minimap-width: calc(var(--minimap-preview-width) + (var(--minimap-padding-inline) * 2));
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
@@ -2344,11 +2399,6 @@ body.library-resizing {
      stops them widening the horizontal scroll without making this a scroll
      container. */
   overflow-x: clip;
-}
-/* Reserve the minimap's footprint as right-only padding so the document centers
-   between the left edge and the minimap, not across the whole reader width. */
-.reader-layout:has(.document-minimap) {
-  padding-right: calc(var(--reader-layout-padding-inline) + var(--minimap-width));
 }
 .reader-layout-no-minimap {
   justify-items: center;
@@ -3285,16 +3335,13 @@ body.library-resizing {
   overflow-x: hidden;
   overflow-y: auto;
 }
-/* Laid out like .reader-layout: one grid cell with the reader's .document-minimap
-   overlaid at the right edge, so the shared minimap machinery works unchanged. */
+/* Laid out like .reader-layout. The rail it shares is outside the page entirely,
+   so nothing here reserves room for it. */
 .code-view {
   --cv-gutter: 3.75em;
   --cv-pad-x: 20px;
   --cv-pad-y: 16px;
   --cv-pad-top: 16px;
-  --minimap-padding-inline: 8px;
-  --minimap-preview-width: 68px;
-  --minimap-width: calc(var(--minimap-preview-width) + (var(--minimap-padding-inline) * 2));
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   min-height: 100%;
@@ -3308,14 +3355,8 @@ body.library-resizing {
 .code-view-doc {
   grid-area: 1 / 1;
   min-width: 0;
-  margin-right: var(--minimap-width);
   position: relative;
   min-height: calc(100vh - var(--app-bar-height) - var(--reader-gutter) - 1px);
-}
-/* Here the document reserves the rail's space with margin, so the rail sits
-   flush at the cell edge (the reading view bleeds it across padding instead). */
-.code-view .document-minimap {
-  margin-right: 0;
 }
 .code-view-highlight,
 .code-view-highlight code,
@@ -3656,23 +3697,13 @@ body.library-resizing {
   line-height: var(--type-caption-line);
   margin-block-start: 0;
 }
+/* Lives in the shell's own column, outside the page — so no sticky, no bleed,
+   and nothing to out-stack: it never overlaps the bar or the card. */
 .document-minimap {
   --minimap-viewport-top: 0%;
   --minimap-viewport-height: 100%;
   --minimap-track-height: 100%;
-  align-self: start;
-  grid-area: 1 / 1;
-  justify-self: end;
-  position: sticky;
-  top: 0;
   width: var(--minimap-width);
-  /* Bleed back across the reserved right padding so the rail stays flush to the
-     reader's right edge. */
-  margin-right: calc(-1 * (var(--reader-layout-padding-inline) + var(--minimap-width)));
-  /* Above the app bar (10) and .reader-corner-tr (11, inside the bar's stacking
-     context), which lands on the rail's own top-right corner and hid it. The rail
-     sticks below the bar and never overlaps it. Under the toast (20) and menus (30+). */
-  z-index: 12;
 }
 .document-minimap-track {
   box-sizing: border-box;
@@ -3798,7 +3829,9 @@ body.library-resizing {
     --type-h5-size: calc(var(--type-base) * 1.3);
     --type-h6-size: calc(var(--type-base) * 1.15);
   }
-  .reader-layout {
+  /* On :root, not the layout: the shell sizes the rail's column from this too,
+     and the two have to shrink together. */
+  :root {
     --minimap-preview-width: 46px;
   }
 }

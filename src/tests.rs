@@ -3451,7 +3451,8 @@ fn app_shell_rebinds_minimap_after_document_updates() {
     for expected in [
             "const minimapHtml = renderDocumentMinimap(state.document.minimap);",
             "const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';",
-            "app.innerHTML = `<div class=\"${layoutClass}\">${state.document.html}${minimapHtml}</div>`;",
+            "app.innerHTML = `<div class=\"${layoutClass}\">${state.document.html}</div>`;",
+            "setMinimapMarkup(minimapHtml);",
             "bindDocumentMinimap();",
             "updateMinimapViewport();",
         ] {
@@ -3658,19 +3659,13 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
             "justify-items: center;",
             "padding: 0 var(--reader-layout-padding-inline);",
             "position: relative;",
-            ".reader-shell.has-document:has(.document-minimap)",
             ".reader-layout-no-minimap",
             "justify-items: center;",
             ".document-minimap {",
             "--minimap-padding-inline: 8px;",
             "--minimap-preview-width: 68px;",
-            "grid-area: 1 / 1;",
-            "justify-self: end;",
-            "position: sticky;",
-            "top: 0;",
             "--minimap-width: calc(var(--minimap-preview-width) + (var(--minimap-padding-inline) * 2));",
             "width: var(--minimap-width);",
-            "margin-right: calc(-1 * (var(--reader-layout-padding-inline) + var(--minimap-width)));",
             "--minimap-track-height: 100%;",
             "height: var(--minimap-track-height);",
             ".document-minimap-content",
@@ -3682,9 +3677,29 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
             "user-select: none;",
             "@media (max-width: 900px)",
             "--minimap-preview-width: 46px;",
+            // The rail is chrome, not page: its own shell column, a lead-in
+            // holding the card's right border off it, and no bleed or sticky,
+            // because it is no longer inside the scroller it tracks.
+            ".reader-minimap {",
+            "grid-column: 3;",
+            "padding-left: var(--reader-minimap-gap);",
+            "--reader-minimap-gap: 8px;",
+            "body:has(.document-minimap) {",
+            "--reader-minimap-column: calc(var(--minimap-width) + var(--reader-minimap-gap));",
         ] {
             assert_contains(css, expected);
         }
+
+    for gone in [
+        "margin-right: calc(-1 * (var(--reader-layout-padding-inline) + var(--minimap-width)));",
+        ".reader-layout:has(.document-minimap)",
+        "position: sticky;\n  top: 0;\n  width: var(--minimap-width);",
+    ] {
+        assert!(
+            !css.contains(gone),
+            "the rail sits outside the page now, so {gone} should be gone"
+        );
+    }
 
     assert!(
         !css.contains(".document-minimap {\n    display: none;"),
@@ -3729,10 +3744,33 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
         !css.contains("content-visibility: auto"),
         "the reader must render in full (no content-visibility) so scrolling matches the web"
     );
+    // Same invariant, enforced from the other side now that the rail is chrome:
+    // its column is exactly the rail plus the lead-in, so no dead strip can open
+    // up between the page's right border and the rail, or past it.
+    assert_contains(
+        css,
+        "--reader-minimap-column: calc(var(--minimap-width) + var(--reader-minimap-gap));",
+    );
+    assert_contains(css, "width: var(--minimap-width);");
+
+    // The rail is the only thing showing position while it is there, so the
+    // native bar is hidden — and has to come back when it isn't. The two branches
+    // must stay apart: `scrollbar-width` anywhere on the element would kill the
+    // ::-webkit-scrollbar rules the visible branch is built from.
+    assert_contains(
+        css,
+        "body:has(.document-minimap) .reader-shell {\n  scrollbar-width: none;\n}",
+    );
+    assert_contains(
+        css,
+        "body:not(:has(.document-minimap)) .reader-shell::-webkit-scrollbar {\n  width: 8px;\n}",
+    );
     assert!(
-            css.contains("margin-right: calc(-1 * (var(--reader-layout-padding-inline) + var(--minimap-width)));"),
-            "minimap rail must occupy the layout padding so no dead strip remains to the right of the rail"
-        );
+        !css.contains(
+            ".reader-shell {\n  background: var(--preview-background);\n  scrollbar-width: none;"
+        ),
+        "scrollbar-width must not sit on the base rule, or the thin bar can never be styled"
+    );
 }
 
 #[test]
@@ -3801,7 +3839,13 @@ fn app_shell_disables_minimap_without_leaving_empty_layout_column() {
             "if (!window.leafMinimap.getEnabled()) {\n    return '';\n  }",
             "const minimapHtml = renderDocumentMinimap(state.document.minimap);",
             "const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';",
-            "app.innerHTML = `<div class=\"${layoutClass}\">${state.document.html}${minimapHtml}</div>`;",
+            "app.innerHTML = `<div class=\"${layoutClass}\">${state.document.html}</div>`;",
+            // The rail is placed beside the page, not inside it. Empty markup
+            // means no rail element at all, which is what collapses the shell
+            // column — a hidden one would still satisfy :has().
+            "setMinimapMarkup(minimapHtml);",
+            "if (readerMinimap) readerMinimap.innerHTML = html || '';",
+            r#"<div id="readerMinimap" class="reader-minimap" aria-hidden="true"></div>"#,
         ] {
             assert_contains(&html, expected);
         }
@@ -6102,7 +6146,7 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
 
     // CSS: the collapsed-grid override and the divider hit target.
     assert!(css.contains(
-        ".library-shell.library-closed {\n  grid-template-columns: 0 minmax(0, 1fr) var(--reader-gutter);\n}"
+        ".library-shell.library-closed {\n  grid-template-columns: 0 minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);\n}"
     ));
     assert!(css.contains(".library-divider {"));
     assert!(css.contains("cursor: col-resize;"));
@@ -6259,11 +6303,12 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
     let html = app_shell_html();
     let css = reading_mode_css();
 
-    // Layout: the shell driven by the CSS variable — rail, reader, and the gutter
-    // track that holds the reader off the window frame.
+    // Layout: the shell driven by the CSS variable — rail, reader, the minimap's
+    // own column (0 until a document has one), and the gutter track that holds
+    // the reader off the window frame.
     assert!(html.contains(r#"<div id="libraryShell" class="library-shell">"#));
     assert!(css.contains(
-        "grid-template-columns: var(--library-width, 240px) minmax(0, 1fr) var(--reader-gutter);"
+        "grid-template-columns: var(--library-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);"
     ));
     assert!(html.contains(r#"<aside id="libraryPane" class="library-pane">"#));
     assert!(html.contains(r#"<div id="libraryTree" class="library-tree"></div>"#));
