@@ -937,7 +937,9 @@ body {
      pane below carrying the rail's vertical stroke. */
   display: flex;
   align-items: center;
-  gap: 16px;
+  /* Same 10px the trailing group runs on, so both shoulders of the tab strip
+     space their icons identically. */
+  gap: 10px;
   align-self: stretch;
   box-sizing: border-box;
   width: var(--library-rail-width, 240px);
@@ -1159,7 +1161,7 @@ body {
 }
 .history-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
 }
 /* The trailing group: the action buttons plus the window controls. Anchors the
@@ -1170,6 +1172,10 @@ body {
   align-items: center;
   align-self: stretch;
   position: relative;
+  /* Mirrors .app-bar-lead's right inset, so a tab comes no closer to the actions
+     than the first one comes to the history buttons. Without it the strip's own
+     12px is all that stands between a title and the toolbar. */
+  padding-left: 16px;
   padding-right: 22px;
 }
 .app-trailing-items {
@@ -1184,8 +1190,8 @@ body {
   align-items: center;
 }
 /* Overflow chevron: hidden inline (the `.app-trailing` prefix outranks the
-   later `.icon-button { display: inline-grid }`), shown only when collapsed.
-   Rests muted, greens on hover like the other toolbar icons. */
+   later `.icon-button { display: inline-grid }`), shown only once something has
+   actually folded. Rests muted, greens on hover like the other toolbar icons. */
 .app-trailing .overflow-toggle {
   display: none;
   border-color: transparent;
@@ -1197,15 +1203,16 @@ body {
   border-color: var(--app-action-hover-background);
   color: var(--app-action-foreground);
 }
-.app-trailing.collapsed .overflow-toggle {
+.app-trailing.has-overflow .overflow-toggle {
   display: inline-grid;
 }
-/* Collapsed: everything trailing (actions + window controls) folds into a
-   dropdown, leaving just the chevron on the bar. */
-.app-trailing.collapsed .app-trailing-items {
+/* Where folded items go, one at a time, as the tab strip runs out of room. Hangs
+   off the trailing group's left edge, which is where the chevron sits, so it
+   drops under the control that opens it rather than out at the window corner. */
+.app-overflow-panel {
   position: absolute;
   top: calc(100% + 4px);
-  right: 0;
+  left: 0;
   display: none;
   flex-direction: column;
   gap: 4px;
@@ -1216,14 +1223,15 @@ body {
   box-shadow: var(--shadow);
   z-index: 30;
 }
-.app-trailing.collapsed.overflow-open .app-trailing-items {
+.app-trailing.overflow-open .app-overflow-panel {
   display: flex;
 }
-.app-trailing.collapsed .app-actions-items {
+/* Folded as a group, but stacked once inside: the panel is only as wide as the
+   chevron's corner allows, and a three-across row overflows it — maximize and
+   close were clipped clean off. */
+.app-overflow-panel .window-controls {
+  flex-direction: column;
   gap: 4px;
-}
-/* The dropdown does its own spacing. */
-.app-trailing.collapsed .window-controls {
   margin-left: 0;
 }
 /* Custom window controls for frameless windows (Windows). Hidden until the
@@ -1767,6 +1775,44 @@ body:has(.document-minimap) {
   background-size: 2px 2px;
   background-attachment: fixed;
 }
+/* Too narrow for a pane beside the page, so the library becomes a sheet over it:
+   full width, parked off the left edge until the app bar's button pulls it in.
+   Out of flow, so the grid still treats the library as closed and the page keeps
+   the whole window. Under the app bar's z-index, which is what keeps the button
+   that opened it reachable to close it again. */
+.library-shell.library-narrow .library-pane {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  z-index: 5;
+  transform: translateX(-100%);
+  transition: transform 0.22s ease;
+}
+.library-shell.library-narrow.library-overlay .library-pane {
+  transform: translateX(0);
+}
+/* Nothing to drag when the sheet is the full width. */
+.library-shell.library-narrow .library-divider {
+  display: none;
+}
+/* The sheet stands in for the page, so the page's furniture goes with it: the
+   corner arcs would paint on top of it, the divider is the top edge of a card
+   nobody can see, and the tabs belong to a document the sheet is covering.
+   The tabs go by visibility, not display — the overflow fold measures the strip
+   to decide what to fold, and a collapsed one would unfold the whole bar into a
+   window too narrow to hold it. */
+body:has(.library-overlay) .reader-corner,
+body:has(.library-overlay) .app-bar::after {
+  display: none;
+}
+body:has(.library-overlay) .tab-bar {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .library-shell.library-narrow .library-pane {
+    transition: none;
+  }
+}
 .library-shell.library-closed {
   grid-template-columns: 0 minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
 }
@@ -1897,6 +1943,13 @@ body:has(.document-minimap) {
   /* Hide the header bands when snapped shut, or the unclipped pane would bleed
      them past the 0px column and show them behind the reader. */
   display: none;
+}
+/* Except as a sheet, which is "closed" only to the grid — it is off-screen when
+   shut, so there is nothing to bleed, and with these hidden it opened onto a
+   blank band where the path and the search box belong. */
+.library-shell.library-narrow .library-header,
+.library-shell.library-narrow .library-crumbs {
+  display: flex;
 }
 /* The library toggle sits in the app bar's lead, left of Back. Rests muted like
    the other secondary toolbar icons, greens on hover. */
@@ -3849,10 +3902,10 @@ body.library-resizing {
   }
 }
 @media (max-width: 640px) {
-  .app-bar {
-    gap: 8px;
-    padding: 0 12px;
-  }
+  /* No padding or gap here: the lead and trailing zones carry their own insets,
+     and adding the bar's on top shifts the logo off the library header's 12px
+     it is meant to line up with — the whole left group slides right as the
+     window narrows. */
   .tab {
     max-width: 104px;
   }

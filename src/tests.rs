@@ -6164,6 +6164,163 @@ fn settings_load_migrates_the_retired_tree_and_flat_views_to_project() {
 }
 
 #[test]
+fn a_narrow_window_opens_the_library_as_a_sliding_sheet() {
+    let html = app_shell_html();
+
+    for expected in [
+        // The button used to do nothing on a narrow window: it cleared the
+        // user-closed flag, but libraryTooNarrow() still forced the pane shut.
+        "if (libraryTooNarrow()) {\n    librarySheetOpen = !librarySheetOpen;",
+        // View state, not a preference — a window opened wide has no sheet.
+        "let librarySheetOpen = false;",
+        "if (!narrow) librarySheetOpen = false;",
+        "libraryShell.classList.toggle('library-overlay', narrow && librarySheetOpen);",
+        // Picking a document dismisses it, the way a mobile menu does.
+        "closeLibrarySheet();",
+    ] {
+        assert_contains(&html, expected);
+    }
+
+    let css = reading_mode_css();
+    let sheet = css
+        .split(".library-shell.library-narrow .library-pane {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines the narrow-window sheet");
+    // Out of flow so the grid still gives the page the whole window, parked off
+    // the left edge, and animated in rather than appearing.
+    for expected in [
+        "position: absolute;",
+        "width: 100%;",
+        "transform: translateX(-100%);",
+        "transition: transform 0.22s ease;",
+    ] {
+        assert_contains(sheet, expected);
+    }
+    assert_contains(
+        css,
+        ".library-shell.library-narrow.library-overlay .library-pane {\n  transform: translateX(0);\n}",
+    );
+    // Under the app bar, or the button that opened it could not close it.
+    assert!(
+        sheet.contains("z-index: 5;"),
+        "the sheet must stay below the app bar: {sheet}"
+    );
+    assert_contains(css, "@media (prefers-reduced-motion: reduce)");
+
+    // The sheet is "closed" only to the grid, so the rule that hides the path
+    // and search box on a snapped-shut pane has to be undone — it opened onto a
+    // blank band otherwise.
+    assert_contains(
+        css,
+        ".library-shell.library-narrow .library-header,\n.library-shell.library-narrow .library-crumbs {\n  display: flex;\n}",
+    );
+    // The page's furniture goes away with the page it belongs to.
+    assert_contains(css, "body:has(.library-overlay) .app-bar::after");
+    // Tabs by visibility, not display: the fold measures the strip, and a
+    // collapsed one reads as "everything fits" and unfolds the whole bar.
+    assert_contains(
+        css,
+        "body:has(.library-overlay) .tab-bar {\n  visibility: hidden;\n}",
+    );
+}
+
+#[test]
+fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
+    let html = app_shell_html();
+
+    for expected in [
+        // Folding is driven by the tab strip actually overflowing, not a width
+        // budget: the old fit reserved a 56px sliver for the tabs and let a
+        // title be sliced in half long before anything folded.
+        "if (tabBar.scrollWidth <= tabBar.clientWidth + 1) break;",
+        "overflowPanel.prepend(el);",
+        // Rightmost first, and everything is unfolded before re-measuring so a
+        // widening window puts the buttons back where they came from.
+        "for (let index = overflowCandidates.length - 1; index >= 0; index -= 1) {",
+        r#"<div class="app-overflow-panel" id="appOverflowPanel"></div>"#,
+        // The window controls and the lead's history buttons fold too, but only
+        // after every action has — which is what their place at the head of the
+        // list buys.
+        "{ el: document.getElementById('windowControls'), home: appTrailingItems },",
+        "{ el: document.getElementById('backButton'), home: historyActions, inLead: true },",
+        // Folding out of the lead frees nothing while an open library pins it to
+        // the rail's width, so those are skipped rather than hidden for nothing.
+        "if (inLead && leadIsPinned) continue;",
+        // Restoring rebuilds each container's original order, so a button that
+        // folded comes back in its own slot beside siblings that never left.
+        "for (const child of children) home.appendChild(child);",
+    ] {
+        assert_contains(&html, expected);
+    }
+
+    // Two never fold. The brand is the way home, and the library button is the
+    // only way to reach the library at all on a narrow window — behind a chevron
+    // it would be unreachable exactly where the sheet matters most.
+    for never_folds in ["homeButton", "libraryOpen"] {
+        assert!(
+            !html.contains(&format!("{{ el: {never_folds},")),
+            "{never_folds} must stay on the bar"
+        );
+    }
+
+    let css = reading_mode_css();
+    assert_contains(css, ".app-trailing.has-overflow .overflow-toggle {");
+    assert_contains(css, ".app-trailing.overflow-open .app-overflow-panel {");
+    // Stacked inside the panel: it is only as wide as the chevron's corner
+    // allows, and the inline three-across row overflowed it, clipping maximize
+    // and close off the end.
+    let folded_controls = css
+        .split(".app-overflow-panel .window-controls {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet folds the window controls");
+    assert_contains(folded_controls, "flex-direction: column;");
+    // The tab strip's two shoulders have to match: the lead's right inset and
+    // the trailing group's left one are what keep a tab from crowding the
+    // actions while the first tab sits well clear of the history buttons.
+    let lead_inset = css
+        .split(".app-bar-lead {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines .app-bar-lead")
+        .contains("padding: 0 16px 0 12px;");
+    let trailing_inset = css
+        .split(".app-trailing {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines .app-trailing")
+        .contains("padding-left: 16px;");
+    assert!(
+        lead_inset && trailing_inset,
+        "the tab strip's shoulders must stay symmetric"
+    );
+
+    // The panel drops under the chevron, which is the trailing group's left
+    // edge — anchoring it right put it out at the window corner instead.
+    let panel = css
+        .split(".app-overflow-panel {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines .app-overflow-panel");
+    assert!(
+        panel.contains("left: 0;") && !panel.contains("right: 0;"),
+        "the panel must hang off the chevron, not the far corner: {panel}"
+    );
+    // The all-or-nothing fold is gone, window controls and all.
+    assert!(
+        !css.contains(".app-trailing.collapsed"),
+        "the trailing group no longer folds as one block"
+    );
+    // The narrow bar must not add its own inset: the lead already carries the
+    // 12px that lines the logo up with the library header below it.
+    assert!(
+        !css.contains("  .app-bar {\n    gap: 8px;\n    padding: 0 12px;\n  }"),
+        "the narrow override shifted the whole left group right"
+    );
+}
+
+#[test]
 fn app_shell_wires_library_pane_open_close_and_resize() {
     let html = app_shell_html();
     let css = reading_mode_css();

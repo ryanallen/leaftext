@@ -1,7 +1,7 @@
 const app = document.getElementById('app');
 const appBar = document.getElementById('appBar');
 const appTrailing = document.querySelector('.app-trailing');
-const appTrailingItems = document.getElementById('appTrailingItems');
+const appActionsItems = document.getElementById('appActionsItems');
 const overflowToggle = document.getElementById('overflowToggle');
 const tabBar = document.getElementById('tabBar');
 const homeButton = document.getElementById('homeButton');
@@ -186,26 +186,65 @@ window.leafSetWindowMaximized = (maximized) => {
 window.leafSetWindowMaximized(window.__leafMaximized);
 
 // --- App-bar overflow -------------------------------------------------------
-// Too narrow to show the trailing group (actions + window controls) inline? Fold
-// it into a chevron dropdown, leaving just the chevron. Fit is measured, not a
-// breakpoint, because the lead widens with the library rail.
-let appTrailingInlineWidth = 0;
-const APP_BAR_MIN_TABS = 56; // room kept for at least a sliver of the tab strip
+// The bar folds into the chevron's panel one item at a time, rightmost first, as
+// the tab strip runs out of room. Measured against the tabs' own overflow rather
+// than a width budget, so a long title costs a button instead of being sliced in
+// half. The history controls go too, once the trailing ones have; the brand and
+// the library button never do — on a narrow window that button is the only way
+// to reach the library at all.
+//
+// Listed last-to-fold first. Each entry names the container it came from, since
+// they do not all share one, and restoring rebuilds each container's original
+// order so a returning button lands in its own slot.
+const overflowPanel = document.getElementById('appOverflowPanel');
+const appTrailingItems = document.getElementById('appTrailingItems');
+const historyActions = document.querySelector('.history-actions');
+const appBarLead = document.querySelector('.app-bar-lead');
+const overflowCandidates = [
+  { el: document.getElementById('windowControls'), home: appTrailingItems },
+  { el: document.getElementById('backButton'), home: historyActions, inLead: true },
+  { el: document.getElementById('forwardButton'), home: historyActions, inLead: true },
+  ...Array.from(appActionsItems.children).map((el) => ({ el, home: appActionsItems })),
+].filter((entry) => entry.el && entry.home);
+// Each affected container's children as they started, non-candidates included.
+const overflowHomes = new Map();
+for (const { home } of overflowCandidates) {
+  if (!overflowHomes.has(home)) overflowHomes.set(home, Array.from(home.children));
+}
+let refittingAppBar = false;
 function closeOverflowMenu() {
   appTrailing.classList.remove('overflow-open');
   overflowToggle.setAttribute('aria-expanded', 'false');
 }
 function refitAppBar() {
-  const collapsed = appTrailing.classList.contains('collapsed');
-  // Measure the inline row only while expanded; collapsed it's an absolute
-  // dropdown whose width isn't what the fit compares against.
-  if (!collapsed) appTrailingInlineWidth = appTrailingItems.offsetWidth;
-  const lead = document.querySelector('.app-bar-lead');
-  const needed = (lead ? lead.offsetWidth : 0) + appTrailingInlineWidth + APP_BAR_MIN_TABS;
-  const shouldCollapse = needed > appBar.clientWidth;
-  if (shouldCollapse === collapsed) return;
-  appTrailing.classList.toggle('collapsed', shouldCollapse);
-  if (!shouldCollapse) closeOverflowMenu();
+  // Moving the buttons relayouts the bar, which is what the ResizeObserver
+  // watches; without this the first fold would trigger the next.
+  if (refittingAppBar) return;
+  refittingAppBar = true;
+  try {
+    // Unfold everything first, rebuilding each container's original order, so a
+    // widening window returns the buttons exactly where they came from.
+    for (const [home, children] of overflowHomes) {
+      for (const child of children) home.appendChild(child);
+    }
+    // An open library pins the lead to the rail's width so the tabs line up with
+    // the pane's edge, so folding out of it frees nothing — leave it whole.
+    const leadIsPinned = appBar.classList.contains('has-rail');
+    for (let index = overflowCandidates.length - 1; index >= 0; index -= 1) {
+      if (tabBar.scrollWidth <= tabBar.clientWidth + 1) break;
+      const { el, inLead } = overflowCandidates[index];
+      // A hidden action takes no width, so folding it frees nothing and would
+      // raise the chevron over an empty-looking menu.
+      if (el.hidden || el.offsetParent === null) continue;
+      if (inLead && leadIsPinned) continue;
+      overflowPanel.prepend(el);
+    }
+    const folded = overflowPanel.childElementCount > 0;
+    appTrailing.classList.toggle('has-overflow', folded);
+    if (!folded) closeOverflowMenu();
+  } finally {
+    refittingAppBar = false;
+  }
 }
 overflowToggle.addEventListener('click', (event) => {
   event.stopPropagation();
@@ -756,6 +795,9 @@ const SNAP_SHUT = 40;           // drag narrower than this and the pane closes
 const DEFAULT_PANE_WIDTH = 240; // first-run fallback only
 const MIN_READER_WIDTH = 360;   // keep the document column usable as the pane grows
 let libraryUserClosed = LEAF_SETTINGS.libraryClosed === true;
+// Whether the narrow-window sheet is showing. Never persisted: it describes the
+// current view, not a preference, and a window opened wide has no sheet.
+let librarySheetOpen = false;
 let libraryWidth = Number.isFinite(LEAF_SETTINGS.libraryWidth) && LEAF_SETTINGS.libraryWidth > 0
   ? LEAF_SETTINGS.libraryWidth
   : DEFAULT_PANE_WIDTH;
@@ -808,8 +850,23 @@ function libraryTooNarrow() {
 function libraryIsClosed() {
   return libraryUserClosed || libraryTooNarrow();
 }
+// Slide the narrow-window sheet away. A no-op when there is no sheet up, so
+// callers don't have to check which layout they are in.
+function closeLibrarySheet() {
+  if (!librarySheetOpen) return;
+  librarySheetOpen = false;
+  applyPaneLayout();
+}
 function applyPaneLayout() {
   const closed = libraryIsClosed();
+  // Too narrow for a pane beside the page, so the library becomes a sheet over
+  // it. Grid-wise it stays closed — the sheet is out of flow — and widening the
+  // window drops it, since a pane that fits should never be an overlay.
+  const narrow = libraryTooNarrow();
+  if (!narrow) librarySheetOpen = false;
+  libraryShell.classList.toggle('library-narrow', narrow);
+  libraryShell.classList.toggle('library-overlay', narrow && librarySheetOpen);
+  libraryOpen.setAttribute('aria-expanded', narrow && librarySheetOpen ? 'true' : 'false');
   libraryShell.classList.toggle('library-closed', closed);
   // Mirror the pane state onto the header so its left zone (the tab rail) tracks
   // the library width and its dividing stroke drops when the library is closed.
@@ -829,8 +886,14 @@ function applyPaneLayout() {
 }
 // The panel button in the app bar toggles the library: closed → open at the
 // default width (never the sliver it was dragged to before snapping shut), open
-// → closed. On a too-narrow window the pane stays display-closed regardless.
+// → closed. On a too-narrow window it slides the sheet in and out instead —
+// a transient view state, so nothing about it is persisted.
 function toggleLibrary() {
+  if (libraryTooNarrow()) {
+    librarySheetOpen = !librarySheetOpen;
+    applyPaneLayout();
+    return;
+  }
   if (libraryIsClosed()) {
     libraryUserClosed = false;
     libraryWidth = DEFAULT_PANE_WIDTH;
@@ -1119,7 +1182,12 @@ function setLibraryFolder(path) {
 }
 function bindLibraryRows() {
   libraryTree.querySelectorAll('[data-open-path]').forEach((button) => {
-    button.addEventListener('click', () => send({ command: 'openRecent', path: button.dataset.openPath }));
+    button.addEventListener('click', () => {
+      send({ command: 'openRecent', path: button.dataset.openPath });
+      // Picking a document is the sheet's whole purpose, so it gets out of the
+      // way — the page it just opened is behind it.
+      closeLibrarySheet();
+    });
   });
   libraryTree.querySelectorAll('[data-nav-into]').forEach((button) => {
     button.addEventListener('click', () => setLibraryFolder(button.dataset.navInto));
@@ -3036,6 +3104,9 @@ function renderTabs(state) {
       };
     });
   });
+  // A tab opening, closing, or changing title changes what the strip needs —
+  // refold so a longer title takes a button rather than getting clipped.
+  refitAppBar();
 }
 // ---- Editing: code view + save -------------------------------------------
 // Source-of-truth is in Rust: the host owns the buffer and re-highlights. The JS

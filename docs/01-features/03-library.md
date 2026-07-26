@@ -13,6 +13,7 @@ The library is the part of leaftext that helps you find documents, not just read
 | Graph view | A force-directed map of how your documents link to each other, toggled by an icon |
 | Search | Filename and content search, scoped to the folder the pane is showing |
 | File actions | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
+| Narrow windows | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
 
 ## Views
 
@@ -163,10 +164,10 @@ Symlinks and Windows reparse points are not descended.
 
 | Behavior | Rule |
 | --- | --- |
-| Toggle | The panel button in the app bar, left of Back, opens and closes the pane |
+| Toggle | The panel button in the app bar, left of Back, opens and closes the pane. It never folds into the app bar's overflow menu, so it is reachable at every window size |
 | Snap shut | Drag narrower than 40 px |
 | Reader minimum | Reader stays at least 360 px wide |
-| Small window | Pane auto-hides if space is too tight |
+| Small window | Too tight for a pane beside the page, so the library becomes a full-width sheet over it — see [Narrow windows](#narrow-windows) |
 
 Saved library state includes:
 
@@ -175,6 +176,12 @@ Saved library state includes:
 - `library_view`
 - `graph_scope`
 - `library_project_path`
+
+### Narrow windows
+
+Below the point where a pane and a usable reader both fit, the library stops being a column beside the page and becomes a sheet over it. The same panel button opens it: it slides in from the left at full width, covering the document, with the path and search box in their usual places at the top. Picking a document dismisses it, since the page you just opened is behind it. The app bar stays above the sheet, so the button that opened it also closes it.
+
+The sheet is not saved. It describes the current view rather than a preference, so widening the window puts the pane back beside the page and there is no sheet to restore.
 
 ## Toggle
 

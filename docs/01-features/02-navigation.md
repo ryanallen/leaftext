@@ -61,6 +61,12 @@ Tab cycling is `Ctrl`-based on every platform, including macOS. Mouse side butto
 - Closing the last tab returns to the home screen. So does clicking the leaf mark at the left of the app bar, which brightens on hover to show it is a control.
 - Opening a file while leaftext is already running (e.g. Explorer "Open with", or double-clicking a `.md`/`.xml`) reuses the running window — the file opens as a new tab and the window comes to the front, rather than launching a second copy of the app.
 
+### When the bar runs out of room
+
+Tabs are never squeezed to make space for the toolbar. As the strip fills, the app bar's buttons fold into a chevron menu one at a time, right to left: the trailing actions first, then Back and Forward, then the window controls. Two never fold — the leaf, which is the way home, and the [library](03-library.md#layout) button, which on a narrow window is the only way to reach the library at all. Widening the window puts each one back where it came from.
+
+While the [library sheet](03-library.md#narrow-windows) is up it covers the page, so the tab strip goes with it.
+
 ## History
 
 ### Files
