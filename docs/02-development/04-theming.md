@@ -49,6 +49,8 @@ Tinted surfaces are not painted as flat fills. A fine dot grid — a 2px lattice
 | `--reader-surface-grain` | Lighter, for the reading view's code blocks, outline panel, table headers, and the tinted table rows — body text sits on these |
 | `--reader-row-grain` | The *untinted* table rows. Dark appearances only; transparent on light ones |
 
+The grain marks cells within a page, not pages themselves. The [code view](../01-features/07-editing.md#code-view) is a tinted surface that takes none: it fills the whole reading area, where a lattice reads as a dithered editor rather than a raised block. A fenced block inside the reading view still takes it.
+
 On a dark appearance both table stripes are grained, so a table reads as a single texture banded light and dark rather than speckled rows alternating with flat ones.
 
 `--reader-row-grain` is the one grain that **lifts** rather than darkens, because the untinted row is the darkest surface in the app and darkening it has nowhere to go: a black dot shifts `#0d1117` by about 10 levels but `#2a2d3d` by about 32, so the texture lands faint on one family and heavy on another. A white dot at a low alpha moves every dark family by a steady ~15.

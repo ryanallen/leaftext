@@ -3097,13 +3097,13 @@ body.library-resizing {
    the rules that set those fills: each uses the `background:` shorthand, which at
    equal specificity would blank the image. A rendered Mermaid diagram and the
    frontmatter table drop it on their own — both clear the fill at higher
-   specificity, taking the grain with it. */
+   specificity, taking the grain with it. Cells only — the code view is a whole page,
+   so graining it dithers the editor. */
 .document-body .document-outline,
 .document-body .tei-front,
 .document-body pre,
 .document-body th,
-.document-body tr:nth-child(2n) td,
-.code-view {
+.document-body tr:nth-child(2n) td {
   background-image: radial-gradient(circle, var(--reader-surface-grain) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;

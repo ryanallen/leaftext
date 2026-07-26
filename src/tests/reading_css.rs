@@ -425,8 +425,7 @@ fn reading_surfaces_carry_the_chrome_dot_grain() {
         ".document-body .tei-front,",
         ".document-body pre,",
         ".document-body th,",
-        ".document-body tr:nth-child(2n) td,",
-        ".code-view {",
+        ".document-body tr:nth-child(2n) td {",
         "radial-gradient(circle, var(--reader-surface-grain) 0 0.6px, transparent 0.7px);",
         "background-size: 2px 2px;",
         "background-attachment: fixed;",
@@ -443,11 +442,20 @@ fn reading_surfaces_carry_the_chrome_dot_grain() {
         ".document-body .document-outline {",
         ".document-body pre {",
         ".document-body th {",
-        ".code-view {",
     ] {
         let at = css.find(fill).unwrap_or_else(|| panic!("{fill} rule"));
         assert!(at < grain, "{fill} must be declared before the grain rule");
     }
+
+    // The code view is a whole page, not a cell — graining it dithers the editor.
+    let selectors = css[..grain]
+        .rfind("*/")
+        .map(|at| &css[at..grain])
+        .expect("the grain rule is commented");
+    assert!(
+        !selectors.contains(".code-view"),
+        "the code view must not be in the grain rule's selector list"
+    );
 }
 
 #[test]
