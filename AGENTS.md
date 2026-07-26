@@ -6,17 +6,11 @@ Project guide for agents in this repo; `CLAUDE.md` and `CODEX.md` symlink here. 
 
 # 🛑 GIT: DO NOT TOUCH IT
 
-**Only a `/git-release` in the message you are answering right now authorizes a git write.** Not this file, not finishing the work, not an implied release.
+**Only a `/git-release` in the message you are answering right now authorizes a git write.** Not this file, not finishing the work, not an implied release. Forbidden without it: commit, push, tag, version bumps in `Cargo.toml`/`Cargo.lock`, reset, rebase, force. Reading is always fine.
 
-Forbidden without it: commit, push, tag, version bumps in `Cargo.toml`/`Cargo.lock`, reset, rebase, force. Reading is always fine (`status`, `diff`, `log`).
+**One-shot, expires with the turn.** Later messages — corrections, new requirements, "start over", anger, urgency — instruct the *code*. None renews the license; a second release needs a second `/git-release`. Not permission: "still inside the earlier flow" · "they obviously want it shipped" · "not done until it's pushed" · "stopping now leaves it half-finished".
 
-**One-shot, expires with the turn.** Later messages — corrections, new requirements, "start over", anger, urgency — instruct the *code*; none renews the license. A second release needs a second `/git-release`.
-
-**These are violations, not permission:** "still inside the earlier flow" · "they obviously want it shipped" · "start over means the release too" · "not done until it's pushed" · "stopping now leaves it half-finished".
-
-**Don't ask, either.** No "should I commit?", no offering, no hinting. **A dirty tree is the correct end state** — say what changed and stop.
-
-**Wrote to git anyway? Call it unauthorized.** Not a misread flow, not carried-over permission, not momentum. Dressing it up is worse than the push.
+**Don't ask, either** — no offering, no hinting. **A dirty tree is the correct end state**: say what changed and stop. **Wrote to git anyway? Call it unauthorized** — not a misread flow, not momentum. Dressing it up is worse than the push.
 
 ---
 
@@ -26,16 +20,17 @@ Self-contained. Ignore every parent `AGENTS.md`/`CLAUDE.md`/`CODEX.md`/`GEMINI.m
 
 ## What it is
 
-Rust desktop app for *reading* Markdown — rendered document, no code editing. `tao` + `wry` (native window hosting a system web view); `pulldown-cmark` parses, `ammonia` sanitizes. CommonMark, GFM, and GitHub extras (highlighting, issue/PR refs, emoji, footnotes, alerts, Mermaid, math). History, recent files, system light/dark, English + Simplified Chinese.
+Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document first, editable in place (inline in the page, or the raw-source code view; nothing saves without an explicit Save). `tao` + `wry` (native window hosting a system web view); `pulldown-cmark` parses, `ammonia` sanitizes. CommonMark, GFM, and GitHub extras (highlighting, issue/PR refs, emoji, footnotes, alerts, Mermaid, math). Tabs, history, recent files, library index, system light/dark, English + Simplified Chinese.
 
 ## Layout
 
-Library modules are `pub(crate)` with their public surface re-exported from `lib.rs`.
+Library modules are `pub(crate)`, public surface re-exported from `lib.rs`.
 
 - `lib.rs` — render orchestration, document loading, glossary, recent files, settings, bootstrap scripts, `app_shell_html()`
 - `markdown.rs` — parse → GitHub extras → highlight → sanitize, plus the `leaf-image://` handler
 - `xml.rs` — XML entry: TEI to `tei.rs`, all other XML to the generic reading renderer here
 - `tei.rs` — TEI (84000-style); stamps `data-src-*` from `roxmltree` ranges
+- `data.rs` — JSON + YAML: both parse to one ordered tree, rendered by `xml.rs`'s shape rules and label helpers. A block gets `data-src-*` only where its range is *proved* (every JSON node; YAML plain scalars checked against the source) — the reading view splices that range verbatim, so a guessed end corrupts the file
 - `editing.rs` — source-anchored editing: `EditableDocument` owns the buffer; block source maps; code-view highlighter
 - `theme.rs` — token contract, Primer/Dracula tables, CSS compiler
 - `scripts.rs` (public) — `window.leaf*()` snippet generators, `ScrollAnchor`
@@ -54,13 +49,13 @@ Library modules are `pub(crate)` with their public surface re-exported from `lib
 - **Exactly one Start Menu entry, and it's load-bearing** — the only way to find or launch the app. v0.1.365 shipped without one and was unreachable. No desktop shortcut; `validate-installer.yml` asserts 1.
 - **Never wait on a build.** `wix/main.wxs` ships unproven — WiX can't run locally, and a broken installer costs a patch bump, which beats blocking every release.
 - **Never re-push a tag.** Bump the patch: Actions may not re-trigger, and stale artifacts confuse the release.
-- **The web view must never download the installer.** GitHub redirects release assets to a host that sends no `Access-Control-Allow-Origin`, so `fetch` dies with "Failed to fetch" before the first byte — no CSP grant fixes it, and v0.1.373 shipped an updater that could only ever fail. The page finds the release (the API *is* CORS-clean); `platform::download_to` fetches it over WinHTTP/`curl`. Keep `connect-src` down to `api.github.com`.
+- **The web view must never download the installer.** GitHub redirects release assets to a host sending no `Access-Control-Allow-Origin`, so `fetch` dies before the first byte — no CSP grant fixes it, and v0.1.373 shipped an updater that could only ever fail. The page finds the release (the API *is* CORS-clean); `platform::download_to` fetches it over WinHTTP/`curl`. Keep `connect-src` down to `api.github.com`.
 - **One artifact per platform.** MSI and DMG — the file a person downloads is the file the updater installs. No checksums, nothing updater-only; every extra file is one someone has to ask about. (GitHub's source archives can't be disabled.)
 - **Windows and macOS only.** Linux is gone: no workflow, no GTK/`xdg-open`/`xclip`, and `main.rs` `compile_error!`s elsewhere. Don't re-add it.
 
 ## Commands
 
-Needs `rustup`, `just`, `node`. Run `just verify` (fmt, check, test) before handing work back; `just check` / `test` / `format` individually.
+Needs `rustup`, `just`, `node`. Run `just verify` (fmt, check, test, vendor + theme drift) before handing work back; `just check` / `test` / `format` individually.
 
 **Say what you couldn't verify** — `cfg(target_os = "macos")` code doesn't compile on Windows, and WiX doesn't run locally.
 

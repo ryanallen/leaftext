@@ -4798,6 +4798,7 @@ function renderState() {
     <section class="empty-state">
       <p class="kicker">${escapeText(window.leafLocale.t('empty.kicker'))}</p>
       <h1>${escapeText(window.leafLocale.t('empty.title'))}</h1>
+      <p class="empty-subtitle">${escapeText(window.leafLocale.t('empty.subtitle'))}</p>
       <p class="empty-description">${escapeText(window.leafLocale.t(emptyDescriptionKey))}</p>
       <button type="button" class="primary-open">${escapeText(window.leafLocale.t('actions.chooseFile'))}</button>
       ${recent.length ? `<div class="recent"><h2>${escapeText(window.leafLocale.t('recent.headingWithCount', { count: window.leafLocale.formatNumber(recent.length) }))}</h2><ol>${recent.map((path) => `<li><button type="button" title="${escapeAttr(window.leafLocale.t('recent.openTitle', { path }))}" data-path="${escapeAttr(path)}" data-reveal-path="${escapeAttr(path)}">${escapeText(path)}</button></li>`).join('')}</ol></div>` : `<p class="empty-help">${escapeText(window.leafLocale.t('empty.noRecent'))}</p>`}

@@ -1,6 +1,6 @@
 # Minimap
 
-> leaftext's minimap is a shrunken clone of the rendered document in a side rail — real, tiny text, not abstract bars — with a live viewport indicator. Click to jump to any section; drag the indicator to scroll.
+> Take in the whole page at once. A tiny version of your document runs down the side — real text, not abstract bars — with a marker showing where you are. Click to jump to any section; drag the marker to scroll.
 
 The minimap is a scaled side-rail showing the actual document beside the reading view. It sits outside the page rather than on it — the page's border stops 4 px short and the rail stands on the same textured chrome as the [library](03-library.md) pane and the app bar, held off the window edge by the same gutter the page card is. It gives you spatial orientation in long documents and lets you jump to any section by clicking or dragging. Because it is a real rendering of the page, you can recognize where you are from the shape of the text itself: a heading, a code block, a verse, a dense paragraph.
 
@@ -23,7 +23,7 @@ A `requestAnimationFrame`-throttled loop writes those on scroll, so the rail sta
 
 ## Whether the rail appears
 
-The Rust side produces a small `DocumentMinimap` for each document whose only job now is to report a positive line count: an empty or zero-line document reports `0` and the rail is skipped entirely. [XML documents](01-rendering.md#xml) report their count from the rendered block HTML (they have no Markdown source to line-scan), so an opened `.xml` file gets the same real-text rail as a Markdown file — the thumbnail itself is always the live clone, whatever the source format.
+The Rust side produces a small `DocumentMinimap` for each document whose only job now is to report a positive line count: an empty or zero-line document reports `0` and the rail is skipped entirely. [XML](01-rendering.md#xml) and [JSON/YAML](01-rendering.md#data-files-json-and-yaml) documents report their count from the rendered block HTML (they have no Markdown source to line-scan), so an opened `.xml`, `.json`, or `.yaml` file gets the same real-text rail as a Markdown file — the thumbnail itself is always the live clone, whatever the source format.
 
 The [code view](07-editing.md#code-view) uses this same minimap over the raw source: the identical rail, thumbnail clone, and drag/click behavior, mirroring the highlighted source text instead of the rendered page. There it renders regardless of the setting below, because with no native scrollbar it is the code view's vertical scroll affordance.
 
@@ -41,7 +41,7 @@ On screens narrower than 600 px the minimap gutters shrink alongside the preview
 
 ## Toggling the minimap
 
-The minimap can be toggled from **Settings** in the app bar. The setting is persisted across restarts via `{config_dir}/leaftext/settings.json` as the `minimap_enabled` field, so leaftext reopens in the same state you left it.
+The minimap can be toggled from **Settings** in the app bar. The setting is persisted across restarts via `{config_dir}/leaftext/settings.json` as the `minimap_enabled` field, so Leaf Text reopens in the same state you left it.
 
 When the minimap is off, its column collapses to zero and the page widens back out to the window gutter, so no empty band remains to the right of the document. The reader's native scrollbar comes back as a thin one at that point: with no rail there would otherwise be nothing at all showing where you are in a long page. While the rail is present the scrollbar stays hidden, because the rail is that indicator.
 

@@ -124,12 +124,12 @@ pub(crate) fn collect_pager_entries_into(dir: &Path, into: &mut Vec<PagerEntry>)
         if path.is_dir() {
             subdirs.push(path);
         } else if path.file_name().and_then(|n| n.to_str()).is_some() {
-            // Markdown and TEI XML are both pages; README (landing page) and
+            // Every format the app renders is a page; README (landing page) and
             // GLOSSARY (the sheet) are excluded by stem.
             let is_doc = path
                 .extension()
                 .and_then(|e| e.to_str())
-                .is_some_and(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("xml"));
+                .is_some_and(is_pager_page_extension);
             let stem = path
                 .file_stem()
                 .and_then(|s| s.to_str())
@@ -183,13 +183,22 @@ pub(crate) fn by_pager_name(a: &PathBuf, b: &PathBuf) -> std::cmp::Ordering {
     an.cmp(&bn)
 }
 
-/// Turn an on-disk name into a display label (matches the web `label()`): drop
-/// a trailing `.md`/`.xml`, collapse `-`/`_` runs to spaces, title-case each
+/// Extensions the pager walks as sequential pages: every format the reading view
+/// renders, so Prev/Next covers a folder rather than part of it.
+pub(crate) fn is_pager_page_extension(extension: &str) -> bool {
+    matches!(
+        extension.to_ascii_lowercase().as_str(),
+        "md" | "xml" | "json" | "yaml" | "yml"
+    )
+}
+
+/// Turn an on-disk name into a display label (matches the web `label()`): drop a
+/// trailing page extension, collapse `-`/`_` runs to spaces, title-case each
 /// word. e.g. `book-1-words--kangyur` -> `Book 1 Words Kangyur`.
 pub(crate) fn pager_label(raw: &str) -> String {
     let base = raw
         .rsplit_once('.')
-        .filter(|(_, ext)| ext.eq_ignore_ascii_case("md") || ext.eq_ignore_ascii_case("xml"))
+        .filter(|(_, ext)| is_pager_page_extension(ext))
         .map(|(stem, _)| stem)
         .unwrap_or(raw);
     let mut spaced = String::with_capacity(base.len());

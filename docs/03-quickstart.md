@@ -1,13 +1,13 @@
 # Quickstart
 
-> Open a Markdown or XML file, learn the core controls, and get comfortable with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), the [minimap](01-features/04-minimap.md), and the [library](01-features/03-library.md) in a few minutes.
+> Open your first file and get comfortable with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), the [minimap](01-features/04-minimap.md), and the [library](01-features/03-library.md) — a few minutes, start to finish.
 
-leaftext is meant to be usable immediately. This page shows the smallest useful path through the app: open a file, read it, move around, and reopen it later.
+There's nothing to set up. No account, no folder to designate, no plugins to choose. Point Leaf Text at a file you already have and start reading. This page walks the shortest useful path: open a file, read it, move around, and come back to it later.
 
 ## Start
 
 1. Press `Ctrl+O` on Windows or `Cmd+O` on macOS.
-2. Pick any `.md` or `.xml` file.
+2. Pick any `.md`, `.xml`, `.json`, `.yaml`, or `.yml` file.
 3. Scroll the document.
 4. Use the minimap on the right to jump.
 5. Open another file to create a new tab.
@@ -16,7 +16,7 @@ leaftext is meant to be usable immediately. This page shows the smallest useful 
 
 ```mermaid
 flowchart LR
-    A[Launch leaftext] --> B[Open a .md or .xml file]
+    A[Launch Leaf Text] --> B[Open a .md, .xml, .json, or .yaml file]
     B --> C[Read in main pane]
     C --> D[Jump with minimap]
     C --> E[Open another file]
@@ -29,9 +29,9 @@ flowchart LR
 | Method | How |
 | --- | --- |
 | Keyboard | `Ctrl+O` / `Cmd+O` |
-| Drag and drop | Drop a `.md` or `.xml` file onto the window |
+| Drag and drop | Drop a `.md`, `.xml`, `.json`, `.yaml`, or `.yml` file onto the window |
 | Recent files | Click a file on the no-file home screen |
-| Command line / Open with | Launch leaftext with a file path |
+| Command line / Open with | Launch Leaf Text with a file path |
 
 > [!TIP]
 > Recent files keeps the last 8 opened files, so reopening a doc is usually one click.
@@ -41,7 +41,7 @@ flowchart LR
 | Area | What it does |
 | --- | --- |
 | Tab bar | Keeps multiple documents open |
-| Main reader | Shows the rendered Markdown or [XML](01-features/01-rendering.md#xml) |
+| Main reader | Shows the rendered Markdown, [XML](01-features/01-rendering.md#xml), or [JSON/YAML](01-features/01-rendering.md#data-files-json-and-yaml) |
 | Outline | A collapsed list of the document's headings at the top, labelled with the document's line count, for jumping to a section |
 | Minimap | Shows the whole document and your current viewport |
 | Back / Forward | Moves through document and scroll history |
@@ -53,7 +53,7 @@ flowchart LR
 
 ### New tab
 
-Press `Ctrl+O` / `Cmd+O` again. leaftext opens the next file in a new tab instead of replacing the current one.
+Press `Ctrl+O` / `Cmd+O` again. Leaf Text opens the next file in a new tab instead of replacing the current one.
 
 ### Jump
 
@@ -96,7 +96,7 @@ Save this as `demo.md` and open it:
 
 ```rust
 fn main() {
-    println!("leaftext");
+    println!("Leaf Text");
 }
 ```
 ~~~

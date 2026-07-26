@@ -6,6 +6,8 @@ mod tei;
 pub(crate) use tei::*;
 mod xml;
 pub(crate) use xml::*;
+mod data;
+pub(crate) use data::*;
 mod theme;
 pub(crate) use markdown::*;
 pub use markdown::{is_local_image_path, local_image_protocol_response, local_image_source_dir};
@@ -181,20 +183,20 @@ pub struct OpenedDocument {
     pub html: String,
     pub minimap: DocumentMinimap,
     /// Source format, so the reading view knows how to anchor edits. Markdown
-    /// blocks carry ranges in `blocks` (positional on the DOM); XML blocks carry
-    /// `data-src-*` inline in `html`.
+    /// blocks carry ranges in `blocks` (positional on the DOM); the tree formats
+    /// carry `data-src-*` inline in `html`.
     pub format: DocumentFormat,
     /// Top-level block source ranges in document order, for in-viewer editing.
-    /// Markdown only; empty for XML (ranges are stamped inline on the HTML).
+    /// Markdown only; the tree formats stamp ranges inline on the HTML.
     #[serde(default)]
     pub blocks: Vec<BlockSpan>,
     /// Source byte offset of each list task marker's state char, in document
-    /// order (see [`task_marker_offsets`]). Empty for XML.
+    /// order (see [`task_marker_offsets`]). Markdown only.
     #[serde(default)]
     pub tasks: Vec<usize>,
-    /// The raw source the block ranges index into. Sent for XML (TEI can't be
-    /// reconstructed from the HTML); empty for Markdown, which round-trips from
-    /// the DOM.
+    /// The raw source the block ranges index into. Sent for the tree formats
+    /// (TEI and a data file can't be reconstructed from the HTML); empty for
+    /// Markdown, which round-trips from the DOM.
     #[serde(default)]
     pub source: String,
 }
@@ -279,11 +281,21 @@ fn normalize_recent_path(path: &Path) -> PathBuf {
 
 pub fn load_document(path: impl AsRef<Path>) -> io::Result<OpenedDocument> {
     let path = path.as_ref();
-    if path.extension().and_then(|e| e.to_str()) == Some("xml") {
-        return load_xml_document(path);
+    let source = fs::read_to_string(path)?;
+    Ok(opened_document_from_source(&source, path))
+}
+
+/// Render source already in hand, picking the renderer by the path's format: the
+/// counterpart to [`load_document`] for live reload's hash-gated bytes and the
+/// code view's unsaved edits. The one routing table, because a second one drifts.
+pub fn opened_document_from_source(source: &str, path: impl AsRef<Path>) -> OpenedDocument {
+    let path = path.as_ref();
+    match DocumentFormat::from_path(path) {
+        DocumentFormat::Xml => opened_document_from_xml(source, path),
+        DocumentFormat::Json => opened_document_from_json(source, path),
+        DocumentFormat::Yaml => opened_document_from_yaml(source, path),
+        DocumentFormat::Markdown => opened_document_from_markdown(source, path),
     }
-    let markdown = fs::read_to_string(path)?;
-    Ok(opened_document_from_markdown(&markdown, path))
 }
 
 /// Load an XML document from disk and render it to an `OpenedDocument`. TEI and
@@ -297,19 +309,51 @@ pub fn load_xml_document(path: impl AsRef<Path>) -> io::Result<OpenedDocument> {
 /// Render an XML string into an `OpenedDocument`: TEI through the TEI renderer,
 /// any other XML through the generic one.
 pub fn opened_document_from_xml(xml: &str, path: impl AsRef<Path>) -> OpenedDocument {
-    let path = path.as_ref();
+    opened_document_from_tree(xml, path.as_ref(), DocumentFormat::Xml, render_xml_document)
+}
+
+/// Render a JSON string into an `OpenedDocument`.
+pub fn opened_document_from_json(json: &str, path: impl AsRef<Path>) -> OpenedDocument {
+    opened_document_from_tree(
+        json,
+        path.as_ref(),
+        DocumentFormat::Json,
+        render_json_document,
+    )
+}
+
+/// Render a YAML string into an `OpenedDocument`.
+pub fn opened_document_from_yaml(yaml: &str, path: impl AsRef<Path>) -> OpenedDocument {
+    opened_document_from_tree(
+        yaml,
+        path.as_ref(),
+        DocumentFormat::Yaml,
+        render_yaml_document,
+    )
+}
+
+/// Render a document that is a tree rather than prose — XML, JSON, YAML — into an
+/// `OpenedDocument`. They differ only in the reader that turns source into HTML;
+/// the shell around it is the same, and none of them can be reconstructed from
+/// the DOM, so each sends its `source` along.
+fn opened_document_from_tree(
+    source: &str,
+    path: &Path,
+    format: DocumentFormat,
+    render: impl Fn(&str, Option<&str>) -> (Option<String>, String, Vec<BlockSpan>),
+) -> OpenedDocument {
     let render_path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
 
     // A document with no title of its own is titled by its file name, which the
-    // generic renderer also heads the page with (a sitemap has nowhere else to
-    // say what it is).
+    // renderer also heads the page with (a sitemap, or a lock file, has nowhere
+    // else to say what it is).
     let fallback_title = render_path
         .file_stem()
         .and_then(|stem| stem.to_str())
         .and_then(plain_document_title)
         .map(|stem| xml_fallback_title(&stem));
 
-    let (title, body_html, blocks) = render_xml_document(xml, fallback_title.as_deref());
+    let (title, body_html, blocks) = render(source, fallback_title.as_deref());
 
     let title = title
         .or(fallback_title)
@@ -327,7 +371,7 @@ pub fn opened_document_from_xml(xml: &str, path: impl AsRef<Path>) -> OpenedDocu
         None => body_html,
     };
 
-    // Chart the rendered block HTML (no Markdown source to line-scan for TEI),
+    // Chart the rendered block HTML (there is no Markdown source to line-scan),
     // before wrapping in the <article>/pager shell so the scan sees only content.
     let minimap = build_minimap_model_from_html(&body_html);
 
@@ -341,10 +385,10 @@ pub fn opened_document_from_xml(xml: &str, path: impl AsRef<Path>) -> OpenedDocu
         path: path.display().to_string(),
         html: article,
         minimap,
-        format: DocumentFormat::Xml,
+        format,
         blocks,
         tasks: Vec::new(),
-        source: xml.to_string(),
+        source: source.to_string(),
     }
 }
 
@@ -1018,7 +1062,7 @@ fn locale_bootstrap_script() -> &'static str {
       'actions.properties': 'Properties',
       'actions.getInfo': 'Get Info',
       'actions.delete': 'Delete',
-      'empty.description': 'Open any Markdown file for a calm, focused read. Turn over a new leaf.',
+      'empty.description': 'Open a file and read it in peace. It stays on your device, in plain text you own.',
       'empty.description.incised': 'For two thousand years knowledge was incised on palm leaves — talipot and palmyra, dried and smoke-cured. Turn over a new one.',
       'empty.description.stylus': 'Scribes cut letters into palm leaves with a stylus, then rubbed in soot so the words rose to the surface. Read on.',
       'empty.description.bound': 'A palm-leaf book was threaded through a single hole and bound between wooden covers. Open yours.',
@@ -1029,8 +1073,9 @@ fn locale_bootstrap_script() -> &'static str {
       'empty.description.bali': 'In Bali, Brahmin scribes still rewrite the sacred texts onto palm leaves by hand.',
       'empty.description.printing': 'The printing press ended the long cycle of copying palm leaf to palm leaf in the early 1800s.',
       'empty.kicker': 'Leaf Text',
-      'empty.noRecent': 'Recent files will appear here after you open a document.',
-      'empty.title': 'Readable XML and Markdown',
+      'empty.noRecent': 'Files you open show up here, so you can pick up where you left off.',
+      'empty.title': 'Refine your mind.',
+      'empty.subtitle': 'Your thoughts, secure and free.',
       'errors.openFailed': 'Failed to open {path}: {reason}',
       'format.fileSizeUnknown': 'Unknown size',
       'library.title': 'Library',
@@ -1151,7 +1196,7 @@ fn locale_bootstrap_script() -> &'static str {
       'actions.properties': '属性',
       'actions.getInfo': '显示简介',
       'actions.delete': '删除',
-      'empty.description': '打开任意 Markdown 文件，宁静专注地阅读，翻开新的一页。',
+      'empty.description': '打开一个文件，静心阅读。它只留在你的设备上，是你自己拥有的纯文本。',
       'empty.description.incised': '两千年来，知识被刻写在棕榈叶上——经晾干烟熏的贝叶棕与糖棕。翻开新的一叶。',
       'empty.description.stylus': '抄写者以铁笔将文字刻入棕榈叶，再揉入烟灰，让字迹浮现。继续读下去。',
       'empty.description.bound': '贝叶经以一线穿孔串连，夹在木质封板之间。翻开你的那一卷。',
@@ -1162,8 +1207,9 @@ fn locale_bootstrap_script() -> &'static str {
       'empty.description.bali': '在巴厘岛，婆罗门抄经者至今仍以手将圣典重写于棕榈叶上。',
       'empty.description.printing': '十九世纪初，印刷术终结了贝叶之间世代相传的抄写。',
       'empty.kicker': 'Leaf Text',
-      'empty.noRecent': '打开文档后，最近文件会显示在这里。',
-      'empty.title': '易读的 XML 与 Markdown',
+      'empty.noRecent': '你打开过的文件会显示在这里，方便随时接着读。',
+      'empty.title': '打磨你的思想。',
+      'empty.subtitle': '你的思绪，安全而自由。',
       'errors.openFailed': '无法打开 {path}：{reason}',
       'format.fileSizeUnknown': '大小未知',
       'library.title': '文库',

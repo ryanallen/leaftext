@@ -1,8 +1,8 @@
 # Rendering
 
-> leaftext reads two formats. It renders CommonMark and GFM Markdown with the GitHub-style extras people actually use — code fences, Mermaid, math, alerts, footnotes, emoji, and local images — and it renders XML: 84000-style TEI translations through a renderer that knows the format, and any other XML through a generic one.
+> Read without the noise. Leaf Text renders your Markdown the way GitHub does — code, diagrams, math, callouts, footnotes, emoji, your own images — and opens your structured files too: 84000-style TEI translations through a reader that knows the format, any other XML through a generic one, and JSON or YAML as readable pages.
 
-leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`, `.mdown`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. `.xml` takes a parallel path — parsed with `roxmltree`, then routed by what the file contains: a TEI document goes to the [TEI renderer](#tei-xml-84000-translations), anything else to the [generic XML renderer](#any-xml). Both produce the same HTML shell. Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the XML sections are described rather than demonstrated, since a Markdown page cannot embed a live XML document.
+Leaf Text picks a pipeline from the file extension. Markdown (`.md`, `.markdown`, `.mdown`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. `.xml` takes a parallel path — parsed with `roxmltree`, then routed by what the file contains: a TEI document goes to the [TEI renderer](#tei-xml-84000-translations), anything else to the [generic XML renderer](#any-xml). `.json`, `.yaml`, and `.yml` go to the [data renderer](#data-files-json-and-yaml), which reads the same shapes the generic XML renderer does. All of them produce the same HTML shell. Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the XML and data sections are described rather than demonstrated, since a Markdown page cannot embed a live document of another format.
 
 ## Summary
 
@@ -16,6 +16,7 @@ leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`,
 | Safety | Sanitized HTML allowlist |
 | [XML](#any-xml) | Any `.xml` file: sections, label/value fields, record tables, links |
 | [TEI XML](#tei-xml-84000-translations) | 84000 Buddhist-translation format; headings, paragraphs, verse, footnotes |
+| [JSON and YAML](#data-files-json-and-yaml) | Any `.json`, `.yaml`, or `.yml` file, read by the same shape rules as XML |
 
 ## Pipeline
 
@@ -24,13 +25,16 @@ flowchart LR
     A[Markdown file] --> B[pulldown-cmark]
     B --> C[GitHub-style extras]
     C --> D[ammonia sanitizer]
-    D --> E[Rendered document in leaftext]
+    D --> E[Rendered document in Leaf Text]
     F[XML file] --> G[roxmltree DOM]
     G --> H{TEI?}
     H -->|yes| I[TEI renderer]
     H -->|no| J[Generic XML renderer]
     I --> E
     J --> E
+    K[JSON or YAML file] --> L[Ordered value tree]
+    L --> M[Data renderer]
+    M --> E
 ```
 
 ## Headings
@@ -183,7 +187,7 @@ A table cell whose entire content is a task-list marker — `[ ]` or `[x]` — r
 
 ## Buttons (Leaf extension)
 
-This one is a leaftext addition, not standard Markdown. Wrap an ordinary inline
+This one is a Leaf Text addition, not standard Markdown. Wrap an ordinary inline
 link in braces and it renders as a button styled like the app's action controls,
 linking wherever the link points. The more braces, the more prominent the button:
 
@@ -207,7 +211,7 @@ literal, so this page can show the syntax without turning it into a button.
 
 Image paths are resolved against the open file: relative paths (including `../` at any depth), absolute paths, and `file://` URLs all load. The title shows on hover:
 
-![Leaf Text](../../imgs/leaftext.png "Leaf Text — Readable XML and Markdown")
+![Leaf Text](../../imgs/leaftext.png "Leaf Text — refine your mind")
 
 Allowed image types include SVG, PNG, JPEG, GIF, APNG, AVIF, BMP, ICO, and WebP.
 
@@ -225,7 +229,7 @@ $$
 
 ## Mermaid diagrams
 
-`mermaid` fences are rendered with the bundled Mermaid runtime, fully offline. If Mermaid fails, leaftext leaves the source visible instead of a blank block.
+`mermaid` fences are rendered with the bundled Mermaid runtime, fully offline. If Mermaid fails, Leaf Text leaves the source visible instead of a blank block.
 
 ```mermaid
 flowchart TD
@@ -246,7 +250,7 @@ sequenceDiagram
 
 ## Emoji
 
-leaftext renders GitHub shortcodes:
+Leaf Text renders GitHub shortcodes:
 
 - `:rocket:` → :rocket:
 - `:tada:` → :tada:
@@ -319,7 +323,7 @@ Tucked away until you open it.
 
 ## Inline HTML
 
-leaftext sanitizes raw HTML with `ammonia`: a curated set of **safe** tags is allowed; the rest is stripped, keeping the inner text.
+Leaf Text sanitizes raw HTML with `ammonia`: a curated set of **safe** tags is allowed; the rest is stripped, keeping the inner text.
 
 Beyond plain Markdown: <ins>inserted</ins>, <s>struck</s>, and <mark>highlighted</mark> text. Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Press <kbd>Ctrl</kbd> + <kbd>F</kbd> to search. An <abbr title="HyperText Markup Language">HTML</abbr> abbreviation shows its title on hover.
 
@@ -370,7 +374,7 @@ ___
 
 ## Simplified Chinese
 
-leaftext offers an English and a Simplified Chinese interface, and renders CJK content without altering it:
+Leaf Text offers an English and a Simplified Chinese interface, and renders CJK content without altering it:
 
 > 阅读，而非编辑。Leaf Text 只显示渲染后的 Markdown 文档。
 
@@ -381,7 +385,7 @@ leaftext offers an English and a Simplified Chinese interface, and renders CJK c
 
 ## XML
 
-leaftext opens `.xml` files alongside `.md` files — the same "Open Document" dialog accepts both, and the [library](03-library.md) indexes both. Which XML renderer runs is decided by the file itself, not by its name: a document with a `<TEI>` root or a `<teiHeader>` goes to the [TEI renderer](#tei-xml-84000-translations); everything else goes to the generic one.
+Leaf Text opens `.xml` files alongside `.md` files — the same "Open Document" dialog accepts both, and the [library](03-library.md) indexes both. Which XML renderer runs is decided by the file itself, not by its name: a document with a `<TEI>` root or a `<teiHeader>` goes to the [TEI renderer](#tei-xml-84000-translations); everything else goes to the generic one.
 
 Doctypes are read and ignored, so plists, XHTML, and DocBook open normally. A file that is not well-formed renders as a single line naming the parse position — `XML parse error. expected 'b' tag, not 'a' at 1:7` — instead of a blank page.
 
@@ -426,6 +430,32 @@ TEI documents have conventions worth following, so they get their own renderer.
 Both XML renderers walk the `roxmltree` DOM and produce the same HTML structure the Markdown pipeline outputs, so themes, footnotes, minimap, pager, and [inline editing](07-editing.md#inline-editing-the-reading-view) all work unchanged for XML documents.
 
 The web reader on this site (`site/reader.js`) renders `.xml` through `renderTEI()` from `tei-xml.js`, which uses `DOMParser` — the TEI path only, fully offline. The generic XML renderer is app-side.
+
+## Data files (JSON and YAML)
+
+Leaf Text opens `.json`, `.yaml`, and `.yml` as pages. A data file is a tree of mappings, lists, and values rather than prose, so it is read by the same shape rules as [any XML](#any-xml) — and shares that renderer's labels, so a sitemap and the JSON next to it name the same field the same way.
+
+| Shape in the file | Rendered as |
+|---|---|
+| A run of keys holding single values | A label/value field. Consecutive ones share one two-column list, so labels line up down the page |
+| Two or more list entries with the same keys, made only of short values | A [table](#tables), one row per entry, columns in first-seen order |
+| A key holding a mapping or a list | A section, headed by the key name |
+| A list of single values | A bulleted list |
+| A value that is entirely a URL | A link |
+| `null`, or a value that is empty | Nothing at all, like an empty XML element |
+
+Key names are read as words, so `runs-on` renders as "Runs on" and `lastBuildDate` as "Last build date"; the same spelled-out names apply (`loc` → "URL", `lastmod` → "Last modified"). A root `title` or `name` key titles the document and heads the page, and is not repeated in the body; a file that has neither is headed and titled by its file name. Headings get the same slugs Markdown headings do, so the [outline](02-navigation.md#outline), the [minimap](04-minimap.md), and the [pager](02-navigation.md#pager) all work as they do elsewhere.
+
+**JSON** is read by Leaf Text's own reader, so nothing about the file is normalized on the way in: keys stay in the order the file wrote them, and numbers display exactly as written rather than being routed through a float. It is deliberately forgiving of two things that are not strictly JSON but are everywhere in the `.json` files people actually open, like `tsconfig.json` and editor settings: `//` and `/* */` comments, and a trailing comma before a closing brace or bracket.
+
+**YAML** is parsed with `yaml-rust2`. An `*alias` is resolved to what its `&anchor` held, and a `<<:` merge key is spliced into the mapping that used it — so a job that merges shared defaults shows those settings under the job, not as a field named `<<`. Keys already written win, which is what merging means. Several documents in one stream (separated by `---`) read as a list of them, so a multi-document Kubernetes manifest renders as a table of its resources.
+
+A file that will not parse renders a single line naming the position — `JSON parse error. expected ',' or '}' after the value (line 12)` — instead of a blank page. A file nested hundreds of levels deep is refused the same way rather than being followed down.
+
+> [!NOTE]
+> Data files are opened through **Open Document**, drag and drop, or the [library](03-library.md), and they are indexed and paged like any other document. Installing Leaf Text does **not** register it as the handler for `.json` or `.yaml`, so double-clicking one in your file manager still opens whatever you normally use. Only [Markdown and XML extensions are associated](../02-installation.md#file-associations).
+
+Editing works, with one limit worth knowing. The [code view](07-editing.md#code-view) edits any data file as raw text, exactly as it does Markdown and XML. In the reading view, a block is click-to-edit only where its precise byte range in the file can be *proved*: that covers every JSON value, and YAML plain scalars. YAML lists, tables, quoted strings, and block scalars (`|`, `>`) are read-only in the reading view and edited in the code view instead — an approximate range would splice an edit over the wrong bytes, so none is offered. See [Editing data files](07-editing.md#editing-data-files).
 
 ## Next
 

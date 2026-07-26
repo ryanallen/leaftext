@@ -1,7 +1,7 @@
 # Refine your mind.
 ## Your thoughts, secure and free.
 
-Leaftext is a free desktop app for reading and editing Markdown and XML. Open a file. Read it.
+Leaf Text is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own.
 
 ![Leaf Text — a readable Markdown and XML document open in the app](imgs/leaftext.png)
 
@@ -9,111 +9,128 @@ Leaftext is a free desktop app for reading and editing Markdown and XML. Open a 
 <a href="https://github.com/ryanallen/leaftext/releases"><img alt="macOS" src="https://img.shields.io/badge/macOS-Universal-silver?style=flat&labelColor=4b5563"></a>
 <a href="https://github.com/ryanallen/leaftext/releases"><img alt="Windows" src="https://img.shields.io/badge/Windows-x64-0078d4?style=flat&labelColor=4b5563"></a>
 
-**[Read the docs →](docs/)** · **[View the project on GitHub →](https://github.com/ryanallen/leaftext)**
+**[Get started →](docs/03-quickstart.md)** · **[Read the docs →](docs/)** · **[View the project on GitHub →](https://github.com/ryanallen/leaftext)**
 
 ---
 
-**Leaf Text** is a free desktop app for reading and editing [Markdown](docs/01-features/01-rendering.md) and [XML](docs/01-features/01-rendering.md#xml) on macOS and Windows. It opens a local file into a clean, GitHub-accurate reading view you can type straight into, keeps your place with tabs and history, and maps how your documents relate in a [graph](docs/01-features/03-library.md#graph). Everything runs locally — no account, no cloud, no telemetry.
+Your notes deserve better than a text editor. Open a file in Leaf Text and it becomes a page you actually want to read — quiet, well set, and easy to move through. Click into a sentence and you can write. Nothing saves until you say so.
 
-## Features
+There's no account and no sign-up. Your files never leave your computer, and they stay [Markdown](docs/01-features/01-rendering.md), [XML](docs/01-features/01-rendering.md#xml), [JSON, and YAML](docs/01-features/01-rendering.md#data-files-json-and-yaml) — formats every other app can read, so you're never locked in.
 
-### Read Markdown and XML
+Free, on macOS and Windows.
+
+## What you can do
+
+### Read without the noise
 
 ![Leaf Text reading view rendering a Markdown document](imgs/rendering.png)
 
-Open a `.md` file and Leaf Text renders it exactly as GitHub would — CommonMark and GitHub Flavored Markdown with the extras people actually use: [syntax-highlighted code](docs/01-features/01-rendering.md#code), [Mermaid diagrams](docs/01-features/01-rendering.md#mermaid-diagrams), [math](docs/01-features/01-rendering.md#math), [GitHub alerts](docs/01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](docs/01-features/01-rendering.md#footnotes), [emoji](docs/01-features/01-rendering.md#emoji), task lists, and [local images](docs/01-features/01-rendering.md#images). It also opens [`.xml` files](docs/01-features/01-rendering.md#xml) through a parallel renderer into the same clean reading view: [any XML](docs/01-features/01-rendering.md#any-xml) — a sitemap, a feed, a config file — reads as sections, fields, and tables instead of tags, and [84000-style TEI](docs/01-features/01-rendering.md#tei-xml-84000-translations), the Buddhist-canon translation format, gets a renderer that knows its conventions. **[Rendering →](docs/01-features/01-rendering.md)**
+Open a `.md` file and it renders the way you'd expect — the same way GitHub does, with the extras people actually use: [highlighted code](docs/01-features/01-rendering.md#code), [diagrams](docs/01-features/01-rendering.md#mermaid-diagrams), [math](docs/01-features/01-rendering.md#math), [callouts](docs/01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](docs/01-features/01-rendering.md#footnotes), [emoji](docs/01-features/01-rendering.md#emoji), task lists, and [your own images](docs/01-features/01-rendering.md#images).
 
-### Edit in place, save on your terms
+[XML opens too](docs/01-features/01-rendering.md#xml). A sitemap, a feed, a config file — [any XML](docs/01-features/01-rendering.md#any-xml) reads as sections, fields, and tables instead of tags. And [84000-style TEI](docs/01-features/01-rendering.md#tei-xml-84000-translations), the format the Buddhist canon is translated into, gets a reader that understands its conventions.
+
+[JSON and YAML open too](docs/01-features/01-rendering.md#data-files-json-and-yaml), read by the same shape rules — a lock file, a CI workflow, or a Kubernetes manifest as headed sections, aligned fields, and record tables instead of punctuation. **[Rendering →](docs/01-features/01-rendering.md)**
+
+### Write where you read
 
 ![Inline editing in the rendered page, with save and undo button](imgs/editing.png)
 ![Editing in code view, with save and undo button](imgs/code-view.png)
 
-Reading-first, but editable. Click into a sentence in the rendered page and type, split and merge blocks with `Enter` and `Backspace`, or toggle a checkbox — the change is written back to the source at exactly that spot, with step-by-step [undo](docs/01-features/07-editing.md#undo). Prefer raw text? Drop to the [code view](docs/01-features/07-editing.md#code-view) for the file's actual Markdown or XML, with editor-style colouring of every delimiter. There's no autosave: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
+Click into a sentence and type. Split a paragraph with `Enter`, join it back with `Backspace`, tick a checkbox — the change lands in your file at exactly that spot, and [undo](docs/01-features/07-editing.md#undo) walks back step by step.
 
-### Find every file, and see how they connect
+Prefer the raw text? Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, XML, JSON, or YAML — coloured like an editor. There's no autosave, ever: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
+
+### Find anything you've written
 
 ![The library pane with the document graph view](imgs/graph.png)
 
-A left-side pane backed by a local SQLite index of every Markdown file you own — [full-text search](docs/01-features/03-library.md#search) it, or walk the folders one at a time with a [breadcrumb](docs/01-features/03-library.md#project) that always says where you are. A [graph view](docs/01-features/03-library.md#graph) maps how your documents link to one another, so you can see the shape of your notes instead of just a list. **[Library →](docs/01-features/03-library.md)**
+A side pane that knows every Markdown file you own. [Search the words inside them](docs/01-features/03-library.md#search), or walk your folders with a [breadcrumb](docs/01-features/03-library.md#project) that always says where you are. The index is a plain SQLite file on your own disk — nothing is uploaded to search it. **[Library →](docs/01-features/03-library.md)**
 
-### Navigate like a browser
+### See how your ideas connect
+
+The [graph view](docs/01-features/03-library.md#graph) maps the links between your documents, so you can see the shape of what you've written instead of scrolling a list. Notes you'd forgotten turn out to be next door to the one you're reading. **[Graph →](docs/01-features/03-library.md#graph)**
+
+### Never lose your place
 
 ![Tabs and Back/Forward history in the app bar](imgs/navigation.png)
 
-[Tabs](docs/01-features/02-navigation.md#tabs), Back/Forward [history](docs/01-features/02-navigation.md#history), a collapsible [outline](docs/01-features/02-navigation.md#outline) (table of contents) at the top of every document, in-document jumps, and a Previous/Next [pager](docs/01-features/05-settings.md#pager) that walks a folder in reading order. Save a file in your editor and Leaf Text [live-reloads](docs/01-features/02-navigation.md#reload) it, keeping your place. **[Navigation →](docs/01-features/02-navigation.md)**
+It moves like a browser: [tabs](docs/01-features/02-navigation.md#tabs), Back and Forward through your [history](docs/01-features/02-navigation.md#history), an [outline](docs/01-features/02-navigation.md#outline) at the top of every document, and a Previous/Next [pager](docs/01-features/05-settings.md#pager) that reads a folder in order. Change a file in another app and Leaf Text [picks it up](docs/01-features/02-navigation.md#reload) without losing your spot. **[Navigation →](docs/01-features/02-navigation.md)**
 
-### Stay oriented with the minimap
+### Take in the whole page at once
 
 ![The minimap rail showing a scaled clone of the document](imgs/minimap.png)
 
-A shrunken clone of the page in a side rail — real, tiny text, not abstract bars — with a live viewport indicator. Recognize where you are from the shape of the text itself, click any section to jump, or drag the indicator to scroll. **[Minimap →](docs/01-features/04-minimap.md)**
+A tiny version of your document runs down the side — real text, not abstract bars — with a marker showing where you are. You'll recognise a section by its shape. Click to jump, or drag to scroll. **[Minimap →](docs/01-features/04-minimap.md)**
 
-### Cite any block with a permalink
+### Point at any line
 
 ![Block permalink numbers in the left-margin gutter](imgs/permalink.png)
 
-Every block — heading, paragraph, list item, table, code fence — gets a stable address in a left-margin gutter. Click it to copy a deep link that lands on that exact spot, in both the app and on the website. Turn the gutter numbers on or off in Settings. **[Rendering →](docs/01-features/01-rendering.md)**
+Every block — heading, paragraph, list item, table, code fence — has a stable address in the margin. Click it to copy a link that lands on that exact spot, in the app and on the web. Turn the numbers off if you'd rather not see them. **[Rendering →](docs/01-features/01-rendering.md)**
 
-### Read faster with Speed Reader
+### Read faster when you need to
 
 ![Speed Reader dimming prose and adding bold lead anchors](imgs/speedreader.png)
 
-An optional mode that dims prose and links and adds bold lead anchors at word starts, so the reading path pops against the page and your eye moves down it quickly. **[Settings →](docs/01-features/05-settings.md#speed-reader)**
+Turn on Speed Reader and the page dims back while bold anchors mark the start of each word. Your eye follows the path down instead of hunting for it. **[Speed Reader →](docs/01-features/05-settings.md#speed-reader)**
 
-### Make it yours
+### Make it look like yours
 
 ![Amaranth theme](imgs/themes/themes.png)
 
+Ten themes — [Amaranth, Arabica, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) — each in light and dark, plus System and Daylight if you'd rather the app follow the time of day. Everything moves together: text, code, callouts, minimap. Each theme's font is fetched from Google Fonts the first time you choose it. **[Themes →](docs/01-features/06-themes.md)**
 
-Ten theme families — [Amaranth, Arabica, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) — each with light and dark variants plus System and Daylight appearance, applied through a semantic token contract so the reader, code, alerts, and minimap always stay visually consistent. Theme fonts load from Google Fonts on demand. **[Themes →](docs/01-features/06-themes.md)**
+### Your thoughts stay yours
 
-### Settings that stick, in two languages
+No account. No cloud. No telemetry. Nothing you open, write, or search ever leaves your machine.
 
-![The Leaf Text settings panel](imgs/settings.png)
+The app touches the network exactly twice, and neither one carries your words: it asks GitHub whether a newer version exists, and it fetches a theme's font from Google Fonts the first time you pick that theme.
 
-Theme, graph size (affects performance), navigation, speed reader, minimap, permalink line numbers, reading-view editing and indexing (affects performance) — stored locally and durable across restarts. Leaf Text also keeps itself current: new versions download in the background and are checked against a published digest, then wait for you to click **Restart to update** — nothing ever installs on its own. **[Settings →](docs/01-features/05-settings.md#updates)**
+Your [settings](docs/01-features/05-settings.md) are a JSON file on your machine, and your documents are the files you already had. Delete Leaf Text tomorrow and every word you wrote is still sitting in the folder you put it in, readable by anything.
 
-## Documentation
+Updates download quietly in the background and are checked against a published digest, then wait for you to click **Restart to update**. Nothing installs on its own. **[Settings →](docs/01-features/05-settings.md#updates)**
 
-New here? Start with the **[Quickstart](docs/03-quickstart.md)**, or browse the **[full documentation](docs/01-introduction.md)**.
+## Get it
 
-The pages are plain Markdown under [`docs/`](docs/) — edit them there.
-
-## Installation
-
-Full setup notes — including troubleshooting — live in the [Installation guide](docs/02-installation.md).
+Leaf Text is free. Download it from [Releases](https://github.com/ryanallen/leaftext/releases) — the full walkthrough, including troubleshooting, is in the [Installation guide](docs/02-installation.md).
 
 ### macOS
 
-Download the universal DMG from [Releases](https://github.com/ryanallen/leaftext/releases). Mount it and drag **Leaf Text** onto the **Applications** shortcut.
+Grab the universal DMG, mount it, and drag **Leaf Text** onto the **Applications** shortcut.
 
-**First launch — "not verified" warning**
+**First launch — "not verified"**
 
-macOS quarantines apps downloaded from the internet. If you see a prompt saying Leaf Text can't be opened because it's from an unidentified developer, run this in Terminal after dragging the app to Applications:
+macOS quarantines anything downloaded from the internet. If it tells you Leaf Text can't be opened because it's from an unidentified developer, run this in Terminal once:
 
 ```sh
 xattr -cr /Applications/leaftext.app
 ```
 
-Then open the app normally.
+Then open it normally.
 
 ### Windows
 
-Download the 64-bit MSI from [Releases](https://github.com/ryanallen/leaftext/releases). It installs for the current user with no elevation prompt. Default path, though **Change...** puts it anywhere you like and updates keep it there:
+Grab the 64-bit MSI. It installs just for you, with no admin prompt. Here by default, though **Change...** puts it anywhere you like and updates keep it there:
 
 ```text
 %LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe
 ```
 
-WebView2 browser data and the library index live in the same profile:
+Your library index and browser data live alongside it:
 
 ```text
 %LOCALAPPDATA%\ryanallen\leaftext\data
 ```
 
-Launch it from the Start Menu, or press the Windows key and type **Leaf Text**. The installer adds one Start Menu entry and no desktop shortcut.
+Launch it from the Start Menu, or tap the Windows key and type **Leaf Text**. One Start Menu entry, no desktop shortcut.
 
-> **Upgrading from v0.1.364 or earlier?** Uninstall the old version first, from **Settings → Apps**. Those installed machine-wide into `C:\Program Files`, and a per-user package cannot remove one, so you would end up with two copies.
+> **Upgrading from v0.1.364 or earlier?** Uninstall the old version first, from **Settings → Apps**. Those installed machine-wide into `C:\Program Files`, and a per-user package can't remove one, so you'd end up with two copies.
+
+## Learn it
+
+New here? The **[Quickstart](docs/03-quickstart.md)** gets you reading in a couple of minutes. Then browse the **[full documentation](docs/01-introduction.md)**.
+
+The pages are plain Markdown under [`docs/`](docs/) — the same format the app reads, so you can open them in Leaf Text itself.
 
 ---
 

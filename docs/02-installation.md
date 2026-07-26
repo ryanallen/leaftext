@@ -1,8 +1,8 @@
 # Installation
 
-> Download the build for your platform from GitHub Releases, install it, and open a Markdown or XML file.
+> Download the build for your platform from GitHub Releases, install it, and open a Markdown, XML, JSON, or YAML file.
 
-leaftext ships prebuilt binaries for macOS and Windows. There is no account, no plugin setup, and no extra runtime to configure first.
+Leaf Text is free, and it ships ready to run on macOS and Windows. There's no account to create, no plugins to pick, and no runtime to install first — download it, open it, and it works.
 
 ## Platforms
 
@@ -36,7 +36,7 @@ xattr -cr /Applications/leaftext.app
 ### Windows
 
 1. Download the latest `.msi`.
-2. Run the installer. It shows one screen: the install folder, with **Change...** to pick another. Click **Install**. There is no elevation prompt and no confirmation screen — leaftext installs for the current user, and the window closes once the install finishes.
+2. Run the installer. It shows one screen: the install folder, with **Change...** to pick another. Click **Install**. There is no elevation prompt and no confirmation screen — Leaf Text installs for the current user, and the window closes once the install finishes.
 3. Launch **Leaf Text** from the Start Menu, or press the Windows key and type its name.
 
 Default installed path, though **Change...** puts it wherever you like and later updates keep it there:
@@ -47,7 +47,10 @@ Default installed path, though **Change...** puts it wherever you like and later
 
 ## File associations
 
-Installing registers leaftext as a handler for `.md`, `.markdown`, `.mdown`, and `.xml`, so those files carry the leaf icon and open in leaftext when double-clicked. On Windows the entries are per-user (`HKCU`), like the install itself.
+Installing registers Leaf Text as a handler for `.md`, `.markdown`, `.mdown`, and `.xml`, so those files carry the leaf icon and open in Leaf Text when double-clicked. On Windows the entries are per-user (`HKCU`), like the install itself.
+
+> [!NOTE]
+> [JSON and YAML](01-features/01-rendering.md#data-files-json-and-yaml) files are **not** associated, even though Leaf Text renders them. `.json` and `.yaml` almost always belong to an editor or IDE, and taking that over is not a decision an installer should make for you. Open them with `Ctrl+O` / `Cmd+O`, by dragging them onto the window, or from the [library](01-features/03-library.md) — or point a specific file at Leaf Text yourself with **Open with**, below.
 
 If an extension already has a default app, the operating system keeps that choice — neither installer overrides one you have made. To switch:
 
@@ -63,7 +66,7 @@ WebView2 data lives here:
 %LOCALAPPDATA%\ryanallen\leaftext\data\webview2
 ```
 
-leaftext never needs administrator rights — not to install, not to update.
+Leaf Text never needs administrator rights — not to install, not to update.
 
 > [!NOTE]
 > The installer adds one Start Menu entry and no desktop shortcut. Drag it to the desktop or taskbar if you want it there too.
@@ -75,8 +78,8 @@ leaftext never needs administrator rights — not to install, not to update.
 
 ```mermaid
 flowchart LR
-    A[Install leaftext] --> B[Launch app]
-    B --> C[Open .md or .xml file]
+    A[Install Leaf Text] --> B[Launch app]
+    B --> C[Open .md, .xml, .json, or .yaml file]
     C --> D[Read]
 ```
 
@@ -84,7 +87,7 @@ Use `Ctrl+O` on Windows or `Cmd+O` on macOS to open your first file.
 
 ## Updates
 
-leaftext checks GitHub Releases for a newer version at every launch, and re-checks in the background at most every six hours while the window stays open. When one is available, a green dot appears over the Settings button and a button appears at the top of the [Settings](01-features/05-settings.md#updates) menu.
+Leaf Text checks GitHub Releases for a newer version at every launch, and re-checks in the background at most every six hours while the window stays open. When one is available, a green dot appears over the Settings button and a button appears at the top of the [Settings](01-features/05-settings.md#updates) menu.
 
 With **Update automatically** on (the default), the new installer downloads in the background; a download that arrives short or oversized is discarded rather than kept. While it runs, the button shows a spinner and its percentage and the dot becomes a spinning ring.
 
@@ -92,13 +95,13 @@ With **Update automatically** on (the default), the new installer downloads in t
 
 Each version is installed automatically once. If an install fails, the next launch says so and names the reason, and that version then waits for a deliberate click instead of being retried forever. Turning **Update automatically** off keeps the check but fetches and installs nothing — the button just opens the release page, and you install by hand.
 
-The update status at the foot of the Settings panel always reports the outcome — up to date, when it last checked, or what went wrong — including an install that failed after a restart, which is otherwise invisible because the installer runs after leaftext exits. Clicking it forces a fresh check at any time. Startup is never blocked by any of this, and being offline only changes what that line says.
+The update status at the foot of the Settings panel always reports the outcome — up to date, when it last checked, or what went wrong — including an install that failed after a restart, which is otherwise invisible because the installer runs after Leaf Text exits. Clicking it forces a fresh check at any time. Startup is never blocked by any of this, and being offline only changes what that line says.
 
 ## FAQ
 
 ### Admin rights
 
-No, never. leaftext installs into your user profile and runs from there, so neither installing nor updating needs administrator rights. App data lives alongside it: `%APPDATA%\ryanallen\leaftext\config` for settings and recent files, `%LOCALAPPDATA%\ryanallen\leaftext\data` for the WebView2 cache and the library index.
+No, never. Leaf Text installs into your user profile and runs from there, so neither installing nor updating needs administrator rights. App data lives alongside it: `%APPDATA%\ryanallen\leaftext\config` for settings and recent files, `%LOCALAPPDATA%\ryanallen\leaftext\data` for the WebView2 cache and the library index.
 
 ### Data paths
 

@@ -1,8 +1,8 @@
 # Library
 
-> The library pane lets you browse and search your documents from a local SQLite index: a Project file list with a breadcrumb path, plus a Graph relationship map behind one icon.
+> Find anything you've written, and see how it connects. Browse and search your documents from a local index that never leaves your machine — a file list with a breadcrumb path, plus a graph of how your documents link to each other.
 
-The library is the part of leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane and is backed by a local indexer.
+The library is the part of Leaf Text that helps you find documents, not just read the one you already opened. It lives in a left-side pane and is backed by a local indexer.
 
 ## Summary
 
@@ -122,6 +122,19 @@ flowchart LR
     C --> D[Project list / Graph]
     C --> E[Search results]
 ```
+
+### File types
+
+The indexer picks up every format the reader opens: Markdown (`.md`, `.markdown`, `.mdown`), [XML](01-rendering.md#xml) (`.xml`), and [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`). Anything else is left alone.
+
+How much of a file becomes searchable depends on its format:
+
+| Format | Indexed |
+| --- | --- |
+| Markdown | Filename, title, headings, front matter, and the body text in searchable chunks |
+| XML, JSON, YAML | Filename and document title |
+
+For the structured formats the title is the one the [renderer](01-rendering.md) works out — an XML `<title>`, a root `title` or `name` key in JSON or YAML — falling back to the filename. Their body text is not chunked for search yet, so they are found by name and title rather than by a phrase inside them. They also draw no [graph](#graph) edges: a URL inside a data file is a value rather than a link between your documents, and reading one as Markdown would invent edges that were never written.
 
 ## Facts
 

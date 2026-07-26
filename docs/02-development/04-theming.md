@@ -1,8 +1,8 @@
 # Theming
 
-> leaftext enforces a semantic token contract of ~100 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.md` compiled from per-family Markdown files — so adding a theme takes no Rust.
+> Leaf Text enforces a semantic token contract of ~100 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.md` compiled from per-family Markdown files — so adding a theme takes no Rust.
 
-leaftext's theme system is built around a semantic token contract — a set of approximately 100 `--leaf-*` CSS custom properties that every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
+Leaf Text's theme system is built around a semantic token contract — a set of approximately 100 `--leaf-*` CSS custom properties that every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
 
 Palettes are **data, not code**: every theme's values live in Markdown tables (`src/assets/themes.md`), parsed once at startup — not in Rust `const` tables.
 

@@ -1,6 +1,6 @@
 # Settings
 
-> leaftext stores preferences locally: theme, speed reader, minimap, pager, line numbers, reading-view editing, indexing, updates, library layout, and window size in a JSON file, plus the interface language in the WebView's local storage.
+> Your settings live on your machine, not in an account. Theme, speed reader, minimap, pager, line numbers, reading-view editing, indexing, updates, library layout, and window size sit in a plain JSON file you can read, plus the interface language in the WebView's local storage.
 
 Most settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView. The one exception is the interface language, kept in the WebView's local storage under `leaf.localeMode`.
 
@@ -82,7 +82,7 @@ Example:
 }
 ```
 
-leaftext removes broken entries automatically and collapses equivalent path spellings to one item.
+Leaf Text removes broken entries automatically and collapses equivalent path spellings to one item.
 
 ## Language
 
@@ -157,7 +157,7 @@ The app ships both language dictionaries locally and applies changes without a r
 - **Every launch asks GitHub for the latest release**, unthrottled — opening the app is when you expect it to know whether it is current. A window left open re-checks in the background at most every six hours; `update_last_checked` records when it last did, so a long session does not spend requests against the rate limit
 - When a newer release exists, its installer downloads in the background — the same `.dmg` or `.msi` published for hand-installing, since a release carries nothing else. A download that arrives short or oversized is deleted rather than kept, and the digest of what did land is recorded so the installer can be re-checked before it runs
 - While it downloads, the button carries a spinner and fills left to right with the percentage; the dot over the Settings button turns into a spinning ring
-- **The next launch installs it, before any window opens.** Windows cannot replace a running executable, so this is the one moment it can happen without interrupting anything: the app hands off to a detached helper, which waits for it to exit, installs, and starts the new version. No prompt — leaftext installs per-user, which is what lets it replace itself without administrator rights
+- **The next launch installs it, before any window opens.** Windows cannot replace a running executable, so this is the one moment it can happen without interrupting anything: the app hands off to a detached helper, which waits for it to exit, installs, and starts the new version. No prompt — Leaf Text installs per-user, which is what lets it replace itself without administrator rights
 - **Restart to update** is still on the button for anyone who does not want to wait for the next launch
 - Each staged version is installed automatically **once**. `update_auto_applied` records the attempt before the installer runs, so an installer that fails silently cannot be retried on every launch — that would be a boot loop. After one failed attempt the version waits for a deliberate click, and the next launch says what went wrong and names the reason
 - **The update status, at the foot of the panel beside the version, is itself the button.** It reports what the last attempt found — *Up to date*, when it last checked, or why it could not: a refused request, a release with no installer for this platform, or a download that failed — and clicking it forces a fresh check at any time, past the six-hour throttle. Before the first check of a session it reads *Check for updates*
@@ -182,7 +182,7 @@ These per-app directories are derived from the app id `com.ryanallen.leaftext`:
 - macOS: `config_dir` = `data_dir` = `~/Library/Application Support/com.ryanallen.leaftext`
 - Windows: `config_dir` = `%APPDATA%\ryanallen\leaftext\config`; `data_dir` = `%LOCALAPPDATA%\ryanallen\leaftext\data`
 
-Both live inside your user profile, so leaftext never needs administrator rights to run. They are also independent of where the app is installed — reinstalling or moving it keeps your settings, recent files, and library index.
+Both live inside your user profile, so Leaf Text never needs administrator rights to run. They are also independent of where the app is installed — reinstalling or moving it keeps your settings, recent files, and library index.
 
 ## Next
 

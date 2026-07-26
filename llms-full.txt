@@ -1,16 +1,16 @@
 # Leaf Text — full page index
 
-> A desktop reader for Markdown. Open a file. Read it. Every canonical page, its human URL, its raw Markdown source, and a short description. Fetch the .md URLs for clean, JS-free text.
+> Refine your mind. Your thoughts, secure and free. A free desktop app for reading and writing your own documents, on your own machine. Every canonical page, its human URL, its raw Markdown source, and a short description. Fetch the .md URLs for clean, JS-free text.
 
 ## Refine your mind.
 - Page: https://leaftext.com/
 - Markdown: https://leaftext.com/README.md
-- Summary: Leaftext is a free desktop app for reading and editing Markdown and XML. Open a file. Read it.
+- Summary: Leaf Text is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own.
 
 ## Rendering
 - Page: https://leaftext.com/docs/#/features/rendering
 - Markdown: https://leaftext.com/docs/01-features/01-rendering.md
-- Summary: leaftext picks a pipeline from the file extension. Markdown (.md, .markdown, .mdown) is parsed in Rust with pulldown-cmark, run through a GitHub-like rendering pipeline, sanitized, and handed to th...
+- Summary: Leaf Text picks a pipeline from the file extension. Markdown (.md, .markdown, .mdown) is parsed in Rust with pulldown-cmark, run through a GitHub-like rendering pipeline, sanitized, and handed to t...
 
 ## Navigation
 - Page: https://leaftext.com/docs/#/features/navigation
@@ -20,7 +20,7 @@
 ## Library
 - Page: https://leaftext.com/docs/#/features/library
 - Markdown: https://leaftext.com/docs/01-features/03-library.md
-- Summary: The library is the part of leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane and is backed by a local indexer.
+- Summary: The library is the part of Leaf Text that helps you find documents, not just read the one you already opened. It lives in a left-side pane and is backed by a local indexer.
 
 ## Minimap
 - Page: https://leaftext.com/docs/#/features/minimap
@@ -40,49 +40,49 @@
 ## Editing
 - Page: https://leaftext.com/docs/#/features/editing
 - Markdown: https://leaftext.com/docs/01-features/07-editing.md
-- Summary: leaftext is reading-first, but it is also editable. You can edit in the reading view itself — click into a sentence and type, toggle a checkbox — and the change is written back into the source at e...
+- Summary: Leaf Text is reading-first, but it is also editable. You can edit in the reading view itself — click into a sentence and type, toggle a checkbox — and the change is written back into the source at ...
 
-## Meet leaftext
+## Meet Leaf Text
 - Page: https://leaftext.com/docs/#/introduction
 - Markdown: https://leaftext.com/docs/01-introduction.md
-- Summary: leaftext is a desktop app for reading local Markdown and XML on macOS and Windows. Open a file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searchable librar...
+- Summary: Leaf Text turns the files you already have into pages you actually want to read. Open a Markdown, XML, JSON, or YAML document on macOS or Windows and it renders clean and calm. Keep your place with...
 
 ## Architecture
 - Page: https://leaftext.com/docs/#/development/architecture
 - Markdown: https://leaftext.com/docs/02-development/01-architecture.md
-- Summary: leaftext is a single Rust binary that embeds a WebView (via wry) inside a native window (via tao). The Markdown rendering pipeline runs on the Rust side; the result is injected into the WebView as ...
+- Summary: Leaf Text is a single Rust binary that embeds a WebView (via wry) inside a native window (via tao). The Markdown rendering pipeline runs on the Rust side; the result is injected into the WebView as...
 
 ## Building
 - Page: https://leaftext.com/docs/#/development/building
 - Markdown: https://leaftext.com/docs/02-development/02-building.md
-- Summary: leaftext is a Rust application (edition 2021). Building from source requires the Rust toolchain and the just command runner.
+- Summary: Leaf Text is a Rust application (edition 2021). Building from source requires the Rust toolchain and the just command runner.
 
 ## Releasing
 - Page: https://leaftext.com/docs/#/development/releasing
 - Markdown: https://leaftext.com/docs/02-development/03-releasing.md
-- Summary: leaftext releases are managed with a single just release command — but it does not bump the version for you. You edit version in Cargo.toml to the new value and commit it first; just release then v...
+- Summary: Leaf Text releases are managed with a single just release command — but it does not bump the version for you. You edit version in Cargo.toml to the new value and commit it first; just release then ...
 
 ## Theming
 - Page: https://leaftext.com/docs/#/development/theming
 - Markdown: https://leaftext.com/docs/02-development/04-theming.md
-- Summary: leaftext's theme system is built around a semantic token contract — a set of approximately 100 --leaf- CSS custom properties that every theme must define. The contract is not enforced by the Rust c...
+- Summary: Leaf Text's theme system is built around a semantic token contract — a set of approximately 100 --leaf- CSS custom properties that every theme must define. The contract is not enforced by the Rust ...
 
 ## Installation
 - Page: https://leaftext.com/docs/#/installation
 - Markdown: https://leaftext.com/docs/02-installation.md
-- Summary: leaftext ships prebuilt binaries for macOS and Windows. There is no account, no plugin setup, and no extra runtime to configure first.
+- Summary: Leaf Text is free, and it ships ready to run on macOS and Windows. There's no account to create, no plugins to pick, and no runtime to install first — download it, open it, and it works.
 
 ## Quickstart
 - Page: https://leaftext.com/docs/#/quickstart
 - Markdown: https://leaftext.com/docs/03-quickstart.md
-- Summary: leaftext is meant to be usable immediately. This page shows the smallest useful path through the app: open a file, read it, move around, and reopen it later.
+- Summary: There's nothing to set up. No account, no folder to designate, no plugins to choose. Point Leaf Text at a file you already have and start reading. This page walks the shortest useful path: open a f...
 
 ## Glossary
 - Page: https://leaftext.com/docs/#/GLOSSARY
 - Markdown: https://leaftext.com/docs/GLOSSARY.md
 - Summary: One shared glossary for the docs. Link into it with an ordinary Markdown link to this file plus the term's anchor, for example minimap from a page in this folder, or minimap from a page one level d...
 
-## leaftext documentation
+## Leaf Text documentation
 - Page: https://leaftext.com/docs/
 - Markdown: https://leaftext.com/docs/README.md
-- Summary: leaftext is a desktop reader for Markdown and XML: open a local file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searchable library. These docs cover the wh...
+- Summary: Leaf Text is a free desktop app for reading and writing your own documents. Open a local Markdown, XML, JSON, or YAML file, get a clean rendered view, write straight into the page, and keep your pl...

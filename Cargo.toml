@@ -22,11 +22,24 @@ roxmltree = "0.20"
 rusqlite = { version = "0.31", features = ["bundled"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
-syntect = "5.3.0"
+# Only the highlighter and its syntax set are used, and the syntaxes come from
+# two-face's binary dumps. Default features would add syntect's own bundled
+# syntax/theme dumps and `yaml-load`, whose `.sublime-syntax` reader is the sole
+# reason the unmaintained yaml-rust was ever in the tree. two-face already asks
+# for `dump-load`/`parsing` only, so switching these off drops it for good.
+syntect = { version = "5.3.0", default-features = false, features = [
+    "parsing",
+    "html",
+    "regex-onig",
+] }
 tao = "0.35.3"
 two-face = "0.5.1"
 url = "2.5.8"
 wry = "0.55.1"
+# The one YAML parser in the binary: reads the documents the app opens, and is
+# maintained and fuzzed, which the input it is pointed at requires. `encoding`
+# is off because files arrive as Rust strings already decoded.
+yaml-rust2 = { version = "0.11.0", default-features = false }
 
 # The window icon is decoded only where tao needs one handed to it. Windows
 # takes its icon from the executable's embedded resource instead, so the PNG

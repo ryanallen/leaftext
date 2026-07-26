@@ -1,8 +1,8 @@
-# leaftext documentation
+# Leaf Text documentation
 
 > Everything in `docs/` — what each page covers, how the pages fit together, and how the folder becomes [leaftext.com/docs](https://leaftext.com/docs).
 
-leaftext is a desktop reader for Markdown and XML: open a local file, get a clean rendered view, and keep your place with tabs, history, a minimap, and a searchable library. These docs cover the whole app, from installing a release build to the startup-validated theme contract.
+Leaf Text is a free desktop app for reading and writing your own documents. Open a local Markdown, XML, JSON, or YAML file, get a clean rendered view, write straight into the page, and keep your place with tabs, history, a minimap, and a searchable library. Nothing leaves your device. These docs cover the whole app, from installing it to the startup-validated theme contract behind the scenes.
 
 ## Map
 
@@ -29,7 +29,7 @@ flowchart LR
 
 | Page | What it covers |
 | --- | --- |
-| [Introduction](01-introduction.md) | What leaftext is, the feature overview, and where to go for each task |
+| [Introduction](01-introduction.md) | What Leaf Text is, the feature overview, and where to go for each task |
 | [Installation](02-installation.md) | Prebuilt downloads for macOS (`.dmg`) and Windows (`.msi`), plus [updates](01-features/05-settings.md#updates), data paths, and first-launch notes |
 | [Quickstart](03-quickstart.md) | The smallest useful path through the app: open a file, read, jump, and reopen — with the core shortcuts |
 
@@ -39,7 +39,7 @@ How the app behaves, page by page:
 
 | Page | What it covers |
 | --- | --- |
-| [Rendering](01-features/01-rendering.md) | The full supported syntax with live examples: CommonMark, GFM, syntax highlighting, Mermaid, math, alerts, footnotes, emoji, block permalinks, Leaf buttons, local images, and XML (any file, plus 84000 TEI translations) |
+| [Rendering](01-features/01-rendering.md) | The full supported syntax with live examples: CommonMark, GFM, syntax highlighting, Mermaid, math, alerts, footnotes, emoji, block permalinks, Leaf buttons, local images, XML (any file, plus 84000 TEI translations), and JSON/YAML |
 | [Navigation](01-features/02-navigation.md) | Tabs, Back/Forward history, the outline, scroll anchors, live reload, recent files, link hints, the pager, and the single-window rule |
 | [Library](01-features/03-library.md) | The left-side pane backed by a local SQLite index: the Project file list with its breadcrumb path, the graph view, filename and content search, and file actions |
 | [Minimap](01-features/04-minimap.md) | The scaled real-text document clone in the side rail: how it renders, when it rebuilds, responsive widths, and the on/off toggle |
@@ -49,11 +49,11 @@ How the app behaves, page by page:
 
 ## Development
 
-For anyone building, extending, or releasing leaftext:
+For anyone building, extending, or releasing Leaf Text:
 
 | Page | What it covers |
 | --- | --- |
-| [Architecture](02-development/01-architecture.md) | The Rust binary end to end: tao windowing, wry WebView, the Markdown pipeline, the XML renderers, the IPC bridge, the background indexer, and every source file's role |
+| [Architecture](02-development/01-architecture.md) | The Rust binary end to end: tao windowing, wry WebView, the Markdown pipeline, the XML and JSON/YAML renderers, the IPC bridge, the background indexer, and every source file's role |
 | [Building](02-development/02-building.md) | Toolchain prerequisites, platform WebView dependencies, and the `just verify` suite |
 | [Theming](02-development/04-theming.md) | The startup-validated contract of ~100 `--leaf-*` CSS custom properties, the theme sources, and how the CSS is compiled and validated |
 | [Releasing](02-development/03-releasing.md) | `just release <version>`: the version bump, the tag push, and the CI builds it triggers on Windows and macOS |
@@ -80,4 +80,4 @@ node docs/render-docs-check.mjs
 ```
 
 > [!TIP]
-> Every page here is readable two ways: rendered on the website, or opened directly in leaftext itself — the app these docs describe.
+> Every page here is readable two ways: rendered on the website, or opened directly in Leaf Text itself — the app these docs describe.

@@ -11,7 +11,8 @@ use crate::*;
 use roxmltree::{Document, Node};
 
 /// Child element names that can title their parent section, in priority order.
-const LABEL_TAGS: [&str; 5] = ["title", "name", "head", "label", "heading"];
+/// Shared with [`crate::data`], where they are JSON/YAML keys instead.
+pub(crate) const LABEL_TAGS: [&str; 5] = ["title", "name", "head", "label", "heading"];
 
 /// Of those, the ones that read as the section's own name and so head it bare.
 /// The rest are qualified by their tag: `<author><name>` heads "Author: Ada".
@@ -21,14 +22,14 @@ const BARE_LABEL_TAGS: [&str; 4] = ["title", "head", "label", "heading"];
 const LABEL_ATTRS: [&str; 4] = ["name", "id", "type", "class"];
 
 /// Repeated records wider than this stay sections rather than becoming a table.
-const MAX_TABLE_COLUMNS: usize = 8;
+pub(crate) const MAX_TABLE_COLUMNS: usize = 8;
 
 /// A record with a value longer than this reads as prose, not a table cell.
-const MAX_TABLE_CELL_CHARS: usize = 200;
+pub(crate) const MAX_TABLE_CELL_CHARS: usize = 200;
 
 /// Nesting past this depth stops recursing and renders the remaining text, so a
 /// pathologically deep file can't blow the stack.
-const MAX_DEPTH: usize = 24;
+pub(crate) const MAX_DEPTH: usize = 24;
 
 /// Parse XML for reading. Doctypes are allowed through (plists and XHTML carry
 /// one); roxmltree reads only the internal subset and never fetches anything.
@@ -369,7 +370,7 @@ fn render_fields<'a>(nodes: &[Node<'a, 'a>], ctx: &mut XmlCtx) {
     if rows.is_empty() {
         return;
     }
-    ctx.push(&format!("<dl class=\"xml-fields\">\n{rows}</dl>\n"));
+    ctx.push(&format!("<dl class=\"data-fields\">\n{rows}</dl>\n"));
 }
 
 /// Render an element's attributes as a compact label/value list under its
@@ -391,7 +392,7 @@ fn render_attribute_fields<'a>(node: Node<'a, 'a>, ctx: &mut XmlCtx) {
         return;
     }
     ctx.push(&format!(
-        "<dl class=\"xml-fields xml-attributes\">\n{rows}</dl>\n"
+        "<dl class=\"data-fields data-attributes\">\n{rows}</dl>\n"
     ));
 }
 
@@ -500,7 +501,7 @@ fn render_table<'a>(rows: &[Node<'a, 'a>], columns: &[(String, String)], ctx: &m
     };
     let attrs = ctx.block_attrs_range("table", first.range().start, last.range().end);
 
-    let mut html = format!("<table class=\"xml-table\"{attrs}>\n<thead><tr>");
+    let mut html = format!("<table class=\"data-table\"{attrs}>\n<thead><tr>");
     for (_, label) in columns {
         html.push_str(&format!("<th>{}</th>", encode_text(label)));
     }
@@ -572,7 +573,7 @@ fn value_html(node: Node) -> Option<String> {
         let mut html = linkify(&text);
         if !attributes.is_empty() {
             html.push_str(&format!(
-                " <span class=\"xml-value-attrs\">({})</span>",
+                " <span class=\"data-value-attrs\">({})</span>",
                 named(&attributes)
             ));
         }
@@ -589,7 +590,7 @@ fn value_html(node: Node) -> Option<String> {
 
 /// Escape a value, linking it when the whole of it is a URL. Only whole-value
 /// URLs link, so prose can't be mangled by a stray `http://` inside it.
-fn linkify(value: &str) -> String {
+pub(crate) fn linkify(value: &str) -> String {
     let trimmed = value.trim();
     let is_url = !trimmed.contains(char::is_whitespace)
         && (trimmed.starts_with("http://")
@@ -608,8 +609,9 @@ fn linkify(value: &str) -> String {
 
 /// The reader-facing label for an element or attribute name. A handful of names
 /// from the formats people actually open (sitemaps, feeds) read badly when
-/// merely humanized, so they get spelled out.
-fn friendly_label(name: &str) -> String {
+/// merely humanized, so they get spelled out. Shared with [`crate::data`], so a
+/// sitemap and the JSON next to it label the same field the same way.
+pub(crate) fn friendly_label(name: &str) -> String {
     match name.to_lowercase().as_str() {
         "loc" => "URL".to_string(),
         "url" | "uri" | "href" | "src" => "Link".to_string(),
@@ -626,7 +628,7 @@ fn friendly_label(name: &str) -> String {
 /// Turn an element or attribute name into a sentence-case label: `lastBuildDate`
 /// → `Last build date`, `pub_date` → `Pub date`. Names that are already all
 /// upper case (`URL`, `ISBN`) are left alone.
-fn humanize_name(name: &str) -> String {
+pub(crate) fn humanize_name(name: &str) -> String {
     let name = name.rsplit(':').next().unwrap_or(name);
     let mut words: Vec<String> = Vec::new();
     let mut current = String::new();

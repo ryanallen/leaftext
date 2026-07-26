@@ -732,6 +732,12 @@ fn pager_label_matches_web_label_rule() {
         pager_label("001-001_toh1-1_chapter_on_going_forth.xml"),
         "001 001 Toh1 1 Chapter On Going Forth"
     );
+    // So are the data formats, and so is theirs.
+    assert_eq!(pager_label("release-notes.json"), "Release Notes");
+    assert_eq!(pager_label("build_matrix.yaml"), "Build Matrix");
+    assert_eq!(pager_label("deploy.yml"), "Deploy");
+    // A name whose tail is not a page extension keeps it, dots and all.
+    assert_eq!(pager_label("v0.1.380"), "V0.1.380");
 }
 
 #[test]
@@ -768,6 +774,34 @@ fn pager_includes_tei_xml_documents() {
     assert!(
         html_mid.contains("001 Going Forth") && html_mid.contains("003 Notes"),
         "the XML chapter should sit between its neighbours: {html_mid}"
+    );
+}
+
+#[test]
+fn pager_includes_json_and_yaml_documents() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let root = std::env::temp_dir().join(format!("leaf-pager-data-{unique}"));
+    fs::create_dir_all(&root).expect("tree is created");
+    fs::write(root.join("README.md"), "# Root\n").expect("root README written");
+    // Every renderable format is a page, so Prev/Next walks the whole folder
+    // rather than stepping over the data files in it.
+    let notes = root.join("001-notes.md");
+    let manifest = root.join("002-manifest.json");
+    let workflow = root.join("003-workflow.yaml");
+    fs::write(&notes, "# Notes\n").expect("md page written");
+    fs::write(&manifest, "{\"name\": \"x\"}").expect("json page written");
+    fs::write(&workflow, "name: x\n").expect("yaml page written");
+
+    // Standing on the JSON page: the Markdown one is behind it, the YAML ahead.
+    let html = pager_html(&manifest);
+    fs::remove_dir_all(&root).expect("tree removed");
+
+    assert!(
+        html.contains("001 Notes") && html.contains("003 Workflow"),
+        "a JSON page should sit between its neighbours: {html}"
     );
 }
 
@@ -1448,7 +1482,7 @@ fn sitemap_records_render_as_a_table_of_links() {
     // `opened_document_from_xml`), so the renderer reports none.
     assert!(title.is_none(), "{title:?}");
     // Repeated flat records become one table, with spelled-out column headings.
-    assert_contains(&html, "<table class=\"xml-table\"");
+    assert_contains(&html, "<table class=\"data-table\"");
     assert_contains(&html, "<th>URL</th><th>Last modified</th>");
     assert_contains(
         &html,
@@ -1483,7 +1517,7 @@ fn feed_renders_its_title_fields_and_entries() {
 
     // Leaf children become one label/value list, camelCase names read as words,
     // and a lone URL value links.
-    assert_contains(&html, "<dl class=\"xml-fields\">");
+    assert_contains(&html, "<dl class=\"data-fields\">");
     assert_contains(&html, "<dt>Last built</dt>");
     assert_contains(
         &html,
@@ -1592,7 +1626,337 @@ fn tei_documents_keep_going_to_the_tei_renderer() {
     assert_eq!(title.as_deref(), Some("The Work"));
     // TEI-only markup, so the routing (not just the title) went to `tei.rs`.
     assert_contains(&html, "<blockquote class=\"tei-verse\">");
-    assert!(!html.contains("xml-fields"), "{html}");
+    assert!(!html.contains("data-fields"), "{html}");
+}
+
+// ---------------------------------------------------------------------------
+// JSON and YAML
+// ---------------------------------------------------------------------------
+
+const PACKAGE_JSON: &str = r#"{
+  "name": "leaftext",
+  "version": "0.1.380",
+  "private": true,
+  "description": null,
+  "keywords": ["markdown", "reader"],
+  "repository": { "type": "git", "url": "https://github.com/x/y" },
+  "contributors": [
+    { "name": "Ada", "email": "ada@example.com" },
+    { "name": "Grace", "email": "grace@example.com" }
+  ]
+}"#;
+
+#[test]
+fn json_reads_its_shape_into_a_title_fields_a_list_and_a_table() {
+    let (title, html, _blocks) = render_json_document(PACKAGE_JSON, Some("Package"));
+
+    // A title-ish root key titles the document, and is then left out of the body
+    // so the same string isn't said twice.
+    assert_eq!(title.as_deref(), Some("leaftext"));
+    assert_contains(&html, ">leaftext</h1>");
+    assert!(!html.contains("<dt>Name</dt>"), "{html}");
+
+    // Consecutive scalar keys collapse into one labelled list, camelCase and
+    // shorthand names read as words, and `null` says nothing at all.
+    assert_contains(&html, "<dl class=\"data-fields\">");
+    assert_contains(&html, "<dt>Version</dt>");
+    assert!(!html.contains("Description"), "{html}");
+
+    // A nested object becomes a section; a whole-value URL links.
+    assert_contains(&html, ">Repository</h2>");
+    assert_contains(&html, "<dt>Link</dt>");
+    assert_contains(&html, "<a href=\"https://github.com/x/y\">");
+
+    // Scalar arrays list; repeated uniform records become one table, with the
+    // union of their keys as columns.
+    assert_contains(&html, "<ul class=\"data-list\"");
+    assert_contains(&html, "<li>markdown</li>");
+    assert_contains(&html, "<table class=\"data-table\"");
+    assert_contains(&html, "<thead><tr><th>Name</th><th>Email</th></tr></thead>");
+    assert_contains(&html, "<tr><td>Ada</td><td>ada@example.com</td></tr>");
+}
+
+#[test]
+fn json_blocks_anchor_to_the_exact_source_they_came_from() {
+    let (_title, _html, blocks) = render_json_document(PACKAGE_JSON, None);
+
+    assert!(!blocks.is_empty());
+    // Every recorded range must slice out the value it was stamped on — the
+    // reader knows precisely where each JSON value starts and stops.
+    let fields: Vec<&str> = blocks
+        .iter()
+        .filter(|block| block.kind == "data_field")
+        .map(|block| &PACKAGE_JSON[block.start..block.end])
+        .collect();
+    assert!(fields.contains(&"\"0.1.380\""), "{fields:?}");
+    assert!(fields.contains(&"true"), "{fields:?}");
+    assert!(fields.contains(&"\"https://github.com/x/y\""), "{fields:?}");
+
+    // The table's range covers every record in it.
+    let table = blocks
+        .iter()
+        .find(|block| block.kind == "data_table")
+        .expect("a record table");
+    let slice = &PACKAGE_JSON[table.start..table.end];
+    assert!(slice.starts_with('{') && slice.ends_with('}'), "{slice}");
+    assert!(slice.contains("Ada") && slice.contains("Grace"), "{slice}");
+}
+
+#[test]
+fn data_blocks_never_take_the_markdown_wysiwyg_path() {
+    // `editable` drives the Markdown path, which edits a block as rendered text
+    // and would write `hi` where `"hi"` belongs. Data blocks are edited as source
+    // instead, so the flag stays false and the kinds stay out of Markdown's
+    // vocabulary (`paragraph`/`heading`), which that path switches on.
+    let yaml = "name: Release\nshell: bash\n";
+    for blocks in [
+        render_json_document(PACKAGE_JSON, None).2,
+        render_yaml_document(yaml, None).2,
+    ] {
+        assert!(!blocks.is_empty());
+        for block in blocks {
+            assert!(!block.editable, "{block:?}");
+            assert!(block.kind.starts_with("data_"), "{block:?}");
+        }
+    }
+}
+
+#[test]
+fn a_grouped_block_gets_a_range_only_when_every_member_has_one() {
+    // A range narrower than the block it is stamped on is the dangerous case: the
+    // source editor would show one item, splice the edit over that item alone, and
+    // leave the reader thinking they had edited the whole list. A YAML flow
+    // sequence proves `macos` but not `windows,` (the comma trails it), so the
+    // list must carry no range at all.
+    let yaml = "os: [windows, macos]\n";
+    let (_title, html, blocks) = render_yaml_document(yaml, None);
+    assert_contains(&html, "<li>windows</li>");
+    assert_contains(&html, "<li>macos</li>");
+    assert!(!html.contains("data-src-start"), "{html}");
+    assert!(blocks.is_empty(), "{blocks:?}");
+
+    // JSON knows every value's bounds, so the same list there spans all of it.
+    let json = r#"{"os": ["windows", "macos"]}"#;
+    let (_title, _html, blocks) = render_json_document(json, None);
+    let list = blocks
+        .iter()
+        .find(|block| block.kind == "data_list")
+        .expect("a list block");
+    assert_eq!(&json[list.start..list.end], "\"windows\", \"macos\"");
+}
+
+#[test]
+fn a_list_that_skipped_a_silent_item_carries_no_range() {
+    // Same rule as the grouped-block case, from the other direction: `null` says
+    // nothing so it is not listed, which leaves the range reaching across source
+    // the block never showed. It gets none.
+    let json = r#"{"os": ["windows", null, "macos"]}"#;
+    let (_title, html, blocks) = render_json_document(json, None);
+
+    assert_contains(&html, "<li>windows</li>");
+    assert_contains(&html, "<li>macos</li>");
+    assert_eq!(html.matches("<li>").count(), 2, "{html}");
+    assert!(
+        !blocks.iter().any(|block| block.kind == "data_list"),
+        "{blocks:?}"
+    );
+}
+
+#[test]
+fn json_source_ranges_survive_multi_byte_text_above_them() {
+    // The reader copies whole characters and advances by their UTF-8 width, so a
+    // value below non-ASCII text still anchors where it really sits.
+    let json = "{\"标题\": \"文档\", \"shell\": \"bash\"}";
+
+    let (_title, _html, blocks) = render_json_document(json, None);
+
+    assert_eq!(blocks.len(), 2, "{blocks:?}");
+    assert_eq!(&json[blocks[0].start..blocks[0].end], "\"文档\"");
+    assert_eq!(&json[blocks[1].start..blocks[1].end], "\"bash\"");
+}
+
+#[test]
+fn json_string_escapes_decode_and_hostile_text_stays_inert() {
+    // `🌿` is a surrogate pair — one character, not two lost halves.
+    let json = r#"{"quote": "say \"hi\"", "leaf": "🌿", "html": "<script>x</script>"}"#;
+
+    let (_title, html, _blocks) = render_json_document(json, None);
+
+    assert_contains(&html, "say \"hi\"");
+    assert_contains(&html, "🌿");
+    // This body is never sanitized downstream — the renderer escapes as it
+    // writes, so markup in a value has to come out inert.
+    assert_contains(&html, "&lt;script&gt;");
+    assert!(!html.contains("<script>"), "{html}");
+}
+
+#[test]
+fn a_malformed_unicode_escape_is_reported_not_guessed() {
+    // `from_str_radix` accepts a leading sign, so this must be rejected on its
+    // own rather than read as 0x12f.
+    let (_title, html, _blocks) = render_json_document(r#"{"a": "\u+12f"}"#, None);
+    assert_contains(&html, "four hex digits");
+}
+
+#[test]
+fn yaml_collections_carry_no_source_range_at_all() {
+    // A block's range is spliced verbatim by the source editor, and nothing can
+    // prove where a YAML collection ends — its closing marker points at whatever
+    // token came next. So tables and lists built from YAML carry no range and stay
+    // read-only, while the plain scalars inside the same file keep theirs.
+    let yaml = "steps:\n  - name: Checkout\n    uses: actions/checkout@v4\n  - name: Build\n    uses: actions/build@v1\n";
+
+    let (_title, html, blocks) = render_yaml_document(yaml, None);
+
+    // The table renders, but without offsets, so it is never source-edited.
+    assert_contains(&html, "<table class=\"data-table\"");
+    let table_tag = &html[html.find("<table").expect("a table")..];
+    assert!(!table_tag[..table_tag.find('>').unwrap()].contains("data-src-start"));
+    assert!(
+        !blocks.iter().any(|block| block.kind == "data_table"),
+        "{blocks:?}"
+    );
+
+    // Every range that *is* recorded slices out exactly the text it stands for.
+    for block in &blocks {
+        assert!(yaml.get(block.start..block.end).is_some(), "{block:?}");
+    }
+}
+
+#[test]
+fn json_reads_files_that_carry_comments_and_trailing_commas() {
+    // `.json` files people actually open — tsconfig, editor settings — have both.
+    // Refusing to render them is the worse answer.
+    let jsonc = r#"{
+  // the compiler options
+  "compilerOptions": {
+    "strict": true, /* on purpose */
+    "target": "es2022",
+  },
+}"#;
+
+    let (_title, html, _blocks) = render_json_document(jsonc, Some("Tsconfig"));
+
+    assert_contains(&html, ">Compiler options</h2>");
+    assert_contains(&html, "<dt>Target</dt>");
+    assert!(!html.contains("parse error"), "{html}");
+}
+
+#[test]
+fn malformed_json_reports_the_line_rather_than_rendering_nothing() {
+    let broken = "{\n  \"a\": 1,\n  \"b\": ,\n}";
+
+    let (title, html, blocks) = render_json_document(broken, Some("Broken"));
+
+    assert!(title.is_none(), "{title:?}");
+    assert_contains(&html, "<strong>JSON parse error.</strong>");
+    assert_contains(&html, "(line 3)");
+    assert!(blocks.is_empty(), "{blocks:?}");
+}
+
+#[test]
+fn yaml_resolves_aliases_and_splices_merge_keys() {
+    let yaml = r#"defaults: &defaults
+  shell: bash
+  timeout: 10
+jobs:
+  build:
+    <<: *defaults
+    runs-on: windows-latest
+"#;
+
+    let (_title, html, _blocks) = render_yaml_document(yaml, Some("Workflow"));
+
+    // `<<: *defaults` means "those pairs, here" — so the merged keys show up
+    // under Build, and no field is literally named `<<`.
+    assert_contains(&html, ">Build</h3>");
+    assert!(!html.contains("&lt;&lt;"), "{html}");
+    let build = &html[html.find(">Build</h3>").expect("a build section")..];
+    assert_contains(build, "<dt>Shell</dt>");
+    assert_contains(build, "<dt>Timeout</dt>");
+    assert_contains(build, "<dt>Runs on</dt>");
+}
+
+#[test]
+fn yaml_anchors_only_the_scalars_whose_range_it_can_prove() {
+    let yaml = "plain: bash\nquoted: \"bash\"\nblock: |\n  two\n  lines\n";
+
+    let (_title, _html, blocks) = render_yaml_document(yaml, None);
+
+    // A plain scalar's source is character-for-character its value, so it gets a
+    // range. A quoted or block scalar's source carries quotes or a `|` that the
+    // value does not, so it gets none — an approximate range is worse than one
+    // that is simply absent.
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert_eq!(&yaml[blocks[0].start..blocks[0].end], "bash");
+    assert_eq!(
+        blocks[0].start,
+        yaml.find("bash").expect("the plain scalar")
+    );
+}
+
+#[test]
+fn yaml_source_ranges_are_byte_offsets_not_character_counts() {
+    // The YAML scanner's markers count *characters*; every block range in the app
+    // is a byte offset. Without the conversion, any file with non-ASCII text
+    // above a value would anchor that value short of where it really sits.
+    let yaml = "título: 汉字文档\nshell: bash\n";
+
+    let (_title, _html, blocks) = render_yaml_document(yaml, None);
+
+    assert_eq!(blocks.len(), 2, "{blocks:?}");
+    for block in &blocks {
+        // A range that slices cleanly is a range measured in bytes.
+        assert!(yaml.get(block.start..block.end).is_some(), "{block:?}");
+    }
+    assert_eq!(&yaml[blocks[0].start..blocks[0].end], "汉字文档");
+    assert_eq!(&yaml[blocks[1].start..blocks[1].end], "bash");
+}
+
+#[test]
+fn yaml_stream_of_several_documents_reads_as_a_list_of_them() {
+    let yaml = "---\nkind: Service\nname: web\n---\nkind: Deployment\nname: api\n";
+
+    let (_title, html, _blocks) = render_yaml_document(yaml, Some("Manifests"));
+
+    // Two flat records of the same shape are a table, whether they arrived as one
+    // sequence or as two documents.
+    assert_contains(&html, "<table class=\"data-table\"");
+    assert_contains(&html, "<th>Kind</th>");
+    assert_contains(&html, "<tr><td>Service</td><td>web</td></tr>");
+    assert_contains(&html, "<tr><td>Deployment</td><td>api</td></tr>");
+}
+
+#[test]
+fn malformed_yaml_reports_a_parse_error() {
+    let broken = "a:\n  - one\n b: two\n";
+
+    let (title, html, blocks) = render_yaml_document(broken, Some("Broken"));
+
+    assert!(title.is_none(), "{title:?}");
+    assert_contains(&html, "<strong>YAML parse error.</strong>");
+    assert!(blocks.is_empty(), "{blocks:?}");
+}
+
+#[test]
+fn deeply_nested_data_is_refused_rather_than_overflowing_the_stack() {
+    // A reader that recurses on a hostile file is a crash, not a rendering
+    // problem, so both refuse depth far past anything a real document reaches.
+    // The JSON reader is ours and reports its own limit; YAML is refused by the
+    // parser's built-in recursion limit first, which is a good part of why a
+    // maintained and fuzzed crate was worth one dependency.
+    let json = format!("{}1{}", "[".repeat(400), "]".repeat(400));
+    let (title, html, blocks) = render_json_document(&json, None);
+    assert_contains(&html, "nested too deeply");
+    assert!(title.is_none() && blocks.is_empty());
+
+    // Flow style, because indented dashes are one flat sequence holding a
+    // multi-line scalar rather than a nest.
+    let yaml = format!("{}a{}", "[".repeat(400), "]".repeat(400));
+    let (title, html, blocks) = render_yaml_document(&yaml, None);
+    assert_contains(&html, "<strong>YAML parse error.</strong>");
+    assert_contains(&html, "recursion limit exceeded");
+    assert!(title.is_none() && blocks.is_empty());
 }
 
 #[test]
@@ -4446,10 +4810,11 @@ fn app_shell_locale_bootstrap_keeps_initial_text_nonblank() {
             "'actions.open': 'Open'",
             "'actions.chooseFile': 'Choose file'",
             "'actions.close': 'Close file'",
-            "'empty.description': 'Open any Markdown file for a calm, focused read. Turn over a new leaf.'",
+            "'empty.description': 'Open a file and read it in peace. It stays on your device, in plain text you own.'",
             "'empty.kicker': 'Leaf Text'",
-            "'empty.title': 'Readable XML and Markdown'",
-            "'empty.noRecent': 'Recent files will appear here after you open a document.'",
+            "'empty.title': 'Refine your mind.'",
+            "'empty.subtitle': 'Your thoughts, secure and free.'",
+            "'empty.noRecent': 'Files you open show up here, so you can pick up where you left off.'",
             "'settings.heading': 'Settings'",
             "TRANSLATIONS.en[key] || key",
         ] {
@@ -7011,8 +7376,19 @@ fn document_format_follows_extension() {
         DocumentFormat::from_path(Path::new("book.XML")),
         DocumentFormat::Xml
     );
+    assert_eq!(
+        DocumentFormat::from_path(Path::new("package.json")),
+        DocumentFormat::Json
+    );
+    for name in ["release.yaml", "release.YML"] {
+        assert_eq!(
+            DocumentFormat::from_path(Path::new(name)),
+            DocumentFormat::Yaml,
+            "{name}"
+        );
+    }
     // Unknown / missing extensions route through the Markdown renderer, matching
-    // how the loader treats everything that is not `.xml`.
+    // how the loader treats everything it does not recognise.
     assert_eq!(
         DocumentFormat::from_path(Path::new("README")),
         DocumentFormat::Markdown

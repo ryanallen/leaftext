@@ -1,19 +1,19 @@
 # Building
 
-> Set up a Rust development environment, clone the repository, and run the leaftext verification suite with `just verify` before contributing.
+> Set up a Rust development environment, clone the repository, and run the Leaf Text verification suite with `just verify` before contributing.
 
-leaftext is a Rust application (edition 2021). Building from source requires the Rust toolchain and the `just` command runner.
+Leaf Text is a Rust application (edition 2021). Building from source requires the Rust toolchain and the `just` command runner.
 
 ## Prerequisites
 
-Before building leaftext, make sure the following are installed:
+Before building Leaf Text, make sure the following are installed:
 
 - **Rust (stable toolchain)** — install via [rustup](https://rustup.rs/). The project targets Rust 2021 edition as declared in `Cargo.toml`.
-- **`just` command runner** — install with `cargo install just`. leaftext uses a `Justfile` to orchestrate formatting, type-checking, testing, and releases.
+- **`just` command runner** — install with `cargo install just`. Leaf Text uses a `Justfile` to orchestrate formatting, type-checking, testing, and releases.
 - **Platform-specific WebView dependency**: none to install. macOS provides WKWebView, and Windows provides WebView2 through the Microsoft Edge WebView2 Runtime.
 
 > [!NOTE]
-> leaftext builds for Windows and macOS only. Any other target stops the build with a `compile_error!` in `src/main.rs` rather than failing later in a platform code path.
+> Leaf Text builds for Windows and macOS only. Any other target stops the build with a `compile_error!` in `src/main.rs` rather than failing later in a platform code path.
 
 ## Clone and build
 
@@ -35,7 +35,7 @@ Launch the app directly from the source tree:
 cargo run
 ```
 
-This compiles (if needed) and starts leaftext. Open a Markdown file with `Ctrl+O` / `Cmd+O`.
+This compiles (if needed) and starts Leaf Text. Open a Markdown file with `Ctrl+O` / `Cmd+O`.
 
 ## Verification suite
 

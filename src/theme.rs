@@ -2843,15 +2843,15 @@ body.library-resizing {
 .document-body .tei-front-body > :first-child {
   margin-top: 0.7em;
 }
-/* Generic (non-TEI) XML: label/value rows share one two-column grid, so the
-   labels line up down the page. */
-.document-body .xml-fields {
+/* Tree documents — generic (non-TEI) XML, JSON, YAML: label/value rows share one
+   two-column grid, so the labels line up down the page. */
+.document-body .data-fields {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   gap: 0.3em 1.2em;
   margin: var(--type-spacing) 0;
 }
-.document-body .xml-fields dt {
+.document-body .data-fields dt {
   color: var(--preview-muted-foreground);
   font-family: var(--app-font);
   font-size: 0.9em;
@@ -2859,26 +2859,27 @@ body.library-resizing {
   line-height: inherit;
   padding-top: 0.12em;
 }
-.document-body .xml-fields dd {
+.document-body .data-fields dd {
   margin: 0;
   overflow-wrap: anywhere;
 }
 /* An element's attributes sit tighter under its heading than its content does. */
-.document-body .xml-attributes {
+.document-body .data-attributes {
   margin-top: calc(-0.4 * var(--type-spacing));
 }
 /* Attributes carried alongside a value, shown after it. */
-.document-body .xml-value-attrs {
+.document-body .data-value-attrs {
   color: var(--preview-muted-foreground);
   font-size: 0.9em;
 }
-/* Repeated records (a sitemap's urls, a POM's dependencies) become a table.
-   Long URL cells wrap rather than pushing the table into a scroll. */
-.document-body .xml-table {
+/* Repeated records (a sitemap's urls, a POM's dependencies, a JSON array of
+   objects) become a table. Long URL cells wrap rather than pushing the table
+   into a scroll. */
+.document-body .data-table {
   font-size: 0.95em;
   width: 100%;
 }
-.document-body .xml-table td {
+.document-body .data-table td {
   overflow-wrap: anywhere;
   vertical-align: top;
 }
@@ -3843,7 +3844,15 @@ body.library-resizing {
   color: var(--empty-heading);
   font: 700 clamp(2.6rem, 7vw, 5.2rem) / 1.04 var(--heading-font);
   letter-spacing: -0.01em;
-  margin: 0 0 18px;
+  margin: 0 0 10px;
+}
+/* The second half of the brand lockup — quieter than the headline, but still
+   set in the heading face so the two lines read as one statement. */
+.empty-subtitle {
+  color: var(--preview-muted-foreground);
+  font: 500 clamp(1.15rem, 2.4vw, 1.6rem) / 1.25 var(--heading-font);
+  letter-spacing: -0.005em;
+  margin: 0 0 20px;
 }
 .empty-description {
   color: var(--preview-muted-foreground);

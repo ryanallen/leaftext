@@ -25,7 +25,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 // Site identity, derived from the repo so this file stays portable.
 const ORIGIN = 'https://' + readFileSync(join(ROOT, 'CNAME'), 'utf8').trim();
 const BRAND = 'Leaf Text';
-const TAGLINE = 'A desktop reader for Markdown. Open a file. Read it.';
+const TAGLINE =
+  'Refine your mind. Your thoughts, secure and free. A free desktop app for reading and writing your own documents, on your own machine.';
 const REPO = 'https://github.com/ryanallen/leaftext';
 const OG_IMAGE = existsSync(join(ROOT, 'imgs/leaftext.png')) ? ORIGIN + '/imgs/leaftext.png' : '';
 

@@ -1,6 +1,6 @@
 # Navigation
 
-> leaftext keeps browser-like history for Markdown reading: tabs, Back/Forward, in-document jumps, and scroll restoration after reloads.
+> Never lose your place. Leaf Text moves like a browser — tabs, Back and Forward, in-document jumps, and your scroll position kept across reloads.
 
 The navigation model is simple from the outside and fairly careful under the hood. Each tab keeps its own file history and its own in-document scroll history.
 
@@ -59,7 +59,7 @@ Tab cycling is `Ctrl`-based on every platform, including macOS. Mouse side butto
 - Tabs can be dragged to reorder them.
 - Clicking a tab while the [Graph view](03-library.md#graph) is open flies the graph to that document's node and zooms in on it.
 - Closing the last tab returns to the home screen. So does clicking the leaf mark at the left of the app bar, which brightens on hover to show it is a control.
-- Opening a file while leaftext is already running (e.g. Explorer "Open with", or double-clicking a `.md`/`.xml`) reuses the running window — the file opens as a new tab and the window comes to the front, rather than launching a second copy of the app.
+- Opening a file while Leaf Text is already running (e.g. Explorer "Open with", or double-clicking a `.md`/`.xml`) reuses the running window — the file opens as a new tab and the window comes to the front, rather than launching a second copy of the app.
 
 ### When the bar runs out of room
 
@@ -77,11 +77,11 @@ Open `README.md`, then click a link to `docs/guide.md`. Back returns to `README.
 
 Jump from `#intro` to `#api` inside the same document. Back returns to the earlier reading position instead of switching files.
 
-That second case is why leaftext keeps scroll history separately from file history.
+That second case is why Leaf Text keeps scroll history separately from file history.
 
 ## Restore
 
-leaftext stores a reading position as a `ScrollAnchor`:
+Leaf Text stores a reading position as a `ScrollAnchor`:
 
 | Part | Meaning |
 | --- | --- |
@@ -91,11 +91,11 @@ leaftext stores a reading position as a `ScrollAnchor`:
 
 This is more stable than storing only raw scroll pixels, so the app can usually return to the same paragraph after rerendering.
 
-The same anchor also holds your place while a document is still settling. Images decode, Mermaid diagrams and math render, and the Pager arrives a beat later; each changes the page height, and leaftext re-pins the reader to its anchor so the text you were reading stays where you left it. Anything that moves the reader therefore records a fresh anchor as it lands — including a click or drag on the [minimap](04-minimap.md) — or the next late arrival would restore the spot you jumped away from.
+The same anchor also holds your place while a document is still settling. Images decode, Mermaid diagrams and math render, and the Pager arrives a beat later; each changes the page height, and Leaf Text re-pins the reader to its anchor so the text you were reading stays where you left it. Anything that moves the reader therefore records a fresh anchor as it lands — including a click or drag on the [minimap](04-minimap.md) — or the next late arrival would restore the spot you jumped away from.
 
 ## Reload
 
-When the current file changes on disk, leaftext reloads it and tries to preserve your place.
+When the current file changes on disk, Leaf Text reloads it and tries to preserve your place.
 
 ```mermaid
 sequenceDiagram
@@ -112,8 +112,8 @@ sequenceDiagram
 Key details:
 
 - The file watcher debounces events with a 200 ms window.
-- leaftext hashes the file contents to skip duplicate reloads.
-- Reload re-renders through the same pipeline the file opened with — [XML](01-rendering.md#xml) stays XML, Markdown stays Markdown.
+- Leaf Text hashes the file contents to skip duplicate reloads.
+- Reload re-renders through the same pipeline the file opened with — [XML](01-rendering.md#xml) stays XML, [JSON and YAML](01-rendering.md#data-files-json-and-yaml) stay themselves, Markdown stays Markdown.
 - The parent directory is watched instead of only the file, so atomic-save editors still work.
 - Other Markdown files changed in that same folder are indexed live, so the [library](03-library.md#live-updates) pane stays current too.
 - Replacing an [image](01-rendering.md#images) the document shows refreshes the picture in place, without a rerender, so the reader does not move.
@@ -129,7 +129,7 @@ The no-file home screen shows the last 8 opened files.
 
 ## Loading
 
-Opening a document hands it to the Rust side to parse and render before the view comes back, and building the page in the reading view can itself take a moment for a large file. For a big document either half of that is slow, so leaftext shows a spinner over the reader while the work happens and clears it the instant the new view arrives.
+Opening a document hands it to the Rust side to parse and render before the view comes back, and building the page in the reading view can itself take a moment for a large file. For a big document either half of that is slow, so Leaf Text shows a spinner over the reader while the work happens and clears it the instant the new view arrives.
 
 - The spinner covers every path that loads a view: opening a file (from [recent files](#recent-files), the [library](03-library.md), a link, the Open dialog, or drag-and-drop), Back/Forward, switching tabs, and toggling the [code view](07-editing.md#code-view) in either direction.
 - It appears immediately when a load starts, so a quick load may show it briefly rather than not at all.
@@ -139,9 +139,9 @@ Opening a document hands it to the Rust side to parse and render before the view
 
 ## Glossary
 
-A document draws its terms from a shared glossary file. You do not have to link them yourself: wherever a defined term appears in the text, leaftext links it for you. Clicking one does not switch documents: it opens that single glossary entry in a sheet that slides up over the page you are reading, so you keep your place underneath.
+A document draws its terms from a shared glossary file. You do not have to link them yourself: wherever a defined term appears in the text, Leaf Text links it for you. Clicking one does not switch documents: it opens that single glossary entry in a sheet that slides up over the page you are reading, so you keep your place underneath.
 
-- Terms are matched automatically in both Markdown and [XML](01-rendering.md#xml) documents — whole words, ignoring case — so the same glossary covers every page with no per-page markup.
+- Terms are matched automatically in every format Leaf Text renders — Markdown, [XML](01-rendering.md#xml), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) — whole words, ignoring case — so the same glossary covers every page with no per-page markup.
 - Text that is already a link, or inside code, is left alone, and the glossary file never links its own entries to themselves.
 - Dismiss the sheet with its close button, by clicking outside it, or with the `Escape` key.
 - A link inside the sheet that points at another glossary term swaps the entry in place; any other link leaves the glossary and follows the link normally.
@@ -185,18 +185,18 @@ Every document opens with an **Outline** — a table of contents built automatic
 - The collapsed header shows the document's total length — **Outline (312 lines)** — counted in the same running block numbers as the [line gutter](01-rendering.md#inline-html), so the count matches the last gutter number on the page.
 - Entries nest as a bulleted list that mirrors the heading levels, so the shape of the document is visible at a glance.
 - Each entry links to its heading, so clicking one jumps straight there.
-- It is built from the rendered headings, so it behaves the same for Markdown and [XML](01-rendering.md#xml).
+- It is built from the rendered headings, so it behaves the same for Markdown, [XML](01-rendering.md#xml), and [JSON or YAML](01-rendering.md#data-files-json-and-yaml).
 - It appears whenever a document has a title plus at least one more heading; a document with only a title shows none.
 
 The outline lists the sections within the current document, which makes it a companion to the [minimap](04-minimap.md): the outline is the document's structure as clickable text, the minimap a scaled picture of the whole page.
 
 ## Pager
 
-When you open a Markdown or [XML](01-rendering.md#xml) document that sits inside a folder tree connected by `README.md` files, leaftext appends a **Previous / Next** bar at the bottom of the page. Clicking a button opens the adjacent document in reading order without creating an extra history entry.
+When you open a Markdown, [XML](01-rendering.md#xml), [JSON, or YAML](01-rendering.md#data-files-json-and-yaml) document that sits inside a folder tree connected by `README.md` files, Leaf Text appends a **Previous / Next** bar at the bottom of the page. Clicking a button opens the adjacent document in reading order without creating an extra history entry.
 
-Reading order follows the same depth-first walk the docs viewer uses: inside each folder, non-README documents come first (Markdown and XML together, sorted by name), then each subfolder — its README acting as the folder's landing page — followed by that folder's own pages. `README` and `GLOSSARY` files (either extension) are never standalone entries in the sequence.
+Reading order follows the same depth-first walk the docs viewer uses: inside each folder, non-README documents come first (every renderable format together — Markdown, XML, JSON, and YAML — sorted by name), then each subfolder — its README acting as the folder's landing page — followed by that folder's own pages. `README` and `GLOSSARY` files (either extension) are never standalone entries in the sequence.
 
-Working out the Previous / Next links means scanning the folder tree, so leaftext does it after the document is already on screen rather than blocking the initial render. A placeholder bar shows in its place for the moment it takes, then the real buttons fill in. In a folder with a great many files the page appears immediately and the pager simply arrives a beat later.
+Working out the Previous / Next links means scanning the folder tree, so Leaf Text does it after the document is already on screen rather than blocking the initial render. A placeholder bar shows in its place for the moment it takes, then the real buttons fill in. In a folder with a great many files the page appears immediately and the pager simply arrives a beat later.
 
 The pager is on by default and can be turned off in [Settings](05-settings.md#pager).
 

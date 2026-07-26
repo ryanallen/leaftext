@@ -11,11 +11,13 @@ use crate::*;
 pub enum DocumentFormat {
     Markdown,
     Xml,
+    Json,
+    Yaml,
 }
 
 impl DocumentFormat {
-    /// The format for a path. Only `.xml` is XML; everything else is Markdown,
-    /// matching how the loader routes files.
+    /// The format for a path. Everything unrecognised is Markdown, matching how
+    /// the loader routes files.
     pub fn from_path(path: &Path) -> Self {
         match path
             .extension()
@@ -24,6 +26,8 @@ impl DocumentFormat {
             .as_deref()
         {
             Some("xml") => Self::Xml,
+            Some("json") => Self::Json,
+            Some("yaml" | "yml") => Self::Yaml,
             _ => Self::Markdown,
         }
     }
@@ -33,6 +37,8 @@ impl DocumentFormat {
         match self {
             Self::Markdown => "markdown",
             Self::Xml => "xml",
+            Self::Json => "json",
+            Self::Yaml => "yaml",
         }
     }
 
@@ -41,6 +47,8 @@ impl DocumentFormat {
         match self {
             Self::Markdown => "Markdown",
             Self::Xml => "XML",
+            Self::Json => "JSON",
+            Self::Yaml => "YAML",
         }
     }
 }
@@ -226,20 +234,25 @@ impl EditableDocument {
     }
 
     /// The block source map for the live buffer: Markdown via pulldown-cmark
-    /// offsets, XML via roxmltree node ranges. The reading view attaches these
-    /// to rendered blocks so an edit knows which source range to splice.
+    /// offsets, XML via roxmltree node ranges, JSON and YAML via their readers.
+    /// The reading view attaches these to rendered blocks so an edit knows which
+    /// source range to splice. JSON and YAML blocks are mapped but never
+    /// editable — see [`crate::data`] for why.
     pub fn block_source_map(&self) -> Vec<BlockSpan> {
         match self.format {
             DocumentFormat::Markdown => block_source_map(&self.text),
             DocumentFormat::Xml => xml_block_source_map(&self.text),
+            DocumentFormat::Json => json_block_source_map(&self.text),
+            DocumentFormat::Yaml => yaml_block_source_map(&self.text),
         }
     }
 
-    /// The task-marker offsets for the live buffer (Markdown only; empty for XML).
+    /// The task-marker offsets for the live buffer (Markdown only; the data
+    /// formats have no task lists).
     pub fn task_offsets(&self) -> Vec<usize> {
         match self.format {
             DocumentFormat::Markdown => task_marker_offsets(&self.text),
-            DocumentFormat::Xml => Vec::new(),
+            DocumentFormat::Xml | DocumentFormat::Json | DocumentFormat::Yaml => Vec::new(),
         }
     }
 
