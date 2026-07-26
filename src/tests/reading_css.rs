@@ -491,6 +491,113 @@ fn reading_mode_css_pins_reader_to_its_grid_cell() {
 }
 
 #[test]
+fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
+    // The wash has to be a sibling in the reader's grid cell, hung off the app
+    // bar's height at the top. Inside the scroller it would be positioned
+    // against the scrolled content and slide away with the document; drawn from
+    // the cell's top it would sit behind the opaque bar and never show.
+    let css = reading_mode_css();
+    let rule_start = css
+        .find(".reader-edge-fade {")
+        .expect("reading-mode CSS should define .reader-edge-fade");
+    let rule_end = css[rule_start..]
+        .find('}')
+        .map(|offset| rule_start + offset)
+        .expect(".reader-edge-fade rule should close");
+    let rule = &css[rule_start..rule_end];
+
+    assert_contains(rule, "grid-column: 2;");
+    assert_contains(rule, "grid-row: 1;");
+    assert_contains(rule, "pointer-events: none;");
+    // The wash behind the dot screen: one band per edge, opaque at each cut and
+    // gone by the far side. It sits here rather than on the bands because those
+    // are masked, and the mask would ramp it a second time.
+    assert_contains(rule, "--reader-edge-fade-depth: 36px;");
+    assert_contains(rule, "--reader-edge-fade-hold: 2px;");
+    // The scrollbar belongs to the scroller, which paints it inside a box this
+    // overlay sits on top of — there is no z-index that puts it back on top, so
+    // the bands hold off its gutter instead. It closes with the minimap rail.
+    assert_contains(
+        rule,
+        "margin: 0 calc(var(--reader-scrollbar) + 1px) 1px 1px;",
+    );
+    assert_contains(css, "  --reader-scrollbar: 14px;");
+    let railed = rule_body(css, "body:has(.document-minimap) {");
+    assert_contains(railed, "--reader-scrollbar: 0px;");
+    // Same width the scrollbar itself is set to, which stays a literal there:
+    // Chromium won't re-resolve a scrollbar pseudo-element on a :has() flip.
+    let bar = rule_body(css, ".reader-shell:not(.has-minimap)::-webkit-scrollbar {");
+    assert_contains(bar, "width: 14px;");
+    assert_eq!(rule.matches("linear-gradient(").count(), 2);
+    // The wash spans the same depth as the screen over it, not its own. Given a
+    // shorter one its ramp ended where the screen's carried on, and the break in
+    // slope read as a bright line at the halfway mark.
+    assert_contains(rule, "background-size: 100% var(--reader-edge-fade-depth);");
+    assert_contains(
+        rule,
+        "background-position: 0 var(--app-bar-height), 0 100%;",
+    );
+    assert_contains(
+        css,
+        ".reader-edge-fade::before {\n  top: var(--app-bar-height);",
+    );
+    assert_contains(css, ".reader-edge-fade::after {\n  bottom: 0;");
+    // The code view repaints the card, so the fade has to follow that colour.
+    assert_contains(css, ":root[data-code-view=\"true\"] .reader-edge-fade {");
+}
+
+#[test]
+fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
+    // The edge is the chrome's dot screen in the page's colour, so it has to be
+    // the same circle on the same lattice — retune the bar's grain and this has
+    // to come with it or the two stop matching.
+    let css = reading_mode_css();
+    let grain = " 0 0.6px, transparent 0.7px";
+    let bar = rule_body(css, ".app-bar {");
+    assert_contains(bar, grain);
+    assert_contains(bar, "background-size: 2px 2px;");
+
+    let shared = rule_body(css, ".reader-edge-fade::before,");
+    assert_contains(shared, grain);
+    assert_contains(shared, "background-size: 2px 2px;");
+    // Depth is one number, shared with the wash under the screen.
+    assert_contains(shared, "height: var(--reader-edge-fade-depth);");
+    // One window-anchored lattice across every grained surface.
+    assert_contains(shared, "background-attachment: fixed;");
+    // One even screen. A second dot layer means a size ramp came back, and every
+    // version of that read as stacked bands.
+    assert_eq!(shared.matches("radial-gradient(").count(), 1);
+
+    // Opposite directions, and both taking their hold from the same variable the
+    // wash does: the two fades cover one span, and any daylight between their
+    // profiles comes back as a bright line where the slopes part. A transform
+    // would flip the box but also make it the containing block for its own fixed
+    // background, knocking it off the shared lattice.
+    // Anchored past the shared rule, whose own selector list ends in the same
+    // `.reader-edge-fade::after {` the bottom band's rule opens with.
+    let standalone = &css[css
+        .find(".reader-edge-fade::before {")
+        .expect("the top band should have its own rule")..];
+    let top = rule_body(standalone, ".reader-edge-fade::before {");
+    let bottom = rule_body(standalone, ".reader-edge-fade::after {");
+    assert_contains(top, "mask-image: linear-gradient(\n    to bottom,");
+    assert_contains(bottom, "mask-image: linear-gradient(\n    to top,");
+    for edge in [top, bottom] {
+        assert_contains(edge, "#000 0 var(--reader-edge-fade-hold),");
+        // WebView2 is Chromium, but WKWebView wants the prefix.
+        assert_contains(edge, "-webkit-mask-image:");
+        assert!(!edge.contains("transform:"));
+    }
+}
+
+#[test]
+fn app_shell_hosts_the_reader_edge_fade() {
+    let html = app_shell_html();
+
+    assert_contains(&html, "class=\"reader-edge-fade\"");
+}
+
+#[test]
 fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
     let css = reading_mode_css();
 

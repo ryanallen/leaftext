@@ -204,6 +204,11 @@
      through the gap, so the page reads as a card floating on the bar's texture
      rather than something bleeding off the edge of the glass. */
   --reader-gutter: 8px;
+  /* The gutter the reader's scrollbar occupies, for overlays that must keep off
+     it. Repeats ::-webkit-scrollbar's width rather than feeding it: that rule
+     stays class-driven because Chromium won't re-resolve a scrollbar pseudo on a
+     :has() flip. */
+  --reader-scrollbar: 14px;
   /* The minimap rail's metrics. Global because the rail sits outside the page
      now: the shell sizes its column from them, and the rail itself reads them
      from the other side of that boundary. */
@@ -1160,6 +1165,9 @@ summary:focus-visible {
    the rail. */
 body:has(.document-minimap) {
   --reader-minimap-column: calc(var(--minimap-width) + var(--reader-minimap-gap));
+  /* The rail is the scroll affordance while it's up, so the native bar is
+     hidden and its gutter closes with it. */
+  --reader-scrollbar: 0px;
 }
 .library-shell {
   display: grid;
@@ -1780,6 +1788,126 @@ body.library-resizing {
 .library-shell.library-closed .reader-loading {
   /* No rail to sit against, so the card is held off the left frame too. */
   margin-left: var(--reader-gutter);
+}
+/* Where the page's content ends. Both edges are hard cuts: the top slides under
+   an opaque app bar, the bottom stops dead at the card's hairline, and a line of
+   text sliced through its x-height reads as a rendering fault. These dissolve
+   the last few pixels back to the page colour instead.
+   Its own element in the reader's grid cell, not a pseudo-element inside the
+   scroller: an absolutely positioned child of a scroll container is placed
+   against the scrolled content, so it would slide away with the document. Same
+   placement trick as .reader-loading. */
+.reader-edge-fade {
+  /* The surface being dissolved to. The code view repaints the card in the
+     editor's code colour, so the dots have to follow it or the last lines break
+     up into the wrong page. */
+  --reader-edge-fade-surface: var(--preview-background);
+  /* How deep each edge reaches — one number for the dot screen and the wash
+     under it, which have to end together. Given half the depth the wash stopped
+     where the screen carried on, and the break in slope read as a bright edge at
+     the halfway mark; the eye catches a change of gradient far more readily than
+     a gradient. */
+  --reader-edge-fade-depth: 36px;
+  /* How long both fades hold at full before going, so the cut is crossed solid.
+     Shared for the same reason as the depth: one profile, not two. */
+  --reader-edge-fade-hold: 2px;
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  pointer-events: none;
+  /* The wash the dot screen sits on, one band per edge. On the element, not the
+     bands: those carry the mask that fades the dots, and a mask takes the whole
+     box with it, so the wash would come out ramped twice. A parent's background
+     paints under its pseudo-elements, which puts it behind the screen for free. */
+  background-image: linear-gradient(
+      to bottom,
+      var(--reader-edge-fade-surface) 0 var(--reader-edge-fade-hold),
+      transparent
+    ),
+    linear-gradient(
+      to top,
+      var(--reader-edge-fade-surface) 0 var(--reader-edge-fade-hold),
+      transparent
+    );
+  background-size: 100% var(--reader-edge-fade-depth);
+  /* The top wash starts at the bar's edge for the same reason the top band does;
+     the bottom one is anchored to the card's edge. */
+  background-position: 0 var(--app-bar-height), 0 100%;
+  background-repeat: no-repeat;
+  /* Over the document (the code view's textarea layer sits at 2), under the
+     loading wash (6), the library sheet (5) and the app bar (10). */
+  z-index: 4;
+  /* Inside the card's three hairlines, so the bottom band can't paint over the
+     stroke or spill past the rounded corners. The right side clears the
+     scrollbar as well: the browser draws it inside the scroller where an overlay
+     on the cell can't get under it, and the thumb starts at the same edge the
+     top band does, so the wash would bury it. */
+  margin: 0 calc(var(--reader-scrollbar) + 1px) 1px 1px;
+  border-radius: 0 0 calc(var(--leaf-radius-md) - 1px)
+    calc(var(--leaf-radius-md) - 1px);
+  overflow: hidden;
+}
+.library-shell.library-closed .reader-edge-fade {
+  margin-left: calc(var(--reader-gutter) + 1px);
+}
+:root[data-code-view="true"] .reader-edge-fade {
+  --reader-edge-fade-surface: var(--code-block-background, var(--preview-background));
+}
+/* The chrome's own dot grain — same circle, same 2px lattice the app bar and the
+   shell are screened with — laid over the page in the page's colour.
+
+   The ramp is a mask, not the pattern. Carrying it in the dots (a `repeat-x` row
+   per layer, radius shrinking with depth) read as stacked bands every time: rows
+   are rows however their phase is staggered, and the fat rows needed to cover
+   the cut fused into a hatch. An even screen at falling alpha has no rows in it.
+
+   `background-attachment: fixed` for the same reason the bar and shell have it —
+   one window-anchored lattice, so the phase doesn't shift where surfaces meet.
+   Hence too the bottom band flipping its mask rather than the box: a transformed
+   element becomes the containing block for its own fixed background. */
+.reader-edge-fade::before,
+.reader-edge-fade::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--reader-edge-fade-depth);
+  /* Alias only so the circle fits one line, like the bar's it has to match. */
+  --fade-dot: var(--reader-edge-fade-surface);
+  background-image: radial-gradient(circle, var(--fade-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
+/* Hung off the bar's bottom edge, not the cell's top: the cell's first 40px are
+   behind the bar, where a band would be invisible. Same hold and same span as
+   the wash beneath, which is what keeps the two from parting and drawing a
+   bright line where they do. */
+.reader-edge-fade::before {
+  top: var(--app-bar-height);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+}
+.reader-edge-fade::after {
+  bottom: 0;
+  -webkit-mask-image: linear-gradient(
+    to top,
+    #000 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to top,
+    #000 0 var(--reader-edge-fade-hold),
+    transparent
+  );
 }
 /* The rail is the reader's scroll affordance, so the native bar hides while there
    is one. On a class, not :has() — scrollbar styles don't re-resolve when a

@@ -161,6 +161,12 @@
   <div class="reader-corner reader-corner-tl" aria-hidden="true"></div>
 </aside>
 <main id="app" class="reader-shell"></main>
+<!-- Soft edges for the page. The card's top slides under an opaque bar and its
+     bottom stops at a hairline, so text used to end mid-stroke at both. This
+     overlays the same grid cell (it can't live inside the scroller — an absolute
+     child there scrolls with the content) and washes the last few pixels back to
+     the page colour. -->
+<div id="readerEdgeFade" class="reader-edge-fade" aria-hidden="true"></div>
 <!-- The minimap rail. Outside the card on purpose: it is chrome, so it sits on
      the shell's texture in its own column and the page's border stops short of
      it. Left empty rather than hidden when there is no minimap — the shell sizes

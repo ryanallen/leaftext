@@ -57,6 +57,8 @@ On a dark appearance both table stripes are grained, so a table reads as a singl
 
 Light appearances zero it. There those rows are the near-white ones, where a dot dark enough to see reads as a grey screen-door mesh laid across the whole table. The token is zeroed rather than the rule dropped, so there is still one selector to reason about against the frontmatter opt-out below.
 
+The reading and code views borrow the lattice for a different job. The page slides under the app bar at the top and stops at the card's hairline at the bottom, and a line of text cut mid-stroke at either edge reads as a fault, so each edge carries a band that dissolves the last 36px back to the page. Same circle, same lattice, but drawn in the page's own color instead of a grain token and laid over a wash of that color — both at full strength across the cut and gone by the far side. The band stops short of the scrollbar's gutter: the browser draws that inside the scroller, where an overlay on the card cannot sit beneath it.
+
 Every grained surface tiles from the window (`background-attachment: fixed`), not from its own box, so they all share one lattice — including both table stripes, so the dots run straight down the page across a stripe instead of breaking at each row edge. Box-anchored grids fall out of phase wherever two surfaces meet and the seam between them reads as a hairline.
 
 > [!NOTE]

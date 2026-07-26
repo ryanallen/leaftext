@@ -36,6 +36,16 @@ fn assert_contains(haystack: &str, needle: &str) {
     );
 }
 
+/// One rule's declarations, from its selector to the first closing brace. The
+/// compiled stylesheet has no nested rules, so the first `}` is always the end.
+fn rule_body<'a>(css: &'a str, selector: &str) -> &'a str {
+    let start = css
+        .find(selector)
+        .unwrap_or_else(|| panic!("the stylesheet should define {selector}"));
+    let body = &css[start..];
+    &body[..body.find('}').expect("the rule should close")]
+}
+
 fn local_img(path: &str) -> String {
     local_image_webview_url(path)
 }
