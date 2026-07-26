@@ -1,0 +1,565 @@
+//! Settings, recent files, locale, the format table, and on-disk locations.
+
+use super::*;
+
+#[test]
+fn locale_modes_resolve_and_fallback_safely() {
+    assert_eq!(LocaleMode::parse("system"), Some(LocaleMode::System));
+    assert_eq!(LocaleMode::parse("en"), Some(LocaleMode::En));
+    assert_eq!(LocaleMode::parse("zh-CN"), Some(LocaleMode::ZhCn));
+    assert_eq!(LocaleMode::parse("zh-cn"), None);
+    assert_eq!(LocaleMode::parse_or_system(Some("en")), LocaleMode::En);
+    assert_eq!(
+        LocaleMode::parse_or_system(Some("not-a-locale")),
+        LocaleMode::System
+    );
+    assert_eq!(LocaleMode::parse_or_system(None), LocaleMode::System);
+    assert_eq!(LocaleMode::System.storage_value(), "system");
+    assert_eq!(LocaleMode::En.storage_value(), "en");
+    assert_eq!(LocaleMode::ZhCn.storage_value(), "zh-CN");
+    assert_eq!(
+        LocaleMode::System.resolve(Some("zh-Hans")),
+        ResolvedLocale::ZhCn
+    );
+    assert_eq!(
+        LocaleMode::System.resolve(Some("zhHans")),
+        ResolvedLocale::ZhCn
+    );
+    assert_eq!(
+        LocaleMode::System.resolve(Some("zh-TW")),
+        ResolvedLocale::ZhCn
+    );
+    assert_eq!(
+        LocaleMode::System.resolve(Some("en-US")),
+        ResolvedLocale::En
+    );
+    assert_eq!(LocaleMode::System.resolve(None).lang(), "en");
+}
+
+#[test]
+fn opening_document_records_recent_file_and_persists_it() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-open-document-{unique}"));
+    let document_path = dir.join("Guide.md");
+    let config_path = dir.join("settings").join("recent-files.json");
+    fs::create_dir_all(&dir).expect("test directory is created");
+    fs::write(&document_path, "# Guide\n\nReadable.").expect("test markdown is written");
+
+    let mut recent = RecentFiles::default();
+    let result = open_document_with_recent(&document_path, &mut recent, Some(&config_path))
+        .expect("document opens");
+
+    assert_eq!(result.document.title, "Guide");
+    assert!(result.recent_save_error.is_none());
+    assert_eq!(recent.files, vec![document_path.clone()]);
+    assert_eq!(load_recent_files(&config_path).files, vec![document_path]);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn opening_missing_document_returns_typed_error_without_changing_recent_files() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let path = std::env::temp_dir().join(format!("leaf-missing-document-{unique}.md"));
+    let mut recent = RecentFiles {
+        files: vec![PathBuf::from("already-open.md")],
+    };
+
+    let error =
+        open_document_with_recent(&path, &mut recent, None).expect_err("missing file fails");
+
+    assert_eq!(error.path(), path.as_path());
+    assert_eq!(error.reason().kind(), io::ErrorKind::NotFound);
+    assert_eq!(recent.files, vec![PathBuf::from("already-open.md")]);
+}
+
+#[test]
+fn forget_removes_a_recent_entry_and_reports_whether_it_was_present() {
+    let mut recent = RecentFiles {
+        files: vec![PathBuf::from("kept.md"), PathBuf::from("gone.md")],
+    };
+
+    assert!(recent.forget(Path::new("gone.md")));
+    assert_eq!(recent.files, vec![PathBuf::from("kept.md")]);
+    // Forgetting something already absent is a no-op and reports false.
+    assert!(!recent.forget(Path::new("gone.md")));
+    assert_eq!(recent.files, vec![PathBuf::from("kept.md")]);
+}
+
+#[test]
+fn recent_file_save_error_is_returned_without_blocking_open_document() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-recent-save-error-{unique}"));
+    let document_path = dir.join("Release.md");
+    fs::create_dir_all(&dir).expect("test directory is created");
+    fs::write(&document_path, "# Release\n\nStill opens.").expect("test markdown is written");
+
+    let mut recent = RecentFiles::default();
+    let result = open_document_with_recent(&document_path, &mut recent, Some(&dir))
+        .expect("document open succeeds when recent save fails");
+    let save_error = result
+        .recent_save_error
+        .expect("recent save error is reported");
+
+    assert_eq!(result.document.title, "Release");
+    assert_eq!(recent.files, vec![document_path]);
+    assert_eq!(save_error.config_path, dir);
+
+    fs::remove_dir_all(save_error.config_path).expect("test directory is removed");
+}
+
+#[test]
+fn recent_record_collapses_equivalent_path_spellings() {
+    let mut recent = RecentFiles::default();
+
+    // `app/README.md` and `app/.tmp/../README.md` resolve to the same file.
+    let clean = Path::new("app").join("README.md");
+    let messy = Path::new("app").join(".tmp").join("..").join("README.md");
+    recent.record(clean.clone());
+    recent.record(messy);
+
+    // Both spellings resolve to the same file, so only one entry remains.
+    assert_eq!(recent.files, vec![clean]);
+}
+
+#[test]
+fn normalize_entries_collapses_existing_duplicate_spellings_on_load() {
+    let app_readme = Path::new("app").join("README.md");
+    let dharma_readme = Path::new("dharma").join("README.md");
+    let mut recent = RecentFiles {
+        files: vec![
+            Path::new("app").join(".tmp").join("..").join("README.md"),
+            dharma_readme.clone(),
+            app_readme.clone(),
+        ],
+    };
+
+    recent.normalize_entries();
+
+    // The two spellings of app/README.md collapse, keeping first-seen order.
+    assert_eq!(recent.files, vec![app_readme, dharma_readme]);
+}
+
+#[test]
+fn recent_files_are_deduplicated_and_limited() {
+    let mut recent = RecentFiles::default();
+
+    for index in 0..10 {
+        recent.record(PathBuf::from(format!("file-{index}.md")));
+    }
+    recent.record(PathBuf::from("file-5.md"));
+
+    assert_eq!(recent.files.first(), Some(&PathBuf::from("file-5.md")));
+    assert_eq!(recent.files.len(), MAX_RECENT_FILES);
+    assert_eq!(
+        recent
+            .files
+            .iter()
+            .filter(|path| path.as_os_str() == "file-5.md")
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn recent_files_persistence_round_trips_and_falls_back_safely() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-recent-persistence-{unique}"));
+    let config_path = dir.join("settings").join("recent-files.json");
+    let missing_path = dir.join("missing.json");
+
+    let mut recent = RecentFiles::default();
+    recent.record(PathBuf::from("first.md"));
+    recent.record(PathBuf::from("second.md"));
+
+    save_recent_files(&config_path, &recent).expect("recent files save");
+    assert_eq!(load_recent_files(&config_path), recent);
+    assert_eq!(load_recent_files(&missing_path), RecentFiles::default());
+
+    fs::write(&config_path, "{not json").expect("corrupt recent files fixture is written");
+    assert_eq!(load_recent_files(&config_path), RecentFiles::default());
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn settings_persistence_round_trips_and_falls_back_safely() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-settings-persistence-{unique}"));
+    let settings_path = dir.join("config").join("settings.json");
+    let missing_path = dir.join("missing.json");
+
+    let settings = Settings {
+        indexing_enabled: true,
+        minimap_enabled: false,
+        pager_enabled: false,
+        speed_reader_enabled: true,
+        line_numbers_enabled: false,
+        reader_editing_enabled: false,
+        theme_family: "nightshade".to_string(),
+        theme_mode: "dark".to_string(),
+        theme_random_used: vec!["fern".to_string(), "github".to_string()],
+        library_view: LibraryView::Graph,
+        graph_scope: GraphScope::Large,
+        library_project_path: "C:\\Users\\rwall".to_string(),
+        library_closed: true,
+        library_width: 312,
+        window_width: 1440,
+        window_height: 960,
+        window_maximized: true,
+        auto_update_enabled: false,
+        update_last_checked: 1_780_000_000,
+        update_staged_version: "0.1.400".to_string(),
+        update_auto_applied: String::new(),
+    };
+
+    save_settings(&settings_path, &settings).expect("settings save");
+    assert_eq!(load_settings(&settings_path), settings);
+    // A missing file restores defaults, not the all-false zero value.
+    assert_eq!(load_settings(&missing_path), Settings::default());
+
+    fs::write(&settings_path, "{not json").expect("corrupt settings fixture is written");
+    assert_eq!(load_settings(&settings_path), Settings::default());
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn settings_load_migrates_legacy_dracula_mode_to_the_nightshade_family() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-settings-migrate-{unique}"));
+    let settings_path = dir.join("settings.json");
+    fs::create_dir_all(&dir).expect("test directory is created");
+
+    // Pre-family installs stored Dracula as a theme mode; it becomes the dark
+    // half of the Nightshade family (the renamed Dracula palette) on load.
+    fs::write(&settings_path, r#"{"theme_mode": "dracula"}"#)
+        .expect("legacy settings fixture is written");
+    let loaded = load_settings(&settings_path);
+    assert_eq!(loaded.theme_family, "nightshade");
+    assert_eq!(loaded.theme_mode, "dark");
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn settings_load_tolerates_partial_json_via_serde_default() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-settings-partial-{unique}"));
+    let settings_path = dir.join("settings.json");
+    fs::create_dir_all(&dir).expect("test directory is created");
+
+    // Only one field present: the rest must fall back to their defaults.
+    fs::write(&settings_path, r#"{"indexing_enabled": true}"#)
+        .expect("partial settings fixture is written");
+    let loaded = load_settings(&settings_path);
+    assert!(loaded.indexing_enabled);
+    assert!(loaded.minimap_enabled);
+    assert_eq!(loaded.theme_mode, "system");
+    assert_eq!(loaded.library_view, LibraryView::Project);
+    assert!(!loaded.library_closed);
+    assert_eq!(loaded.library_width, 240);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn settings_load_migrates_the_retired_tree_and_flat_views_to_project() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-settings-library-view-{unique}"));
+    fs::create_dir_all(&dir).expect("test directory is created");
+
+    // Both retired views load as Project. The alias matters because an unknown
+    // enum value would fail the whole deserialize and reset every other setting.
+    for legacy in ["tree", "flat"] {
+        let settings_path = dir.join(format!("{legacy}.json"));
+        fs::write(
+            &settings_path,
+            format!(r#"{{"library_view": "{legacy}", "minimap_enabled": false}}"#),
+        )
+        .expect("legacy library view fixture is written");
+        let loaded = load_settings(&settings_path);
+        assert_eq!(loaded.library_view, LibraryView::Project);
+        assert!(!loaded.minimap_enabled);
+    }
+
+    // The frontend's own strings round-trip, and the retired names resolve too.
+    assert_eq!(
+        LibraryView::from_client("project"),
+        Some(LibraryView::Project)
+    );
+    assert_eq!(LibraryView::from_client("graph"), Some(LibraryView::Graph));
+    assert_eq!(LibraryView::from_client("tree"), Some(LibraryView::Project));
+    assert_eq!(LibraryView::from_client("flat"), Some(LibraryView::Project));
+    assert_eq!(LibraryView::from_client("nope"), None);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn settings_file_path_lives_in_leaftext_config() {
+    let path = settings_file_path().expect("project config directory is available");
+    assert!(path.ends_with("settings.json"));
+    assert!(path.to_string_lossy().contains("leaftext"));
+}
+
+#[test]
+fn webview_user_data_dir_uses_leaftext_local_data() {
+    let path = webview_user_data_dir().expect("project data directory is available");
+    let path_display = path.to_string_lossy();
+
+    assert!(path.ends_with("webview2"));
+    assert!(path_display.contains("leaftext"));
+}
+
+#[test]
+fn app_data_dir_is_the_local_data_root_not_the_webview_cache() {
+    let path = app_data_dir().expect("project data directory is available");
+    let path_display = path.to_string_lossy();
+    assert!(path_display.contains("leaftext"));
+    // The manifest must not live under the WebView2-specific subfolder.
+    assert!(!path.ends_with("webview2"));
+}
+
+/// These paths are where every installed copy already keeps its settings,
+/// recent files, and search index, so they are a compatibility contract, not a
+/// preference. They were captured from the `directories` crate's
+/// `ProjectDirs::from("com", "ryanallen", "leaftext")` before that dependency
+/// was replaced with the plain environment lookups in `project_config_dir` and
+/// `project_data_local_dir`. Changing either shape silently orphans user data:
+/// the app would start up looking clean, with the old settings still on disk.
+#[test]
+fn project_dirs_match_the_documented_layout() {
+    let config = project_config_dir().expect("config directory is available");
+    let data = project_data_local_dir().expect("data directory is available");
+
+    #[cfg(windows)]
+    {
+        let roaming = PathBuf::from(std::env::var_os("APPDATA").expect("APPDATA is set"));
+        let local = PathBuf::from(std::env::var_os("LOCALAPPDATA").expect("LOCALAPPDATA is set"));
+        assert_eq!(
+            config,
+            roaming.join("ryanallen").join("leaftext").join("config")
+        );
+        assert_eq!(data, local.join("ryanallen").join("leaftext").join("data"));
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let home = PathBuf::from(std::env::var_os("HOME").expect("HOME is set"));
+        let support = home
+            .join("Library/Application Support")
+            .join("com.ryanallen.leaftext");
+        // macOS draws no roaming/local distinction, so both roots are the one
+        // Application Support folder.
+        assert_eq!(config, support);
+        assert_eq!(data, support);
+    }
+}
+
+#[test]
+fn document_format_follows_extension() {
+    assert_eq!(
+        DocumentFormat::from_path(Path::new("notes.md")),
+        DocumentFormat::Markdown
+    );
+    assert_eq!(
+        DocumentFormat::from_path(Path::new("book.XML")),
+        DocumentFormat::Xml
+    );
+    assert_eq!(
+        DocumentFormat::from_path(Path::new("package.json")),
+        DocumentFormat::Json
+    );
+    for name in ["release.yaml", "release.YML"] {
+        assert_eq!(
+            DocumentFormat::from_path(Path::new(name)),
+            DocumentFormat::Yaml,
+            "{name}"
+        );
+    }
+    // Unknown / missing extensions route through the Markdown renderer, matching
+    // how the loader treats everything it does not recognise.
+    assert_eq!(
+        DocumentFormat::from_path(Path::new("README")),
+        DocumentFormat::Markdown
+    );
+}
+
+/// `for_path` is the "can we open this at all?" question, so unlike `from_path`
+/// it must not quietly answer Markdown for a format the app cannot read.
+#[test]
+fn unreadable_extensions_have_no_format() {
+    for name in [
+        "photo.png",
+        "book.epub",
+        "archive.zip",
+        "notes.txt",
+        "README",
+    ] {
+        assert_eq!(
+            DocumentFormat::for_path(Path::new(name)),
+            None,
+            "{name} is not a format the app reads"
+        );
+        assert!(!is_supported_document_path(Path::new(name)), "{name}");
+    }
+}
+
+/// Every extension the table lists must round-trip back to its own format, and
+/// the flat list the file dialog offers must be exactly those extensions. This is
+/// the test that keeps a new format from being half-added.
+#[test]
+fn every_listed_extension_maps_back_to_its_format() {
+    let mut listed = Vec::new();
+    for format in DocumentFormat::ALL {
+        assert!(
+            !format.extensions().is_empty(),
+            "{format:?} must name at least one extension"
+        );
+        for extension in format.extensions() {
+            assert_eq!(
+                &extension.to_ascii_lowercase(),
+                extension,
+                "{extension} must be listed lowercase"
+            );
+            assert_eq!(
+                DocumentFormat::from_extension(extension),
+                Some(format),
+                ".{extension} should read as {format:?}"
+            );
+            // Case-insensitively too: extensions arrive as the user typed them.
+            assert_eq!(
+                DocumentFormat::from_extension(&extension.to_ascii_uppercase()),
+                Some(format),
+                ".{extension} uppercase should read as {format:?}"
+            );
+            assert!(
+                !listed.contains(extension),
+                ".{extension} is claimed by two formats"
+            );
+            listed.push(extension);
+        }
+    }
+    assert_eq!(all_document_extensions(), listed);
+}
+
+/// The pager, the file dialog, drag-and-drop, link following and the library index
+/// each used to carry their own list. Anything the app can open must page too.
+#[test]
+fn every_readable_format_is_a_pager_page_and_an_in_app_link() {
+    for extension in all_document_extensions() {
+        assert!(
+            is_pager_page_extension(extension),
+            ".{extension} opens but Prev/Next skips it"
+        );
+        assert!(
+            is_pager_page_extension(&extension.to_ascii_uppercase()),
+            ".{extension} uppercase should page too"
+        );
+    }
+    // `.markdown` and `.mdown` open like any other page, so they must also page
+    // and lose their extension in the label.
+    assert!(is_pager_page_extension("markdown"));
+    assert!(is_pager_page_extension("mdown"));
+    assert_eq!(pager_label("getting-started.markdown"), "Getting Started");
+    assert!(!is_pager_page_extension("png"));
+}
+
+#[test]
+fn the_settings_panel_exposes_the_auto_update_toggle() {
+    let html = app_shell_html();
+    assert!(html.contains(r#"<input type="checkbox" id="autoUpdateEnabled""#));
+    assert!(html.contains(r#"data-i18n="settings.autoUpdate.label""#));
+
+    // Both locale tables must carry every update string, or the button renders
+    // blank for one of them.
+    for key in [
+        "update.available",
+        "update.downloading",
+        "update.restart",
+        "update.failed",
+        "update.failedReason",
+        "update.check",
+        "update.checkTitle",
+        "update.checking",
+        "update.upToDate",
+        "update.lastChecked",
+        "update.checkedNow",
+        "update.checkFailed",
+        "update.applyFailed",
+        "update.httpError",
+        "update.downloadsOff",
+        "update.noInstaller",
+        "settings.autoUpdate.label",
+        "settings.autoUpdate.help",
+    ] {
+        assert_eq!(
+            html.matches(&format!("'{key}':")).count(),
+            2,
+            "{key} is missing from a locale table"
+        );
+    }
+}
+
+#[test]
+fn the_settings_panel_can_check_for_updates_on_demand() {
+    // The scheduled check is throttled to hours, so without a control that forces
+    // one there is no way to find out whether updating works — the symptom that
+    // made the whole updater look broken. The button's label is the status itself,
+    // so one control both reports and re-checks; `update.check` is only the text
+    // before the first answer.
+    let html = app_shell_html();
+    assert!(html.contains(r#"<button type="button" class="settings-check" id="settingsCheck">"#));
+    assert!(html.contains(r#"id="settingsCheckLabel" data-i18n="update.check""#));
+    // No separate status line to fall back to, so the error color lives here.
+    assert!(reading_mode_css().contains(".settings-check.is-error"));
+    // The download's progress signals: a spinner and a fill behind the label.
+    assert!(html.contains(r#"id="settingsUpdateSpinner""#));
+    assert!(html.contains(r#"id="settingsUpdateFill""#));
+
+    let css = reading_mode_css();
+    assert!(css.contains(".settings-spinner"));
+    // Green for news, amber for a failure: the dot is all a user sees with the
+    // panel shut.
+    assert!(css.contains(".settings-alert-dot.is-downloading"));
+    assert!(css.contains(".settings-alert-dot.is-failed"));
+}
+
+#[test]
+fn the_settings_panel_shows_the_running_version() {
+    let html = app_shell_html();
+    assert!(html.contains(r#"<span class="settings-version-number" id="settingsVersion">"#));
+    assert!(html.contains(r#"data-i18n="settings.version""#));
+    assert_eq!(
+        html.matches("'settings.version':").count(),
+        2,
+        "settings.version is missing from a locale table"
+    );
+    // The number itself comes from the init script, not the markup.
+    assert!(initial_version_script().contains(env!("CARGO_PKG_VERSION")));
+}

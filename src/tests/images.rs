@@ -1,0 +1,612 @@
+//! Image URL resolution and the `leaf-image://` protocol.
+
+use super::*;
+
+#[test]
+fn sanitizer_allows_local_image_protocol_urls() {
+    let sanitized = sanitize_rendered_html(
+        r#"<img src="leaf-image://local/nested/space%20image.png" alt="x">"#,
+    );
+
+    assert_contains(
+        &sanitized,
+        r#"<img src="leaf-image://local/nested/space%20image.png" alt="x">"#,
+    );
+}
+
+#[test]
+fn sanitizer_allows_webview_local_image_workaround_urls() {
+    let sanitized = sanitize_rendered_html(&format!(
+        r#"<img src="{}" alt="x" onerror="alert(1)">"#,
+        local_img("nested/space%20image.png")
+    ));
+
+    assert_contains(
+        &sanitized,
+        &expected_img("nested/space%20image.png", r#"alt="x""#),
+    );
+    assert!(!sanitized.contains("onerror"));
+}
+
+#[test]
+fn renders_commonmark_code_blocks_links_images_and_rules() {
+    let markdown = r#"Paragraph with `inline code`.
+
+Paragraph with [a link](https://example.com).
+
+[a titled link](https://example.com "Example title").
+
+![Alt text](images/example.svg "Example image")
+
+```rust
+fn main() {}
+```
+
+~~~text
+tilde fence
+~~~
+
+    indented code
+
+---
+
+***
+
+___
+"#;
+
+    let rendered = render_markdown_document(markdown, "README.md");
+
+    assert_contains(&rendered.html, "<code>inline code</code>");
+    assert_contains(
+        &rendered.html,
+        r#"<a href="https://example.com" rel="noopener noreferrer">a link</a>"#,
+    );
+    assert_contains(
+        &rendered.html,
+        r#"<a href="https://example.com" title="Example title" rel="noopener noreferrer">a titled link</a>"#,
+    );
+    assert_contains(
+        &rendered.html,
+        r#"<img src="images/example.svg" alt="Alt text" title="Example image">"#,
+    );
+    assert_contains(
+        &rendered.html,
+        "<pre class=\"highlight\" data-language=\"Rust\"><code class=\"language-rust\">",
+    );
+    assert_contains(
+        &rendered.html,
+        "<pre class=\"highlight\" data-language=\"Text\"><code class=\"language-text\">",
+    );
+    assert_contains(&rendered.html, "tilde fence");
+    assert_contains(&rendered.html, "<pre><code>indented code");
+    assert_eq!(rendered.html.matches("<hr>").count(), 3);
+}
+
+#[test]
+fn uses_image_alt_text_as_title_tooltip_when_no_title_is_given() {
+    let markdown = "![im the alt text in the box](images/example.svg)";
+
+    let rendered = render_markdown_document(markdown, "README.md");
+
+    assert_contains(
+        &rendered.html,
+        r#"<img src="images/example.svg" alt="im the alt text in the box" title="im the alt text in the box">"#,
+    );
+}
+
+#[test]
+fn keeps_explicit_image_title_over_alt_text() {
+    let markdown = r#"![Alt text](images/example.svg "Real title")"#;
+
+    let rendered = render_markdown_document(markdown, "README.md");
+
+    assert_contains(
+        &rendered.html,
+        r#"<img src="images/example.svg" alt="Alt text" title="Real title">"#,
+    );
+}
+
+#[test]
+fn changed_image_files_refresh_without_a_document_re_render() {
+    // Only real image files take the refresh path; a changed .md is a document
+    // reload, and a stray file is neither.
+    assert!(is_local_image_path(Path::new("imgs/themes/sage.png")));
+    assert!(is_local_image_path(Path::new("/tmp/Diagram.SVG")));
+    assert!(!is_local_image_path(Path::new("themes/sage.md")));
+    assert!(!is_local_image_path(Path::new("notes.txt")));
+    assert!(!is_local_image_path(Path::new("imgs/themes")));
+
+    // The host asks the page to re-fetch, rather than re-rendering: the document
+    // text is unchanged, so a reload would hash-gate itself out anyway.
+    assert_eq!(image_refresh_script(), "window.leafRefreshImages();");
+
+    let html = app_shell_html();
+    for expected in [
+        "window.leafRefreshImages = () => {",
+        "localImageEpoch += 1;",
+        "const stamped = `${base}?leaf-epoch=${localImageEpoch}`;",
+        "if (img.getAttribute('src') !== stamped) img.setAttribute('src', stamped);",
+        // Every render stamps a fresh epoch, so reopening a document after an
+        // image was replaced on disk cannot show the cached copy.
+        "    stampLocalImages();\n    decorateBlockquoteLines();",
+    ] {
+        assert_contains(&html, expected);
+    }
+    // Only images served by the host's protocol are touched; remote and data URLs
+    // keep the src the document gave them.
+    assert_contains(
+        &html,
+        "const LOCAL_IMAGE_SRC_PREFIXES = ['leaf-image://', 'http://leaf-image.', 'https://leaf-image.'];",
+    );
+
+    // The cache-busting query is inert on the way back in: the protocol handler
+    // resolves the path from the URL's segments and ignores the query.
+    let source_dir = fixture_source_path("images");
+    let path = local_image_protocol_path(
+        &format!("{}?leaf-epoch=7", local_img("diagram.png")),
+        &source_dir,
+    )
+    .expect("stamped local image url resolves");
+    assert_eq!(path, source_dir.join("diagram.png"));
+}
+
+#[test]
+fn resolves_relative_media_against_source_file_directory() {
+    let markdown = "![Leaf logo](assets/logo.svg)";
+    let source_path = fixture_source_path("project/README.md");
+
+    let rendered = render_markdown_document(markdown, &source_path);
+
+    assert_contains(&rendered.html, &expected_base_href(&source_path));
+    assert_contains(
+        &rendered.html,
+        &expected_img("assets/logo.svg", r#"alt="Leaf logo" title="Leaf logo""#),
+    );
+}
+
+#[test]
+fn renders_markdown_links_and_images_for_native_link_handling() {
+    let markdown = r#"[External](https://example.com)
+[Sibling](./other.md#install)
+[Parent](../README.md)
+[Escaped](./Nested%20Guide.md#heading)
+[Text file](./notes/readme.txt)
+[Reference][reference]
+<https://example.org/autolink>
+<leaf@example.com>
+
+![Relative image](./images/example.svg "Example SVG")
+
+<a href="./raw doc.md#html-heading" title="Raw doc">Raw HTML doc</a>
+<img src="./raw image.png" alt="Raw image" title="Raw">
+
+[reference]: ./refs/reference.md#target
+"#;
+    let source_path = fixture_source_path("project/nested/current.md");
+
+    let rendered = render_markdown_document(markdown, &source_path);
+
+    assert_contains(&rendered.html, &expected_base_href(&source_path));
+    for expected in [
+        r#"<a href="https://example.com" rel="noopener noreferrer">External</a>"#,
+        r##"<a href="./other.md#install" rel="noopener noreferrer">Sibling</a>"##,
+        r#"<a href="../README.md" rel="noopener noreferrer">Parent</a>"#,
+        r##"<a href="./Nested%20Guide.md#heading" rel="noopener noreferrer">Escaped</a>"##,
+        r#"<a href="./notes/readme.txt" rel="noopener noreferrer">Text file</a>"#,
+        r##"<a href="./refs/reference.md#target" rel="noopener noreferrer">Reference</a>"##,
+        r#"<a href="https://example.org/autolink" rel="noopener noreferrer">https://example.org/autolink</a>"#,
+        r#"<a href="mailto:leaf@example.com" rel="noopener noreferrer">leaf@example.com</a>"#,
+        r##"<a href="./raw doc.md#html-heading" title="Raw doc" rel="noopener noreferrer">Raw HTML doc</a>"##,
+    ] {
+        assert_contains(&rendered.html, expected);
+    }
+    assert_contains(
+        &rendered.html,
+        &expected_img(
+            "images/example.svg",
+            r#"alt="Relative image" title="Example SVG""#,
+        ),
+    );
+    assert_contains(
+        &rendered.html,
+        &expected_img("raw%20image.png", r#"alt="Raw image" title="Raw""#),
+    );
+    assert!(!rendered.html.contains(r#"<a href="./images/example.svg""#));
+}
+
+#[test]
+fn preserves_markdown_image_alt_and_title_after_url_resolution() {
+    let markdown = r#"![Leaf logo](images/logo.svg "Leaf logo title")"#;
+    let source_path = fixture_source_path("project/README.md");
+
+    let rendered = render_markdown_document(markdown, &source_path);
+
+    assert_contains(
+        &rendered.html,
+        &expected_img(
+            "images/logo.svg",
+            r#"alt="Leaf logo" title="Leaf logo title""#,
+        ),
+    );
+}
+
+#[test]
+fn renders_linked_github_badges_as_images() {
+    let markdown = r#"[![Checkup](https://github.com/ryanallen/grid/actions/workflows/checkup.yml/badge.svg)](https://github.com/ryanallen/grid/actions/workflows/checkup.yml)
+[![Tests](https://github.com/ryanallen/grid/actions/workflows/tests.yml/badge.svg)](https://github.com/ryanallen/grid/actions/workflows/tests.yml)
+[![Lint](https://github.com/ryanallen/grid/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/ryanallen/grid/actions/workflows/lint.yml)
+[![QEMU Smoke](https://github.com/ryanallen/grid/actions/workflows/qemu-smoke.yml/badge.svg)](https://github.com/ryanallen/grid/actions/workflows/qemu-smoke.yml)
+[![Shields Tests](https://img.shields.io/github/actions/workflow/status/ryanallen/grid/tests.yml?label=Tests)](https://github.com/ryanallen/grid/actions/workflows/tests.yml)"#;
+    let source_path = fixture_source_path("project/README.md");
+
+    let rendered = render_markdown_document(markdown, &source_path);
+
+    for (label, workflow, badge_url) in [
+            (
+                "Checkup",
+                "checkup.yml",
+                "https://img.shields.io/github/actions/workflow/status/ryanallen/grid/checkup.yml?label=Checkup",
+            ),
+            (
+                "Tests",
+                "tests.yml",
+                "https://img.shields.io/github/actions/workflow/status/ryanallen/grid/tests.yml?label=Tests",
+            ),
+            (
+                "Lint",
+                "lint.yml",
+                "https://img.shields.io/github/actions/workflow/status/ryanallen/grid/lint.yml?label=Lint",
+            ),
+            (
+                "QEMU Smoke",
+                "qemu-smoke.yml",
+                "https://img.shields.io/github/actions/workflow/status/ryanallen/grid/qemu-smoke.yml?label=QEMU+Smoke",
+            ),
+            (
+                "Shields Tests",
+                "tests.yml",
+                "https://img.shields.io/github/actions/workflow/status/ryanallen/grid/tests.yml?label=Tests",
+            ),
+        ] {
+            assert_contains(
+                &rendered.html,
+                &format!(
+                    r#"<a href="https://github.com/ryanallen/grid/actions/workflows/{workflow}" rel="noopener noreferrer"><img src="{badge_url}" alt="{label}" title="{label}"></a>"#
+                ),
+            );
+        }
+
+    assert!(!rendered
+        .html
+        .contains(r#"/actions/workflows/checkup.yml/badge.svg"#));
+}
+
+#[test]
+fn keeps_safe_absolute_markdown_image_urls() {
+    let source_path = fixture_source_path("project/README.md");
+    let local_image_path = absolute_path_destination_for_fixture("project/assets/logo.svg");
+    let local_file_url = file_url_for_fixture("project/assets/logo.svg");
+    let markdown = format!(
+        r#"![Remote](https://example.com/assets/logo.svg)
+![Local]({local_file_url})
+![Absolute path]({local_image_path})"#
+    );
+
+    let rendered = render_markdown_document(&markdown, &source_path);
+
+    assert_contains(
+        &rendered.html,
+        r#"<img src="https://example.com/assets/logo.svg" alt="Remote" title="Remote">"#,
+    );
+    assert_contains(
+        &rendered.html,
+        &expected_img("assets/logo.svg", r#"alt="Local" title="Local""#),
+    );
+    assert_contains(
+        &rendered.html,
+        &expected_img(
+            "assets/logo.svg",
+            r#"alt="Absolute path" title="Absolute path""#,
+        ),
+    );
+}
+
+#[test]
+fn sanitizes_unsafe_markdown_image_urls() {
+    let markdown = r#"![Script](javascript:alert(1))
+![Data](data:image/svg+xml;base64,PHN2ZyBvbmxvYWQ9YWxlcnQoMSk+)
+![Vbscript](vbscript:msgbox(1))"#;
+    let source_path = fixture_source_path("project/README.md");
+
+    let rendered = render_markdown_document(markdown, &source_path);
+
+    assert!(!rendered.html.contains("javascript:"));
+    assert!(!rendered.html.contains("data:"));
+    assert!(!rendered.html.contains("vbscript:"));
+    assert_contains(&rendered.html, r#"<img alt="Script" title="Script">"#);
+    assert_contains(&rendered.html, r#"<img alt="Data" title="Data">"#);
+    assert_contains(&rendered.html, r#"<img alt="Vbscript" title="Vbscript">"#);
+}
+
+#[test]
+fn resolves_safe_raw_html_image_sources_against_source_directory() {
+    let markdown = r#"<p align="center">
+<img src="images/logo.png" alt="Leaf logo" title="Leaf" width="96">
+<img src=assets/badge.svg alt="Local badge">
+</p>"#;
+    let source_path = fixture_source_path("project/README.md");
+
+    let rendered = render_markdown_document(markdown, &source_path);
+
+    assert_contains(
+        &rendered.html,
+        &expected_img("images/logo.png", r#"alt="Leaf logo" title="Leaf""#),
+    );
+    assert_contains(
+        &rendered.html,
+        &expected_img("assets/badge.svg", r#"alt="Local badge""#),
+    );
+}
+
+#[test]
+fn preserves_safe_raw_html_image_assets_after_sanitization() {
+    let source_path = fixture_source_path("project/README.md");
+    let local_file_url = file_url_for_fixture("project/assets/logo.svg");
+    let markdown = format!(r#"<img src="{local_file_url}" alt="Leaf logo" title="Logo">"#);
+
+    let rendered = render_markdown_document(&markdown, &source_path);
+
+    assert_contains(
+        &rendered.html,
+        &expected_img("assets/logo.svg", r#"alt="Leaf logo" title="Logo""#),
+    );
+}
+
+#[test]
+fn local_image_protocol_serves_rendered_markdown_image_bytes() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-local-image-{unique}"));
+    let image_dir = dir.join("nested");
+    let markdown_path = dir.join("README.md");
+    let image_path = image_dir.join("space image.png");
+    let png = tiny_png_bytes();
+
+    fs::create_dir_all(&image_dir).expect("test image directory is created");
+    fs::write(&image_path, png).expect("test png is written");
+
+    assert_eq!(
+        resolve_image_destination("nested/space%20image.png", &markdown_path),
+        Some(local_img("nested/space%20image.png"))
+    );
+    let rendered = render_markdown_document(
+        "![Space image](nested/space%20image.png \"Local\")",
+        &markdown_path,
+    );
+    let source_dir = local_image_source_dir(&markdown_path).expect("source dir resolves");
+    let response =
+        local_image_protocol_response(&local_img("nested/space%20image.png"), Some(&source_dir));
+
+    fs::remove_dir_all(&dir).expect("test image directory is removed");
+
+    assert_contains(
+        &rendered.html,
+        &expected_img(
+            "nested/space%20image.png",
+            r#"alt="Space image" title="Local""#,
+        ),
+    );
+    assert_eq!(response.status, 200);
+    assert_eq!(response.content_type, "image/png");
+    assert_eq!(response.body, png);
+}
+
+#[test]
+fn local_image_protocol_serves_raw_html_svg_bytes() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-local-svg-{unique}"));
+    let markdown_path = dir.join("README.md");
+    let svg_path = dir.join("logo.svg");
+    let svg = br#"<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"><rect width="2" height="2" fill="green"/></svg>"#;
+
+    fs::create_dir_all(&dir).expect("test svg directory is created");
+    fs::write(&svg_path, svg).expect("test svg is written");
+
+    let rendered = render_markdown_document(r#"<img src="logo.svg" alt="Logo">"#, &markdown_path);
+    let source_dir = local_image_source_dir(&markdown_path).expect("source dir resolves");
+    let response = local_image_protocol_response(&local_img("logo.svg"), Some(&source_dir));
+
+    fs::remove_dir_all(&dir).expect("test svg directory is removed");
+
+    assert_contains(&rendered.html, &expected_img("logo.svg", r#"alt="Logo""#));
+    assert_eq!(response.status, 200);
+    assert_eq!(response.content_type, "image/svg+xml");
+    assert_eq!(response.body, svg);
+}
+
+#[test]
+fn local_image_protocol_serves_requested_markdown_and_html_image_paths() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let root = std::env::temp_dir().join(format!("leaf-requested-images-{unique}"));
+    let docs = root.join("docs");
+    let images = docs.join("imgs");
+    let shared = root.join("shared");
+    let markdown_path = docs.join("current.md");
+    let png = tiny_png_bytes();
+
+    fs::create_dir_all(&images).expect("test image directory is created");
+    fs::create_dir_all(&shared).expect("test shared directory is created");
+    fs::write(images.join("pic.png"), png).expect("test png is written");
+    fs::write(images.join("pic one.png"), png).expect("test spaced png is written");
+    fs::write(shared.join("pic.png"), png).expect("test parent png is written");
+
+    let markdown = r#"![alt](imgs/pic.png)
+![alt](./imgs/pic.png)
+![alt](../shared/pic.png)
+![alt](imgs/pic%20one.png)
+<img src="imgs/pic.png" alt="alt">
+<img src="./imgs/pic.png">
+![Remote](https://example.com/pic.png)"#;
+    let rendered = render_markdown_document(markdown, &markdown_path);
+    let source_dir = local_image_source_dir(&markdown_path).expect("source dir resolves");
+
+    for expected in [
+        expected_img("imgs/pic.png", r#"alt="alt" title="alt""#),
+        expected_img("__leaf_parent__/shared/pic.png", r#"alt="alt" title="alt""#),
+        expected_img("imgs/pic%20one.png", r#"alt="alt" title="alt""#),
+    ] {
+        assert_contains(&rendered.html, &expected);
+    }
+    assert_contains(
+        &rendered.html,
+        &format!(r#"<img src="{}">"#, local_img("imgs/pic.png")),
+    );
+    assert_contains(
+        &rendered.html,
+        r#"<img src="https://example.com/pic.png" alt="Remote" title="Remote">"#,
+    );
+
+    for path in [
+        "imgs/pic.png",
+        "imgs/pic%20one.png",
+        "__leaf_parent__/shared/pic.png",
+    ] {
+        let response = local_image_protocol_response(&local_img(path), Some(&source_dir));
+        assert_eq!(response.status, 200, "expected {path} to load");
+        assert_eq!(response.content_type, "image/png");
+        assert_eq!(response.body, png);
+    }
+
+    fs::remove_dir_all(&root).expect("test image tree is removed");
+}
+
+#[test]
+fn local_image_protocol_serves_nested_document_image_paths() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let root = std::env::temp_dir().join(format!("leaf-nested-images-{unique}"));
+    let nested = root.join("docs").join("nested");
+    let nested_images = nested.join("imgs");
+    let shared = root.join("docs").join("shared");
+    let markdown_path = nested.join("current.md");
+    let png = tiny_png_bytes();
+
+    fs::create_dir_all(&nested_images).expect("test nested image directory is created");
+    fs::create_dir_all(&shared).expect("test shared image directory is created");
+    fs::write(nested_images.join("pic.png"), png).expect("nested png is written");
+    fs::write(shared.join("pic.png"), png).expect("shared png is written");
+
+    let rendered = render_markdown_document(
+        "![Nested](imgs/pic.png)\n![Shared](../shared/pic.png)",
+        &markdown_path,
+    );
+    let source_dir = local_image_source_dir(&markdown_path).expect("source dir resolves");
+
+    assert_contains(
+        &rendered.html,
+        &expected_img("imgs/pic.png", r#"alt="Nested" title="Nested""#),
+    );
+    assert_contains(
+        &rendered.html,
+        &expected_img(
+            "__leaf_parent__/shared/pic.png",
+            r#"alt="Shared" title="Shared""#,
+        ),
+    );
+
+    for path in ["imgs/pic.png", "__leaf_parent__/shared/pic.png"] {
+        let response = local_image_protocol_response(&local_img(path), Some(&source_dir));
+        assert_eq!(response.status, 200, "expected nested {path} to load");
+        assert_eq!(response.body, png);
+    }
+
+    fs::remove_dir_all(&root).expect("test nested image tree is removed");
+}
+
+#[test]
+fn local_image_protocol_loads_any_depth_above_the_document_and_reports_missing_images() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let root = std::env::temp_dir().join(format!("leaf-local-image-scope-{unique}"));
+    let nested = root.join("docs").join("01-features");
+    let markdown_path = nested.join("themes.md");
+    let png = tiny_png_bytes();
+
+    fs::create_dir_all(root.join("imgs")).expect("test image directory is created");
+    fs::create_dir_all(&nested).expect("test docs directory is created");
+    fs::write(root.join("imgs").join("pic.png"), png).expect("test image is written");
+
+    // Two levels up, as the shipped docs reference their screenshots.
+    let rendered = render_markdown_document(
+        "![Up two](../../imgs/pic.png)\n![Missing](missing.png)",
+        &markdown_path,
+    );
+    let source_dir = local_image_source_dir(&markdown_path).expect("source dir resolves");
+    let missing = local_image_protocol_response(&local_img("missing.png"), Some(&source_dir));
+    let up_two = local_image_protocol_response(
+        &local_img("__leaf_parent__/__leaf_parent__/imgs/pic.png"),
+        Some(&source_dir),
+    );
+
+    fs::remove_dir_all(&root).expect("test docs directory is removed");
+
+    assert_contains(
+        &rendered.html,
+        &expected_img(
+            "__leaf_parent__/__leaf_parent__/imgs/pic.png",
+            r#"alt="Up two" title="Up two""#,
+        ),
+    );
+    assert_contains(
+        &rendered.html,
+        &expected_img("missing.png", r#"alt="Missing" title="Missing""#),
+    );
+    assert_eq!(missing.status, 404);
+    assert_eq!(up_two.status, 200, "an image two levels up must load");
+    assert_eq!(up_two.body, png);
+}
+
+#[test]
+fn local_image_protocol_loads_absolute_paths_outside_the_document_tree() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let root = std::env::temp_dir().join(format!("leaf-local-image-absolute-{unique}"));
+    let docs = root.join("docs");
+    let elsewhere = root.join("elsewhere");
+    let markdown_path = docs.join("README.md");
+    let image_path = elsewhere.join("pic.png");
+    let png = tiny_png_bytes();
+
+    fs::create_dir_all(&docs).expect("test docs directory is created");
+    fs::create_dir_all(&elsewhere).expect("test image directory is created");
+    fs::write(&image_path, png).expect("test image is written");
+
+    let source_dir = local_image_source_dir(&markdown_path).expect("source dir resolves");
+    let url = resolve_image_destination(&image_path.to_string_lossy(), &markdown_path)
+        .expect("an absolute path outside the document tree resolves to a URL");
+    let response = local_image_protocol_response(&url, Some(&source_dir));
+
+    fs::remove_dir_all(&root).expect("test directories are removed");
+
+    assert!(
+        url.contains("__leaf_absolute__"),
+        "expected an absolute-path URL, got {url}"
+    );
+    assert_eq!(response.status, 200, "an absolute path must load");
+    assert_eq!(response.body, png);
+}

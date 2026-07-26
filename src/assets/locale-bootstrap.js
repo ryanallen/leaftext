@@ -1,0 +1,378 @@
+(() => {
+  const STORAGE_KEY = 'leaf.localeMode';
+  const MODE_FALLBACK = 'system';
+  const VALID_MODES = new Set(['system', 'en', 'zh-CN']);
+  const TRANSLATIONS = {
+    en: {
+      'actions.back': 'Back',
+      'actions.back.title': 'Go back',
+      'actions.chooseFile': 'Choose file',
+      'actions.close': 'Close file',
+      'actions.close.title': 'Close current file',
+      'actions.closeTab': 'Close tab',
+      'actions.copyCode': 'Copy code',
+      'actions.copiedCode': 'Copied',
+      'actions.anchorLink': 'Copy link to this spot',
+      'actions.home': 'Home',
+      'actions.home.title': 'Show recent files',
+      'actions.forward': 'Forward',
+      'actions.forward.title': 'Go forward',
+      'actions.open': 'Open',
+      'actions.open.title': 'Open Markdown file',
+      'actions.codeView': 'View source',
+      'actions.codeView.title': 'Toggle raw source view',
+      'actions.save': 'Save',
+      'actions.save.title': 'Save changes',
+      'actions.undo': 'Undo',
+      'actions.undo.title': 'Undo last edit',
+      'actions.more': 'More options',
+      'reader.loading': 'Loading document…',
+      'actions.revealFile': 'Reveal file',
+      'actions.cut': 'Cut',
+      'actions.copy': 'Copy',
+      'actions.copyPath': 'Copy path',
+      'actions.rename': 'Rename',
+      'actions.properties': 'Properties',
+      'actions.getInfo': 'Get Info',
+      'actions.delete': 'Delete',
+      'empty.description': 'Open a file and read it in peace. It stays on your device, in plain text you own.',
+      'empty.description.incised': 'For two thousand years knowledge was incised on palm leaves — talipot and palmyra, dried and smoke-cured. Turn over a new one.',
+      'empty.description.stylus': 'Scribes cut letters into palm leaves with a stylus, then rubbed in soot so the words rose to the surface. Read on.',
+      'empty.description.bound': 'A palm-leaf book was threaded through a single hole and bound between wooden covers. Open yours.',
+      'empty.description.lifespan': 'A palm leaf holds its text for a few decades — six hundred years at most — so temples recopied the old ones before they wore away.',
+      'empty.description.roundLetters': 'The round letters of Devanagari, Kannada, and Telugu curved that way so sharp strokes would not tear the leaf.',
+      'empty.description.lontar': 'In Indonesia these leaf-books were called lontar, from the old words for “leaf” and “palmyra palm.”',
+      'empty.description.coldDry': 'The oldest palm-leaf manuscripts survived in cold, dry places — Nepal, Tibet, the high passes of central Asia.',
+      'empty.description.bali': 'In Bali, Brahmin scribes still rewrite the sacred texts onto palm leaves by hand.',
+      'empty.description.printing': 'The printing press ended the long cycle of copying palm leaf to palm leaf in the early 1800s.',
+      'empty.kicker': 'Leaf Text',
+      'empty.noRecent': 'Files you open show up here, so you can pick up where you left off.',
+      'empty.title': 'Refine your mind.',
+      'empty.subtitle': 'Your thoughts, secure and free.',
+      'errors.openFailed': 'Failed to open {path}: {reason}',
+      'format.fileSizeUnknown': 'Unknown size',
+      'library.title': 'Library',
+      'library.view.graph': 'Graph',
+      'library.view.graph.on': 'Show how these documents link',
+      'library.view.graph.off': 'Back to the file list',
+      'library.crumbs.label': 'Folder path',
+      'library.crumbs.enter': 'Open {name}',
+      'library.crumbs.more': 'Skipped folders: {names}',
+      'library.graph.empty': 'No links to graph yet.',
+      'library.graph.loading': 'Building graph…',
+      'library.graph.error': 'Graph failed to load.',
+      'library.graph.truncated': 'Showing the {count} most-linked documents.',
+      'library.scanning': 'Scanning…',
+      'library.filesFound': '{count} files found',
+      'library.empty': 'No Markdown indexed yet.',
+      'library.open': 'Library',
+      'library.divider.resize': 'Resize library',
+      'library.search.placeholder': 'Search files…',
+      'library.search.noResults': 'No matches.',
+      'library.search.count': '{count} results',
+      'library.search.loading': 'Searching…',
+      'library.search.error': 'Search failed.',
+      'recent.headingWithCount': 'Recent ({count})',
+      'recent.openTitle': 'Open {path}',
+      'minimap.aria': 'Document minimap',
+      'outline.title': 'Outline',
+      'outline.lineCount': '({count} lines)',
+      'settings.heading': 'Settings',
+      'update.available': 'Update to v{version}',
+      'update.downloading': 'Downloading v{version}… {percent}%',
+      'update.restart': 'Restart to update',
+      'update.failed': 'Update failed — open release page',
+      'update.failedReason': 'Update failed: {message}',
+      'update.title': 'A new version is available',
+      'update.check': 'Check for updates',
+      'update.checkTitle': 'Ask GitHub for the latest release now',
+      'update.checking': 'Checking…',
+      'update.upToDate': 'Up to date.',
+      'update.lastChecked': 'Last checked {when}.',
+      'update.checkedNow': 'Checked just now.',
+      'update.checkFailed': 'Could not reach GitHub: {message}',
+      'update.applyFailed': 'Installing v{version} failed: {message}',
+      'update.httpError': 'GitHub answered {status}',
+      'update.downloadsOff': 'Downloads are off — the button opens the release page.',
+      'update.noInstaller': 'This release publishes no installer for this platform — the button opens the release page.',
+      'settings.autoUpdate.aria': 'Download updates',
+      'settings.autoUpdate.label': 'Update automatically',
+      'settings.autoUpdate.help': 'Download new versions in the background and install them the next time you open the app. Off checks for updates but only links to the download page.',
+      'settings.version': 'Version',
+      'settings.indexing.label': 'Index entire device',
+      'settings.indexing.help': 'Crawl this device for Markdown and XML documents and rescan each time you open the app.',
+      'settings.theme.appearance': 'Appearance',
+      'settings.theme.aria': 'Theme',
+      'settings.theme.dark': 'Dark',
+      'settings.theme.daylight': 'Daylight',
+      'settings.theme.family.amaranth': 'Amaranth',
+      'settings.theme.family.fern': 'Fern',
+      'settings.theme.family.github': 'GitHub',
+      'settings.theme.family.halcyon': 'Halcyon',
+      'settings.theme.family.nightshade': 'Nightshade',
+      'settings.theme.family.sage': 'Sage',
+      'settings.theme.family.random': 'Random',
+      'settings.theme.help': 'System follows device preference; Daylight is light by day, dark at night.',
+      'settings.theme.label': 'Theme',
+      'settings.theme.light': 'Light',
+      'settings.theme.sheet.browse': 'Add your own theme on GitHub →',
+      'settings.theme.sheet.close': 'Close',
+      'settings.theme.sheet.title': 'Themes',
+      'settings.theme.system': 'System',
+      'settings.minimap.aria': 'Show document minimap',
+      'settings.minimap.help': 'Show a scrollable document overview on wider windows.',
+      'settings.minimap.label': 'Show minimap',
+      'settings.graphScope.aria': 'Graph size',
+      'settings.graphScope.label': 'Graph size',
+      'settings.graphScope.help': 'How many documents the graph view draws. Smaller is faster.',
+      'settings.graphScope.small': 'Focus (open document + links)',
+      'settings.graphScope.medium': 'Medium (up to 2,000)',
+      'settings.graphScope.large': 'Large (up to 5,000)',
+      'settings.graphScope.xl': 'Everything',
+      'settings.speedReader.aria': 'Speed Reader',
+      'settings.speedReader.help': 'Make prose quieter and add bold lead anchors for faster scanning.',
+      'settings.speedReader.label': 'Speed Reader',
+      'settings.lineNumbers.aria': 'Show line numbers',
+      'settings.lineNumbers.help': 'Number each block in the left margin as a copyable permalink.',
+      'settings.lineNumbers.label': 'Line numbers',
+      'settings.readerEditing.aria': 'Edit in reading view',
+      'settings.readerEditing.help': 'Click into the rendered page to edit it. Turn off to keep the reading view read-only; the code view still edits the source.',
+      'settings.readerEditing.label': 'Edit in reading view',
+      'titles.app': 'Leaf Text',
+      'titles.document': '{title} - Leaf Text',
+    },
+    'zh-CN': {
+      'actions.chooseFile': '选择文件',
+      'actions.close': '关闭文件',
+      'actions.close.title': '关闭当前文件',
+      'actions.closeTab': '关闭标签页',
+      'actions.copyCode': '复制代码',
+      'actions.copiedCode': '已复制',
+      'actions.anchorLink': '复制此处的链接',
+      'actions.home': '主页',
+      'actions.home.title': '显示最近文件',
+      'actions.open': '打开',
+      'actions.open.title': '打开 Markdown 文件',
+      'actions.codeView': '查看源码',
+      'actions.codeView.title': '切换源码视图',
+      'actions.save': '保存',
+      'actions.save.title': '保存更改',
+      'actions.undo': '撤销',
+      'actions.undo.title': '撤销上次编辑',
+      'actions.more': '更多选项',
+      'reader.loading': '正在加载文档…',
+      'actions.revealFile': '在文件管理器中显示',
+      'actions.cut': '剪切',
+      'actions.copy': '复制',
+      'actions.copyPath': '复制路径',
+      'actions.rename': '重命名',
+      'actions.properties': '属性',
+      'actions.getInfo': '显示简介',
+      'actions.delete': '删除',
+      'empty.description': '打开一个文件，静心阅读。它只留在你的设备上，是你自己拥有的纯文本。',
+      'empty.description.incised': '两千年来，知识被刻写在棕榈叶上——经晾干烟熏的贝叶棕与糖棕。翻开新的一叶。',
+      'empty.description.stylus': '抄写者以铁笔将文字刻入棕榈叶，再揉入烟灰，让字迹浮现。继续读下去。',
+      'empty.description.bound': '贝叶经以一线穿孔串连，夹在木质封板之间。翻开你的那一卷。',
+      'empty.description.lifespan': '一片棕榈叶能存字数十年，至多约六百年——于是寺院在旧叶朽坏前将其重抄。',
+      'empty.description.roundLetters': '天城文、卡纳达文与泰卢固文的圆润字形，正是为了不让锋利的笔画划破叶面。',
+      'empty.description.lontar': '在印度尼西亚，这些叶书被称为 lontar，源自古爪哇语中“叶”与“糖棕”二字。',
+      'empty.description.coldDry': '最古老的贝叶写本留存于寒冷干燥之地——尼泊尔、西藏，以及中亚的高山隘口。',
+      'empty.description.bali': '在巴厘岛，婆罗门抄经者至今仍以手将圣典重写于棕榈叶上。',
+      'empty.description.printing': '十九世纪初，印刷术终结了贝叶之间世代相传的抄写。',
+      'empty.kicker': 'Leaf Text',
+      'empty.noRecent': '你打开过的文件会显示在这里，方便随时接着读。',
+      'empty.title': '打磨你的思想。',
+      'empty.subtitle': '你的思绪，安全而自由。',
+      'errors.openFailed': '无法打开 {path}：{reason}',
+      'format.fileSizeUnknown': '大小未知',
+      'library.title': '文库',
+      'library.view.graph': '关系图',
+      'library.view.graph.on': '查看这些文档的链接关系',
+      'library.view.graph.off': '返回文件列表',
+      'library.crumbs.label': '文件夹路径',
+      'library.crumbs.enter': '打开 {name}',
+      'library.crumbs.more': '省略的文件夹：{names}',
+      'library.graph.empty': '暂无可用的链接关系。',
+      'library.graph.loading': '正在生成关系图…',
+      'library.graph.error': '关系图加载失败。',
+      'library.graph.truncated': '仅显示链接最多的 {count} 个文档。',
+      'library.scanning': '正在扫描…',
+      'library.filesFound': '已找到 {count} 个文件',
+      'library.empty': '尚未索引任何 Markdown 文件。',
+      'library.open': '文库',
+      'library.divider.resize': '调整文库宽度',
+      'library.search.placeholder': '搜索文件…',
+      'library.search.noResults': '无匹配结果。',
+      'library.search.count': '{count} 条结果',
+      'library.search.loading': '正在搜索…',
+      'library.search.error': '搜索失败。',
+      'recent.headingWithCount': '最近文件（{count}）',
+      'recent.openTitle': '打开 {path}',
+      'minimap.aria': '文档缩略图',
+      'outline.title': '大纲',
+      'outline.lineCount': '（{count} 行）',
+      'settings.heading': '设置',
+      'update.available': '更新到 v{version}',
+      'update.downloading': '正在下载 v{version}… {percent}%',
+      'update.restart': '重启以更新',
+      'update.failed': '更新失败 — 打开发布页面',
+      'update.failedReason': '更新失败：{message}',
+      'update.title': '有新版本可用',
+      'update.check': '检查更新',
+      'update.checkTitle': '立即向 GitHub 查询最新版本',
+      'update.checking': '正在检查…',
+      'update.upToDate': '已是最新版本。',
+      'update.lastChecked': '上次检查：{when}。',
+      'update.checkedNow': '刚刚检查过。',
+      'update.checkFailed': '无法连接 GitHub：{message}',
+      'update.applyFailed': '安装 v{version} 失败：{message}',
+      'update.httpError': 'GitHub 返回 {status}',
+      'update.downloadsOff': '下载已关闭 — 此按钮会打开发布页面。',
+      'update.noInstaller': '此版本没有发布适用于该平台的安装包 — 此按钮会打开发布页面。',
+      'settings.autoUpdate.aria': '下载更新',
+      'settings.autoUpdate.label': '自动更新',
+      'settings.autoUpdate.help': '在后台下载新版本，并在下次打开应用时自动安装。关闭后仍会检查更新，但只提供下载页面链接。',
+      'settings.version': '版本',
+      'settings.indexing.label': '索引整个设备',
+      'settings.indexing.help': '扫描此设备上的 Markdown 和 XML 文档，并在每次打开应用时重新扫描。',
+      'settings.theme.appearance': '外观',
+      'settings.theme.aria': '主题',
+      'settings.theme.dark': '深色',
+      'settings.theme.daylight': '日间自动',
+      'settings.theme.family.amaranth': 'Amaranth',
+      'settings.theme.family.fern': 'Fern',
+      'settings.theme.family.github': 'GitHub',
+      'settings.theme.family.halcyon': 'Halcyon',
+      'settings.theme.family.nightshade': 'Nightshade',
+      'settings.theme.family.sage': 'Sage',
+      'settings.theme.family.random': '随机',
+      'settings.theme.help': '跟随系统显示偏好；“日间自动”白天浅色、夜间深色。',
+      'settings.theme.label': '主题',
+      'settings.theme.light': '浅色',
+      'settings.theme.sheet.browse': '在 GitHub 上添加你的主题 →',
+      'settings.theme.sheet.close': '关闭',
+      'settings.theme.sheet.title': '主题',
+      'settings.theme.system': '跟随系统',
+      'settings.minimap.aria': '显示文档缩略图',
+      'settings.minimap.help': '在较宽窗口中显示可滚动的文档概览。',
+      'settings.minimap.label': '显示缩略图',
+      'settings.graphScope.aria': '关系图规模',
+      'settings.graphScope.label': '关系图规模',
+      'settings.graphScope.help': '关系图绘制的文档数量。规模越小越快。',
+      'settings.graphScope.small': '聚焦（当前文档及其链接）',
+      'settings.graphScope.medium': '中等（最多 2,000）',
+      'settings.graphScope.large': '大（最多 5,000）',
+      'settings.graphScope.xl': '全部',
+      'settings.speedReader.aria': '快速阅读',
+      'settings.speedReader.help': '弱化正文干扰，并为词首添加加粗引导，方便快速浏览。',
+      'settings.speedReader.label': '快速阅读',
+      'settings.lineNumbers.aria': '显示行号',
+      'settings.lineNumbers.help': '在左侧页边为每个区块标注可复制的固定链接编号。',
+      'settings.lineNumbers.label': '行号',
+      'settings.readerEditing.aria': '在阅读视图中编辑',
+      'settings.readerEditing.help': '点击渲染后的页面即可直接编辑。关闭后阅读视图为只读；源代码视图仍可编辑源文件。',
+      'settings.readerEditing.label': '在阅读视图中编辑',
+      'titles.app': 'Leaf Text',
+      'titles.document': '{title} - Leaf Text',
+    },  };
+  const root = document.documentElement;
+  const listeners = new Set();
+  const createModeStorage = (storageKey) => ({
+    read() {
+      try {
+        return window.localStorage ? window.localStorage.getItem(storageKey) : null;
+      } catch (_) {
+        return null;
+      }
+    },
+    write(value) {
+      try {
+        if (window.localStorage) {
+          window.localStorage.setItem(storageKey, value);
+        }
+      } catch (_) {}
+    },
+  });
+  const normalizeMode = (value) => (VALID_MODES.has(value) ? value : MODE_FALLBACK);
+  const systemLanguage = () => {
+    const languages = Array.isArray(navigator.languages) ? navigator.languages : [];
+    return languages[0] || navigator.language || '';
+  };
+  const resolveSystemLocale = () => {
+    const language = String(systemLanguage()).trim().toLowerCase();
+    return language.startsWith('zh') ? 'zh-CN' : 'en';
+  };
+  const resolveLocale = () => (mode === 'system' ? resolveSystemLocale() : mode);
+  const interpolate = (message, values = {}) => message.replace(/\{([a-zA-Z0-9_]+)\}/g, (match, name) => (
+    Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : match
+  ));
+  const translate = (key, values = {}) => {
+    const resolvedLocale = resolveLocale();
+    const message = (TRANSLATIONS[resolvedLocale] && TRANSLATIONS[resolvedLocale][key]) || TRANSLATIONS.en[key] || key;
+    return interpolate(message, values);
+  };
+  const snapshot = () => ({ mode, resolvedLocale: resolveLocale() });
+  const apply = () => {
+    const locale = snapshot();
+    root.lang = locale.resolvedLocale;
+    root.dataset.localeMode = locale.mode;
+    root.dataset.locale = locale.resolvedLocale;
+    listeners.forEach((listener) => listener(locale));
+  };
+
+  const storage = createModeStorage(STORAGE_KEY);
+  let mode = normalizeMode(storage.read());
+
+  window.leafLocale = {
+    getMode: () => mode,
+    getResolvedLocale: resolveLocale,
+    setMode(nextMode) {
+      mode = normalizeMode(nextMode);
+      storage.write(mode);
+      apply();
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      listener(snapshot());
+      return () => listeners.delete(listener);
+    },
+    t: translate,
+    formatNumber(value, options) {
+      return new Intl.NumberFormat(resolveLocale(), options).format(value);
+    },
+    formatDate(value, options) {
+      return new Intl.DateTimeFormat(resolveLocale(), options).format(value);
+    },
+    formatRelativeTime(value, unit, options) {
+      return new Intl.RelativeTimeFormat(resolveLocale(), options).format(value, unit);
+    },
+    formatFileSize(bytes) {
+      const number = Number(bytes);
+      if (!Number.isFinite(number)) {
+        return translate('format.fileSizeUnknown');
+      }
+      const units = ['byte', 'kilobyte', 'megabyte', 'gigabyte'];
+      let size = Math.abs(number);
+      let unitIndex = 0;
+      while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex += 1;
+      }
+      const signedSize = number < 0 ? -size : size;
+      return new Intl.NumberFormat(resolveLocale(), {
+        maximumFractionDigits: unitIndex === 0 ? 0 : 1,
+        style: 'unit',
+        unit: units[unitIndex],
+        unitDisplay: 'short',
+      }).format(signedSize);
+    },
+  };
+
+  window.addEventListener('languagechange', () => {
+    if (mode === 'system') {
+      apply();
+    }
+  });
+
+  apply();
+})();

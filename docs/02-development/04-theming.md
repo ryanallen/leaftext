@@ -145,7 +145,7 @@ Two tests re-derive contrast across **every** theme so an unreadable palette fai
 
 Then, per family, it emits a font block (`--heading-font`/`--reading-font`/`--app-font`/`--code-font`) from that family's `fonts`, placed before the locale rule so a CJK reader's reading font still wins.
 
-`reading_mode_css()` assembles the full style block — compiled theme CSS, then the `:root` alias layer (radius/shadow scales and short component names), then the application layout and document body CSS. No Primer primitives and no font faces are embedded — fonts load separately from Google Fonts (see [Theme fonts](#theme-fonts)). The result is cached in a `OnceLock<String>` — computed once per process lifetime.
+`reading_mode_css()` assembles the full style block: the compiled theme CSS above, then the stylesheet itself from `src/assets/reading.css` — the `:root` alias layer (radius/shadow scales and short component names), then the application layout and document body CSS. The token blocks have to come first so every `var(--leaf-*)` in the stylesheet resolves. The stylesheet is an asset rather than a Rust literal so it stays editable as CSS. No Primer primitives and no font faces are embedded — fonts load separately from Google Fonts (see [Theme fonts](#theme-fonts)). The result is cached in a `OnceLock<String>` — computed once per process lifetime.
 
 ## Theme fonts
 

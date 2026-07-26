@@ -1,0 +1,231 @@
+const SPEED_READER_SKIP_SELECTOR = [
+  'code',
+  'pre',
+  'kbd',
+  'samp',
+  'script',
+  'style',
+  'textarea',
+  'input',
+  'select',
+  'button',
+  'svg',
+  'math',
+  '.katex',
+  '.mermaid',
+  '.settings-menu',
+  '.library-pane',
+  '.tab-bar',
+  '.app-bar',
+  '.document-minimap',
+  '.glossary-sheet',
+  '.docs-pager',
+  '[data-speed-reader-skip]',
+  '.speed-reader-anchor',
+].join(',');
+const speedReaderSegmenter = (typeof Intl !== 'undefined' && Intl.Segmenter)
+  ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+  : null;
+function speedReaderGraphemes(text) {
+  if (speedReaderSegmenter) {
+    return Array.from(speedReaderSegmenter.segment(text), (part) => part.segment);
+  }
+  return Array.from(text);
+}
+function speedReaderHasCjk(text) {
+  return /[\u0e00-\u0e7f\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/u.test(text);
+}
+function isSpeedReaderWord(word) {
+  if (word.length < 2 || speedReaderHasCjk(word)) {
+    return false;
+  }
+  return /^\p{L}+(?:['\u2019]\p{L}+)?$/u.test(word);
+}
+// An all-uppercase word (HTML, GFM, JSON) is an acronym read as a single unit,
+// so it is bolded whole rather than split into a lead prefix and a dim tail.
+function isSpeedReaderAcronym(word) {
+  return /^\p{Lu}+$/u.test(word);
+}
+function leadAnchorPrefixLength(count) {
+  if (count <= 1) return 0;
+  if (count <= 3) return 1;
+  if (count <= 5) return 2;
+  if (count <= 8) return 3;
+  if (count <= 12) return 4;
+  return Math.min(6, Math.ceil(count * 0.35));
+}
+function appendSpeedReaderWord(fragment, word) {
+  const chars = speedReaderGraphemes(word);
+  const prefixLength = isSpeedReaderAcronym(word) ? chars.length : leadAnchorPrefixLength(chars.length);
+  if (prefixLength === 0) {
+    fragment.append(document.createTextNode(word));
+    return;
+  }
+  const anchor = document.createElement('span');
+  anchor.className = 'speed-reader-anchor';
+  anchor.textContent = chars.slice(0, prefixLength).join('');
+  fragment.append(anchor, document.createTextNode(chars.slice(prefixLength).join('')));
+}
+function appendSpeedReaderCandidate(fragment, token) {
+  const parts = token.split(/(-)/);
+  parts.forEach((part) => {
+    if (!part) return;
+    if (part === '-' || !isSpeedReaderWord(part)) {
+      fragment.append(document.createTextNode(part));
+      return;
+    }
+    appendSpeedReaderWord(fragment, part);
+  });
+}
+function isSpeedReaderWordChar(char) {
+  return Boolean(char && /[\p{L}\p{N}]/u.test(char));
+}
+// A token is code-like (no lead anchor) only when a digit is fused to it (page2)
+// or a joiner glues it to a word char on its far side (file.md, a@b, x=y). A
+// joiner against whitespace or sentence punctuation is ordinary prose.
+const SPEED_READER_JOINER = /[:/\\._@#?=&%+~]/;
+function speedReaderTouchesCode(text, start, end) {
+  const before = text[start - 1];
+  const after = text[end];
+  if (/[0-9]/.test(before || '') || /[0-9]/.test(after || '')) return true;
+  if (SPEED_READER_JOINER.test(before || '') && isSpeedReaderWordChar(text[start - 2])) return true;
+  if (SPEED_READER_JOINER.test(after || '') && isSpeedReaderWordChar(text[end + 1])) return true;
+  return false;
+}
+function speedReaderFragment(text) {
+  const fragment = document.createDocumentFragment();
+  const tokenPattern = /\p{L}+(?:['\u2019-]\p{L}+)*/gu;
+  let cursor = 0;
+  let changed = false;
+  for (const match of text.matchAll(tokenPattern)) {
+    const token = match[0];
+    const index = match.index || 0;
+    if (index > cursor) {
+      fragment.append(document.createTextNode(text.slice(cursor, index)));
+    }
+    if (speedReaderTouchesCode(text, index, index + token.length)) {
+      fragment.append(document.createTextNode(token));
+      cursor = index + token.length;
+      continue;
+    }
+    const before = fragment.childNodes.length;
+    appendSpeedReaderCandidate(fragment, token);
+    changed = changed || fragment.childNodes.length !== before + 1 || fragment.lastChild?.textContent !== token;
+    cursor = index + token.length;
+  }
+  if (cursor < text.length) {
+    fragment.append(document.createTextNode(text.slice(cursor)));
+  }
+  return changed ? fragment : null;
+}
+function shouldSkipSpeedReaderTextNode(node, root) {
+  if (!node.nodeValue || !node.nodeValue.trim()) {
+    return true;
+  }
+  if (!/\p{L}/u.test(node.nodeValue)) {
+    return true;
+  }
+  const parent = node.parentElement;
+  if (!parent || parent.closest(SPEED_READER_SKIP_SELECTOR)) {
+    return true;
+  }
+  return !root.contains(parent);
+}
+function applySpeedReaderToDocument(root = app.querySelector('.document-body')) {
+  if (!speedReaderEnabled || !root || root.dataset.speedReaderProcessed === 'true') {
+    return;
+  }
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      return shouldSkipSpeedReaderTextNode(node, root) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  const nodes = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    nodes.push(node);
+  }
+  nodes.forEach((node) => {
+    const fragment = speedReaderFragment(node.nodeValue || '');
+    if (fragment) {
+      node.replaceWith(fragment);
+    }
+  });
+  root.dataset.speedReaderProcessed = 'true';
+}
+let speedReaderEnabled = LEAF_SETTINGS.speedReaderEnabled === true;
+function setSpeedReaderEnabled(enabled) {
+  speedReaderEnabled = Boolean(enabled);
+  document.documentElement.dataset.speedReader = String(speedReaderEnabled);
+  if (speedReaderEnabled) {
+    applySpeedReaderToDocument();
+  }
+}
+setSpeedReaderEnabled(speedReaderEnabled);
+speedReaderEnabledControl.checked = speedReaderEnabled;
+speedReaderEnabledControl.addEventListener('change', () => {
+  setSpeedReaderEnabled(speedReaderEnabledControl.checked);
+  send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });
+});
+// Library pane: one file view (Project — folders entered one at a time, with the
+// breadcrumb above saying where you are) plus the graph, behind its own toggle.
+// The host persists the view and the folder; the frontend reports each change and
+// applies host values on boot.
+const LIBRARY_VIEWS = ['project', 'graph'];
+// Markdown files are badged with the app's own leaf mark. The host inlines the
+// same glyph the header uses, so the row tints it via stroke/fill currentColor
+// rather than shipping a fixed color.
+const LEAF_FILE_ICON = `{{LEAF_ICON_SVG}}`;
+// Outline folder glyph shown before folder names in the library. Inherits the
+// row color via stroke="currentColor".
+const FOLDER_ICON_SVG = '<svg class="library-folder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" /></svg>';
+let indexingEnabled = LEAF_SETTINGS.indexingEnabled === true;
+// The file list is where the pane opens, not the graph.
+let libraryView = LIBRARY_VIEWS.includes(LEAF_SETTINGS.libraryView) ? LEAF_SETTINGS.libraryView : 'project';
+const GRAPH_SCOPES = ['small', 'medium', 'large', 'xl'];
+let graphScope = GRAPH_SCOPES.includes(LEAF_SETTINGS.graphScope) ? LEAF_SETTINGS.graphScope : 'small';
+// Graph size: persist the choice and, if the graph is on screen, rebuild it for
+// the new scope right away.
+graphScopeControl.value = graphScope;
+graphScopeControl.addEventListener('change', () => {
+  graphScope = GRAPH_SCOPES.includes(graphScopeControl.value) ? graphScopeControl.value : 'small';
+  send({ command: 'setGraphScope', scope: graphScope });
+  if (libraryView === 'graph') requestGraphData();
+});
+// The folder the pane is inside ('' is the root); the breadcrumb is this path.
+let libraryProjectPath = typeof LEAF_SETTINGS.libraryProjectPath === 'string' ? LEAF_SETTINGS.libraryProjectPath : '';
+// Library pane open/close + resize. The closed preference and last open width are
+// host-persisted (window.__leafSettings + setLibraryLayout), like the other
+// settings.
+const SNAP_SHUT = 40;           // drag narrower than this and the pane closes
+const DEFAULT_PANE_WIDTH = 240; // first-run fallback only
+const MIN_READER_WIDTH = 360;   // keep the document column usable as the pane grows
+let libraryUserClosed = LEAF_SETTINGS.libraryClosed === true;
+// Whether the narrow-window sheet is showing. Never persisted: it describes the
+// current view, not a preference, and a window opened wide has no sheet.
+let librarySheetOpen = false;
+let libraryWidth = Number.isFinite(LEAF_SETTINGS.libraryWidth) && LEAF_SETTINGS.libraryWidth > 0
+  ? LEAF_SETTINGS.libraryWidth
+  : DEFAULT_PANE_WIDTH;
+let libraryTreeData = [];
+let libraryError = null;
+let lastScanProgress = { phase: 'idle', filesFound: 0 };
+// Full-text search over the library. A non-empty query replaces the tree with
+// ranked results; clearing it restores the tree. The backend echoes the query so
+// a slow response for an old one is dropped.
+const SEARCH_DEBOUNCE_MS = 150;
+let librarySearchQuery = '';
+let librarySearchTimer = 0;
+let librarySearchHits = null;
+let librarySearchError = null;
+let librarySearchLoading = false;
+// Search covers the folder the pane is showing (see librarySearchScopePaths).
+// Above this many paths it can't be bound in one IN clause, so the query runs
+// against the whole library instead.
+const SEARCH_SCOPE_CAP = 1500;
+// A heading anchor to scroll to once a clicked result's document has rendered.
+let pendingSearchJump = null;
+indexingEnabledControl.checked = indexingEnabled;
+indexingEnabledControl.addEventListener('change', () => {
+  indexingEnabled = indexingEnabledControl.checked;
+  send({ command: 'setIndexingEnabled', enabled: indexingEnabled });
+});

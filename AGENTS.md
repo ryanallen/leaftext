@@ -24,22 +24,27 @@ Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document 
 
 ## Layout
 
-Library modules are `pub(crate)`, public surface re-exported from `lib.rs`.
+Library modules are `pub(crate)`, public surface re-exported from `lib.rs`. **Both crate roots share `src/`** — `lib.rs` (library) and `main.rs` (binary) — so a bare `mod tests;` in `main.rs` resolves to the library's `src/tests/`. That is why the binary's modules live under `src/app/`.
 
-- `lib.rs` — render orchestration, document loading, glossary, recent files, settings, bootstrap scripts, `app_shell_html()`
+Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pipeline that orders the stages; siblings hold one stage each. A directory's **types** stay visible module-wide (`pub(super)`), because that is what they were when it was one file; functions are only opened up where something calls them.
+
+- `lib.rs` — render orchestration, document loading, glossary, recent files, settings, `app_shell_html()`, and the ordered `APP_SHELL_SCRIPT_PARTS` list
 - `format.rs` — `DocumentFormat`: the **only** table of readable formats and their extensions. The file dialog, drag-and-drop, link following, the pager, the indexer and the render router all ask it. A new format is one arm here plus whatever the exhaustive matches then refuse to compile — never a second list. `for_path` answers "can we open this?" (`None` if not); `from_path` answers "render it as what?" (Markdown for anything unrecognised)
-- `markdown.rs` — parse → GitHub extras → highlight → sanitize, plus the `leaf-image://` handler
+- `markdown/` — parse → GitHub extras → highlight → sanitize. `mod.rs` the pipeline · `events.rs` event-stream transforms · `headings.rs` anchors and titles · `github.rs` refs, mentions, emoji, repo context · `footnotes.rs` · `code.rs` fences and highlighting · `rawhtml.rs` **what raw HTML may keep — a security boundary** · `htmlparse.rs` tag/attribute scanning, no policy and no crate dependencies · `images.rs` image URL resolution · `image_protocol.rs` the `leaf-image://` scheme · `paths.rs` percent-coding
 - `xml.rs` — XML entry: TEI to `tei.rs`, all other XML to the generic reading renderer here
 - `tei.rs` — TEI (84000-style); stamps `data-src-*` from `roxmltree` ranges
 - `data.rs` — JSON + YAML: both parse to one ordered tree, rendered by `xml.rs`'s shape rules and label helpers. A block gets `data-src-*` only where its range is *proved* (every JSON node; YAML plain scalars checked against the source) — the reading view splices that range verbatim, so a guessed end corrupts the file
 - `editing.rs` — source-anchored editing: `EditableDocument` owns the buffer; block source maps; code-view highlighter
-- `theme.rs` — token contract, Primer/Dracula tables, CSS compiler
+- `theme.rs` — token contract, Primer/Dracula tables, CSS compiler. The stylesheet itself is `assets/reading.css`; `reading_mode_css()` prepends the compiled tokens to it
 - `scripts.rs` (public) — `window.leaf*()` snippet generators, `ScrollAnchor`
 - `updater.rs` — update staging: where a download lands, the length it must reach, the manifest, the applier's verdict
 - `assets.rs` — `leaf-asset://` serving and SVG color normalization; not the `assets/` dir it embeds
-- `pager.rs` Prev/Next · `minimap.rs` model · `indexer.rs` SQLite index + search · `tests.rs` all unit tests
-- `main.rs` window, event loop, files, history · `platform.rs` clipboard, trash, HTTPS download, update applier · `single_instance.rs`
-- `assets/` — fonts, CSS, WebView front-end (`app-shell.html`, `app-shell.js`) via `include_str!`
+- `indexer/` — SQLite index. `mod.rs` types and tuning · `db.rs` schema, migrations, feature state · `scan.rs` the crawl · `sync.rs` filesystem changes after it · `records.rs` the files table · `chunks.rs` · `frontmatter.rs` · `links.rs` · `search.rs` · `tree.rs` · `graph.rs` · `worker.rs` · `tests.rs`
+- `pager.rs` Prev/Next · `minimap.rs` model · `tests/` the library's unit tests, one file per subject, shared helpers in `mod.rs`
+- `main.rs` — window, web view, protocol handlers, and the startup that assembles `AppCtx`
+- `app/` — the binary's guts. `event_loop.rs` `AppCtx` and the loop · `events.rs` `UserEvent`/`IpcCommand`/IPC bridge · `workspace.rs` tabs · `history.rs` back/forward · `watch.rs` watching and reload · `editing_cmds.rs` · `render.rs` · `glossary.rs` · `links.rs` what an href means · `fileops.rs` · `update_flow.rs` · `tests.rs`. `mod.rs` does `use crate::*`, so submodules inherit main.rs's imports through `use super::*` — one import list, not two that drift
+- `platform.rs` clipboard, trash, HTTPS download, update applier · `single_instance.rs`
+- `assets/` — fonts, `reading.css`, the bootstrap scripts, and `shell/` (the WebView front-end in 21 ordered fragments) via `include_str!`. **`shell/` is one script, not modules**: the fragments concatenate in `APP_SHELL_SCRIPT_PARTS` order, share one scope, and the last ends with the bootstrap call that must run last. The page has no module loader, so order is load-bearing and a fragment alone is not a valid program
 - `wix/main.wxs` MSI recipe · `scripts/` build+release · `.github/workflows/` · `Justfile` · `Cargo.toml` (`version` is the release source of truth)
 
 ## Rules each paid for in version numbers
