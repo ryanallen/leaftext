@@ -44,6 +44,8 @@ Adding an artifact means someone will ask what it is. That is the bar it has to 
 
 Both artifacts are automatically attached to the GitHub Release at [github.com/ryanallen/leaftext/releases](https://github.com/ryanallen/leaftext/releases), alongside the source archives GitHub attaches itself and which cannot be turned off.
 
+**Only the newest release is kept.** Each platform job deletes every older release and its tag once its own upload succeeds, so the releases page holds exactly one version — the current one. That cleanup runs after publishing and can never fail the build: both jobs race to do it, so whichever finishes second routinely finds the release, or its tag, already gone.
+
 ## Before releasing
 
 Always run the full verification suite before cutting a release to confirm formatting, type-checking, and tests all pass:
@@ -61,7 +63,7 @@ Use [semantic versioning](https://semver.org/): `MAJOR.MINOR.PATCH`. The current
 ```toml
 [package]
 name = "leaftext"
-version = "0.1.361"
+version = "0.1.371"
 edition = "2021"
 ```
 

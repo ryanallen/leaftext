@@ -83,7 +83,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          $current = $env:DIST_TAG
-          gh release list --limit 100 --json tagName | ConvertFrom-Json | ForEach-Object { $_.tagName } | Where-Object { $_ -ne $current } | ForEach-Object {
-            gh release delete $_ --yes --cleanup-tag
+          # Housekeeping after publishing, so nothing here may fail the build: the
+          # macOS job races this one, and --cleanup-tag 422s on a tag the winner
+          # already deleted. That turned a finished release red.
+          $ErrorActionPreference = 'Continue'
+          if (Test-Path variable:PSNativeCommandUseErrorActionPreference) {
+            $PSNativeCommandUseErrorActionPreference = $false
           }
+
+          $current = $env:DIST_TAG
+          $stale = gh release list --limit 100 --json tagName |
+            ConvertFrom-Json |
+            ForEach-Object { $_.tagName } |
+            Where-Object { $_ -ne $current }
+
+          if ($stale) {
+            foreach ($old in $stale) {
+              & gh release delete $old --yes --cleanup-tag
+              if ($LASTEXITCODE -ne 0) {
+                Write-Host "Could not remove $old with its tag; deleting the release alone."
+                & gh release delete $old --yes
+                if ($LASTEXITCODE -ne 0) { Write-Host "Left $old in place." }
+              }
+            }
+          }
+          exit 0

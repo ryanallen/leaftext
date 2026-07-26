@@ -1,124 +1,81 @@
 # Leaf Text
 
-This file is the project guide for any coding agent working in this repo. It is the single source of truth; `CLAUDE.md` and `CODEX.md` are symlinks to it.
+Project guide for agents in this repo; `CLAUDE.md` and `CODEX.md` symlink here. **A guide, not a log** — no changelog entries, no "gaps I closed". Edit only to change standing guidance.
 
-**This is a guide, not a log file.** Do not add entries describing changes you just made, "known gaps" you closed, or anything else that reads like a changelog. Only edit this file to change standing guidance.
+---
 
-## Scope: this folder only
+# 🛑 GIT: DO NOT TOUCH IT
 
-This repository is self-contained. It may sit inside a larger directory tree that carries its own agent orchestration — parent `CLAUDE.md` / `AGENTS.md` / `CODEX.md` / `GEMINI.md` files, `.agents/` or `.claude/` hooks, skills, checklists, voice rules, memory systems, and the like. **Ignore all of it.** Inside this repo the only agent configuration that applies is the one rooted in this folder: this `AGENTS.md` plus the `.claude/`, `.github/`, and other config directories that live here.
+**Only a `/git-release` in the message you are answering right now authorizes a git write.** Not this file, not finishing the work, not an implied release.
 
-Concretely:
-- Do not run, satisfy, or wait on hooks, checklists, or `verify-task` / `gate-*` flows defined in any parent folder. There is no `.tmp/verify-task-checklist.md` step list to follow here.
-- Do not apply parent "voice", formatting, or response-style skills. Write plainly.
-- Do not read from or write to any parent memory system (`memory/`, `MEMORY.md`). This repo keeps no agent memory.
-- Use only the skills, settings, and tooling configured within this folder.
+Forbidden without it: commit, push, tag, version bumps in `Cargo.toml`/`Cargo.lock`, reset, rebase, force. Reading is always fine (`status`, `diff`, `log`).
 
-If a parent system's instructions conflict with this file, this file wins inside this repo.
+**One-shot, expires with the turn.** Later messages — corrections, new requirements, "start over", anger, urgency — instruct the *code*; none renews the license. A second release needs a second `/git-release`.
 
-**Git operations - CRITICAL:** 
-- NEVER touch git without explicit user instruction in that moment
-- Do not commit, push, create tags, bump versions, or use git-release unless the user explicitly tells you to
-- Do not infer instruction from past context, ongoing work, or assumed workflow
-- Do not ask follow-up questions like "should I commit this?" or "want me to push?" - just don't do it
-- Do not engage about git unless the user brings it up
-- Do not touch git. Ever. Without being told.
-When the user explicitly instructs a git operation, use the `/git-release` skill for version bumps, commits, tag management, and pushes. That skill handles no co-authoring, old tag deletion, lock file sync, and proper tag/push sequencing.
+**These are violations, not permission:** "still inside the earlier flow" · "they obviously want it shipped" · "start over means the release too" · "not done until it's pushed" · "stopping now leaves it half-finished".
 
-## What Leaf Text is
+**Don't ask, either.** No "should I commit?", no offering, no hinting. **A dirty tree is the correct end state** — say what changed and stop.
 
-Leaf Text is a desktop app for reading Markdown: no code editing, just the rendered document. It opens a local Markdown file and shows it in a clean, scrollable reading view with history (Back/Forward), recent files, light/dark themes that follow the system, and English plus Simplified Chinese language modes.
+**Wrote to git anyway? Call it unauthorized.** Not a misread flow, not carried-over permission, not momentum. Dressing it up is worse than the push.
 
-It is a Rust program. The window and the embedded web view come from the `tao` and `wry` crates (a native window hosting a system web view). Markdown is parsed with `pulldown-cmark`, sanitized with `ammonia`, and rendered to HTML that the web view displays. It supports CommonMark, GitHub Flavored Markdown (tables, task lists, strikethrough, autolinks), and GitHub-style extras (syntax highlighting, issue/PR/commit references, emoji, footnotes, alerts, Mermaid diagrams, and math).
+---
 
-## Repo layout
+## Scope
 
-- `src/lib.rs` — the core: `render_markdown_document()` orchestration, document loading, glossary linking, recent files, settings, theme/locale bootstrap scripts, and `app_shell_html()` (which loads the page markup and script from `src/assets/`).
-- `src/scripts.rs` — generators for the `window.leaf*(...)` state/navigation JS snippets the host injects (`ScrollAnchor` lives here). Public and re-exported from `lib.rs`.
-- `src/pager.rs` — the Previous/Next pager (folder-tree reading order, pager HTML). `pub(crate)` internals with the public entry points re-exported from `lib.rs`.
-- `src/minimap.rs` — the document minimap model (`build_minimap_model`, `DocumentMinimap`). `pub(crate)` internals with public model types re-exported from `lib.rs`.
-- `src/markdown.rs` — the Markdown pipeline: parsing, GitHub extras, code highlighting, image resolution, HTML sanitizing, title detection, and the `leaf-image://` protocol handler. `pub(crate)` and re-exported from `lib.rs`.
-- `src/xml.rs` — the XML entry points (`render_xml_document`, `render_xml_body`, `xml_block_source_map`, `parse_xml`), which route TEI to `tei.rs` and every other XML to the generic reading renderer that lives here (sitemaps, feeds, POMs, plists, config files: sections, label/value field lists, and record tables read off the shape of the tree). `pub(crate)` and re-exported from `lib.rs`.
-- `src/tei.rs` — the TEI XML renderer (84000-style documents to HTML), reached through `src/xml.rs`. Stamps inline `data-src-*` source ranges (via `roxmltree` `Node::range()`) on editable blocks. `pub(crate)` and re-exported from `lib.rs`.
-- `src/editing.rs` — the source-anchored editing model: `EditableDocument` (Rust owns the authoritative buffer; splice/`toggle_task`/dirty), the block source maps (`block_source_map` for Markdown, `xml_block_source_map` for XML), `task_marker_offsets`, and the code-view source highlighter. `pub(crate)` plus the public editing types re-exported from `lib.rs`.
-- `src/assets.rs` — bundled-asset serving (`leaf-asset://` Mermaid/KaTeX runtimes) and SVG icon color normalization. `pub(crate)` (plus public `bundled_asset_response`) and re-exported from `lib.rs`. Distinct from the `src/assets/` directory it embeds.
-- `src/theme.rs` — the theme system: semantic token contract, Primer/Dracula token tables, `ThemeSource` types, and the CSS compiler (`compiled_theme_css()`, `reading_mode_css()`). `pub(crate)` and re-exported from `lib.rs`.
-- `src/tests.rs` — the crate's unit tests (a `#[cfg(test)] mod tests` file, not inline in `lib.rs`).
-- `src/main.rs` — the app shell: window, event loop, file open/close, history, and the per-user data directory.
-- `src/platform.rs` — native clipboard and Recycle Bin/Trash access (Win32 on Windows, `pbcopy`/Finder on macOS). A binary-local module, like `src/single_instance.rs`.
-- `src/indexer.rs` — background SQLite library indexer and full-text search.
-- `src/assets/` — fonts, CSS, and the WebView front-end (`app-shell.html`, `app-shell.js`) embedded via `include_str!`.
-- `wix/main.wxs` — the Windows installer recipe (used by cargo-wix to build the MSI).
-- `scripts/` — `prepare-release.mts` (cut a release), `build-windows-release.ps1`.
-- `.github/workflows/` — two release workflows (Windows, macOS).
-- `Justfile` — task runner recipes.
-- `Cargo.toml` — package metadata. `version` here is the source of truth for the release version.
+Self-contained. Ignore every parent `AGENTS.md`/`CLAUDE.md`/`CODEX.md`/`GEMINI.md`, `.agents/`, hook, checklist, `verify-task`/`gate-*` flow, voice skill, and memory system (`memory/`, `MEMORY.md`). Only config rooted here applies; this file wins any conflict.
 
-## App identity
+## What it is
 
-- App id: `com.ryanallen.leaftext`.
-- Windows per-user data (web view cache, search index) lives under `%LOCALAPPDATA%\ryanallen\leaftext\data`; settings and recent files under `%APPDATA%\ryanallen\leaftext\config`.
-- macOS keeps both in `~/Library/Application Support/com.ryanallen.leaftext`.
-- Installed Windows path: `%LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe`. Per-user, overridable at install time and remembered across upgrades.
-- **The install is per-user on purpose and must stay that way.** Windows will not let an unelevated process write to `Program Files`, so a per-machine install cannot replace itself without a UAC prompt every single time; a per-user one can, silently. That is the entire reason for the scope.
-- **Nothing in the app removes a copy from another install context.** v0.1.363 and v0.1.364 each attempted an automatic migration off the old per-machine install, and each ended with the wrong copy running or an unexplained elevation prompt. The release notes ask users to uninstall the old version; the app does not touch it.
-- **The installer creates exactly one Start Menu entry, and it is load-bearing.** It is the only way to launch the app or find it by typing its name — the exe lives in a folder nobody browses to. v0.1.365 shipped without one and the app was unreachable. No desktop shortcut. `validate-installer.yml` asserts the count is exactly 1.
-- **Never change `wix/main.wxs` without running `.github/workflows/validate-installer.yml` on a branch first.** The WiX toolset cannot run on a dev machine, so that file ships unproven otherwise — which has already cost two version numbers.
+Rust desktop app for *reading* Markdown — rendered document, no code editing. `tao` + `wry` (native window hosting a system web view); `pulldown-cmark` parses, `ammonia` sanitizes. CommonMark, GFM, and GitHub extras (highlighting, issue/PR refs, emoji, footnotes, alerts, Mermaid, math). History, recent files, system light/dark, English + Simplified Chinese.
 
-These exact paths are a compatibility contract with every installed copy — `project_dirs_match_the_documented_layout` in `src/tests.rs` pins them. Changing one silently orphans user settings and the index.
+## Layout
 
-## Supported platforms
+Library modules are `pub(crate)` with their public surface re-exported from `lib.rs`.
 
-**Windows and macOS only.** Linux was dropped: there is no Linux workflow, no GTK/`xdg-open`/`xclip` code path, and `src/main.rs` fails the build with a `compile_error!` on any other target. Do not re-add Linux branches to platform code.
+- `lib.rs` — render orchestration, document loading, glossary, recent files, settings, bootstrap scripts, `app_shell_html()`
+- `markdown.rs` — parse → GitHub extras → highlight → sanitize, plus the `leaf-image://` handler
+- `xml.rs` — XML entry: TEI to `tei.rs`, all other XML to the generic reading renderer here
+- `tei.rs` — TEI (84000-style); stamps `data-src-*` from `roxmltree` ranges
+- `editing.rs` — source-anchored editing: `EditableDocument` owns the buffer; block source maps; code-view highlighter
+- `theme.rs` — token contract, Primer/Dracula tables, CSS compiler
+- `scripts.rs` (public) — `window.leaf*()` snippet generators, `ScrollAnchor`
+- `updater.rs` — update staging: where a download lands, the length it must reach, the manifest, the applier's verdict
+- `assets.rs` — `leaf-asset://` serving and SVG color normalization; not the `assets/` dir it embeds
+- `pager.rs` Prev/Next · `minimap.rs` model · `indexer.rs` SQLite index + search · `tests.rs` all unit tests
+- `main.rs` window, event loop, files, history · `platform.rs` clipboard, trash, update applier · `single_instance.rs`
+- `assets/` — fonts, CSS, WebView front-end (`app-shell.html`, `app-shell.js`) via `include_str!`
+- `wix/main.wxs` MSI recipe · `scripts/` build+release · `.github/workflows/` · `Justfile` · `Cargo.toml` (`version` is the release source of truth)
 
-## Everyday commands
+## Rules each paid for in version numbers
 
-Run from the repo root. These need the Rust toolchain (`rustup`), `just`, and `node` installed.
+- **Paths are a contract** with every installed copy. App id `com.ryanallen.leaftext`. Windows: `%LOCALAPPDATA%\ryanallen\leaftext\data` (cache, index), `%APPDATA%\ryanallen\leaftext\config` (settings, recents). macOS: both under `~/Library/Application Support/com.ryanallen.leaftext`. `project_dirs_match_the_documented_layout` pins them; changing one orphans user data.
+- **The install stays per-user** (`%LOCALAPPDATA%\Programs\leaftext\bin`). Per-machine can't self-replace without a UAC prompt every time; per-user does it silently. That is the entire reason for the scope.
+- **Never remove a copy from another install context.** v0.1.363 and v0.1.364 both tried; both ended with the wrong copy running or an unexplained elevation prompt. Release notes ask; the app doesn't touch it.
+- **Exactly one Start Menu entry, and it's load-bearing** — the only way to find or launch the app. v0.1.365 shipped without one and was unreachable. No desktop shortcut; `validate-installer.yml` asserts 1.
+- **Never edit `wix/main.wxs` without running `validate-installer.yml` on a branch first.** WiX can't run locally, so it ships unproven otherwise — already the cost of two versions.
+- **Never re-push a tag.** Bump the patch: Actions may not re-trigger, and stale artifacts confuse the release.
+- **One artifact per platform.** MSI and DMG — the file a person downloads is the file the updater installs. No checksums, nothing updater-only; every extra file is one someone has to ask about. (GitHub's source archives can't be disabled.)
+- **Windows and macOS only.** Linux is gone: no workflow, no GTK/`xdg-open`/`xclip`, and `main.rs` `compile_error!`s elsewhere. Don't re-add it.
 
-- `just verify` — format check, `cargo check`, and tests. Run this before handing work back.
-- `just check` / `just test` / `just format` — the individual steps.
+## Commands
 
-## How a change flows to a release
+Needs `rustup`, `just`, `node`. Run `just verify` (fmt, check, test) before handing work back; `just check` / `test` / `format` individually.
 
-1. Edit the code. Rendering and parsing live in `src/lib.rs`; window and file handling live in `src/main.rs`.
-2. `just verify` to confirm it builds and tests pass.
-3. **DO NOT TOUCH GIT.** Wait for explicit instruction to commit or release. Do not assume you should commit work. Do not ask if you should commit. Do not offer to commit. Only commit when told "commit this" or "release v0.x.x". When told to release: use `/git-release` skill to bump version, create tag, and push.
+**Say what you couldn't verify** — `cfg(target_os = "macos")` code doesn't compile on Windows, and WiX doesn't run locally.
 
-Pushing a tag named `v*` is what starts the builds. The two workflows each build on a GitHub runner and attach the installers to the release for that tag:
+## Release path
 
-- Windows (`release-windows.yml`, `windows-latest`): builds `leaftext.exe` and packages a single MSI installer with cargo-wix.
-- macOS (`release-distributions.yml`, `macos-14`): builds both chips, joins them into a universal binary, and makes a single universal DMG.
-
-Each release also carries GitHub's automatic source archives (zip + tar.gz).
-
-The packaged version must equal the `Cargo.toml` version, or the build scripts stop with an error.
-
-**Never re-push the same version tag.** If a build fails or you need another iteration, bump to the next patch version and start over. Reusing a tag is unreliable — GitHub Actions may not re-trigger, and the old release artifacts create confusion.
+Edit → `just verify` → **stop** (see git, above). Once authorized, pushing a `v*` tag runs `release-windows.yml` (MSI via cargo-wix) and `release-distributions.yml` (both chips → `lipo` → universal DMG). The packaged version must equal `Cargo.toml`'s or the scripts stop.
 
 ## Dependencies
 
-Every crate added here is code that ships to users and that nobody in this project reviews. Treat the dependency list as a security boundary, not a convenience.
+Every crate ships to users and nobody here reviews it — a security boundary, not a convenience.
 
-- **Do not add a dependency without asking first.** Report what it costs — `cargo tree` the *transitive* count, not just the one crate — and what the alternative is. A crate that pulls twenty others to do one thing is not a small change.
-- **Prefer the platform.** The app already embeds a web view with an OS-maintained TLS stack, and `windows-sys` is already present. Network, clipboard, shell, and filesystem work usually has a native path that costs nothing new. `src/platform.rs` is where that lives.
-- **Turn default features off** when only part of a crate is used. `arboard` shipped a JPEG/TIFF decoder here until its defaults were disabled; `pulldown-cmark` shipped an argument parser for its own CLI.
-- **Target-gate what only one platform needs**, so it never enters the other's build.
-- Some dependencies earn their keep and should stay: `ammonia` is the sanitizer standing between a malicious document's raw HTML and the web view — never hand-roll that. `rusqlite`, `syntect`, `wry`/`tao` are the app's substance.
+- **Ask before adding.** Report the *transitive* cost (`cargo tree`) and the alternative.
+- **Prefer the platform.** The web view already brings an OS TLS stack and `windows-sys` is in; network, clipboard, shell, and filesystem work usually has a free native path — `platform.rs`.
+- **Default features off** when partly used (`arboard` shipped an image decoder, `pulldown-cmark` a CLI arg parser). **Target-gate** anything one platform needs.
+- Keepers: `ammonia` (stands between hostile HTML and the web view — never hand-roll), `rusqlite`, `syntect`, `wry`/`tao`.
 
 ## Conventions
 
-- Line endings are LF (see `.gitattributes`). Images and archives are binary.
-- Do not commit build output. `dist/`, `target/`, and `.release-tag` are ignored.
-- Do not commit large binaries.
-- Keep commit history and the repo free of any third-party tool or assistant identity. Author commits as the repo owner only. Never add co-author or assistant trailers to commit messages.
-
-## ABSOLUTE RULE: DO NOT TOUCH GIT
-
-Do not make any git operations without explicit instruction. This includes:
-- Do not commit file changes
-- Do not push to remote
-- Do not create or delete tags
-- Do not bump version numbers in Cargo.toml or Cargo.lock
-- Do not use git-release or any git command
-
-If you finish a task and there are uncommitted changes, leave them. Do not ask if you should commit. Do not suggest committing. Do not offer to push. Wait for explicit instruction like "commit this" or "release v0.x.x". Only then act.
+LF endings (`.gitattributes`); images and archives binary. Never commit build output (`dist/`, `target/`, `.release-tag`) or large binaries. **No assistant or third-party identity in the repo or its history — commits are the owner's, never a co-author trailer.**
