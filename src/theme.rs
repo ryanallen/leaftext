@@ -810,8 +810,9 @@ pub(crate) fn reading_mode_css() -> &'static str {
   --minimap-padding-inline: 8px;
   --minimap-preview-width: 68px;
   --minimap-width: calc(var(--minimap-preview-width) + (var(--minimap-padding-inline) * 2));
-  /* What separates the page's right border from the rail. */
-  --reader-minimap-gap: 8px;
+  /* What separates the page's right border from the rail. The rail's far side
+     keeps --reader-gutter, so it is held off the frame exactly as the page is. */
+  --reader-minimap-gap: 4px;
   /* How much width the rail takes out of the page's column. Zero until a
      document actually has a minimap, or turning it off would leave a dead band.
      Set from `body` (below) rather than the shell: the app bar's divider and
@@ -959,6 +960,7 @@ body {
   /* The logomark is an inline SVG filled with currentColor, so it takes the
      theme's primary color and recolors whenever the theme changes. */
   color: var(--primary);
+  transition: color 0.12s ease;
 }
 .brand-button {
   display: inline-flex;
@@ -971,9 +973,15 @@ body {
   background: transparent;
   cursor: pointer;
 }
+/* It navigates home, so it has to answer the pointer — as the logomark, not as
+   another toolbar chip. Full contrast against the bar: white on the dark themes,
+   darkest ink on the light ones, where a literal white would vanish. */
 .brand-button:hover {
   background: transparent;
   border-color: transparent;
+}
+.brand-button:hover > svg {
+  color: var(--app-foreground);
 }
 .tab-bar {
   display: flex;
@@ -1762,8 +1770,9 @@ body:has(.document-minimap) {
 .library-shell.library-closed {
   grid-template-columns: 0 minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
 }
-/* The rail's column: the 2px lead-in is the gap between the page's right border
-   and the rail, and the bar's height keeps its top level with the card's. */
+/* The rail's own column: the lead-in holds it off the page's right border, and
+   the gutter beyond gives it the same outer inset the page card has. The bar's
+   height keeps its top level with the card's. */
 .reader-minimap {
   grid-column: 3;
   grid-row: 1;

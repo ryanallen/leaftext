@@ -58,7 +58,7 @@ Tab cycling is `Ctrl`-based on every platform, including macOS. Mouse side butto
 - A tab with [unsaved edits](07-editing.md#save) shows a dot beside its name until they are saved.
 - Tabs can be dragged to reorder them.
 - Clicking a tab while the [Graph view](03-library.md#graph) is open flies the graph to that document's node and zooms in on it.
-- Closing the last tab returns to the home screen.
+- Closing the last tab returns to the home screen. So does clicking the leaf mark at the left of the app bar, which brightens on hover to show it is a control.
 - Opening a file while leaftext is already running (e.g. Explorer "Open with", or double-clicking a `.md`/`.xml`) reuses the running window — the file opens as a new tab and the window comes to the front, rather than launching a second copy of the app.
 
 ## History

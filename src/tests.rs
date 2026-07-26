@@ -3678,12 +3678,13 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
             "@media (max-width: 900px)",
             "--minimap-preview-width: 46px;",
             // The rail is chrome, not page: its own shell column, a lead-in
-            // holding the card's right border off it, and no bleed or sticky,
-            // because it is no longer inside the scroller it tracks.
+            // holding the card's right border off it, the window gutter beyond
+            // it, and no bleed or sticky, because it no longer lives in the
+            // scroller it tracks.
             ".reader-minimap {",
             "grid-column: 3;",
             "padding-left: var(--reader-minimap-gap);",
-            "--reader-minimap-gap: 8px;",
+            "--reader-minimap-gap: 4px;",
             "body:has(.document-minimap) {",
             "--reader-minimap-column: calc(var(--minimap-width) + var(--reader-minimap-gap));",
         ] {
