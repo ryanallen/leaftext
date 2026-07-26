@@ -1200,36 +1200,32 @@ body {
 .app-trailing.collapsed .app-actions-items {
   gap: 4px;
 }
-/* In the dropdown the window controls are ordinary icon buttons, not the
-   full-height flush caption buttons they are on the bar. */
+/* The dropdown does its own spacing. */
 .app-trailing.collapsed .window-controls {
   margin-left: 0;
 }
-.app-trailing.collapsed .window-control {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--leaf-radius-lg);
-}
 /* Custom window controls for frameless windows (Windows). Hidden until the
-   frontend reveals them; they sit flush in the top-right corner and act as the
-   native minimize/maximize/close buttons, since there's no OS title bar. */
+   frontend reveals them; they act as the native minimize/maximize/close buttons,
+   since there's no OS title bar. */
 .window-controls {
   display: flex;
-  align-self: stretch;
+  align-items: center;
+  gap: 10px;
   margin-left: 2px;
 }
+/* The same chip as every other toolbar icon button: three square full-height
+   fills in a row read as a different control set from the icons beside them. */
 .window-control {
-  width: 46px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   display: grid;
   place-items: center;
   padding: 0;
-  border: none;
-  /* Square, full-bleed hover fills (overriding the global button radius) so they
-     read as native caption buttons; the window's own rounded top-right corner
-     clips the close button's fill to the corner. */
-  border-radius: 0;
+  border-color: transparent;
+  border-radius: var(--leaf-radius-lg);
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--app-muted-foreground);
   cursor: pointer;
 }
 .window-control svg {
@@ -1248,22 +1244,22 @@ body.is-maximized #winMaximize .wc-maximize {
 body.is-maximized #winMaximize .wc-restore {
   display: block;
 }
-/* Neutral, square caption-button hover — a translucent overlay so it stays
-   visible in every theme (a plain surface token read the same as the bar).
-   border-radius: 0 defeats the global button radius; close keeps its own. */
+/* The shared toolbar hover chip, so these match the open/code-view/settings
+   icons beside them. Close keeps the red every desktop uses for it. */
 .window-control:hover {
-  background: color-mix(in srgb, var(--foreground) 12%, transparent);
-  color: var(--foreground);
-  border-radius: 0;
+  background: var(--app-action-hover-background);
+  border-color: var(--app-action-hover-background);
+  color: var(--app-action-foreground);
 }
 .window-control-close:hover {
   background: #e81123;
+  border-color: #e81123;
   color: #ffffff;
 }
-/* Frameless: the flush window controls own the right edge, so the trailing group
-   drops its inset (the controls sit at the very corner). */
+/* Frameless: the close chip is in the window's corner, so its inset matches the
+   4px the chip leaves above it — the default trailing inset reads lopsided. */
 .frameless .app-trailing {
-  padding-right: 0;
+  padding-right: 4px;
 }
 /* Only frameless windows carry the in-app window controls; hide them otherwise
    so no empty gap shows where they'd sit. */
