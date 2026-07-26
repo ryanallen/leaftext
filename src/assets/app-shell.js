@@ -5537,8 +5537,12 @@ function renderDocumentMinimap(model) {
 // The rail lives beside the page rather than inside it, so every render has to
 // place it here instead of in its own markup. Empty means no rail at all — the
 // shell's :has(.document-minimap) collapses the column it would occupy.
+//
+// The scroller is told directly rather than left to :has(): scrollbar styles do
+// not re-resolve when a :has() match flips, so the bar outlives the rail.
 function setMinimapMarkup(html) {
   if (readerMinimap) readerMinimap.innerHTML = html || '';
+  if (app) app.classList.toggle('has-minimap', Boolean(html));
 }
 function currentMinimap() {
   return readerMinimap ? readerMinimap.querySelector('.document-minimap') : null;

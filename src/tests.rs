@@ -3759,11 +3759,45 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
     // ::-webkit-scrollbar rules the visible branch is built from.
     assert_contains(
         css,
-        "body:has(.document-minimap) .reader-shell {\n  scrollbar-width: none;\n}",
+        ".reader-shell.has-minimap {\n  scrollbar-width: none;\n}",
+    );
+    // The thumb is inset by a transparent border with the fill clipped inside it;
+    // a bare width would put it flush against the card's border and corners.
+    assert_contains(
+        css,
+        ".reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb",
     );
     assert_contains(
         css,
-        "body:not(:has(.document-minimap)) .reader-shell::-webkit-scrollbar {\n  width: 8px;\n}",
+        "border: 4px solid transparent;\n  background-clip: padding-box;",
+    );
+    // Keyed off the renderer's class, never :has() — scrollbar styles do not
+    // re-resolve when a :has() match flips, so the bar outlives the rail.
+    assert!(
+        !css.contains(":has(.document-minimap) .reader-shell::-webkit-scrollbar"),
+        "scrollbar visibility must not hang off :has()"
+    );
+    assert_contains(
+        &app_shell_html(),
+        "app.classList.toggle('has-minimap', Boolean(html));",
+    );
+
+    // The corner overlay paints chrome over the card's square corner and masks
+    // the arc back out. The mask must be unconditional: on a rule only some
+    // states match, the rest render a plain block in the corner.
+    let corner = css
+        .split(".reader-corner-tr {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines .reader-corner-tr");
+    assert!(
+        corner.contains("mask-image: radial-gradient(circle at 0 100%"),
+        "the corner's mask must sit on its base rule: {corner}"
+    );
+    // And it follows the card in when the rail takes a column beside it.
+    assert!(
+        corner.contains("right: calc(var(--reader-gutter) + var(--reader-minimap-column));"),
+        "the corner must track the card's right edge: {corner}"
     );
     assert!(
         !css.contains(

@@ -912,18 +912,14 @@ body {
   /* Only as wide as the card below it, then a radius shorter again at each end:
      .reader-corner-tl / -tr arc from there down into the card's side borders. A
      pixel of overlap with each arc's tangent, so a rounding difference between the
-     boxes can't open a gap. */
+     boxes can't open a gap. On the right that also clears the rail's column (0
+     wide when there is no rail), which is chrome the line must not cross. */
   left: calc(var(--reader-gutter) + var(--leaf-radius-md) - 1px);
-  right: calc(var(--reader-gutter) + var(--leaf-radius-md) - 1px);
+  right: calc(var(--reader-gutter) + var(--reader-minimap-column) + var(--leaf-radius-md) - 1px);
   bottom: 0;
   height: 1px;
   background: var(--app-border);
   z-index: 0;
-}
-/* The divider is the card's top edge, so it stops where the card does. Without
-   this it carries on over the rail's column and draws a line across the chrome. */
-body:has(.document-minimap) .app-bar::after {
-  right: calc(var(--reader-gutter) + var(--reader-minimap-column) + var(--leaf-radius-md) - 1px);
 }
 .app-bar.has-rail::after {
   /* Don't run the reader divider across the library column: the rail is one
@@ -1853,14 +1849,12 @@ body:has(.document-minimap) {
   border-top-left-radius: calc(var(--leaf-radius-md) + 1px);
 }
 /* In the app bar, so it tracks the bar's bottom edge whether or not the frameless
-   window drops the bar's top border. */
+   window drops the bar's top border. Follows the card in when the rail takes a
+   column beside it (0 wide when there is no rail).
+   The mask belongs on this rule, not on a conditional one: without it the box
+   paints as a plain chrome square over the page's corner. */
 .reader-corner-tr {
   top: calc(100% - 1px);
-  right: var(--reader-gutter);
-}
-/* The corner turns down into the card's right border, so it follows the card in
-   when the rail takes a column beside it. */
-body:has(.document-minimap) .reader-corner-tr {
   right: calc(var(--reader-gutter) + var(--reader-minimap-column));
   -webkit-mask-image: radial-gradient(circle at 0 100%, transparent 0 var(--reader-corner-cut), #000 var(--reader-corner-cut));
   mask-image: radial-gradient(circle at 0 100%, transparent 0 var(--reader-corner-cut), #000 var(--reader-corner-cut));
@@ -2320,31 +2314,41 @@ body.library-resizing {
   /* No rail to sit against, so the card is held off the left frame too. */
   margin-left: var(--reader-gutter);
 }
-/* The rail is the reader's scroll affordance, so the native bar stays hidden
-   while there is one. Split across the two branches on purpose: in Chromium
-   setting `scrollbar-width` at all disables every ::-webkit-scrollbar rule on
-   the element (see .library-scroll), so the branch that wants a styled bar must
-   never see the standard property. */
-body:has(.document-minimap) .reader-shell {
+/* The rail is the reader's scroll affordance, so the native bar hides while there
+   is one. On a class, not :has() — scrollbar styles don't re-resolve when a
+   :has() match flips, so the bar outlived the rail coming back. The two branches
+   stay apart for a second reason: in Chromium `scrollbar-width` anywhere on the
+   element kills every ::-webkit-scrollbar rule for it (see .library-scroll). */
+.reader-shell.has-minimap {
   scrollbar-width: none;
 }
-body:has(.document-minimap) .reader-shell::-webkit-scrollbar {
+.reader-shell.has-minimap::-webkit-scrollbar {
   width: 0;
 }
 /* No rail — the minimap is off, or there is no document — leaves nothing at all
    showing where you are in a long page, so a thin bar comes back, styled like
    the library's. */
-body:not(:has(.document-minimap)) .reader-shell::-webkit-scrollbar {
-  width: 8px;
+.reader-shell:not(.has-minimap)::-webkit-scrollbar {
+  /* 4px of inset each side plus the 6px the thumb actually shows. */
+  width: 14px;
 }
-body:not(:has(.document-minimap)) .reader-shell::-webkit-scrollbar-track {
-  /* Transparent, and held below the bar the page scrolls under. */
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-track {
+  /* Only the bar needs clearing here — the page scrolls under it. The thumb
+     insets itself from the other three edges, so the track keeps its full travel
+     and the thumb still reaches the very bottom. */
   background: transparent;
   margin-top: var(--app-bar-height);
 }
-body:not(:has(.document-minimap)) .reader-shell::-webkit-scrollbar-thumb {
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb {
+  /* A transparent border with the fill clipped inside it is the only way to
+     inset a webkit thumb: 4px off the card's right border, its rounded bottom
+     corner, and the arc under the bar. */
+  border: 4px solid transparent;
+  background-clip: padding-box;
   border-radius: var(--leaf-radius-md);
-  background: color-mix(in srgb, var(--app-muted-foreground) 35%, transparent);
+  background-color: color-mix(in srgb, var(--app-muted-foreground) 35%, transparent);
+  /* Floor the grabber so a long document can't shrink it to a sliver. */
+  min-height: 56px;
 }
 .reader-loading {
   /* Overlays the reader cell so a spinner can show over the current document
