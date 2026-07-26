@@ -25,10 +25,12 @@ pub use minimap::{
 mod assets;
 pub(crate) use assets::*;
 pub use assets::{bundled_asset_response, BundledAsset, LOCAL_ASSET_PROTOCOL};
+mod format;
+pub use format::{all_document_extensions, is_supported_document_path, DocumentFormat};
 mod editing;
 pub use editing::{
     block_source_map, kind_is_editable, render_source_view_html, task_marker_offsets, BlockSpan,
-    DocumentFormat, EditableDocument,
+    EditableDocument,
 };
 mod updater;
 pub use updater::{

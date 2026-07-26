@@ -23,18 +23,19 @@ use std::{
 
 use leaftext::indexer::{event_script, GraphRequest, IndexerEvent, IndexerWorker};
 use leaftext::{
-    app_data_dir, app_shell_html, blocks_resynced_script, bundled_asset_response, code_view_script,
-    config_file_path, document_pager_html, fragment_scroll_script, glossary_sheet_script,
-    image_refresh_script, initial_apply_outcome_script, initial_settings_script,
-    initial_state_script, initial_update_script, initial_version_script, is_local_image_path,
+    all_document_extensions, app_data_dir, app_shell_html, blocks_resynced_script,
+    bundled_asset_response, code_view_script, config_file_path, document_pager_html,
+    fragment_scroll_script, glossary_sheet_script, image_refresh_script,
+    initial_apply_outcome_script, initial_settings_script, initial_state_script,
+    initial_update_script, initial_version_script, is_local_image_path, is_supported_document_path,
     line_count_script, load_recent_files, load_settings, local_image_protocol_response,
     local_image_source_dir, navigation_state_script, open_document_with_recent,
     open_error_state_script, opened_document_from_source, pager_loaded_script,
     render_markdown_document, save_recent_files, save_result_script, save_settings,
     scroll_anchor_script, settings_file_path, source_updated_script, update_progress_script,
     update_state_script, webview_user_data_dir, workspace_reload_script, workspace_state_script,
-    workspace_switch_script, EditableDocument, GraphScope, LibraryView, OpenedDocument,
-    RecentFiles, ScrollAnchor, Settings, UpdateDownload, LOCAL_ASSET_PROTOCOL,
+    workspace_switch_script, DocumentFormat, EditableDocument, GraphScope, LibraryView,
+    OpenedDocument, RecentFiles, ScrollAnchor, Settings, UpdateDownload, LOCAL_ASSET_PROTOCOL,
     LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
@@ -1000,7 +1001,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                 *control_flow = ControlFlow::Exit;
             }
             Event::UserEvent(UserEvent::OpenPicker) => {
-                if let Some(path) = pick_markdown_file() {
+                if let Some(path) = pick_document_file() {
                     index_opened_path(indexer.as_ref(), &path);
                     workspace.open_path(path);
                     render_active(
@@ -1223,12 +1224,12 @@ fn run_app() -> Result<(), Box<dyn Error>> {
                             scroll_to_fragment(webview.as_ref(), &fragment);
                         }
                     }
-                    LinkTarget::External(target) | LinkTarget::LocalNonMarkdown(target) => {
+                    LinkTarget::External(target) | LinkTarget::LocalOther(target) => {
                         if let Err(error) = open_with_os(&target) {
                             eprintln!("Failed to open {target} with the OS: {error}");
                         }
                     }
-                    LinkTarget::LocalMarkdown(target) => {
+                    LinkTarget::LocalDocument(target) => {
                         let path = path_from_local_link(&target, &current_path);
                         if paths_refer_to_same_document(&path, &current_path) {
                             if let Some(fragment) = fragment_from_href(&target) {
@@ -1272,12 +1273,12 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             }
             Event::UserEvent(UserEvent::CountLines { href, token }) => {
                 // Count the linked document's lines for the hover tooltip. Only
-                // in-app Markdown links resolve to a file; else -1 ("unknown").
+                // in-app document links resolve to a file; else -1 ("unknown").
                 let lines = workspace
                     .active
                     .and_then(|active| workspace.tabs[active].history.current().cloned())
                     .and_then(|current_path| match classify_link_target(&href) {
-                        LinkTarget::LocalMarkdown(target) => {
+                        LinkTarget::LocalDocument(target) => {
                             let path = path_from_local_link(&target, &current_path);
                             fs::read_to_string(&path)
                                 .ok()
@@ -1997,46 +1998,31 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
     }
 }
 
-fn pick_markdown_file() -> Option<PathBuf> {
-    FileDialog::new()
+/// The Open dialog: one filter per format plus a combined one, both derived from
+/// the format table so the picker can't offer or omit a format the renderer has.
+fn pick_document_file() -> Option<PathBuf> {
+    let mut dialog = FileDialog::new()
         .set_title("Open Document")
-        .add_filter(
-            "Documents",
-            &["md", "markdown", "mdown", "xml", "json", "yaml", "yml"],
-        )
-        .add_filter("Markdown", &["md", "markdown", "mdown"])
-        .add_filter("TEI XML", &["xml"])
-        .add_filter("Data", &["json", "yaml", "yml"])
-        .add_filter("All files", &["*"])
-        .pick_file()
+        .add_filter("Documents", &all_document_extensions());
+    for format in DocumentFormat::ALL {
+        dialog = dialog.add_filter(format.display_name(), format.extensions());
+    }
+    dialog.add_filter("All files", &["*"]).pick_file()
 }
 
-/// Open each dropped Markdown file as a tab. Returns `true` to block the
-/// webview's default drop behavior (a useless "copy" cursor).
+/// Open each dropped document as a tab. Returns `true` to block the webview's
+/// default drop behavior (a useless "copy" cursor).
 fn drag_drop_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(DragDropEvent) -> bool {
     move |event| {
         if let DragDropEvent::Drop { paths, .. } = event {
             for path in paths {
-                if is_markdown_path(&path) {
+                if is_supported_document_path(&path) {
                     let _ = proxy.send_event(UserEvent::OpenPath(path));
                 }
             }
         }
         true
     }
-}
-
-/// True when `path` has an extension we know how to open. Matches the
-/// extensions offered by the file picker so drag-and-drop and Open agree.
-fn is_markdown_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|ext| ext.to_str())
-        .is_some_and(|ext| {
-            matches!(
-                ext.to_ascii_lowercase().as_str(),
-                "md" | "markdown" | "mdown" | "xml" | "json" | "yaml" | "yml"
-            )
-        })
 }
 
 /// One open document tab: its own back/forward history, scroll history, and a
@@ -3184,8 +3170,10 @@ impl DocumentHistory {
 enum LinkTarget {
     AnchorOnly,
     External(String),
-    LocalMarkdown(String),
-    LocalNonMarkdown(String),
+    /// A local file the app renders: followed in place, in the current tab.
+    LocalDocument(String),
+    /// A local file the app doesn't render: handed to the OS.
+    LocalOther(String),
 }
 
 fn classify_link_target(href: &str) -> LinkTarget {
@@ -3198,10 +3186,10 @@ fn classify_link_target(href: &str) -> LinkTarget {
         return LinkTarget::External(href.to_string());
     }
 
-    if is_markdown_link(href) {
-        LinkTarget::LocalMarkdown(href.to_string())
+    if is_document_link(href) {
+        LinkTarget::LocalDocument(href.to_string())
     } else {
-        LinkTarget::LocalNonMarkdown(href.to_string())
+        LinkTarget::LocalOther(href.to_string())
     }
 }
 
@@ -3227,15 +3215,12 @@ fn is_external_link(href: &str) -> bool {
             .is_some_and(|scheme| scheme.eq_ignore_ascii_case("tel:"))
 }
 
-fn is_markdown_link(href: &str) -> bool {
+/// True when a local link points at a file the app renders, so it opens in the
+/// reading view rather than being handed to the OS. Every format, not just
+/// Markdown — otherwise a link to the `.json` beside a note leaves the app.
+fn is_document_link(href: &str) -> bool {
     let path = local_path_from_href(href).unwrap_or_else(|| PathBuf::from(href));
-    matches!(
-        path.extension()
-            .and_then(|extension| extension.to_str())
-            .map(str::to_ascii_lowercase)
-            .as_deref(),
-        Some("md" | "markdown" | "mdown")
-    )
+    is_supported_document_path(&path)
 }
 
 fn path_from_local_link(href: &str, current_path: &Path) -> PathBuf {
@@ -3785,23 +3770,36 @@ mod tests {
         );
         assert_eq!(
             classify_link_target("file:///C:/docs/Guide.md#install"),
-            LinkTarget::LocalMarkdown("file:///C:/docs/Guide.md#install".to_string())
+            LinkTarget::LocalDocument("file:///C:/docs/Guide.md#install".to_string())
         );
         assert_eq!(
             classify_link_target("file:///C:/docs/Nested%20Guide.MDOWN#heading"),
-            LinkTarget::LocalMarkdown("file:///C:/docs/Nested%20Guide.MDOWN#heading".to_string())
+            LinkTarget::LocalDocument("file:///C:/docs/Nested%20Guide.MDOWN#heading".to_string())
         );
         assert_eq!(
             classify_link_target("../README.md#overview"),
-            LinkTarget::LocalMarkdown("../README.md#overview".to_string())
+            LinkTarget::LocalDocument("../README.md#overview".to_string())
         );
+        // Every format the reading view renders follows in place, not just Markdown.
+        for target in [
+            "./data/tei.xml",
+            "../package.json",
+            "./config.yaml",
+            "./config.yml",
+        ] {
+            assert_eq!(
+                classify_link_target(target),
+                LinkTarget::LocalDocument(target.to_string()),
+                "{target} should open in the reading view"
+            );
+        }
         assert_eq!(
             classify_link_target("file:///C:/docs/logo.png"),
-            LinkTarget::LocalNonMarkdown("file:///C:/docs/logo.png".to_string())
+            LinkTarget::LocalOther("file:///C:/docs/logo.png".to_string())
         );
         assert_eq!(
             classify_link_target("./assets/Release%20Notes.pdf"),
-            LinkTarget::LocalNonMarkdown("./assets/Release%20Notes.pdf".to_string())
+            LinkTarget::LocalOther("./assets/Release%20Notes.pdf".to_string())
         );
         assert_eq!(classify_link_target("#section"), LinkTarget::AnchorOnly);
         assert_eq!(classify_link_target("./#section"), LinkTarget::AnchorOnly);

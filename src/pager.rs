@@ -184,12 +184,11 @@ pub(crate) fn by_pager_name(a: &PathBuf, b: &PathBuf) -> std::cmp::Ordering {
 }
 
 /// Extensions the pager walks as sequential pages: every format the reading view
-/// renders, so Prev/Next covers a folder rather than part of it.
+/// renders, so Prev/Next covers a folder rather than part of it. Asks the format
+/// table rather than restating it — a page the app can open but the pager can't
+/// see is invisible to Prev/Next and keeps its extension in the label.
 pub(crate) fn is_pager_page_extension(extension: &str) -> bool {
-    matches!(
-        extension.to_ascii_lowercase().as_str(),
-        "md" | "xml" | "json" | "yaml" | "yml"
-    )
+    DocumentFormat::from_extension(extension).is_some()
 }
 
 /// Turn an on-disk name into a display label (matches the web `label()`): drop a

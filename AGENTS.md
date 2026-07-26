@@ -27,6 +27,7 @@ Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document 
 Library modules are `pub(crate)`, public surface re-exported from `lib.rs`.
 
 - `lib.rs` — render orchestration, document loading, glossary, recent files, settings, bootstrap scripts, `app_shell_html()`
+- `format.rs` — `DocumentFormat`: the **only** table of readable formats and their extensions. The file dialog, drag-and-drop, link following, the pager, the indexer and the render router all ask it. A new format is one arm here plus whatever the exhaustive matches then refuse to compile — never a second list. `for_path` answers "can we open this?" (`None` if not); `from_path` answers "render it as what?" (Markdown for anything unrecognised)
 - `markdown.rs` — parse → GitHub extras → highlight → sanitize, plus the `leaf-image://` handler
 - `xml.rs` — XML entry: TEI to `tei.rs`, all other XML to the generic reading renderer here
 - `tei.rs` — TEI (84000-style); stamps `data-src-*` from `roxmltree` ranges

@@ -1096,7 +1096,7 @@ function applyScanProgress(progress) {
 // A library row's display name: a file shows its file name (basename minus a
 // .md-style extension), matching the tabs; a folder shows its folder name.
 function fileDisplayName(node) {
-  return stripMarkdownExt(node && node.name) || (node && (node.title || node.path)) || '';
+  return stripDocumentExt(node && node.name) || (node && (node.title || node.path)) || '';
 }
 function nodeSortKey(node) {
   const label = node && node.kind === 'folder' ? (node.name || '') : fileDisplayName(node);
@@ -2162,7 +2162,7 @@ function searchHitHtml(hit) {
   const path = (hit && hit.absPath) || '';
   const title = (hit && hit.title) || path;
   const anchor = (hit && hit.anchor) || '';
-  return `<button type="button" class="library-hit" data-open-path="${escapeAttr(path)}" data-anchor="${escapeAttr(anchor)}" title="${escapeAttr(path)}"><span class="library-hit-title">${escapeText(stripMarkdownExt(title) || title)}</span><span class="library-hit-snippet">${highlightSnippet(hit && hit.snippet)}</span></button>`;
+  return `<button type="button" class="library-hit" data-open-path="${escapeAttr(path)}" data-anchor="${escapeAttr(anchor)}" title="${escapeAttr(path)}"><span class="library-hit-title">${escapeText(stripDocumentExt(title) || title)}</span><span class="library-hit-snippet">${highlightSnippet(hit && hit.snippet)}</span></button>`;
 }
 function bindSearchHits() {
   librarySearchResults.querySelectorAll('[data-open-path]').forEach((button) => {
@@ -3034,15 +3034,22 @@ function renderStaticText() {
   lineNumbersEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.lineNumbers.aria'));
   readerEditingEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.readerEditing.aria'));
 }
-// Tabs and the library both show the file name (basename, minus a .md/.markdown
-// extension), not the document's heading title. Falls back to the title, then
-// the raw path.
-function stripMarkdownExt(name) {
-  return (name || '').replace(/\.(md|markdown|mdown|mkd)$/i, '');
+// Every extension the app reads. Mirrors the table in `src/format.rs`, which is
+// the source of truth — the page can't import it, so keep the two in step.
+const DOCUMENT_EXTS = 'md|markdown|mdown|xml|json|yaml|yml';
+/** A bare file name ending in a document extension. */
+const DOCUMENT_NAME_RE = new RegExp(`\\.(${DOCUMENT_EXTS})$`, 'i');
+/** An href pointing at a document, fragment or query allowed. */
+const DOCUMENT_HREF_RE = new RegExp(`\\.(${DOCUMENT_EXTS})(?:[#?].*)?$`, 'i');
+// Tabs and the library both show the file name (basename, minus the document
+// extension), not the document's heading title. Falls back to the title, then the
+// raw path. Every format loses its extension, so tabs read alike.
+function stripDocumentExt(name) {
+  return (name || '').replace(DOCUMENT_NAME_RE, '');
 }
 function tabDisplayName(tab) {
   const base = (tab.path || '').split(/[\\/]/).pop() || '';
-  return stripMarkdownExt(base) || tab.title || tab.path || '';
+  return stripDocumentExt(base) || tab.title || tab.path || '';
 }
 function renderTabs(state) {
   const tabs = state.tabs || [];
@@ -5013,7 +5020,9 @@ function linkHoverInfo(rawHref) {
   if (/^[a-z][a-z0-9+.-]*:/i.test(rawHref)) {
     return { kind: 'App link', detail: hoverDetail(rawHref) };
   }
-  if (/\.md(?:[#?].*)?$/i.test(rawHref)) {
+  // Any format the app reads, not just Markdown — the host follows all of them in
+  // place, so the hint has to promise the same.
+  if (DOCUMENT_HREF_RE.test(rawHref)) {
     return { kind: 'Another page', detail: hoverDetail(rawHref) };
   }
   if (rawHref.startsWith('/')) {

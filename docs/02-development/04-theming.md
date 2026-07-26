@@ -40,16 +40,20 @@ Corners and elevation are tokenized too, but as **global scales** in the compile
 
 ### Surface grain
 
-Tinted surfaces are not painted as flat fills. A fine dot grid — a 2px lattice of near-transparent dots — is tiled over them, so a surface reads as a dithered cell rather than a wash of color. Like the radius and shadow scales, the grain lives in the compiled `:root` block rather than per-theme, as four alpha values that darken for dark appearances:
+Tinted surfaces are not painted as flat fills. A fine dot grid — a 2px lattice of near-transparent dots — is tiled over them, so a surface reads as a dithered cell rather than a wash of color. Like the radius and shadow scales, the grain lives in the compiled `:root` block rather than per-theme, as four alpha values, the first three darkening further for dark appearances:
 
 | Token | Where it grains |
 |---|---|
 | `--app-bar-grain` | App bar, library pane, and the reading card's corners |
 | `--library-header-grain` | Heavier, so an inactive tab reads as a darker cell without an outline |
 | `--reader-surface-grain` | Lighter, for the reading view's code blocks, outline panel, table headers, and the tinted table rows — body text sits on these |
-| `--reader-surface-grain-deep` | Heavier again, for the *untinted* table rows |
+| `--reader-row-grain` | The *untinted* table rows. Dark appearances only; transparent on light ones |
 
-Both table stripes are grained, not just the tinted one, so a table reads as a single texture banded light and dark rather than speckled rows alternating with flat ones. The untinted row needs the heavier value precisely because it carries no fill to speckle: at the tinted rows' weight its dots would barely register.
+On a dark appearance both table stripes are grained, so a table reads as a single texture banded light and dark rather than speckled rows alternating with flat ones.
+
+`--reader-row-grain` is the one grain that **lifts** rather than darkens, because the untinted row is the darkest surface in the app and darkening it has nowhere to go: a black dot shifts `#0d1117` by about 10 levels but `#2a2d3d` by about 32, so the texture lands faint on one family and heavy on another. A white dot at a low alpha moves every dark family by a steady ~15.
+
+Light appearances zero it. There those rows are the near-white ones, where a dot dark enough to see reads as a grey screen-door mesh laid across the whole table. The token is zeroed rather than the rule dropped, so there is still one selector to reason about against the frontmatter opt-out below.
 
 Every grained surface tiles from the window (`background-attachment: fixed`), not from its own box, so they all share one lattice — including both table stripes, so the dots run straight down the page across a stripe instead of breaking at each row edge. Box-anchored grids fall out of phase wherever two surfaces meet and the seam between them reads as a hairline.
 

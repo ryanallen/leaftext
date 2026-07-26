@@ -4,55 +4,6 @@
 
 use crate::*;
 
-/// A document's source language, from its file extension. Picks how the code
-/// view colours the text and which renderer rebuilds the reading view.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum DocumentFormat {
-    Markdown,
-    Xml,
-    Json,
-    Yaml,
-}
-
-impl DocumentFormat {
-    /// The format for a path. Everything unrecognised is Markdown, matching how
-    /// the loader routes files.
-    pub fn from_path(path: &Path) -> Self {
-        match path
-            .extension()
-            .and_then(|ext| ext.to_str())
-            .map(str::to_ascii_lowercase)
-            .as_deref()
-        {
-            Some("xml") => Self::Xml,
-            Some("json") => Self::Json,
-            Some("yaml" | "yml") => Self::Yaml,
-            _ => Self::Markdown,
-        }
-    }
-
-    /// The token the syntax highlighter uses to pick a language definition.
-    pub fn language_token(self) -> &'static str {
-        match self {
-            Self::Markdown => "markdown",
-            Self::Xml => "xml",
-            Self::Json => "json",
-            Self::Yaml => "yaml",
-        }
-    }
-
-    /// The label shown on the code view, and the fallback highlight class.
-    pub fn display_name(self) -> &'static str {
-        match self {
-            Self::Markdown => "Markdown",
-            Self::Xml => "XML",
-            Self::Json => "JSON",
-            Self::Yaml => "YAML",
-        }
-    }
-}
-
 /// Reading-view undo entries kept per document; each is a full buffer snapshot.
 const UNDO_STACK_CAP: usize = 200;
 

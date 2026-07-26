@@ -790,9 +790,11 @@ pub(crate) fn reading_mode_css() -> &'static str {
      chrome's: body text sits on these, so it darkens the fill without competing
      with the words. */
   --reader-surface-grain: rgba(0, 0, 0, 0.08);
-  /* A heavier grain for the untinted table rows: with no fill to speckle, a dot at
-     the weight above barely registers on them. */
-  --reader-surface-grain-deep: rgba(0, 0, 0, 0.15);
+  /* The untinted table rows — the ones carrying no fill, so the grain above has
+     nothing to speckle. Dark themes only: on a light theme these are the near-white
+     rows, where a dot dark enough to see reads as a grey screen-door mesh laid over
+     the whole table. Light themes leave them plain. */
+  --reader-row-grain: transparent;
   /* Corner radii — one scale every surface pulls from, so rounding swaps in a
      single place. Sizes map onto the values the components historically used. */
   --leaf-radius-xs: 2px;
@@ -864,7 +866,11 @@ body {
   --app-bar-grain: rgba(0, 0, 0, 0.35);
   --library-header-grain: rgba(0, 0, 0, 0.72);
   --reader-surface-grain: rgba(0, 0, 0, 0.3);
-  --reader-surface-grain-deep: rgba(0, 0, 0, 0.55);
+  /* Light, not dark — the one grain in the app that goes the other way. This row is
+     the darkest surface there is, so darkening it has nowhere to go: black at any
+     alpha shifts `#0d1117` by ~10 and `#2a2d3d` by ~32, faint and uneven across
+     families. Lifting instead moves every dark theme by a steady ~15. */
+  --reader-row-grain: rgba(255, 255, 255, 0.07);
 }
 .app-bar {
   position: fixed;
@@ -3708,11 +3714,13 @@ body.library-resizing {
   background-repeat: repeat;
   background-attachment: fixed;
 }
-/* Grain the untinted rows too, so a table reads as one texture banded light and
-   dark rather than speckled rows alternating with flat ones. Same fixed lattice as
-   every other grain, so the dots run straight down across the stripe. */
+/* Grain the untinted rows too, so a dark table reads as one texture banded light
+   and dark rather than speckled rows alternating with flat ones. Same fixed lattice
+   as every other grain, so the dots run straight down across the stripe. Light
+   themes zero the token rather than drop the rule, keeping one selector to reason
+   about against the frontmatter opt-out below. */
 .document-body tr:nth-child(2n + 1) td {
-  background-image: radial-gradient(circle, var(--reader-surface-grain-deep) 0 0.6px, transparent 0.7px);
+  background-image: radial-gradient(circle, var(--reader-row-grain) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;

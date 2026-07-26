@@ -24,6 +24,8 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use rusqlite::{params, params_from_iter, types::Value, Connection, OpenFlags};
 use serde::Serialize;
 
+use crate::DocumentFormat;
+
 /// Latest applied schema migration: 1 base, 2 full-text search, 3 frontmatter,
 /// 4 doc-to-doc link graph.
 const SCHEMA_VERSION: i64 = 4;
@@ -347,44 +349,10 @@ fn normal_path(path: &Path) -> PathBuf {
     path.to_path_buf()
 }
 
-fn lowercase_extension(path: &Path) -> Option<String> {
-    path.extension()
-        .and_then(|ext| ext.to_str())
-        .map(|ext| ext.to_ascii_lowercase())
-}
-
-fn is_markdown_file(path: &Path) -> bool {
-    matches!(
-        lowercase_extension(path).as_deref(),
-        Some("md" | "markdown" | "mdown")
-    )
-}
-
-/// XML documents (opened as `.xml`, rendered by the XML pipeline).
-fn is_xml_file(path: &Path) -> bool {
-    matches!(lowercase_extension(path).as_deref(), Some("xml"))
-}
-
-/// JSON and YAML documents, rendered by the data pipeline.
-fn is_data_file(path: &Path) -> bool {
-    matches!(
-        lowercase_extension(path).as_deref(),
-        Some("json" | "yaml" | "yml")
-    )
-}
-
-/// Document types the library indexes: Markdown, XML, and the data formats.
+/// Document types the library indexes: every format the app can open, so the
+/// library and the reading view never disagree about what a document is.
 fn is_indexable_file(path: &Path) -> bool {
-    is_markdown_file(path) || is_xml_file(path) || is_data_file(path)
-}
-
-/// A data file's title, read by the same renderer the reading view uses so the
-/// library and the open tab agree on what the document is called.
-fn data_title(content: &str, path: &Path) -> Option<String> {
-    match lowercase_extension(path).as_deref() {
-        Some("json") => crate::render_json_body(content).0,
-        _ => crate::render_yaml_body(content).0,
-    }
+    crate::is_supported_document_path(path)
 }
 
 fn is_repo_noise_dir(name: &str) -> bool {
@@ -1460,14 +1428,12 @@ pub struct DocLink {
 /// Markdown links, `<a href>`, and `[[wiki]]`; XML gets `target=`/`href=` attrs.
 /// Deduplicated by resolved target so a repeated link draws one edge.
 fn document_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
-    let mut links = if is_xml_file(source_abs) {
-        xml_links(content, source_abs)
-    } else if is_data_file(source_abs) {
+    let mut links = match DocumentFormat::from_path(source_abs) {
+        DocumentFormat::Xml => xml_links(content, source_abs),
         // A data file's strings are values, not prose. Scanning them as Markdown
         // invents links that were never written, so the graph leaves them out.
-        Vec::new()
-    } else {
-        markdown_links(content, source_abs)
+        DocumentFormat::Json | DocumentFormat::Yaml => Vec::new(),
+        DocumentFormat::Markdown => markdown_links(content, source_abs),
     };
     dedup_links(&mut links);
     links
@@ -2466,42 +2432,32 @@ fn process_file(job: &ParseJob, cancel: &AtomicBool) -> FileOutcome {
     // Parsing runs here on the parse pool; the writer thread only persists.
     // Link extraction runs for every type so the graph can edge MD and XML.
     let links = document_links(&content, &job.abs_path);
-    if is_xml_file(&job.abs_path) {
-        // XML: take the document title and links; body isn't chunked for
-        // search yet, so chunks/frontmatter stay empty.
-        let (title, _body) = crate::render_xml_body(&content);
-        FileOutcome::Indexed {
-            content_hash,
-            title: title.unwrap_or_else(|| stem_of(&job.filename)),
-            headings: Vec::new(),
-            chunks: Vec::new(),
-            frontmatter: Vec::new(),
-            links,
+    // Only Markdown is outlined and chunked for search so far; a tree format
+    // contributes its title and links, leaving the rest empty. Titles come from the
+    // renderer the reading view uses, so the library and the tab agree on the name.
+    let title = match DocumentFormat::from_path(&job.abs_path) {
+        DocumentFormat::Xml => crate::render_xml_body(&content).0,
+        DocumentFormat::Json => crate::render_json_body(&content).0,
+        DocumentFormat::Yaml => crate::render_yaml_body(&content).0,
+        DocumentFormat::Markdown => {
+            let parsed = parse_markdown(&content, &stem_of(&job.filename));
+            return FileOutcome::Indexed {
+                content_hash,
+                title: parsed.title,
+                headings: parsed.headings,
+                chunks: chunk_file(&content),
+                frontmatter: frontmatter_fields(&content),
+                links,
+            };
         }
-    } else if is_data_file(&job.abs_path) {
-        // JSON and YAML: the title only, as for XML. A data file has no headings
-        // to outline, and its body isn't chunked for search yet.
-        let title = data_title(&content, &job.abs_path);
-        FileOutcome::Indexed {
-            content_hash,
-            title: title.unwrap_or_else(|| stem_of(&job.filename)),
-            headings: Vec::new(),
-            chunks: Vec::new(),
-            frontmatter: Vec::new(),
-            links,
-        }
-    } else {
-        let parsed = parse_markdown(&content, &stem_of(&job.filename));
-        let chunks = chunk_file(&content);
-        let frontmatter = frontmatter_fields(&content);
-        FileOutcome::Indexed {
-            content_hash,
-            title: parsed.title,
-            headings: parsed.headings,
-            chunks,
-            frontmatter,
-            links,
-        }
+    };
+    FileOutcome::Indexed {
+        content_hash,
+        title: title.unwrap_or_else(|| stem_of(&job.filename)),
+        headings: Vec::new(),
+        chunks: Vec::new(),
+        frontmatter: Vec::new(),
+        links,
     }
 }
 

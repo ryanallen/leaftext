@@ -209,13 +209,15 @@ Hovering a link shows a small tooltip that names what kind of link it is and sho
 | Glossary entry | A `glossary:` term link, or a link to `GLOSSARY.md#term` |
 | Full glossary | A bare `glossary:` link that opens the whole glossary |
 | In-page jump | A `#fragment` link to a heading on the current page |
-| Another page | A relative link to another `.md` document (its line count is shown too) |
+| Another page | A relative link to any document Leaf Text reads — `.md`, [`.xml`](01-rendering.md#xml), [`.json`, `.yaml`](01-rendering.md#data-files-json-and-yaml) (its line count is shown too) |
 | External site | An `http://` or `https://` link |
 | Email link | A `mailto:` link |
 | App link | Any other URL scheme |
 | Site path | A root-relative `/path` link |
 
 This is a desktop affordance: it appears only with a mouse (a fine pointer that can hover), and is left off on touch screens. The tooltip follows the cursor, flips to stay on screen near the edges, and hides on scroll or when the window loses focus.
+
+The hint also tells you where a click will land. A link to a document Leaf Text reads opens in the reading view, in the current tab, with a history entry — that covers every format it renders, not Markdown alone, so a link from a note to the `.json` beside it stays inside the app. A link to any other local file (an image, a PDF, a spreadsheet) is handed to your operating system to open in whatever owns that type.
 
 ## Next
 

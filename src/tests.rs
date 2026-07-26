@@ -2613,12 +2613,28 @@ fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
 fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
     let css = reading_mode_css();
 
-    // Both stripes carry the lattice, and the untinted one — with no fill to
-    // speckle — uses the heavier grain.
+    // Dark themes grain both stripes; light themes leave the untinted rows plain,
+    // because there a dot dark enough to see reads as a grey mesh over the table.
     assert_contains(css, "--reader-surface-grain: rgba(0, 0, 0, 0.08);");
-    assert_contains(css, "--reader-surface-grain-deep: rgba(0, 0, 0, 0.15);");
+    assert_contains(css, "--reader-row-grain: transparent;");
     assert_contains(css, "--reader-surface-grain: rgba(0, 0, 0, 0.3);");
-    assert_contains(css, "--reader-surface-grain-deep: rgba(0, 0, 0, 0.55);");
+    // Lighter, not darker — the untinted row is the darkest surface in the app, so
+    // darkening it has nowhere to go and lands unevenly across theme families.
+    assert_contains(css, "--reader-row-grain: rgba(255, 255, 255, 0.07);");
+
+    // The zeroed value must be the light default and the lift the dark override,
+    // not the reverse — that swap is exactly what this pins.
+    let light = css
+        .find("--reader-row-grain: transparent;")
+        .expect("light themes zero the row grain");
+    let dark = css
+        .find("--reader-row-grain: rgba(255, 255, 255, 0.07);")
+        .expect("dark themes set the row grain");
+    let dark_block = css
+        .find("[data-theme=\"dark\"]")
+        .expect("the dark override block");
+    assert!(light < dark_block, "the zeroed value is the light default");
+    assert!(dark > dark_block, "the lifted value is the dark override");
 
     let even = css
         .find("tr:nth-child(2n) td")
@@ -2630,10 +2646,10 @@ fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
         .find(".frontmatter tr td")
         .expect("the frontmatter table opts out");
 
-    // The deep grain belongs to the untinted stripe, not the tinted one.
+    // The row grain belongs to the untinted stripe, not the tinted one.
     assert_contains(
         &css[odd..],
-        "radial-gradient(circle, var(--reader-surface-grain-deep)",
+        "radial-gradient(circle, var(--reader-row-grain)",
     );
     // Same 2px lattice on both, so the dots line up down the page across a stripe.
     assert_contains(&css[odd..], "background-size: 2px 2px;");
@@ -7431,6 +7447,86 @@ fn document_format_follows_extension() {
         DocumentFormat::from_path(Path::new("README")),
         DocumentFormat::Markdown
     );
+}
+
+/// `for_path` is the "can we open this at all?" question, so unlike `from_path`
+/// it must not quietly answer Markdown for a format the app cannot read.
+#[test]
+fn unreadable_extensions_have_no_format() {
+    for name in [
+        "photo.png",
+        "book.epub",
+        "archive.zip",
+        "notes.txt",
+        "README",
+    ] {
+        assert_eq!(
+            DocumentFormat::for_path(Path::new(name)),
+            None,
+            "{name} is not a format the app reads"
+        );
+        assert!(!is_supported_document_path(Path::new(name)), "{name}");
+    }
+}
+
+/// Every extension the table lists must round-trip back to its own format, and
+/// the flat list the file dialog offers must be exactly those extensions. This is
+/// the test that keeps a new format from being half-added.
+#[test]
+fn every_listed_extension_maps_back_to_its_format() {
+    let mut listed = Vec::new();
+    for format in DocumentFormat::ALL {
+        assert!(
+            !format.extensions().is_empty(),
+            "{format:?} must name at least one extension"
+        );
+        for extension in format.extensions() {
+            assert_eq!(
+                &extension.to_ascii_lowercase(),
+                extension,
+                "{extension} must be listed lowercase"
+            );
+            assert_eq!(
+                DocumentFormat::from_extension(extension),
+                Some(format),
+                ".{extension} should read as {format:?}"
+            );
+            // Case-insensitively too: extensions arrive as the user typed them.
+            assert_eq!(
+                DocumentFormat::from_extension(&extension.to_ascii_uppercase()),
+                Some(format),
+                ".{extension} uppercase should read as {format:?}"
+            );
+            assert!(
+                !listed.contains(extension),
+                ".{extension} is claimed by two formats"
+            );
+            listed.push(extension);
+        }
+    }
+    assert_eq!(all_document_extensions(), listed);
+}
+
+/// The pager, the file dialog, drag-and-drop, link following and the library index
+/// each used to carry their own list. Anything the app can open must page too.
+#[test]
+fn every_readable_format_is_a_pager_page_and_an_in_app_link() {
+    for extension in all_document_extensions() {
+        assert!(
+            is_pager_page_extension(extension),
+            ".{extension} opens but Prev/Next skips it"
+        );
+        assert!(
+            is_pager_page_extension(&extension.to_ascii_uppercase()),
+            ".{extension} uppercase should page too"
+        );
+    }
+    // `.markdown` and `.mdown` open like any other page, so they must also page
+    // and lose their extension in the label.
+    assert!(is_pager_page_extension("markdown"));
+    assert!(is_pager_page_extension("mdown"));
+    assert_eq!(pager_label("getting-started.markdown"), "Getting Started");
+    assert!(!is_pager_page_extension("png"));
 }
 
 #[test]
