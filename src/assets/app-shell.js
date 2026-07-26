@@ -2464,20 +2464,15 @@ async function streamInstaller(url, size) {
   flush();
 }
 
-// Fetch the release's checksum file and stage the installer behind it. Anything
-// that goes wrong leaves the button pointing at the release page.
-async function downloadUpdate(version, installer, checksum) {
+// Stream the installer to the host, which writes and hashes it. Anything that
+// goes wrong leaves the button pointing at the release page.
+async function downloadUpdate(version, installer) {
   setUpdateState({ status: 'downloading', version, percent: 0 });
   try {
-    const sums = await fetch(checksum.browser_download_url);
-    if (!sums.ok) throw new Error(`checksum unavailable (${sums.status})`);
-    const digest = (await sums.text()).trim().split(/\s+/)[0];
-
     send({
       command: 'updateDownloadBegin',
       version,
       asset: installer.name,
-      blake3: digest,
       size: installer.size,
     });
     await streamInstaller(installer.browser_download_url, installer.size);
@@ -2536,15 +2531,11 @@ async function checkForUpdate(force) {
     const installer = UPDATE_ASSET_SUFFIX
       ? assets.find((asset) => asset && typeof asset.name === 'string' && asset.name.endsWith(UPDATE_ASSET_SUFFIX))
       : null;
-    const checksum = installer
-      ? assets.find((asset) => asset && asset.name === `${installer.name}.blake3`)
-      : null;
 
-    // No installer for this platform, no published checksum to verify it
-    // against, or the user turned auto-update off: notify only, which is what
-    // the button did before any of this existed. Say which, so a release that
-    // forgot to publish a checksum doesn't read as a broken updater.
-    if (!installer || !checksum || !autoUpdateEnabled) {
+    // No installer for this platform, or the user turned auto-update off: notify
+    // only, which is what the button did before any of this existed. Say which,
+    // so a release that failed to publish one doesn't read as a broken updater.
+    if (!installer || !autoUpdateEnabled) {
       setUpdateState({
         status: 'available',
         version,
@@ -2555,7 +2546,7 @@ async function checkForUpdate(force) {
       return;
     }
     setUpdateState({ status: 'available', version, url, checkedAt: Date.now(), message: '' });
-    await downloadUpdate(version, installer, checksum);
+    await downloadUpdate(version, installer);
   } catch (error) {
     // Offline, rate-limited, or a malformed answer. `checkedAt` is deliberately
     // left alone so the next tick retries instead of waiting out the interval.

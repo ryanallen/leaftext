@@ -192,6 +192,18 @@ fn relaunch(executable: &Path) -> io::Result<()> {
     Command::new(executable).spawn().map(|_| ())
 }
 
+/// The single `.app` bundle at the root of a mounted image. Anything else there
+/// (the `/Applications` symlink the DMG carries for drag-installing) is skipped.
+#[cfg(target_os = "macos")]
+fn mounted_bundle(mount: &Path) -> Result<PathBuf, String> {
+    std::fs::read_dir(mount)
+        .map_err(|error| format!("could not read the mounted image: {error}"))?
+        .flatten()
+        .map(|entry| entry.path())
+        .find(|path| path.is_dir() && path.extension().is_some_and(|kind| kind == "app"))
+        .ok_or_else(|| "the disk image contained no .app bundle".to_string())
+}
+
 /// The `.app` directory containing an executable, if it is inside one.
 #[cfg(target_os = "macos")]
 fn bundle_root(executable: &Path) -> Option<PathBuf> {
@@ -229,7 +241,7 @@ fn install(installer: &Path, _relaunch: &Path) -> Result<(), String> {
     }
 }
 
-/// macOS: swap the application bundle.
+/// macOS: mount the disk image, copy the bundle out, and swap it into place.
 ///
 /// The old bundle is moved aside before the new one is moved in, and only
 /// deleted once the new one is in place, so a failure at any step leaves a
@@ -255,24 +267,57 @@ fn install(installer: &Path, relaunch: &Path) -> Result<(), String> {
     std::fs::create_dir_all(&unpacked)
         .map_err(|error| format!("could not create the unpack folder: {error}"))?;
 
-    // ditto, not unzip: it preserves the resource forks and extended
-    // attributes that a signed bundle depends on.
-    let status = Command::new("ditto")
-        .args(["-x", "-k"])
+    // macOS publishes one file, the disk image a person double-clicks, so the
+    // bundle is copied out of that. Read-only and -nobrowse: nothing should appear
+    // in Finder mid-install.
+    let mount = installer.with_extension("mount");
+    let _ = Command::new("hdiutil")
+        .args(["detach", "-force"])
+        .arg(&mount)
+        .status();
+    let _ = std::fs::remove_dir_all(&mount);
+    std::fs::create_dir_all(&mount)
+        .map_err(|error| format!("could not create the mount point: {error}"))?;
+
+    let status = Command::new("hdiutil")
+        .arg("attach")
         .arg(installer)
-        .arg(&unpacked)
+        .arg("-mountpoint")
+        .arg(&mount)
+        .args(["-nobrowse", "-readonly", "-noverify", "-noautoopen"])
         .status()
-        .map_err(|error| format!("could not unpack the update: {error}"))?;
+        .map_err(|error| format!("could not mount the update: {error}"))?;
     if !status.success() {
-        return Err(format!("unpacking the update failed with {status}"));
+        return Err(format!("mounting the update failed with {status}"));
     }
 
-    let new_bundle = std::fs::read_dir(&unpacked)
-        .map_err(|error| format!("could not read the unpacked update: {error}"))?
-        .flatten()
-        .map(|entry| entry.path())
-        .find(|path| path.extension().is_some_and(|kind| kind == "app"))
-        .ok_or("the update archive contained no .app bundle")?;
+    // Everything from here to the detach has to release the mount, so the copy's
+    // outcome is held rather than returned.
+    let copied = mounted_bundle(&mount).and_then(|source| {
+        let name = source
+            .file_name()
+            .ok_or_else(|| "the bundle on the image has no name".to_string())?;
+        // ditto, not a directory copy: it preserves the resource forks and
+        // extended attributes the bundle's signature depends on.
+        let destination = unpacked.join(name);
+        let status = Command::new("ditto")
+            .arg(&source)
+            .arg(&destination)
+            .status()
+            .map_err(|error| format!("could not copy the update off the image: {error}"))?;
+        if !status.success() {
+            return Err(format!("copying the update failed with {status}"));
+        }
+        Ok(destination)
+    });
+
+    // Detach whatever happened; a left-behind mount would block the next attempt.
+    let _ = Command::new("hdiutil")
+        .args(["detach", "-force"])
+        .arg(&mount)
+        .status();
+    let _ = std::fs::remove_dir_all(&mount);
+    let new_bundle = copied?;
 
     let retired = bundle.with_extension("app.old");
     let _ = std::fs::remove_dir_all(&retired);

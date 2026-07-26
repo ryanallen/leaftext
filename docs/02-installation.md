@@ -11,7 +11,7 @@ leaftext ships prebuilt binaries for macOS and Windows. There is no account, no 
 | macOS | `.dmg` | Universal (Apple Silicon + Intel) |
 | Windows | `.msi` | Windows 10+ 64-bit |
 
-Each release also carries a `.blake3` checksum beside every download, and a `.app.zip` of the macOS bundle. Those are what the [in-app updater](#updates) fetches and verifies; installing by hand needs only the `.dmg` or `.msi`.
+A release is those two files and nothing else. The [in-app updater](#updates) installs the same `.dmg` or `.msi` you would download by hand, so there is never a file on the release page whose purpose has to be explained.
 
 Download the latest build from [GitHub Releases](https://github.com/ryanallen/leaftext/releases).
 
@@ -74,7 +74,7 @@ Use `Ctrl+O` on Windows or `Cmd+O` on macOS to open your first file.
 
 leaftext checks GitHub Releases for a newer version, at most once every six hours, and again on that interval while the window stays open. When one is available, a green dot appears over the Settings button and a button appears at the top of the [Settings](01-features/05-settings.md#updates) menu.
 
-With **Download updates** on (the default), the new installer downloads in the background and is checked against the `.blake3` digest published with the release; a download that does not match is discarded. While it runs, the button shows a spinner and its percentage and the dot becomes a spinning ring. The button then reads **Restart to update**, and clicking it closes leaftext, installs, and reopens it.
+With **Download updates** on (the default), the new installer downloads in the background; a download that arrives short or oversized is discarded rather than kept. While it runs, the button shows a spinner and its percentage and the dot becomes a spinning ring. The button then reads **Restart to update**, and clicking it closes leaftext, installs, and reopens it — on macOS by mounting the disk image, copying the bundle out, and swapping it in.
 
 Nothing installs on its own. The download is automatic; the install is always a button you press. Turning **Download updates** off keeps the check but nothing is fetched — the button just opens the release page, and you install by hand.
 

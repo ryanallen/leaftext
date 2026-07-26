@@ -6991,7 +6991,6 @@ fn a_verified_download_is_staged_and_readable_afterwards() {
         &data_dir,
         "v0.1.362",
         "leaftext-v0.1.362-windows-x86_64.msi",
-        &digest,
         payload.len() as u64,
     )
     .expect("download opens");
@@ -7022,32 +7021,31 @@ fn a_verified_download_is_staged_and_readable_afterwards() {
 }
 
 #[test]
-fn a_download_that_fails_its_checksum_is_refused_and_deleted() {
-    let data_dir = update_test_dir("badhash");
-    let payload = b"tampered installer".to_vec();
-    let expected = blake3_hex(b"the installer that was actually published");
+fn a_staged_installer_altered_on_disk_is_caught_before_it_runs() {
+    // Releases publish no checksum, so nothing compares the download against a
+    // published digest. What the manifest digest is for is this: the installer
+    // sits in a user-writable folder until the user clicks, and the applier
+    // re-hashes it before handing it to the installer program.
+    let data_dir = update_test_dir("altered");
+    let payload = b"the installer that was downloaded".to_vec();
 
     let mut download = UpdateDownload::begin(
         &data_dir,
         "0.1.362",
         "leaftext-v0.1.362-windows-x86_64.msi",
-        &expected,
         payload.len() as u64,
     )
     .expect("download opens");
     download.write_chunk(&payload).expect("chunk accepted");
+    let staged = download.finish().expect("download stages");
 
-    let error = download.finish().expect_err("mismatched hash is refused");
-    assert!(error.contains("checksum"), "unhelpful message: {error}");
-
-    // Nothing installable may survive a failed verification.
-    assert!(read_staged(&data_dir, "0.1.362").is_none());
-    let leftovers: Vec<_> = fs::read_dir(staging_dir(&data_dir, "0.1.362"))
-        .expect("staging folder exists")
-        .flatten()
-        .map(|entry| entry.file_name())
-        .collect();
-    assert!(leftovers.is_empty(), "left behind {leftovers:?}");
+    let installer = staged.installer_path(&data_dir);
+    fs::write(&installer, b"something else entirely, same length").expect("tamper");
+    assert_ne!(
+        hash_file(&installer).expect("rehash"),
+        staged.blake3,
+        "the applier's re-hash must not match after the file changed"
+    );
 
     let _ = fs::remove_dir_all(&data_dir);
 }
@@ -7056,13 +7054,11 @@ fn a_download_that_fails_its_checksum_is_refused_and_deleted() {
 fn a_truncated_download_is_refused() {
     let data_dir = update_test_dir("short");
     let payload = b"only the first half".to_vec();
-    let digest = blake3_hex(&payload);
 
     let mut download = UpdateDownload::begin(
         &data_dir,
         "0.1.362",
         "leaftext.msi",
-        &digest,
         payload.len() as u64 + 100,
     )
     .expect("download opens");
@@ -7082,8 +7078,7 @@ fn a_truncated_download_is_refused() {
 fn a_download_may_not_grow_past_its_advertised_size() {
     let data_dir = update_test_dir("oversize");
     let mut download =
-        UpdateDownload::begin(&data_dir, "0.1.362", "leaftext.msi", &blake3_hex(b"x"), 4)
-            .expect("download opens");
+        UpdateDownload::begin(&data_dir, "0.1.362", "leaftext.msi", 4).expect("download opens");
 
     assert!(download.write_chunk(b"aaaa").is_ok());
     let error = download
@@ -7097,7 +7092,6 @@ fn a_download_may_not_grow_past_its_advertised_size() {
 #[test]
 fn release_metadata_cannot_escape_the_staging_folder() {
     let data_dir = update_test_dir("traversal");
-    let digest = blake3_hex(b"x");
 
     // A hostile or broken tag_name becomes a directory name, so separators and
     // dot segments must not survive into it.
@@ -7118,7 +7112,7 @@ fn release_metadata_cannot_escape_the_staging_folder() {
         "",
     ] {
         assert!(
-            UpdateDownload::begin(&data_dir, "0.1.362", hostile, &digest, 1).is_err(),
+            UpdateDownload::begin(&data_dir, "0.1.362", hostile, 1).is_err(),
             "accepted asset name {hostile:?}"
         );
     }
@@ -7127,54 +7121,28 @@ fn release_metadata_cannot_escape_the_staging_folder() {
 }
 
 #[test]
-fn a_malformed_checksum_is_refused_before_anything_downloads() {
-    let data_dir = update_test_dir("digest");
-    for bad in [
-        "",
-        "not-a-hash",
-        &"a".repeat(63),
-        &"a".repeat(65),
-        &"z".repeat(64),
-    ] {
-        assert!(
-            UpdateDownload::begin(&data_dir, "0.1.362", "leaftext.msi", bad, 10).is_err(),
-            "accepted digest {bad:?}"
-        );
-    }
-
-    // Checksum files conventionally carry the file name after the digest, and
-    // hex is case-insensitive; both must be accepted.
-    let digest = blake3_hex(b"x");
-    assert!(UpdateDownload::begin(
-        &data_dir,
-        "0.1.362",
-        "leaftext.msi",
-        &format!("{digest}  leaftext.msi"),
-        10
-    )
-    .is_ok());
-    assert!(UpdateDownload::begin(
-        &data_dir,
-        "0.1.362",
-        "leaftext.msi",
-        &digest.to_uppercase(),
-        10
-    )
-    .is_ok());
-
+fn an_absurd_download_size_is_refused() {
+    let data_dir = update_test_dir("huge");
+    assert!(UpdateDownload::begin(&data_dir, "0.1.362", "a.msi", 0).is_err());
+    assert!(UpdateDownload::begin(&data_dir, "0.1.362", "a.msi", MAX_UPDATE_BYTES + 1).is_err());
     let _ = fs::remove_dir_all(&data_dir);
 }
 
 #[test]
-fn an_absurd_download_size_is_refused() {
-    let data_dir = update_test_dir("huge");
-    let digest = blake3_hex(b"x");
-    assert!(UpdateDownload::begin(&data_dir, "0.1.362", "a.msi", &digest, 0).is_err());
+fn a_release_publishes_one_installable_file_per_platform() {
+    // The release page is two downloads and nothing else: no checksum files, no
+    // archive published only for the updater. What the updater fetches is exactly
+    // what a person downloads by hand, which is why nobody has to be told what an
+    // extra file is for.
+    let suffix = platform_asset_suffix();
+    #[cfg(windows)]
+    assert_eq!(suffix, "-windows-x86_64.msi");
+    #[cfg(target_os = "macos")]
+    assert_eq!(suffix, "-macos-universal.dmg");
     assert!(
-        UpdateDownload::begin(&data_dir, "0.1.362", "a.msi", &digest, MAX_UPDATE_BYTES + 1)
-            .is_err()
+        !suffix.contains("blake3") && !suffix.contains(".app.zip"),
+        "the updater must install the file people download: {suffix}"
     );
-    let _ = fs::remove_dir_all(&data_dir);
 }
 
 #[test]
@@ -7272,15 +7240,9 @@ fn the_page_is_told_how_the_last_install_went() {
 fn a_staged_record_without_its_installer_reads_as_nothing_staged() {
     let data_dir = update_test_dir("halfdeleted");
     let payload = b"installer".to_vec();
-    let digest = blake3_hex(&payload);
-    let mut download = UpdateDownload::begin(
-        &data_dir,
-        "0.1.362",
-        "leaftext.msi",
-        &digest,
-        payload.len() as u64,
-    )
-    .expect("download opens");
+    let mut download =
+        UpdateDownload::begin(&data_dir, "0.1.362", "leaftext.msi", payload.len() as u64)
+            .expect("download opens");
     download.write_chunk(&payload).expect("chunk accepted");
     let staged = download.finish().expect("download verifies");
 
@@ -7398,9 +7360,6 @@ fn the_page_is_told_which_installer_this_build_takes() {
     assert!(script.starts_with("window.__leafUpdateAsset = "));
     assert!(script.contains(platform_asset_suffix()));
 
-    // The suffix has to match what the release workflow actually publishes.
-    #[cfg(windows)]
-    assert_eq!(platform_asset_suffix(), "-windows-x86_64.msi");
-    #[cfg(target_os = "macos")]
-    assert_eq!(platform_asset_suffix(), "-macos-universal.app.zip");
+    // The suffix has to match what the release workflow actually publishes; see
+    // `a_release_publishes_one_installable_file_per_platform`.
 }

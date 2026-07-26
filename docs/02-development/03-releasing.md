@@ -37,13 +37,12 @@ After the tag push, the CI pipeline produces release artifacts for all supported
 | -------- | -------------------- |
 | Windows  | 64-bit MSI installer |
 | macOS    | Universal DMG (Apple Silicon + Intel) |
-| macOS    | Universal `.app.zip`, the bundle the [in-app updater](../01-features/05-settings.md#updates) installs |
 
-Every artifact is published with a `.blake3` file beside it holding its digest. The updater refuses to stage a download that does not match, so a release missing its checksum falls back to notify-only: the button opens the release page instead of downloading.
+**One file per platform, and no more.** Each is both the hand-install download and what the [in-app updater](../01-features/05-settings.md#updates) installs. Nothing is published for the updater alone and no checksum files are published: a digest served from the same host as the download adds nothing over the advertised byte count and TLS, and every extra file on a release page is one a visitor has to ask about. If a release publishes no installer for a platform, that platform falls back to notify-only — the button opens the release page instead of downloading.
 
-The digests are produced by the binary CI just built (`leaftext --hash-file <artifact> --hash-out <file>`), so the hash CI publishes and the hash the app verifies against can never come from different implementations.
+Adding an artifact means someone will ask what it is. That is the bar it has to clear.
 
-All artifacts are automatically attached to the GitHub Release at [github.com/ryanallen/leaftext/releases](https://github.com/ryanallen/leaftext/releases).
+Both artifacts are automatically attached to the GitHub Release at [github.com/ryanallen/leaftext/releases](https://github.com/ryanallen/leaftext/releases), alongside the source archives GitHub attaches itself and which cannot be turned off.
 
 ## Before releasing
 

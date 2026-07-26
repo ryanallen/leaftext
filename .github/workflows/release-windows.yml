@@ -59,11 +59,10 @@ jobs:
         shell: pwsh
         run: |
           $tag = $env:DIST_TAG
-          # The .blake3 digest ships with the installer: the in-app updater
-          # refuses to stage a download that does not match it.
+          # One file: the MSI a person downloads, which is also what the in-app
+          # updater installs.
           $assets = @(
-            "dist/leaftext-$tag-windows-x86_64.msi",
-            "dist/leaftext-$tag-windows-x86_64.msi.blake3"
+            "dist/leaftext-$tag-windows-x86_64.msi"
           )
           $existing = @($assets | Where-Object { Test-Path $_ })
           if ($existing.Count -eq 0) { throw "No release assets were built." }

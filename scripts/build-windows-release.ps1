@@ -116,18 +116,7 @@ New-Item -ItemType Directory -Path $dist | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "cargo wix failed." }
 if (-not (Test-Path $msiPath)) { throw "MSI not produced: $msiPath" }
 
-# 3. Publish the installer's blake3 digest beside it. The in-app updater
-#    verifies downloads against this file, so it is hashed by the binary that
-#    was just built rather than an outside tool: CI and the app then cannot
-#    disagree about the algorithm. Start-Process because PowerShell's call
-#    operator does not wait for a GUI-subsystem executable.
-$sumPath = "$msiPath.blake3"
-$hashRun = Start-Process -FilePath $exePath -Wait -PassThru -NoNewWindow `
-    -ArgumentList @("--hash-file", $msiPath, "--hash-out", $sumPath)
-if ($hashRun.ExitCode -ne 0) { throw "hashing the MSI failed." }
-if (-not (Test-Path $sumPath)) { throw "Checksum not produced: $sumPath" }
-
-# 4. Verification: report version and list the built file. No secrets printed.
+# 3. Verification: report version and list the built file. No secrets printed.
 Write-Host ""
 Write-Host "Built leaftext $version ($Tag). Asset in $dist :"
 Get-ChildItem $dist -File | ForEach-Object {

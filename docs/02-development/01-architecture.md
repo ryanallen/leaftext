@@ -17,7 +17,7 @@ leaftext is a single Rust binary that embeds a WebView (via `wry`) inside a nati
 | `rfd`                   | Native file dialogs                                  |
 | `serde` / `serde_json`  | IPC message serialization                            |
 | `notify-debouncer-mini` | Filesystem watcher for live reload                   |
-| `blake3`                | Content hashing: change detection in the indexer, and verifying update downloads |
+| `blake3`                | Content hashing: change detection in the indexer, and re-checking a staged installer before it runs |
 | `roxmltree`             | Read-only XML DOM parsing for TEI and other XML      |
 | `windows-sys` (Windows) | Win32 calls: single-instance guard, clipboard, Recycle Bin, waiting for the app to exit before an update installs |
 
@@ -41,7 +41,7 @@ leaftext's Rust source is split by concern:
 - **`src/indexer.rs`** — Background SQLite-based library indexer. Implements a breadth-first filesystem walk with a parse/hash worker pool (`PARSE_WORKERS = 4`), incremental fast-path checks on `mtime + size`, missing-file detection, and a separate read-only connection so tree queries answer promptly during a full crawl. It also answers the library's full-text search: files are split into chunks indexed in a SQLite FTS5 table, queried with BM25 ranking and highlighted snippets, optionally restricted to a set of document paths (the [search scope](../01-features/03-library.md#search-scope): the folder the pane is showing, or the nodes the graph drew), and frontmatter fields are parsed into a normalized table. `build_graph()` assembles the [Graph view](../01-features/03-library.md#graph)'s link map — one node per indexed document, one undirected edge per resolved doc-to-doc link — sliced by a `GraphRequest` (a focused neighborhood around seed documents, the densest N, or everything).
 - **`src/single_instance.rs`** — Single-instance guard (Windows). The first launch holds a per-user named mutex and listens on a named pipe; a later launch detects the mutex, forwards its file path to the running instance (which opens it as a new tab and comes to the front), and exits before building any UI — so a second document reuses the existing process instead of spawning a whole new window and WebView2 group. A no-op on other platforms.
 - **`src/platform.rs`** — Native OS integration, so no crate is carried for it: the clipboard and the Recycle Bin (Win32 `SetClipboardData` and `SHFileOperationW` on Windows, `pbcopy` and Finder on macOS), and the update applier — a detached copy of the binary that waits for the app to exit, re-verifies the staged installer, runs it, records whether it worked, and relaunches. Nothing here touches a copy left by another install context: two attempts at that each shipped broken, so the release notes ask instead.
-- **`src/updater.rs`** — The staging model for [updates](../01-features/05-settings.md#updates): where a download lands, the digest it has to match, the manifest a later launch reads it back from, and the record the applier leaves saying how the install went. The page does the fetching; this module decides what is allowed to be installed.
+- **`src/updater.rs`** — The staging model for [updates](../01-features/05-settings.md#updates): where a download lands, the length it must arrive at, the manifest a later launch reads it back from, and the record the applier leaves saying how the install went. The page does the fetching; this module decides what is allowed to be installed.
 - **`src/tests.rs`** — The crate's unit tests, kept in one `#[cfg(test)] mod tests` file rather than inline in `lib.rs`. They reach the crate's public and `pub(crate)` surface through `use super::*`.
 
 The WebView front-end that `app_shell_html()` serves lives outside the Rust source as editable assets, embedded at build time with `include_str!`:
@@ -146,9 +146,9 @@ Key `IpcCommand` variants include:
 | `setIndexingEnabled`   | "Index entire device" toggle          |
 | `setAutoUpdateEnabled` | "Download updates" toggle in Settings menu |
 | `updateChecked`        | A release check finished: reset the six-hour throttle |
-| `updateDownloadBegin`  | Open a staging folder for a version, and the checksum and size to hold the download to |
+| `updateDownloadBegin`  | Open a staging folder for a version, and the size to hold the download to |
 | `updateDownloadChunk`  | One base64 chunk of the installer, written and hashed as it arrives |
-| `updateDownloadFinish` | The page finished fetching: verify the digest and stage, or reject |
+| `updateDownloadFinish` | The page finished fetching: stage the download if it arrived whole, or reject it |
 | `updateDownloadFailed` | The page could not fetch the installer: discard the partial file |
 | `applyUpdate`          | The "Restart to update" button: launch the installer and exit |
 | `getFileTree`          | Boot-time library pane initialization |

@@ -11,10 +11,15 @@
 //! carries `com.apple.quarantine`, which Gatekeeper refuses to launch unless the
 //! bundle is notarized. A file this process writes carries no such attribute.
 //!
-//! Nothing here installs on its own. The checksum beside a release comes from
-//! the same place as the release, so it proves the download arrived intact, not
-//! that it is trustworthy. Until the artifacts are code signed, every install is
-//! a button the user pressed.
+//! A release publishes one file per platform and no checksum beside it: a digest
+//! served from the same host proves nothing the advertised byte count and TLS do
+//! not, and it put three unexplainable files on every release page. The digest of
+//! what landed is still recorded, so the applier can re-hash the installer before
+//! running it — that catches the file changing while it waits in a user-writable
+//! folder, which is a threat this side can actually see.
+//!
+//! Nothing here installs on its own. Until the artifacts are code signed no amount
+//! of hashing makes them trustworthy, so every install is a button the user pressed.
 
 use std::fs::{self, File};
 use std::io::{self, Write};
@@ -70,9 +75,9 @@ pub fn is_newer_version(candidate: &str, current: &str) -> bool {
     false
 }
 
-/// The release asset this build can install, as a file-name suffix. Windows
-/// takes the MSI; macOS takes a zipped app bundle rather than the DMG, because
-/// mounting and copying out of a disk image is fragile to automate.
+/// The release asset this build can install, as a file-name suffix: the same file
+/// a person downloads by hand. Nothing is published for the updater alone, which
+/// is what makes `install` in `platform.rs` mount a disk image on macOS.
 pub fn platform_asset_suffix() -> &'static str {
     #[cfg(windows)]
     {
@@ -80,12 +85,9 @@ pub fn platform_asset_suffix() -> &'static str {
     }
     #[cfg(target_os = "macos")]
     {
-        "-macos-universal.app.zip"
+        "-macos-universal.dmg"
     }
 }
-
-/// Checksum files are published as `<asset>.blake3`, holding the hex digest.
-pub const CHECKSUM_EXTENSION: &str = "blake3";
 
 /// Root of the staging area, beside the search index in the app data folder.
 pub fn updates_dir(data_dir: &Path) -> PathBuf {
@@ -140,7 +142,8 @@ pub struct StagedUpdate {
     pub version: String,
     /// Installer file name, inside the same directory as the manifest.
     pub asset: String,
-    /// Hex blake3 digest the installer was verified against.
+    /// Hex blake3 digest of the installer as it was written, for the applier to
+    /// re-check before running it.
     pub blake3: String,
     /// Size in bytes, as written.
     pub size: u64,
@@ -245,7 +248,6 @@ pub fn take_apply_outcome(data_dir: &Path) -> Option<ApplyOutcome> {
 pub struct UpdateDownload {
     version: String,
     asset: String,
-    expected_blake3: String,
     expected_size: u64,
     written: u64,
     part_path: PathBuf,
@@ -263,7 +265,6 @@ impl UpdateDownload {
         data_dir: &Path,
         version: &str,
         asset: &str,
-        expected_blake3: &str,
         expected_size: u64,
     ) -> Result<Self, String> {
         let version = sanitize_version(version);
@@ -271,8 +272,6 @@ impl UpdateDownload {
             return Err("the release did not name a usable version".to_string());
         }
         let asset = sanitize_asset_name(asset).ok_or("the release asset has an unusable name")?;
-        let expected_blake3 = normalize_digest(expected_blake3)
-            .ok_or("the published checksum is not a blake3 digest")?;
         if expected_size == 0 || expected_size > MAX_UPDATE_BYTES {
             return Err(format!("refusing a {expected_size}-byte download"));
         }
@@ -288,7 +287,6 @@ impl UpdateDownload {
 
         Ok(Self {
             version,
-            expected_blake3,
             expected_size,
             written: 0,
             final_path: directory.join(&asset),
@@ -324,16 +322,15 @@ impl UpdateDownload {
         &self.version
     }
 
-    /// Verify and publish: the `.part` file is only renamed into place once the
-    /// full length arrived and the digest matches, so anything that finds the
-    /// final name can trust it.
+    /// Publish: the `.part` file is only renamed into place once the full length
+    /// arrived, so anything that finds the final name is a whole download. The
+    /// digest of what landed goes in the manifest for the applier to re-check.
     pub fn finish(self) -> Result<StagedUpdate, String> {
         // Take the struct apart so the file handle can be closed before the
         // rename — Windows will not rename a file that is still open.
         let Self {
             version,
             asset,
-            expected_blake3,
             expected_size,
             written,
             part_path,
@@ -354,10 +351,6 @@ impl UpdateDownload {
         }
 
         let digest = hasher.finalize().to_hex().to_string();
-        if digest != expected_blake3 {
-            let _ = fs::remove_file(&part_path);
-            return Err("the download did not match its published checksum".to_string());
-        }
 
         fs::rename(&part_path, &final_path)
             .map_err(|error| format!("could not finalize the download: {error}"))?;
@@ -380,17 +373,6 @@ impl UpdateDownload {
     pub fn discard(&self) {
         let _ = fs::remove_file(&self.part_path);
     }
-}
-
-/// Accept a hex digest in any case, rejecting anything that is not exactly a
-/// 256-bit blake3 hash.
-fn normalize_digest(digest: &str) -> Option<String> {
-    // Checksum files often carry a trailing file name; take the first field.
-    let digest = digest.split_whitespace().next()?.trim();
-    if digest.len() != 64 || !digest.chars().all(|c| c.is_ascii_hexdigit()) {
-        return None;
-    }
-    Some(digest.to_ascii_lowercase())
 }
 
 /// Hash a file that is already on disk, to re-check a staged installer before

@@ -248,12 +248,11 @@ enum UserEvent {
         /// Version found, empty when already current. Only used for logging.
         version: String,
     },
-    /// Open a staging folder for `version` and expect `size` bytes hashing to
-    /// `blake3`. Any earlier attempt at the same version is discarded.
+    /// Open a staging folder for `version` and expect exactly `size` bytes. Any
+    /// earlier attempt at the same version is discarded.
     UpdateDownloadBegin {
         version: String,
         asset: String,
-        blake3: String,
         size: u64,
     },
     /// One base64 chunk of the installer, in order.
@@ -431,7 +430,6 @@ enum IpcCommand {
     UpdateDownloadBegin {
         version: String,
         asset: String,
-        blake3: String,
         size: u64,
     },
     #[serde(rename = "updateDownloadChunk")]
@@ -447,47 +445,12 @@ enum IpcCommand {
     ApplyUpdate,
 }
 
-/// Read `--name value` out of the command line.
-fn flag_value(name: &str) -> Option<String> {
-    let mut args = env::args();
-    while let Some(argument) = args.next() {
-        if argument == name {
-            return args.next();
-        }
-    }
-    None
-}
-
-/// Release-build helper: write `<digest>  <name>` for one file into another.
-///
-/// The release workflow publishes this beside each installer, and the updater
-/// verifies downloads against it. Hashing with the binary that was just built
-/// means CI and the app cannot disagree about the algorithm. It writes to a
-/// file rather than stdout because the Windows build is a GUI-subsystem
-/// executable with no console attached to print to.
-fn run_hash_mode(input: &Path, output: &Path) -> io::Result<()> {
-    let digest = leaftext::hash_file(input)?;
-    let name = input
-        .file_name()
-        .map(|name| name.to_string_lossy().into_owned())
-        .unwrap_or_default();
-    fs::write(output, format!("{digest}  {name}\n"))
-}
-
 fn main() {
     // A detached copy of this binary, spawned by the app to install a staged
     // update after the app exits. It opens no window and touches no settings.
     if let Some(request) = platform::parse_apply_request(env::args()) {
         if let Err(error) = platform::run_update_apply(&request) {
             eprintln!("Update failed: {error}");
-        }
-        return;
-    }
-
-    if let (Some(input), Some(output)) = (flag_value("--hash-file"), flag_value("--hash-out")) {
-        if let Err(error) = run_hash_mode(Path::new(&input), Path::new(&output)) {
-            eprintln!("Hashing {input} failed: {error}");
-            std::process::exit(1);
         }
         return;
     }
@@ -1549,15 +1512,14 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             Event::UserEvent(UserEvent::UpdateDownloadBegin {
                 version,
                 asset,
-                blake3,
                 size,
             }) => {
                 update_download = None;
                 let started = app_data_dir()
                     .ok_or_else(|| "there is no app data folder to download into".to_string());
-                match started.and_then(|data_dir| {
-                    UpdateDownload::begin(&data_dir, &version, &asset, &blake3, size)
-                }) {
+                match started
+                    .and_then(|data_dir| UpdateDownload::begin(&data_dir, &version, &asset, size))
+                {
                     Ok(download) => update_download = Some(download),
                     Err(error) => {
                         eprintln!("Update download refused: {error}");
@@ -1933,13 +1895,11 @@ fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {
             IpcCommand::UpdateDownloadBegin {
                 version,
                 asset,
-                blake3,
                 size,
             } => {
                 let _ = proxy.send_event(UserEvent::UpdateDownloadBegin {
                     version,
                     asset,
-                    blake3,
                     size,
                 });
             }

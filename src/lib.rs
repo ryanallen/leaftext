@@ -32,7 +32,7 @@ mod updater;
 pub use updater::{
     decode_base64, hash_file, is_newer_version, now_unix, platform_asset_suffix, prune_staged,
     read_staged, record_apply_outcome, staging_dir, take_apply_outcome, update_check_is_due,
-    updates_dir, ApplyOutcome, StagedUpdate, UpdateDownload, CHECKSUM_EXTENSION, MAX_UPDATE_BYTES,
+    updates_dir, ApplyOutcome, StagedUpdate, UpdateDownload, MAX_UPDATE_BYTES,
     UPDATE_CHECK_INTERVAL_SECS,
 };
 

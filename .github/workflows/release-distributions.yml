@@ -243,15 +243,6 @@ jobs:
             codesign --force --sign - "${app_dir}"
             codesign --verify --verbose "${app_dir}"
 
-            # A zipped bundle alongside the DMG, for the in-app updater to
-            # install. Automating a DMG means mounting and copying out of a
-            # disk image, which is fragile; a zip is just an unpack and a swap.
-            # ditto -c -k --keepParent preserves the extended attributes and
-            # resource forks the signature depends on, which `zip` does not.
-            local zip_path="dist/leaftext-${tag}-macos-${artifact_suffix}.app.zip"
-            ditto -c -k --keepParent "${app_dir}" "${zip_path}"
-            test -f "${zip_path}"
-
             cp -R "${app_dir}" "${dmg_root}/${app_name}"
             ln -s /Applications "${dmg_root}/Applications"
 
@@ -290,19 +281,10 @@ jobs:
             rmdir "${mount_dir}"
           }
 
-          # One architecture-independent build: the universal DMG for people
-          # installing by hand, plus the zipped bundle the updater installs.
+          # One file for macOS: the universal DMG. It is what a person downloads
+          # and what the in-app updater installs from, so there is nothing else to
+          # publish and nothing on the release page to explain.
           package_distribution "universal" "${universal_binary}"
-
-          # Publish each artifact's blake3 digest beside it, hashed by the
-          # binary that was just built so CI and the in-app updater cannot
-          # disagree about the algorithm.
-          for artifact in \
-            "dist/leaftext-${tag}-macos-universal.dmg" \
-            "dist/leaftext-${tag}-macos-universal.app.zip"; do
-            "${universal_binary}" --hash-file "${artifact}" --hash-out "${artifact}.blake3"
-            test -f "${artifact}.blake3"
-          done
 
       - name: Upload release assets
         env:
@@ -314,9 +296,6 @@ jobs:
           tag="${DIST_TAG}"
           assets=(
             "dist/leaftext-${tag}-macos-universal.dmg"
-            "dist/leaftext-${tag}-macos-universal.dmg.blake3"
-            "dist/leaftext-${tag}-macos-universal.app.zip"
-            "dist/leaftext-${tag}-macos-universal.app.zip.blake3"
           )
 
           # Ensure the release exists; ignore failure if another job created it first.
