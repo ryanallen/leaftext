@@ -3703,6 +3703,34 @@ body:has(#readerToolbar:not([hidden])) {
   touch-action: none;
   user-select: none;
 }
+/* While the thumbnail is being built — it clones the rendered page, so it can't
+   exist until that page is laid out. updateDocumentMinimapPreview drops the class
+   once a clone is in. */
+.document-minimap-spinner {
+  position: absolute;
+  top: calc(var(--app-bar-height) + 12px);
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  border-radius: var(--leaf-radius-full);
+  border: 2px solid color-mix(in srgb, var(--preview-foreground) 22%, transparent);
+  border-top-color: var(--accent);
+  animation: leaf-reader-spin 0.8s linear infinite;
+  pointer-events: none;
+}
+.document-minimap:not(.is-loading) .document-minimap-spinner {
+  display: none;
+}
+/* Nothing to point at yet — the box would otherwise sit over blank rail. */
+.document-minimap.is-loading .document-minimap-viewport {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .document-minimap-spinner {
+    animation-duration: 1.6s;
+  }
+}
 /* Holds the scaled document clone; slides within the clipped track (JS sets top
    via --minimap-preview-top) when the document is taller than the rail. */
 .document-minimap-content {

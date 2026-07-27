@@ -44,10 +44,10 @@ fn workspace_reload_script_preserves_scroll_via_reload_entry_point() {
 
     // The reload path must call leafReloadDocument (which keeps the reader's
     // scroll position), never leafSetState (which jumps back to the top).
-    assert!(script.starts_with("window.leafReloadDocument({"));
+    assert!(script.starts_with("window.leafReloadDocument(JSON.parse("));
     assert!(!script.contains("leafSetState"));
-    assert_contains(&script, r#""active":0"#);
-    assert_contains(&script, r#""title":"Guide""#);
+    assert_payload_contains(&script, r#""active":0"#);
+    assert_payload_contains(&script, r#""title":"Guide""#);
 }
 
 #[test]
@@ -68,9 +68,10 @@ fn workspace_switch_script_restores_target_tab_anchor_without_reset() {
 
     // Switching must render through leafSwitchTab (renders, then restores the
     // saved anchor) rather than leafSetState (which snaps back to the top).
-    assert!(script.starts_with("window.leafSwitchTab({"));
+    assert!(script.starts_with("window.leafSwitchTab(JSON.parse("));
     assert!(!script.contains("leafSetState"));
-    assert_contains(&script, r#""active":0"#);
+    assert_payload_contains(&script, r#""active":0"#);
+    // The anchor stays a literal beside the parsed state — it is a handful of bytes.
     assert!(script.ends_with(r#", {"section":"intro","block":2,"offsetY":12.5});"#));
 
     // No saved anchor (first visit to a tab) passes null, which starts the
@@ -100,9 +101,10 @@ fn document_state_script_never_serializes_raw_title_markup() {
     fs::remove_file(&path).expect("test markdown is removed");
 
     assert_eq!(document.title, "Words & My Perfect Teacher");
-    assert_contains(&script, r#""title":"Words & My Perfect Teacher""#);
-    assert!(!script.contains(r#""title":"<div"#));
-    assert!(!script.contains(r#""title":"Words &amp;"#));
+    let payload = script_payload_json(&script);
+    assert_contains(&payload, r#""title":"Words & My Perfect Teacher""#);
+    assert!(!payload.contains(r#""title":"<div"#));
+    assert!(!payload.contains(r#""title":"Words &amp;"#));
 }
 
 #[test]

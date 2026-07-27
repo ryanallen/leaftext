@@ -1,5 +1,8 @@
+// The rail starts loading: the thumbnail clones the rendered document, so it can't
+// exist until the document is laid out — on a large file, long enough that an empty
+// rail beside a finished page looks broken rather than busy.
 function documentMinimapMarkup() {
-  return `<aside class="document-minimap" aria-label="${escapeAttr(window.leafLocale.t('minimap.aria'))}"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
+  return `<aside class="document-minimap is-loading" aria-label="${escapeAttr(window.leafLocale.t('minimap.aria'))}"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="document-minimap-spinner" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
 }
 function renderDocumentMinimap(model) {
   if (!window.leafMinimap.getEnabled()) {
@@ -77,6 +80,11 @@ function bindDocumentMinimap() {
     const minimap = track.closest('.document-minimap');
     if (minimap) {
       placeMinimapViewport(minimap, metrics, boundedScrollTop);
+      // A drag can cross the whole document, so the window follows it or the rail
+      // slides onto a blank stretch. Coalesced to one rebuild a frame.
+      if (!minimapWindowCoversView(metrics, boundedScrollTop)) {
+        scheduleMinimapPreviewUpdate();
+      }
     } else {
       updateMinimapViewport();
     }
@@ -173,6 +181,7 @@ function bindDocumentMinimapPreview(track) {
     // Watch the rail, not the document: its width changes at the responsive
     // breakpoints (which the source's resize would miss), and it never fires on scroll.
     minimapResizeObserver = new ResizeObserver(() => {
+      invalidateMinimapMetrics();
       scheduleReaderLayoutUpdate();
       scheduleMinimapPreviewUpdate();
     });
@@ -204,6 +213,20 @@ function disconnectMinimapPreviewObservers() {
   minimapBuiltVersion = -1;
   minimapBuiltSourceWidth = -1;
   minimapBuiltPreviewWidth = -1;
+  minimapBuiltRange = null;
+  invalidateMinimapMetrics();
+}
+// Drop the cached rail geometry. Everything that can change it calls this; the
+// scroll handler, which cannot, is the one path that reads the cache.
+function invalidateMinimapMetrics() {
+  minimapScrollMetrics = null;
+}
+function minimapMetricsForScroll(track) {
+  if (minimapScrollMetrics && minimapScrollMetrics.track === track) {
+    return minimapScrollMetrics;
+  }
+  minimapScrollMetrics = Object.assign({ track }, measureDocumentMinimap(track));
+  return minimapScrollMetrics;
 }
 function measureDocumentContent(source) {
   if (!source) {
@@ -465,12 +488,17 @@ function scheduleReaderLayoutUpdate(anchor = readerScrollAnchor || captureReader
   }
   readerLayoutFrame = window.requestAnimationFrame(() => {
     readerLayoutFrame = 0;
+    // The origin write below can change the document's height, so the rail's
+    // cached geometry can't outlive it.
+    invalidateMinimapMetrics();
     correctReaderScrollOrigin();
     // A minimap drag owns the scroll: `anchor` predates it (the drag skips the
     // refresh to keep layout reads off the pointer path), so re-pinning would throw
     // the reader back to where the drag started. Leave the box alone too; endDrag
-    // settles both.
-    if (minimapDragging) {
+    // settles both. A wheel gesture owns it for the same reason — `anchor` is
+    // deliberately only refreshed once the scroll settles, so re-pinning to it
+    // mid-gesture would drag the reader back.
+    if (minimapDragging || readerScrolling) {
       return;
     }
     restoreReaderScrollAnchor(anchor);
@@ -548,7 +576,9 @@ function measureDocumentMinimap(track) {
   // document gets a short rail, a long one fills the screen and slides inside.
   const availableHeight = minimap ? minimapAvailableHeight(minimap) : viewportHeight;
   const trackHeight = Math.max(1, Math.min(availableHeight, scaledDocumentHeight));
-  if (minimap) {
+  // Only write when it moves: an identical inline write still dirties the element,
+  // and the re-layout that provokes is the whole cost on the scroll path.
+  if (minimap && minimap.style.getPropertyValue('--minimap-track-height') !== `${trackHeight}px`) {
     minimap.style.setProperty('--minimap-track-height', `${trackHeight}px`);
   }
   return { source, sourceWidth, contentWidth, sourceTop, trackRect, trackHeight, viewportHeight, scrollHeight, scrollable, scrollTop, previewScale, scaledDocumentHeight };
@@ -567,41 +597,62 @@ function scheduleMinimapPreviewUpdate() {
 // let the width check decide whether a rebuild is needed.
 function invalidateMinimapPreview() {
   minimapContentVersion += 1;
+  invalidateMinimapMetrics();
   scheduleMinimapPreviewUpdate();
 }
 // Any <details> open/close (outline, settings, library folders) changes document
 // height, so the minimap clone goes stale. The body MutationObserver misses the
 // bare `open` flip; `toggle` catches both — in capture phase, since it doesn't bubble.
 document.addEventListener('toggle', invalidateMinimapPreview, true);
-// Build the thumbnail: clone the document, strip ids/links (nothing focusable or
-// duplicated for a11y), shrink to the rail width with a transform. Rebuilt only on
-// content changes; scroll just repositions the box and slides the clone.
-function updateDocumentMinimapPreview() {
-  const minimap = currentMinimap();
-  const track = minimap ? minimap.querySelector('.document-minimap-track') : null;
-  const content = track ? track.querySelector('.document-minimap-content') : null;
-  const source = minimapSourceElement();
-  if (!track || !content || !source) {
-    return;
+// Where the rail's top and bottom edges fall in the document, in document pixels.
+// Mirrors placeMinimapViewport's previewTop, which is what actually slides the
+// thumbnail — the two must agree or the clone would be built for the wrong slice.
+function minimapVisibleDocumentRange(metrics, scrollTop) {
+  const ratio = metrics.scrollable === 0
+    ? 0
+    : Math.min(1, Math.max(0, scrollTop / metrics.scrollable));
+  const previewTop = -ratio * Math.max(0, metrics.scaledDocumentHeight - metrics.trackHeight);
+  const top = metrics.previewScale > 0 ? -previewTop / metrics.previewScale : 0;
+  const height = metrics.previewScale > 0 ? metrics.trackHeight / metrics.previewScale : 0;
+  return { top, bottom: top + height, height };
+}
+// Extra document to keep either side of the visible slice, as a multiple of it. One
+// each way means a whole rail's worth of scrolling before a rebuild.
+const MINIMAP_WINDOW_SLACK = 1;
+// Does the built clone still hold everything the rail is showing?
+function minimapWindowCoversView(metrics, scrollTop) {
+  if (!minimapBuiltRange) {
+    return true;
   }
-  const metrics = measureDocumentMinimap(track);
-  const contentRect = content.getBoundingClientRect();
-  const previewWidth = Math.max(1, Math.ceil(contentRect.width));
-  const previewScale = previewWidth / metrics.sourceWidth;
-  // Skip the clone when nothing shaping the thumbnail changed: same content
-  // version, wrap width, and rail width. The common resize (height-only, or a
-  // width change within the capped column) just repositions the box off the
-  // existing clone — the cloneNode below is what made resize feel like a reload.
-  if (
-    content.querySelector('.document-minimap-preview') &&
-    minimapBuiltVersion === minimapContentVersion &&
-    minimapBuiltSourceWidth === metrics.sourceWidth &&
-    minimapBuiltPreviewWidth === previewWidth
-  ) {
-    updateMinimapViewport();
-    return;
+  const view = minimapVisibleDocumentRange(metrics, scrollTop);
+  return view.top >= minimapBuiltRange.top && view.bottom <= minimapBuiltRange.bottom;
+}
+// Document offset of an element's top/bottom edge, on the same basis as
+// metrics.sourceTop (the scroll container's content coordinates).
+function minimapBlockEdges(el, appTop, scrollTop) {
+  const rect = el.getBoundingClientRect();
+  return { top: rect.top - appTop + scrollTop, bottom: rect.bottom - appTop + scrollTop };
+}
+// Index of the first block whose bottom edge is past `offset`. Blocks are in
+// document order, so a binary search finds it without measuring all 50,000.
+function minimapFirstBlockPast(children, appTop, scrollTop, offset) {
+  let lo = 0;
+  let hi = children.length - 1;
+  let found = children.length;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (minimapBlockEdges(children[mid], appTop, scrollTop).bottom > offset) {
+      found = mid;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
   }
-  const preview = source.cloneNode(true);
+  return found;
+}
+// Strip the clone: nothing focusable, nothing with a duplicate id, no second copy
+// of every link for a screen reader to find.
+function stripMinimapClone(preview) {
   preview.removeAttribute('id');
   // Drop the code view's focusable textarea from the clone; its text is invisible
   // anyway (the colour layer shows).
@@ -619,12 +670,108 @@ function updateDocumentMinimapPreview() {
   });
   preview.classList.add('document-minimap-preview');
   preview.setAttribute('aria-hidden', 'true');
-  preview.style.width = `${metrics.sourceWidth}px`;
-  // Scale to the rail width, then nudge the clone down by the top gap (sourceTop)
-  // so the thumbnail sits where the real content sits in the scroll range.
-  preview.style.transform = `translateY(${metrics.sourceTop * previewScale}px) scale(${previewScale})`;
+}
+// Build the thumbnail: clone the document, strip ids/links, shrink to the rail
+// width with a transform. Rebuilt on content changes and when scrolling leaves the
+// window it was built for; scroll otherwise just repositions the box and slides it.
+//
+// The clone holds only the slice the rail can show. Cloning the whole document put
+// a second copy of every element on the page — 99.9% of it off-screen — which cost
+// ~890ms a frame to slide on a 4MB glossary. It is still a clone of the real
+// rendering, so the rail keeps real text rather than a synthesized line pattern.
+function updateDocumentMinimapPreview() {
+  const minimap = currentMinimap();
+  const track = minimap ? minimap.querySelector('.document-minimap-track') : null;
+  const content = track ? track.querySelector('.document-minimap-content') : null;
+  const source = minimapSourceElement();
+  if (!track || !content || !source) {
+    return;
+  }
+  const metrics = measureDocumentMinimap(track);
+  const contentRect = content.getBoundingClientRect();
+  const previewWidth = Math.max(1, Math.ceil(contentRect.width));
+  const previewScale = previewWidth / metrics.sourceWidth;
+  const scrollTop = metrics.scrollTop;
+  // Skip the clone when nothing shaping the thumbnail changed: same content
+  // version, wrap width, rail width, and the window still covers the view. The
+  // common resize (height-only, or a width change within the capped column) just
+  // repositions the box off the existing clone — the cloneNode below is what made
+  // resize feel like a reload.
+  if (
+    content.querySelector('.document-minimap-preview') &&
+    minimapBuiltVersion === minimapContentVersion &&
+    minimapBuiltSourceWidth === metrics.sourceWidth &&
+    minimapBuiltPreviewWidth === previewWidth &&
+    minimapWindowCoversView(metrics, scrollTop)
+  ) {
+    updateMinimapViewport();
+    return;
+  }
+  // The code view is one text block with no per-block children to window, so it
+  // clones whole, as does any document the rail can show in full.
+  const children = source.classList.contains('document-body') ? Array.from(source.children) : [];
+  const view = minimapVisibleDocumentRange(metrics, scrollTop);
+  const windowsIt = children.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;
+  let preview;
+  if (!windowsIt) {
+    preview = source.cloneNode(true);
+    stripMinimapClone(preview);
+    preview.style.width = `${metrics.sourceWidth}px`;
+    // Scale to the rail width, then nudge the clone down by the top gap (sourceTop)
+    // so the thumbnail sits where the real content sits in the scroll range.
+    preview.style.transform = `translateY(${metrics.sourceTop * previewScale}px) scale(${previewScale})`;
+    minimapBuiltRange = null;
+  } else {
+    const appTop = app.getBoundingClientRect().top;
+    const slack = view.height * MINIMAP_WINDOW_SLACK;
+    const first = minimapFirstBlockPast(children, appTop, scrollTop, view.top - slack);
+    const last = Math.min(
+      children.length - 1,
+      minimapFirstBlockPast(children, appTop, scrollTop, view.bottom + slack),
+    );
+    // cloneNode(false) keeps the body's own classes and attributes, so every
+    // `.document-body x` rule still matches inside the clone.
+    preview = source.cloneNode(false);
+    for (let i = first; i <= last; i += 1) {
+      preview.appendChild(children[i].cloneNode(true));
+    }
+    stripMinimapClone(preview);
+    preview.style.width = `${metrics.sourceWidth}px`;
+    // The body's own top padding would push the first block in the window down by
+    // a gap that only belongs at the start of the document; the translate below
+    // places that block at its true offset instead.
+    preview.style.paddingTop = '0';
+    preview.style.paddingBottom = '0';
+    const firstTop = first < children.length
+      ? minimapBlockEdges(children[first], appTop, scrollTop).top
+      : metrics.sourceTop;
+    preview.style.transform = `translateY(${firstTop * previewScale}px) scale(${previewScale})`;
+    minimapBuiltRange = {
+      top: first < children.length ? firstTop : 0,
+      bottom: last >= 0 ? minimapBlockEdges(children[last], appTop, scrollTop).bottom : 0,
+    };
+  }
   content.replaceChildren(preview);
-  content.style.height = `${metrics.scaledDocumentHeight}px`;
+  if (content.style.height !== `${metrics.scaledDocumentHeight}px`) {
+    content.style.height = `${metrics.scaledDocumentHeight}px`;
+  }
+  // A windowed clone starts mid-document, so its first block's top margin has
+  // nothing above it to collapse against and lands off by that margin — enough to
+  // shift the thumbnail on every rebuild. Cheaper to measure the miss than to model
+  // the collapsing. One read, on the rebuild path, never on scroll.
+  if (minimapBuiltRange) {
+    const clonedFirst = preview.firstElementChild;
+    if (clonedFirst) {
+      const wanted = minimapBuiltRange.top * previewScale;
+      const landedAt = clonedFirst.getBoundingClientRect().top - content.getBoundingClientRect().top;
+      const delta = wanted - landedAt;
+      if (Math.abs(delta) > 0.5) {
+        preview.style.transform = `translateY(${wanted + delta}px) scale(${previewScale})`;
+      }
+    }
+  }
+  // There is a thumbnail now, so the rail stops saying it is working on one.
+  minimap.classList.remove('is-loading');
   minimapBuiltVersion = minimapContentVersion;
   minimapBuiltSourceWidth = metrics.sourceWidth;
   minimapBuiltPreviewWidth = previewWidth;
@@ -636,7 +783,7 @@ function scheduleMinimapViewportUpdate() {
   }
   minimapViewportFrame = window.requestAnimationFrame(() => {
     minimapViewportFrame = 0;
-    updateMinimapViewport();
+    updateMinimapViewportFromScroll();
   });
 }
 function updateMinimapViewport() {
@@ -648,7 +795,32 @@ function updateMinimapViewport() {
   if (!track) {
     return;
   }
-  placeMinimapViewport(minimap, measureDocumentMinimap(track), null);
+  const metrics = measureDocumentMinimap(track);
+  placeMinimapViewport(minimap, metrics, null);
+  // A jump (a rail click, a drag landing, a restored anchor) can leave the slice
+  // the clone was built for; rebuild for where the rail now points.
+  if (!minimapWindowCoversView(metrics, metrics.scrollTop)) {
+    scheduleMinimapPreviewUpdate();
+  }
+}
+// The scroll handler's version: cached geometry and CSS-variable writes only, so a
+// wheel click never forces a layout. A scroll past the clone's window schedules a
+// rebuild off this path, leaving the existing clone up until it lands.
+function updateMinimapViewportFromScroll() {
+  const minimap = currentMinimap();
+  if (!minimap) {
+    return;
+  }
+  const track = minimap.querySelector('.document-minimap-track');
+  if (!track) {
+    return;
+  }
+  const metrics = minimapMetricsForScroll(track);
+  const scrollTop = app.scrollTop;
+  placeMinimapViewport(minimap, metrics, scrollTop);
+  if (!minimapWindowCoversView(metrics, scrollTop)) {
+    scheduleMinimapPreviewUpdate();
+  }
 }
 // Place the viewport box and, on tall documents, slide the thumbnail inside the
 // rail. Position is driven by the exact reader scroll and the box height is the
@@ -658,7 +830,9 @@ function updateMinimapViewport() {
 function placeMinimapViewport(minimap, metrics, scrollTopOverride) {
   const content = minimap.querySelector('.document-minimap-content');
   const scaledDocumentHeight = metrics.scaledDocumentHeight;
-  if (content) {
+  // Guarded for the same reason as --minimap-track-height: an identical inline
+  // write still dirties the element, and this runs on the scroll path.
+  if (content && content.style.height !== `${scaledDocumentHeight}px`) {
     content.style.height = `${scaledDocumentHeight}px`;
   }
   const scrollTop = Math.min(metrics.scrollable, Math.max(0, scrollTopOverride === null ? metrics.scrollTop : scrollTopOverride));
@@ -672,13 +846,30 @@ function placeMinimapViewport(minimap, metrics, scrollTopOverride) {
   minimap.style.setProperty('--minimap-viewport-height', `${boundedViewportHeight}px`);
   minimap.style.setProperty('--minimap-preview-top', `${previewTop}px`);
 }
-// The scroll listener must stay cheap: scroll fires many times per frame, so a
-// forced layout here stutters the page. clampReaderScrollPosition() and
-// captureReaderScrollAnchor() both force a reflow, so the listener is passive and
-// coalesces that work into one rAF per frame. scheduleMinimapViewportUpdate() is
-// just a flag + rAF, safe on the event. The anchor is consumed asynchronously, so
-// updating it a frame late costs nothing.
-let readerScrollFrame = 0;
+// The scroll listener must stay cheap. clampReaderScrollPosition() and
+// captureReaderScrollAnchor() each force a layout — ~400ms on a 4MB glossary, which
+// is the wheel taking two seconds to answer — and once a frame was still too often.
+// Nothing reads either mid-gesture (the anchor serves the reflow re-pin and tab
+// switches; the clamp only has to hold at rest), so they settle after the wheel
+// stops and the handler itself reads no geometry at all.
+function settleReaderScroll() {
+  readerScrollSettleTimer = 0;
+  readerScrolling = false;
+  clampReaderScrollPosition();
+  readerScrollAnchor = captureReaderScrollAnchor();
+  // The clamp may have moved the reader; the rail follows it.
+  updateMinimapViewport();
+}
+// A render places the reader deliberately, so a settle queued by a scroll of the
+// OUTGOING document must not land on the new one — it would overwrite the anchor
+// being restored, and hold the reflow re-pin off while the fresh page settles.
+function cancelReaderScrollSettle() {
+  if (readerScrollSettleTimer) {
+    window.clearTimeout(readerScrollSettleTimer);
+    readerScrollSettleTimer = 0;
+  }
+  readerScrolling = false;
+}
 app.addEventListener('scroll', () => {
   // A minimap drag owns the scroll (clamped scrollTop, box pinned via CSS vars,
   // endDrag re-captures on release), so do nothing here during a drag — the
@@ -687,16 +878,14 @@ app.addEventListener('scroll', () => {
     return;
   }
   scheduleMinimapViewportUpdate();
-  if (readerScrollFrame) {
-    return;
+  readerScrolling = true;
+  if (readerScrollSettleTimer) {
+    window.clearTimeout(readerScrollSettleTimer);
   }
-  readerScrollFrame = window.requestAnimationFrame(() => {
-    readerScrollFrame = 0;
-    clampReaderScrollPosition();
-    readerScrollAnchor = captureReaderScrollAnchor();
-  });
+  readerScrollSettleTimer = window.setTimeout(settleReaderScroll, READER_SCROLL_SETTLE_MS);
 }, { passive: true });
 window.addEventListener('resize', () => {
+  invalidateMinimapMetrics();
   scheduleReaderLayoutUpdate();
   scheduleMinimapViewportUpdate();
   scheduleMinimapPreviewUpdate();

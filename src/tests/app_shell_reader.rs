@@ -78,9 +78,14 @@ fn app_shell_renders_interactive_document_minimap() {
             "document-minimap-content",
             "document-minimap-viewport",
             "window.leafLocale.t('minimap.aria')",
-            "aria-hidden=\"true\"><div class=\"document-minimap-content\" aria-hidden=\"true\"></div><div class=\"document-minimap-viewport\" aria-hidden=\"true\"",
+            "aria-hidden=\"true\"><div class=\"document-minimap-content\" aria-hidden=\"true\"></div><div class=\"document-minimap-spinner\" aria-hidden=\"true\"></div><div class=\"document-minimap-viewport\" aria-hidden=\"true\"",
             "bindDocumentMinimap();",
             "function bindDocumentMinimap() {",
+            // The rail says it is working until there is a thumbnail to show: the
+            // clone can't exist before the document has been laid out, and on a
+            // large file an empty rail beside a finished page looks broken.
+            "class=\"document-minimap is-loading\"",
+            "minimap.classList.remove('is-loading');",
         ] {
             assert_contains(&html, expected);
         }
@@ -88,7 +93,7 @@ fn app_shell_renders_interactive_document_minimap() {
     // The minimap is a real-text thumbnail: a shrunken clone of the rendered
     // document, not an abstract canvas painting.
     assert!(
-        html.contains("const preview = source.cloneNode(true);"),
+        html.contains("preview = source.cloneNode(true);"),
         "minimap must clone the document into a scaled preview"
     );
     assert!(
@@ -127,11 +132,29 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "minimapBuiltVersion === minimapContentVersion &&",
         "minimapBuiltSourceWidth === metrics.sourceWidth &&",
         "minimapBuiltPreviewWidth === previewWidth",
-        "const preview = source.cloneNode(true);",
+        "preview = source.cloneNode(true);",
         "preview.classList.add('document-minimap-preview');",
         "preview.style.transform = `translateY(${metrics.sourceTop * previewScale}px) scale(${previewScale})`;",
         "content.replaceChildren(preview);",
         "updateMinimapViewport();",
+        // A document taller than the rail is cloned as the slice the rail can
+        // actually show, not whole: a full clone put a second copy of every element
+        // on the page, which cost ~890ms a frame to slide on a 4MB glossary. The
+        // window is still a clone of the real rendering, so the rail keeps real
+        // text — and on any document the rail can show in full it IS the whole
+        // document, which is why nothing here is gated on a size threshold.
+        "function minimapWindowCoversView(metrics, scrollTop) {",
+        "function minimapVisibleDocumentRange(metrics, scrollTop) {",
+        "function minimapFirstBlockPast(children, appTop, scrollTop, offset) {",
+        "const windowsIt = children.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;",
+        "preview = source.cloneNode(false);",
+        "preview.appendChild(children[i].cloneNode(true));",
+        // Scrolling reads no geometry at all — cached metrics, arithmetic, and CSS
+        // variable writes. Re-measuring per wheel click forced a fresh layout of the
+        // whole document, which is what made one click take ~2 seconds.
+        "function minimapMetricsForScroll(track) {",
+        "function invalidateMinimapMetrics() {",
+        "function updateMinimapViewportFromScroll() {",
         // Glossary terms are tagged before their hrefs are stripped so the clone can
         // re-blend them (the href-based body blend can't match once href is gone).
         "link.classList.add('glossary-term');",
@@ -486,7 +509,8 @@ fn app_shell_rebinds_minimap_after_document_updates() {
     for expected in [
             "const minimapHtml = renderDocumentMinimap(state.document.minimap);",
             "const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';",
-            "app.innerHTML = `<div class=\"${layoutClass}\">${state.document.html}</div>`;",
+            // Rendered hidden, then revealed already decorated: see renderState.
+            "app.innerHTML = `<div class=\"${layoutClass}\" style=\"display:none\">${state.document.html}</div>`;",
             "setMinimapMarkup(minimapHtml);",
             "bindDocumentMinimap();",
             "updateMinimapViewport();",
@@ -633,21 +657,41 @@ fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
         assert_contains(&html, expected);
     }
 
-    // Mid-drag, the queued pass must not re-pin at all: its anchor predates the
-    // drag, so restoring it would fight the pointer and undo the jump.
+    // Mid-gesture, the queued pass must not re-pin at all: its anchor predates the
+    // drag, so restoring it would fight the pointer and undo the jump. A wheel
+    // scroll is guarded for the same reason — the anchor is deliberately only
+    // refreshed once the scroll settles, so it is stale by design until then.
     let update_start = html
         .find("function scheduleReaderLayoutUpdate(")
         .expect("app shell should schedule reader layout updates");
     let update_body = &html[update_start..];
-    let drag_guard = update_body
-        .find("if (minimapDragging) {")
-        .expect("the layout pass should bail while a minimap drag owns the scroll");
+    let gesture_guard = update_body
+        .find("if (minimapDragging || readerScrolling) {")
+        .expect("the layout pass should bail while a drag or a scroll owns the reader");
     let repin = update_body
         .find("restoreReaderScrollAnchor(anchor);")
         .expect("the layout pass should re-pin the reader anchor");
     assert!(
-        drag_guard < repin,
-        "the minimap-drag bail must come before the anchor re-pin, or a drag gets yanked back to where it started"
+        gesture_guard < repin,
+        "the gesture bail must come before the anchor re-pin, or a drag gets yanked back to where it started"
+    );
+
+    // The clamp and the anchor capture both force a layout, which on a large
+    // document is ~400ms — too expensive to run per frame, and nothing reads either
+    // mid-gesture. They settle after the wheel stops instead.
+    for expected in [
+        "function settleReaderScroll() {",
+        "readerScrollSettleTimer = window.setTimeout(settleReaderScroll, READER_SCROLL_SETTLE_MS);",
+        "let readerScrolling = false;",
+    ] {
+        assert_contains(&html, expected);
+    }
+    // The old per-frame version must be gone, or the stall comes back with it.
+    assert!(
+        !html.contains(
+            "readerScrollFrame = window.requestAnimationFrame(() => {\n    readerScrollFrame = 0;\n    clampReaderScrollPosition();"
+        ),
+        "the scroll listener must not force a layout every frame"
     );
 }
 
@@ -659,7 +703,8 @@ fn app_shell_disables_minimap_without_leaving_empty_layout_column() {
             "if (!window.leafMinimap.getEnabled()) {\n    return '';\n  }",
             "const minimapHtml = renderDocumentMinimap(state.document.minimap);",
             "const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';",
-            "app.innerHTML = `<div class=\"${layoutClass}\">${state.document.html}</div>`;",
+            // Rendered hidden, then revealed already decorated: see renderState.
+            "app.innerHTML = `<div class=\"${layoutClass}\" style=\"display:none\">${state.document.html}</div>`;",
             // The rail is placed beside the page, not inside it. Empty markup
             // means no rail element at all, which is what collapses the shell
             // column — a hidden one would still satisfy :has().

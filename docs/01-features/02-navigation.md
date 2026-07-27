@@ -109,6 +109,8 @@ This is more stable than storing only raw scroll pixels, so the app can usually 
 
 The same anchor also holds your place while a document is still settling. Images decode, Mermaid diagrams and math render, and the Pager arrives a beat later; each changes the page height, and Leaf Text re-pins the reader to its anchor so the text you were reading stays where you left it. Anything that moves the reader therefore records a fresh anchor as it lands — including a click or drag on the [minimap](04-minimap.md) — or the next late arrival would restore the spot you jumped away from.
 
+The anchor is recorded a moment after scrolling stops rather than on every frame of it. Reading it means measuring the document, which on a large file is expensive enough that doing it per wheel click is what makes the wheel feel slow. While a scroll or a drag is in flight the reader's position is yours, so the re-pin stands aside until the gesture settles — re-pinning mid-gesture would pull against the very scroll that is happening.
+
 ## Reload
 
 When the current file changes on disk, Leaf Text reloads it and tries to preserve your place.
@@ -151,6 +153,7 @@ Opening a document hands it to the Rust side to parse and render before the view
 - It appears immediately when a load starts, so a quick load may show it briefly rather than not at all.
 - It overlays the reader without disturbing the [library](03-library.md) pane or the app bar, and lets clicks pass through.
 - Re-clicking the tab you are already on does nothing on the host side, so no spinner appears there. Reading-view edits, such as ticking a checkbox, re-render in place without one.
+- The [minimap](04-minimap.md#how-it-works) rail carries a spinner of its own. Its thumbnail is a scaled clone of the finished page, so it can only be built once the document has been laid out — it arrives just after the page rather than with it.
 - A safety timeout lowers it even if a response never comes, so it can never get stuck on screen.
 
 ## Glossary

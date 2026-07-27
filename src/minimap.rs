@@ -5,6 +5,11 @@ pub(crate) const MINIMAP_LONG_LINE_CHAR_THRESHOLD: usize = 80;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocumentMinimap {
     pub line_count: usize,
+    /// The line-by-line shape of the document. Not sent to the page, which draws the
+    /// rail from a scaled clone of the real rendering and reads only `line_count`.
+    /// These were 5.5 MB of an 18.9 MB payload on a 4 MB glossary, parsed every open
+    /// for nothing.
+    #[serde(default, skip_serializing)]
     pub spans: Vec<MinimapSpan>,
 }
 

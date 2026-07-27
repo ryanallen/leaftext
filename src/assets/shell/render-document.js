@@ -2,6 +2,7 @@ function renderState() {
   const state = currentState || { recent: [], tabs: [], active: null, document: null };
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
+  cancelReaderScrollSettle();
   readerAnchorBlocks = null;
   // Any full render shows the reading view, so we're no longer in the code view.
   codeViewActive = false;
@@ -16,7 +17,14 @@ function renderState() {
     // by the origin and the anchor restore lands off by exactly that.
     const previousBody = app.querySelector('.document-body');
     const previousScrollOrigin = previousBody ? previousBody.style.getPropertyValue('--reader-scroll-origin') : '';
-    app.innerHTML = `<div class="${layoutClass}">${state.document.html}</div>`;
+    // Hidden, then revealed already decorated. The passes below add three elements
+    // to every addressable block (locus alias, gutter link, its number) — 150,000
+    // insertions on a 4MB glossary. Against a laid-out page each one invalidates
+    // everything after it, turning 200ms of work into 33 SECONDS of layout; laid out
+    // once at the end it costs ~1.3s. None of them read geometry, so having none
+    // yet costs nothing.
+    app.innerHTML = `<div class="${layoutClass}" style="display:none">${state.document.html}</div>`;
+    const readerLayout = app.firstElementChild;
     setMinimapMarkup(minimapHtml);
     if (previousScrollOrigin) {
       const freshBody = app.querySelector('.document-body');
@@ -28,14 +36,21 @@ function renderState() {
     decorateBlockquoteLines();
     buildDocumentOutline();
     decorateAnchorLinks();
+    decorateCodeBlocks();
+    applySpeedReaderToDocument();
+    // The caret waits for the reveal below: focus() does nothing on a hidden
+    // element, so a commit's caret would be dropped rather than restored.
+    bindReadingEditor(state.document, { deferCaret: true });
+    // One style pass and one layout, for the finished document.
+    if (readerLayout) readerLayout.style.removeProperty('display');
+    // Past this line the document has geometry, so anything that measures it, or
+    // renders by measuring text, or wants focus, is safe.
+    placeDeferredReadingCaret();
     bindDocumentLinks();
     requestDocumentPager(state.document.path || activeDocumentPath());
     bindDocumentMinimap();
     renderMermaidDiagrams();
     renderMathElements();
-    decorateCodeBlocks();
-    applySpeedReaderToDocument();
-    bindReadingEditor(state.document);
     observeReaderReflow();
     scheduleMinimapPreviewUpdate();
     // Returning from the code view: land on the block holding the source line

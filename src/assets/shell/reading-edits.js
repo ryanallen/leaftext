@@ -435,9 +435,17 @@ function placePendingCaret(body) {
   placeCaretInBlock(target, pending.textOffset || 0);
 }
 
+// Land a caret the render deferred. The reading view is decorated while hidden (see
+// renderState) and a hidden element can't take focus, so this runs after the reveal.
+function placeDeferredReadingCaret() {
+  const body = app.querySelector('.document-body');
+  if (body) placePendingCaret(body);
+}
+
 // Orchestrate the reading view's editing layer after each render: remember
 // source/format, attach ranges, make checkboxes interactive, wire editors.
-function bindReadingEditor(doc) {
+// `deferCaret` leaves the pending caret for placeDeferredReadingCaret().
+function bindReadingEditor(doc, { deferCaret = false } = {}) {
   if (!doc) return;
   const body = app.querySelector('.document-body');
   if (!body) return;
@@ -456,7 +464,7 @@ function bindReadingEditor(doc) {
   if (currentDocumentFormat === 'markdown') {
     bindTableCheckboxes();
   }
-  placePendingCaret(body);
+  if (!deferCaret) placePendingCaret(body);
 }
 
 // Re-sync editing state after a buffer edit that needs no re-render (a task

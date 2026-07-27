@@ -293,8 +293,21 @@ let minimapPointerOffsetY = null;
 let minimapDragMetrics = null;
 let minimapResizeObserver = null;
 let minimapBodyObserver = null;
+// The document range the built clone holds, or null when it holds all of it — the
+// clone is a window on long documents, so scrolling out of range is a third reason
+// to rebuild (see updateDocumentMinimapPreview).
+let minimapBuiltRange = null;
+// Rail geometry, cached for the scroll path: scrolling changes none of it, and
+// re-measuring per wheel click forced a fresh layout of the whole document.
+let minimapScrollMetrics = null;
 let readerLayoutFrame = 0;
 let readerScrollAnchor = null;
+// Between the first wheel click and the settle after it. The clamp and the anchor
+// capture each force a layout, so they wait for the gesture to stop — and the reflow
+// re-pin stands aside while it runs, the anchor being stale by design until then.
+let readerScrollSettleTimer = 0;
+let readerScrolling = false;
+const READER_SCROLL_SETTLE_MS = 120;
 let readerReflowObserver = null;
 let resetReaderScrollOnNextRender = false;
 // Cached list of the document's anchor blocks, rebuilt when the document changes,

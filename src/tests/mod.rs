@@ -39,6 +39,41 @@ fn assert_contains(haystack: &str, needle: &str) {
     );
 }
 
+/// The JSON a state script hands the page, decoded back out of it. The document
+/// payloads go over as `f(JSON.parse("…"))` rather than as object literals (see
+/// `json_parse_expr`), so the state's own quoting is escaped one level down inside
+/// the script text and assertions have to read through that.
+fn script_payload_json(script: &str) -> String {
+    let start = script
+        .find("JSON.parse(\"")
+        .map(|index| index + "JSON.parse(".len())
+        .unwrap_or_else(|| panic!("expected a JSON.parse payload in:\n{script}"));
+    // Scan to the literal's own closing quote rather than the script's last one:
+    // leafSwitchTab passes the scroll anchor after it, whose quotes would win a
+    // reverse search.
+    let bytes = script.as_bytes();
+    let mut end = None;
+    let mut index = start + 1;
+    while index < bytes.len() {
+        match bytes[index] {
+            b'\\' => index += 2,
+            b'"' => {
+                end = Some(index);
+                break;
+            }
+            _ => index += 1,
+        }
+    }
+    let end = end.unwrap_or_else(|| panic!("expected the payload literal to close in:\n{script}"));
+    serde_json::from_str::<String>(&script[start..=end])
+        .unwrap_or_else(|error| panic!("payload literal should decode ({error}) in:\n{script}"))
+}
+
+/// Assert against the decoded payload of a state script.
+fn assert_payload_contains(script: &str, needle: &str) {
+    assert_contains(&script_payload_json(script), needle);
+}
+
 /// One rule's declarations, from its selector to the first closing brace. The
 /// compiled stylesheet has no nested rules, so the first `}` is always the end.
 fn rule_body<'a>(css: &'a str, selector: &str) -> &'a str {

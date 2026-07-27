@@ -278,24 +278,25 @@ fn minimap_model_covers_released_categories_without_source_payloads() {
     let markdown = "# Heading\n\nParagraph line that is deliberately long enough to become a long minimap structure entry.\n- list item\n> quote\n```rs\nfn main() {}\n```\n";
 
     let model = build_minimap_model(markdown);
-    let serialized =
-        serde_json::to_string(&model).expect("minimap model serializes for UI handoff");
 
     assert_eq!(model.line_count, 8);
-    for expected in [
-        r#""category":"heading""#,
-        r#""category":"blank""#,
-        r#""category":"paragraph""#,
-        r#""category":"list""#,
-        r#""category":"blockquote""#,
-        r#""category":"code-fence""#,
-        r#""structure":"long""#,
-        r#""structure":"short""#,
-        r#""start_line":"#,
-        r#""line_count":"#,
-    ] {
-        assert_contains(&serialized, expected);
+    use MinimapLineCategory::*;
+    for expected in [Heading, Blank, Paragraph, List, Blockquote, CodeFence] {
+        assert!(
+            model.spans.iter().any(|span| span.category == expected),
+            "the model should chart a {expected:?} span"
+        );
     }
+    for expected in [MinimapLineStructure::Long, MinimapLineStructure::Short] {
+        assert!(
+            model.spans.iter().any(|span| span.structure == expected),
+            "the model should chart a {expected:?} span"
+        );
+    }
+    // The model holds shape, never text. Checked against the spans serialized on
+    // their own: `DocumentMinimap` no longer serializes them as part of the document
+    // payload, but they are still the only place source text could have leaked to.
+    let held = serde_json::to_string(&model.spans).expect("minimap spans serialize");
     for forbidden in [
         "Heading",
         "Paragraph line",
@@ -304,8 +305,8 @@ fn minimap_model_covers_released_categories_without_source_payloads() {
         "fn main",
     ] {
         assert!(
-            !serialized.contains(forbidden),
-            "minimap handoff should not store source text: {forbidden}"
+            !held.contains(forbidden),
+            "minimap model should not store source text: {forbidden}"
         );
     }
     assert_eq!(
@@ -366,9 +367,17 @@ fn opened_document_carries_minimap_model_for_webview_state() {
         .spans
         .iter()
         .any(|span| span.category == MinimapLineCategory::CodeFence));
-    assert_contains(&script, r#""minimap":{"line_count":7,"spans":["#);
-    assert_contains(&script, r#""category":"heading""#);
-    assert_contains(&script, r#""category":"code-fence""#);
+    // The page is told how long the document is and nothing else: it draws the rail
+    // from a scaled clone of the real rendering, so the spans would be 5.5 MB of
+    // payload (on a 4 MB glossary) that nothing reads. See `DocumentMinimap`.
+    assert_payload_contains(&script, r#""minimap":{"line_count":7}"#);
+    let payload = script_payload_json(&script);
+    for absent in [r#""spans""#, r#""category""#, r#""start_line""#] {
+        assert!(
+            !payload.contains(absent),
+            "the minimap handoff should not carry {absent}"
+        );
+    }
 }
 
 #[test]

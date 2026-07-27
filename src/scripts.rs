@@ -1,6 +1,28 @@
 use crate::store::{DocumentGraph, SearchHit, Vault};
 use crate::*;
 
+/// A JSON value as a `JSON.parse("…")` expression rather than a JavaScript object
+/// literal. Same bytes to us, very different work for the web view: a literal goes
+/// through the JavaScript parser, the string through the much smaller JSON reader —
+/// 236 ms against 38 ms for a 4 MB glossary's state. The document payloads are the
+/// only ones here big enough for it to matter.
+fn json_parse_expr(value: &serde_json::Value) -> String {
+    let json = value.to_string();
+    // `serde_json` escapes quotes, backslashes and control characters, so this is
+    // already a valid JS string literal. U+2028/U+2029 are the exception it leaves
+    // bare — legal in JSON, line terminators to some JS parsers — so spell them out.
+    let literal = serde_json::to_string(&json)
+        .unwrap_or_else(|_| "\"{}\"".to_string())
+        .replace('\u{2028}', "\\u2028")
+        .replace('\u{2029}', "\\u2029");
+    format!("JSON.parse({literal})")
+}
+
+/// `f(<state>);`, with the state handed over via [`json_parse_expr`].
+fn call_with_json(function: &str, value: &serde_json::Value) -> String {
+    format!("{function}({});", json_parse_expr(value))
+}
+
 /// Initial workspace state as `window.__leafInitialState`. Run as an init
 /// script (before any page script) so the boot bootstrap applies it on the
 /// first render.
@@ -129,7 +151,7 @@ pub fn document_state_script(document: &OpenedDocument, recent: &[PathBuf]) -> S
         "recent": recent,
         "document": document,
     });
-    format!("window.leafSetState({});", state)
+    call_with_json("window.leafSetState", &state)
 }
 
 /// Full workspace state: recent files, tab bar (title + path), active tab
@@ -154,7 +176,7 @@ pub fn workspace_state_script(
         "active": active,
         "document": document,
     });
-    format!("window.leafSetState({});", state)
+    call_with_json("window.leafSetState", &state)
 }
 
 /// Tabs, recents and the active index with no document. The code view renders
@@ -204,7 +226,7 @@ pub fn workspace_reload_script(
         "active": active,
         "document": document,
     });
-    format!("window.leafReloadDocument({});", state)
+    call_with_json("window.leafReloadDocument", &state)
 }
 
 /// A document-intrinsic scroll position that survives a full re-render (tab
@@ -259,7 +281,12 @@ pub fn workspace_switch_script(
         Some(anchor) => scroll_anchor_json(anchor),
         None => "null".to_string(),
     };
-    format!("window.leafSwitchTab({state}, {anchor});")
+    // Same `JSON.parse` hand-off as the other document payloads; the anchor is a
+    // handful of bytes and stays a literal.
+    format!(
+        "window.leafSwitchTab({}, {anchor});",
+        json_parse_expr(&state)
+    )
 }
 
 pub fn navigation_state_script(can_go_back: bool, can_go_forward: bool) -> String {
