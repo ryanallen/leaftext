@@ -1465,3 +1465,161 @@ fn build_graph_capped_scope_keeps_densest_and_flags_truncated() {
     drop(conn);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+// ---------------------------------------------------------------------------
+// Vaults
+// ---------------------------------------------------------------------------
+
+#[test]
+fn a_vault_is_a_row_and_writes_nothing_into_the_folder() {
+    let dir = unique_dir("vault-add");
+    let root = dir.join("dharma");
+    write_file(&root.join("note.md"), "# Note\n");
+    let before: Vec<String> = std::fs::read_dir(&root)
+        .expect("folder read")
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().to_string())
+        .collect();
+    let conn = open_db(&dir).expect("db opens");
+
+    let vault = add_vault(&conn, &root, &default_vault_name(&root)).expect("vault added");
+    assert_eq!(vault.name, "dharma");
+    assert_eq!(vault.root_path, path_to_string(&root));
+    assert!(vault.id > 0);
+
+    // The whole point: adding a vault leaves the user's folder alone. No marker,
+    // no dotfile, nothing.
+    let after: Vec<String> = std::fs::read_dir(&root)
+        .expect("folder read")
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().to_string())
+        .collect();
+    assert_eq!(before, after);
+
+    // Adding the same folder again is the same vault, not a second one.
+    let again = add_vault(&conn, &root, "Renamed").expect("vault re-added");
+    assert_eq!(again, vault);
+    assert_eq!(list_vaults(&conn).expect("listed").len(), 1);
+
+    drop(conn);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn the_active_vault_survives_a_reopen_and_falls_back_to_the_whole_library() {
+    let dir = unique_dir("vault-active");
+    let one = dir.join("one");
+    let two = dir.join("two");
+    std::fs::create_dir_all(&one).expect("folder created");
+    std::fs::create_dir_all(&two).expect("folder created");
+    let conn = open_db(&dir).expect("db opens");
+
+    // Nothing chosen yet is the whole library, which is a real answer, not an
+    // error state.
+    assert_eq!(active_vault_id(&conn), 0);
+    assert!(find_vault(&conn, 0).expect("lookup").is_none());
+
+    // Two vaults may share a name; they are told apart by id.
+    let first = add_vault(&conn, &one, "Library").expect("added");
+    let second = add_vault(&conn, &two, "Library").expect("added");
+    assert_ne!(first.id, second.id);
+    set_active_vault_id(&conn, second.id).expect("active saved");
+    assert_eq!(active_vault_id(&conn), second.id);
+    assert_eq!(
+        find_vault(&conn, second.id)
+            .expect("lookup")
+            .map(|vault| vault.root_path),
+        Some(path_to_string(&two))
+    );
+
+    // It is in the database, so the next launch reads the same answer back.
+    drop(conn);
+    let conn = open_db(&dir).expect("db reopens");
+    assert_eq!(active_vault_id(&conn), second.id);
+
+    // Back to the whole library.
+    set_active_vault_id(&conn, 0).expect("active cleared");
+    assert_eq!(active_vault_id(&conn), 0);
+
+    drop(conn);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn migration_5_lands_on_an_index_that_predates_vaults() {
+    let dir = unique_dir("vault-migrate");
+    let conn = open_db(&dir).expect("db opens");
+    let version: i64 = conn
+        .query_row(
+            "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+            [],
+            |row| row.get(0),
+        )
+        .expect("version read");
+    assert_eq!(version, SCHEMA_VERSION);
+
+    // Reopening an existing database must not try to create the tables twice —
+    // this is the path every already-installed copy takes.
+    drop(conn);
+    let conn = open_db(&dir).expect("db reopens");
+    assert!(list_vaults(&conn).expect("listed").is_empty());
+
+    drop(conn);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_vault_can_be_renamed_repointed_and_removed() {
+    let dir = unique_dir("vault-edit");
+    let wrong = dir.join("emptyguru").join("site");
+    let right = dir.join("emptyguru");
+    let other = dir.join("elsewhere");
+    std::fs::create_dir_all(&wrong).expect("folder created");
+    std::fs::create_dir_all(&other).expect("folder created");
+    let conn = open_db(&dir).expect("db opens");
+
+    // The wrong folder picked.
+    let vault = add_vault(&conn, &wrong, &default_vault_name(&wrong)).expect("added");
+    assert_eq!(vault.name, "site");
+
+    // Relabelling touches nothing but the label.
+    rename_vault(&conn, vault.id, "  Empty Guru  ").expect("renamed");
+    assert_eq!(
+        find_vault(&conn, vault.id).expect("lookup").unwrap().name,
+        "Empty Guru"
+    );
+    // An empty name is not a name; the old one stands.
+    rename_vault(&conn, vault.id, "   ").expect("blank ignored");
+    assert_eq!(
+        find_vault(&conn, vault.id).expect("lookup").unwrap().name,
+        "Empty Guru"
+    );
+
+    // Re-pointing keeps the row — same id, same name, new folder.
+    set_vault_root(&conn, vault.id, &right).expect("re-pointed");
+    let moved = find_vault(&conn, vault.id).expect("lookup").unwrap();
+    assert_eq!(moved.id, vault.id);
+    assert_eq!(moved.name, "Empty Guru");
+    assert_eq!(moved.root_path, path_to_string(&right));
+    assert_eq!(list_vaults(&conn).expect("listed").len(), 1);
+
+    // Two rows for one folder would be two names for the same place.
+    let second = add_vault(&conn, &other, "Elsewhere").expect("added");
+    assert!(set_vault_root(&conn, second.id, &right).is_err());
+    assert_eq!(
+        find_vault(&conn, second.id)
+            .expect("lookup")
+            .unwrap()
+            .root_path,
+        path_to_string(&other)
+    );
+
+    // Removing drops the row and leaves the folder standing.
+    remove_vault(&conn, second.id).expect("removed");
+    assert!(find_vault(&conn, second.id).expect("lookup").is_none());
+    assert!(other.is_dir());
+    assert_eq!(list_vaults(&conn).expect("listed").len(), 1);
+
+    drop(conn);
+    let _ = std::fs::remove_dir_all(&dir);
+}

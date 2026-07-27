@@ -21,6 +21,7 @@ pub(crate) struct AppCtx {
     pub(crate) local_image_source_dir: Arc<Mutex<Option<PathBuf>>>,
     pub(crate) file_watch: FileWatch,
     pub(crate) indexer: Option<IndexerWorker>,
+    pub(crate) vault_state: VaultState,
     pub(crate) last_windowed_size: LogicalSize<f64>,
     pub(crate) last_maximized: bool,
 }
@@ -42,6 +43,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
         local_image_source_dir,
         mut file_watch,
         indexer,
+        mut vault_state,
         mut last_windowed_size,
         mut last_maximized,
     } = ctx;
@@ -462,6 +464,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     );
                 } else {
                     index_opened_path(indexer.as_ref(), &changed);
+                    // The pane lists one folder off the disk, so a file added,
+                    // renamed or removed in that folder changes what it shows.
+                    if change_affects_pane(&vault_state, &changed) {
+                        let folder = vault_state.folder.clone();
+                        request_folder(&vault_state, &proxy, folder);
+                    }
                     // An image, not a document: the text is unchanged, so the
                     // reload above would hash-gate itself out.
                     if is_local_image_path(&changed) {
@@ -632,35 +640,65 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 settings.library_width = width;
                 persist_settings(&settings, settings_path.as_ref());
             }
-            Event::UserEvent(UserEvent::GetFileTree) => {
-                if let Some(indexer) = indexer.as_ref() {
-                    indexer.request_tree();
+            Event::UserEvent(UserEvent::CreateVault) => {
+                if let Some(folder) = pick_vault_folder() {
+                    create_vault(&folder, &mut vault_state, &proxy, webview.as_ref());
                 }
             }
-            Event::UserEvent(UserEvent::GetGraph { scope, seeds }) => {
-                if let Some(indexer) = indexer.as_ref() {
-                    // Focus keeps the seed neighborhood; the rest cap the densest
-                    // documents, up to XL (no cap).
-                    let request = match GraphScope::from_client(&scope).unwrap_or_default() {
-                        GraphScope::Small => GraphRequest {
-                            focus: Some(seeds),
-                            limit: None,
-                        },
-                        GraphScope::Medium => GraphRequest {
-                            focus: None,
-                            limit: Some(2000),
-                        },
-                        GraphScope::Large => GraphRequest {
-                            focus: None,
-                            limit: Some(5000),
-                        },
-                        GraphScope::Xl => GraphRequest {
-                            focus: None,
-                            limit: None,
-                        },
-                    };
-                    indexer.request_graph(request);
+            Event::UserEvent(UserEvent::SetActiveVault { id }) => {
+                set_active_vault(id, &mut vault_state, &proxy, webview.as_ref());
+                // Back to the whole library: the indexer owns that tree.
+                if vault_state.root.is_none() {
+                    if let Some(indexer) = indexer.as_ref() {
+                        indexer.request_tree();
+                    }
                 }
+            }
+            Event::UserEvent(UserEvent::RenameVault { id, name }) => {
+                rename_vault_row(id, &name, &vault_state, webview.as_ref());
+            }
+            Event::UserEvent(UserEvent::ChangeVaultFolder { id }) => {
+                if let Some(folder) = pick_vault_folder() {
+                    change_vault_folder(id, &folder, &mut vault_state, &proxy, webview.as_ref());
+                }
+            }
+            Event::UserEvent(UserEvent::RemoveVault { id }) => {
+                remove_vault_row(id, &mut vault_state, webview.as_ref());
+                // Removing the vault on screen lands back at the top of the
+                // whole library.
+                vault_state.folder.clear();
+                request_folder(&vault_state, &proxy, String::new());
+            }
+            Event::UserEvent(UserEvent::LoadFolder { path }) => {
+                request_folder(&vault_state, &proxy, path);
+            }
+            Event::UserEvent(UserEvent::FolderLoaded { scope, listing }) => {
+                deliver_folder(&mut vault_state, webview.as_ref(), scope, listing);
+            }
+            Event::UserEvent(UserEvent::GetGraph { scope, seeds }) => {
+                // Focus keeps the seed neighborhood; the rest cap the densest
+                // documents, up to XL (no cap).
+                let request = match GraphScope::from_client(&scope).unwrap_or_default() {
+                    GraphScope::Small => GraphRequest {
+                        focus: Some(seeds),
+                        limit: None,
+                    },
+                    GraphScope::Medium => GraphRequest {
+                        focus: None,
+                        limit: Some(2000),
+                    },
+                    GraphScope::Large => GraphRequest {
+                        focus: None,
+                        limit: Some(5000),
+                    },
+                    GraphScope::Xl => GraphRequest {
+                        focus: None,
+                        limit: None,
+                    },
+                };
+                // Read off the disk under one bounded root: the active vault, or
+                // the folder the pane is in. No index, so nothing to go stale.
+                request_link_graph(&vault_state, &proxy, request);
             }
             Event::UserEvent(UserEvent::SetGraphScope { scope }) => {
                 if let Some(scope) = GraphScope::from_client(&scope) {
@@ -697,6 +735,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
             }
             Event::UserEvent(UserEvent::Indexer(indexer_event)) => {
+                // The pane's files are read off the disk now, so the indexer's
+                // own tree snapshots have nowhere to go. Its scan progress,
+                // search results, graph and errors still do.
+                if matches!(indexer_event, IndexerEvent::Library { .. }) {
+                    return;
+                }
                 if let Some(webview) = webview.as_ref() {
                     if let Err(error) = webview.evaluate_script(&event_script(&indexer_event)) {
                         eprintln!("Failed to update library view: {error}");

@@ -27,6 +27,10 @@ pub(crate) use assets::*;
 pub use assets::{bundled_asset_response, BundledAsset, LOCAL_ASSET_PROTOCOL};
 mod format;
 pub use format::{all_document_extensions, is_supported_document_path, DocumentFormat};
+mod folder_tree;
+pub use folder_tree::{read_folder_listing, FolderCrumb, FolderListing};
+mod link_graph;
+pub use link_graph::{read_link_graph, MAX_GRAPH_DOCUMENTS};
 mod editing;
 pub use editing::{
     block_source_map, kind_is_editable, render_source_view_html, task_marker_offsets, BlockSpan,

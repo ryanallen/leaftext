@@ -21,6 +21,7 @@ mod scan;
 mod search;
 mod sync;
 mod tree;
+mod vaults;
 mod worker;
 
 // Re-exported so `indexer::x` reaches every public item, wherever it lives.
@@ -31,6 +32,7 @@ pub use graph::*;
 pub use links::*;
 pub use search::*;
 pub use tree::*;
+pub use vaults::*;
 pub use worker::*;
 
 // Wholly internal; imported so the submodules can reach each other.
@@ -54,8 +56,8 @@ use serde::Serialize;
 use crate::DocumentFormat;
 
 /// Latest applied schema migration: 1 base, 2 full-text search, 3 frontmatter,
-/// 4 doc-to-doc link graph.
-pub(super) const SCHEMA_VERSION: i64 = 4;
+/// 4 doc-to-doc link graph, 5 vaults.
+pub(super) const SCHEMA_VERSION: i64 = 5;
 
 /// Feature name recorded in `file_feature_state` for the chunk/FTS layer.
 pub(super) const CHUNKS_FEATURE: &str = "chunks";

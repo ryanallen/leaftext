@@ -1632,6 +1632,117 @@ body.library-resizing {
   flex: 0 0 auto;
   max-width: none;
 }
+/* The leftmost crumb, in its usual place at the head of the trail, now opening
+   the vault switcher. Two classes deep on purpose: at the root it is also
+   `.is-current`, whose rules would otherwise take its pointer and its hover, and
+   it is still a button. */
+.library-crumb.library-crumb-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 60%;
+  color: var(--app-foreground);
+  font-weight: 600;
+  cursor: pointer;
+}
+.library-crumb-switcher .library-crumb-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.library-crumb-caret {
+  flex: none;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--app-muted-foreground);
+}
+.library-crumb.library-crumb-switcher:hover,
+.library-crumb.library-crumb-switcher[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--app-muted-foreground) 16%, transparent);
+  color: var(--app-foreground);
+}
+/* The tick on the row you are in — including the whole-library row, which is a
+   choice like any other. */
+.crumb-menu-item.is-selected {
+  font-weight: 600;
+}
+.crumb-menu-check {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  margin-left: auto;
+  color: var(--accent);
+}
+/* A vault's row: the row itself switches to it, and the pencil at its end opens
+   everything else you can do to it. One visible button, so nothing about the
+   vault is hidden behind a right-click. */
+.crumb-menu-row {
+  display: flex;
+  align-items: center;
+}
+.crumb-menu-row .crumb-menu-item {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.crumb-menu-edit {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-right: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--leaf-radius-sm);
+  background: transparent;
+  /* Dimmer than the label until pointed at: it is the second thing on the row,
+     not a rival to the name. */
+  color: color-mix(in srgb, var(--app-muted-foreground) 75%, transparent);
+  cursor: pointer;
+}
+.crumb-menu-edit svg {
+  width: 14px;
+  height: 14px;
+}
+.crumb-menu-row:hover .crumb-menu-edit {
+  color: var(--app-muted-foreground);
+}
+.crumb-menu-edit:hover {
+  background: color-mix(in srgb, var(--app-muted-foreground) 20%, transparent);
+  color: var(--app-foreground);
+}
+/* Which vault the panel is about, so the rows below it are unambiguous. */
+.crumb-menu-heading {
+  padding: 4px 10px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The name field. Enter or leaving it commits; Escape abandons the edit. */
+.crumb-menu-input {
+  display: block;
+  width: calc(100% - 12px);
+  box-sizing: border-box;
+  margin: 2px 6px 4px;
+  padding: 4px 8px;
+  border-radius: var(--leaf-radius-md);
+  border: 1px solid color-mix(in srgb, var(--app-muted-foreground) 35%, transparent);
+  background: var(--chrome-surface);
+  color: inherit;
+  font-family: inherit;
+  font-size: 12px;
+}
+.crumb-menu-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--app-foreground) 45%, transparent);
+}
 /* The elided folders, listed under the "…". Rows carry a folder icon, so they read
    as places rather than commands. */
 .crumb-menu {

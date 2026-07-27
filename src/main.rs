@@ -7,22 +7,27 @@ mod app;
 mod platform;
 mod single_instance;
 
-use leaftext::indexer::{event_script, GraphRequest, IndexerEvent, IndexerWorker};
+use leaftext::indexer::{
+    active_vault_id, add_vault, default_vault_name, event_script, find_vault, list_vaults, open_db,
+    remove_vault, rename_vault, set_active_vault_id, set_vault_root, DocumentGraph, GraphRequest,
+    IndexerEvent, IndexerWorker, Vault,
+};
 use leaftext::{
     all_document_extensions, app_data_dir, app_shell_html, blocks_resynced_script,
     bundled_asset_response, code_view_script, config_file_path, document_pager_html,
     fragment_scroll_script, glossary_sheet_script, image_refresh_script,
     initial_apply_outcome_script, initial_settings_script, initial_state_script,
-    initial_update_script, initial_version_script, is_local_image_path, is_supported_document_path,
-    line_count_script, load_recent_files, load_settings, local_image_protocol_response,
-    local_image_source_dir, navigation_state_script, open_document_with_recent,
-    open_error_state_script, opened_document_from_source, pager_loaded_script,
-    render_markdown_document, save_recent_files, save_result_script, save_settings,
-    scroll_anchor_script, settings_file_path, source_updated_script, update_progress_script,
-    update_state_script, webview_user_data_dir, workspace_reload_script, workspace_state_script,
-    workspace_switch_script, DocumentFormat, EditableDocument, GraphScope, LibraryView,
-    OpenedDocument, RecentFiles, ScrollAnchor, Settings, UpdateDownload, LOCAL_ASSET_PROTOCOL,
-    LOCAL_IMAGE_PROTOCOL,
+    initial_update_script, initial_vaults_script, initial_version_script, is_local_image_path,
+    is_supported_document_path, library_folder_script, line_count_script, load_recent_files,
+    load_settings, local_image_protocol_response, local_image_source_dir, navigation_state_script,
+    open_document_with_recent, open_error_state_script, opened_document_from_source,
+    pager_loaded_script, read_folder_listing, read_link_graph, render_markdown_document,
+    save_recent_files, save_result_script, save_settings, scroll_anchor_script, settings_file_path,
+    source_updated_script, update_progress_script, update_state_script, vaults_script,
+    webview_user_data_dir, workspace_reload_script, workspace_state_script,
+    workspace_switch_script, DocumentFormat, EditableDocument, FolderListing, GraphScope,
+    LibraryView, OpenedDocument, RecentFiles, ScrollAnchor, Settings, UpdateDownload,
+    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -30,6 +35,7 @@ use notify_debouncer_mini::{
     DebounceEventResult, Debouncer,
 };
 use rfd::FileDialog;
+use rusqlite::Connection;
 use serde::Deserialize;
 use std::{
     borrow::Cow,
@@ -305,9 +311,19 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .map(load_recent_files)
         .unwrap_or_default();
 
+    // The vault registry, so the leftmost crumb reads the active vault's name on
+    // the first paint. Opening the manifest here also applies its migrations
+    // before the indexer's threads touch it.
+    let data_dir = app_data_dir();
+    let vault_state = VaultState::load(data_dir.as_deref());
+
     let builder = WebViewBuilder::new_with_web_context(&mut web_context)
         .with_html(app_shell_html())
         .with_initialization_script(initial_settings_script(&settings))
+        .with_initialization_script(initial_vaults_script(
+            &vault_state.vaults(),
+            vault_state.active,
+        ))
         .with_initialization_script(initial_state_script(&recent.files))
         .with_initialization_script(initial_version_script())
         .with_initialization_script(initial_update_script())
@@ -380,7 +396,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
 
     // The background library indexer, owning its own SQLite connections and
     // threads; results come back as `UserEvent::Indexer`.
-    let indexer = app_data_dir().and_then(|data_dir| {
+    let indexer = data_dir.clone().and_then(|data_dir| {
         let proxy = proxy.clone();
         match IndexerWorker::new(data_dir, move |event: IndexerEvent| {
             let _ = proxy.send_event(UserEvent::Indexer(event));
@@ -424,6 +440,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         local_image_source_dir,
         file_watch,
         indexer,
+        vault_state,
         last_windowed_size,
         last_maximized,
     };
@@ -506,6 +523,14 @@ fn pick_document_file() -> Option<PathBuf> {
         dialog = dialog.add_filter(format.display_name(), format.extensions());
     }
     dialog.add_filter("All files", &["*"]).pick_file()
+}
+
+/// The New vault dialog: a folder, since a vault is a folder. Nothing is written
+/// into it — the app records the choice itself.
+fn pick_vault_folder() -> Option<PathBuf> {
+    FileDialog::new()
+        .set_title("Choose a vault folder")
+        .pick_folder()
 }
 
 /// Open each dropped document as a tab. Returns `true` to block the webview's

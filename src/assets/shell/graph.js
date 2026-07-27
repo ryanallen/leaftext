@@ -136,8 +136,19 @@ function requestGraphData() {
 // Entry point when the graph view becomes visible. Requests fresh data the first
 // time, then either builds the scene (data already in hand) or just moves the
 // active-node highlight (scene already built).
+// The graph is read off the disk under one bounded root: the vault you are in,
+// or the folder the pane is showing. At the drive roots with no vault there is
+// no such root — say so rather than walking the whole disk to find out.
+function graphHasBoundedRoot() {
+  return Boolean(activeVaultId || libraryProjectPath);
+}
 function showGraph() {
   graphActivePath = activeDocumentPath();
+  if (!graphHasBoundedRoot()) {
+    teardownGraphScene();
+    setGraphStatus(window.leafLocale.t('library.graph.unscoped'));
+    return;
+  }
   if (!graphRequested) {
     requestGraphData();
   }
@@ -164,6 +175,13 @@ window.leafSetGraph = (payload) => {
 function teardownGraph() {
   graphRequested = false;
   teardownGraphScene();
+}
+// Moving the pane moves the graph's root, so what it drew is about somewhere
+// else now. Only matters while the graph is the view on screen.
+function refreshGraphForScope() {
+  graphRequested = false;
+  graphData = null;
+  if (libraryView === 'graph') showGraph();
 }
 
 function teardownGraphScene() {

@@ -84,8 +84,9 @@ function librarySearchScopePaths() {
     if (!graphData || !graphData.nodes) return null;
     paths = graphData.nodes.map((n) => n.path);
   } else if (libraryProjectPath) {
-    const folder = findFolderByPath(libraryTreeData || [], libraryProjectPath);
-    paths = collectLibraryFiles(folder ? (folder.children || []) : [], []).map((f) => f.path);
+    // The documents on screen. Only this folder, not the ones under it: the pane
+    // reads one folder at a time and has never looked inside the rest.
+    paths = (libraryEntries || []).filter((node) => node.kind === 'file').map((node) => node.path);
   } else {
     return null;
   }
@@ -124,7 +125,7 @@ window.leafSetSearchResults = (payload) => {
 // indexing and starts the rescan itself, so there's no JS-initiated crawl on boot.
 renderLibrary();
 applyPaneLayout();
-send({ command: 'getFileTree' });
+send({ command: 'getFolder', path: libraryProjectPath });
 // Updates. The check compares the running version against the latest GitHub
 // release; if a newer one publishes this platform's installer, the page downloads
 // it and streams it to the host, which writes, hashes, and stages it. The button

@@ -183,21 +183,12 @@ window.leafSetPager = (state) => {
   bindDocumentLinks();
   scheduleReaderLayoutUpdate();
 };
-// The folder path chain from the tree root down to the folder containing
-// `filePath`. null when no such file is in the tree; empty array = at the root.
-function folderAncestorsOf(nodes, filePath) {
-  const walk = (list, trail) => {
-    for (const node of list || []) {
-      if (node.kind === 'folder') {
-        const found = walk(node.children, trail.concat(node.path));
-        if (found) return found;
-      } else if (node.path === filePath) {
-        return trail;
-      }
-    }
-    return null;
-  };
-  return walk(nodes, []);
+// The folder holding `filePath`, or '' when it has no parent worth showing.
+// A string operation, because that is all it takes — the old version walked a
+// whole in-memory tree to answer the same question.
+function parentFolderOf(filePath) {
+  const cut = Math.max((filePath || '').lastIndexOf('/'), (filePath || '').lastIndexOf('\\'));
+  return cut > 0 ? filePath.slice(0, cut) : '';
 }
 function scrollSelectedLibraryRowIntoView() {
   const row = libraryTree.querySelector('.library-file.is-selected');
@@ -205,20 +196,18 @@ function scrollSelectedLibraryRowIntoView() {
   if (row) row.scrollIntoView({ block: 'center' });
 }
 // Carry out a pending reveal: move the pane into the open document's folder so
-// its row (and the breadcrumb to it) is on screen. Returns false (still pending)
-// until the tree loads, so leafSetLibraryState can retry.
+// its row is on screen. Already there means nothing to load — just re-render for
+// the highlight.
 function revealSelectedInLibrary() {
   if (!libraryRevealPending || !librarySelectedPath) return false;
-  const nodes = libraryTreeData || [];
-  if (!nodes.length) return false;
   libraryRevealPending = false;
-  const ancestors = folderAncestorsOf(nodes, librarySelectedPath);
-  if (ancestors) {
-    libraryProjectPath = ancestors.length ? ancestors[ancestors.length - 1] : '';
-    persistLibraryState();
+  const folder = parentFolderOf(librarySelectedPath);
+  if (folder && folder !== libraryProjectPath) {
+    setLibraryFolder(folder);
+    return true;
   }
   renderLibrary();
-  if (ancestors) scrollSelectedLibraryRowIntoView();
+  scrollSelectedLibraryRowIntoView();
   return true;
 }
 // Mark `path` the library's current file and ask the next render to reveal it.
@@ -272,10 +261,6 @@ function applyScanProgress(progress) {
 function fileDisplayName(node) {
   return stripDocumentExt(node && node.name) || (node && (node.title || node.path)) || '';
 }
-function nodeSortKey(node) {
-  const label = node && node.kind === 'folder' ? (node.name || '') : fileDisplayName(node);
-  return label.toLowerCase();
-}
 // A Markdown file row: the leaf mark, then the file name, truncated.
 function fileRowHtml(node) {
   const label = fileDisplayName(node);
@@ -284,60 +269,11 @@ function fileRowHtml(node) {
   const current = isSelected ? ' aria-current="true"' : '';
   return `<button type="button" class="library-file${selected}"${current} data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(node.path)}">${LEAF_FILE_ICON}<span class="library-file-label">${escapeText(label)}</span></button>`;
 }
-function collectLibraryFiles(nodes, out) {
-  for (const node of nodes || []) {
-    if (node.kind === 'file') {
-      out.push(node);
-    } else {
-      collectLibraryFiles(node.children, out);
-    }
-  }
-  return out;
-}
-// Project (drill-in) view helpers. Folders are entered one level at a time; the
-// current folder is located in the tree by its full path.
-function findFolderByPath(nodes, path) {
-  for (const node of nodes || []) {
-    if (node.kind !== 'folder') continue;
-    if (node.path === path) return node;
-    const found = findFolderByPath(node.children, path);
-    if (found) return found;
-  }
-  return null;
-}
-// The chain of folder nodes from the tree root down to `path` — what the
-// breadcrumb draws. Empty at the root; null when the path isn't in the tree.
-function folderChainTo(nodes, path) {
-  if (!path) return [];
-  const walk = (list, trail) => {
-    for (const node of list || []) {
-      if (node.kind !== 'folder') continue;
-      const next = trail.concat(node);
-      if (node.path === path) return next;
-      const found = walk(node.children, next);
-      if (found) return found;
-    }
-    return null;
-  };
-  return walk(nodes, []);
-}
-function projectChildrenSorted(nodes) {
-  const folders = [];
-  const files = [];
-  for (const node of nodes || []) {
-    (node.kind === 'folder' ? folders : files).push(node);
-  }
-  const byName = (a, b) => nodeSortKey(a).localeCompare(nodeSortKey(b));
-  folders.sort(byName);
-  files.sort(byName);
-  return folders.concat(files);
-}
-// The folder rows for the folder we're inside. Walking back out is the
-// breadcrumb's job, so no "up" row here.
-function renderProject(nodes, chain) {
-  const children = chain.length ? (chain[chain.length - 1].children || []) : nodes;
+// The rows for the folder we're inside — already ordered by the host, folders
+// first. Walking back out is the breadcrumb's job, so no "up" row here.
+function renderProject(entries) {
   const rows = [];
-  for (const node of projectChildrenSorted(children)) {
+  for (const node of entries || []) {
     if (node.kind === 'folder') {
       rows.push(`<button type="button" class="library-nav-folder" data-nav-into="${escapeAttr(node.path)}" title="${escapeAttr(node.name)}">${FOLDER_ICON_SVG}<span class="library-file-label">${escapeText(node.name)}</span><span class="library-nav-chevron" aria-hidden="true">›</span></button>`);
     } else {
@@ -346,13 +282,13 @@ function renderProject(nodes, chain) {
   }
   return `<div class="library-project">${rows.join('')}</div>`;
 }
-// Enter a folder (or, from a crumb, step back out to one). '' is the root.
+// Enter a folder (or, from a crumb, step back out to one). '' is the top: the
+// active vault's folder, or the drive roots. The host reads it and calls back —
+// nothing is known about a folder here until it has been opened.
 function setLibraryFolder(path) {
   libraryProjectPath = path || '';
   persistLibraryState();
-  renderLibrary();
-  // Search covers the folder on screen, so moving changes the result set.
-  if (librarySearchQuery) runLibrarySearch(librarySearch.value);
+  send({ command: 'getFolder', path: libraryProjectPath });
 }
 function bindLibraryRows() {
   libraryTree.querySelectorAll('[data-open-path]').forEach((button) => {
@@ -372,8 +308,12 @@ function bindLibraryRows() {
 // width, not a fixed count — widening the pane reveals more of the path. What
 // doesn't fit collapses into a "…" button that opens a menu of the folders it
 // swallowed, so a deep path is still one click from any ancestor.
+// The leftmost crumb keeps its place at the head of the trail; what changed is
+// what it does. It is already the top — the whole library, or the vault you are
+// in — so there is nothing above it to walk to, and clicking it opens the
+// switcher instead.
 function crumbSegments(chain) {
-  return [{ path: '', name: window.leafLocale.t('library.title') }]
+  return [{ path: '', name: libraryRootLabel(), switcher: true }]
     .concat(chain.map((node) => ({ path: node.path, name: node.name || node.path })));
 }
 // The chain the trail is currently drawing, kept so a resize can refit without
@@ -381,6 +321,14 @@ function crumbSegments(chain) {
 let libraryCrumbChain = [];
 const CRUMB_SEP_HTML = '<span class="library-crumb-sep" aria-hidden="true">›</span>';
 function crumbHtml(segment, current) {
+  if (segment.switcher) {
+    const label = escapeAttr(window.leafLocale.t('library.vaults.switch', { name: segment.name }));
+    // At the root this crumb is also where you are, but it stays a button: its
+    // job is the menu, not navigation.
+    const here = current ? ' is-current' : '';
+    const marker = current ? ' aria-current="true"' : '';
+    return `<button type="button" class="library-crumb library-crumb-switcher${here}"${marker} data-crumb-switcher="1" title="${label}" aria-label="${label}" aria-haspopup="menu" aria-expanded="false"><span class="library-crumb-name">${escapeText(segment.name)}</span><span class="library-crumb-caret" aria-hidden="true">▾</span></button>`;
+  }
   if (current) {
     return `<span class="library-crumb is-current" aria-current="true" title="${escapeAttr(segment.path || segment.name)}">${escapeText(segment.name)}</span>`;
   }
@@ -452,14 +400,25 @@ function fitLibraryCrumbs() {
   libraryCrumbTrail.innerHTML = hidden.length
     ? [crumbHtml(segments[0], false), crumbElisionHtml(hidden)].concat(rendered).join(CRUMB_SEP_HTML)
     : rendered.join(CRUMB_SEP_HTML);
+  bindCrumbTrailButtons(hidden);
+}
+// The trail's folder links and its two menu buttons, wired after any rebuild.
+function bindCrumbTrailButtons(hidden) {
   libraryCrumbTrail.querySelectorAll('[data-crumb-path]').forEach((crumb) => {
     crumb.addEventListener('click', () => setLibraryFolder(crumb.dataset.crumbPath));
   });
+  const switcher = libraryCrumbTrail.querySelector('[data-crumb-switcher]');
+  if (switcher) {
+    switcher.addEventListener('click', (event) => {
+      event.stopPropagation();
+      toggleCrumbMenu(switcher, vaultMenuItems());
+    });
+  }
   const more = libraryCrumbTrail.querySelector('[data-crumb-more]');
   if (more) {
     more.addEventListener('click', (event) => {
       event.stopPropagation();
-      toggleCrumbMenu(more, hidden);
+      toggleCrumbMenu(more, folderMenuItems(hidden));
     });
   }
 }
@@ -467,7 +426,12 @@ function renderLibraryCrumbs(chain) {
   if (!libraryCrumbTrail) return;
   if (libraryView === 'graph') {
     hideCrumbMenu();
-    libraryCrumbTrail.innerHTML = `<span class="library-crumb is-current">${escapeText(window.leafLocale.t('library.view.graph'))}</span>`;
+    // The graph has no folder path, but the switcher stays put: it is where you
+    // change vaults, and losing it here would strand you in one.
+    const root = crumbSegments([])[0];
+    libraryCrumbTrail.innerHTML = crumbHtml(root, false) + CRUMB_SEP_HTML
+      + `<span class="library-crumb is-current">${escapeText(window.leafLocale.t('library.view.graph'))}</span>`;
+    bindCrumbTrailButtons([]);
     // The graph took the band over; the next file-list render starts from scratch.
     libraryCrumbFitKey = null;
     return;
@@ -475,8 +439,9 @@ function renderLibraryCrumbs(chain) {
   libraryCrumbChain = chain;
   fitLibraryCrumbs();
 }
-// The elided folders, as a menu under the "…". Same chrome as the file
-// right-click menu; each item enters that folder.
+// One menu for the two buttons on the trail: the folders the "…" swallowed, and
+// the vault switcher under the leftmost crumb. Same chrome as the file
+// right-click menu.
 const crumbMenu = document.createElement('div');
 crumbMenu.className = 'context-menu crumb-menu';
 crumbMenu.hidden = true;
@@ -495,30 +460,199 @@ function hideCrumbMenu() {
   }
   crumbMenuOwner = null;
 }
-function toggleCrumbMenu(button, hidden) {
+// The folders the "…" stands in for; picking one enters it.
+function folderMenuItems(hidden) {
+  return hidden.map((segment) => ({
+    label: segment.name,
+    title: segment.path || segment.name,
+    icon: FOLDER_ICON_SVG,
+    run: () => setLibraryFolder(segment.path),
+  }));
+}
+// The switcher's rows: the whole library as it has always been, then every
+// vault, then New vault…. The rows are told apart by id, so two vaults may share
+// a name — and "Library" is that first row's label, not a reserved word.
+function vaultMenuItems() {
+  const items = [{
+    label: window.leafLocale.t('library.title'),
+    title: window.leafLocale.t('library.vaults.all'),
+    icon: FOLDER_ICON_SVG,
+    selected: !activeVaultId,
+    run: () => switchVault(0),
+  }];
+  for (const vault of leafVaults) {
+    if (!vault || !vault.id) continue;
+    items.push({
+      label: vault.name || vault.rootPath,
+      title: vault.rootPath || '',
+      icon: FOLDER_ICON_SVG,
+      selected: vault.id === activeVaultId,
+      run: () => switchVault(vault.id),
+      // The row's own button: everything you can do to this vault, in one
+      // place. Visible, because a menu you have to right-click is a menu
+      // nobody finds.
+      edit: () => showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault)),
+    });
+  }
+  items.push('separator');
+  items.push({
+    label: window.leafLocale.t('library.vaults.new'),
+    title: window.leafLocale.t('library.vaults.new.help'),
+    icon: MENU_PLUS_SVG,
+    run: () => send({ command: 'createVault' }),
+  });
+  return items;
+}
+// One vault's edit panel, shown in place of the switcher's list: its name, the
+// folder it points at, and the way to forget it. Reached from the row's button.
+function editVaultMenuItems(vault) {
+  return [
+    {
+      heading: window.leafLocale.t('library.vaults.editing', { name: vault.name || '' }),
+    },
+    {
+      // Commits on Enter or on leaving the field; Escape abandons it.
+      input: vault.name || '',
+      placeholder: window.leafLocale.t('library.vaults.name'),
+      commit: (name) => {
+        if (name && name !== vault.name) send({ command: 'renameVault', id: vault.id, name });
+      },
+    },
+    {
+      label: window.leafLocale.t('library.vaults.changeFolder'),
+      title: vault.rootPath || '',
+      icon: FOLDER_ICON_SVG,
+      run: () => send({ command: 'changeVaultFolder', id: vault.id }),
+    },
+    {
+      label: window.leafLocale.t('library.vaults.remove'),
+      title: window.leafLocale.t('library.vaults.remove.help'),
+      icon: MENU_TRASH_SVG,
+      danger: true,
+      run: () => send({ command: 'removeVault', id: vault.id }),
+    },
+    'separator',
+    {
+      label: window.leafLocale.t('library.vaults.back'),
+      icon: MENU_BACK_SVG,
+      run: () => showCrumbMenu(crumbMenuOwner, vaultMenuItems()),
+    },
+  ];
+}
+// Picking an entry lands on its root — including the one already active, which
+// is how the top of a deep trail stays one click away.
+function switchVault(id) {
+  if (id === activeVaultId) {
+    setLibraryFolder('');
+    return;
+  }
+  send({ command: 'setActiveVault', id });
+}
+// What the buttons on the trail do: a second click on the one that opened the
+// menu closes it again. Only they toggle — a click *inside* the menu that swaps
+// its contents (a row's edit button, or Back) calls showCrumbMenu directly,
+// because closing there is exactly the bug of the button appearing to do nothing.
+function toggleCrumbMenu(button, items) {
   if (!crumbMenu.hidden && crumbMenuOwner === button) {
     hideCrumbMenu();
     return;
   }
-  hideCrumbMenu();
-  if (!hidden.length) return;
+  showCrumbMenu(button, items);
+}
+function showCrumbMenu(button, items) {
+  // Rebuilt in place when the menu swaps to another set of rows, so hiding
+  // (which drops the owner and pulls focus back to the crumb) is skipped.
+  const reopening = crumbMenuOwner === button && !crumbMenu.hidden;
+  if (!reopening) hideCrumbMenu();
+  if (!items.length) return;
+  crumbMenuOwner = button;
   crumbMenu.textContent = '';
-  for (const segment of hidden) {
+  let firstFocusable = null;
+  for (const entry of items) {
+    if (entry === 'separator') {
+      const separator = document.createElement('div');
+      separator.className = 'context-menu-separator';
+      separator.setAttribute('role', 'separator');
+      crumbMenu.appendChild(separator);
+      continue;
+    }
+    if (entry.heading) {
+      const heading = document.createElement('div');
+      heading.className = 'crumb-menu-heading';
+      heading.textContent = entry.heading;
+      crumbMenu.appendChild(heading);
+      continue;
+    }
+    if (entry.input !== undefined) {
+      const field = document.createElement('input');
+      field.type = 'text';
+      field.className = 'crumb-menu-input';
+      field.value = entry.input;
+      field.spellcheck = false;
+      field.setAttribute('autocomplete', 'off');
+      field.placeholder = entry.placeholder || '';
+      field.setAttribute('aria-label', entry.placeholder || '');
+      let settled = false;
+      const commit = () => {
+        if (settled) return;
+        settled = true;
+        entry.commit(field.value.trim());
+      };
+      field.addEventListener('keydown', (event) => {
+        event.stopPropagation();
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          commit();
+          hideCrumbMenu();
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          settled = true;
+          hideCrumbMenu();
+        }
+      });
+      field.addEventListener('blur', commit);
+      crumbMenu.appendChild(field);
+      firstFocusable = firstFocusable || field;
+      continue;
+    }
+    const row = document.createElement('div');
+    row.className = 'crumb-menu-row';
     const item = document.createElement('button');
     item.type = 'button';
-    item.className = 'context-menu-item crumb-menu-item';
+    item.className = 'context-menu-item crumb-menu-item'
+      + (entry.selected ? ' is-selected' : '')
+      + (entry.danger ? ' is-danger' : '');
     item.setAttribute('role', 'menuitem');
-    item.title = segment.path || segment.name;
-    item.innerHTML = `${FOLDER_ICON_SVG}<span class="crumb-menu-label"></span>`;
-    item.querySelector('.crumb-menu-label').textContent = segment.name;
+    if (entry.title) item.title = entry.title;
+    // The icon and the tick are ours; only the label is user text, so it goes in
+    // as text rather than markup.
+    item.innerHTML = `${entry.icon || ''}<span class="crumb-menu-label"></span>${entry.selected ? MENU_CHECK_SVG : ''}`;
+    item.querySelector('.crumb-menu-label').textContent = entry.label;
     item.addEventListener('click', (event) => {
       event.stopPropagation();
       hideCrumbMenu();
-      setLibraryFolder(segment.path);
+      entry.run();
     });
-    crumbMenu.appendChild(item);
+    row.appendChild(item);
+    if (entry.edit) {
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'crumb-menu-edit';
+      edit.innerHTML = MENU_EDIT_SVG;
+      const label = window.leafLocale.t('library.vaults.edit', { name: entry.label });
+      edit.title = label;
+      edit.setAttribute('aria-label', label);
+      // Not a switch: this opens the panel for that row, and the click must not
+      // reach the row underneath it.
+      edit.addEventListener('click', (event) => {
+        event.stopPropagation();
+        entry.edit();
+      });
+      row.appendChild(edit);
+    }
+    crumbMenu.appendChild(row);
+    firstFocusable = firstFocusable || item;
   }
-  crumbMenuOwner = button;
   button.setAttribute('aria-expanded', 'true');
   crumbMenu.hidden = false;
   const anchor = button.getBoundingClientRect();
@@ -526,8 +660,7 @@ function toggleCrumbMenu(button, hidden) {
   const top = Math.max(8, Math.min(anchor.bottom + 4, window.innerHeight - crumbMenu.offsetHeight - 8));
   crumbMenu.style.left = left + 'px';
   crumbMenu.style.top = top + 'px';
-  const first = crumbMenu.querySelector('.context-menu-item');
-  if (first) first.focus();
+  if (firstFocusable) firstFocusable.focus();
 }
 window.addEventListener('click', (event) => {
   if (!crumbMenu.contains(event.target)) hideCrumbMenu();
@@ -566,16 +699,8 @@ function renderLibraryGraphToggle() {
   libraryGraphToggle.setAttribute('aria-label', label);
 }
 function renderLibrary() {
-  const nodes = libraryTreeData || [];
-  // A saved folder this tree doesn't have (a rescan dropped it) falls back to the
-  // root. Only judge that with nodes in hand: empty means loading, not gone.
-  let chain = nodes.length ? folderChainTo(nodes, libraryProjectPath) : [];
-  if (!chain) {
-    chain = [];
-    libraryProjectPath = '';
-  }
   renderLibraryGraphToggle();
-  renderLibraryCrumbs(chain);
+  renderLibraryCrumbs(libraryChain);
   // The graph view replaces the file list with an interactive canvas. It owns the
   // whole pane body, so hide the list and let the graph module drive itself.
   if (libraryView === 'graph') {
@@ -591,13 +716,32 @@ function renderLibrary() {
     libraryTree.innerHTML = `<p class="library-empty">${escapeText(libraryError.message || '')}</p>`;
     return;
   }
-  if (!nodes.length) {
-    libraryTree.innerHTML = `<p class="library-empty">${escapeText(window.leafLocale.t('library.empty'))}</p>`;
+  if (!libraryEntries.length) {
+    libraryTree.innerHTML = `<p class="library-empty">${escapeText(window.leafLocale.t('library.folderEmpty'))}</p>`;
     return;
   }
-  libraryTree.innerHTML = renderProject(nodes, chain);
+  libraryTree.innerHTML = renderProject(libraryEntries);
   bindLibraryRows();
 }
+// One folder, read off the disk by the host: where it is, the trail down to it,
+// and its contents. This is the only thing that fills the pane.
+window.leafSetLibraryFolder = (payload) => {
+  const next = payload || {};
+  libraryError = null;
+  libraryProjectPath = typeof next.path === 'string' ? next.path : '';
+  libraryChain = Array.isArray(next.chain) ? next.chain : [];
+  libraryEntries = Array.isArray(next.entries) ? next.entries : [];
+  // The trail changed, so it has to be laid out again.
+  libraryCrumbFitKey = null;
+  // Without a vault the graph's root is this folder, so moving re-roots it.
+  if (!activeVaultId) refreshGraphForScope();
+  renderLibrary();
+  if (librarySelectedPath) scrollSelectedLibraryRowIntoView();
+  // Search covers the folder on screen, so moving changes the result set.
+  if (librarySearchQuery) runLibrarySearch(librarySearch.value);
+};
+// What is left of the indexer's channel to the pane: its scan progress, and its
+// errors. The files are not its business any more — they are read off the disk.
 window.leafSetLibraryState = (state) => {
   const next = state || {};
   if (next.error) {
@@ -605,25 +749,40 @@ window.leafSetLibraryState = (state) => {
     renderLibrary();
     return;
   }
-  libraryError = null;
-  if (next.tree) {
-    libraryTreeData = next.tree;
-  }
   if (next.progress) {
     applyScanProgress(next.progress);
   }
-  // The indexer just came online (or refreshed the tree). If the graph view is
-  // open but has no data yet — e.g. the app launched straight into it before the
-  // reader thread was ready and the first request was dropped — ask again.
+  // The indexer just came online. If the graph view is open but has no data yet
+  // — e.g. the app launched straight into it before the reader thread was ready
+  // and the first request was dropped — ask again.
   if (libraryView === 'graph' && !graphData) {
     graphRequested = false;
+    showGraph();
   }
-  // A reveal queued before the tree loaded (e.g. launching straight into a file)
-  // runs here once the nodes are in hand; revealSelectedInLibrary renders itself.
-  if (libraryRevealPending && libraryView !== 'graph' && revealSelectedInLibrary()) return;
-  renderLibrary();
 };
 window.leafSetScanProgress = (progress) => {
   applyScanProgress(progress);
+};
+// The vault registry, pushed by the host after a vault is added or switched to.
+// The files for the new root arrive separately.
+window.leafSetVaults = (payload) => {
+  const next = payload || {};
+  const previous = activeVaultId;
+  leafVaults = Array.isArray(next.vaults) ? next.vaults : [];
+  activeVaultId = Number.isFinite(next.active) ? next.active : 0;
+  if (activeVaultId !== previous) {
+    // A new root: the folder the list was in belonged to the old one, and its
+    // files are about to be replaced.
+    libraryProjectPath = '';
+    libraryEntries = [];
+    libraryChain = [];
+    libraryError = null;
+    persistLibraryState();
+    // A different root means a different graph.
+    refreshGraphForScope();
+  }
+  // The leftmost crumb reads the root's name, so the trail lays out again.
+  libraryCrumbFitKey = null;
+  renderLibrary();
 };
 

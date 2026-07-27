@@ -137,6 +137,27 @@ CREATE INDEX idx_links_target_abs ON links(target_abs);
 CREATE INDEX idx_links_target_name ON links(target_name);
 "#;
 
+/// Migration 5: vaults. A vault is a folder the app treats as a library root,
+/// and it is recorded here — nothing is written into the folder itself, so
+/// adding one leaves the user's files untouched. `root_path` is unique: adding
+/// the same folder twice is the same vault, not a second one.
+///
+/// `app_state` is the app's own scratch row store; `active_vault` lives there
+/// (absent, empty, or `0` all mean the whole library).
+const MIGRATION_5_SQL: &str = r#"
+CREATE TABLE vaults (
+    id        INTEGER PRIMARY KEY,
+    name      TEXT NOT NULL,
+    root_path TEXT NOT NULL UNIQUE,
+    added_at  INTEGER NOT NULL
+);
+
+CREATE TABLE app_state (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+"#;
+
 /// Open (creating if needed) the manifest database, apply PRAGMAs, and migrate.
 /// Runs on the caller's thread so the schema exists before the reader connects.
 pub fn open_db(data_dir: &Path) -> DbResult<Connection> {
@@ -236,6 +257,17 @@ fn run_migrations(conn: &mut Connection) -> DbResult<()> {
         tx.execute_batch(MIGRATION_4_SQL).map_err(to_err)?;
         tx.execute(
             "INSERT INTO schema_migrations (version, applied_at) VALUES (4, ?1)",
+            params![now_secs()],
+        )
+        .map_err(to_err)?;
+        tx.commit().map_err(to_err)?;
+    }
+
+    if current < 5 {
+        let tx = conn.transaction().map_err(to_err)?;
+        tx.execute_batch(MIGRATION_5_SQL).map_err(to_err)?;
+        tx.execute(
+            "INSERT INTO schema_migrations (version, applied_at) VALUES (5, ?1)",
             params![now_secs()],
         )
         .map_err(to_err)?;

@@ -129,8 +129,37 @@ pub(crate) enum UserEvent {
         closed: bool,
         width: u32,
     },
-    /// Request the current library tree from the indexer's read connection.
-    GetFileTree,
+    /// Pick a folder and register it as a vault, then switch the library to it.
+    CreateVault,
+    /// Scope the library to a vault by id; `0` is the whole library.
+    SetActiveVault {
+        id: i64,
+    },
+    /// Relabel a vault. The folder is untouched.
+    RenameVault {
+        id: i64,
+        name: String,
+    },
+    /// Reopen the folder picker and point an existing vault somewhere else —
+    /// the fix for having picked the wrong folder.
+    ChangeVaultFolder {
+        id: i64,
+    },
+    /// Forget a vault. The row goes; the folder stays.
+    RemoveVault {
+        id: i64,
+    },
+    /// Show one folder in the library pane. Empty is the top level: the active
+    /// vault's folder, or the drive roots.
+    LoadFolder {
+        path: String,
+    },
+    /// A folder finished being read off disk. `scope` is the vault root the read
+    /// was made under, so a listing that lands after a vault switch is dropped.
+    FolderLoaded {
+        scope: Option<PathBuf>,
+        listing: FolderListing,
+    },
     /// Request the library link graph. `scope` is the persisted graph size;
     /// `seeds` are the focus documents, used only by the Focus scope.
     GetGraph {
@@ -315,8 +344,24 @@ pub(crate) enum IpcCommand {
     },
     #[serde(rename = "setLibraryLayout")]
     SetLibraryLayout { closed: bool, width: u32 },
-    #[serde(rename = "getFileTree")]
-    GetFileTree,
+    #[serde(rename = "createVault")]
+    CreateVault,
+    #[serde(rename = "setActiveVault")]
+    SetActiveVault {
+        #[serde(default)]
+        id: i64,
+    },
+    #[serde(rename = "renameVault")]
+    RenameVault { id: i64, name: String },
+    #[serde(rename = "changeVaultFolder")]
+    ChangeVaultFolder { id: i64 },
+    #[serde(rename = "removeVault")]
+    RemoveVault { id: i64 },
+    #[serde(rename = "getFolder")]
+    GetFolder {
+        #[serde(default)]
+        path: String,
+    },
     #[serde(rename = "getGraph")]
     GetGraph {
         #[serde(default)]
@@ -520,8 +565,23 @@ pub(crate) fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<S
             IpcCommand::SetLibraryLayout { closed, width } => {
                 let _ = proxy.send_event(UserEvent::SetLibraryLayout { closed, width });
             }
-            IpcCommand::GetFileTree => {
-                let _ = proxy.send_event(UserEvent::GetFileTree);
+            IpcCommand::CreateVault => {
+                let _ = proxy.send_event(UserEvent::CreateVault);
+            }
+            IpcCommand::SetActiveVault { id } => {
+                let _ = proxy.send_event(UserEvent::SetActiveVault { id });
+            }
+            IpcCommand::RenameVault { id, name } => {
+                let _ = proxy.send_event(UserEvent::RenameVault { id, name });
+            }
+            IpcCommand::ChangeVaultFolder { id } => {
+                let _ = proxy.send_event(UserEvent::ChangeVaultFolder { id });
+            }
+            IpcCommand::RemoveVault { id } => {
+                let _ = proxy.send_event(UserEvent::RemoveVault { id });
+            }
+            IpcCommand::GetFolder { path } => {
+                let _ = proxy.send_event(UserEvent::LoadFolder { path });
             }
             IpcCommand::GetGraph { scope, seeds } => {
                 let _ = proxy.send_event(UserEvent::GetGraph { scope, seeds });

@@ -14,6 +14,7 @@ mod history;
 mod links;
 mod render;
 mod update_flow;
+mod vaults;
 mod watch;
 mod workspace;
 
@@ -26,6 +27,7 @@ pub(crate) use history::*;
 pub(crate) use links::*;
 pub(crate) use render::*;
 pub(crate) use update_flow::*;
+pub(crate) use vaults::*;
 pub(crate) use watch::*;
 pub(crate) use workspace::*;
 

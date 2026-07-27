@@ -15,7 +15,7 @@ pub struct DocLink {
 /// Extract a document's outgoing links, dispatching on file type. Markdown gets
 /// Markdown links, `<a href>`, and `[[wiki]]`; XML gets `target=`/`href=` attrs.
 /// Deduplicated by resolved target so a repeated link draws one edge.
-pub(super) fn document_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
+pub(crate) fn document_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
     let mut links = match DocumentFormat::from_path(source_abs) {
         DocumentFormat::Xml => xml_links(content, source_abs),
         // A data file's strings are values, not prose. Scanning them as Markdown
@@ -209,7 +209,7 @@ fn percent_decode(value: &str) -> String {
 
 /// Normalize a note name (wiki link text, or a file's own name) to the key both
 /// sides match on: trimmed and lowercased.
-pub(super) fn normalize_name_key(name: &str) -> String {
+pub(crate) fn normalize_name_key(name: &str) -> String {
     name.trim().to_lowercase()
 }
 

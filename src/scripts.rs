@@ -1,3 +1,4 @@
+use crate::indexer::Vault;
 use crate::*;
 
 /// Initial workspace state as `window.__leafInitialState`. Run as an init
@@ -38,6 +39,31 @@ pub fn initial_settings_script(settings: &Settings) -> String {
         "updateStagedVersion": settings.update_staged_version,
     });
     format!("window.__leafSettings = {};", state)
+}
+
+/// One folder's contents, for the library pane. Every string in it is
+/// file-derived and untrusted; the page escapes them before the DOM.
+pub fn library_folder_script(listing: &FolderListing) -> String {
+    let payload = serde_json::to_string(listing).unwrap_or_else(|_| "null".to_string());
+    format!("window.leafSetLibraryFolder({payload});")
+}
+
+/// The vault registry as `window.__leafVaults`. An init script, like the other
+/// seeded state, so the leftmost crumb reads the active vault's name on the
+/// first paint instead of flashing "Library" and correcting itself.
+pub fn initial_vaults_script(vaults: &[Vault], active: i64) -> String {
+    format!("window.__leafVaults = {};", vaults_payload(vaults, active))
+}
+
+/// The same registry, pushed after a change (a vault added, or switched to).
+pub fn vaults_script(vaults: &[Vault], active: i64) -> String {
+    format!("window.leafSetVaults({});", vaults_payload(vaults, active))
+}
+
+/// Vault names are folder names — user text — so the page escapes them before
+/// the DOM.
+fn vaults_payload(vaults: &[Vault], active: i64) -> serde_json::Value {
+    serde_json::json!({ "vaults": vaults, "active": active })
 }
 
 /// The running app version as `window.__leafVersion`. Run as an init script so

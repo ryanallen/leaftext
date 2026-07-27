@@ -199,7 +199,8 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
 
     // The toggle flips the pane open/closed; layout applies on boot and on resize.
     assert!(html.contains("libraryOpen.addEventListener('click', toggleLibrary);"));
-    assert!(html.contains("applyPaneLayout();\nsend({ command: 'getFileTree' });"));
+    assert!(html
+        .contains("applyPaneLayout();\nsend({ command: 'getFolder', path: libraryProjectPath });"));
     assert!(html.contains("window.addEventListener('resize', () => {"));
 }
 
@@ -235,7 +236,7 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
     assert!(html.contains("window.leafSetScanProgress ="));
     assert!(html.contains("window.leafSetSearchResults ="));
     assert!(html.contains("const LEAF_SETTINGS = (window.__leafSettings"));
-    assert!(html.contains("send({ command: 'getFileTree' });"));
+    assert!(html.contains("send({ command: 'getFolder', path: libraryProjectPath });"));
 
     // The search field, its debounced request, and the result-open + jump.
     assert!(html.contains(r#"<input id="librarySearch" class="library-search""#));
@@ -341,23 +342,24 @@ fn library_follows_and_highlights_the_active_file() {
     assert!(html.contains(r#"class="library-file${selected}""#));
     assert!(css.contains(".library-file.is-selected,"));
 
-    // Reveal helpers: locate the file in the tree, drill/expand to it.
-    assert!(html.contains("function folderAncestorsOf(nodes, filePath)"));
+    // Reveal: the file's folder is a string operation on its own path, then the
+    // pane asks for that folder. Nothing walks a tree, because there isn't one.
+    assert!(html.contains("function parentFolderOf(filePath)"));
     assert!(html.contains("function revealSelectedInLibrary()"));
     assert!(html.contains("function scrollSelectedLibraryRowIntoView()"));
 
-    // Going to a file (open, switch, click a tab) follows it; the tree
-    // arriving later runs a queued reveal. Clicking a tab always flies the
-    // graph to that node; opening/switching only does so when the doc changed.
-    // Clicking the tab you are already on forces a graph rebuild (resync) so a
-    // stale scene in memory can't leave the view stuck.
+    // Going to a file (open, switch, click a tab) follows it. Clicking a tab
+    // always flies the graph to that node; opening/switching only does so when
+    // the doc changed. Clicking the tab you are already on forces a graph
+    // rebuild (resync) so a stale scene in memory can't leave the view stuck.
     assert!(html.contains("followFileInLibrary(openedPath,"));
     assert!(html.contains("followFileInLibrary(switchedPath,"));
     assert!(html.contains("followFileInLibrary(tab ? tab.path || null : null, true, wasActive);"));
     assert!(html.contains("const wasActive = index === (currentState && currentState.active);"));
-    assert!(html.contains(
-        "if (libraryRevealPending && libraryView !== 'graph' && revealSelectedInLibrary()) return;"
-    ));
+    // A reveal resolves at once now: the file's folder is known from its path, so
+    // there is no queued reveal waiting for a tree to arrive.
+    assert!(html.contains("if (folder && folder !== libraryProjectPath) {"));
+    assert!(!html.contains("if (libraryRevealPending && libraryView !== 'graph'"));
 }
 
 #[test]
@@ -369,7 +371,8 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     assert!(html.contains(r#"<div class="library-crumbs" id="libraryCrumbs">"#));
     assert!(html.contains(r#"<nav class="library-crumb-trail" id="libraryCrumbTrail""#));
     assert!(html.contains("function renderLibraryCrumbs(chain)"));
-    assert!(html.contains("function folderChainTo(nodes, path)"));
+    // The trail arrives with the listing; the page never derives it.
+    assert!(html.contains("libraryChain = Array.isArray(next.chain) ? next.chain : [];"));
 
     // Every crumb but the last walks back out to that folder; the last is where
     // you are. A deep path elides its middle rather than overflowing the pane.
@@ -390,8 +393,8 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     // What didn't fit hides behind a "…" button that opens a menu of those
     // folders; picking one enters it.
     assert!(html.contains("data-crumb-more=\"1\""));
-    assert!(html.contains("function toggleCrumbMenu(button, hidden)"));
-    assert!(html.contains("setLibraryFolder(segment.path)"));
+    assert!(html.contains("function showCrumbMenu(button, items)"));
+    assert!(html.contains("run: () => setLibraryFolder(segment.path),"));
     assert!(css.contains(".crumb-menu {"));
     // A fit that would draw the same crumbs at the same width leaves the DOM alone,
     // or an indexer push would rebuild the trail under an open "…" menu.
@@ -401,8 +404,8 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     assert!(html.contains(
         "button.addEventListener('click', () => setLibraryFolder(button.dataset.navInto));"
     ));
-    // A folder the current tree no longer has falls back to the root.
-    assert!(html.contains("chain = [];\n    libraryProjectPath = '';"));
+    // A folder that has gone missing falls back to the top level. The host
+    // decides that as it reads, so the page never holds a path it cannot show.
 
     // The two bands share one treatment (the pane's own surface and grain) and
     // the list starts below both.
@@ -417,6 +420,113 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     let graph_icon = normalize_svg_icon_colors(GRAPH_ICON_SVG);
     assert!(graph_icon.contains("stroke=\"currentColor\""));
     assert!(html.contains(graph_icon.trim()));
+}
+
+#[test]
+fn the_leftmost_crumb_stays_put_and_opens_the_vault_switcher() {
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    // Same crumb, same place at the head of the same trail — what changed is
+    // that it opens a menu rather than walking to the root. It carries no
+    // data-crumb-path, so it cannot navigate.
+    assert!(html.contains("[{ path: '', name: libraryRootLabel(), switcher: true }]"));
+    assert!(html.contains(r#"data-crumb-switcher="1""#));
+    assert!(html.contains("toggleCrumbMenu(switcher, vaultMenuItems());"));
+    assert!(css.contains(".library-crumb.library-crumb-switcher {"));
+    // Its label is the active vault's name, or the whole library's.
+    assert!(html.contains("function libraryRootLabel()"));
+    assert!(html.contains("return (vault && vault.name) || window.leafLocale.t('library.title');"));
+    // Reachable from the graph too, or picking that view would strand you in a
+    // vault with no way out.
+    assert!(html.contains("const root = crumbSegments([])[0];"));
+
+    // The menu: the whole library as it is today, every vault, then New vault…
+    // which asks the host for a folder picker.
+    assert!(html.contains("function vaultMenuItems()"));
+    assert!(html.contains("selected: !activeVaultId,"));
+    assert!(html.contains("selected: vault.id === activeVaultId,"));
+    assert!(html.contains("send({ command: 'createVault' })"));
+    assert!(html.contains("send({ command: 'setActiveVault', id });"));
+    // Picking the entry you are in lands on its root rather than doing nothing.
+    assert!(html.contains("if (id === activeVaultId) {\n    setLibraryFolder('');"));
+
+    // Seeded before the first paint, so the crumb never flashes the wrong name.
+    assert!(html.contains("const LEAF_VAULTS = (window.__leafVaults"));
+    assert!(html.contains("window.leafSetVaults ="));
+
+    for key in [
+        "library.vaults.switch",
+        "library.vaults.all",
+        "library.vaults.new",
+        "library.vaults.new.help",
+    ] {
+        let needle = format!("'{key}':");
+        let count = html.matches(&needle).count();
+        assert!(
+            count >= 2,
+            "expected EN + ZH-CN entries for {key}, found {count}"
+        );
+    }
+}
+
+#[test]
+fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    // A visible button on the row, not a right-click: rename, re-point and
+    // remove all live behind it.
+    assert!(html.contains("edit: () => showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault)),"));
+    assert!(html.contains(r#"edit.className = 'crumb-menu-edit';"#));
+    assert!(css.contains(".crumb-menu-edit {"));
+    // Clicking it opens that vault's panel rather than switching to the vault.
+    assert!(html.contains("edit.addEventListener('click', (event) => {\n        event.stopPropagation();\n        entry.edit();"));
+    // Nothing hangs off a contextmenu handler in the switcher.
+    assert!(!html.contains("crumbMenu.addEventListener('contextmenu'"));
+    // Only the crumb-trail buttons toggle the menu shut on a second click. A
+    // click inside it that swaps the rows must not close it — that is the bug
+    // where the pencil looked like it did nothing.
+    assert!(html.contains("function toggleCrumbMenu(button, items)"));
+    assert!(html.contains("toggleCrumbMenu(switcher, vaultMenuItems());"));
+    assert!(html.contains("toggleCrumbMenu(more, folderMenuItems(hidden));"));
+    let show = html
+        .split("function showCrumbMenu(button, items) {")
+        .nth(1)
+        .and_then(|rest| rest.split("\n}").next())
+        .expect("the shell defines showCrumbMenu");
+    assert!(
+        !show.contains("hideCrumbMenu();\n    return;"),
+        "showCrumbMenu must render, never close and bail: {show}"
+    );
+
+    // The panel: the name, the folder, the removal, and a way back to the list.
+    assert!(html.contains("function editVaultMenuItems(vault)"));
+    assert!(html.contains("send({ command: 'renameVault', id: vault.id, name });"));
+    assert!(html.contains("send({ command: 'changeVaultFolder', id: vault.id })"));
+    assert!(html.contains("send({ command: 'removeVault', id: vault.id })"));
+    assert!(html.contains("showCrumbMenu(crumbMenuOwner, vaultMenuItems())"));
+    // The name field commits on Enter or on leaving it, and Escape abandons it.
+    assert!(html.contains("field.addEventListener('blur', commit);"));
+    assert!(html.contains("} else if (event.key === 'Escape') {"));
+    assert!(css.contains(".crumb-menu-input {"));
+
+    for key in [
+        "library.vaults.edit",
+        "library.vaults.editing",
+        "library.vaults.name",
+        "library.vaults.changeFolder",
+        "library.vaults.remove",
+        "library.vaults.remove.help",
+        "library.vaults.back",
+    ] {
+        let needle = format!("'{key}':");
+        let count = html.matches(&needle).count();
+        assert!(
+            count >= 2,
+            "expected EN + ZH-CN entries for {key}, found {count}"
+        );
+    }
 }
 
 #[test]
