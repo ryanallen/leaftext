@@ -372,10 +372,9 @@ fn opened_document_carries_minimap_model_for_webview_state() {
 }
 
 #[test]
-fn settings_default_keeps_minimap_on_and_indexing_off() {
+fn settings_default_keeps_minimap_on() {
     let settings = Settings::default();
     assert!(settings.minimap_enabled);
-    assert!(!settings.indexing_enabled);
     assert!(!settings.speed_reader_enabled);
     assert!(!settings.line_numbers_enabled);
     assert_eq!(settings.theme_family, "fern");

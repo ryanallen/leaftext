@@ -1,4 +1,4 @@
-use crate::indexer::Vault;
+use crate::store::{DocumentGraph, SearchHit, Vault};
 use crate::*;
 
 /// Initial workspace state as `window.__leafInitialState`. Run as an init
@@ -22,7 +22,6 @@ pub fn initial_state_script(recent: &[PathBuf]) -> String {
 pub fn initial_settings_script(settings: &Settings) -> String {
     let state = serde_json::json!({
         "minimapEnabled": settings.minimap_enabled,
-        "indexingEnabled": settings.indexing_enabled,
         "pagerEnabled": settings.pager_enabled,
         "speedReaderEnabled": settings.speed_reader_enabled,
         "lineNumbersEnabled": settings.line_numbers_enabled,
@@ -39,6 +38,29 @@ pub fn initial_settings_script(settings: &Settings) -> String {
         "updateStagedVersion": settings.update_staged_version,
     });
     format!("window.__leafSettings = {};", state)
+}
+
+/// The link graph, for the graph view. Every string is file-derived and
+/// untrusted; the page escapes them before they reach a label.
+pub fn graph_script(graph: &DocumentGraph) -> String {
+    let payload = serde_json::json!({
+        "nodes": graph.nodes,
+        "edges": graph.edges,
+        "truncated": graph.truncated,
+        "error": serde_json::Value::Null,
+    });
+    format!("window.leafSetGraph({payload});")
+}
+
+/// Ranked search results. The query is echoed so the page can drop an answer to
+/// a query the field has already moved on from.
+pub fn search_results_script(query: &str, hits: &[SearchHit]) -> String {
+    let payload = serde_json::json!({
+        "query": query,
+        "hits": hits,
+        "error": serde_json::Value::Null,
+    });
+    format!("window.leafSetSearchResults({payload});")
 }
 
 /// One folder's contents, for the library pane. Every string in it is

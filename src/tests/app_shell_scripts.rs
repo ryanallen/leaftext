@@ -116,7 +116,6 @@ fn fragment_scroll_script_escapes_fragment_for_webview_handoff() {
 #[test]
 fn initial_settings_script_defines_camelcase_global() {
     let script = initial_settings_script(&Settings {
-        indexing_enabled: true,
         minimap_enabled: false,
         pager_enabled: false,
         speed_reader_enabled: true,
@@ -142,7 +141,7 @@ fn initial_settings_script_defines_camelcase_global() {
     // update fields do cross: the page owns the check throttle and the button.
     assert_eq!(
         script,
-        r#"window.__leafSettings = {"graphScope":"large","indexingEnabled":true,"libraryClosed":true,"libraryProjectPath":"docs","libraryView":"graph","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[],"updateLastChecked":1780000000,"updateStagedVersion":"0.1.400"};"#
+        r#"window.__leafSettings = {"graphScope":"large","libraryClosed":true,"libraryProjectPath":"docs","libraryView":"graph","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[],"updateLastChecked":1780000000,"updateStagedVersion":"0.1.400"};"#
     );
 }
 

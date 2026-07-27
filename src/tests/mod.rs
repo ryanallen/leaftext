@@ -13,7 +13,6 @@ mod folder_tree;
 mod glossary;
 mod images;
 mod indexer_pager;
-mod link_graph;
 mod markdown_code;
 mod markdown_github;
 mod markdown_rawhtml;
@@ -23,6 +22,7 @@ mod reading_css;
 mod settings_paths;
 mod theme_registry;
 mod updater;
+mod vault_corpus;
 
 #[derive(Debug, Clone, Copy)]
 struct Rgb {

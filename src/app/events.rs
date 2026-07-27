@@ -67,10 +67,6 @@ pub(crate) enum UserEvent {
     /// The file backing some tab changed on disk; the live-reload watcher sends
     /// this with the changed path. Only acted on when it is the active document.
     FileChanged(PathBuf),
-    /// Turn the background library indexer on or off.
-    SetIndexingEnabled {
-        enabled: bool,
-    },
     /// Persist the minimap-visibility toggle.
     SetMinimapEnabled {
         enabled: bool,
@@ -154,11 +150,32 @@ pub(crate) enum UserEvent {
     LoadFolder {
         path: String,
     },
+    /// Point the pane at a document: the vault that owns it, and its folder.
+    RevealInLibrary {
+        path: PathBuf,
+    },
     /// A folder finished being read off disk. `scope` is the vault root the read
     /// was made under, so a listing that lands after a vault switch is dropped.
     FolderLoaded {
         scope: Option<PathBuf>,
         listing: FolderListing,
+    },
+    /// The active vault's text finished being read. Whatever was waiting on it —
+    /// a graph, a search — runs when it lands.
+    CorpusLoaded {
+        corpus: Box<VaultCorpus>,
+    },
+    /// A graph finished building. Both this and the search below are computed on
+    /// a worker thread: they walk every document in the vault, which is far too
+    /// much to do on the thread that answers the window.
+    GraphReady {
+        scope: Option<PathBuf>,
+        graph: DocumentGraph,
+    },
+    SearchReady {
+        scope: Option<PathBuf>,
+        query: String,
+        hits: Vec<SearchHit>,
     },
     /// Request the library link graph. `scope` is the persisted graph size;
     /// `seeds` are the focus documents, used only by the Focus scope.
@@ -210,9 +227,6 @@ pub(crate) enum UserEvent {
     },
     /// Revert the most recent reading-view edit in the active document.
     UndoEdit,
-    /// A result/progress event from the background indexer worker, delivered to
-    /// the webview through its library callbacks.
-    Indexer(IndexerEvent),
     /// The page checked GitHub; record when, so the next launches don't.
     UpdateChecked {
         /// Version found, empty when already current. Only used for logging.
@@ -297,8 +311,6 @@ pub(crate) enum IpcCommand {
     GoBack { scroll_anchor: ScrollAnchor },
     #[serde(rename = "goForward")]
     GoForward { scroll_anchor: ScrollAnchor },
-    #[serde(rename = "setIndexingEnabled")]
-    SetIndexingEnabled { enabled: bool },
     #[serde(rename = "setMinimapEnabled")]
     SetMinimapEnabled { enabled: bool },
     #[serde(rename = "setPagerEnabled")]
@@ -362,6 +374,8 @@ pub(crate) enum IpcCommand {
         #[serde(default)]
         path: String,
     },
+    #[serde(rename = "revealInLibrary")]
+    RevealInLibrary { path: PathBuf },
     #[serde(rename = "getGraph")]
     GetGraph {
         #[serde(default)]
@@ -501,9 +515,6 @@ pub(crate) fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<S
             IpcCommand::GoForward { scroll_anchor } => {
                 let _ = proxy.send_event(UserEvent::GoForward { scroll_anchor });
             }
-            IpcCommand::SetIndexingEnabled { enabled } => {
-                let _ = proxy.send_event(UserEvent::SetIndexingEnabled { enabled });
-            }
             IpcCommand::SetMinimapEnabled { enabled } => {
                 let _ = proxy.send_event(UserEvent::SetMinimapEnabled { enabled });
             }
@@ -582,6 +593,9 @@ pub(crate) fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<S
             }
             IpcCommand::GetFolder { path } => {
                 let _ = proxy.send_event(UserEvent::LoadFolder { path });
+            }
+            IpcCommand::RevealInLibrary { path } => {
+                let _ = proxy.send_event(UserEvent::RevealInLibrary { path });
             }
             IpcCommand::GetGraph { scope, seeds } => {
                 let _ = proxy.send_event(UserEvent::GetGraph { scope, seeds });

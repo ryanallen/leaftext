@@ -20,7 +20,6 @@ pub(crate) struct AppCtx {
     pub(crate) proxy: EventLoopProxy<UserEvent>,
     pub(crate) local_image_source_dir: Arc<Mutex<Option<PathBuf>>>,
     pub(crate) file_watch: FileWatch,
-    pub(crate) indexer: Option<IndexerWorker>,
     pub(crate) vault_state: VaultState,
     pub(crate) last_windowed_size: LogicalSize<f64>,
     pub(crate) last_maximized: bool,
@@ -42,7 +41,6 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
         proxy,
         local_image_source_dir,
         mut file_watch,
-        indexer,
         mut vault_state,
         mut last_windowed_size,
         mut last_maximized,
@@ -91,7 +89,6 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             }
             Event::UserEvent(UserEvent::OpenPicker) => {
                 if let Some(path) = pick_document_file() {
-                    index_opened_path(indexer.as_ref(), &path);
                     workspace.open_path(path);
                     render_active(
                         &window,
@@ -105,7 +102,6 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
             }
             Event::UserEvent(UserEvent::OpenPath(path)) => {
-                index_opened_path(indexer.as_ref(), &path);
                 workspace.open_path(path);
                 render_active(
                     &window,
@@ -166,31 +162,17 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
             }
             Event::UserEvent(UserEvent::RenamePath { path, new_name }) => {
-                match rename_file(&path, &new_name) {
-                    Ok(renamed) => {
-                        // Drop the old entry and index the new one so the pane
-                        // updates without waiting for a crawl.
-                        if let Some(indexer) = indexer.as_ref() {
-                            indexer.sync_path(path.clone());
-                            indexer.sync_path(renamed);
-                        }
-                    }
-                    Err(error) => {
-                        eprintln!("Failed to rename {}: {error}", path.display());
-                    }
+                // The watcher notices the rename and re-lists the folder; there
+                // is no manifest to keep in step any more.
+                if let Err(error) = rename_file(&path, &new_name) {
+                    eprintln!("Failed to rename {}: {error}", path.display());
                 }
             }
-            Event::UserEvent(UserEvent::DeletePath(path)) => match delete_to_trash(&path) {
-                Ok(()) => {
-                    // The file is gone; forget it so it leaves the pane at once.
-                    if let Some(indexer) = indexer.as_ref() {
-                        indexer.sync_path(path);
-                    }
-                }
-                Err(error) => {
+            Event::UserEvent(UserEvent::DeletePath(path)) => {
+                if let Err(error) = delete_to_trash(&path) {
                     eprintln!("Failed to move {} to the trash: {error}", path.display());
                 }
-            },
+            }
             Event::UserEvent(UserEvent::ShowProperties(path)) => {
                 if let Err(error) = show_properties(&path) {
                     eprintln!("Failed to show properties for {}: {error}", path.display());
@@ -285,7 +267,6 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 if glossary_scheme_slug(&href).is_some() {
                     match nearest_glossary_file(&current_path) {
                         Some(path) if !paths_refer_to_same_document(&path, &current_path) => {
-                            index_opened_path(indexer.as_ref(), &path);
                             workspace.tabs[active].scroll_history.clear();
                             workspace.tabs[active].history.record(path);
                             render_active(
@@ -328,7 +309,6 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                             }
                             return;
                         }
-                        index_opened_path(indexer.as_ref(), &path);
                         workspace.tabs[active].scroll_history.clear();
                         workspace.tabs[active].history.record(path);
                         render_active(
@@ -463,13 +443,19 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         &local_image_source_dir,
                     );
                 } else {
-                    index_opened_path(indexer.as_ref(), &changed);
                     // The pane lists one folder off the disk, so a file added,
                     // renamed or removed in that folder changes what it shows.
                     if change_affects_pane(&vault_state, &changed) {
                         let folder = vault_state.folder.clone();
                         request_folder(&vault_state, &proxy, folder);
                     }
+                    // And the vault's text is a cache of the disk, so it is
+                    // patched a file at a time rather than re-read. The graph is
+                    // only redrawn when the graph is the view on screen —
+                    // rebuilding it for a pane nobody is looking at is what made
+                    // a burst of saves lock the window.
+                    let graph_showing = settings.library_view == LibraryView::Graph;
+                    refresh_corpus_path(&mut vault_state, &proxy, &changed, graph_showing);
                     // An image, not a document: the text is unchanged, so the
                     // reload above would hash-gate itself out.
                     if is_local_image_path(&changed) {
@@ -560,13 +546,6 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     resync_editing_state(webview.as_ref(), &workspace);
                 }
             }
-            Event::UserEvent(UserEvent::SetIndexingEnabled { enabled }) => {
-                if let Some(indexer) = indexer.as_ref() {
-                    indexer.set_indexing_enabled(enabled);
-                }
-                settings.indexing_enabled = enabled;
-                persist_settings(&settings, settings_path.as_ref());
-            }
             Event::UserEvent(UserEvent::SetMinimapEnabled { enabled }) => {
                 settings.minimap_enabled = enabled;
                 persist_settings(&settings, settings_path.as_ref());
@@ -647,11 +626,11 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             }
             Event::UserEvent(UserEvent::SetActiveVault { id }) => {
                 set_active_vault(id, &mut vault_state, &proxy, webview.as_ref());
-                // Back to the whole library: the indexer owns that tree.
+                // Back to the whole library: its top is the drive roots, which
+                // `request_folder` returns without reading anything.
                 if vault_state.root.is_none() {
-                    if let Some(indexer) = indexer.as_ref() {
-                        indexer.request_tree();
-                    }
+                    vault_state.folder.clear();
+                    request_folder(&vault_state, &proxy, String::new());
                 }
             }
             Event::UserEvent(UserEvent::RenameVault { id, name }) => {
@@ -672,8 +651,20 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::LoadFolder { path }) => {
                 request_folder(&vault_state, &proxy, path);
             }
+            Event::UserEvent(UserEvent::RevealInLibrary { path }) => {
+                reveal_in_library(&path, &mut vault_state, &proxy, webview.as_ref());
+            }
             Event::UserEvent(UserEvent::FolderLoaded { scope, listing }) => {
                 deliver_folder(&mut vault_state, webview.as_ref(), scope, listing);
+            }
+            Event::UserEvent(UserEvent::CorpusLoaded { corpus }) => {
+                deliver_corpus(&mut vault_state, &proxy, *corpus);
+            }
+            Event::UserEvent(UserEvent::GraphReady { scope, graph }) => {
+                deliver_graph(&vault_state, webview.as_ref(), scope, graph);
+            }
+            Event::UserEvent(UserEvent::SearchReady { scope, query, hits }) => {
+                deliver_search(&vault_state, webview.as_ref(), scope, &query, hits);
             }
             Event::UserEvent(UserEvent::GetGraph { scope, seeds }) => {
                 // Focus keeps the seed neighborhood; the rest cap the densest
@@ -696,9 +687,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         limit: None,
                     },
                 };
-                // Read off the disk under one bounded root: the active vault, or
-                // the folder the pane is in. No index, so nothing to go stale.
-                request_link_graph(&vault_state, &proxy, request);
+                // Off the vault's own text, read once and shared with search.
+                request_link_graph(&mut vault_state, &proxy, webview.as_ref(), request);
+                let _ = &settings;
             }
             Event::UserEvent(UserEvent::SetGraphScope { scope }) => {
                 if let Some(scope) = GraphScope::from_client(&scope) {
@@ -707,9 +698,10 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
             }
             Event::UserEvent(UserEvent::Search { query, scope }) => {
-                if let Some(indexer) = indexer.as_ref() {
-                    indexer.search(query, scope);
-                }
+                // Search reads the active vault's text. Without a vault there is
+                // nothing bounded to read, so the page says so and never asks.
+                let _ = scope;
+                request_vault_search(&mut vault_state, &proxy, query);
             }
             Event::UserEvent(UserEvent::LoadPager { path }) => {
                 let proxy = proxy.clone();
@@ -731,19 +723,6 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         {
                             eprintln!("Failed to update document pager: {error}");
                         }
-                    }
-                }
-            }
-            Event::UserEvent(UserEvent::Indexer(indexer_event)) => {
-                // The pane's files are read off the disk now, so the indexer's
-                // own tree snapshots have nowhere to go. Its scan progress,
-                // search results, graph and errors still do.
-                if matches!(indexer_event, IndexerEvent::Library { .. }) {
-                    return;
-                }
-                if let Some(webview) = webview.as_ref() {
-                    if let Err(error) = webview.evaluate_script(&event_script(&indexer_event)) {
-                        eprintln!("Failed to update library view: {error}");
                     }
                 }
             }
@@ -829,16 +808,26 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             _ => {}
         }
 
-        // Keep the watcher on the active document and the folder Project view is
-        // browsing, so both live-update. A no-op unless one changed since last sync.
+        // Keep the watcher on the active document and on the pane's root, so
+        // both live-update. A no-op unless one changed since last sync.
         let active_path = workspace
             .active
             .and_then(|index| workspace.tabs.get(index))
             .and_then(|tab| tab.history.current())
             .map(PathBuf::as_path);
-        let project_dir = (settings.library_view == LibraryView::Project
-            && !settings.library_project_path.is_empty())
-        .then(|| Path::new(&settings.library_project_path));
-        file_watch.sync(active_path, project_dir);
+        // A vault is watched whole and recursively — the user picked that
+        // folder, and its corpus has to stay live while they edit anywhere
+        // inside it. A folder the pane merely browsed to is watched one level
+        // deep, because that is all the pane shows: browsing to `C:\` must not
+        // subscribe to every change on the drive.
+        let vault_root = vault_state.root.clone();
+        let (project_dir, mode) = match vault_root.as_deref() {
+            Some(root) => (Some(root), RecursiveMode::Recursive),
+            None => (
+                (!vault_state.folder.is_empty()).then(|| Path::new(&vault_state.folder)),
+                RecursiveMode::NonRecursive,
+            ),
+        };
+        file_watch.sync(active_path, project_dir, mode);
     });
 }

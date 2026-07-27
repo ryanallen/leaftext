@@ -1538,6 +1538,14 @@ body.library-resizing {
 .library-search:focus {
   outline: none;
 }
+/* Search reads the active vault's text, so with no vault there is nothing for
+   it to read: the row collapses and the list starts where the field was. */
+.library-pane[data-searchable="false"] {
+  --library-header-height: 0px;
+}
+.library-pane[data-searchable="false"] .library-header {
+  display: none;
+}
 /* The two pinned bands: the breadcrumb directly under the app bar, the search row
    under that. Both absolute against the pane (not sticky) so neither drifts with
    the list, which slides up behind them. Same treatment on both — the pane's own
@@ -1799,6 +1807,23 @@ body.library-resizing {
   background: color-mix(in srgb, var(--accent) 28%, transparent);
   color: var(--app-foreground);
 }
+/* The way back out, first in the list. Quieter than the folders below it — it
+   is not one of this folder's contents — and set apart by a hairline so the eye
+   reads it as chrome rather than a row. */
+.library-nav-up {
+  color: var(--app-muted-foreground);
+  margin-bottom: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid color-mix(in srgb, var(--app-border) 60%, transparent);
+  border-radius: var(--leaf-radius-md) var(--leaf-radius-md) 0 0;
+}
+.library-nav-up:hover {
+  color: var(--app-foreground);
+}
+.library-nav-up .library-folder-icon {
+  width: 14px;
+  height: 14px;
+}
 .library-file,
 .library-nav-folder {
   display: flex;
@@ -1865,7 +1890,6 @@ body.library-resizing {
   display: flex;
   flex-direction: column;
 }
-.library-progress,
 .library-empty {
   padding: 8px 12px;
   color: var(--app-muted-foreground);

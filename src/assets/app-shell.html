@@ -86,11 +86,6 @@
           <span class="setting-label" data-i18n="settings.readerEditing.label">Edit in reading view</span>
           <span class="setting-help" id="readerEditingEnabledHelp" data-i18n="settings.readerEditing.help">Click into the rendered page to edit it. Turn off to keep the reading view read-only; the code view still edits the source.</span>
         </label>
-        <label class="setting-control setting-control-inline" for="indexingEnabled">
-          <input type="checkbox" id="indexingEnabled" aria-describedby="indexingEnabledHelp">
-          <span class="setting-label" data-i18n="settings.indexing.label">Index entire device</span>
-          <span class="setting-help" id="indexingEnabledHelp" data-i18n="settings.indexing.help">Crawl this device for Markdown files and rescan each time you open the app.</span>
-        </label>
         <!-- Update status, always present. Without it a check that found nothing,
              was throttled, or failed is indistinguishable from one that never
              ran, and the only way to see the updater work is to wait. It is also
@@ -136,7 +131,6 @@
       <div id="libraryGraphCanvas" class="library-graph-canvas"></div>
       <p id="libraryGraphStatus" class="library-graph-status" aria-live="polite" hidden></p>
     </div>
-    <div id="libraryScanProgress" class="library-progress" aria-live="polite" hidden></div>
   </div>
   <!-- Where you are: the folder path, one crumb per level, with the graph
        toggle on the right. Its own band above the search row, same treatment. -->

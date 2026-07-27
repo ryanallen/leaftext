@@ -205,7 +205,6 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
     let missing_path = dir.join("missing.json");
 
     let settings = Settings {
-        indexing_enabled: true,
         minimap_enabled: false,
         pager_enabled: false,
         speed_reader_enabled: true,
@@ -269,16 +268,20 @@ fn settings_load_tolerates_partial_json_via_serde_default() {
     let settings_path = dir.join("settings.json");
     fs::create_dir_all(&dir).expect("test directory is created");
 
-    // Only one field present: the rest must fall back to their defaults.
-    fs::write(&settings_path, r#"{"indexing_enabled": true}"#)
-        .expect("partial settings fixture is written");
+    // Only one field present: the rest must fall back to their defaults. An
+    // unknown key — `indexing_enabled`, which every already-installed copy still
+    // has in its settings file — is ignored rather than failing the load.
+    fs::write(
+        &settings_path,
+        r#"{"library_width": 312, "indexing_enabled": true}"#,
+    )
+    .expect("partial settings fixture is written");
     let loaded = load_settings(&settings_path);
-    assert!(loaded.indexing_enabled);
+    assert_eq!(loaded.library_width, 312);
     assert!(loaded.minimap_enabled);
     assert_eq!(loaded.theme_mode, "system");
     assert_eq!(loaded.library_view, LibraryView::Project);
     assert!(!loaded.library_closed);
-    assert_eq!(loaded.library_width, 240);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }

@@ -218,11 +218,11 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
     ));
     assert!(html.contains(r#"<aside id="libraryPane" class="library-pane">"#));
     assert!(html.contains(r#"<div id="libraryTree" class="library-tree"></div>"#));
-    assert!(html.contains(r#"id="libraryScanProgress""#));
-
-    // Settings toggle + host-persisted change reporting.
-    assert!(html.contains(r#"<input type="checkbox" id="indexingEnabled""#));
-    assert!(html.contains("send({ command: 'setIndexingEnabled', enabled: indexingEnabled });"));
+    // No crawl, so nothing to report the progress of and nothing to switch on.
+    assert!(!html.contains("libraryScanProgress"));
+    assert!(!html.contains("indexingEnabled"));
+    assert!(!html.contains("setIndexingEnabled"));
+    assert!(!html.contains("settings.indexing.label"));
     assert!(html.contains("command: 'setLibraryState',"));
     // Two states only: the Project file list and the Graph.
     assert!(html.contains("const LIBRARY_VIEWS = ['project', 'graph'];"));
@@ -231,9 +231,11 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
     assert!(html.contains(r#"<span class="library-nav-chevron" aria-hidden="true">›</span>"#));
 
     // Library callbacks, the host-injected settings global it seeds from, and
-    // the boot-time render + tree load.
-    assert!(html.contains("window.leafSetLibraryState ="));
-    assert!(html.contains("window.leafSetScanProgress ="));
+    // the boot-time render + folder load. The pane is filled by
+    // leafSetLibraryFolder now; there is no indexer left to report state.
+    assert!(html.contains("window.leafSetLibraryFolder ="));
+    assert!(!html.contains("window.leafSetLibraryState ="));
+    assert!(!html.contains("window.leafSetScanProgress ="));
     assert!(html.contains("window.leafSetSearchResults ="));
     assert!(html.contains("const LEAF_SETTINGS = (window.__leafSettings"));
     assert!(html.contains("send({ command: 'getFolder', path: libraryProjectPath });"));
@@ -250,18 +252,11 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
 
     // i18n keys exist in both dictionaries.
     for key in [
-        "settings.indexing.label",
-        "settings.indexing.help",
         "library.title",
         "library.view.graph",
-        "library.view.graph.on",
-        "library.view.graph.off",
         "library.crumbs.label",
         "library.crumbs.enter",
         "library.crumbs.more",
-        "library.scanning",
-        "library.filesFound",
-        "library.empty",
         "library.open",
         "library.divider.resize",
         "library.search.placeholder",
@@ -342,9 +337,9 @@ fn library_follows_and_highlights_the_active_file() {
     assert!(html.contains(r#"class="library-file${selected}""#));
     assert!(css.contains(".library-file.is-selected,"));
 
-    // Reveal: the file's folder is a string operation on its own path, then the
-    // pane asks for that folder. Nothing walks a tree, because there isn't one.
-    assert!(html.contains("function parentFolderOf(filePath)"));
+    // Reveal is the host's call: only it knows the vaults, so going to a file
+    // switches to the vault that owns it and opens the folder holding it.
+    assert!(html.contains("send({ command: 'revealInLibrary', path: librarySelectedPath });"));
     assert!(html.contains("function revealSelectedInLibrary()"));
     assert!(html.contains("function scrollSelectedLibraryRowIntoView()"));
 
@@ -356,9 +351,9 @@ fn library_follows_and_highlights_the_active_file() {
     assert!(html.contains("followFileInLibrary(switchedPath,"));
     assert!(html.contains("followFileInLibrary(tab ? tab.path || null : null, true, wasActive);"));
     assert!(html.contains("const wasActive = index === (currentState && currentState.active);"));
-    // A reveal resolves at once now: the file's folder is known from its path, so
-    // there is no queued reveal waiting for a tree to arrive.
-    assert!(html.contains("if (folder && folder !== libraryProjectPath) {"));
+    // Both views follow the document — the graph's scope is the vault, so a
+    // file from another one moves it too.
+    assert!(html.contains("if (libraryRevealPending) revealSelectedInLibrary();"));
     assert!(!html.contains("if (libraryRevealPending && libraryView !== 'graph'"));
 }
 

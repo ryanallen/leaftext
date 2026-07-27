@@ -112,10 +112,10 @@ pub(crate) fn split_leading_frontmatter(markdown: &str) -> Option<(String, &str)
 /// Render a parsed frontmatter block as a `key`/`value` metadata table, or an
 /// empty string when nothing parses. Cells are untrusted, so they're escaped.
 pub(crate) fn render_frontmatter_table(inner: &str) -> String {
-    let block = crate::indexer::FrontmatterBlock {
+    let block = crate::store::FrontmatterBlock {
         body: inner.to_string(),
     };
-    let fields = crate::indexer::parse_frontmatter(&block)
+    let fields = crate::store::parse_frontmatter(&block)
         .map(|parsed| parsed.fields)
         .unwrap_or_default();
     if fields.is_empty() {

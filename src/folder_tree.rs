@@ -8,7 +8,7 @@
 //! The top level is the vault's own folder, or — with no vault — the drive
 //! roots, which is what "Library" has always shown.
 
-use crate::indexer::{
+use crate::store::{
     detect_roots, is_dir_reparse, is_system_dir, path_to_string, root_label, FileTreeNode, NodeKind,
 };
 

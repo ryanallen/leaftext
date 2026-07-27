@@ -195,19 +195,14 @@ function scrollSelectedLibraryRowIntoView() {
   // Centered so a deeply nested file lands away from the app bar and bottom edge.
   if (row) row.scrollIntoView({ block: 'center' });
 }
-// Carry out a pending reveal: move the pane into the open document's folder so
-// its row is on screen. Already there means nothing to load — just re-render for
-// the highlight.
+// Carry out a pending reveal: put the pane where the open document is. The host
+// decides what that means, because only it knows the vaults — a file inside one
+// switches to it, a file in none switches to the whole library, and either way
+// the folder holding it is what opens.
 function revealSelectedInLibrary() {
   if (!libraryRevealPending || !librarySelectedPath) return false;
   libraryRevealPending = false;
-  const folder = parentFolderOf(librarySelectedPath);
-  if (folder && folder !== libraryProjectPath) {
-    setLibraryFolder(folder);
-    return true;
-  }
-  renderLibrary();
-  scrollSelectedLibraryRowIntoView();
+  send({ command: 'revealInLibrary', path: librarySelectedPath });
   return true;
 }
 // Mark `path` the library's current file and ask the next render to reveal it.
@@ -215,6 +210,9 @@ function revealSelectedInLibrary() {
 function followFileInLibrary(path, focus, forceRefresh) {
   librarySelectedPath = path || null;
   libraryRevealPending = !!path;
+  // Going to a file can move the pane's root, and that is true in either view —
+  // the graph's scope is the vault, so it follows the document too.
+  if (libraryRevealPending) revealSelectedInLibrary();
   // In graph mode there are no rows; move the highlight to the active node. On a
   // deliberate navigation, also fly the camera to it and zoom in; `forceRefresh`
   // rebuilds the slice too.
@@ -222,11 +220,7 @@ function followFileInLibrary(path, focus, forceRefresh) {
     graphSetActive(librarySelectedPath, focus, forceRefresh);
     return;
   }
-  if (libraryRevealPending) {
-    if (!revealSelectedInLibrary()) renderLibrary();
-  } else {
-    renderLibrary();
-  }
+  renderLibrary();
 }
 // Switching between the file list and the graph. One icon, pressed while the
 // graph is up, so the pane never hides which of the two you are looking at.
@@ -245,17 +239,6 @@ if (libraryGraphToggle) {
     setLibraryView(libraryView === 'graph' ? 'project' : 'graph');
   });
 }
-function applyScanProgress(progress) {
-  lastScanProgress = progress || { phase: 'idle', filesFound: 0 };
-  if (lastScanProgress.phase === 'scanning') {
-    const count = window.leafLocale.formatNumber(lastScanProgress.filesFound || 0);
-    libraryScanProgress.textContent = window.leafLocale.t('library.scanning') + ' ' + window.leafLocale.t('library.filesFound', { count });
-    libraryScanProgress.hidden = false;
-  } else {
-    libraryScanProgress.hidden = true;
-    libraryScanProgress.textContent = '';
-  }
-}
 // A library row's display name: a file shows its file name (basename minus a
 // .md-style extension), matching the tabs; a folder shows its folder name.
 function fileDisplayName(node) {
@@ -271,8 +254,26 @@ function fileRowHtml(node) {
 }
 // The rows for the folder we're inside — already ordered by the host, folders
 // first. Walking back out is the breadcrumb's job, so no "up" row here.
+// Where "up" goes: the folder above this one, or the root when this is the
+// first level in. Null at the top, where there is nothing above — a vault's own
+// folder, or the drive roots. Leaving a vault is the switcher's job, not this
+// row's.
+function libraryParentCrumb() {
+  if (!libraryChain.length) return null;
+  const parent = libraryChain[libraryChain.length - 2];
+  return parent ? { path: parent.path, name: parent.name } : { path: '', name: libraryRootLabel() };
+}
+// The row above the contents: back out one folder. The breadcrumb can do this
+// too, but it is a thin line of small text at the top of the pane — this is a
+// full-width target sitting where the pointer already is.
+function upRowHtml(parent) {
+  const label = window.leafLocale.t('library.up', { name: parent.name });
+  return `<button type="button" class="library-nav-folder library-nav-up" data-nav-into="${escapeAttr(parent.path)}" title="${escapeAttr(label)}" aria-label="${escapeAttr(label)}">${BACK_ARROW_SVG}<span class="library-file-label">${escapeText(parent.name)}</span></button>`;
+}
 function renderProject(entries) {
   const rows = [];
+  const parent = libraryParentCrumb();
+  if (parent) rows.push(upRowHtml(parent));
   for (const node of entries || []) {
     if (node.kind === 'folder') {
       rows.push(`<button type="button" class="library-nav-folder" data-nav-into="${escapeAttr(node.path)}" title="${escapeAttr(node.name)}">${FOLDER_ICON_SVG}<span class="library-file-label">${escapeText(node.name)}</span><span class="library-nav-chevron" aria-hidden="true">›</span></button>`);
@@ -534,7 +535,7 @@ function editVaultMenuItems(vault) {
     'separator',
     {
       label: window.leafLocale.t('library.vaults.back'),
-      icon: MENU_BACK_SVG,
+      icon: BACK_ARROW_SVG,
       run: () => showCrumbMenu(crumbMenuOwner, vaultMenuItems()),
     },
   ];
@@ -690,6 +691,18 @@ if (typeof ResizeObserver !== 'undefined' && libraryCrumbTrail && libraryCrumbTr
   new ResizeObserver(scheduleCrumbFit).observe(libraryCrumbTrail.parentElement);
 }
 window.addEventListener('resize', scheduleCrumbFit);
+// Search reads the vault's text, so without a vault there is nothing for it to
+// read. The field is hidden rather than left to return nothing — a box that
+// looks like it works and does not is worse than no box.
+function renderLibrarySearchability() {
+  const searchable = Boolean(activeVaultId);
+  libraryPane.dataset.searchable = String(searchable);
+  if (!searchable && librarySearchQuery) {
+    // Leaving a vault with a query up would strand its results on screen.
+    librarySearch.value = '';
+    runLibrarySearch('');
+  }
+}
 function renderLibraryGraphToggle() {
   if (!libraryGraphToggle) return;
   const on = libraryView === 'graph';
@@ -700,6 +713,7 @@ function renderLibraryGraphToggle() {
 }
 function renderLibrary() {
   renderLibraryGraphToggle();
+  renderLibrarySearchability();
   renderLibraryCrumbs(libraryChain);
   // The graph view replaces the file list with an interactive canvas. It owns the
   // whole pane body, so hide the list and let the graph module drive itself.
@@ -717,7 +731,11 @@ function renderLibrary() {
     return;
   }
   if (!libraryEntries.length) {
-    libraryTree.innerHTML = `<p class="library-empty">${escapeText(window.leafLocale.t('library.folderEmpty'))}</p>`;
+    // Still render the rows: an empty folder is exactly where the way back out
+    // matters most.
+    libraryTree.innerHTML = renderProject(libraryEntries)
+      + `<p class="library-empty">${escapeText(window.leafLocale.t('library.folderEmpty'))}</p>`;
+    bindLibraryRows();
     return;
   }
   libraryTree.innerHTML = renderProject(libraryEntries);
@@ -733,35 +751,10 @@ window.leafSetLibraryFolder = (payload) => {
   libraryEntries = Array.isArray(next.entries) ? next.entries : [];
   // The trail changed, so it has to be laid out again.
   libraryCrumbFitKey = null;
-  // Without a vault the graph's root is this folder, so moving re-roots it.
-  if (!activeVaultId) refreshGraphForScope();
   renderLibrary();
   if (librarySelectedPath) scrollSelectedLibraryRowIntoView();
   // Search covers the folder on screen, so moving changes the result set.
   if (librarySearchQuery) runLibrarySearch(librarySearch.value);
-};
-// What is left of the indexer's channel to the pane: its scan progress, and its
-// errors. The files are not its business any more — they are read off the disk.
-window.leafSetLibraryState = (state) => {
-  const next = state || {};
-  if (next.error) {
-    libraryError = next.error;
-    renderLibrary();
-    return;
-  }
-  if (next.progress) {
-    applyScanProgress(next.progress);
-  }
-  // The indexer just came online. If the graph view is open but has no data yet
-  // — e.g. the app launched straight into it before the reader thread was ready
-  // and the first request was dropped — ask again.
-  if (libraryView === 'graph' && !graphData) {
-    graphRequested = false;
-    showGraph();
-  }
-};
-window.leafSetScanProgress = (progress) => {
-  applyScanProgress(progress);
 };
 // The vault registry, pushed by the host after a vault is added or switched to.
 // The files for the new root arrive separately.

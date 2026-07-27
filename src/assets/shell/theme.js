@@ -173,7 +173,6 @@ window.leafTheme.subscribe((theme) => {
 window.leafLocale.subscribe(() => {
   renderStaticText();
   renderState();
-  applyScanProgress(lastScanProgress);
   renderLibrary();
   updateThemeSelection();
   renderUpdateButton();

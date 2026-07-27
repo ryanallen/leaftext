@@ -49,14 +49,19 @@ impl FileWatch {
     /// Point the watcher at the active document's folder and, when given, the
     /// Project view's folder (recursively). Cheap after every event: diffs the
     /// desired set against what's watched and no-ops when nothing changed.
-    pub(crate) fn sync(&mut self, active_path: Option<&Path>, project_dir: Option<&Path>) {
+    pub(crate) fn sync(
+        &mut self,
+        active_path: Option<&Path>,
+        project_dir: Option<&Path>,
+        mode: RecursiveMode,
+    ) {
         if active_path != self.last_active.as_deref() {
             // Active document changed, so the stored hash is stale; force a render.
             self.active_hash = None;
             self.last_active = active_path.map(Path::to_path_buf);
         }
 
-        let desired = desired_watches(active_path, project_dir);
+        let desired = desired_watches(active_path, project_dir, mode);
         if desired == self.watched {
             return;
         }
@@ -89,15 +94,23 @@ impl FileWatch {
     }
 }
 
-/// The directories to watch and each one's recursive mode: the Project folder
-/// recursively, plus the active document's folder when not already covered.
+/// The directories to watch and each one's mode: the pane's root in `mode`, plus
+/// the active document's folder when not already covered.
+///
+/// `mode` is the caller's, not a constant, and the distinction is load-bearing.
+/// A vault is watched **recursively** — the user chose that folder, so its size
+/// is their business, and the corpus underneath it has to stay live. A folder
+/// the pane merely browsed to is watched **non-recursively**: the pane shows one
+/// level, so one level is all it needs, and browsing to `C:\` must not subscribe
+/// to every change on the drive.
 pub(crate) fn desired_watches(
     active_path: Option<&Path>,
     project_dir: Option<&Path>,
+    mode: RecursiveMode,
 ) -> HashMap<PathBuf, RecursiveMode> {
     let mut desired = HashMap::new();
     if let Some(dir) = project_dir.and_then(watch_folder) {
-        desired.insert(dir, RecursiveMode::Recursive);
+        desired.insert(dir, mode);
     }
     if let Some(dir) = active_path.and_then(watch_dir_for) {
         let covered = desired.iter().any(|(watched, mode)| {

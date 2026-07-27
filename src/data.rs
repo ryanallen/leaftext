@@ -698,19 +698,6 @@ pub(crate) fn render_yaml_document(
     }
 }
 
-/// The title and body HTML for a JSON string, where the block map isn't needed
-/// (the library indexer).
-pub(crate) fn render_json_body(source: &str) -> (Option<String>, String) {
-    let (title, html, _) = render_json_document(source, None);
-    (title, html)
-}
-
-/// The title and body HTML for a YAML string.
-pub(crate) fn render_yaml_body(source: &str) -> (Option<String>, String) {
-    let (title, html, _) = render_yaml_document(source, None);
-    (title, html)
-}
-
 /// The block source map for a JSON string, matching what
 /// [`render_json_document`] stamps inline.
 pub(crate) fn json_block_source_map(source: &str) -> Vec<BlockSpan> {

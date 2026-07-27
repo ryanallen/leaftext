@@ -22,6 +22,22 @@ pub(crate) struct VaultState {
     /// The folder the pane is showing, so a change on disk under it can be
     /// noticed and a stale read discarded.
     pub(crate) folder: String,
+    /// The active vault's text. Read once, on first use, then patched a file at
+    /// a time by the watcher. Both the graph and search read it, so the vault is
+    /// opened once and serves both.
+    ///
+    /// Behind an `Arc` because neither of those runs here: walking every
+    /// document to build a graph or scan for a query is far too much work for
+    /// the thread that answers the window, so each goes to a worker holding a
+    /// cheap clone of this.
+    pub(crate) corpus: Option<Arc<VaultCorpus>>,
+    /// A read is in flight, so a second request waits rather than starting one.
+    pub(crate) corpus_loading: bool,
+    /// What asked for the corpus while it was being read.
+    pub(crate) pending_graph: Option<GraphRequest>,
+    pub(crate) pending_search: Option<String>,
+    /// The last graph asked for, so an edit on disk can redraw it.
+    pub(crate) last_graph: Option<GraphRequest>,
 }
 
 impl VaultState {
@@ -49,7 +65,21 @@ impl VaultState {
             active,
             root,
             folder: String::new(),
+            corpus: None,
+            corpus_loading: false,
+            pending_graph: None,
+            pending_search: None,
+            last_graph: None,
         }
+    }
+
+    /// Forget the vault's text and anything waiting on it. Called whenever the
+    /// root moves: what was read is about somewhere else now.
+    pub(crate) fn drop_corpus(&mut self) {
+        self.corpus = None;
+        self.pending_graph = None;
+        self.pending_search = None;
+        self.last_graph = None;
     }
 
     pub(crate) fn vaults(&self) -> Vec<Vault> {
@@ -130,6 +160,7 @@ pub(crate) fn change_vault_folder(
     if state.active == id {
         state.root = Some(folder.to_path_buf());
         state.folder.clear();
+        state.drop_corpus();
         request_folder(state, proxy, String::new());
     }
     push_vaults(webview, state);
@@ -151,6 +182,7 @@ pub(crate) fn remove_vault_row(id: i64, state: &mut VaultState, webview: Option<
         }
         state.active = 0;
         state.root = None;
+        state.drop_corpus();
     }
     push_vaults(webview, state);
 }
@@ -173,10 +205,51 @@ fn apply_active_vault(
         .flatten()
         .map(|vault| PathBuf::from(vault.root_path));
     // A new root, so the pane starts at the top of it rather than in a folder
-    // that belonged to whatever was showing before.
+    // that belonged to whatever was showing before, and everything read under
+    // the old one is about somewhere else.
     state.folder.clear();
+    state.drop_corpus();
     push_vaults(webview, state);
     request_folder(state, proxy, String::new());
+}
+
+/// Show a document in the pane: switch to the vault that owns it when that is
+/// not the one on screen, then open the folder holding it.
+///
+/// Going to a file should land you where the file *is*. Without this the pane
+/// only ever navigated inside whatever vault happened to be active, so a file
+/// from somewhere else clamped back to that vault's root and the trail read as
+/// the wrong place entirely. A file in no vault lands on the whole library, for
+/// the same reason in reverse.
+pub(crate) fn reveal_in_library(
+    file: &Path,
+    state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    webview: Option<&WebView>,
+) {
+    let owner = state
+        .conn
+        .as_ref()
+        .and_then(|conn| vault_containing(conn, file));
+    let target = owner.as_ref().map(|vault| vault.id).unwrap_or(0);
+    if target != state.active {
+        if let Some(conn) = state.conn.as_ref() {
+            if let Err(error) = set_active_vault_id(conn, target) {
+                eprintln!("Could not remember the active vault: {error}");
+            }
+        }
+        state.active = target;
+        state.root = owner.map(|vault| PathBuf::from(vault.root_path));
+        // A different root: what was read under the old one is about somewhere
+        // else, and the graph with it.
+        state.drop_corpus();
+        push_vaults(webview, state);
+    }
+    let folder = file
+        .parent()
+        .map(|parent| parent.to_string_lossy().to_string())
+        .unwrap_or_default();
+    request_folder(state, proxy, folder);
 }
 
 /// Read one folder for the pane. Empty `path` is the top level — the vault's
@@ -210,45 +283,198 @@ pub(crate) fn deliver_folder(
     }
 }
 
-/// The one bounded folder the graph covers: the active vault, or the folder the
-/// pane is in. `None` at the drive roots with no vault — there is nothing
-/// bounded to graph there, and walking a whole disk is the crawl we just left.
+/// The one folder the graph covers: the active vault, and only that.
+///
+/// It used to fall back to whatever folder the pane was in, which read fine
+/// until that folder was `C:\` — then opening the graph walked the whole drive,
+/// which is the crawl this all exists to be rid of. A vault is the only thing in
+/// the app that means "this is a collection", and a graph is a map of one.
 pub(crate) fn graph_root(state: &VaultState) -> Option<PathBuf> {
-    if let Some(root) = state.root.clone() {
-        return Some(root);
-    }
-    let folder = Path::new(&state.folder);
-    (!state.folder.is_empty() && folder.is_dir()).then(|| folder.to_path_buf())
+    state.root.clone()
 }
 
-/// Build the link graph off the disk and hand it to the page through the same
-/// callback the indexed graph used, so the front end is none the wiser.
+/// The link graph, off the vault's text. Waits for the read if it is the first
+/// thing to ask for it, and builds on a worker either way.
 pub(crate) fn request_link_graph(
-    state: &VaultState,
+    state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
+    webview: Option<&WebView>,
     request: GraphRequest,
 ) {
-    let Some(root) = graph_root(state) else {
+    state.last_graph = Some(request.clone());
+    if graph_root(state).is_none() {
         // Nothing bounded to read. An empty graph, not an error: the page says
-        // what to do about it.
-        let _ = proxy.send_event(UserEvent::Indexer(IndexerEvent::Graph {
-            graph: DocumentGraph {
-                nodes: Vec::new(),
-                edges: Vec::new(),
-                truncated: false,
-            },
-            error: None,
-        }));
+        // what to do about it. Cheap enough to answer here.
+        if let Some(webview) = webview {
+            let _ = webview.evaluate_script(&graph_script(&empty_graph()));
+        }
         return;
-    };
+    }
+    match state.corpus.clone() {
+        Some(corpus) => build_graph_off_thread(state, proxy, corpus, request),
+        None => {
+            state.pending_graph = Some(request);
+            read_corpus(state, proxy);
+        }
+    }
+}
+
+/// Search the vault's text. Same wait-for-the-read shape as the graph, the same
+/// one read behind both, and the same worker.
+pub(crate) fn request_vault_search(
+    state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    query: String,
+) {
+    match state.corpus.clone() {
+        Some(corpus) => run_search_off_thread(state, proxy, corpus, query),
+        None => {
+            state.pending_search = Some(query);
+            read_corpus(state, proxy);
+        }
+    }
+}
+
+fn build_graph_off_thread(
+    state: &VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    corpus: Arc<VaultCorpus>,
+    request: GraphRequest,
+) {
+    let scope = state.root.clone();
     let proxy = proxy.clone();
     thread::spawn(move || {
-        let graph = read_link_graph(&root, &request);
-        let _ = proxy.send_event(UserEvent::Indexer(IndexerEvent::Graph {
-            graph,
-            error: None,
-        }));
+        let graph = corpus.graph(&request);
+        let _ = proxy.send_event(UserEvent::GraphReady { scope, graph });
     });
+}
+
+fn run_search_off_thread(
+    state: &VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    corpus: Arc<VaultCorpus>,
+    query: String,
+) {
+    let scope = state.root.clone();
+    let proxy = proxy.clone();
+    thread::spawn(move || {
+        let hits = corpus.search(&query);
+        let _ = proxy.send_event(UserEvent::SearchReady { scope, query, hits });
+    });
+}
+
+/// Paint a finished graph, unless the vault moved while it was building.
+pub(crate) fn deliver_graph(
+    state: &VaultState,
+    webview: Option<&WebView>,
+    scope: Option<PathBuf>,
+    graph: DocumentGraph,
+) {
+    if scope != state.root {
+        return;
+    }
+    let Some(webview) = webview else {
+        return;
+    };
+    if let Err(error) = webview.evaluate_script(&graph_script(&graph)) {
+        eprintln!("Failed to draw the graph: {error}");
+    }
+}
+
+/// Same for a finished search. The page also drops answers to queries the field
+/// has moved on from, so a slow one is harmless twice over.
+pub(crate) fn deliver_search(
+    state: &VaultState,
+    webview: Option<&WebView>,
+    scope: Option<PathBuf>,
+    query: &str,
+    hits: Vec<SearchHit>,
+) {
+    if scope != state.root {
+        return;
+    }
+    let Some(webview) = webview else {
+        return;
+    };
+    if let Err(error) = webview.evaluate_script(&search_results_script(query, &hits)) {
+        eprintln!("Failed to show search results: {error}");
+    }
+}
+
+/// Start the one read, unless it is already running.
+fn read_corpus(state: &mut VaultState, proxy: &EventLoopProxy<UserEvent>) {
+    if state.corpus_loading {
+        return;
+    }
+    let Some(root) = state.root.clone() else {
+        return;
+    };
+    state.corpus_loading = true;
+    let proxy = proxy.clone();
+    thread::spawn(move || {
+        let corpus = VaultCorpus::read(&root);
+        let _ = proxy.send_event(UserEvent::CorpusLoaded {
+            corpus: Box::new(corpus),
+        });
+    });
+}
+
+/// The read landed. Anything that was waiting on it starts now — on a worker,
+/// not here.
+pub(crate) fn deliver_corpus(
+    state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    corpus: VaultCorpus,
+) {
+    state.corpus_loading = false;
+    // Read under a root we have since left: throw it away rather than answer
+    // with someone else's vault.
+    if state.root.as_deref() != Some(corpus.root.as_path()) {
+        return;
+    }
+    let corpus = Arc::new(corpus);
+    state.corpus = Some(Arc::clone(&corpus));
+    if let Some(request) = state.pending_graph.take() {
+        build_graph_off_thread(state, proxy, Arc::clone(&corpus), request);
+    }
+    if let Some(query) = state.pending_search.take() {
+        run_search_off_thread(state, proxy, corpus, query);
+    }
+}
+
+/// A file under the vault changed: patch that one document. This is what "live"
+/// costs — one file read, not a scan.
+///
+/// The graph is redrawn only when it is the view on screen. Rebuilding it for a
+/// pane nobody is looking at is what turned a burst of saves into a locked
+/// window, and rebuilding it *here* is what made each one cost the whole vault.
+pub(crate) fn refresh_corpus_path(
+    state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    changed: &Path,
+    graph_showing: bool,
+) {
+    let Some(corpus) = state.corpus.as_mut() else {
+        return;
+    };
+    // Cheap unless a worker is mid-build against this exact corpus, in which
+    // case it clones rather than mutate out from under it.
+    Arc::make_mut(corpus).refresh(changed);
+    if !graph_showing {
+        return;
+    }
+    let (Some(request), Some(corpus)) = (state.last_graph.clone(), state.corpus.clone()) else {
+        return;
+    };
+    build_graph_off_thread(state, proxy, corpus, request);
+}
+
+fn empty_graph() -> DocumentGraph {
+    DocumentGraph {
+        nodes: Vec::new(),
+        edges: Vec::new(),
+        truncated: false,
+    }
 }
 
 /// Whether a path that changed on disk would alter what the pane is showing:

@@ -1,7 +1,5 @@
 //! YAML frontmatter: locating it, parsing it, storing its fields.
 
-use super::*;
-
 /// The leading frontmatter block's inner text (between the `---` fences), with
 /// fences and any UTF-8 BOM stripped.
 #[derive(Debug, Clone, PartialEq)]
@@ -164,48 +162,3 @@ pub fn parse_frontmatter(block: &FrontmatterBlock) -> Result<ParsedFrontmatter, 
     }
     Ok(ParsedFrontmatter { fields })
 }
-
-/// Replace one file's frontmatter rows. `INSERT OR IGNORE` collapses duplicate
-/// (key, value) pairs; keys are already lowercased by [`parse_frontmatter`].
-pub fn replace_frontmatter(
-    conn: &Connection,
-    file_id: i64,
-    fields: &[FrontmatterField],
-) -> DbResult<()> {
-    conn.execute(
-        "DELETE FROM frontmatter WHERE file_id = ?1",
-        params![file_id],
-    )
-    .map_err(to_err)?;
-    for field in fields {
-        conn.execute(
-            "INSERT OR IGNORE INTO frontmatter (file_id, key, value) VALUES (?1, ?2, ?3)",
-            params![file_id, field.key, field.value],
-        )
-        .map_err(to_err)?;
-    }
-    Ok(())
-}
-
-/// Remove all of a file's frontmatter rows (when it leaves status `ok`).
-pub(super) fn delete_frontmatter(conn: &Connection, file_id: i64) -> DbResult<()> {
-    conn.execute(
-        "DELETE FROM frontmatter WHERE file_id = ?1",
-        params![file_id],
-    )
-    .map_err(to_err)?;
-    Ok(())
-}
-
-/// Extract and parse a file's frontmatter into fields; a malformed block yields
-/// no fields but never fails the file.
-pub(super) fn frontmatter_fields(content: &str) -> Vec<FrontmatterField> {
-    match extract_frontmatter(content) {
-        Some(block) => parse_frontmatter(&block).unwrap_or_default().fields,
-        None => Vec::new(),
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Link extraction (doc-to-doc graph edges)
-// ---------------------------------------------------------------------------

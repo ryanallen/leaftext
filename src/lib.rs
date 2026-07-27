@@ -1,7 +1,7 @@
 //! Core document rendering and app-state helpers for leaftext.
 
-pub mod indexer;
 mod markdown;
+pub mod store;
 mod tei;
 pub(crate) use tei::*;
 mod xml;
@@ -29,8 +29,8 @@ mod format;
 pub use format::{all_document_extensions, is_supported_document_path, DocumentFormat};
 mod folder_tree;
 pub use folder_tree::{read_folder_listing, FolderCrumb, FolderListing};
-mod link_graph;
-pub use link_graph::{read_link_graph, MAX_GRAPH_DOCUMENTS};
+mod vault_corpus;
+pub use vault_corpus::{CorpusDocument, VaultCorpus, MAX_CORPUS_DOCUMENTS};
 mod editing;
 pub use editing::{
     block_source_map, kind_is_editable, render_source_view_html, task_marker_offsets, BlockSpan,
@@ -1019,7 +1019,6 @@ pub fn save_recent_files(config_path: impl AsRef<Path>, recent: &RecentFiles) ->
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
-    pub indexing_enabled: bool,
     pub minimap_enabled: bool,
     /// Append the automatic Previous/Next pager to every document. On by default.
     pub pager_enabled: bool,
@@ -1074,7 +1073,6 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            indexing_enabled: false,
             minimap_enabled: true,
             pager_enabled: true,
             speed_reader_enabled: false,

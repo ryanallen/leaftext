@@ -136,17 +136,17 @@ function requestGraphData() {
 // Entry point when the graph view becomes visible. Requests fresh data the first
 // time, then either builds the scene (data already in hand) or just moves the
 // active-node highlight (scene already built).
-// The graph is read off the disk under one bounded root: the vault you are in,
-// or the folder the pane is showing. At the drive roots with no vault there is
-// no such root — say so rather than walking the whole disk to find out.
+// The graph is read off the disk, and the vault is the only root it reads. The
+// whole library is not a collection, it is a computer — there is no map of it
+// worth drawing and no way to read one without a crawl.
 function graphHasBoundedRoot() {
-  return Boolean(activeVaultId || libraryProjectPath);
+  return Boolean(activeVaultId);
 }
 function showGraph() {
   graphActivePath = activeDocumentPath();
   if (!graphHasBoundedRoot()) {
     teardownGraphScene();
-    setGraphStatus(window.leafLocale.t('library.graph.unscoped'));
+    setGraphStatus(window.leafLocale.t('library.graph.needsVault'));
     return;
   }
   if (!graphRequested) {

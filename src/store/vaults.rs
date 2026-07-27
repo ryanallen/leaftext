@@ -113,6 +113,40 @@ pub fn remove_vault(conn: &Connection, id: i64) -> DbResult<()> {
     Ok(())
 }
 
+/// The vault whose folder holds `path`, or `None` when no vault does. The
+/// innermost wins: a vault nested inside another owns the files under it, which
+/// is the same rule the pane uses when both are on the list.
+pub fn vault_containing(conn: &Connection, path: &Path) -> Option<Vault> {
+    let path = path_to_string(path);
+    list_vaults(conn)
+        .ok()?
+        .into_iter()
+        .filter(|vault| holds(&vault.root_path, &path))
+        .max_by_key(|vault| vault.root_path.len())
+}
+
+/// Whether `root` is `path` or an ancestor of it. Compared case-insensitively on
+/// Windows, where the same file is reachable under either spelling.
+fn holds(root: &str, path: &str) -> bool {
+    let separator = std::path::MAIN_SEPARATOR;
+    let root = root.trim_end_matches(separator);
+    let Some(rest) = path.get(..root.len()) else {
+        return false;
+    };
+    let matches = if cfg!(windows) {
+        rest.eq_ignore_ascii_case(root)
+    } else {
+        rest == root
+    };
+    // `C:\notes` must not claim `C:\notes-old`: what follows has to be the
+    // separator, or nothing at all.
+    matches
+        && path[root.len()..]
+            .chars()
+            .next()
+            .is_none_or(|c| c == separator)
+}
+
 /// The vault with this id, or `None` — including for `0`, which is the whole
 /// library rather than a vault.
 pub fn find_vault(conn: &Connection, id: i64) -> DbResult<Option<Vault>> {

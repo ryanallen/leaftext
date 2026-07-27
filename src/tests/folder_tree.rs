@@ -2,7 +2,7 @@
 
 use super::*;
 
-use crate::indexer::NodeKind;
+use crate::store::NodeKind;
 
 fn tree_dir(tag: &str) -> PathBuf {
     let nanos = SystemTime::now()
@@ -136,4 +136,40 @@ fn the_whole_library_starts_at_the_drive_roots() {
     );
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn the_file_list_starts_with_a_way_back_out() {
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    // First row of the list, above the folder's own contents.
+    assert!(html.contains("const parent = libraryParentCrumb();"));
+    assert!(html.contains("if (parent) rows.push(upRowHtml(parent));"));
+    assert!(html.contains(r#"class="library-nav-folder library-nav-up""#));
+    assert!(css.contains(".library-nav-up {"));
+
+    // It goes to the folder above, or to the root from one level in. There is
+    // nothing above the top, so no row there — leaving a vault is the
+    // switcher's job.
+    assert!(html.contains("function libraryParentCrumb()"));
+    assert!(html.contains("if (!libraryChain.length) return null;"));
+    assert!(html.contains(
+        "return parent ? { path: parent.path, name: parent.name } : { path: '', name: libraryRootLabel() };"
+    ));
+    // It navigates through the same handler every folder row uses.
+    assert!(html.contains(r#"data-nav-into="${escapeAttr(parent.path)}""#));
+    assert!(html.contains(
+        "button.addEventListener('click', () => setLibraryFolder(button.dataset.navInto));"
+    ));
+    // An empty folder is exactly where the way out matters, so the rows still
+    // render alongside the empty notice.
+    assert!(html.contains("libraryTree.innerHTML = renderProject(libraryEntries)\n      + `<p class=\"library-empty\">"));
+
+    let needle = "'library.up':";
+    let count = html.matches(needle).count();
+    assert!(
+        count >= 2,
+        "expected EN + ZH-CN entries for library.up, found {count}"
+    );
 }

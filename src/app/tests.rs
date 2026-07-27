@@ -185,7 +185,7 @@ fn desired_watches_cover_the_project_folder_and_the_open_document() {
     // A document inside the project folder is already covered by the recursive
     // watch, so the project folder is the only directory watched.
     let inside_doc = project.join("notes.md");
-    let watches = desired_watches(Some(&inside_doc), Some(&project));
+    let watches = desired_watches(Some(&inside_doc), Some(&project), RecursiveMode::Recursive);
     assert_eq!(watches.len(), 1);
     assert_eq!(
         watches.get(&canon(&project)),
@@ -194,7 +194,7 @@ fn desired_watches_cover_the_project_folder_and_the_open_document() {
 
     // A document outside the project folder adds its own non-recursive watch.
     let outside_doc = outside.join("loose.md");
-    let watches = desired_watches(Some(&outside_doc), Some(&project));
+    let watches = desired_watches(Some(&outside_doc), Some(&project), RecursiveMode::Recursive);
     assert_eq!(
         watches.get(&canon(&project)),
         Some(&RecursiveMode::Recursive)
@@ -205,7 +205,7 @@ fn desired_watches_cover_the_project_folder_and_the_open_document() {
     );
 
     // No project folder: only the document's folder is watched, non-recursively.
-    let watches = desired_watches(Some(&outside_doc), None);
+    let watches = desired_watches(Some(&outside_doc), None, RecursiveMode::Recursive);
     assert_eq!(watches.len(), 1);
     assert_eq!(
         watches.get(&canon(&outside)),
@@ -214,7 +214,7 @@ fn desired_watches_cover_the_project_folder_and_the_open_document() {
 
     // A stale (nonexistent) project path is not watched.
     let missing = root.join("does-not-exist");
-    assert!(desired_watches(None, Some(&missing)).is_empty());
+    assert!(desired_watches(None, Some(&missing), RecursiveMode::Recursive).is_empty());
 
     fs::remove_dir_all(&root).expect("fixture directory is removed");
 }
@@ -517,4 +517,37 @@ fn move_tab_reorders_and_keeps_active_document_selected() {
     assert!(!workspace.move_tab(0, 0));
     assert!(!workspace.move_tab(1, 9));
     assert_eq!(workspace.active, Some(0));
+}
+
+#[test]
+fn a_browsed_folder_is_watched_one_level_deep_not_recursively() {
+    // Browsing into `C:\` in the library used to hand the watcher a recursive
+    // subscription to the whole drive. Every change on the machine then arrived
+    // as an event, and the pane rebuilt against each one — the window stopped
+    // answering, and switching vaults never got processed.
+    //
+    // A vault is the user's own choice of folder and stays recursive; a folder
+    // the pane merely browsed to gets one level, which is all the pane shows.
+    let dir = std::env::temp_dir().join(format!(
+        "leaf-watch-mode-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    ));
+    let browsed = dir.join("browsed");
+    fs::create_dir_all(&browsed).expect("test directory is created");
+
+    let shallow = desired_watches(None, Some(&browsed), RecursiveMode::NonRecursive);
+    assert_eq!(shallow.len(), 1);
+    assert!(shallow
+        .values()
+        .all(|mode| matches!(mode, RecursiveMode::NonRecursive)));
+
+    let deep = desired_watches(None, Some(&browsed), RecursiveMode::Recursive);
+    assert!(deep
+        .values()
+        .all(|mode| matches!(mode, RecursiveMode::Recursive)));
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
 }
