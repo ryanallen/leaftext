@@ -284,6 +284,14 @@ pub fn glossary_sheet_script(body_html: &str, anchor: &str) -> String {
     format!("window.leafShowGlossary({body_html}, {anchor});")
 }
 
+/// Tell the page a lookup produced nothing: the sheet is already up on a spinner
+/// by the time the host reads, so silence would leave it spinning. `reason` is
+/// `missing` (no glossary file near the document) or `failed`.
+pub fn glossary_failed_script(reason: &str) -> String {
+    let reason = serde_json::to_string(reason).expect("glossary reason serializes");
+    format!("window.leafGlossaryFailed({reason});")
+}
+
 /// Re-fetch the local images on screen. Sent when an image file changes: nothing
 /// to re-render, but the web view would otherwise keep the copy it decoded.
 pub fn image_refresh_script() -> String {

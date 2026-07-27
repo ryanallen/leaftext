@@ -54,6 +54,9 @@ if (themeSheetClose) {
 if (themeBackdrop) {
   themeBackdrop.addEventListener('click', closeThemeSheet);
 }
+if (themeSheet) {
+  makeSheetDraggable(themeSheet, themeSheet.querySelector('.theme-sheet-grip'), closeThemeSheet);
+}
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && themeSheet && !themeSheet.hidden) {
     closeThemeSheet();

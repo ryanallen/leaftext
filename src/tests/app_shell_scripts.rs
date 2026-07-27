@@ -153,3 +153,11 @@ fn initial_version_script_exposes_the_package_version() {
         format!("window.__leafVersion = {:?};", env!("CARGO_PKG_VERSION"))
     );
 }
+
+#[test]
+fn glossary_failed_script_gives_the_page_a_reason_to_show() {
+    assert_eq!(
+        glossary_failed_script("missing"),
+        r#"window.leafGlossaryFailed("missing");"#
+    );
+}

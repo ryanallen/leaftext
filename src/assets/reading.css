@@ -3898,7 +3898,42 @@ body:has(#readerToolbar:not([hidden])) {
   transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .glossary-sheet.open {
-  transform: translateY(0);
+  transform: translateY(var(--sheet-drag, 0px));
+}
+/* Both sheets can be pushed down and away by their grab bar (makeSheetDraggable):
+   --sheet-drag is how far the pointer has carried the sheet, and the transition
+   is off for the length of the drag so it tracks the pointer exactly. */
+.glossary-sheet.is-dragging,
+.theme-sheet.is-dragging {
+  transition: none;
+}
+.glossary-sheet-grip,
+.theme-sheet-grip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The bar is 4px of ink, but what you grab is the whole strip across the top
+     of the sheet -- a 4px target is a promise nobody can hit. The negative
+     bottom margin returns the strip to the space the bar alone once took. */
+  height: 24px;
+  margin: 0 0 -8px;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.glossary-sheet-grip::before,
+.theme-sheet-grip::before {
+  content: '';
+  width: 40px;
+  height: 4px;
+  border-radius: var(--leaf-radius-pill);
+  background: var(--border-strong);
+}
+.glossary-sheet.is-dragging .glossary-sheet-grip,
+.theme-sheet.is-dragging .theme-sheet-grip {
+  cursor: grabbing;
 }
 /* Settings row that opens the theme selector: label on the left, the current
    "Family · Appearance" summary and a chevron on the right. */
@@ -3976,14 +4011,7 @@ body:has(#readerToolbar:not([hidden])) {
   transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .theme-sheet.open {
-  transform: translateY(0);
-}
-.theme-sheet-grip {
-  width: 40px;
-  height: 4px;
-  margin: 10px auto 2px;
-  border-radius: var(--leaf-radius-pill);
-  background: var(--border-strong);
+  transform: translateY(var(--sheet-drag, 0px));
 }
 .theme-sheet-head {
   display: flex;
@@ -4148,14 +4176,6 @@ body:has(#readerToolbar:not([hidden])) {
   font-size: 0.74rem;
   line-height: 1.2;
 }
-.glossary-sheet-grip {
-  flex: none;
-  width: 36px;
-  height: 4px;
-  margin: 10px auto 2px;
-  border-radius: var(--leaf-radius-xs);
-  background: var(--border-strong);
-}
 .glossary-sheet-close {
   position: absolute;
   top: 8px;
@@ -4186,6 +4206,40 @@ body:has(#readerToolbar:not([hidden])) {
 }
 .glossary-sheet-body > :first-child {
   margin-top: 0;
+}
+/* Waiting on the host to read and render the glossary. The fade-in is delayed
+   past the sheet's own slide-up, so a lookup answered from the render cache
+   lands first and no spinner is ever seen. */
+.glossary-sheet-waiting {
+  display: grid;
+  place-items: center;
+  min-height: 132px;
+  opacity: 0;
+  animation: leaf-glossary-wait-in 0.2s ease 0.3s forwards;
+}
+.glossary-sheet-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--leaf-radius-full);
+  border: 3px solid color-mix(in srgb, var(--foreground) 18%, transparent);
+  border-top-color: var(--accent);
+  animation: leaf-reader-spin 0.8s linear infinite;
+}
+@keyframes leaf-glossary-wait-in {
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glossary-sheet-spinner {
+    animation-duration: 1.6s;
+  }
+}
+/* A lookup that came back with nothing to show: no such term, no glossary file,
+   or one that wouldn't read. */
+.glossary-sheet-message {
+  margin: 24px 0;
+  color: var(--muted-foreground);
 }
 .glossary-sheet-footer {
   flex: none;
@@ -4218,6 +4272,6 @@ body:has(#readerToolbar:not([hidden])) {
   }
   .glossary-sheet.open,
   .theme-sheet.open {
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(-50%) translateY(var(--sheet-drag, 0px));
   }
 }

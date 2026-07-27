@@ -29,9 +29,17 @@ pub(crate) fn nearest_glossary_file(current_path: &Path) -> Option<PathBuf> {
     None
 }
 
+/// Tell the page a lookup failed. The sheet went up on a spinner when the link
+/// was followed, so every path out of `show_glossary_entry` has to say something.
+fn report_glossary_failure(webview: &WebView, reason: &str) {
+    if let Err(error) = webview.evaluate_script(&glossary_failed_script(reason)) {
+        eprintln!("Failed to report the glossary failure: {error}");
+    }
+}
+
 /// Read the glossary file for `href` (nearest `GLOSSARY.md` for a `glossary:`
 /// link, or a real `…/GLOSSARY.md#slug` path) and show the term in the bottom
-/// sheet. Failures are logged and leave the sheet untouched.
+/// sheet. Failures are logged, and told to the page so its spinner stops.
 pub(crate) fn show_glossary_entry(webview: Option<&WebView>, href: &str, current_path: &Path) {
     let Some(webview) = webview else {
         return;
@@ -41,6 +49,7 @@ pub(crate) fn show_glossary_entry(webview: Option<&WebView>, href: &str, current
             Some(path) => (path, slug),
             None => {
                 eprintln!("No GLOSSARY.md found above {}", current_path.display());
+                report_glossary_failure(webview, "missing");
                 return;
             }
         }
@@ -67,6 +76,10 @@ pub(crate) fn show_glossary_entry(webview: Option<&WebView>, href: &str, current
                 Ok(markdown) => markdown,
                 Err(error) => {
                     eprintln!("Failed to read glossary {}: {error}", path.display());
+                    // A path the user linked to that isn't there reads the same
+                    // as no glossary at all, which is the more useful message.
+                    let reason = if path.exists() { "failed" } else { "missing" };
+                    report_glossary_failure(webview, reason);
                     return;
                 }
             };

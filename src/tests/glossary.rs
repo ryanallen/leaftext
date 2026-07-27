@@ -108,3 +108,33 @@ fn does_not_auto_link_terms_inside_the_glossary_file_itself() {
         "the glossary file should not auto-link its own terms"
     );
 }
+
+#[test]
+fn app_shell_raises_a_spinner_when_a_glossary_link_is_followed() {
+    let html = app_shell_html();
+
+    // The wait starts in the page, before the host is told: the host renders on
+    // its own thread and can't send a spinner until that work is already done.
+    assert_contains(
+        &html,
+        "      awaitGlossaryEntry();\n      send({ command: 'openGlossary', href: rawHref });",
+    );
+    assert_contains(
+        &html,
+        "    awaitGlossaryEntry();\n    send({ command: 'openGlossary', href: glossaryHrefBase + '#' + within });",
+    );
+    assert_contains(&html, "spinner.className = 'glossary-sheet-spinner';");
+    // Neither an answer that never comes nor one the user stopped waiting for
+    // may leave the sheet spinning.
+    assert_contains(&html, "glossarySheetMessage('glossary.failed');");
+    assert_contains(&html, "if (!glossaryWaiting) return;");
+    assert_contains(&html, "window.leafGlossaryFailed = (reason) => {");
+
+    // The spinner is delayed past the sheet's slide-up, so the common cached
+    // lookup never flashes one.
+    let css = reading_mode_css();
+    assert_contains(
+        &css,
+        "  animation: leaf-glossary-wait-in 0.2s ease 0.3s forwards;",
+    );
+}

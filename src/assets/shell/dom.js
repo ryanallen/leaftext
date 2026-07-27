@@ -125,6 +125,59 @@ function endTabDrag(commit) {
 }
 document.addEventListener('pointerup', () => endTabDrag(true));
 document.addEventListener('pointercancel', () => endTabDrag(false));
+// Keeps the promise a bottom sheet's grab bar makes: drag it and the sheet
+// follows, let go and it either falls away or springs back. The travel rides a
+// custom property rather than an inline transform, because the wide layout also
+// centers the sheet with translateX(-50%) -- composing the two in CSS keeps that
+// rule the only place that knows about the centering.
+const SHEET_DISMISS_PX = 88;
+const SHEET_FLICK_PX_PER_MS = 0.5;
+function makeSheetDraggable(sheet, grip, dismiss) {
+  if (!sheet || !grip) return;
+  let drag = null;
+  grip.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault(); // don't start a text selection on the way down
+    drag = {
+      id: event.pointerId,
+      startY: event.clientY,
+      dy: 0,
+      lastY: event.clientY,
+      lastT: event.timeStamp,
+      speed: 0,
+    };
+    sheet.classList.add('is-dragging');
+    try { grip.setPointerCapture(event.pointerId); } catch (_) {}
+  });
+  grip.addEventListener('pointermove', (event) => {
+    if (!drag || event.pointerId !== drag.id) return;
+    // Downward only: dragging up would lift the sheet off the window's edge.
+    drag.dy = Math.max(0, event.clientY - drag.startY);
+    const dt = event.timeStamp - drag.lastT;
+    if (dt > 0) drag.speed = (event.clientY - drag.lastY) / dt;
+    drag.lastY = event.clientY;
+    drag.lastT = event.timeStamp;
+    sheet.style.setProperty('--sheet-drag', drag.dy + 'px');
+  });
+  const finish = (event) => {
+    if (!drag || event.pointerId !== drag.id) return;
+    const leaving = drag.dy > SHEET_DISMISS_PX || (drag.speed > SHEET_FLICK_PX_PER_MS && drag.dy > 12);
+    drag = null;
+    // Dropping the class first puts the transition back, so both endings
+    // animate from wherever the drag left the sheet.
+    sheet.classList.remove('is-dragging');
+    if (!leaving) {
+      sheet.style.removeProperty('--sheet-drag');
+      return;
+    }
+    // The sheet's own close slides it to translateY(100%) from here; the offset
+    // can only be cleared once that has finished, or it would jump first.
+    dismiss();
+    window.setTimeout(() => sheet.style.removeProperty('--sheet-drag'), 400);
+  };
+  grip.addEventListener('pointerup', finish);
+  grip.addEventListener('pointercancel', finish);
+}
 // A growl: one line, bottom right, gone on its own. One slot that replaces
 // itself, not a stack -- a stack is a thing that then needs managing. Failures
 // hold longer: a success is read at a glance, a failure has to be finished and

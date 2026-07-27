@@ -55,7 +55,9 @@ function onGlossaryKey(event) {
   if (event.key === 'Escape') dismissGlossary();
 }
 function showGlossary() {
-  glossaryLastFocus = document.activeElement;
+  // Only when it opens: a term followed from inside the sheet calls this again,
+  // and the focus to return to is the document's, not a link about to be replaced.
+  if (glossarySheet.hidden) glossaryLastFocus = document.activeElement;
   glossaryBackdrop.hidden = false;
   glossarySheet.hidden = false;
   requestAnimationFrame(() => {
@@ -67,6 +69,7 @@ function showGlossary() {
 }
 function dismissGlossary() {
   if (glossarySheet.hidden) return;
+  endGlossaryWait();
   glossaryBackdrop.classList.remove('open');
   glossarySheet.classList.remove('open');
   document.removeEventListener('keydown', onGlossaryKey);
@@ -79,8 +82,63 @@ function dismissGlossary() {
   setTimeout(hide, 320);
   if (glossaryLastFocus && glossaryLastFocus.focus) glossaryLastFocus.focus();
 }
+// A big glossary takes long enough to read and render that a tap can look like
+// it missed, so the sheet goes up on a spinner the moment the link is followed.
+// The page raises it rather than the host: the host can't send a script while it
+// is rendering, so its spinner would arrive after the work it was to cover. The
+// fade-in is delayed (CSS), so a cached lookup never flashes one.
+const GLOSSARY_ANSWER_TIMEOUT_MS = 20000;
+let glossaryWaitTimer = 0;
+// Every openGlossary goes through awaitGlossaryEntry, so an answer arriving with
+// nothing outstanding belongs to a lookup the user dismissed: it must not put the
+// sheet back up on its own.
+let glossaryWaiting = false;
+function endGlossaryWait() {
+  glossaryWaiting = false;
+  if (glossaryWaitTimer) {
+    clearTimeout(glossaryWaitTimer);
+    glossaryWaitTimer = 0;
+  }
+}
+function glossarySheetMessage(key, values) {
+  endGlossaryWait();
+  const text = document.createElement('p');
+  text.className = 'glossary-sheet-message';
+  text.textContent = window.leafLocale.t(key, values);
+  glossarySheetBody.innerHTML = '';
+  glossarySheetBody.appendChild(text);
+}
+// Called as the link is followed, before the host has heard about it.
+function awaitGlossaryEntry() {
+  endGlossaryWait();
+  const waiting = document.createElement('div');
+  waiting.className = 'glossary-sheet-waiting';
+  waiting.setAttribute('role', 'status');
+  waiting.setAttribute('aria-label', window.leafLocale.t('glossary.loading'));
+  const spinner = document.createElement('div');
+  spinner.className = 'glossary-sheet-spinner';
+  spinner.setAttribute('aria-hidden', 'true');
+  waiting.appendChild(spinner);
+  glossarySheetBody.innerHTML = '';
+  glossarySheetBody.appendChild(waiting);
+  glossarySheetBody.scrollTop = 0;
+  glossaryWaiting = true;
+  // If nothing comes back at all, the sheet still has to stop spinning.
+  glossaryWaitTimer = window.setTimeout(() => {
+    glossaryWaitTimer = 0;
+    glossarySheetMessage('glossary.failed');
+  }, GLOSSARY_ANSWER_TIMEOUT_MS);
+  showGlossary();
+}
+// The host looked and came back empty-handed: no glossary file near the
+// document ('missing'), or one it couldn't read.
+window.leafGlossaryFailed = (reason) => {
+  if (glossarySheet.hidden) return;
+  glossarySheetMessage(reason === 'missing' ? 'glossary.missing' : 'glossary.failed');
+};
 glossaryBackdrop.addEventListener('click', dismissGlossary);
 glossarySheetClose.addEventListener('click', dismissGlossary);
+makeSheetDraggable(glossarySheet, glossarySheet.querySelector('.glossary-sheet-grip'), dismissGlossary);
 // "Open the full glossary" opens the glossary file as an ordinary document tab,
 // resolved (like the link that opened the sheet) against the active document.
 glossaryFullLink.addEventListener('click', (event) => {
@@ -96,6 +154,7 @@ glossarySheetBody.addEventListener('click', (event) => {
   event.preventDefault();
   const within = glossaryAnchorFromHref(rawHref) || (rawHref.startsWith('#') ? rawHref.slice(1) : '');
   if (within) {
+    awaitGlossaryEntry();
     send({ command: 'openGlossary', href: glossaryHrefBase + '#' + within });
     return;
   }
@@ -250,18 +309,21 @@ let glossaryParsedRoot = null;
 // Called by the host with the fully rendered glossary document; pull out the
 // requested entry and slide the sheet up.
 window.leafShowGlossary = (html, anchor) => {
+  if (!glossaryWaiting) return; // answer to a lookup the user has since dismissed
+  endGlossaryWait();
   if (html !== glossaryParsedHtml) {
     glossaryParsedRoot = document.createElement('div');
     glossaryParsedRoot.innerHTML = html;
     glossaryParsedHtml = html;
   }
   const entry = extractGlossaryEntry(glossaryParsedRoot, anchor);
-  glossarySheetBody.innerHTML = '';
-  if (entry) {
-    glossarySheetBody.appendChild(entry);
-  } else {
-    glossarySheetBody.textContent = 'No glossary entry for “' + anchor + '”.';
+  if (!entry) {
+    glossarySheetMessage('glossary.noEntry', { term: anchor });
+    showGlossary();
+    return;
   }
+  glossarySheetBody.innerHTML = '';
+  glossarySheetBody.appendChild(entry);
   glossarySheetBody.scrollTop = 0;
   showGlossary();
 };
@@ -303,6 +365,7 @@ function bindDocumentLinks() {
       // For a `glossary:` link keep the bare scheme as the base, so term jumps
       // and "open full glossary" let the host re-resolve the nearest file.
       glossaryHrefBase = /^glossary:/i.test(rawHref) ? 'glossary:' : rawHref.split('#')[0];
+      awaitGlossaryEntry();
       send({ command: 'openGlossary', href: rawHref });
       return;
     }

@@ -97,7 +97,7 @@ flowchart LR
 
 ## Choose
 
-Open **Settings**, then **Theme** to slide up the theme picker. It lists every family as a button — plus [Random](#random) at the end — with an Appearance control (System / Light / Dark / Daylight) at the top. Changes apply immediately and are saved as `theme_family` and `theme_mode` in `settings.json` (see [Settings](05-settings.md#options)).
+Open **Settings**, then **Theme** to slide up the theme picker. It lists every family as a button — plus [Random](#random) at the end — with an Appearance control (System / Light / Dark / Daylight) at the top. Changes apply immediately and are saved as `theme_family` and `theme_mode` in `settings.json` (see [Settings](05-settings.md#options)). Close the picker with its close button, by clicking outside it, with `Escape`, or by dragging the grab bar at its top downwards — the same [bottom sheet](../GLOSSARY.md#bottom-sheet) the glossary uses.
 
 ## Fonts
 

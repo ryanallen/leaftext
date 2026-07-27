@@ -159,7 +159,8 @@ A document draws its terms from a shared glossary file. You do not have to link 
 
 - Terms are matched automatically in every format Leaf Text renders — Markdown, [XML](01-rendering.md#xml), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) — whole words, ignoring case — so the same glossary covers every page with no per-page markup.
 - Text that is already a link, or inside code, is left alone, and the glossary file never links its own entries to themselves.
-- Dismiss the sheet with its close button, by clicking outside it, or with the `Escape` key.
+- Dismiss the sheet with its close button, by clicking outside it, with the `Escape` key, or by dragging the grab bar at its top downwards — a short flick is enough, and letting go partway lets it spring back.
+- The sheet rises the moment you click the term. A large glossary takes a moment to read, so it opens on a spinner and fills in when the entry is ready; a glossary small enough to answer at once never shows one. If there is no `GLOSSARY.md` to be found, or no entry under that term, the sheet says so instead of spinning.
 - A link inside the sheet that points at another glossary term swaps the entry in place; any other link leaves the glossary and follows the link normally.
 - A link at the foot of the sheet opens the whole glossary as a page.
 - Glossary term links take the surrounding text's colour and carry a quiet dotted underline in a dimmed wash of that same colour, in every theme and mode — enough to mark an expandable term without pulling the eye away from the prose. Where the prose is already muted, as in a quote, the underline dims further to match.

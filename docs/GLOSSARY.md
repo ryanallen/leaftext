@@ -22,7 +22,8 @@ Leaf reads it but does not show it in the rendered document.
 
 A panel that slides up from the bottom of the reading view to show a glossary
 entry without taking you away from the current document. Dismiss it with its
-close button, by clicking outside it, or with the Escape key.
+close button, by clicking outside it, with the Escape key, or by dragging the
+grab bar at its top downwards.
 
 ## Slug
 
