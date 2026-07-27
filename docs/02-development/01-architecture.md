@@ -1,6 +1,6 @@
 # Architecture
 
-> Leaf Text is a Rust desktop app using tao for windowing and wry for WebView. The Markdown pipeline, IPC bridge, and background indexer are all covered here.
+> Leaf Text is a Rust desktop app using tao for windowing and wry for WebView. The Markdown pipeline, the IPC bridge, the vault registry, and the git integration are all covered here.
 
 Leaf Text is a single Rust binary that embeds a WebView (via `wry`) inside a native window (via `tao`). The Markdown rendering pipeline runs on the Rust side; the result is injected into the WebView as HTML. All user interaction — opening files, navigating history, adjusting settings — flows through a typed IPC bridge between JavaScript running in the WebView and the Rust host.
 
@@ -13,16 +13,16 @@ Leaf Text is a single Rust binary that embeds a WebView (via `wry`) inside a nat
 | `pulldown-cmark`        | CommonMark + GFM Markdown parser                     |
 | `syntect` + `two-face`  | Syntax highlighting for code blocks                 |
 | `ammonia`               | HTML sanitization (allowlist-based)                  |
-| `rusqlite` (bundled)    | SQLite for the library indexer                       |
+| `rusqlite` (bundled)    | SQLite for the [vault](../01-features/03-library.md#vaults) registry |
 | `rfd`                   | Native file dialogs                                  |
 | `serde` / `serde_json`  | IPC message serialization                            |
-| `notify-debouncer-mini` | Filesystem watcher for live reload                   |
-| `blake3`                | Content hashing: change detection in the indexer, and re-checking a staged installer before it runs |
+| `notify-debouncer-mini` | Filesystem watcher for live reload and the [library pane](../01-features/03-library.md#live-updates) |
+| `blake3`                | Content hashing: re-checking a staged installer before it runs |
 | `roxmltree`             | Read-only XML DOM parsing for TEI and other XML      |
 | `yaml-rust2`            | YAML parsing for the [data renderer](../01-features/01-rendering.md#data-files-json-and-yaml). JSON needs no crate — `src/data.rs` reads it directly, which is what keeps key order and exact byte ranges |
 | `windows-sys` (Windows) | Win32 calls: single-instance guard, clipboard, Recycle Bin, the WinHTTP update download, waiting for the app to exit before an update installs |
 
-The list is deliberately short. Clipboard, Recycle Bin, per-user data paths, and update downloads are all done against the platform rather than through a crate — see [Dependencies](../../AGENTS.md) for the standing policy, and `src/platform.rs` for where the native code lives.
+The list is deliberately short. Clipboard, Recycle Bin, per-user data paths, update downloads, and [git](../01-features/03-library.md#github-sync) are all done against the platform rather than through a crate — see [Dependencies](../../AGENTS.md) for the standing policy, and `src/platform.rs` for where the native code lives.
 
 Features are trimmed for the same reason. `syntect` is taken with `default-features = false` and only `parsing`, `html`, and `regex-onig`: its syntax definitions come from `two-face`'s binary dumps, so its own bundled syntax and theme dumps are dead weight, and its `yaml-load` feature — which reads `.sublime-syntax` YAML and was the only thing pulling in the unmaintained `yaml-rust` — is not needed at all. `yaml-rust2` is likewise taken without its `encoding` feature, since files reach it as decoded Rust strings.
 
@@ -31,7 +31,7 @@ Features are trimmed for the same reason. `syntect` is taken with `default-featu
 Leaf Text's Rust source is split by concern. Where a concern grew past one file it became a directory whose `mod.rs` holds the shared vocabulary and the pipeline that orders the stages, with one sibling file per stage. Both crate roots live in `src/` — `lib.rs` for the library, `main.rs` for the binary — so the binary's modules sit under `src/app/` to keep the two namespaces apart.
 
 - **`src/main.rs`** — Entry point. Builds the window and the WebView2 instance, registers the custom protocol handlers, and runs the startup sequence that assembles the event loop's state. It tunes WebView2 with a trimmed browser-argument set (site isolation and background networking off, GPU and the renderer kept hot) to reduce the process/background footprint of a single-window offline reader.
-- **`src/app/`** — The binary's guts. `event_loop.rs` holds `AppCtx` (the fourteen pieces of state the loop owns between events) and the loop itself: one arm per thing the window, the page, the watcher or the indexer can report. Around it, `events.rs` (`UserEvent`, `IpcCommand`, and the IPC bridge the page talks over), `workspace.rs` (`Workspace` and `Tab`), `history.rs` (back/forward and the scroll position each entry remembers), `watch.rs` (the `FileWatch` live-reload watcher), `editing_cmds.rs`, `render.rs`, `glossary.rs`, `links.rs` (what a clicked href means), `fileops.rs`, and `update_flow.rs`.
+- **`src/app/`** — The binary's guts. `event_loop.rs` holds `AppCtx` (the state the loop owns between events) and the loop itself: one arm per thing the window, the page or the watcher can report. Around it, `events.rs` (`UserEvent`, `IpcCommand`, and the IPC bridge the page talks over), `workspace.rs` (`Workspace` and `Tab` — a new tab inherits the [source view](../01-features/07-editing.md#code-view) from the one you were in), `history.rs` (back/forward and the scroll position each entry remembers), `watch.rs` (the `FileWatch` live-reload watcher), `vaults.rs` (the vault switcher, the folder reads, and the corpus's lifecycle), `vault_git.rs` (the [GitHub panel](../01-features/03-library.md#github-sync)'s four jobs, each on its own thread), `editing_cmds.rs`, `render.rs`, `glossary.rs`, `links.rs` (what a clicked href means), `fileops.rs`, and `update_flow.rs`.
 - **`src/lib.rs`** — Core document rendering and app-state helpers. Contains `render_markdown_document()` (which orchestrates the Markdown pipeline in `markdown/`), document loading, glossary auto-linking, recent-files and settings persistence, and `app_shell_html()`, which assembles the WebView page from the shell markup and script fragments in `src/assets/` (see below) and substitutes runtime tokens.
 - **`src/format.rs`** — `DocumentFormat` and the single table of readable formats and their extensions. Everything that has to know what counts as a document asks this one: the Open dialog's filters, drag and drop, whether a clicked link opens in the reading view or goes to the OS, the [pager](../01-features/02-navigation.md#pager)'s page list, the [library](../01-features/03-library.md)'s indexable set, and the render router's choice of pipeline. `for_path()` answers whether a file can be opened at all (`None` if not); `from_path()` answers which renderer to use, falling back to Markdown so an extension-less `README` still opens. Adding a format is one arm here — the matches on it are exhaustive on purpose, so the compiler names every site that must account for it. Public, re-exported at the crate root.
 - **`src/scripts.rs`** — Generators for the small JS snippets the host injects to drive the WebView: initial/document/workspace state, navigation, scroll anchoring (`ScrollAnchor`), the glossary sheet, and error state. Each returns a `String` of `window.leaf*(...)` calls that the event loop hands to `webview.evaluate_script()`.
@@ -44,11 +44,14 @@ Leaf Text's Rust source is split by concern. Where a concern grew past one file 
 - **`src/assets.rs`** — Bundled-asset serving and icon processing: the `include_bytes!` Mermaid/KaTeX runtimes and the PixiJS + d3-force bundles that power the [Graph view](../01-features/03-library.md#graph), `bundled_asset_response()` for the `leaf-asset://` scheme, the toolbar/brand SVG constants, and `normalize_svg_icon_colors()` (rewrites literal icon colors to `currentColor`). Not to be confused with the `src/assets/` directory it embeds. `pub(crate)` (plus the public `bundled_asset_response` / `BundledAsset` / `LOCAL_ASSET_PROTOCOL`), re-exported at the crate root.
 - **`src/markdown/`** — The Markdown rendering pipeline. `mod.rs` runs the stages in order; `events.rs` transforms the event stream between parse and render, `headings.rs` does heading anchors and document titles, `github.rs` the GitHub extras (autolinks, issue/PR/commit references, emoji, alerts, repo context), `footnotes.rs`, `code.rs` the `syntect` highlighting, `images.rs` image URL resolution, `image_protocol.rs` the `local_image_protocol_response()` handler for the `leaf-image://` custom scheme, and `paths.rs` percent-coding. Two files carry the sanitizer: `rawhtml.rs` decides what raw HTML inside Markdown may keep and configures `ammonia`, and `htmlparse.rs` does the tag and attribute scanning underneath it — no policy, and no dependency on anything else in the crate. Items are `pub(crate)` and re-exported at the crate root.
 - **`src/theme.rs`** — The theme system. The semantic token contract (`LEAF_SEMANTIC_TOKEN_CONTRACT`), the `ThemeSource` / `ThemeFile` types, and the CSS compiler: `theme_sources()` (which parses the bundled `src/assets/themes.md` once via `parse_theme_markdown()` and leaks it to `&'static`), `compiled_theme_css()`, `theme_source_token_value()`, `assert_theme_sources_cover_contract()`, and `reading_mode_css()` — which prepends the compiled token blocks to the stylesheet in `src/assets/reading.css`, so every `var(--leaf-*)` in it resolves. Palettes are data, not code, and so is the stylesheet: neither lives in Rust tables. Its items are `pub(crate)` and re-exported at the crate root. See [theming](04-theming.md).
-- **`src/indexer/`** — Background SQLite-based library indexer, and the crate's only public module. `db.rs` opens the index and migrates its schema, `scan.rs` runs a breadth-first filesystem walk with a parse/hash worker pool (`PARSE_WORKERS = 4`) and incremental fast-path checks on `mtime + size`, `sync.rs` handles filesystem changes after the initial crawl, and `records.rs` owns the files table and missing-file detection. A separate read-only connection lets tree queries answer promptly during a full crawl. `search.rs` answers the library's full-text search: `chunks.rs` splits files into the chunks indexed in a SQLite FTS5 table, queried with BM25 ranking and highlighted snippets, optionally restricted to a set of document paths (the [search scope](../01-features/03-library.md#search-scope): the folder the pane is showing, or the nodes the graph drew); `frontmatter.rs` parses frontmatter fields into a normalized table and `links.rs` resolves doc-to-doc links. `tree.rs` builds the folder tree the pane renders, and `graph.rs`'s `build_graph()` assembles the [Graph view](../01-features/03-library.md#graph)'s link map — one node per indexed document, one undirected edge per resolved link — sliced by a `GraphRequest` (a focused neighborhood around seed documents, the densest N, or everything). `worker.rs` owns the background threads and the events they send the page.
+- **`src/store/`** — The [vault](../01-features/03-library.md#vaults) registry, and the two parsers that go with it. `vaults.rs` holds the rows (add, rename, re-root, remove, and `vault_containing()`, which answers which vault holds a path — innermost wins); `db.rs` opens `manifest.db` and migrates its schema. `frontmatter.rs` and `links.rs` take text and give back fields and link targets; neither ever needed a table, which is why they outlived the one they were written for. `mod.rs` holds the shared shapes (`FileTreeNode`, `DocumentGraph`, `SearchHit`) and the path helpers. The crate's only public module.
+- **`src/folder_tree.rs`** — The [library pane](../01-features/03-library.md#file-tree)'s files. `read_folder_listing(root, path)` returns one directory's immediate children plus the trail down to it; the top is the active vault's folder, or the drive roots. Nothing below is touched, so nothing is walked that nobody opened.
+- **`src/vault_corpus.rs`** — The vault's text, in memory. One read serves both things that must see inside every document: `graph()` builds the [link map](../01-features/03-library.md#graph) and `search()` answers the [search box](../01-features/03-library.md#search). There is no index behind it, so the files are the only copy of the truth and this is a cache the watcher patches a file at a time (`refresh()`). Dropped on a vault switch and on quit; capped at 5,000 documents.
+- **`src/git.rs`** — [GitHub sync](../01-features/03-library.md#github-sync). Shells out to the machine's own `git` rather than speaking the protocol, for the same reason `src/platform.rs` shells out to `msiexec`: the user's git already knows who they are and how to sign in, and a crate would ship a second copy of all of it. `git_tooling()` reports what is installed, `inspect_vault_repo()` reads a folder's standing (a repository at the root, one it sits inside, ones below it, and the ahead/behind counts), `init_vault_repo()` / `create_repo_on_github()` / `link_vault_remote()` are the two routes onto GitHub, and `sync_vault_repo()` commits, rebases and pushes — undoing a conflicted rebase before it returns. Creating the repository is the one thing git cannot do, so `gh` is used where it is installed and the browser where it is not; no token is ever held here. The output parsers (`commit_message()`, `remote_label()`, `repo_name_for_vault()`, `parse_ahead_behind()`) are pure and unit-tested.
 - **`src/single_instance.rs`** — Single-instance guard (Windows). The first launch holds a per-user named mutex and listens on a named pipe; a later launch detects the mutex, forwards its file path to the running instance (which opens it as a new tab and comes to the front), and exits before building any UI — so a second document reuses the existing process instead of spawning a whole new window and WebView2 group. A no-op on other platforms.
 - **`src/platform.rs`** — Native OS integration, so no crate is carried for it: the clipboard and the Recycle Bin (Win32 `SetClipboardData` and `SHFileOperationW` on Windows, `pbcopy` and Finder on macOS), the installer download (`download_to()`, WinHTTP on Windows and the bundled `curl` on macOS, both using the OS certificate store), and the update applier — a detached copy of the binary that waits for the app to exit, re-verifies the staged installer, runs it, records whether it worked, and relaunches. Nothing here touches a copy left by another install context: two attempts at that each shipped broken, so the release notes ask instead.
 - **`src/updater.rs`** — The staging model for [updates](../01-features/05-settings.md#updates): where a download lands, the length it must arrive at, the manifest a later launch reads it back from, and the record the applier leaves saying how the install went. `update_url_is_allowed()` holds the download to HTTPS and GitHub's own hosts, because the URL arrives from the network by way of the page and is handed to a native client that has no same-origin rule behind it.
-- **`src/tests/`** — The library's unit tests, one file per subject with the shared helpers in `mod.rs`, rather than inline in `lib.rs`. They reach the crate's public and `pub(crate)` surface through `use super::*`. The binary's own tests are `src/app/tests.rs`, and the indexer's are `src/indexer/tests.rs`.
+- **`src/tests/`** — The library's unit tests, one file per subject with the shared helpers in `mod.rs`, rather than inline in `lib.rs`. They reach the crate's public and `pub(crate)` surface through `use super::*`. The binary's own tests are `src/app/tests.rs`, and the store's are `src/store/tests.rs`.
 
 The WebView front-end that `app_shell_html()` serves lives outside the Rust source as editable assets, embedded at build time with `include_str!`:
 
@@ -150,14 +153,24 @@ Key `IpcCommand` variants include:
 | `setPagerEnabled`      | Pager toggle in Settings menu         |
 | `setSpeedReaderEnabled` | Speed Reader toggle in Settings menu |
 | `setLineNumbersEnabled` | Line-numbers toggle in Settings menu |
-| `setReaderEditingEnabled` | Reading-view editing toggle in Settings menu |
-| `setIndexingEnabled`   | "Index entire device" toggle          |
 | `updateChecked`        | A release check finished: reset the six-hour throttle |
 | `updateDownload`       | The release the check found: fetch that URL natively, hash it, and stage it |
 | `applyUpdate`          | The "Restart to update" button: launch the installer and exit |
-| `getFileTree`          | Boot-time library pane initialization |
-| `getGraph`             | Build the library link graph for the current scope + focus seeds |
+| `getFolder`            | Read one folder for the [library pane](../01-features/03-library.md#file-tree) — its children and the trail down to it |
+| `revealInLibrary`      | Opening a document: switch to whichever vault holds it and open its folder |
+| `getGraph`             | Build the vault's link graph for the current scope + focus seeds |
+| `setGraphView`         | Whether the page is showing the [graph](../01-features/03-library.md#graph), so a change on disk knows whether a map is on screen |
 | `setGraphScope`        | Graph size picker in Settings menu    |
+| `createVault`          | **New vault…**: pick a folder and register it |
+| `setActiveVault`       | Vault switcher: make one the library root (`0` is the whole library) |
+| `renameVault`          | The vault settings panel's name field  |
+| `changeVaultFolder`    | The vault settings panel: point a vault at a different folder |
+| `removeVault`          | The vault settings panel: forget the vault, leaving the folder alone |
+| `getVaultStatus`       | The header's [sync button](../01-features/03-library.md#syncing): read the folder's git state, off the network |
+| `getVaultGit`          | Opening the vault's [GitHub panel](../01-features/03-library.md#github-sync): the folder's state plus what is installed |
+| `createVaultRepo`      | **Create a private repo**: `git init`, commit, then `gh repo create --push` |
+| `linkVaultRemote`      | The pasted repository address: point `origin` at it and push |
+| `syncVault`            | **Sync**: commit, pull with a rebase, push |
 | `loadPager`            | Request the Previous / Next pager after a document renders |
 | `enterCodeView`        | The [code view](../01-features/07-editing.md#code-view) toggle: show the document's raw source |
 | `exitCodeView`         | Toggle back from the code view to the rendered reading view |
@@ -166,7 +179,7 @@ Key `IpcCommand` variants include:
 | `editBlock`            | An [inline reading-view edit](../01-features/07-editing.md#inline-editing-the-reading-view): splice new text over a block's source byte range |
 | `toggleTask`           | A reading-view [task checkbox](../01-features/07-editing.md#inline-editing-the-reading-view) click: flip the Nth `[ ]`/`[x]` marker |
 | `undoEdit`             | The [Undo](../01-features/07-editing.md#undo) button or `Ctrl+Z` / `Cmd+Z`: revert the most recent reading-view edit |
-| `search`               | Library search box query (optionally scoped to the shown documents) |
+| `search`               | Library search box query, over the active vault's text |
 | `revealFile`           | File row context menu: reveal in file manager |
 | `copyFile`             | File row context menu: cut/copy the file to the clipboard |
 | `copyPath`             | File row context menu: copy the file path as text |
@@ -174,13 +187,13 @@ Key `IpcCommand` variants include:
 | `deleteFile`           | File row context menu: move to Recycle Bin / Trash |
 | `showProperties`       | File row context menu: OS file properties |
 | `goHome`               | Clicking the Leaf Text logo            |
-| `setLibraryState`      | Library view change, or entering / stepping back out of a folder |
+| `setLibraryState`      | Entering a folder, or stepping back out of one |
 | `setLibraryLayout`     | Library pane resize or collapse       |
 | `setWindowChrome`      | Theme change repainting the window border and dark-mode flag (Windows) |
 | `windowDrag`           | Frameless title bar: start moving the window (mousedown on empty app-bar space) |
 | `windowMinimize` / `windowToggleMaximize` / `windowClose` | The custom minimize / maximize / close buttons on the frameless Windows title bar |
 
-Results flow back from Rust to JavaScript via `webview.evaluate_script()`, calling `window.leafSetState()`, `window.leafSwitchTab()`, `window.leafReloadDocument()`, `window.leafSetNavigation()`, `window.leafSetLibraryState()`, `window.leafShowGlossary()`, `window.leafShowCodeView()`, `window.leafSourceUpdated()`, `window.leafSaved()`, `window.leafRefreshImages()`, and related entry points.
+Results flow back from Rust to JavaScript via `webview.evaluate_script()`, calling `window.leafSetState()`, `window.leafSwitchTab()`, `window.leafSetWorkspace()` (tabs with no document, for a tab opening straight into the [source view](../01-features/07-editing.md#code-view)), `window.leafReloadDocument()`, `window.leafSetNavigation()`, `window.leafSetLibraryFolder()`, `window.leafSetVaults()`, `window.leafSetVaultStatus()`, `window.leafSetVaultGit()`, `window.leafSetGraph()`, `window.leafSetSearchResults()`, `window.leafShowGlossary()`, `window.leafShowCodeView()`, `window.leafSourceUpdated()`, `window.leafSaved()`, `window.leafRefreshImages()`, and related entry points.
 
 ## Key data structures
 

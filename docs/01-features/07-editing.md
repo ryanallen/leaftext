@@ -20,7 +20,7 @@ Leaf Text is reading-first, but it is also editable. You can edit **in the readi
 | Editing | Type directly; native undo, `Tab` inserts a tab character |
 | Save | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears only with unsaved changes |
 | Unsaved marker | A tab with unsaved edits shows a dot beside its name |
-| Read-only | A [setting](05-settings.md#reading-view-editing) turns reading-view editing off, keeping the rendered page read-only — except checkboxes, which still toggle |
+| Read-only | Documents open locked. The [padlock](#the-padlock) on the reading view's toolbar unlocks the one in front of you — except checkboxes, which toggle either way |
 
 ## Inline editing (the reading view)
 
@@ -31,7 +31,20 @@ The rendered page is a live editor. The **source stays the single source of trut
 - **Every other block edits its exact source.** Code blocks, [alerts](01-rendering.md#blockquotes-and-alerts), loose lists, blocks with images, footnotes, or math, and blocks containing raw HTML tags outside a small safe set (links, line breaks, bold, italic, strikethrough, inline code, and the inline HTML tags Leaf Text can rebuild exactly — `<abbr>`, `<kbd>`, `<mark>`, `<ins>`, `<sub>`, `<sup>`, `<span>`, and `<div>`) open their raw source in place when you click them, then splice back on the way out. This is also how **[XML](01-rendering.md#xml)** edits: XML carries meaning the rendered HTML cannot reconstruct, so an XML block is edited as its true source.
 - **Nothing is ever mangled.** A block only edits WYSIWYG when its rendered form can be turned back into the identical source; anything else edits its source directly. Either way the edit is a precise splice, and the [live reload](02-navigation.md#reload) watcher recognizes your own save so it never fights it.
 - Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way.
-- Prefer a pure reading experience? Turn off **Reading-view editing** in [Settings](05-settings.md#reading-view-editing) and the rendered page becomes read-only — clicks no longer enter edit mode. Checkboxes are the one exception: they still toggle and auto-save, since ticking a box is an action, not text editing. The [code view](#code-view) still edits the source, so the file is never locked outright.
+- A document opens **locked**: clicks do not enter edit mode until you say so. See [The padlock](#the-padlock).
+
+## The padlock
+
+Whether the rendered page can be typed into is a fact about *that page*, not a preference for every document you will ever open — so it is a padlock on the reading view's own tools, in the recess beside the reading button on the [floating toolbar](02-navigation.md#the-toolbar).
+
+- A shut padlock means the page is read-only. An open one means you can click into it and type.
+- Documents open **locked**. Reading is the default posture, and one click is a cheap price for not editing a file by brushing it.
+- The answer lasts as long as the window. A document reopened tomorrow is read-only again, which is the safe way round to be wrong.
+- **Checkboxes toggle either way.** Ticking a box is a quick action that auto-saves and records no undo, not text editing.
+- The [code view](#code-view) is an editor whatever the padlock says, so a file is never locked outright.
+- Flipping the padlock commits whatever block was mid-edit rather than discarding it.
+
+The other reading-view tools live in the same recess: the [speed reader](05-settings.md#speed-reader) and [line numbers](05-settings.md#line-numbers), both of which stay app-wide preferences because they are ways of reading rather than properties of a file. None of the three is filled in the accent colour — that treatment means "this is the view you are in", and a setting inside a view must not wear it.
 
 ## Undo
 
@@ -43,7 +56,9 @@ Reading-view edits are undoable, step by step.
 
 ## Code view
 
-The toggle is the code-brackets button in the app bar, left of Settings — it appears whenever a document is open. Click it and the rendered page is replaced by the file's raw source; the button swaps to a document icon, and clicking again returns to the reading view.
+The toggle is the code-brackets button on the [floating toolbar](02-navigation.md#the-toolbar) under the page, beside reading and the [graph](03-library.md#graph). Click it and the rendered page is replaced by the file's raw source; click the reading button to come back.
+
+Opening another document while you are in the source view opens **that** document in the source view. The view is where you are working, not a property of the file you picked.
 
 - The source is coloured by the same Rust highlighter that colours fenced code blocks in the [reading view](01-rendering.md#code), with Markdown, XML, JSON, and YAML all in its language table. Each construct's *delimiters* are coloured to match their content the way a code editor does — the `#` of a heading, the `[]` and `()` of a link, the `**` and backticks of bold and inline code, the `>` of a quote — rather than left as plain text, and headings and bold read in bold. An [XML](01-rendering.md#xml) file shows its tags, with element names in bold and attribute names in their own colour, and a [JSON or YAML](01-rendering.md#data-files-json-and-yaml) file shows its keys, values, and punctuation the way an editor would.
 - Long lines wrap instead of scrolling sideways, and the line-number gutter numbers *source* lines — a wrapped line keeps one number, pinned to its first row.
@@ -64,7 +79,7 @@ The code view is a real editor surface: click anywhere and type.
 
 Saving is always explicit.
 
-- With no unsaved changes there is no save control at all. The moment the buffer differs from the file, a green **Save** button appears in the app bar and the tab shows a dot beside its name.
+- With no unsaved changes there is no save control at all. The moment the buffer differs from the file, a green **Save** button appears on the [floating toolbar](02-navigation.md#the-toolbar) and the tab shows a dot beside its name.
 - Click **Save** or press `Ctrl+S` (`Cmd+S` on macOS) to write the buffer to disk. The button and dot clear on success.
 - A save does not bounce the view: the file watcher recognizes the app's own write and skips the [live reload](02-navigation.md#reload) it would otherwise trigger.
 

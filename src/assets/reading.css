@@ -1878,6 +1878,84 @@ body:has(#readerToolbar:not([hidden])) {
    same-level buttons would just read as more views. Grained on the same
    window-anchored lattice as the bar and the rail, so it is the same surface
    pressed in rather than a different one laid on top. */
+/* The vault's own sync button, at the end of its crumb row. Carries a count
+   rather than a bare dot: "3" is a reason to press it, a dot is only a rumour.
+   Absent entirely when there is nothing waiting -- see renderVaultSyncButton. */
+.library-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 2px 6px 2px 4px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.library-sync:hover {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+.library-sync[hidden] {
+  display: none;
+}
+/* On its way out, still turning. */
+.library-sync.is-leaving {
+  opacity: 0;
+  transition: opacity 260ms ease;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .library-sync.is-leaving {
+    transition: none;
+  }
+}
+.library-sync svg {
+  width: 13px;
+  height: 13px;
+}
+.library-sync:disabled {
+  cursor: default;
+}
+/* Turning while it works, so a slow push looks like a slow push. An <svg> takes
+   its transform origin from its own box, so this has to be said out loud or the
+   glyph orbits the button's top-left corner instead of spinning. */
+.library-sync.is-busy svg {
+  transform-origin: 50% 50%;
+  animation: library-sync-spin 1.1s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .library-sync.is-busy svg {
+    animation-duration: 2.4s;
+  }
+}
+@keyframes library-sync-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A line of explanation inside the vault menu: what the repository is, or what
+   is missing before it can be one. Sized down from a row and not clickable, so
+   it never looks like a button that has stopped working. */
+.crumb-menu-note {
+  padding: 4px 10px 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--app-muted-foreground);
+  white-space: normal;
+  word-break: break-word;
+}
+.crumb-menu-note.is-danger {
+  color: var(--danger, #d1242f);
+}
+.crumb-menu-item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .reader-view-tools {
   display: inline-flex;
   align-items: center;
@@ -2246,19 +2324,38 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-layout-no-minimap {
   justify-items: center;
 }
-.app-error {
+/* The growl. Rises into place rather than appearing, because something that
+   appears in the corner of a page has already been half-missed by the time the
+   eye gets there. */
+.app-toast {
   position: fixed;
   right: 18px;
   bottom: 18px;
   z-index: 20;
   max-width: min(520px, calc(100vw - 36px));
-  border: 1px solid var(--app-error-border);
+  border: 1px solid var(--app-border);
   border-radius: var(--leaf-radius-lg);
   background: var(--app-surface-elevated);
   box-shadow: var(--shadow);
-  color: var(--app-error-foreground);
+  color: var(--app-foreground);
   font: 600 14px/1.45 var(--app-font);
   padding: 12px 14px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.app-toast.is-shown {
+  opacity: 1;
+  transform: none;
+}
+.app-toast.is-error {
+  border-color: var(--app-error-border);
+  color: var(--app-error-foreground);
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-toast {
+    transition: none;
+  }
 }
 .document-body {
   width: min(var(--type-measure-body), 100%);

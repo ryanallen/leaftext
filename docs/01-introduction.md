@@ -65,4 +65,4 @@ That file opens as a formatted document, not as source code in an editor.
 
 - [Quickstart](03-quickstart.md) shows the actual reading flow.
 - [Rendering](01-features/01-rendering.md) shows what Markdown syntax, XML structure, and JSON/YAML shapes the app renders.
-- [Library](01-features/03-library.md) explains search, indexing, and the side pane.
+- [Library](01-features/03-library.md) explains [vaults](01-features/03-library.md#vaults), search, the [graph](01-features/03-library.md#graph), and [GitHub sync](01-features/03-library.md#github-sync).

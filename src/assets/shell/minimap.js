@@ -701,18 +701,7 @@ window.addEventListener('resize', () => {
   scheduleMinimapViewportUpdate();
   scheduleMinimapPreviewUpdate();
 });
-window.leafShowError = (message) => {
-  const existing = document.querySelector('.app-error');
-  if (existing) {
-    existing.remove();
-  }
-  const error = document.createElement('div');
-  error.className = 'app-error';
-  error.setAttribute('role', 'status');
-  error.textContent = message;
-  document.body.appendChild(error);
-  setTimeout(() => error.remove(), 7000);
-};
+window.leafShowError = (message) => leafToast(message, 'error');
 window.leafShowOpenError = (path, reason) => {
   window.leafShowError(window.leafLocale.t('errors.openFailed', { path, reason }));
 };
@@ -724,3 +713,6 @@ function escapeAttr(value) {
 }
 window.leafSetState(window.__leafInitialState || { recent: [], document: null });
 window.leafSetNavigation({ canGoBack: false, canGoForward: false });
+// The vault list came in on the window rather than through its callback, so
+// nothing has asked about its repository yet.
+requestActiveVaultStatus();

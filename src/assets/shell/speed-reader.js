@@ -178,9 +178,17 @@ let graphViewOpen = false;
 // same glyph the header uses, so the row tints it via stroke/fill currentColor
 // rather than shipping a fixed color.
 const LEAF_FILE_ICON = `{{LEAF_ICON_SVG}}`;
+// Sending a vault to GitHub. Inlined the same way the rest are.
+const SYNC_ICON_SVG = `{{SYNC_ICON_SVG}}`;
+// What the host last said about each vault's repository, by id. Kept so
+// reopening the panel shows what it knew rather than blanking while git is
+// asked again.
+const vaultGitByVault = new Map();
+
 // A vault's glyph, inlined from the same files the host stamps into the
 // switcher's button, so the button and its menu can never drift apart. Open is
 // the vault you are in; closed is one you are not.
+const CLOUD_ICON_SVG = `{{CLOUD_ICON_SVG}}`;
 const PACKAGE_OPEN_ICON_SVG = `{{PACKAGE_OPEN_ICON_SVG}}`;
 const PACKAGE_ICON_SVG = `{{PACKAGE_ICON_SVG}}`;
 // And the plain folder, for the things that really are folders.

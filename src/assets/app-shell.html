@@ -125,6 +125,10 @@
   <div class="library-crumbs" id="libraryCrumbs">
     <button type="button" id="libraryVaultSwitch" class="library-vault-switch" aria-haspopup="menu" aria-expanded="false" data-i18n-title="library.vaults.label" data-i18n-aria-label="library.vaults.label" title="Vaults" aria-label="Vaults">{{PACKAGE_OPEN_ICON_SVG}}<span class="library-crumb-caret" aria-hidden="true">▾</span></button>
     <nav class="library-crumb-trail" id="libraryCrumbTrail" data-i18n-aria-label="library.crumbs.label" aria-label="Folder path"></nav>
+    <!-- Present only when this vault has work that has not reached GitHub. A
+         button that is always there says nothing; one that appears is the
+         message. -->
+    <button type="button" id="librarySyncButton" class="library-sync" data-i18n-aria-label="library.vaults.sync.now" aria-label="Sync" hidden>{{SYNC_ICON_SVG}}<span class="library-sync-count"></span></button>
   </div>
   <div class="library-header">
     <div class="library-search-wrap">
@@ -167,6 +171,7 @@
          views. -->
     <span id="readerViewTools" class="reader-view-tools" role="group" data-i18n-aria-label="toolbar.readingTools" aria-label="Reading tools" hidden>
       <button type="button" id="readerLockButton" class="reader-subtool" aria-pressed="false" data-i18n-aria-label="toolbar.unlock" data-i18n-title="toolbar.unlock" aria-label="Unlock to edit this page" title="Unlock to edit this page"><span class="reader-swap-glyph reader-glyph-off">{{LOCK_CLOSED_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{LOCK_OPEN_ICON_SVG}}</span></button>
+      <button type="button" id="lineNumbersButton" class="reader-subtool" aria-pressed="false" data-i18n-aria-label="toolbar.lineNumbers" data-i18n-title="toolbar.lineNumbers" aria-label="Line numbers" title="Line numbers"><span class="reader-swap-glyph reader-glyph-off">{{LINE_NUMBERS_OFF_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{LINE_NUMBERS_ON_ICON_SVG}}</span></button>
       <button type="button" id="speedReaderButton" class="reader-subtool" aria-pressed="false" data-i18n-aria-label="toolbar.speedReader" data-i18n-title="toolbar.speedReader" aria-label="Speed reader" title="Speed reader"><span class="reader-swap-glyph reader-glyph-off">{{SPEED_READER_OFF_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{SPEED_READER_ON_ICON_SVG}}</span></button>
     </span>
     <button type="button" id="viewCodeButton" class="reader-tool" data-view="code" aria-pressed="false" data-i18n-aria-label="actions.codeView" data-i18n-title="actions.codeView.title" aria-label="View source" title="View source">{{CODE_VIEW_ICON_SVG}}</button>

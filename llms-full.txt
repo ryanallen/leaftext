@@ -20,7 +20,7 @@
 ## Library
 - Page: https://leaftext.com/docs/#/features/library
 - Markdown: https://leaftext.com/docs/01-features/03-library.md
-- Summary: The library is the part of Leaf Text that helps you find documents, not just read the one you already opened. It lives in a left-side pane and is backed by a local indexer.
+- Summary: The library is the part of Leaf Text that helps you find documents, not just read the one you already opened. It lives in a left-side pane, and everything it shows is read from disk when you ask fo...
 
 ## Minimap
 - Page: https://leaftext.com/docs/#/features/minimap

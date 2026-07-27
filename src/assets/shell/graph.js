@@ -91,17 +91,16 @@ function renderReaderToolbar(hasDocument) {
   }
   renderReadingTools(current === 'reading');
 }
-// The reading view's own tools. Neither turns blue: a filled chip is how this bar
-// says "this is the view you are in", and borrowing it for a setting inside that
-// view would put two different meanings on one treatment. The glyph carries the
-// state instead -- a shut padlock, a thin first letter -- and the colour only
-// says whether it is on.
+// The reading view's own tools. None turns blue: the filled chip means "this is
+// the view you are in", and a setting inside that view must not wear it. The
+// glyph carries the state instead -- a shut padlock, a thin first letter.
 function renderReadingTools(onReadingView) {
   if (readerViewTools) readerViewTools.hidden = !onReadingView;
   if (!onReadingView) return;
   const unlocked = readerEditingAllowed();
   setSubtoolState(readerLockButton, unlocked, unlocked ? 'toolbar.lock' : 'toolbar.unlock');
   setSubtoolState(speedReaderButton, speedReaderEnabled, 'toolbar.speedReader');
+  setSubtoolState(lineNumbersButton, lineNumbersEnabled, 'toolbar.lineNumbers');
 }
 function setSubtoolState(button, on, labelKey) {
   if (!button) return;
@@ -130,6 +129,15 @@ if (speedReaderButton) {
   speedReaderButton.addEventListener('click', () => {
     setSpeedReaderEnabled(!speedReaderEnabled);
     send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });
+    renderReadingTools(true);
+  });
+}
+// Line numbers are the same shape of thing: how the reading view is drawn, kept
+// for the whole app, reachable from the bar and from Settings.
+if (lineNumbersButton) {
+  lineNumbersButton.addEventListener('click', () => {
+    setLineNumbersEnabled(!lineNumbersEnabled);
+    send({ command: 'setLineNumbersEnabled', enabled: lineNumbersEnabled });
     renderReadingTools(true);
   });
 }
@@ -386,11 +394,10 @@ async function buildGraphScene() {
     app, world, edgesGfx, nodes, links, nodeByPath, colors, labelsLayer,
     hoverNode: null, draggingNode: null, panning: false, panLast: null, pressGlobal: null,
     lastWidth: width, lastHeight: height,
-    // Frame everything until the reader takes the wheel. The first question a
-    // map has to answer is how much there is, which a view parked at 1:1 on an
-    // arbitrary centre cannot: two documents sit lost in an empty field and two
-    // thousand hang off every edge. Any pan, zoom, drag or flight ends it for
-    // good -- past that the view is the reader's, and ours to leave alone.
+    // Frame everything until the reader takes the wheel. A view parked at 1:1 on
+    // an arbitrary centre cannot answer "how much is there": two documents sit
+    // lost in an empty field, two thousand hang off every edge. Any pan, zoom,
+    // drag or flight ends it for good.
     autoFit: true,
     // Ambient labels wait for the layout to settle so they resolve on stable
     // positions instead of flickering as the simulation jiggles the nodes.

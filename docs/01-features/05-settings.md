@@ -1,6 +1,6 @@
 # Settings
 
-> Your settings live on your machine, not in an account. Theme, speed reader, minimap, pager, line numbers, reading-view editing, indexing, updates, library layout, and window size sit in a plain JSON file you can read, plus the interface language in the WebView's local storage.
+> Your settings live on your machine, not in an account. Theme, speed reader, minimap, pager, line numbers, updates, library layout, and window size sit in a plain JSON file you can read, plus the interface language in the WebView's local storage.
 
 Most settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView. The one exception is the interface language, kept in the WebView's local storage under `leaf.localeMode`.
 
@@ -15,10 +15,11 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 | Minimap | On / Off | On |
 | Pager | On / Off | On |
 | Line numbers | On / Off | Off |
-| Reading-view editing | On / Off | On |
-| Indexing | On / Off | Off |
-| Library view | Project, Graph | Project |
 | Graph size | Focus, Medium, Large, Everything | Focus |
+
+Two of these are also reachable without opening the panel: **Speed Reader** and **Line numbers** sit in the reading view's own tools on the [floating toolbar](02-navigation.md#the-toolbar), and the two places drive the same saved value.
+
+Whether the rendered page can be typed into is **not** here. It is a padlock on the document in front of you — see [Editing](07-editing.md#the-padlock).
 
 ## Open
 
@@ -30,7 +31,7 @@ Click **Settings** in the app bar. The panel opens as a dropdown and updates the
 | --- | --- |
 | `{config_dir}/settings.json` | Preferences |
 | `{config_dir}/recent-files.json` | Last 8 opened files |
-| `{data_dir}/manifest.db` | Library index |
+| `{data_dir}/manifest.db` | The [vaults](03-library.md#vaults) you have named, and which one is active |
 | `{data_dir}/webview2` | WebView2 data |
 | `{data_dir}/updates` | Verified installer waiting to be applied ([Updates](#updates)) |
 
@@ -40,16 +41,13 @@ Here `{config_dir}` and `{data_dir}` are the per-app directories derived from th
 
 ```json
 {
-  "indexing_enabled": true,
   "minimap_enabled": true,
   "pager_enabled": true,
   "speed_reader_enabled": false,
   "line_numbers_enabled": false,
-  "reader_editing_enabled": true,
   "theme_family": "fern",
   "theme_mode": "system",
   "theme_random_used": [],
-  "library_view": "project",
   "graph_scope": "small",
   "library_project_path": "",
   "library_closed": false,
@@ -101,9 +99,9 @@ The app ships both language dictionaries locally and applies changes without a r
 
 ### Graph size
 
-- Controls how many documents the [Graph view](03-library.md#graph) draws
-- **Focus** (default) shows the open document and its direct links — or, on the start screen, the [recent files](02-navigation.md#recent-files) and theirs
-- **Medium** shows up to the 2,000 most-linked documents, **Large** up to 5,000, and **Everything** the whole indexed library with no cap
+- Controls how many documents the [graph](03-library.md#graph) draws
+- **Focus** (default) shows the open document and its direct links
+- **Medium** shows up to the 2,000 most-linked documents, **Large** up to 5,000, and **Everything** the whole vault with no cap
 - Smaller sizes open faster; the larger ones stay responsive by settling the layout sooner and repainting less often
 - Saved as `graph_scope`, stored as `small`, `medium`, `large`, or `xl`
 
@@ -115,7 +113,7 @@ The app ships both language dictionaries locally and applies changes without a r
 
 ### Speed Reader
 
-- Off by default
+- Off by default, and also on the reading view's [toolbar](02-navigation.md#the-toolbar)
 - Dims non-anchor prose text (including headings) so bold lead anchors carry the most contrast against the background
 - Quiets links to the dimmed prose color with a faint underline, until hover or keyboard focus brightens them
 - Regularizes existing bold text and adds bold lead anchors at word starts; all-caps acronyms (HTML, GFM) are bolded whole
@@ -130,24 +128,11 @@ The app ships both language dictionaries locally and applies changes without a r
 
 ### Line numbers
 
-- Off by default
+- Off by default, and also on the reading view's [toolbar](02-navigation.md#the-toolbar)
 - Numbers each block in the left gutter as a copyable [block permalink](01-rendering.md#inline-html)
 - Hidden until you hover a block (or the number itself) on pointer devices; stays faintly visible on touch devices and narrow windows, where a single tap copies the link
 - Turning it off hides the numbers; blocks keep their ids, so `#id` deep links still resolve
 - Saved as `line_numbers_enabled`
-
-### Reading-view editing
-
-- On by default
-- Lets you edit the rendered page directly — click a block to edit it — as described in [Editing](07-editing.md#inline-editing-the-reading-view)
-- Turn it off to keep the reading view read-only; task checkboxes still toggle (and auto-save), and the [code view](07-editing.md#code-view) still edits the raw source
-- Saved as `reader_editing_enabled`
-
-### Indexing
-
-- Off by default
-- Enabling it starts a whole-device background crawl right away, and again on each launch while it stays on
-- Files you open manually are still indexed even if background indexing is off
 
 ### Updates
 
@@ -179,7 +164,7 @@ These per-app directories are derived from the app id `com.ryanallen.leaftext`:
 - macOS: `config_dir` = `data_dir` = `~/Library/Application Support/com.ryanallen.leaftext`
 - Windows: `config_dir` = `%APPDATA%\ryanallen\leaftext\config`; `data_dir` = `%LOCALAPPDATA%\ryanallen\leaftext\data`
 
-Both live inside your user profile, so Leaf Text never needs administrator rights to run. They are also independent of where the app is installed — reinstalling or moving it keeps your settings, recent files, and library index.
+Both live inside your user profile, so Leaf Text never needs administrator rights to run. They are also independent of where the app is installed — reinstalling or moving it keeps your settings, recent files, and [vaults](03-library.md#vaults).
 
 ## Next
 

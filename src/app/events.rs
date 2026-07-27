@@ -121,6 +121,33 @@ pub(crate) enum UserEvent {
     SetGraphView {
         open: bool,
     },
+    /// A vault's git panel: read it, make it a repository, point it at one, or
+    /// push it. Each runs off the loop and comes back as `VaultGitReady`.
+    GetVaultGit {
+        id: i64,
+    },
+    GetVaultStatus {
+        id: i64,
+    },
+    CreateVaultRepo {
+        id: i64,
+    },
+    LinkVaultRemote {
+        id: i64,
+        url: String,
+    },
+    SyncVault {
+        id: i64,
+    },
+    /// The panel's next whole state, already serialized on the worker thread.
+    VaultGitReady {
+        json: String,
+    },
+    /// Just the folder's own git state, for the header's sync button.
+    VaultStatusReady {
+        id: i64,
+        json: String,
+    },
     /// Persist the library pane's open/closed state and last open width.
     SetLibraryLayout {
         closed: bool,
@@ -354,6 +381,16 @@ pub(crate) enum IpcCommand {
     },
     #[serde(rename = "setGraphView")]
     SetGraphView { open: bool },
+    #[serde(rename = "getVaultGit")]
+    GetVaultGit { id: i64 },
+    #[serde(rename = "getVaultStatus")]
+    GetVaultStatus { id: i64 },
+    #[serde(rename = "createVaultRepo")]
+    CreateVaultRepo { id: i64 },
+    #[serde(rename = "linkVaultRemote")]
+    LinkVaultRemote { id: i64, url: String },
+    #[serde(rename = "syncVault")]
+    SyncVault { id: i64 },
     #[serde(rename = "setLibraryLayout")]
     SetLibraryLayout { closed: bool, width: u32 },
     #[serde(rename = "createVault")]
@@ -572,6 +609,21 @@ pub(crate) fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<S
             }
             IpcCommand::SetGraphView { open } => {
                 let _ = proxy.send_event(UserEvent::SetGraphView { open });
+            }
+            IpcCommand::GetVaultGit { id } => {
+                let _ = proxy.send_event(UserEvent::GetVaultGit { id });
+            }
+            IpcCommand::GetVaultStatus { id } => {
+                let _ = proxy.send_event(UserEvent::GetVaultStatus { id });
+            }
+            IpcCommand::CreateVaultRepo { id } => {
+                let _ = proxy.send_event(UserEvent::CreateVaultRepo { id });
+            }
+            IpcCommand::LinkVaultRemote { id, url } => {
+                let _ = proxy.send_event(UserEvent::LinkVaultRemote { id, url });
+            }
+            IpcCommand::SyncVault { id } => {
+                let _ = proxy.send_event(UserEvent::SyncVault { id });
             }
             IpcCommand::SetLibraryLayout { closed, width } => {
                 let _ = proxy.send_event(UserEvent::SetLibraryLayout { closed, width });

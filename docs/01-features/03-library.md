@@ -1,86 +1,118 @@
 # Library
 
-> Find anything you've written, and see how it connects. Browse and search your documents from a local index that never leaves your machine — a file list with a breadcrumb path, plus a graph of how your documents link to each other.
+> Point Leaf Text at a folder and it becomes a vault: a browsable file tree, a searchable body of text, and a map of how those documents link to each other. Nothing is crawled, nothing is written into your folder, and a vault can sync itself to GitHub.
 
-The library is the part of Leaf Text that helps you find documents, not just read the one you already opened. It lives in a left-side pane and is backed by a local indexer.
+The library is the part of Leaf Text that helps you find documents, not just read the one you already opened. It lives in a left-side pane, and everything it shows is read from disk when you ask for it.
 
 ## Summary
 
 | Feature | What you get |
 | --- | --- |
-| Project view | One folder at a time, with a breadcrumb showing where you are (the default view) |
-| Breadcrumb | The folder path above the search box; every crumb steps back out to that level, and what does not fit collapses into a `…` menu |
-| Graph view | A force-directed map of how your documents link to each other, toggled by an icon |
-| Search | Filename and content search, scoped to the folder the pane is showing |
+| Vaults | A folder you name as a library root. The switcher beside the breadcrumb creates, edits and moves between them |
+| File tree | One folder at a time, with a breadcrumb showing where you are and a row that steps back out |
+| Breadcrumb | The folder path above the search box; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
+| Search | Filename and content search across the active vault |
+| Graph | A force-directed map of how the vault's documents link to each other, shown on the page rather than in the pane |
+| GitHub sync | A vault can be a git repository that pushes to GitHub, with a sync button in its own header |
 | File actions | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
 | Narrow windows | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
 
-## Views
+## Vaults
 
-The pane has two states: the **Project** file list, which is where it opens, and the **Graph**. The graph toggle sits at the right end of the breadcrumb band; the choice is remembered across restarts.
+A **vault** is a folder you have told Leaf Text to treat as a library root. It is the unit that search, the graph and syncing all work over.
 
-```mermaid
-flowchart LR
-    A[Library pane] --> B[Project]
-    A --> G[Graph]
-```
+The button at the left of the breadcrumb — a box, or a cloud once the vault [syncs](#github-sync) — opens the vault switcher:
 
-### Project
-
-The file list. Folders are entered one at a time, so the pane shows one folder's contents rather than a whole hierarchy at once.
-
-- Click a folder row — or its `›` chevron — to go into it.
-- The **breadcrumb** above the search box is the path you are on: `Library › docs › features`. Click any crumb to step back out to that level. It shows as much of the path as fits the band, so widening the pane reveals more crumbs and dragging the divider refits it mid-drag. Whatever does not fit collapses behind a `…` button that opens a menu of the skipped folders; pick one to enter it.
-- Folders sort before files, each alphabetized. Folders with no indexed documents are pruned.
-- Opening a file moves the pane into that file's folder and highlights the row, so the pane always shows where the document you are reading lives.
-- The folder you are in is saved, so a restart reopens it. If a rescan drops that folder, the pane falls back to the library root.
-
-### Graph
-
-A force-directed relationship map of your library: each **node** is a document, each **edge** is a link that resolves from one indexed document to another (a Markdown link, or a `[[wiki]]` link matched by filename). It answers "how does this fit with everything else?" rather than "where is this file?".
-
-- The document you are reading is highlighted in the accent colour and pulled larger, so you can always spot where you are.
-- **Names** float in dim grey beneath the nodes, so you can read the map without hovering. They stay a fixed size as you zoom and are decluttered by fit: where the layout is open every name shows, and where nodes crowd together only the ones that clear their neighbours do — most-connected documents keep their labels first. Zooming into a busy region spreads its nodes apart and reveals more names. The document you are on always keeps its name, and hovering always shows the hovered node's name and its neighbours'.
-- **Click** a node to open that document. **Hover** a node to light up its direct links and dim the rest.
-- **Drag** a node to reposition it, **drag the background** to pan, and **scroll** to zoom.
-- **Click a document's tab** in the tab bar and the graph flies to that document's node and zooms in on it. Clicking the tab you are already on rebuilds the map from the current index, so it always reflects the latest links rather than staying on a stale view.
-- Resizing the pane re-fits the map to the new size; it no longer waits for a view switch.
-- Switching back to the file list lands on the open document's folder, not wherever the list was left.
-
-How many documents the map draws is set by the [Graph size](05-settings.md#graph-size) setting — from a tight **Focus** neighborhood (the open document and its direct links) up to **Everything** (every indexed document). Smaller sizes render faster; the larger sizes are tuned to stay responsive by easing the layout and repainting less often as it settles.
+- **Library** is the no-vault state: the pane starts at your drive roots and browses anywhere. Search and the graph are unavailable, because neither has a bounded set of documents to work over.
+- **A vault** roots the pane at that folder. Everything below it is browsable, searchable and mappable.
+- **New vault…** opens a folder picker; the folder's name becomes the vault's name.
+- The settings button on a vault's row opens a panel to rename it, point it at a different folder, remove it, or connect it to [GitHub](#github-sync).
 
 > [!NOTE]
-> With nothing open — the start screen — the **Focus** size seeds the map from your [recent files](02-navigation.md#recent-files) and their links, so the graph is never empty just because no document is active.
+> **Nothing is written into your folder.** A vault is a row in Leaf Text's own database, not a marker file. Removing a vault forgets it; the folder and its files are untouched.
+
+## File tree
+
+The pane lists one folder at a time — the folder you are in, not a whole hierarchy.
+
+- Click a folder row — or its `›` chevron — to go into it.
+- The row above the list steps back out one level.
+- The **breadcrumb** above the search box is the path you are on: `Vajrayana › docs › features`. Click any crumb to step back to that level. It shows as much of the path as fits the band, so widening the pane reveals more crumbs and dragging the divider refits it mid-drag. Whatever does not fit collapses behind a `…` button that opens a menu of the skipped folders.
+- Folders sort before files, each alphabetized. Hidden folders, common build folders, and symlinks or Windows reparse points are not descended.
+- Opening a file moves the pane to that file's folder and highlights the row. A file inside a vault switches to that vault first; a file in none switches to the whole library.
+- The folder you are in is saved, so a restart reopens it. If the folder has gone, the pane falls back to the top of the vault.
+
+Each call reads exactly one directory, so nothing below what you opened is ever touched.
 
 ## Search
 
-Search matches both file names and document content.
+Search covers the active vault. With no vault the field is hidden rather than left to return nothing — a box that looks like it works and does not is worse than no box.
 
 | Search type | Behavior |
 | --- | --- |
-| Name matches | Listed first |
-| Content matches | Ranked with BM25 and shown with snippets |
+| Name matches | Ranked first |
+| Content matches | Ranked by how often the terms appear, with snippets |
+| Multiple terms | Every term must appear, in the name or the body |
 | Result limit | Top 50 |
-| CJK text | Prefix matching works for unspaced Han text |
 
-Example:
+Opening a content result jumps to the nearest heading above the match.
 
-- Query `release` might match `release-notes.md` first by filename.
-- It can also match a paragraph inside `roadmap.md`, with a snippet preview.
+The text search reads is the same copy the [graph](#graph) reads: one pass over the vault, held in memory, patched a file at a time by the [watcher](#live-updates) and dropped when you switch vaults or quit. There is no index on disk, so nothing can go stale relative to your files.
 
-Opening a content result jumps to the nearest heading.
+## Graph
 
-### Search scope
+A force-directed relationship map of the vault: each **node** is a document, each **edge** is a link that resolves from one document to another (a Markdown link, an `<a href>`, a `[[wiki]]` link matched by filename, or a TEI `target=`).
 
-Search reaches exactly as far as the pane shows — there is no separate control:
+It is a **view of the page**, not a panel — reach it from the [floating toolbar](02-navigation.md#the-toolbar) under the document, beside reading and the source view. It needs a vault: the whole library is a computer, not a collection, and there is no map of one worth drawing.
 
-| Where you are | What search covers |
+- The map **opens framed on everything it drew** — the tightest zoom that still holds the whole layout, centred. Two documents fill the view; two thousand shrink to fit. The first pan, zoom, drag or flight hands the view over to you, and it stops reframing.
+- The document you are reading is highlighted in the accent colour and pulled larger.
+- **Names** float in dim grey beneath the nodes. They stay a fixed size as you zoom and are decluttered by fit: where the layout is open every name shows, and where nodes crowd only the ones that clear their neighbours do. The document you are on always keeps its name, and hovering shows the hovered node's name and its neighbours'.
+- **Click** a node to open that document — the map holds until the document is ready, then steps aside. **Hover** to light up a node's direct links and dim the rest.
+- **Drag** a node to reposition it, **drag the background** to pan, **scroll** to zoom.
+- Opening a document from the pane while the map is up **keeps the map up** and moves the highlight. Changing what you are looking at is not a reason to change how you are looking at it.
+- Closing the last tab closes the map with it: the start screen is not one of a document's views.
+- Building the map shows the same spinner a slow document does.
+
+How many documents it draws is set by the [Graph size](05-settings.md#graph-size) setting — from a tight **Focus** neighborhood (the open document and its direct links) up to **Everything**. Smaller sizes render faster; larger ones stay responsive by easing the layout and repainting less often as it settles.
+
+> [!NOTE]
+> A link to a web address is not an edge. A sitemap full of `https://` URLs draws no lines, even when those URLs are the published form of files sitting in the vault.
+
+## GitHub sync
+
+A vault can be a git repository that pushes to GitHub. Open a vault's settings from the switcher to see where it stands.
+
+### What it needs
+
+**git is the only requirement.** Leaf Text never holds a token: it runs the `git` already on your machine, which already knows who you are and how to sign in.
+
+| What is installed | What the panel offers |
 | --- | --- |
-| Inside a folder | The files in that folder, including its subfolders |
-| At the library root | The whole indexed library |
-| [Graph](#graph) | The documents currently drawn (set by the [Graph size](05-settings.md#graph-size)) |
+| git and [`gh`](https://cli.github.com) | **Create a private repo** — one click, made and pushed |
+| git alone | **Create it on GitHub ↗** — opens GitHub with the name filled in; paste the address back and the panel links it |
+| neither | A link to install git, and nothing else |
 
-Because a folder and the graph both show a subset, searching from them stays inside that subset — a search in a graph focused on one document only turns up matches from that document's neighborhood. The filter runs in the query itself, so a scoped match ranked below the top 50 of a library-wide search still surfaces. Entering a folder, stepping back out through a crumb, or switching views re-runs the current query under the new reach. A scoped set larger than 1,500 documents searches the whole library instead.
+On Windows, Git for Windows installs Git Credential Manager and sets it as the default, so the first push opens a browser once and never asks again. On macOS the bundled credential helper cannot sign in to GitHub any more, so `gh` or Git Credential Manager has to be installed; the panel says so rather than letting a push fail.
+
+The panel also warns before the fact about the two things git needs and often lacks: an identity (`user.name` and `user.email`) and a way to authenticate.
+
+### Syncing
+
+**Sync** commits everything changed, pulls with a rebase, and pushes. Commit messages describe the change — `Update README.md`, or `Update 4 files` — and carry no mention of the app.
+
+A **sync button appears at the end of the vault's breadcrumb** whenever there is work that has not reached GitHub, carrying the count. It spins while it works and fades out still spinning, and a growl in the corner says where the push landed. It is absent when there is nothing to send.
+
+The count is uncommitted changes plus unpushed commits — both answerable from disk. Whether the *remote* has moved needs a fetch, so it is not checked in the background; behind-counts appear in the vault's settings panel and after a sync, where you have asked for them.
+
+> [!IMPORTANT]
+> A rebase that hits a conflict is undone before the sync returns. There is no merge view in a reader, so the panel says what happened and leaves the folder as it found it, for you to resolve in git.
+
+### Repositories inside repositories
+
+A vault whose folder already holds a repository somewhere below it — a project vault with the code in `app/` — has that named in the panel. Creating a repository at the vault root adds those nested ones to a new `.gitignore`, with the reason written beside them: each has its own remote, and tracking one from outside records a pointer nobody else can resolve.
+
+A vault sitting *inside* someone else's repository is told so too. Creating a repository there is legal and common, but it should not be a surprise afterwards.
 
 ## File actions
 
@@ -104,63 +136,36 @@ Cut and Copy place the file itself on the system clipboard, so you paste it in y
 
 ## Live updates
 
-The library pane keeps up with changes on disk, so a file you just created shows up without a manual rescan.
+The pane keeps up with changes on disk, so a file you just created shows up without a refresh.
 
-- The same file watcher that drives live reload watches two places: the open document's folder, and — while the [file list](#project) is up — the folder you are browsing.
-- The browsed folder is watched recursively, so a document added in it or any of its subfolders is indexed immediately and the pane refreshes, even when no document is open.
-- A document created or edited in the open document's folder is indexed the same way.
-- Renaming or deleting a file from the right-click menu updates the pane right away.
-- Moving, renaming, or deleting a folder outside the app syncs the affected subtree immediately — new files are indexed and removed files are forgotten without a manual rescan.
-- Folders outside both watched locations appear after the next full crawl, or as soon as you open a file from them.
+- The same file watcher that drives live reload watches the active vault **recursively**, plus the open document's folder when it sits outside the vault. With no vault, only the folder you are browsing is watched, and not recursively — browsing a drive root should not subscribe to the whole drive.
+- A file added, renamed or removed in the folder you are looking at refreshes the list.
+- The vault's in-memory text is patched for the one file that changed, so [search](#search) and the [graph](#graph) stay current without re-reading the vault.
+- The [sync count](#syncing) is re-read too, whether the change was to the document you are editing or to any other file in the vault.
 
-## Indexing
+## File types
 
-```mermaid
-flowchart LR
-    A[Filesystem crawl] --> B[4 parse/hash workers]
-    B --> C[SQLite manifest]
-    C --> D[Project list / Graph]
-    C --> E[Search results]
-```
+The pane lists every format the reader opens: Markdown (`.md`, `.markdown`, `.mdown`), [XML](01-rendering.md#xml) (`.xml`), and [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`). Anything else is left alone.
 
-### File types
-
-The indexer picks up every format the reader opens: Markdown (`.md`, `.markdown`, `.mdown`), [XML](01-rendering.md#xml) (`.xml`), and [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`). Anything else is left alone.
-
-How much of a file becomes searchable depends on its format:
-
-| Format | Indexed |
-| --- | --- |
-| Markdown | Filename, title, headings, front matter, and the body text in searchable chunks |
-| XML, JSON, YAML | Filename and document title |
-
-For the structured formats the title is the one the [renderer](01-rendering.md) works out — an XML `<title>`, a root `title` or `name` key in JSON or YAML — falling back to the filename. Their body text is not chunked for search yet, so they are found by name and title rather than by a phrase inside them. They also draw no [graph](#graph) edges: a URL inside a data file is a value rather than a link between your documents, and reading one as Markdown would invent edges that were never written.
+Data files are searchable by name and title but draw no [graph](#graph) edges: a URL inside a data file is a value rather than a link between your documents, and reading one as Markdown would invent edges that were never written.
 
 ## Facts
 
 | Item | Value |
 | --- | --- |
-| Storage | `manifest.db` |
-| Worker pool | 4 parallel parse/hash workers |
-| Large-file indexing | Files over 2 MB are indexed from their first 2 MB, not skipped |
-| DB mode | SQLite WAL |
-| Progress throttle | 150 ms |
-| Full tree refresh throttle | 1500 ms |
+| Vault registry | `manifest.db` — the vaults you have named, and which one is active |
+| Vault text | Held in memory for the active vault only; dropped on a switch and on quit |
+| Documents read | Up to 5,000 per vault |
+| Search results | Top 50 |
+| Folder listing | One directory per click |
 
-## Skips
+> [!NOTE]
+> `manifest.db` keeps its name from when it held a file index. It no longer does — anything that reads a document reads the disk. What it holds now is the list of folders you called vaults, which is why losing it loses that list.
 
-### Status
+### Skipped folders
 
-- unreadable files (binary or non-UTF-8)
-- missing files after a successful rescan
+Browsing skips hidden folders and the common heavy or generated ones:
 
-A file over 2 MB is **not** skipped: it is indexed from its first 2 MB — so its title, headings, and the start of its content are searchable and it appears in every view — while the reader still opens the whole file. Only search coverage stops at the 2 MB mark.
-
-### Folders
-
-Common heavy or generated folders are skipped, including:
-
-- `.git`
 - `node_modules`
 - `target`
 - `vendor`
@@ -169,9 +174,7 @@ Common heavy or generated folders are skipped, including:
 - `.venv`
 - `__pycache__`
 
-Root-level system directories are also skipped where appropriate, such as `Windows`, `Program Files`, `AppData`, `Library`, `proc`, and `sys`.
-
-Symlinks and Windows reparse points are not descended.
+At a drive root, system directories such as `Windows`, `Program Files`, `AppData` and `Library` are skipped too. Symlinks and Windows reparse points are not descended.
 
 ## Layout
 
@@ -186,9 +189,10 @@ Saved library state includes:
 
 - `library_closed`
 - `library_width`
-- `library_view`
 - `graph_scope`
 - `library_project_path`
+
+The active vault is saved in `manifest.db` beside the vault list, not in [settings](05-settings.md).
 
 ### Narrow windows
 
@@ -196,23 +200,8 @@ Below the point where a pane and a usable reader both fit, the library stops bei
 
 The sheet is not saved. It describes the current view rather than a preference, so widening the window puts the pane back beside the page and there is no sheet to restore.
 
-## Toggle
-
-Indexing is off by default.
-
-When enabled:
-
-1. A background crawl starts right away — and again on each app launch while the setting stays on.
-2. Search and browse expand as the manifest fills in.
-
-When disabled:
-
-- No background crawl runs.
-- Existing manifest data still shows.
-- Files you open manually are still indexed.
-
 ## Next
 
 - [Settings](05-settings.md)
-- [Navigation](02-navigation.md)
+- [Navigation](02-navigation.md#the-toolbar)
 - [Architecture](../02-development/01-architecture.md)

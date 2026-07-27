@@ -107,4 +107,4 @@ That single file lets you verify headings, task lists, callouts, and syntax high
 
 - [Rendering](01-features/01-rendering.md) for supported syntax and examples
 - [Navigation](01-features/02-navigation.md) for tabs, history, and live reload
-- [Library](01-features/03-library.md) for search and indexing
+- [Library](01-features/03-library.md) for [vaults](01-features/03-library.md#vaults), search, and [GitHub sync](01-features/03-library.md#github-sync)

@@ -433,6 +433,15 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     .and_then(|index| workspace.tabs.get(index))
                     .and_then(|tab| tab.history.current())
                     .is_some_and(|current| paths_refer_to_same_document(&changed, current));
+                // Above the split, or it misses the commonest change of all —
+                // saving the document you are reading takes the other branch.
+                // Unfiltered on purpose: a containment check here compared the
+                // watcher's canonicalised path against the registry's plain one
+                // and discarded every event. One `git status`, off the loop, on
+                // an already-debounced event, is cheaper than being wrong.
+                if vault_state.active != 0 {
+                    refresh_vault_status(&vault_state, &proxy, vault_state.active);
+                }
                 if is_active_document {
                     reload_active_document(
                         &window,
@@ -610,6 +619,27 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::SetGraphView { open }) => {
                 vault_state.graph_open = open;
             }
+            Event::UserEvent(UserEvent::GetVaultGit { id }) => {
+                request_vault_git(&vault_state, &proxy, webview.as_ref(), id);
+            }
+            Event::UserEvent(UserEvent::GetVaultStatus { id }) => {
+                refresh_vault_status(&vault_state, &proxy, id);
+            }
+            Event::UserEvent(UserEvent::CreateVaultRepo { id }) => {
+                create_vault_repo(&vault_state, &proxy, webview.as_ref(), id);
+            }
+            Event::UserEvent(UserEvent::LinkVaultRemote { id, url }) => {
+                link_vault_repo(&vault_state, &proxy, webview.as_ref(), id, url);
+            }
+            Event::UserEvent(UserEvent::SyncVault { id }) => {
+                sync_vault(&vault_state, &proxy, webview.as_ref(), id);
+            }
+            Event::UserEvent(UserEvent::VaultGitReady { json }) => {
+                deliver_vault_git(webview.as_ref(), &json);
+            }
+            Event::UserEvent(UserEvent::VaultStatusReady { id, json }) => {
+                deliver_vault_status(webview.as_ref(), id, &json);
+            }
             Event::UserEvent(UserEvent::SetLibraryLayout { closed, width }) => {
                 settings.library_closed = closed;
                 settings.library_width = width;
@@ -622,6 +652,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             }
             Event::UserEvent(UserEvent::SetActiveVault { id }) => {
                 set_active_vault(id, &mut vault_state, &proxy, webview.as_ref());
+                // A different vault has a different repository, and its button
+                // should be right before anyone looks at it.
+                refresh_vault_status(&vault_state, &proxy, id);
                 // Back to the whole library: its top is the drive roots, which
                 // `request_folder` returns without reading anything.
                 if vault_state.root.is_none() {

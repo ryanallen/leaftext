@@ -398,6 +398,9 @@ crumbMenu.hidden = true;
 crumbMenu.setAttribute('role', 'menu');
 document.body.appendChild(crumbMenu);
 let crumbMenuOwner = null;
+// Which vault's settings the menu is showing, so a git answer arriving a second
+// later can redraw the panel it belongs to and no other.
+let crumbMenuVault = null;
 function hideCrumbMenu() {
   if (crumbMenu.hidden) return;
   // Hand focus back to the "…" before hiding, or it would be stranded on a
@@ -409,6 +412,7 @@ function hideCrumbMenu() {
     if (returnFocus && crumbMenuOwner.isConnected) crumbMenuOwner.focus();
   }
   crumbMenuOwner = null;
+  crumbMenuVault = null;
 }
 // The folders the "…" stands in for; picking one enters it.
 function folderMenuItems(hidden) {
@@ -423,13 +427,15 @@ function folderMenuItems(hidden) {
 // vault, then New vault…. The rows are told apart by id, so two vaults may share
 // a name — and "Library" is that first row's label, not a reserved word.
 function vaultMenuItems() {
-  // Open is the one you are in, closed the ones you are not — the glyph carries
-  // the state, so the tick beside it confirms rather than being the only sign.
-  const rootIcon = (on) => (on ? PACKAGE_OPEN_ICON_SVG : PACKAGE_ICON_SVG);
+  // Ask about every vault, not just the one in use: the menu is where you
+  // compare them, and "which of these reach GitHub" is the comparison worth
+  // making. Cached after the first look, so this costs once per vault.
+  requestKnownVaultStatuses();
+  const rootIcon = (on, id) => vaultGlyph(on, id);
   const items = [{
     label: window.leafLocale.t('library.title'),
     title: window.leafLocale.t('library.vaults.all'),
-    icon: rootIcon(!activeVaultId),
+    icon: rootIcon(!activeVaultId, 0),
     selected: !activeVaultId,
     run: () => switchVault(0),
   }];
@@ -438,13 +444,20 @@ function vaultMenuItems() {
     items.push({
       label: vault.name || vault.rootPath,
       title: vault.rootPath || '',
-      icon: rootIcon(vault.id === activeVaultId),
+      icon: rootIcon(vault.id === activeVaultId, vault.id),
       selected: vault.id === activeVaultId,
       run: () => switchVault(vault.id),
       // The row's own button: everything you can do to this vault, in one
       // place. Visible, because a menu you have to right-click is a menu
       // nobody finds.
-      edit: () => showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault)),
+      edit: () => {
+        crumbMenuVault = vault;
+        // Ask now rather than when a button is pressed: reading a repository is
+        // disk work, and the panel should already know the answer by the time
+        // anyone has read down to it.
+        send({ command: 'getVaultGit', id: vault.id });
+        showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
+      },
     });
   }
   items.push('separator');
@@ -458,6 +471,255 @@ function vaultMenuItems() {
 }
 // One vault's edit panel, shown in place of the switcher's list: its name, the
 // folder it points at, and the way to forget it. Reached from the row's button.
+// The vault's standing with GitHub. Every branch of this is a state the machine
+// is actually in -- git missing, a repo already here, a repo one folder down --
+// and each says what it is before offering what to do about it.
+function vaultGitItems(vault) {
+  const items = ['separator', { heading: window.leafLocale.t('library.vaults.sync') }];
+  const state = vaultGitByVault.get(vault.id);
+  if (!state) {
+    items.push({ note: window.leafLocale.t('library.vaults.sync.reading') });
+    return items;
+  }
+  if (!state.tooling.git) {
+    // The one hard requirement. Everything else this panel does is a wrapper
+    // around a git that is already installed and already knows the user.
+    items.push({ note: window.leafLocale.t('library.vaults.sync.noGit') });
+    items.push({
+      label: window.leafLocale.t('library.vaults.sync.getGit'),
+      run: () => send({ command: 'openExternal', url: 'https://git-scm.com/downloads' }),
+    });
+    return items;
+  }
+  const repo = state.repo;
+  const busy = Boolean(state.busy);
+  if (repo.atRoot) {
+    items.push({ note: repoSummary(repo) });
+    if (repo.remote) {
+      items.push({
+        label: window.leafLocale.t(busy ? 'library.vaults.sync.working' : 'library.vaults.sync.now'),
+        icon: SYNC_ICON_SVG,
+        disabled: busy,
+        keepOpen: true,
+      run: () => send({ command: 'syncVault', id: vault.id }),
+      });
+    } else {
+      // A repository with nowhere to push. The same two routes as a fresh one.
+      pushCreateRoutes(items, vault, state, busy);
+    }
+  } else {
+    if (repo.outer) {
+      items.push({ note: window.leafLocale.t('library.vaults.sync.inside', { repo: repo.outer }) });
+    }
+    if (repo.nested && repo.nested.length) {
+      items.push({
+        note: window.leafLocale.t('library.vaults.sync.nested', { list: repo.nested.join(', ') }),
+      });
+    }
+    pushCreateRoutes(items, vault, state, busy);
+  }
+  // Two things git needs that only bite at the moment of committing or pushing,
+  // which is too late to be told about them.
+  if (!state.tooling.identity) {
+    items.push({ note: window.leafLocale.t('library.vaults.sync.noIdentity'), danger: true });
+  }
+  if (!state.tooling.credentialHelper) {
+    items.push({ note: window.leafLocale.t('library.vaults.sync.noHelper'), danger: true });
+  }
+  const outcome = syncOutcomeText(state);
+  if (outcome) items.push({ note: outcome, danger: Boolean(state.error) });
+  return items;
+}
+// The two ways to get a repository onto GitHub. `gh` is one click because it
+// already holds a token; without it the browser does the authenticated part and
+// hands back a URL, which needs no token here at all.
+function pushCreateRoutes(items, vault, state, busy) {
+  if (state.tooling.gh) {
+    items.push({
+      label: window.leafLocale.t(busy ? 'library.vaults.sync.working' : 'library.vaults.sync.create'),
+      icon: SYNC_ICON_SVG,
+      disabled: busy,
+      keepOpen: true,
+      run: () => send({ command: 'createVaultRepo', id: vault.id }),
+    });
+  }
+  items.push({
+    label: window.leafLocale.t('library.vaults.sync.createOnGitHub'),
+    title: window.leafLocale.t('library.vaults.sync.createOnGitHub.help'),
+    run: () => send({
+      command: 'openExternal',
+      url: `https://github.com/new?name=${encodeURIComponent(state.suggested)}&visibility=private`,
+    }),
+  });
+  items.push({
+    input: '',
+    placeholder: window.leafLocale.t('library.vaults.sync.pasteUrl'),
+    commit: (url) => {
+      if (url) send({ command: 'linkVaultRemote', id: vault.id, url });
+    },
+  });
+}
+// Where the repository stands, in one line. Zero counts are left out; "0
+// behind" is noise on a repository that is up to date.
+function repoSummary(repo) {
+  const parts = [repo.remote || window.leafLocale.t('library.vaults.sync.noRemote')];
+  if (repo.branch) parts.push(repo.branch);
+  const waiting = [];
+  if (repo.changed) waiting.push(window.leafLocale.t('library.vaults.sync.changed', { count: repo.changed }));
+  if (repo.ahead) waiting.push(window.leafLocale.t('library.vaults.sync.ahead', { count: repo.ahead }));
+  if (repo.behind) waiting.push(window.leafLocale.t('library.vaults.sync.behind', { count: repo.behind }));
+  if (!waiting.length && repo.remote) waiting.push(window.leafLocale.t('library.vaults.sync.clean'));
+  return parts.join(' · ') + (waiting.length ? ' — ' + waiting.join(', ') : '');
+}
+// The host reports an outcome as a short tag it can build without a translator;
+// the words are chosen here, where the rest of them live.
+function syncOutcomeText(state) {
+  const message = state.message;
+  if (!message) return '';
+  if (state.error) return message;
+  if (message === 'created') return window.leafLocale.t('library.vaults.sync.done.created');
+  if (message === 'linked') return window.leafLocale.t('library.vaults.sync.done.linked');
+  if (message === 'local-only') return window.leafLocale.t('library.vaults.sync.done.localOnly');
+  if (message.startsWith('synced:')) {
+    const committed = Number(message.split(':')[1] || 0);
+    if (!committed) return window.leafLocale.t('library.vaults.sync.done.upToDate');
+    // Naming the destination is most of the reassurance: it is the part nobody
+    // can check at a glance, and the part that is wrong when something is wrong.
+    const remote = state.repo && state.repo.remote;
+    return remote
+      ? window.leafLocale.t('library.vaults.sync.done.pushedTo', { count: committed, repo: remote })
+      : window.leafLocale.t('library.vaults.sync.done.pushed', { count: committed });
+  }
+  return message;
+}
+// Redraw the panel in place when it is the one this state belongs to. Anything
+// else and the state is filed for the next time it is opened.
+function refreshVaultGitPanel(id) {
+  if (!crumbMenuVault || crumbMenuVault.id !== id || crumbMenu.hidden) return;
+  showCrumbMenu(crumbMenuOwner, editVaultMenuItems(crumbMenuVault));
+}
+// The header's sync button: shown only when this vault has a remote and work
+// that has not reached it -- uncommitted changes plus unpushed commits, both
+// answerable from disk. Whether the *remote* has moved needs a fetch, and a
+// reader that talks to GitHub on every save is doing something nobody asked
+// for; behind-counts belong in the panel, where you have asked.
+// Pushing a repository that is nearly up to date can be over in under a tenth
+// of a second. A spinner that lives for one frame reads as a glitch, not as
+// work, so the turn is held for long enough to be seen -- the growl is what
+// actually reports the outcome, and it wants something to arrive after.
+const SYNC_MIN_SPIN_MS = 700;
+const SYNC_FADE_MS = 260;
+let syncSpinUntil = 0;
+let syncSpinTimer = 0;
+let syncFadeTimer = 0;
+// Held from the click until the host reports how it went. Without it the turn
+// stops the moment anything else redraws the button -- a watcher tick mid-push
+// was enough -- and a spinner that pauses reads as a failure, which is the one
+// thing it must not say while the push is still running.
+let syncInFlight = false;
+function renderVaultSyncButton() {
+  if (!librarySyncButton) return;
+  const state = vaultGitByVault.get(activeVaultId);
+  const repo = state && state.repo;
+  const waiting = repo && repo.atRoot && repo.remote ? (repo.changed || 0) + (repo.ahead || 0) : 0;
+  const held = Math.max(0, syncSpinUntil - performance.now());
+  const spinning = syncInFlight || Boolean(state && state.busy) || held > 0;
+  // The button owes the eye the rest of the turn even once the work is done, so
+  // come back and redraw when the hold runs out.
+  if (syncSpinTimer) clearTimeout(syncSpinTimer);
+  syncSpinTimer = held > 0 ? setTimeout(renderVaultSyncButton, held + 20) : 0;
+
+  if (!activeVaultId || (!waiting && !spinning)) {
+    // Gone, but not blinked out: it fades while still turning, so the last thing
+    // seen is the work finishing rather than the button vanishing mid-thought.
+    // A failure leaves `waiting` above zero, so this is only ever the happy way
+    // out -- after an error the button stays where it is, ready to go again.
+    if (!librarySyncButton.hidden && !syncFadeTimer) {
+      librarySyncButton.classList.add('is-leaving');
+      syncFadeTimer = setTimeout(() => {
+        syncFadeTimer = 0;
+        librarySyncButton.hidden = true;
+        librarySyncButton.classList.remove('is-leaving', 'is-busy');
+      }, SYNC_FADE_MS);
+    }
+    return;
+  }
+  if (syncFadeTimer) {
+    clearTimeout(syncFadeTimer);
+    syncFadeTimer = 0;
+  }
+  librarySyncButton.classList.remove('is-leaving');
+  librarySyncButton.hidden = false;
+  librarySyncButton.disabled = spinning;
+  librarySyncButton.classList.toggle('is-busy', spinning);
+  const count = librarySyncButton.querySelector('.library-sync-count');
+  if (count) count.textContent = spinning ? '' : String(waiting);
+  const label = spinning
+    ? window.leafLocale.t('library.vaults.sync.working')
+    : window.leafLocale.t('library.vaults.sync.pending', { count: waiting });
+  librarySyncButton.title = label;
+  librarySyncButton.setAttribute('aria-label', label);
+}
+if (librarySyncButton) {
+  librarySyncButton.addEventListener('click', () => {
+    if (!activeVaultId) return;
+    syncInFlight = true;
+    syncSpinUntil = performance.now() + SYNC_MIN_SPIN_MS;
+    renderVaultSyncButton();
+    send({ command: 'syncVault', id: activeVaultId });
+  });
+}
+// The header's own reading: the folder's state without what-is-installed, which
+// is the expensive half. Merged into whatever the panel already knew.
+// Where the active vault's repository stands. Called from both ways the page
+// learns which vault is active, because they share no path: a switch arrives
+// through `leafSetVaults`, but a cold launch reads `__leafVaults` off the window
+// and never calls it. Hooked to the callback alone, this only ever fired if you
+// changed vaults.
+function requestActiveVaultStatus() {
+  renderVaultSyncButton();
+  if (activeVaultId) send({ command: 'getVaultStatus', id: activeVaultId });
+}
+window.leafSetVaultStatus = (id, repo) => {
+  if (typeof id !== 'number' || !repo) return;
+  const previous = vaultGitByVault.get(id);
+  // Only the folder's state. Saying `busy: false` here would end the spin from
+  // a watcher tick that happened to land mid-push, which is what made the turn
+  // stutter -- a job is over when the job says so, not when a file moves.
+  vaultGitByVault.set(id, Object.assign({}, previous || { id, tooling: {} }, { repo }));
+  renderVaultSyncButton();
+  renderLibraryVaultSwitch();
+  // An open menu is showing glyphs decided before this answer arrived.
+  if (crumbMenuOwner === libraryVaultSwitch && !crumbMenu.hidden) {
+    showCrumbMenu(libraryVaultSwitch, vaultMenuItems());
+  }
+  refreshVaultGitPanel(id);
+};
+window.leafSetVaultGit = (state) => {
+  if (!state || typeof state.id !== 'number') return;
+  // A whole state with nothing running is the end of whatever was: this is the
+  // only thing that stops the turn.
+  if (!state.busy) syncInFlight = false;
+  vaultGitByVault.set(state.id, state);
+  renderVaultSyncButton();
+  refreshVaultGitPanel(state.id);
+  // Anything the user pressed a button for says how it went, whether or not the
+  // panel is open -- the header's button can start a sync with the panel shut,
+  // and until now a failure there was silent. Reading the folder carries no
+  // message, so opening the panel does not growl at anyone.
+  if (state.message) {
+    leafToast(syncOutcomeText(state), state.error ? 'error' : 'ok');
+  }
+};
+window.leafVaultGitBusy = (id) => {
+  const state = vaultGitByVault.get(id);
+  if (!state) return;
+  // Keep everything known and only raise the flag, so the panel dims its buttons
+  // rather than emptying while the work runs.
+  vaultGitByVault.set(id, Object.assign({}, state, { busy: true, message: null, error: false }));
+  renderVaultSyncButton();
+  refreshVaultGitPanel(id);
+};
 function editVaultMenuItems(vault) {
   return [
     {
@@ -484,6 +746,7 @@ function editVaultMenuItems(vault) {
       danger: true,
       run: () => send({ command: 'removeVault', id: vault.id }),
     },
+    ...vaultGitItems(vault),
     'separator',
     {
       label: window.leafLocale.t('library.vaults.back'),
@@ -491,6 +754,28 @@ function editVaultMenuItems(vault) {
       run: () => showCrumbMenu(crumbMenuOwner, vaultMenuItems()),
     },
   ];
+}
+// Whether this vault has somewhere to push. A repository with no remote is a
+// pile of commits on one disk, which is not what a cloud promises.
+function vaultSyncs(id) {
+  const state = id ? vaultGitByVault.get(id) : null;
+  const repo = state && state.repo;
+  return Boolean(repo && repo.atRoot && repo.remote);
+}
+// The mark a vault wears: a cloud once it reaches GitHub, a box until then.
+// One cloud, not an open and a closed one -- open/closed says which vault you
+// are standing in, and a cloud is about where the thing lives. The tick still
+// marks the current row.
+function vaultGlyph(current, id) {
+  if (vaultSyncs(id)) return CLOUD_ICON_SVG;
+  return current ? PACKAGE_OPEN_ICON_SVG : PACKAGE_ICON_SVG;
+}
+// Ask about any vault we have not looked at yet. Bounded by the number of vaults
+// and answered off the event loop, so opening the menu never waits on git.
+function requestKnownVaultStatuses() {
+  for (const vault of leafVaults) {
+    if (!vaultGitByVault.has(vault.id)) send({ command: 'getVaultStatus', id: vault.id });
+  }
 }
 // Picking an entry lands on its root — including the one already active, which
 // is how the top of a deep trail stays one click away.
@@ -534,6 +819,16 @@ function showCrumbMenu(button, items) {
       heading.className = 'crumb-menu-heading';
       heading.textContent = entry.heading;
       crumbMenu.appendChild(heading);
+      continue;
+    }
+    // A line of explanation rather than something to press: what the repository
+    // is, or what is stopping it. Not a disabled button, which would suggest
+    // there is a way to press it.
+    if (entry.note) {
+      const note = document.createElement('div');
+      note.className = entry.danger ? 'crumb-menu-note is-danger' : 'crumb-menu-note';
+      note.textContent = entry.note;
+      crumbMenu.appendChild(note);
       continue;
     }
     if (entry.input !== undefined) {
@@ -581,9 +876,13 @@ function showCrumbMenu(button, items) {
     // as text rather than markup.
     item.innerHTML = `${entry.icon || ''}<span class="crumb-menu-label"></span>${entry.selected ? MENU_CHECK_SVG : ''}`;
     item.querySelector('.crumb-menu-label').textContent = entry.label;
+    if (entry.disabled) item.disabled = true;
     item.addEventListener('click', (event) => {
       event.stopPropagation();
-      hideCrumbMenu();
+      // Most rows are a destination, so the menu gets out of the way. The git
+      // rows are work done in place -- closing the panel would take away the
+      // only thing that reports how it went.
+      if (!entry.keepOpen) hideCrumbMenu();
       entry.run();
     });
     row.appendChild(item);
@@ -647,6 +946,10 @@ window.addEventListener('resize', scheduleCrumbFit);
 // are in, so hovering it says what changing would change.
 function renderLibraryVaultSwitch() {
   if (!libraryVaultSwitch) return;
+  // The button shows the vault you are in, so it wears that vault's mark. The
+  // caret is ours and stays; only the glyph before it is replaced.
+  const glyph = libraryVaultSwitch.querySelector('svg');
+  if (glyph) glyph.outerHTML = vaultGlyph(true, activeVaultId);
   const label = window.leafLocale.t('library.vaults.switch', { name: libraryRootLabel() });
   libraryVaultSwitch.title = label;
   libraryVaultSwitch.setAttribute('aria-label', label);
@@ -710,6 +1013,10 @@ window.leafSetVaults = (payload) => {
   const previous = activeVaultId;
   leafVaults = Array.isArray(next.vaults) ? next.vaults : [];
   activeVaultId = Number.isFinite(next.active) ? next.active : 0;
+  // Whichever vault is now current, find out where its repository stands. This
+  // is also how the button is right on the first paint: startup sends the vault
+  // list like everything else does, so there is no separate opening move.
+  requestActiveVaultStatus();
   if (activeVaultId !== previous) {
     // A new root: the folder the list was in belonged to the old one, and its
     // files are about to be replaced.

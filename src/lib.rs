@@ -29,6 +29,15 @@ mod format;
 pub use format::{all_document_extensions, is_supported_document_path, DocumentFormat};
 mod folder_tree;
 pub use folder_tree::{read_folder_listing, FolderCrumb, FolderListing};
+
+/// Git, as much of it as a vault needs. Shells out to the machine's own git
+/// rather than shipping a second one that would not know the user, their
+/// identity, or how they log in to GitHub.
+mod git;
+pub use git::{
+    create_repo_on_github, git_tooling, init_vault_repo, inspect_vault_repo, link_vault_remote,
+    repo_name_for_vault, sync_vault_repo, GitError, GitTooling, SyncReport, VaultRepo,
+};
 mod vault_corpus;
 pub use vault_corpus::{CorpusDocument, VaultCorpus, MAX_CORPUS_DOCUMENTS};
 mod editing;
@@ -864,6 +873,18 @@ pub fn app_shell_html() -> String {
             normalize_svg_icon_colors(DOCUMENT_ICON_SVG).trim(),
         )
         .replace(
+            "{{LINE_NUMBERS_ON_ICON_SVG}}",
+            normalize_svg_icon_colors(LINE_NUMBERS_ON_ICON_SVG).trim(),
+        )
+        .replace(
+            "{{LINE_NUMBERS_OFF_ICON_SVG}}",
+            normalize_svg_icon_colors(LINE_NUMBERS_OFF_ICON_SVG).trim(),
+        )
+        .replace(
+            "{{SYNC_ICON_SVG}}",
+            normalize_svg_icon_colors(SYNC_ICON_SVG).trim(),
+        )
+        .replace(
             "{{SPEED_READER_ON_ICON_SVG}}",
             normalize_svg_icon_colors(SPEED_READER_ON_ICON_SVG).trim(),
         )
@@ -878,6 +899,10 @@ pub fn app_shell_html() -> String {
         .replace(
             "{{LOCK_OPEN_ICON_SVG}}",
             normalize_svg_icon_colors(LOCK_OPEN_ICON_SVG).trim(),
+        )
+        .replace(
+            "{{CLOUD_ICON_SVG}}",
+            normalize_svg_icon_colors(CLOUD_ICON_SVG).trim(),
         )
         .replace(
             "{{PACKAGE_OPEN_ICON_SVG}}",

@@ -246,8 +246,8 @@ flowchart TD
 sequenceDiagram
     participant UI
     participant Reader
-    UI->>Reader: getFileTree { filter }
-    Reader-->>UI: leafSetLibraryState(tree)
+    UI->>Reader: getFolder { path }
+    Reader-->>UI: leafSetLibraryFolder(listing)
 ```
 
 ## Emoji

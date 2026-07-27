@@ -340,6 +340,234 @@ fn the_map_opens_framing_everything_and_then_leaves_the_view_alone() {
 }
 
 #[test]
+fn saving_the_document_you_are_reading_still_updates_the_sync_count() {
+    let source = include_str!("../app/event_loop.rs");
+
+    // A change to the open document takes the live-reload branch; a change to
+    // anything else takes the other one. The status refresh sat in the second,
+    // so the commonest edit there is -- saving the file you are looking at --
+    // left the header's count stale until something else happened to move.
+    let refresh = source
+        .find("refresh_vault_status(&vault_state, &proxy, vault_state.active);")
+        .expect("the watcher refreshes the vault's status");
+    let branch = source
+        .find("if is_active_document {")
+        .expect("the watcher splits on the active document");
+    assert!(
+        refresh < branch,
+        "the status refresh must run before the branch, or it only fires for          files you are not editing"
+    );
+
+    // And nothing between the event and the refresh. A containment check lived
+    // here and discarded every event: the watcher reports paths under what it
+    // watched, and that was canonicalised — a `\?\` verbatim prefix on
+    // Windows, which does not share a component with the plain `C:\…` the vault
+    // registry holds. One `git status` off the loop is cheaper than being wrong.
+    assert!(!source.contains("changed.starts_with(root)"));
+}
+
+#[test]
+fn one_growl_serves_every_thing_worth_saying_in_passing() {
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    // There was already an error growl; this is that one generalised rather than
+    // a second thing in the same corner doing the same job.
+    assert!(html.contains("function leafToast(message, tone) {"));
+    assert!(html.contains("window.leafShowError = (message) => leafToast(message, 'error');"));
+    assert!(!html.contains("error.className = 'app-error';"));
+    assert!(css.contains(".app-toast {"));
+    assert!(css.contains(".app-toast.is-error {"));
+
+    // One slot, replaced. A stack is a thing that then needs managing.
+    assert!(html.contains("document.querySelector('.app-toast')"));
+    // A failure holds longer than a success: one is read at a glance and never
+    // again, the other has to be finished and acted on.
+    assert!(html.contains("const TOAST_MS = 5000;"));
+    assert!(html.contains("const TOAST_ERROR_MS = 8000;"));
+    // It rises into place; something that simply appears in a corner has been
+    // half-missed by the time the eye arrives.
+    assert!(css.contains(".app-toast.is-shown {"));
+    assert!(css.contains("@media (prefers-reduced-motion: reduce) {"));
+}
+
+#[test]
+fn a_vault_with_work_to_send_says_so_in_its_own_header() {
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    // Two clicks down a settings panel is where a control goes to be forgotten.
+    // This one lives at the end of the vault's crumb row, and only exists while
+    // there is something to press it for.
+    assert!(html.contains(r#"id="librarySyncButton" class="library-sync""#));
+    assert!(html.contains("function renderVaultSyncButton()"));
+    assert!(html.contains("if (!activeVaultId || (!waiting && !spinning)) {"));
+    assert!(html.contains("send({ command: 'syncVault', id: activeVaultId });"));
+    assert!(css.contains(".library-sync {"));
+    assert!(css.contains(".library-sync[hidden] {"));
+    // A count, not a dot: "3" is a reason to press it.
+    assert!(html.contains("(repo.changed || 0) + (repo.ahead || 0)"));
+    assert!(css.contains(".library-sync.is-busy svg {"));
+
+    // The count is read off disk, on a path that never asks the network. The
+    // panel's reading is the one that runs `gh auth status`; doing that on every
+    // save would put a token check behind Ctrl+S.
+    assert!(html.contains("send({ command: 'getVaultStatus', id: activeVaultId });"));
+    assert!(html.contains("window.leafSetVaultStatus = (id, repo) => {"));
+
+    // There are two ways the page learns which vault is active and they share no
+    // path: a switch mid-session comes through `leafSetVaults`, but a cold launch
+    // never calls that -- the list is already on the window as `__leafVaults` and
+    // read straight out of it. Asking from only one of them is a button that
+    // works all session and is missing every time the app starts.
+    assert!(html.contains("function requestActiveVaultStatus() {"));
+    assert_eq!(
+        html.matches("requestActiveVaultStatus();").count(),
+        2,
+        "expected both callers to ask: the vault switch and the bootstrap"
+    );
+    let bootstrap = html
+        .rfind("window.leafSetNavigation({ canGoBack: false, canGoForward: false });")
+        .expect("the shell ends by bootstrapping itself");
+    assert!(
+        html[bootstrap..].contains("requestActiveVaultStatus();"),
+        "the bootstrap has to ask too, or a cold launch never does"
+    );
+
+    // A push that finishes in a tenth of a second still has to look like work,
+    // and whatever happened has to reach you whether or not the panel is open --
+    // starting a sync from here used to fail silently with the panel shut.
+    assert!(html.contains("const SYNC_MIN_SPIN_MS = 700;"));
+    assert!(html.contains("syncSpinUntil = performance.now() + SYNC_MIN_SPIN_MS;"));
+    assert!(html.contains("librarySyncButton.classList.toggle('is-busy', spinning);"));
+
+    // Once it turns it does not stop until the answer is in. Anything else
+    // redrawing the button mid-push -- a watcher tick was enough -- used to end
+    // the turn, and a spinner that pauses reads as a failure at the one moment
+    // it must not. Only a finished job releases it.
+    assert!(html.contains("let syncInFlight = false;"));
+    assert!(html.contains("    syncInFlight = true;"));
+    assert!(
+        html.contains("const spinning = syncInFlight || Boolean(state && state.busy) || held > 0;")
+    );
+    assert!(html.contains("  if (!state.busy) syncInFlight = false;"));
+    // A watcher tick carries the folder's state and nothing about the job, so it
+    // must not claim the job is over.
+    assert!(!html.contains("{ repo, busy: false }"));
+    // And it leaves still turning, rather than blinking out mid-thought.
+    assert!(html.contains("librarySyncButton.classList.add('is-leaving');"));
+    assert!(css.contains(".library-sync.is-leaving {"));
+    // An <svg> takes its transform origin from its own box, so a spin that does
+    // not say so orbits the corner instead of turning.
+    assert!(css.contains("  transform-origin: 50% 50%;"));
+    assert!(html.contains("leafToast(syncOutcomeText(state), state.error ? 'error' : 'ok');"));
+    // Reading the folder carries no message, so opening the panel is silent.
+    assert!(html.contains("  if (state.message) {"));
+
+    for key in [
+        "library.vaults.sync.pending",
+        "library.vaults.sync.done.pushedTo",
+    ] {
+        let count = html.matches(&format!("'{key}':")).count();
+        assert!(
+            count >= 2,
+            "expected EN + ZH-CN entries for {key}, found {count}"
+        );
+    }
+}
+
+#[test]
+fn a_vault_that_reaches_github_wears_a_cloud() {
+    let html = app_shell_html();
+
+    // Where a box says "a collection, here", a cloud says "and somewhere else as
+    // well" -- which is the whole of what syncing buys, and the one thing worth
+    // knowing at a glance about a vault you are not currently in.
+    let cloud = normalize_svg_icon_colors(CLOUD_ICON_SVG);
+    assert!(cloud.contains("stroke=\"currentColor\""));
+    assert!(html.contains(cloud.trim()));
+    assert!(html.contains("const CLOUD_ICON_SVG = `"));
+    assert!(html.contains("function vaultGlyph(current, id) {"));
+    assert!(html.contains("  if (vaultSyncs(id)) return CLOUD_ICON_SVG;"));
+
+    // A repository with no remote is a pile of commits on one disk, which is not
+    // what a cloud promises.
+    assert!(html.contains("return Boolean(repo && repo.atRoot && repo.remote);"));
+
+    // One cloud, not an open and a closed one: open/closed says which vault you
+    // are standing in, and a cloud is about where the thing lives. The tick still
+    // marks the current row.
+    assert_eq!(html.matches("CLOUD_ICON_SVG;").count(), 1);
+    assert!(html.contains("return current ? PACKAGE_OPEN_ICON_SVG : PACKAGE_ICON_SVG;"));
+
+    // The menu is where vaults are compared, so every one of them is asked about
+    // -- not only the one in use. Cached, so it costs once per vault.
+    assert!(html.contains("function requestKnownVaultStatuses() {"));
+    assert!(html.contains(
+        "if (!vaultGitByVault.has(vault.id)) send({ command: 'getVaultStatus', id: vault.id });"
+    ));
+
+    // And the switcher button wears the mark of the vault it stands for; only
+    // the glyph is replaced, the caret beside it is ours.
+    assert!(html.contains("if (glyph) glyph.outerHTML = vaultGlyph(true, activeVaultId);"));
+}
+
+#[test]
+fn a_vault_can_be_put_on_github_from_its_own_settings() {
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    // Opening the panel reads the folder; everything after that is a button.
+    assert!(html.contains("window.leafSetVaultGit = (state) => {"));
+    assert!(html.contains("window.leafVaultGitBusy = (id) => {"));
+    assert!(html.contains("send({ command: 'syncVault', id: vault.id }),"));
+    assert!(html.contains("send({ command: 'createVaultRepo', id: vault.id }),"));
+    assert!(html.contains("command: 'linkVaultRemote', id: vault.id, url"));
+
+    // Git is the one hard requirement, and it is named rather than assumed.
+    assert!(html.contains("if (!state.tooling.git) {"));
+    assert!(html.contains("https://git-scm.com/downloads"));
+    // Without gh the browser does the authenticated half and hands back a URL,
+    // so nothing here ever holds a token.
+    assert!(html.contains("if (state.tooling.gh) {"));
+    assert!(html.contains("https://github.com/new?name="));
+    assert!(html.contains("visibility=private"));
+    assert!(!html.contains("ghp_"));
+    assert!(!html.contains("Authorization"));
+
+    // The two things git needs that only bite at commit or push time, which is
+    // too late to be told about them.
+    assert!(html.contains("if (!state.tooling.identity) {"));
+    assert!(html.contains("if (!state.tooling.credentialHelper) {"));
+
+    // A repo one folder down is reported, not silently swallowed, and a vault
+    // inside someone else's repo is told that is what it is.
+    assert!(html.contains("library.vaults.sync.nested"));
+    assert!(html.contains("library.vaults.sync.inside"));
+
+    // Work happens in the panel, so the panel stays up to report it.
+    assert!(html.contains("if (!entry.keepOpen) hideCrumbMenu();"));
+    assert!(html.contains("keepOpen: true,"));
+    assert!(css.contains(".crumb-menu-note {"));
+    assert!(css.contains(".crumb-menu-item:disabled {"));
+
+    for key in [
+        "library.vaults.sync",
+        "library.vaults.sync.noGit",
+        "library.vaults.sync.create",
+        "library.vaults.sync.pasteUrl",
+        "library.vaults.sync.noHelper",
+        "library.vaults.sync.done.pushed",
+    ] {
+        let count = html.matches(&format!("'{key}':")).count();
+        assert!(
+            count >= 2,
+            "expected EN + ZH-CN entries for {key}, found {count}"
+        );
+    }
+}
+
+#[test]
 fn editing_the_reading_view_is_a_padlock_on_the_document_not_a_global_switch() {
     let html = app_shell_html();
     let css = reading_mode_css();
@@ -358,6 +586,7 @@ fn editing_the_reading_view_is_a_padlock_on_the_document_not_a_global_switch() {
     assert!(html.contains(r#"id="readerViewTools" class="reader-view-tools""#));
     assert!(html.contains(r#"id="readerLockButton" class="reader-subtool""#));
     assert!(html.contains(r#"id="speedReaderButton" class="reader-subtool""#));
+    assert!(html.contains(r#"id="lineNumbersButton" class="reader-subtool""#));
     assert!(html.contains("readerViewTools.hidden = !onReadingView;"));
     assert!(html.contains("renderReadingTools(current === 'reading');"));
     // Sunk into the bar and grained like it, rather than laid on top of it.
@@ -392,6 +621,16 @@ fn editing_the_reading_view_is_a_padlock_on_the_document_not_a_global_switch() {
     // to, so pressed (unlocked, or the speed reader running) shows the on glyph.
     assert!(html.contains("setSubtoolState(readerLockButton, unlocked,"));
     assert!(html.contains("setSubtoolState(speedReaderButton, speedReaderEnabled,"));
+    assert!(html.contains("setSubtoolState(lineNumbersButton, lineNumbersEnabled,"));
+    // Line numbers and the speed reader are how the reading view is drawn, kept
+    // for the whole app: one setter owns the flag, the attribute and the
+    // settings checkbox, so the bar and the sheet can never disagree.
+    assert!(html.contains(
+        "if (lineNumbersEnabledControl) lineNumbersEnabledControl.checked = lineNumbersEnabled;"
+    ));
+    for icon in [LINE_NUMBERS_ON_ICON_SVG, LINE_NUMBERS_OFF_ICON_SVG] {
+        assert!(html.contains(normalize_svg_icon_colors(icon).trim()));
+    }
     assert!(html.contains("button.setAttribute('aria-pressed', String(on));"));
 
     // The speed reader stays one preference for the whole app -- a way of
@@ -644,12 +883,11 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     }
     assert!(html.contains("const PACKAGE_OPEN_ICON_SVG = `"));
     assert!(html.contains("const PACKAGE_ICON_SVG = `"));
-    // Open is the vault you are in, closed the ones you are not, so the row
-    // says which it is without leaning on the tick alone.
-    assert!(
-        html.contains("const rootIcon = (on) => (on ? PACKAGE_OPEN_ICON_SVG : PACKAGE_ICON_SVG);")
-    );
-    assert!(html.contains("icon: rootIcon(vault.id === activeVaultId),"));
+    // Open is the vault you are in, closed the ones you are not, so the row says
+    // which it is without leaning on the tick alone — until a vault reaches
+    // GitHub, at which point where it lives is the more useful thing to show.
+    assert!(html.contains("const rootIcon = (on, id) => vaultGlyph(on, id);"));
+    assert!(html.contains("icon: rootIcon(vault.id === activeVaultId, vault.id),"));
     // The pane still lists directories as directories.
     assert!(html.contains("const FOLDER_ICON_SVG = `"));
     assert!(html.contains(r#"<span class="library-crumb-caret" aria-hidden="true">"#));
@@ -703,7 +941,10 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
 
     // A visible button on the row, not a right-click: rename, re-point and
     // remove all live behind it.
-    assert!(html.contains("edit: () => showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault)),"));
+    assert!(html.contains("showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));"));
+    // Opening the panel asks about the folder's repository straight away, so the
+    // answer is there by the time anyone has read down to it.
+    assert!(html.contains("send({ command: 'getVaultGit', id: vault.id });"));
     assert!(html.contains(r#"edit.className = 'crumb-menu-edit';"#));
     assert!(css.contains(".crumb-menu-edit {"));
     // Clicking it opens that vault's panel rather than switching to the vault.

@@ -7,6 +7,15 @@ pub(crate) const OPEN_LIBRARY_ICON_SVG: &str = include_str!("assets/panel.svg");
 pub(crate) const OPEN_ICON_SVG: &str = include_str!("assets/folder-open.svg");
 pub(crate) const CODE_VIEW_ICON_SVG: &str = include_str!("assets/code-bracket.svg");
 pub(crate) const DOCUMENT_ICON_SVG: &str = include_str!("assets/document.svg");
+/// Numbering each block in the margin: plain lines when it is off, numbered
+/// ones when it is on. The glyph is the margin it makes.
+pub(crate) const LINE_NUMBERS_ON_ICON_SVG: &str = include_str!("assets/list-ordered.svg");
+pub(crate) const LINE_NUMBERS_OFF_ICON_SVG: &str = include_str!("assets/text-align-start.svg");
+
+/// Sending a vault to GitHub and taking back what is there. The same round
+/// arrows the updater's language uses, because it is the same idea.
+pub(crate) const SYNC_ICON_SVG: &str = include_str!("assets/arrow-path.svg");
+
 /// Whether the reading view is a live editor, on the document in front of you.
 /// Both glyphs ship and the button shows the state it is in — a closed padlock
 /// on a document you cannot type into, an open one on a document you can.
@@ -18,6 +27,10 @@ pub(crate) const LOCK_OPEN_ICON_SVG: &str = include_str!("assets/lock-open.svg")
 /// a truer label for it than any word would be.
 pub(crate) const SPEED_READER_ON_ICON_SVG: &str = include_str!("assets/speed-reader-on.svg");
 pub(crate) const SPEED_READER_OFF_ICON_SVG: &str = include_str!("assets/speed-reader-off.svg");
+
+/// A vault that reaches GitHub. A box says "a collection, here"; a cloud says
+/// "and somewhere else as well", which is what syncing buys.
+pub(crate) const CLOUD_ICON_SVG: &str = include_str!("assets/cloud.svg");
 
 /// A vault: a package rather than a folder, because a vault is not one — it is
 /// a whole collection the app treats as a unit, and it has to read as different

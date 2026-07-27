@@ -10,6 +10,7 @@ mod app_shell_scripts;
 mod data_xml;
 mod editing;
 mod folder_tree;
+mod git;
 mod glossary;
 mod images;
 mod indexer_pager;

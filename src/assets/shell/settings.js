@@ -62,13 +62,17 @@ pagerEnabledControl.addEventListener('change', () => {
 // #locus links still resolve. Off by default.
 let lineNumbersEnabled =
   typeof LEAF_SETTINGS.lineNumbersEnabled === 'boolean' ? LEAF_SETTINGS.lineNumbersEnabled : false;
-function applyLineNumbersEnabled() {
+// Two ways in -- the reading view's tools and the settings row -- so the one
+// setter owns the flag, the attribute and the checkbox, and neither caller can
+// leave the other showing the wrong thing.
+function setLineNumbersEnabled(enabled) {
+  lineNumbersEnabled = Boolean(enabled);
   document.documentElement.dataset.lineNumbersEnabled = String(lineNumbersEnabled);
+  if (lineNumbersEnabledControl) lineNumbersEnabledControl.checked = lineNumbersEnabled;
 }
-applyLineNumbersEnabled();
-lineNumbersEnabledControl.checked = lineNumbersEnabled;
+setLineNumbersEnabled(lineNumbersEnabled);
 lineNumbersEnabledControl.addEventListener('change', () => {
-  lineNumbersEnabled = lineNumbersEnabledControl.checked;
-  applyLineNumbersEnabled();
+  setLineNumbersEnabled(lineNumbersEnabledControl.checked);
   send({ command: 'setLineNumbersEnabled', enabled: lineNumbersEnabled });
+  renderReaderToolbar(!!activeDocumentPath());
 });

@@ -36,9 +36,11 @@ const viewGraphButton = document.getElementById('viewGraphButton');
 const readerViewTools = document.getElementById('readerViewTools');
 const readerLockButton = document.getElementById('readerLockButton');
 const speedReaderButton = document.getElementById('speedReaderButton');
+const lineNumbersButton = document.getElementById('lineNumbersButton');
 const libraryCrumbTrail = document.getElementById('libraryCrumbTrail');
 const libraryVaultSwitch = document.getElementById('libraryVaultSwitch');
 const librarySearch = document.getElementById('librarySearch');
+const librarySyncButton = document.getElementById('librarySyncButton');
 const librarySearchResults = document.getElementById('librarySearchResults');
 const settingsMenu = document.getElementById('settingsMenu');
 const readerLoading = document.getElementById('readerLoading');
@@ -123,15 +125,45 @@ function endTabDrag(commit) {
 }
 document.addEventListener('pointerup', () => endTabDrag(true));
 document.addEventListener('pointercancel', () => endTabDrag(false));
+// A growl: one line, bottom right, gone on its own. One slot that replaces
+// itself, not a stack -- a stack is a thing that then needs managing. Failures
+// hold longer: a success is read at a glance, a failure has to be finished and
+// acted on.
+const TOAST_MS = 5000;
+const TOAST_ERROR_MS = 8000;
+let toastTimer = 0;
+function leafToast(message, tone) {
+  const existing = document.querySelector('.app-toast');
+  if (existing) existing.remove();
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+    toastTimer = 0;
+  }
+  if (!message) return;
+  const toast = document.createElement('div');
+  const error = tone === 'error';
+  toast.className = error ? 'app-toast is-error' : 'app-toast';
+  // `status` rather than `alert` even for failures: nothing here is urgent
+  // enough to interrupt a screen reader mid-sentence.
+  toast.setAttribute('role', 'status');
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  // A frame later, so the transition has a start state to move away from.
+  window.requestAnimationFrame(() => toast.classList.add('is-shown'));
+  toastTimer = setTimeout(() => {
+    toast.classList.remove('is-shown');
+    setTimeout(() => toast.remove(), 200);
+  }, error ? TOAST_ERROR_MS : TOAST_MS);
+}
+
 // A slow document renders on the Rust side before the HTML comes back. Show a
 // spinner over the reader immediately during that work, cleared when the
 // document state arrives; a safety timeout guarantees it never sticks.
 const READER_LOADING_SAFETY_MS = 30000;
 let readerLoadingSafety = 0;
-// Who put the overlay up. It covers the reader cell, and the graph draws in that
-// same cell: a document rendering behind the map must not throw a spinner over
-// it, nor clear the one the map raised while it builds. Pass 'graph' to speak
-// for the map; everything else speaks for the document.
+// Who put the overlay up. It covers the reader cell and the graph draws there
+// too, so a document rendering behind the map must neither cover it nor clear
+// the map's own spinner. Pass 'graph' to speak for the map.
 let readerLoadingOwner = null;
 function beginReaderLoading(owner) {
   const forGraph = owner === 'graph';
