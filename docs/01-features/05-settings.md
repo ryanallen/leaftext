@@ -1,6 +1,6 @@
 # Settings
 
-> Your settings live on your machine, not in an account. Theme, speed reader, minimap, pager, line numbers, updates, library layout, and window size sit in a plain JSON file you can read, plus the interface language in the WebView's local storage.
+> Your settings live on your machine, not in an account. Theme, speed reader, minimap, pager, updates, library layout, and window size sit in a plain JSON file you can read, plus the interface language in the WebView's local storage.
 
 Most settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView. The one exception is the interface language, kept in the WebView's local storage under `leaf.localeMode`.
 
@@ -14,10 +14,9 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 | Speed Reader | On / Off | Off |
 | Minimap | On / Off | On |
 | Pager | On / Off | On |
-| Line numbers | On / Off | Off |
 | Graph size | Focus, Medium, Large, Everything | Focus |
 
-Two of these are also reachable without opening the panel: **Speed Reader** and **Line numbers** sit in the reading view's own tools on the [floating toolbar](02-navigation.md#the-toolbar), and the two places drive the same saved value.
+One of these is also reachable without opening the panel: **Speed Reader** sits in the reading view's own tools on the [floating toolbar](02-navigation.md#the-toolbar), and the two places drive the same saved value.
 
 Whether the rendered page can be typed into is **not** here. It is a padlock on the document in front of you — see [Editing](07-editing.md#the-padlock).
 
@@ -44,7 +43,6 @@ Here `{config_dir}` and `{data_dir}` are the per-app directories derived from th
   "minimap_enabled": true,
   "pager_enabled": true,
   "speed_reader_enabled": false,
-  "line_numbers_enabled": false,
   "theme_family": "fern",
   "theme_mode": "system",
   "theme_random_used": [],
@@ -125,14 +123,6 @@ The app ships both language dictionaries locally and applies changes without a r
 - Appends a Previous / Next bar at the bottom of documents in a folder tree connected by `README.md` files
 - Turn it off when you prefer clean document bottoms without navigation buttons
 - Saved as `pager_enabled`
-
-### Line numbers
-
-- Off by default, and also on the reading view's [toolbar](02-navigation.md#the-toolbar)
-- Numbers each block in the left gutter as a copyable [block permalink](01-rendering.md#inline-html)
-- Hidden until you hover a block (or the number itself) on pointer devices; stays faintly visible on touch devices and narrow windows, where a single tap copies the link
-- Turning it off hides the numbers; blocks keep their ids, so `#id` deep links still resolve
-- Saved as `line_numbers_enabled`
 
 ### Updates
 

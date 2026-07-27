@@ -648,7 +648,6 @@ fn editing_the_reading_view_is_a_padlock_on_the_document_not_a_global_switch() {
     assert!(html.contains(r#"id="readerViewTools" class="reader-view-tools""#));
     assert!(html.contains(r#"id="readerLockButton" class="reader-subtool""#));
     assert!(html.contains(r#"id="speedReaderButton" class="reader-subtool""#));
-    assert!(html.contains(r#"id="lineNumbersButton" class="reader-subtool""#));
     assert!(html.contains("readerViewTools.hidden = !onReadingView;"));
     assert!(html.contains("renderReadingTools(current === 'reading');"));
     // Sunk into the bar and grained like it, rather than laid on top of it.
@@ -683,16 +682,6 @@ fn editing_the_reading_view_is_a_padlock_on_the_document_not_a_global_switch() {
     // to, so pressed (unlocked, or the speed reader running) shows the on glyph.
     assert!(html.contains("setSubtoolState(readerLockButton, unlocked,"));
     assert!(html.contains("setSubtoolState(speedReaderButton, speedReaderEnabled,"));
-    assert!(html.contains("setSubtoolState(lineNumbersButton, lineNumbersEnabled,"));
-    // Line numbers and the speed reader are how the reading view is drawn, kept
-    // for the whole app: one setter owns the flag, the attribute and the
-    // settings checkbox, so the bar and the sheet can never disagree.
-    assert!(html.contains(
-        "if (lineNumbersEnabledControl) lineNumbersEnabledControl.checked = lineNumbersEnabled;"
-    ));
-    for icon in [LINE_NUMBERS_ON_ICON_SVG, LINE_NUMBERS_OFF_ICON_SVG] {
-        assert!(html.contains(normalize_svg_icon_colors(icon).trim()));
-    }
     assert!(html.contains("button.setAttribute('aria-pressed', String(on));"));
 
     // The speed reader stays one preference for the whole app -- a way of

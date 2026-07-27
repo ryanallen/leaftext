@@ -10,7 +10,7 @@ Leaf Text picks a pipeline from the file extension. Markdown (`.md`, `.markdown`
 | --- | --- |
 | Core Markdown | Headings, paragraphs, lists, links, images, blockquotes, rules, inline code |
 | GFM | Tables, task lists, strikethrough, autolinks |
-| Extras | Syntax highlighting, Mermaid, math, alerts, footnotes, emoji, block permalinks |
+| Extras | Syntax highlighting, Mermaid, math, alerts, footnotes, emoji |
 | Leaf extensions | [Buttons](#buttons-leaf-extension) — a link wrapped in braces |
 | Local content | [Images](#images) by relative, absolute, or `file://` path |
 | Safety | Sanitized HTML allowlist |
@@ -48,7 +48,7 @@ All six ATX heading levels render:
 ##### H5 heading
 ###### H6 heading
 
-Every heading gets a slug `id`. Every other content block — paragraphs, list items, blockquotes, code blocks, tables, and more — gets a stable auto-assigned `id` too. Hover any block, or the gutter spot beside it, to reveal a permalink button in the left margin; clicking it jumps to that exact block. On touch devices, which have no hover, the button stays faintly visible in the margin beside every block and brightens when tapped. A blockquote (or GitHub alert) is treated as a single citable unit: it carries one permalink button, and the paragraphs inside it share it — each still keeps its own `id`, so a direct `#`-link to an inner block resolves. Blocks with an explicit author-supplied `id` work the same way — see [Inline HTML](#inline-html).
+Every heading gets a slug `id`, so `#slug` links and the [outline](02-navigation.md#outline) resolve against it. Blocks carrying an explicit author-supplied `id` keep theirs — see [Inline HTML](#inline-html).
 
 ## Text formatting
 
@@ -120,7 +120,7 @@ Standard blockquotes also use a hanging indent for each authored line, so when a
 
 Language-tagged fenced code blocks get syntax coloring, a language badge, and a Copy button. Hover a block to reveal the button.
 
-A line too long for the column scrolls sideways inside the block; the badge, the Copy button, and the block's [gutter number](05-settings.md#line-numbers) all stay put while it does, and the block itself keeps the reading column's left edge.
+A line too long for the column scrolls sideways inside the block; the badge and the Copy button stay put while it does, and the block itself keeps the reading column's left edge.
 
 ```rust
 /// Extract the leading frontmatter block, if any.
@@ -350,9 +350,7 @@ An `id` on a `<div>`, `<p>`, `<span>`, or a heading (`<h1>`–`<h6>`) creates a 
 
 <h1 id="foreword" align="center">Foreword</h1>
 
-Link to it from anywhere on the same page: `[Foreword](#foreword)`. Every content block also carries a line number in the left gutter — the same affordance every block gets automatically, with or without an explicit `id`.
-
-Every block gets a short, citable address from its place in the document: a flat running count down the page — `1`, `2`, `3`, `4` and so on, like a code editor's line gutter, with no reset at headings. The number sits in the left margin as faint monospace text, aligned to the bottom of the block's first line; on pointer devices it stays hidden until you hover the block (or the number itself), which brightens it, while on touch devices and narrow windows it stays faintly visible so a single tap copies the link. The address is plain ASCII, so it stays readable in the tooltip even when the heading text has diacritics. A heading also keeps its text slug, so `#slug` links and the table of contents still resolve; it carries its number through a hidden alias. Clicking a gutter number jumps to the block **and** copies its `#<id>` to the clipboard, so you can paste the citation out. A block with an explicit author `id` keeps that id. You can hide the gutter numbers entirely with the [Line numbers setting](05-settings.md#line-numbers) — the ids stay, so `#id` links keep resolving.
+Link to it from anywhere on the same page: `[Foreword](#foreword)`. Headings are addressable this way without any markup of your own — each gets a slug `id` from its text.
 
 `<br>` forces a line break inside a paragraph without starting a new block:
 

@@ -131,14 +131,10 @@ function bindTableCheckboxes() {
 
 // Serialize an anchor back to Markdown. The renderer makes several kinds of `<a>`
 // that must NOT all become `[text](href)`:
-//   - the gutter permalink → nothing;
 //   - glossary links and GitHub refs (`.github-ref`) → their plain text;
 //   - autolinks (visible text == URL) → kept bare;
 //   - everything else → `[text](href)`.
 function anchorToMarkdown(el) {
-  if (el.classList.contains('heading-anchor')) {
-    return '';
-  }
   const href = el.getAttribute('href') || '';
   const text = el.textContent;
   if (href.startsWith('glossary:') || el.classList.contains('github-ref')) {

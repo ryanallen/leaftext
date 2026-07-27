@@ -44,7 +44,7 @@ Whether the rendered page can be typed into is a fact about *that page*, not a p
 - The [code view](#code-view) is an editor whatever the padlock says, so a file is never locked outright.
 - Flipping the padlock commits whatever block was mid-edit rather than discarding it.
 
-The other reading-view tools live in the same recess: the [speed reader](05-settings.md#speed-reader) and [line numbers](05-settings.md#line-numbers), both of which stay app-wide preferences because they are ways of reading rather than properties of a file. None of the three is filled in the accent colour — that treatment means "this is the view you are in", and a setting inside a view must not wear it.
+The other reading-view tool lives in the same recess: the [speed reader](05-settings.md#speed-reader), which stays an app-wide preference because it is a way of reading rather than a property of a file. Neither it nor the padlock is filled in the accent colour — that treatment means "this is the view you are in", and a setting inside a view must not wear it.
 
 ## Undo
 

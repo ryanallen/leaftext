@@ -3110,106 +3110,6 @@ body:has(#readerToolbar:not([hidden])) {
 .code-copy.is-copied .code-copy-check {
   display: block;
 }
-/* Permalink number for any anchor-addressable block. Out of flow, hidden until
-   the block is hovered or the number focused (always visible on touch/narrow —
-   see the media query below). */
-.document-body .has-anchor-link {
-  position: relative;
-}
-/* The number hangs in the margin left of its block (right: 100%) so the block's
-   box — and a list item's ::marker — stays where normal flow puts it. The anchor
-   inherits the block's font metrics, so the small number sits on the block's
-   first-line baseline rather than floating like a superscript. */
-.document-body .heading-anchor {
-  position: absolute;
-  right: 100%;
-  top: 0;
-  display: block;
-  width: 40px;
-  padding-right: 8px;
-  font-size: inherit;
-  line-height: inherit;
-  text-align: right;
-  white-space: nowrap;
-  background: transparent;
-  color: var(--preview-muted-foreground);
-  opacity: 0;
-  pointer-events: auto;
-  user-select: none;
-  transition: opacity 0.12s ease, color 0.12s ease;
-}
-/* The visible glyph: a small monospace number on the block's first-line baseline. */
-.document-body .heading-anchor-num {
-  font-family: var(--code-font);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  vertical-align: baseline;
-}
-/* "Line numbers" off hides the visible number; blocks keep their ids and locus
-   aliases, so #locus deep links still resolve. */
-:root[data-line-numbers-enabled="false"] .document-body .heading-anchor {
-  display: none;
-}
-/* A list item's number steps 2em further left to clear the ::marker and align
-   on the same gutter column as every other number. */
-.document-body li.has-anchor-link > .heading-anchor {
-  right: calc(100% + 2em);
-}
-/* A table is its own overflow container, so a number hung outside it is clipped.
-   Seat it inside a 40px left padding pulled back with a negative margin instead;
-   a table has no ::marker to drag out of place. */
-.document-body table.has-anchor-link {
-  padding-left: 40px;
-  margin-left: -40px;
-}
-.document-body table.has-anchor-link > .heading-anchor {
-  right: auto;
-  left: 0;
-}
-/* A code block's first line starts a padding-length down and a notch smaller
-   than body copy; the number follows both to sit on that line's baseline. */
-.document-body pre.has-anchor-link > .heading-anchor {
-  top: 1em;
-  font-size: 0.875em;
-}
-/* A zero-size alias that carries a heading's #locus without disturbing its
-   layout (the heading keeps its slug id for the table of contents). */
-.document-body .locus-alias {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-}
-/* Anchorable blocks nest, so hovering a deep block also hovers its ancestors.
-   The :not(:has(...)) guard reveals only the innermost hovered/focused block's
-   number, not a stack of ghost numbers in the shared gutter. */
-.document-body .has-anchor-link:hover:not(:has(.has-anchor-link:hover)) > .heading-anchor,
-.document-body .has-anchor-link:focus-within:not(:has(.has-anchor-link:focus-within)) > .heading-anchor,
-.document-body .has-anchor-link > .heading-anchor:hover,
-.document-body .has-anchor-link > .heading-anchor:focus-visible {
-  opacity: 1;
-  color: var(--reading-link);
-}
-.document-body .heading-anchor:hover {
-  color: var(--reading-link);
-}
-/* Confirms a click copied the #locus: hold the number lit for the timeout
-   decorateAnchorLinks sets. */
-.document-body .heading-anchor.is-copied {
-  opacity: 1;
-  color: var(--reading-link);
-}
-/* Narrow/touch has little left margin, so tuck the numbers tighter and shrink
-   them. Kept always-visible (no hover to reveal), so one tap copies and jumps. */
-@media (hover: none), (max-width: 600px) {
-  .document-body .heading-anchor {
-    padding-right: 3px;
-    opacity: 0.4;
-  }
-  .document-body .heading-anchor-num {
-    font-size: 11px;
-  }
-}
 .document-body pre.mermaid[data-processed="true"] {
   background: transparent;
   border: 0;
@@ -3731,16 +3631,19 @@ body:has(#readerToolbar:not([hidden])) {
     animation-duration: 1.6s;
   }
 }
-/* Holds the scaled document clone; slides within the clipped track (JS sets top
-   via --minimap-preview-top) when the document is taller than the rail. */
+/* Holds the scaled document clone; slides within the clipped track (JS sets
+   --minimap-preview-top) when the document is taller than the rail. A transform,
+   not `top`: this moves every frame, and as a layout property `top` made the
+   browser re-lay-out the page to do it — 128ms worst frame against 44ms. */
 .document-minimap-content {
   position: absolute;
-  top: var(--minimap-preview-top, 0px);
+  top: 0;
+  transform: translateY(var(--minimap-preview-top, 0px));
   right: var(--minimap-padding-inline);
   left: var(--minimap-padding-inline);
   overflow: visible;
   pointer-events: none;
-  will-change: top;
+  will-change: transform;
 }
 /* The clone: a shrunken rendering of the document. JS sets its width and a
    translateY + scale transform (origin top-left). Zero the .document-body

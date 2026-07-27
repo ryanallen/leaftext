@@ -56,7 +56,7 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 | Group | What is in it |
 | --- | --- |
 | Views | [Reading](01-rendering.md), the [source](07-editing.md#code-view), and the [graph](03-library.md#graph). Exactly one is filled in the accent colour: the one you are in |
-| Reading tools | Shown only on the reading view, in a recess beside its button: the [padlock](07-editing.md#the-padlock), the [speed reader](05-settings.md#speed-reader), and [line numbers](05-settings.md#line-numbers) |
+| Reading tools | Shown only on the reading view, in a recess beside its button: the [padlock](07-editing.md#the-padlock) and the [speed reader](05-settings.md#speed-reader) |
 | Edits | [Undo](07-editing.md#undo) and [Save](07-editing.md#save), each appearing only when there is something to undo or save |
 
 **No document, no bar.** The three views are three ways of showing one thing, and the start screen is not that thing — a toggle there would be navigation, which the [library](03-library.md) pane already does better.
@@ -202,7 +202,7 @@ The `glossary:` link carries no file path, so the same text works from any page 
 
 Every document opens with an **Outline** — a table of contents built automatically from the document's headings — tucked just under the title. It starts collapsed, so it never crowds the top of the page; click it to expand.
 
-- The collapsed header shows the document's total length — **Outline (312 lines)** — counted in the same running block numbers as the [line gutter](01-rendering.md#inline-html), so the count matches the last gutter number on the page.
+- The collapsed header shows the document's total length — **Outline (312 lines)** — counting the body blocks: paragraphs, headings, list items, quotes, code blocks, tables. The outline's own entries are navigation rather than body, so they don't count, and neither do footnote definitions.
 - Entries nest as a bulleted list that mirrors the heading levels, so the shape of the document is visible at a glance.
 - Each entry links to its heading, so clicking one jumps straight there.
 - It is built from the rendered headings, so it behaves the same for Markdown, [XML](01-rendering.md#xml), and [JSON or YAML](01-rendering.md#data-files-json-and-yaml).

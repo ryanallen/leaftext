@@ -17,12 +17,9 @@ function renderState() {
     // by the origin and the anchor restore lands off by exactly that.
     const previousBody = app.querySelector('.document-body');
     const previousScrollOrigin = previousBody ? previousBody.style.getPropertyValue('--reader-scroll-origin') : '';
-    // Hidden, then revealed already decorated. The passes below add three elements
-    // to every addressable block (locus alias, gutter link, its number) — 150,000
-    // insertions on a 4MB glossary. Against a laid-out page each one invalidates
-    // everything after it, turning 200ms of work into 33 SECONDS of layout; laid out
-    // once at the end it costs ~1.3s. None of them read geometry, so having none
-    // yet costs nothing.
+    // Hidden, then revealed already decorated: mutating a laid-out document makes
+    // every insertion invalidate everything after it. None of the passes below read
+    // geometry, so having none yet costs nothing.
     app.innerHTML = `<div class="${layoutClass}" style="display:none">${state.document.html}</div>`;
     const readerLayout = app.firstElementChild;
     setMinimapMarkup(minimapHtml);
@@ -35,7 +32,6 @@ function renderState() {
     stampLocalImages();
     decorateBlockquoteLines();
     buildDocumentOutline();
-    decorateAnchorLinks();
     decorateCodeBlocks();
     applySpeedReaderToDocument();
     // The caret waits for the reveal below: focus() does nothing on a hidden

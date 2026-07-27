@@ -75,11 +75,6 @@
           <span class="setting-label" data-i18n="settings.speedReader.label">Speed Reader</span>
           <span class="setting-help" id="speedReaderEnabledHelp" data-i18n="settings.speedReader.help">Make prose quieter and add bold lead anchors for faster scanning.</span>
         </label>
-        <label class="setting-control setting-control-inline" for="lineNumbersEnabled">
-          <input type="checkbox" id="lineNumbersEnabled" aria-label="Show line numbers" aria-describedby="lineNumbersEnabledHelp">
-          <span class="setting-label" data-i18n="settings.lineNumbers.label">Line numbers</span>
-          <span class="setting-help" id="lineNumbersEnabledHelp" data-i18n="settings.lineNumbers.help">Number each block in the left margin as a copyable permalink.</span>
-        </label>
         <!-- Update status, always present. Without it a check that found nothing,
              was throttled, or failed is indistinguishable from one that never
              ran, and the only way to see the updater work is to wait. It is also
@@ -171,7 +166,6 @@
          views. -->
     <span id="readerViewTools" class="reader-view-tools" role="group" data-i18n-aria-label="toolbar.readingTools" aria-label="Reading tools" hidden>
       <button type="button" id="readerLockButton" class="reader-subtool" aria-pressed="false" data-i18n-aria-label="toolbar.unlock" data-i18n-title="toolbar.unlock" aria-label="Unlock to edit this page" title="Unlock to edit this page"><span class="reader-swap-glyph reader-glyph-off">{{LOCK_CLOSED_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{LOCK_OPEN_ICON_SVG}}</span></button>
-      <button type="button" id="lineNumbersButton" class="reader-subtool" aria-pressed="false" data-i18n-aria-label="toolbar.lineNumbers" data-i18n-title="toolbar.lineNumbers" aria-label="Line numbers" title="Line numbers"><span class="reader-swap-glyph reader-glyph-off">{{LINE_NUMBERS_OFF_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{LINE_NUMBERS_ON_ICON_SVG}}</span></button>
       <button type="button" id="speedReaderButton" class="reader-subtool" aria-pressed="false" data-i18n-aria-label="toolbar.speedReader" data-i18n-title="toolbar.speedReader" aria-label="Speed reader" title="Speed reader"><span class="reader-swap-glyph reader-glyph-off">{{SPEED_READER_OFF_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{SPEED_READER_ON_ICON_SVG}}</span></button>
     </span>
     <button type="button" id="viewCodeButton" class="reader-tool" data-view="code" aria-pressed="false" data-i18n-aria-label="actions.codeView" data-i18n-title="actions.codeView.title" aria-label="View source" title="View source">{{CODE_VIEW_ICON_SVG}}</button>

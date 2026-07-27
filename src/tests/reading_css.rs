@@ -685,9 +685,16 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
         "minimap viewport must span the full rail width"
     );
     assert!(
-            css.contains(".document-minimap-content {\n  position: absolute;\n  top: var(--minimap-preview-top, 0px);\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
+            css.contains(".document-minimap-content {\n  position: absolute;\n  top: 0;\n  transform: translateY(var(--minimap-preview-top, 0px));\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
             "the minimap thumbnail lane fills the rail inside the exact 8px padding on both edges"
         );
+    // The slide is a transform, not `top`: the lane moves every frame, and as a
+    // layout property `top` made the browser re-lay-out the page to move it —
+    // 128ms worst frame on a 4MB glossary against 44ms, the no-rail floor.
+    assert!(
+        css.contains("  will-change: transform;"),
+        "the thumbnail lane must be promoted for its transform, not for `top`"
+    );
     // The reader renders the whole document up front, so it must NOT use
     // content-visibility (which flashed blocks blank and jumped the minimap box).
     assert!(

@@ -9,8 +9,6 @@ pub(crate) const CODE_VIEW_ICON_SVG: &str = include_str!("assets/code-bracket.sv
 pub(crate) const DOCUMENT_ICON_SVG: &str = include_str!("assets/document.svg");
 /// Numbering each block in the margin: plain lines when it is off, numbered
 /// ones when it is on. The glyph is the margin it makes.
-pub(crate) const LINE_NUMBERS_ON_ICON_SVG: &str = include_str!("assets/list-ordered.svg");
-pub(crate) const LINE_NUMBERS_OFF_ICON_SVG: &str = include_str!("assets/text-align-start.svg");
 
 /// Sending a vault to GitHub and taking back what is there. The same round
 /// arrows the updater's language uses, because it is the same idea.

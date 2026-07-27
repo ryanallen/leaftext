@@ -79,10 +79,6 @@ pub(crate) enum UserEvent {
     SetSpeedReaderEnabled {
         enabled: bool,
     },
-    /// Persist the reading-view gutter line-number toggle.
-    SetLineNumbersEnabled {
-        enabled: bool,
-    },
     /// Persist the reading-view editing toggle.
     /// Persist the selected theme family (`github`/`nightshade`/`amaranth`/…).
     SetThemeFamily {
@@ -345,8 +341,6 @@ pub(crate) enum IpcCommand {
     SetPagerEnabled { enabled: bool },
     #[serde(rename = "setSpeedReaderEnabled")]
     SetSpeedReaderEnabled { enabled: bool },
-    #[serde(rename = "setLineNumbersEnabled")]
-    SetLineNumbersEnabled { enabled: bool },
     #[serde(rename = "setThemeFamily")]
     SetThemeFamily { family: String },
     #[serde(rename = "setThemeMode")]
@@ -560,9 +554,6 @@ pub(crate) fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<S
             }
             IpcCommand::SetSpeedReaderEnabled { enabled } => {
                 let _ = proxy.send_event(UserEvent::SetSpeedReaderEnabled { enabled });
-            }
-            IpcCommand::SetLineNumbersEnabled { enabled } => {
-                let _ = proxy.send_event(UserEvent::SetLineNumbersEnabled { enabled });
             }
             IpcCommand::SetThemeFamily { family } => {
                 let _ = proxy.send_event(UserEvent::SetThemeFamily { family });

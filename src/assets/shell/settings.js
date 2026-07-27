@@ -57,22 +57,3 @@ pagerEnabledControl.addEventListener('change', () => {
   applyPagerEnabled();
   send({ command: 'setPagerEnabled', enabled: pagerEnabled });
 });
-// Gutter permalink numbers. A data-attribute on <html> shows/hides them via CSS
-// (no re-render); hiding drops only the visible number, blocks keep their ids so
-// #locus links still resolve. Off by default.
-let lineNumbersEnabled =
-  typeof LEAF_SETTINGS.lineNumbersEnabled === 'boolean' ? LEAF_SETTINGS.lineNumbersEnabled : false;
-// Two ways in -- the reading view's tools and the settings row -- so the one
-// setter owns the flag, the attribute and the checkbox, and neither caller can
-// leave the other showing the wrong thing.
-function setLineNumbersEnabled(enabled) {
-  lineNumbersEnabled = Boolean(enabled);
-  document.documentElement.dataset.lineNumbersEnabled = String(lineNumbersEnabled);
-  if (lineNumbersEnabledControl) lineNumbersEnabledControl.checked = lineNumbersEnabled;
-}
-setLineNumbersEnabled(lineNumbersEnabled);
-lineNumbersEnabledControl.addEventListener('change', () => {
-  setLineNumbersEnabled(lineNumbersEnabledControl.checked);
-  send({ command: 'setLineNumbersEnabled', enabled: lineNumbersEnabled });
-  renderReaderToolbar(!!activeDocumentPath());
-});

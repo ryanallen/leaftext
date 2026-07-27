@@ -19,12 +19,8 @@ function sendEditCommand(message) {
   send(message);
 }
 
-// The length of a block's user-visible text — its text content minus the gutter
-// permalink's locus text, which is a decoration the caret never counts.
 function visibleTextLength(el) {
-  const clone = el.cloneNode(true);
-  clone.querySelectorAll('.heading-anchor').forEach((node) => node.remove());
-  return clone.textContent.length;
+  return el.textContent.length;
 }
 
 // The caret's character offset inside `el`'s visible text, or null when the
@@ -37,24 +33,16 @@ function caretTextOffsetIn(el) {
   const before = document.createRange();
   before.selectNodeContents(el);
   before.setEnd(caret.startContainer, caret.startOffset);
-  const fragment = before.cloneContents();
-  fragment.querySelectorAll('.heading-anchor').forEach((node) => node.remove());
-  return fragment.textContent.length;
+  return before.cloneContents().textContent.length;
 }
 
 // Put the caret at a character offset inside `el`'s visible text (clamped to the
-// end), walking text nodes and skipping the gutter permalink.
+// end), walking its text nodes.
 function placeCaretInBlock(el, offset) {
   const selection = window.getSelection();
   if (!selection) return;
   const range = document.createRange();
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      return node.parentElement && node.parentElement.closest('.heading-anchor')
-        ? NodeFilter.FILTER_REJECT
-        : NodeFilter.FILTER_ACCEPT;
-    },
-  });
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   let remaining = Math.max(0, offset || 0);
   let lastNode = null;
   let placed = false;
@@ -293,13 +281,12 @@ function handleWysiwygKeydown(el, event) {
 }
 
 // Turn `el` into a live Markdown editor: keep the rendered styling, edit in
-// place, commit on blur. The gutter permalink and checkboxes stay non-editable
-// islands; focus moving within the block neither resets the baseline nor commits.
+// place, commit on blur. Checkboxes stay non-editable islands; focus moving within
+// the block neither resets the baseline nor commits.
 function makeMarkdownEditable(el) {
   el.setAttribute('contenteditable', 'true');
   el.setAttribute('spellcheck', 'false');
   el.classList.add('leaf-editable');
-  el.querySelectorAll('.heading-anchor').forEach((a) => a.setAttribute('contenteditable', 'false'));
   el.querySelectorAll('input[type="checkbox"]').forEach((box) => box.setAttribute('contenteditable', 'false'));
   // A link click is navigation, not "edit here": swallow the mousedown so the
   // block never takes focus (the delegated click still navigates), and commit the

@@ -174,162 +174,49 @@ fn opened_markdown_document_carries_editing_maps() {
 }
 
 #[test]
-fn anchor_addressable_blocks_get_a_permalink_button() {
+fn the_reading_view_has_no_gutter_line_numbers() {
     let html = app_shell_html();
     let css = reading_mode_css();
 
-    // Decoration runs after each document render, before link binding so the
-    // injected anchors get wired into in-document fragment navigation.
-    assert!(html.contains("function decorateAnchorLinks()"));
-    let render = html
-        .find("decorateAnchorLinks();")
-        .expect("decorateAnchorLinks is called during render");
-    let bind = html[render..]
-        .find("bindDocumentLinks();")
-        .map(|index| render + index)
-        .expect("bindDocumentLinks is called during render");
-    assert!(
-        render < bind,
-        "anchors must be injected before links are bound"
-    );
+    // The gutter permalink numbers are gone: three elements per addressable block
+    // (150,000 on a large glossary, tripling it) to show one number on hover, behind
+    // a setting that was off by default.
+    for absent in [
+        "decorateAnchorLinks",
+        "ensureAnchorLinkTargets",
+        "anchorLinkTemplate",
+        "assignLocus",
+        "uniqueAnchorBlockId",
+        "heading-anchor",
+        "has-anchor-link",
+        "locus-alias",
+        "dataset.locus",
+        "lineNumbersEnabled",
+        "lineNumbersButton",
+        "setLineNumbersEnabled",
+        "actions.anchorLink",
+        "toolbar.lineNumbers",
+        "settings.lineNumbers",
+        "data-line-numbers-enabled",
+    ] {
+        assert!(
+            !html.contains(absent) && !css.contains(absent),
+            "the reading view's line numbers are gone; found {absent}"
+        );
+    }
 
-    // Standard content blocks get ids assigned if they do not already have
-    // one, then become permalink targets. Footnote definitions (which carry
-    // their own back-reference) are excluded.
-    assert!(html.contains("const ANCHOR_LINK_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]'"));
-    assert!(html.contains("function ensureAnchorLinkTargets(body)"));
-    assert!(html.contains("target.id = uniqueAnchorBlockId(seen, locus);"));
-    assert!(html.contains("target.classList.contains('footnote-definition')"));
-
-    // Each block gets a short numeric address: a flat running count down the
-    // page (1, 2, 3, 4 …), like a code editor's line gutter, with no reset at
-    // headings. A heading keeps its slug id and carries its number through a
-    // hidden alias. Navigation-outline (link-only) list items are skipped.
-    assert!(html.contains("function assignLocus(target, locus, seen)"));
+    // What the numbers were nice for survives: the outline still reports how long
+    // the document is. Counted rather than stamped onto every block.
+    assert!(html.contains("function documentLineCount(body)"));
+    assert!(html.contains("const DOCUMENT_LINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]'"));
+    assert!(html.contains(
+        "summaryCount.textContent = window.leafLocale.t('outline.lineCount', { count: documentLineCount(body) });"
+    ));
+    // Link-only outline entries and footnote definitions are not body lines.
     assert!(html.contains("function isNavOutlineItem(el)"));
-    assert!(html.contains("let line = 0;"));
-    assert!(html.contains("line += 1;"));
-    assert!(html.contains("assignLocus(target, '' + line, seen);"));
-    assert!(html.contains("target.dataset.locus = alias.id;"));
-
-    // The button is a real anchor link to the block's locus (dataset.locus).
-    assert!(html.contains("link.href = '#' + encodeURIComponent(locus)"));
-
-    // A bare anchor (with an inner number span) is cloned per block and its line
-    // number stamped into that span, instead of building the element from scratch
-    // tens of thousands of times.
-    assert!(html.contains("link.firstChild.textContent = locus;"));
-    assert!(html.contains("const anchorLinkTemplate = (() => {"));
-    assert!(html.contains("num.className = 'heading-anchor-num';"));
-    assert!(html.contains("const link = anchorLinkTemplate.cloneNode(true);"));
-
-    // Clicking the gutter button copies its #locus so the canonical number can
-    // be pasted out — the way to read the locus on touch, where there is no
-    // hover tooltip. The jump still happens (the copy listener does not
-    // preventDefault), and a brief is-copied flash confirms the copy.
-    assert!(html.contains("function copyToClipboard(text)"));
-    assert!(html.contains("copyToClipboard('#' + locus);"));
-    assert!(css.contains(".document-body .heading-anchor.is-copied {"));
-
-    // Gutter button styling exists and stays out of the horizontal scroll.
-    assert!(css.contains(".document-body .heading-anchor {"));
-    assert!(css.contains("overflow-x: clip;"));
-    assert!(css.contains("background: var(--app-action-hover-background);"));
-    assert!(css.contains(".document-body .has-anchor-link > .heading-anchor:hover,"));
-
-    // The number hangs in the margin just left of its block (right: 100%), so
-    // the block's own box — and, for a list item, its ::marker — stays exactly
-    // where normal flow puts it. No per-reflow JS measuring pass, and no
-    // negative-margin carve dragging list markers into the page margin.
-    assert!(css.contains(".document-body .has-anchor-link {\n  position: relative;\n}"));
-    assert!(!css.contains(
-        ".document-body .has-anchor-link {\n  position: relative;\n  padding-left: 40px;"
-    ));
-    assert!(css.contains(".document-body .heading-anchor {\n  position: absolute;\n  right: 100%;"));
-    assert!(
-        !html.contains("positionAnchorLinks"),
-        "the per-reflow anchor-positioning pass is replaced by the CSS gutter"
-    );
-
-    // A list item's number steps one list indent further left so it clears the
-    // ::marker (I., II., •) and top-level list numbers share the gutter column.
-    assert!(css.contains(
-        ".document-body li.has-anchor-link > .heading-anchor {\n  right: calc(100% + 2em);\n}"
-    ));
-
-    // A table is its own overflow container, so a number hung outside it would be
-    // clipped invisible; it alone keeps the carved-gutter scheme (40px left
-    // padding pulled back with a matching negative margin, number seated inside).
-    assert!(css.contains(
-        ".document-body table.has-anchor-link {\n  padding-left: 40px;\n  margin-left: -40px;\n}"
-    ));
-    assert!(css.contains(
-        ".document-body table.has-anchor-link > .heading-anchor {\n  right: auto;\n  left: 0;\n}"
-    ));
-
-    // A code block must not: the carve dragged its whole box off the reading
-    // column's left edge. Its scroll moves to the <code> so the number can hang in
-    // the shared gutter, sized and nudged to the code's first-line baseline.
-    assert!(!css.contains("pre.has-anchor-link {\n  padding-left: 40px;"));
-    assert!(!css.contains("pre.has-anchor-link,"));
-    assert!(css.contains(
-        ".document-body pre.has-anchor-link > .heading-anchor {\n  top: 1em;\n  font-size: 0.875em;\n}"
-    ));
-    assert!(css
-        .contains(".document-body pre:has(> code) {\n  clip-path: none;\n  overflow: visible;\n}"));
-    assert!(css.contains(
-        ".document-body pre:has(> code) > code {\n  display: block;\n  overflow-x: auto;\n}"
-    ));
-
-    // A blockquote keeps its native left bar: with the number hung outside the
-    // block there is no carve shifting the border-box, so no repaint is needed.
-    assert!(!css.contains("blockquote.has-anchor-link {"));
-    assert!(!css.contains("blockquote.has-anchor-link::after"));
-
-    // The blockquote is the citable unit and carries the only button; its inner
-    // blocks must not carve a second gutter or the quote text is dragged off the
-    // column. decorateAnchorLinks skips the button on anything nested in a
-    // blockquote (the block keeps its id, so #locus links still resolve).
-    assert!(html
-        .contains("if (target.tagName !== 'BLOCKQUOTE' && target.closest('blockquote')) return;"));
-
-    // The reader renders the whole document up front like the web reader — no
-    // content-visibility, whose off-screen size estimates made scrolling flash
-    // blank and the minimap viewport box jump.
-    assert!(!css.contains("content-visibility: auto"));
-
-    // Only the innermost hovered/focused block reveals its button. Without the
-    // :not(:has(...)) guard, hovering a nested block would also light up every
-    // ancestor block's button, stacking ghost buttons in the shared gutter.
-    assert!(css.contains(
-            ".document-body .has-anchor-link:hover:not(:has(.has-anchor-link:hover)) > .heading-anchor,"
-        ));
-    assert!(css.contains(
-            ".document-body .has-anchor-link:focus-within:not(:has(.has-anchor-link:focus-within)) > .heading-anchor,"
-        ));
-
-    // On pointer devices the numbers are hidden until their block is hovered
-    // (opacity 0 by default). A narrow window (and touch) has no hover to reveal
-    // them, so the media query restores their visibility (opacity 0.4), tucks
-    // them tighter to the content edge, and shrinks the glyph — one direct tap
-    // then copies the deep link.
-    assert!(css.contains(
-        ".document-body .heading-anchor {\n  position: absolute;\n  right: 100%;\n  top: 0;"
-    ));
-    assert!(css.contains("  opacity: 0;\n"));
-    assert!(css.contains("@media (hover: none), (max-width: 600px) {"));
-    let narrow = css
-        .find("@media (hover: none), (max-width: 600px) {")
-        .expect("small-screen permalink media query exists");
-    assert!(css[narrow..].contains("opacity: 0.4;"));
-    assert!(css[narrow..].contains("font-size: 11px;"));
-
-    // Label exists in both dictionaries.
-    let count = html.matches("'actions.anchorLink':").count();
-    assert!(
-        count >= 2,
-        "expected EN + ZH-CN entries for actions.anchorLink, found {count}"
-    );
+    assert!(html.contains("target.classList.contains('footnote-definition')"));
+    // Headings keep their slug ids, so the TOC and #slug deep links still resolve.
+    assert!(html.contains("if (!h.id) h.id = 'section-' + (i + 1);"));
 }
 
 #[test]

@@ -152,7 +152,6 @@ Key `IpcCommand` variants include:
 | `setMinimapEnabled`    | Minimap toggle in Settings menu       |
 | `setPagerEnabled`      | Pager toggle in Settings menu         |
 | `setSpeedReaderEnabled` | Speed Reader toggle in Settings menu |
-| `setLineNumbersEnabled` | Line-numbers toggle in Settings menu |
 | `updateChecked`        | A release check finished: reset the six-hour throttle |
 | `updateDownload`       | The release the check found: fetch that URL natively, hash it, and stage it |
 | `applyUpdate`          | The "Restart to update" button: launch the installer and exit |

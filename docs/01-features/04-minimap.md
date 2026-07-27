@@ -16,7 +16,7 @@ The clone is rebuilt only when it needs to be — when the document's content ch
 
 - `--minimap-viewport-top` — positions the viewport indicator within the rail
 - `--minimap-viewport-height` — sizes the indicator proportionally to the reader window
-- `--minimap-preview-top` — slides the thumbnail inside the rail on tall documents (the CSS maps it to the clone's `top`)
+- `--minimap-preview-top` — slides the thumbnail inside the rail on tall documents (the CSS maps it to a `transform`, not `top`: the lane moves every frame, and moving it by a layout property made the browser re-lay-out the page to do it)
 
 A `requestAnimationFrame`-throttled loop writes those on scroll, and reads no geometry at all while doing it. The rail's measurements — the document's height, the thumbnail's scale, the rail's own height — change only when the content or the window does, so they are cached and dropped by the things that can change them; scrolling changes none of them. Re-measuring per wheel click instead forces a fresh layout of the entire document, which on a large file is the whole difference between a rail that follows the wheel and one that answers a second later. The indicator's position and travel come from the reader's exact scroll position over its scrollable height, and the indicator's height is the reader window scaled to the rail — so click-to-scroll and the indicator stay aligned with the thumbnail on documents of any length.
 

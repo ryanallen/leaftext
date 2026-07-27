@@ -46,7 +46,6 @@ pub fn initial_settings_script(settings: &Settings) -> String {
         "minimapEnabled": settings.minimap_enabled,
         "pagerEnabled": settings.pager_enabled,
         "speedReaderEnabled": settings.speed_reader_enabled,
-        "lineNumbersEnabled": settings.line_numbers_enabled,
         "themeFamily": settings.theme_family,
         "themeMode": settings.theme_mode,
         "themeRandomUsed": settings.theme_random_used,

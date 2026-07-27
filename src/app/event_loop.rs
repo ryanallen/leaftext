@@ -567,10 +567,6 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 settings.speed_reader_enabled = enabled;
                 persist_settings(&settings, settings_path.as_ref());
             }
-            Event::UserEvent(UserEvent::SetLineNumbersEnabled { enabled }) => {
-                settings.line_numbers_enabled = enabled;
-                persist_settings(&settings, settings_path.as_ref());
-            }
             Event::UserEvent(UserEvent::SetThemeFamily { family }) => {
                 settings.theme_family = family;
                 persist_settings(&settings, settings_path.as_ref());

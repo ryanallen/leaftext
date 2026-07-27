@@ -108,7 +108,6 @@ function renderReadingTools(onReadingView) {
   const unlocked = readerEditingAllowed();
   setSubtoolState(readerLockButton, unlocked, unlocked ? 'toolbar.lock' : 'toolbar.unlock');
   setSubtoolState(speedReaderButton, speedReaderEnabled, 'toolbar.speedReader');
-  setSubtoolState(lineNumbersButton, lineNumbersEnabled, 'toolbar.lineNumbers');
 }
 function setSubtoolState(button, on, labelKey) {
   if (!button) return;
@@ -137,15 +136,6 @@ if (speedReaderButton) {
   speedReaderButton.addEventListener('click', () => {
     setSpeedReaderEnabled(!speedReaderEnabled);
     send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });
-    renderReadingTools(true);
-  });
-}
-// Line numbers are the same shape of thing: how the reading view is drawn, kept
-// for the whole app, reachable from the bar and from Settings.
-if (lineNumbersButton) {
-  lineNumbersButton.addEventListener('click', () => {
-    setLineNumbersEnabled(!lineNumbersEnabled);
-    send({ command: 'setLineNumbersEnabled', enabled: lineNumbersEnabled });
     renderReadingTools(true);
   });
 }

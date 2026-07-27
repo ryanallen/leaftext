@@ -24,9 +24,8 @@ fn app_shell_decorates_blockquote_hard_break_lines_for_hanging_indent() {
 fn app_shell_builds_collapsed_heading_outline_under_the_title() {
     let html = app_shell_html();
 
-    // The builder exists, is wired into the render pipeline before the anchor
-    // pass, and the anchor pass skips the outline so its link-only entries
-    // never take a locus number.
+    // The builder exists, is wired into the render pipeline, and the line count
+    // skips the outline's own link-only entries rather than counting them.
     assert_contains(&html, "function buildDocumentOutline() {");
     assert_contains(&html, "buildDocumentOutline();");
     assert_contains(&html, "if (target.closest('.document-outline')) return;");
@@ -42,13 +41,13 @@ fn app_shell_builds_collapsed_heading_outline_under_the_title() {
     assert!(!html.contains("const rootList = document.createElement('ol');"));
     assert_contains(&html, "link.className = 'document-outline-link';");
     assert_contains(&html, "link.href = '#' + encodeURIComponent(h.id);");
-    // The summary carries the document's total line count, stamped in by the
-    // anchor pass (whose running count is the total) after the outline exists.
+    // The summary carries how long the document is — counted, not stamped onto
+    // every block on the way to the total.
     assert_contains(&html, "summaryCount.className = 'document-outline-count';");
-    assert_contains(&html, "const lineTotal = ensureAnchorLinkTargets(body);");
+    assert_contains(&html, "function documentLineCount(body) {");
     assert_contains(
         &html,
-        "window.leafLocale.t('outline.lineCount', { count: lineTotal })",
+        "window.leafLocale.t('outline.lineCount', { count: documentLineCount(body) })",
     );
     // The (potentially ~25k-entry) list is built lazily, only when the reader
     // first expands the outline — not at every document render.

@@ -341,17 +341,6 @@ function bindDocumentLinks() {
     if (!link || !app.contains(link) || !link.closest('.document-body')) {
       return;
     }
-    // A tap/click on the gutter permalink copies its #locus (even with a modifier
-    // held) without blocking the jump; a brief is-copied flash confirms it.
-    if (link.classList.contains('heading-anchor')) {
-      const locus = link.parentElement && link.parentElement.dataset ? link.parentElement.dataset.locus : '';
-      if (locus) {
-        copyToClipboard('#' + locus);
-        link.classList.add('is-copied');
-        window.clearTimeout(link.__copiedTimer);
-        link.__copiedTimer = window.setTimeout(() => link.classList.remove('is-copied'), 900);
-      }
-    }
     if (event.defaultPrevented || event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
       return;
     }

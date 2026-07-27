@@ -32,9 +32,6 @@ function inlineDomToMarkdown(node) {
     }
     if (child.nodeType !== Node.ELEMENT_NODE) return;
     const tag = child.tagName.toLowerCase();
-    if (child.classList.contains('heading-anchor')) {
-      return;
-    }
     if (tag === 'br') {
       // Keep breaks inline. A backslash-newline hard break would end an ATX
       // heading's source line and split the rendered heading apart on re-render.
@@ -132,8 +129,6 @@ function listDomToMarkdown(listEl, indent) {
 function blockquoteDomToMarkdown(el) {
   const paragraphs = [];
   Array.from(el.children).forEach((child) => {
-    const tag = child.tagName.toLowerCase();
-    if (tag === 'a' && child.classList.contains('heading-anchor')) return;
     const lines = Array.from(child.children).filter(
       (node) => node.classList && node.classList.contains('blockquote-line'),
     );
@@ -200,12 +195,7 @@ const MARKDOWN_WYSIWYG_INLINE_TAGS = new Set([
 ]);
 
 function inlineMarkdownDomWysiwygSafe(el) {
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT, {
-    acceptNode(node) {
-      if (node.classList && node.classList.contains('heading-anchor')) return NodeFilter.FILTER_REJECT;
-      return NodeFilter.FILTER_ACCEPT;
-    },
-  });
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const tag = node.tagName.toLowerCase();
     if (!MARKDOWN_WYSIWYG_INLINE_TAGS.has(tag)) return false;
@@ -246,9 +236,6 @@ function blockquoteWysiwygSafe(el) {
   if (el.querySelector('blockquote, pre, table, ul, ol, img, sup.footnote-reference, .katex, .mermaid, input')) {
     return false;
   }
-  return Array.from(el.children).every((child) => {
-    const tag = child.tagName.toLowerCase();
-    return tag === 'p' || (tag === 'a' && child.classList.contains('heading-anchor'));
-  });
+  return Array.from(el.children).every((child) => child.tagName.toLowerCase() === 'p');
 }
 

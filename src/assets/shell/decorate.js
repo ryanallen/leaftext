@@ -193,79 +193,35 @@ function decorateCodeBlocks() {
     pre.appendChild(button);
   });
 }
-// Built once and cloned per block — far cheaper than building it from scratch
-// tens of thousands of times on a big document.
-const anchorLinkTemplate = (() => {
-  const link = document.createElement('a');
-  link.className = 'heading-anchor';
-  // The number lives in an inner span so the anchor inherits the block's font
-  // metrics while the glyph stays a fixed small size — see the .heading-anchor CSS.
-  const num = document.createElement('span');
-  num.className = 'heading-anchor-num';
-  link.appendChild(num);
-  return link;
-})();
-// `pre:not(.mermaid)` excludes diagrams: a gutter link inserted as the pre's
-// first child would corrupt the source Mermaid reads from innerHTML.
-const ANCHOR_LINK_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]';
-function uniqueAnchorBlockId(seen, base) {
-  let candidate = base;
-  let suffix = 1;
-  while (!candidate || seen.has(candidate)) {
-    candidate = base + '-' + suffix;
-    suffix += 1;
-  }
-  seen.add(candidate);
-  return candidate;
-}
+// The body blocks the outline counts as "lines". `pre:not(.mermaid)` excludes
+// diagrams, which are one figure however many lines of source drew them.
+const DOCUMENT_LINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]';
 // A list item that is purely a link (or links) is a table-of-contents /
-// navigation entry, not body content, so it takes no number.
+// navigation entry, not body content, so it doesn't count.
 function isNavOutlineItem(el) {
   if (el.tagName !== 'LI') return false;
-  const text = (el.textContent || '').replace(/\\s+/g, '');
+  const text = (el.textContent || '').replace(/\s+/g, '');
   if (!text) return false;
   let linkText = '';
   el.querySelectorAll('a').forEach((a) => { linkText += a.textContent || ''; });
-  return text === linkText.replace(/\\s+/g, '');
+  return text === linkText.replace(/\s+/g, '');
 }
-// Give `target` the address `locus`. If it already has an id, keep it and add a
-// hidden alias carrying the locus (so #<locus> still lands); otherwise the locus
-// becomes the id. Recorded on dataset.locus for the gutter permalink.
-function assignLocus(target, locus, seen) {
-  if (target.id) {
-    seen.add(target.id);
-    const alias = document.createElement('span');
-    alias.className = 'locus-alias';
-    alias.id = uniqueAnchorBlockId(seen, locus);
-    alias.setAttribute('aria-hidden', 'true');
-    target.insertBefore(alias, target.firstChild);
-    target.dataset.locus = alias.id;
-  } else {
-    target.id = uniqueAnchorBlockId(seen, locus);
-    target.dataset.locus = target.id;
-  }
-}
-// Number the document so each block has a short citable address: a flat running
-// count down the page, no reset at headings. A heading keeps its slug id (so the
-// TOC and #slug links resolve) and carries its number through a hidden alias.
-// Link-only outline items are skipped. Deterministic, so ids survive a re-render.
-function ensureAnchorLinkTargets(body) {
-  const seen = new Set(Array.from(body.querySelectorAll('[id]')).map((element) => element.id).filter(Boolean));
-  let line = 0;
-  body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
+// How long the document is, in body blocks. Counted rather than stamped — the total
+// is all anyone reads, so numbering 50,000 blocks to reach it bought nothing.
+function documentLineCount(body) {
+  let lines = 0;
+  body.querySelectorAll(DOCUMENT_LINE_SELECTOR).forEach((target) => {
     if (target.classList.contains('footnote-definition')) return;
-    // The generated outline is navigation, not body content — no locus number.
+    // The generated outline is navigation, not body content.
     if (target.closest('.document-outline')) return;
     if (isNavOutlineItem(target)) return;
-    line += 1;
-    assignLocus(target, '' + line, seen);
+    lines += 1;
   });
-  return line;
+  return lines;
 }
 // Build a collapsed "Outline" from the headings and insert it under the title
 // (mirrors site/outline.js). A DOM pass over the <h1>–<h6>, nesting entries as a
-// bulleted list in a closed <details>. Run before the anchor pass (so its
-// link-only entries skip block-numbering) and before bindDocumentLinks.
+// bulleted list in a closed <details>. Run before bindDocumentLinks.
 function buildDocumentOutline() {
   const body = app.querySelector('.document-body');
   if (!body) return;
@@ -286,10 +242,11 @@ function buildDocumentOutline() {
   summaryLabel.dataset.i18n = 'outline.title';
   summaryLabel.textContent = window.leafLocale.t('outline.title');
   summary.appendChild(summaryLabel);
-  // Filled in by decorateAnchorLinks once numbering knows the line count — a
-  // separate span so renderStaticText's [data-i18n] sweep never wipes it.
+  // Its own span so renderStaticText's [data-i18n] sweep can't wipe it. Counted
+  // before the outline is inserted, so the outline never counts itself.
   const summaryCount = document.createElement('span');
   summaryCount.className = 'document-outline-count';
+  summaryCount.textContent = window.leafLocale.t('outline.lineCount', { count: documentLineCount(body) });
   summary.appendChild(summaryCount);
   details.appendChild(summary);
   // The entry list can be enormous (one <li> per heading), so build it only when
@@ -305,7 +262,7 @@ function populateDocumentOutline(details, rest) {
   details.dataset.outlinePopulated = 'true';
   const readHeadingText = (h) => {
     const clone = h.cloneNode(true);
-    clone.querySelectorAll('.heading-anchor, .anchor-link, .locus-alias, .footnote-ref').forEach((n) => n.remove());
+    clone.querySelectorAll('.footnote-ref').forEach((n) => n.remove());
     return (clone.textContent || '').replace(/\s+/g, ' ').trim();
   };
   const rootList = document.createElement('ul');
@@ -361,44 +318,6 @@ window.leafRefreshImages = () => {
   stampLocalImages();
   scheduleMinimapPreviewUpdate();
 };
-// Give every anchor-addressable block a gutter permalink button, GitHub style.
-// A real anchor link to the target id, so bindDocumentLinks wires it into
-// fragment navigation like a TOC link. Clicking also copies the #locus (without
-// blocking the jump) — the only way to read the locus on touch.
-function decorateAnchorLinks() {
-  const body = app.querySelector('.document-body');
-  if (!body) return;
-  const lineTotal = ensureAnchorLinkTargets(body);
-  // The numbering pass's final count is the line total; stamp it into the outline
-  // summary ("Outline (1234 lines)").
-  const outlineCount = body.querySelector('.document-outline-count');
-  if (outlineCount) {
-    outlineCount.textContent = window.leafLocale.t('outline.lineCount', { count: lineTotal });
-  }
-  const label = window.leafLocale.t('actions.anchorLink');
-  body.querySelectorAll(ANCHOR_LINK_SELECTOR).forEach((target) => {
-    const locus = target.dataset.locus;
-    if (!locus) return;
-    if (target.classList.contains('footnote-definition')) return;
-    if (target.closest('.document-outline')) return;
-    if (target.querySelector(':scope > .heading-anchor')) return;
-    // A blockquote is one citable unit and carries the button; skip it on blocks
-    // nested inside a blockquote (a second gutter carve would drag the quote text
-    // off the column). They keep their id, so #locus links still resolve.
-    if (target.tagName !== 'BLOCKQUOTE' && target.closest('blockquote')) return;
-    const link = anchorLinkTemplate.cloneNode(true);
-    link.href = '#' + encodeURIComponent(locus);
-    link.setAttribute('aria-label', label);
-    link.title = label;
-    // The digits live in the inner span (see anchorLinkTemplate); clicks copy the
-    // deep link via the delegated body listener.
-    link.firstChild.textContent = locus;
-    target.classList.add('has-anchor-link');
-    target.insertBefore(link, target.firstChild);
-  });
-  // No JS positioning: the button lives in each block's own gutter (see the
-  // .has-anchor-link CSS), and clicks are handled by the delegated body listener.
-}
 function setCodeCopyLabel(button, key) {
   const label = window.leafLocale.t(key);
   button.setAttribute('aria-label', label);
@@ -431,16 +350,6 @@ function legacyCopy(text) {
   }
   document.body.removeChild(area);
   return copied;
-}
-// Copy arbitrary text, preferring the async clipboard API and falling back to the
-// hidden-textarea path for webview contexts where it is blocked. Used by the
-// gutter permalink so a tapped locus number can be pasted out.
-function copyToClipboard(text) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).catch(() => { legacyCopy(text); });
-    return;
-  }
-  legacyCopy(text);
 }
 // Briefly show the check mark and a "Copied" label, then revert.
 function flashCodeCopied(button) {
