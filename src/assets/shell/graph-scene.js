@@ -297,11 +297,29 @@ function wireGraphResize(scene) {
   scene.resizeObserver = ro;
 }
 
+// Whether the layout's box is entirely inside the padded view at the camera's
+// current setting — i.e. whether there is anything to follow.
+function graphBoundsInView(scene, minX, minY, maxX, maxY) {
+  const ws = scene.world.scale.x || 1;
+  const ox = scene.world.position.x;
+  const oy = scene.world.position.y;
+  const pad = GRAPH_FIT_PADDING;
+  return ox + minX * ws >= pad
+    && oy + minY * ws >= pad
+    && ox + maxX * ws <= scene.app.screen.width - pad
+    && oy + maxY * ws <= scene.app.screen.height - pad;
+}
+
 // Frame every node: the tightest zoom that still holds the whole layout, with
 // the bounding box centred. Two documents fill the view; two thousand shrink to
 // fit. Clamped to the same limits the wheel obeys, so a pair of nodes 40px apart
 // stops at 4x rather than filling the screen with two dots.
-function fitGraphToView(scene) {
+//
+// `follow` is the settling case: it moves only when the layout has left the frame.
+// A force layout breathes, and refitting on every tick of that put the pumping on
+// screen. Following what escapes and leaving the rest to the fit at `end` keeps
+// the same guarantee — nothing off screen — without the ride.
+function fitGraphToView(scene, follow) {
   if (!scene || !scene.nodes || !scene.nodes.length) return;
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const node of scene.nodes) {
@@ -313,6 +331,7 @@ function fitGraphToView(scene) {
     if (node.y + r > maxY) maxY = node.y + r;
   }
   if (!Number.isFinite(minX) || !Number.isFinite(minY)) return;
+  if (follow && graphBoundsInView(scene, minX, minY, maxX, maxY)) return;
   const width = scene.app.screen.width;
   const height = scene.app.screen.height;
   // A single node has no extent to divide by; the padding is the whole budget.

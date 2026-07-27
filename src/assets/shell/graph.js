@@ -35,6 +35,14 @@ const GRAPH_LABEL_GAP = 4; // screen px between a node and the top of its label
 // place any in a dense overview and the per-relayout cost stops being free.
 // Active/hover labels still show at any size.
 const GRAPH_AMBIENT_LABEL_MAX = 400;
+// Where a rebuild that inherited the last layout starts the simulation: a nudge to
+// absorb what changed, not a fresh layout. Full alpha threw the whole map out from
+// the centre again, which is what a save looked like from the reader's side.
+const GRAPH_WARM_ALPHA = 0.3;
+// A burst of writes under the vault arrives as a burst of graphs. Build the last
+// and skip the rest — each rebuild is a WebGL context thrown away.
+const GRAPH_REBUILD_COALESCE_MS = 150;
+let graphRebuildTimer = 0;
 
 // Show the map instead of the document, or put the document back. One flag for
 // the window, not a mode each tab remembers: a graph is of the vault, and the
@@ -290,6 +298,18 @@ function showGraph() {
   }
 }
 
+// What a payload draws: the node set with its degrees, and the wires between
+// them. Two graphs that agree on this are the same picture, however they arrived
+// — so the one already on screen, with the layout it settled into and wherever
+// the reader has panned it, is the better copy of it.
+function graphSignature(data) {
+  const nodes = (data && data.nodes) || [];
+  const edges = (data && data.edges) || [];
+  const marks = nodes.map((node) => node.path + ':' + (node.degree || 0)).sort();
+  const wires = edges.map((edge) => edge.source + '>' + edge.target).sort();
+  return marks.join('\n') + '\n--\n' + wires.join('\n');
+}
+
 window.leafSetGraph = (payload) => {
   if (payload && payload.error) {
     graphData = null;
@@ -301,7 +321,21 @@ window.leafSetGraph = (payload) => {
     return;
   }
   graphData = payload || { nodes: [], edges: [], truncated: false };
-  if (graphViewOpen) buildGraphScene();
+  if (!graphViewOpen) return;
+  // Already drawing exactly this. The host redraws for any change to the vault's
+  // text, and most of them leave the map identical.
+  if (graphScene && graphScene.signature === graphSignature(graphData)) return;
+  // Nothing on screen yet: the first graph of a session is what the reader is
+  // waiting for, so it must not wait behind a timer.
+  if (!graphScene) {
+    buildGraphScene();
+    return;
+  }
+  if (graphRebuildTimer) clearTimeout(graphRebuildTimer);
+  graphRebuildTimer = setTimeout(() => {
+    graphRebuildTimer = 0;
+    if (graphViewOpen) buildGraphScene();
+  }, GRAPH_REBUILD_COALESCE_MS);
 };
 
 function teardownGraph() {
@@ -318,6 +352,7 @@ function refreshGraphForScope() {
 }
 
 function teardownGraphScene() {
+  if (graphRebuildTimer) { clearTimeout(graphRebuildTimer); graphRebuildTimer = 0; }
   if (graphScene) {
     if (graphScene.focusRaf) { try { cancelAnimationFrame(graphScene.focusRaf); } catch (_) { /* noop */ } }
     if (graphScene.resizeObserver) { try { graphScene.resizeObserver.disconnect(); } catch (_) { /* noop */ } }
@@ -328,7 +363,30 @@ function teardownGraphScene() {
   readerGraphCanvas.innerHTML = '';
 }
 
+// Where the map on screen had got to: every node's place, and the camera. A redraw
+// is nearly always a small change to a picture someone is reading, so the next
+// scene starts from here.
+function carryGraphLayout(scene) {
+  const positions = new Map();
+  for (const node of scene.nodes) {
+    if (typeof node.x === 'number' && typeof node.y === 'number') {
+      positions.set(node.path, { x: node.x, y: node.y });
+    }
+  }
+  return {
+    positions,
+    // A framing the reader took is theirs to keep across a redraw; one we chose
+    // stays ours, so a graph that grew a node still gets framed.
+    autoFit: scene.autoFit,
+    settled: scene.settled,
+    scale: scene.world.scale.x,
+    x: scene.world.position.x,
+    y: scene.world.position.y,
+  };
+}
+
 async function buildGraphScene() {
+  const carried = graphScene ? carryGraphLayout(graphScene) : null;
   teardownGraphScene();
   const data = graphData;
   if (!data || !data.nodes || !data.nodes.length) {
@@ -373,8 +431,15 @@ async function buildGraphScene() {
 
   const colors = graphColors();
 
-  // Build node objects d3 will mutate with x/y, plus their Pixi graphics.
-  const nodes = data.nodes.map((n) => ({ path: n.path, label: n.label || n.path, degree: n.degree || 0 }));
+  // Build node objects d3 will mutate with x/y, plus their Pixi graphics. A node
+  // the last scene had keeps its place: d3 only seeds the ones without one, so a
+  // rebuild lands on the layout that was there plus wherever the new nodes fall.
+  const nodes = data.nodes.map((n) => {
+    const node = { path: n.path, label: n.label || n.path, degree: n.degree || 0 };
+    const seat = carried && carried.positions.get(n.path);
+    if (seat) { node.x = seat.x; node.y = seat.y; }
+    return node;
+  });
   const nodeByPath = new Map(nodes.map((n) => [n.path, n]));
   const links = (data.edges || [])
     .filter((e) => nodeByPath.has(e.source) && nodeByPath.has(e.target))
@@ -397,11 +462,15 @@ async function buildGraphScene() {
     // Frame everything until the reader takes the wheel. A view parked at 1:1 on
     // an arbitrary centre cannot answer "how much is there": two documents sit
     // lost in an empty field, two thousand hang off every edge. Any pan, zoom,
-    // drag or flight ends it for good.
-    autoFit: true,
+    // drag or flight ends it for good — including one from before a redraw.
+    autoFit: carried ? carried.autoFit : true,
     // Ambient labels wait for the layout to settle so they resolve on stable
-    // positions instead of flickering as the simulation jiggles the nodes.
-    settled: false,
+    // positions instead of flickering as the simulation jiggles the nodes. A
+    // carried layout is already settled, so its names do not blink out.
+    settled: carried ? carried.settled : false,
+    // What this scene draws, so a later delivery of the same picture can be
+    // recognised and left alone.
+    signature: graphSignature(data),
     // A 2D context used only to measure label widths for the collision pass.
     measureCtx: document.createElement('canvas').getContext('2d'),
   };
@@ -459,14 +528,17 @@ async function buildGraphScene() {
   if (!veryHeavy) {
     sim.force('collide', window.d3.forceCollide().radius((d) => graphNodeRadius(d.degree) + 3));
   }
+  // Inherited a layout: run the simulation warm, so it absorbs the change rather
+  // than laying the whole vault out again under a reader's eyes.
+  if (carried && carried.positions.size) sim.alpha(GRAPH_WARM_ALPHA);
   const renderEvery = veryHeavy ? 6 : heavy ? 3 : 1;
   let tickCount = 0;
   sim.on('tick', () => {
     tickCount += 1;
     if (tickCount % renderEvery === 0) {
-      // Refit as it settles, so a layout expanding past the edges is followed
-      // rather than watched from behind a fixed camera.
-      if (scene.autoFit) fitGraphToView(scene);
+      // Follow as it settles, so a layout expanding past the edges is not watched
+      // from behind a fixed camera — but hold still while it stays in frame.
+      if (scene.autoFit) fitGraphToView(scene, true);
       renderGraphFrame(scene);
     }
   });
@@ -487,7 +559,14 @@ async function buildGraphScene() {
   applyGraphStyles();
   // d3 seeds positions before the first tick, so there is already something to
   // frame: the map opens fitted rather than snapping into place a frame later.
-  fitGraphToView(scene);
+  // A camera the reader set survives the redraw instead of being overruled by it.
+  if (scene.autoFit) {
+    fitGraphToView(scene);
+  } else if (carried) {
+    scene.world.scale.set(carried.scale);
+    scene.world.position.set(carried.x, carried.y);
+  }
+  layoutGraphLabels(scene);
   renderGraphFrame(scene);
   // A rebuild triggered by a deliberate navigation (tab click/switch) flies to
   // the active node now that its graphics exist; d3 seeds positions before the

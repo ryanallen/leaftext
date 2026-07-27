@@ -47,7 +47,7 @@ flowchart LR
 | Back / Forward | Moves through document and scroll history |
 | Code view | Toggles the page to its raw, editable source — see [Editing](01-features/07-editing.md) |
 | Save | A green button that appears when the source has [unsaved edits](01-features/07-editing.md#save) |
-| Library pane | Lets you browse, graph, and search indexed Markdown files |
+| Library pane | Browse a folder, [search](01-features/03-library.md#search) a [vault](01-features/03-library.md#vaults)'s text, and [map](01-features/03-library.md#graph) how its documents link |
 
 ## Basics
 

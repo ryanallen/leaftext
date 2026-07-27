@@ -53,7 +53,10 @@ const MARK_OPEN: char = '\u{2}';
 const MARK_CLOSE: char = '\u{3}';
 
 /// One document, as the corpus holds it.
-#[derive(Debug, Clone)]
+///
+/// Compared by value so a watcher tick reporting text identical to what is held
+/// can be answered with "nothing changed", the way live reload hash-gates itself.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CorpusDocument {
     pub path: String,
     /// The file name without its extension: what the pane and the graph show.
@@ -91,12 +94,25 @@ impl VaultCorpus {
         }
     }
 
+    /// Whether a changed path is one this corpus holds text for. Asked before
+    /// [`Self::refresh`], because getting that far can cost a clone of the whole
+    /// corpus, and most of what the watcher reports is not a document.
+    pub fn covers(&self, path: &Path) -> bool {
+        path.starts_with(&self.root) && crate::is_supported_document_path(path)
+    }
+
     /// Bring one path up to date after the watcher reports a change: re-read it,
     /// add it if it is new, drop it if it is gone. Cheaper than re-reading the
     /// vault, and it is what keeps search and the graph live while you edit.
-    pub fn refresh(&mut self, path: &Path) {
-        if !path.starts_with(&self.root) || !crate::is_supported_document_path(path) {
-            return;
+    ///
+    /// Returns whether the corpus is actually different afterwards. The watcher
+    /// reports every write under the vault — `.git` bookkeeping, an image, a save
+    /// whose bytes did not change — and the graph is redrawn off this answer, so
+    /// "nothing changed" has to be sayable: that churn used to tear the map down
+    /// and rebuild it over and over while someone was reading it.
+    pub fn refresh(&mut self, path: &Path) -> bool {
+        if !self.covers(path) {
+            return false;
         }
         let key = path_to_string(path);
         let existing = self
@@ -104,15 +120,23 @@ impl VaultCorpus {
             .iter()
             .position(|document| document.path == key);
         match (read_document(path), existing) {
-            (Some(fresh), Some(index)) => self.documents[index] = fresh,
-            (Some(fresh), None) if self.documents.len() < MAX_CORPUS_DOCUMENTS => {
-                self.documents.push(fresh)
+            (Some(fresh), Some(index)) => {
+                if self.documents[index] == fresh {
+                    return false;
+                }
+                self.documents[index] = fresh;
+                true
             }
-            (Some(_), None) => {}
+            (Some(fresh), None) if self.documents.len() < MAX_CORPUS_DOCUMENTS => {
+                self.documents.push(fresh);
+                true
+            }
+            (Some(_), None) => false,
             (None, Some(index)) => {
                 self.documents.remove(index);
+                true
             }
-            (None, None) => {}
+            (None, None) => false,
         }
     }
 

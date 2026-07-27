@@ -1823,6 +1823,15 @@ body.library-resizing {
 :root[data-graph-view="true"] .reader-loading {
   grid-column: 2 / 4;
 }
+/* The map has no minimap, so in this view there is no minimap column — said once
+   here rather than in each place measuring to a rail that is not there. The bar's
+   divider and .reader-corner-tr are both positioned off it, so they stopped a
+   column short of the map and turned the arc down in mid-air over the canvas.
+   On `body`, where the rule that opens the column sets it: a custom property set
+   on an element beats one inherited from :root, however specific that selector. */
+:root[data-graph-view="true"] > body {
+  --reader-minimap-column: 0px;
+}
 .reader-graph-canvas canvas {
   display: block;
 }

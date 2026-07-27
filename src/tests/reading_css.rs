@@ -874,6 +874,29 @@ fn the_map_takes_the_column_the_minimap_is_not_using() {
     // on the page's middle and sits visibly left of the map's.
     assert!(css.contains(":root[data-graph-view=\"true\"] .reader-loading {"));
     assert!(css.contains(":root[data-graph-view=\"true\"] .reader-edge-fade {"));
+
+    // And the chrome that draws the top of the card has to reach the map's right
+    // edge, not the page's. Both the bar's divider and the top-right arc are
+    // positioned off the minimap column, so the column closes in this view rather
+    // than each of them learning about the map: the stroke used to stop a rail's
+    // width short and the arc turned down in mid-air over the top of the canvas.
+    assert_contains(
+        css,
+        ":root[data-graph-view=\"true\"] > body {\n  --reader-minimap-column: 0px;\n}",
+    );
+    // Set on `body`, where the rule that opens the column sets it. A custom
+    // property on an element beats one inherited from :root, however specific the
+    // :root selector is — the override would simply never apply.
+    let opens = css
+        .find("body:has(.document-minimap) {")
+        .expect("stylesheet opens the minimap column on body");
+    let closes = css
+        .find(":root[data-graph-view=\"true\"] > body {")
+        .expect("stylesheet closes it again in graph view");
+    assert!(
+        opens < closes,
+        "the graph-view override has to come after the rule it overrides"
+    );
 }
 
 #[test]

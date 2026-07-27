@@ -326,9 +326,14 @@ fn the_map_opens_framing_everything_and_then_leaves_the_view_alone() {
     // A view parked at 1:1 on an arbitrary centre cannot answer the first thing
     // a map is asked: how much is there. Two documents sat lost in the middle of
     // an empty field. So it fits, clamped to the zoom limits the wheel obeys.
-    assert!(html.contains("function fitGraphToView(scene)"));
-    assert!(html.contains("autoFit: true,"));
-    assert!(html.contains("if (scene.autoFit) fitGraphToView(scene);"));
+    assert!(html.contains("function fitGraphToView(scene, follow)"));
+    assert!(html.contains("autoFit: carried ? carried.autoFit : true,"));
+    // While it settles the camera follows only what leaves the frame. A force
+    // layout breathes, and refitting on every tick put that pumping on screen.
+    assert!(html.contains("if (scene.autoFit) fitGraphToView(scene, true);"));
+    assert!(
+        html.contains("if (follow && graphBoundsInView(scene, minX, minY, maxX, maxY)) return;")
+    );
     assert!(html.contains("Math.min(availableX / spanX, availableY / spanY)"));
     // Four gestures take the view, and it is not given back: pan, wheel, drag,
     // and a flight to one node.
@@ -336,6 +341,63 @@ fn the_map_opens_framing_everything_and_then_leaves_the_view_alone() {
     assert_eq!(
         releases, 4,
         "expected pan, wheel, drag and focus to end auto-fit, found {releases}"
+    );
+}
+
+#[test]
+fn a_redraw_of_the_same_map_is_not_a_redraw() {
+    let html = app_shell_html();
+
+    // The host redraws the graph for any change to the vault's text, so the page
+    // is handed the same picture over and over while someone reads it. Tearing
+    // the scene down for one of those is a WebGL context thrown away, a layout
+    // restarted, and a camera reset -- the map visibly bouncing for a change that
+    // was not one. So a payload is identified by what it draws and compared.
+    assert!(html.contains("function graphSignature(data)"));
+    assert!(html
+        .contains("if (graphScene && graphScene.signature === graphSignature(graphData)) return;"));
+    assert!(html.contains("signature: graphSignature(data),"));
+
+    // A real change still rebuilds, but inherits the layout: every node keeps its
+    // place, the simulation starts warm rather than laying the vault out again,
+    // and a framing the reader chose survives.
+    assert!(html.contains("function carryGraphLayout(scene)"));
+    assert!(html.contains("const carried = graphScene ? carryGraphLayout(graphScene) : null;"));
+    assert!(html.contains("if (seat) { node.x = seat.x; node.y = seat.y; }"));
+    assert!(html.contains("if (carried && carried.positions.size) sim.alpha(GRAPH_WARM_ALPHA);"));
+
+    // And a burst of writes -- a sync, a checkout, several saves -- builds once,
+    // at the end, instead of once per delivery.
+    assert!(html.contains("const GRAPH_REBUILD_COALESCE_MS = "));
+    assert!(html.contains("if (graphRebuildTimer) clearTimeout(graphRebuildTimer);"));
+    // Except the first, which is what the reader is actually waiting for.
+    assert!(html.contains("if (!graphScene) {\n    buildGraphScene();"));
+}
+
+#[test]
+fn only_a_document_that_moved_redraws_the_map() {
+    let source = include_str!("../app/vaults.rs");
+
+    // A vault is a folder someone works in: the watcher reports `.git` writing an
+    // index, a saved image, a temp file coming and going. None of them can change
+    // the corpus, and every one of them used to reach the page as a fresh graph.
+    let refresh = source
+        .find("pub(crate) fn refresh_corpus_path(")
+        .expect("the watcher patches the corpus a file at a time");
+    let body = &source[refresh..];
+    let covers = body
+        .find("if !corpus.covers(changed) {")
+        .expect("a path that is not a document is answered before anything is paid for");
+    let make_mut = body
+        .find("Arc::make_mut(corpus).refresh(changed)")
+        .expect("the corpus is patched through make_mut");
+    assert!(
+        covers < make_mut,
+        "the cheap check has to come before the clone make_mut may pay for"
+    );
+    assert!(
+        body.contains("if !Arc::make_mut(corpus).refresh(changed) {\n        return;\n    }"),
+        "a refresh that changed nothing must not reach the graph rebuild"
     );
 }
 

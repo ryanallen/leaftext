@@ -66,12 +66,14 @@ A force-directed relationship map of the vault: each **node** is a document, eac
 It is a **view of the page**, not a panel — reach it from the [floating toolbar](02-navigation.md#the-toolbar) under the document, beside reading and the source view. It needs a vault: the whole library is a computer, not a collection, and there is no map of one worth drawing.
 
 - The map **opens framed on everything it drew** — the tightest zoom that still holds the whole layout, centred. Two documents fill the view; two thousand shrink to fit. The first pan, zoom, drag or flight hands the view over to you, and it stops reframing.
+- While the layout settles the view **follows only what leaves the frame**, then frames everything once more when it comes to rest. A force layout breathes as it works, and a camera refitting on every frame of that put the pumping on screen.
 - The document you are reading is highlighted in the accent colour and pulled larger.
 - **Names** float in dim grey beneath the nodes. They stay a fixed size as you zoom and are decluttered by fit: where the layout is open every name shows, and where nodes crowd only the ones that clear their neighbours do. The document you are on always keeps its name, and hovering shows the hovered node's name and its neighbours'.
 - **Click** a node to open that document — the map holds until the document is ready, then steps aside. **Hover** to light up a node's direct links and dim the rest.
 - **Drag** a node to reposition it, **drag the background** to pan, **scroll** to zoom.
 - Opening a document from the pane while the map is up **keeps the map up** and moves the highlight. Changing what you are looking at is not a reason to change how you are looking at it.
 - Closing the last tab closes the map with it: the start screen is not one of a document's views.
+- Editing a document under the vault **redraws the map in place**: every node keeps its position, your pan and zoom are kept, and the layout eases into what changed rather than laying itself out again. An edit that draws the same map — a word typed into a document that links nowhere new — changes nothing on screen at all.
 - Building the map shows the same spinner a slow document does.
 
 How many documents it draws is set by the [Graph size](05-settings.md#graph-size) setting — from a tight **Focus** neighborhood (the open document and its direct links) up to **Everything**. Smaller sizes render faster; larger ones stay responsive by easing the layout and repainting less often as it settles.
@@ -140,7 +142,7 @@ The pane keeps up with changes on disk, so a file you just created shows up with
 
 - The same file watcher that drives live reload watches the active vault **recursively**, plus the open document's folder when it sits outside the vault. With no vault, only the folder you are browsing is watched, and not recursively — browsing a drive root should not subscribe to the whole drive.
 - A file added, renamed or removed in the folder you are looking at refreshes the list.
-- The vault's in-memory text is patched for the one file that changed, so [search](#search) and the [graph](#graph) stay current without re-reading the vault.
+- The vault's in-memory text is patched for the one file that changed, so [search](#search) and the [graph](#graph) stay current without re-reading the vault. Only a document whose text actually moved counts: a vault is a folder you work in, and git writing to itself, a saved image or an editor's temp file are not changes to your documents.
 - The [sync count](#syncing) is re-read too, whether the change was to the document you are editing or to any other file in the vault.
 
 ## File types

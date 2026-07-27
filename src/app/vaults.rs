@@ -453,6 +453,10 @@ pub(crate) fn deliver_corpus(
 /// The graph is redrawn only when it is the view on screen. Rebuilding it for a
 /// pane nobody is looking at is what turned a burst of saves into a locked
 /// window, and rebuilding it *here* is what made each one cost the whole vault.
+///
+/// And only when the document text actually moved. A vault is a folder someone
+/// works in, and every unrelated write in it used to reach the page as a fresh
+/// graph — which the page can only receive by tearing the map down.
 pub(crate) fn refresh_corpus_path(
     state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
@@ -462,9 +466,16 @@ pub(crate) fn refresh_corpus_path(
     let Some(corpus) = state.corpus.as_mut() else {
         return;
     };
+    // Before the refresh: `Arc::make_mut` clones the whole vault's text when a
+    // worker is mid-build, and a path that is not a document must not cost that.
+    if !corpus.covers(changed) {
+        return;
+    }
     // Cheap unless a worker is mid-build against this exact corpus, in which
     // case it clones rather than mutate out from under it.
-    Arc::make_mut(corpus).refresh(changed);
+    if !Arc::make_mut(corpus).refresh(changed) {
+        return;
+    }
     if !graph_showing {
         return;
     }

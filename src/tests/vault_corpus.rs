@@ -152,19 +152,19 @@ fn the_watcher_patches_one_file_rather_than_re_reading_the_vault() {
 
     // Edited: the new text is searchable, the old is not.
     write(&root.join("b.md"), "# B\n\nRewritten wording.\n");
-    corpus.refresh(&root.join("b.md"));
+    assert!(corpus.refresh(&root.join("b.md")));
     assert_eq!(corpus.documents.len(), 2);
     assert!(corpus.search("original").is_empty());
     assert_eq!(titles(&corpus.search("rewritten")), vec!["b"]);
 
     // Added: a file that was not there at read time joins.
     write(&root.join("c.md"), "# C\n\nBrand new.\n");
-    corpus.refresh(&root.join("c.md"));
+    assert!(corpus.refresh(&root.join("c.md")));
     assert_eq!(titles(&corpus.search("brand")), vec!["c"]);
 
     // Deleted: gone from both, with nothing to prune and no stale node.
     fs::remove_file(root.join("b.md")).expect("file removed");
-    corpus.refresh(&root.join("b.md"));
+    assert!(corpus.refresh(&root.join("b.md")));
     assert_eq!(
         labels(&corpus.graph(&GraphRequest::default())),
         vec!["a", "c"]
@@ -174,8 +174,35 @@ fn the_watcher_patches_one_file_rather_than_re_reading_the_vault() {
 
     // Something outside the vault is not the vault's business.
     write(&dir.join("outside.md"), "# Outside\n");
-    corpus.refresh(&dir.join("outside.md"));
+    assert!(!corpus.refresh(&dir.join("outside.md")));
     assert_eq!(corpus.documents.len(), 2);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn a_change_that_changed_nothing_says_so() {
+    let dir = corpus_dir("refresh-unchanged");
+    let root = dir.join("vault");
+    write(&root.join("a.md"), "# A\n\n[c](./c.md)\n");
+
+    let mut corpus = VaultCorpus::read(&root);
+
+    // The graph on screen is redrawn off this answer, so everything the watcher
+    // reports that cannot have moved a document has to answer no. A vault is a
+    // folder someone works in: most of what happens in it is not a document.
+    write(&root.join(".git").join("index"), "not a document\n");
+    assert!(!corpus.refresh(&root.join(".git").join("index")));
+    write(&root.join("diagram.png"), "not a document either\n");
+    assert!(!corpus.refresh(&root.join("diagram.png")));
+    // Nor is a document whose bytes came back the same -- a watcher fires more
+    // than once for one save, and a touch is not an edit.
+    write(&root.join("a.md"), "# A\n\n[c](./c.md)\n");
+    assert!(!corpus.refresh(&root.join("a.md")));
+    // A link to a file that is not there is not a node, so nothing changes when
+    // one that was never in the corpus is reported gone.
+    assert!(!corpus.refresh(&root.join("c.md")));
+    assert_eq!(corpus.documents.len(), 1);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }
