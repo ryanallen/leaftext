@@ -84,9 +84,6 @@ pub(crate) enum UserEvent {
         enabled: bool,
     },
     /// Persist the reading-view editing toggle.
-    SetReaderEditingEnabled {
-        enabled: bool,
-    },
     /// Persist the selected theme family (`github`/`nightshade`/`amaranth`/…).
     SetThemeFamily {
         family: String,
@@ -115,10 +112,14 @@ pub(crate) enum UserEvent {
         border_b: u8,
         dark: bool,
     },
-    /// Persist the library view choice and the folder Project view is inside.
+    /// Persist the folder the library pane is inside.
     SetLibraryState {
-        view: String,
         project_path: String,
+    },
+    /// Whether the page is showing the graph. Not persisted — it says only
+    /// whether a change on disk has a map on screen to redraw.
+    SetGraphView {
+        open: bool,
     },
     /// Persist the library pane's open/closed state and last open width.
     SetLibraryLayout {
@@ -319,8 +320,6 @@ pub(crate) enum IpcCommand {
     SetSpeedReaderEnabled { enabled: bool },
     #[serde(rename = "setLineNumbersEnabled")]
     SetLineNumbersEnabled { enabled: bool },
-    #[serde(rename = "setReaderEditingEnabled")]
-    SetReaderEditingEnabled { enabled: bool },
     #[serde(rename = "setThemeFamily")]
     SetThemeFamily { family: String },
     #[serde(rename = "setThemeMode")]
@@ -350,10 +349,11 @@ pub(crate) enum IpcCommand {
     },
     #[serde(rename = "setLibraryState")]
     SetLibraryState {
-        view: String,
         #[serde(rename = "projectPath")]
         project_path: String,
     },
+    #[serde(rename = "setGraphView")]
+    SetGraphView { open: bool },
     #[serde(rename = "setLibraryLayout")]
     SetLibraryLayout { closed: bool, width: u32 },
     #[serde(rename = "createVault")]
@@ -527,9 +527,6 @@ pub(crate) fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<S
             IpcCommand::SetLineNumbersEnabled { enabled } => {
                 let _ = proxy.send_event(UserEvent::SetLineNumbersEnabled { enabled });
             }
-            IpcCommand::SetReaderEditingEnabled { enabled } => {
-                let _ = proxy.send_event(UserEvent::SetReaderEditingEnabled { enabled });
-            }
             IpcCommand::SetThemeFamily { family } => {
                 let _ = proxy.send_event(UserEvent::SetThemeFamily { family });
             }
@@ -570,8 +567,11 @@ pub(crate) fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<S
                     dark,
                 });
             }
-            IpcCommand::SetLibraryState { view, project_path } => {
-                let _ = proxy.send_event(UserEvent::SetLibraryState { view, project_path });
+            IpcCommand::SetLibraryState { project_path } => {
+                let _ = proxy.send_event(UserEvent::SetLibraryState { project_path });
+            }
+            IpcCommand::SetGraphView { open } => {
+                let _ = proxy.send_event(UserEvent::SetGraphView { open });
             }
             IpcCommand::SetLibraryLayout { closed, width } => {
                 let _ = proxy.send_event(UserEvent::SetLibraryLayout { closed, width });

@@ -17,7 +17,19 @@ function runViewRender(payload, render) {
 }
 window.leafSetState = (state) => {
   currentState = state || { recent: [], tabs: [], active: null, document: null };
+  // Only the gestures that meant "leave the map" close it. Opening a file from
+  // the pane while reading the map is a change of subject, not a change of
+  // view — the graph stays up and moves its highlight to what you opened.
+  if (graphExitPending) {
+    graphExitPending = false;
+    closeGraphView();
+  }
   if (!currentState.document) {
+    // No document, no views. The three of them are three ways of showing one
+    // thing, and the home screen is not that thing — which is why the bar hides
+    // here. Closing the last tab with the map up left it on screen with nothing
+    // left to leave it by.
+    closeGraphView();
     emptyDescriptionKey = pickEmptyDescriptionKey();
   }
   runViewRender(currentState.document && currentState.document.html, () => {
@@ -92,6 +104,20 @@ window.leafSwitchTab = (state, anchor) => {
     });
   });
 };
+// Tabs and recents with no document attached. A tab opened straight into the
+// code view renders from the code view's own payload, so the state script never
+// runs for it — without this it would have no entry in the strip and nothing
+// for the page to call the active document.
+window.leafSetWorkspace = (state) => {
+  const next = state || {};
+  currentState = Object.assign({}, currentState || {}, {
+    recent: next.recent || [],
+    tabs: next.tabs || [],
+    active: next.active == null ? null : next.active,
+  });
+  renderTabs(currentState);
+  followFileInLibrary(activeDocumentPath(), false);
+};
 window.leafSetNavigation = (state) => {
   navigationState = state || { canGoBack: false, canGoForward: false };
   renderNavigation();
@@ -161,7 +187,6 @@ function renderStaticText() {
   minimapEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.minimap.aria'));
   speedReaderEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.speedReader.aria'));
   lineNumbersEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.lineNumbers.aria'));
-  readerEditingEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.readerEditing.aria'));
 }
 // Every extension the app reads. Mirrors the table in `src/format.rs`, which is
 // the source of truth — the page can't import it, so keep the two in step.

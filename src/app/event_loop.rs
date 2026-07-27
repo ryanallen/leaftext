@@ -454,7 +454,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     // only redrawn when the graph is the view on screen —
                     // rebuilding it for a pane nobody is looking at is what made
                     // a burst of saves lock the window.
-                    let graph_showing = settings.library_view == LibraryView::Graph;
+                    let graph_showing = vault_state.graph_open;
                     refresh_corpus_path(&mut vault_state, &proxy, &changed, graph_showing);
                     // An image, not a document: the text is unchanged, so the
                     // reload above would hash-gate itself out.
@@ -562,10 +562,6 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 settings.line_numbers_enabled = enabled;
                 persist_settings(&settings, settings_path.as_ref());
             }
-            Event::UserEvent(UserEvent::SetReaderEditingEnabled { enabled }) => {
-                settings.reader_editing_enabled = enabled;
-                persist_settings(&settings, settings_path.as_ref());
-            }
             Event::UserEvent(UserEvent::SetThemeFamily { family }) => {
                 settings.theme_family = family;
                 persist_settings(&settings, settings_path.as_ref());
@@ -607,12 +603,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             }) => {
                 apply_window_chrome(&window, r, g, b, border_r, border_g, border_b, dark);
             }
-            Event::UserEvent(UserEvent::SetLibraryState { view, project_path }) => {
-                if let Some(view) = LibraryView::from_client(&view) {
-                    settings.library_view = view;
-                }
+            Event::UserEvent(UserEvent::SetLibraryState { project_path }) => {
                 settings.library_project_path = project_path;
                 persist_settings(&settings, settings_path.as_ref());
+            }
+            Event::UserEvent(UserEvent::SetGraphView { open }) => {
+                vault_state.graph_open = open;
             }
             Event::UserEvent(UserEvent::SetLibraryLayout { closed, width }) => {
                 settings.library_closed = closed;
@@ -689,7 +685,6 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 };
                 // Off the vault's own text, read once and shared with search.
                 request_link_graph(&mut vault_state, &proxy, webview.as_ref(), request);
-                let _ = &settings;
             }
             Event::UserEvent(UserEvent::SetGraphScope { scope }) => {
                 if let Some(scope) = GraphScope::from_client(&scope) {

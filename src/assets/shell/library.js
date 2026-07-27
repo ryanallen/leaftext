@@ -1,9 +1,5 @@
 function persistLibraryState() {
-  send({
-    command: 'setLibraryState',
-    view: libraryView,
-    projectPath: libraryProjectPath,
-  });
+  send({ command: 'setLibraryState', projectPath: libraryProjectPath });
 }
 function persistLibraryLayout() {
   send({ command: 'setLibraryLayout', closed: libraryUserClosed, width: Math.round(libraryWidth) });
@@ -213,31 +209,11 @@ function followFileInLibrary(path, focus, forceRefresh) {
   // Going to a file can move the pane's root, and that is true in either view —
   // the graph's scope is the vault, so it follows the document too.
   if (libraryRevealPending) revealSelectedInLibrary();
-  // In graph mode there are no rows; move the highlight to the active node. On a
-  // deliberate navigation, also fly the camera to it and zoom in; `forceRefresh`
-  // rebuilds the slice too.
-  if (libraryView === 'graph') {
-    graphSetActive(librarySelectedPath, focus, forceRefresh);
-    return;
-  }
+  // With the graph up, move the highlight to the active node. On a deliberate
+  // navigation, also fly the camera to it and zoom in; `forceRefresh` rebuilds
+  // the slice too.
+  if (graphViewOpen) graphSetActive(librarySelectedPath, focus, forceRefresh);
   renderLibrary();
-}
-// Switching between the file list and the graph. One icon, pressed while the
-// graph is up, so the pane never hides which of the two you are looking at.
-function setLibraryView(view) {
-  if (!LIBRARY_VIEWS.includes(view) || view === libraryView) return;
-  libraryView = view;
-  persistLibraryState();
-  // Leaving the graph lands on the open document, not wherever the list was left.
-  libraryRevealPending = view !== 'graph' && !!librarySelectedPath;
-  if (!libraryRevealPending || !revealSelectedInLibrary()) renderLibrary();
-  // The reach changed, so re-run the active query under the new one.
-  if (librarySearchQuery) runLibrarySearch(librarySearch.value);
-}
-if (libraryGraphToggle) {
-  libraryGraphToggle.addEventListener('click', () => {
-    setLibraryView(libraryView === 'graph' ? 'project' : 'graph');
-  });
 }
 // A library row's display name: a file shows its file name (basename minus a
 // .md-style extension), matching the tabs; a folder shows its folder name.
@@ -309,12 +285,12 @@ function bindLibraryRows() {
 // width, not a fixed count — widening the pane reveals more of the path. What
 // doesn't fit collapses into a "…" button that opens a menu of the folders it
 // swallowed, so a deep path is still one click from any ancestor.
-// The leftmost crumb keeps its place at the head of the trail; what changed is
-// what it does. It is already the top — the whole library, or the vault you are
-// in — so there is nothing above it to walk to, and clicking it opens the
-// switcher instead.
+// The leftmost crumb is the root — the whole library, or the vault you are in —
+// and clicking it goes there, the way every other crumb goes to its folder.
+// Changing *which* root that is belongs to the button beside the trail, not to
+// a crumb that looks exactly like a place.
 function crumbSegments(chain) {
-  return [{ path: '', name: libraryRootLabel(), switcher: true }]
+  return [{ path: '', name: libraryRootLabel() }]
     .concat(chain.map((node) => ({ path: node.path, name: node.name || node.path })));
 }
 // The chain the trail is currently drawing, kept so a resize can refit without
@@ -322,14 +298,6 @@ function crumbSegments(chain) {
 let libraryCrumbChain = [];
 const CRUMB_SEP_HTML = '<span class="library-crumb-sep" aria-hidden="true">›</span>';
 function crumbHtml(segment, current) {
-  if (segment.switcher) {
-    const label = escapeAttr(window.leafLocale.t('library.vaults.switch', { name: segment.name }));
-    // At the root this crumb is also where you are, but it stays a button: its
-    // job is the menu, not navigation.
-    const here = current ? ' is-current' : '';
-    const marker = current ? ' aria-current="true"' : '';
-    return `<button type="button" class="library-crumb library-crumb-switcher${here}"${marker} data-crumb-switcher="1" title="${label}" aria-label="${label}" aria-haspopup="menu" aria-expanded="false"><span class="library-crumb-name">${escapeText(segment.name)}</span><span class="library-crumb-caret" aria-hidden="true">▾</span></button>`;
-  }
   if (current) {
     return `<span class="library-crumb is-current" aria-current="true" title="${escapeAttr(segment.path || segment.name)}">${escapeText(segment.name)}</span>`;
   }
@@ -354,7 +322,7 @@ function crumbFitKey(segments) {
 // written once. Both writes happen inside the same task, so nothing intermediate
 // paints.
 function fitLibraryCrumbs() {
-  if (!libraryCrumbTrail || libraryView === 'graph') return;
+  if (!libraryCrumbTrail) return;
   const segments = crumbSegments(libraryCrumbChain);
   // The trail fills the band whatever is in it, so its width keys the fit safely.
   const key = crumbFitKey(segments);
@@ -408,13 +376,6 @@ function bindCrumbTrailButtons(hidden) {
   libraryCrumbTrail.querySelectorAll('[data-crumb-path]').forEach((crumb) => {
     crumb.addEventListener('click', () => setLibraryFolder(crumb.dataset.crumbPath));
   });
-  const switcher = libraryCrumbTrail.querySelector('[data-crumb-switcher]');
-  if (switcher) {
-    switcher.addEventListener('click', (event) => {
-      event.stopPropagation();
-      toggleCrumbMenu(switcher, vaultMenuItems());
-    });
-  }
   const more = libraryCrumbTrail.querySelector('[data-crumb-more]');
   if (more) {
     more.addEventListener('click', (event) => {
@@ -425,18 +386,6 @@ function bindCrumbTrailButtons(hidden) {
 }
 function renderLibraryCrumbs(chain) {
   if (!libraryCrumbTrail) return;
-  if (libraryView === 'graph') {
-    hideCrumbMenu();
-    // The graph has no folder path, but the switcher stays put: it is where you
-    // change vaults, and losing it here would strand you in one.
-    const root = crumbSegments([])[0];
-    libraryCrumbTrail.innerHTML = crumbHtml(root, false) + CRUMB_SEP_HTML
-      + `<span class="library-crumb is-current">${escapeText(window.leafLocale.t('library.view.graph'))}</span>`;
-    bindCrumbTrailButtons([]);
-    // The graph took the band over; the next file-list render starts from scratch.
-    libraryCrumbFitKey = null;
-    return;
-  }
   libraryCrumbChain = chain;
   fitLibraryCrumbs();
 }
@@ -474,10 +423,13 @@ function folderMenuItems(hidden) {
 // vault, then New vault…. The rows are told apart by id, so two vaults may share
 // a name — and "Library" is that first row's label, not a reserved word.
 function vaultMenuItems() {
+  // Open is the one you are in, closed the ones you are not — the glyph carries
+  // the state, so the tick beside it confirms rather than being the only sign.
+  const rootIcon = (on) => (on ? PACKAGE_OPEN_ICON_SVG : PACKAGE_ICON_SVG);
   const items = [{
     label: window.leafLocale.t('library.title'),
     title: window.leafLocale.t('library.vaults.all'),
-    icon: FOLDER_ICON_SVG,
+    icon: rootIcon(!activeVaultId),
     selected: !activeVaultId,
     run: () => switchVault(0),
   }];
@@ -486,7 +438,7 @@ function vaultMenuItems() {
     items.push({
       label: vault.name || vault.rootPath,
       title: vault.rootPath || '',
-      icon: FOLDER_ICON_SVG,
+      icon: rootIcon(vault.id === activeVaultId),
       selected: vault.id === activeVaultId,
       run: () => switchVault(vault.id),
       // The row's own button: everything you can do to this vault, in one
@@ -639,7 +591,7 @@ function showCrumbMenu(button, items) {
       const edit = document.createElement('button');
       edit.type = 'button';
       edit.className = 'crumb-menu-edit';
-      edit.innerHTML = MENU_EDIT_SVG;
+      edit.innerHTML = MENU_SETTINGS_SVG;
       const label = window.leafLocale.t('library.vaults.edit', { name: entry.label });
       edit.title = label;
       edit.setAttribute('aria-label', label);
@@ -691,6 +643,20 @@ if (typeof ResizeObserver !== 'undefined' && libraryCrumbTrail && libraryCrumbTr
   new ResizeObserver(scheduleCrumbFit).observe(libraryCrumbTrail.parentElement);
 }
 window.addEventListener('resize', scheduleCrumbFit);
+// The switcher's own button, left of the trail. Its label names the root you
+// are in, so hovering it says what changing would change.
+function renderLibraryVaultSwitch() {
+  if (!libraryVaultSwitch) return;
+  const label = window.leafLocale.t('library.vaults.switch', { name: libraryRootLabel() });
+  libraryVaultSwitch.title = label;
+  libraryVaultSwitch.setAttribute('aria-label', label);
+}
+if (libraryVaultSwitch) {
+  libraryVaultSwitch.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleCrumbMenu(libraryVaultSwitch, vaultMenuItems());
+  });
+}
 // Search reads the vault's text, so without a vault there is nothing for it to
 // read. The field is hidden rather than left to return nothing — a box that
 // looks like it works and does not is worse than no box.
@@ -703,29 +669,10 @@ function renderLibrarySearchability() {
     runLibrarySearch('');
   }
 }
-function renderLibraryGraphToggle() {
-  if (!libraryGraphToggle) return;
-  const on = libraryView === 'graph';
-  const label = window.leafLocale.t(on ? 'library.view.graph.off' : 'library.view.graph.on');
-  libraryGraphToggle.setAttribute('aria-pressed', String(on));
-  libraryGraphToggle.title = label;
-  libraryGraphToggle.setAttribute('aria-label', label);
-}
 function renderLibrary() {
-  renderLibraryGraphToggle();
+  renderLibraryVaultSwitch();
   renderLibrarySearchability();
   renderLibraryCrumbs(libraryChain);
-  // The graph view replaces the file list with an interactive canvas. It owns the
-  // whole pane body, so hide the list and let the graph module drive itself.
-  if (libraryView === 'graph') {
-    libraryTree.hidden = true;
-    libraryGraph.hidden = false;
-    showGraph();
-    return;
-  }
-  libraryGraph.hidden = true;
-  libraryTree.hidden = false;
-  teardownGraph();
   if (libraryError) {
     libraryTree.innerHTML = `<p class="library-empty">${escapeText(libraryError.message || '')}</p>`;
     return;
@@ -771,7 +718,9 @@ window.leafSetVaults = (payload) => {
     libraryChain = [];
     libraryError = null;
     persistLibraryState();
-    // A different root means a different graph.
+    // A different root means a different graph — and no vault means no graph at
+    // all, so the page goes back to the document.
+    if (!graphHasBoundedRoot()) closeGraphView();
     refreshGraphForScope();
   }
   // The leftmost crumb reads the root's name, so the trail lays out again.

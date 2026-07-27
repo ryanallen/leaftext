@@ -120,11 +120,9 @@ fn initial_settings_script_defines_camelcase_global() {
         pager_enabled: false,
         speed_reader_enabled: true,
         line_numbers_enabled: false,
-        reader_editing_enabled: false,
         theme_family: "nightshade".to_string(),
         theme_mode: "dark".to_string(),
         theme_random_used: Vec::new(),
-        library_view: LibraryView::Graph,
         graph_scope: GraphScope::Large,
         library_project_path: "docs".to_string(),
         library_closed: true,
@@ -141,7 +139,7 @@ fn initial_settings_script_defines_camelcase_global() {
     // update fields do cross: the page owns the check throttle and the button.
     assert_eq!(
         script,
-        r#"window.__leafSettings = {"graphScope":"large","libraryClosed":true,"libraryProjectPath":"docs","libraryView":"graph","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"readerEditingEnabled":false,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[],"updateLastChecked":1780000000,"updateStagedVersion":"0.1.400"};"#
+        r#"window.__leafSettings = {"graphScope":"large","libraryClosed":true,"libraryProjectPath":"docs","libraryWidth":312,"lineNumbersEnabled":false,"minimapEnabled":false,"pagerEnabled":false,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[],"updateLastChecked":1780000000,"updateStagedVersion":"0.1.400"};"#
     );
 }
 

@@ -22,17 +22,12 @@ function setDirtyState(path, dirty) {
   updateEditingChrome();
 }
 
-// Show/hide and style the code-view toggle and Save button for the active
-// document. Both are hidden on the home screen; Save enables (and greens) only
-// when the active document has unsaved edits.
+// Show/hide and style the floating bar for the active document: which view is
+// on, and whether there is anything to save or undo.
 function updateEditingChrome() {
   const path = activeDocumentPath();
   const hasDocument = !!path;
-  if (codeViewButton) {
-    codeViewButton.hidden = !hasDocument;
-    codeViewButton.setAttribute('aria-pressed', codeViewActive ? 'true' : 'false');
-    codeViewButton.classList.toggle('is-active', codeViewActive);
-  }
+  renderReaderToolbar(hasDocument);
   if (saveButton) {
     // Nothing to save, nothing shown: the green "Save" button appears only when
     // the active document has unsaved edits.
@@ -508,8 +503,10 @@ function scrollReadingToSrcOffset(srcOffset) {
   return true;
 }
 
-if (codeViewButton) {
-  codeViewButton.addEventListener('click', () => {
+// Swap between the rendered page and its source, carrying the reader's place
+// across. Named rather than inline on a listener: the floating bar's view group
+// calls it, and so did the button that used to live in the app bar.
+function toggleCodeView() {
     if (!activeDocumentPath()) return;
     // Carry the current position across the toggle; the destination view's
     // render consumes it and lands at the same relative spot.
@@ -532,8 +529,7 @@ if (codeViewButton) {
     // rebuilding a big document is slow), so arm the spinner for the wait.
     beginReaderLoading();
     send({ command: codeViewActive ? 'exitCodeView' : 'enterCodeView' });
-  });
-}
+  }
 if (saveButton) {
   saveButton.addEventListener('click', saveActiveDocument);
 }

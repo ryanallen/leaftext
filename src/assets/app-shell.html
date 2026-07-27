@@ -32,7 +32,6 @@
     <button type="button" id="overflowToggle" class="icon-button overflow-toggle" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="actions.more" data-i18n-title="actions.more" aria-label="More options" title="More options"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg></button>
     <div class="app-trailing-items" id="appTrailingItems">
     <div class="app-actions-items" id="appActionsItems">
-    <button type="button" id="codeViewButton" class="icon-button code-view-button" data-i18n-aria-label="actions.codeView" data-i18n-title="actions.codeView.title" aria-label="View source" title="View source" aria-pressed="false" hidden><span class="cv-icon cv-icon-code">{{CODE_VIEW_ICON_SVG}}</span><span class="cv-icon cv-icon-doc">{{DOCUMENT_ICON_SVG}}</span></button>
     <details class="settings-menu" id="settingsMenu">
       <summary id="settingsSummary" class="icon-button" data-i18n-aria-label="settings.heading" data-i18n-title="settings.heading" aria-label="Settings" title="Settings">
         {{SETTINGS_ICON_SVG}}
@@ -81,11 +80,6 @@
           <span class="setting-label" data-i18n="settings.lineNumbers.label">Line numbers</span>
           <span class="setting-help" id="lineNumbersEnabledHelp" data-i18n="settings.lineNumbers.help">Number each block in the left margin as a copyable permalink.</span>
         </label>
-        <label class="setting-control setting-control-inline" for="readerEditingEnabled">
-          <input type="checkbox" id="readerEditingEnabled" aria-label="Edit in reading view" aria-describedby="readerEditingEnabledHelp">
-          <span class="setting-label" data-i18n="settings.readerEditing.label">Edit in reading view</span>
-          <span class="setting-help" id="readerEditingEnabledHelp" data-i18n="settings.readerEditing.help">Click into the rendered page to edit it. Turn off to keep the reading view read-only; the code view still edits the source.</span>
-        </label>
         <!-- Update status, always present. Without it a check that found nothing,
              was throttled, or failed is indistinguishable from one that never
              ran, and the only way to see the updater work is to wait. It is also
@@ -105,8 +99,6 @@
       </div>
     </details>
     <button type="button" id="openButton" class="icon-button open-button" data-i18n-aria-label="actions.open" data-i18n-title="actions.open.title" aria-label="Open" title="Open Markdown file">{{OPEN_ICON_SVG}}</button>
-    <button type="button" id="saveButton" class="save-button" data-i18n="actions.save" data-i18n-aria-label="actions.save" data-i18n-title="actions.save.title" aria-label="Save" title="Save" hidden>Save</button>
-    <button type="button" id="undoButton" class="icon-button undo-button" data-i18n-aria-label="actions.undo" data-i18n-title="actions.undo.title" aria-label="Undo" title="Undo last edit" hidden><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" /></svg></button>
     </div>
     <div class="window-controls" id="windowControls" hidden aria-hidden="true">
       <button type="button" class="window-control" id="winMinimize" tabindex="-1" aria-label="Minimize" title="Minimize"><svg viewBox="0 0 12 12" aria-hidden="true"><line x1="2.5" y1="6.5" x2="9.5" y2="6.5" stroke="currentColor" stroke-width="1"/></svg></button>
@@ -127,16 +119,12 @@
   <div class="library-scroll">
     <div id="librarySearchResults" class="library-results" hidden></div>
     <div id="libraryTree" class="library-tree"></div>
-    <div id="libraryGraph" class="library-graph" hidden>
-      <div id="libraryGraphCanvas" class="library-graph-canvas"></div>
-      <p id="libraryGraphStatus" class="library-graph-status" aria-live="polite" hidden></p>
-    </div>
   </div>
   <!-- Where you are: the folder path, one crumb per level, with the graph
        toggle on the right. Its own band above the search row, same treatment. -->
   <div class="library-crumbs" id="libraryCrumbs">
+    <button type="button" id="libraryVaultSwitch" class="library-vault-switch" aria-haspopup="menu" aria-expanded="false" data-i18n-title="library.vaults.label" data-i18n-aria-label="library.vaults.label" title="Vaults" aria-label="Vaults">{{PACKAGE_OPEN_ICON_SVG}}<span class="library-crumb-caret" aria-hidden="true">▾</span></button>
     <nav class="library-crumb-trail" id="libraryCrumbTrail" data-i18n-aria-label="library.crumbs.label" aria-label="Folder path"></nav>
-    <button type="button" id="libraryGraphToggle" class="library-graph-toggle" aria-pressed="false" data-i18n-title="library.view.graph.on" data-i18n-aria-label="library.view.graph.on" title="Show how these documents link" aria-label="Show how these documents link">{{GRAPH_ICON_SVG}}</button>
   </div>
   <div class="library-header">
     <div class="library-search-wrap">
@@ -150,11 +138,44 @@
   <div class="reader-corner reader-corner-tl" aria-hidden="true"></div>
 </aside>
 <main id="app" class="reader-shell"></main>
+<!-- The graph, in the page rather than the pane. A map of the whole vault needs
+     the room the reader has; at 240px in the sidebar its labels were unreadable
+     and clicking a node shoved the answer somewhere you were not looking. Same
+     grid cell as the reader, shown in its place. -->
+<div id="readerGraph" class="reader-graph" hidden>
+  <div id="readerGraphCanvas" class="reader-graph-canvas"></div>
+  <p id="readerGraphStatus" class="reader-graph-status" aria-live="polite" hidden></p>
+</div>
 <!-- Soft edges for the page. The card's top slides under an opaque bar and its
      bottom stops at a hairline, so text used to end mid-stroke at both. This
      overlays the same grid cell (it can't live inside the scroller — an absolute
      child there scrolls with the content) and washes the last few pixels back to
      the page colour. -->
+<!-- Views and edits, floating over the foot of the page rather than crowded
+     into the top-right strip beside Settings and Open. Which view you are in is
+     the pressed button, so the bar answers "where am I" as well as "what can I
+     do". Its own grid cell placement, not a child of the scroller, or it would
+     scroll away with the document. -->
+<div id="readerToolbar" class="reader-toolbar" role="toolbar" data-i18n-aria-label="toolbar.label" aria-label="Views and edits" hidden>
+  <div class="reader-tool-group" role="group" data-i18n-aria-label="toolbar.views" aria-label="Views">
+    <button type="button" id="viewReadingButton" class="reader-tool" data-view="reading" aria-pressed="true" data-i18n-aria-label="toolbar.reading" data-i18n-title="toolbar.reading" aria-label="Reading" title="Reading">{{DOCUMENT_ICON_SVG}}</button>
+    <!-- What the reading view can do, in a recess beside the button that turns
+         it on. They arrive and leave with the view: the source view is an editor
+         however the padlock is set and neither means anything on a map, so a
+         control for a view you are not in is noise. Sunk and grained rather than
+         a second row of same-level buttons, which would read as three more
+         views. -->
+    <span id="readerViewTools" class="reader-view-tools" role="group" data-i18n-aria-label="toolbar.readingTools" aria-label="Reading tools" hidden>
+      <button type="button" id="readerLockButton" class="reader-subtool" aria-pressed="false" data-i18n-aria-label="toolbar.unlock" data-i18n-title="toolbar.unlock" aria-label="Unlock to edit this page" title="Unlock to edit this page"><span class="reader-swap-glyph reader-glyph-off">{{LOCK_CLOSED_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{LOCK_OPEN_ICON_SVG}}</span></button>
+      <button type="button" id="speedReaderButton" class="reader-subtool" aria-pressed="false" data-i18n-aria-label="toolbar.speedReader" data-i18n-title="toolbar.speedReader" aria-label="Speed reader" title="Speed reader"><span class="reader-swap-glyph reader-glyph-off">{{SPEED_READER_OFF_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{SPEED_READER_ON_ICON_SVG}}</span></button>
+    </span>
+    <button type="button" id="viewCodeButton" class="reader-tool" data-view="code" aria-pressed="false" data-i18n-aria-label="actions.codeView" data-i18n-title="actions.codeView.title" aria-label="View source" title="View source">{{CODE_VIEW_ICON_SVG}}</button>
+    <button type="button" id="viewGraphButton" class="reader-tool" data-view="graph" aria-pressed="false" data-i18n-aria-label="library.view.graph" data-i18n-title="library.view.graph.on" aria-label="Graph" title="Show how these documents link">{{GRAPH_ICON_SVG}}</button>
+  </div>
+  <span class="reader-tool-divider" aria-hidden="true"></span>
+  <button type="button" id="undoButton" class="reader-tool undo-button" data-i18n-aria-label="actions.undo" data-i18n-title="actions.undo.title" aria-label="Undo" title="Undo last edit" hidden><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" /></svg></button>
+  <button type="button" id="saveButton" class="reader-tool-save" data-i18n="actions.save" data-i18n-aria-label="actions.save" data-i18n-title="actions.save.title" aria-label="Save" title="Save" hidden>Save</button>
+</div>
 <div id="readerEdgeFade" class="reader-edge-fade" aria-hidden="true"></div>
 <!-- The minimap rail. Outside the card on purpose: it is chrome, so it sits on
      the shell's texture in its own column and the page's border stops short of

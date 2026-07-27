@@ -7,6 +7,30 @@ pub(crate) const OPEN_LIBRARY_ICON_SVG: &str = include_str!("assets/panel.svg");
 pub(crate) const OPEN_ICON_SVG: &str = include_str!("assets/folder-open.svg");
 pub(crate) const CODE_VIEW_ICON_SVG: &str = include_str!("assets/code-bracket.svg");
 pub(crate) const DOCUMENT_ICON_SVG: &str = include_str!("assets/document.svg");
+/// Whether the reading view is a live editor, on the document in front of you.
+/// Both glyphs ship and the button shows the state it is in — a closed padlock
+/// on a document you cannot type into, an open one on a document you can.
+pub(crate) const LOCK_CLOSED_ICON_SVG: &str = include_str!("assets/lock-closed.svg");
+pub(crate) const LOCK_OPEN_ICON_SVG: &str = include_str!("assets/lock-open.svg");
+
+/// The speed reader, drawn as two A's: the first one bolded when it is on, both
+/// left thin when it is off. The glyph is what the page does to a word, which is
+/// a truer label for it than any word would be.
+pub(crate) const SPEED_READER_ON_ICON_SVG: &str = include_str!("assets/speed-reader-on.svg");
+pub(crate) const SPEED_READER_OFF_ICON_SVG: &str = include_str!("assets/speed-reader-off.svg");
+
+/// A vault: a package rather than a folder, because a vault is not one — it is
+/// a whole collection the app treats as a unit, and it has to read as different
+/// from the plain directories in the pane below it.
+///
+/// Open for the one you are in — the switcher's button, and its row in the menu
+/// — and closed for the ones you are not. The state is in the glyph, so the tick
+/// beside it is confirmation rather than the only signal.
+pub(crate) const PACKAGE_OPEN_ICON_SVG: &str = include_str!("assets/package-open.svg");
+pub(crate) const PACKAGE_ICON_SVG: &str = include_str!("assets/package.svg");
+/// The one copy of the folder glyph, for the things that really are folders:
+/// the pane's folder rows and the crumb trail's elided ancestors.
+pub(crate) const FOLDER_ICON_SVG: &str = include_str!("assets/folder.svg");
 /// Linked nodes: the library pane's toggle between the file list and the graph.
 pub(crate) const GRAPH_ICON_SVG: &str = include_str!("assets/graph.svg");
 // The one copy of the leaf mark. Both the header logomark and the library's

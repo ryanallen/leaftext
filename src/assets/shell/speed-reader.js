@@ -156,37 +156,45 @@ let speedReaderEnabled = LEAF_SETTINGS.speedReaderEnabled === true;
 function setSpeedReaderEnabled(enabled) {
   speedReaderEnabled = Boolean(enabled);
   document.documentElement.dataset.speedReader = String(speedReaderEnabled);
+  // Two ways in, one flag: the bar and the settings row each show what the other
+  // did. Set here rather than at each call site so neither can forget.
+  if (speedReaderEnabledControl) speedReaderEnabledControl.checked = speedReaderEnabled;
   if (speedReaderEnabled) {
     applySpeedReaderToDocument();
   }
 }
 setSpeedReaderEnabled(speedReaderEnabled);
-speedReaderEnabledControl.checked = speedReaderEnabled;
 speedReaderEnabledControl.addEventListener('change', () => {
   setSpeedReaderEnabled(speedReaderEnabledControl.checked);
   send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });
+  // Let the bar work out whether it is showing, rather than restating the rule.
+  renderReaderToolbar(!!activeDocumentPath());
 });
-// Library pane: one file view (Project — folders entered one at a time, with the
-// breadcrumb above saying where you are) plus the graph, behind its own toggle.
-// The host persists the view and the folder; the frontend reports each change and
-// applies host values on boot.
-const LIBRARY_VIEWS = ['project', 'graph'];
+// Whether the page is showing the graph instead of the document. Not a pane mode
+// and not per-tab: one flag, dropped the moment a document is opened, so there is
+// never a question of which tab the map belonged to.
+let graphViewOpen = false;
 // Markdown files are badged with the app's own leaf mark. The host inlines the
 // same glyph the header uses, so the row tints it via stroke/fill currentColor
 // rather than shipping a fixed color.
 const LEAF_FILE_ICON = `{{LEAF_ICON_SVG}}`;
-// Outline folder glyph shown before folder names in the library. Inherits the
-// row color via stroke="currentColor".
-const FOLDER_ICON_SVG = '<svg class="library-folder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" /></svg>';
+// A vault's glyph, inlined from the same files the host stamps into the
+// switcher's button, so the button and its menu can never drift apart. Open is
+// the vault you are in; closed is one you are not.
+const PACKAGE_OPEN_ICON_SVG = `{{PACKAGE_OPEN_ICON_SVG}}`;
+const PACKAGE_ICON_SVG = `{{PACKAGE_ICON_SVG}}`;
+// And the plain folder, for the things that really are folders.
+const FOLDER_ICON_SVG = `{{FOLDER_ICON_SVG}}`;
 // The tick on the switcher's active row, and the mark on New vault…. Inline like
 // the folder glyph so both take the row's color from currentColor, and so every
 // row carries one and the labels line up.
 const MENU_CHECK_SVG = '<svg class="crumb-menu-check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>';
 const MENU_PLUS_SVG = '<svg class="library-folder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>';
-// The button on a vault row that opens everything you can do to it, and the
-// glyphs its panel uses. A visible pencil, not a right-click: a menu you have to
+// The button on a vault row that opens everything you can do to it — the same
+// sliders the app's own Settings wears, because that panel is this vault's
+// settings. Visible on the row, not behind a right-click: a menu you have to
 // guess at is a menu nobody finds.
-const MENU_EDIT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 21h8" /><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /></svg>';
+const MENU_SETTINGS_SVG = `{{SETTINGS_ICON_SVG}}`;
 const MENU_TRASH_SVG = '<svg class="library-folder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>';
 const BACK_ARROW_SVG = '<svg class="library-folder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>';
 // Vaults. A vault is a folder the app treats as a library root; nothing is
@@ -204,8 +212,6 @@ function libraryRootLabel() {
   const vault = activeVault();
   return (vault && vault.name) || window.leafLocale.t('library.title');
 }
-// The file list is where the pane opens, not the graph.
-let libraryView = LIBRARY_VIEWS.includes(LEAF_SETTINGS.libraryView) ? LEAF_SETTINGS.libraryView : 'project';
 const GRAPH_SCOPES = ['small', 'medium', 'large', 'xl'];
 let graphScope = GRAPH_SCOPES.includes(LEAF_SETTINGS.graphScope) ? LEAF_SETTINGS.graphScope : 'small';
 // Graph size: persist the choice and, if the graph is on screen, rebuild it for
@@ -214,7 +220,7 @@ graphScopeControl.value = graphScope;
 graphScopeControl.addEventListener('change', () => {
   graphScope = GRAPH_SCOPES.includes(graphScopeControl.value) ? graphScopeControl.value : 'small';
   send({ command: 'setGraphScope', scope: graphScope });
-  if (libraryView === 'graph') requestGraphData();
+  if (graphViewOpen) requestGraphData();
 });
 // The folder the pane is inside ('' is the root); the breadcrumb is this path.
 let libraryProjectPath = typeof LEAF_SETTINGS.libraryProjectPath === 'string' ? LEAF_SETTINGS.libraryProjectPath : '';
@@ -257,3 +263,19 @@ let librarySearchLoading = false;
 const SEARCH_SCOPE_CAP = 1500;
 // A heading anchor to scroll to once a clicked result's document has rendered.
 let pendingSearchJump = null;
+// Which documents you have unlocked for editing in the reading view. This used
+// to be one switch in Settings governing everything you would ever open, which
+// is the wrong shape for the question: whether a page is yours to type into is a
+// fact about that page, not about the app. Locked is the default, and the answer
+// lasts as long as the window — a document reopened tomorrow is read-only again,
+// which is the safe way round to be wrong.
+const readerUnlockedByPath = new Set();
+function readerEditingAllowed() {
+  const path = activeDocumentPath();
+  return !!path && readerUnlockedByPath.has(path);
+}
+// Set by the one gesture that means "leave the map": clicking a node, or a
+// search hit whose whole point is landing on the matching line. Everything else
+// that opens a file -- the pane, a tab, a link -- keeps the view you are in, so
+// changing document does not also change how you are reading it.
+let graphExitPending = false;

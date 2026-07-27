@@ -20,6 +20,9 @@ const GRAPH_RECENT_SEED_CAP = 50;
 // tied to the same ceiling.
 const GRAPH_MIN_ZOOM = 0.15;
 const GRAPH_MAX_ZOOM = 4;
+// Screen margin left around the graph when it fits itself to the view. Larger
+// than a node needs, because a label hangs above each one.
+const GRAPH_FIT_PADDING = 64;
 // When we fly the graph to a node (clicking its tab), settle at least this zoom
 // so the node reads as focused; never zoom out from a closer view the user set.
 const GRAPH_FOCUS_ZOOM = 2.2;
@@ -33,14 +36,130 @@ const GRAPH_LABEL_GAP = 4; // screen px between a node and the top of its label
 // Active/hover labels still show at any size.
 const GRAPH_AMBIENT_LABEL_MAX = 400;
 
-function setGraphStatus(message) {
-  if (!message) {
-    libraryGraphStatus.hidden = true;
-    libraryGraphStatus.textContent = '';
+// Show the map instead of the document, or put the document back. One flag for
+// the window, not a mode each tab remembers: a graph is of the vault, and the
+// question "which tab was it on" has no answer.
+function setGraphView(open) {
+  const next = Boolean(open) && graphHasBoundedRoot();
+  if (next === graphViewOpen) return;
+  graphViewOpen = next;
+  applyGraphView();
+  // The host needs to know so a file changing on disk only costs a redraw when
+  // there is something on screen to redraw.
+  send({ command: 'setGraphView', open: graphViewOpen });
+  if (graphViewOpen) showGraph();
+  else teardownGraph();
+}
+// Leaving the graph for a document, which is what opening one means. Silent when
+// the graph was not up.
+function closeGraphView() {
+  setGraphView(false);
+}
+function applyGraphView() {
+  if (readerGraph) readerGraph.hidden = !graphViewOpen;
+  if (app) app.hidden = graphViewOpen;
+  if (readerMinimap) readerMinimap.hidden = graphViewOpen;
+  // No minimap, so no reason to keep holding its column. The stylesheet reads
+  // this to give the map, and what floats over it, the full width.
+  document.documentElement.dataset.graphView = graphViewOpen ? 'true' : 'false';
+  renderReaderToolbar(!!activeDocumentPath());
+}
+// The bar: the views of the open document, one of them pressed, then whatever
+// edits apply.
+//
+// No document, no bar. The three views are three ways of showing one thing, and
+// on the home screen there is no thing — a toggle there would be flipping
+// between the recent files and a map, which is navigation, not a view. The pane
+// beside it already does that, and does it better.
+//
+// A view you *can* be in but cannot enter greys out where it stands rather than
+// vanishing: those states come and go as you work, and a row that reshuffles
+// under the pointer is worse than one with a dead key in it.
+function renderReaderToolbar(hasDocument) {
+  if (!readerToolbar) return;
+  readerToolbar.hidden = !hasDocument;
+  if (!hasDocument) return;
+  const current = graphViewOpen ? 'graph' : codeViewActive ? 'code' : 'reading';
+  const enabled = { reading: true, code: true, graph: graphHasBoundedRoot() };
+  for (const button of [viewReadingButton, viewCodeButton, viewGraphButton]) {
+    if (!button) continue;
+    const view = button.dataset.view;
+    const on = view === current;
+    button.setAttribute('aria-pressed', String(on));
+    button.classList.toggle('is-active', on);
+    button.disabled = !enabled[view] && !on;
+  }
+  renderReadingTools(current === 'reading');
+}
+// The reading view's own tools. Neither turns blue: a filled chip is how this bar
+// says "this is the view you are in", and borrowing it for a setting inside that
+// view would put two different meanings on one treatment. The glyph carries the
+// state instead -- a shut padlock, a thin first letter -- and the colour only
+// says whether it is on.
+function renderReadingTools(onReadingView) {
+  if (readerViewTools) readerViewTools.hidden = !onReadingView;
+  if (!onReadingView) return;
+  const unlocked = readerEditingAllowed();
+  setSubtoolState(readerLockButton, unlocked, unlocked ? 'toolbar.lock' : 'toolbar.unlock');
+  setSubtoolState(speedReaderButton, speedReaderEnabled, 'toolbar.speedReader');
+}
+function setSubtoolState(button, on, labelKey) {
+  if (!button) return;
+  button.setAttribute('aria-pressed', String(on));
+  const label = window.leafLocale.t(labelKey);
+  button.title = label;
+  button.setAttribute('aria-label', label);
+}
+// Flipping it re-renders the document, which is what binds or drops the editable
+// blocks. Any block mid-edit is committed first rather than silently discarded.
+function toggleReaderLock() {
+  const path = activeDocumentPath();
+  if (!path) return;
+  commitActiveEditingBlock();
+  if (readerUnlockedByPath.has(path)) readerUnlockedByPath.delete(path);
+  else readerUnlockedByPath.add(path);
+  renderState();
+}
+if (readerLockButton) {
+  readerLockButton.addEventListener('click', toggleReaderLock);
+}
+// The speed reader stays one preference for the whole app -- it is a way of
+// reading, not a property of a document -- so this and the row in Settings drive
+// the same flag and each reflects the other.
+if (speedReaderButton) {
+  speedReaderButton.addEventListener('click', () => {
+    setSpeedReaderEnabled(!speedReaderEnabled);
+    send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });
+    renderReadingTools(true);
+  });
+}
+// Going to a view. Each is a way of showing the same thing, so entering one
+// leaves the others — there is no state where two are on.
+function setReaderView(view) {
+  if (view === 'graph') {
+    // The source view is of a document; the map is not. Leave it first.
+    if (codeViewActive) toggleCodeView();
+    setGraphView(true);
     return;
   }
-  libraryGraphStatus.hidden = false;
-  libraryGraphStatus.textContent = message;
+  setGraphView(false);
+  // Reading and code are the same document either way round, so both are the
+  // one toggle — it carries the reader's place across the swap.
+  if ((view === 'code') !== codeViewActive) toggleCodeView();
+  renderReaderToolbar(!!activeDocumentPath());
+}
+for (const button of [viewReadingButton, viewCodeButton, viewGraphButton]) {
+  if (button) button.addEventListener('click', () => setReaderView(button.dataset.view));
+}
+
+function setGraphStatus(message) {
+  if (!message) {
+    readerGraphStatus.hidden = true;
+    readerGraphStatus.textContent = '';
+    return;
+  }
+  readerGraphStatus.hidden = false;
+  readerGraphStatus.textContent = message;
 }
 
 function loadScriptOnce(src) {
@@ -129,7 +248,10 @@ function requestGraphData() {
   graphRequested = true;
   graphData = null;
   teardownGraphScene();
-  setGraphStatus(window.leafLocale.t('library.graph.loading'));
+  // The spinner a slow document gets. Building a map is the same kind of wait,
+  // and a line of text in the corner reads as a result rather than a wait.
+  setGraphStatus('');
+  beginReaderLoading('graph');
   send({ command: 'getGraph', scope: graphScope, seeds });
 }
 
@@ -146,6 +268,7 @@ function showGraph() {
   graphActivePath = activeDocumentPath();
   if (!graphHasBoundedRoot()) {
     teardownGraphScene();
+    clearReaderLoading('graph');
     setGraphStatus(window.leafLocale.t('library.graph.needsVault'));
     return;
   }
@@ -162,18 +285,20 @@ function showGraph() {
 window.leafSetGraph = (payload) => {
   if (payload && payload.error) {
     graphData = null;
-    if (libraryView === 'graph') {
+    if (graphViewOpen) {
       teardownGraphScene();
+      clearReaderLoading('graph');
       setGraphStatus((payload.error && payload.error.message) || window.leafLocale.t('library.graph.error'));
     }
     return;
   }
   graphData = payload || { nodes: [], edges: [], truncated: false };
-  if (libraryView === 'graph') buildGraphScene();
+  if (graphViewOpen) buildGraphScene();
 };
 
 function teardownGraph() {
   graphRequested = false;
+  clearReaderLoading('graph');
   teardownGraphScene();
 }
 // Moving the pane moves the graph's root, so what it drew is about somewhere
@@ -181,7 +306,7 @@ function teardownGraph() {
 function refreshGraphForScope() {
   graphRequested = false;
   graphData = null;
-  if (libraryView === 'graph') showGraph();
+  if (graphViewOpen) showGraph();
 }
 
 function teardownGraphScene() {
@@ -192,13 +317,14 @@ function teardownGraphScene() {
     try { graphScene.app.destroy(true, { children: true, texture: true }); } catch (_) { /* already gone */ }
     graphScene = null;
   }
-  libraryGraphCanvas.innerHTML = '';
+  readerGraphCanvas.innerHTML = '';
 }
 
 async function buildGraphScene() {
   teardownGraphScene();
   const data = graphData;
   if (!data || !data.nodes || !data.nodes.length) {
+    clearReaderLoading('graph');
     setGraphStatus(window.leafLocale.t('library.graph.empty'));
     return;
   }
@@ -206,31 +332,33 @@ async function buildGraphScene() {
     await loadGraphLibs();
   } catch (err) {
     console.error('Leaf graph runtimes failed to load', err);
+    clearReaderLoading('graph');
     setGraphStatus((err && err.message) ? String(err.message) : window.leafLocale.t('library.graph.error'));
     return;
   }
   // The view may have changed while the runtimes loaded.
-  if (libraryView !== 'graph') return;
+  if (!graphViewOpen) { clearReaderLoading('graph'); return; }
 
   try {
-  const width = libraryGraphCanvas.clientWidth || 300;
-  const height = libraryGraphCanvas.clientHeight || 300;
+  const width = readerGraphCanvas.clientWidth || 300;
+  const height = readerGraphCanvas.clientHeight || 300;
   const app = new PIXI.Application();
   await app.init({
-    resizeTo: libraryGraphCanvas,
+    resizeTo: readerGraphCanvas,
     backgroundAlpha: 0,
     antialias: true,
     autoDensity: true,
     resolution: window.devicePixelRatio || 1,
     preference: 'webgl',
   });
-  if (libraryView !== 'graph') {
+  if (!graphViewOpen) {
     try { app.destroy(true, { children: true }); } catch (_) { /* noop */ }
+    clearReaderLoading('graph');
     return;
   }
   // Pixi renders on demand (not every frame) to stay quiet once the layout settles.
   app.ticker.stop();
-  libraryGraphCanvas.appendChild(app.canvas);
+  readerGraphCanvas.appendChild(app.canvas);
   setGraphStatus(data.truncated
     ? window.leafLocale.t('library.graph.truncated', { count: window.leafLocale.formatNumber(data.nodes.length) })
     : '');
@@ -258,6 +386,12 @@ async function buildGraphScene() {
     app, world, edgesGfx, nodes, links, nodeByPath, colors, labelsLayer,
     hoverNode: null, draggingNode: null, panning: false, panLast: null, pressGlobal: null,
     lastWidth: width, lastHeight: height,
+    // Frame everything until the reader takes the wheel. The first question a
+    // map has to answer is how much there is, which a view parked at 1:1 on an
+    // arbitrary centre cannot: two documents sit lost in an empty field and two
+    // thousand hang off every edge. Any pan, zoom, drag or flight ends it for
+    // good -- past that the view is the reader's, and ours to leave alone.
+    autoFit: true,
     // Ambient labels wait for the layout to settle so they resolve on stable
     // positions instead of flickering as the simulation jiggles the nodes.
     settled: false,
@@ -322,12 +456,18 @@ async function buildGraphScene() {
   let tickCount = 0;
   sim.on('tick', () => {
     tickCount += 1;
-    if (tickCount % renderEvery === 0) renderGraphFrame(scene);
+    if (tickCount % renderEvery === 0) {
+      // Refit as it settles, so a layout expanding past the edges is followed
+      // rather than watched from behind a fixed camera.
+      if (scene.autoFit) fitGraphToView(scene);
+      renderGraphFrame(scene);
+    }
   });
   sim.on('end', () => {
     // The layout has stopped moving: let ambient labels resolve on the final
     // positions, then paint.
     scene.settled = true;
+    if (scene.autoFit) fitGraphToView(scene);
     layoutGraphLabels(scene);
     renderGraphFrame(scene);
   });
@@ -336,7 +476,11 @@ async function buildGraphScene() {
   wireGraphPointer(scene);
   wireGraphResize(scene);
   graphScene = scene;
+  clearReaderLoading('graph');
   applyGraphStyles();
+  // d3 seeds positions before the first tick, so there is already something to
+  // frame: the map opens fitted rather than snapping into place a frame later.
+  fitGraphToView(scene);
   renderGraphFrame(scene);
   // A rebuild triggered by a deliberate navigation (tab click/switch) flies to
   // the active node now that its graphics exist; d3 seeds positions before the
@@ -350,6 +494,7 @@ async function buildGraphScene() {
     // Surface the real failure (e.g. WebGL unavailable in this WebView) on the
     // status line instead of hanging on "Building graph…", and log a breadcrumb.
     console.error('Leaf graph build failed', err);
+    clearReaderLoading('graph');
     teardownGraphScene();
     setGraphStatus((err && err.message) ? String(err.message) : window.leafLocale.t('library.graph.error'));
   }

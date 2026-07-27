@@ -833,3 +833,91 @@ fn reading_mode_css_keeps_code_surfaces_readable_in_light_and_dark() {
         assert_contrast_at_least(css, theme, "--syntax-changed", "--syntax-changed-bg", 4.5);
     }
 }
+
+#[test]
+fn the_page_ends_above_the_floating_bar() {
+    let css = reading_mode_css();
+
+    // The bar floats over the foot of the page, so the page has to stop short of
+    // it — otherwise the last thing on the page sits underneath, which the
+    // Previous/Next pager makes obvious by being both last and a target.
+    assert_contains(
+        css,
+        "  padding-bottom: calc(var(--reader-content-pad) + var(--reader-toolbar-space, 0px));",
+    );
+    // Room only while the bar is up: no bar, no gap at the bottom of the page.
+    assert_contains(css, "  --reader-toolbar-space: 0px;");
+    assert_contains(
+        css,
+        "body:has(#readerToolbar:not([hidden])) {\n  --reader-toolbar-space: 62px;\n}",
+    );
+    // The pager's own top margin still clears the app bar; this is added below
+    // it, not instead of it.
+    assert_contains(css, "margin-top: var(--app-bar-height);");
+}
+
+#[test]
+fn the_map_takes_the_column_the_minimap_is_not_using() {
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    // The minimap hides in graph view, but its track is a fixed width and stays
+    // reserved — leaving an empty strip down the right of the canvas that reads
+    // as a rendering fault. Column 4 is the gutter and stays: the map is held
+    // off the window frame the way the page is.
+    assert!(css.contains("grid-column: 2 / 4;"));
+    assert!(html.contains(
+        "document.documentElement.dataset.graphView = graphViewOpen ? 'true' : 'false';"
+    ));
+    assert!(css.contains(":root[data-graph-view=\"true\"] .reader-toolbar,"));
+    // The floating bar has to be measured against the same width or it centres
+    // on the page's middle and sits visibly left of the map's.
+    assert!(css.contains(":root[data-graph-view=\"true\"] .reader-loading {"));
+    assert!(css.contains(":root[data-graph-view=\"true\"] .reader-edge-fade {"));
+}
+
+#[test]
+fn anything_that_hides_itself_is_allowed_to() {
+    // `display` on a class outranks the user agent's `[hidden] { display: none }`,
+    // so an element that sets one and relies on the other is simply always
+    // visible. That is how the floating toolbar came to sit over the home
+    // screen: the attribute was set, the rule ignored it, and nothing failed.
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    for element in html.split('<').skip(1) {
+        let Some(tag) = element.split('>').next() else {
+            continue;
+        };
+        // Only elements that start hidden — the ones a stale `display` would
+        // strand on screen.
+        if !(tag.ends_with(" hidden") || tag.contains(" hidden ")) {
+            continue;
+        }
+        let Some(classes) = tag
+            .split_once("class=\"")
+            .and_then(|(_, rest)| rest.split_once('"').map(|(classes, _)| classes.to_string()))
+        else {
+            continue;
+        };
+        for class in classes.split_whitespace() {
+            let rule = format!(".{class} {{");
+            let Some(body) = css
+                .split(&rule)
+                .nth(1)
+                .and_then(|rest| rest.split('}').next())
+            else {
+                continue;
+            };
+            if !body.contains("display:") {
+                continue;
+            }
+            let escape = format!(".{class}[hidden]");
+            assert!(
+                css.contains(&escape),
+                ".{class} sets `display`, so the `hidden` attribute on it does \
+                 nothing. Add `{escape} {{ display: none; }}`."
+            );
+        }
+    }
+}

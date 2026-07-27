@@ -70,8 +70,16 @@ impl Workspace {
             return;
         }
 
+        // Reading source and opening another file opens that file in source
+        // too. The view is where the reader is working, not a property of the
+        // document they picked, so picking one should not throw them out of it.
+        let code_view = self
+            .active
+            .and_then(|index| self.tabs.get(index))
+            .is_some_and(|tab| tab.code_view);
         let mut tab = Tab {
             title: tab_title_from_path(&path),
+            code_view,
             ..Tab::default()
         };
         tab.history.record(path);

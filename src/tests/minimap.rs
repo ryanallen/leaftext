@@ -381,7 +381,6 @@ fn settings_default_keeps_minimap_on() {
     assert_eq!(settings.theme_mode, "system");
     // The pane opens on the file list, at the library root — not on a force graph
     // of every indexed document.
-    assert_eq!(settings.library_view, LibraryView::Project);
     assert!(settings.library_project_path.is_empty());
     // The pane is open by default, with the 240px fallback width.
     assert!(!settings.library_closed);

@@ -209,11 +209,9 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
         pager_enabled: false,
         speed_reader_enabled: true,
         line_numbers_enabled: false,
-        reader_editing_enabled: false,
         theme_family: "nightshade".to_string(),
         theme_mode: "dark".to_string(),
         theme_random_used: vec!["fern".to_string(), "github".to_string()],
-        library_view: LibraryView::Graph,
         graph_scope: GraphScope::Large,
         library_project_path: "C:\\Users\\rwall".to_string(),
         library_closed: true,
@@ -280,14 +278,13 @@ fn settings_load_tolerates_partial_json_via_serde_default() {
     assert_eq!(loaded.library_width, 312);
     assert!(loaded.minimap_enabled);
     assert_eq!(loaded.theme_mode, "system");
-    assert_eq!(loaded.library_view, LibraryView::Project);
     assert!(!loaded.library_closed);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }
 
 #[test]
-fn settings_load_migrates_the_retired_tree_and_flat_views_to_project() {
+fn a_settings_file_from_before_the_pane_had_one_view_still_loads() {
     let unique = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("system time is after Unix epoch")
@@ -295,9 +292,11 @@ fn settings_load_migrates_the_retired_tree_and_flat_views_to_project() {
     let dir = std::env::temp_dir().join(format!("leaf-settings-library-view-{unique}"));
     fs::create_dir_all(&dir).expect("test directory is created");
 
-    // Both retired views load as Project. The alias matters because an unknown
-    // enum value would fail the whole deserialize and reset every other setting.
-    for legacy in ["tree", "flat"] {
+    // `library_view` was the pane's mode when the graph lived in the sidebar.
+    // The graph is a page now and the key is gone, but every installed copy
+    // still has it — and an unknown key must be ignored, not fail the whole
+    // deserialize and reset every other setting with it.
+    for legacy in ["tree", "flat", "project", "graph"] {
         let settings_path = dir.join(format!("{legacy}.json"));
         fs::write(
             &settings_path,
@@ -305,19 +304,8 @@ fn settings_load_migrates_the_retired_tree_and_flat_views_to_project() {
         )
         .expect("legacy library view fixture is written");
         let loaded = load_settings(&settings_path);
-        assert_eq!(loaded.library_view, LibraryView::Project);
         assert!(!loaded.minimap_enabled);
     }
-
-    // The frontend's own strings round-trip, and the retired names resolve too.
-    assert_eq!(
-        LibraryView::from_client("project"),
-        Some(LibraryView::Project)
-    );
-    assert_eq!(LibraryView::from_client("graph"), Some(LibraryView::Graph));
-    assert_eq!(LibraryView::from_client("tree"), Some(LibraryView::Project));
-    assert_eq!(LibraryView::from_client("flat"), Some(LibraryView::Project));
-    assert_eq!(LibraryView::from_client("nope"), None);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }

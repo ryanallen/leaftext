@@ -72,16 +72,3 @@ lineNumbersEnabledControl.addEventListener('change', () => {
   applyLineNumbersEnabled();
   send({ command: 'setLineNumbersEnabled', enabled: lineNumbersEnabled });
 });
-// Whether the reading view is a live editor. On by default; off keeps the page a
-// pure reader (no click-to-edit, checkboxes inert). The code view still edits
-// source. Toggling just re-renders the open document to apply it.
-let readerEditingEnabled =
-  typeof LEAF_SETTINGS.readerEditingEnabled === 'boolean' ? LEAF_SETTINGS.readerEditingEnabled : true;
-readerEditingEnabledControl.checked = readerEditingEnabled;
-readerEditingEnabledControl.addEventListener('change', () => {
-  // Commit any block being edited before flipping, so it isn't silently dropped.
-  commitActiveEditingBlock();
-  readerEditingEnabled = readerEditingEnabledControl.checked;
-  send({ command: 'setReaderEditingEnabled', enabled: readerEditingEnabled });
-  renderState();
-});

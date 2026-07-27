@@ -20,6 +20,9 @@ function bindSearchHits() {
       // Open (or focus) the file, then scroll to the matching heading once it
       // renders. Files with no heading above the match open at the top.
       pendingSearchJump = anchor ? { path, anchor } : null;
+      // A hit is a place in the text, so it is worth leaving the map for; the
+      // anchor it carries has nothing to scroll to on a canvas.
+      graphExitPending = true;
       send({ command: 'openRecent', path });
     });
   });
@@ -29,13 +32,11 @@ function bindSearchHits() {
 // restores the tree exactly as it was, including the active view and filters.
 function renderLibrarySearch() {
   const active = !!librarySearchQuery;
-  const graphMode = libraryView === 'graph';
-  // In graph mode the tree stays hidden; an active search shows results over the
-  // pane and hides the graph, and clearing the search restores the graph.
+  // A query replaces the file list with its results; clearing it puts the list
+  // back. The graph is on the page now, so it is none of this function's
+  // business.
   librarySearchResults.hidden = !active;
-  libraryTree.hidden = active || graphMode;
-  libraryGraph.hidden = graphMode ? active : true;
-  if (graphMode && !active) showGraph();
+  libraryTree.hidden = active;
   if (!active) {
     librarySearchResults.innerHTML = '';
     return;
@@ -79,11 +80,7 @@ function runLibrarySearch(value) {
 // the graph to the nodes it drew; a set too large to bind also searches all.
 function librarySearchScopePaths() {
   let paths;
-  if (libraryView === 'graph') {
-    // Not yet loaded: search everything rather than an empty (match-nothing) set.
-    if (!graphData || !graphData.nodes) return null;
-    paths = graphData.nodes.map((n) => n.path);
-  } else if (libraryProjectPath) {
+  if (libraryProjectPath) {
     // The documents on screen. Only this folder, not the ones under it: the pane
     // reads one folder at a time and has never looked inside the rest.
     paths = (libraryEntries || []).filter((node) => node.kind === 'file').map((node) => node.path);

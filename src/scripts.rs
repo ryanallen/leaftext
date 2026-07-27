@@ -25,11 +25,9 @@ pub fn initial_settings_script(settings: &Settings) -> String {
         "pagerEnabled": settings.pager_enabled,
         "speedReaderEnabled": settings.speed_reader_enabled,
         "lineNumbersEnabled": settings.line_numbers_enabled,
-        "readerEditingEnabled": settings.reader_editing_enabled,
         "themeFamily": settings.theme_family,
         "themeMode": settings.theme_mode,
         "themeRandomUsed": settings.theme_random_used,
-        "libraryView": settings.library_view.as_str(),
         "graphScope": settings.graph_scope.as_str(),
         "libraryProjectPath": settings.library_project_path,
         "libraryClosed": settings.library_closed,
@@ -157,6 +155,31 @@ pub fn workspace_state_script(
         "document": document,
     });
     format!("window.leafSetState({});", state)
+}
+
+/// Tabs, recents and the active index with no document. The code view renders
+/// itself from [`code_view_script`], so the state script never runs for a tab
+/// showing source — this is how such a tab still gets its entry in the strip and
+/// gives the page an active document to name.
+pub fn workspace_only_script(
+    recent: &[PathBuf],
+    tabs: &[(String, String)],
+    active: Option<usize>,
+) -> String {
+    let recent: Vec<String> = recent
+        .iter()
+        .map(|path| path.display().to_string())
+        .collect();
+    let tabs: Vec<serde_json::Value> = tabs
+        .iter()
+        .map(|(title, path)| serde_json::json!({ "title": title, "path": path }))
+        .collect();
+    let state = serde_json::json!({
+        "recent": recent,
+        "tabs": tabs,
+        "active": active,
+    });
+    format!("window.leafSetWorkspace({});", state)
 }
 
 /// Like [`workspace_state_script`] but via `leafReloadDocument`, which

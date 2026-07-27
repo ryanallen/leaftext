@@ -38,6 +38,10 @@ pub(crate) struct VaultState {
     pub(crate) pending_search: Option<String>,
     /// The last graph asked for, so an edit on disk can redraw it.
     pub(crate) last_graph: Option<GraphRequest>,
+    /// Whether the page is showing the graph. Transient, and the page owns it —
+    /// this copy exists only so a file changing on disk knows whether there is
+    /// a map on screen worth rebuilding.
+    pub(crate) graph_open: bool,
 }
 
 impl VaultState {
@@ -70,6 +74,7 @@ impl VaultState {
             pending_graph: None,
             pending_search: None,
             last_graph: None,
+            graph_open: false,
         }
     }
 

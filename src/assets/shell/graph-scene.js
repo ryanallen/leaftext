@@ -194,6 +194,8 @@ function startNodeDrag(scene, node, event) {
   const p = graphGlobalToWorld(scene, event.global.x, event.global.y);
   node.fx = p.x;
   node.fy = p.y;
+  // Moving a node is taking the view: stop reframing under the reader's hand.
+  scene.autoFit = false;
   scene.sim.alphaTarget(0.3).restart();
 }
 
@@ -206,6 +208,7 @@ function wireGraphPointer(scene) {
   stage.hitArea = scene.app.screen; // a Rectangle Pixi keeps sized to the canvas
   stage.on('pointerdown', (event) => {
     if (event.target !== stage) return; // a node handled it
+    scene.autoFit = false;
     scene.panning = true;
     scene.panLast = { x: event.global.x, y: event.global.y };
   });
@@ -232,7 +235,13 @@ function wireGraphPointer(scene) {
       // A press that barely moved is a click: open that document.
       const moved = scene.pressGlobal
         && Math.hypot(event.global.x - scene.pressGlobal.x, event.global.y - scene.pressGlobal.y) > 4;
-      if (!moved) send({ command: 'openRecent', path: node.path });
+      // Clicking a node is a navigation out of the map: you picked something to
+      // read. The map holds until that document is ready and then steps aside,
+      // rather than closing now and flashing the file you were already on.
+      if (!moved) {
+        graphExitPending = true;
+        send({ command: 'openRecent', path: node.path });
+      }
     }
     if (scene.panning) {
       // A pan slid nodes across the viewport edges; re-decide which labels are
@@ -251,6 +260,7 @@ function wireGraphPointer(scene) {
   scene.app.canvas.addEventListener('wheel', (event) => {
     event.preventDefault();
     const factor = event.deltaY < 0 ? 1.12 : 1 / 1.12;
+    scene.autoFit = false;
     graphZoomAt(scene, event.offsetX, event.offsetY, factor);
     // Zoom changes how far apart the nodes sit on screen, so re-decide which
     // ambient labels fit before repainting.
@@ -264,21 +274,59 @@ function wireGraphPointer(scene) {
 // resize, shift the view by half the delta to keep content centred, repaint.
 function wireGraphResize(scene) {
   const ro = new ResizeObserver(() => {
-    const w = libraryGraphCanvas.clientWidth;
-    const h = libraryGraphCanvas.clientHeight;
+    const w = readerGraphCanvas.clientWidth;
+    const h = readerGraphCanvas.clientHeight;
     if (!w || !h || (w === scene.lastWidth && h === scene.lastHeight)) return;
     const dx = (w - scene.lastWidth) / 2;
     const dy = (h - scene.lastHeight) / 2;
     scene.lastWidth = w;
     scene.lastHeight = h;
     try { scene.app.renderer.resize(w, h); } catch (_) { /* renderer gone */ }
-    scene.world.position.x += dx;
-    scene.world.position.y += dy;
+    if (scene.autoFit) {
+      // Still ours to frame, so a wider pane shows more of the map rather than
+      // the same crop with margins.
+      fitGraphToView(scene);
+    } else {
+      scene.world.position.x += dx;
+      scene.world.position.y += dy;
+    }
     layoutGraphLabels(scene);
     renderGraphFrame(scene);
   });
-  ro.observe(libraryGraphCanvas);
+  ro.observe(readerGraphCanvas);
   scene.resizeObserver = ro;
+}
+
+// Frame every node: the tightest zoom that still holds the whole layout, with
+// the bounding box centred. Two documents fill the view; two thousand shrink to
+// fit. Clamped to the same limits the wheel obeys, so a pair of nodes 40px apart
+// stops at 4x rather than filling the screen with two dots.
+function fitGraphToView(scene) {
+  if (!scene || !scene.nodes || !scene.nodes.length) return;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const node of scene.nodes) {
+    if (typeof node.x !== 'number' || typeof node.y !== 'number') continue;
+    const r = graphNodeRadius(node.degree);
+    if (node.x - r < minX) minX = node.x - r;
+    if (node.x + r > maxX) maxX = node.x + r;
+    if (node.y - r < minY) minY = node.y - r;
+    if (node.y + r > maxY) maxY = node.y + r;
+  }
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) return;
+  const width = scene.app.screen.width;
+  const height = scene.app.screen.height;
+  // A single node has no extent to divide by; the padding is the whole budget.
+  const availableX = Math.max(1, width - GRAPH_FIT_PADDING * 2);
+  const availableY = Math.max(1, height - GRAPH_FIT_PADDING * 2);
+  const spanX = Math.max(1, maxX - minX);
+  const spanY = Math.max(1, maxY - minY);
+  const scale = Math.max(
+    GRAPH_MIN_ZOOM,
+    Math.min(GRAPH_MAX_ZOOM, Math.min(availableX / spanX, availableY / spanY)),
+  );
+  scene.world.scale.set(scale);
+  scene.world.position.x = width / 2 - ((minX + maxX) / 2) * scale;
+  scene.world.position.y = height / 2 - ((minY + maxY) / 2) * scale;
 }
 
 function graphZoomAt(scene, sx, sy, factor) {
@@ -295,6 +343,8 @@ function graphZoomAt(scene, sx, sy, factor) {
 // Cancels any in-flight focus animation so rapid tab clicks don't fight.
 function focusGraphNode(scene, node) {
   if (!scene || !node || typeof node.x !== 'number') return;
+  // A flight to one node is a chosen framing; stop refitting behind it.
+  scene.autoFit = false;
   if (scene.focusRaf) { cancelAnimationFrame(scene.focusRaf); scene.focusRaf = null; }
   const width = scene.app.screen.width;
   const height = scene.app.screen.height;
@@ -335,7 +385,7 @@ function focusGraphNode(scene, node) {
 // always rebuilds so a stale graph catches up.
 function graphSetActive(path, focus, forceRefresh) {
   graphActivePath = path || null;
-  if (libraryView !== 'graph') return;
+  if (!graphViewOpen) return;
   // Focus scope's slice is the active document's neighborhood, so changed seeds
   // (a different document) mean the scene in memory is for the wrong file.
   const seedChanged =

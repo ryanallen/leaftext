@@ -21,17 +21,23 @@ const graphScopeControl = document.getElementById('graphScope');
 const pagerEnabledControl = document.getElementById('pagerEnabled');
 const speedReaderEnabledControl = document.getElementById('speedReaderEnabled');
 const lineNumbersEnabledControl = document.getElementById('lineNumbersEnabled');
-const readerEditingEnabledControl = document.getElementById('readerEditingEnabled');
 const libraryShell = document.getElementById('libraryShell');
 const libraryPane = document.getElementById('libraryPane');
 const libraryDivider = document.getElementById('libraryDivider');
 const libraryOpen = document.getElementById('libraryOpen');
 const libraryTree = document.getElementById('libraryTree');
-const libraryGraph = document.getElementById('libraryGraph');
-const libraryGraphCanvas = document.getElementById('libraryGraphCanvas');
-const libraryGraphStatus = document.getElementById('libraryGraphStatus');
+const readerGraph = document.getElementById('readerGraph');
+const readerGraphCanvas = document.getElementById('readerGraphCanvas');
+const readerGraphStatus = document.getElementById('readerGraphStatus');
+const readerToolbar = document.getElementById('readerToolbar');
+const viewReadingButton = document.getElementById('viewReadingButton');
+const viewCodeButton = document.getElementById('viewCodeButton');
+const viewGraphButton = document.getElementById('viewGraphButton');
+const readerViewTools = document.getElementById('readerViewTools');
+const readerLockButton = document.getElementById('readerLockButton');
+const speedReaderButton = document.getElementById('speedReaderButton');
 const libraryCrumbTrail = document.getElementById('libraryCrumbTrail');
-const libraryGraphToggle = document.getElementById('libraryGraphToggle');
+const libraryVaultSwitch = document.getElementById('libraryVaultSwitch');
 const librarySearch = document.getElementById('librarySearch');
 const librarySearchResults = document.getElementById('librarySearchResults');
 const settingsMenu = document.getElementById('settingsMenu');
@@ -122,12 +128,26 @@ document.addEventListener('pointercancel', () => endTabDrag(false));
 // document state arrives; a safety timeout guarantees it never sticks.
 const READER_LOADING_SAFETY_MS = 30000;
 let readerLoadingSafety = 0;
-function beginReaderLoading() {
-  clearReaderLoading();
+// Who put the overlay up. It covers the reader cell, and the graph draws in that
+// same cell: a document rendering behind the map must not throw a spinner over
+// it, nor clear the one the map raised while it builds. Pass 'graph' to speak
+// for the map; everything else speaks for the document.
+let readerLoadingOwner = null;
+function beginReaderLoading(owner) {
+  const forGraph = owner === 'graph';
+  if (graphViewOpen && !forGraph) return;
+  clearReaderLoading(owner);
+  readerLoadingOwner = forGraph ? 'graph' : null;
   if (readerLoading) readerLoading.hidden = false;
-  readerLoadingSafety = setTimeout(clearReaderLoading, READER_LOADING_SAFETY_MS);
+  // The safety net answers to nobody: whoever raised it, it comes down.
+  readerLoadingSafety = setTimeout(() => {
+    readerLoadingOwner = null;
+    clearReaderLoading();
+  }, READER_LOADING_SAFETY_MS);
 }
-function clearReaderLoading() {
+function clearReaderLoading(owner) {
+  if (readerLoadingOwner === 'graph' && owner !== 'graph') return;
+  readerLoadingOwner = null;
   if (readerLoadingSafety) { clearTimeout(readerLoadingSafety); readerLoadingSafety = 0; }
   if (readerLoading) readerLoading.hidden = true;
 }

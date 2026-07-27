@@ -1041,65 +1041,6 @@ button {
   border-color: var(--app-action-hover-background);
   color: var(--app-action-foreground);
 }
-/* Code-view toggle: rests muted, greens on hover. The icon carries the state
-   (brackets in the reading view, a document while the code view is open). */
-.code-view-button {
-  border-color: transparent;
-  background: transparent;
-  color: var(--app-muted-foreground);
-}
-.code-view-button:hover {
-  background: var(--app-action-hover-background);
-  border-color: var(--app-action-hover-background);
-  color: var(--app-action-foreground);
-}
-.cv-icon {
-  display: inline-flex;
-}
-.code-view-button .cv-icon-doc,
-.code-view-button.is-active .cv-icon-code {
-  display: none;
-}
-.code-view-button.is-active .cv-icon-doc {
-  display: inline-flex;
-}
-.code-view-button[hidden],
-.save-button[hidden],
-.undo-button[hidden] {
-  display: none;
-}
-/* Undo: Save's quieter sibling — same green, dimmed below the solid Save fill
-   so the pair reads as one action and its undo. */
-.undo-button {
-  border-color: transparent;
-  background: color-mix(in srgb, var(--app-action-background) 45%, transparent);
-  color: var(--app-action-foreground);
-}
-.undo-button:hover {
-  background: var(--app-action-hover-background);
-  border-color: var(--app-action-hover-background);
-  color: var(--app-action-foreground);
-}
-/* Save: the affirmative action. A solid green button shown only when there are
-   unsaved edits, deepening to the hover green when pointed at. */
-.save-button {
-  display: inline-flex;
-  align-items: center;
-  height: 34px;
-  padding: 0 14px;
-  border: 1px solid transparent;
-  border-radius: var(--leaf-radius-md);
-  background: var(--app-action-background);
-  color: var(--app-action-foreground);
-  font: 600 13px var(--app-font);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.save-button:hover {
-  background: var(--app-action-hover-background);
-  border-color: var(--app-action-hover-background);
-  color: var(--app-action-foreground);
-}
 /* Unsaved-edits dot on a tab. Sits between the label and the (active-tab-only)
    close button; hidden unless the tab is modified. */
 .tab-dirty-dot {
@@ -1422,33 +1363,6 @@ body.library-resizing {
 .library-tree {
   padding: 0 6px 12px;
 }
-/* Fills the pane below the header; the Pixi canvas owns pan/zoom, so this never
-   scrolls. */
-.library-graph {
-  position: absolute;
-  inset: 0;
-  top: var(--library-chrome-height);
-  overflow: hidden;
-}
-.library-graph-canvas {
-  width: 100%;
-  height: 100%;
-}
-.library-graph-canvas canvas {
-  display: block;
-}
-.library-graph-status {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 10px;
-  margin: 0;
-  padding: 0 12px;
-  text-align: center;
-  font-size: 11px;
-  color: var(--app-muted-foreground);
-  pointer-events: none;
-}
 .library-results {
   padding: 0 6px 12px;
 }
@@ -1572,8 +1486,10 @@ body.library-resizing {
 .library-crumbs {
   top: var(--library-app-bar);
   height: var(--library-crumbs-height);
-  gap: 6px;
-  padding: 0 6px 0 12px;
+  /* Tight against the trail: the button and the root crumb read as one group,
+     the way a toolbar's control sits against what it acts on. */
+  gap: 2px;
+  padding: 0 6px 0 8px;
 }
 .library-header {
   top: calc(var(--library-app-bar) + var(--library-crumbs-height));
@@ -1640,35 +1556,36 @@ body.library-resizing {
   flex: 0 0 auto;
   max-width: none;
 }
-/* The leftmost crumb, in its usual place at the head of the trail, now opening
-   the vault switcher. Two classes deep on purpose: at the root it is also
-   `.is-current`, whose rules would otherwise take its pointer and its hover, and
-   it is still a button. */
-.library-crumb.library-crumb-switcher {
+/* The vault switcher, left of the trail. Its own control rather than the first
+   crumb: that crumb is a place, and clicking a place should go there. This is
+   the only thing in the pane that changes which root the trail is even about,
+   so it sits outside the trail and reads as chrome. */
+.library-vault-switch {
+  flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  max-width: 60%;
-  color: var(--app-foreground);
-  font-weight: 600;
+  gap: 2px;
+  height: 20px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--leaf-radius-sm);
+  background: transparent;
+  color: var(--app-muted-foreground);
   cursor: pointer;
 }
-.library-crumb-switcher .library-crumb-name {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+.library-vault-switch svg {
+  width: 15px;
+  height: 15px;
+}
+.library-vault-switch:hover,
+.library-vault-switch[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--app-muted-foreground) 16%, transparent);
+  color: var(--app-foreground);
 }
 .library-crumb-caret {
   flex: none;
   font-size: 9px;
   line-height: 1;
-  color: var(--app-muted-foreground);
-}
-.library-crumb.library-crumb-switcher:hover,
-.library-crumb.library-crumb-switcher[aria-expanded="true"] {
-  background: color-mix(in srgb, var(--app-muted-foreground) 16%, transparent);
-  color: var(--app-foreground);
 }
 /* The tick on the row you are in — including the whole-library row, which is a
    choice like any other. */
@@ -1779,34 +1696,6 @@ body.library-resizing {
   color: color-mix(in srgb, var(--app-muted-foreground) 60%, transparent);
   font-size: 10px;
 }
-/* The graph toggle: muted at rest, accent-filled while the graph is up, so which
-   of the two views is on screen is legible without opening anything. */
-.library-graph-toggle {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--leaf-radius-sm);
-  background: transparent;
-  color: var(--app-muted-foreground);
-  cursor: pointer;
-}
-.library-graph-toggle svg {
-  width: 15px;
-  height: 15px;
-}
-.library-graph-toggle:hover {
-  background: color-mix(in srgb, var(--app-muted-foreground) 18%, transparent);
-  color: var(--app-foreground);
-}
-.library-graph-toggle[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--accent) 28%, transparent);
-  color: var(--app-foreground);
-}
 /* The way back out, first in the list. Quieter than the folders below it — it
    is not one of this folder's contents — and set apart by a hairline so the eye
    reads it as chrome rather than a row. */
@@ -1903,6 +1792,216 @@ body.library-resizing {
    .reader-corner-tl / -tr round where it turns the corner.
    Against an open library there is no left gutter: the card sits flush on the
    rail, and its left border is the stroke that marks the rail's edge. */
+/* The graph, in the reader's own cell and wearing the page's frame, because it
+   stands in for the page. The Pixi canvas owns pan and zoom, so this never
+   scrolls. */
+/* Columns 2 and 3: the reading column and the minimap's track. The map has no
+   minimap, and a reserved-but-empty strip down the right of a canvas reads as a
+   rendering fault rather than a layout. The gutter (column 4) stays, so the map
+   is held off the window frame like the page is. */
+.reader-graph {
+  grid-column: 2 / 4;
+  grid-row: 1;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  background: var(--preview-background);
+  border-left: 1px solid var(--app-border);
+  border-right: 1px solid var(--app-border);
+  border-bottom: 1px solid var(--app-border);
+  border-radius: 0 0 var(--leaf-radius-md) var(--leaf-radius-md);
+  /* Clear the app bar the page tucks under. */
+  padding-top: var(--app-bar-height);
+}
+.reader-graph-canvas {
+  width: 100%;
+  height: 100%;
+}
+/* What floats over the map has to be measured against the same width, or the
+   toolbar centres on the page's middle and sits visibly off to the left. */
+:root[data-graph-view="true"] .reader-toolbar,
+:root[data-graph-view="true"] .reader-loading {
+  grid-column: 2 / 4;
+}
+.reader-graph-canvas canvas {
+  display: block;
+}
+.reader-graph-status {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  margin: 0;
+  padding: 0 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--app-muted-foreground);
+  pointer-events: none;
+}
+/* The floating bar: the views, then the edits, parked over the foot of the page.
+   Placed by the grid rather than inside the scroller, so it holds still while
+   the document moves under it, and centred because it belongs to the page
+   rather than to either edge of the window. */
+/* How much room the page leaves at its foot for the bar: the bar's own height
+   plus the gap it floats above the edge, and nothing at all when it is not
+   there. */
+:root {
+  --reader-toolbar-space: 0px;
+}
+body:has(#readerToolbar:not([hidden])) {
+  --reader-toolbar-space: 62px;
+}
+.reader-toolbar {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  justify-self: center;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 18px;
+  padding: 4px;
+  border-radius: var(--leaf-radius-lg, 12px);
+  border: 1px solid var(--app-border);
+  /* Opaque: the page scrolls underneath it. */
+  background: var(--chrome-surface);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22), 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+.reader-tool-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+/* The reading view's tools, sunk into the bar beside the button that turns that
+   view on. A recess says "these belong to the thing next to them"; another row of
+   same-level buttons would just read as more views. Grained on the same
+   window-anchored lattice as the bar and the rail, so it is the same surface
+   pressed in rather than a different one laid on top. */
+.reader-view-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  margin: 0 2px 0 4px;
+  padding: 2px;
+  border-radius: var(--leaf-radius-md, 8px);
+  background-color: color-mix(in srgb, var(--app-foreground) 9%, var(--chrome-surface));
+  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-attachment: fixed;
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--app-foreground) 16%, transparent);
+}
+.reader-view-tools[hidden] {
+  display: none;
+}
+/* Smaller than a view button, and never filled: the filled chip is how this bar
+   says which view you are in, and a setting inside a view must not wear it. On
+   is full-strength ink against the muted off state, and the glyph itself swaps. */
+.reader-subtool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-muted-foreground);
+  cursor: pointer;
+}
+.reader-subtool svg {
+  width: 16px;
+  height: 16px;
+}
+.reader-subtool:hover {
+  background: color-mix(in srgb, var(--app-foreground) 10%, transparent);
+  color: var(--app-foreground);
+}
+.reader-subtool[aria-pressed="true"] {
+  color: var(--app-foreground);
+}
+/* One button, two glyphs, and the pressed state picks which. Swapping innerHTML
+   instead would rebuild the icon under the pointer on every render. */
+.reader-swap-glyph {
+  display: inline-flex;
+}
+.reader-subtool .reader-glyph-on,
+.reader-subtool[aria-pressed="true"] .reader-glyph-off {
+  display: none;
+}
+.reader-subtool[aria-pressed="true"] .reader-glyph-on {
+  display: inline-flex;
+}
+.reader-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--leaf-radius-md);
+  background: transparent;
+  color: var(--app-muted-foreground);
+  cursor: pointer;
+}
+.reader-tool svg {
+  width: 17px;
+  height: 17px;
+}
+.reader-tool:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--app-muted-foreground) 16%, transparent);
+  color: var(--app-foreground);
+}
+/* The view you are in. The one piece of colour in the bar, so the bar answers
+   "where am I" at a glance — the same job the highlighted tool does in Figma. */
+.reader-tool.is-active,
+.reader-tool.is-active:hover {
+  background: var(--accent);
+  color: var(--preview-background);
+}
+/* A view you cannot enter — no document to show source for, no vault to map —
+   stays in place and greys out, so the row never reshuffles under the pointer. */
+.reader-tool:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.reader-tool-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--app-border);
+}
+/* Save keeps its word. It is the one thing in the bar that writes to disk, and
+   an icon would make it guessable rather than certain. */
+.reader-tool-save {
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--leaf-radius-md);
+  background: var(--accent);
+  color: var(--preview-background);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.reader-tool-save:hover {
+  filter: brightness(1.08);
+}
+/* `display` on a class beats the user agent's `[hidden] { display: none }`, so
+   every one of these has to turn itself off explicitly. Without the first rule
+   the bar ignored `hidden` entirely and sat over the home screen. */
+.reader-toolbar[hidden],
+.reader-tool[hidden],
+.reader-tool-save[hidden] {
+  display: none;
+}
+/* Nothing to undo or save: the divider has nothing to divide. */
+.reader-toolbar:has(.undo-button[hidden]):has(.reader-tool-save[hidden]) .reader-tool-divider {
+  display: none;
+}
 .reader-shell {
   background: var(--preview-background);
   /* Pin the reader to its grid cell. Auto-placed, it gets evicted into the 0px
@@ -1989,6 +2088,11 @@ body.library-resizing {
 }
 .library-shell.library-closed .reader-edge-fade {
   margin-left: calc(var(--reader-gutter) + 1px);
+}
+/* The top and bottom fades belong to a scrolling document. The map does not
+   scroll, and a wash across its edges just dims nodes near the frame. */
+:root[data-graph-view="true"] .reader-edge-fade {
+  display: none;
 }
 :root[data-code-view="true"] .reader-edge-fade {
   --reader-edge-fade-surface: var(--code-block-background, var(--preview-background));
@@ -2160,6 +2264,10 @@ body.library-resizing {
   width: min(var(--type-measure-body), 100%);
   margin: calc(-1 * var(--reader-scroll-origin, 0px)) 0 0;
   padding: var(--reader-content-pad) 0;
+  /* The floating bar sits over this corner of the page. Without the extra room
+     the last thing on the page ends underneath it — which the Previous/Next
+     pager makes obvious, being the last thing and a target. */
+  padding-bottom: calc(var(--reader-content-pad) + var(--reader-toolbar-space, 0px));
   color: var(--preview-foreground);
   font-size: var(--type-body-size);
   line-height: var(--type-body-line);

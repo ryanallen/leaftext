@@ -443,14 +443,14 @@ function bindReadingEditor(doc) {
   if (!body) return;
   currentDocumentFormat = doc.format || 'markdown';
   currentDocumentSource = typeof doc.source === 'string' ? doc.source : '';
-  // Checkboxes stay interactive even with reader editing off: a task toggle is a
-  // quick action that auto-saves and records no undo, not text editing. Only the
-  // click-to-type editable blocks are gated behind the setting.
+  // Checkboxes stay interactive on a locked page: a task toggle is a quick
+  // action that auto-saves and records no undo, not text editing. Only the
+  // click-to-type editable blocks are behind the padlock.
   if (currentDocumentFormat === 'markdown') {
     attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : [], currentDocumentSource);
     bindTaskCheckboxes(doc.tasks || []);
   }
-  if (readerEditingEnabled) {
+  if (readerEditingAllowed()) {
     bindEditableBlocks(currentDocumentFormat);
   }
   if (currentDocumentFormat === 'markdown') {

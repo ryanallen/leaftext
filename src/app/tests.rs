@@ -551,3 +551,30 @@ fn a_browsed_folder_is_watched_one_level_deep_not_recursively() {
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }
+
+#[test]
+fn a_document_opened_while_reading_source_opens_in_source() {
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("/notes/first.md"));
+    assert!(
+        !workspace.tabs[0].code_view,
+        "the first tab starts in the reading view"
+    );
+
+    // The view is where the reader is working, not a property of the file they
+    // picked. Opening one from the pane used to throw them back to the page.
+    workspace.tabs[0].code_view = true;
+    workspace.open_path(PathBuf::from("/notes/second.md"));
+    assert_eq!(workspace.active, Some(1));
+    assert!(workspace.tabs[1].code_view);
+
+    // And back the other way: leaving source leaves it for what opens next.
+    workspace.tabs[1].code_view = false;
+    workspace.open_path(PathBuf::from("/notes/third.md"));
+    assert!(!workspace.tabs[2].code_view);
+
+    // Returning to a tab shows that tab's own view, not the one you came from.
+    workspace.tabs[0].code_view = true;
+    workspace.set_active(0);
+    assert!(workspace.tabs[0].code_view);
+}

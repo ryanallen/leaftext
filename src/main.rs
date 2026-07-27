@@ -24,10 +24,10 @@ use leaftext::{
     pager_loaded_script, read_folder_listing, render_markdown_document, save_recent_files,
     save_result_script, save_settings, scroll_anchor_script, search_results_script,
     settings_file_path, source_updated_script, update_progress_script, update_state_script,
-    vaults_script, webview_user_data_dir, workspace_reload_script, workspace_state_script,
-    workspace_switch_script, DocumentFormat, EditableDocument, FolderListing, GraphScope,
-    LibraryView, OpenedDocument, RecentFiles, ScrollAnchor, Settings, UpdateDownload, VaultCorpus,
-    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    vaults_script, webview_user_data_dir, workspace_only_script, workspace_reload_script,
+    workspace_state_script, workspace_switch_script, DocumentFormat, EditableDocument,
+    FolderListing, GraphScope, OpenedDocument, RecentFiles, ScrollAnchor, Settings, UpdateDownload,
+    VaultCorpus, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,

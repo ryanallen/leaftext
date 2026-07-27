@@ -864,6 +864,34 @@ pub fn app_shell_html() -> String {
             normalize_svg_icon_colors(DOCUMENT_ICON_SVG).trim(),
         )
         .replace(
+            "{{SPEED_READER_ON_ICON_SVG}}",
+            normalize_svg_icon_colors(SPEED_READER_ON_ICON_SVG).trim(),
+        )
+        .replace(
+            "{{SPEED_READER_OFF_ICON_SVG}}",
+            normalize_svg_icon_colors(SPEED_READER_OFF_ICON_SVG).trim(),
+        )
+        .replace(
+            "{{LOCK_CLOSED_ICON_SVG}}",
+            normalize_svg_icon_colors(LOCK_CLOSED_ICON_SVG).trim(),
+        )
+        .replace(
+            "{{LOCK_OPEN_ICON_SVG}}",
+            normalize_svg_icon_colors(LOCK_OPEN_ICON_SVG).trim(),
+        )
+        .replace(
+            "{{PACKAGE_OPEN_ICON_SVG}}",
+            normalize_svg_icon_colors(PACKAGE_OPEN_ICON_SVG).trim(),
+        )
+        .replace(
+            "{{PACKAGE_ICON_SVG}}",
+            normalize_svg_icon_colors(PACKAGE_ICON_SVG).trim(),
+        )
+        .replace(
+            "{{FOLDER_ICON_SVG}}",
+            normalize_svg_icon_colors(FOLDER_ICON_SVG).trim(),
+        )
+        .replace(
             "{{GRAPH_ICON_SVG}}",
             normalize_svg_icon_colors(GRAPH_ICON_SVG).trim(),
         )
@@ -1029,7 +1057,6 @@ pub struct Settings {
     pub line_numbers_enabled: bool,
     /// Make the reading view a live editor. On by default; off keeps it
     /// read-only. The code view edits the raw source regardless.
-    pub reader_editing_enabled: bool,
     /// Selected theme family: `github`/`nightshade`/`amaranth`/… Raw frontend
     /// string; the frontend normalizes anything unexpected back to `github`.
     pub theme_family: String,
@@ -1040,8 +1067,6 @@ pub struct Settings {
     /// family is `random`, the frontend draws a fresh family at each launch and
     /// appends it here so none repeats until every family has shown, then resets.
     pub theme_random_used: Vec<String>,
-    /// Which library view is showing: the Project file list or the Graph.
-    pub library_view: LibraryView,
     /// How much of the link graph the graph view draws (see [`GraphScope`]).
     pub graph_scope: GraphScope,
     /// The folder Project view is inside (empty string = the root). Restored on
@@ -1077,11 +1102,9 @@ impl Default for Settings {
             pager_enabled: true,
             speed_reader_enabled: false,
             line_numbers_enabled: false,
-            reader_editing_enabled: true,
             theme_family: "fern".to_string(),
             theme_mode: "system".to_string(),
             theme_random_used: Vec::new(),
-            library_view: LibraryView::default(),
             graph_scope: GraphScope::default(),
             library_project_path: String::new(),
             library_closed: false,
@@ -1092,38 +1115,6 @@ impl Default for Settings {
             update_last_checked: 0,
             update_staged_version: String::new(),
             update_auto_applied: String::new(),
-        }
-    }
-}
-
-/// The library pane's two states: Project browses the folders one at a time (the
-/// default), and Graph swaps the list for the link map. Serialized lowercase to
-/// match the frontend's `LIBRARY_VIEWS` strings. The retired Tree and Flat views
-/// alias to Project so an existing settings file still loads.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum LibraryView {
-    #[default]
-    #[serde(alias = "tree", alias = "flat")]
-    Project,
-    Graph,
-}
-
-impl LibraryView {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            LibraryView::Project => "project",
-            LibraryView::Graph => "graph",
-        }
-    }
-
-    /// Parse a value sent by the frontend, ignoring anything unrecognized. The
-    /// retired `tree`/`flat` names both resolve to Project.
-    pub fn from_client(value: &str) -> Option<Self> {
-        match value {
-            "project" | "tree" | "flat" => Some(LibraryView::Project),
-            "graph" => Some(LibraryView::Graph),
-            _ => None,
         }
     }
 }

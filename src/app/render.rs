@@ -66,6 +66,19 @@ pub(crate) fn render_active(
                     ScrollIntent::Preserve => None,
                     ScrollIntent::Reset => Some(0.0),
                 };
+                // The code view's own payload carries no tabs, so the strip and
+                // the active index have to go over separately. A file opened
+                // straight into source is a tab the page has never heard of.
+                let tabs = workspace.tab_summaries();
+                if let Some(webview) = webview {
+                    if let Err(error) = webview.evaluate_script(&workspace_only_script(
+                        &recent.files,
+                        &tabs,
+                        Some(index),
+                    )) {
+                        eprintln!("Failed to update tabs for the code view: {error}");
+                    }
+                }
                 enter_code_view(webview, workspace, scroll_fraction);
                 return;
             }

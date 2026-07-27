@@ -113,7 +113,6 @@ function reportWindowChrome(theme) {
 // below, which invoke renderState() synchronously on load — so it is out of the
 // temporal dead zone by the time renderState() first reads it. The functions
 // that use it are defined further down (near the rest of the editing code).
-const codeViewButton = document.getElementById('codeViewButton');
 const saveButton = document.getElementById('saveButton');
 const undoButton = document.getElementById('undoButton');
 // Whether each document has a reading-view edit to undo. Set optimistically
