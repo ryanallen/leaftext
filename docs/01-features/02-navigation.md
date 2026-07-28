@@ -71,7 +71,7 @@ Settings and Open stay in the app bar at the top right. They are about the app, 
 - Each tab keeps its own document history.
 - Each tab also keeps its own scroll history.
 - Switching away from a tab and back returns you to where you left it — the same reading position, or, for a tab in the [code view](07-editing.md#code-view), the same spot in the source.
-- A tab with [unsaved edits](07-editing.md#save) shows a dot beside its name until they are saved.
+- A tab with [unsaved edits](07-editing.md#save) shows a dot in the corner where its close button sits, until they are saved; pointing at the tab hands that corner back to the button. The two share one spot rather than each taking their own, so a tab never changes size as the pointer crosses it.
 - Tabs can be dragged to reorder them.
 - Clicking a tab while the [Graph view](03-library.md#graph) is open flies the graph to that document's node and zooms in on it.
 - Closing the last tab returns to the home screen. So does clicking the leaf mark at the left of the app bar, which brightens on hover to show it is a control.
@@ -130,7 +130,7 @@ sequenceDiagram
 Key details:
 
 - The file watcher debounces events with a 200 ms window.
-- Leaf Text hashes the file contents to skip duplicate reloads.
+- Leaf Text hashes the file contents to skip duplicate reloads, and skips a reload outright when the file already holds exactly what is on screen — the hash is unknown right after a document opens, and the whole folder is watched, so the first event to arrive is usually about something else.
 - Reload re-renders through the same pipeline the file opened with — [XML](01-rendering.md#xml) stays XML, [JSON and YAML](01-rendering.md#data-files-json-and-yaml) stay themselves, Markdown stays Markdown.
 - The parent directory is watched instead of only the file, so atomic-save editors still work.
 - Other Markdown files changed in that same folder are indexed live, so the [library](03-library.md#live-updates) pane stays current too.

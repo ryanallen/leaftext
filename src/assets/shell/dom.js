@@ -218,7 +218,10 @@ let readerLoadingSafety = 0;
 let readerLoadingOwner = null;
 function beginReaderLoading(owner) {
   const forGraph = owner === 'graph';
-  if (graphViewOpen && !forGraph) return;
+  // Only while the map is staying up. Clicking a node is a navigation out of it,
+  // and the map deliberately holds until the document is ready — so suppressing
+  // the spinner there leaves the whole read looking like a frozen map.
+  if (graphViewOpen && !graphExitPending && !forGraph) return;
   clearReaderLoading(owner);
   readerLoadingOwner = forGraph ? 'graph' : null;
   if (readerLoading) readerLoading.hidden = false;
@@ -230,6 +233,10 @@ function beginReaderLoading(owner) {
 }
 function clearReaderLoading(owner) {
   if (readerLoadingOwner === 'graph' && owner !== 'graph') return;
+  // The same rule the other way round: the map tearing itself down must not pull
+  // down a spinner raised for the document that is replacing it, or the wait
+  // reappears as a blink between the map going and the page arriving.
+  if (owner === 'graph' && readerLoadingOwner !== 'graph') return;
   readerLoadingOwner = null;
   if (readerLoadingSafety) { clearTimeout(readerLoadingSafety); readerLoadingSafety = 0; }
   if (readerLoading) readerLoading.hidden = true;

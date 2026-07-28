@@ -148,6 +148,18 @@ pub(crate) const KATEX_FONTS: &[(&str, &[u8])] = &[
     ),
 ];
 
+/// Webview URL for a staged code-view payload.
+///
+/// Windows and Android cannot route a custom scheme, so wry intercepts it as
+/// `http://<scheme>.<host>/…`; a raw `leaf-source://` URL there fails to load.
+pub fn source_payload_url(protocol: &str, id: u64) -> String {
+    let protocol_url = format!("{protocol}://{LOCAL_IMAGE_HOST}/payload/{id}");
+    #[cfg(any(target_os = "windows", target_os = "android"))]
+    return protocol_url.replacen(&format!("{protocol}://"), &format!("http://{protocol}."), 1);
+    #[cfg(not(any(target_os = "windows", target_os = "android")))]
+    return protocol_url;
+}
+
 /// A bundled asset served over [`LOCAL_ASSET_PROTOCOL`].
 pub struct BundledAsset {
     pub status: u16,

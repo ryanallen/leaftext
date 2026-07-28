@@ -14,10 +14,10 @@ use leaftext::store::{
 };
 use leaftext::{
     all_document_extensions, app_data_dir, app_shell_html, blocks_resynced_script,
-    bundled_asset_response, code_view_script, config_file_path, create_repo_on_github,
-    document_pager_html, fragment_scroll_script, git_tooling, glossary_failed_script,
-    glossary_sheet_script, graph_script, image_refresh_script, init_vault_repo,
-    initial_apply_outcome_script, initial_settings_script, initial_state_script,
+    bundled_asset_response, code_view_fetch_script, code_view_payload, config_file_path,
+    create_repo_on_github, document_pager_html, fragment_scroll_script, git_tooling,
+    glossary_failed_script, glossary_sheet_script, graph_script, image_refresh_script,
+    init_vault_repo, initial_apply_outcome_script, initial_settings_script, initial_state_script,
     initial_update_script, initial_vaults_script, initial_version_script, inspect_vault_repo,
     is_local_image_path, is_supported_document_path, library_folder_script, line_count_script,
     link_vault_remote, load_recent_files, load_settings, local_image_protocol_response,
@@ -25,11 +25,12 @@ use leaftext::{
     open_error_state_script, opened_document_from_source, pager_loaded_script, read_folder_listing,
     render_markdown_document, repo_name_for_vault, save_recent_files, save_result_script,
     save_settings, scroll_anchor_script, search_results_script, settings_file_path,
-    source_updated_script, sync_vault_repo, update_progress_script, update_state_script,
-    vaults_script, webview_user_data_dir, workspace_only_script, workspace_reload_script,
-    workspace_state_script, workspace_switch_script, DocumentFormat, EditableDocument,
-    FolderListing, GitTooling, GraphScope, OpenedDocument, RecentFiles, ScrollAnchor, Settings,
-    UpdateDownload, VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    source_payload_url, source_updated_script, sync_vault_repo, update_progress_script,
+    update_state_script, vaults_script, webview_user_data_dir, workspace_only_script,
+    workspace_reload_script, workspace_state_script, workspace_switch_script, DocumentFormat,
+    EditableDocument, FolderListing, GitTooling, GraphScope, OpenedDocument, RecentFiles,
+    ScrollAnchor, Settings, UpdateDownload, VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL,
+    LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -347,6 +348,10 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             LOCAL_ASSET_PROTOCOL.to_string(),
             bundled_asset_protocol_handler(),
         )
+        .with_custom_protocol(
+            SOURCE_PAYLOAD_PROTOCOL.to_string(),
+            source_payload_protocol_handler(),
+        )
         .with_ipc_handler(handler)
         .with_drag_drop_handler(drag_drop_handler)
         .with_on_page_load_handler({
@@ -481,6 +486,21 @@ fn bundled_asset_protocol_handler(
             .header("Cache-Control", "max-age=31536000, immutable")
             .body(asset.body)
             .expect("bundled asset protocol response builds")
+    }
+}
+
+fn source_payload_protocol_handler(
+) -> impl Fn(wry::WebViewId, Request<Vec<u8>>) -> Response<Cow<'static, [u8]>> {
+    move |_webview_id, request| {
+        let payload = source_payload_response(request.uri().to_string().as_str());
+        Response::builder()
+            .status(payload.status)
+            .header("Content-Type", payload.content_type)
+            .header("Access-Control-Allow-Origin", payload.allow_origin)
+            // The buffer changes as you type; a cached copy would show stale source.
+            .header("Cache-Control", "no-store")
+            .body(Cow::Owned(payload.body))
+            .expect("source payload protocol response builds")
     }
 }
 

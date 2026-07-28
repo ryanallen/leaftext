@@ -566,7 +566,9 @@ function toggleCodeView() {
       pendingReadingSrcOffset = lineIndex == null ? null : byteOffsetAtLineIndex(codeViewText, lineIndex);
     } else {
       pendingReadingSrcOffset = null;
-      pendingCodeViewSrcOffset = topReadingBlockSourceOffset();
+      // Coming from the map there is no reading position to carry, and asking for
+      // one measures a document that is not on screen.
+      pendingCodeViewSrcOffset = graphViewOpen ? null : topReadingBlockSourceOffset();
     }
     // Either direction re-renders the whole view (highlighting a big source or
     // rebuilding a big document is slow), so arm the spinner for the wait.
@@ -711,10 +713,31 @@ function renderCodeView(state) {
   window.requestAnimationFrame(() => updateMinimapViewport());
 }
 
+// Enter the code view by fetching the payload the host staged. The colored source
+// is megabytes, and handed over as script it had to cross the webview's process
+// boundary — seconds on a large file — so the host sends only this URL. A failure
+// leaves the reading view up rather than a half-built editor.
+window.leafLoadCodeView = (url) => {
+  fetch(url)
+    .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
+    .then((state) => window.leafShowCodeView(state))
+    .catch((error) => {
+      console.error('code view: could not load the source payload', error);
+      clearReaderLoading();
+    });
+};
+
 // Enter the code view: the host sends the highlighted source, the exact buffer
 // text, the language, and the dirty state.
 window.leafShowCodeView = (state) => {
   runViewRender(state && state.html, () => {
+    // The map was held until now (see setReaderView). Dropping it here means the
+    // reading view it was covering is replaced in the same breath rather than
+    // revealed, laid out, and thrown away.
+    if (graphExitPending) {
+      graphExitPending = false;
+      closeGraphView();
+    }
     codeViewActive = true;
     codeViewText = (state && state.text) || '';
     renderCodeView(state || {});

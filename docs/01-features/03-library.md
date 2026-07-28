@@ -74,7 +74,7 @@ It is a **view of the page**, not a panel — reach it from the [floating toolba
 - Opening a document from the pane while the map is up **keeps the map up** and moves the highlight. Changing what you are looking at is not a reason to change how you are looking at it.
 - Closing the last tab closes the map with it: the start screen is not one of a document's views.
 - Editing a document under the vault **redraws the map in place**: every node keeps its position, your pan and zoom are kept, and the layout eases into what changed rather than laying itself out again. An edit that draws the same map — a word typed into a document that links nowhere new — changes nothing on screen at all.
-- Building the map shows the same spinner a slow document does.
+- Building the map shows the same spinner a slow document does — and so does leaving it. Whether you click a node, open a search hit, or switch to the [source](07-editing.md#code-view), the map holds until its replacement is ready rather than dropping to a half-drawn page, and the wait is shown on top of it.
 
 How many documents it draws is set by the [Graph size](05-settings.md#graph-size) setting — from a tight **Focus** neighborhood (the open document and its direct links) up to **Everything**. Smaller sizes render faster; larger ones stay responsive by easing the layout and repainting less often as it settles.
 

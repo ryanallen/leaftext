@@ -24,7 +24,7 @@ pub use minimap::{
 };
 mod assets;
 pub(crate) use assets::*;
-pub use assets::{bundled_asset_response, BundledAsset, LOCAL_ASSET_PROTOCOL};
+pub use assets::{bundled_asset_response, source_payload_url, BundledAsset, LOCAL_ASSET_PROTOCOL};
 mod format;
 pub use format::{all_document_extensions, is_supported_document_path, DocumentFormat};
 mod folder_tree;

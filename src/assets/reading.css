@@ -426,7 +426,10 @@ body {
   gap: 1px;
   flex: 0 0 auto;
   max-width: 132px;
-  padding: 0 4px;
+  /* The extra on the right reserves the close button's corner, which is out of
+     flow and so buys no room of its own. Without it a short name ends underneath
+     the button — the dirty dot used to be padding the two apart by accident. */
+  padding: 0 12px 0 4px;
   /* A cell hanging off the reader divider (z-index 1) so the active tab can cover it,
      top corners rounded to the page's radius. The transparent strokes reserve the
      space the active tab's frame paints in, keeping every tab the same size. */
@@ -1041,23 +1044,34 @@ button {
   border-color: var(--app-action-hover-background);
   color: var(--app-action-foreground);
 }
-/* Unsaved-edits dot on a tab. Sits between the label and the (active-tab-only)
-   close button; hidden unless the tab is modified. */
+/* Unsaved-edits dot on a tab, sharing the close button's corner. In the row it
+   was 13px of content that vanished on the tab's own hover, so a modified tab
+   shrank and its label jumped the moment you pointed at it. */
 .tab-dirty-dot {
   display: none;
-  width: 7px;
-  height: 7px;
-  min-width: 7px;
-  margin: 0 3px;
+  position: absolute;
+  /* Centered in the close button's 18px box (top/right 2px). */
+  top: 7px;
+  right: 7px;
+  width: 8px;
+  height: 8px;
+  /* The button underneath stays the click target. */
+  pointer-events: none;
   border-radius: var(--leaf-radius-full);
   background: var(--accent);
 }
 .tab-modified .tab-dirty-dot {
-  display: inline-block;
+  display: block;
 }
-/* On the active tab the close button replaces the dot on hover. */
-.tab-active:hover .tab-dirty-dot {
+/* One corner, one occupant: the dot says "unsaved", and reaching for the tab
+   hands the corner back to the button. Focus counts as reaching, so the close
+   button is still there for the keyboard. */
+.tab-modified:hover .tab-dirty-dot,
+.tab-modified:focus-within .tab-dirty-dot {
   display: none;
+}
+.tab-modified:not(:hover):not(:focus-within) .tab-close {
+  opacity: 0;
 }
 button:hover {
   background: var(--app-action-hover-background);

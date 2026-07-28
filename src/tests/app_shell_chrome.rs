@@ -738,3 +738,99 @@ fn app_shell_csp_allows_github_api_for_update_check() {
         "connect-src must allow the GitHub API for the update check: {connect_src}"
     );
 }
+
+#[test]
+fn the_code_view_payload_url_is_one_the_page_is_allowed_to_fetch() {
+    // Three ways this has gone wrong, each showing up as a code view that never
+    // appears: a raw custom-scheme URL (Windows cannot route one), a CSP that does
+    // not name the origin, and a response without CORS — the scheme is a different
+    // origin from the page, so the fetch is refused before the first byte.
+    let url = source_payload_url("leaf-source", 7);
+
+    if cfg!(any(target_os = "windows", target_os = "android")) {
+        assert_eq!(url, "http://leaf-source.local/payload/7");
+    } else {
+        assert_eq!(url, "leaf-source://local/payload/7");
+    }
+
+    let html = app_shell_html();
+    let connect_src = html
+        .lines()
+        .find(|line| line.contains("Content-Security-Policy"))
+        .expect("shell declares a Content-Security-Policy")
+        .split(';')
+        .map(str::trim)
+        .find(|directive| directive.starts_with("connect-src"))
+        .expect("CSP declares an explicit connect-src directive")
+        .to_string();
+
+    // Derived from the URL rather than spelled out again, so the two cannot drift.
+    let (scheme, rest) = url.split_once("://").expect("the payload URL has a scheme");
+    let origin = format!("{scheme}://{}", rest.split('/').next().unwrap_or_default());
+    assert!(
+        connect_src.contains(&origin),
+        "connect-src must allow {origin} or the code view cannot fetch its source: {connect_src}"
+    );
+}
+
+#[test]
+fn an_unsaved_tab_does_not_resize_when_you_reach_for_it() {
+    // The dot was in the tab's row and hidden on hover, so pointing at a modified
+    // tab deleted 13px of content: the tab shrank and its label jumped, and the
+    // dot had been shoving the close button away from the name the whole time.
+    // Sharing the button's corner means the swap costs no layout.
+    let css = reading_mode_css();
+
+    let dot = css
+        .split(".tab-dirty-dot {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines the unsaved-edits dot");
+    assert!(
+        dot.contains("position: absolute;"),
+        "the dot must be out of flow or showing it resizes the tab: {dot}"
+    );
+    assert!(
+        !dot.contains("margin"),
+        "an out-of-flow dot has no margin to push the row with: {dot}"
+    );
+    assert!(
+        dot.contains("pointer-events: none;"),
+        "the close button underneath stays the click target: {dot}"
+    );
+
+    // The close button sits in the same corner, so the two swap in place.
+    let close = css
+        .split(".tab-close {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines the close button");
+    assert!(close.contains("position: absolute;"));
+    assert!(close.contains("top: 2px;") && close.contains("right: 2px;"));
+
+    // One corner, one occupant — and the keyboard can still get to the button.
+    assert_contains(
+        css,
+        ".tab-modified:hover .tab-dirty-dot,\n.tab-modified:focus-within .tab-dirty-dot {\n  display: none;\n}",
+    );
+    assert_contains(
+        css,
+        ".tab-modified:not(:hover):not(:focus-within) .tab-close {\n  opacity: 0;\n}",
+    );
+    // The old rule resized the tab and only ever covered the active one.
+    assert!(
+        !css.contains(".tab-active:hover .tab-dirty-dot"),
+        "the hover rule that resized the tab is gone"
+    );
+
+    // And the tab reserves that corner, since an absolute button buys no room.
+    let tab = css
+        .split("\n.tab {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines a tab");
+    assert!(
+        tab.contains("padding: 0 12px 0 4px;"),
+        "a short name would otherwise end under the close button: {tab}"
+    );
+}

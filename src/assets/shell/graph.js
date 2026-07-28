@@ -148,6 +148,16 @@ function setReaderView(view) {
     setGraphView(true);
     return;
   }
+  // Going from the map straight to the source: hold the map until the source is
+  // ready, the way clicking a node does. Dropping it first reveals the reading
+  // view, and revealing it lays out a whole document we are about to replace —
+  // which is the reading view flashing up under a spinner on the way to the
+  // code view.
+  if (graphViewOpen && view === 'code' && !codeViewActive) {
+    graphExitPending = true;
+    toggleCodeView();
+    return;
+  }
   setGraphView(false);
   // Reading and code are the same document either way round, so both are the
   // one toggle — it carries the reader's place across the swap.

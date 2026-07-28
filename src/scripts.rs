@@ -326,7 +326,7 @@ pub fn open_error_state_script(path: &Path, reason: &str) -> String {
 
 /// Swap to the raw-source code view: highlighted source (the layer behind the
 /// textarea), the buffer text, language token and label, and dirty state.
-pub fn code_view_script(
+pub fn code_view_payload(
     highlighted_html: &str,
     text: &str,
     language: &str,
@@ -347,7 +347,16 @@ pub fn code_view_script(
     if let Some(fraction) = scroll_fraction {
         state["scrollFraction"] = serde_json::json!(fraction);
     }
-    format!("window.leafShowCodeView({});", state)
+    state.to_string()
+}
+
+/// Point the page at a staged payload instead of carrying it. See
+/// `PENDING_SOURCE_PAYLOAD` for why the megabytes do not travel as script.
+pub fn code_view_fetch_script(url: &str) -> String {
+    format!(
+        "window.leafLoadCodeView({});",
+        serde_json::to_string(url).unwrap_or_else(|_| String::from("\"\""))
+    )
 }
 
 /// Refresh the code view's highlight overlay and dirty state after a debounced

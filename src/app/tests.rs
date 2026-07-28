@@ -578,3 +578,96 @@ fn a_document_opened_while_reading_source_opens_in_source() {
     workspace.set_active(0);
     assert!(workspace.tabs[0].code_view);
 }
+
+#[test]
+fn a_staged_source_payload_is_served_with_the_headers_the_fetch_needs() {
+    let url = stage_source_payload("{\"html\":\"x\"}".to_string());
+
+    let served = source_payload_response(&url);
+    assert_eq!(served.status, 200);
+    assert_eq!(served.body, b"{\"html\":\"x\"}");
+    assert_eq!(
+        served.allow_origin, "*",
+        "the payload is a different origin from the page; without CORS the fetch dies"
+    );
+    assert!(served.content_type.starts_with("application/json"));
+
+    // Staging again supersedes it, so only one payload is ever held.
+    let next = stage_source_payload("{\"html\":\"y\"}".to_string());
+    assert_ne!(url, next, "each entry gets its own URL");
+    assert_eq!(source_payload_response(&next).body, b"{\"html\":\"y\"}");
+    assert_eq!(
+        source_payload_response(&url).status,
+        404,
+        "a superseded payload must not still be served"
+    );
+
+    // A URL naming no payload we hold is a 404, not a panic or a stale body.
+    assert_eq!(
+        source_payload_response("http://leaf-source.local/payload/nonsense").status,
+        404
+    );
+}
+
+#[test]
+fn the_code_view_script_carries_a_url_and_not_the_source() {
+    // The whole point: the megabytes stay behind the URL. A regression here is
+    // silent — it still works, just slowly.
+    let payload = code_view_payload(
+        "<span>huge</span>",
+        "huge text",
+        "markdown",
+        "Markdown",
+        false,
+        None,
+    );
+    let script = code_view_fetch_script(&stage_source_payload(payload));
+
+    assert!(script.contains("leafLoadCodeView"), "{script}");
+    assert!(
+        !script.contains("huge"),
+        "the script must not carry the source or the highlight: {script}"
+    );
+    assert!(
+        script.len() < 200,
+        "the script should be a URL, not a payload: {script}"
+    );
+}
+
+#[test]
+fn a_watch_event_for_unchanged_content_is_not_a_reload() {
+    // With the code view open, re-sending rebuilt the entire colored source — so a
+    // spurious event for an untouched file read as the view redrawing itself with
+    // new colors a moment after it appeared.
+    let contents = "# Title
+
+body
+"
+    .to_string();
+    let mut edit = EditableDocument::new(PathBuf::from("notes.md"), contents.clone());
+
+    assert!(
+        buffer_already_shows(Some(&edit), &contents),
+        "an event carrying what we already show is nothing to act on"
+    );
+    assert!(
+        !buffer_already_shows(
+            Some(&edit),
+            "# Title
+
+changed
+"
+        ),
+        "a real outside change must still reload"
+    );
+    assert!(
+        !buffer_already_shows(None, &contents),
+        "with no buffer there is nothing to compare, so let the reload happen"
+    );
+
+    // A dirty buffer must never claim to match the disk, or an outside change
+    // arriving over unsaved edits would be dropped.
+    edit.replace_range(2, 7, "Other");
+    assert!(edit.is_dirty());
+    assert!(!buffer_already_shows(Some(&edit), &contents));
+}

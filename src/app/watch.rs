@@ -149,6 +149,18 @@ pub(crate) fn content_hash(contents: &str) -> u64 {
     hasher.finish()
 }
 
+/// Whether an event has nothing to act on because the buffer already holds exactly
+/// what is on disk.
+///
+/// `active_hash` is cleared whenever the active document changes, so the first event
+/// after an open never matches it — and the whole folder is watched, so one usually
+/// arrives about something else. That rebuilt the entire colored source for a file
+/// nobody had touched. A dirty buffer never claims to match, so an outside change
+/// over unsaved edits is still reconciled.
+pub(crate) fn buffer_already_shows(edit: Option<&EditableDocument>, contents: &str) -> bool {
+    edit.is_some_and(|edit| !edit.is_dirty() && edit.text() == contents)
+}
+
 /// Re-render the active document from disk, preserving scroll position. Reads
 /// the file once and hash-gates, so a spurious event with unchanged contents
 /// re-renders nothing.
@@ -203,6 +215,15 @@ pub(crate) fn reload_active_document(
         .tabs
         .get(index)
         .is_some_and(|tab| tab.has_edit_for(&path));
+
+    let shown = workspace
+        .tabs
+        .get(index)
+        .and_then(|tab| tab.edit.as_ref())
+        .filter(|_| buffer_is_current);
+    if buffer_already_shows(shown, &contents) {
+        return;
+    }
     if let Some(edit) = workspace
         .tabs
         .get_mut(index)
@@ -216,7 +237,7 @@ pub(crate) fn reload_active_document(
             let display = edit.format.display_name().to_string();
             let highlighted = edit.source_view_html();
             if let Some(webview) = webview {
-                if let Err(error) = webview.evaluate_script(&code_view_script(
+                let url = stage_source_payload(code_view_payload(
                     highlighted,
                     &text,
                     &language,
@@ -224,7 +245,8 @@ pub(crate) fn reload_active_document(
                     false,
                     // Live reload refreshes in place; the page keeps its scroll.
                     None,
-                )) {
+                ));
+                if let Err(error) = webview.evaluate_script(&code_view_fetch_script(&url)) {
                     eprintln!("Live reload: failed to refresh code view: {error}");
                 }
             }

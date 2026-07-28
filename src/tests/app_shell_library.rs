@@ -279,20 +279,22 @@ fn changing_document_does_not_change_which_view_you_are_in() {
     let html = app_shell_html();
 
     // Opening a file from the pane while the map is up used to snap back to the
-    // reading view, so picking what to look at also picked how. Only the two
-    // gestures that mean "leave the map" close it: a node click, and a search
-    // hit, whose anchor has nothing to scroll to on a canvas.
+    // reading view, so picking what to look at also picked how. Only a gesture
+    // that *means* "leave the map" closes it: a node click, a search hit (whose
+    // anchor has nothing to scroll to on a canvas), and pressing the source
+    // button. Each holds the map until its destination is ready rather than
+    // dropping it and laying out the reading view in between.
     assert!(html.contains("let graphExitPending = false;"));
     let exits = html.matches("graphExitPending = true;").count();
     assert_eq!(
-        exits, 2,
-        "expected exactly the node click and the search hit to leave the map, found {exits}"
+        exits, 3,
+        "expected the node click, the search hit and the source button to leave the map, found {exits}"
     );
     assert!(html.contains("if (graphExitPending) {"));
     // And nothing else may reach for the door, bar the two states where there
     // is nothing left to map: the home screen, and a library with no vault.
     let closes = html.matches("closeGraphView();").count();
-    assert_eq!(closes, 3, "expected the pending exit, the home screen and the leaving-a-vault guard to close the map, found {closes}");
+    assert_eq!(closes, 4, "expected the two pending exits, the home screen and the leaving-a-vault guard to close the map, found {closes}");
     assert!(html.contains(
         "if (!currentState.document) {
     // No document, no views."
@@ -309,10 +311,11 @@ fn the_map_waits_with_the_same_spinner_a_slow_document_does() {
 
     // A line of text in the corner reads as a result, not a wait. The overlay is
     // shared with the reader, so it tracks who raised it: a document rendering
-    // behind the map must not throw a spinner over it, and must not take down
-    // the one the map is waiting on.
+    // behind a map that is *staying* must not throw a spinner over it, and must
+    // not take down the one the map is waiting on. Leaving the map is the
+    // exception — see `leaving_the_map_for_a_document_shows_the_spinner`.
     assert!(html.contains("beginReaderLoading('graph');"));
-    assert!(html.contains("if (graphViewOpen && !forGraph) return;"));
+    assert!(html.contains("if (graphViewOpen && !graphExitPending && !forGraph) return;"));
     assert!(html.contains("if (readerLoadingOwner === 'graph' && owner !== 'graph') return;"));
     // Every way out of a build puts it down; the safety timeout is the backstop.
     assert!(html.matches("clearReaderLoading('graph');").count() >= 6);
@@ -1080,4 +1083,53 @@ fn library_row_context_menu_offers_file_actions() {
     assert!(html.contains("function openRenameBox(path)"));
     assert!(html.contains("'actions.delete': 'Delete'"));
     assert!(html.contains("'actions.delete': '删除'"));
+}
+
+#[test]
+fn leaving_the_map_for_a_document_shows_the_spinner() {
+    // Clicking a node navigates out of the map, and the map deliberately holds
+    // until the document is ready rather than flashing the file you were on. The
+    // wait is a whole document being read, so with the spinner suppressed the map
+    // just sits there looking frozen — which is what it did.
+    let html = app_shell_html();
+
+    // The gesture arms the exit before the request goes out.
+    assert!(html.contains("        graphExitPending = true;"));
+    assert!(html.contains("send({ command: 'openRecent', path: node.path });"));
+    assert!(html.contains("const READER_LOADING_COMMANDS = new Set(['openRecent']);"));
+
+    // So the spinner is only withheld while the map is staying up.
+    assert!(html.contains("if (graphViewOpen && !graphExitPending && !forGraph) return;"));
+
+    // And the map stepping aside must not pull down the spinner the document
+    // raised, or the wait comes back as a blink mid-handover.
+    assert!(html.contains("clearReaderLoading('graph');"));
+    assert!(html.contains("if (owner === 'graph' && readerLoadingOwner !== 'graph') return;"));
+}
+
+#[test]
+fn going_from_the_map_to_the_source_does_not_lay_out_the_reading_view_on_the_way() {
+    // The map covers the reading view with `hidden`, so revealing it lays out the
+    // whole document — and going map -> source dropped the map first, which meant
+    // laying out a document only to replace it a moment later. That showed up as
+    // the reading view flashing under a spinner between the two views.
+    let html = app_shell_html();
+
+    // The map is held, exactly as a node click holds it.
+    assert!(html.contains("if (graphViewOpen && view === 'code' && !codeViewActive) {"));
+    // ...and dropped by the source render itself, in the same breath as the swap,
+    // so the reading view underneath is replaced rather than revealed.
+    let render = html
+        .split("window.leafShowCodeView = (state) => {")
+        .nth(1)
+        .and_then(|rest| rest.split("codeViewActive = true;").next())
+        .expect("the code view's render entry");
+    assert!(
+        render.contains("graphExitPending = false;") && render.contains("closeGraphView();"),
+        "the source render must drop the held map before it renders: {render}"
+    );
+    // Nothing measures a document that is not on screen for a position to carry.
+    assert!(html.contains(
+        "pendingCodeViewSrcOffset = graphViewOpen ? null : topReadingBlockSourceOffset();"
+    ));
 }

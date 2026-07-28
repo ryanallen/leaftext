@@ -2,6 +2,66 @@
 
 use super::*;
 
+/// The scheme the page fetches the code view's payload over.
+pub(crate) const SOURCE_PAYLOAD_PROTOCOL: &str = "leaf-source";
+
+/// The code view's payload, staged for the page to fetch rather than pushed to it.
+///
+/// `evaluate_script` hands the whole script across WebView2's process boundary,
+/// which was 4.4s of a 4 MB source's 8.8s entry — and `JSON.parse` instead of an
+/// object literal changed nothing, because the cost is the crossing, not the parse.
+static PENDING_SOURCE_PAYLOAD: std::sync::Mutex<Option<(u64, Vec<u8>)>> =
+    std::sync::Mutex::new(None);
+static SOURCE_PAYLOAD_SERIAL: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// One staged payload, served over [`SOURCE_PAYLOAD_PROTOCOL`].
+pub(crate) struct SourcePayload {
+    pub(crate) status: u16,
+    pub(crate) content_type: &'static str,
+    /// A different origin from the page, so without this the fetch is refused before
+    /// the first byte — the way GitHub's asset host defeats the updater. Wildcard is
+    /// safe: the scheme only exists inside this webview's own request interception.
+    pub(crate) allow_origin: &'static str,
+    pub(crate) body: Vec<u8>,
+}
+
+/// Stage `json` and return the URL that serves it. Each call supersedes the last,
+/// so at most one payload is held.
+pub(crate) fn stage_source_payload(json: String) -> String {
+    let id = SOURCE_PAYLOAD_SERIAL.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+    if let Ok(mut slot) = PENDING_SOURCE_PAYLOAD.lock() {
+        *slot = Some((id, json.into_bytes()));
+    }
+    source_payload_url(SOURCE_PAYLOAD_PROTOCOL, id)
+}
+
+/// Resolve a payload request. Kept rather than taken, so a retried fetch still
+/// finds it; the next code-view entry replaces it.
+pub(crate) fn source_payload_response(uri: &str) -> SourcePayload {
+    let wanted = uri.rsplit('/').next().and_then(|id| id.parse::<u64>().ok());
+    let body = match (wanted, PENDING_SOURCE_PAYLOAD.lock()) {
+        (Some(wanted), Ok(slot)) => match slot.as_ref() {
+            Some((id, body)) if *id == wanted => Some(body.clone()),
+            _ => None,
+        },
+        _ => None,
+    };
+    match body {
+        Some(body) => SourcePayload {
+            status: 200,
+            content_type: "application/json; charset=utf-8",
+            allow_origin: "*",
+            body,
+        },
+        None => SourcePayload {
+            status: 404,
+            content_type: "text/plain; charset=utf-8",
+            allow_origin: "*",
+            body: Vec::new(),
+        },
+    }
+}
+
 /// Render a tab's reading view from its edit buffer, so unsaved edits show.
 /// The buffer's format came from its path, so the shared router picks the same
 /// renderer an initial open would have.
@@ -54,14 +114,15 @@ pub(crate) fn enter_code_view(
     let highlighted = edit.source_view_html();
 
     if let Some(webview) = webview {
-        if let Err(error) = webview.evaluate_script(&code_view_script(
+        let url = stage_source_payload(code_view_payload(
             highlighted,
             &text,
             &language,
             &display,
             dirty,
             scroll_fraction,
-        )) {
+        ));
+        if let Err(error) = webview.evaluate_script(&code_view_fetch_script(&url)) {
             eprintln!("Code view: failed to show source: {error}");
         }
     }
