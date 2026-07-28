@@ -206,8 +206,8 @@ fn app_shell_opens_both_views_at_the_same_content_top_gap() {
 
     // The code view has no scroll origin, so it pays the gap the shell's app-bar
     // padding doesn't already cover. Both of its layers read the same var, so the
-    // colour layer and the textarea over it stay aligned. (The line numbers are a
-    // counter on the colour lines, so there is no third layer to keep in step.)
+    // color layer and the textarea over it stay aligned. (The line numbers are a
+    // counter on the color lines, so there is no third layer to keep in step.)
     assert_contains(
         &css,
         "--cv-pad-top: calc(var(--reader-content-top-gap) - var(--app-bar-height));",
@@ -871,11 +871,11 @@ fn app_shell_edits_code_view_incrementally_without_whole_document_reflow() {
 #[test]
 fn code_view_line_numbers_are_a_counter_on_the_lines_they_label() {
     // They used to be a second layer, three elements per line — 228,000 of them on
-    // a 76,000-line file — kept in step with the colour lines only by wrapping
+    // a 76,000-line file — kept in step with the color lines only by wrapping
     // identically. That held until a number was too wide for the gutter: at the
     // fixed 3.75em, line 10,000's fifth digit wrapped, every row past it went
     // double height, and the numbers ended a million pixels below their own text.
-    // A counter on the colour lines cannot drift, because there is only one layer.
+    // A counter on the color lines cannot drift, because there is only one layer.
     let html = app_shell_html();
     let css = reading_mode_css();
 

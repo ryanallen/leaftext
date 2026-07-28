@@ -12,11 +12,18 @@ function isDocumentDirty(path) {
 // document, the Save button — without forcing a full re-render.
 function setDirtyState(path, dirty) {
   if (!path) return;
-  if (dirty) dirtyByPath.set(path, true);
+  const next = !!dirty;
+  // Only touch the DOM when the answer actually changed. Every code-view keystroke
+  // calls this, and the chrome refresh below ends in refitAppBar(), which measures
+  // the tab strip and so forces a layout of the whole page — 141 ms per character
+  // on a 4 MB source. After the first character the document is already dirty and
+  // there is nothing to restate.
+  if ((dirtyByPath.get(path) === true) === next) return;
+  if (next) dirtyByPath.set(path, true);
   else dirtyByPath.delete(path);
   document.querySelectorAll('.tab').forEach((tabEl) => {
     if (tabEl.dataset.tabPath === path) {
-      tabEl.classList.toggle('tab-modified', !!dirty);
+      tabEl.classList.toggle('tab-modified', next);
     }
   });
   updateEditingChrome();
@@ -346,12 +353,66 @@ function refreshCodeViewMinimap() {
   }, CODE_VIEW_MINIMAP_IDLE_MS);
 }
 
+// Hand the host the edit rather than the buffer.
+//
+// Shipping the whole text on each debounce cost 243 ms of IPC per typing pause on
+// a 4 MB file — the string is marshalled across the process boundary and parsed
+// again on the far side, both ways. The edit itself is a handful of characters, so
+// send those: the common prefix and suffix of the last text the host was given and
+// the current one bracket everything that changed.
+//
+// Offsets are UTF-16 code units, which is what JS string indices are; the host
+// converts against its own copy. `length` lets it prove the two buffers still
+// agree — if they ever drift, a splice would corrupt the file silently, so a
+// mismatch triggers a full resend instead.
+function sourceSpliceSince(previous, next) {
+  const max = Math.min(previous.length, next.length);
+  let prefix = 0;
+  while (prefix < max && previous.charCodeAt(prefix) === next.charCodeAt(prefix)) prefix += 1;
+  let suffix = 0;
+  while (
+    suffix < max - prefix &&
+    previous.charCodeAt(previous.length - 1 - suffix) === next.charCodeAt(next.length - 1 - suffix)
+  ) {
+    suffix += 1;
+  }
+  // Never split a surrogate pair: back off until both ends sit on whole code points.
+  while (prefix > 0 && prefix < previous.length && prefix < next.length) {
+    const c = next.charCodeAt(prefix - 1);
+    if (c >= 0xd800 && c <= 0xdbff) prefix -= 1;
+    else break;
+  }
+  return {
+    start: prefix,
+    removed: previous.length - suffix - prefix,
+    inserted: next.slice(prefix, next.length - suffix),
+    length: next.length,
+  };
+}
+
+function sendSourceUpdate() {
+  if (lastSentSourceText === null) {
+    lastSentSourceText = codeViewText;
+    send({ command: 'updateSource', text: codeViewText });
+    return;
+  }
+  if (lastSentSourceText === codeViewText) return;
+  const splice = sourceSpliceSince(lastSentSourceText, codeViewText);
+  lastSentSourceText = codeViewText;
+  send({
+    command: 'spliceSource',
+    start: splice.start,
+    removed: splice.removed,
+    inserted: splice.inserted,
+    length: splice.length,
+  });
+}
+
 function scheduleSourceUpdate() {
   if (sourceUpdateTimer) clearTimeout(sourceUpdateTimer);
   sourceUpdateTimer = setTimeout(() => {
     sourceUpdateTimer = 0;
-    lastSentSourceText = codeViewText;
-    send({ command: 'updateSource', text: codeViewText });
+    sendSourceUpdate();
   }, 180);
 }
 
@@ -363,9 +424,17 @@ function flushSourceUpdate() {
     clearTimeout(sourceUpdateTimer);
     sourceUpdateTimer = 0;
   }
+  sendSourceUpdate();
+}
+
+// The host's copy disagreed with ours, so stop splicing and send the whole buffer.
+// Nothing should reach this; it exists so that if anything does, the file is
+// rewritten from what is on screen rather than from a buffer that has drifted.
+window.leafResyncSource = () => {
+  if (!codeViewActive) return;
   lastSentSourceText = codeViewText;
   send({ command: 'updateSource', text: codeViewText });
-}
+};
 
 // The code view reuses the reader's own minimap (the scaled document clone in a
 // sticky rail, bound by bindDocumentMinimap / updated by updateMinimapViewport).
@@ -433,7 +502,7 @@ function byteOffsetAtLineIndex(text, lineIndex) {
 }
 
 // The 0-based index of the code view's top visible line, by binary search over
-// the in-order colour lines.
+// the in-order color lines.
 function topVisibleCodeLineIndex() {
   const rows = app.querySelectorAll('.cv-line');
   if (!rows.length) return null;

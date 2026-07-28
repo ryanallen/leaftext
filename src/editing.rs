@@ -156,6 +156,46 @@ impl EditableDocument {
         was_dirty != self.is_dirty()
     }
 
+    /// Splice over a range given in UTF-16 code units — what a JavaScript string
+    /// index counts — recording no undo, like the code-view typing it serves.
+    ///
+    /// The page sends the edit rather than the buffer (4 MB of IPC per typing pause
+    /// otherwise), and its offsets are UTF-16. Byte offsets diverge from those the
+    /// moment the text has a diacritic or an emoji in it, so the conversion happens
+    /// here, against the buffer being spliced.
+    pub fn splice_utf16_without_undo(
+        &mut self,
+        start: usize,
+        removed: usize,
+        inserted: &str,
+    ) -> bool {
+        let (start_byte, end_byte) = self.byte_range_for_utf16(start, removed);
+        self.splice(start_byte, end_byte, inserted, false)
+    }
+
+    /// Byte offsets for `[start, start + removed)` counted in UTF-16 code units.
+    fn byte_range_for_utf16(&self, start: usize, removed: usize) -> (usize, usize) {
+        let end_units = start.saturating_add(removed);
+        let mut units = 0usize;
+        let mut start_byte = None;
+        for (byte, ch) in self.text.char_indices() {
+            if start_byte.is_none() && units >= start {
+                start_byte = Some(byte);
+            }
+            if units >= end_units {
+                return (start_byte.unwrap_or(byte), byte);
+            }
+            units += ch.len_utf16();
+        }
+        (start_byte.unwrap_or(self.text.len()), self.text.len())
+    }
+
+    /// The buffer's length in UTF-16 code units, so the page can prove the two
+    /// copies still agree after a splice.
+    pub fn utf16_len(&self) -> usize {
+        self.text.chars().map(char::len_utf16).sum()
+    }
+
     /// Toggle the `index`-th task-list marker by flipping the state byte
     /// between its brackets (`[ ]` ⇄ `[x]`). The offset is recomputed from the
     /// live buffer, and one ASCII byte replaces another so no offsets shift.

@@ -15,6 +15,9 @@ function sendEditCommand(message) {
   if (path) {
     undoableByPath.set(path, true);
     setDirtyState(path, true);
+    // Undo just became available, which setDirtyState only reflects when the dirty
+    // flag itself changed — on the second and later edits it has not.
+    updateEditingChrome();
   }
   send(message);
 }

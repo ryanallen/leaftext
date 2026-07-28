@@ -500,6 +500,21 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::UpdateSource { text }) => {
                 update_source_buffer(webview.as_ref(), &mut workspace, text);
             }
+            Event::UserEvent(UserEvent::SpliceSource {
+                start,
+                removed,
+                inserted,
+                length,
+            }) => {
+                splice_source_buffer(
+                    webview.as_ref(),
+                    &mut workspace,
+                    start,
+                    removed,
+                    &inserted,
+                    length,
+                );
+            }
             Event::UserEvent(UserEvent::SaveDocument) => {
                 save_active_document(webview.as_ref(), &mut workspace, &mut file_watch);
             }

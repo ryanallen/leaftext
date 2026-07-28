@@ -373,3 +373,65 @@ fn the_code_views_highlight_is_memoized_against_the_buffer() {
     edit.set_text(markdown.to_string());
     assert_eq!(edit.source_view_html(), first);
 }
+
+#[test]
+fn a_code_view_splice_lands_on_the_same_bytes_the_page_meant() {
+    // The page sends UTF-16 offsets (JS string indices) and the host converts them
+    // against its own copy. Byte offsets diverge from those the moment there is a
+    // diacritic or an emoji, and a splice landing one byte off corrupts the file.
+    // The offsets here are exactly what sourceSpliceSince computes on the page.
+    fn splice_of(before: &str, after: &str) -> (usize, usize, String) {
+        let b: Vec<u16> = before.encode_utf16().collect();
+        let a: Vec<u16> = after.encode_utf16().collect();
+        let max = b.len().min(a.len());
+        let mut prefix = 0;
+        while prefix < max && b[prefix] == a[prefix] {
+            prefix += 1;
+        }
+        let mut suffix = 0;
+        while suffix < max - prefix && b[b.len() - 1 - suffix] == a[a.len() - 1 - suffix] {
+            suffix += 1;
+        }
+        let inserted = String::from_utf16(&a[prefix..a.len() - suffix]).expect("valid utf-16");
+        (prefix, b.len() - suffix - prefix, inserted)
+    }
+
+    for (before, after) in [
+        ("hello world", "hello brave world"),
+        // an edit after multi-byte text, where byte and UTF-16 offsets differ
+        ("*āśā*, Skt. one", "*āśā*, Skt. two"),
+        (
+            "Bhūtaḍāmara maṇḍala she is one",
+            "Bhūtaḍāmara maṇḍala she was one",
+        ),
+        // astral plane: one char, two UTF-16 units, four bytes
+        ("a 😀 b", "a 😀 xb"),
+        ("emoji 😀😀 tail", "emoji 😀 tail"),
+        ("abcdef", "abf"),
+        ("whole", "different"),
+        ("", "first text"),
+        ("goes away", ""),
+        ("line one\nline two\n", "line one\nline 2\nline two\n"),
+    ] {
+        let (start, removed, inserted) = splice_of(before, after);
+        let mut edit = EditableDocument::new(PathBuf::from("x.md"), before.to_string());
+        edit.splice_utf16_without_undo(start, removed, &inserted);
+        assert_eq!(
+            edit.text(),
+            after,
+            "splice start={start} removed={removed} of {before:?} should give {after:?}"
+        );
+        // The length check the host uses to notice the two copies drifting apart.
+        assert_eq!(edit.utf16_len(), after.encode_utf16().count());
+    }
+
+    // Typing in the code view is covered by the textarea's own undo, so a splice
+    // records none of its own.
+    let mut edit = EditableDocument::new(PathBuf::from("x.md"), "abc".to_string());
+    edit.splice_utf16_without_undo(1, 1, "X");
+    assert_eq!(edit.text(), "aXc");
+    assert!(
+        !edit.can_undo(),
+        "code-view typing records no reader undo step"
+    );
+}

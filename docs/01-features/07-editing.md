@@ -72,6 +72,7 @@ The code view is a real editor surface: click anywhere and type.
 - Undo and redo are the platform's own (`Ctrl+Z` / `Cmd+Z`), and selection, caret movement, and IME input all behave natively.
 - `Tab` inserts a tab character at the caret instead of moving focus; `Shift+Tab` remains the keyboard escape out of the editor.
 - Edits re-highlight through the same Rust path on a short debounce, so colour follows what you type. Highlighting costs time in proportion to the whole file rather than the edit, so past a quarter of a megabyte it stops running between keystrokes: the lines you change show as plain text until the view is next built, which beats the editor freezing on every pause. The result is kept against the buffer it came from, so leaving the source view and coming back is instant unless the text changed.
+- What reaches the host is the edit, not the file: the offset, how much was removed, and what was typed. Sending a multi-megabyte buffer on every pause in typing cost a fifth of a second of it. The message carries the buffer's new length too, so if the host's copy ever disagreed it would ask for the whole text again rather than splice into a buffer it no longer understood.
 - Each tab keeps its own edit buffer: switching tabs or toggling back to the reading view never loses unsaved work.
 - The reading view renders the *buffer*, not the disk — toggle back before saving and you see your edits rendered.
 

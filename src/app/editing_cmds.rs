@@ -70,6 +70,55 @@ pub(crate) fn enter_code_view(
     }
 }
 
+/// Apply a code-view edit expressed as the range it replaced.
+///
+/// The page sends the change instead of the buffer (see `sourceSpliceSince`),
+/// which is the difference between a few bytes and 4 MB of IPC per typing pause.
+/// `length` is what the page believes the buffer now measures in UTF-16 units; if
+/// ours disagrees the two copies have drifted, and rather than splice into a
+/// buffer we no longer understand we ask the page to resend the whole thing.
+pub(crate) fn splice_source_buffer(
+    webview: Option<&WebView>,
+    workspace: &mut Workspace,
+    start: usize,
+    removed: usize,
+    inserted: &str,
+    length: usize,
+) {
+    let Some(index) = workspace.active else {
+        return;
+    };
+    let Some(edit) = workspace
+        .tabs
+        .get_mut(index)
+        .and_then(|tab| tab.edit.as_mut())
+    else {
+        return;
+    };
+    edit.splice_utf16_without_undo(start, removed, inserted);
+
+    if edit.utf16_len() != length {
+        eprintln!("Code view: buffer drifted from the page; asking for a full resend");
+        if let Some(webview) = webview {
+            if let Err(error) = webview.evaluate_script("window.leafResyncSource();") {
+                eprintln!("Code view: failed to request a resync: {error}");
+            }
+        }
+        return;
+    }
+
+    let dirty = edit.is_dirty();
+    let highlighted = (edit.text().len() <= MAX_LIVE_HIGHLIGHT_BYTES)
+        .then(|| edit.source_view_html().to_string());
+    if let Some(webview) = webview {
+        if let Err(error) =
+            webview.evaluate_script(&source_updated_script(highlighted.as_deref(), dirty))
+        {
+            eprintln!("Code view: failed to refresh source: {error}");
+        }
+    }
+}
+
 /// The largest buffer re-highlighted while you type. Measured: 16 KB costs 9 ms,
 /// 256 KB ~380 ms, 4 MB 6.6 s. Ordinary source files sit far below it.
 const MAX_LIVE_HIGHLIGHT_BYTES: usize = 256 * 1024;

@@ -679,7 +679,7 @@ function buildWindowedMinimapClone(source, first, last) {
     slice(source, preview);
     return preview;
   }
-  // The code view: a shallow spine down to the colour lines, which are the only
+  // The code view: a shallow spine down to the color lines, which are the only
   // per-line layer it has (the numbers are a counter on those same lines).
   const preview = source.cloneNode(false);
   const doc = source.querySelector('.code-view-doc');

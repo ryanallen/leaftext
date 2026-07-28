@@ -75,6 +75,13 @@ pub(crate) enum UserEvent {
     SetPagerEnabled {
         enabled: bool,
     },
+    /// A code-view edit, as the range it replaced rather than the whole buffer.
+    SpliceSource {
+        start: usize,
+        removed: usize,
+        inserted: String,
+        length: usize,
+    },
     /// Persist the Speed Reader toggle.
     SetSpeedReaderEnabled {
         enabled: bool,
@@ -431,6 +438,13 @@ pub(crate) enum IpcCommand {
     #[serde(rename = "exitCodeView")]
     ExitCodeView,
     /// The code-view textarea changed; carries the full buffer text (debounced).
+    #[serde(rename = "spliceSource")]
+    SpliceSource {
+        start: usize,
+        removed: usize,
+        inserted: String,
+        length: usize,
+    },
     #[serde(rename = "updateSource")]
     UpdateSource { text: String },
     /// Write the active document's buffer to disk.
@@ -551,6 +565,19 @@ pub(crate) fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<S
             }
             IpcCommand::SetPagerEnabled { enabled } => {
                 let _ = proxy.send_event(UserEvent::SetPagerEnabled { enabled });
+            }
+            IpcCommand::SpliceSource {
+                start,
+                removed,
+                inserted,
+                length,
+            } => {
+                let _ = proxy.send_event(UserEvent::SpliceSource {
+                    start,
+                    removed,
+                    inserted,
+                    length,
+                });
             }
             IpcCommand::SetSpeedReaderEnabled { enabled } => {
                 let _ = proxy.send_event(UserEvent::SetSpeedReaderEnabled { enabled });
