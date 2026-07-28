@@ -24,7 +24,7 @@ function renderGraphFrame(scene) {
   scene.app.render();
 }
 
-// Recolour and resize the node dots for the current active/hover state, then let
+// Recolor and resize the node dots for the current active/hover state, then let
 // the label pass decide which names to show. Cheap and only called on state
 // changes, not per frame.
 function applyGraphStyles() {
@@ -60,7 +60,7 @@ function refreshGraphColors() {
 }
 
 // Choose which labels are visible and place them. Active/hovered nodes (and a
-// hover's neighbours) are forced; when settled with no hover, every other node
+// hover's neighbors) are forced; when settled with no hover, every other node
 // is an ambient candidate walked most-connected-first, each winning a label only
 // if its screen box clears the ones already placed. So the visible set scales
 // with available room, and zooming in surfaces more names.
@@ -160,7 +160,7 @@ function setNodeLabel(scene, node, show, color) {
   if (show && !node.labelText) {
     const text = new PIXI.Text({
       text: node.label,
-      // White base so the tint reproduces the target colour exactly, the same way
+      // White base so the tint reproduces the target color exactly, the same way
       // the node dots are drawn white and tinted.
       style: { fontFamily: 'Noto Sans, sans-serif', fontSize: GRAPH_LABEL_FONT_SIZE, fill: 0xffffff, align: 'center' },
     });
@@ -271,7 +271,7 @@ function wireGraphPointer(scene) {
 
 // Pixi's `resizeTo` only reacts to window resizes, so a pane-splitter drag
 // (element resize) wouldn't resize or repaint. Observe the canvas ourselves:
-// resize, shift the view by half the delta to keep content centred, repaint.
+// resize, shift the view by half the delta to keep content centered, repaint.
 function wireGraphResize(scene) {
   const ro = new ResizeObserver(() => {
     const w = readerGraphCanvas.clientWidth;
@@ -311,7 +311,7 @@ function graphBoundsInView(scene, minX, minY, maxX, maxY) {
 }
 
 // Frame every node: the tightest zoom that still holds the whole layout, with
-// the bounding box centred. Two documents fill the view; two thousand shrink to
+// the bounding box centered. Two documents fill the view; two thousand shrink to
 // fit. Clamped to the same limits the wheel obeys, so a pair of nodes 40px apart
 // stops at 4x rather than filling the screen with two dots.
 //
@@ -357,8 +357,8 @@ function graphZoomAt(scene, sx, sy, factor) {
   scene.world.scale.set(next);
 }
 
-// Smoothly pan+zoom so `node` ends centred and zoomed in. The target recomputes
-// each frame from the node's live position, so it lands centred even mid-settle.
+// Smoothly pan+zoom so `node` ends centered and zoomed in. The target recomputes
+// each frame from the node's live position, so it lands centered even mid-settle.
 // Cancels any in-flight focus animation so rapid tab clicks don't fight.
 function focusGraphNode(scene, node) {
   if (!scene || !node || typeof node.x !== 'number') return;
@@ -378,7 +378,7 @@ function focusGraphNode(scene, node) {
     const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     const scale = startScale + (targetScale - startScale) * e;
     // Where the world must sit for the node (at its current position) to be
-    // centred on the canvas at this scale; blend from the start position so the
+    // centered on the canvas at this scale; blend from the start position so the
     // motion eases rather than snapping.
     const wantX = width / 2 - node.x * scale;
     const wantY = height / 2 - node.y * scale;
@@ -400,7 +400,7 @@ function focusGraphNode(scene, node) {
 
 // Move the highlight to a newly active document. Focus scope refetches+rebuilds
 // (its slice is the active document's neighborhood); fixed scopes keep the scene
-// and recolour, flying the camera when `focus`. `forceRefresh` (resync gesture)
+// and recolor, flying the camera when `focus`. `forceRefresh` (resync gesture)
 // always rebuilds so a stale graph catches up.
 function graphSetActive(path, focus, forceRefresh) {
   graphActivePath = path || null;

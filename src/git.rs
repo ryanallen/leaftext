@@ -93,7 +93,7 @@ pub struct VaultRepo {
     /// Repositories below this folder, as paths relative to it. These are what a
     /// new repository at the root would swallow.
     pub nested: Vec<String>,
-    /// `owner/name` where the remote is recognisable, else the raw URL.
+    /// `owner/name` where the remote is recognizable, else the raw URL.
     pub remote: Option<String>,
     pub branch: Option<String>,
     /// Files added, changed or deleted since the last commit.
@@ -340,7 +340,7 @@ pub fn create_repo_on_github(root: &Path, name: &str) -> Result<(), GitError> {
     ))
 }
 
-/// Point an already-initialised repository at a URL the user made themselves and
+/// Point an already-initialized repository at a URL the user made themselves and
 /// push to it. The other half of the browser route.
 pub fn link_vault_remote(root: &Path, url: &str) -> Result<(), GitError> {
     let url = url.trim();
@@ -458,7 +458,7 @@ fn porcelain_path(line: &str) -> Option<&str> {
 }
 
 /// `owner/name` out of a remote URL, in any of the forms git accepts. Anything
-/// unrecognised is shown as it is rather than guessed at.
+/// unrecognized is shown as it is rather than guessed at.
 pub(crate) fn remote_label(url: &str) -> String {
     let trimmed = url.trim().trim_end_matches('/');
     let without_git = trimmed.strip_suffix(".git").unwrap_or(trimmed);
@@ -480,7 +480,7 @@ pub(crate) fn remote_label(url: &str) -> String {
 }
 
 /// A vault's name as a repository name: what GitHub will accept, and what the
-/// user will recognise afterwards.
+/// user will recognize afterwards.
 pub fn repo_name_for_vault(vault_name: &str) -> String {
     let mut out = String::with_capacity(vault_name.len());
     let mut last_dash = true;

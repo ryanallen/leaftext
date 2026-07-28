@@ -87,7 +87,7 @@ impl Workspace {
         self.active = Some(self.tabs.len() - 1);
     }
 
-    /// Close the tab at `index`, then pick a sensible neighbour as active (or
+    /// Close the tab at `index`, then pick a sensible neighbor as active (or
     /// the home screen when no tabs remain).
     pub(crate) fn close_tab(&mut self, index: usize) {
         if index >= self.tabs.len() {

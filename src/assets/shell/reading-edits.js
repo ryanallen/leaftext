@@ -229,7 +229,7 @@ function openInsertBlockAfter(el) {
 }
 
 // Structural keys for a WYSIWYG block, by kind. Paragraphs and headings get the
-// block-editor behaviours (Enter splits, Shift+Enter breaks the line, Backspace
+// block-editor behaviors (Enter splits, Shift+Enter breaks the line, Backspace
 // at the start merges up); lists lean on the browser's native contenteditable
 // list handling (Enter makes a new item, Backspace joins items) and serialize
 // whatever structure results; table cells are single-line, so Enter is inert.

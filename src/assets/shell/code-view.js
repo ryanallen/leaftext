@@ -72,13 +72,15 @@ function sizeLineNumberGutter(codeView, lineCount) {
 }
 
 // A zero-width space stands in for an empty source line so its box keeps a full
-// row's height, aligning the colour layer and gutter with the textarea.
+// row's height, aligning the color layer and gutter with the textarea.
 const CODE_VIEW_BLANK = '​';
 
-// Split the flat highlighter output into one HTML string per source line, closing
-// and re-opening any span that straddles a line break so colour carries across
-// without leaking markup. Returns null unless the split yields exactly
-// `expectedCount` lines, so the caller can fall back to a plain render.
+// Split the flat highlighter output into one HTML string per source line. The
+// highlighter closes its spans at every line break, so the straddle handling here
+// is a safety net rather than the usual path — it closes and re-opens anything
+// still open so a line's markup never leaks into the next. Returns null unless the
+// split yields exactly `expectedCount` lines, so the caller can fall back to a
+// plain render.
 function highlightedHtmlToLines(html, expectedCount) {
   const lines = [];
   const openStack = [];
@@ -116,65 +118,65 @@ function highlightedHtmlToLines(html, expectedCount) {
   return lines;
 }
 
-// The inner HTML each colour-layer line currently shows, one per source line. A
-// recolour compares against this to touch only changed lines; a keystroke sets an
-// edited line's entry to plain text so the next recolour repaints it.
-let codeViewColourHtml = [];
+// The inner HTML each color-layer line currently shows, one per source line. A
+// recolor compares against this to touch only changed lines; a keystroke sets an
+// edited line's entry to plain text so the next recolor repaints it.
+let codeViewColorHtml = [];
 
-// The inner markup for one colour-layer line: the highlighted line when the
+// The inner markup for one color-layer line: the highlighted line when the
 // per-line split lined up, a zero-width space for a blank line (so its box keeps a
 // row's height), or plain-escaped text as a fallback.
-function colourLineInner(lineText, colouredLine) {
+function colorLineInner(lineText, coloredLine) {
   if (lineText === '') {
     return CODE_VIEW_BLANK;
   }
-  return colouredLine != null ? colouredLine : escapeText(lineText);
+  return coloredLine != null ? coloredLine : escapeText(lineText);
 }
 
-// The per-line inner markup for a whole buffer, coloured from `html` (falling back
+// The per-line inner markup for a whole buffer, colored from `html` (falling back
 // to plain-escaped text if the split doesn't line up 1:1). The single source both
-// the full build and the incremental recolour compute their line HTML from.
-function computeColourInner(html, text) {
+// the full build and the incremental recolor compute their line HTML from.
+function computeColorInner(html, text) {
   const lineTexts = text.split('\n');
-  const coloured = highlightedHtmlToLines(html || '', lineTexts.length);
+  const colored = highlightedHtmlToLines(html || '', lineTexts.length);
   return lineTexts.map((lineText, index) =>
-    colourLineInner(lineText, coloured ? coloured[index] : null)
+    colorLineInner(lineText, colored ? colored[index] : null)
   );
 }
 
-// Rebuild the whole colour layer, one `<div class="cv-line">` per source line.
-// Used on entry and as a self-heal; the keystroke/recolour paths patch instead.
-function setCodeViewColourLines(codeEl, html, text) {
-  const inner = computeColourInner(html, text);
+// Rebuild the whole color layer, one `<div class="cv-line">` per source line.
+// Used on entry and as a self-heal; the keystroke/recolor paths patch instead.
+function setCodeViewColorLines(codeEl, html, text) {
+  const inner = computeColorInner(html, text);
   codeEl.innerHTML = inner.map((line) => `<div class="cv-line">${line}</div>`).join('');
-  codeViewColourHtml = inner;
+  codeViewColorHtml = inner;
 }
 
 // Repaint after a debounced re-highlight by replacing only the lines whose markup
-// changed (edited lines, plus any whose colour shifted from multi-line state like
+// changed (edited lines, plus any whose color shifted from multi-line state like
 // a fence). Diffs against the authoritative full highlight, so unchanged lines
 // stay in place and the whole document never re-lays-out.
-function recolourCodeViewLines(codeEl, html, text) {
-  const inner = computeColourInner(html, text);
+function recolorCodeViewLines(codeEl, html, text) {
+  const inner = computeColorInner(html, text);
   if (
-    codeViewColourHtml.length !== inner.length ||
+    codeViewColorHtml.length !== inner.length ||
     codeEl.children.length !== inner.length
   ) {
     // Line structure drifted from the highlight; rebuild once to resync.
-    setCodeViewColourLines(codeEl, html, text);
+    setCodeViewColorLines(codeEl, html, text);
     return;
   }
   for (let i = 0; i < inner.length; i += 1) {
-    if (codeViewColourHtml[i] !== inner[i]) {
+    if (codeViewColorHtml[i] !== inner[i]) {
       codeEl.children[i].innerHTML = inner[i];
-      codeViewColourHtml[i] = inner[i];
+      codeViewColorHtml[i] = inner[i];
     }
   }
 }
 
-// A single colour-layer line element. Freshly typed lines show as plain text (via
-// textContent, so no markup leaks); the debounced re-highlight recolours them.
-function makeColourLine(text) {
+// A single color-layer line element. Freshly typed lines show as plain text (via
+// textContent, so no markup leaks); the debounced re-highlight recolors them.
+function makeColorLine(text) {
   const div = document.createElement('div');
   div.className = 'cv-line';
   div.textContent = text === '' ? CODE_VIEW_BLANK : text;
@@ -199,8 +201,8 @@ function spliceLineElements(container, start, removeCount, newTexts, makeEl) {
   container.insertBefore(frag, node);
 }
 
-// The text nodes of one colour-layer line, in document order. Their concatenated
-// data equals the line's text; the elements around them are the colour spans.
+// The text nodes of one color-layer line, in document order. Their concatenated
+// data equals the line's text; the elements around them are the color spans.
 function codeLineTextNodes(root) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const nodes = [];
@@ -212,8 +214,8 @@ function codeLineTextNodes(root) {
   return nodes;
 }
 
-// Delete `len` chars at column `start` from a colour line's text nodes, leaving
-// the colour spans in place. Offsets are read before any node is edited, so
+// Delete `len` chars at column `start` from a color line's text nodes, leaving
+// the color spans in place. Offsets are read before any node is edited, so
 // mutating one doesn't disturb the others.
 function deleteCodeLineRange(root, start, len) {
   if (len <= 0) return;
@@ -231,8 +233,8 @@ function deleteCodeLineRange(root, start, len) {
   }
 }
 
-// Insert `str` at column `at`, inside the colour run to its left so typed text
-// inherits that colour (a char added in a blue link stays blue).
+// Insert `str` at column `at`, inside the color run to its left so typed text
+// inherits that color (a char added in a blue link stays blue).
 function insertCodeLineText(root, at, str) {
   if (!str) return;
   const nodes = codeLineTextNodes(root);
@@ -256,17 +258,17 @@ function insertCodeLineText(root, at, str) {
   last.data += str;
 }
 
-// Edit one coloured line's DOM in place so its colours survive the keystroke:
+// Edit one colored line's DOM in place so its colors survive the keystroke:
 // diff old vs new text to the changed span, then delete/insert only those chars
 // among the text nodes. The debounced re-highlight corrects boundary shifts after.
 // Stops the edited line dropping to plain text between keystroke and re-highlight.
-function patchColourLineText(lineEl, oldText, newText) {
+function patchColorLineText(lineEl, oldText, newText) {
   if (newText === '') {
     lineEl.innerHTML = CODE_VIEW_BLANK;
     return;
   }
   if (oldText === '') {
-    // The line was blank (a zero-width space), so there's no colouring to
+    // The line was blank (a zero-width space), so there's no coloring to
     // preserve — show the typed text plainly.
     lineEl.textContent = newText;
     return;
@@ -287,9 +289,9 @@ function patchColourLineText(lineEl, oldText, newText) {
   insertCodeLineText(lineEl, prefix, newText.slice(prefix, newText.length - suffix));
 }
 
-// The line text a colour-layer element is currently showing, mapping the blank
+// The line text a color-layer element is currently showing, mapping the blank
 // line's zero-width-space placeholder back to an empty string.
-function colourLineText(lineEl) {
+function colorLineText(lineEl) {
   const text = lineEl.textContent;
   return text === CODE_VIEW_BLANK ? '' : text;
 }
@@ -316,25 +318,25 @@ function updateCodeViewLinesIncremental(codeEl, prevText, nextText) {
   const removeCount = prev.length - suffix - prefix;
   const inserted = next.slice(prefix, next.length - suffix);
   // The overwhelmingly common edit — typing within a single line — replaces one
-  // line with one line. Keep that line's existing coloured element and edit only
-  // the changed characters into it, so its colours never drop to plain text. Fall
+  // line with one line. Keep that line's existing colored element and edit only
+  // the changed characters into it, so its colors never drop to plain text. Fall
   // back to a plain rebuild only if the element's text has drifted from what we
-  // expect (then the debounced recolour restores it).
+  // expect (then the debounced recolor restores it).
   if (removeCount === 1 && inserted.length === 1) {
     const lineEl = codeEl.children[prefix];
-    if (lineEl && colourLineText(lineEl) === prev[prefix]) {
-      patchColourLineText(lineEl, prev[prefix], inserted[0]);
-      codeViewColourHtml[prefix] = lineEl.innerHTML;
+    if (lineEl && colorLineText(lineEl) === prev[prefix]) {
+      patchColorLineText(lineEl, prev[prefix], inserted[0]);
+      codeViewColorHtml[prefix] = lineEl.innerHTML;
     } else {
-      spliceLineElements(codeEl, prefix, removeCount, inserted, makeColourLine);
-      codeViewColourHtml.splice(prefix, removeCount, ...inserted.map(() => null));
+      spliceLineElements(codeEl, prefix, removeCount, inserted, makeColorLine);
+      codeViewColorHtml.splice(prefix, removeCount, ...inserted.map(() => null));
     }
     return;
   }
-  spliceLineElements(codeEl, prefix, removeCount, inserted, makeColourLine);
-  // Keep the recolour bookkeeping in step: the edited lines now show plain text,
-  // so mark them (null) to guarantee the next recolour repaints them.
-  codeViewColourHtml.splice(prefix, removeCount, ...inserted.map(() => null));
+  spliceLineElements(codeEl, prefix, removeCount, inserted, makeColorLine);
+  // Keep the recolor bookkeeping in step: the edited lines now show plain text,
+  // so mark them (null) to guarantee the next recolor repaints them.
+  codeViewColorHtml.splice(prefix, removeCount, ...inserted.map(() => null));
 }
 
 // Rebuild the thumbnail once typing has actually stopped. The 180 ms edit debounce
@@ -416,7 +418,7 @@ function scheduleSourceUpdate() {
   }, 180);
 }
 
-// Push the latest buffer to the host now, cancelling any pending debounce, so a
+// Push the latest buffer to the host now, canceling any pending debounce, so a
 // save writes exactly what is in the textarea.
 function flushSourceUpdate() {
   if (!codeViewActive) return;
@@ -599,7 +601,7 @@ window.addEventListener('keydown', (event) => {
   undoLastEdit();
 });
 
-// Build the wrapped raw-source code view: three exactly-aligned layers (colour,
+// Build the wrapped raw-source code view: three exactly-aligned layers (color,
 // line-number mirror, transparent textarea) that the reader shell (#app)
 // scrolls as one — the same scroller the reading view uses, whose native
 // scrollbar is already hidden. The document never scrolls sideways: long lines
@@ -636,7 +638,7 @@ function renderCodeView(state) {
   const highlight = app.querySelector('.code-view-highlight');
   const code = highlight.querySelector('code');
   textarea.value = text;
-  setCodeViewColourLines(code, state.html, text);
+  setCodeViewColorLines(code, state.html, text);
   sizeLineNumberGutter(app.querySelector('.code-view'), text.split('\n').length);
   // Tab edits the document — insert a tab character at the caret — instead of
   // moving focus to the next control. Inserted via execCommand so the
@@ -651,7 +653,7 @@ function renderCodeView(state) {
   textarea.addEventListener('input', () => {
     const prevText = codeViewText;
     codeViewText = textarea.value;
-    // Patch only the changed lines into the colour layer and gutter. A within-line
+    // Patch only the changed lines into the color layer and gutter. A within-line
     // edit splices chars into the existing spans so the line never drops to plain
     // text; the debounced re-highlight corrects boundary shifts after.
     updateCodeViewLinesIncremental(code, prevText, codeViewText);
@@ -722,16 +724,16 @@ window.leafShowCodeView = (state) => {
   });
 };
 
-// Refresh the code view's colour layer and dirty state after a debounced
-// re-highlight. Only recolour when the buffer still matches what was sent, or
+// Refresh the code view's color layer and dirty state after a debounced
+// re-highlight. Only recolor when the buffer still matches what was sent, or
 // stale HTML would hide newer keystrokes.
 window.leafSourceUpdated = (state) => {
   if (!codeViewActive || !state) return;
-  // Null html: the host skipped the re-highlight (buffer too large to colour
+  // Null html: the host skipped the re-highlight (buffer too large to color
   // between keystrokes), so keep the plain-text patch the edited lines already have.
   if (state.html != null && (lastSentSourceText === null || codeViewText === lastSentSourceText)) {
     const code = app.querySelector('.code-view-highlight code');
-    if (code) recolourCodeViewLines(code, state.html, codeViewText);
+    if (code) recolorCodeViewLines(code, state.html, codeViewText);
   }
   const path = activeDocumentPath();
   if (path) setDirtyState(path, !!state.dirty);

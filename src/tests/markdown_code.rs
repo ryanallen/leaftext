@@ -198,7 +198,17 @@ fn supports_foundation_fenced_code_language_aliases() {
                 r#"<pre class="highlight" data-language="{display}"><code class="{class_name}">"#
             ),
         );
-        assert_contains(&rendered.html, "syn-");
+        if display == "Text" {
+            // Plain text has no construct to color, so nothing it carries is in a
+            // styled rule and the run needs no element at all.
+            assert!(
+                !rendered.html.contains("syn-"),
+                "plain text should carry no syntax span: {}",
+                rendered.html
+            );
+        } else {
+            assert_contains(&rendered.html, "syn-");
+        }
     }
 }
 
@@ -370,4 +380,135 @@ fn handles_large_and_multiple_highlighted_code_blocks() {
     assert_contains(&rendered.html, r#"data-language="TypeScript""#);
     assert_contains(&rendered.html, r#"data-language="JavaScript""#);
     assert_contains(&rendered.html, r#"data-language="nonsense""#);
+}
+
+/// The stylesheet's `.syn-` rules, as the sorted class set each needs on a single
+/// element. Parsed out of `reading.css` so the table in `code.rs` is checked
+/// against the thing it mirrors rather than against a copy of itself.
+fn syntax_rules_in_stylesheet() -> Vec<Vec<String>> {
+    let css = reading_mode_css();
+    let mut stripped = String::with_capacity(css.len());
+    let mut rest = &css[..];
+    while let Some(open) = rest.find("/*") {
+        stripped.push_str(&rest[..open]);
+        match rest[open..].find("*/") {
+            Some(close) => rest = &rest[open + close + 2..],
+            None => {
+                rest = "";
+                break;
+            }
+        }
+    }
+    stripped.push_str(rest);
+
+    let mut rules: Vec<Vec<String>> = Vec::new();
+    let mut cursor = stripped.as_str();
+    while let Some(brace) = cursor.find('{') {
+        // Whatever follows the previous block or declaration is this selector list.
+        let selectors = cursor[..brace]
+            .rsplit(['}', ';'])
+            .next()
+            .unwrap_or_default();
+        for selector in selectors.split(',') {
+            if !selector.contains(".syn-") {
+                continue;
+            }
+            // Only the rightmost compound matters: no `syn-` class sits left of a
+            // descendant combinator here, which is what lets one flat span per run
+            // stand in for syntect's nested ones.
+            let compound = selector
+                .split_whitespace()
+                .filter(|part| part.contains(".syn-"))
+                .next_back()
+                .unwrap_or_default();
+            let mut classes: Vec<String> = compound
+                .split('.')
+                .filter_map(|part| part.strip_prefix("syn-"))
+                .map(|class| {
+                    class
+                        .chars()
+                        .take_while(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+                        .collect::<String>()
+                })
+                .filter(|class| !class.is_empty())
+                .collect();
+            classes.sort();
+            if !classes.is_empty() && !rules.contains(&classes) {
+                rules.push(classes);
+            }
+        }
+        cursor = &cursor[brace + 1..];
+    }
+    rules.sort();
+    rules
+}
+
+#[test]
+fn the_syntax_rules_match_the_stylesheet() {
+    let expected = syntax_rules_in_stylesheet();
+    let mut actual: Vec<Vec<String>> = SYNTAX_STYLE_RULES
+        .iter()
+        .map(|rule| {
+            let mut classes: Vec<String> = rule.iter().map(|class| class.to_string()).collect();
+            classes.sort();
+            classes
+        })
+        .collect();
+    actual.sort();
+
+    // The highlighter drops every class no listed rule needs, so a rule present in
+    // the stylesheet but missing here never gets an element to match.
+    assert_eq!(
+        actual, expected,
+        "the syntax rule table and reading.css have drifted"
+    );
+}
+
+#[test]
+fn a_run_no_rule_styles_gets_no_element() {
+    // Markdown wraps paragraphs in a `meta.paragraph` scope that styles nothing on
+    // its own, so prose must arrive as bare text — the bulk of a large source.
+    let rendered = render_markdown_document(
+        "```markdown\nplain prose with no markup at all\n```",
+        "README.md",
+    );
+
+    assert_contains(&rendered.html, "plain prose with no markup at all");
+    assert!(
+        !rendered.html.contains("<span"),
+        "unstyled prose should carry no span:\n{}",
+        rendered.html
+    );
+}
+
+#[test]
+fn adjacent_tokens_that_style_the_same_share_one_element() {
+    // Emphasis over several words is one run, not one element per word.
+    let rendered = render_markdown_document("```markdown\n*one two three*\n```", "README.md");
+
+    assert_contains(&rendered.html, r#">one two three</span>"#);
+}
+
+#[test]
+fn a_syntax_span_never_straddles_a_line_break() {
+    // The code view splits this markup per source line; a span left open across
+    // the break would have to be reopened on the next line to stay balanced.
+    let rendered = render_markdown_document(
+        "```markdown\n## First heading\n\n## Second heading\n```",
+        "README.md",
+    );
+    let code = rendered
+        .html
+        .split(r#"<code class="language-markdown">"#)
+        .nth(1)
+        .and_then(|rest| rest.split("</code>").next())
+        .expect("the highlighted block");
+
+    for line in code.lines() {
+        assert_eq!(
+            line.matches("<span").count(),
+            line.matches("</span>").count(),
+            "each line's spans must close on that line: {line}"
+        );
+    }
 }

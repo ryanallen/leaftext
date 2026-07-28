@@ -65,10 +65,10 @@ A force-directed relationship map of the vault: each **node** is a document, eac
 
 It is a **view of the page**, not a panel — reach it from the [floating toolbar](02-navigation.md#the-toolbar) under the document, beside reading and the source view. It needs a vault: the whole library is a computer, not a collection, and there is no map of one worth drawing.
 
-- The map **opens framed on everything it drew** — the tightest zoom that still holds the whole layout, centred. Two documents fill the view; two thousand shrink to fit. The first pan, zoom, drag or flight hands the view over to you, and it stops reframing.
+- The map **opens framed on everything it drew** — the tightest zoom that still holds the whole layout, centered. Two documents fill the view; two thousand shrink to fit. The first pan, zoom, drag or flight hands the view over to you, and it stops reframing.
 - While the layout settles the view **follows only what leaves the frame**, then frames everything once more when it comes to rest. A force layout breathes as it works, and a camera refitting on every frame of that put the pumping on screen.
-- The document you are reading is highlighted in the accent colour and pulled larger.
-- **Names** float in dim grey beneath the nodes. They stay a fixed size as you zoom and are decluttered by fit: where the layout is open every name shows, and where nodes crowd only the ones that clear their neighbours do. The document you are on always keeps its name, and hovering shows the hovered node's name and its neighbours'.
+- The document you are reading is highlighted in the accent color and pulled larger.
+- **Names** float in dim gray beneath the nodes. They stay a fixed size as you zoom and are decluttered by fit: where the layout is open every name shows, and where nodes crowd only the ones that clear their neighbors do. The document you are on always keeps its name, and hovering shows the hovered node's name and its neighbors'.
 - **Click** a node to open that document — the map holds until the document is ready, then steps aside. **Hover** to light up a node's direct links and dim the rest.
 - **Drag** a node to reposition it, **drag the background** to pan, **scroll** to zoom.
 - Opening a document from the pane while the map is up **keeps the map up** and moves the highlight. Changing what you are looking at is not a reason to change how you are looking at it.

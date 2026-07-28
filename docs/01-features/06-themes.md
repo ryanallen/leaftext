@@ -18,8 +18,8 @@ Pick a family in the theme picker. Ten ship, listed alphabetically, with **Fern*
 | [Goldenrod](https://github.com/ryanallen/leaftext/blob/main/themes/goldenrod.md) | A stark black-and-gold palette — honey-on-white light, near-black dark — with a golden-yellow accent |
 | [Halcyon](https://github.com/ryanallen/leaftext/blob/main/themes/halcyon.md) | A calm, clean palette with one blue accent and a cool blue-gray dark mode |
 | [Nightshade](https://github.com/ryanallen/leaftext/blob/main/themes/nightshade.md) | The classic Dracula palette (light "Alucard" and dark) |
-| [Pippin](https://github.com/ryanallen/leaftext/blob/main/themes/pippin.md) | A crisp, macOS-style palette — clean neutral greys with a system-blue accent |
-| [Sage](https://github.com/ryanallen/leaftext/blob/main/themes/sage.md) | A neutral greyscale palette with a muted-blue (Minimal-style) accent |
+| [Pippin](https://github.com/ryanallen/leaftext/blob/main/themes/pippin.md) | A crisp, macOS-style palette — clean neutral grays with a system-blue accent |
+| [Sage](https://github.com/ryanallen/leaftext/blob/main/themes/sage.md) | A neutral grayscale palette with a muted-blue (Minimal-style) accent |
 
 An eleventh picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
 

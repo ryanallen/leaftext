@@ -70,7 +70,7 @@ fn one_read_graphs_the_vault_with_no_database_involved() {
         .expect("orphan is a node");
     assert_eq!(orphan.degree, 0);
 
-    // Focus keeps the seed and its neighbours; a cap keeps the densest and says
+    // Focus keeps the seed and its neighbors; a cap keeps the densest and says
     // the picture is partial.
     let focused = corpus.graph(&GraphRequest {
         focus: Some(vec![crate::store::path_to_string(&root.join("refuge.md"))]),

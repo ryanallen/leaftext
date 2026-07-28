@@ -1,4 +1,4 @@
-//! The theme registry, the semantic token contract, and colour maths over it.
+//! The theme registry, the semantic token contract, and color maths over it.
 
 use super::*;
 

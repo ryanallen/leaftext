@@ -69,8 +69,7 @@ use pulldown_cmark::{
 };
 use serde::{Deserialize, Serialize};
 use syntect::{
-    html::{ClassStyle, ClassedHTMLGenerator},
-    parsing::{SyntaxReference, SyntaxSet},
+    parsing::{ParseState, Scope, ScopeStack, SyntaxReference, SyntaxSet},
     util::LinesWithEndings,
 };
 use url::Url;
@@ -744,7 +743,7 @@ fn replace_terms_in_text(
                 if end > lower.len() || &lower_bytes[pos..end] != lower_term.as_bytes() {
                     continue;
                 }
-                // Whole-word: neither neighbour may be alphanumeric.
+                // Whole-word: neither neighbor may be alphanumeric.
                 let before_ok = pos == 0
                     || !lower[..pos]
                         .chars()

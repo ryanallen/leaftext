@@ -278,7 +278,7 @@ fn app_shell_header_keeps_one_chrome_shade_with_dividers() {
     }
 
     // No surface derives its own shade from the token — a tint on one shows up as a
-    // tone seam where it meets its neighbour.
+    // tone seam where it meets its neighbor.
     assert!(!css.contains("--library-surface"));
     for tinted in [
         "color-mix(in srgb, var(--chrome-surface)",

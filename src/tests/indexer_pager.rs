@@ -45,7 +45,7 @@ fn pager_includes_tei_xml_documents() {
     fs::write(root.join("README.md"), "# Root\n").expect("root README written");
     fs::write(book.join("README.md"), "# Book\n").expect("book README written");
     // Two XML chapters plus a Markdown one, to prove XML both appears in the
-    // order and pages to its neighbours.
+    // order and pages to its neighbors.
     let ch1 = book.join("001-going-forth.xml");
     let ch2 = book.join("002-ordination.xml");
     let notes = book.join("003-notes.md");
@@ -66,7 +66,7 @@ fn pager_includes_tei_xml_documents() {
     );
     assert!(
         html_mid.contains("001 Going Forth") && html_mid.contains("003 Notes"),
-        "the XML chapter should sit between its neighbours: {html_mid}"
+        "the XML chapter should sit between its neighbors: {html_mid}"
     );
 }
 
@@ -94,7 +94,7 @@ fn pager_includes_json_and_yaml_documents() {
 
     assert!(
         html.contains("001 Notes") && html.contains("003 Workflow"),
-        "a JSON page should sit between its neighbours: {html}"
+        "a JSON page should sit between its neighbors: {html}"
     );
 }
 
@@ -115,7 +115,7 @@ fn pager_orders_by_folder_tree_like_the_web_viewer() {
     fs::write(root.join("GLOSSARY.md"), "# Glossary\n").expect("glossary written");
 
     // Standing on the section README, prev is its parent book and next is its
-    // child chapter — the same neighbours the web pager shows.
+    // child chapter — the same neighbors the web pager shows.
     let html = pager_html(&section.join("README.md"));
     fs::remove_dir_all(&root).expect("tree removed");
 

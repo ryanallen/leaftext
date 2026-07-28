@@ -192,7 +192,7 @@ fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
     let css = reading_mode_css();
 
     // Dark themes grain both stripes; light themes leave the untinted rows plain,
-    // because there a dot dark enough to see reads as a grey mesh over the table.
+    // because there a dot dark enough to see reads as a gray mesh over the table.
     assert_contains(css, "--reader-surface-grain: rgba(0, 0, 0, 0.08);");
     assert_contains(css, "--reader-row-grain: transparent;");
     assert_contains(css, "--reader-surface-grain: rgba(0, 0, 0, 0.3);");
@@ -542,13 +542,13 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
         ".reader-edge-fade::before {\n  top: var(--app-bar-height);",
     );
     assert_contains(css, ".reader-edge-fade::after {\n  bottom: 0;");
-    // The code view repaints the card, so the fade has to follow that colour.
+    // The code view repaints the card, so the fade has to follow that color.
     assert_contains(css, ":root[data-code-view=\"true\"] .reader-edge-fade {");
 }
 
 #[test]
 fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
-    // The edge is the chrome's dot screen in the page's colour, so it has to be
+    // The edge is the chrome's dot screen in the page's color, so it has to be
     // the same circle on the same lattice — retune the bar's grain and this has
     // to come with it or the two stop matching.
     let css = reading_mode_css();
@@ -877,7 +877,7 @@ fn the_map_takes_the_column_the_minimap_is_not_using() {
         "document.documentElement.dataset.graphView = graphViewOpen ? 'true' : 'false';"
     ));
     assert!(css.contains(":root[data-graph-view=\"true\"] .reader-toolbar,"));
-    // The floating bar has to be measured against the same width or it centres
+    // The floating bar has to be measured against the same width or it centers
     // on the page's middle and sits visibly left of the map's.
     assert!(css.contains(":root[data-graph-view=\"true\"] .reader-loading {"));
     assert!(css.contains(":root[data-graph-view=\"true\"] .reader-edge-fade {"));

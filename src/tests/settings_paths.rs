@@ -392,7 +392,7 @@ fn document_format_follows_extension() {
         );
     }
     // Unknown / missing extensions route through the Markdown renderer, matching
-    // how the loader treats everything it does not recognise.
+    // how the loader treats everything it does not recognize.
     assert_eq!(
         DocumentFormat::from_path(Path::new("README")),
         DocumentFormat::Markdown

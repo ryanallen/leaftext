@@ -323,7 +323,7 @@ fn the_map_waits_with_the_same_spinner_a_slow_document_does() {
 fn the_map_opens_framing_everything_and_then_leaves_the_view_alone() {
     let html = app_shell_html();
 
-    // A view parked at 1:1 on an arbitrary centre cannot answer the first thing
+    // A view parked at 1:1 on an arbitrary center cannot answer the first thing
     // a map is asked: how much is there. Two documents sat lost in the middle of
     // an empty field. So it fits, clamped to the zoom limits the wheel obeys.
     assert!(html.contains("function fitGraphToView(scene, follow)"));
@@ -433,7 +433,7 @@ fn one_growl_serves_every_thing_worth_saying_in_passing() {
     let html = app_shell_html();
     let css = reading_mode_css();
 
-    // There was already an error growl; this is that one generalised rather than
+    // There was already an error growl; this is that one generalized rather than
     // a second thing in the same corner doing the same job.
     assert!(html.contains("function leafToast(message, tone) {"));
     assert!(html.contains("window.leafShowError = (message) => leafToast(message, 'error');"));
@@ -691,7 +691,7 @@ fn editing_the_reading_view_is_a_padlock_on_the_document_not_a_global_switch() {
         let icon = normalize_svg_icon_colors(icon);
         assert!(
             icon.contains("stroke=\"currentColor\""),
-            "the exporter's black must be normalised"
+            "the exporter's black must be normalized"
         );
         assert!(html.contains(icon.trim()));
     }
@@ -756,7 +756,7 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     assert!(!html.contains("graphViewButton"));
     assert!(!html.contains("codeViewButton"));
     assert!(!html.contains(r#"class="save-button""#));
-    // With a document open, a view you cannot enter greys out where it stands —
+    // With a document open, a view you cannot enter grays out where it stands —
     // those states come and go as you work, and a row that reshuffles under the
     // pointer is worse than one with a dead key.
     assert!(html.contains("button.disabled = !enabled[view] && !on;"));

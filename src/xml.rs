@@ -3,7 +3,7 @@
 //! TEI goes to [`crate::tei`], which knows its conventions. Everything else —
 //! sitemaps, feeds, POMs, plists, config files — lands here, where there is no
 //! schema to lean on, so the renderer reads the shape of the tree: leaves become
-//! labelled fields, repeated flat records become tables, elements holding
+//! labeled fields, repeated flat records become tables, elements holding
 //! elements become sections, mixed content becomes prose. Blocks emitted from a
 //! single element carry its byte range, so editing anchors as TEI's does.
 
@@ -18,7 +18,7 @@ pub(crate) const LABEL_TAGS: [&str; 5] = ["title", "name", "head", "label", "hea
 /// The rest are qualified by their tag: `<author><name>` heads "Author: Ada".
 const BARE_LABEL_TAGS: [&str; 4] = ["title", "head", "label", "heading"];
 
-/// Attributes that name an element when no labelling child is present.
+/// Attributes that name an element when no labeling child is present.
 const LABEL_ATTRS: [&str; 4] = ["name", "id", "type", "class"];
 
 /// Repeated records wider than this stay sections rather than becoming a table.
@@ -308,7 +308,7 @@ fn render_prose<'a>(node: Node<'a, 'a>, ctx: &mut XmlCtx) {
     ctx.push(&format!("<p{attrs}>{}</p>\n", encode_text(&text)));
 }
 
-/// The heading for a container: its labelling child's text, a naming attribute,
+/// The heading for a container: its labeling child's text, a naming attribute,
 /// or the humanized tag name. Returns the source element the label came from so
 /// the heading can be anchored to it.
 fn container_label<'a>(node: Node<'a, 'a>, ctx: &XmlCtx) -> (Option<String>, Option<Node<'a, 'a>>) {

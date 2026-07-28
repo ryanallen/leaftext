@@ -42,7 +42,7 @@ flowchart LR
 | --- | --- |
 | Tab bar | Keeps multiple documents open |
 | Main reader | Shows the rendered Markdown, [XML](01-features/01-rendering.md#xml), or [JSON/YAML](01-features/01-rendering.md#data-files-json-and-yaml) |
-| Outline | A collapsed list of the document's headings at the top, labelled with the document's line count, for jumping to a section |
+| Outline | A collapsed list of the document's headings at the top, labeled with the document's line count, for jumping to a section |
 | Minimap | Shows the whole document and your current viewport |
 | Back / Forward | Moves through document and scroll history |
 | Code view | Toggles the page to its raw, editable source — see [Editing](01-features/07-editing.md) |

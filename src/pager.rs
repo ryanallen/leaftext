@@ -27,7 +27,7 @@ pub(crate) fn pager_loading_html() -> &'static str {
 /// of the doc tree: at each folder, non-README files first (sorted by name),
 /// then each subfolder (its README as the landing page), then that folder's
 /// pages. The root is the highest ancestor still covered by a chain of READMEs.
-/// Empty string when the file has no neighbours.
+/// Empty string when the file has no neighbors.
 pub(crate) fn pager_html(current: &Path) -> String {
     let root = pager_doc_root(current);
     let entries = collect_pager_entries(&root);

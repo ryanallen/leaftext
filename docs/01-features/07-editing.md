@@ -13,7 +13,7 @@ Leaf Text is reading-first, but it is also editable. You can edit **in the readi
 | Interactive checkboxes | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | Undo | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits |
 | Code view | Toggle the rendered page to the raw source and back |
-| Highlighting | The source is coloured by the app's own highlighter — Markdown, XML, JSON, and YAML |
+| Highlighting | The source is colored by the app's own highlighter — Markdown, XML, JSON, and YAML |
 | Line numbers | A gutter numbers each source line, staying pinned when long lines wrap |
 | Wrapped lines | Long lines wrap; the code view never scrolls sideways |
 | Minimap | The same [minimap](04-minimap.md) rail as the reading view, over the source |
@@ -44,7 +44,7 @@ Whether the rendered page can be typed into is a fact about *that page*, not a p
 - The [code view](#code-view) is an editor whatever the padlock says, so a file is never locked outright.
 - Flipping the padlock commits whatever block was mid-edit rather than discarding it.
 
-The other reading-view tool lives in the same recess: the [speed reader](05-settings.md#speed-reader), which stays an app-wide preference because it is a way of reading rather than a property of a file. Neither it nor the padlock is filled in the accent colour — that treatment means "this is the view you are in", and a setting inside a view must not wear it.
+The other reading-view tool lives in the same recess: the [speed reader](05-settings.md#speed-reader), which stays an app-wide preference because it is a way of reading rather than a property of a file. Neither it nor the padlock is filled in the accent color — that treatment means "this is the view you are in", and a setting inside a view must not wear it.
 
 ## Undo
 
@@ -60,7 +60,7 @@ The toggle is the code-brackets button on the [floating toolbar](02-navigation.m
 
 Opening another document while you are in the source view opens **that** document in the source view. The view is where you are working, not a property of the file you picked.
 
-- The source is coloured by the same Rust highlighter that colours fenced code blocks in the [reading view](01-rendering.md#code), with Markdown, XML, JSON, and YAML all in its language table. Each construct's *delimiters* are coloured to match their content the way a code editor does — the `#` of a heading, the `[]` and `()` of a link, the `**` and backticks of bold and inline code, the `>` of a quote — rather than left as plain text, and headings and bold read in bold. An [XML](01-rendering.md#xml) file shows its tags, with element names in bold and attribute names in their own colour, and a [JSON or YAML](01-rendering.md#data-files-json-and-yaml) file shows its keys, values, and punctuation the way an editor would.
+- The source is colored by the same Rust highlighter that colors fenced code blocks in the [reading view](01-rendering.md#code), with Markdown, XML, JSON, and YAML all in its language table. Each construct's *delimiters* are colored to match their content the way a code editor does — the `#` of a heading, the `[]` and `()` of a link, the `**` and backticks of bold and inline code, the `>` of a quote — rather than left as plain text, and headings and bold read in bold. An [XML](01-rendering.md#xml) file shows its tags, with element names in bold and attribute names in their own color, and a [JSON or YAML](01-rendering.md#data-files-json-and-yaml) file shows its keys, values, and punctuation the way an editor would.
 - Long lines wrap instead of scrolling sideways, and the gutter numbers *source* lines — a wrapped line keeps one number, pinned to its first row. Each number is drawn on the line it labels rather than in a column of its own, so the two cannot drift apart however the text wraps; the gutter widens to fit the highest number in the file so a number never folds onto a second line.
 - The rail on the right is the reader's own [minimap](04-minimap.md), showing a scaled thumbnail of the source; click or drag it to move, exactly as in the reading view.
 - Toggling keeps your place: the code view opens on the source line of the block you were reading, and toggling back lands the reading view on that same block. Switching to another tab and back does too — a tab left in the code view comes back in the code view, scrolled to where you left it.
@@ -71,7 +71,7 @@ The code view is a real editor surface: click anywhere and type.
 
 - Undo and redo are the platform's own (`Ctrl+Z` / `Cmd+Z`), and selection, caret movement, and IME input all behave natively.
 - `Tab` inserts a tab character at the caret instead of moving focus; `Shift+Tab` remains the keyboard escape out of the editor.
-- Edits re-highlight through the same Rust path on a short debounce, so colour follows what you type. Highlighting costs time in proportion to the whole file rather than the edit, so past a quarter of a megabyte it stops running between keystrokes: the lines you change show as plain text until the view is next built, which beats the editor freezing on every pause. The result is kept against the buffer it came from, so leaving the source view and coming back is instant unless the text changed.
+- Edits re-highlight through the same Rust path on a short debounce, so color follows what you type. Highlighting costs time in proportion to the whole file rather than the edit, so past a quarter of a megabyte it stops running between keystrokes: the lines you change show as plain text until the view is next built, which beats the editor freezing on every pause. The result is kept against the buffer it came from, so leaving the source view and coming back is instant unless the text changed.
 - What reaches the host is the edit, not the file: the offset, how much was removed, and what was typed. Sending a multi-megabyte buffer on every pause in typing cost a fifth of a second of it. The message carries the buffer's new length too, so if the host's copy ever disagreed it would ask for the whole text again rather than splice into a buffer it no longer understood.
 - Each tab keeps its own edit buffer: switching tabs or toggling back to the reading view never loses unsaved work.
 - The reading view renders the *buffer*, not the disk — toggle back before saving and you see your edits rendered.

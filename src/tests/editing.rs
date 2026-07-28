@@ -22,10 +22,10 @@ fn data_blocks_never_take_the_markdown_wysiwyg_path() {
 }
 
 #[test]
-fn code_view_colours_markdown_and_xml_delimiters() {
-    // The code editor colours each construct's delimiter too, via a
+fn code_view_colors_markdown_and_xml_delimiters() {
+    // The code editor colors each construct's delimiter too, via a
     // punctuation.definition.* rule at higher specificity than the generic
-    // .code-view .syn-punctuation, so `#`/`[]()`/`**`/backticks/`>` aren't grey.
+    // .code-view .syn-punctuation, so `#`/`[]()`/`**`/backticks/`>` aren't gray.
     let css = reading_mode_css();
 
     for selector in [
@@ -331,7 +331,7 @@ fn editable_document_adopts_external_change_when_clean() {
 #[test]
 fn source_view_highlights_both_markdown_and_xml() {
     // The code view reuses the reader's Rust highlighter, which has both
-    // Markdown and XML in its language table — so both formats colour, not just
+    // Markdown and XML in its language table — so both formats color, not just
     // Markdown. The output is escaped and wrapped in syntect `syn-*` spans.
     let markdown = render_source_view_html("# Heading\n", DocumentFormat::Markdown);
     assert!(markdown.contains("syn-"), "markdown source is highlighted");

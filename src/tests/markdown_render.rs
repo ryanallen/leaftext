@@ -95,7 +95,7 @@ fn opened_document_starts_with_async_pager_placeholder() {
     assert_contains(&document.html, "docs-pager-skeleton");
     assert!(
         !document.html.contains("Next Page"),
-        "document render should not synchronously scan pager neighbours"
+        "document render should not synchronously scan pager neighbors"
     );
     assert_contains(&pager, "Next Page");
 }

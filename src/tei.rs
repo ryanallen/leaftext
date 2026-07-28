@@ -15,7 +15,7 @@ pub(crate) fn tei_div_heading_level(div_type: &str, depth: usize) -> Option<u8> 
     Some((2 + depth as u8).min(6))
 }
 
-/// GitHub-compatible slug from plain text (matches slugger.js behaviour).
+/// GitHub-compatible slug from plain text (matches slugger.js behavior).
 pub(crate) fn tei_slugify(text: &str) -> String {
     let lower = text.to_lowercase();
     let cleaned: String = lower

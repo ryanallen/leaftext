@@ -26,6 +26,8 @@ Per-severity accent colors for GitHub-style alert callouts: `--leaf-markdown-ale
 
 One token per syntactic role: `--leaf-syntax-background`, `--leaf-syntax-foreground`, `--leaf-syntax-comment`, `--leaf-syntax-keyword`, `--leaf-syntax-string`, `--leaf-syntax-number`, `--leaf-syntax-function`, `--leaf-syntax-variable`, `--leaf-syntax-type`, `--leaf-syntax-operator`, `--leaf-syntax-punctuation`, and per-channel inserted/deleted/changed diff tokens.
 
+The rules that spend those tokens — the `.syn-` selectors in `assets/reading.css` — are mirrored by `SYNTAX_STYLE_RULES` in `markdown/code.rs`, and a test fails if the two drift. The highlighter gives a run of text **one** element carrying only the classes some listed rule needs, rather than a nested element per scope naming every scope atom, so a class missing from the table is a rule that never gets an element to match. Adding a `.syn-` rule means adding its class set there too. This is also why no `.syn-` selector may put a syntax class to the left of a descendant combinator: with one element per run there is no ancestor syntax element to match, and where an enclosing construct's rule is the more specific one it now wins on specificity rather than losing on depth.
+
 ### Minimap colors
 
 `--leaf-minimap-background`, `--leaf-minimap-border`, `--leaf-minimap-viewport-border`, `--leaf-minimap-viewport-background`, `--leaf-minimap-heading`, `--leaf-minimap-paragraph`, `--leaf-minimap-blank`, `--leaf-minimap-list`, `--leaf-minimap-blockquote`, `--leaf-minimap-code`.
@@ -55,7 +57,7 @@ On a dark appearance both table stripes are grained, so a table reads as a singl
 
 `--reader-row-grain` is the one grain that **lifts** rather than darkens, because the untinted row is the darkest surface in the app and darkening it has nowhere to go: a black dot shifts `#0d1117` by about 10 levels but `#2a2d3d` by about 32, so the texture lands faint on one family and heavy on another. A white dot at a low alpha moves every dark family by a steady ~15.
 
-Light appearances zero it. There those rows are the near-white ones, where a dot dark enough to see reads as a grey screen-door mesh laid across the whole table. The token is zeroed rather than the rule dropped, so there is still one selector to reason about against the frontmatter opt-out below.
+Light appearances zero it. There those rows are the near-white ones, where a dot dark enough to see reads as a gray screen-door mesh laid across the whole table. The token is zeroed rather than the rule dropped, so there is still one selector to reason about against the frontmatter opt-out below.
 
 The reading and code views borrow the lattice for a different job. The page slides under the app bar at the top and stops at the card's hairline at the bottom, and a line of text cut mid-stroke at either edge reads as a fault, so each edge carries a band that dissolves the last 36px back to the page. Same circle, same lattice, but drawn in the page's own color instead of a grain token and laid over a wash of that color — both at full strength across the cut and gone by the far side. The band stops short of the scrollbar's gutter: the browser draws that inside the scroller, where an overlay on the card cannot sit beneath it.
 
@@ -88,10 +90,10 @@ Themes are organized as **families**, each pairing a light and a dark **source**
 | `halcyon-dark`     | `halcyon` (Halcyon)       | Dark       | A cool blue-gray ramp (`#1c2127`) with a bright blue accent (`#4c9dff`).            |
 | `nightshade-light` | `nightshade` (Nightshade) | Light      | A light "Alucard" interpretation of the Dracula accent hues on a cream ground.     |
 | `nightshade-dark`  | `nightshade` (Nightshade) | Dark       | The classic Dracula hex values (`#282a36`, `#f8f8f2`, `#bd93f9`).                   |
-| `pippin-light`     | `pippin` (Pippin)         | Light      | Crisp neutral greys with a macOS system-blue accent (a Cupertino palette).           |
-| `pippin-dark`      | `pippin` (Pippin)         | Dark       | macOS-style dark greys with a bright system-blue accent.                            |
-| `sage-light`       | `sage` (Sage)             | Light      | Amaranth's light tokens on neutral grey with a muted-blue (Minimal-style) accent.  |
-| `sage-dark`        | `sage` (Sage)             | Dark       | Amaranth's dark tokens on neutral grey with a muted-blue accent.                    |
+| `pippin-light`     | `pippin` (Pippin)         | Light      | Crisp neutral grays with a macOS system-blue accent (a Cupertino palette).           |
+| `pippin-dark`      | `pippin` (Pippin)         | Dark       | macOS-style dark grays with a bright system-blue accent.                            |
+| `sage-light`       | `sage` (Sage)             | Light      | Amaranth's light tokens on neutral gray with a muted-blue (Minimal-style) accent.  |
+| `sage-dark`        | `sage` (Sage)             | Dark       | Amaranth's dark tokens on neutral gray with a muted-blue accent.                    |
 
 Every source activates through the Leaf-owned attributes the theme bootstrap stamps on `:root`: `data-leaf-theme="<family>"` and `data-leaf-appearance="<light|dark>"`. So a source's selector is `:root[data-leaf-theme="github"][data-leaf-appearance="light"]`, and so on.
 

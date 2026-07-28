@@ -183,7 +183,7 @@
      dark speckle on the light surface, overridden heavier for dark themes. */
   --app-bar-grain: rgba(0, 0, 0, 0.1);
   /* A heavier grain for inactive tabs, so one reads as a darker dotted cell set
-     apart from its neighbours without any outline. Overridden darker still for
+     apart from its neighbors without any outline. Overridden darker still for
      dark themes. */
   --library-header-grain: rgba(0, 0, 0, 0.3);
   /* The same grain for the reading view's tinted surfaces. Lighter than the
@@ -192,7 +192,7 @@
   --reader-surface-grain: rgba(0, 0, 0, 0.08);
   /* The untinted table rows — the ones carrying no fill, so the grain above has
      nothing to speckle. Dark themes only: on a light theme these are the near-white
-     rows, where a dot dark enough to see reads as a grey screen-door mesh laid over
+     rows, where a dot dark enough to see reads as a gray screen-door mesh laid over
      the whole table. Light themes leave them plain. */
   --reader-row-grain: transparent;
   /* Corner radii — one scale every surface pulls from, so rounding swaps in a
@@ -403,7 +403,7 @@ body {
 .tab-bar {
   display: flex;
   /* Must clear the active tab's --tab-flare on both sides, or a flare reaches an
-     inactive neighbour and the two tabs read as fused. Raise it with the flare. */
+     inactive neighbor and the two tabs read as fused. Raise it with the flare. */
   gap: 14px;
   min-width: 0;
   /* Full header height, but the tabs hang from the bar's bottom edge (where the
@@ -1818,7 +1818,7 @@ body.library-resizing {
   height: 100%;
 }
 /* What floats over the map has to be measured against the same width, or the
-   toolbar centres on the page's middle and sits visibly off to the left. */
+   toolbar centers on the page's middle and sits visibly off to the left. */
 :root[data-graph-view="true"] .reader-toolbar,
 :root[data-graph-view="true"] .reader-loading {
   grid-column: 2 / 4;
@@ -1849,7 +1849,7 @@ body.library-resizing {
 }
 /* The floating bar: the views, then the edits, parked over the foot of the page.
    Placed by the grid rather than inside the scroller, so it holds still while
-   the document moves under it, and centred because it belongs to the page
+   the document moves under it, and centered because it belongs to the page
    rather than to either edge of the window. */
 /* How much room the page leaves at its foot for the bar: the bar's own height
    plus the gap it floats above the edge, and nothing at all when it is not
@@ -1888,7 +1888,7 @@ body:has(#readerToolbar:not([hidden])) {
    window-anchored lattice as the bar and the rail, so it is the same surface
    pressed in rather than a different one laid on top. */
 /* The vault's own sync button, at the end of its crumb row. Carries a count
-   rather than a bare dot: "3" is a reason to press it, a dot is only a rumour.
+   rather than a bare dot: "3" is a reason to press it, a dot is only a rumor.
    Absent entirely when there is nothing waiting -- see renderVaultSyncButton. */
 .library-sync {
   display: inline-flex;
@@ -2041,7 +2041,7 @@ body:has(#readerToolbar:not([hidden])) {
   background: color-mix(in srgb, var(--app-muted-foreground) 16%, transparent);
   color: var(--app-foreground);
 }
-/* The view you are in. The one piece of colour in the bar, so the bar answers
+/* The view you are in. The one piece of color in the bar, so the bar answers
    "where am I" at a glance — the same job the highlighted tool does in Figma. */
 .reader-tool.is-active,
 .reader-tool.is-active:hover {
@@ -2049,7 +2049,7 @@ body:has(#readerToolbar:not([hidden])) {
   color: var(--preview-background);
 }
 /* A view you cannot enter — no document to show source for, no vault to map —
-   stays in place and greys out, so the row never reshuffles under the pointer. */
+   stays in place and grays out, so the row never reshuffles under the pointer. */
 .reader-tool:disabled {
   opacity: 0.35;
   cursor: default;
@@ -2118,14 +2118,14 @@ body:has(#readerToolbar:not([hidden])) {
 /* Where the page's content ends. Both edges are hard cuts: the top slides under
    an opaque app bar, the bottom stops dead at the card's hairline, and a line of
    text sliced through its x-height reads as a rendering fault. These dissolve
-   the last few pixels back to the page colour instead.
+   the last few pixels back to the page color instead.
    Its own element in the reader's grid cell, not a pseudo-element inside the
    scroller: an absolutely positioned child of a scroll container is placed
    against the scrolled content, so it would slide away with the document. Same
    placement trick as .reader-loading. */
 .reader-edge-fade {
   /* The surface being dissolved to. The code view repaints the card in the
-     editor's code colour, so the dots have to follow it or the last lines break
+     editor's code color, so the dots have to follow it or the last lines break
      up into the wrong page. */
   --reader-edge-fade-surface: var(--preview-background);
   /* How deep each edge reaches — one number for the dot screen and the wash
@@ -2185,7 +2185,7 @@ body:has(#readerToolbar:not([hidden])) {
   --reader-edge-fade-surface: var(--code-block-background, var(--preview-background));
 }
 /* The chrome's own dot grain — same circle, same 2px lattice the app bar and the
-   shell are screened with — laid over the page in the page's colour.
+   shell are screened with — laid over the page in the page's color.
 
    The ramp is a mask, not the pattern. Carrying it in the dots (a `repeat-x` row
    per layer, radius shrinking with depth) read as stacked bands every time: rows
@@ -2818,7 +2818,7 @@ body:has(#readerToolbar:not([hidden])) {
   font-weight: 700;
 }
 /* Glossary term links: a quiet dotted underline in the surrounding text's
-   colour (not the accent), so a term stays discoverable without standing out.
+   color (not the accent), so a term stays discoverable without standing out.
    Matches both `glossary:slug` and a `…/GLOSSARY.md#slug` link; placed last so
    it wins ties against the generic link/hover rules above. */
 .document-body a[href^="glossary:" i],
@@ -3196,7 +3196,7 @@ body:has(#readerToolbar:not([hidden])) {
   font-style: italic;
 }
 /* ---- Code view (raw source editing) -------------------------------------
-   Wrapped source drawn as three aligned layers: the colour layer (the reader's
+   Wrapped source drawn as three aligned layers: the color layer (the reader's
    Rust highlighter), a transparent per-line mirror carrying wrap-aware line
    numbers, and a transparent textarea owning caret/selection/IME/undo. All
    share identical metrics so their wrapping and line positions match exactly. */
@@ -3224,7 +3224,7 @@ body:has(#readerToolbar:not([hidden])) {
   line-height: 1.6;
   tab-size: 4;
 }
-/* As tall as its content (the colour layer sets height), but at least a viewport. */
+/* As tall as its content (the color layer sets height), but at least a viewport. */
 .code-view-doc {
   grid-area: 1 / 1;
   min-width: 0;
@@ -3262,7 +3262,7 @@ body:has(#readerToolbar:not([hidden])) {
   background: none;
   color: inherit;
 }
-/* One block per source line so a keystroke recolours only the edited line. Wraps
+/* One block per source line so a keystroke recolors only the edited line. Wraps
    exactly like the textarea beside it (rules inherited above). Positioned so the
    line number can hang in the gutter beside it. */
 .cv-line {
@@ -3369,7 +3369,7 @@ body:has(#readerToolbar:not([hidden])) {
    but raw Markdown is mostly markup.* (bold, italic, links, code, quotes),
    which would otherwise sit unstyled. Each construct's delimiter carries a
    punctuation.definition.* scope; pairing each markup rule with its sibling (at
-   higher specificity than the generic .syn-punctuation) colours the marker to
+   higher specificity than the generic .syn-punctuation) colors the marker to
    match its construct, the way an editor does. */
 .code-view .syn-markup.syn-heading,
 .code-view .syn-section,
@@ -3395,8 +3395,8 @@ body:has(#readerToolbar:not([hidden])) {
 .code-view .syn-meta.syn-link {
   color: var(--syntax-number);
 }
-/* Link/image delimiters (`[ ]` label, `( )` destination): colour them the link
-   hue so `[label](url)` reads as one unit, not grey brackets. */
+/* Link/image delimiters (`[ ]` label, `( )` destination): color them the link
+   hue so `[label](url)` reads as one unit, not gray brackets. */
 .code-view .syn-punctuation.syn-definition.syn-link,
 .code-view .syn-punctuation.syn-definition.syn-metadata,
 .code-view .syn-punctuation.syn-definition.syn-image {
@@ -3408,7 +3408,7 @@ body:has(#readerToolbar:not([hidden])) {
   font-style: italic;
 }
 /* The list marker (`-`, `*`, `1.`) is punctuation.definition.list_item; the
-   markup.list scopes wrap the whole item, so colouring those would tint text. */
+   markup.list scopes wrap the whole item, so coloring those would tint text. */
 .code-view .syn-punctuation.syn-list_item {
   color: var(--syntax-keyword);
   font-weight: 700;
@@ -3417,7 +3417,7 @@ body:has(#readerToolbar:not([hidden])) {
   text-decoration: line-through;
 }
 /* XML: give attribute names their own hue (both name and tag are entity.* and
-   would otherwise share a colour) and bold the element name, editor-style. */
+   would otherwise share a color) and bold the element name, editor-style. */
 .code-view .syn-entity.syn-name.syn-tag {
   font-weight: 700;
 }

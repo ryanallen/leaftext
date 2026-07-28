@@ -147,9 +147,9 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {",
         "const windowsIt = rows.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;",
         "preview = buildWindowedMinimapClone(source, first, last);",
-        // The code view windows too: its rows are the colour lines, and the gutter
+        // The code view windows too: its rows are the color lines, and the gutter
         // rows beside them are sliced at the same indices or every number would end
-        // up labelling the wrong line.
+        // up labeling the wrong line.
         "function minimapWindowRows(source) {",
         "const code = source.querySelector('.code-view-highlight code');",
         "function buildWindowedMinimapClone(source, first, last) {",
@@ -168,7 +168,7 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
     }
 
     // The clone keeps glossary terms blended into body text like the page, instead
-    // of showing them on the generic accent link colour.
+    // of showing them on the generic accent link color.
     assert_contains(
         &css,
         ".document-minimap-preview a.glossary-term {\n  color: inherit;\n}",
@@ -841,17 +841,17 @@ fn code_blocks_get_a_copy_button() {
 #[test]
 fn app_shell_edits_code_view_incrementally_without_whole_document_reflow() {
     // Typing in the code view must patch only the lines that changed, never
-    // rewrite the whole colour layer — that whole-document rewrite is what turned
+    // rewrite the whole color layer — that whole-document rewrite is what turned
     // the document white on every keystroke and stuttered on large files.
     let html = app_shell_html();
 
-    // The colour layer is built one block per source line, split from the flat
-    // highlighter output so a single line can be recoloured on its own.
+    // The color layer is built one block per source line, split from the flat
+    // highlighter output so a single line can be recolored on its own.
     assert!(html.contains("function highlightedHtmlToLines(html, expectedCount)"));
-    assert!(html.contains("function setCodeViewColourLines(codeEl, html, text)"));
+    assert!(html.contains("function setCodeViewColorLines(codeEl, html, text)"));
 
     // The per-keystroke handler diffs the lines and splices only the changed run,
-    // and does NOT set the whole colour layer's text.
+    // and does NOT set the whole color layer's text.
     assert!(html.contains("updateCodeViewLinesIncremental(code, prevText, codeViewText)"));
     assert!(!html.contains("code.textContent = codeViewText"));
 
@@ -861,11 +861,11 @@ fn app_shell_edits_code_view_incrementally_without_whole_document_reflow() {
     assert!(html.contains("function refreshCodeViewMinimap()"));
     assert!(html.contains("minimapBodyObserver.disconnect();"));
 
-    // A debounced re-highlight repaints only the colour lines that changed rather
-    // than rebuilding every line div, so recolour does not re-lay-out a large
-    // document. The recolour compares against the tracked per-line markup.
-    assert!(html.contains("function recolourCodeViewLines(codeEl, html, text)"));
-    assert!(html.contains("recolourCodeViewLines(code, state.html, codeViewText)"));
+    // A debounced re-highlight repaints only the color lines that changed rather
+    // than rebuilding every line div, so recolor does not re-lay-out a large
+    // document. The recolor compares against the tracked per-line markup.
+    assert!(html.contains("function recolorCodeViewLines(codeEl, html, text)"));
+    assert!(html.contains("recolorCodeViewLines(code, state.html, codeViewText)"));
 }
 
 #[test]
@@ -882,7 +882,7 @@ fn code_view_line_numbers_are_a_counter_on_the_lines_they_label() {
     let line = css_block(css, ".cv-line {");
     assert!(
         line.contains("counter-increment: cv-line;") && line.contains("position: relative;"),
-        "each colour line counts itself and hosts its own number: {line}"
+        "each color line counts itself and hosts its own number: {line}"
     );
     assert_contains(css, "counter-reset: cv-line;");
     let number = css_block(css, ".cv-line::before {");

@@ -605,7 +605,7 @@ mod windows_impl {
             return Err(format!("the Recycle Bin refused the file (code {result})"));
         }
         if operation.fAnyOperationsAborted != 0 {
-            return Err("the delete was cancelled".to_string());
+            return Err("the delete was canceled".to_string());
         }
         Ok(())
     }

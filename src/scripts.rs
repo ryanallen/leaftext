@@ -352,8 +352,8 @@ pub fn code_view_script(
 
 /// Refresh the code view's highlight overlay and dirty state after a debounced
 /// re-highlight. Leaves the textarea untouched. `None` means the buffer was too
-/// large to recolour mid-typing (`MAX_LIVE_HIGHLIGHT_BYTES`), and the page keeps
-/// the colour layer it has.
+/// large to recolor mid-typing (`MAX_LIVE_HIGHLIGHT_BYTES`), and the page keeps
+/// the color layer it has.
 pub fn source_updated_script(highlighted_html: Option<&str>, dirty: bool) -> String {
     let state = serde_json::json!({
         "html": highlighted_html,

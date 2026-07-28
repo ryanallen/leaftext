@@ -502,8 +502,8 @@ body {
 }
 
 /* Glossary term links read as a quiet dotted underline in every theme and mode
-   (including speed reader). They take the surrounding text's colour — not the
-   accent link colour — and the underline is a dimmed wash of that same colour,
+   (including speed reader). They take the surrounding text's color — not the
+   accent link color — and the underline is a dimmed wash of that same color,
    so an expandable term stays discoverable without standing out from the prose
    it sits in. Because the dim is relative to currentColor, prose that is
    already muted (blockquotes, captions) gets a fainter underline still.
@@ -556,7 +556,7 @@ body {
 
 /* ---- GitHub-style alerts ------------------------------------------- */
 /* A blockquote tagged `markdown-alert markdown-alert-TYPE` by the renderer; the
-   coloured title comes from ::before, matching the desktop app. */
+   colored title comes from ::before, matching the desktop app. */
 
 .markdown-body .markdown-alert {
   padding: 0.6em 1em;

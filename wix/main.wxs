@@ -143,9 +143,9 @@
              Everything is under HKCU: a per-user install cannot write HKLM and
              does not need to.
 
-             Windows 8+ honours its own UserChoice above these keys, so claiming an
+             Windows 8+ honors its own UserChoice above these keys, so claiming an
              extension takes effect where nothing else has claimed it and is
-             ignored where the user already chose — which is the correct behaviour
+             ignored where the user already chose — which is the correct behavior
              in both cases. The Capabilities keys put the app in Settings > Default
              apps so the choice can be made there in one click. -->
         <DirectoryRef Id='Bin'>

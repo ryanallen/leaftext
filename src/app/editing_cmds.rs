@@ -124,7 +124,7 @@ pub(crate) fn splice_source_buffer(
 const MAX_LIVE_HIGHLIGHT_BYTES: usize = 256 * 1024;
 
 /// Apply a debounced code-view edit to the buffer, then re-highlight and refresh
-/// the code view's colour layer and dirty state.
+/// the code view's color layer and dirty state.
 pub(crate) fn update_source_buffer(
     webview: Option<&WebView>,
     workspace: &mut Workspace,
@@ -144,7 +144,7 @@ pub(crate) fn update_source_buffer(
     let dirty = edit.is_dirty();
     // Re-highlighting scales with the whole buffer, not the edit — 6.6 s for a 4 MB
     // file, on this thread, every time typing pauses. Past the cap the edited lines
-    // keep the plain text the page already patched in, and colour returns on the
+    // keep the plain text the page already patched in, and color returns on the
     // next build.
     let highlighted = (edit.text().len() <= MAX_LIVE_HIGHLIGHT_BYTES)
         .then(|| edit.source_view_html().to_string());

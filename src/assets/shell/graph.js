@@ -2,7 +2,7 @@
 // Graph view: an Obsidian-style force-directed map of how documents link to one
 // another, rendered with PixiJS (WebGL) and laid out with d3-force. Nodes are
 // documents; edges are resolved doc-to-doc links. The active document is the
-// highlighted centre; clicking a node opens it; hovering lights up its links.
+// highlighted center; clicking a node opens it; hovering lights up its links.
 // ---------------------------------------------------------------------------
 let graphData = null; // last {nodes, edges, truncated} payload from the backend
 let graphRequested = false; // asked the backend since entering the graph view
@@ -37,7 +37,7 @@ const GRAPH_LABEL_GAP = 4; // screen px between a node and the top of its label
 const GRAPH_AMBIENT_LABEL_MAX = 400;
 // Where a rebuild that inherited the last layout starts the simulation: a nudge to
 // absorb what changed, not a fresh layout. Full alpha threw the whole map out from
-// the centre again, which is what a save looked like from the reader's side.
+// the center again, which is what a save looked like from the reader's side.
 const GRAPH_WARM_ALPHA = 0.3;
 // A burst of writes under the vault arrives as a burst of graphs. Build the last
 // and skip the rest — each rebuild is a WebGL context thrown away.
@@ -80,7 +80,7 @@ function applyGraphView() {
 // between the recent files and a map, which is navigation, not a view. The pane
 // beside it already does that, and does it better.
 //
-// A view you *can* be in but cannot enter greys out where it stands rather than
+// A view you *can* be in but cannot enter grays out where it stands rather than
 // vanishing: those states come and go as you work, and a row that reshuffles
 // under the pointer is worse than one with a dead key in it.
 function renderReaderToolbar(hasDocument) {
@@ -229,7 +229,7 @@ function graphColors() {
     hot: cssVarColor('--app-foreground', 0xe6e6e6),
     edge: cssVarColor('--app-border', 0x3a3f4b),
     // Ambient labels for the documents you are not on: the muted-foreground token
-    // (a dim grey), so they read as secondary next to the active/hover labels.
+    // (a dim gray), so they read as secondary next to the active/hover labels.
     dim: cssVarColor('--app-muted-foreground', 0x8b95a5),
   };
 }
@@ -450,7 +450,7 @@ async function buildGraphScene() {
     hoverNode: null, draggingNode: null, panning: false, panLast: null, pressGlobal: null,
     lastWidth: width, lastHeight: height,
     // Frame everything until the reader takes the wheel. A view parked at 1:1 on
-    // an arbitrary centre cannot answer "how much is there": two documents sit
+    // an arbitrary center cannot answer "how much is there": two documents sit
     // lost in an empty field, two thousand hang off every edge. Any pan, zoom,
     // drag or flight ends it for good — including one from before a redraw.
     autoFit: carried ? carried.autoFit : true,
@@ -459,7 +459,7 @@ async function buildGraphScene() {
     // carried layout is already settled, so its names do not blink out.
     settled: carried ? carried.settled : false,
     // What this scene draws, so a later delivery of the same picture can be
-    // recognised and left alone.
+    // recognized and left alone.
     signature: graphSignature(data),
     // A 2D context used only to measure label widths for the collision pass.
     measureCtx: document.createElement('canvas').getContext('2d'),
@@ -475,7 +475,7 @@ async function buildGraphScene() {
 
   for (const node of nodes) {
     const gfx = new PIXI.Graphics();
-    // Drawn white so a tint shows the true state colour; radius set once.
+    // Drawn white so a tint shows the true state color; radius set once.
     gfx.circle(0, 0, graphNodeRadius(node.degree)).fill(0xffffff);
     gfx.eventMode = 'static';
     gfx.cursor = 'pointer';

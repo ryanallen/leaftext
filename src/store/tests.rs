@@ -211,7 +211,7 @@ fn a_vault_can_be_renamed_repointed_and_removed() {
     let vault = add_vault(&conn, &wrong, &default_vault_name(&wrong)).expect("added");
     assert_eq!(vault.name, "site");
 
-    // Relabelling touches nothing but the label, and a blank name is not a name.
+    // Relabeling touches nothing but the label, and a blank name is not a name.
     rename_vault(&conn, vault.id, "  Empty Guru  ").expect("renamed");
     assert_eq!(
         find_vault(&conn, vault.id).expect("lookup").unwrap().name,

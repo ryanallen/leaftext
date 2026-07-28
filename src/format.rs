@@ -11,7 +11,7 @@
 use crate::*;
 
 /// A document's format, from its file extension. Picks which renderer builds the
-/// reading view, how the code view colours the source, and what the app admits
+/// reading view, how the code view colors the source, and what the app admits
 /// it can open.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -57,7 +57,7 @@ impl DocumentFormat {
     }
 
     /// The format to render `path` as, falling back to Markdown for anything
-    /// unrecognised. The loader is total — a file that reached it gets rendered
+    /// unrecognized. The loader is total — a file that reached it gets rendered
     /// as something — so extension-less READMEs read as Markdown rather than
     /// failing to open.
     pub fn from_path(path: &Path) -> Self {

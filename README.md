@@ -38,7 +38,7 @@ Open a `.md` file and it renders the way you'd expect — the same way GitHub do
 
 Click into a sentence and type. Split a paragraph with `Enter`, join it back with `Backspace`, tick a checkbox — the change lands in your file at exactly that spot, and [undo](docs/01-features/07-editing.md#undo) walks back step by step.
 
-Prefer the raw text? Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, XML, JSON, or YAML — coloured like an editor. There's no autosave, ever: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
+Prefer the raw text? Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, XML, JSON, or YAML — colored like an editor. There's no autosave, ever: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
 
 ### Find anything you've written
 
@@ -60,7 +60,7 @@ It moves like a browser: [tabs](docs/01-features/02-navigation.md#tabs), Back an
 
 ![The minimap rail showing a scaled clone of the document](imgs/minimap.png)
 
-A tiny version of your document runs down the side — real text, not abstract bars — with a marker showing where you are. You'll recognise a section by its shape. Click to jump, or drag to scroll. **[Minimap →](docs/01-features/04-minimap.md)**
+A tiny version of your document runs down the side — real text, not abstract bars — with a marker showing where you are. You'll recognize a section by its shape. Click to jump, or drag to scroll. **[Minimap →](docs/01-features/04-minimap.md)**
 
 ### Point at any line
 

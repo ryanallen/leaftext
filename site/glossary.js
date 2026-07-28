@@ -1,6 +1,6 @@
 // glossary.js
 // ---------------------------------------------------------------------------
-// Shared bottom-sheet glossary behaviour for the web reading views (the root
+// Shared bottom-sheet glossary behavior for the web reading views (the root
 // README reader in reader.js and the /docs site in docs.js).
 //
 // A "glossary link" is any in-page link whose target file is the glossary

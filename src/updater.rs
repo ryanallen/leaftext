@@ -391,7 +391,7 @@ impl UpdateDownload {
         Ok(staged)
     }
 
-    /// Throw away a failed or cancelled download.
+    /// Throw away a failed or canceled download.
     pub fn discard(&self) {
         let _ = fs::remove_file(&self.part_path);
     }

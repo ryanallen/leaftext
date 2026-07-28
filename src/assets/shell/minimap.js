@@ -651,7 +651,7 @@ function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {
   return found;
 }
 // The rows a windowed clone slices, in document order. The reading view's are the
-// body's blocks; the code view's are its colour lines, one per source line.
+// body's blocks; the code view's are its color lines, one per source line.
 function minimapWindowRows(source) {
   if (source.classList.contains('document-body')) {
     return Array.from(source.children);
@@ -711,7 +711,7 @@ function buildWindowedMinimapClone(source, first, last) {
 function stripMinimapClone(preview) {
   preview.removeAttribute('id');
   // Drop the code view's focusable textarea from the clone; its text is invisible
-  // anyway (the colour layer shows).
+  // anyway (the color layer shows).
   preview.querySelectorAll('textarea').forEach((node) => node.remove());
   preview.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
   preview.querySelectorAll('a[href]').forEach((link) => {

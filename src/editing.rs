@@ -253,7 +253,7 @@ impl EditableDocument {
         }
     }
 
-    /// The highlighted source for the code view's colour layer, memoized against
+    /// The highlighted source for the code view's color layer, memoized against
     /// the buffer it was built from (see `source_view_cache`).
     pub fn source_view_html(&mut self) -> &str {
         let key = blake3::hash(self.text.as_bytes());
@@ -290,7 +290,7 @@ pub struct BlockSpan {
     pub end: usize,
     /// Whether the reading view may turn this block into a live editor. A
     /// non-editable mapped block still carries its range (so it re-renders when
-    /// a neighbour's edit shifts offsets) but is edited via the code view.
+    /// a neighbor's edit shifts offsets) but is edited via the code view.
     pub editable: bool,
 }
 

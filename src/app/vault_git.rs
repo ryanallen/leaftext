@@ -161,7 +161,7 @@ pub(crate) fn create_vault_repo(
     });
 }
 
-/// Point the vault at a repository the user made in the browser. Initialises
+/// Point the vault at a repository the user made in the browser. Initializes
 /// first when the folder is not a repository yet, so one paste is the whole job.
 pub(crate) fn link_vault_repo(
     state: &VaultState,

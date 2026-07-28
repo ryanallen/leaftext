@@ -162,10 +162,10 @@ fn glossary_failed_script_gives_the_page_a_reason_to_show() {
 }
 
 #[test]
-fn a_buffer_too_large_to_recolour_while_typing_says_so_instead_of_stalling() {
+fn a_buffer_too_large_to_recolor_while_typing_says_so_instead_of_stalling() {
     // Re-highlighting scales with the whole buffer, not the edit: 6.6 s for a 4 MB
     // file, on the event-loop thread, every time typing paused. Past the cap the
-    // host sends no markup and the page leaves the colour layer alone rather than
+    // host sends no markup and the page leaves the color layer alone rather than
     // freezing to rebuild it.
     let with_html = source_updated_script(Some("<span>x</span>"), true);
     assert_contains(&with_html, r#""html":"<span>x</span>""#);
@@ -177,7 +177,7 @@ fn a_buffer_too_large_to_recolour_while_typing_says_so_instead_of_stalling() {
     assert!(skipped.starts_with("window.leafSourceUpdated("));
 
     // The page must treat a null highlight as "keep what is on screen", not as a
-    // reason to blank the colour layer.
+    // reason to blank the color layer.
     let html = app_shell_html();
     assert_contains(
         &html,

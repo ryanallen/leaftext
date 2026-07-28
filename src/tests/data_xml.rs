@@ -119,7 +119,7 @@ fn tei_front_matter_renders_collapsed_before_the_body() {
 
     let (_title, html) = render_xml_body(xml);
 
-    // The front becomes a collapsed <details> (no `open` attribute) labelled
+    // The front becomes a collapsed <details> (no `open` attribute) labeled
     // with its section headings, and it holds the summary/acknowledgement text.
     assert_contains(
             &html,
@@ -248,7 +248,7 @@ fn atom_link_attributes_stand_in_for_missing_text() {
     let (_title, html) = render_xml_body(xml);
 
     // An empty element with one attribute shows that attribute as its value,
-    // unlabelled — the element's own label already names it. (Match around the
+    // unlabeled — the element's own label already names it. (Match around the
     // inline source-range attributes.)
     assert_contains(&html, "<dt>Link</dt><dd data-block-id=");
     assert_contains(
@@ -351,7 +351,7 @@ fn json_reads_its_shape_into_a_title_fields_a_list_and_a_table() {
     assert_contains(&html, ">leaftext</h1>");
     assert!(!html.contains("<dt>Name</dt>"), "{html}");
 
-    // Consecutive scalar keys collapse into one labelled list, camelCase and
+    // Consecutive scalar keys collapse into one labeled list, camelCase and
     // shorthand names read as words, and `null` says nothing at all.
     assert_contains(&html, "<dl class=\"data-fields\">");
     assert_contains(&html, "<dt>Version</dt>");
