@@ -61,7 +61,7 @@ The toggle is the code-brackets button on the [floating toolbar](02-navigation.m
 Opening another document while you are in the source view opens **that** document in the source view. The view is where you are working, not a property of the file you picked.
 
 - The source is coloured by the same Rust highlighter that colours fenced code blocks in the [reading view](01-rendering.md#code), with Markdown, XML, JSON, and YAML all in its language table. Each construct's *delimiters* are coloured to match their content the way a code editor does — the `#` of a heading, the `[]` and `()` of a link, the `**` and backticks of bold and inline code, the `>` of a quote — rather than left as plain text, and headings and bold read in bold. An [XML](01-rendering.md#xml) file shows its tags, with element names in bold and attribute names in their own colour, and a [JSON or YAML](01-rendering.md#data-files-json-and-yaml) file shows its keys, values, and punctuation the way an editor would.
-- Long lines wrap instead of scrolling sideways, and the line-number gutter numbers *source* lines — a wrapped line keeps one number, pinned to its first row.
+- Long lines wrap instead of scrolling sideways, and the line-number gutter numbers *source* lines — a wrapped line keeps one number, pinned to its first row. The gutter widens to fit the highest number in the file, so the number never folds onto a second line and walks out of step with the text it labels.
 - The rail on the right is the reader's own [minimap](04-minimap.md), showing a scaled thumbnail of the source; click or drag it to move, exactly as in the reading view.
 - Toggling keeps your place: the code view opens on the source line of the block you were reading, and toggling back lands the reading view on that same block. Switching to another tab and back does too — a tab left in the code view comes back in the code view, scrolled to where you left it.
 
@@ -71,7 +71,7 @@ The code view is a real editor surface: click anywhere and type.
 
 - Undo and redo are the platform's own (`Ctrl+Z` / `Cmd+Z`), and selection, caret movement, and IME input all behave natively.
 - `Tab` inserts a tab character at the caret instead of moving focus; `Shift+Tab` remains the keyboard escape out of the editor.
-- Edits re-highlight through the same Rust path on a short debounce, so colour follows what you type.
+- Edits re-highlight through the same Rust path on a short debounce, so colour follows what you type. Highlighting costs time in proportion to the whole file rather than the edit, so past a quarter of a megabyte it stops running between keystrokes: the lines you change show as plain text until the view is next built, which beats the editor freezing on every pause. The result is kept against the buffer it came from, so leaving the source view and coming back is instant unless the text changed.
 - Each tab keeps its own edit buffer: switching tabs or toggling back to the reading view never loses unsaved work.
 - The reading view renders the *buffer*, not the disk — toggle back before saving and you see your edits rendered.
 

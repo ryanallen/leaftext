@@ -633,15 +633,15 @@ function minimapBlockEdges(el, appTop, scrollTop) {
   const rect = el.getBoundingClientRect();
   return { top: rect.top - appTop + scrollTop, bottom: rect.bottom - appTop + scrollTop };
 }
-// Index of the first block whose bottom edge is past `offset`. Blocks are in
-// document order, so a binary search finds it without measuring all 50,000.
-function minimapFirstBlockPast(children, appTop, scrollTop, offset) {
+// Index of the first row whose bottom edge is past `offset`. Rows are in document
+// order, so a binary search finds it without measuring all 50,000.
+function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {
   let lo = 0;
-  let hi = children.length - 1;
-  let found = children.length;
+  let hi = rows.length - 1;
+  let found = rows.length;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    if (minimapBlockEdges(children[mid], appTop, scrollTop).bottom > offset) {
+    if (minimapBlockEdges(rows[mid], appTop, scrollTop).bottom > offset) {
       found = mid;
       hi = mid - 1;
     } else {
@@ -649,6 +649,67 @@ function minimapFirstBlockPast(children, appTop, scrollTop, offset) {
     }
   }
   return found;
+}
+// The rows a windowed clone slices, in document order. The reading view's are the
+// body's blocks; the code view's are its colour lines, one per source line.
+function minimapWindowRows(source) {
+  if (source.classList.contains('document-body')) {
+    return Array.from(source.children);
+  }
+  const code = source.querySelector('.code-view-highlight code');
+  return code ? Array.from(code.children) : [];
+}
+// A clone holding rows `first..last` only. The code view needs its own path: it is
+// three layers over one grid cell, and its colour lines and gutter rows are matched
+// by index, so both are sliced at the same indices or every number labels the wrong
+// line.
+function buildWindowedMinimapClone(source, first, last) {
+  const slice = (from, into) => {
+    const rows = from.children;
+    for (let i = first; i <= last && i < rows.length; i += 1) {
+      into.appendChild(rows[i].cloneNode(true));
+    }
+    // The layer's own top padding belongs at the start of the document, not at the
+    // start of a window into the middle of it; the caller's translate places the
+    // first row instead.
+    into.style.paddingTop = '0';
+    into.style.paddingBottom = '0';
+  };
+  if (source.classList.contains('document-body')) {
+    // cloneNode(false) keeps the body's own classes and attributes, so every
+    // `.document-body x` rule still matches inside the clone.
+    const preview = source.cloneNode(false);
+    slice(source, preview);
+    return preview;
+  }
+  const preview = source.cloneNode(false);
+  const doc = source.querySelector('.code-view-doc');
+  const highlight = source.querySelector('.code-view-highlight');
+  const code = highlight ? highlight.querySelector('code') : null;
+  const nums = source.querySelector('.code-view-linenums');
+  if (!doc || !highlight || !code) {
+    return source.cloneNode(true);
+  }
+  // Both are sized to fill the reader; a window must be only as tall as the rows in
+  // it, and `min-height: 100%` here would resolve against the rail's full-document
+  // content box instead.
+  preview.style.minHeight = '0';
+  const docClone = doc.cloneNode(false);
+  docClone.style.minHeight = '0';
+  const highlightClone = highlight.cloneNode(false);
+  const codeClone = code.cloneNode(false);
+  slice(code, codeClone);
+  highlightClone.style.paddingTop = '0';
+  highlightClone.style.paddingBottom = '0';
+  highlightClone.appendChild(codeClone);
+  docClone.appendChild(highlightClone);
+  if (nums) {
+    const numsClone = nums.cloneNode(false);
+    slice(nums, numsClone);
+    docClone.appendChild(numsClone);
+  }
+  preview.appendChild(docClone);
+  return preview;
 }
 // Strip the clone: nothing focusable, nothing with a duplicate id, no second copy
 // of every link for a screen reader to find.
@@ -707,11 +768,9 @@ function updateDocumentMinimapPreview() {
     updateMinimapViewport();
     return;
   }
-  // The code view is one text block with no per-block children to window, so it
-  // clones whole, as does any document the rail can show in full.
-  const children = source.classList.contains('document-body') ? Array.from(source.children) : [];
+  const rows = minimapWindowRows(source);
   const view = minimapVisibleDocumentRange(metrics, scrollTop);
-  const windowsIt = children.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;
+  const windowsIt = rows.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;
   let preview;
   if (!windowsIt) {
     preview = source.cloneNode(true);
@@ -724,31 +783,21 @@ function updateDocumentMinimapPreview() {
   } else {
     const appTop = app.getBoundingClientRect().top;
     const slack = view.height * MINIMAP_WINDOW_SLACK;
-    const first = minimapFirstBlockPast(children, appTop, scrollTop, view.top - slack);
+    const first = minimapFirstBlockPast(rows, appTop, scrollTop, view.top - slack);
     const last = Math.min(
-      children.length - 1,
-      minimapFirstBlockPast(children, appTop, scrollTop, view.bottom + slack),
+      rows.length - 1,
+      minimapFirstBlockPast(rows, appTop, scrollTop, view.bottom + slack),
     );
-    // cloneNode(false) keeps the body's own classes and attributes, so every
-    // `.document-body x` rule still matches inside the clone.
-    preview = source.cloneNode(false);
-    for (let i = first; i <= last; i += 1) {
-      preview.appendChild(children[i].cloneNode(true));
-    }
+    preview = buildWindowedMinimapClone(source, first, last);
     stripMinimapClone(preview);
     preview.style.width = `${metrics.sourceWidth}px`;
-    // The body's own top padding would push the first block in the window down by
-    // a gap that only belongs at the start of the document; the translate below
-    // places that block at its true offset instead.
-    preview.style.paddingTop = '0';
-    preview.style.paddingBottom = '0';
-    const firstTop = first < children.length
-      ? minimapBlockEdges(children[first], appTop, scrollTop).top
+    const firstTop = first < rows.length
+      ? minimapBlockEdges(rows[first], appTop, scrollTop).top
       : metrics.sourceTop;
     preview.style.transform = `translateY(${firstTop * previewScale}px) scale(${previewScale})`;
     minimapBuiltRange = {
-      top: first < children.length ? firstTop : 0,
-      bottom: last >= 0 ? minimapBlockEdges(children[last], appTop, scrollTop).bottom : 0,
+      top: first < rows.length ? firstTop : 0,
+      bottom: last >= 0 ? minimapBlockEdges(rows[last], appTop, scrollTop).bottom : 0,
     };
   }
   content.replaceChildren(preview);

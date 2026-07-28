@@ -3282,11 +3282,16 @@ body:has(#readerToolbar:not([hidden])) {
   display: flex;
   align-items: flex-start;
 }
+/* Never wrapped: a row is as tall as its tallest cell, so a number folding onto a
+   second line would make the whole row twice the height of the line it labels and
+   walk the gutter out of step with the text. buildLineNumbers sizes --cv-gutter to
+   the digit count so it has room not to. */
 .cv-lnnum {
   box-sizing: border-box;
   flex: 0 0 var(--cv-gutter);
   padding-right: 14px;
   text-align: right;
+  white-space: nowrap;
   color: var(--preview-muted-foreground);
   opacity: 0.5;
   font-variant-numeric: tabular-nums;

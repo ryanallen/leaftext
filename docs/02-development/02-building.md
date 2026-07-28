@@ -37,6 +37,8 @@ cargo run
 
 This compiles (if needed) and starts Leaf Text. Open a Markdown file with `Ctrl+O` / `Cmd+O`.
 
+Dependencies are compiled with optimizations even in this debug build (`[profile.dev.package."*"]` in `Cargo.toml`). Parsing, sanitizing, and syntax highlighting all happen inside crates, so leaving them unoptimized made a development build several times slower than the one users get — slow enough to send you hunting performance problems that do not exist in a release build. Dependencies change rarely, so they are compiled once and cached; rebuilds of this crate stay at debug speed.
+
 ## Verification suite
 
 Before submitting a contribution, run the full suite:

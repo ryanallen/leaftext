@@ -280,14 +280,17 @@ function handleWysiwygKeydown(el, event) {
   }
 }
 
-// Turn `el` into a live Markdown editor: keep the rendered styling, edit in
-// place, commit on blur. Checkboxes stay non-editable islands; focus moving within
-// the block neither resets the baseline nor commits.
-function makeMarkdownEditable(el) {
+// Make `el` an editing host. Split from the listeners below, and from the
+// `.leaf-editable` class, so bindEditableBlocks can apply each in its own pass.
+function markMarkdownEditable(el) {
   el.setAttribute('contenteditable', 'true');
   el.setAttribute('spellcheck', 'false');
-  el.classList.add('leaf-editable');
   el.querySelectorAll('input[type="checkbox"]').forEach((box) => box.setAttribute('contenteditable', 'false'));
+}
+// Wire `el` as a live Markdown editor: keep the rendered styling, edit in place,
+// commit on blur. Checkboxes stay non-editable islands; focus moving within the
+// block neither resets the baseline nor commits.
+function wireMarkdownEditable(el) {
   // A link click is navigation, not "edit here": swallow the mousedown so the
   // block never takes focus (the delegated click still navigates), and commit the
   // block being edited first, since no focusout will fire.
@@ -317,15 +320,15 @@ function makeMarkdownEditable(el) {
   el.addEventListener('keydown', (event) => handleWysiwygKeydown(el, event));
 }
 
-// Turn `el` into a raw-source editor, for XML blocks and Markdown blocks that
+// Wire `el` as a raw-source editor, for XML blocks and Markdown blocks that
 // don't round-trip WYSIWYG. The block swaps to its exact source on focus and
 // splices it back on blur; no change restores the rendered view, a real change
-// triggers a host re-render.
-function makeSourceEditable(el) {
+// triggers a host re-render. Unlike a WYSIWYG block it is not an editing host up
+// front — `contenteditable` goes on at pointerdown, one block at a time.
+function wireSourceEditable(el) {
   const start = Number(el.dataset.srcStart);
   const end = Number(el.dataset.srcEnd);
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
-  el.classList.add('leaf-editable');
   el.addEventListener('pointerdown', (event) => {
     if (el.dataset.editingSource === 'true') return;
     // Let a link click navigate; source editing starts from a click on any
@@ -381,9 +384,17 @@ function makeSourceEditable(el) {
 // Wire up every mapped block. Clean text blocks, tight lists, and tables edit
 // WYSIWYG; every other block edits its source in place. A thematic break is left
 // alone.
+//
+// One pass per kind of mutation, never one pass doing all of them per block.
+// Interleaving a `contenteditable` write with the `.leaf-editable` class (which the
+// `:focus` rules key on) makes each block force its own focus recomputation:
+// unlocking a 50,000-block glossary took 148 SECONDS that way, half a second
+// batched. Neither write is expensive alone; only alternating them is.
 function bindEditableBlocks(format) {
   const body = app.querySelector('.document-body');
   if (!body) return;
+  const wysiwygBlocks = [];
+  const sourceBlocks = [];
   body.querySelectorAll('[data-src-start]').forEach((el) => {
     if (el.dataset.srcStart == null || el.dataset.srcEnd == null) return;
     const kind = el.dataset.blockKind;
@@ -395,11 +406,18 @@ function bindEditableBlocks(format) {
         (kind === 'table' && tableWysiwygSafe(el)) ||
         (kind === 'blockquote' && blockquoteWysiwygSafe(el)));
     if (wysiwyg) {
-      makeMarkdownEditable(el);
-    } else {
-      makeSourceEditable(el);
+      wysiwygBlocks.push(el);
+    } else if (Number.isFinite(Number(el.dataset.srcStart)) && Number.isFinite(Number(el.dataset.srcEnd))) {
+      // A block with an unusable range gets neither the class nor a listener, the
+      // same as before — wireSourceEditable's own guard would have dropped it.
+      sourceBlocks.push(el);
     }
   });
+  wysiwygBlocks.forEach(markMarkdownEditable);
+  wysiwygBlocks.forEach((el) => el.classList.add('leaf-editable'));
+  sourceBlocks.forEach((el) => el.classList.add('leaf-editable'));
+  wysiwygBlocks.forEach(wireMarkdownEditable);
+  sourceBlocks.forEach(wireSourceEditable);
 }
 
 // Land the caret carried across a structural edit's re-render: focus the

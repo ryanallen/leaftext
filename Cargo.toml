@@ -8,6 +8,13 @@ strip = true
 lto = "thin"
 codegen-units = 1
 
+# Parsing, sanitizing and highlighting all happen inside crates, so an unoptimized
+# debug build lies about performance — 3.0s to open a 4MB glossary against 0.5s
+# shipped. Dependencies change rarely, so this costs one build and keeps `cargo run`
+# honest; rebuilds of this crate stay at debug speed.
+[profile.dev.package."*"]
+opt-level = 3
+
 [dependencies]
 ammonia = "4.1.2"
 blake3 = "1"

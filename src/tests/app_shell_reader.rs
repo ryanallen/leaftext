@@ -144,10 +144,17 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         // document, which is why nothing here is gated on a size threshold.
         "function minimapWindowCoversView(metrics, scrollTop) {",
         "function minimapVisibleDocumentRange(metrics, scrollTop) {",
-        "function minimapFirstBlockPast(children, appTop, scrollTop, offset) {",
-        "const windowsIt = children.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;",
-        "preview = source.cloneNode(false);",
-        "preview.appendChild(children[i].cloneNode(true));",
+        "function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {",
+        "const windowsIt = rows.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;",
+        "preview = buildWindowedMinimapClone(source, first, last);",
+        // The code view windows too: its rows are the colour lines, and the gutter
+        // rows beside them are sliced at the same indices or every number would end
+        // up labelling the wrong line.
+        "function minimapWindowRows(source) {",
+        "const code = source.querySelector('.code-view-highlight code');",
+        "function buildWindowedMinimapClone(source, first, last) {",
+        "const nums = source.querySelector('.code-view-linenums');",
+        "into.appendChild(rows[i].cloneNode(true));",
         // Scrolling reads no geometry at all — cached metrics, arithmetic, and CSS
         // variable writes. Re-measuring per wheel click forced a fresh layout of the
         // whole document, which is what made one click take ~2 seconds.
@@ -859,4 +866,33 @@ fn app_shell_edits_code_view_incrementally_without_whole_document_reflow() {
     // document. The recolour compares against the tracked per-line markup.
     assert!(html.contains("function recolourCodeViewLines(codeEl, html, text)"));
     assert!(html.contains("recolourCodeViewLines(code, state.html, codeViewText)"));
+}
+
+#[test]
+fn code_view_line_numbers_never_wrap_out_of_step_with_their_lines() {
+    // A gutter row is as tall as its tallest cell, so a line number folding onto a
+    // second line makes the row twice the height of the line it labels — and the
+    // gutter walks away from the text, a row per line, from the first number too
+    // wide to fit. At the old fixed 3.75em that was line 10,000: every file past
+    // 9,999 lines had its numbers drift, a million pixels by the end of a 76,000-
+    // line one. The gutter is sized to the digit count and the number never wraps.
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    assert_contains(&html, "const digits = String(lines.length).length;");
+    assert_contains(
+        &html,
+        "codeView.style.setProperty('--cv-gutter', `max(3.75em, ${digits}ch + 1.25em)`);",
+    );
+    let gutter_number = css_block(css, ".cv-lnnum {");
+    assert!(
+        gutter_number.contains("white-space: nowrap;"),
+        "the gutter number must not wrap: {gutter_number}"
+    );
+    // It is sized in `ch`, which is exact only because the code view is monospace.
+    let code_view = css_block(css, ".code-view {");
+    assert!(
+        code_view.contains("font-family: var(--code-font);"),
+        "the ch-based gutter assumes the code view's monospace font: {code_view}"
+    );
 }

@@ -343,3 +343,33 @@ fn source_view_highlights_both_markdown_and_xml() {
         "angle brackets are escaped, not raw tags"
     );
 }
+
+#[test]
+fn the_code_views_highlight_is_memoized_against_the_buffer() {
+    // Highlighting is the slowest thing the editing model does — seconds on a
+    // multi-megabyte file — and it used to run again on every entry, so toggling
+    // to source and back paid it twice. The memo is keyed by a hash of the buffer,
+    // so an edit invalidates it without anything having to remember to.
+    let markdown = "# Title\n\nSome *prose* and a `span`.\n\n```rs\nfn main() {}\n```\n";
+    let mut edit = EditableDocument::new(PathBuf::from("note.md"), markdown.to_string());
+
+    let first = edit.source_view_html().to_string();
+    assert!(first.contains("syn-"), "the source view is highlighted");
+    assert_eq!(edit.source_view_html(), first, "a second entry reuses it");
+
+    // Any path that changes the text must produce different markup.
+    edit.set_text("# Other\n".to_string());
+    let after_set = edit.source_view_html().to_string();
+    assert_ne!(after_set, first, "set_text invalidates the memo");
+
+    edit.replace_range(0, 1, "##");
+    assert_ne!(
+        edit.source_view_html(),
+        after_set,
+        "a splice invalidates the memo"
+    );
+
+    // Back to a buffer seen before: same text, same markup.
+    edit.set_text(markdown.to_string());
+    assert_eq!(edit.source_view_html(), first);
+}

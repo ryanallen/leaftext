@@ -58,8 +58,17 @@ let lastSentSourceText = null;
 // One right-aligned number per source line, paired with a transparent copy of
 // the line's text so the row wraps to the same height as the colour layer —
 // keeping numbers aligned once lines wrap. Rebuilt when the text changes.
+//
+// The gutter fits the highest line number. At the fixed 3.75em a fifth digit
+// wrapped, doubling every row past line 9,999 and walking the numbers away from
+// their lines. Monospace, so `ch` sizes it exactly.
 function buildLineNumbers(container, text) {
   const lines = text.split('\n');
+  const codeView = container.closest('.code-view');
+  if (codeView) {
+    const digits = String(lines.length).length;
+    codeView.style.setProperty('--cv-gutter', `max(3.75em, ${digits}ch + 1.25em)`);
+  }
   container.innerHTML = lines
     .map(
       (line, index) =>
@@ -688,7 +697,9 @@ window.leafShowCodeView = (state) => {
 // stale HTML would hide newer keystrokes.
 window.leafSourceUpdated = (state) => {
   if (!codeViewActive || !state) return;
-  if (lastSentSourceText === null || codeViewText === lastSentSourceText) {
+  // Null html: the host skipped the re-highlight (buffer too large to colour
+  // between keystrokes), so keep the plain-text patch the edited lines already have.
+  if (state.html != null && (lastSentSourceText === null || codeViewText === lastSentSourceText)) {
     const code = app.querySelector('.code-view-highlight code');
     if (code) recolourCodeViewLines(code, state.html, codeViewText);
   }

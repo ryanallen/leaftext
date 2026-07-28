@@ -23,6 +23,11 @@ pub struct EditableDocument {
     /// inline-edit undo lives here. Code-view typing is not snapshotted — the
     /// textarea's own undo covers it.
     undo_stack: Vec<String>,
+    /// The code view's syntax highlight, with a hash of the buffer it came from.
+    /// Highlighting costs 6.6 s on a 4 MB file and used to run on every entry.
+    /// Keyed by hash rather than invalidated by hand, so no future mutator can
+    /// forget to clear it; the markup is large, so it lives only as long as the tab.
+    source_view_cache: Option<(blake3::Hash, String)>,
 }
 
 impl EditableDocument {
@@ -37,6 +42,7 @@ impl EditableDocument {
             text: contents,
             version: 0,
             undo_stack: Vec::new(),
+            source_view_cache: None,
         }
     }
 
@@ -207,9 +213,20 @@ impl EditableDocument {
         }
     }
 
-    /// The highlighted source for the code view's colour layer.
-    pub fn source_view_html(&self) -> String {
-        render_source_view_html(&self.text, self.format)
+    /// The highlighted source for the code view's colour layer, memoized against
+    /// the buffer it was built from (see `source_view_cache`).
+    pub fn source_view_html(&mut self) -> &str {
+        let key = blake3::hash(self.text.as_bytes());
+        let hit = matches!(&self.source_view_cache, Some((cached, _)) if *cached == key);
+        if !hit {
+            let html = render_source_view_html(&self.text, self.format);
+            self.source_view_cache = Some((key, html));
+        }
+        &self
+            .source_view_cache
+            .as_ref()
+            .expect("the cache was just filled")
+            .1
     }
 }
 

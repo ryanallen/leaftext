@@ -211,13 +211,13 @@ pub(crate) fn reload_active_document(
     {
         edit.adopt_external(contents.clone());
         if in_code_view {
-            let highlighted = edit.source_view_html();
             let text = edit.text().to_string();
             let language = edit.format.language_token().to_string();
             let display = edit.format.display_name().to_string();
+            let highlighted = edit.source_view_html();
             if let Some(webview) = webview {
                 if let Err(error) = webview.evaluate_script(&code_view_script(
-                    &highlighted,
+                    highlighted,
                     &text,
                     &language,
                     &display,

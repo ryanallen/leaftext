@@ -370,11 +370,10 @@ fn opened_document_carries_minimap_model_for_webview_state() {
     // The page is told how long the document is and nothing else: it draws the rail
     // from a scaled clone of the real rendering, so the spans would be 5.5 MB of
     // payload (on a 4 MB glossary) that nothing reads. See `DocumentMinimap`.
-    assert_payload_contains(&script, r#""minimap":{"line_count":7}"#);
-    let payload = script_payload_json(&script);
+    assert_contains(&script, r#""minimap":{"line_count":7}"#);
     for absent in [r#""spans""#, r#""category""#, r#""start_line""#] {
         assert!(
-            !payload.contains(absent),
+            !script.contains(absent),
             "the minimap handoff should not carry {absent}"
         );
     }

@@ -44,10 +44,10 @@ fn workspace_reload_script_preserves_scroll_via_reload_entry_point() {
 
     // The reload path must call leafReloadDocument (which keeps the reader's
     // scroll position), never leafSetState (which jumps back to the top).
-    assert!(script.starts_with("window.leafReloadDocument(JSON.parse("));
+    assert!(script.starts_with("window.leafReloadDocument({"));
     assert!(!script.contains("leafSetState"));
-    assert_payload_contains(&script, r#""active":0"#);
-    assert_payload_contains(&script, r#""title":"Guide""#);
+    assert_contains(&script, r#""active":0"#);
+    assert_contains(&script, r#""title":"Guide""#);
 }
 
 #[test]
@@ -68,10 +68,9 @@ fn workspace_switch_script_restores_target_tab_anchor_without_reset() {
 
     // Switching must render through leafSwitchTab (renders, then restores the
     // saved anchor) rather than leafSetState (which snaps back to the top).
-    assert!(script.starts_with("window.leafSwitchTab(JSON.parse("));
+    assert!(script.starts_with("window.leafSwitchTab({"));
     assert!(!script.contains("leafSetState"));
-    assert_payload_contains(&script, r#""active":0"#);
-    // The anchor stays a literal beside the parsed state — it is a handful of bytes.
+    assert_contains(&script, r#""active":0"#);
     assert!(script.ends_with(r#", {"section":"intro","block":2,"offsetY":12.5});"#));
 
     // No saved anchor (first visit to a tab) passes null, which starts the
@@ -101,10 +100,9 @@ fn document_state_script_never_serializes_raw_title_markup() {
     fs::remove_file(&path).expect("test markdown is removed");
 
     assert_eq!(document.title, "Words & My Perfect Teacher");
-    let payload = script_payload_json(&script);
-    assert_contains(&payload, r#""title":"Words & My Perfect Teacher""#);
-    assert!(!payload.contains(r#""title":"<div"#));
-    assert!(!payload.contains(r#""title":"Words &amp;"#));
+    assert_contains(&script, r#""title":"Words & My Perfect Teacher""#);
+    assert!(!script.contains(r#""title":"<div"#));
+    assert!(!script.contains(r#""title":"Words &amp;"#));
 }
 
 #[test]
@@ -160,5 +158,29 @@ fn glossary_failed_script_gives_the_page_a_reason_to_show() {
     assert_eq!(
         glossary_failed_script("missing"),
         r#"window.leafGlossaryFailed("missing");"#
+    );
+}
+
+#[test]
+fn a_buffer_too_large_to_recolour_while_typing_says_so_instead_of_stalling() {
+    // Re-highlighting scales with the whole buffer, not the edit: 6.6 s for a 4 MB
+    // file, on the event-loop thread, every time typing paused. Past the cap the
+    // host sends no markup and the page leaves the colour layer alone rather than
+    // freezing to rebuild it.
+    let with_html = source_updated_script(Some("<span>x</span>"), true);
+    assert_contains(&with_html, r#""html":"<span>x</span>""#);
+    assert_contains(&with_html, r#""dirty":true"#);
+
+    let skipped = source_updated_script(None, false);
+    assert_contains(&skipped, r#""html":null"#);
+    assert_contains(&skipped, r#""dirty":false"#);
+    assert!(skipped.starts_with("window.leafSourceUpdated("));
+
+    // The page must treat a null highlight as "keep what is on screen", not as a
+    // reason to blank the colour layer.
+    let html = app_shell_html();
+    assert_contains(
+        &html,
+        "if (state.html != null && (lastSentSourceText === null || codeViewText === lastSentSourceText)) {",
     );
 }
