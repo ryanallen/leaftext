@@ -659,10 +659,7 @@ function minimapWindowRows(source) {
   const code = source.querySelector('.code-view-highlight code');
   return code ? Array.from(code.children) : [];
 }
-// A clone holding rows `first..last` only. The code view needs its own path: it is
-// three layers over one grid cell, and its colour lines and gutter rows are matched
-// by index, so both are sliced at the same indices or every number labels the wrong
-// line.
+// A clone holding rows `first..last` only.
 function buildWindowedMinimapClone(source, first, last) {
   const slice = (from, into) => {
     const rows = from.children;
@@ -682,11 +679,12 @@ function buildWindowedMinimapClone(source, first, last) {
     slice(source, preview);
     return preview;
   }
+  // The code view: a shallow spine down to the colour lines, which are the only
+  // per-line layer it has (the numbers are a counter on those same lines).
   const preview = source.cloneNode(false);
   const doc = source.querySelector('.code-view-doc');
   const highlight = source.querySelector('.code-view-highlight');
   const code = highlight ? highlight.querySelector('code') : null;
-  const nums = source.querySelector('.code-view-linenums');
   if (!doc || !highlight || !code) {
     return source.cloneNode(true);
   }
@@ -699,15 +697,12 @@ function buildWindowedMinimapClone(source, first, last) {
   const highlightClone = highlight.cloneNode(false);
   const codeClone = code.cloneNode(false);
   slice(code, codeClone);
+  // The counter restarts inside the clone, so offset it or the numbers read 1..n.
+  codeClone.style.counterReset = 'cv-line ' + first;
   highlightClone.style.paddingTop = '0';
   highlightClone.style.paddingBottom = '0';
   highlightClone.appendChild(codeClone);
   docClone.appendChild(highlightClone);
-  if (nums) {
-    const numsClone = nums.cloneNode(false);
-    slice(nums, numsClone);
-    docClone.appendChild(numsClone);
-  }
   preview.appendChild(docClone);
   return preview;
 }

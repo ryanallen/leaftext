@@ -55,26 +55,13 @@ function undoLastEdit() {
 // (typing continued after it was sent) is ignored rather than regressing.
 let lastSentSourceText = null;
 
-// One right-aligned number per source line, paired with a transparent copy of
-// the line's text so the row wraps to the same height as the colour layer —
-// keeping numbers aligned once lines wrap. Rebuilt when the text changes.
-//
-// The gutter fits the highest line number. At the fixed 3.75em a fifth digit
-// wrapped, doubling every row past line 9,999 and walking the numbers away from
-// their lines. Monospace, so `ch` sizes it exactly.
-function buildLineNumbers(container, text) {
-  const lines = text.split('\n');
-  const codeView = container.closest('.code-view');
-  if (codeView) {
-    const digits = String(lines.length).length;
-    codeView.style.setProperty('--cv-gutter', `max(3.75em, ${digits}ch + 1.25em)`);
-  }
-  container.innerHTML = lines
-    .map(
-      (line, index) =>
-        `<div class="cv-lnrow"><span class="cv-lnnum">${index + 1}</span><span class="cv-lntxt">${escapeText(line) || '​'}</span></div>`
-    )
-    .join('');
+// A CSS counter draws the numbers, so the only thing left to set is the gutter's
+// width: too narrow and the number wraps, making every row past 9,999 lines taller
+// than the line it labels. Monospace, so `ch` sizes it exactly.
+function sizeLineNumberGutter(codeView, lineCount) {
+  if (!codeView) return;
+  const digits = String(Math.max(1, lineCount)).length;
+  codeView.style.setProperty('--cv-gutter', `max(3.75em, ${digits}ch + 1.25em)`);
 }
 
 // A zero-width space stands in for an empty source line so its box keeps a full
@@ -187,20 +174,6 @@ function makeColourLine(text) {
   return div;
 }
 
-// A single gutter row: the right-aligned number plus a transparent copy of the
-// line's text (so the row wraps to the same height as the colour line).
-function makeGutterRow(text, index) {
-  const row = document.createElement('div');
-  row.className = 'cv-lnrow';
-  const num = document.createElement('span');
-  num.className = 'cv-lnnum';
-  num.textContent = String(index + 1);
-  const txt = document.createElement('span');
-  txt.className = 'cv-lntxt';
-  txt.textContent = text === '' ? CODE_VIEW_BLANK : text;
-  row.append(num, txt);
-  return row;
-}
 
 // Replace a contiguous run of `container`'s children (its line elements are 1:1
 // with source lines) — remove `removeCount` starting at `start`, then insert one
@@ -318,7 +291,7 @@ function colourLineText(lineEl) {
 // splice, so the shared prefix/suffix of the old and new line arrays is untouched
 // and only the range between them is rebuilt — keeping large documents from
 // re-rendering on every keystroke.
-function updateCodeViewLinesIncremental(codeEl, gutterEl, prevText, nextText) {
+function updateCodeViewLinesIncremental(codeEl, prevText, nextText) {
   const prev = prevText.split('\n');
   const next = nextText.split('\n');
   const maxCommon = Math.min(prev.length, next.length);
@@ -349,38 +322,28 @@ function updateCodeViewLinesIncremental(codeEl, gutterEl, prevText, nextText) {
       spliceLineElements(codeEl, prefix, removeCount, inserted, makeColourLine);
       codeViewColourHtml.splice(prefix, removeCount, ...inserted.map(() => null));
     }
-    // The gutter mirror is transparent (it only sets each row's height), so a
-    // plain rebuild of the one changed row is fine.
-    spliceLineElements(gutterEl, prefix, removeCount, inserted, makeGutterRow);
     return;
   }
   spliceLineElements(codeEl, prefix, removeCount, inserted, makeColourLine);
-  spliceLineElements(gutterEl, prefix, removeCount, inserted, makeGutterRow);
   // Keep the recolour bookkeeping in step: the edited lines now show plain text,
   // so mark them (null) to guarantee the next recolour repaints them.
   codeViewColourHtml.splice(prefix, removeCount, ...inserted.map(() => null));
-  // Inserting or removing lines shifts every following line's number; renumber the
-  // suffix rows the splice left in place. A same-line edit skips this entirely.
-  if (prev.length !== next.length) {
-    const rows = gutterEl.children;
-    for (let i = prefix; i < rows.length; i += 1) {
-      const num = rows[i].firstChild;
-      if (num) {
-        num.textContent = String(i + 1);
-      }
-    }
-  }
 }
 
-// Rebuild the code view's minimap thumbnail now. The per-keystroke DOM edits do
-// NOT drive the minimap — its content mutation observer is deliberately detached
-// in the code view (see renderCodeView) so a full-document clone does not run on
-// every character. Instead we refresh it on the debounced edit cycle.
+// Rebuild the thumbnail once typing has actually stopped. The 180 ms edit debounce
+// is still mid-sentence, and rebuilding there cost ~66 ms in every pause; a
+// thumbnail can lag a second behind without anyone being able to tell.
+const CODE_VIEW_MINIMAP_IDLE_MS = 1200;
+let codeViewMinimapTimer = 0;
 function refreshCodeViewMinimap() {
   if (!codeViewActive) {
     return;
   }
-  invalidateMinimapPreview();
+  if (codeViewMinimapTimer) window.clearTimeout(codeViewMinimapTimer);
+  codeViewMinimapTimer = window.setTimeout(() => {
+    codeViewMinimapTimer = 0;
+    if (codeViewActive) invalidateMinimapPreview();
+  }, CODE_VIEW_MINIMAP_IDLE_MS);
 }
 
 function scheduleSourceUpdate() {
@@ -469,10 +432,10 @@ function byteOffsetAtLineIndex(text, lineIndex) {
   return bytes;
 }
 
-// The 0-based index of the code view's top visible gutter line, by binary
-// search over the in-order line rows.
+// The 0-based index of the code view's top visible line, by binary search over
+// the in-order colour lines.
 function topVisibleCodeLineIndex() {
-  const rows = app.querySelectorAll('.cv-lnrow');
+  const rows = app.querySelectorAll('.cv-line');
   if (!rows.length) return null;
   const topEdge = app.getBoundingClientRect().top + 1;
   let lo = 0;
@@ -595,7 +558,6 @@ function renderCodeView(state) {
     <div class="code-view" data-language="${escapeAttr(state.displayName || '')}">
       <div class="code-view-doc">
         <pre class="code-view-highlight" aria-hidden="true"><code class="language-${escapeAttr(state.language || '')}"></code></pre>
-        <div class="code-view-linenums" aria-hidden="true"></div>
         <textarea class="code-view-input" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea>
       </div>
     </div>`;
@@ -604,10 +566,9 @@ function renderCodeView(state) {
   const textarea = app.querySelector('.code-view-input');
   const highlight = app.querySelector('.code-view-highlight');
   const code = highlight.querySelector('code');
-  const linenums = app.querySelector('.code-view-linenums');
   textarea.value = text;
   setCodeViewColourLines(code, state.html, text);
-  buildLineNumbers(linenums, text);
+  sizeLineNumberGutter(app.querySelector('.code-view'), text.split('\n').length);
   // Tab edits the document — insert a tab character at the caret — instead of
   // moving focus to the next control. Inserted via execCommand so the
   // textarea's native undo stack keeps working. Shift+Tab is left alone as the
@@ -624,7 +585,7 @@ function renderCodeView(state) {
     // Patch only the changed lines into the colour layer and gutter. A within-line
     // edit splices chars into the existing spans so the line never drops to plain
     // text; the debounced re-highlight corrects boundary shifts after.
-    updateCodeViewLinesIncremental(code, linenums, prevText, codeViewText);
+    updateCodeViewLinesIncremental(code, prevText, codeViewText);
     const path = activeDocumentPath();
     if (path) setDirtyState(path, true);
     scheduleSourceUpdate();
@@ -659,7 +620,7 @@ function renderCodeView(state) {
   // block landing and let the fraction (0) fall through to a flush-top landing.
   if (explicit == null && !atTop && srcOffset != null) {
     const lineIndex = lineIndexAtByteOffset(text, srcOffset);
-    const row = linenums.children[Math.min(lineIndex, linenums.children.length - 1)];
+    const row = code.children[Math.min(lineIndex, code.children.length - 1)];
     if (row) {
       const shellRect = app.getBoundingClientRect();
       const rowRect = row.getBoundingClientRect();

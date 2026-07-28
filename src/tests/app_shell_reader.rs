@@ -153,7 +153,6 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "function minimapWindowRows(source) {",
         "const code = source.querySelector('.code-view-highlight code');",
         "function buildWindowedMinimapClone(source, first, last) {",
-        "const nums = source.querySelector('.code-view-linenums');",
         "into.appendChild(rows[i].cloneNode(true));",
         // Scrolling reads no geometry at all — cached metrics, arithmetic, and CSS
         // variable writes. Re-measuring per wheel click forced a fresh layout of the
@@ -206,16 +205,17 @@ fn app_shell_opens_both_views_at_the_same_content_top_gap() {
     assert_contains(&html, "const READER_CONTENT_TOP_GAP = 88;");
 
     // The code view has no scroll origin, so it pays the gap the shell's app-bar
-    // padding doesn't already cover. All three of its layers read the same var, so
-    // the colour layer, the line-number mirror and the textarea stay aligned.
+    // padding doesn't already cover. Both of its layers read the same var, so the
+    // colour layer and the textarea over it stay aligned. (The line numbers are a
+    // counter on the colour lines, so there is no third layer to keep in step.)
     assert_contains(
         &css,
         "--cv-pad-top: calc(var(--reader-content-top-gap) - var(--app-bar-height));",
     );
     assert_eq!(
         css.matches("padding: var(--cv-pad-top)").count(),
-        3,
-        "the code view's three aligned layers must share --cv-pad-top"
+        2,
+        "the code view's two aligned layers must share --cv-pad-top"
     );
 
     // 88px from the shell's top edge is 48px of clear air below the 40px bar, which
@@ -852,7 +852,7 @@ fn app_shell_edits_code_view_incrementally_without_whole_document_reflow() {
 
     // The per-keystroke handler diffs the lines and splices only the changed run,
     // and does NOT set the whole colour layer's text.
-    assert!(html.contains("updateCodeViewLinesIncremental(code, linenums, prevText, codeViewText)"));
+    assert!(html.contains("updateCodeViewLinesIncremental(code, prevText, codeViewText)"));
     assert!(!html.contains("code.textContent = codeViewText"));
 
     // The minimap's content observer is detached in the code view (so no
@@ -869,27 +869,60 @@ fn app_shell_edits_code_view_incrementally_without_whole_document_reflow() {
 }
 
 #[test]
-fn code_view_line_numbers_never_wrap_out_of_step_with_their_lines() {
-    // A gutter row is as tall as its tallest cell, so a line number folding onto a
-    // second line makes the row twice the height of the line it labels — and the
-    // gutter walks away from the text, a row per line, from the first number too
-    // wide to fit. At the old fixed 3.75em that was line 10,000: every file past
-    // 9,999 lines had its numbers drift, a million pixels by the end of a 76,000-
-    // line one. The gutter is sized to the digit count and the number never wraps.
+fn code_view_line_numbers_are_a_counter_on_the_lines_they_label() {
+    // They used to be a second layer, three elements per line — 228,000 of them on
+    // a 76,000-line file — kept in step with the colour lines only by wrapping
+    // identically. That held until a number was too wide for the gutter: at the
+    // fixed 3.75em, line 10,000's fifth digit wrapped, every row past it went
+    // double height, and the numbers ended a million pixels below their own text.
+    // A counter on the colour lines cannot drift, because there is only one layer.
     let html = app_shell_html();
     let css = reading_mode_css();
 
-    assert_contains(&html, "const digits = String(lines.length).length;");
+    let line = css_block(css, ".cv-line {");
+    assert!(
+        line.contains("counter-increment: cv-line;") && line.contains("position: relative;"),
+        "each colour line counts itself and hosts its own number: {line}"
+    );
+    assert_contains(css, "counter-reset: cv-line;");
+    let number = css_block(css, ".cv-line::before {");
+    for expected in [
+        "content: counter(cv-line);",
+        "position: absolute;",
+        // Out of flow, so a wrapped line still gets one number on its first row.
+        "right: 100%;",
+        "white-space: nowrap;",
+    ] {
+        assert!(
+            number.contains(expected),
+            "{expected} missing from: {number}"
+        );
+    }
+    // The second layer, and everything that maintained it, is gone.
+    for absent in [
+        "code-view-linenums",
+        "cv-lnrow",
+        "cv-lnnum",
+        "cv-lntxt",
+        "makeGutterRow",
+    ] {
+        assert!(
+            !html.contains(absent) && !css.contains(absent),
+            "the mirrored gutter layer is gone; found {absent}"
+        );
+    }
+
+    // The gutter still has to be wide enough for the highest number, or the
+    // counter's text would overflow into the line it labels.
+    assert_contains(
+        &html,
+        "function sizeLineNumberGutter(codeView, lineCount) {",
+    );
     assert_contains(
         &html,
         "codeView.style.setProperty('--cv-gutter', `max(3.75em, ${digits}ch + 1.25em)`);",
     );
-    let gutter_number = css_block(css, ".cv-lnnum {");
-    assert!(
-        gutter_number.contains("white-space: nowrap;"),
-        "the gutter number must not wrap: {gutter_number}"
-    );
-    // It is sized in `ch`, which is exact only because the code view is monospace.
+    // Sized in `ch`, which is exact only because the code view is monospace.
     let code_view = css_block(css, ".code-view {");
     assert!(
         code_view.contains("font-family: var(--code-font);"),

@@ -29,7 +29,7 @@ The Rust side produces a small `DocumentMinimap` for each document whose only jo
 
 The [code view](07-editing.md#code-view) uses this same minimap over the raw source: the identical rail, thumbnail clone, and drag/click behavior, mirroring the highlighted source text instead of the rendered page. There it renders regardless of the setting below, because with no native scrollbar it is the code view's vertical scroll affordance. What the rail clones is the code view's own container, the element the editor's type metrics and syntax colors are set on — the thumbnail is moved out of the page to build it, so anything it only inherited from a parent would be lost, and it would wrap at a different width than the source it is meant to mirror.
 
-It is windowed there too, and to the same slice: the source view is three layers over one grid cell — the coloured lines, the numbers beside them, and the textarea you type into — so the clone takes the coloured lines and the numbers at matching positions, or every number would end up labelling a different line.
+It is windowed there too: the source view is the coloured lines with the textarea you type into laid over them, so the clone takes a slice of those lines. The line numbers ride along, because they are drawn by a counter on the lines themselves rather than by a second column of elements.
 
 ## Responsive behavior
 

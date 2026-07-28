@@ -3233,7 +3233,6 @@ body:has(#readerToolbar:not([hidden])) {
 }
 .code-view-highlight,
 .code-view-highlight code,
-.code-view-linenums,
 .code-view-input {
   font-family: inherit;
   font-size: inherit;
@@ -3257,49 +3256,40 @@ body:has(#readerToolbar:not([hidden])) {
 }
 .code-view-highlight code {
   display: block;
+  counter-reset: cv-line;
   margin: 0;
   padding: 0;
   background: none;
   color: inherit;
 }
 /* One block per source line so a keystroke recolours only the edited line. Wraps
-   exactly like the textarea and gutter row beside it (rules inherited above). */
+   exactly like the textarea beside it (rules inherited above). Positioned so the
+   line number can hang in the gutter beside it. */
 .cv-line {
   display: block;
+  position: relative;
   margin: 0;
   padding: 0;
+  counter-increment: cv-line;
 }
-.code-view-linenums {
+/* The line number, drawn by a counter rather than a second layer of elements.
+   That layer was three elements per line — 228,000 of them on a 76,000-line file,
+   a third of everything on the page — kept in step with these lines only by
+   wrapping identically, which it stopped doing the moment a number was too wide
+   for the gutter. A counter cannot drift: there is only one layer now.
+   Out of flow, so a wrapped line still gets exactly one number on its first row. */
+.cv-line::before {
+  content: counter(cv-line);
   position: absolute;
-  inset: 0;
-  margin: 0;
-  padding: var(--cv-pad-top) var(--cv-pad-x) var(--cv-pad-y) 0;
-  color: transparent;
-  z-index: 1;
-  pointer-events: none;
-}
-.cv-lnrow {
-  display: flex;
-  align-items: flex-start;
-}
-/* Never wrapped: a row is as tall as its tallest cell, so a number folding onto a
-   second line would make the whole row twice the height of the line it labels and
-   walk the gutter out of step with the text. buildLineNumbers sizes --cv-gutter to
-   the digit count so it has room not to. */
-.cv-lnnum {
-  box-sizing: border-box;
-  flex: 0 0 var(--cv-gutter);
-  padding-right: 14px;
-  text-align: right;
+  right: 100%;
+  top: 0;
+  margin-right: 14px;
   white-space: nowrap;
   color: var(--preview-muted-foreground);
   opacity: 0.5;
   font-variant-numeric: tabular-nums;
   user-select: none;
-}
-.cv-lntxt {
-  flex: 1 1 auto;
-  min-width: 0;
+  pointer-events: none;
 }
 .code-view-input {
   position: absolute;
