@@ -270,13 +270,22 @@ impl EditableDocument {
     }
 }
 
-/// Highlight raw source for the code view via the reader's own `highlight_code`
-/// (the fenced-code-block path). Returns the inner markup for a `<code>`
+/// Highlight raw source for the code view. Returns the inner markup for a `<code>`
 /// element, falling back to escaped text when the language has no definition.
+///
+/// Markdown goes through `color_markdown_source`, which reads it with the parser
+/// the reading view already uses; syntect's Markdown grammar costs seconds on a
+/// large file where that parse costs milliseconds. The data formats keep syntect,
+/// where they tokenize in well under a tenth of a second.
 pub fn render_source_view_html(source: &str, format: DocumentFormat) -> String {
-    language_definition(format.language_token())
-        .and_then(|language| highlight_code(source, &language))
-        .unwrap_or_else(|| encode_text(source).to_string())
+    match format {
+        DocumentFormat::Markdown => color_markdown_source(source),
+        DocumentFormat::Xml | DocumentFormat::Json | DocumentFormat::Yaml => {
+            language_definition(format.language_token())
+                .and_then(|language| highlight_code(source, &language))
+                .unwrap_or_else(|| encode_text(source).to_string())
+        }
+    }
 }
 
 /// One top-level block, tying a stable id and kind to its exact source byte

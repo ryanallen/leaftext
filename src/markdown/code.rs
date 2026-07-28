@@ -305,6 +305,38 @@ fn class_bit(class: &str) -> u64 {
         .unwrap_or(0)
 }
 
+/// The bits for a set of scope atoms named directly rather than parsed out of a
+/// syntect scope — how `source.rs` says what a Markdown construct carries.
+pub(crate) fn atom_bits(atoms: &[&str]) -> u64 {
+    atoms.iter().fold(0u64, |bits, atom| bits | class_bit(atom))
+}
+
+/// The class list for everything `carried`, as the union of the rules it
+/// satisfies. A class in no satisfied rule cannot affect the cascade, so dropping
+/// it paints the same — and dropping all of them means no element is needed.
+pub(crate) fn styled_class_list(carried: u64) -> String {
+    let styled = syntax_rule_masks()
+        .iter()
+        .filter(|rule| *rule & !carried == 0)
+        .fold(0u64, |mask, rule| mask | rule);
+
+    let mut list = String::new();
+    if styled == 0 {
+        return list;
+    }
+    for (index, class) in styled_syntax_classes().iter().enumerate() {
+        if styled & (1u64 << index) == 0 {
+            continue;
+        }
+        if !list.is_empty() {
+            list.push(' ');
+        }
+        list.push_str("syn-");
+        list.push_str(class);
+    }
+    list
+}
+
 /// Highlight `code` as one `<span class="syn-…">` per run of identically-styled
 /// text. Syntect's `ClassedHTMLGenerator` instead nests a span per scope level
 /// naming every scope atom, which on a 4 MB glossary was 336k spans carrying 16 MB
@@ -359,7 +391,7 @@ pub(crate) fn highlight_code(code: &str, language: &LanguageDefinition) -> Optio
 /// Append `text` under the class list `wanted`, reusing the span already open
 /// when the list has not changed — that reuse is what merges adjacent tokens
 /// into one element.
-fn push_run(html: &mut String, open: &mut String, wanted: &str, text: &str) {
+pub(crate) fn push_run(html: &mut String, open: &mut String, wanted: &str, text: &str) {
     if text.is_empty() {
         return;
     }
@@ -399,40 +431,19 @@ impl ScopeClasses {
         bits
     }
 
-    /// The stack's class list, as the union of the rules it satisfies. A class in
-    /// no satisfied rule cannot affect the cascade, so dropping it paints the
-    /// same — and dropping all of them means no element is needed.
+    /// The stack's class list, cached: a document reuses the same few stacks for
+    /// every one of its tokens.
     fn write_stack(&mut self, out: &mut String, stack: &ScopeStack) {
         let carried = stack
             .scopes
             .iter()
             .fold(0u64, |bits, scope| bits | self.scope_bits(*scope));
-        let styled = syntax_rule_masks()
-            .iter()
-            .filter(|rule| *rule & !carried == 0)
-            .fold(0u64, |mask, rule| mask | rule);
-
         out.clear();
-        if styled == 0 {
-            return;
-        }
-        if let Some(list) = self.lists.get(&styled) {
-            out.push_str(list);
-            return;
-        }
-        let mut list = String::new();
-        for (index, class) in styled_syntax_classes().iter().enumerate() {
-            if styled & (1u64 << index) == 0 {
-                continue;
-            }
-            if !list.is_empty() {
-                list.push(' ');
-            }
-            list.push_str("syn-");
-            list.push_str(class);
-        }
-        out.push_str(&list);
-        self.lists.insert(styled, list);
+        let list = self
+            .lists
+            .entry(carried)
+            .or_insert_with(|| styled_class_list(carried));
+        out.push_str(list);
     }
 }
 

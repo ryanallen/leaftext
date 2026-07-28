@@ -13,6 +13,7 @@ mod image_protocol;
 mod images;
 mod paths;
 mod rawhtml;
+mod source;
 
 // Re-exported so `markdown::x` reaches every item, wherever it lives.
 pub(crate) use code::*;
@@ -25,6 +26,7 @@ pub(crate) use image_protocol::*;
 pub(crate) use images::*;
 pub(crate) use paths::*;
 pub(crate) use rawhtml::*;
+pub(crate) use source::*;
 
 // The crate's public surface. A pub(crate) glob cannot carry these out of the
 // crate, and lib.rs re-exports them, so name them explicitly.
