@@ -138,6 +138,11 @@ let cvInput = null;
 // synchronously on load, before code-view.js's own top level has run.
 let monacoEditor = null;
 let monacoChangeSub = null;
+// The editor's layout-change subscription, which re-derives the bounded wrap
+// column (see applyCodeViewWrapColumn) whenever the width or font changes, and
+// the column it last set — kept here so teardown disposes/resets them.
+let monacoLayoutSub = null;
+let codeViewWrapColumn = 0;
 let monacoLoadPromise = null;
 // The last textarea value, mirrored so a save (and the debounced re-highlight)
 // send the current buffer even if a keystroke is still within the debounce.

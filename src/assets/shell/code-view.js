@@ -770,6 +770,37 @@ function reskinMonacoForTheme() {
   if (codeFont) monacoEditor.updateOptions({ fontFamily: codeFont });
 }
 
+// Word wrap ends this many pixels short of the minimap. Monaco has no
+// right-padding option and its own 'on' wrap fills flush to the minimap's left
+// edge, tucking the last characters under the minimap's drop-shadow. So the wrap
+// is 'bounded' and we drive the column: narrow enough to clear the shadow and
+// leave a right gap that echoes the ~10px lineDecorationsWidth gap on the text's
+// left (a few px of that gap is the shadow, the rest is clear space).
+const CODE_VIEW_WRAP_RIGHT_GAP_PX = 16;
+
+// Set the bounded wrap column so wrapped text stops CODE_VIEW_WRAP_RIGHT_GAP_PX
+// short of the minimap. Monaco's own wrap column is floor((contentWidth - 2) /
+// charWidth) with the scrollbar hidden; this is that minus the gap. contentWidth
+// is the text region (gutter and minimap already excluded) and the code font is
+// monospace, so a pixel width maps cleanly to a column. Runs after create and on
+// every layout change (window resize, font swap); only writes when the column
+// actually changed, so the updateOptions it makes doesn't loop back through
+// onDidLayoutChange (contentWidth doesn't depend on the wrap column).
+function applyCodeViewWrapColumn() {
+  if (!monacoEditor || !window.LeafMonaco) return;
+  const info = monacoEditor.getLayoutInfo();
+  const font = monacoEditor.getOption(window.LeafMonaco.editor.EditorOption.fontInfo);
+  const charWidth = font && font.typicalHalfwidthCharacterWidth;
+  if (!charWidth || !info || !info.contentWidth) return;
+  const column = Math.max(
+    1,
+    Math.floor((info.contentWidth - CODE_VIEW_WRAP_RIGHT_GAP_PX - 2) / charWidth)
+  );
+  if (column === codeViewWrapColumn) return;
+  codeViewWrapColumn = column;
+  monacoEditor.updateOptions({ wordWrapColumn: column });
+}
+
 // Create the editor in `container`, relay content changes to the source-splice
 // path, and land where the reader was if a source offset was carried across the
 // toggle. Skinned for now with Monaco's own light/dark theme — the Leaf theme
@@ -782,7 +813,13 @@ function createMonacoEditor(monaco, container, state, text) {
     value: text,
     language: monacoLanguageFor(state),
     theme: defineLeafMonacoTheme(monaco),
-    wordWrap: 'on',
+    // Bounded, not 'on': 'on' wraps flush to the minimap's left edge, tucking the
+    // last characters under its drop-shadow. applyCodeViewWrapColumn drives the
+    // column so the text stops short of the minimap with a right gap. The initial
+    // column is a placeholder — it is recomputed from the real width right after
+    // create, and on every layout change after.
+    wordWrap: 'bounded',
+    wordWrapColumn: 120,
     // showSlider 'always' — the viewport box stays visible instead of only on hover.
     minimap: { enabled: true, showSlider: 'always' },
     automaticLayout: true,
@@ -798,6 +835,9 @@ function createMonacoEditor(monaco, container, state, text) {
     renderLineHighlight: 'none',
     // No scrollbars — the reader hides its own too; the wheel and the minimap do
     // the scrolling. And no overview ruler, so the minimap is the rightmost thing.
+    // verticalScrollbarSize stays 0: it reserves space to the RIGHT of the
+    // minimap, so any value shoves the minimap off the window edge — the right gap
+    // is done through the wrap column instead (applyCodeViewWrapColumn).
     scrollbar: {
       vertical: 'hidden',
       horizontal: 'hidden',
@@ -814,6 +854,9 @@ function createMonacoEditor(monaco, container, state, text) {
     if (path) setDirtyState(path, true);
     scheduleSourceUpdate();
   });
+  // Keep the wrap gap in step with the width: set it now, then on every relayout.
+  monacoLayoutSub = monacoEditor.onDidLayoutChange(applyCodeViewWrapColumn);
+  applyCodeViewWrapColumn();
   const srcOffset = pendingCodeViewSrcOffset;
   pendingCodeViewSrcOffset = null;
   if (srcOffset != null && !pendingViewAtTop) {

@@ -193,8 +193,13 @@ function cvTeardownEditor() {
       monacoChangeSub.dispose();
       monacoChangeSub = null;
     }
+    if (monacoLayoutSub) {
+      monacoLayoutSub.dispose();
+      monacoLayoutSub = null;
+    }
     monacoEditor.dispose();
     monacoEditor = null;
+    codeViewWrapColumn = 0;
   }
   if (!cvEd) return;
   if (cvEd.renumberTimer) window.clearTimeout(cvEd.renumberTimer);

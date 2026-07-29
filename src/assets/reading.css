@@ -3273,6 +3273,14 @@ body:has(#readerToolbar:not([hidden])) {
   border-radius: var(--leaf-radius-sm, 6px);
   box-sizing: border-box;
 }
+/* A hairline down the minimap rail's left edge, in the page-border token, so the
+   rail is walled off from the text the same way the page card is walled by its
+   own border. A left box-shadow, not border-left: Monaco sizes the minimap canvas
+   to the element's full width, so a real border would shift/clip it by a pixel —
+   the shadow paints the stroke in the wrap gap without touching the layout. */
+.code-view-monaco .monaco-editor .minimap {
+  box-shadow: -1px 0 0 0 var(--app-border);
+}
 /* Laid out like .reader-layout. The rail it shares is outside the page entirely,
    so nothing here reserves room for it. */
 .code-view {
