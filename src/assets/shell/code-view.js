@@ -770,32 +770,40 @@ function reskinMonacoForTheme() {
   if (codeFont) monacoEditor.updateOptions({ fontFamily: codeFont });
 }
 
-// Word wrap ends this many pixels short of the minimap. Monaco has no
+// Word wrap ends roughly this many pixels short of the minimap. Monaco has no
 // right-padding option and its own 'on' wrap fills flush to the minimap's left
-// edge, tucking the last characters under the minimap's drop-shadow. So the wrap
-// is 'bounded' and we drive the column: narrow enough to clear the shadow and
-// leave a right gap that echoes the ~10px lineDecorationsWidth gap on the text's
-// left (a few px of that gap is the shadow, the rest is clear space).
+// edge, tucking the last characters under it. The rail's left divider stands 8px
+// off the minimap, so 16px here leaves the text ~8px clear of that divider — the
+// gap the owner asked for. Converted to whole columns below.
 const CODE_VIEW_WRAP_RIGHT_GAP_PX = 16;
 
-// Set the bounded wrap column so wrapped text stops CODE_VIEW_WRAP_RIGHT_GAP_PX
-// short of the minimap. Monaco's own wrap column is floor((contentWidth - 2) /
-// charWidth) with the scrollbar hidden; this is that minus the gap. contentWidth
-// is the text region (gutter and minimap already excluded) and the code font is
-// monospace, so a pixel width maps cleanly to a column. Runs after create and on
-// every layout change (window resize, font swap); only writes when the column
-// actually changed, so the updateOptions it makes doesn't loop back through
-// onDidLayoutChange (contentWidth doesn't depend on the wrap column).
+// Set the bounded wrap column so wrapped text stops ~CODE_VIEW_WRAP_RIGHT_GAP_PX
+// short of the minimap, and publish the minimap's width to CSS. info.viewportColumn
+// is Monaco's OWN natural wrap column ('on' would land there — flush to the
+// minimap), so pulling a whole number of columns off it lands the wrap a
+// deterministic distance short. Deriving the column from contentWidth by hand
+// instead double-floored the pixel gap and drifted to ~1 column, leaving the text
+// nearly touching the rail. The gap in columns is the pixel gap over the monospace
+// char width, rounded up so it never comes out short. The minimap width goes to
+// --cv-minimap-width because only Monaco knows it and the page frame (top divider,
+// bottom stroke) has to stop at the minimap's left edge. Runs after create and on
+// every layout change; only writes the column when it changed, so the updateOptions
+// it makes doesn't loop back through onDidLayoutChange.
 function applyCodeViewWrapColumn() {
   if (!monacoEditor || !window.LeafMonaco) return;
   const info = monacoEditor.getLayoutInfo();
+  if (!info) return;
+  if (info.minimap) {
+    document.documentElement.style.setProperty(
+      '--cv-minimap-width',
+      `${info.minimap.minimapWidth}px`
+    );
+  }
   const font = monacoEditor.getOption(window.LeafMonaco.editor.EditorOption.fontInfo);
   const charWidth = font && font.typicalHalfwidthCharacterWidth;
-  if (!charWidth || !info || !info.contentWidth) return;
-  const column = Math.max(
-    1,
-    Math.floor((info.contentWidth - CODE_VIEW_WRAP_RIGHT_GAP_PX - 2) / charWidth)
-  );
+  if (!charWidth || !info.viewportColumn) return;
+  const gapColumns = Math.ceil(CODE_VIEW_WRAP_RIGHT_GAP_PX / charWidth);
+  const column = Math.max(1, info.viewportColumn - gapColumns);
   if (column === codeViewWrapColumn) return;
   codeViewWrapColumn = column;
   monacoEditor.updateOptions({ wordWrapColumn: column });

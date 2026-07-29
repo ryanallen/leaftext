@@ -200,6 +200,9 @@ function cvTeardownEditor() {
     monacoEditor.dispose();
     monacoEditor = null;
     codeViewWrapColumn = 0;
+    // Drop the published minimap width so a stale value can't frame the reading
+    // view if it ever read the property.
+    document.documentElement.style.removeProperty('--cv-minimap-width');
   }
   if (!cvEd) return;
   if (cvEd.renumberTimer) window.clearTimeout(cvEd.renumberTimer);

@@ -3259,6 +3259,46 @@ body:has(#readerToolbar:not([hidden])) {
    edge, matching the reading view's framing. No surgery on Monaco's internals. */
 .reader-shell.code-view-monaco-shell {
   overflow: hidden;
+  /* No card borders of its own here: the minimap runs flush to the shell's right
+     edge, so the page frame must wrap only the text and stop at the minimap's left
+     stroke — which a static border can't do. The left edge and the (trimmed)
+     bottom edge are redrawn by ::after below; the top edge is the app bar's
+     divider (also trimmed below); the right side is the minimap rail. */
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 0;
+}
+/* The page frame for the text area: the left edge full height, and the bottom
+   edge stopped at the minimap's left stroke (--cv-minimap-width from the shell's
+   right, plus the 8px the stroke stands off). One box owns both edges, so the
+   bottom-left corner rounds as it did before. Kept inside the padding box so the
+   shell's overflow:hidden doesn't clip it; pointer-events:none so Monaco still
+   takes the clicks. */
+.reader-shell.code-view-monaco-shell::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: var(--app-bar-height);
+  bottom: 0;
+  right: calc(var(--cv-minimap-width, 0px) + 8px);
+  border-left: 1px solid var(--app-border);
+  border-bottom: 1px solid var(--app-border);
+  border-bottom-left-radius: var(--leaf-radius-md);
+  pointer-events: none;
+}
+/* Trim the app bar's reader divider (the card's top edge) to the same minimap
+   stroke, measured from the window's right edge: the reader gutter to the shell,
+   then the minimap and its 8px stand-off. Was carried to the card's rounded
+   right corner, which no longer exists in code view. */
+:root[data-code-view="true"] .app-bar::after {
+  right: calc(var(--reader-gutter) + var(--cv-minimap-width, 0px) + 8px);
+}
+/* The top-right corner arc turns the app bar's divider down into the card's right
+   border — but there is no right border in code view, so the arc has nothing to
+   join and would just draw a stray curve over the minimap. */
+:root[data-code-view="true"] .reader-corner-tr {
+  display: none;
 }
 .code-view-monaco {
   position: absolute;
@@ -3273,13 +3313,22 @@ body:has(#readerToolbar:not([hidden])) {
   border-radius: var(--leaf-radius-sm, 6px);
   box-sizing: border-box;
 }
-/* A hairline down the minimap rail's left edge, in the page-border token, so the
-   rail is walled off from the text the same way the page card is walled by its
-   own border. A left box-shadow, not border-left: Monaco sizes the minimap canvas
-   to the element's full width, so a real border would shift/clip it by a pixel —
-   the shadow paints the stroke in the wrap gap without touching the layout. */
-.code-view-monaco .monaco-editor .minimap {
-  box-shadow: -1px 0 0 0 var(--app-border);
+/* A hairline standing off the minimap rail's left edge, in the page-border token,
+   so the rail is walled off from the text the same way the page card is walled by
+   its own border. A ::before, not border-left or box-shadow: Monaco sizes the
+   minimap canvas to the element's full width (a real border would shift/clip it)
+   and a box-shadow can't be offset without widening into a solid bar. The pseudo
+   sits 8px out in the wrap gap so it doesn't touch the preview panel; Monaco
+   positions .minimap absolutely, so it already anchors the pseudo. */
+.code-view-monaco .monaco-editor .minimap::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -8px;
+  width: 1px;
+  background: var(--app-border);
+  pointer-events: none;
 }
 /* Laid out like .reader-layout. The rail it shares is outside the page entirely,
    so nothing here reserves room for it. */
