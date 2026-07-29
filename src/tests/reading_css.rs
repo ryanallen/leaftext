@@ -863,6 +863,28 @@ fn the_page_ends_above_the_floating_bar() {
     assert_contains(css, "margin-top: var(--app-bar-height);");
 }
 
+// Monaco sizes the line-number gutter to fit the widest number and right-aligns the
+// numbers in it, so at five digits — its minimum width — the number's left edge lands
+// exactly on the page frame's border and the two touch. The stand-off has to be a
+// transform: the gutter's width is something Monaco measures and re-lays-out from, so
+// anything that changes the box feeds back into its own layout.
+#[test]
+fn the_code_views_line_numbers_stand_off_the_page_frame() {
+    let css = reading_mode_css();
+
+    assert_contains(css, "  --cv-line-number-pad: 8px;");
+    let numbers = rule_body(
+        css,
+        ".code-view-monaco .monaco-editor .margin-view-overlays .line-numbers {",
+    );
+    assert_contains(numbers, "transform: translateX(var(--cv-line-number-pad));");
+    // Not padding or width — see above.
+    assert!(
+        !numbers.contains("padding") && !numbers.contains("width:"),
+        "the stand-off must not change the box Monaco measures: {numbers}"
+    );
+}
+
 #[test]
 fn the_map_takes_the_column_the_minimap_is_not_using() {
     let html = app_shell_html();

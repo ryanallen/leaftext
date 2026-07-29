@@ -838,6 +838,37 @@ function applyCodeViewWrapColumn() {
   monacoEditor.updateOptions({ wordWrapColumn: column });
 }
 
+// Room to leave above the first line and below the last one. Monaco puts line 1
+// flush against the top of its box and the last line flush against the bottom, and
+// both of those edges are under .reader-edge-fade — the ~36px of page that
+// dissolves to its own color where the document slides under the app bar and where
+// it meets the card's stroke. Scrolled to either end there is nothing left to
+// dissolve, so the wash lands on text that is meant to be read: the first line came
+// out half erased. The reading view never shows this because its page carries the
+// same clearance as padding; this is that padding, inside the editor's own scroll
+// height, so no line can ever sit in the wash.
+//
+// Both numbers are taken from the reading view rather than restated. The top gap is
+// READER_CONTENT_TOP_GAP, measured from the shell's top edge, and the editor's box
+// already starts below the app bar — so the bar's height comes off it, exactly as
+// --cv-pad-top did. The bottom is what .document-body leaves: the content pad plus
+// the room the floating toolbar needs, which is declared on <body> (a :has() rule),
+// not the root, so it has to be read from there or it comes back 0 and the last
+// line ends up under the bar.
+function monacoEditorPadding() {
+  const px = (value) => Number.parseFloat(value) || 0;
+  const root = getComputedStyle(document.documentElement);
+  const barHeight = px(root.getPropertyValue('--app-bar-height'));
+  const contentPad = px(root.getPropertyValue('--reader-content-pad'));
+  const toolbarSpace = px(
+    getComputedStyle(document.body).getPropertyValue('--reader-toolbar-space')
+  );
+  return {
+    top: Math.max(0, READER_CONTENT_TOP_GAP - barHeight),
+    bottom: contentPad + toolbarSpace,
+  };
+}
+
 // Create the editor in `container`, relay content changes to the source-splice
 // path, and land where the reader was if a source offset was carried across the
 // toggle. Skinned for now with Monaco's own light/dark theme — the Leaf theme
@@ -862,6 +893,9 @@ function createMonacoEditor(monaco, container, state, text) {
     automaticLayout: true,
     lineNumbers: 'on',
     scrollBeyondLastLine: false,
+    // Clears the top and bottom edge fades (and the floating toolbar) — see
+    // monacoEditorPadding.
+    padding: monacoEditorPadding(),
     fontFamily: codeFont || undefined,
     fontSize: 14,
     renderWhitespace: 'none',

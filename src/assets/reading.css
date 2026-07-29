@@ -3326,6 +3326,22 @@ body:has(#readerToolbar:not([hidden])) {
 .code-view-monaco {
   position: absolute;
   inset: var(--app-bar-height) 0 0 0;
+  /* How far the line numbers stand off the page frame's left border. */
+  --cv-line-number-pad: 8px;
+}
+/* Monaco right-aligns the line numbers in a box it sizes to fit the widest one, and
+   that box starts at the frame's left border — so once a file needs five digits (its
+   minimum width is five characters) the numbers sit against the stroke with nothing
+   between: on a 76,000-line document every "76001" touched the edge. The gutter has
+   no left padding to give, and its one width knob buys a whole character at a time,
+   which is about twice this gap. So the column is nudged off the border here.
+   A transform, not a layout change: Monaco measures this gutter and re-lays-out when
+   its width changes, and the nudge must not be one of the numbers it measures. So
+   nothing else moves — the room comes out of the gap Monaco keeps between the numbers
+   and the text, which is wide enough (its own 10px, plus the space the folding
+   controls sit in) to spare this and still read as a gap. */
+.code-view-monaco .monaco-editor .margin-view-overlays .line-numbers {
+  transform: translateX(var(--cv-line-number-pad));
 }
 /* The minimap's floating viewport box (the draggable "where am I" window),
    styled to echo the reader rail's viewport box: our minimap-viewport colors,

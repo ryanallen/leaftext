@@ -914,6 +914,63 @@ fn app_shell_refits_the_code_view_wrap_to_whatever_font_is_actually_measured() {
     );
 }
 
+// The edge fades dissolve the top and bottom of the page so a line sliced by the app
+// bar's edge or the card's stroke doesn't read as a rendering fault. Scrolled to
+// either end there is no slice to hide — and Monaco puts line 1 and the last line
+// flush against those same two edges, so the wash fell on text instead: the first
+// line of every document came up half erased. The editor therefore has to hold its
+// content clear of both edges the way the reading view's page does, which is why the
+// clearance is READ from the reading view's own numbers rather than typed again here.
+#[test]
+fn app_shell_holds_the_code_view_clear_of_the_edge_fades() {
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    // The option exists at all, and is Monaco's own padding — the scroll height grows,
+    // so the ends of the document can be scrolled out of the wash.
+    assert_contains(&html, "padding: monacoEditorPadding(),");
+
+    let padding = html
+        .split("function monacoEditorPadding()")
+        .nth(1)
+        .expect("the shell must size the code view's padding");
+    let padding = &padding[..padding.find("\n}\n").expect("padding body should close")];
+
+    // Top: the gap the reading view opens for its first block, less the bar the
+    // editor's box already starts below.
+    assert_contains(padding, "READER_CONTENT_TOP_GAP - barHeight");
+    assert_contains(padding, "root.getPropertyValue('--app-bar-height')");
+
+    // Bottom: what .document-body leaves — the content pad plus the floating toolbar's
+    // room. That one is declared on <body>, not the root, so it must be read from the
+    // body or it comes back 0 and the last line sits under the bar.
+    assert_contains(padding, "contentPad + toolbarSpace");
+    assert_contains(padding, "root.getPropertyValue('--reader-content-pad')");
+    assert_contains(
+        padding,
+        "getComputedStyle(document.body).getPropertyValue('--reader-toolbar-space')",
+    );
+    assert_contains(&css, "body:has(#readerToolbar:not([hidden])) {");
+
+    // And the clearance actually covers the fade, whatever the three numbers become:
+    // the top gap left over after the app bar has to be at least as deep as the wash.
+    let px = |name: &str| -> f64 {
+        let value = css
+            .split(&format!("{name}: "))
+            .nth(1)
+            .unwrap_or_else(|| panic!("{name} must be declared"));
+        value[..value.find("px").expect("a pixel length")]
+            .parse()
+            .expect("a number")
+    };
+    let clearance = px("--reader-content-top-gap") - px("--app-bar-height");
+    let fade = px("--reader-edge-fade-depth");
+    assert!(
+        clearance >= fade,
+        "the code view's top padding is {clearance}px, which does not clear the {fade}px fade"
+    );
+}
+
 #[test]
 fn code_view_line_numbers_are_a_counter_on_the_lines_they_label() {
     // They used to be a second layer, three elements per line — 228,000 of them on
