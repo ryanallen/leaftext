@@ -677,6 +677,99 @@ function currentAppearance() {
     : 'light';
 }
 
+// ---- Theme: paint Monaco with our colors --------------------------------------
+// Monaco can't read our CSS variables, so we translate the active theme's colors
+// into a Monaco theme and hand it over — the same palette the reading view uses,
+// so the code view and its minimap track every theme and light/dark change.
+
+// Resolve any CSS color (hex, rgb(a), or a var chain) to hex WITHOUT '#', via a
+// throwaway probe — the trick reportWindowChrome already uses. Six digits, or
+// eight when the color carries alpha.
+function leafResolveColor(value) {
+  if (!value) return null;
+  const probe = document.createElement('span');
+  probe.style.color = value;
+  document.body.appendChild(probe);
+  const resolved = getComputedStyle(probe).color;
+  probe.remove();
+  const parts = resolved.match(/[\d.]+/g);
+  if (!parts || parts.length < 3) return null;
+  const hex = (n) => Math.round(Number(n)).toString(16).padStart(2, '0');
+  const rgb = hex(parts[0]) + hex(parts[1]) + hex(parts[2]);
+  return parts.length >= 4 && Number(parts[3]) < 1 ? rgb + hex(Number(parts[3]) * 255) : rgb;
+}
+
+// One theme token's resolved color (hex, no '#'), or null when unset.
+function leafThemeToken(name) {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return raw ? leafResolveColor(raw) : null;
+}
+
+// Build and register the Monaco theme for the current appearance from our
+// palette, returning its name. Monaco's rule colors are hex without '#'; its UI
+// colors take '#rrggbb'/'#rrggbbaa'.
+function defineLeafMonacoTheme(monaco) {
+  const dark = currentAppearance() === 'dark';
+  const t = leafThemeToken;
+  const fg = t('--leaf-syntax-foreground') || (dark ? 'd4d4d4' : '2b2b2b');
+  const rule = (token, color, fontStyle) =>
+    color ? { token, foreground: color, ...(fontStyle ? { fontStyle } : {}) } : null;
+  // Monaco's own Markdown grammar: headings and list markers are `keyword`, bold
+  // `strong`, italic `emphasis`, inline/fenced code `variable`(`.source`), links
+  // `string.link`, blockquotes/comments `comment`, rules `meta.separator`, raw
+  // HTML `tag`/`attribute`. The plain names also cover XML/YAML.
+  const rules = [
+    rule('', fg),
+    rule('keyword', t('--leaf-syntax-keyword'), 'bold'),
+    rule('strong', fg, 'bold'),
+    rule('emphasis', fg, 'italic'),
+    rule('variable', t('--leaf-syntax-string')),
+    rule('variable.source', t('--leaf-syntax-string')),
+    rule('string', t('--leaf-syntax-string')),
+    rule('string.link', t('--leaf-markdown-link')),
+    rule('comment', t('--leaf-syntax-comment'), 'italic'),
+    rule('meta.separator', t('--leaf-syntax-punctuation')),
+    rule('tag', t('--leaf-syntax-function')),
+    rule('attribute.name', t('--leaf-syntax-function')),
+    rule('attribute.value', t('--leaf-syntax-string')),
+    rule('number', t('--leaf-syntax-number')),
+    rule('type', t('--leaf-syntax-type')),
+    rule('key', t('--leaf-syntax-function')),
+    rule('delimiter', t('--leaf-syntax-punctuation')),
+  ].filter(Boolean);
+  const hash = (name) => {
+    const v = t(name);
+    return v ? '#' + v : null;
+  };
+  const colors = {
+    'editor.background': hash('--leaf-syntax-background'),
+    'editor.foreground': '#' + fg,
+    'editorLineNumber.foreground': hash('--leaf-syntax-comment'),
+    'editorLineNumber.activeForeground': '#' + fg,
+    'editor.selectionBackground': hash('--leaf-editor-code-selection-background'),
+    'editorCursor.foreground': '#' + fg,
+    // No blue focus ring poking through the card's rounded corners.
+    focusBorder: '#00000000',
+    contrastBorder: '#00000000',
+  };
+  Object.keys(colors).forEach((key) => {
+    if (colors[key] == null) delete colors[key];
+  });
+  const name = dark ? 'leaf-dark' : 'leaf-light';
+  monaco.editor.defineTheme(name, { base: dark ? 'vs-dark' : 'vs', inherit: true, rules, colors });
+  return name;
+}
+
+// Re-skin the live editor after a theme or appearance change, and re-fit the code
+// font (per-family). No-op when the editor isn't up. Wired into leafTheme's
+// subscription in theme.js, which fires on family, mode, and system flips.
+function reskinMonacoForTheme() {
+  if (!monacoEditor || !window.LeafMonaco) return;
+  window.LeafMonaco.editor.setTheme(defineLeafMonacoTheme(window.LeafMonaco));
+  const codeFont = getComputedStyle(document.documentElement).getPropertyValue('--code-font').trim();
+  if (codeFont) monacoEditor.updateOptions({ fontFamily: codeFont });
+}
+
 // Create the editor in `container`, relay content changes to the source-splice
 // path, and land where the reader was if a source offset was carried across the
 // toggle. Skinned for now with Monaco's own light/dark theme — the Leaf theme
@@ -688,9 +781,10 @@ function createMonacoEditor(monaco, container, state, text) {
   monacoEditor = monaco.editor.create(container, {
     value: text,
     language: monacoLanguageFor(state),
-    theme: currentAppearance() === 'dark' ? 'vs-dark' : 'vs',
+    theme: defineLeafMonacoTheme(monaco),
     wordWrap: 'on',
-    minimap: { enabled: true },
+    // showSlider 'always' — the viewport box stays visible instead of only on hover.
+    minimap: { enabled: true, showSlider: 'always' },
     automaticLayout: true,
     lineNumbers: 'on',
     scrollBeyondLastLine: false,
@@ -700,6 +794,19 @@ function createMonacoEditor(monaco, container, state, text) {
     unicodeHighlight: { ambiguousCharacters: false, invisibleCharacters: false },
     quickSuggestions: false,
     occurrencesHighlight: 'off',
+    // No box/stroke around the line being edited.
+    renderLineHighlight: 'none',
+    // No scrollbars — the reader hides its own too; the wheel and the minimap do
+    // the scrolling. And no overview ruler, so the minimap is the rightmost thing.
+    scrollbar: {
+      vertical: 'hidden',
+      horizontal: 'hidden',
+      verticalScrollbarSize: 0,
+      horizontalScrollbarSize: 0,
+      handleMouseWheel: true,
+    },
+    overviewRulerLanes: 0,
+    overviewRulerBorder: false,
   });
   monacoChangeSub = monacoEditor.onDidChangeModelContent(() => {
     codeViewText = monacoEditor.getValue();

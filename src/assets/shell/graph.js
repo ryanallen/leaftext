@@ -158,6 +158,26 @@ function setReaderView(view) {
     toggleCodeView();
     return;
   }
+  // Leaving the map for the reading view. #app is hidden while the map is up, so
+  // revealing it re-lays-out the whole document — a stall on a big file with no
+  // feedback. Hold a spinner across it, matching graph→code, instead of freezing
+  // on the map. The 'graph' owner is what lets the spinner show while the map is
+  // still up (beginReaderLoading otherwise suppresses spinners there).
+  if (graphViewOpen && view === 'reading' && !codeViewActive) {
+    beginReaderLoading('graph');
+    // Two frames before the reveal so the spinner actually paints first — the
+    // reveal below re-lays-out the whole document in one blocking frame, and
+    // without the yield the spinner and the finished reader paint together, so it
+    // never shows (mirrors runViewRender's heavy-payload path).
+    window.requestAnimationFrame(() =>
+      window.requestAnimationFrame(() => {
+        setGraphView(false);
+        renderReaderToolbar(!!activeDocumentPath());
+        window.requestAnimationFrame(() => clearReaderLoading('graph'));
+      })
+    );
+    return;
+  }
   setGraphView(false);
   // Reading and code are the same document either way round, so both are the
   // one toggle — it carries the reader's place across the swap.

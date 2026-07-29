@@ -3254,14 +3254,24 @@ body:has(#readerToolbar:not([hidden])) {
   overflow-x: hidden;
   overflow-y: auto;
 }
-/* Monaco code view: Monaco owns its own scrolling and minimap, so the reader
-   shell does not scroll here and the editor fills the area below the app bar. */
+/* Monaco code view. Monaco owns its own scrolling and its own minimap; the shell
+   stops scrolling and the editor fills the reader area out to the left window
+   edge, matching the reading view's framing. No surgery on Monaco's internals. */
 .reader-shell.code-view-monaco-shell {
   overflow: hidden;
 }
 .code-view-monaco {
   position: absolute;
   inset: var(--app-bar-height) 0 0 0;
+}
+/* The minimap's floating viewport box (the draggable "where am I" window),
+   styled to echo the reader rail's viewport box: our minimap-viewport colors,
+   a border, and rounded corners. Nothing else about the minimap is touched. */
+.code-view-monaco .monaco-editor .minimap-slider {
+  background: var(--leaf-minimap-viewport-background) !important;
+  border: 1px solid var(--leaf-minimap-viewport-border);
+  border-radius: var(--leaf-radius-sm, 6px);
+  box-sizing: border-box;
 }
 /* Laid out like .reader-layout. The rail it shares is outside the page entirely,
    so nothing here reserves room for it. */

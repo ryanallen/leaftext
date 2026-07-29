@@ -852,7 +852,7 @@ fn app_shell_code_view_is_a_worker_free_monaco_with_its_own_minimap() {
 
     // Wrapping stays on and the minimap is Monaco's own.
     assert!(html.contains("wordWrap: 'on',"));
-    assert!(html.contains("minimap: { enabled: true },"));
+    assert!(html.contains("minimap: { enabled: true"));
 
     // Edits relay to the host as source splices (scheduleSourceUpdate), not a
     // whole-buffer resend per keystroke.

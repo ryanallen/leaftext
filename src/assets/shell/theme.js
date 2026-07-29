@@ -184,6 +184,9 @@ window.leafTheme.subscribe((theme) => {
   updateThemeSelection();
   reportWindowChrome(theme);
   refreshGraphColors();
+  // The code view is Monaco; repaint it (and its minimap) from our palette so it
+  // tracks the theme and light/dark like everything else.
+  reskinMonacoForTheme();
 });
 window.leafLocale.subscribe(() => {
   renderStaticText();
