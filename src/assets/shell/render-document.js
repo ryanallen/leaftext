@@ -6,6 +6,7 @@ function renderState() {
   readerAnchorBlocks = null;
   // Any full render shows the reading view, so we're no longer in the code view.
   codeViewActive = false;
+  cvTeardownEditor();
   document.documentElement.dataset.codeView = 'false';
   renderTabs(state);
   if (state.document) {

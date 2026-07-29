@@ -95,6 +95,7 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/shell/theme.js"),
     include_str!("assets/shell/render-state.js"),
     include_str!("assets/shell/code-view.js"),
+    include_str!("assets/shell/code-editor.js"),
     include_str!("assets/shell/reading-blocks.js"),
     include_str!("assets/shell/dom-to-markdown.js"),
     include_str!("assets/shell/reading-edits.js"),

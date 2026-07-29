@@ -17,7 +17,7 @@ Leaf Text is reading-first, but it is also editable. You can edit **in the readi
 | Line numbers | A gutter numbers each source line, staying pinned when long lines wrap |
 | Wrapped lines | Long lines wrap; the code view never scrolls sideways |
 | Minimap | The same [minimap](04-minimap.md) rail as the reading view, over the source |
-| Editing | Type directly; native undo, `Tab` inserts a tab character |
+| Editing | Type directly; undo/redo, selection, and clipboard work, and `Tab` inserts a tab character. Large files use a [purpose-built editor surface](#editing-the-source) so a keystroke stays fast |
 | Save | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears only with unsaved changes |
 | Unsaved marker | A tab with unsaved edits shows a dot beside its name |
 | Read-only | Documents open locked. The [padlock](#the-padlock) on the reading view's toolbar unlocks the one in front of you — except checkboxes, which toggle either way |
@@ -69,9 +69,9 @@ Opening another document while you are in the source view opens **that** documen
 
 The code view is a real editor surface: click anywhere and type.
 
-- Undo and redo are the platform's own (`Ctrl+Z` / `Cmd+Z`), and selection, caret movement, and IME input all behave natively.
-- `Tab` inserts a tab character at the caret instead of moving focus; `Shift+Tab` remains the keyboard escape out of the editor.
-- Edits re-highlight through the same Rust path on a short debounce, so color follows what you type. Highlighting costs time in proportion to the whole file rather than the edit, so past a quarter of a megabyte it stops running between keystrokes: the lines you change show as plain text until the view is next built, which beats the editor freezing on every pause. The result is kept against the buffer it came from, so leaving the source view and coming back is instant unless the text changed.
+- Selection, caret movement, undo and redo (`Ctrl+Z` / `Cmd+Z`), and clipboard (`Ctrl+C` / `X` / `V`) all work as you would expect. `Tab` inserts a tab character at the caret instead of moving focus; `Shift+Tab` remains the keyboard escape out of the editor.
+- A large file uses a purpose-built editor surface rather than a plain text box. A single editable element holding the whole document is what made the code view slow — seconds per keystroke on a multi-megabyte file, and a stutter on every unrelated redraw — because the cost of editable text scales with the length of the document, not the size of the edit. Past a quarter of a megabyte Leaf Text keeps the colored source as the only full-length surface and drives typing through a small off-document input, drawing the caret and selection itself, so a keystroke touches only the line it changes. Below that size the native text box is used unchanged. The difference is one of feel, not capability: the same keys, selection, and clipboard work either way. The trade-offs on the large-file path are that the platform's inline IME preview and screen-reader support are reduced (composed text still commits, and `Ctrl+C` still copies), and that copying from the right-click menu falls back to the keyboard shortcut.
+- Edits re-highlight through the same Rust path on a short debounce, so color follows what you type. Highlighting costs time in proportion to the whole file rather than the edit, so past that same quarter-megabyte mark it stops running between keystrokes: the lines you change show as plain text until the view is next built, which beats the editor freezing on every pause. The result is kept against the buffer it came from, so leaving the source view and coming back is instant unless the text changed.
 - What reaches the host is the edit, not the file: the offset, how much was removed, and what was typed. Sending a multi-megabyte buffer on every pause in typing cost a fifth of a second of it. The message carries the buffer's new length too, so if the host's copy ever disagreed it would ask for the whole text again rather than splice into a buffer it no longer understood.
 - Each tab keeps its own edit buffer: switching tabs or toggling back to the reading view never loses unsaved work.
 - The reading view renders the *buffer*, not the disk — toggle back before saving and you see your edits rendered.

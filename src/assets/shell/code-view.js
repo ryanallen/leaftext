@@ -393,6 +393,8 @@ function sourceSpliceSince(previous, next) {
 }
 
 function sendSourceUpdate() {
+  // The editor path defers rejoining its line array until the buffer is read.
+  cvSyncCodeViewText();
   if (lastSentSourceText === null) {
     lastSentSourceText = codeViewText;
     send({ command: 'updateSource', text: codeViewText });
@@ -434,6 +436,7 @@ function flushSourceUpdate() {
 // rewritten from what is on screen rather than from a buffer that has drifted.
 window.leafResyncSource = () => {
   if (!codeViewActive) return;
+  cvSyncCodeViewText();
   lastSentSourceText = codeViewText;
   send({ command: 'updateSource', text: codeViewText });
 };
@@ -563,6 +566,7 @@ function toggleCodeView() {
     if (codeViewActive) {
       pendingCodeViewSrcOffset = null;
       const lineIndex = topVisibleCodeLineIndex();
+      cvSyncCodeViewText();
       pendingReadingSrcOffset = lineIndex == null ? null : byteOffsetAtLineIndex(codeViewText, lineIndex);
     } else {
       pendingReadingSrcOffset = null;
@@ -616,22 +620,27 @@ window.addEventListener('keydown', (event) => {
 function renderCodeView(state) {
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
+  cvTeardownEditor();
   readerAnchorBlocks = null;
   // If the code view is already on screen (live reload, tab reorder), remember
   // where it sits so an in-place re-render doesn't jump to the top. An explicit
   // restored fraction or a pending toggle fraction still wins over this.
-  const priorCodeScroll = app.querySelector('.code-view-input') ? viewScrollFraction() : null;
+  const priorCodeScroll = app.querySelector('.code-view') ? viewScrollFraction() : null;
   app.className = 'reader-shell has-document code-view-shell';
   // Flag the code view at the document root so the header's active tab (a sibling
   // of the reader, not a descendant) can match the code surface color.
   document.documentElement.dataset.codeView = 'true';
   const text = state.text || '';
   lastSentSourceText = text;
+  // Past the gate the document-sized textarea is the whole cost of the view
+  // (seconds per keystroke, ~135 ms per restyle); the editor path draws its own
+  // caret instead and no editable element ever holds the document.
+  const useEditor = text.length > CODE_EDITOR_MAX_TEXTAREA_CHARS;
   app.innerHTML = `
-    <div class="code-view" data-language="${escapeAttr(state.displayName || '')}">
+    <div class="code-view${useEditor ? ' code-view-editor' : ''}" data-language="${escapeAttr(state.displayName || '')}">
       <div class="code-view-doc">
         <pre class="code-view-highlight" aria-hidden="true"><code class="language-${escapeAttr(state.language || '')}"></code></pre>
-        <textarea class="code-view-input" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea>
+        ${useEditor ? '' : '<textarea class="code-view-input" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea>'}
       </div>
     </div>`;
   // The code view always carries a rail, whatever the reading view's setting.
@@ -639,30 +648,38 @@ function renderCodeView(state) {
   const textarea = app.querySelector('.code-view-input');
   const highlight = app.querySelector('.code-view-highlight');
   const code = highlight.querySelector('code');
-  textarea.value = text;
-  setCodeViewColorLines(code, state.html, text);
-  sizeLineNumberGutter(app.querySelector('.code-view'), text.split('\n').length);
-  // Tab edits the document — insert a tab character at the caret — instead of
-  // moving focus to the next control. Inserted via execCommand so the
-  // textarea's native undo stack keeps working. Shift+Tab is left alone as the
-  // standard keyboard escape out of the editor.
-  textarea.addEventListener('keydown', (event) => {
-    if (event.key === 'Tab' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
-      event.preventDefault();
-      document.execCommand('insertText', false, '\t');
-    }
-  });
-  textarea.addEventListener('input', () => {
-    const prevText = codeViewText;
-    codeViewText = textarea.value;
-    // Patch only the changed lines into the color layer and gutter. A within-line
-    // edit splices chars into the existing spans so the line never drops to plain
-    // text; the debounced re-highlight corrects boundary shifts after.
-    updateCodeViewLinesIncremental(code, prevText, codeViewText);
-    const path = activeDocumentPath();
-    if (path) setDirtyState(path, true);
-    scheduleSourceUpdate();
-  });
+  if (useEditor) {
+    const inner = computeColorInner(state.html, text);
+    codeViewColorHtml = inner;
+    cvSetupEditor(code, app.querySelector('.code-view-doc'), text, inner);
+  } else {
+    textarea.value = text;
+    setCodeViewColorLines(code, state.html, text);
+  }
+  sizeLineNumberGutter(app.querySelector('.code-view'), useEditor ? cvEd.lines.length : text.split('\n').length);
+  if (textarea) {
+    // Tab edits the document — insert a tab character at the caret — instead of
+    // moving focus to the next control. Inserted via execCommand so the
+    // textarea's native undo stack keeps working. Shift+Tab is left alone as the
+    // standard keyboard escape out of the editor.
+    textarea.addEventListener('keydown', (event) => {
+      if (event.key === 'Tab' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+        event.preventDefault();
+        document.execCommand('insertText', false, '\t');
+      }
+    });
+    textarea.addEventListener('input', () => {
+      const prevText = codeViewText;
+      codeViewText = textarea.value;
+      // Patch only the changed lines into the color layer and gutter. A within-line
+      // edit splices chars into the existing spans so the line never drops to plain
+      // text; the debounced re-highlight corrects boundary shifts after.
+      updateCodeViewLinesIncremental(code, prevText, codeViewText);
+      const path = activeDocumentPath();
+      if (path) setDirtyState(path, true);
+      scheduleSourceUpdate();
+    });
+  }
   // Wire the reader's minimap to this DOM: rail drag/click, the resize observer,
   // and the first thumbnail build. The global #app scroll listener keeps the
   // viewport box in sync while scrolling.
@@ -678,9 +695,12 @@ function renderCodeView(state) {
   // view (yanking to the bottom). Park at the start, focus without scrolling,
   // then land where we should: an explicit restored position (returning to a
   // tab left in code view), else a pending toggle fraction, else the position
-  // the code view already held (in-place re-render).
-  textarea.setSelectionRange(0, 0);
-  textarea.focus({ preventScroll: true });
+  // the code view already held (in-place re-render). The editor path focused
+  // its own input in cvSetupEditor.
+  if (textarea) {
+    textarea.setSelectionRange(0, 0);
+    textarea.focus({ preventScroll: true });
+  }
   const explicit = typeof state.scrollFraction === 'number' ? state.scrollFraction : null;
   const srcOffset = pendingCodeViewSrcOffset;
   pendingCodeViewSrcOffset = null;
@@ -693,7 +713,9 @@ function renderCodeView(state) {
   // block landing and let the fraction (0) fall through to a flush-top landing.
   if (explicit == null && !atTop && srcOffset != null) {
     const lineIndex = lineIndexAtByteOffset(text, srcOffset);
-    const row = code.children[Math.min(lineIndex, code.children.length - 1)];
+    const row = cvEd
+      ? cvLineEl(Math.min(lineIndex, cvEd.lines.length - 1))
+      : code.children[Math.min(lineIndex, code.children.length - 1)];
     if (row) {
       const shellRect = app.getBoundingClientRect();
       const rowRect = row.getBoundingClientRect();

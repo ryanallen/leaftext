@@ -126,6 +126,12 @@ const undoableByPath = new Map();
 // Whether the reader is currently showing raw source instead of the rendered
 // document. Reset by renderState(), set by leafShowCodeView().
 let codeViewActive = false;
+// The large-document code editor's state and its one hidden input (see
+// code-editor.js). Declared here with the other editing globals because
+// renderState() — which tears the editor down — runs synchronously on load,
+// before code-editor.js's own top level has executed.
+let cvEd = null;
+let cvInput = null;
 // The last textarea value, mirrored so a save (and the debounced re-highlight)
 // send the current buffer even if a keystroke is still within the debounce.
 let codeViewText = '';

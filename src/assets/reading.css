@@ -3327,6 +3327,92 @@ body:has(#readerToolbar:not([hidden])) {
   background: var(--code-block-selection-background);
   color: transparent;
 }
+/* ---- The large-document editor path (.code-view-editor) ------------------
+   No document-sized editable element exists here: the color layer is the only
+   full-height surface, input goes through the fixed .cv-hidden-input on
+   <body>, and caret/selection are drawn. All measured on a 4 MB / 76k-line
+   file — the textarea this replaces cost ~95 ms a keystroke and seconds to
+   enter. */
+/* Lines are grouped so Blink relays out one chunk, not 76,000 siblings, when a
+   line changes. Plain block wrappers; wrapping metrics are inherited the same
+   way as bare lines. */
+.cv-chunk {
+  display: block;
+}
+/* Numbers come from the line's own data-ln, not the counter: Blink re-resolves
+   the whole document's counter tree on any line insertion (~410 ms) and even a
+   single counter-reset write (~60 ms), while attr() depends on the line alone.
+   The deferred sweep in code-editor.js keeps the attributes true. */
+.code-view-editor .cv-line {
+  counter-increment: none;
+}
+.code-view-editor .cv-line::before {
+  content: attr(data-ln);
+}
+.code-view-editor .code-view-doc {
+  cursor: text;
+}
+/* Drawn selection, under the text: the holder sits earlier in the stacking
+   layer than the highlight <pre>, so the color layer paints over it. */
+.cv-selection {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.cv-selection > div {
+  position: absolute;
+  background: var(--code-block-selection-background);
+}
+/* Drawn caret; visible only while the hidden input has focus. */
+.cv-caret {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2px;
+  height: 1.6em;
+  background: var(--preview-foreground);
+  z-index: 3;
+  pointer-events: none;
+  display: none;
+}
+.cv-focused .cv-caret {
+  display: block;
+  animation: cv-caret-blink 1.06s step-end infinite;
+}
+@keyframes cv-caret-blink {
+  0%,
+  49.9% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+/* The one editable element: 2px, parked at the caret's screen position so IME
+   candidate windows and the OS emoji panel open where typing happens. Fixed on
+   <body>, outside the document-tall scroller — an editable element inside it
+   taxes every page-wide restyle (~135 ms) no matter how small it is. */
+.cv-hidden-input {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 2px;
+  height: 18px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  opacity: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  resize: none;
+  overflow: hidden;
+  outline: none;
+  z-index: 5;
+  pointer-events: none;
+}
 .code-view .syn-comment {
   color: var(--syntax-comment);
   font-style: italic;
