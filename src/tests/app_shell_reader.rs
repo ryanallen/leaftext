@@ -839,33 +839,32 @@ fn code_blocks_get_a_copy_button() {
 }
 
 #[test]
-fn app_shell_edits_code_view_incrementally_without_whole_document_reflow() {
-    // Typing in the code view must patch only the lines that changed, never
-    // rewrite the whole color layer — that whole-document rewrite is what turned
-    // the document white on every keystroke and stuttered on large files.
+fn app_shell_code_view_is_a_worker_free_monaco_with_its_own_minimap() {
+    // The code view is Monaco now: it renders only what's on screen, so typing
+    // never re-lays-out the whole document — the stutter the old hand-built color
+    // layer fought line by line. Guard the load-bearing choices of that swap.
     let html = app_shell_html();
 
-    // The color layer is built one block per source line, split from the flat
-    // highlighter output so a single line can be recolored on its own.
-    assert!(html.contains("function highlightedHtmlToLines(html, expectedCount)"));
-    assert!(html.contains("function setCodeViewColorLines(codeEl, html, text)"));
+    // Entering the code view mounts a Monaco container and clears the reader's
+    // own rail — Monaco draws its own minimap.
+    assert!(html.contains(r#"app.innerHTML = '<div class="code-view-monaco"></div>';"#));
+    assert!(html.contains("setMinimapMarkup('');"));
 
-    // The per-keystroke handler diffs the lines and splices only the changed run,
-    // and does NOT set the whole color layer's text.
-    assert!(html.contains("updateCodeViewLinesIncremental(code, prevText, codeViewText)"));
-    assert!(!html.contains("code.textContent = codeViewText"));
+    // Wrapping stays on and the minimap is Monaco's own.
+    assert!(html.contains("wordWrap: 'on',"));
+    assert!(html.contains("minimap: { enabled: true },"));
 
-    // The minimap's content observer is detached in the code view (so no
-    // whole-document clone runs per keystroke); the thumbnail refreshes on the
-    // debounced edit cycle instead.
-    assert!(html.contains("function refreshCodeViewMinimap()"));
-    assert!(html.contains("minimapBodyObserver.disconnect();"));
+    // Edits relay to the host as source splices (scheduleSourceUpdate), not a
+    // whole-buffer resend per keystroke.
+    assert!(html.contains("monacoEditor.onDidChangeModelContent(() => {"));
+    assert!(html.contains("scheduleSourceUpdate();"));
 
-    // A debounced re-highlight repaints only the color lines that changed rather
-    // than rebuilding every line div, so recolor does not re-lay-out a large
-    // document. The recolor compares against the tracked per-line markup.
-    assert!(html.contains("function recolorCodeViewLines(codeEl, html, text)"));
-    assert!(html.contains("recolorCodeViewLines(code, state.html, codeViewText)"));
+    // The bundle loads lazily, and Monaco is handed an inert worker stub so it
+    // never spawns a worker or evaluates worker code on the main thread — the
+    // app's security policy (no 'unsafe-eval', no blob: workers) stays untouched.
+    assert!(html.contains("function loadMonacoOnce()"));
+    assert!(html.contains("self.MonacoEnvironment = {"));
+    assert!(html.contains("getWorker() {"));
 }
 
 #[test]

@@ -186,6 +186,16 @@ function cvSetupEditor(code, doc, text, inner) {
 }
 
 function cvTeardownEditor() {
+  // The code view is Monaco now; dispose it wherever the old editor was torn
+  // down (renderCodeView re-entry, and renderState when leaving for the reader).
+  if (monacoEditor) {
+    if (monacoChangeSub) {
+      monacoChangeSub.dispose();
+      monacoChangeSub = null;
+    }
+    monacoEditor.dispose();
+    monacoEditor = null;
+  }
   if (!cvEd) return;
   if (cvEd.renumberTimer) window.clearTimeout(cvEd.renumberTimer);
   if (cvEd.renumberFrame) window.cancelAnimationFrame(cvEd.renumberFrame);
@@ -198,6 +208,12 @@ function cvTeardownEditor() {
 // The code view's buffer, rejoined only when something is about to read it —
 // joining 76,000 lines per keystroke is exactly the O(document) trap.
 function cvSyncCodeViewText() {
+  // Monaco is authoritative when it's up: read the live buffer so a save (or the
+  // debounced splice) sends exactly what's on screen.
+  if (monacoEditor) {
+    codeViewText = monacoEditor.getValue();
+    return;
+  }
   if (cvEd && cvEd.textDirty) {
     codeViewText = cvEd.lines.join('\n');
     cvEd.textDirty = false;

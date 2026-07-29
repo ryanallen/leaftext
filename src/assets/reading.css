@@ -3254,6 +3254,15 @@ body:has(#readerToolbar:not([hidden])) {
   overflow-x: hidden;
   overflow-y: auto;
 }
+/* Monaco code view: Monaco owns its own scrolling and minimap, so the reader
+   shell does not scroll here and the editor fills the area below the app bar. */
+.reader-shell.code-view-monaco-shell {
+  overflow: hidden;
+}
+.code-view-monaco {
+  position: absolute;
+  inset: var(--app-bar-height) 0 0 0;
+}
 /* Laid out like .reader-layout. The rail it shares is outside the page entirely,
    so nothing here reserves room for it. */
 .code-view {

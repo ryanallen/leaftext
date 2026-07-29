@@ -509,6 +509,10 @@ function byteOffsetAtLineIndex(text, lineIndex) {
 // The 0-based index of the code view's top visible line, by binary search over
 // the in-order color lines.
 function topVisibleCodeLineIndex() {
+  if (monacoEditor) {
+    const ranges = monacoEditor.getVisibleRanges();
+    return ranges && ranges.length ? ranges[0].startLineNumber - 1 : null;
+  }
   const rows = app.querySelectorAll('.cv-line');
   if (!rows.length) return null;
   const topEdge = app.getBoundingClientRect().top + 1;
@@ -607,132 +611,151 @@ window.addEventListener('keydown', (event) => {
   undoLastEdit();
 });
 
-// Build the wrapped raw-source code view: three exactly-aligned layers (color,
-// line-number mirror, transparent textarea) that the reader shell (#app)
-// scrolls as one — the same scroller the reading view uses, whose native
-// scrollbar is already hidden. The document never scrolls sideways: long lines
-// wrap, and the line numbers stay pinned to their lines.
-//
-// The rail on the right is the reader's own document minimap — identical markup
-// and machinery (bindDocumentMinimap, updateMinimapViewport, the clone-based
-// thumbnail). It renders here regardless of the reading view's minimap setting
-// because it is the code view's vertical scroll affordance.
+// The raw-source code view is Monaco (the VS Code editor): it owns line
+// wrapping, virtualized rendering of huge files, and its own colored minimap.
+// The vendored bundle loads lazily on first entry; edits relay back to the host
+// as source splices (the same IPC the old editor used). Monaco scrolls
+// internally, so the reader shell does not scroll here and carries no rail.
+
+// Load the vendored Monaco bundle once, over the same leaf-asset channel the
+// other runtimes use (stylesheet linked, script injected). Monaco is handed an
+// inert worker stub so it never spawns a background worker — nor falls back to
+// evaluating worker code on the main thread — because colorizing and the minimap
+// are main-thread already and nothing we use needs one, which keeps the app's
+// security policy untouched.
+function loadMonacoOnce() {
+  if (window.LeafMonaco) return Promise.resolve(window.LeafMonaco);
+  if (monacoLoadPromise) return monacoLoadPromise;
+  monacoLoadPromise = new Promise((resolve, reject) => {
+    if (!self.MonacoEnvironment) {
+      self.MonacoEnvironment = {
+        getWorker() {
+          return {
+            postMessage() {},
+            addEventListener() {},
+            removeEventListener() {},
+            terminate() {},
+            onmessage: null,
+            onerror: null,
+          };
+        },
+      };
+    }
+    if (!document.getElementById('monacoStylesheet')) {
+      const link = document.createElement('link');
+      link.id = 'monacoStylesheet';
+      link.rel = 'stylesheet';
+      link.href = MONACO_CSS_URL;
+      document.head.appendChild(link);
+    }
+    loadScriptOnce(MONACO_SCRIPT_URL)
+      .then(() =>
+        window.LeafMonaco
+          ? resolve(window.LeafMonaco)
+          : reject(new Error('Monaco loaded without exposing LeafMonaco'))
+      )
+      .catch(reject);
+  });
+  return monacoLoadPromise;
+}
+
+// The Monaco language id for a code-view payload. Only the colorizers bundled
+// (Markdown, XML, YAML) are registered; anything else — including JSON until its
+// grammar is bundled — falls back to plain text, which still edits and minimaps.
+function monacoLanguageFor(state) {
+  const lang = (state.language || '').toLowerCase();
+  if (lang.includes('xml') || lang === 'tei') return 'xml';
+  if (lang.includes('yaml') || lang === 'yml') return 'yaml';
+  if (lang.includes('markdown') || lang === 'md' || lang === '') return 'markdown';
+  return 'plaintext';
+}
+
+// Light or dark, from the appearance the theme bootstrap stamps on :root.
+function currentAppearance() {
+  return document.documentElement.getAttribute('data-leaf-appearance') === 'dark'
+    ? 'dark'
+    : 'light';
+}
+
+// Create the editor in `container`, relay content changes to the source-splice
+// path, and land where the reader was if a source offset was carried across the
+// toggle. Skinned for now with Monaco's own light/dark theme — the Leaf theme
+// converter comes next.
+function createMonacoEditor(monaco, container, state, text) {
+  const codeFont = getComputedStyle(document.documentElement)
+    .getPropertyValue('--code-font')
+    .trim();
+  monacoEditor = monaco.editor.create(container, {
+    value: text,
+    language: monacoLanguageFor(state),
+    theme: currentAppearance() === 'dark' ? 'vs-dark' : 'vs',
+    wordWrap: 'on',
+    minimap: { enabled: true },
+    automaticLayout: true,
+    lineNumbers: 'on',
+    scrollBeyondLastLine: false,
+    fontFamily: codeFont || undefined,
+    fontSize: 14,
+    renderWhitespace: 'none',
+    unicodeHighlight: { ambiguousCharacters: false, invisibleCharacters: false },
+    quickSuggestions: false,
+    occurrencesHighlight: 'off',
+  });
+  monacoChangeSub = monacoEditor.onDidChangeModelContent(() => {
+    codeViewText = monacoEditor.getValue();
+    const path = activeDocumentPath();
+    if (path) setDirtyState(path, true);
+    scheduleSourceUpdate();
+  });
+  const srcOffset = pendingCodeViewSrcOffset;
+  pendingCodeViewSrcOffset = null;
+  if (srcOffset != null && !pendingViewAtTop) {
+    const lineIndex = lineIndexAtByteOffset(text, srcOffset);
+    monacoEditor.revealLineNearTop(lineIndex + 1);
+  }
+  pendingViewAtTop = false;
+  pendingViewScrollFraction = null;
+  monacoEditor.focus();
+}
+
+// Swap the reader shell over to Monaco for the active document's source. Monaco
+// loads lazily; the spinner (armed by the toggle) stays up until the editor is
+// on screen. Re-entering (live reload) disposes and rebuilds.
 function renderCodeView(state) {
+  cvTeardownEditor();
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
-  cvTeardownEditor();
   readerAnchorBlocks = null;
-  // If the code view is already on screen (live reload, tab reorder), remember
-  // where it sits so an in-place re-render doesn't jump to the top. An explicit
-  // restored fraction or a pending toggle fraction still wins over this.
-  const priorCodeScroll = app.querySelector('.code-view') ? viewScrollFraction() : null;
-  app.className = 'reader-shell has-document code-view-shell';
+  app.className = 'reader-shell has-document code-view-monaco-shell';
   // Flag the code view at the document root so the header's active tab (a sibling
   // of the reader, not a descendant) can match the code surface color.
   document.documentElement.dataset.codeView = 'true';
+  // Monaco draws its own minimap; the reader's rail does not belong here.
+  setMinimapMarkup('');
   const text = state.text || '';
   lastSentSourceText = text;
-  // Past the gate the document-sized textarea is the whole cost of the view
-  // (seconds per keystroke, ~135 ms per restyle); the editor path draws its own
-  // caret instead and no editable element ever holds the document.
-  const useEditor = text.length > CODE_EDITOR_MAX_TEXTAREA_CHARS;
-  app.innerHTML = `
-    <div class="code-view${useEditor ? ' code-view-editor' : ''}" data-language="${escapeAttr(state.displayName || '')}">
-      <div class="code-view-doc">
-        <pre class="code-view-highlight" aria-hidden="true"><code class="language-${escapeAttr(state.language || '')}"></code></pre>
-        ${useEditor ? '' : '<textarea class="code-view-input" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea>'}
-      </div>
-    </div>`;
-  // The code view always carries a rail, whatever the reading view's setting.
-  setMinimapMarkup(documentMinimapMarkup());
-  const textarea = app.querySelector('.code-view-input');
-  const highlight = app.querySelector('.code-view-highlight');
-  const code = highlight.querySelector('code');
-  if (useEditor) {
-    const inner = computeColorInner(state.html, text);
-    codeViewColorHtml = inner;
-    cvSetupEditor(code, app.querySelector('.code-view-doc'), text, inner);
-  } else {
-    textarea.value = text;
-    setCodeViewColorLines(code, state.html, text);
-  }
-  sizeLineNumberGutter(app.querySelector('.code-view'), useEditor ? cvEd.lines.length : text.split('\n').length);
-  if (textarea) {
-    // Tab edits the document — insert a tab character at the caret — instead of
-    // moving focus to the next control. Inserted via execCommand so the
-    // textarea's native undo stack keeps working. Shift+Tab is left alone as the
-    // standard keyboard escape out of the editor.
-    textarea.addEventListener('keydown', (event) => {
-      if (event.key === 'Tab' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
-        event.preventDefault();
-        document.execCommand('insertText', false, '\t');
+  codeViewText = text;
+  app.innerHTML = '<div class="code-view-monaco"></div>';
+  const container = app.querySelector('.code-view-monaco');
+  // runViewRender lowers the spinner right after this returns; re-raise on the
+  // next tick (only when a load is actually pending) so it stays up across the
+  // async load, then lower it once the editor is on screen.
+  Promise.resolve().then(() => {
+    if (codeViewActive && !window.LeafMonaco) beginReaderLoading();
+  });
+  loadMonacoOnce()
+    .then((monaco) => {
+      if (!codeViewActive || !container.isConnected) {
+        clearReaderLoading();
+        return;
       }
+      createMonacoEditor(monaco, container, state, text);
+      clearReaderLoading();
+    })
+    .catch((error) => {
+      console.error('code view: Monaco failed to load', error);
+      clearReaderLoading();
     });
-    textarea.addEventListener('input', () => {
-      const prevText = codeViewText;
-      codeViewText = textarea.value;
-      // Patch only the changed lines into the color layer and gutter. A within-line
-      // edit splices chars into the existing spans so the line never drops to plain
-      // text; the debounced re-highlight corrects boundary shifts after.
-      updateCodeViewLinesIncremental(code, prevText, codeViewText);
-      const path = activeDocumentPath();
-      if (path) setDirtyState(path, true);
-      scheduleSourceUpdate();
-    });
-  }
-  // Wire the reader's minimap to this DOM: rail drag/click, the resize observer,
-  // and the first thumbnail build. The global #app scroll listener keeps the
-  // viewport box in sync while scrolling.
-  bindDocumentMinimap();
-  // Detach the minimap's mutation observer: the document mutates on every
-  // keystroke here, and re-cloning it each time stuttered on large files. The
-  // thumbnail refreshes on the debounced edit cycle instead.
-  if (minimapBodyObserver) {
-    minimapBodyObserver.disconnect();
-    minimapBodyObserver = null;
-  }
-  // Setting .value parks the caret at the end, and focus() would scroll it into
-  // view (yanking to the bottom). Park at the start, focus without scrolling,
-  // then land where we should: an explicit restored position (returning to a
-  // tab left in code view), else a pending toggle fraction, else the position
-  // the code view already held (in-place re-render). The editor path focused
-  // its own input in cvSetupEditor.
-  if (textarea) {
-    textarea.setSelectionRange(0, 0);
-    textarea.focus({ preventScroll: true });
-  }
-  const explicit = typeof state.scrollFraction === 'number' ? state.scrollFraction : null;
-  const srcOffset = pendingCodeViewSrcOffset;
-  pendingCodeViewSrcOffset = null;
-  const atTop = pendingViewAtTop;
-  pendingViewAtTop = false;
-  let positioned = false;
-  // Landing on the reader's exact source line wins over any fraction, but only
-  // when this render isn't restoring an explicit saved position (a tab reopened
-  // in the code view) and wasn't toggled from the very top — there we skip the
-  // block landing and let the fraction (0) fall through to a flush-top landing.
-  if (explicit == null && !atTop && srcOffset != null) {
-    const lineIndex = lineIndexAtByteOffset(text, srcOffset);
-    const row = cvEd
-      ? cvLineEl(Math.min(lineIndex, cvEd.lines.length - 1))
-      : code.children[Math.min(lineIndex, code.children.length - 1)];
-    if (row) {
-      const shellRect = app.getBoundingClientRect();
-      const rowRect = row.getBoundingClientRect();
-      // Land the target line just below the top edge, echoing the reading gap.
-      app.scrollTop = Math.max(0, app.scrollTop + (rowRect.top - shellRect.top) - 12);
-      positioned = true;
-    }
-  }
-  if (!positioned) {
-    let fraction = explicit;
-    if (fraction == null) fraction = pendingViewScrollFraction;
-    if (fraction == null) fraction = priorCodeScroll;
-    const scrollable = Math.max(0, app.scrollHeight - app.clientHeight);
-    app.scrollTop = (fraction || 0) * scrollable;
-  }
-  pendingViewScrollFraction = null;
-  window.requestAnimationFrame(() => updateMinimapViewport());
 }
 
 // Enter the code view by fetching the payload the host staged. The colored source

@@ -132,6 +132,13 @@ let codeViewActive = false;
 // before code-editor.js's own top level has executed.
 let cvEd = null;
 let cvInput = null;
+// Monaco now backs the code view (see code-view.js). The editor instance, its
+// content-change subscription, and the one-time bundle loader promise live here
+// with the other editing globals because renderState() tears the editor down
+// synchronously on load, before code-view.js's own top level has run.
+let monacoEditor = null;
+let monacoChangeSub = null;
+let monacoLoadPromise = null;
 // The last textarea value, mirrored so a save (and the debounced re-highlight)
 // send the current buffer even if a keystroke is still within the debounce.
 let codeViewText = '';
