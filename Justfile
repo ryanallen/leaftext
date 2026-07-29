@@ -33,6 +33,11 @@ bundle-themes:
 check-themes:
     node scripts/bundle-themes.mjs --check
 
+# Rebuild the vendored Monaco bundle (the code view's editor). Manual, like the
+# other vendored assets — first: npm i --no-save monaco-editor@0.52.2 esbuild@0.24.0
+bundle-monaco:
+    node scripts/bundle-monaco.mjs
+
 verify: format-check check test check-vendor check-themes
 
 # Cut a release: commit, tag, and push so CI builds all platforms.

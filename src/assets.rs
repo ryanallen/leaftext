@@ -63,6 +63,13 @@ pub(crate) const PIXI_JS: &[u8] = include_bytes!("assets/vendor/pixi.min.js");
 pub(crate) const PIXI_UNSAFE_EVAL_JS: &[u8] =
     include_bytes!("assets/vendor/pixi-unsafe-eval.min.js");
 pub(crate) const D3_FORCE_JS: &[u8] = include_bytes!("assets/vendor/d3-force.min.js");
+// Monaco (the VS Code editor) powers the raw-source code view: line wrapping,
+// huge files, and a built-in colored minimap. Vendored as one self-contained
+// bundle — core editor plus the Markdown/XML/YAML colorizers, no language
+// services or web workers — built by `scripts/bundle-monaco.mjs`. The icon font
+// is inlined, so `monaco.js` + `monaco.css` is the whole of it.
+pub(crate) const MONACO_JS: &[u8] = include_bytes!("assets/vendor/monaco/monaco.js");
+pub(crate) const MONACO_CSS: &[u8] = include_bytes!("assets/vendor/monaco/monaco.css");
 pub(crate) const KATEX_JS: &[u8] = include_bytes!("assets/vendor/katex/katex.min.js");
 pub(crate) const KATEX_CSS: &[u8] = include_bytes!("assets/vendor/katex/katex.min.css");
 pub(crate) const KATEX_FONTS: &[(&str, &[u8])] = &[
@@ -200,6 +207,8 @@ pub(crate) fn bundled_asset_bytes(uri: &str) -> Option<(&'static str, &'static [
         "pixi.min.js" => Some(("text/javascript; charset=utf-8", PIXI_JS)),
         "pixi-unsafe-eval.min.js" => Some(("text/javascript; charset=utf-8", PIXI_UNSAFE_EVAL_JS)),
         "d3-force.min.js" => Some(("text/javascript; charset=utf-8", D3_FORCE_JS)),
+        "monaco/monaco.js" => Some(("text/javascript; charset=utf-8", MONACO_JS)),
+        "monaco/monaco.css" => Some(("text/css; charset=utf-8", MONACO_CSS)),
         "katex/katex.min.js" => Some(("text/javascript; charset=utf-8", KATEX_JS)),
         "katex/katex.min.css" => Some(("text/css; charset=utf-8", KATEX_CSS)),
         _ => {
