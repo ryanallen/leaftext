@@ -11,12 +11,11 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 | Theme | Amaranth, Fern, GitHub, Halcyon, Nightshade, Sage, Random | Fern |
 | Appearance | System, Light, Dark, Daylight | System |
 | Language | System, English, Simplified Chinese | System |
-| Speed Reader | On / Off | Off |
 | Minimap | On / Off | On |
 | Pager | On / Off | On |
 | Graph size | Focus, Medium, Large, Everything | Focus |
 
-One of these is also reachable without opening the panel: **Speed Reader** sits in the reading view's own tools on the [floating toolbar](02-navigation.md#the-toolbar), and the two places drive the same saved value.
+**Speed Reader** is not in this panel. It is a reading-view tool on the [floating toolbar](02-navigation.md#the-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest.
 
 Whether the rendered page can be typed into is **not** here. It is a padlock on the document in front of you — see [Editing](07-editing.md#the-padlock).
 
@@ -111,7 +110,7 @@ The app ships both language dictionaries locally and applies changes without a r
 
 ### Speed Reader
 
-- Off by default, and also on the reading view's [toolbar](02-navigation.md#the-toolbar)
+- Off by default, toggled from the reading view's [toolbar](02-navigation.md#the-toolbar) rather than this panel
 - Dims non-anchor prose text (including headings) so bold lead anchors carry the most contrast against the background
 - Quiets links to the dimmed prose color with a faint underline, until hover or keyboard focus brightens them
 - Regularizes existing bold text and adds bold lead anchors at word starts; all-caps acronyms (HTML, GFM) are bolded whole

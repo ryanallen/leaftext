@@ -378,8 +378,12 @@ function bindCrumbTrailButtons(hidden) {
   });
   const more = libraryCrumbTrail.querySelector('[data-crumb-more]');
   if (more) {
-    more.addEventListener('click', (event) => {
+    // On the press, and stopped there, so the menu's own close-on-outside-press
+    // does not fight this toggle -- same reasoning as the vault switcher.
+    more.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
       event.stopPropagation();
+      event.preventDefault();
       toggleCrumbMenu(more, folderMenuItems(hidden));
     });
   }
@@ -401,6 +405,14 @@ let crumbMenuOwner = null;
 // Which vault's settings the menu is showing, so a git answer arriving a second
 // later can redraw the panel it belongs to and no other.
 let crumbMenuVault = null;
+// Changing an already-set repository is deliberately a second step: the paste
+// field stays folded behind a button until this is on, so the common panel is
+// the short one and re-pointing takes a decision. Reset with the panel.
+let changeRepoRevealed = false;
+// The address each vault pointed at before its last change, so a wrong turn is
+// one click to undo. Kept for the session -- git overwrites the old URL and
+// keeps no copy, which is exactly how one got lost. Keyed by vault id.
+const previousRemoteByVault = new Map();
 function hideCrumbMenu() {
   if (crumbMenu.hidden) return;
   // Hand focus back to the "…" before hiding, or it would be stranded on a
@@ -413,6 +425,7 @@ function hideCrumbMenu() {
   }
   crumbMenuOwner = null;
   crumbMenuVault = null;
+  changeRepoRevealed = false;
 }
 // The folders the "…" stands in for; picking one enters it.
 function folderMenuItems(hidden) {
@@ -437,6 +450,9 @@ function vaultMenuItems() {
     title: window.leafLocale.t('library.vaults.all'),
     icon: rootIcon(!activeVaultId, 0),
     selected: !activeVaultId,
+    // Tagged so a status answer can flip this row's glyph in place instead of
+    // rebuilding the whole menu -- see refreshSwitcherGlyphs.
+    vaultId: 0,
     run: () => switchVault(0),
   }];
   for (const vault of leafVaults) {
@@ -446,12 +462,14 @@ function vaultMenuItems() {
       title: vault.rootPath || '',
       icon: rootIcon(vault.id === activeVaultId, vault.id),
       selected: vault.id === activeVaultId,
+      vaultId: vault.id,
       run: () => switchVault(vault.id),
       // The row's own button: everything you can do to this vault, in one
       // place. Visible, because a menu you have to right-click is a menu
       // nobody finds.
       edit: () => {
         crumbMenuVault = vault;
+        changeRepoRevealed = false;
         // Ask now rather than when a button is pressed: reading a repository is
         // disk work, and the panel should already know the answer by the time
         // anyone has read down to it.
@@ -468,6 +486,69 @@ function vaultMenuItems() {
     run: () => send({ command: 'createVault' }),
   });
   return items;
+}
+// The expanded "change repository" panel: names where the vault points now,
+// takes a new address, and saves only on Save. Nothing here reaches GitHub --
+// it sets the address; sending files is a separate Sync -- so a wrong paste can
+// be Cancelled, and the address it replaced is remembered to put back.
+function pushChangeRepoPanel(items, vault, repo) {
+  const current = repo.remoteUrl || repo.remote || '';
+  items.push({ note: window.leafLocale.t('library.vaults.sync.changeRepo.current', { url: current }) });
+  items.push({ note: window.leafLocale.t('library.vaults.sync.changeRepo.help') });
+  const closePanel = () => {
+    changeRepoRevealed = false;
+    showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
+  };
+  const saveRepo = () => {
+    const field = crumbMenu.querySelector('.repo-url-field');
+    const url = field ? field.value.trim() : '';
+    if (url && url !== current) {
+      if (current) previousRemoteByVault.set(vault.id, current);
+      send({ command: 'linkVaultRemote', id: vault.id, url });
+    }
+    closePanel();
+  };
+  items.push({
+    input: '',
+    fieldClass: 'repo-url-field',
+    commitOnBlur: false,
+    onEnter: saveRepo,
+    onEscape: closePanel,
+    placeholder: window.leafLocale.t('library.vaults.sync.pasteUrl'),
+  });
+  items.push({
+    buttons: [
+      {
+        label: window.leafLocale.t('library.vaults.sync.changeRepo.cancel'),
+        keepOpen: true,
+        run: closePanel,
+      },
+      {
+        label: window.leafLocale.t('library.vaults.sync.changeRepo.save'),
+        icon: MENU_CHECK_SVG,
+        primary: true,
+        keepOpen: true,
+        run: saveRepo,
+      },
+    ],
+  });
+  // The one it pointed at before the last change, offered back. Fills the field
+  // rather than saving straight away, so putting it back is still a decision you
+  // watch happen.
+  const previous = previousRemoteByVault.get(vault.id);
+  if (previous && previous !== current) {
+    items.push({
+      label: window.leafLocale.t('library.vaults.sync.changeRepo.restore', { url: previous }),
+      keepOpen: true,
+      run: () => {
+        const field = crumbMenu.querySelector('.repo-url-field');
+        if (field) {
+          field.value = previous;
+          field.focus();
+        }
+      },
+    });
+  }
 }
 // One vault's edit panel, shown in place of the switcher's list: its name, the
 // folder it points at, and the way to forget it. Reached from the row's button.
@@ -503,6 +584,22 @@ function vaultGitItems(vault) {
         keepOpen: true,
       run: () => send({ command: 'syncVault', id: vault.id }),
       });
+      // Re-pointing stays folded behind a button so the everyday panel is just
+      // "Sync" and a change takes a deliberate press, not a fat-finger.
+      if (!changeRepoRevealed) {
+        items.push({
+          label: window.leafLocale.t('library.vaults.sync.changeRepo'),
+          keepOpen: true,
+          run: () => {
+            changeRepoRevealed = true;
+            showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
+            const field = crumbMenu.querySelector('.repo-url-field');
+            if (field) field.focus();
+          },
+        });
+      } else {
+        pushChangeRepoPanel(items, vault, repo);
+      }
     } else {
       // A repository with nowhere to push. The same two routes as a fresh one.
       pushCreateRoutes(items, vault, state, busy);
@@ -596,7 +693,27 @@ function syncOutcomeText(state) {
 // else and the state is filed for the next time it is opened.
 function refreshVaultGitPanel(id) {
   if (!crumbMenuVault || crumbMenuVault.id !== id || crumbMenu.hidden) return;
+  // Not while someone is typing in it. `gh auth status` reaches the network, so
+  // its answer arrives a beat after the panel opens -- right as a name or an
+  // address is being entered. Rebuilding then would destroy the field mid-word,
+  // and destroying a focused field fires its blur, committing the half-typed
+  // value. The state is already filed; redraw once the field is left.
+  const active = document.activeElement;
+  if (active && active.classList.contains('crumb-menu-input') && crumbMenu.contains(active)) return;
   showCrumbMenu(crumbMenuOwner, editVaultMenuItems(crumbMenuVault));
+}
+// A status answer only changes a row's glyph (box vs cloud). Rebuilding the
+// whole menu for that -- which is what this used to do -- tore down every row,
+// so a click landing mid-rebuild hit a node already gone: the button that "only
+// worked sometimes". Swap just the glyph in place instead. Skipped while the
+// settings panel owns the menu (crumbMenuVault set), which has no such rows.
+function refreshSwitcherGlyphs() {
+  if (crumbMenu.hidden || crumbMenuOwner !== libraryVaultSwitch || crumbMenuVault) return;
+  for (const item of crumbMenu.querySelectorAll('.crumb-menu-item[data-vault-id]')) {
+    const id = Number(item.dataset.vaultId);
+    const glyph = item.querySelector('svg');
+    if (glyph) glyph.outerHTML = vaultGlyph(id === 0 ? !activeVaultId : id === activeVaultId, id);
+  }
 }
 // The header's sync button: shown only when this vault has a remote and work
 // that has not reached it -- uncommitted changes plus unpushed commits, both
@@ -689,10 +806,7 @@ window.leafSetVaultStatus = (id, repo) => {
   vaultGitByVault.set(id, Object.assign({}, previous || { id, tooling: {} }, { repo }));
   renderVaultSyncButton();
   renderLibraryVaultSwitch();
-  // An open menu is showing glyphs decided before this answer arrived.
-  if (crumbMenuOwner === libraryVaultSwitch && !crumbMenu.hidden) {
-    showCrumbMenu(libraryVaultSwitch, vaultMenuItems());
-  }
+  refreshSwitcherGlyphs();
   refreshVaultGitPanel(id);
 };
 window.leafSetVaultGit = (state) => {
@@ -751,7 +865,12 @@ function editVaultMenuItems(vault) {
     {
       label: window.leafLocale.t('library.vaults.back'),
       icon: BACK_ARROW_SVG,
-      run: () => showCrumbMenu(crumbMenuOwner, vaultMenuItems()),
+      // Back to the list, so the panel is no longer up: clear the mark or a
+      // stale status answer would still think it is.
+      run: () => {
+        crumbMenuVault = null;
+        showCrumbMenu(crumbMenuOwner, vaultMenuItems());
+      },
     },
   ];
 }
@@ -835,6 +954,7 @@ function showCrumbMenu(button, items) {
       const field = document.createElement('input');
       field.type = 'text';
       field.className = 'crumb-menu-input';
+      if (entry.fieldClass) field.classList.add(entry.fieldClass);
       field.value = entry.input;
       field.spellcheck = false;
       field.setAttribute('autocomplete', 'off');
@@ -842,7 +962,7 @@ function showCrumbMenu(button, items) {
       field.setAttribute('aria-label', entry.placeholder || '');
       let settled = false;
       const commit = () => {
-        if (settled) return;
+        if (settled || !entry.commit) return;
         settled = true;
         entry.commit(field.value.trim());
       };
@@ -850,17 +970,53 @@ function showCrumbMenu(button, items) {
         event.stopPropagation();
         if (event.key === 'Enter') {
           event.preventDefault();
-          commit();
-          hideCrumbMenu();
+          // A field with its own Save button (the repository address) hands Enter
+          // to that button's action, so nothing is saved until Save is pressed
+          // and nothing changes just because the field was left.
+          if (entry.onEnter) entry.onEnter();
+          else {
+            commit();
+            hideCrumbMenu();
+          }
         } else if (event.key === 'Escape') {
           event.preventDefault();
           settled = true;
-          hideCrumbMenu();
+          if (entry.onEscape) entry.onEscape();
+          else hideCrumbMenu();
         }
       });
-      field.addEventListener('blur', commit);
+      // Only commit-on-leave when the field *is* its own commit. An address field
+      // waits for Save, so wandering off it must not change the repository.
+      if (entry.commit && entry.commitOnBlur !== false) field.addEventListener('blur', commit);
       crumbMenu.appendChild(field);
       firstFocusable = firstFocusable || field;
+      continue;
+    }
+    // A row of buttons that sit side by side rather than stacked -- a Save next
+    // to its Cancel, where stacking them reads as two separate choices instead
+    // of the pair they are.
+    if (entry.buttons) {
+      const bar = document.createElement('div');
+      bar.className = 'crumb-menu-actions';
+      for (const button of entry.buttons) {
+        const action = document.createElement('button');
+        action.type = 'button';
+        action.className = 'context-menu-item crumb-menu-item crumb-menu-action'
+          + (button.primary ? ' is-primary' : '');
+        action.setAttribute('role', 'menuitem');
+        action.innerHTML = `${button.icon || ''}<span class="crumb-menu-label"></span>`;
+        action.querySelector('.crumb-menu-label').textContent = button.label;
+        action.addEventListener('pointerdown', (event) => {
+          if (event.button !== 0) return;
+          event.stopPropagation();
+          event.preventDefault();
+          if (!button.keepOpen) hideCrumbMenu();
+          button.run();
+        });
+        bar.appendChild(action);
+        firstFocusable = firstFocusable || action;
+      }
+      crumbMenu.appendChild(bar);
       continue;
     }
     const row = document.createElement('div');
@@ -876,9 +1032,17 @@ function showCrumbMenu(button, items) {
     // as text rather than markup.
     item.innerHTML = `${entry.icon || ''}<span class="crumb-menu-label"></span>${entry.selected ? MENU_CHECK_SVG : ''}`;
     item.querySelector('.crumb-menu-label').textContent = entry.label;
+    if (entry.vaultId !== undefined) item.dataset.vaultId = String(entry.vaultId);
     if (entry.disabled) item.disabled = true;
-    item.addEventListener('click', (event) => {
+    // Act on the press, not on the full click. A click only fires when press and
+    // release land on the same element, so a redraw slipping in between -- and
+    // this menu redraws itself whenever git answers, which is exactly while it is
+    // open -- swallowed the click and the button did nothing. Pressing fires the
+    // instant the button is touched, before any redraw can replace it.
+    item.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
       event.stopPropagation();
+      event.preventDefault();
       // Most rows are a destination, so the menu gets out of the way. The git
       // rows are work done in place -- closing the panel would take away the
       // only thing that reports how it went.
@@ -894,10 +1058,12 @@ function showCrumbMenu(button, items) {
       const label = window.leafLocale.t('library.vaults.edit', { name: entry.label });
       edit.title = label;
       edit.setAttribute('aria-label', label);
-      // Not a switch: this opens the panel for that row, and the click must not
-      // reach the row underneath it.
-      edit.addEventListener('click', (event) => {
+      // Not a switch: this opens the panel for that row, and the press must not
+      // reach the row underneath it. On the press for the same reason as above.
+      edit.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
         event.stopPropagation();
+        event.preventDefault();
         entry.edit();
       });
       row.appendChild(edit);
@@ -912,9 +1078,18 @@ function showCrumbMenu(button, items) {
   const top = Math.max(8, Math.min(anchor.bottom + 4, window.innerHeight - crumbMenu.offsetHeight - 8));
   crumbMenu.style.left = left + 'px';
   crumbMenu.style.top = top + 'px';
-  if (firstFocusable) firstFocusable.focus();
+  // Only claim focus when the menu is first opened. An in-place redraw -- a swap
+  // to the settings panel, a git answer landing, a reveal -- leaves focus where
+  // it is, so nothing yanks the cursor out of a field mid-word or drags it into
+  // the name box unasked. Callers that want the cursor somewhere on a redraw
+  // (the change-repo reveal) place it themselves.
+  if (firstFocusable && !reopening) firstFocusable.focus();
 }
-window.addEventListener('click', (event) => {
+// Close on a press outside the menu, matching how the rows act: the openers and
+// the rows stop this from firing on their own press, so what reaches here is
+// only ever a press somewhere else. On press (not click) so a redraw that just
+// replaced the pressed row cannot leave a stray click to close what it opened.
+window.addEventListener('pointerdown', (event) => {
   if (!crumbMenu.contains(event.target)) hideCrumbMenu();
 });
 window.addEventListener('blur', hideCrumbMenu);
@@ -955,8 +1130,15 @@ function renderLibraryVaultSwitch() {
   libraryVaultSwitch.setAttribute('aria-label', label);
 }
 if (libraryVaultSwitch) {
-  libraryVaultSwitch.addEventListener('click', (event) => {
+  // On the press, and stopping it there: the menu's own close-on-outside-press
+  // listens for the same event, so a click-based toggle here would let that
+  // listener close the menu on the way down and this reopen it on the way up.
+  libraryVaultSwitch.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
     event.stopPropagation();
+    event.preventDefault();
+    // Opening (or reopening) the switcher shows the list, not a settings panel.
+    crumbMenuVault = null;
     toggleCrumbMenu(libraryVaultSwitch, vaultMenuItems());
   });
 }
@@ -1017,6 +1199,10 @@ window.leafSetVaults = (payload) => {
   // is also how the button is right on the first paint: startup sends the vault
   // list like everything else does, so there is no separate opening move.
   requestActiveVaultStatus();
+  // And read the rest now too, in the background, so their marks are already
+  // known by the time the switcher is opened -- the menu then has nothing to
+  // wait on and nothing to redraw under a click.
+  requestKnownVaultStatuses();
   if (activeVaultId !== previous) {
     // A new root: the folder the list was in belonged to the old one, and its
     // files are about to be replaced.

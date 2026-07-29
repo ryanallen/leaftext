@@ -12,8 +12,18 @@
 
 use std::ffi::OsStr;
 use std::fmt;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
+use std::thread;
+use std::time::{Duration, Instant};
+
+/// How long any one git (or gh) call may run before it is killed. Git normally
+/// answers in well under a second; the only things that take longer are a large
+/// fetch and a credential helper popping a window the app cannot see. The second
+/// one would otherwise hang the sync forever -- the "spinning that never stops".
+/// Generous enough for a real fetch, short enough that a wedged prompt gives up.
+const TOOL_TIMEOUT: Duration = Duration::from_secs(90);
 
 /// How deep below a vault to look for repositories that would end up inside a
 /// new one. Three is enough for `leaftext/app`, and for a nested clone one level
@@ -95,6 +105,10 @@ pub struct VaultRepo {
     pub nested: Vec<String>,
     /// `owner/name` where the remote is recognizable, else the raw URL.
     pub remote: Option<String>,
+    /// The address exactly as git holds it, for showing before a change and for
+    /// putting back if the change was a mistake. The label above is for reading;
+    /// this is the thing you would paste.
+    pub remote_url: Option<String>,
     pub branch: Option<String>,
     /// Files added, changed or deleted since the last commit.
     pub changed: usize,
@@ -131,15 +145,70 @@ where
         command.current_dir(dir);
     }
     command.stdin(Stdio::null());
+    command.stdout(Stdio::piped());
+    command.stderr(Stdio::piped());
     // A prompt would block forever behind a window that cannot show it. Tell git
-    // to fail instead, and the panel can say what is missing.
+    // to fail instead, and the panel can say what is missing. `GCM_INTERACTIVE`
+    // and `GIT_ASKPASS` shut the same door on the credential helper, which is a
+    // *separate* program with its own window and does not read the first flag --
+    // the one that left a sync spinning behind a dialog nobody could find.
     command.env("GIT_TERMINAL_PROMPT", "0");
+    command.env("GCM_INTERACTIVE", "never");
+    command.env("GIT_ASKPASS", "echo");
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
         command.creation_flags(0x0800_0000);
     }
-    command.output()
+    run_with_timeout(command, TOOL_TIMEOUT)
+}
+
+/// Spawn a command and wait at most `limit` for it, killing it if it overruns.
+///
+/// The pipes are drained on their own threads so a chatty command (a fetch's
+/// progress) can never fill a pipe buffer and deadlock against a parent that is
+/// only watching the clock. A kill closes the pipes, so those threads then end.
+fn run_with_timeout(mut command: Command, limit: Duration) -> std::io::Result<Output> {
+    let mut child = command.spawn()?;
+    let mut stdout_pipe = child.stdout.take();
+    let mut stderr_pipe = child.stderr.take();
+    let stdout_reader = thread::spawn(move || {
+        let mut buffer = Vec::new();
+        if let Some(pipe) = stdout_pipe.as_mut() {
+            let _ = pipe.read_to_end(&mut buffer);
+        }
+        buffer
+    });
+    let stderr_reader = thread::spawn(move || {
+        let mut buffer = Vec::new();
+        if let Some(pipe) = stderr_pipe.as_mut() {
+            let _ = pipe.read_to_end(&mut buffer);
+        }
+        buffer
+    });
+    let start = Instant::now();
+    loop {
+        if let Some(status) = child.try_wait()? {
+            let stdout = stdout_reader.join().unwrap_or_default();
+            let stderr = stderr_reader.join().unwrap_or_default();
+            return Ok(Output {
+                status,
+                stdout,
+                stderr,
+            });
+        }
+        if start.elapsed() >= limit {
+            let _ = child.kill();
+            let _ = child.wait();
+            let _ = stdout_reader.join();
+            let _ = stderr_reader.join();
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                "the command took too long and was stopped",
+            ));
+        }
+        thread::sleep(Duration::from_millis(40));
+    }
 }
 
 /// Run git in `dir` and return its stdout. `Err` carries stderr.
@@ -212,10 +281,11 @@ pub fn inspect_vault_repo(root: &Path) -> VaultRepo {
     }
 
     if repo.at_root {
-        repo.remote = git(root, &["remote", "get-url", "origin"])
+        let url = git(root, &["remote", "get-url", "origin"])
             .ok()
-            .filter(|url| !url.is_empty())
-            .map(|url| remote_label(&url));
+            .filter(|url| !url.is_empty());
+        repo.remote = url.as_deref().map(remote_label);
+        repo.remote_url = url;
         repo.branch = git(root, &["branch", "--show-current"])
             .ok()
             .filter(|branch| !branch.is_empty());
@@ -340,12 +410,29 @@ pub fn create_repo_on_github(root: &Path, name: &str) -> Result<(), GitError> {
     ))
 }
 
-/// Point an already-initialized repository at a URL the user made themselves and
-/// push to it. The other half of the browser route.
+/// Whether this exact folder is a git repository's own top level -- not a folder
+/// sitting inside one. Every write below refuses unless this holds, so a command
+/// run in a vault can never reach up and rewrite the repository it happens to
+/// live inside. That is the failure that pointed a vault's "change repo" at the
+/// wrong place and left the parent repo staring at unrelated histories.
+fn is_repo_root(root: &Path) -> bool {
+    matches!(git(root, &["rev-parse", "--show-toplevel"]), Ok(top) if same_folder(&top, root))
+}
+
+/// Point an already-initialized repository at a URL the user gave. Only sets the
+/// address -- it does **not** push. Sending the vault's contents somewhere is a
+/// separate, deliberate Sync, so merely naming a repository can never overwrite
+/// what is already in it or tangle two unrelated histories together.
 pub fn link_vault_remote(root: &Path, url: &str) -> Result<(), GitError> {
     let url = url.trim();
     if url.is_empty() {
         return Err(GitError::new("link remote", "no address given"));
+    }
+    if !is_repo_root(root) {
+        return Err(GitError::new(
+            "link remote",
+            "this folder is not its own repository",
+        ));
     }
     // Replace rather than add: pointing an existing origin somewhere else is the
     // likelier intent, and `remote add` on a taken name just errors.
@@ -354,7 +441,7 @@ pub fn link_vault_remote(root: &Path, url: &str) -> Result<(), GitError> {
     } else {
         git(root, &["remote", "add", "origin", url])?;
     }
-    push(root)
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -368,6 +455,15 @@ pub fn link_vault_remote(root: &Path, url: &str) -> Result<(), GitError> {
 /// read is worse than telling them to go and sort it out in git.
 pub fn sync_vault_repo(root: &Path) -> Result<SyncReport, GitError> {
     let mut report = SyncReport::default();
+
+    if !is_repo_root(root) {
+        // Committing here would sweep up the enclosing repository's changes, not
+        // the vault's. Refuse rather than commit the wrong things.
+        return Err(GitError::new(
+            "sync",
+            "this folder is not its own repository",
+        ));
+    }
 
     let status = git(root, &["status", "--porcelain"])?;
     report.committed = count_changes(&status);
@@ -527,13 +623,23 @@ pub(crate) fn gitignore_addition(existing: &str, nested: &[String]) -> String {
     out
 }
 
-/// The first line worth showing out of a tool's complaint. git puts the useful
-/// sentence first and the advice after; the advice is for a terminal.
+/// The first line worth showing out of a tool's complaint. git narrates a push
+/// to stderr -- the destination URL, the remote's progress -- before it says
+/// what went wrong, and those lines read like success ("To github.com/..."). So
+/// skip the narration and the terminal-only advice, and land on the sentence
+/// that actually names the problem.
 fn first_useful_line(detail: &str) -> String {
+    let is_noise = |line: &str| {
+        line.is_empty()
+            || line.starts_with("hint:")
+            || line.starts_with("remote:")
+            || line.starts_with("To ")
+            || line.starts_with("From ")
+    };
     detail
         .lines()
         .map(str::trim)
-        .find(|line| !line.is_empty() && !line.starts_with("hint:"))
+        .find(|line| !is_noise(line))
         .unwrap_or("")
         .trim_start_matches("fatal: ")
         .trim_start_matches("error: ")

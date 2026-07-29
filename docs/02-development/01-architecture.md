@@ -151,7 +151,7 @@ Key `IpcCommand` variants include:
 | `setThemeRandomBag`    | The [Random theme](../01-features/06-themes.md#random) draw: persist the families already shown in the current no-repeat cycle |
 | `setMinimapEnabled`    | Minimap toggle in Settings menu       |
 | `setPagerEnabled`      | Pager toggle in Settings menu         |
-| `setSpeedReaderEnabled` | Speed Reader toggle in Settings menu |
+| `setSpeedReaderEnabled` | Speed Reader toggle on the reading toolbar |
 | `updateChecked`        | A release check finished: reset the six-hour throttle |
 | `updateDownload`       | The release the check found: fetch that URL natively, hash it, and stage it |
 | `applyUpdate`          | The "Restart to update" button: launch the installer and exit |

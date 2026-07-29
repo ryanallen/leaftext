@@ -185,7 +185,6 @@ function renderStaticText() {
   });
   graphScopeControl.setAttribute('aria-label', window.leafLocale.t('settings.graphScope.aria'));
   minimapEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.minimap.aria'));
-  speedReaderEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.speedReader.aria'));
 }
 // Every extension the app reads. Mirrors the table in `src/format.rs`, which is
 // the source of truth — the page can't import it, so keep the two in step.

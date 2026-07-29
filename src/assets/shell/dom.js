@@ -19,7 +19,6 @@ const THEME_REPO_URL = 'https://github.com/ryanallen/leaftext';
 const minimapEnabledControl = document.getElementById('minimapEnabled');
 const graphScopeControl = document.getElementById('graphScope');
 const pagerEnabledControl = document.getElementById('pagerEnabled');
-const speedReaderEnabledControl = document.getElementById('speedReaderEnabled');
 const libraryShell = document.getElementById('libraryShell');
 const libraryPane = document.getElementById('libraryPane');
 const libraryDivider = document.getElementById('libraryDivider');

@@ -92,12 +92,18 @@ A vault can be a git repository that pushes to GitHub. Open a vault's settings f
 | What is installed | What the panel offers |
 | --- | --- |
 | git and [`gh`](https://cli.github.com) | **Create a private repo** — one click, made and pushed |
-| git alone | **Create it on GitHub ↗** — opens GitHub with the name filled in; paste the address back and the panel links it |
+| git alone | **Create it on GitHub ↗** — opens GitHub with the name filled in; paste the address back and the panel points the vault at it |
 | neither | A link to install git, and nothing else |
 
 On Windows, Git for Windows installs Git Credential Manager and sets it as the default, so the first push opens a browser once and never asks again. On macOS the bundled credential helper cannot sign in to GitHub any more, so `gh` or Git Credential Manager has to be installed; the panel says so rather than letting a push fail.
 
 The panel also warns before the fact about the two things git needs and often lacks: an identity (`user.name` and `user.email`) and a way to authenticate.
+
+### Changing the repository
+
+The settings panel names the address the vault points at now. **Change repo…** opens a field for a new one, with **Save** and **Cancel**: nothing changes until you press Save, and the address it replaces is offered back with one press in case the change was a mistake.
+
+Setting or changing the address only points the vault — it never pushes on its own. Sending your files is always a separate, deliberate [Sync](#syncing), so naming a repository can never overwrite what is already in it. Leaf Text also refuses to act on a repository the vault folder merely sits *inside*; it works only on a repository the folder is the root of.
 
 ### Syncing
 

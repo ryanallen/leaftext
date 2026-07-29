@@ -1578,9 +1578,11 @@ body.library-resizing {
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  height: 20px;
-  padding: 0 4px;
+  gap: 3px;
+  /* A bigger target than the glyph inside it: the whole thing is one button, and
+     it was easy to miss at 20px. */
+  height: 26px;
+  padding: 0 7px;
   border: 0;
   border-radius: var(--leaf-radius-sm);
   background: transparent;
@@ -1972,6 +1974,25 @@ body:has(#readerToolbar:not([hidden])) {
   white-space: normal;
   word-break: break-word;
 }
+/* Save beside Cancel, sharing the width, rather than stacked into two rows that
+   read as two separate choices. */
+.crumb-menu-actions {
+  display: flex;
+  gap: 4px;
+  padding: 2px 4px;
+}
+.crumb-menu-actions .crumb-menu-action {
+  flex: 1 1 0;
+  justify-content: center;
+}
+/* The check icon is borrowed from the selected-row tick, which pushes itself to
+   the far edge; here it rides next to its label, centered as one group. */
+.crumb-menu-actions .crumb-menu-action svg {
+  margin-left: 0;
+}
+.crumb-menu-actions .crumb-menu-action.is-primary {
+  color: var(--accent);
+}
 .crumb-menu-note.is-danger {
   color: var(--danger, #d1242f);
 }
@@ -2027,6 +2048,12 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-swap-glyph {
   display: inline-flex;
 }
+/* The gauge reads as a speedometer: off, its needle points left (slow), so the
+   off glyph is mirrored; on, it points right (fast) and its heavier stroke makes
+   it the louder of the two. */
+.reader-subtool .reader-glyph-off {
+  transform: scaleX(-1);
+}
 .reader-subtool .reader-glyph-on,
 .reader-subtool[aria-pressed="true"] .reader-glyph-off {
   display: none;
@@ -2061,6 +2088,14 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-tool.is-active:hover {
   background: var(--accent);
   color: var(--preview-background);
+}
+/* The active glyph is drawn a touch heavier than its resting outline, so the
+   selected view reads as bolder as well as brighter. Targets the strokes
+   directly -- a CSS rule overrides each path's own stroke-width attribute, which
+   inheritance from the svg would not. */
+.reader-tool.is-active svg path,
+.reader-tool.is-active svg line {
+  stroke-width: 2.25;
 }
 /* A view you cannot enter — no document to show source for, no vault to map —
    stays in place and grays out, so the row never reshuffles under the pointer. */

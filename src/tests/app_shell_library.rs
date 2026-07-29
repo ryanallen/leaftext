@@ -688,19 +688,16 @@ fn editing_the_reading_view_is_a_padlock_on_the_document_not_a_global_switch() {
     assert!(html.contains("button.setAttribute('aria-pressed', String(on));"));
 
     // The speed reader stays one preference for the whole app -- a way of
-    // reading, not a property of a document -- so the bar and the settings row
-    // drive the same flag and each shows what the other did.
+    // reading, not a property of a document -- driven now from the reading
+    // toolbar's own control alone.
     for icon in [SPEED_READER_ON_ICON_SVG, SPEED_READER_OFF_ICON_SVG] {
         let icon = normalize_svg_icon_colors(icon);
         assert!(
             icon.contains("stroke=\"currentColor\""),
-            "the exporter's black must be normalized"
+            "the icon's stroke must be normalized to currentColor"
         );
         assert!(html.contains(icon.trim()));
     }
-    assert!(html.contains(
-        "if (speedReaderEnabledControl) speedReaderEnabledControl.checked = speedReaderEnabled;"
-    ));
     assert!(
         html.contains("send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });")
     );
@@ -1001,8 +998,10 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
     assert!(html.contains("send({ command: 'getVaultGit', id: vault.id });"));
     assert!(html.contains(r#"edit.className = 'crumb-menu-edit';"#));
     assert!(css.contains(".crumb-menu-edit {"));
-    // Clicking it opens that vault's panel rather than switching to the vault.
-    assert!(html.contains("edit.addEventListener('click', (event) => {\n        event.stopPropagation();\n        entry.edit();"));
+    // Pressing it opens that vault's panel rather than switching to the vault --
+    // on the press, so a redraw mid-click cannot swallow it.
+    assert!(html.contains("edit.addEventListener('pointerdown', (event) => {"));
+    assert!(html.contains("entry.edit();"));
     // Nothing hangs off a contextmenu handler in the switcher.
     assert!(!html.contains("crumbMenu.addEventListener('contextmenu'"));
     // Only the crumb-trail buttons toggle the menu shut on a second click. A

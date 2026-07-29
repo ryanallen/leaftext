@@ -130,8 +130,8 @@ if (readerLockButton) {
   readerLockButton.addEventListener('click', toggleReaderLock);
 }
 // The speed reader stays one preference for the whole app -- it is a way of
-// reading, not a property of a document -- so this and the row in Settings drive
-// the same flag and each reflects the other.
+// reading, not a property of a document. The reading toolbar is the one place it
+// is turned on and off; the glyph then shows which way it went.
 if (speedReaderButton) {
   speedReaderButton.addEventListener('click', () => {
     setSpeedReaderEnabled(!speedReaderEnabled);

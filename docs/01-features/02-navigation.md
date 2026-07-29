@@ -56,7 +56,7 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 | Group | What is in it |
 | --- | --- |
 | Views | [Reading](01-rendering.md), the [source](07-editing.md#code-view), and the [graph](03-library.md#graph). Exactly one is filled in the accent color: the one you are in |
-| Reading tools | Shown only on the reading view, in a recess beside its button: the [padlock](07-editing.md#the-padlock) and the [speed reader](05-settings.md#speed-reader) |
+| Reading tools | Shown only on the reading view, in a recess to the left of the view buttons so the three stay together: the [padlock](07-editing.md#the-padlock) and the [speed reader](05-settings.md#speed-reader) |
 | Edits | [Undo](07-editing.md#undo) and [Save](07-editing.md#save), each appearing only when there is something to undo or save |
 
 **No document, no bar.** The three views are three ways of showing one thing, and the start screen is not that thing — a toggle there would be navigation, which the [library](03-library.md) pane already does better.

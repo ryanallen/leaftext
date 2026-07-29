@@ -156,20 +156,11 @@ let speedReaderEnabled = LEAF_SETTINGS.speedReaderEnabled === true;
 function setSpeedReaderEnabled(enabled) {
   speedReaderEnabled = Boolean(enabled);
   document.documentElement.dataset.speedReader = String(speedReaderEnabled);
-  // Two ways in, one flag: the bar and the settings row each show what the other
-  // did. Set here rather than at each call site so neither can forget.
-  if (speedReaderEnabledControl) speedReaderEnabledControl.checked = speedReaderEnabled;
   if (speedReaderEnabled) {
     applySpeedReaderToDocument();
   }
 }
 setSpeedReaderEnabled(speedReaderEnabled);
-speedReaderEnabledControl.addEventListener('change', () => {
-  setSpeedReaderEnabled(speedReaderEnabledControl.checked);
-  send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });
-  // Let the bar work out whether it is showing, rather than restating the rule.
-  renderReaderToolbar(!!activeDocumentPath());
-});
 // Whether the page is showing the graph instead of the document. Not a pane mode
 // and not per-tab: one flag, dropped the moment a document is opened, so there is
 // never a question of which tab the map belonged to.

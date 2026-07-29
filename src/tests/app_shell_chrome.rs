@@ -317,21 +317,23 @@ fn app_shell_persists_and_applies_speed_reader_setting() {
     let html = app_shell_html();
     let css = reading_mode_css();
 
+    // The setting persists and applies, but it is driven from the reading
+    // toolbar's own control now, not a Settings checkbox -- that row was removed
+    // once the toolbar carried the toggle, so nothing here reads back from it.
     for expected in [
-            r#"<label class="setting-control setting-control-inline" for="speedReaderEnabled">"#,
-            r#"<input type="checkbox" id="speedReaderEnabled" aria-label="Speed Reader" aria-describedby="speedReaderEnabledHelp">"#,
-            "const speedReaderEnabledControl = document.getElementById('speedReaderEnabled');",
-            "let speedReaderEnabled = LEAF_SETTINGS.speedReaderEnabled === true;",
-            "function setSpeedReaderEnabled(enabled) {",
-            "document.documentElement.dataset.speedReader = String(speedReaderEnabled);",
-            "send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });",
-            "applySpeedReaderToDocument();",
-            "function leadAnchorPrefixLength(count) {",
-            "anchor.className = 'speed-reader-anchor';",
-            "speedReaderEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.speedReader.aria'));",
-        ] {
-            assert_contains(&html, expected);
-        }
+        "let speedReaderEnabled = LEAF_SETTINGS.speedReaderEnabled === true;",
+        "function setSpeedReaderEnabled(enabled) {",
+        "document.documentElement.dataset.speedReader = String(speedReaderEnabled);",
+        "send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });",
+        "applySpeedReaderToDocument();",
+        "function leadAnchorPrefixLength(count) {",
+        "anchor.className = 'speed-reader-anchor';",
+    ] {
+        assert_contains(&html, expected);
+    }
+    // The Settings checkbox and everything that fed it are gone.
+    assert!(!html.contains(r#"id="speedReaderEnabled""#));
+    assert!(!html.contains("speedReaderEnabledControl"));
 
     for expected in [
         r#":root[data-speed-reader="true"] .document-body a,"#,

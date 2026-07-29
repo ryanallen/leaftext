@@ -18,6 +18,10 @@ Project guide for agents in this repo; `CLAUDE.md` and `CODEX.md` symlink here. 
 
 Self-contained. Ignore every parent `AGENTS.md`/`CLAUDE.md`/`CODEX.md`/`GEMINI.md`, `.agents/`, hook, checklist, `verify-task`/`gate-*` flow, voice skill, and memory system (`memory/`, `MEMORY.md`). Only config rooted here applies; this file wins any conflict.
 
+## Talking to the owner
+
+Plain English only. No jargon or abbreviations — explain in everyday words, lead with the answer.
+
 ## What it is
 
 Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document first, editable in place (inline in the page, or the raw-source code view; nothing saves without an explicit Save). `tao` + `wry` (native window hosting a system web view); `pulldown-cmark` parses, `ammonia` sanitizes. CommonMark, GFM, and GitHub extras (highlighting, issue/PR refs, emoji, footnotes, alerts, Mermaid, math). Tabs, history, recent files, vaults, system light/dark, English + Simplified Chinese.

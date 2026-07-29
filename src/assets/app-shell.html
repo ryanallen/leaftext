@@ -70,11 +70,6 @@
           <span class="setting-label">Show next/previous</span>
           <span class="setting-help" id="pagerEnabledHelp">Add Previous and Next links at the bottom of each document, ordered by the folder tree.</span>
         </label>
-        <label class="setting-control setting-control-inline" for="speedReaderEnabled">
-          <input type="checkbox" id="speedReaderEnabled" aria-label="Speed Reader" aria-describedby="speedReaderEnabledHelp">
-          <span class="setting-label" data-i18n="settings.speedReader.label">Speed Reader</span>
-          <span class="setting-help" id="speedReaderEnabledHelp" data-i18n="settings.speedReader.help">Make prose quieter and add bold lead anchors for faster scanning.</span>
-        </label>
         <!-- Update status, always present. Without it a check that found nothing,
              was throttled, or failed is indistinguishable from one that never
              ran, and the only way to see the updater work is to wait. It is also
@@ -157,17 +152,18 @@
      scroll away with the document. -->
 <div id="readerToolbar" class="reader-toolbar" role="toolbar" data-i18n-aria-label="toolbar.label" aria-label="Views and edits" hidden>
   <div class="reader-tool-group" role="group" data-i18n-aria-label="toolbar.views" aria-label="Views">
-    <button type="button" id="viewReadingButton" class="reader-tool" data-view="reading" aria-pressed="true" data-i18n-aria-label="toolbar.reading" data-i18n-title="toolbar.reading" aria-label="Reading" title="Reading">{{DOCUMENT_ICON_SVG}}</button>
-    <!-- What the reading view can do, in a recess beside the button that turns
-         it on. They arrive and leave with the view: the source view is an editor
-         however the padlock is set and neither means anything on a map, so a
-         control for a view you are not in is noise. Sunk and grained rather than
-         a second row of same-level buttons, which would read as three more
-         views. -->
+    <!-- What the reading view can do, in a recess to the left of the three view
+         buttons rather than wedged between them, so reading / source / graph
+         always read as one unbroken group. These tools arrive and leave with the
+         reading view: the source view is an editor however the padlock is set and
+         neither means anything on a map, so a control for a view you are not in
+         is noise. Sunk and grained rather than same-level buttons, which would
+         read as three more views. -->
     <span id="readerViewTools" class="reader-view-tools" role="group" data-i18n-aria-label="toolbar.readingTools" aria-label="Reading tools" hidden>
       <button type="button" id="readerLockButton" class="reader-subtool" aria-pressed="false" data-i18n-aria-label="toolbar.unlock" data-i18n-title="toolbar.unlock" aria-label="Unlock to edit this page" title="Unlock to edit this page"><span class="reader-swap-glyph reader-glyph-off">{{LOCK_CLOSED_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{LOCK_OPEN_ICON_SVG}}</span></button>
       <button type="button" id="speedReaderButton" class="reader-subtool" aria-pressed="false" data-i18n-aria-label="toolbar.speedReader" data-i18n-title="toolbar.speedReader" aria-label="Speed reader" title="Speed reader"><span class="reader-swap-glyph reader-glyph-off">{{SPEED_READER_OFF_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{SPEED_READER_ON_ICON_SVG}}</span></button>
     </span>
+    <button type="button" id="viewReadingButton" class="reader-tool" data-view="reading" aria-pressed="true" data-i18n-aria-label="toolbar.reading" data-i18n-title="toolbar.reading" aria-label="Reading" title="Reading">{{DOCUMENT_ICON_SVG}}</button>
     <button type="button" id="viewCodeButton" class="reader-tool" data-view="code" aria-pressed="false" data-i18n-aria-label="actions.codeView" data-i18n-title="actions.codeView.title" aria-label="View source" title="View source">{{CODE_VIEW_ICON_SVG}}</button>
     <button type="button" id="viewGraphButton" class="reader-tool" data-view="graph" aria-pressed="false" data-i18n-aria-label="library.view.graph" data-i18n-title="library.view.graph.on" aria-label="Graph" title="Show how these documents link">{{GRAPH_ICON_SVG}}</button>
   </div>
