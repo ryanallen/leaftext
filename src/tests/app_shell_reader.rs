@@ -870,6 +870,50 @@ fn app_shell_code_view_is_a_worker_free_monaco_with_its_own_minimap() {
     assert!(html.contains("getWorker() {"));
 }
 
+// The code view's wrap is a column count, so it is only a width once a character has
+// been measured — and every theme brings its own code font. Monaco measures a font
+// when it is told to use it, which for a web font is before the face has arrived, so
+// it measures the fallback; a font landing changes no geometry, so the layout event
+// the column rides never fires to correct it. The wrap therefore looked like a
+// property of the theme: text running under the minimap on some, stopping short on
+// others, depending only on whether that font was already loaded and how wide the
+// fallback was.
+//
+// The re-fit is pinned here because it has to keep working for fonts nobody has picked
+// yet: it is driven by the web view saying "faces finished loading", which names no
+// font and covers every source, so a new theme needs no code. Anything that starts
+// listing font names, or fits only the fonts that ship today, fails this test.
+#[test]
+fn app_shell_refits_the_code_view_wrap_to_whatever_font_is_actually_measured() {
+    let html = app_shell_html();
+
+    // Forcing the measurement again is the load-bearing half — Monaco does not
+    // re-measure on its own — and the column cache has to go first, because the same
+    // count against a different font reads as "nothing changed".
+    let refit = html
+        .split("function refitCodeViewToFont()")
+        .nth(1)
+        .expect("the shell must expose the wrap re-fit");
+    let refit = &refit[..refit.find("\n}").expect("re-fit body should close")];
+    assert_contains(refit, "editor.remeasureFonts();");
+    assert_contains(refit, "codeViewWrapColumn = 0;");
+    assert_contains(refit, "applyCodeViewWrapColumn();");
+
+    // Both things that change the measurement re-fit: the theme's own font swap, and
+    // any face finishing its load afterwards. The listener is generic on purpose —
+    // `loadingdone` fires for every font from every source and names none.
+    assert_contains(&html, "if (codeFont) monacoEditor.updateOptions({ fontFamily: codeFont });\n  // A theme brings its own code font, so the wrap has to be re-fitted to it.\n  refitCodeViewToFont();");
+    assert_contains(
+        &html,
+        "document.fonts.addEventListener('loadingdone', monacoFontsDoneHandler);",
+    );
+    // And it is dropped on teardown, or it re-fits an editor that no longer exists.
+    assert_contains(
+        &html,
+        "document.fonts.removeEventListener('loadingdone', monacoFontsDoneHandler);",
+    );
+}
+
 #[test]
 fn code_view_line_numbers_are_a_counter_on_the_lines_they_label() {
     // They used to be a second layer, three elements per line — 228,000 of them on

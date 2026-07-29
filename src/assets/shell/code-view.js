@@ -768,6 +768,33 @@ function reskinMonacoForTheme() {
   window.LeafMonaco.editor.setTheme(defineLeafMonacoTheme(window.LeafMonaco));
   const codeFont = getComputedStyle(document.documentElement).getPropertyValue('--code-font').trim();
   if (codeFont) monacoEditor.updateOptions({ fontFamily: codeFont });
+  // A theme brings its own code font, so the wrap has to be re-fitted to it.
+  refitCodeViewToFont();
+}
+
+// Re-fit the wrap column to whatever the code font is measuring right now.
+//
+// The wrap column is a count of characters; it is only a width once you know how
+// wide a character is, and Monaco takes that measurement once — at the moment it is
+// told which font to use. A theme swap points it at a face the web view has usually
+// not finished loading yet, so what gets measured is the fallback standing in for it,
+// and the fallback's width is not the width the text ends up drawn at. Too narrow a
+// measurement and the wrap runs out under the minimap; too wide and it stops well
+// short. Nothing corrected it afterwards: a font arriving changes no geometry, so
+// onDidLayoutChange never fires for it. That is the whole of why the wrap looked like
+// a property of the theme — it was really down to whether that theme's font happened
+// to be loaded already, and how close the fallback was.
+//
+// So: force the measurement again, then re-derive. The cache has to go first because
+// it is keyed on the column number alone, and the same count against a different font
+// reads as "nothing changed". Nothing here knows or asks which fonts exist, where
+// they come from, or when they arrive — any face, from anywhere, is handled by having
+// been re-measured.
+function refitCodeViewToFont() {
+  if (!monacoEditor || !window.LeafMonaco) return;
+  window.LeafMonaco.editor.remeasureFonts();
+  codeViewWrapColumn = 0;
+  applyCodeViewWrapColumn();
 }
 
 // Word wrap ends roughly this many pixels short of the minimap. Monaco has no
@@ -788,7 +815,9 @@ const CODE_VIEW_WRAP_RIGHT_GAP_PX = 16;
 // --cv-minimap-width because only Monaco knows it and the page frame (top divider,
 // bottom stroke) has to stop at the minimap's left edge. Runs after create and on
 // every layout change; only writes the column when it changed, so the updateOptions
-// it makes doesn't loop back through onDidLayoutChange.
+// it makes doesn't loop back through onDidLayoutChange. That cache is the column
+// number and nothing else, so anything changing what a column is WORTH — the code
+// font — must clear it before calling here: refitCodeViewToFont.
 function applyCodeViewWrapColumn() {
   if (!monacoEditor || !window.LeafMonaco) return;
   const info = monacoEditor.getLayoutInfo();
@@ -865,6 +894,15 @@ function createMonacoEditor(monaco, container, state, text) {
   // Keep the wrap gap in step with the width: set it now, then on every relayout.
   monacoLayoutSub = monacoEditor.onDidLayoutChange(applyCodeViewWrapColumn);
   applyCodeViewWrapColumn();
+  // And in step with the font, which the width can't tell us about. `loadingdone` is
+  // the web view saying a batch of faces has finished loading — it fires for every
+  // font from every source, names none of them, and keeps firing for later batches,
+  // so a font this code has never heard of is covered by the same line. Whatever the
+  // editor was measuring before the face landed, it re-measures after.
+  if (document.fonts && document.fonts.addEventListener) {
+    monacoFontsDoneHandler = () => refitCodeViewToFont();
+    document.fonts.addEventListener('loadingdone', monacoFontsDoneHandler);
+  }
   const srcOffset = pendingCodeViewSrcOffset;
   pendingCodeViewSrcOffset = null;
   if (srcOffset != null && !pendingViewAtTop) {

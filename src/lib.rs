@@ -844,7 +844,10 @@ pub fn app_shell_html() -> String {
             "{{MONACO_SCRIPT_URL}}",
             &bundled_asset_url("monaco/monaco.js"),
         )
-        .replace("{{MONACO_CSS_URL}}", &bundled_asset_url("monaco/monaco.css"))
+        .replace(
+            "{{MONACO_CSS_URL}}",
+            &bundled_asset_url("monaco/monaco.css"),
+        )
         .replace(
             "{{LEAF_ICON_SVG}}",
             normalize_svg_icon_colors(LEAF_ICON_SVG).trim(),

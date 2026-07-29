@@ -139,10 +139,15 @@ let cvInput = null;
 let monacoEditor = null;
 let monacoChangeSub = null;
 // The editor's layout-change subscription, which re-derives the bounded wrap
-// column (see applyCodeViewWrapColumn) whenever the width or font changes, and
+// column (see applyCodeViewWrapColumn) whenever the editor's width changes, and
 // the column it last set — kept here so teardown disposes/resets them.
 let monacoLayoutSub = null;
 let codeViewWrapColumn = 0;
+// The `document.fonts` listener that re-fits that column when a face finishes
+// loading. A font arriving changes no geometry, so no layout event announces it —
+// see refitCodeViewToFont. Held here so teardown can unsubscribe: it outlives the
+// editor otherwise, and would re-fit a disposed one.
+let monacoFontsDoneHandler = null;
 let monacoLoadPromise = null;
 // The last textarea value, mirrored so a save (and the debounced re-highlight)
 // send the current buffer even if a keystroke is still within the debounce.

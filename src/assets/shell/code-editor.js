@@ -197,6 +197,10 @@ function cvTeardownEditor() {
       monacoLayoutSub.dispose();
       monacoLayoutSub = null;
     }
+    if (monacoFontsDoneHandler) {
+      document.fonts.removeEventListener('loadingdone', monacoFontsDoneHandler);
+      monacoFontsDoneHandler = null;
+    }
     monacoEditor.dispose();
     monacoEditor = null;
     codeViewWrapColumn = 0;
