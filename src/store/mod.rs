@@ -80,11 +80,15 @@ pub struct GraphNode {
     pub external: bool,
 }
 
+/// One line on the map, pointing from the document that wrote the link to the thing
+/// it linked. `mutual` when each end links the other: one line with a head at both
+/// ends, rather than two lying on top of each other.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GraphEdge {
     pub source: String,
     pub target: String,
+    pub mutual: bool,
 }
 
 /// What slice of the link graph to draw. `focus` keeps only the seed documents

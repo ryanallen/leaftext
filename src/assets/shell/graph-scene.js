@@ -3,17 +3,21 @@
 function renderGraphFrame(scene) {
   const { edgesGfx, colors, hoverNode } = scene;
   edgesGfx.clear();
+  const heads =
+    scene.nodes.length <= GRAPH_ARROW_MAX_NODES && scene.world.scale.x >= GRAPH_ARROW_MIN_ZOOM;
   for (const link of scene.links) {
     const s = link.source;
     const t = link.target;
     if (typeof s.x !== 'number' || typeof t.x !== 'number') continue;
     const hot = hoverNode && (s === hoverNode || t === hoverNode);
+    const color = hot ? colors.active : colors.edge;
+    const alpha = hoverNode ? (hot ? 0.9 : 0.12) : 0.4;
     edgesGfx.moveTo(s.x, s.y).lineTo(t.x, t.y);
-    edgesGfx.stroke({
-      width: hot ? 1.6 : 1,
-      color: hot ? colors.active : colors.edge,
-      alpha: hoverNode ? (hot ? 0.9 : 0.12) : 0.4,
-    });
+    edgesGfx.stroke({ width: hot ? 1.6 : 1, color, alpha });
+    if (!heads) continue;
+    // A pair that links each other is one line wearing two heads, not two lines.
+    drawGraphArrow(scene, t, s, color, alpha);
+    if (link.mutual) drawGraphArrow(scene, s, t, color, alpha);
   }
   for (const node of scene.nodes) {
     if (typeof node.x === 'number') node.gfx.position.set(node.x, node.y);
@@ -22,6 +26,32 @@ function renderGraphFrame(scene) {
   // only moves the labels already chosen visible, it does not re-decide the set.
   positionGraphLabels(scene);
   scene.app.render();
+}
+
+// One arrowhead on the line into `at`, coming from `from`. Backed off by `at`'s
+// radius *and* its current scale — without the scale the head hides under the
+// active node, the one whose incoming links you most want to read.
+function drawGraphArrow(scene, at, from, color, alpha) {
+  const dx = at.x - from.x;
+  const dy = at.y - from.y;
+  const distance = Math.hypot(dx, dy);
+  if (!distance) return;
+  const ux = dx / distance;
+  const uy = dy / distance;
+  const clear = graphNodeRadius(at.degree) * (at.gfx ? at.gfx.scale.x : 1) + 1;
+  // Two circles this close leave no line to put a head on; drawing one anyway puts
+  // it inside the node it points at.
+  if (distance < clear + GRAPH_ARROW_LENGTH) return;
+  const tipX = at.x - ux * clear;
+  const tipY = at.y - uy * clear;
+  const baseX = tipX - ux * GRAPH_ARROW_LENGTH;
+  const baseY = tipY - uy * GRAPH_ARROW_LENGTH;
+  // Perpendicular to the line, for the two back corners.
+  const px = -uy * GRAPH_ARROW_HALF_WIDTH;
+  const py = ux * GRAPH_ARROW_HALF_WIDTH;
+  scene.edgesGfx
+    .poly([tipX, tipY, baseX + px, baseY + py, baseX - px, baseY - py])
+    .fill({ color, alpha });
 }
 
 // Recolor and resize the node dots for the current active/hover state, then let

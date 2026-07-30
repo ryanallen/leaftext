@@ -39,6 +39,14 @@ const GRAPH_AMBIENT_LABEL_MAX = 400;
 // absorb what changed, not a fresh layout. Full alpha threw the whole map out from
 // the center again, which is what a save looked like from the reader's side.
 const GRAPH_WARM_ALPHA = 0.3;
+// Arrowheads, in world units like the node radii, so a head holds its size against
+// the circle it points at through any zoom.
+const GRAPH_ARROW_LENGTH = 6;
+const GRAPH_ARROW_HALF_WIDTH = 3;
+// Where a head is only ink per frame: a map already a thicket, or a zoom that makes
+// it a couple of pixels.
+const GRAPH_ARROW_MAX_NODES = 800;
+const GRAPH_ARROW_MIN_ZOOM = 0.5;
 // A burst of writes under the vault arrives as a burst of graphs. Build the last
 // and skip the rest — each rebuild is a WebGL context thrown away.
 const GRAPH_REBUILD_COALESCE_MS = 150;
@@ -476,7 +484,8 @@ async function buildGraphScene() {
   const nodeByPath = new Map(nodes.map((n) => [n.path, n]));
   const links = (data.edges || [])
     .filter((e) => nodeByPath.has(e.source) && nodeByPath.has(e.target))
-    .map((e) => ({ source: e.source, target: e.target }));
+    // `mutual` is both ends linking each other: one line, a head at each end.
+    .map((e) => ({ source: e.source, target: e.target, mutual: !!e.mutual }));
 
   const world = new PIXI.Container();
   world.position.set(width / 2, height / 2);

@@ -857,6 +857,20 @@ fn a_web_address_is_a_node_drawn_as_a_ring_and_opened_in_the_browser() {
     // nodes, so a bare ring let the line run through the hollow and stop in mid-air.
     assert!(html.contains("gfx.circle(0, 0, Math.max(1.6, radius * 0.36)).fill(0xffffff);"));
     assert!(css.contains("radial-gradient(circle at center, var(--app-border) 1.6px"));
+
+    // An edge points the way the link was written; a pair that links each other gets
+    // one line with a head at both ends. Heads drop on a dense map and at a far
+    // zoom, where they are ink per frame and nothing else.
+    assert!(html.contains("drawGraphArrow(scene, t, s, color, alpha);"));
+    assert!(html.contains("if (link.mutual) drawGraphArrow(scene, s, t, color, alpha);"));
+    assert!(html.contains("mutual: !!e.mutual }));"));
+    assert!(html.contains(
+        "scene.nodes.length <= GRAPH_ARROW_MAX_NODES && scene.world.scale.x >= GRAPH_ARROW_MIN_ZOOM;"
+    ));
+    // Backed off by the target's radius *and* its scale, or the head hides under the
+    // active node — the one node whose incoming links you most want to read.
+    assert!(html
+        .contains("const clear = graphNodeRadius(at.degree) * (at.gfx ? at.gfx.scale.x : 1) + 1;"));
     // And its own resting tint, quieter than a document's, so the documents are
     // still what the eye lands on.
     assert!(html.contains("external: cssVarColor('--app-border', 0x3a3f4b),"));

@@ -407,7 +407,10 @@ pub(crate) fn build_graph(documents: &[CorpusDocument]) -> DocumentGraph {
     let mut url_to_index: HashMap<String, usize> = HashMap::new();
     let mut truncated = false;
 
-    let mut edges: HashSet<(usize, usize)> = HashSet::new();
+    // Deduped directed: `(a, b)` and `(b, a)` are two different facts. Sorting the
+    // pair here is what used to collapse them, killing the duplicate at the cost of
+    // forgetting which end wrote the link.
+    let mut directed: HashSet<(usize, usize)> = HashSet::new();
     for (from, document) in documents.iter().enumerate() {
         let mut urls_from_here = 0usize;
         for link in document_links(&document.text, Path::new(&document.path)) {
@@ -428,7 +431,8 @@ pub(crate) fn build_graph(documents: &[CorpusDocument]) -> DocumentGraph {
                     });
                     nodes.len() - 1
                 });
-                edges.insert((from, to));
+                // Always this way round: a page cannot link back at you.
+                directed.insert((from, to));
                 continue;
             }
             let to = link
@@ -449,24 +453,41 @@ pub(crate) fn build_graph(documents: &[CorpusDocument]) -> DocumentGraph {
             if to == from {
                 continue; // a document linking itself is not an edge
             }
-            edges.insert(if from < to { (from, to) } else { (to, from) });
+            directed.insert((from, to));
         }
     }
 
-    for (a, b) in &edges {
-        nodes[*a].degree += 1;
-        nodes[*b].degree += 1;
+    // One line per pair. A pair linked both ways keeps its own orientation (sorted,
+    // so it is the same every read) and is marked `mutual`; a one-way pair keeps the
+    // direction it was written in.
+    let mut drawn: HashSet<(usize, usize)> = HashSet::new();
+    let mut edges: Vec<GraphEdge> = Vec::new();
+    for &(from, to) in &directed {
+        let pair = if from < to { (from, to) } else { (to, from) };
+        if !drawn.insert(pair) {
+            continue;
+        }
+        let mutual = directed.contains(&(to, from));
+        let (source, target) = if mutual { pair } else { (from, to) };
+        nodes[source].degree += 1;
+        nodes[target].degree += 1;
+        edges.push(GraphEdge {
+            source: nodes[source].path.clone(),
+            target: nodes[target].path.clone(),
+            mutual,
+        });
     }
+    // A HashSet iterates in no fixed order, and the page compares graphs by
+    // signature to decide whether it is already drawing this one.
+    edges.sort_by(|a, b| {
+        a.source
+            .cmp(&b.source)
+            .then_with(|| a.target.cmp(&b.target))
+    });
 
     DocumentGraph {
-        edges: edges
-            .iter()
-            .map(|(a, b)| GraphEdge {
-                source: nodes[*a].path.clone(),
-                target: nodes[*b].path.clone(),
-            })
-            .collect(),
         nodes,
+        edges,
         truncated,
     }
 }

@@ -213,6 +213,65 @@ fn two_documents_citing_one_page_share_its_node() {
 }
 
 #[test]
+fn an_edge_keeps_the_direction_it_was_written_in() {
+    let dir = graph_dir("direction");
+    let seed = dir.join("opening.md");
+    write(
+        &seed,
+        "# Opening\n\nSee [refuge](./refuge.md) and https://example.org/a\n",
+    );
+    // Links back, so that pair goes both ways.
+    write(
+        &dir.join("refuge.md"),
+        "# Refuge\n\n[opening](./opening.md)\n",
+    );
+    // Points at the seed and is never pointed at: one way.
+    write(
+        &dir.join("commentary.md"),
+        "# Commentary\n\nOn [the opening](./opening.md).\n",
+    );
+
+    let graph = document_graph(&seed, &GraphRequest::default());
+    let label_of = |path: &str| {
+        graph
+            .nodes
+            .iter()
+            .find(|node| node.path == path)
+            .map(|node| node.label.clone())
+            .unwrap_or_default()
+    };
+    let mut drawn: Vec<String> = graph
+        .edges
+        .iter()
+        .map(|edge| {
+            let arrow = if edge.mutual { "<->" } else { "->" };
+            format!(
+                "{} {arrow} {}",
+                label_of(&edge.source),
+                label_of(&edge.target)
+            )
+        })
+        .collect();
+    drawn.sort();
+
+    assert_eq!(
+        drawn,
+        vec![
+            // One way, pointing away from whoever wrote the link.
+            "commentary -> opening",
+            // A page cannot link back, so an address is always the target.
+            "opening -> example.org",
+            // Both ways: one line, marked so the page puts a head on each end. Its
+            // orientation is sorted rather than arbitrary, so two reads of an
+            // unchanged folder produce the same list.
+            "opening <-> refuge",
+        ]
+    );
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
 fn a_document_that_is_gone_is_an_empty_map_rather_than_a_failure() {
     let dir = graph_dir("missing");
     let graph = document_graph(&dir.join("never-written.md"), &GraphRequest::default());

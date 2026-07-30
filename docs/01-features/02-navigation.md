@@ -61,7 +61,7 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 
 **No document, no bar.** The three views are three ways of showing one thing, and the start screen is not that thing — a toggle there would be navigation, which the [library](03-library.md) pane already does better.
 
-A view you can be in but cannot enter grays out where it stands rather than vanishing: the graph needs a [vault](03-library.md#vaults), and a row that reshuffles under the pointer is worse than one with a dead key in it. The reading tools do appear and disappear with the reading view, because a control for a view you are not in says nothing.
+**All three views are always enterable.** With the bar up there is a document, and a document can be read, edited as source, and mapped — so no view button is ever dead. The graph used to gray out without a [vault](03-library.md#vaults); it maps the [open document](03-library.md#graph) instead now. The reading tools do appear and disappear with the reading view, because a control for a view you are not in says nothing.
 
 Settings and Open stay in the app bar at the top right. They are about the app, not about the document.
 
