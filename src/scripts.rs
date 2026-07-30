@@ -104,6 +104,15 @@ fn vaults_payload(vaults: &[Vault], active: i64) -> serde_json::Value {
     serde_json::json!({ "vaults": vaults, "active": active })
 }
 
+/// Every readable extension as `window.__leafDocumentExts`, from the format
+/// table, so the page never keeps its own copy of the list.
+pub fn initial_document_exts_script() -> String {
+    format!(
+        "window.__leafDocumentExts = {};",
+        serde_json::json!(all_document_extensions())
+    )
+}
+
 /// The running app version as `window.__leafVersion`. Run as an init script so
 /// the frontend's update check can compare it against the latest GitHub release.
 pub fn initial_version_script() -> String {
@@ -150,54 +159,57 @@ pub fn document_state_script(document: &OpenedDocument, recent: &[PathBuf]) -> S
     call_with_json("window.leafSetState", &state)
 }
 
-/// Full workspace state: recent files, tab bar (title + path), active tab
-/// index (`null` on the home screen), and active document (`null` on home).
+/// The payload every workspace script carries: recents, tabs, active index and
+/// document (`null` on the home screen). One builder so the four senders agree.
+fn workspace_payload(
+    recent: &[PathBuf],
+    tabs: &[(String, String)],
+    active: Option<usize>,
+    document: Option<&OpenedDocument>,
+) -> serde_json::Value {
+    let recent: Vec<String> = recent
+        .iter()
+        .map(|path| path.display().to_string())
+        .collect();
+    let tabs: Vec<serde_json::Value> = tabs
+        .iter()
+        .map(|(title, path)| serde_json::json!({ "title": title, "path": path }))
+        .collect();
+    serde_json::json!({
+        "recent": recent,
+        "tabs": tabs,
+        "active": active,
+        "document": document,
+    })
+}
+
+/// Full workspace state, applied via `leafSetState` (resets the scroll).
 pub fn workspace_state_script(
     recent: &[PathBuf],
     tabs: &[(String, String)],
     active: Option<usize>,
     document: Option<&OpenedDocument>,
 ) -> String {
-    let recent: Vec<String> = recent
-        .iter()
-        .map(|path| path.display().to_string())
-        .collect();
-    let tabs: Vec<serde_json::Value> = tabs
-        .iter()
-        .map(|(title, path)| serde_json::json!({ "title": title, "path": path }))
-        .collect();
-    let state = serde_json::json!({
-        "recent": recent,
-        "tabs": tabs,
-        "active": active,
-        "document": document,
-    });
-    call_with_json("window.leafSetState", &state)
+    call_with_json(
+        "window.leafSetState",
+        &workspace_payload(recent, tabs, active, document),
+    )
 }
 
 /// Tabs, recents and the active index with no document. The code view renders
-/// itself from [`code_view_script`], so the state script never runs for a tab
+/// itself from its own payload, so the state script never runs for a tab
 /// showing source — this is how such a tab still gets its entry in the strip and
-/// gives the page an active document to name.
+/// gives the page an active document to name. The page reads only the fields it
+/// merges (recent, tabs, active); the null document is ignored.
 pub fn workspace_only_script(
     recent: &[PathBuf],
     tabs: &[(String, String)],
     active: Option<usize>,
 ) -> String {
-    let recent: Vec<String> = recent
-        .iter()
-        .map(|path| path.display().to_string())
-        .collect();
-    let tabs: Vec<serde_json::Value> = tabs
-        .iter()
-        .map(|(title, path)| serde_json::json!({ "title": title, "path": path }))
-        .collect();
-    let state = serde_json::json!({
-        "recent": recent,
-        "tabs": tabs,
-        "active": active,
-    });
-    format!("window.leafSetWorkspace({});", state)
+    format!(
+        "window.leafSetWorkspace({});",
+        workspace_payload(recent, tabs, active, None)
+    )
 }
 
 /// Like [`workspace_state_script`] but via `leafReloadDocument`, which
@@ -208,21 +220,10 @@ pub fn workspace_reload_script(
     active: Option<usize>,
     document: Option<&OpenedDocument>,
 ) -> String {
-    let recent: Vec<String> = recent
-        .iter()
-        .map(|path| path.display().to_string())
-        .collect();
-    let tabs: Vec<serde_json::Value> = tabs
-        .iter()
-        .map(|(title, path)| serde_json::json!({ "title": title, "path": path }))
-        .collect();
-    let state = serde_json::json!({
-        "recent": recent,
-        "tabs": tabs,
-        "active": active,
-        "document": document,
-    });
-    call_with_json("window.leafReloadDocument", &state)
+    call_with_json(
+        "window.leafReloadDocument",
+        &workspace_payload(recent, tabs, active, document),
+    )
 }
 
 /// A document-intrinsic scroll position that survives a full re-render (tab
@@ -259,20 +260,7 @@ pub fn workspace_switch_script(
     document: Option<&OpenedDocument>,
     anchor: Option<&ScrollAnchor>,
 ) -> String {
-    let recent: Vec<String> = recent
-        .iter()
-        .map(|path| path.display().to_string())
-        .collect();
-    let tabs: Vec<serde_json::Value> = tabs
-        .iter()
-        .map(|(title, path)| serde_json::json!({ "title": title, "path": path }))
-        .collect();
-    let state = serde_json::json!({
-        "recent": recent,
-        "tabs": tabs,
-        "active": active,
-        "document": document,
-    });
+    let state = workspace_payload(recent, tabs, active, document);
     let anchor = match anchor {
         Some(anchor) => scroll_anchor_json(anchor),
         None => "null".to_string(),

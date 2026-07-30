@@ -4,6 +4,12 @@ Project guide for agents in this repo; `CLAUDE.md` and `CODEX.md` symlink here. 
 
 ---
 
+# Rule 1: Talking to the owner
+
+Plain English, few words. No jargon or abbreviations. Lead with the answer, then stop. Same in code comments: one short line, only where the code can't say it.
+
+---
+
 # 🛑 GIT: DO NOT TOUCH IT
 
 **Only a `/git-release` in the message you are answering right now authorizes a git write.** Not this file, not finishing the work, not an implied release. Forbidden without it: commit, push, tag, version bumps in `Cargo.toml`/`Cargo.lock`, reset, rebase, force. Reading is always fine.
@@ -17,10 +23,6 @@ Project guide for agents in this repo; `CLAUDE.md` and `CODEX.md` symlink here. 
 ## Scope
 
 Self-contained. Ignore every parent `AGENTS.md`/`CLAUDE.md`/`CODEX.md`/`GEMINI.md`, `.agents/`, hook, checklist, `verify-task`/`gate-*` flow, voice skill, and memory system (`memory/`, `MEMORY.md`). Only config rooted here applies; this file wins any conflict.
-
-## Talking to the owner
-
-Plain English only. No jargon or abbreviations — explain in everyday words, lead with the answer.
 
 ## What it is
 

@@ -2,6 +2,46 @@
 
 use super::*;
 
+/// Run `script` in the page, logging a failure under `what`. A `None` webview
+/// (teardown) is not an error.
+pub(crate) fn run_page_script(webview: Option<&WebView>, script: &str, what: &str) {
+    if let Some(webview) = webview {
+        if let Err(error) = webview.evaluate_script(script) {
+            eprintln!("{what}: {error}");
+        }
+    }
+}
+
+/// The document for `path`: the tab's cached render when the file still hashes
+/// the same, a fresh render (cached on the tab) when not. The read is cheap;
+/// the render is what the cache saves.
+fn cached_or_rendered_document(
+    workspace: &mut Workspace,
+    index: usize,
+    path: &Path,
+) -> io::Result<OpenedDocument> {
+    let source = read_source(path)?;
+    let hash = content_hash(&source.text);
+    if let Some(cache) = workspace
+        .tabs
+        .get(index)
+        .and_then(|tab| tab.rendered.as_ref())
+    {
+        if cache.hash == hash && paths_refer_to_same_document(&cache.path, path) {
+            return Ok(cache.document.clone());
+        }
+    }
+    let document = opened_document_from_source(&source.text, path);
+    if let Some(tab) = workspace.tabs.get_mut(index) {
+        tab.rendered = Some(RenderedCache {
+            path: path.to_path_buf(),
+            hash,
+            document: document.clone(),
+        });
+    }
+    Ok(document)
+}
+
 pub(crate) fn update_local_image_source_dir(
     state: &Arc<Mutex<Option<PathBuf>>>,
     source_dir: Option<PathBuf>,
@@ -70,15 +110,11 @@ pub(crate) fn render_active(
                 // the active index have to go over separately. A file opened
                 // straight into source is a tab the page has never heard of.
                 let tabs = workspace.tab_summaries();
-                if let Some(webview) = webview {
-                    if let Err(error) = webview.evaluate_script(&workspace_only_script(
-                        &recent.files,
-                        &tabs,
-                        Some(index),
-                    )) {
-                        eprintln!("Failed to update tabs for the code view: {error}");
-                    }
-                }
+                run_page_script(
+                    webview,
+                    &workspace_only_script(&recent.files, &tabs, Some(index)),
+                    "Failed to update tabs for the code view",
+                );
                 enter_code_view(webview, workspace, scroll_fraction);
                 return;
             }
@@ -98,17 +134,21 @@ pub(crate) fn render_active(
                     .expect("edit buffer present");
                 reading_document_from_buffer(edit, &path)
             } else {
-                match open_document_with_recent(&path, recent, config_path.map(PathBuf::as_path)) {
-                    Ok(success) => {
-                        if let Some(error) = success.recent_save_error {
-                            eprintln!("Failed to save recent files: {}", error.source);
+                match cached_or_rendered_document(workspace, index, &path) {
+                    Ok(document) => {
+                        // The same recent-files bookkeeping an initial open does.
+                        recent.record(path.clone());
+                        if let Some(config_path) = config_path {
+                            if let Err(error) = save_recent_files(config_path, recent) {
+                                eprintln!("Failed to save recent files: {error}");
+                            }
                         }
-                        success.document
+                        document
                     }
                     Err(error) => {
-                        let failed_path = error.path().to_path_buf();
-                        let reason = error.reason().to_string();
-                        let missing = error.reason().kind() == io::ErrorKind::NotFound;
+                        let failed_path = path.clone();
+                        let reason = error.to_string();
+                        let missing = error.kind() == io::ErrorKind::NotFound;
                         eprintln!("Failed to open {}: {}", failed_path.display(), reason);
 
                         // Drop a missing file from Recent so it can't re-trigger.
@@ -159,41 +199,32 @@ pub(crate) fn render_active(
                 local_image_source_dir(&image_source_path),
             );
             let tabs = workspace.tab_summaries();
-            if let Some(webview) = webview {
-                let script = match scroll {
-                    ScrollIntent::Preserve => {
-                        workspace_reload_script(&recent.files, &tabs, Some(index), Some(&document))
-                    }
-                    ScrollIntent::Restore(anchor) => workspace_switch_script(
-                        &recent.files,
-                        &tabs,
-                        Some(index),
-                        Some(&document),
-                        anchor.as_ref(),
-                    ),
-                    ScrollIntent::Reset => {
-                        workspace_state_script(&recent.files, &tabs, Some(index), Some(&document))
-                    }
-                };
-                if let Err(error) = webview.evaluate_script(&script) {
-                    eprintln!("Failed to update document view: {error}");
+            let script = match scroll {
+                ScrollIntent::Preserve => {
+                    workspace_reload_script(&recent.files, &tabs, Some(index), Some(&document))
                 }
-            }
+                ScrollIntent::Restore(anchor) => workspace_switch_script(
+                    &recent.files,
+                    &tabs,
+                    Some(index),
+                    Some(&document),
+                    anchor.as_ref(),
+                ),
+                ScrollIntent::Reset => {
+                    workspace_state_script(&recent.files, &tabs, Some(index), Some(&document))
+                }
+            };
+            run_page_script(webview, &script, "Failed to update document view");
         }
         None => {
             window.set_title("Leaf Text");
             update_local_image_source_dir(local_image_source_dir_state, None);
             let tabs = workspace.tab_summaries();
-            if let Some(webview) = webview {
-                if let Err(error) = webview.evaluate_script(&workspace_state_script(
-                    &recent.files,
-                    &tabs,
-                    None,
-                    None,
-                )) {
-                    eprintln!("Failed to update view: {error}");
-                }
-            }
+            run_page_script(
+                webview,
+                &workspace_state_script(&recent.files, &tabs, None, None),
+                "Failed to update view",
+            );
         }
     }
     update_active_navigation(webview, workspace);
@@ -204,14 +235,14 @@ pub(crate) fn update_navigation(
     history: &DocumentHistory,
     scroll_history: &ScrollHistory,
 ) {
-    if let Some(webview) = webview {
-        if let Err(error) = webview.evaluate_script(&navigation_state_script(
+    run_page_script(
+        webview,
+        &navigation_state_script(
             scroll_history.can_go_back() || history.can_go_back(),
             scroll_history.can_go_forward() || history.can_go_forward(),
-        )) {
-            eprintln!("Failed to update navigation state: {error}");
-        }
-    }
+        ),
+        "Failed to update navigation state",
+    );
 }
 
 /// Refresh the back/forward buttons from the active tab's histories, or disable
@@ -219,14 +250,11 @@ pub(crate) fn update_navigation(
 pub(crate) fn update_active_navigation(webview: Option<&WebView>, workspace: &Workspace) {
     match workspace.active.and_then(|index| workspace.tabs.get(index)) {
         Some(tab) => update_navigation(webview, &tab.history, &tab.scroll_history),
-        None => {
-            if let Some(webview) = webview {
-                if let Err(error) = webview.evaluate_script(&navigation_state_script(false, false))
-                {
-                    eprintln!("Failed to update navigation state: {error}");
-                }
-            }
-        }
+        None => run_page_script(
+            webview,
+            &navigation_state_script(false, false),
+            "Failed to update navigation state",
+        ),
     }
 }
 
@@ -234,33 +262,33 @@ pub(crate) fn update_active_navigation(webview: Option<&WebView>, workspace: &Wo
 /// state script the render sends back clears it; a page-side safety timeout
 /// covers anything that slips through.
 pub(crate) fn begin_reader_loading(webview: Option<&WebView>) {
-    if let Some(webview) = webview {
-        if let Err(error) = webview.evaluate_script("beginReaderLoading();") {
-            eprintln!("Failed to arm the reader loading spinner: {error}");
-        }
-    }
+    run_page_script(
+        webview,
+        "beginReaderLoading();",
+        "Failed to arm the reader loading spinner",
+    );
 }
 
 pub(crate) fn scroll_to_fragment(webview: Option<&WebView>, fragment: &str) {
-    if let Some(webview) = webview {
-        if let Err(error) = webview.evaluate_script(&fragment_scroll_script(fragment)) {
-            eprintln!("Failed to scroll to document fragment: {error}");
-        }
-    }
+    run_page_script(
+        webview,
+        &fragment_scroll_script(fragment),
+        "Failed to scroll to document fragment",
+    );
 }
 
 pub(crate) fn restore_scroll_anchor(webview: Option<&WebView>, anchor: &ScrollAnchor) {
-    if let Some(webview) = webview {
-        if let Err(error) = webview.evaluate_script(&scroll_anchor_script(anchor)) {
-            eprintln!("Failed to restore document scroll position: {error}");
-        }
-    }
+    run_page_script(
+        webview,
+        &scroll_anchor_script(anchor),
+        "Failed to restore document scroll position",
+    );
 }
 
 pub(crate) fn show_open_error(webview: Option<&WebView>, path: &std::path::Path, reason: &str) {
-    if let Some(webview) = webview {
-        if let Err(error) = webview.evaluate_script(&open_error_state_script(path, reason)) {
-            eprintln!("Failed to show localized open error message: {error}");
-        }
-    }
+    run_page_script(
+        webview,
+        &open_error_state_script(path, reason),
+        "Failed to show localized open error message",
+    );
 }

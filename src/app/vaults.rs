@@ -291,12 +291,11 @@ pub(crate) fn deliver_folder(
         return;
     }
     state.folder = listing.path.clone();
-    let Some(webview) = webview else {
-        return;
-    };
-    if let Err(error) = webview.evaluate_script(&library_folder_script(&listing)) {
-        eprintln!("Failed to show the folder: {error}");
-    }
+    run_page_script(
+        webview,
+        &library_folder_script(&listing),
+        "Failed to show the folder",
+    );
 }
 
 /// A graph that was asked for: the document it was about, and the slice wanted.
@@ -372,9 +371,11 @@ pub(crate) fn request_link_graph(
         None => {
             // An empty graph, not an error: the page shows it as nothing to draw.
             // Cheap enough to answer here.
-            if let Some(webview) = webview {
-                let _ = webview.evaluate_script(&graph_script(&empty_graph()));
-            }
+            run_page_script(
+                webview,
+                &graph_script(&empty_graph()),
+                "Failed to draw the graph",
+            );
         }
     }
 }
@@ -457,12 +458,7 @@ pub(crate) fn deliver_graph(
     if graph_source(state, document) != Some(source) {
         return;
     }
-    let Some(webview) = webview else {
-        return;
-    };
-    if let Err(error) = webview.evaluate_script(&graph_script(&graph)) {
-        eprintln!("Failed to draw the graph: {error}");
-    }
+    run_page_script(webview, &graph_script(&graph), "Failed to draw the graph");
 }
 
 /// Same for a finished search. The page also drops answers to queries the field
@@ -477,12 +473,11 @@ pub(crate) fn deliver_search(
     if scope != state.root {
         return;
     }
-    let Some(webview) = webview else {
-        return;
-    };
-    if let Err(error) = webview.evaluate_script(&search_results_script(query, &hits)) {
-        eprintln!("Failed to show search results: {error}");
-    }
+    run_page_script(
+        webview,
+        &search_results_script(query, &hits),
+        "Failed to show search results",
+    );
 }
 
 /// Start the one read, unless it is already running.
@@ -610,10 +605,9 @@ pub(crate) fn change_affects_pane(state: &VaultState, changed: &Path) -> bool {
 
 /// Send the registry and the active id to the page.
 pub(crate) fn push_vaults(webview: Option<&WebView>, state: &VaultState) {
-    let Some(webview) = webview else {
-        return;
-    };
-    if let Err(error) = webview.evaluate_script(&vaults_script(&state.vaults(), state.active)) {
-        eprintln!("Failed to update the vault switcher: {error}");
-    }
+    run_page_script(
+        webview,
+        &vaults_script(&state.vaults(), state.active),
+        "Failed to update the vault switcher",
+    );
 }

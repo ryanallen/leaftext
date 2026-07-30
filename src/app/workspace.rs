@@ -22,6 +22,19 @@ pub(crate) struct Tab {
     /// Whether this tab is currently showing the raw-source code view rather
     /// than the rendered reading view.
     pub(crate) code_view: bool,
+    /// The last render of this tab's document from disk, reused on a switch
+    /// while the contents still hash the same. The hash check is what admits
+    /// it, so a stale entry is re-rendered over, never shown.
+    pub(crate) rendered: Option<RenderedCache>,
+}
+
+/// See [`Tab::rendered`].
+#[derive(Debug)]
+pub(crate) struct RenderedCache {
+    pub(crate) path: PathBuf,
+    /// [`content_hash`] of the source the document was rendered from.
+    pub(crate) hash: u64,
+    pub(crate) document: OpenedDocument,
 }
 
 impl Tab {
@@ -71,6 +84,20 @@ impl Workspace {
             .and_then(|index| self.tabs.get(index))
             .and_then(|tab| tab.history.current())
             .map(PathBuf::as_path)
+    }
+
+    /// The active tab's edit buffer, when one exists.
+    pub(crate) fn active_edit(&self) -> Option<&EditableDocument> {
+        self.active
+            .and_then(|index| self.tabs.get(index))
+            .and_then(|tab| tab.edit.as_ref())
+    }
+
+    /// The active tab's edit buffer, mutably.
+    pub(crate) fn active_edit_mut(&mut self) -> Option<&mut EditableDocument> {
+        self.active
+            .and_then(|index| self.tabs.get_mut(index))
+            .and_then(|tab| tab.edit.as_mut())
     }
 
     /// Open `path` as a tab. If a tab is already showing that document, just

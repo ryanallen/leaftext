@@ -750,8 +750,31 @@ fn auto_link_glossary(body_html: String, doc_dir: &Path) -> String {
     link_terms_in_html(&body_html, &terms)
 }
 
+/// The shell's icon placeholders and the SVG each takes. A new icon is one row
+/// here; the placeholder test proves none is left unfilled.
+const APP_SHELL_ICONS: &[(&str, &str)] = &[
+    ("{{LEAF_ICON_SVG}}", LEAF_ICON_SVG),
+    ("{{BACK_ICON_SVG}}", BACK_ICON_SVG),
+    ("{{FORWARD_ICON_SVG}}", FORWARD_ICON_SVG),
+    ("{{SETTINGS_ICON_SVG}}", SETTINGS_ICON_SVG),
+    ("{{OPEN_LIBRARY_ICON_SVG}}", OPEN_LIBRARY_ICON_SVG),
+    ("{{OPEN_ICON_SVG}}", OPEN_ICON_SVG),
+    ("{{CODE_VIEW_ICON_SVG}}", CODE_VIEW_ICON_SVG),
+    ("{{DOCUMENT_ICON_SVG}}", DOCUMENT_ICON_SVG),
+    ("{{SYNC_ICON_SVG}}", SYNC_ICON_SVG),
+    ("{{SPEED_READER_ON_ICON_SVG}}", SPEED_READER_ON_ICON_SVG),
+    ("{{SPEED_READER_OFF_ICON_SVG}}", SPEED_READER_OFF_ICON_SVG),
+    ("{{LOCK_CLOSED_ICON_SVG}}", LOCK_CLOSED_ICON_SVG),
+    ("{{LOCK_OPEN_ICON_SVG}}", LOCK_OPEN_ICON_SVG),
+    ("{{CLOUD_ICON_SVG}}", CLOUD_ICON_SVG),
+    ("{{PACKAGE_OPEN_ICON_SVG}}", PACKAGE_OPEN_ICON_SVG),
+    ("{{PACKAGE_ICON_SVG}}", PACKAGE_ICON_SVG),
+    ("{{FOLDER_ICON_SVG}}", FOLDER_ICON_SVG),
+    ("{{GRAPH_ICON_SVG}}", GRAPH_ICON_SVG),
+];
+
 pub fn app_shell_html() -> String {
-    APP_SHELL_HTML
+    let mut html = APP_SHELL_HTML
         .replace("{{APP_SCRIPT}}", app_shell_script())
         .replace("{{THEME_BOOTSTRAP_SCRIPT}}", &theme_bootstrap_script())
         .replace("{{APP_CSS_URL}}", &bundled_asset_url("app.css"))
@@ -784,79 +807,12 @@ pub fn app_shell_html() -> String {
         .replace(
             "{{MONACO_CSS_URL}}",
             &bundled_asset_url("monaco/monaco.css"),
-        )
-        .replace(
-            "{{LEAF_ICON_SVG}}",
-            normalize_svg_icon_colors(LEAF_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{BACK_ICON_SVG}}",
-            normalize_svg_icon_colors(BACK_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{FORWARD_ICON_SVG}}",
-            normalize_svg_icon_colors(FORWARD_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{SETTINGS_ICON_SVG}}",
-            normalize_svg_icon_colors(SETTINGS_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{OPEN_LIBRARY_ICON_SVG}}",
-            normalize_svg_icon_colors(OPEN_LIBRARY_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{OPEN_ICON_SVG}}",
-            normalize_svg_icon_colors(OPEN_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{CODE_VIEW_ICON_SVG}}",
-            normalize_svg_icon_colors(CODE_VIEW_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{DOCUMENT_ICON_SVG}}",
-            normalize_svg_icon_colors(DOCUMENT_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{SYNC_ICON_SVG}}",
-            normalize_svg_icon_colors(SYNC_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{SPEED_READER_ON_ICON_SVG}}",
-            normalize_svg_icon_colors(SPEED_READER_ON_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{SPEED_READER_OFF_ICON_SVG}}",
-            normalize_svg_icon_colors(SPEED_READER_OFF_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{LOCK_CLOSED_ICON_SVG}}",
-            normalize_svg_icon_colors(LOCK_CLOSED_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{LOCK_OPEN_ICON_SVG}}",
-            normalize_svg_icon_colors(LOCK_OPEN_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{CLOUD_ICON_SVG}}",
-            normalize_svg_icon_colors(CLOUD_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{PACKAGE_OPEN_ICON_SVG}}",
-            normalize_svg_icon_colors(PACKAGE_OPEN_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{PACKAGE_ICON_SVG}}",
-            normalize_svg_icon_colors(PACKAGE_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{FOLDER_ICON_SVG}}",
-            normalize_svg_icon_colors(FOLDER_ICON_SVG).trim(),
-        )
-        .replace(
-            "{{GRAPH_ICON_SVG}}",
-            normalize_svg_icon_colors(GRAPH_ICON_SVG).trim(),
-        )
+        );
+    for (placeholder, svg) in APP_SHELL_ICONS {
+        let normalized = normalize_svg_icon_colors(svg);
+        html = html.replace(placeholder, normalized.trim());
+    }
+    html
 }
 
 /// The theme picker's family buttons for the selector bottom sheet, one per

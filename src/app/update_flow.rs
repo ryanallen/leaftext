@@ -10,12 +10,11 @@ pub(crate) fn report_update_state(
     version: &str,
     message: Option<&str>,
 ) {
-    if let Some(webview) = webview {
-        if let Err(error) = webview.evaluate_script(&update_state_script(status, version, message))
-        {
-            eprintln!("Failed to report update state: {error}");
-        }
-    }
+    run_page_script(
+        webview,
+        &update_state_script(status, version, message),
+        "Failed to report update state",
+    );
 }
 
 /// Fetch and stage an installer, then report how it went. Runs on its own

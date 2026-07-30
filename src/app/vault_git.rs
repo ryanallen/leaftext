@@ -48,12 +48,11 @@ fn vault_root(state: &VaultState, id: i64) -> Option<(String, PathBuf)> {
 /// Tell the panel a job has started, before starting it. Without this the first
 /// feedback is the result, and a push over a slow line looks like a dead button.
 fn mark_busy(webview: Option<&WebView>, id: i64) {
-    if let Some(webview) = webview {
-        let script = format!("window.leafVaultGitBusy({id});");
-        if let Err(error) = webview.evaluate_script(&script) {
-            eprintln!("Failed to mark the vault git panel busy: {error}");
-        }
-    }
+    run_page_script(
+        webview,
+        &format!("window.leafVaultGitBusy({id});"),
+        "Failed to mark the vault git panel busy",
+    );
 }
 
 /// Run `job` off the event loop and post whatever it decides back as the panel's
@@ -116,12 +115,11 @@ pub(crate) fn refresh_vault_status(state: &VaultState, proxy: &EventLoopProxy<Us
 
 /// Hand the header's button its vault's state.
 pub(crate) fn deliver_vault_status(webview: Option<&WebView>, id: i64, json: &str) {
-    if let Some(webview) = webview {
-        let script = format!("window.leafSetVaultStatus({id}, {json});");
-        if let Err(error) = webview.evaluate_script(&script) {
-            eprintln!("Failed to update the vault status: {error}");
-        }
-    }
+    run_page_script(
+        webview,
+        &format!("window.leafSetVaultStatus({id}, {json});"),
+        "Failed to update the vault status",
+    );
 }
 
 /// Read the vault's situation without changing anything. Opening the panel.
@@ -212,10 +210,9 @@ pub(crate) fn sync_vault(
 
 /// Hand a finished job's state to the page.
 pub(crate) fn deliver_vault_git(webview: Option<&WebView>, json: &str) {
-    if let Some(webview) = webview {
-        let script = format!("window.leafSetVaultGit({json});");
-        if let Err(error) = webview.evaluate_script(&script) {
-            eprintln!("Failed to update the vault git panel: {error}");
-        }
-    }
+    run_page_script(
+        webview,
+        &format!("window.leafSetVaultGit({json});"),
+        "Failed to update the vault git panel",
+    );
 }

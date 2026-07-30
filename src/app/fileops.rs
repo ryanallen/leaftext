@@ -301,19 +301,19 @@ pub(crate) fn show_properties(path: &Path) -> io::Result<()> {
 /// without this, doing something in the pane leaves the pane showing what was true
 /// before you did it.
 pub(crate) fn refresh_library_folder(webview: Option<&WebView>) {
-    if let Some(webview) = webview {
-        if let Err(error) = webview.evaluate_script(&library_refresh_script()) {
-            eprintln!("Failed to refresh the library pane: {error}");
-        }
-    }
+    run_page_script(
+        webview,
+        &library_refresh_script(),
+        "Failed to refresh the library pane",
+    );
 }
 
 /// Tell the person what went wrong, where they are looking. These are the failures
 /// they set in motion and are waiting on, and the terminal is not where they are.
 pub(crate) fn report_file_action_failure(webview: Option<&WebView>, message: &str) {
-    if let Some(webview) = webview {
-        if let Err(error) = webview.evaluate_script(&error_toast_script(message)) {
-            eprintln!("Failed to report a file action failure: {error}");
-        }
-    }
+    run_page_script(
+        webview,
+        &error_toast_script(message),
+        "Failed to report a file action failure",
+    );
 }

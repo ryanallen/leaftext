@@ -236,16 +236,16 @@ pub(crate) fn reload_active_document(
             let text = edit.text().to_string();
             let language = edit.format.language_token().to_string();
             let display = edit.format.display_name().to_string();
-            if let Some(webview) = webview {
-                let url = stage_source_payload(code_view_payload(
-                    &text, &language, &display, false,
-                    // Live reload refreshes in place; the page keeps its scroll.
-                    None,
-                ));
-                if let Err(error) = webview.evaluate_script(&code_view_fetch_script(&url)) {
-                    eprintln!("Live reload: failed to refresh code view: {error}");
-                }
-            }
+            let url = stage_source_payload(code_view_payload(
+                &text, &language, &display, false,
+                // Live reload refreshes in place; the page keeps its scroll.
+                None,
+            ));
+            run_page_script(
+                webview,
+                &code_view_fetch_script(&url),
+                "Live reload: failed to refresh code view",
+            );
             return;
         }
     }
@@ -255,6 +255,12 @@ pub(crate) fn reload_active_document(
     let document = opened_document_from_source(&contents, &path);
     if let Some(tab) = workspace.tabs.get_mut(index) {
         tab.title = document.title.clone();
+        // Cache it, so switching away and back doesn't redo this render.
+        tab.rendered = Some(RenderedCache {
+            path: path.clone(),
+            hash,
+            document: document.clone(),
+        });
     }
     window.set_title(&format!("{} - Leaf Text", document.title));
 
@@ -265,14 +271,9 @@ pub(crate) fn reload_active_document(
     );
 
     let tabs = workspace.tab_summaries();
-    if let Some(webview) = webview {
-        if let Err(error) = webview.evaluate_script(&workspace_reload_script(
-            &recent.files,
-            &tabs,
-            Some(index),
-            Some(&document),
-        )) {
-            eprintln!("Live reload: failed to update document view: {error}");
-        }
-    }
+    run_page_script(
+        webview,
+        &workspace_reload_script(&recent.files, &tabs, Some(index), Some(&document)),
+        "Live reload: failed to update document view",
+    );
 }

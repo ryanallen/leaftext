@@ -69,20 +69,14 @@ pub(crate) fn reading_document_from_buffer(edit: &EditableDocument, path: &Path)
     opened_document_from_source(edit.text(), path)
 }
 
-/// Swap the active document to the code view. Seeds the edit buffer from disk
-/// the first time, then hands the webview the highlighted source, buffer text,
-/// language, and dirty state.
-pub(crate) fn enter_code_view(
-    webview: Option<&WebView>,
-    workspace: &mut Workspace,
-    scroll_fraction: Option<f64>,
-) {
-    let Some((index, path)) = active_tab_path(workspace) else {
-        return;
-    };
-
-    // Read the file only when there's no buffer for this document yet; re-entry
-    // reuses the buffer so unsaved edits survive.
+/// The active tab's edit buffer, seeded from disk the first time; re-entry
+/// reuses it so unsaved edits survive. `what` names the caller in the error
+/// line. Also returns the tab's index.
+fn seeded_active_edit<'a>(
+    workspace: &'a mut Workspace,
+    what: &str,
+) -> Option<(usize, &'a mut EditableDocument)> {
+    let (index, path) = active_tab_path(workspace)?;
     let needs_seed = workspace
         .tabs
         .get(index)
@@ -91,38 +85,48 @@ pub(crate) fn enter_code_view(
         match read_source(&path) {
             Ok(contents) => contents,
             Err(error) => {
-                eprintln!("Code view: failed to read {}: {error}", path.display());
-                return;
+                eprintln!("{what}: failed to read {}: {error}", path.display());
+                return None;
             }
         }
     } else {
         SourceText::utf8(String::new())
     };
+    let tab = workspace.tabs.get_mut(index)?;
+    Some((index, tab.edit_buffer(&path, contents)))
+}
 
-    let Some(tab) = workspace.tabs.get_mut(index) else {
+/// Swap the active document to the code view. Seeds the edit buffer from disk
+/// the first time, then hands the webview the highlighted source, buffer text,
+/// language, and dirty state.
+pub(crate) fn enter_code_view(
+    webview: Option<&WebView>,
+    workspace: &mut Workspace,
+    scroll_fraction: Option<f64>,
+) {
+    let Some((index, edit)) = seeded_active_edit(workspace, "Code view") else {
         return;
     };
     // Building the editor on a big source takes a while; the code-view script
     // clears the spinner once it is on screen.
     begin_reader_loading(webview);
-    let edit = tab.edit_buffer(&path, contents);
     let text = edit.text().to_string();
     let language = edit.format.language_token().to_string();
     let display = edit.format.display_name().to_string();
     let dirty = edit.is_dirty();
 
-    if let Some(webview) = webview {
-        let url = stage_source_payload(code_view_payload(
-            &text,
-            &language,
-            &display,
-            dirty,
-            scroll_fraction,
-        ));
-        if let Err(error) = webview.evaluate_script(&code_view_fetch_script(&url)) {
-            eprintln!("Code view: failed to show source: {error}");
-        }
-    }
+    let url = stage_source_payload(code_view_payload(
+        &text,
+        &language,
+        &display,
+        dirty,
+        scroll_fraction,
+    ));
+    run_page_script(
+        webview,
+        &code_view_fetch_script(&url),
+        "Code view: failed to show source",
+    );
     if let Some(tab) = workspace.tabs.get_mut(index) {
         tab.code_view = true;
     }
@@ -143,34 +147,27 @@ pub(crate) fn splice_source_buffer(
     inserted: &str,
     length: usize,
 ) {
-    let Some(index) = workspace.active else {
-        return;
-    };
-    let Some(edit) = workspace
-        .tabs
-        .get_mut(index)
-        .and_then(|tab| tab.edit.as_mut())
-    else {
+    let Some(edit) = workspace.active_edit_mut() else {
         return;
     };
     edit.splice_utf16_without_undo(start, removed, inserted);
 
     if edit.utf16_len() != length {
         eprintln!("Code view: buffer drifted from the page; asking for a full resend");
-        if let Some(webview) = webview {
-            if let Err(error) = webview.evaluate_script("window.leafResyncSource();") {
-                eprintln!("Code view: failed to request a resync: {error}");
-            }
-        }
+        run_page_script(
+            webview,
+            "window.leafResyncSource();",
+            "Code view: failed to request a resync",
+        );
         return;
     }
 
     let dirty = edit.is_dirty();
-    if let Some(webview) = webview {
-        if let Err(error) = webview.evaluate_script(&source_updated_script(dirty)) {
-            eprintln!("Code view: failed to refresh source: {error}");
-        }
-    }
+    run_page_script(
+        webview,
+        &source_updated_script(dirty),
+        "Code view: failed to refresh source",
+    );
 }
 
 /// Apply a debounced code-view edit to the buffer, then refresh the dirty state.
@@ -179,23 +176,16 @@ pub(crate) fn update_source_buffer(
     workspace: &mut Workspace,
     text: String,
 ) {
-    let Some(index) = workspace.active else {
-        return;
-    };
-    let Some(edit) = workspace
-        .tabs
-        .get_mut(index)
-        .and_then(|tab| tab.edit.as_mut())
-    else {
+    let Some(edit) = workspace.active_edit_mut() else {
         return;
     };
     edit.set_text(text);
     let dirty = edit.is_dirty();
-    if let Some(webview) = webview {
-        if let Err(error) = webview.evaluate_script(&source_updated_script(dirty)) {
-            eprintln!("Code view: failed to refresh source: {error}");
-        }
-    }
+    run_page_script(
+        webview,
+        &source_updated_script(dirty),
+        "Code view: failed to refresh source",
+    );
 }
 
 /// Write the active tab's edit buffer to disk. Sets the watcher's content hash
@@ -205,14 +195,7 @@ pub(crate) fn save_active_document(
     workspace: &mut Workspace,
     file_watch: &mut FileWatch,
 ) {
-    let Some(index) = workspace.active else {
-        return;
-    };
-    let Some(edit) = workspace
-        .tabs
-        .get_mut(index)
-        .and_then(|tab| tab.edit.as_mut())
-    else {
+    let Some(edit) = workspace.active_edit_mut() else {
         return;
     };
     let path = edit.path.clone();
@@ -234,11 +217,7 @@ pub(crate) fn save_active_document(
         }
     };
 
-    if let Some(webview) = webview {
-        if let Err(error) = webview.evaluate_script(&script) {
-            eprintln!("Save: failed to report result: {error}");
-        }
-    }
+    run_page_script(webview, &script, "Save: failed to report result");
 }
 
 /// Seed the edit buffer from disk on the first edit, then splice a reading-view
@@ -251,28 +230,9 @@ pub(crate) fn apply_block_edit(
     text: &str,
     record_undo: bool,
 ) -> bool {
-    let Some((tab_index, path)) = active_tab_path(workspace) else {
+    let Some((_, edit)) = seeded_active_edit(workspace, "Edit block") else {
         return false;
     };
-    let needs_seed = workspace
-        .tabs
-        .get(tab_index)
-        .is_some_and(|tab| tab.needs_edit_seed(&path));
-    let contents = if needs_seed {
-        match read_source(&path) {
-            Ok(contents) => contents,
-            Err(error) => {
-                eprintln!("Edit block: failed to read {}: {error}", path.display());
-                return false;
-            }
-        }
-    } else {
-        SourceText::utf8(String::new())
-    };
-    let Some(tab) = workspace.tabs.get_mut(tab_index) else {
-        return false;
-    };
-    let edit = tab.edit_buffer(&path, contents);
     if record_undo {
         edit.replace_range(start, end, text);
     } else {
@@ -285,11 +245,7 @@ pub(crate) fn apply_block_edit(
 /// no Save-button round-trip. The version bump plus watcher-hash update keep our
 /// own write from bouncing back through the file watcher as an external change.
 pub(crate) fn autosave_active_buffer(workspace: &mut Workspace, file_watch: &mut FileWatch) {
-    let Some(edit) = workspace
-        .active
-        .and_then(|index| workspace.tabs.get_mut(index))
-        .and_then(|tab| tab.edit.as_mut())
-    else {
+    let Some(edit) = workspace.active_edit_mut() else {
         return;
     };
     let text = edit.text().to_string();
@@ -314,28 +270,9 @@ pub(crate) fn toggle_task_marker(
     file_watch: &mut FileWatch,
     index: usize,
 ) {
-    let Some((tab_index, path)) = active_tab_path(workspace) else {
+    let Some((_, edit)) = seeded_active_edit(workspace, "Toggle task") else {
         return;
     };
-    let needs_seed = workspace
-        .tabs
-        .get(tab_index)
-        .is_some_and(|tab| tab.needs_edit_seed(&path));
-    let contents = if needs_seed {
-        match read_source(&path) {
-            Ok(contents) => contents,
-            Err(error) => {
-                eprintln!("Toggle task: failed to read {}: {error}", path.display());
-                return;
-            }
-        }
-    } else {
-        SourceText::utf8(String::new())
-    };
-    let Some(tab) = workspace.tabs.get_mut(tab_index) else {
-        return;
-    };
-    let edit = tab.edit_buffer(&path, contents);
     edit.toggle_task_without_undo(index);
     let text = edit.text().to_string();
     match write_source(&edit.path, &text, edit.spelling) {
@@ -352,33 +289,25 @@ pub(crate) fn toggle_task_marker(
     let dirty = edit.is_dirty();
     let can_undo = edit.can_undo();
 
-    if let Some(webview) = webview {
-        // A toggle doesn't re-render, so carry the toggled source for the
-        // reader's raw-source editors to slice from.
-        let script = blocks_resynced_script(&tasks, dirty, can_undo, Some(&text));
-        if let Err(error) = webview.evaluate_script(&script) {
-            eprintln!("Toggle task: failed to resync reading view: {error}");
-        }
-    }
+    // A toggle doesn't re-render, so carry the toggled source for the
+    // reader's raw-source editors to slice from.
+    run_page_script(
+        webview,
+        &blocks_resynced_script(&tasks, dirty, can_undo, Some(&text)),
+        "Toggle task: failed to resync reading view",
+    );
 }
 
 /// Push the buffer's editing state (task offsets, dirty, undo availability) back
 /// to the reading view. The source is omitted since the caller's re-render
 /// already delivered it.
 pub(crate) fn resync_editing_state(webview: Option<&WebView>, workspace: &Workspace) {
-    let Some(webview) = webview else {
+    let Some(edit) = workspace.active_edit() else {
         return;
     };
-    let Some(edit) = workspace
-        .active
-        .and_then(|index| workspace.tabs.get(index))
-        .and_then(|tab| tab.edit.as_ref())
-    else {
-        return;
-    };
-    let script =
-        blocks_resynced_script(&edit.task_offsets(), edit.is_dirty(), edit.can_undo(), None);
-    if let Err(error) = webview.evaluate_script(&script) {
-        eprintln!("Editing: failed to resync reading view: {error}");
-    }
+    run_page_script(
+        webview,
+        &blocks_resynced_script(&edit.task_offsets(), edit.is_dirty(), edit.can_undo(), None),
+        "Editing: failed to resync reading view",
+    );
 }

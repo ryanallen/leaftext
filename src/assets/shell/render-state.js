@@ -167,9 +167,9 @@ window.leafRestoreScrollAnchor = (anchor) => {
     updateMinimapViewport();
   });
 };
-// Every extension the app reads. Mirrors the table in `src/format.rs`, which is
-// the source of truth — the page can't import it, so keep the two in step.
-const DOCUMENT_EXTS = 'md|markdown|mdown|xml|json|yaml|yml';
+// Every extension the app reads, injected at boot from the table in
+// `src/format.rs` — never a copy kept here.
+const DOCUMENT_EXTS = (window.__leafDocumentExts || ['md']).join('|');
 /** A bare file name ending in a document extension. */
 const DOCUMENT_NAME_RE = new RegExp(`\\.(${DOCUMENT_EXTS})$`, 'i');
 /** An href pointing at a document, fragment or query allowed. */
@@ -187,64 +187,64 @@ function tabDisplayName(tab) {
 function renderTabs(state) {
   const tabs = state.tabs || [];
   const active = state.active;
+  // A pure HTML write; the strip's listeners live on the bar itself (below).
   tabBar.innerHTML = tabs.map((tab, index) => `<span class="tab${index === active ? ' tab-active' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(tabDisplayName(tab))}</button><span class="tab-dirty-dot" aria-hidden="true"></span><button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></span>`).join('');
-  tabBar.querySelectorAll('[data-tab-index]').forEach((button) => {
-    button.addEventListener('click', () => {
-      if (suppressTabClick) return;
-      const index = Number(button.dataset.tabIndex);
-      const wasActive = index === (currentState && currentState.active);
-      // A real switch renders the other document (which may be slow); show the
-      // spinner. Re-clicking the active tab is a host no-op, so skip it there.
-      if (!wasActive) beginReaderLoading();
-      send({
-        command: 'switchTab',
-        index,
-        scroll_anchor: currentScrollAnchor(),
-        code_scroll: codeViewActive ? viewScrollFraction() : null,
-      });
-      // Reveal even when this is already the active tab (no state round-trip
-      // from the host): clicking a file's tab snaps the library back to it, and
-      // in graph mode flies the camera to that node and zooms in. Clicking the
-      // tab you are already on is a deliberate resync — force the graph to
-      // rebuild so it can't stay stuck on a stale scene in memory.
-      const tab = (currentState.tabs || [])[index];
-      followFileInLibrary(tab ? tab.path || null : null, true, wasActive);
-    });
-  });
-  tabBar.querySelectorAll('[data-tab-close]').forEach((button) => {
-    button.addEventListener('click', (event) => {
-      event.stopPropagation();
-      send({ command: 'closeTab', index: Number(button.dataset.tabClose) });
-    });
-  });
-  tabBar.querySelectorAll('.tab').forEach((tabEl) => {
-    tabEl.addEventListener('pointerdown', (event) => {
-      if (event.button !== 0 || event.target.closest('.tab-close')) return;
-      const dragIndex = Number(tabEl.dataset.tabPos);
-      const dragRect = tabEl.getBoundingClientRect();
-      const dragMid = dragRect.left + dragRect.width / 2;
-      const others = Array.from(tabBar.querySelectorAll('.tab'))
-        .map((el) => {
-          const rect = el.getBoundingClientRect();
-          return { pos: Number(el.dataset.tabPos), el, mid: rect.left + rect.width / 2 };
-        })
-        .filter((t) => t.pos !== dragIndex)
-        .sort((a, b) => a.mid - b.mid);
-      const filteredFrom = others.filter((t) => t.mid < dragMid).length;
-      tabDrag = {
-        index: dragIndex,
-        el: tabEl,
-        startX: event.clientX,
-        pointerId: event.pointerId,
-        moved: false,
-        to: filteredFrom,
-        others,
-        draggedWidth: dragRect.width,
-        filteredFrom,
-      };
-    });
-  });
   // A tab opening, closing, or changing title changes what the strip needs —
   // refold so a longer title takes a button rather than getting clipped.
   refitAppBar();
 }
+// One listener on the bar answers for tabs that are rebuilt on every render.
+tabBar.addEventListener('click', (event) => {
+  const close = event.target.closest('[data-tab-close]');
+  if (close) {
+    event.stopPropagation();
+    send({ command: 'closeTab', index: Number(close.dataset.tabClose) });
+    return;
+  }
+  const label = event.target.closest('[data-tab-index]');
+  if (!label || suppressTabClick) return;
+  const index = Number(label.dataset.tabIndex);
+  const wasActive = index === (currentState && currentState.active);
+  // A real switch renders the other document (which may be slow); show the
+  // spinner. Re-clicking the active tab is a host no-op, so skip it there.
+  if (!wasActive) beginReaderLoading();
+  send({
+    command: 'switchTab',
+    index,
+    scroll_anchor: currentScrollAnchor(),
+    code_scroll: codeViewActive ? viewScrollFraction() : null,
+  });
+  // Reveal even when this is already the active tab (no state round-trip
+  // from the host): clicking a file's tab snaps the library back to it, and
+  // in graph mode flies the camera to that node and zooms in. Clicking the
+  // tab you are already on is a deliberate resync — force the graph to
+  // rebuild so it can't stay stuck on a stale scene in memory.
+  const tab = (currentState.tabs || [])[index];
+  followFileInLibrary(tab ? tab.path || null : null, true, wasActive);
+});
+tabBar.addEventListener('pointerdown', (event) => {
+  const tabEl = event.target.closest('.tab');
+  if (!tabEl || event.button !== 0 || event.target.closest('.tab-close')) return;
+  const dragIndex = Number(tabEl.dataset.tabPos);
+  const dragRect = tabEl.getBoundingClientRect();
+  const dragMid = dragRect.left + dragRect.width / 2;
+  const others = Array.from(tabBar.querySelectorAll('.tab'))
+    .map((el) => {
+      const rect = el.getBoundingClientRect();
+      return { pos: Number(el.dataset.tabPos), el, mid: rect.left + rect.width / 2 };
+    })
+    .filter((t) => t.pos !== dragIndex)
+    .sort((a, b) => a.mid - b.mid);
+  const filteredFrom = others.filter((t) => t.mid < dragMid).length;
+  tabDrag = {
+    index: dragIndex,
+    el: tabEl,
+    startX: event.clientX,
+    pointerId: event.pointerId,
+    moved: false,
+    to: filteredFrom,
+    others,
+    draggedWidth: dragRect.width,
+    filteredFrom,
+  };
+});

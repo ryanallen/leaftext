@@ -18,17 +18,17 @@ use leaftext::{
     create_repo_on_github, document_graph, document_pager_html, error_toast_script,
     fragment_scroll_script, git_tooling, glossary_failed_script, glossary_sheet_script,
     graph_script, image_refresh_script, init_vault_repo, initial_apply_outcome_script,
-    initial_settings_script, initial_state_script, initial_update_script, initial_vaults_script,
-    initial_version_script, inspect_vault_repo, is_local_image_path, is_supported_document_path,
-    library_folder_script, library_refresh_script, line_count_script, link_vault_remote,
-    load_recent_files, load_settings, local_image_protocol_response, local_image_source_dir,
-    navigation_state_script, open_document_with_recent, open_error_state_script,
-    opened_document_from_source, pager_loaded_script, read_folder_listing, read_source,
-    render_markdown_document, repo_name_for_vault, save_recent_files, save_result_script,
-    save_settings, scroll_anchor_script, search_results_script, settings_file_path,
-    settings_unreadable_script, source_payload_url, source_updated_script, sync_vault_repo,
-    update_progress_script, update_state_script, vaults_script, webview_user_data_dir,
-    workspace_only_script, workspace_reload_script, workspace_state_script,
+    initial_document_exts_script, initial_settings_script, initial_state_script,
+    initial_update_script, initial_vaults_script, initial_version_script, inspect_vault_repo,
+    is_local_image_path, is_supported_document_path, library_folder_script, library_refresh_script,
+    line_count_script, link_vault_remote, load_recent_files, load_settings,
+    local_image_protocol_response, local_image_source_dir, navigation_state_script,
+    open_error_state_script, opened_document_from_source, pager_loaded_script, read_folder_listing,
+    read_source, render_markdown_document, repo_name_for_vault, save_recent_files,
+    save_result_script, save_settings, scroll_anchor_script, search_results_script,
+    settings_file_path, settings_unreadable_script, source_payload_url, source_updated_script,
+    sync_vault_repo, update_progress_script, update_state_script, vaults_script,
+    webview_user_data_dir, workspace_only_script, workspace_reload_script, workspace_state_script,
     workspace_switch_script, write_source, DocumentFormat, EditableDocument, FolderListing,
     GitTooling, GraphScope, OpenedDocument, RecentFiles, ScrollAnchor, Settings, SettingsLoad,
     SourceText, UpdateDownload, VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
@@ -333,6 +333,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             vault_state.active,
         ))
         .with_initialization_script(initial_state_script(&recent.files))
+        .with_initialization_script(initial_document_exts_script())
         .with_initialization_script(initial_version_script())
         .with_initialization_script(initial_update_script())
         .with_initialization_script(initial_apply_outcome_script(apply_outcome.as_ref()))

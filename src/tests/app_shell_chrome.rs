@@ -81,7 +81,7 @@ fn app_shell_renders_history_controls_and_intercepts_document_links() {
             "send({ command: 'closeTab', index: currentState.active });",
             "command: 'switchTab',",
             "code_scroll: codeViewActive ? viewScrollFraction() : null,",
-            "send({ command: 'closeTab', index: Number(button.dataset.tabClose) });",
+            "send({ command: 'closeTab', index: Number(close.dataset.tabClose) });",
             "send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });",
             "send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor() });",
             "function bindDocumentLinks() {",
@@ -758,4 +758,34 @@ fn an_unsaved_tab_does_not_resize_when_you_reach_for_it() {
         tab.contains("padding: 0 12px 0 4px;"),
         "a short name would otherwise end under the close button: {tab}"
     );
+}
+
+#[test]
+fn app_shell_fills_every_placeholder() {
+    // Every `{{...}}` in the template must be filled, or it ships as braces.
+    let html = app_shell_html();
+    let mut rest = crate::APP_SHELL_HTML;
+    while let Some(start) = rest.find("{{") {
+        let after = &rest[start..];
+        let end = after.find("}}").expect("template placeholder closes") + 2;
+        let placeholder = &after[..end];
+        assert!(
+            !html.contains(placeholder),
+            "app_shell_html leaves {placeholder} unfilled"
+        );
+        rest = &after[end..];
+    }
+}
+
+#[test]
+fn document_extensions_ride_to_the_page_from_the_format_table() {
+    // The boot script must carry every extension the format table declares.
+    let script = initial_document_exts_script();
+    assert!(script.starts_with("window.__leafDocumentExts = ["));
+    for extension in all_document_extensions() {
+        assert!(
+            script.contains(&format!("\"{extension}\"")),
+            "extension {extension} missing from {script}"
+        );
+    }
 }

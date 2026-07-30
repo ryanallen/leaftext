@@ -32,9 +32,11 @@ pub(crate) fn nearest_glossary_file(current_path: &Path) -> Option<PathBuf> {
 /// Tell the page a lookup failed. The sheet went up on a spinner when the link
 /// was followed, so every path out of `show_glossary_entry` has to say something.
 fn report_glossary_failure(webview: &WebView, reason: &str) {
-    if let Err(error) = webview.evaluate_script(&glossary_failed_script(reason)) {
-        eprintln!("Failed to report the glossary failure: {error}");
-    }
+    run_page_script(
+        Some(webview),
+        &glossary_failed_script(reason),
+        "Failed to report the glossary failure",
+    );
 }
 
 /// Read the glossary file for `href` (nearest `GLOSSARY.md` for a `glossary:`
@@ -94,9 +96,11 @@ pub(crate) fn show_glossary_entry(webview: Option<&WebView>, href: &str, current
             html
         }
     };
-    if let Err(error) = webview.evaluate_script(&glossary_sheet_script(&html, &anchor)) {
-        eprintln!("Failed to show glossary entry: {error}");
-    }
+    run_page_script(
+        Some(webview),
+        &glossary_sheet_script(&html, &anchor),
+        "Failed to show glossary entry",
+    );
 }
 
 // The last rendered glossary, reused across lookups of the same unchanged file.
