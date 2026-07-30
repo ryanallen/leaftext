@@ -47,12 +47,9 @@ Default installed path, though **Change...** puts it wherever you like and later
 
 ## File associations
 
-Installing registers Leaf Text as a handler for `.md`, `.markdown`, `.mdown`, and `.xml`, so those files carry the leaf icon and open in Leaf Text when double-clicked. On Windows the entries are per-user (`HKCU`), like the install itself.
+Installing registers Leaf Text as a handler for every extension it reads — `.md`, `.markdown`, `.mdown`, `.xml`, `.json`, `.yaml`, `.yml`, `.eml`, `.mht`, and `.mhtml` — so those files carry the leaf icon and appear under **Open with**. On Windows the entries are per-user (`HKCU`), like the install itself.
 
-> [!NOTE]
-> [JSON and YAML](01-features/01-rendering.md#data-files-json-and-yaml) files are **not** associated, even though Leaf Text renders them. `.json` and `.yaml` almost always belong to an editor or IDE, and taking that over is not a decision an installer should make for you. The same goes for [email files](01-features/01-rendering.md#email-eml) — `.eml` belongs to your mail app. Open them with `Ctrl+O` / `Cmd+O`, by dragging them onto the window, or from the [library](01-features/03-library.md) — or point a specific file at Leaf Text yourself with **Open with**, below.
-
-If an extension already has a default app, the operating system keeps that choice — neither installer overrides one you have made. To switch:
+An extension no app has claimed opens in Leaf Text on its own. One that already has a default app keeps it — neither installer overrides a choice you or another app made, so `.json` stays with your editor and `.eml` with your mail app until you say otherwise. To switch:
 
 - **Windows** — right-click a file, **Open with** → **Choose another app** → **Leaf Text** → *Always use this app*. Or **Settings** → **Apps** → **Default apps** → **Leaf Text**.
 - **macOS** — select a file, **Get Info** → **Open with** → **Leaf Text** → **Change All…**

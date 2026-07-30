@@ -150,6 +150,25 @@ window.addEventListener('keydown', (event) => {
     send({ command: 'closeTab', index: currentState.active });
     return;
   }
+  // Select-all in the reading view means the page, not the library and chrome
+  // around it. Editable fields and the code view keep their native select-all.
+  if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'a') {
+    if (codeViewActive || isEditableMouseTarget(event.target)) {
+      return;
+    }
+    const body = app.querySelector('.document-body');
+    // offsetParent is null while another view (the graph) sits in its place.
+    if (!body || body.offsetParent === null) {
+      return;
+    }
+    event.preventDefault();
+    const range = document.createRange();
+    range.selectNodeContents(body);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    return;
+  }
   if (event.ctrlKey && !event.metaKey && !event.altKey && event.key === 'Tab') {
     event.preventDefault();
     const tabCount = (currentState.tabs || []).length;

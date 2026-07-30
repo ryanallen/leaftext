@@ -68,6 +68,7 @@ Click a heading in the document or click a spot in the minimap. That jump is add
 | Close tab | `Ctrl+W` | `Cmd+W` |
 | Save ([unsaved edits](01-features/07-editing.md#save)) | `Ctrl+S` | `Cmd+S` |
 | [Undo](01-features/07-editing.md#undo) the last edit | `Ctrl+Z` | `Cmd+Z` |
+| Select the page | `Ctrl+A` | `Cmd+A` |
 
 Mouse side buttons also trigger Back and Forward on Windows.
 

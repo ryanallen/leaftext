@@ -199,7 +199,12 @@ jobs:
                  icon for .md files, leaftext is absent from Open With, and Get
                  Info offers no way to make it the default. Viewer, not Editor:
                  macOS reserves Editor for apps that own saving the format.
-                 Alternate rank so an existing editor keeps its default. The
+                 Every format src/format.rs reads is claimed here;
+                 `installer_claims_every_readable_extension` pins the two lists.
+                 Default rank so Launch Services hands an unclaimed type over on
+                 its own — a choice the user made, or an app owning the format,
+                 still wins. public.plain-text stays Alternate in its own entry:
+                 Default there would take every .txt on the machine. The
                  double-click itself arrives as an Apple Event, handled by the
                  Event::Opened arm in src/main.rs. -->
             <key>CFBundleDocumentTypes</key>
@@ -210,7 +215,7 @@ jobs:
                 <key>CFBundleTypeRole</key>
                 <string>Viewer</string>
                 <key>LSHandlerRank</key>
-                <string>Alternate</string>
+                <string>Default</string>
                 <key>CFBundleTypeExtensions</key>
                 <array>
                   <string>md</string>
@@ -220,6 +225,17 @@ jobs:
                 <key>LSItemContentTypes</key>
                 <array>
                   <string>net.daringfireball.markdown</string>
+                </array>
+              </dict>
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>Plain Text Document</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Alternate</string>
+                <key>LSItemContentTypes</key>
+                <array>
                   <string>public.plain-text</string>
                 </array>
               </dict>
@@ -229,7 +245,7 @@ jobs:
                 <key>CFBundleTypeRole</key>
                 <string>Viewer</string>
                 <key>LSHandlerRank</key>
-                <string>Alternate</string>
+                <string>Default</string>
                 <key>CFBundleTypeExtensions</key>
                 <array>
                   <string>xml</string>
@@ -237,6 +253,55 @@ jobs:
                 <key>LSItemContentTypes</key>
                 <array>
                   <string>public.xml</string>
+                </array>
+              </dict>
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>JSON Document</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Default</string>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                  <string>json</string>
+                </array>
+                <key>LSItemContentTypes</key>
+                <array>
+                  <string>public.json</string>
+                </array>
+              </dict>
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>YAML Document</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Default</string>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                  <string>yaml</string>
+                  <string>yml</string>
+                </array>
+                <key>LSItemContentTypes</key>
+                <array>
+                  <string>public.yaml</string>
+                </array>
+              </dict>
+              <!-- Extensions only: naming a UTI makes Launch Services ignore
+                   them, and .mht has no system UTI to name. -->
+              <dict>
+                <key>CFBundleTypeName</key>
+                <string>Email Message</string>
+                <key>CFBundleTypeRole</key>
+                <string>Viewer</string>
+                <key>LSHandlerRank</key>
+                <string>Default</string>
+                <key>CFBundleTypeExtensions</key>
+                <array>
+                  <string>eml</string>
+                  <string>mht</string>
+                  <string>mhtml</string>
                 </array>
               </dict>
             </array>

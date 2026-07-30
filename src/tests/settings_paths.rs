@@ -495,6 +495,35 @@ fn every_listed_extension_maps_back_to_its_format() {
     assert_eq!(all_document_extensions(), listed);
 }
 
+/// The installers are the two places the extension list lives outside
+/// `format.rs`, and neither can read it at install time: the MSI claims each
+/// extension in the registry, the macOS bundle claims them in its Info.plist.
+/// This is what keeps a format the app opens from shipping without its
+/// double-click — .json, .yaml, .yml, .eml, .mht and .mhtml all did.
+#[test]
+fn installer_claims_every_readable_extension() {
+    let wxs = include_str!("../../wix/main.wxs");
+    let plist = include_str!("../../.github/workflows/release-distributions.yml");
+
+    for extension in all_document_extensions() {
+        // The closing quote matters: .mht must not pass on .mhtml's entry.
+        for needle in [
+            format!(r"Key='Software\Classes\.{extension}'"),
+            format!(r"SupportedTypes' Name='.{extension}'"),
+            format!(r"Capabilities\FileAssociations' Name='.{extension}'"),
+        ] {
+            assert!(
+                wxs.contains(&needle),
+                "wix/main.wxs does not claim .{extension}: missing {needle}"
+            );
+        }
+        assert!(
+            plist.contains(&format!("<string>{extension}</string>")),
+            "the macOS Info.plist in release-distributions.yml does not claim .{extension}"
+        );
+    }
+}
+
 /// The pager, the file dialog, drag-and-drop, link following and the library index
 /// each used to carry their own list. Anything the app can open must page too.
 #[test]

@@ -166,8 +166,8 @@
                 <RegistryValue Root='HKCU' Key='Software\Classes\LeafText.Document\shell\open\command' Type='string' Value='&quot;[#MainExecutableFile]&quot; &quot;%1&quot;'/>
                 <RemoveRegistryKey Root='HKCU' Key='Software\Classes\LeafText.Document' Action='removeOnUninstall'/>
 
-                <!-- The four extensions the app actually reads; see
-                     `is_markdown_path` / `is_xml_path` in src/indexer.rs. -->
+                <!-- Every extension src/format.rs reads;
+                     `installer_claims_every_readable_extension` pins the two lists. -->
                 <RegistryValue Root='HKCU' Key='Software\Classes\.md' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\.md\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\.markdown' Type='string' Value='LeafText.Document'/>
@@ -176,6 +176,18 @@
                 <RegistryValue Root='HKCU' Key='Software\Classes\.mdown\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\.xml' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\.xml\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.json' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.json\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.yaml' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.yaml\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.yml' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.yml\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.eml' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.eml\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.mht' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.mht\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.mhtml' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\.mhtml\OpenWithProgids' Name='LeafText.Document' Type='string' Value=''/>
 
                 <!-- Puts leaftext in the "Open with" list even for extensions it
                      does not own. -->
@@ -185,16 +197,28 @@
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.markdown' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.mdown' Type='string' Value=''/>
                 <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.xml' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.json' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.yaml' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.yml' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.eml' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.mht' Type='string' Value=''/>
+                <RegistryValue Root='HKCU' Key='Software\Classes\Applications\leaftext.exe\SupportedTypes' Name='.mhtml' Type='string' Value=''/>
                 <RemoveRegistryKey Root='HKCU' Key='Software\Classes\Applications\leaftext.exe' Action='removeOnUninstall'/>
 
                 <!-- Default Programs registration, so the app is listed in
                      Settings > Default apps rather than only reachable per-file. -->
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities' Name='ApplicationName' Type='string' Value='Leaf Text'/>
-                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities' Name='ApplicationDescription' Type='string' Value='Read Markdown and XML documents.'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities' Name='ApplicationDescription' Type='string' Value='Read Markdown, XML, JSON, YAML and email documents.'/>
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.md' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.markdown' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.mdown' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.xml' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.json' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.yaml' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.yml' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.eml' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.mht' Type='string' Value='LeafText.Document'/>
+                <RegistryValue Root='HKCU' Key='Software\ryanallen\leaftext\Capabilities\FileAssociations' Name='.mhtml' Type='string' Value='LeafText.Document'/>
                 <RegistryValue Root='HKCU' Key='Software\RegisteredApplications' Name='Leaf Text' Type='string' Value='Software\ryanallen\leaftext\Capabilities'/>
             </Component>
         </DirectoryRef>

@@ -775,6 +775,21 @@ fn code_blocks_get_a_copy_button() {
 }
 
 #[test]
+fn select_all_in_the_reading_view_selects_only_the_page() {
+    let html = app_shell_html();
+
+    // Ctrl/Cmd+A used to select the whole shell — library pane, toolbar and all —
+    // so copying a page dragged the chrome along. The shortcut selects just the
+    // rendered document, and stands aside for editable fields and the code view,
+    // whose native select-all is scoped already.
+    assert!(html.contains("event.key.toLowerCase() === 'a'"));
+    assert!(html.contains("if (codeViewActive || isEditableMouseTarget(event.target))"));
+    assert!(html.contains("range.selectNodeContents(body)"));
+    assert!(html.contains("selection.removeAllRanges()"));
+    assert!(html.contains("selection.addRange(range)"));
+}
+
+#[test]
 fn app_shell_code_view_is_a_worker_free_monaco_with_its_own_minimap() {
     // The code view is Monaco now: it renders only what's on screen, so typing
     // never re-lays-out the whole document — the stutter the old hand-built color

@@ -46,6 +46,7 @@ flowchart LR
 | Previous tab | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` |
 | Save (with [unsaved edits](07-editing.md#save)) | `Ctrl+S` | `Cmd+S` |
 | [Undo](07-editing.md#undo) the last reading-view edit | `Ctrl+Z` | `Cmd+Z` |
+| Select the page (reading view) | `Ctrl+A` | `Cmd+A` |
 
 Tab cycling is `Ctrl`-based on every platform, including macOS. Mouse side buttons also trigger Back and Forward.
 
@@ -75,7 +76,7 @@ Settings and Open stay in the app bar at the top right. They are about the app, 
 - Tabs can be dragged to reorder them.
 - Clicking a tab while the [Graph view](03-library.md#graph) is open flies the graph to that document's node and zooms in on it.
 - Closing the last tab returns to the home screen. So does clicking the leaf mark at the left of the app bar, which brightens on hover to show it is a control.
-- Opening a file while Leaf Text is already running (e.g. Explorer "Open with", or double-clicking a `.md`/`.xml`) reuses the running window — the file opens as a new tab and the window comes to the front, rather than launching a second copy of the app.
+- Opening a file while Leaf Text is already running (e.g. Explorer "Open with", or double-clicking an [associated file](../02-installation.md#file-associations)) reuses the running window — the file opens as a new tab and the window comes to the front, rather than launching a second copy of the app.
 
 ### When the bar runs out of room
 

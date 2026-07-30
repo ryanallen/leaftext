@@ -460,7 +460,7 @@ Key names are read as words, so `runs-on` renders as "Runs on" and `lastBuildDat
 A file that will not parse renders a single line naming the position — `JSON parse error. expected ',' or '}' after the value (line 12)` — instead of a blank page. A file nested hundreds of levels deep is refused the same way rather than being followed down.
 
 > [!NOTE]
-> Data files are opened through **Open Document**, drag and drop, or the [library](03-library.md), and they are indexed and paged like any other document. Installing Leaf Text does **not** register it as the handler for `.json` or `.yaml`, so double-clicking one in your file manager still opens whatever you normally use. Only [Markdown and XML extensions are associated](../02-installation.md#file-associations).
+> Data files are indexed and paged like any other document, and installing Leaf Text [registers it for](../02-installation.md#file-associations) `.json`, `.yaml`, and `.yml` — a double-click opens Leaf Text where nothing else has claimed the extension, and your editor keeps it where it has.
 
 Editing works, with one limit worth knowing. The [code view](07-editing.md#code-view) edits any data file as raw text, exactly as it does Markdown and XML. In the reading view, a block is click-to-edit only where its precise byte range in the file can be *proved*: that covers every JSON value, and YAML plain scalars. YAML lists, tables, quoted strings, and block scalars (`|`, `>`) are read-only in the reading view and edited in the code view instead — an approximate range would splice an edit over the wrong bytes, so none is offered. See [Editing data files](07-editing.md#editing-data-files).
 
@@ -482,7 +482,7 @@ On disk such a file is wild: delivery and signature headers on top, then every p
 The delivery, routing, and anti-spam headers are not shown — they are machine plumbing, and the [code view](07-editing.md#code-view) has all of them when you want the raw message. The body passes the same sanitizer every other rendered page does, and nothing in the message can reach the network: inline images come from the file itself, never from a remote server.
 
 > [!NOTE]
-> Like [data files](#data-files-json-and-yaml), emails are opened through **Open Document**, drag and drop, or the [library](03-library.md) — installing Leaf Text does not take over `.eml` from your mail app. The message body is transfer-coded in the source, so nothing in the reading view is click-to-edit; the code view edits the raw file.
+> Installing Leaf Text [registers it for](../02-installation.md#file-associations) `.eml`, `.mht`, and `.mhtml`, though a mail app that already owns `.eml` keeps it. The message body is transfer-coded in the source, so nothing in the reading view is click-to-edit; the code view edits the raw file.
 
 ## File encodings
 
