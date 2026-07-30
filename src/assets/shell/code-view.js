@@ -797,14 +797,25 @@ function refitCodeViewToFont() {
   applyCodeViewWrapColumn();
 }
 
-// Word wrap ends roughly this many pixels short of the minimap. Monaco has no
+// How far the last character stays clear of the rail's divider. Monaco has no
 // right-padding option and its own 'on' wrap fills flush to the minimap's left
-// edge, tucking the last characters under it. The rail's left divider stands 8px
-// off the minimap, so 16px here leaves the text ~8px clear of that divider — the
-// gap the owner asked for. Converted to whole columns below.
-const CODE_VIEW_WRAP_RIGHT_GAP_PX = 16;
+// edge, tucking the last characters under it — so the gap is bought back through
+// the wrap column instead. This is the gap the owner asked for, and it is measured
+// from the divider, not the minimap.
+const CODE_VIEW_TEXT_DIVIDER_GAP_PX = 8;
 
-// Set the bounded wrap column so wrapped text stops ~CODE_VIEW_WRAP_RIGHT_GAP_PX
+// Which makes the gap from the minimap that plus however far the divider itself
+// stands off the minimap — read from CSS rather than restated, so moving the
+// divider (--cv-minimap-standoff) carries the text with it and the clearance above
+// stays what it says it is. Converted to whole columns below.
+function codeViewWrapRightGapPx() {
+  const standoff = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--cv-minimap-standoff')
+  );
+  return CODE_VIEW_TEXT_DIVIDER_GAP_PX + (Number.isFinite(standoff) ? standoff : 0);
+}
+
+// Set the bounded wrap column so wrapped text stops codeViewWrapRightGapPx()
 // short of the minimap, and publish the minimap's width to CSS. info.viewportColumn
 // is Monaco's OWN natural wrap column ('on' would land there — flush to the
 // minimap), so pulling a whole number of columns off it lands the wrap a
@@ -831,11 +842,57 @@ function applyCodeViewWrapColumn() {
   const font = monacoEditor.getOption(window.LeafMonaco.editor.EditorOption.fontInfo);
   const charWidth = font && font.typicalHalfwidthCharacterWidth;
   if (!charWidth || !info.viewportColumn) return;
-  const gapColumns = Math.ceil(CODE_VIEW_WRAP_RIGHT_GAP_PX / charWidth);
+  const gapColumns = Math.ceil(codeViewWrapRightGapPx() / charWidth);
   const column = Math.max(1, info.viewportColumn - gapColumns);
   if (column === codeViewWrapColumn) return;
   codeViewWrapColumn = column;
   monacoEditor.updateOptions({ wordWrapColumn: column });
+}
+
+// Keep the minimap's viewport box inside the rail.
+//
+// Once a file is long enough that the minimap has to scroll inside itself, Monaco
+// stops placing the box at a straight fraction of the scroll and instead lines its
+// top edge up with the minimap's own drawing: a whole number of minimap lines, plus
+// the part-line the viewport happens to start on. That figure is never re-checked
+// against the height of the rail, so at the very bottom of a long file the box's
+// bottom edge lands a pixel or two below the editor's box — and the editor's own
+// overflow:hidden cuts off whatever is down there. Monaco never notices, because its
+// box is a plain translucent fill with nothing at its edges; ours has a border and
+// rounded corners, so what goes missing is the bottom of the frame: the stroke
+// vanishes and the two bottom corners square off. Hence bottom-only, and only on a
+// file long enough to scroll the minimap — measured here at 1.5px over on a
+// 76,000-line document.
+//
+// So pull it back in. What it moves by is the part of a minimap line that overflowed,
+// under three pixels at any pixel ratio, so the box still reads as level with the
+// text beside it. Nothing is re-derived: the rail's height and the box's own height
+// are Monaco's numbers, read back off the elements it sized.
+function clampMinimapSliderToRail() {
+  const rail = app.querySelector('.code-view-monaco .monaco-editor .minimap');
+  const slider = rail && rail.querySelector('.minimap-slider');
+  if (!slider || !rail.clientHeight) return;
+  const top = Number.parseFloat(slider.style.top);
+  const limit = rail.clientHeight - slider.offsetHeight;
+  if (!Number.isFinite(top) || top <= limit) return;
+  slider.style.top = `${Math.max(0, limit)}px`;
+}
+
+// Watch for Monaco moving the box. It writes the offset to the slider's own `style`
+// on every scroll, so the mutation is the signal — no polling, and no guessing where
+// in the frame Monaco's render lands. Our own correction trips the observer once
+// more; that pass sees the box already inside and does nothing, so it settles.
+// Monaco builds the minimap during create(), so the rail is there to observe.
+function watchMinimapSlider() {
+  const rail = app.querySelector('.code-view-monaco .monaco-editor .minimap');
+  if (!rail) return;
+  monacoSliderObserver = new MutationObserver(clampMinimapSliderToRail);
+  monacoSliderObserver.observe(rail, {
+    attributes: true,
+    attributeFilter: ['style'],
+    subtree: true,
+  });
+  clampMinimapSliderToRail();
 }
 
 // Room to leave above the first line and below the last one. Monaco puts line 1
@@ -928,6 +985,8 @@ function createMonacoEditor(monaco, container, state, text) {
   // Keep the wrap gap in step with the width: set it now, then on every relayout.
   monacoLayoutSub = monacoEditor.onDidLayoutChange(applyCodeViewWrapColumn);
   applyCodeViewWrapColumn();
+  // And keep the viewport box off the bottom edge — see clampMinimapSliderToRail.
+  watchMinimapSlider();
   // And in step with the font, which the width can't tell us about. `loadingdone` is
   // the web view saying a batch of faces has finished loading — it fires for every
   // font from every source, names none of them, and keeps firing for later batches,

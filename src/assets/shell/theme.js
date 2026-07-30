@@ -148,6 +148,10 @@ let codeViewWrapColumn = 0;
 // see refitCodeViewToFont. Held here so teardown can unsubscribe: it outlives the
 // editor otherwise, and would re-fit a disposed one.
 let monacoFontsDoneHandler = null;
+// Watches the minimap for Monaco moving its viewport box, so the box can be kept
+// inside the rail — see clampMinimapSliderToRail. Held here so teardown
+// disconnects it: an observer outlives the editor it was watching.
+let monacoSliderObserver = null;
 let monacoLoadPromise = null;
 // The last textarea value, mirrored so a save (and the debounced re-highlight)
 // send the current buffer even if a keystroke is still within the debounce.

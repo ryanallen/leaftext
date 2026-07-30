@@ -223,6 +223,11 @@
   /* What separates the page's right border from the rail. The rail's far side
      keeps --reader-gutter, so it is held off the frame exactly as the page is. */
   --reader-minimap-gap: 4px;
+  /* The code view's version of that gap: how far the page frame's right border —
+     which is also the rail's divider — stands off Monaco's minimap. Said once
+     because three things have to land on it: the frame, the app bar's divider,
+     and the top-right corner arc, all measured from the window's right edge. */
+  --cv-minimap-standoff: 4px;
   /* How much width the rail takes out of the page's column. Zero until a
      document actually has a minimap, or turning it off would leave a dead band.
      Set from `body` (below) rather than the shell: the app bar's divider and
@@ -3271,7 +3276,7 @@ body:has(#readerToolbar:not([hidden])) {
 }
 /* The page frame for the text area: left, right and bottom edges, with both
    bottom corners rounded. The right edge sits at the minimap's left stroke
-   (--cv-minimap-width from the shell's right, plus the 8px the stroke stands off),
+   (--cv-minimap-width from the shell's right, plus --cv-minimap-standoff),
    so this one border both frames the page and is the divider walling off the
    minimap rail — no separate minimap stroke. The top edge is the app bar's divider;
    the two top corners are the arc elements (reader-corner-tl and -tr), which sit at
@@ -3286,7 +3291,7 @@ body:has(#readerToolbar:not([hidden])) {
   left: 0;
   top: calc(var(--app-bar-height) + var(--leaf-radius-md));
   bottom: 0;
-  right: calc(var(--cv-minimap-width, 0px) + 8px);
+  right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
   border-left: 1px solid var(--app-border);
   border-right: 1px solid var(--app-border);
   border-bottom: 1px solid var(--app-border);
@@ -3303,11 +3308,14 @@ body:has(#readerToolbar:not([hidden])) {
 }
 /* Trim the app bar's reader divider (the card's top edge) to the faked right edge
    at the minimap stroke, measured from the window's right edge: the reader gutter
-   to the shell, then the minimap and its 8px stand-off, then a radius short so the
+   to the shell, then the minimap and its stand-off, then a radius short so the
    ::before top-right arc turns the corner. Same shape as the reading-view formula,
    with the minimap column replaced by the code-view minimap width. */
 :root[data-code-view="true"] .app-bar::after {
-  right: calc(var(--reader-gutter) + var(--cv-minimap-width, 0px) + 8px + var(--leaf-radius-md) - 1px);
+  right: calc(
+    var(--reader-gutter) + var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) +
+      var(--leaf-radius-md) - 1px
+  );
 }
 /* The top-right corner of the faked page: the same convex arc reader-corner-tr
    draws at the card's real right corner in the reading view, moved in to the minimap
@@ -3318,7 +3326,7 @@ body:has(#readerToolbar:not([hidden])) {
    right offset matches ::after's faked edge; the arc's own geometry (top: 100% - 1px,
    the radius+1 box, the top/right borders) is inherited from .reader-corner(-tr). */
 :root[data-code-view="true"] .reader-corner-tr {
-  right: calc(var(--reader-gutter) + var(--cv-minimap-width, 0px) + 8px);
+  right: calc(var(--reader-gutter) + var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
   background: none;
   -webkit-mask-image: none;
   mask-image: none;
@@ -3351,10 +3359,23 @@ body:has(#readerToolbar:not([hidden])) {
   border: 1px solid var(--leaf-minimap-viewport-border);
   border-radius: var(--leaf-radius-sm, 6px);
   box-sizing: border-box;
+  /* Hold the box a pixel clear of the rail's outer edge, or its right stroke is
+     a coin toss. Monaco sizes the box to the full width of the rail, and the rail
+     ends exactly where the editor's overflow:hidden cuts — so the stroke lands on
+     the last device pixel inside the clip, and whether that pixel survives depends
+     on which way the clip rounds at this window width and display scale. Measured
+     with a deliberately fat border: the left edge got all nine of its device pixels
+     and the right edge got eight. A real stroke is one device pixel, so on the
+     losing side it disappeared completely — the whole right side of the box, at
+     some window widths and not others. A pixel of clearance takes the rounding out
+     of it. !important because the width is Monaco's, written inline; nothing reads
+     this box's width back (dragging works off the pointer), so narrowing the drawing
+     changes nothing else. */
+  width: calc(100% - 1px) !important;
 }
 /* The hairline walling the minimap rail off from the text is now the page frame's
-   own right border (.code-view-monaco-shell::after), which lands at this same
-   8px-off-the-minimap position and lets the top-right and bottom-right corners
+   own right border (.code-view-monaco-shell::after), which lands at the same
+   --cv-minimap-standoff position and lets the top-right and bottom-right corners
    round into it — so the minimap needs no stroke of its own. */
 /* Laid out like .reader-layout. The rail it shares is outside the page entirely,
    so nothing here reserves room for it. */
