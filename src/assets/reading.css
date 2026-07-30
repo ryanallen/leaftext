@@ -4066,39 +4066,105 @@ body:has(#readerToolbar:not([hidden])) {
 }
 .theme-item {
   position: relative;
+  /* Column-reverse: name span comes first in the DOM (a test pins that), the
+     swatch block second — reversed so the block sits on top and the name below. */
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  /* Fill the grid column; without this the button shrinks to its name's width. */
+  width: 100%;
+  box-sizing: border-box;
   min-height: 54px;
-  padding: 14px 18px;
+  padding: 0;
   border: 0;
   border-radius: var(--leaf-radius-xl);
-  /* Flat tiles: a faint ink tint over the sheet fill (which the cards would
-     otherwise match exactly), so they read without a stroke. */
-  background: color-mix(in srgb, var(--foreground) 5%, var(--surface-elevated));
-  color: var(--settings-control-foreground);
+  /* The card wears the theme's own paper and ink (Random falls back to a neutral
+     tile), so it reads as a sample of the theme. A faint stroke in the SHEET's
+     ink keeps a paper-white card from vanishing on a light sheet. */
+  background: var(--card-bg-light, color-mix(in srgb, var(--foreground) 5%, var(--surface-elevated)));
+  color: var(--card-fg-light, var(--settings-control-foreground));
   font: 700 13.5px var(--app-font);
-  text-align: center;
+  text-align: left;
   cursor: pointer;
-  transition: background 0.12s ease;
+  overflow: hidden;
+}
+/* The stroke rides a pseudo-element above the swatches; drawn on the card itself
+   the opaque swatch block would paint over it everywhere but the name band. */
+.theme-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 12%, transparent);
+  pointer-events: none;
+  transition: box-shadow 0.12s ease;
+}
+:root[data-leaf-appearance='dark'] .theme-item {
+  background: var(--card-bg-dark, color-mix(in srgb, var(--foreground) 5%, var(--surface-elevated)));
+  color: var(--card-fg-dark, var(--settings-control-foreground));
+}
+/* The palette preview: a full-bleed block of edge-to-edge bars across the top,
+   the card's rounded corners clipping it (card sets overflow: hidden). */
+.theme-swatches {
+  display: flex;
+  height: 78px;
+}
+.theme-swatch {
+  flex: 1;
+  /* Each swatch carries both colors; show the one for the resolved appearance. */
+  background: var(--sw-light);
+}
+:root[data-leaf-appearance='dark'] .theme-swatch {
+  background: var(--sw-dark);
 }
 .theme-item-name {
+  padding: 11px 14px 13px;
+  /* The app font until the picker has loaded this theme's own font; then swap. */
+  font-family: var(--app-font);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.theme-item:hover {
-  background: color-mix(in srgb, var(--foreground) 10%, var(--surface-elevated));
+.theme-item.font-ready .theme-item-name {
+  font-family: var(--card-font, var(--app-font));
 }
-.theme-item.is-active {
-  background: color-mix(in srgb, var(--accent) 18%, var(--surface-elevated));
+/* Spinner shown over the swatch block while that theme's font loads. A neutral
+   disc in the sheet's own tokens keeps it legible over any swatch colors. */
+.theme-item-spinner {
+  position: absolute;
+  top: 39px;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--foreground) 22%, transparent);
+  border-top-color: var(--foreground);
+  background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
+  display: none;
+  pointer-events: none;
+  animation: theme-item-spin 0.7s linear infinite;
+}
+.theme-item.is-loading .theme-item-spinner {
+  display: block;
+}
+@keyframes theme-item-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.theme-item:hover::after {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 26%, transparent);
+}
+.theme-item.is-active::after {
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 /* Selected badge: the check-circle, tinted with the theme accent, pinned to the
-   card's top-right corner. Hidden until the card is active. */
+   name band. Hidden until the card is active. */
 .theme-item-check {
   position: absolute;
-  top: 7px;
-  right: 7px;
+  bottom: 11px;
+  right: 10px;
   width: 16px;
   height: 16px;
   display: none;

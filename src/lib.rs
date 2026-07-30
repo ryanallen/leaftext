@@ -843,20 +843,95 @@ pub fn app_shell_html() -> String {
 /// the card is `.is-active`.
 const THEME_ITEM_CHECK_SVG: &str = "<svg class=\"theme-item-check\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z\" /></svg>";
 
+/// The tokens each card previews as a swatch strip: paper, ink, brand, then two
+/// code accents — the colors that make one theme look unlike another.
+const THEME_SWATCH_TOKENS: &[&str] = &[
+    "--leaf-background",
+    "--leaf-foreground",
+    "--leaf-primary",
+    "--leaf-syntax-keyword",
+    "--leaf-syntax-string",
+];
+
+/// Spinner shown over a card while the picker loads that theme's web font. The
+/// shell adds `.is-loading` on open and clears it once the font is ready.
+const THEME_ITEM_SPINNER: &str = "<span class=\"theme-item-spinner\" aria-hidden=\"true\"></span>";
+
+/// The card wears the theme's own paper, ink and heading font, per appearance, so
+/// it reads as a swatch of the theme itself. `--card-font` is applied only once
+/// the shell has loaded that font (`.font-ready`); until then the card keeps the
+/// app font. Random has none of these, so it starts on the neutral tile.
+fn theme_card_style(family: &str) -> String {
+    let pick = |appearance: Appearance, token: &str| {
+        theme_sources()
+            .iter()
+            .find(|s| s.family == family && s.appearance == appearance)
+            .and_then(|s| theme_source_token_value(s, token))
+            .unwrap_or("#808080")
+    };
+    let font = theme_sources()
+        .iter()
+        .find(|s| s.family == family)
+        .map(|s| s.font_heading)
+        .unwrap_or("");
+    // The style attribute is double-quoted, but font stacks quote their names;
+    // encode those inner quotes so the attribute stays well-formed.
+    let font = font.replace('"', "&quot;");
+    format!(
+        "--card-bg-light:{};--card-bg-dark:{};--card-fg-light:{};--card-fg-dark:{};--card-font:{font}",
+        pick(Appearance::Light, "--leaf-background"),
+        pick(Appearance::Dark, "--leaf-background"),
+        pick(Appearance::Light, "--leaf-foreground"),
+        pick(Appearance::Dark, "--leaf-foreground"),
+    )
+}
+
+/// One swatch strip for a family: each swatch carries its light and dark color,
+/// and the card shows whichever matches the resolved appearance (CSS picks).
+fn theme_swatches_html(family: &str) -> String {
+    let sources = theme_sources();
+    let source = |appearance: Appearance| {
+        sources
+            .iter()
+            .find(|s| s.family == family && s.appearance == appearance)
+    };
+    let light = source(Appearance::Light);
+    let dark = source(Appearance::Dark);
+    let mut swatches = String::new();
+    for token in THEME_SWATCH_TOKENS {
+        let value = |src: Option<&ThemeSource>| {
+            src.and_then(|s| theme_source_token_value(s, token))
+                .unwrap_or("#808080")
+        };
+        let (l, d) = (value(light), value(dark));
+        swatches.push_str(&format!(
+            "<span class=\"theme-swatch\" style=\"--sw-light:{l};--sw-dark:{d}\"></span>"
+        ));
+    }
+    format!("<span class=\"theme-swatches\" aria-hidden=\"true\">{swatches}</span>")
+}
+
 fn theme_items_html() -> String {
     let mut items: String = theme_families()
         .into_iter()
         .map(|(id, name)| {
+            let swatches = theme_swatches_html(id);
+            let style = theme_card_style(id);
             format!(
-                "<li><button type=\"button\" class=\"theme-item\" data-family=\"{id}\" aria-pressed=\"false\"><span class=\"theme-item-name\">{name}</span>{THEME_ITEM_CHECK_SVG}</button></li>"
+                "<li><button type=\"button\" class=\"theme-item\" data-family=\"{id}\" style=\"{style}\" aria-pressed=\"false\"><span class=\"theme-item-name\">{name}</span>{swatches}{THEME_ITEM_SPINNER}{THEME_ITEM_CHECK_SVG}</button></li>"
             )
         })
         .collect();
     // "Random" is not a real family: it's a preference the bootstrap resolves to a
     // concrete family at each launch, cycling through every family without repeat
-    // before resetting. Appended after the families.
+    // before resetting. Appended after the families, and seeded with the first
+    // family's look — the shell then cycles it through every theme while the sheet
+    // is open, the name alone staying "Random".
+    let seed = theme_families().first().map(|(id, _)| *id).unwrap_or("");
+    let random_swatches = theme_swatches_html(seed);
+    let random_style = theme_card_style(seed);
     items.push_str(
-        &format!("<li><button type=\"button\" class=\"theme-item theme-item-random\" data-family=\"random\" aria-pressed=\"false\"><span class=\"theme-item-name\">Random</span>{THEME_ITEM_CHECK_SVG}</button></li>"),
+        &format!("<li><button type=\"button\" class=\"theme-item theme-item-random\" data-family=\"random\" style=\"{random_style}\" aria-pressed=\"false\"><span class=\"theme-item-name\">Random</span>{random_swatches}{THEME_ITEM_SPINNER}{THEME_ITEM_CHECK_SVG}</button></li>"),
     );
     items
 }

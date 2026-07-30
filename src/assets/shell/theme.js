@@ -34,6 +34,7 @@ function openThemeSheet() {
   }
   themeBackdrop.hidden = false;
   themeSheet.hidden = false;
+  loadThemeCardFonts();
   requestAnimationFrame(() => {
     themeBackdrop.classList.add('open');
     themeSheet.classList.add('open');
@@ -42,10 +43,117 @@ function openThemeSheet() {
 function closeThemeSheet() {
   themeBackdrop.classList.remove('open');
   themeSheet.classList.remove('open');
+  unloadThemeCardFonts();
   setTimeout(() => {
     themeBackdrop.hidden = true;
     themeSheet.hidden = true;
   }, 200);
+}
+// Each card previews its theme's own heading font, but web fonts are loaded only
+// while the picker is open and dropped on close, so the app doesn't hold every
+// theme's font at rest. A card keeps the app font (and shows a spinner) until its
+// font is ready, then swaps. Random borrows whichever family it is cycling to.
+const themeCardFontLinks = new Map();
+let themeRandomTimer = 0;
+let themeRandomIndex = 0;
+function firstFontName(stack) {
+  const first = (stack || '').split(',')[0].trim();
+  return first.replace(/^["']|["']$/g, '');
+}
+function themeCardFontReady(card) {
+  card.classList.remove('is-loading');
+  card.classList.add('font-ready');
+}
+function ensureThemeCardFont(card) {
+  const name = firstFontName(card.style.getPropertyValue('--card-font'));
+  // No custom font (system stack) or no Font Loading API: use it right away.
+  if (!name || !document.fonts) {
+    themeCardFontReady(card);
+    return;
+  }
+  const spec = '700 1em "' + name + '"';
+  if (document.fonts.check(spec)) {
+    themeCardFontReady(card);
+    return;
+  }
+  card.classList.add('is-loading');
+  const load = () =>
+    document.fonts.load(spec).then(() => themeCardFontReady(card)).catch(() => themeCardFontReady(card));
+  const href = window.leafTheme.getFamilyFontHref(card.dataset.family);
+  if (!href) {
+    load();
+    return;
+  }
+  let link = themeCardFontLinks.get(card.dataset.family);
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    themeCardFontLinks.set(card.dataset.family, link);
+    document.head.appendChild(link);
+  }
+  // The @font-face rules must exist before load() can resolve, so wait for the
+  // stylesheet unless it is already parsed.
+  if (link.sheet) {
+    load();
+  } else {
+    link.addEventListener('load', load, { once: true });
+    link.addEventListener('error', () => themeCardFontReady(card), { once: true });
+  }
+}
+function themeFamilyCards() {
+  return Array.from(themeSheetGrid.querySelectorAll('.theme-item[data-family]')).filter(
+    (card) => !card.classList.contains('theme-item-random'),
+  );
+}
+function loadThemeCardFonts() {
+  themeFamilyCards().forEach(ensureThemeCardFont);
+  startThemeRandomCycle();
+}
+function unloadThemeCardFonts() {
+  stopThemeRandomCycle();
+  themeCardFontLinks.forEach((link) => link.remove());
+  themeCardFontLinks.clear();
+  themeSheetGrid.querySelectorAll('.theme-item').forEach((card) => {
+    card.classList.remove('is-loading', 'font-ready');
+  });
+}
+// Paint Random with one family's colors, ink and font — keeping Random's own name
+// and only using the theme's font once it has loaded.
+function paintThemeRandomFrom(card) {
+  const random = themeSheetGrid.querySelector('.theme-item-random');
+  if (!random || !card) return;
+  ['--card-bg-light', '--card-bg-dark', '--card-fg-light', '--card-fg-dark', '--card-font'].forEach((name) => {
+    random.style.setProperty(name, card.style.getPropertyValue(name));
+  });
+  const src = card.querySelectorAll('.theme-swatch');
+  random.querySelectorAll('.theme-swatch').forEach((sw, i) => {
+    const from = src[i];
+    if (!from) return;
+    sw.style.setProperty('--sw-light', from.style.getPropertyValue('--sw-light'));
+    sw.style.setProperty('--sw-dark', from.style.getPropertyValue('--sw-dark'));
+  });
+  const name = firstFontName(random.style.getPropertyValue('--card-font'));
+  const ready = !name || (document.fonts && document.fonts.check('700 1em "' + name + '"'));
+  random.classList.remove('is-loading');
+  random.classList.toggle('font-ready', !!ready);
+}
+function startThemeRandomCycle() {
+  stopThemeRandomCycle();
+  const cards = themeFamilyCards();
+  if (cards.length === 0) return;
+  themeRandomIndex = 0;
+  paintThemeRandomFrom(cards[0]);
+  themeRandomTimer = setInterval(() => {
+    themeRandomIndex = (themeRandomIndex + 1) % cards.length;
+    paintThemeRandomFrom(cards[themeRandomIndex]);
+  }, 500);
+}
+function stopThemeRandomCycle() {
+  if (themeRandomTimer) {
+    clearInterval(themeRandomTimer);
+    themeRandomTimer = 0;
+  }
 }
 if (themeSheetOpen) {
   themeSheetOpen.addEventListener('click', openThemeSheet);

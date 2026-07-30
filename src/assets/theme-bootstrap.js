@@ -123,6 +123,9 @@
     getMode: () => mode,
     getFamily: () => familyPreference,
     getResolvedTheme: resolvedTheme,
+    // The picker loads each theme's font while open; hand it the same family ->
+    // stylesheet map this bootstrap uses for the active theme.
+    getFamilyFontHref: (fam) => FAMILY_FONTS[fam] || '',
     setMode(nextMode) {
       mode = normalizeMode(nextMode);
       apply();

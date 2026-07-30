@@ -74,7 +74,7 @@ Every family rendering the same reference document, split diagonally so the ligh
 
 ## Random
 
-The last entry in the theme picker is **Random**. It is not a palette; it is a preference that draws a concrete family at each launch, so the app opens in a different theme every time. The draw is a no-repeat cycle: every family shows once before any repeats, and when the cycle resets it avoids immediately repeating the family you just saw. The families already used in the current cycle are remembered across restarts (saved as `theme_random_used` in `settings.json`), so quitting and relaunching keeps the rotation going rather than starting over. The picker keeps showing Random as selected — the concrete family it resolved to for this session drives the actual colors.
+The last entry in the theme picker is **Random**. It is not a palette; it is a preference that draws a concrete family at each launch, so the app opens in a different theme every time. The draw is a no-repeat cycle: every family shows once before any repeats, and when the cycle resets it avoids immediately repeating the family you just saw. The families already used in the current cycle are remembered across restarts (saved as `theme_random_used` in `settings.json`), so quitting and relaunching keeps the rotation going rather than starting over. The picker keeps showing Random as selected — the concrete family it resolved to for this session drives the actual colors. While the picker is open, the Random card previews the pool it draws from: it morphs through every theme's colors and font, one every half second, with only its name staying "Random".
 
 ## Appearance
 
@@ -102,7 +102,7 @@ flowchart LR
 
 ## Choose
 
-Open **Settings**, then **Theme** to slide up the theme picker. It lists every family as a button — plus [Random](#random) at the end — with an Appearance control (System / Light / Dark / Daylight) at the top. Changes apply immediately and are saved as `theme_family` and `theme_mode` in `settings.json` (see [Settings](05-settings.md#options)). Close the picker with its close button, by clicking outside it, with `Escape`, or by dragging the grab bar at its top downwards — the same [bottom sheet](../GLOSSARY.md#bottom-sheet) the glossary uses.
+Open **Settings**, then **Theme** to slide up the theme picker. It lists every family as a preview card — plus [Random](#random) at the end — with an Appearance control (System / Light / Dark / Daylight) at the top. Each card wears its own theme: the theme's paper and ink, a strip of five swatches (background, text, brand, and two code colors), and the theme's heading font, all following the current appearance. Changes apply immediately and are saved as `theme_family` and `theme_mode` in `settings.json` (see [Settings](05-settings.md#options)). Close the picker with its close button, by clicking outside it, with `Escape`, or by dragging the grab bar at its top downwards — the same [bottom sheet](../GLOSSARY.md#bottom-sheet) the glossary uses.
 
 ## Fonts
 
@@ -111,6 +111,7 @@ Leaf Text does not bundle fonts. Instead, the active theme's font is fetched fro
 - Each family carries its own type: **Fern** uses Noto (Sans/Serif/Sans Mono); **Nightshade** pairs Fraunces headings with Inter and Fira Code; **Halcyon** uses IBM Plex Sans/Mono; **Amaranth** uses the Source family (Serif 4 / Sans 3 / Code Pro); **Sage** uses Inter with JetBrains Mono; **Arabica** pairs Rubik with JetBrains Mono; **Goldenrod** pairs Space Grotesk with Space Mono; **Ginger** pairs Nunito with Inconsolata; **Pippin** pairs DM Sans with DM Mono; **Bloodleaf** pairs Archivo with Roboto Mono.
 - The **GitHub** family is the exception: it uses your OS's native font stack (like github.com) and fetches nothing.
 - Switching families swaps the font link, so the font changes with the theme.
+- The theme picker is the exception to loading only the active font: while it is open it loads every theme's font so each card shows its real type, then drops them all on close, so the app never carries them at rest. A card keeps the app font (and shows a spinner) until its own font arrives, then swaps.
 - Every font stack lists system fallbacks, so text is readable immediately while the web font loads — and stays readable offline, falling back until you have loaded the font online once.
 
 ## Tokens

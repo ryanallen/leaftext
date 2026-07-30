@@ -50,13 +50,17 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
     assert!(!html.contains(r#"id="themeFamily""#));
     assert_contains(&html, "const THEME_MODE_NAMES = { system: 'System', light: 'Light', dark: 'Dark', daylight: 'Daylight' };");
     // Every registered family is a pickable card in the selector sheet (name in a
-    // span, with the selected-state check badge).
+    // span, with the selected-state check badge). The card carries an inline style
+    // that paints it in the theme's own paper/ink, so attributes sit between the
+    // family id and the name span.
     for (family, name) in theme_families() {
         assert_contains(
             &html,
-            &format!(
-                r#"<button type="button" class="theme-item" data-family="{family}" aria-pressed="false"><span class="theme-item-name">{name}</span>"#
-            ),
+            &format!(r#"<button type="button" class="theme-item" data-family="{family}""#),
+        );
+        assert_contains(
+            &html,
+            &format!(r#"<span class="theme-item-name">{name}</span>"#),
         );
     }
     // Plus the special "Random" preference
@@ -64,8 +68,9 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
     // real family, so it never appears in theme_families()/the font map/the CSS.
     assert_contains(
         &html,
-        r#"<button type="button" class="theme-item theme-item-random" data-family="random" aria-pressed="false"><span class="theme-item-name">Random</span>"#,
+        r#"<button type="button" class="theme-item theme-item-random" data-family="random""#,
     );
+    assert_contains(&html, r#"<span class="theme-item-name">Random</span>"#);
     assert!(!theme_families().iter().any(|(id, _)| *id == "random"));
     // Palettes are data-only token maps, not free-form author CSS.
     assert!(!html.contains("customTheme"));
