@@ -26,7 +26,8 @@ impl FileWatch {
             move |result: DebounceEventResult| {
                 if let Ok(events) = result {
                     for event in events {
-                        let _ = proxy.send_event(UserEvent::FileChanged(event.path));
+                        let _ =
+                            proxy.send_event(UserEvent::FileChanged(plain_event_path(event.path)));
                     }
                 }
             },
@@ -92,6 +93,26 @@ impl FileWatch {
         }
         self.watched = desired;
     }
+}
+
+/// An event's path in the plain form the rest of the app compares against.
+///
+/// Watched directories are canonicalized, which on Windows puts them in the
+/// `\\?\` verbatim form — and the watcher reports every event in the form the
+/// watch was registered with. The pane's folder and the vault's root are held
+/// plain, and both are checked with plain equality, so an untranslated event
+/// matched nothing: a file appearing in the shown folder never refreshed the
+/// pane, and the vault's text was never patched. Translate once, here at the
+/// boundary. On macOS every absolute path starts with `/`, so this is a no-op.
+pub(crate) fn plain_event_path(path: PathBuf) -> PathBuf {
+    let text = path.to_string_lossy();
+    if let Some(share) = text.strip_prefix(r"\\?\UNC\") {
+        return PathBuf::from(format!(r"\\{share}"));
+    }
+    if let Some(plain) = text.strip_prefix(r"\\?\") {
+        return PathBuf::from(plain.to_string());
+    }
+    path
 }
 
 /// The directories to watch and each one's mode: the pane's root in `mode`, plus

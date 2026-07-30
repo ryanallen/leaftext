@@ -1909,7 +1909,7 @@ body.library-resizing {
   --reader-toolbar-space: 0px;
 }
 body:has(#readerToolbar:not([hidden])) {
-  --reader-toolbar-space: 62px;
+  --reader-toolbar-space: 52px;
 }
 .reader-toolbar {
   grid-column: 2;
@@ -1917,16 +1917,56 @@ body:has(#readerToolbar:not([hidden])) {
   align-self: end;
   justify-self: center;
   z-index: 6;
+  /* Anchor for the dot-screened shadow behind it. */
+  position: relative;
   display: flex;
   align-items: center;
   gap: 2px;
-  margin-bottom: 18px;
+  /* Off the page's bottom edge by the same 8px the card is held off the frame. */
+  margin-bottom: 8px;
   padding: 4px;
+  border-radius: var(--leaf-radius-lg, 12px);
+  /* Transparent, not gone: the border keeps the box's size while ::after
+     paints the visible face — see below. */
+  border: 1px solid transparent;
+  background: transparent;
+  /* Only the contact line stays smooth; the soft spread is the dot screen below. */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+/* The bar's face — fill and hairline — on ::after rather than the element:
+   a negative-z child paints over its parent's own background, so the only way
+   the dot shadow (::before) gets behind an opaque face is for the face to be a
+   later negative-z child itself. inset -1px re-covers the border box the
+   element's transparent border holds in layout. */
+.reader-toolbar::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -1px;
   border-radius: var(--leaf-radius-lg, 12px);
   border: 1px solid var(--app-border);
   /* Opaque: the page scrolls underneath it. */
   background: var(--chrome-surface);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22), 0 1px 3px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+/* The bar's drop shadow: the same 2px dot lattice the page fade is screened
+   with, in shadow ink instead of the page's color, thinning away from the bar
+   under a mask — a halftone shadow rather than a smooth blur. Fixed attachment
+   keeps its dots on the one window-anchored lattice every grained surface
+   shares. z-index -1 keeps it inside the bar's own stacking context, above the
+   page fade (4) and under the ::after face that follows it in tree order. */
+.reader-toolbar::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -14px -22px -9px;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.55) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  -webkit-mask-image: radial-gradient(ellipse farthest-side at 50% 55%, #000 30%, transparent 98%);
+  mask-image: radial-gradient(ellipse farthest-side at 50% 55%, #000 30%, transparent 98%);
 }
 .reader-tool-group {
   display: flex;

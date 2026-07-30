@@ -220,6 +220,106 @@ fn desired_watches_cover_the_project_folder_and_the_open_document() {
 }
 
 #[test]
+fn watcher_events_translate_back_to_plain_paths() {
+    // Windows canonical form carries the verbatim prefix; the app compares plain.
+    assert_eq!(
+        plain_event_path(PathBuf::from(r"\\?\C:\notes\mail.eml")),
+        PathBuf::from(r"C:\notes\mail.eml")
+    );
+    assert_eq!(
+        plain_event_path(PathBuf::from(r"\\?\UNC\server\share\note.md")),
+        PathBuf::from(r"\\server\share\note.md")
+    );
+    // Already plain, on either platform: untouched.
+    assert_eq!(
+        plain_event_path(PathBuf::from(r"C:\notes\mail.eml")),
+        PathBuf::from(r"C:\notes\mail.eml")
+    );
+    assert_eq!(
+        plain_event_path(PathBuf::from("/vault/notes/mail.eml")),
+        PathBuf::from("/vault/notes/mail.eml")
+    );
+}
+
+#[test]
+fn the_watcher_translates_at_its_own_boundary() {
+    // Every consumer of a change event compares plain paths, so the translation
+    // has to happen where the event is born — not in one consumer at a time.
+    let source = include_str!("watch.rs");
+    assert!(
+        source.contains("UserEvent::FileChanged(plain_event_path(event.path))"),
+        "the debouncer must translate event paths before sending them"
+    );
+}
+
+#[test]
+fn an_external_file_in_the_shown_folder_refreshes_the_pane_for_every_format() {
+    let dir = std::env::temp_dir().join(format!(
+        "leaf-pane-refresh-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    ));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let canonical = fs::canonicalize(&dir).expect("fixture directory canonicalizes");
+
+    let mut state = VaultState::load(None);
+    // The pane holds the plain form, the way browsing builds it.
+    state.folder = plain_event_path(canonical.clone())
+        .to_string_lossy()
+        .to_string();
+
+    // The watcher reports in canonical form; translated, every readable format
+    // must land — .eml arriving from a mail client the same as a saved .md.
+    for extension in all_document_extensions() {
+        let changed = plain_event_path(canonical.join(format!("new.{extension}")));
+        assert!(
+            change_affects_pane(&state, &changed),
+            "a new .{extension} in the shown folder must refresh the pane"
+        );
+    }
+
+    // A change one level down is not on screen, so it asks for no re-read.
+    let below = plain_event_path(canonical.join("sub").join("deep.md"));
+    assert!(!change_affects_pane(&state, &below));
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn the_vaults_text_is_patched_for_every_format_the_watcher_reports() {
+    let dir = std::env::temp_dir().join(format!(
+        "leaf-corpus-patch-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    ));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let canonical = fs::canonicalize(&dir).expect("fixture directory canonicalizes");
+    let root = plain_event_path(canonical.clone());
+
+    let mut corpus = VaultCorpus::read(&root);
+    for extension in all_document_extensions() {
+        let name = format!("new.{extension}");
+        fs::write(dir.join(&name), "hello").expect("fixture document is written");
+        // As the watcher would report it, translated at the boundary.
+        let changed = plain_event_path(canonical.join(&name));
+        assert!(
+            corpus.covers(&changed),
+            "a new .{extension} under the vault must be the corpus's business"
+        );
+        assert!(
+            corpus.refresh(&changed),
+            "a new .{extension} under the vault must join the corpus"
+        );
+    }
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
 fn classifies_link_targets_for_native_opening() {
     assert_eq!(
         classify_link_target("https://example.com"),

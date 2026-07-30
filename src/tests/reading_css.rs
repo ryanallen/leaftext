@@ -854,7 +854,7 @@ fn the_page_ends_above_the_floating_bar() {
     assert_contains(css, "  --reader-toolbar-space: 0px;");
     assert_contains(
         css,
-        "body:has(#readerToolbar:not([hidden])) {\n  --reader-toolbar-space: 62px;\n}",
+        "body:has(#readerToolbar:not([hidden])) {\n  --reader-toolbar-space: 52px;\n}",
     );
     // The pager's own top margin still clears the app bar; this is added below
     // it, not instead of it.
