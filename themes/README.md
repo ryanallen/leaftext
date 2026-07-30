@@ -5,7 +5,7 @@
 
 Every theme in Leaf Text is plain data — one Markdown file per family, right here in this folder. Because they are Markdown, they render as the color tables below in Leaf itself and at [leaftext.com/themes](https://leaftext.com/themes).
 
-10 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full ~100-token contract inside its file.
+11 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full ~100-token contract inside its file.
 
 ## Gallery
 
@@ -46,6 +46,25 @@ Every theme in Leaf Text is plain data — one Markdown file per family, right h
 | Warning    | `#8a5a12` | `#e8c07a` |
 | Danger     | `#c0392b` | `#e8917f` |
 | Border     | `#dbcab4` | `#3a2d23` |
+
+### Bloodleaf
+
+[`bloodleaf.md`](bloodleaf.md) · Heading **Archivo** · Body **Archivo** · Code **Roboto Mono** · Google Fonts
+
+![Bloodleaf — the same document in the light and dark variants](../imgs/themes/bloodleaf.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#ffffff` | `#0f141a` |
+| Foreground | `#15181c` | `#dfe6ee` |
+| Heading    | `#0c0f12` | `#ffffff` |
+| Primary    | `#d81e28` | `#ff4b52` |
+| Accent     | `#d81e28` | `#ff4b52` |
+| Link       | `#d81e28` | `#ff6b70` |
+| Success    | `#1a7a3a` | `#3fd07a` |
+| Warning    | `#8a6100` | `#ffc043` |
+| Danger     | `#b81420` | `#ff5f63` |
+| Border     | `#dde5ec` | `#28323d` |
 
 ### Fern
 

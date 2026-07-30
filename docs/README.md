@@ -43,7 +43,7 @@ How the app behaves, page by page:
 | [Navigation](01-features/02-navigation.md) | Tabs, Back/Forward history, the outline, scroll anchors, live reload, recent files, link hints, the pager, and the single-window rule |
 | [Library](01-features/03-library.md) | The left-side pane backed by a local SQLite index: the Project file list with its breadcrumb path, the graph view, filename and content search, and file actions |
 | [Minimap](01-features/04-minimap.md) | The scaled real-text document clone in the side rail: how it renders, when it rebuilds, responsive widths, and the on/off toggle |
-| [Themes](01-features/06-themes.md) | The ten theme families (Amaranth, Arabica, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage), light/dark/System/Daylight appearance, on-demand Google Fonts, and the semantic token contract |
+| [Themes](01-features/06-themes.md) | The eleven theme families (Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage), light/dark/System/Daylight appearance, on-demand Google Fonts, and the semantic token contract |
 | [Settings](01-features/05-settings.md) | Every preference, its default, and the JSON files on disk that store them |
 | [Editing](01-features/07-editing.md) | Inline editing in the rendered page (blocks, checkboxes, undo), the raw-source code view, and the explicit Save flow |
 

@@ -6,12 +6,13 @@ From the user side, themes are simple: open the theme picker, tap a family, pick
 
 ## Families
 
-Pick a family in the theme picker. Ten ship, listed alphabetically, with **Fern** as the default. Each family is a plain Markdown file that opens with a screenshot of its own palette — browse them all in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview plus a light-vs-dark swatch table per family, or open one below:
+Pick a family in the theme picker. Eleven ship, listed alphabetically, with **Fern** as the default. Each family is a plain Markdown file that opens with a screenshot of its own palette — browse them all in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview plus a light-vs-dark swatch table per family, or open one below:
 
 | Family | Palette |
 | --- | --- |
 | [Amaranth](https://github.com/ryanallen/leaftext/blob/main/themes/amaranth.md) | Clean light/dark base ramps with a violet accent |
 | [Arabica](https://github.com/ryanallen/leaftext/blob/main/themes/arabica.md) | A coffee palette — creamy latte light, dark-roast espresso dark — with an AnuPpuccin mauve accent |
+| [Bloodleaf](https://github.com/ryanallen/leaftext/blob/main/themes/bloodleaf.md) | Blood-red veins on a white ground — an over-exposed white light with a red accent and a sky-blue second hue, against a blue-black night dark |
 | [Fern](https://github.com/ryanallen/leaftext/blob/main/themes/fern.md) | **Default.** An Amaranth-based palette with a fern-green cast |
 | [Ginger](https://github.com/ryanallen/leaftext/blob/main/themes/ginger.md) | A warm palette — cream light, cool slate dark — with a ginger-orange accent |
 | [GitHub](https://github.com/ryanallen/leaftext/blob/main/themes/github.md) | GitHub's light/dark palette, in its own system-font stack |
@@ -21,7 +22,7 @@ Pick a family in the theme picker. Ten ship, listed alphabetically, with **Fern*
 | [Pippin](https://github.com/ryanallen/leaftext/blob/main/themes/pippin.md) | A crisp, macOS-style palette — clean neutral grays with a system-blue accent |
 | [Sage](https://github.com/ryanallen/leaftext/blob/main/themes/sage.md) | A neutral grayscale palette with a muted-blue (Minimal-style) accent |
 
-An eleventh picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
+A twelfth picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
 
 ## Previews
 
@@ -34,6 +35,10 @@ Every family rendering the same reference document, split diagonally so the ligh
 ### Arabica
 
 ![Arabica — the same document in the light and dark variants](../../imgs/themes/arabica.png)
+
+### Bloodleaf
+
+![Bloodleaf — the same document in the light and dark variants](../../imgs/themes/bloodleaf.png)
 
 ### Fern
 
@@ -103,7 +108,7 @@ Open **Settings**, then **Theme** to slide up the theme picker. It lists every f
 
 Leaf Text does not bundle fonts. Instead, the active theme's font is fetched from **Google Fonts** when the theme activates, and the WebView caches it on disk so later launches are instant:
 
-- Each family carries its own type: **Fern** uses Noto (Sans/Serif/Sans Mono); **Nightshade** pairs Fraunces headings with Inter and Fira Code; **Halcyon** uses IBM Plex Sans/Mono; **Amaranth** uses the Source family (Serif 4 / Sans 3 / Code Pro); **Sage** uses Inter with JetBrains Mono; **Arabica** pairs Rubik with JetBrains Mono; **Goldenrod** pairs Space Grotesk with Space Mono; **Ginger** pairs Nunito with Inconsolata; **Pippin** pairs DM Sans with DM Mono.
+- Each family carries its own type: **Fern** uses Noto (Sans/Serif/Sans Mono); **Nightshade** pairs Fraunces headings with Inter and Fira Code; **Halcyon** uses IBM Plex Sans/Mono; **Amaranth** uses the Source family (Serif 4 / Sans 3 / Code Pro); **Sage** uses Inter with JetBrains Mono; **Arabica** pairs Rubik with JetBrains Mono; **Goldenrod** pairs Space Grotesk with Space Mono; **Ginger** pairs Nunito with Inconsolata; **Pippin** pairs DM Sans with DM Mono; **Bloodleaf** pairs Archivo with Roboto Mono.
 - The **GitHub** family is the exception: it uses your OS's native font stack (like github.com) and fetches nothing.
 - Switching families swaps the font link, so the font changes with the theme.
 - Every font stack lists system fallbacks, so text is readable immediately while the web font loads — and stays readable offline, falling back until you have loaded the font online once.

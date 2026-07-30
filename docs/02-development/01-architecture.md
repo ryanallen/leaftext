@@ -85,6 +85,8 @@ The raw rendered HTML is passed through `ammonia` with an allowlist of GFM-safe 
 
 `initial_settings_script()` produces `window.__leafSettings = {...}` from the persisted `Settings` struct. This script is registered as a WebView initialization script so the theme and library pane render from saved state on the very first paint — no flash of defaults.
 
+`load_settings()` returns a `SettingsLoad`: the settings themselves plus whether a file was there that did not parse. The two are separated because they are otherwise indistinguishable — an unreadable file and no file at all both end in `Settings::default()`, so the app opens looking factory-fresh with nothing to say that someone's saved choices were skipped. `settings_unreadable_script()` carries that flag to the page as `window.__leafSettingsUnreadable`, and the boot growls once when it is true. A leading UTF-8 byte order mark is not one of those cases: Windows editors write one by default, so `read_config_text()` looks past it for both [config files](../01-features/05-settings.md#files).
+
 **6. Load into the WebView**
 
 `app_shell_html()` generates the full HTML/CSS/JS shell. `reading_mode_css()` assembles the complete style block: compiled theme CSS (from the bundled `themes.md`) + the `:root` alias layer + application CSS. Fonts are not bundled — the active [theme](../01-features/06-themes.md#fonts) fetches its font from Google Fonts on demand. The rendered document HTML is injected into the shell via `workspace_state_script()` or `workspace_switch_script()`, which call the appropriate `window.leaf*` JavaScript entry points.

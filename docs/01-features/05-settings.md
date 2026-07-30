@@ -8,7 +8,7 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 
 | Setting | Options | Default |
 | --- | --- | --- |
-| Theme | Amaranth, Fern, GitHub, Halcyon, Nightshade, Sage, Random | Fern |
+| Theme | Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage, Random | Fern |
 | Appearance | System, Light, Dark, Daylight | System |
 | Language | System, English, Simplified Chinese | System |
 | Minimap | On / Off | On |
@@ -34,6 +34,8 @@ Click **Settings** in the app bar. The panel opens as a dropdown and updates the
 | `{data_dir}/updates` | Verified installer waiting to be applied ([Updates](#updates)) |
 
 Here `{config_dir}` and `{data_dir}` are the per-app directories derived from the app id `com.ryanallen.leaftext` — they already include the vendor/app path segments (there is no extra `leaftext/` component to add). See [Paths](#paths) for the real per-platform locations.
+
+Both JSON files are editable by hand, and a byte order mark in front of the opening brace is fine — Windows editors add one by default. If `settings.json` still cannot be read, Leaf Text starts on its defaults and says so in the corner rather than coming up looking factory-fresh; the file is left untouched for you to look at.
 
 ## Example
 

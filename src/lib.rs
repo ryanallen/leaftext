@@ -1046,8 +1046,20 @@ pub fn app_data_dir() -> Option<PathBuf> {
     project_data_local_dir()
 }
 
+/// Read one of our own JSON config files, dropping a leading byte order mark.
+/// PowerShell and Notepad write one by default, `serde_json` refuses it, and
+/// every reader here defaults on a parse failure — so without this a file edited
+/// by hand on Windows is silently thrown away.
+fn read_config_text(path: impl AsRef<Path>) -> io::Result<String> {
+    let text = fs::read_to_string(path)?;
+    match text.strip_prefix('\u{feff}') {
+        Some(stripped) => Ok(stripped.to_string()),
+        None => Ok(text),
+    }
+}
+
 pub fn load_recent_files(config_path: impl AsRef<Path>) -> RecentFiles {
-    let mut recent: RecentFiles = fs::read_to_string(config_path)
+    let mut recent: RecentFiles = read_config_text(config_path)
         .ok()
         .and_then(|contents| serde_json::from_str(&contents).ok())
         .unwrap_or_default();
@@ -1178,13 +1190,27 @@ pub fn settings_file_path() -> Option<PathBuf> {
     project_config_dir().map(|dir| dir.join("settings.json"))
 }
 
+/// What [`load_settings`] found. An unreadable file and no file at all both end
+/// in [`Settings::default()`], so without this flag the app opens factory-fresh
+/// with nothing to say that someone's saved choices were skipped.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct SettingsLoad {
+    pub settings: Settings,
+    /// A file was there and did not parse — false for the ordinary first launch.
+    pub unreadable: bool,
+}
+
 /// Load the persisted UI toggles, falling back to defaults when the file is
 /// missing or corrupt.
-pub fn load_settings(settings_path: impl AsRef<Path>) -> Settings {
-    let mut settings: Settings = fs::read_to_string(settings_path)
+pub fn load_settings(settings_path: impl AsRef<Path>) -> SettingsLoad {
+    let text = read_config_text(settings_path);
+    let parsed: Option<Settings> = text
+        .as_ref()
         .ok()
-        .and_then(|contents| serde_json::from_str(&contents).ok())
-        .unwrap_or_default();
+        .and_then(|contents| serde_json::from_str(contents).ok());
+    // Read but not parsed: the file is there and we are about to ignore it.
+    let unreadable = text.is_ok() && parsed.is_none();
+    let mut settings = parsed.unwrap_or_default();
     // Migrate the pre-family single-axis setting: Dracula used to be a theme
     // "mode"; it's now the dark half of the Nightshade family (the renamed
     // Dracula palette).
@@ -1192,7 +1218,10 @@ pub fn load_settings(settings_path: impl AsRef<Path>) -> Settings {
         settings.theme_family = "nightshade".to_string();
         settings.theme_mode = "dark".to_string();
     }
-    settings
+    SettingsLoad {
+        settings,
+        unreadable,
+    }
 }
 
 pub fn save_settings(settings_path: impl AsRef<Path>, settings: &Settings) -> io::Result<()> {

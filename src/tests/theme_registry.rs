@@ -8,8 +8,8 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
     let sources = theme_sources();
 
     assert_theme_sources_cover_contract(sources);
-    // Ten families (github, nightshade, amaranth, fern, sage, halcyon, arabica, goldenrod, ginger, pippin), each a light/dark pair.
-    assert_eq!(sources.len(), 20);
+    // Eleven families (github, nightshade, amaranth, fern, sage, halcyon, arabica, goldenrod, ginger, pippin, bloodleaf), each a light/dark pair.
+    assert_eq!(sources.len(), 22);
     assert!(sources.iter().any(|source| source.id == "nightshade-dark"));
 
     for source in sources {
@@ -30,6 +30,7 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
         vec![
             ("amaranth", "Amaranth"),
             ("arabica", "Arabica"),
+            ("bloodleaf", "Bloodleaf"),
             ("fern", "Fern"),
             ("ginger", "Ginger"),
             ("github", "GitHub"),

@@ -906,6 +906,12 @@ function escapeAttr(value) {
 }
 window.leafSetState(window.__leafInitialState || { recent: [], document: null });
 window.leafSetNavigation({ canGoBack: false, canGoForward: false });
+// Came up on defaults because the settings file would not read. Nothing on
+// screen distinguishes that from a first launch, so say it; the file is left
+// alone for its owner to look at.
+if (window.__leafSettingsUnreadable) {
+  window.leafShowError(window.leafLocale.t('errors.settingsUnreadable'));
+}
 // The vault list came in on the window rather than through its callback, so
 // nothing has asked about its repository yet.
 requestActiveVaultStatus();

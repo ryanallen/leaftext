@@ -49,6 +49,13 @@ pub fn initial_settings_script(settings: &Settings) -> String {
     format!("window.__leafSettings = {};", state)
 }
 
+/// Whether `settings.json` was there and unreadable, as
+/// `window.__leafSettingsUnreadable`; the boot growls once when it is true.
+/// Always emitted, so the flag is never undefined.
+pub fn settings_unreadable_script(unreadable: bool) -> String {
+    format!("window.__leafSettingsUnreadable = {unreadable};")
+}
+
 /// The link graph, for the graph view. Every string is file-derived and
 /// untrusted; the page escapes them before they reach a label.
 pub fn graph_script(graph: &DocumentGraph) -> String {

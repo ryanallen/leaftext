@@ -410,7 +410,7 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
     );
     assert_eq!(
         theme_family_ids_json(),
-        r#"["amaranth","arabica","fern","ginger","github","goldenrod","halcyon","nightshade","pippin","sage"]"#
+        r#"["amaranth","arabica","bloodleaf","fern","ginger","github","goldenrod","halcyon","nightshade","pippin","sage"]"#
     );
     assert_contains(
         &html,

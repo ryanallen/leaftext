@@ -25,12 +25,12 @@ use leaftext::{
     open_error_state_script, opened_document_from_source, pager_loaded_script, read_folder_listing,
     render_markdown_document, repo_name_for_vault, save_recent_files, save_result_script,
     save_settings, scroll_anchor_script, search_results_script, settings_file_path,
-    source_payload_url, source_updated_script, sync_vault_repo, update_progress_script,
-    update_state_script, vaults_script, webview_user_data_dir, workspace_only_script,
-    workspace_reload_script, workspace_state_script, workspace_switch_script, DocumentFormat,
-    EditableDocument, FolderListing, GitTooling, GraphScope, OpenedDocument, RecentFiles,
-    ScrollAnchor, Settings, UpdateDownload, VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL,
-    LOCAL_IMAGE_PROTOCOL,
+    settings_unreadable_script, source_payload_url, source_updated_script, sync_vault_repo,
+    update_progress_script, update_state_script, vaults_script, webview_user_data_dir,
+    workspace_only_script, workspace_reload_script, workspace_state_script,
+    workspace_switch_script, DocumentFormat, EditableDocument, FolderListing, GitTooling,
+    GraphScope, OpenedDocument, RecentFiles, ScrollAnchor, Settings, SettingsLoad, UpdateDownload,
+    VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -217,7 +217,10 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     // Load settings before building the window so it reopens at the size and
     // maximized state the user left it. The rest ride to the webview below.
     let settings_path = settings_file_path();
-    let mut settings = settings_path
+    let SettingsLoad {
+        mut settings,
+        unreadable: settings_unreadable,
+    } = settings_path
         .as_ref()
         .map(load_settings)
         .unwrap_or_default();
@@ -323,6 +326,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     let builder = WebViewBuilder::new_with_web_context(&mut web_context)
         .with_html(app_shell_html())
         .with_initialization_script(initial_settings_script(&settings))
+        .with_initialization_script(settings_unreadable_script(settings_unreadable))
         .with_initialization_script(initial_vaults_script(
             &vault_state.vaults(),
             vault_state.active,

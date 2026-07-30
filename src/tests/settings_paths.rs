@@ -224,12 +224,61 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
     };
 
     save_settings(&settings_path, &settings).expect("settings save");
-    assert_eq!(load_settings(&settings_path), settings);
-    // A missing file restores defaults, not the all-false zero value.
-    assert_eq!(load_settings(&missing_path), Settings::default());
+    let loaded = load_settings(&settings_path);
+    assert_eq!(loaded.settings, settings);
+    // Read back cleanly, so there is nothing to tell the page about.
+    assert!(!loaded.unreadable);
+    // A missing file restores defaults, not the all-false zero value — and is an
+    // ordinary first launch, not something to report.
+    let missing = load_settings(&missing_path);
+    assert_eq!(missing.settings, Settings::default());
+    assert!(!missing.unreadable);
 
     fs::write(&settings_path, "{not json").expect("corrupt settings fixture is written");
-    assert_eq!(load_settings(&settings_path), Settings::default());
+    let corrupt = load_settings(&settings_path);
+    assert_eq!(corrupt.settings, Settings::default());
+    // A file that is there and does not parse is the one case worth a growl:
+    // the app is about to look factory-fresh with the file's contents ignored.
+    assert!(corrupt.unreadable);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn a_byte_order_mark_from_a_windows_editor_does_not_reset_the_config() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-settings-bom-{unique}"));
+    fs::create_dir_all(&dir).expect("test directory is created");
+
+    // PowerShell's Out-File/Set-Content and Notepad all write a UTF-8 byte order
+    // mark by default, so a hand-edited config on Windows arrives with three
+    // bytes in front of the opening brace. serde_json refuses them, and every
+    // reader here defaults on a parse failure — which silently threw the file
+    // away. Both config files must look past the mark.
+    let settings_path = dir.join("settings.json");
+    fs::write(
+        &settings_path,
+        "\u{feff}{\"library_width\": 312, \"minimap_enabled\": false}",
+    )
+    .expect("BOM settings fixture is written");
+    let loaded = load_settings(&settings_path);
+    assert_eq!(loaded.settings.library_width, 312);
+    assert!(!loaded.settings.minimap_enabled);
+    assert!(
+        !loaded.unreadable,
+        "a byte order mark must not count as an unreadable file"
+    );
+
+    let recent_path = dir.join("recent-files.json");
+    fs::write(&recent_path, "\u{feff}{\"files\": [\"first.md\"]}")
+        .expect("BOM recent files fixture is written");
+    assert_eq!(
+        load_recent_files(&recent_path).files,
+        vec![PathBuf::from("first.md")]
+    );
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }
@@ -248,7 +297,7 @@ fn settings_load_migrates_legacy_dracula_mode_to_the_nightshade_family() {
     // half of the Nightshade family (the renamed Dracula palette) on load.
     fs::write(&settings_path, r#"{"theme_mode": "dracula"}"#)
         .expect("legacy settings fixture is written");
-    let loaded = load_settings(&settings_path);
+    let loaded = load_settings(&settings_path).settings;
     assert_eq!(loaded.theme_family, "nightshade");
     assert_eq!(loaded.theme_mode, "dark");
 
@@ -273,7 +322,7 @@ fn settings_load_tolerates_partial_json_via_serde_default() {
         r#"{"library_width": 312, "indexing_enabled": true}"#,
     )
     .expect("partial settings fixture is written");
-    let loaded = load_settings(&settings_path);
+    let loaded = load_settings(&settings_path).settings;
     assert_eq!(loaded.library_width, 312);
     assert!(loaded.minimap_enabled);
     assert_eq!(loaded.theme_mode, "system");
@@ -302,11 +351,36 @@ fn a_settings_file_from_before_the_pane_had_one_view_still_loads() {
             format!(r#"{{"library_view": "{legacy}", "minimap_enabled": false}}"#),
         )
         .expect("legacy library view fixture is written");
-        let loaded = load_settings(&settings_path);
+        let loaded = load_settings(&settings_path).settings;
         assert!(!loaded.minimap_enabled);
     }
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn an_unreadable_settings_file_reaches_the_page_as_a_growl() {
+    // The whole point of the flag: coming up on defaults is invisible, so the
+    // page has to say it. Host side, it is always emitted so the flag is never
+    // undefined; page side, the boot growls only when it is true.
+    assert_eq!(
+        settings_unreadable_script(true),
+        "window.__leafSettingsUnreadable = true;"
+    );
+    assert_eq!(
+        settings_unreadable_script(false),
+        "window.__leafSettingsUnreadable = false;"
+    );
+
+    let html = app_shell_html();
+    assert_contains(&html, "if (window.__leafSettingsUnreadable) {");
+    assert_contains(
+        &html,
+        "window.leafShowError(window.leafLocale.t('errors.settingsUnreadable'));",
+    );
+    // Both locales carry the message, so neither shows the bare key.
+    assert_contains(&html, "'errors.settingsUnreadable': 'Your settings file");
+    assert_contains(&html, "'errors.settingsUnreadable': '无法读取设置文件");
 }
 
 #[test]
