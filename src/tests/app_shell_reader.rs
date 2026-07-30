@@ -802,7 +802,9 @@ fn app_shell_code_view_is_a_worker_free_monaco_with_its_own_minimap() {
     // (not 'on') so applyCodeViewWrapColumn can hold the text short of the minimap
     // — 'on' wraps flush under the minimap's drop-shadow.
     assert!(html.contains("wordWrap: 'bounded',"));
-    assert!(html.contains("monacoEditor.onDidLayoutChange(applyCodeViewWrapColumn)"));
+    assert!(html.contains("monacoEditor.onDidLayoutChange(() => {"));
+    // A relayout re-derives the wrap column and re-checks the viewport box.
+    assert!(html.contains("    clampMinimapSliderToRail();\n  });"));
     assert!(html.contains("minimap: { enabled: true"));
 
     // Edits relay to the host as source splices (scheduleSourceUpdate), not a

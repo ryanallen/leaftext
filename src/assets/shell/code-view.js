@@ -563,21 +563,30 @@ function applyCodeViewWrapColumn() {
 // under three pixels at any pixel ratio, so the box still reads as level with the
 // text beside it. Nothing is re-derived: the rail's height and the box's own height
 // are Monaco's numbers, read back off the elements it sized.
+// A pixel clear of the bottom edge too, for the reason the right stroke keeps one
+// (the .minimap-slider rule in reading.css). Fractional geometry: clientHeight and
+// offsetHeight round, and the rail's height is not always whole.
+const MINIMAP_SLIDER_RAIL_CLEARANCE_PX = 1;
 function clampMinimapSliderToRail() {
   const rail = app.querySelector('.code-view-monaco .monaco-editor .minimap');
   const slider = rail && rail.querySelector('.minimap-slider');
-  if (!slider || !rail.clientHeight) return;
+  if (!slider) return;
+  const railHeight = rail.getBoundingClientRect().height;
+  if (!railHeight) return;
   const top = Number.parseFloat(slider.style.top);
-  const limit = rail.clientHeight - slider.offsetHeight;
+  const limit =
+    railHeight - slider.getBoundingClientRect().height - MINIMAP_SLIDER_RAIL_CLEARANCE_PX;
   if (!Number.isFinite(top) || top <= limit) return;
   slider.style.top = `${Math.max(0, limit)}px`;
 }
 
-// Watch for Monaco moving the box. It writes the offset to the slider's own `style`
-// on every scroll, so the mutation is the signal — no polling, and no guessing where
-// in the frame Monaco's render lands. Our own correction trips the observer once
-// more; that pass sees the box already inside and does nothing, so it settles.
-// Monaco builds the minimap during create(), so the rail is there to observe.
+// Monaco writes the offset to the slider's own `style`, so the mutation is the
+// signal — no polling. Our correction trips it once more, sees the box inside, stops.
+//
+// But an observer only reports a *change*, and opening the code view already at the
+// bottom positions the box in Monaco's first render — one write, nothing watching yet,
+// so it stayed cut off until a resize wrote again. So check on the way in too: now, in
+// case that render ran, and next frame in case it had not.
 function watchMinimapSlider() {
   const rail = app.querySelector('.code-view-monaco .monaco-editor .minimap');
   if (!rail) return;
@@ -588,6 +597,7 @@ function watchMinimapSlider() {
     subtree: true,
   });
   clampMinimapSliderToRail();
+  window.requestAnimationFrame(clampMinimapSliderToRail);
 }
 
 // Room to leave above the first line and below the last one. Monaco puts line 1
@@ -678,7 +688,11 @@ function createMonacoEditor(monaco, container, state, text) {
     scheduleSourceUpdate();
   });
   // Keep the wrap gap in step with the width: set it now, then on every relayout.
-  monacoLayoutSub = monacoEditor.onDidLayoutChange(applyCodeViewWrapColumn);
+  monacoLayoutSub = monacoEditor.onDidLayoutChange(() => {
+    applyCodeViewWrapColumn();
+    // A moved edge can leave the box hanging without moving it, so no mutation fires.
+    clampMinimapSliderToRail();
+  });
   applyCodeViewWrapColumn();
   // And keep the viewport box off the bottom edge — see clampMinimapSliderToRail.
   watchMinimapSlider();
