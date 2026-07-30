@@ -70,8 +70,7 @@ fn off_thread<F>(
         return;
     };
     mark_busy(webview, id);
-    let proxy = proxy.clone();
-    thread::spawn(move || {
+    off_loop(proxy, move || {
         let (message, error) = job(&root, &name);
         // Whatever happened, the panel is redrawn from a fresh reading of the
         // folder — the outcome message says what was attempted, the state says
@@ -84,9 +83,9 @@ fn off_thread<F>(
         );
         next.message = message;
         next.error = error;
-        let _ = proxy.send_event(UserEvent::VaultGitReady {
+        UserEvent::VaultGitReady {
             json: serde_json::to_string(&next).unwrap_or_else(|_| "null".to_string()),
-        });
+        }
     });
 }
 
@@ -103,13 +102,12 @@ pub(crate) fn refresh_vault_status(state: &VaultState, proxy: &EventLoopProxy<Us
     let Some((_name, root)) = vault_root(state, id) else {
         return;
     };
-    let proxy = proxy.clone();
-    thread::spawn(move || {
+    off_loop(proxy, move || {
         let repo = inspect_vault_repo(&root);
-        let _ = proxy.send_event(UserEvent::VaultStatusReady {
+        UserEvent::VaultStatusReady {
             id,
             json: serde_json::to_string(&repo).unwrap_or_else(|_| "null".to_string()),
-        });
+        }
     });
 }
 

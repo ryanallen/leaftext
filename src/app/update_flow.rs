@@ -26,12 +26,11 @@ pub(crate) fn run_update_download(
     asset: String,
     size: u64,
     url: String,
-) {
-    let event = match stage_update_download(&proxy, &version, &asset, size, &url) {
+) -> UserEvent {
+    match stage_update_download(&proxy, &version, &asset, size, &url) {
         Ok(staged) => UserEvent::UpdateDownloadStaged { version: staged },
         Err(message) => UserEvent::UpdateDownloadFailed { version, message },
-    };
-    let _ = proxy.send_event(event);
+    }
 }
 
 /// The download proper, returning the version that was staged. A partial file is

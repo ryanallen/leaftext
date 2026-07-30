@@ -317,3 +317,20 @@ pub(crate) fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<S
         }
     }
 }
+
+/// Run `job` on a worker and post what it returns back to the loop. Everything
+/// that reads the disk or the network goes through here — the thread answering
+/// the window must wait on neither.
+///
+/// The answer lands as an ordinary event, so the loop decides whether it still
+/// wants it. Each `*Ready` arm carries what it was about (a vault root, a graph
+/// source, a path) and drops an answer that outlived its question.
+pub(crate) fn off_loop<F>(proxy: &EventLoopProxy<UserEvent>, job: F)
+where
+    F: FnOnce() -> UserEvent + Send + 'static,
+{
+    let proxy = proxy.clone();
+    thread::spawn(move || {
+        let _ = proxy.send_event(job());
+    });
+}

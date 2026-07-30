@@ -164,14 +164,8 @@ pub(crate) fn buffer_already_shows(edit: Option<&EditableDocument>, contents: &s
 /// Re-render the active document from disk, preserving scroll position. Reads
 /// the file once and hash-gates, so a spurious event with unchanged contents
 /// re-renders nothing.
-pub(crate) fn reload_active_document(
-    window: &tao::window::Window,
-    webview: Option<&WebView>,
-    workspace: &mut Workspace,
-    recent: &RecentFiles,
-    file_watch: &mut FileWatch,
-    local_image_source_dir_state: &Arc<Mutex<Option<PathBuf>>>,
-) {
+pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileWatch) {
+    let workspace = &mut reader.workspace;
     let Some(index) = workspace.active else {
         return;
     };
@@ -242,7 +236,7 @@ pub(crate) fn reload_active_document(
                 None,
             ));
             run_page_script(
-                webview,
+                reader.webview.as_ref(),
                 &code_view_fetch_script(&url),
                 "Live reload: failed to refresh code view",
             );
@@ -262,18 +256,19 @@ pub(crate) fn reload_active_document(
             document: document.clone(),
         });
     }
-    window.set_title(&format!("{} - Leaf Text", document.title));
+    reader
+        .window
+        .set_title(&format!("{} - Leaf Text", document.title));
 
     let image_source_path = fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
-    update_local_image_source_dir(
-        local_image_source_dir_state,
-        local_image_source_dir(&image_source_path),
-    );
+    if let Ok(mut current) = reader.image_dir.lock() {
+        *current = local_image_source_dir(&image_source_path);
+    }
 
-    let tabs = workspace.tab_summaries();
+    let tabs = reader.workspace.tab_summaries();
     run_page_script(
-        webview,
-        &workspace_reload_script(&recent.files, &tabs, Some(index), Some(&document)),
+        reader.page(),
+        &workspace_reload_script(&reader.recent.files, &tabs, Some(index), Some(&document)),
         "Live reload: failed to update document view",
     );
 }

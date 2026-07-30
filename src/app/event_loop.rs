@@ -4,21 +4,16 @@
 use super::*;
 
 use tao::event_loop::EventLoop;
-use tao::window::Window;
 
 /// Everything the loop owns between events, assembled by `run_app` at startup.
-/// It exists so the loop takes one argument instead of fourteen.
+/// It exists so the loop takes one argument instead of ten.
 pub(crate) struct AppCtx {
+    /// The window, the page, and what is on screen in them.
+    pub(crate) reader: Reader,
     pub(crate) settings: Settings,
     pub(crate) settings_path: Option<PathBuf>,
-    pub(crate) recent: RecentFiles,
-    pub(crate) config_path: Option<PathBuf>,
-    pub(crate) workspace: Workspace,
     pub(crate) pending_open_path: Option<PathBuf>,
-    pub(crate) webview: Option<WebView>,
-    pub(crate) window: Window,
     pub(crate) proxy: EventLoopProxy<UserEvent>,
-    pub(crate) local_image_source_dir: Arc<Mutex<Option<PathBuf>>>,
     pub(crate) file_watch: FileWatch,
     pub(crate) vault_state: VaultState,
     pub(crate) last_windowed_size: LogicalSize<f64>,
@@ -52,21 +47,34 @@ fn apply_setting_command(settings: &mut Settings, command: IpcCommand) -> bool {
     true
 }
 
+/// The one way out: remember the geometry, save it, drop the page, stop the
+/// loop. The close button, the page's own close, and applying an update all end
+/// here — the update helper waits for this process to exit before installing.
+fn shut_down(
+    reader: &mut Reader,
+    settings: &mut Settings,
+    settings_path: Option<&PathBuf>,
+    windowed_size: LogicalSize<f64>,
+    control_flow: &mut ControlFlow,
+) {
+    settings.window_width = windowed_size.width.round() as u32;
+    settings.window_height = windowed_size.height.round() as u32;
+    settings.window_maximized = reader.window.is_maximized();
+    persist_settings(settings, settings_path);
+    let _ = reader.webview.take();
+    *control_flow = ControlFlow::Exit;
+}
+
 /// Runs until the window closes, which ends the process — hence the `!`.
 pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> ! {
-    // Unpacked straight back into locals: the arms mutate a dozen of these and read
+    // Unpacked straight back into locals: the arms mutate most of these and read
     // them constantly, and `ctx.` at every use would bury the event handling.
     let AppCtx {
+        mut reader,
         mut settings,
         settings_path,
-        mut recent,
-        config_path,
-        mut workspace,
         mut pending_open_path,
-        mut webview,
-        window,
         proxy,
-        local_image_source_dir,
         mut file_watch,
         mut vault_state,
         mut last_windowed_size,
@@ -83,20 +91,20 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             } => {
                 // Remember the size only while windowed; convert the physical
                 // event size to the logical size the next launch expects.
-                if !window.is_maximized()
-                    && !window.is_minimized()
+                if !reader.window.is_maximized()
+                    && !reader.window.is_minimized()
                     && size.width > 0
                     && size.height > 0
                 {
-                    last_windowed_size = size.to_logical(window.scale_factor());
+                    last_windowed_size = size.to_logical(reader.window.scale_factor());
                 }
                 // Keep the custom title bar's maximize/restore icon in sync with
                 // the real window state whenever it changes.
-                let maximized = window.is_maximized();
+                let maximized = reader.window.is_maximized();
                 if maximized != last_maximized {
                     last_maximized = maximized;
                     run_page_script(
-                        webview.as_ref(),
+                        reader.page(),
                         &format!("window.leafSetWindowMaximized({maximized});"),
                         "Failed to sync the maximize button",
                     );
@@ -105,21 +113,19 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 ..
-            } => {
-                // Capture the final window geometry so it reopens where it left off.
-                settings.window_width = last_windowed_size.width.round() as u32;
-                settings.window_height = last_windowed_size.height.round() as u32;
-                settings.window_maximized = window.is_maximized();
-                persist_settings(&settings, settings_path.as_ref());
-                let _ = webview.take();
-                *control_flow = ControlFlow::Exit;
-            }
+            } => shut_down(
+                &mut reader,
+                &mut settings,
+                settings_path.as_ref(),
+                last_windowed_size,
+                control_flow,
+            ),
             // macOS delivers a double-clicked document as an Apple Event, not an
             // argument, so file associations there are inert without this. Before
             // the page is up the path waits with the command-line one.
             Event::Opened { urls } => {
                 for path in urls.iter().filter_map(|url| url.to_file_path().ok()) {
-                    if webview.is_some() && pending_open_path.is_none() {
+                    if reader.webview.is_some() && pending_open_path.is_none() {
                         let _ = proxy.send_event(UserEvent::OpenPath(path));
                     } else {
                         pending_open_path = Some(path);
@@ -132,29 +138,22 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
             }
             Event::UserEvent(UserEvent::FocusWindow) => {
-                window.set_minimized(false);
-                window.set_focus();
+                reader.window.set_minimized(false);
+                reader.window.set_focus();
             }
             Event::UserEvent(UserEvent::OpenPath(path)) => {
-                workspace.open_path(path);
-                render_active(
-                    &window,
-                    webview.as_ref(),
-                    &mut workspace,
-                    &mut recent,
-                    config_path.as_ref(),
-                    &local_image_source_dir,
-                    ScrollIntent::Reset,
-                );
+                reader.workspace.open_path(path);
+                reader.render(ScrollIntent::Reset);
                 // A forwarded open from a second launch should surface the window.
-                window.set_minimized(false);
-                window.set_focus();
+                reader.window.set_minimized(false);
+                reader.window.set_focus();
             }
             Event::UserEvent(UserEvent::FileChanged(changed)) => {
                 // The active document live-reloads; a sibling change instead
                 // refreshes the pane and the corpus so both stay in sync without
                 // a full rescan.
-                let is_active_document = workspace
+                let is_active_document = reader
+                    .workspace
                     .active_path()
                     .is_some_and(|current| paths_refer_to_same_document(&changed, current));
                 // Above the split, or it misses the commonest change of all —
@@ -167,14 +166,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     refresh_vault_status(&vault_state, &proxy, vault_state.active);
                 }
                 if is_active_document {
-                    reload_active_document(
-                        &window,
-                        webview.as_ref(),
-                        &mut workspace,
-                        &recent,
-                        &mut file_watch,
-                        &local_image_source_dir,
-                    );
+                    reload_active_document(&mut reader, &mut file_watch);
                 } else {
                     // The pane lists one folder off the disk, so a file added,
                     // renamed or removed in that folder changes what it shows.
@@ -193,7 +185,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     // reload above would hash-gate itself out.
                     if is_local_image_path(&changed) {
                         run_page_script(
-                            webview.as_ref(),
+                            reader.page(),
                             &image_refresh_script(),
                             "Live reload: failed to refresh images",
                         );
@@ -201,13 +193,13 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
             }
             Event::UserEvent(UserEvent::VaultGitReady { json }) => {
-                deliver_vault_git(webview.as_ref(), &json);
+                deliver_vault_git(reader.page(), &json);
             }
             Event::UserEvent(UserEvent::VaultStatusReady { id, json }) => {
-                deliver_vault_status(webview.as_ref(), id, &json);
+                deliver_vault_status(reader.page(), id, &json);
             }
             Event::UserEvent(UserEvent::FolderLoaded { scope, listing }) => {
-                deliver_folder(&mut vault_state, webview.as_ref(), scope, listing);
+                deliver_folder(&mut vault_state, reader.page(), scope, listing);
             }
             Event::UserEvent(UserEvent::CorpusLoaded { corpus }) => {
                 deliver_corpus(&mut vault_state, &proxy, *corpus);
@@ -215,22 +207,23 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::GraphReady { source, graph }) => {
                 deliver_graph(
                     &vault_state,
-                    webview.as_ref(),
-                    workspace.active_path(),
+                    reader.webview.as_ref(),
+                    reader.workspace.active_path(),
                     source,
                     graph,
                 );
             }
             Event::UserEvent(UserEvent::SearchReady { scope, query, hits }) => {
-                deliver_search(&vault_state, webview.as_ref(), scope, &query, hits);
+                deliver_search(&vault_state, reader.page(), scope, &query, hits);
             }
             Event::UserEvent(UserEvent::PagerLoaded { path, html }) => {
-                let is_active_document = workspace
+                let is_active_document = reader
+                    .workspace
                     .active_path()
                     .is_some_and(|current| paths_refer_to_same_document(&path, current));
                 if is_active_document {
                     run_page_script(
-                        webview.as_ref(),
+                        reader.page(),
                         &pager_loaded_script(&path, &html),
                         "Failed to update document pager",
                     );
@@ -238,7 +231,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             }
             Event::UserEvent(UserEvent::UpdateDownloadProgress { version, percent }) => {
                 run_page_script(
-                    webview.as_ref(),
+                    reader.page(),
                     &update_progress_script(&version, percent),
                     "Failed to report download progress",
                 );
@@ -251,25 +244,17 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 if let Some(data_dir) = app_data_dir() {
                     leaftext::prune_staged(&data_dir, Some(&version));
                 }
-                report_update_state(webview.as_ref(), "staged", &version, None);
+                report_update_state(reader.page(), "staged", &version, None);
             }
             Event::UserEvent(UserEvent::UpdateDownloadFailed { version, message }) => {
                 eprintln!("Update download failed: {message}");
-                report_update_state(webview.as_ref(), "failed", &version, Some(&message));
+                report_update_state(reader.page(), "failed", &version, Some(&message));
             }
             Event::UserEvent(UserEvent::FromPage(command)) => match command {
                 IpcCommand::Open => {
                     if let Some(path) = pick_document_file() {
-                        workspace.open_path(path);
-                        render_active(
-                            &window,
-                            webview.as_ref(),
-                            &mut workspace,
-                            &mut recent,
-                            config_path.as_ref(),
-                            &local_image_source_dir,
-                            ScrollIntent::Reset,
-                        );
+                        reader.workspace.open_path(path);
+                        reader.render(ScrollIntent::Reset);
                     }
                 }
                 // The page opening a file is the same act as a forwarded open.
@@ -281,7 +266,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     into_folder,
                     cut,
                 } => match transfer_into_folder(&path, &into_folder, cut) {
-                    Ok(_) => refresh_library_folder(webview.as_ref()),
+                    Ok(_) => refresh_library_folder(reader.page()),
                     Err(error) => {
                         let verb = if cut { "move" } else { "copy" };
                         eprintln!(
@@ -289,7 +274,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                             path.display(),
                             into_folder.display()
                         );
-                        report_file_action_failure(webview.as_ref(), &error.to_string());
+                        report_file_action_failure(reader.page(), &error.to_string());
                     }
                 },
                 IpcCommand::RevealFile { path } => {
@@ -317,17 +302,17 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::RenameFile { path, new_name } => match rename_file(&path, &new_name) {
-                    Ok(_) => refresh_library_folder(webview.as_ref()),
+                    Ok(_) => refresh_library_folder(reader.page()),
                     Err(error) => {
                         eprintln!("Failed to rename {}: {error}", path.display());
-                        report_file_action_failure(webview.as_ref(), &error.to_string());
+                        report_file_action_failure(reader.page(), &error.to_string());
                     }
                 },
                 IpcCommand::DeleteFile { path } => match delete_to_trash(&path) {
-                    Ok(()) => refresh_library_folder(webview.as_ref()),
+                    Ok(()) => refresh_library_folder(reader.page()),
                     Err(error) => {
                         eprintln!("Failed to move {} to the trash: {error}", path.display());
-                        report_file_action_failure(webview.as_ref(), &error);
+                        report_file_action_failure(reader.page(), &error);
                     }
                 },
                 IpcCommand::ShowProperties { path } => {
@@ -336,16 +321,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::CloseTab { index } => {
-                    workspace.close_tab(index);
-                    render_active(
-                        &window,
-                        webview.as_ref(),
-                        &mut workspace,
-                        &mut recent,
-                        config_path.as_ref(),
-                        &local_image_source_dir,
-                        ScrollIntent::Reset,
-                    );
+                    reader.workspace.close_tab(index);
+                    reader.render(ScrollIntent::Reset);
                 }
                 IpcCommand::SwitchTab {
                     index,
@@ -354,69 +331,47 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 } => {
                     // Clicking the active tab is a no-op; re-rendering would jump the
                     // reader.
-                    if workspace.active == Some(index) {
+                    if reader.workspace.active == Some(index) {
                         return;
                     }
-                    if let Some(active) = workspace.active {
-                        if let Some(tab) = workspace.tabs.get_mut(active) {
+                    if let Some(active) = reader.workspace.active {
+                        if let Some(tab) = reader.workspace.tabs.get_mut(active) {
                             tab.saved_scroll_anchor = Some(scroll_anchor);
                             // Remember where the source editor was left; `None` for a
                             // reading-view tab, which leaves nothing to restore.
                             tab.saved_code_scroll = code_scroll;
                         }
                     }
-                    if workspace.set_active(index) {
+                    if reader.workspace.set_active(index) {
                         // Reopen where the reader left it (`None` starts at the top).
-                        let saved = workspace
+                        let saved = reader
+                            .workspace
                             .tabs
                             .get(index)
-                            .and_then(|t| t.saved_scroll_anchor.clone());
-                        render_active(
-                            &window,
-                            webview.as_ref(),
-                            &mut workspace,
-                            &mut recent,
-                            config_path.as_ref(),
-                            &local_image_source_dir,
-                            ScrollIntent::Restore(saved),
-                        );
+                            .and_then(|tab| tab.saved_scroll_anchor.clone());
+                        reader.render(ScrollIntent::Restore(saved));
                     }
                 }
                 IpcCommand::MoveTab { from, to } => {
-                    if workspace.move_tab(from, to) {
+                    if reader.workspace.move_tab(from, to) {
                         // Only the tab order changed; keep the reader in place
                         // rather than snapping the active document back to the top.
-                        render_active(
-                            &window,
-                            webview.as_ref(),
-                            &mut workspace,
-                            &mut recent,
-                            config_path.as_ref(),
-                            &local_image_source_dir,
-                            ScrollIntent::Preserve,
-                        );
+                        reader.render(ScrollIntent::Preserve);
                     }
                 }
                 IpcCommand::GoHome => {
-                    workspace.go_home();
-                    render_active(
-                        &window,
-                        webview.as_ref(),
-                        &mut workspace,
-                        &mut recent,
-                        config_path.as_ref(),
-                        &local_image_source_dir,
-                        ScrollIntent::Reset,
-                    );
+                    reader.workspace.go_home();
+                    reader.render(ScrollIntent::Reset);
                 }
                 IpcCommand::OpenLink {
                     href,
                     scroll_anchor,
                 } => {
-                    let Some(active) = workspace.active else {
+                    let Some(active) = reader.workspace.active else {
                         return;
                     };
-                    let Some(current_path) = workspace.tabs[active].history.current().cloned()
+                    let Some(current_path) =
+                        reader.workspace.tabs[active].history.current().cloned()
                     else {
                         return;
                     };
@@ -425,17 +380,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     if glossary_scheme_slug(&href).is_some() {
                         match nearest_glossary_file(&current_path) {
                             Some(path) if !paths_refer_to_same_document(&path, &current_path) => {
-                                workspace.tabs[active].scroll_history.clear();
-                                workspace.tabs[active].history.record(path);
-                                render_active(
-                                    &window,
-                                    webview.as_ref(),
-                                    &mut workspace,
-                                    &mut recent,
-                                    config_path.as_ref(),
-                                    &local_image_source_dir,
-                                    ScrollIntent::Reset,
-                                );
+                                reader.workspace.tabs[active].scroll_history.clear();
+                                reader.workspace.tabs[active].history.record(path);
+                                reader.render(ScrollIntent::Reset);
                             }
                             Some(_) => {}
                             None => {
@@ -447,9 +394,11 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     match classify_link_target(&href) {
                         LinkTarget::AnchorOnly => {
                             if let Some(fragment) = fragment_from_href(&href) {
-                                workspace.tabs[active].scroll_history.record(scroll_anchor);
-                                update_active_navigation(webview.as_ref(), &workspace);
-                                scroll_to_fragment(webview.as_ref(), &fragment);
+                                reader.workspace.tabs[active]
+                                    .scroll_history
+                                    .record(scroll_anchor);
+                                update_active_navigation(reader.page(), &reader.workspace);
+                                scroll_to_fragment(reader.page(), &fragment);
                             }
                         }
                         LinkTarget::External(target) | LinkTarget::LocalOther(target) => {
@@ -461,25 +410,19 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                             let path = path_from_local_link(&target, &current_path);
                             if paths_refer_to_same_document(&path, &current_path) {
                                 if let Some(fragment) = fragment_from_href(&target) {
-                                    workspace.tabs[active].scroll_history.record(scroll_anchor);
-                                    update_active_navigation(webview.as_ref(), &workspace);
-                                    scroll_to_fragment(webview.as_ref(), &fragment);
+                                    reader.workspace.tabs[active]
+                                        .scroll_history
+                                        .record(scroll_anchor);
+                                    update_active_navigation(reader.page(), &reader.workspace);
+                                    scroll_to_fragment(reader.page(), &fragment);
                                 }
                                 return;
                             }
-                            workspace.tabs[active].scroll_history.clear();
-                            workspace.tabs[active].history.record(path);
-                            render_active(
-                                &window,
-                                webview.as_ref(),
-                                &mut workspace,
-                                &mut recent,
-                                config_path.as_ref(),
-                                &local_image_source_dir,
-                                ScrollIntent::Reset,
-                            );
+                            reader.workspace.tabs[active].scroll_history.clear();
+                            reader.workspace.tabs[active].history.record(path);
+                            reader.render(ScrollIntent::Reset);
                             if let Some(fragment) = fragment_from_href(&target) {
-                                scroll_to_fragment(webview.as_ref(), &fragment);
+                                scroll_to_fragment(reader.page(), &fragment);
                             }
                         }
                     }
@@ -490,15 +433,17 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::OpenGlossary { href } => {
-                    let Some(current_path) = workspace.active_path().map(Path::to_path_buf) else {
+                    let Some(current_path) = reader.workspace.active_path().map(Path::to_path_buf)
+                    else {
                         return;
                     };
-                    show_glossary_entry(webview.as_ref(), &href, &current_path);
+                    show_glossary_entry(reader.page(), &href, &current_path);
                 }
                 IpcCommand::CountLines { href, token } => {
                     // Count the linked document's lines for the hover tooltip. Only
                     // in-app document links resolve to a file; else -1 ("unknown").
-                    let lines = workspace
+                    let lines = reader
+                        .workspace
                         .active_path()
                         .map(Path::to_path_buf)
                         .and_then(|current_path| match classify_link_target(&href) {
@@ -512,17 +457,17 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         })
                         .unwrap_or(-1);
                     run_page_script(
-                        webview.as_ref(),
+                        reader.page(),
                         &line_count_script(token, lines),
                         "Failed to send line count to the webview",
                     );
                 }
                 IpcCommand::GoBack { scroll_anchor } => {
-                    let Some(active) = workspace.active else {
+                    let Some(active) = reader.workspace.active else {
                         return;
                     };
                     let restored = {
-                        let tab = &mut workspace.tabs[active];
+                        let tab = &mut reader.workspace.tabs[active];
                         if let Some(scroll_position) = tab.scroll_history.back(scroll_anchor) {
                             Some(scroll_position)
                         } else if tab.history.can_go_back() {
@@ -534,26 +479,18 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     };
                     match restored {
                         Some(scroll_position) => {
-                            restore_scroll_anchor(webview.as_ref(), &scroll_position);
-                            update_active_navigation(webview.as_ref(), &workspace);
+                            restore_scroll_anchor(reader.page(), &scroll_position);
+                            update_active_navigation(reader.page(), &reader.workspace);
                         }
-                        None => render_active(
-                            &window,
-                            webview.as_ref(),
-                            &mut workspace,
-                            &mut recent,
-                            config_path.as_ref(),
-                            &local_image_source_dir,
-                            ScrollIntent::Reset,
-                        ),
+                        None => reader.render(ScrollIntent::Reset),
                     }
                 }
                 IpcCommand::GoForward { scroll_anchor } => {
-                    let Some(active) = workspace.active else {
+                    let Some(active) = reader.workspace.active else {
                         return;
                     };
                     let restored = {
-                        let tab = &mut workspace.tabs[active];
+                        let tab = &mut reader.workspace.tabs[active];
                         if let Some(scroll_position) = tab.scroll_history.forward(scroll_anchor) {
                             Some(scroll_position)
                         } else if tab.history.can_go_forward() {
@@ -565,43 +502,27 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     };
                     match restored {
                         Some(scroll_position) => {
-                            restore_scroll_anchor(webview.as_ref(), &scroll_position);
-                            update_active_navigation(webview.as_ref(), &workspace);
+                            restore_scroll_anchor(reader.page(), &scroll_position);
+                            update_active_navigation(reader.page(), &reader.workspace);
                         }
-                        None => render_active(
-                            &window,
-                            webview.as_ref(),
-                            &mut workspace,
-                            &mut recent,
-                            config_path.as_ref(),
-                            &local_image_source_dir,
-                            ScrollIntent::Reset,
-                        ),
+                        None => reader.render(ScrollIntent::Reset),
                     }
                 }
                 IpcCommand::EnterCodeView => {
                     // A fresh toggle carries its own position: the page stashed the
                     // reading view's scroll fraction before asking to enter.
-                    enter_code_view(webview.as_ref(), &mut workspace, None);
+                    enter_code_view(reader.webview.as_ref(), &mut reader.workspace, None);
                 }
                 IpcCommand::ExitCodeView => {
-                    if let Some(index) = workspace.active {
-                        if let Some(tab) = workspace.tabs.get_mut(index) {
+                    if let Some(index) = reader.workspace.active {
+                        if let Some(tab) = reader.workspace.tabs.get_mut(index) {
                             tab.code_view = false;
                         }
                     }
-                    render_active(
-                        &window,
-                        webview.as_ref(),
-                        &mut workspace,
-                        &mut recent,
-                        config_path.as_ref(),
-                        &local_image_source_dir,
-                        ScrollIntent::Reset,
-                    );
+                    reader.render(ScrollIntent::Reset);
                 }
                 IpcCommand::UpdateSource { text } => {
-                    update_source_buffer(webview.as_ref(), &mut workspace, text);
+                    update_source_buffer(reader.webview.as_ref(), &mut reader.workspace, text);
                 }
                 IpcCommand::SpliceSource {
                     start,
@@ -610,8 +531,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     length,
                 } => {
                     splice_source_buffer(
-                        webview.as_ref(),
-                        &mut workspace,
+                        reader.webview.as_ref(),
+                        &mut reader.workspace,
                         start,
                         removed,
                         &inserted,
@@ -619,10 +540,19 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     );
                 }
                 IpcCommand::SaveDocument => {
-                    save_active_document(webview.as_ref(), &mut workspace, &mut file_watch);
+                    save_active_document(
+                        reader.webview.as_ref(),
+                        &mut reader.workspace,
+                        &mut file_watch,
+                    );
                 }
                 IpcCommand::ToggleTask { index } => {
-                    toggle_task_marker(webview.as_ref(), &mut workspace, &mut file_watch, index);
+                    toggle_task_marker(
+                        reader.webview.as_ref(),
+                        &mut reader.workspace,
+                        &mut file_watch,
+                        index,
+                    );
                 }
                 IpcCommand::EditBlock {
                     start,
@@ -634,41 +564,26 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     // the reader's place. Source stays authoritative for MD and XML.
                     // A checkbox toggle (autosave) splices without an undo step and
                     // writes to disk right away.
-                    if apply_block_edit(&mut workspace, start, end, &text, !autosave) {
+                    if apply_block_edit(&mut reader.workspace, start, end, &text, !autosave) {
                         if autosave {
-                            autosave_active_buffer(&mut workspace, &mut file_watch);
+                            autosave_active_buffer(&mut reader.workspace, &mut file_watch);
                         }
-                        render_active(
-                            &window,
-                            webview.as_ref(),
-                            &mut workspace,
-                            &mut recent,
-                            config_path.as_ref(),
-                            &local_image_source_dir,
-                            ScrollIntent::Preserve,
-                        );
+                        reader.render(ScrollIntent::Preserve);
                         // Host decides the Save/Undo buttons from the real dirty and
                         // undo state, not the frontend's guess.
-                        resync_editing_state(webview.as_ref(), &workspace);
+                        resync_editing_state(reader.page(), &reader.workspace);
                     }
                 }
                 IpcCommand::UndoEdit => {
                     // Pop the buffer back one edit, re-render, and resync so undoing
                     // the only edit also clears the Save button.
-                    let undone = workspace
+                    let undone = reader
+                        .workspace
                         .active_edit_mut()
                         .is_some_and(EditableDocument::undo);
                     if undone {
-                        render_active(
-                            &window,
-                            webview.as_ref(),
-                            &mut workspace,
-                            &mut recent,
-                            config_path.as_ref(),
-                            &local_image_source_dir,
-                            ScrollIntent::Preserve,
-                        );
-                        resync_editing_state(webview.as_ref(), &workspace);
+                        reader.render(ScrollIntent::Preserve);
+                        resync_editing_state(reader.page(), &reader.workspace);
                     }
                 }
                 // The persisted toggles, applied in one place and saved once.
@@ -686,23 +601,22 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::WindowDrag => {
-                    let _ = window.drag_window();
+                    let _ = reader.window.drag_window();
                 }
                 IpcCommand::WindowMinimize => {
-                    window.set_minimized(true);
+                    reader.window.set_minimized(true);
                 }
                 IpcCommand::WindowToggleMaximize => {
-                    window.set_maximized(!window.is_maximized());
+                    let maximized = reader.window.is_maximized();
+                    reader.window.set_maximized(!maximized);
                 }
-                IpcCommand::WindowClose => {
-                    // Same teardown as the native close button.
-                    settings.window_width = last_windowed_size.width.round() as u32;
-                    settings.window_height = last_windowed_size.height.round() as u32;
-                    settings.window_maximized = window.is_maximized();
-                    persist_settings(&settings, settings_path.as_ref());
-                    let _ = webview.take();
-                    *control_flow = ControlFlow::Exit;
-                }
+                IpcCommand::WindowClose => shut_down(
+                    &mut reader,
+                    &mut settings,
+                    settings_path.as_ref(),
+                    last_windowed_size,
+                    control_flow,
+                ),
                 IpcCommand::SetWindowChrome {
                     r,
                     g,
@@ -712,33 +626,42 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     border_b,
                     dark,
                 } => {
-                    apply_window_chrome(&window, r, g, b, border_r, border_g, border_b, dark);
+                    apply_window_chrome(
+                        &reader.window,
+                        r,
+                        g,
+                        b,
+                        border_r,
+                        border_g,
+                        border_b,
+                        dark,
+                    );
                 }
                 IpcCommand::SetGraphView { open } => {
                     vault_state.graph_open = open;
                 }
                 IpcCommand::GetVaultGit { id } => {
-                    request_vault_git(&vault_state, &proxy, webview.as_ref(), id);
+                    request_vault_git(&vault_state, &proxy, reader.page(), id);
                 }
                 IpcCommand::GetVaultStatus { id } => {
                     refresh_vault_status(&vault_state, &proxy, id);
                 }
                 IpcCommand::CreateVaultRepo { id } => {
-                    create_vault_repo(&vault_state, &proxy, webview.as_ref(), id);
+                    create_vault_repo(&vault_state, &proxy, reader.page(), id);
                 }
                 IpcCommand::LinkVaultRemote { id, url } => {
-                    link_vault_repo(&vault_state, &proxy, webview.as_ref(), id, url);
+                    link_vault_repo(&vault_state, &proxy, reader.page(), id, url);
                 }
                 IpcCommand::SyncVault { id } => {
-                    sync_vault(&vault_state, &proxy, webview.as_ref(), id);
+                    sync_vault(&vault_state, &proxy, reader.page(), id);
                 }
                 IpcCommand::CreateVault => {
                     if let Some(folder) = pick_vault_folder() {
-                        create_vault(&folder, &mut vault_state, &proxy, webview.as_ref());
+                        create_vault(&folder, &mut vault_state, &proxy, reader.page());
                     }
                 }
                 IpcCommand::SetActiveVault { id } => {
-                    set_active_vault(id, &mut vault_state, &proxy, webview.as_ref());
+                    set_active_vault(id, &mut vault_state, &proxy, reader.page());
                     // A different vault has a different repository, and its button
                     // should be right before anyone looks at it.
                     refresh_vault_status(&vault_state, &proxy, id);
@@ -750,21 +673,15 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::RenameVault { id, name } => {
-                    rename_vault_row(id, &name, &vault_state, webview.as_ref());
+                    rename_vault_row(id, &name, &vault_state, reader.page());
                 }
                 IpcCommand::ChangeVaultFolder { id } => {
                     if let Some(folder) = pick_vault_folder() {
-                        change_vault_folder(
-                            id,
-                            &folder,
-                            &mut vault_state,
-                            &proxy,
-                            webview.as_ref(),
-                        );
+                        change_vault_folder(id, &folder, &mut vault_state, &proxy, reader.page());
                     }
                 }
                 IpcCommand::RemoveVault { id } => {
-                    remove_vault_row(id, &mut vault_state, webview.as_ref());
+                    remove_vault_row(id, &mut vault_state, reader.page());
                     // Removing the vault on screen lands back at the top of the
                     // whole library.
                     vault_state.folder.clear();
@@ -774,7 +691,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     request_folder(&vault_state, &proxy, path);
                 }
                 IpcCommand::RevealInLibrary { path } => {
-                    reveal_in_library(&path, &mut vault_state, &proxy, webview.as_ref());
+                    reveal_in_library(&path, &mut vault_state, &proxy, reader.page());
                 }
                 IpcCommand::GetGraph { scope, seeds } => {
                     // Focus keeps the seed neighborhood; the rest cap the densest
@@ -801,11 +718,11 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     // screen — read once and shared with search — and off that
                     // document itself otherwise, so a file in no vault still has a
                     // map of what it links to.
-                    let document = workspace.active_path().map(Path::to_path_buf);
+                    let document = reader.workspace.active_path().map(Path::to_path_buf);
                     request_link_graph(
                         &mut vault_state,
                         &proxy,
-                        webview.as_ref(),
+                        reader.webview.as_ref(),
                         document,
                         request,
                     );
@@ -817,10 +734,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     request_vault_search(&mut vault_state, &proxy, query);
                 }
                 IpcCommand::LoadPager { path } => {
-                    let proxy = proxy.clone();
-                    thread::spawn(move || {
+                    off_loop(&proxy, move || {
                         let html = document_pager_html(&path);
-                        let _ = proxy.send_event(UserEvent::PagerLoaded { path, html });
+                        UserEvent::PagerLoaded { path, html }
                     });
                 }
                 IpcCommand::UpdateChecked { version } => {
@@ -836,8 +752,11 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     size,
                     url,
                 } => {
-                    let proxy = proxy.clone();
-                    thread::spawn(move || run_update_download(proxy, version, asset, size, url));
+                    // Its own proxy for the progress it reports while running.
+                    let progress = proxy.clone();
+                    off_loop(&proxy, move || {
+                        run_update_download(progress, version, asset, size, url)
+                    });
                 }
                 IpcCommand::ApplyUpdate => {
                     let staged = app_data_dir().and_then(|data_dir| {
@@ -848,23 +767,20 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         Some((data_dir, staged)) => {
                             let directory = leaftext::staging_dir(&data_dir, &staged.version);
                             match platform::spawn_update_helper(&directory) {
-                                Ok(()) => {
-                                    // The helper waits for this process to exit
-                                    // before installing, so shut down the same way
-                                    // the close button does.
-                                    settings.window_width = last_windowed_size.width.round() as u32;
-                                    settings.window_height =
-                                        last_windowed_size.height.round() as u32;
-                                    settings.window_maximized = window.is_maximized();
-                                    persist_settings(&settings, settings_path.as_ref());
-                                    let _ = webview.take();
-                                    *control_flow = ControlFlow::Exit;
-                                }
+                                // The helper waits for this process to exit before
+                                // installing, so leave the same way the button does.
+                                Ok(()) => shut_down(
+                                    &mut reader,
+                                    &mut settings,
+                                    settings_path.as_ref(),
+                                    last_windowed_size,
+                                    control_flow,
+                                ),
                                 Err(error) => {
                                     let message = format!("could not start the installer: {error}");
                                     eprintln!("{message}");
                                     report_update_state(
-                                        webview.as_ref(),
+                                        reader.page(),
                                         "failed",
                                         &staged.version,
                                         Some(&message),
@@ -876,7 +792,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                             let message = "the staged update is no longer on disk".to_string();
                             settings.update_staged_version.clear();
                             persist_settings(&settings, settings_path.as_ref());
-                            report_update_state(webview.as_ref(), "failed", "", Some(&message));
+                            report_update_state(reader.page(), "failed", "", Some(&message));
                         }
                     }
                 }
@@ -886,7 +802,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
 
         // Keep the watcher on the active document and on the pane's root, so
         // both live-update. A no-op unless one changed since last sync.
-        let active_path = workspace.active_path();
+        let active_path = reader.workspace.active_path();
         // A vault is watched whole and recursively — the user picked that
         // folder, and its corpus has to stay live while they edit anywhere
         // inside it. A folder the pane merely browsed to is watched one level

@@ -419,16 +419,18 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     let last_maximized = settings.window_maximized;
 
     let ctx = AppCtx {
+        reader: Reader {
+            window,
+            webview,
+            workspace,
+            recent,
+            config_path,
+            image_dir: local_image_source_dir,
+        },
         settings,
         settings_path,
-        recent,
-        config_path,
-        workspace,
         pending_open_path,
-        webview,
-        window,
         proxy,
-        local_image_source_dir,
         file_watch,
         vault_state,
         last_windowed_size,

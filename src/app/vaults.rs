@@ -273,10 +273,9 @@ pub(crate) fn reveal_in_library(
 /// user pointed at, so it does not run on the event loop.
 pub(crate) fn request_folder(state: &VaultState, proxy: &EventLoopProxy<UserEvent>, path: String) {
     let scope = state.root.clone();
-    let proxy = proxy.clone();
-    thread::spawn(move || {
+    off_loop(proxy, move || {
         let listing = read_folder_listing(scope.as_deref(), &path);
-        let _ = proxy.send_event(UserEvent::FolderLoaded { scope, listing });
+        UserEvent::FolderLoaded { scope, listing }
     });
 }
 
@@ -402,13 +401,9 @@ fn build_vault_graph_off_thread(
     corpus: Arc<VaultCorpus>,
     request: GraphRequest,
 ) {
-    let proxy = proxy.clone();
-    thread::spawn(move || {
-        let graph = corpus.graph(&request);
-        let _ = proxy.send_event(UserEvent::GraphReady {
-            source: GraphSource::Vault(root),
-            graph,
-        });
+    off_loop(proxy, move || UserEvent::GraphReady {
+        source: GraphSource::Vault(root),
+        graph: corpus.graph(&request),
     });
 }
 
@@ -420,13 +415,12 @@ fn build_document_graph_off_thread(
     seed: PathBuf,
     request: GraphRequest,
 ) {
-    let proxy = proxy.clone();
-    thread::spawn(move || {
+    off_loop(proxy, move || {
         let graph = document_graph(&seed, &request);
-        let _ = proxy.send_event(UserEvent::GraphReady {
+        UserEvent::GraphReady {
             source: GraphSource::Document(seed),
             graph,
-        });
+        }
     });
 }
 
@@ -437,10 +431,9 @@ fn run_search_off_thread(
     query: String,
 ) {
     let scope = state.root.clone();
-    let proxy = proxy.clone();
-    thread::spawn(move || {
+    off_loop(proxy, move || {
         let hits = corpus.search(&query);
-        let _ = proxy.send_event(UserEvent::SearchReady { scope, query, hits });
+        UserEvent::SearchReady { scope, query, hits }
     });
 }
 
@@ -489,12 +482,8 @@ fn read_corpus(state: &mut VaultState, proxy: &EventLoopProxy<UserEvent>) {
         return;
     };
     state.corpus_loading = true;
-    let proxy = proxy.clone();
-    thread::spawn(move || {
-        let corpus = VaultCorpus::read(&root);
-        let _ = proxy.send_event(UserEvent::CorpusLoaded {
-            corpus: Box::new(corpus),
-        });
+    off_loop(proxy, move || UserEvent::CorpusLoaded {
+        corpus: Box::new(VaultCorpus::read(&root)),
     });
 }
 
