@@ -143,8 +143,6 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
     assert_contains(css, ".document-body summary");
     assert_contains(css, ".document-body .syn-keyword");
     assert_contains(css, ".document-body .syn-inserted");
-    assert_contains(css, r#":root[data-locale="zh-CN"]"#);
-    assert_contains(css, "Noto Sans SC");
     assert_contains(css, "word-wrap: break-word;");
 }
 

@@ -188,7 +188,7 @@ function decorateCodeBlocks() {
     button.type = 'button';
     button.className = 'code-copy';
     button.innerHTML = CODE_COPY_ICON;
-    setCodeCopyLabel(button, 'actions.copyCode');
+    setCodeCopyLabel(button, 'Copy code');
     button.addEventListener('click', () => copyCodeBlock(button, code.textContent || ''));
     pre.appendChild(button);
   });
@@ -239,14 +239,12 @@ function buildDocumentOutline() {
   const summary = document.createElement('summary');
   summary.className = 'document-outline-summary';
   const summaryLabel = document.createElement('span');
-  summaryLabel.dataset.i18n = 'outline.title';
-  summaryLabel.textContent = window.leafLocale.t('outline.title');
+  summaryLabel.textContent = 'Outline';
   summary.appendChild(summaryLabel);
-  // Its own span so renderStaticText's [data-i18n] sweep can't wipe it. Counted
-  // before the outline is inserted, so the outline never counts itself.
+  // Counted before the outline is inserted, so the outline never counts itself.
   const summaryCount = document.createElement('span');
   summaryCount.className = 'document-outline-count';
-  summaryCount.textContent = window.leafLocale.t('outline.lineCount', { count: documentLineCount(body) });
+  summaryCount.textContent = `(${formatCount(documentLineCount(body))} lines)`;
   summary.appendChild(summaryCount);
   details.appendChild(summary);
   // The entry list can be enormous (one <li> per heading), so build it only when
@@ -318,8 +316,7 @@ window.leafRefreshImages = () => {
   stampLocalImages();
   scheduleMinimapPreviewUpdate();
 };
-function setCodeCopyLabel(button, key) {
-  const label = window.leafLocale.t(key);
+function setCodeCopyLabel(button, label) {
   button.setAttribute('aria-label', label);
   button.title = label;
 }
@@ -354,10 +351,10 @@ function legacyCopy(text) {
 // Briefly show the check mark and a "Copied" label, then revert.
 function flashCodeCopied(button) {
   button.classList.add('is-copied');
-  setCodeCopyLabel(button, 'actions.copiedCode');
+  setCodeCopyLabel(button, 'Copied');
   window.clearTimeout(button.__copiedTimer);
   button.__copiedTimer = window.setTimeout(() => {
     button.classList.remove('is-copied');
-    setCodeCopyLabel(button, 'actions.copyCode');
+    setCodeCopyLabel(button, 'Copy code');
   }, 1400);
 }

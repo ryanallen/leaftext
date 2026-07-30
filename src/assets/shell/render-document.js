@@ -10,7 +10,7 @@ function renderState() {
   document.documentElement.dataset.codeView = 'false';
   renderTabs(state);
   if (state.document) {
-    document.title = window.leafLocale.t('titles.document', { title: state.document.title });
+    document.title = `${state.document.title} - Leaf Text`;
     app.className = 'reader-shell has-document';
     const minimapHtml = renderDocumentMinimap(state.document.minimap);
     const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';
@@ -83,7 +83,7 @@ function renderState() {
     return;
   }
   resetReaderScrollOnNextRender = false;
-  document.title = window.leafLocale.t('titles.app');
+  document.title = 'Leaf Text';
   app.className = 'reader-shell empty';
   // No document, no rail — and the shell's column collapses with it.
   setMinimapMarkup('');
@@ -91,12 +91,12 @@ function renderState() {
   const recent = state.recent || [];
   app.innerHTML = `
     <section class="empty-state">
-      <p class="kicker">${escapeText(window.leafLocale.t('empty.kicker'))}</p>
-      <h1>${escapeText(window.leafLocale.t('empty.title'))}</h1>
-      <p class="empty-subtitle">${escapeText(window.leafLocale.t('empty.subtitle'))}</p>
-      <p class="empty-description">${escapeText(window.leafLocale.t(emptyDescriptionKey))}</p>
-      <button type="button" class="primary-open">${escapeText(window.leafLocale.t('actions.chooseFile'))}</button>
-      ${recent.length ? `<div class="recent"><h2>${escapeText(window.leafLocale.t('recent.headingWithCount', { count: window.leafLocale.formatNumber(recent.length) }))}</h2><ol>${recent.map((path) => `<li><button type="button" title="${escapeAttr(window.leafLocale.t('recent.openTitle', { path }))}" data-path="${escapeAttr(path)}" data-reveal-path="${escapeAttr(path)}">${escapeText(path)}</button></li>`).join('')}</ol></div>` : `<p class="empty-help">${escapeText(window.leafLocale.t('empty.noRecent'))}</p>`}
+      <p class="kicker">Leaf Text</p>
+      <h1>Refine your mind.</h1>
+      <p class="empty-subtitle">Your thoughts, secure and free.</p>
+      <p class="empty-description">${escapeText(emptyDescription)}</p>
+      <button type="button" class="primary-open">Choose file</button>
+      ${recent.length ? `<div class="recent"><h2>Recent (${escapeText(formatCount(recent.length))})</h2><ol>${recent.map((path) => `<li><button type="button" title="Open ${escapeAttr(path)}" data-path="${escapeAttr(path)}" data-reveal-path="${escapeAttr(path)}">${escapeText(path)}</button></li>`).join('')}</ol></div>` : `<p class="empty-help">Files you open show up here, so you can pick up where you left off.</p>`}
     </section>`;
   app.querySelector('.primary-open').addEventListener('click', () => send({ command: 'open' }));
   app.querySelectorAll('[data-path]').forEach((button) => {

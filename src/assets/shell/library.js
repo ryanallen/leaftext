@@ -1,3 +1,5 @@
+// Said by both sync buttons and the count chip, so it is written once.
+const SYNC_WORKING = 'Working…';
 function persistLibraryState() {
   send({ command: 'setLibraryState', projectPath: libraryProjectPath });
 }
@@ -243,7 +245,7 @@ function libraryParentCrumb() {
 // too, but it is a thin line of small text at the top of the pane — this is a
 // full-width target sitting where the pointer already is.
 function upRowHtml(parent) {
-  const label = window.leafLocale.t('library.up', { name: parent.name });
+  const label = `Back to ${parent.name}`;
   return `<button type="button" class="library-nav-folder library-nav-up" data-nav-into="${escapeAttr(parent.path)}" title="${escapeAttr(label)}" aria-label="${escapeAttr(label)}">${BACK_ARROW_SVG}<span class="library-file-label">${escapeText(parent.name)}</span></button>`;
 }
 function renderProject(entries) {
@@ -301,12 +303,12 @@ function crumbHtml(segment, current) {
   if (current) {
     return `<span class="library-crumb is-current" aria-current="true" title="${escapeAttr(segment.path || segment.name)}">${escapeText(segment.name)}</span>`;
   }
-  const enter = escapeAttr(window.leafLocale.t('library.crumbs.enter', { name: segment.name }));
+  const enter = escapeAttr(`Open ${segment.name}`);
   return `<button type="button" class="library-crumb" data-crumb-path="${escapeAttr(segment.path)}" title="${enter}">${escapeText(segment.name)}</button>`;
 }
 function crumbElisionHtml(hidden) {
   const names = hidden.map((segment) => segment.name);
-  const label = escapeAttr(window.leafLocale.t('library.crumbs.more', { names: names.join(' › ') }));
+  const label = escapeAttr(`Skipped folders: ${names.join(' › ')}`);
   return `<button type="button" class="library-crumb is-elided" data-crumb-more="1" title="${label}" aria-label="${label}" aria-haspopup="menu" aria-expanded="false">…</button>`;
 }
 // What the trail was last laid out for. The library re-renders on every indexer
@@ -446,8 +448,8 @@ function vaultMenuItems() {
   requestKnownVaultStatuses();
   const rootIcon = (on, id) => vaultGlyph(on, id);
   const items = [{
-    label: window.leafLocale.t('library.title'),
-    title: window.leafLocale.t('library.vaults.all'),
+    label: 'Library',
+    title: 'Everything the library has indexed',
     icon: rootIcon(!activeVaultId, 0),
     selected: !activeVaultId,
     // Tagged so a status answer can flip this row's glyph in place instead of
@@ -480,8 +482,8 @@ function vaultMenuItems() {
   }
   items.push('separator');
   items.push({
-    label: window.leafLocale.t('library.vaults.new'),
-    title: window.leafLocale.t('library.vaults.new.help'),
+    label: 'New vault…',
+    title: 'Choose a folder to use as a library root',
     icon: MENU_PLUS_SVG,
     run: () => send({ command: 'createVault' }),
   });
@@ -493,8 +495,8 @@ function vaultMenuItems() {
 // be Canceled, and the address it replaced is remembered to put back.
 function pushChangeRepoPanel(items, vault, repo) {
   const current = repo.remoteUrl || repo.remote || '';
-  items.push({ note: window.leafLocale.t('library.vaults.sync.changeRepo.current', { url: current }) });
-  items.push({ note: window.leafLocale.t('library.vaults.sync.changeRepo.help') });
+  items.push({ note: `Now pointing at: ${current}` });
+  items.push({ note: 'Paste a new address and press Save. This only changes where it points — your files are sent when you Sync, not now.' });
   const closePanel = () => {
     changeRepoRevealed = false;
     showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
@@ -514,17 +516,17 @@ function pushChangeRepoPanel(items, vault, repo) {
     commitOnBlur: false,
     onEnter: saveRepo,
     onEscape: closePanel,
-    placeholder: window.leafLocale.t('library.vaults.sync.pasteUrl'),
+    placeholder: 'Paste the repository address',
   });
   items.push({
     buttons: [
       {
-        label: window.leafLocale.t('library.vaults.sync.changeRepo.cancel'),
+        label: 'Cancel',
         keepOpen: true,
         run: closePanel,
       },
       {
-        label: window.leafLocale.t('library.vaults.sync.changeRepo.save'),
+        label: 'Save',
         icon: MENU_CHECK_SVG,
         primary: true,
         keepOpen: true,
@@ -538,7 +540,7 @@ function pushChangeRepoPanel(items, vault, repo) {
   const previous = previousRemoteByVault.get(vault.id);
   if (previous && previous !== current) {
     items.push({
-      label: window.leafLocale.t('library.vaults.sync.changeRepo.restore', { url: previous }),
+      label: `Put back ${previous}`,
       keepOpen: true,
       run: () => {
         const field = crumbMenu.querySelector('.repo-url-field');
@@ -556,18 +558,18 @@ function pushChangeRepoPanel(items, vault, repo) {
 // is actually in -- git missing, a repo already here, a repo one folder down --
 // and each says what it is before offering what to do about it.
 function vaultGitItems(vault) {
-  const items = ['separator', { heading: window.leafLocale.t('library.vaults.sync') }];
+  const items = ['separator', { heading: 'GitHub' }];
   const state = vaultGitByVault.get(vault.id);
   if (!state) {
-    items.push({ note: window.leafLocale.t('library.vaults.sync.reading') });
+    items.push({ note: 'Checking this folder…' });
     return items;
   }
   if (!state.tooling.git) {
     // The one hard requirement. Everything else this panel does is a wrapper
     // around a git that is already installed and already knows the user.
-    items.push({ note: window.leafLocale.t('library.vaults.sync.noGit') });
+    items.push({ note: 'Syncing needs git, which is not installed.' });
     items.push({
-      label: window.leafLocale.t('library.vaults.sync.getGit'),
+      label: 'Install git ↗',
       run: () => send({ command: 'openExternal', url: 'https://git-scm.com/downloads' }),
     });
     return items;
@@ -578,7 +580,7 @@ function vaultGitItems(vault) {
     items.push({ note: repoSummary(repo) });
     if (repo.remote) {
       items.push({
-        label: window.leafLocale.t(busy ? 'library.vaults.sync.working' : 'library.vaults.sync.now'),
+        label: busy ? SYNC_WORKING : 'Sync',
         icon: SYNC_ICON_SVG,
         disabled: busy,
         keepOpen: true,
@@ -588,7 +590,7 @@ function vaultGitItems(vault) {
       // "Sync" and a change takes a deliberate press, not a fat-finger.
       if (!changeRepoRevealed) {
         items.push({
-          label: window.leafLocale.t('library.vaults.sync.changeRepo'),
+          label: 'Change repo…',
           keepOpen: true,
           run: () => {
             changeRepoRevealed = true;
@@ -606,11 +608,11 @@ function vaultGitItems(vault) {
     }
   } else {
     if (repo.outer) {
-      items.push({ note: window.leafLocale.t('library.vaults.sync.inside', { repo: repo.outer }) });
+      items.push({ note: `This folder sits inside ${repo.outer}. A repository here is separate from it.` });
     }
     if (repo.nested && repo.nested.length) {
       items.push({
-        note: window.leafLocale.t('library.vaults.sync.nested', { list: repo.nested.join(', ') }),
+        note: `Already repositories, and left alone: ${repo.nested.join(', ')}`,
       });
     }
     pushCreateRoutes(items, vault, state, busy);
@@ -618,10 +620,10 @@ function vaultGitItems(vault) {
   // Two things git needs that only bite at the moment of committing or pushing,
   // which is too late to be told about them.
   if (!state.tooling.identity) {
-    items.push({ note: window.leafLocale.t('library.vaults.sync.noIdentity'), danger: true });
+    items.push({ note: 'git does not know who you are yet. Set user.name and user.email.', danger: true });
   }
   if (!state.tooling.credentialHelper) {
-    items.push({ note: window.leafLocale.t('library.vaults.sync.noHelper'), danger: true });
+    items.push({ note: 'git has no way to sign in to GitHub, so a push will fail.', danger: true });
   }
   const outcome = syncOutcomeText(state);
   if (outcome) items.push({ note: outcome, danger: Boolean(state.error) });
@@ -633,7 +635,7 @@ function vaultGitItems(vault) {
 function pushCreateRoutes(items, vault, state, busy) {
   if (state.tooling.gh) {
     items.push({
-      label: window.leafLocale.t(busy ? 'library.vaults.sync.working' : 'library.vaults.sync.create'),
+      label: busy ? SYNC_WORKING : 'Create a private repo',
       icon: SYNC_ICON_SVG,
       disabled: busy,
       keepOpen: true,
@@ -641,8 +643,8 @@ function pushCreateRoutes(items, vault, state, busy) {
     });
   }
   items.push({
-    label: window.leafLocale.t('library.vaults.sync.createOnGitHub'),
-    title: window.leafLocale.t('library.vaults.sync.createOnGitHub.help'),
+    label: 'Create it on GitHub ↗',
+    title: 'Opens GitHub with the name filled in. Copy the address it gives you and paste it below.',
     run: () => send({
       command: 'openExternal',
       url: `https://github.com/new?name=${encodeURIComponent(state.suggested)}&visibility=private`,
@@ -650,7 +652,7 @@ function pushCreateRoutes(items, vault, state, busy) {
   });
   items.push({
     input: '',
-    placeholder: window.leafLocale.t('library.vaults.sync.pasteUrl'),
+    placeholder: 'Paste the repository address',
     commit: (url) => {
       if (url) send({ command: 'linkVaultRemote', id: vault.id, url });
     },
@@ -659,13 +661,13 @@ function pushCreateRoutes(items, vault, state, busy) {
 // Where the repository stands, in one line. Zero counts are left out; "0
 // behind" is noise on a repository that is up to date.
 function repoSummary(repo) {
-  const parts = [repo.remote || window.leafLocale.t('library.vaults.sync.noRemote')];
+  const parts = [repo.remote || 'A repository here, with nowhere to push'];
   if (repo.branch) parts.push(repo.branch);
   const waiting = [];
-  if (repo.changed) waiting.push(window.leafLocale.t('library.vaults.sync.changed', { count: repo.changed }));
-  if (repo.ahead) waiting.push(window.leafLocale.t('library.vaults.sync.ahead', { count: repo.ahead }));
-  if (repo.behind) waiting.push(window.leafLocale.t('library.vaults.sync.behind', { count: repo.behind }));
-  if (!waiting.length && repo.remote) waiting.push(window.leafLocale.t('library.vaults.sync.clean'));
+  if (repo.changed) waiting.push(`${repo.changed} changed`);
+  if (repo.ahead) waiting.push(`${repo.ahead} to push`);
+  if (repo.behind) waiting.push(`${repo.behind} to pull`);
+  if (!waiting.length && repo.remote) waiting.push('up to date');
   return parts.join(' · ') + (waiting.length ? ' — ' + waiting.join(', ') : '');
 }
 // The host reports an outcome as a short tag it can build without a translator;
@@ -674,18 +676,18 @@ function syncOutcomeText(state) {
   const message = state.message;
   if (!message) return '';
   if (state.error) return message;
-  if (message === 'created') return window.leafLocale.t('library.vaults.sync.done.created');
-  if (message === 'linked') return window.leafLocale.t('library.vaults.sync.done.linked');
-  if (message === 'local-only') return window.leafLocale.t('library.vaults.sync.done.localOnly');
+  if (message === 'created') return 'Created on GitHub and pushed.';
+  if (message === 'linked') return 'Repository set. Choose Sync to send your files to it.';
+  if (message === 'local-only') return 'This folder is a repository now. Make one on GitHub and paste its address.';
   if (message.startsWith('synced:')) {
     const committed = Number(message.split(':')[1] || 0);
-    if (!committed) return window.leafLocale.t('library.vaults.sync.done.upToDate');
+    if (!committed) return 'Nothing to send.';
     // Naming the destination is most of the reassurance: it is the part nobody
     // can check at a glance, and the part that is wrong when something is wrong.
     const remote = state.repo && state.repo.remote;
     return remote
-      ? window.leafLocale.t('library.vaults.sync.done.pushedTo', { count: committed, repo: remote })
-      : window.leafLocale.t('library.vaults.sync.done.pushed', { count: committed });
+      ? `Pushed ${committed} to ${remote}.`
+      : `Pushed ${committed} changed.`;
   }
   return message;
 }
@@ -772,8 +774,8 @@ function renderVaultSyncButton() {
   const count = librarySyncButton.querySelector('.library-sync-count');
   if (count) count.textContent = spinning ? '' : String(waiting);
   const label = spinning
-    ? window.leafLocale.t('library.vaults.sync.working')
-    : window.leafLocale.t('library.vaults.sync.pending', { count: waiting });
+    ? SYNC_WORKING
+    : `Sync ${waiting} to GitHub`;
   librarySyncButton.title = label;
   librarySyncButton.setAttribute('aria-label', label);
 }
@@ -837,25 +839,25 @@ window.leafVaultGitBusy = (id) => {
 function editVaultMenuItems(vault) {
   return [
     {
-      heading: window.leafLocale.t('library.vaults.editing', { name: vault.name || '' }),
+      heading: `Editing ${vault.name || ''}`,
     },
     {
       // Commits on Enter or on leaving the field; Escape abandons it.
       input: vault.name || '',
-      placeholder: window.leafLocale.t('library.vaults.name'),
+      placeholder: 'Vault name',
       commit: (name) => {
         if (name && name !== vault.name) send({ command: 'renameVault', id: vault.id, name });
       },
     },
     {
-      label: window.leafLocale.t('library.vaults.changeFolder'),
+      label: 'Change folder…',
       title: vault.rootPath || '',
       icon: FOLDER_ICON_SVG,
       run: () => send({ command: 'changeVaultFolder', id: vault.id }),
     },
     {
-      label: window.leafLocale.t('library.vaults.remove'),
-      title: window.leafLocale.t('library.vaults.remove.help'),
+      label: 'Remove vault',
+      title: 'Forgets the vault. The folder and its files are left alone.',
       icon: MENU_TRASH_SVG,
       danger: true,
       run: () => send({ command: 'removeVault', id: vault.id }),
@@ -863,7 +865,7 @@ function editVaultMenuItems(vault) {
     ...vaultGitItems(vault),
     'separator',
     {
-      label: window.leafLocale.t('library.vaults.back'),
+      label: 'Back',
       icon: BACK_ARROW_SVG,
       // Back to the list, so the panel is no longer up: clear the mark or a
       // stale status answer would still think it is.
@@ -1055,7 +1057,7 @@ function showCrumbMenu(button, items) {
       edit.type = 'button';
       edit.className = 'crumb-menu-edit';
       edit.innerHTML = MENU_SETTINGS_SVG;
-      const label = window.leafLocale.t('library.vaults.edit', { name: entry.label });
+      const label = `Edit ${entry.label}`;
       edit.title = label;
       edit.setAttribute('aria-label', label);
       // Not a switch: this opens the panel for that row, and the press must not
@@ -1125,7 +1127,7 @@ function renderLibraryVaultSwitch() {
   // caret is ours and stays; only the glyph before it is replaced.
   const glyph = libraryVaultSwitch.querySelector('svg');
   if (glyph) glyph.outerHTML = vaultGlyph(true, activeVaultId);
-  const label = window.leafLocale.t('library.vaults.switch', { name: libraryRootLabel() });
+  const label = `Switch vault (in ${libraryRootLabel()})`;
   libraryVaultSwitch.title = label;
   libraryVaultSwitch.setAttribute('aria-label', label);
 }
@@ -1166,7 +1168,7 @@ function renderLibrary() {
     // Still render the rows: an empty folder is exactly where the way back out
     // matters most.
     libraryTree.innerHTML = renderProject(libraryEntries)
-      + `<p class="library-empty">${escapeText(window.leafLocale.t('library.folderEmpty'))}</p>`;
+      + `<p class="library-empty">${escapeText('Nothing to read in this folder.')}</p>`;
     bindLibraryRows();
     return;
   }

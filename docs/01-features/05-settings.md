@@ -1,8 +1,8 @@
 # Settings
 
-> Your settings live on your machine, not in an account. Theme, speed reader, minimap, pager, updates, library layout, and window size sit in a plain JSON file you can read, plus the interface language in the WebView's local storage.
+> Your settings live on your machine, not in an account. Theme, speed reader, minimap, pager, updates, library layout, and window size sit in a plain JSON file you can read.
 
-Most settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView. The one exception is the interface language, kept in the WebView's local storage under `leaf.localeMode`.
+Settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView.
 
 ## Options
 
@@ -10,7 +10,6 @@ Most settings are owned by the Rust app rather than browser storage, which keeps
 | --- | --- | --- |
 | Theme | Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage, Random | Fern |
 | Appearance | System, Light, Dark, Daylight | System |
-| Language | System, English, Simplified Chinese | System |
 | Minimap | On / Off | On |
 | Pager | On / Off | On |
 | Graph size | Focus, Medium, Large, Everything | Focus |
@@ -78,16 +77,6 @@ Example:
 ```
 
 Leaf Text removes broken entries automatically and collapses equivalent path spellings to one item.
-
-## Language
-
-| Mode | Result |
-| --- | --- |
-| System | `zh*` locales become Simplified Chinese; everything else becomes English |
-| English | Forces English UI |
-| Simplified Chinese | Forces Simplified Chinese UI |
-
-The app ships both language dictionaries locally and applies changes without a restart.
 
 ## Behavior
 

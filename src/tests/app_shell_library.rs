@@ -166,8 +166,10 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
 
     // Markup: the resize divider on the pane edge and the library toggle button,
     // which lives in the app bar's lead (an .icon-button), left of Back.
-    assert!(html.contains(r#"<div id="libraryDivider" class="library-divider" data-i18n-title="library.divider.resize" title="Resize library""#));
-    assert!(html.contains(r#"<button type="button" id="libraryOpen" class="icon-button library-open" data-i18n-title="library.open" data-i18n-aria-label="library.open""#));
+    assert!(
+        html.contains(r#"<div id="libraryDivider" class="library-divider" title="Resize library""#)
+    );
+    assert!(html.contains(r#"<button type="button" id="libraryOpen" class="icon-button library-open" title="Toggle library""#));
 
     // The toggle icon is the bundled asset, normalized to currentColor like the
     // other toolbar icons (no stray literal stroke color survives).
@@ -205,7 +207,7 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
 }
 
 #[test]
-fn app_shell_includes_library_pane_settings_and_i18n() {
+fn app_shell_includes_library_pane_settings_and_wording() {
     let html = app_shell_html();
     let css = reading_mode_css();
 
@@ -242,7 +244,7 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
 
     // The search field, its debounced request, and the result-open + jump.
     assert!(html.contains(r#"<input id="librarySearch" class="library-search""#));
-    assert!(html.contains(r#"data-i18n-placeholder="library.search.placeholder""#));
+    assert!(html.contains(r#"placeholder="Search files...""#));
     assert!(html.contains("send({ command: 'search', query, scope: librarySearchScopePaths() });"));
     assert!(html.contains("window.leafScrollToFragment('#' + jump.anchor);"));
 
@@ -250,27 +252,20 @@ fn app_shell_includes_library_pane_settings_and_i18n() {
     assert!(html.contains(r#"data-open-path="${escapeAttr(node.path)}""#));
     assert!(html.contains(r#"data-open-path="${escapeAttr(path)}""#));
 
-    // i18n keys exist in both dictionaries.
-    for key in [
-        "library.title",
-        "library.view.graph",
-        "library.crumbs.label",
-        "library.crumbs.enter",
-        "library.crumbs.more",
-        "library.open",
-        "library.divider.resize",
-        "library.search.placeholder",
-        "library.search.noResults",
-        "library.search.count",
-        "library.search.loading",
-        "library.search.error",
+    // Every string the pane shows is present, so none of it renders blank.
+    for wording in [
+        "'Library'",
+        "aria-label=\"Folder path\"",
+        "`Open ${segment.name}`",
+        "`Skipped folders: ${names.join(' › ')}`",
+        "title=\"Resize library\"",
+        "placeholder=\"Search files...\"",
+        ">No matches.</p>",
+        "} results</p>`",
+        "Searching…",
+        "'Search failed.'",
     ] {
-        let needle = format!("'{key}':");
-        let count = html.matches(&needle).count();
-        assert!(
-            count >= 2,
-            "expected EN + ZH-CN entries for {key}, found {count}"
-        );
+        assert!(html.contains(wording), "missing wording: {wording}");
     }
 }
 
@@ -529,15 +524,11 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
     // Reading the folder carries no message, so opening the panel is silent.
     assert!(html.contains("  if (state.message) {"));
 
-    for key in [
-        "library.vaults.sync.pending",
-        "library.vaults.sync.done.pushedTo",
+    for wording in [
+        "`Sync ${waiting} to GitHub`",
+        "`Pushed ${committed} to ${remote}.`",
     ] {
-        let count = html.matches(&format!("'{key}':")).count();
-        assert!(
-            count >= 2,
-            "expected EN + ZH-CN entries for {key}, found {count}"
-        );
+        assert!(html.contains(wording), "missing wording: {wording}");
     }
 }
 
@@ -607,8 +598,8 @@ fn a_vault_can_be_put_on_github_from_its_own_settings() {
 
     // A repo one folder down is reported, not silently swallowed, and a vault
     // inside someone else's repo is told that is what it is.
-    assert!(html.contains("library.vaults.sync.nested"));
-    assert!(html.contains("library.vaults.sync.inside"));
+    assert!(html.contains("Already repositories, and left alone:"));
+    assert!(html.contains("A repository here is separate from it."));
 
     // Work happens in the panel, so the panel stays up to report it.
     assert!(html.contains("if (!entry.keepOpen) hideCrumbMenu();"));
@@ -616,19 +607,15 @@ fn a_vault_can_be_put_on_github_from_its_own_settings() {
     assert!(css.contains(".crumb-menu-note {"));
     assert!(css.contains(".crumb-menu-item:disabled {"));
 
-    for key in [
-        "library.vaults.sync",
-        "library.vaults.sync.noGit",
-        "library.vaults.sync.create",
-        "library.vaults.sync.pasteUrl",
-        "library.vaults.sync.noHelper",
-        "library.vaults.sync.done.pushed",
+    for wording in [
+        "heading: 'GitHub'",
+        "'Syncing needs git, which is not installed.'",
+        "'Create a private repo'",
+        "'Paste the repository address'",
+        "'git has no way to sign in to GitHub, so a push will fail.'",
+        "`Pushed ${committed} changed.`",
     ] {
-        let count = html.matches(&format!("'{key}':")).count();
-        assert!(
-            count >= 2,
-            "expected EN + ZH-CN entries for {key}, found {count}"
-        );
+        assert!(html.contains(wording), "missing wording: {wording}");
     }
 }
 
@@ -702,17 +689,13 @@ fn editing_the_reading_view_is_a_padlock_on_the_document_not_a_global_switch() {
         html.contains("send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });")
     );
 
-    for key in [
-        "toolbar.lock",
-        "toolbar.unlock",
-        "toolbar.speedReader",
-        "toolbar.readingTools",
+    for wording in [
+        "'Lock this page (read-only)'",
+        "'Unlock to edit this page'",
+        "'Speed reader'",
+        r#"aria-label="Reading tools""#,
     ] {
-        let count = html.matches(&format!("'{key}':")).count();
-        assert!(
-            count >= 2,
-            "expected EN + ZH-CN entries for {key}, found {count}"
-        );
+        assert!(html.contains(wording), "missing wording: {wording}");
     }
 }
 
@@ -762,10 +745,10 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     assert!(html.contains("button.disabled = unavailable;"));
     assert!(css.contains(".reader-tool:disabled {"));
     // And hovering the dead key says why it is dead rather than what it would have
-    // done. Swapped by key, so a language change keeps the reason instead of
-    // reverting to the enterable wording.
-    assert!(html.contains("const VIEW_UNAVAILABLE_REASON = { graph: 'library.graph.needsVault' };"));
-    assert!(html.contains("button.dataset.i18nTitle = key;"));
+    // done. The enterable wording is remembered first, so restoring it does not
+    // need a second copy of that sentence here.
+    assert!(html.contains("const VIEW_UNAVAILABLE_REASON = { graph: GRAPH_NEEDS_VAULT };"));
+    assert!(html.contains("button.dataset.titleEnterable = button.title || '';"));
     // No document, no bar. Three views of one thing needs the thing; on the home
     // screen a toggle would be navigation, which the pane beside it already does.
     assert!(html.contains("readerToolbar.hidden = !hasDocument;"));
@@ -796,21 +779,15 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     assert!(html.contains("send({ command: 'openRecent', path: node.path });"));
     assert!(html.contains("function graphSetActive("));
 
-    for key in [
-        "library.view.graph",
-        "library.view.graph.on",
-        "library.view.graph.off",
-        "library.graph.empty",
-        "library.graph.error",
-        "library.graph.needsVault",
-        "library.graph.truncated",
+    for wording in [
+        r#"aria-label="Graph""#,
+        r#"title="Show how these documents link""#,
+        "'No links to graph yet.'",
+        "const GRAPH_ERROR = 'Graph failed to load.';",
+        "const GRAPH_NEEDS_VAULT = 'Pick a vault to see how its documents link.';",
+        "most-linked documents.`",
     ] {
-        let needle = format!("'{key}':");
-        let count = html.matches(&needle).count();
-        assert!(
-            count >= 2,
-            "expected EN + ZH-CN entries for {key}, found {count}"
-        );
+        assert!(html.contains(wording), "missing wording: {wording}");
     }
 }
 
@@ -949,9 +926,7 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     assert!(html.contains(r#"<span class="library-crumb-caret" aria-hidden="true">"#));
     // Its label names the root you are in, so hovering says what would change.
     assert!(html.contains("function renderLibraryVaultSwitch()"));
-    assert!(html.contains(
-        "const label = window.leafLocale.t('library.vaults.switch', { name: libraryRootLabel() });"
-    ));
+    assert!(html.contains("const label = `Switch vault (in ${libraryRootLabel()})`;"));
 
     // The leftmost crumb is a place again: it goes to the root, and nothing in
     // the trail opens a menu.
@@ -960,7 +935,7 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     assert!(!html.contains("library-crumb-switcher"));
     // Its label is the vault's name, or the whole library's.
     assert!(html.contains("function libraryRootLabel()"));
-    assert!(html.contains("return (vault && vault.name) || window.leafLocale.t('library.title');"));
+    assert!(html.contains("return (vault && vault.name) || 'Library';"));
 
     // The menu itself is unchanged: the whole library, every vault, New vault…
     assert!(html.contains("function vaultMenuItems()"));
@@ -974,19 +949,14 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     assert!(html.contains("const LEAF_VAULTS = (window.__leafVaults"));
     assert!(html.contains("window.leafSetVaults ="));
 
-    for key in [
-        "library.vaults.label",
-        "library.vaults.switch",
-        "library.vaults.all",
-        "library.vaults.new",
-        "library.vaults.new.help",
+    for wording in [
+        r#"aria-label="Vaults""#,
+        "`Switch vault (in ${libraryRootLabel()})`",
+        "'Everything the library has indexed'",
+        "'New vault…'",
+        "'Choose a folder to use as a library root'",
     ] {
-        let needle = format!("'{key}':");
-        let count = html.matches(&needle).count();
-        assert!(
-            count >= 2,
-            "expected EN + ZH-CN entries for {key}, found {count}"
-        );
+        assert!(html.contains(wording), "missing wording: {wording}");
     }
 }
 
@@ -1036,21 +1006,16 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
     assert!(html.contains("} else if (event.key === 'Escape') {"));
     assert!(css.contains(".crumb-menu-input {"));
 
-    for key in [
-        "library.vaults.edit",
-        "library.vaults.editing",
-        "library.vaults.name",
-        "library.vaults.changeFolder",
-        "library.vaults.remove",
-        "library.vaults.remove.help",
-        "library.vaults.back",
+    for wording in [
+        "`Edit ${entry.label}`",
+        "`Editing ${vault.name || ''}`",
+        "'Vault name'",
+        "'Change folder…'",
+        "'Remove vault'",
+        "'Forgets the vault. The folder and its files are left alone.'",
+        "label: 'Back'",
     ] {
-        let needle = format!("'{key}':");
-        let count = html.matches(&needle).count();
-        assert!(
-            count >= 2,
-            "expected EN + ZH-CN entries for {key}, found {count}"
-        );
+        assert!(html.contains(wording), "missing wording: {wording}");
     }
 }
 
@@ -1085,8 +1050,7 @@ fn library_row_context_menu_offers_file_actions() {
 
     // The inline rename box and the new menu labels are present.
     assert!(html.contains("function openRenameBox(path)"));
-    assert!(html.contains("'actions.delete': 'Delete'"));
-    assert!(html.contains("'actions.delete': '删除'"));
+    assert!(html.contains("{ action: 'delete', label: 'Delete', danger: true }"));
 }
 
 #[test]

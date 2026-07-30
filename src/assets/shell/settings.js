@@ -1,24 +1,24 @@
 let currentState = { recent: [], tabs: [], active: null, document: null };
 let navigationState = { canGoBack: false, canGoForward: false };
 // Subtext under the home-screen hero: one of several palm-leaf facts, chosen at
-// random per showing. The chosen key is kept so a language switch re-translates
-// the same fact rather than re-rolling.
-const EMPTY_DESCRIPTION_KEYS = [
-  'empty.description',
-  'empty.description.incised',
-  'empty.description.stylus',
-  'empty.description.bound',
-  'empty.description.lifespan',
-  'empty.description.roundLetters',
-  'empty.description.lontar',
-  'empty.description.coldDry',
-  'empty.description.bali',
-  'empty.description.printing',
+// random per showing. The chosen one is kept so a re-render shows the same fact
+// rather than re-rolling.
+const EMPTY_DESCRIPTIONS = [
+  'Open a file and read it in peace. It stays on your device, in plain text you own.',
+  'For two thousand years knowledge was incised on palm leaves — talipot and palmyra, dried and smoke-cured. Turn over a new one.',
+  'Scribes cut letters into palm leaves with a stylus, then rubbed in soot so the words rose to the surface. Read on.',
+  'A palm-leaf book was threaded through a single hole and bound between wooden covers. Open yours.',
+  'A palm leaf holds its text for a few decades — six hundred years at most — so temples recopied the old ones before they wore away.',
+  'The round letters of Devanagari, Kannada, and Telugu curved that way so sharp strokes would not tear the leaf.',
+  'In Indonesia these leaf-books were called lontar, from the old words for “leaf” and “palmyra palm.”',
+  'The oldest palm-leaf manuscripts survived in cold, dry places — Nepal, Tibet, the high passes of central Asia.',
+  'In Bali, Brahmin scribes still rewrite the sacred texts onto palm leaves by hand.',
+  'The printing press ended the long cycle of copying palm leaf to palm leaf in the early 1800s.',
 ];
-function pickEmptyDescriptionKey() {
-  return EMPTY_DESCRIPTION_KEYS[Math.floor(Math.random() * EMPTY_DESCRIPTION_KEYS.length)];
+function pickEmptyDescription() {
+  return EMPTY_DESCRIPTIONS[Math.floor(Math.random() * EMPTY_DESCRIPTIONS.length)];
 }
-let emptyDescriptionKey = pickEmptyDescriptionKey();
+let emptyDescription = pickEmptyDescription();
 // UI toggles are persisted by the host, injected as window.__leafSettings before
 // any page script (the app shell's opaque origin can't use localStorage). We seed
 // from them synchronously here and report every change back so it can save them.

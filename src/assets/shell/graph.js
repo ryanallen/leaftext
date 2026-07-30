@@ -101,31 +101,27 @@ function renderReaderToolbar(hasDocument) {
   }
   renderReadingTools(current === 'reading');
 }
+const GRAPH_NEEDS_VAULT = 'Pick a vault to see how its documents link.';
+const GRAPH_ERROR = 'Graph failed to load.';
 // Why a view can't be entered, keyed by view — what the grayed-out key says when
 // you hover it, instead of leaving you to work it out. Only the map has a reason
 // to give: it is of a vault, so without one there is nothing to draw. The other
 // two are always enterable, and if that ever changes they keep their ordinary
 // tooltip rather than inventing an explanation. The sentence is the one the map
 // itself shows when you get there, so it is said in one place.
-const VIEW_UNAVAILABLE_REASON = { graph: 'library.graph.needsVault' };
-// Point a grayed-out view key's tooltip at that reason, and an enterable one back
-// at what it does.
-//
-// Swapped by KEY and not by text: the pass that reapplies wording after a language
-// change reads data-i18n-title off the element, so setting the title alone would
-// put the old sentence back the moment the language changed. The enterable key is
-// the one the markup already carries, remembered here before it is overwritten, so
-// there is no second copy of it in this file to drift out of step.
+const VIEW_UNAVAILABLE_REASON = { graph: GRAPH_NEEDS_VAULT };
+// Point a grayed-out view tool's tooltip at that reason, and an enterable one back
+// at what it does. The enterable wording is remembered from the markup, so there is
+// no second copy of it here to drift.
 function setViewToolReason(button, unavailable) {
-  if (!button.dataset.i18nTitleEnterable) {
-    button.dataset.i18nTitleEnterable = button.dataset.i18nTitle || '';
+  if (!button.dataset.titleEnterable) {
+    button.dataset.titleEnterable = button.title || '';
   }
-  const key =
+  const title =
     (unavailable && VIEW_UNAVAILABLE_REASON[button.dataset.view]) ||
-    button.dataset.i18nTitleEnterable;
-  if (!key) return;
-  button.dataset.i18nTitle = key;
-  button.title = window.leafLocale.t(key);
+    button.dataset.titleEnterable;
+  if (!title) return;
+  button.title = title;
 }
 // The reading view's own tools. None turns blue: the filled chip means "this is
 // the view you are in", and a setting inside that view must not wear it. The
@@ -134,13 +130,12 @@ function renderReadingTools(onReadingView) {
   if (readerViewTools) readerViewTools.hidden = !onReadingView;
   if (!onReadingView) return;
   const unlocked = readerEditingAllowed();
-  setSubtoolState(readerLockButton, unlocked, unlocked ? 'toolbar.lock' : 'toolbar.unlock');
-  setSubtoolState(speedReaderButton, speedReaderEnabled, 'toolbar.speedReader');
+  setSubtoolState(readerLockButton, unlocked, unlocked ? 'Lock this page (read-only)' : 'Unlock to edit this page');
+  setSubtoolState(speedReaderButton, speedReaderEnabled, 'Speed reader');
 }
-function setSubtoolState(button, on, labelKey) {
+function setSubtoolState(button, on, label) {
   if (!button) return;
   button.setAttribute('aria-pressed', String(on));
-  const label = window.leafLocale.t(labelKey);
   button.title = label;
   button.setAttribute('aria-label', label);
 }
@@ -333,7 +328,7 @@ function showGraph() {
   if (!graphHasBoundedRoot()) {
     teardownGraphScene();
     clearReaderLoading('graph');
-    setGraphStatus(window.leafLocale.t('library.graph.needsVault'));
+    setGraphStatus(GRAPH_NEEDS_VAULT);
     return;
   }
   if (!graphRequested) {
@@ -364,7 +359,7 @@ window.leafSetGraph = (payload) => {
     if (graphViewOpen) {
       teardownGraphScene();
       clearReaderLoading('graph');
-      setGraphStatus((payload.error && payload.error.message) || window.leafLocale.t('library.graph.error'));
+      setGraphStatus((payload.error && payload.error.message) || GRAPH_ERROR);
     }
     return;
   }
@@ -439,7 +434,7 @@ async function buildGraphScene() {
   const data = graphData;
   if (!data || !data.nodes || !data.nodes.length) {
     clearReaderLoading('graph');
-    setGraphStatus(window.leafLocale.t('library.graph.empty'));
+    setGraphStatus('No links to graph yet.');
     return;
   }
   try {
@@ -447,7 +442,7 @@ async function buildGraphScene() {
   } catch (err) {
     console.error('Leaf graph runtimes failed to load', err);
     clearReaderLoading('graph');
-    setGraphStatus((err && err.message) ? String(err.message) : window.leafLocale.t('library.graph.error'));
+    setGraphStatus((err && err.message) ? String(err.message) : GRAPH_ERROR);
     return;
   }
   // The view may have changed while the runtimes loaded.
@@ -474,7 +469,7 @@ async function buildGraphScene() {
   app.ticker.stop();
   readerGraphCanvas.appendChild(app.canvas);
   setGraphStatus(data.truncated
-    ? window.leafLocale.t('library.graph.truncated', { count: window.leafLocale.formatNumber(data.nodes.length) })
+    ? `Showing the ${formatCount(data.nodes.length)} most-linked documents.`
     : '');
 
   const colors = graphColors();
@@ -630,7 +625,7 @@ async function buildGraphScene() {
     console.error('Leaf graph build failed', err);
     clearReaderLoading('graph');
     teardownGraphScene();
-    setGraphStatus((err && err.message) ? String(err.message) : window.leafLocale.t('library.graph.error'));
+    setGraphStatus((err && err.message) ? String(err.message) : GRAPH_ERROR);
   }
 }
 

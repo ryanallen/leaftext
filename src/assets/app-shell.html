@@ -7,33 +7,32 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: http://leaf-image.local leaf-image: data:; script-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset:; style-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset: https://fonts.googleapis.com; font-src 'self' data: http://leaf-asset.local leaf-asset: https://fonts.gstatic.com; connect-src 'self' http://leaf-source.local leaf-source: https://api.github.com">
 <title>Leaf Text</title>
 <script>{{THEME_BOOTSTRAP_SCRIPT}}</script>
-<script>{{LOCALE_BOOTSTRAP_SCRIPT}}</script>
 <link rel="stylesheet" href="{{KATEX_CSS_URL}}">
 <link rel="stylesheet" href="{{APP_CSS_URL}}">
 </head>
 <body>
 <header id="appBar" class="app-bar">
   <div class="app-bar-lead">
-    <button type="button" id="homeButton" class="brand-button" data-i18n-aria-label="actions.home" data-i18n-title="actions.home.title" aria-label="Home" title="Home">
+    <button type="button" id="homeButton" class="brand-button" aria-label="Home" title="Home">
       {{LEAF_ICON_SVG}}
     </button>
-    <button type="button" id="libraryOpen" class="icon-button library-open" data-i18n-title="library.open" data-i18n-aria-label="library.open" title="Toggle library" aria-label="Toggle library">{{OPEN_LIBRARY_ICON_SVG}}</button>
+    <button type="button" id="libraryOpen" class="icon-button library-open" title="Toggle library" aria-label="Toggle library">{{OPEN_LIBRARY_ICON_SVG}}</button>
     <nav class="history-actions" aria-label="Document history">
-      <button type="button" id="backButton" class="icon-button history-button" data-i18n-aria-label="actions.back" data-i18n-title="actions.back.title" aria-label="Back" title="Back" disabled>
+      <button type="button" id="backButton" class="icon-button history-button" aria-label="Back" title="Back" disabled>
         {{BACK_ICON_SVG}}
       </button>
-      <button type="button" id="forwardButton" class="icon-button history-button" data-i18n-aria-label="actions.forward" data-i18n-title="actions.forward.title" aria-label="Forward" title="Forward" disabled>
+      <button type="button" id="forwardButton" class="icon-button history-button" aria-label="Forward" title="Forward" disabled>
         {{FORWARD_ICON_SVG}}
       </button>
     </nav>
   </div>
   <div class="tab-bar" id="tabBar" role="tablist" aria-label="Open documents"></div>
   <div class="app-trailing">
-    <button type="button" id="overflowToggle" class="icon-button overflow-toggle" aria-haspopup="true" aria-expanded="false" data-i18n-aria-label="actions.more" data-i18n-title="actions.more" aria-label="More options" title="More options"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg></button>
+    <button type="button" id="overflowToggle" class="icon-button overflow-toggle" aria-haspopup="true" aria-expanded="false" aria-label="More options" title="More options"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg></button>
     <div class="app-trailing-items" id="appTrailingItems">
     <div class="app-actions-items" id="appActionsItems">
     <details class="settings-menu" id="settingsMenu">
-      <summary id="settingsSummary" class="icon-button" data-i18n-aria-label="settings.heading" data-i18n-title="settings.heading" aria-label="Settings" title="Settings">
+      <summary id="settingsSummary" class="icon-button" aria-label="Settings" title="Settings">
         {{SETTINGS_ICON_SVG}}
         <span class="settings-alert-dot" id="settingsAlertDot" aria-hidden="true" hidden></span>
       </summary>
@@ -46,24 +45,24 @@
           <span class="settings-update-label" id="settingsUpdateLabel"></span>
         </button>
         <button type="button" class="setting-theme-open" id="themeSheetOpen" aria-haspopup="dialog">
-          <span class="setting-label" data-i18n="settings.theme.label">Theme</span>
+          <span class="setting-label">Theme</span>
           <span class="setting-theme-current" id="themeCurrentLabel"></span>
           <span class="setting-theme-chevron" aria-hidden="true">›</span>
         </button>
         <label class="setting-control" for="graphScope">
-          <span class="setting-label" data-i18n="settings.graphScope.label">Graph size</span>
+          <span class="setting-label">Graph size</span>
           <select id="graphScope" aria-label="Graph size" aria-describedby="graphScopeHelp">
-            <option value="small" data-i18n="settings.graphScope.small">Focus (open document + links)</option>
-            <option value="medium" data-i18n="settings.graphScope.medium">Medium (up to 2,000)</option>
-            <option value="large" data-i18n="settings.graphScope.large">Large (up to 5,000)</option>
-            <option value="xl" data-i18n="settings.graphScope.xl">Everything</option>
+            <option value="small">Focus (open document + links)</option>
+            <option value="medium">Medium (up to 2,000)</option>
+            <option value="large">Large (up to 5,000)</option>
+            <option value="xl">Everything</option>
           </select>
-          <span class="setting-help" id="graphScopeHelp" data-i18n="settings.graphScope.help">How many documents the graph view draws. Smaller is faster.</span>
+          <span class="setting-help" id="graphScopeHelp">How many documents the graph view draws. Smaller is faster.</span>
         </label>
         <label class="setting-control setting-control-inline" for="minimapEnabled">
           <input type="checkbox" id="minimapEnabled" aria-label="Show document minimap" aria-describedby="minimapEnabledHelp">
-          <span class="setting-label" data-i18n="settings.minimap.label">Show minimap</span>
-          <span class="setting-help" id="minimapEnabledHelp" data-i18n="settings.minimap.help">Show a scrollable document overview on wider windows.</span>
+          <span class="setting-label">Show minimap</span>
+          <span class="setting-help" id="minimapEnabledHelp">Show a scrollable document overview on wider windows.</span>
         </label>
         <label class="setting-control setting-control-inline" for="pagerEnabled">
           <input type="checkbox" id="pagerEnabled" aria-label="Show next and previous links" aria-describedby="pagerEnabledHelp">
@@ -78,17 +77,16 @@
           <button type="button" class="settings-check" id="settingsCheck">
             <span class="settings-spinner" id="settingsCheckSpinner" aria-hidden="true" hidden></span>
             <!-- Separate span so the spinner survives the text swap. -->
-            <span id="settingsCheckLabel" data-i18n="update.check">Check for updates</span>
+            <span id="settingsCheckLabel">Check for updates</span>
           </button>
           <p class="settings-version">
-            <span data-i18n="settings.version">Version</span>
-            <!-- Separate span so renderStaticText's [data-i18n] sweep never wipes the number. -->
+            <span>Version</span>
             <span class="settings-version-number" id="settingsVersion"></span>
           </p>
         </div>
       </div>
     </details>
-    <button type="button" id="openButton" class="icon-button open-button" data-i18n-aria-label="actions.open" data-i18n-title="actions.open.title" aria-label="Open" title="Open Markdown file">{{OPEN_ICON_SVG}}</button>
+    <button type="button" id="openButton" class="icon-button open-button" aria-label="Open" title="Open Markdown file">{{OPEN_ICON_SVG}}</button>
     </div>
     <div class="window-controls" id="windowControls" hidden aria-hidden="true">
       <button type="button" class="window-control" id="winMinimize" tabindex="-1" aria-label="Minimize" title="Minimize"><svg viewBox="0 0 12 12" aria-hidden="true"><line x1="2.5" y1="6.5" x2="9.5" y2="6.5" stroke="currentColor" stroke-width="1"/></svg></button>
@@ -113,19 +111,19 @@
   <!-- Where you are: the folder path, one crumb per level, with the graph
        toggle on the right. Its own band above the search row, same treatment. -->
   <div class="library-crumbs" id="libraryCrumbs">
-    <button type="button" id="libraryVaultSwitch" class="library-vault-switch" aria-haspopup="menu" aria-expanded="false" data-i18n-title="library.vaults.label" data-i18n-aria-label="library.vaults.label" title="Vaults" aria-label="Vaults">{{PACKAGE_OPEN_ICON_SVG}}<span class="library-crumb-caret" aria-hidden="true">▾</span></button>
-    <nav class="library-crumb-trail" id="libraryCrumbTrail" data-i18n-aria-label="library.crumbs.label" aria-label="Folder path"></nav>
+    <button type="button" id="libraryVaultSwitch" class="library-vault-switch" aria-haspopup="menu" aria-expanded="false" title="Vaults" aria-label="Vaults">{{PACKAGE_OPEN_ICON_SVG}}<span class="library-crumb-caret" aria-hidden="true">▾</span></button>
+    <nav class="library-crumb-trail" id="libraryCrumbTrail" aria-label="Folder path"></nav>
     <!-- Present only when this vault has work that has not reached GitHub. A
          button that is always there says nothing; one that appears is the
          message. -->
-    <button type="button" id="librarySyncButton" class="library-sync" data-i18n-aria-label="library.vaults.sync.now" aria-label="Sync" hidden>{{SYNC_ICON_SVG}}<span class="library-sync-count"></span></button>
+    <button type="button" id="librarySyncButton" class="library-sync" aria-label="Sync" hidden>{{SYNC_ICON_SVG}}<span class="library-sync-count"></span></button>
   </div>
   <div class="library-header">
     <div class="library-search-wrap">
-      <input id="librarySearch" class="library-search" type="search" autocomplete="off" spellcheck="false" data-i18n-placeholder="library.search.placeholder" placeholder="Search files...">
+      <input id="librarySearch" class="library-search" type="search" autocomplete="off" spellcheck="false" placeholder="Search files...">
     </div>
   </div>
-  <div id="libraryDivider" class="library-divider" data-i18n-title="library.divider.resize" title="Resize library" role="separator" aria-orientation="vertical"></div>
+  <div id="libraryDivider" class="library-divider" title="Resize library" role="separator" aria-orientation="vertical"></div>
   <!-- The card's top-left corner. A child of the pane so it is placed by the same
        grid line as the card's left border and can't drift off it. See
        .reader-corner. -->
@@ -150,8 +148,8 @@
      the pressed button, so the bar answers "where am I" as well as "what can I
      do". Its own grid cell placement, not a child of the scroller, or it would
      scroll away with the document. -->
-<div id="readerToolbar" class="reader-toolbar" role="toolbar" data-i18n-aria-label="toolbar.label" aria-label="Views and edits" hidden>
-  <div class="reader-tool-group" role="group" data-i18n-aria-label="toolbar.views" aria-label="Views">
+<div id="readerToolbar" class="reader-toolbar" role="toolbar" aria-label="Views and edits" hidden>
+  <div class="reader-tool-group" role="group" aria-label="Views">
     <!-- What the reading view can do, in a recess to the left of the three view
          buttons rather than wedged between them, so reading / source / graph
          always read as one unbroken group. These tools arrive and leave with the
@@ -159,17 +157,17 @@
          neither means anything on a map, so a control for a view you are not in
          is noise. Sunk and grained rather than same-level buttons, which would
          read as three more views. -->
-    <span id="readerViewTools" class="reader-view-tools" role="group" data-i18n-aria-label="toolbar.readingTools" aria-label="Reading tools" hidden>
-      <button type="button" id="readerLockButton" class="reader-subtool" aria-pressed="false" data-i18n-aria-label="toolbar.unlock" data-i18n-title="toolbar.unlock" aria-label="Unlock to edit this page" title="Unlock to edit this page"><span class="reader-swap-glyph reader-glyph-off">{{LOCK_CLOSED_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{LOCK_OPEN_ICON_SVG}}</span></button>
-      <button type="button" id="speedReaderButton" class="reader-subtool" aria-pressed="false" data-i18n-aria-label="toolbar.speedReader" data-i18n-title="toolbar.speedReader" aria-label="Speed reader" title="Speed reader"><span class="reader-swap-glyph reader-glyph-off">{{SPEED_READER_OFF_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{SPEED_READER_ON_ICON_SVG}}</span></button>
+    <span id="readerViewTools" class="reader-view-tools" role="group" aria-label="Reading tools" hidden>
+      <button type="button" id="readerLockButton" class="reader-subtool" aria-pressed="false" aria-label="Unlock to edit this page" title="Unlock to edit this page"><span class="reader-swap-glyph reader-glyph-off">{{LOCK_CLOSED_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{LOCK_OPEN_ICON_SVG}}</span></button>
+      <button type="button" id="speedReaderButton" class="reader-subtool" aria-pressed="false" aria-label="Speed reader" title="Speed reader"><span class="reader-swap-glyph reader-glyph-off">{{SPEED_READER_OFF_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{SPEED_READER_ON_ICON_SVG}}</span></button>
     </span>
-    <button type="button" id="viewReadingButton" class="reader-tool" data-view="reading" aria-pressed="true" data-i18n-aria-label="toolbar.reading" data-i18n-title="toolbar.reading" aria-label="Reading" title="Reading">{{DOCUMENT_ICON_SVG}}</button>
-    <button type="button" id="viewCodeButton" class="reader-tool" data-view="code" aria-pressed="false" data-i18n-aria-label="actions.codeView" data-i18n-title="actions.codeView.title" aria-label="View source" title="View source">{{CODE_VIEW_ICON_SVG}}</button>
-    <button type="button" id="viewGraphButton" class="reader-tool" data-view="graph" aria-pressed="false" data-i18n-aria-label="library.view.graph" data-i18n-title="library.view.graph.on" aria-label="Graph" title="Show how these documents link">{{GRAPH_ICON_SVG}}</button>
+    <button type="button" id="viewReadingButton" class="reader-tool" data-view="reading" aria-pressed="true" aria-label="Reading" title="Reading">{{DOCUMENT_ICON_SVG}}</button>
+    <button type="button" id="viewCodeButton" class="reader-tool" data-view="code" aria-pressed="false" aria-label="View source" title="View source">{{CODE_VIEW_ICON_SVG}}</button>
+    <button type="button" id="viewGraphButton" class="reader-tool" data-view="graph" aria-pressed="false" aria-label="Graph" title="Show how these documents link">{{GRAPH_ICON_SVG}}</button>
   </div>
   <span class="reader-tool-divider" aria-hidden="true"></span>
-  <button type="button" id="undoButton" class="reader-tool undo-button" data-i18n-aria-label="actions.undo" data-i18n-title="actions.undo.title" aria-label="Undo" title="Undo last edit" hidden><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" /></svg></button>
-  <button type="button" id="saveButton" class="reader-tool-save" data-i18n="actions.save" data-i18n-aria-label="actions.save" data-i18n-title="actions.save.title" aria-label="Save" title="Save" hidden>Save</button>
+  <button type="button" id="undoButton" class="reader-tool undo-button" aria-label="Undo" title="Undo last edit" hidden><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" /></svg></button>
+  <button type="button" id="saveButton" class="reader-tool-save" aria-label="Save" title="Save" hidden>Save</button>
 </div>
 <div id="readerEdgeFade" class="reader-edge-fade" aria-hidden="true"></div>
 <!-- The minimap rail. Outside the card on purpose: it is chrome, so it sits on
@@ -178,7 +176,7 @@
      that column with :has(.document-minimap), which a hidden host would still
      match. -->
 <div id="readerMinimap" class="reader-minimap" aria-hidden="true"></div>
-<div id="readerLoading" class="reader-loading" role="status" aria-live="polite" data-i18n-aria-label="reader.loading" aria-label="Loading document…" hidden>
+<div id="readerLoading" class="reader-loading" role="status" aria-live="polite" aria-label="Loading document…" hidden>
   <div class="reader-loading-spinner" aria-hidden="true"></div>
 </div>
 </div>
@@ -190,22 +188,22 @@
   <div class="glossary-sheet-footer"><button type="button" id="glossaryFullLink" class="glossary-sheet-fulllink">Open the full glossary</button></div>
 </aside>
 <div id="themeBackdrop" class="theme-sheet-backdrop" hidden></div>
-<aside id="themeSheet" class="theme-sheet" role="dialog" aria-modal="true" data-i18n-aria-label="settings.theme.sheet.title" aria-label="Themes" hidden>
+<aside id="themeSheet" class="theme-sheet" role="dialog" aria-modal="true" aria-label="Themes" hidden>
   <div class="theme-sheet-grip"></div>
   <div class="theme-sheet-head">
-    <span class="theme-sheet-title" data-i18n="settings.theme.sheet.title">Themes</span>
-    <button type="button" id="themeSheetClose" class="theme-sheet-close" data-i18n-aria-label="settings.theme.sheet.close" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
+    <span class="theme-sheet-title">Themes</span>
+    <button type="button" id="themeSheetClose" class="theme-sheet-close" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
   </div>
-  <div class="theme-sheet-modes" id="themeSheetModes" role="group" data-i18n-aria-label="settings.theme.appearance" aria-label="Appearance">
-    <button type="button" class="theme-mode-btn" data-mode="system" data-i18n="settings.theme.system">System</button>
-    <button type="button" class="theme-mode-btn" data-mode="light" data-i18n="settings.theme.light">Light</button>
-    <button type="button" class="theme-mode-btn" data-mode="dark" data-i18n="settings.theme.dark">Dark</button>
-    <button type="button" class="theme-mode-btn" data-mode="daylight" data-i18n="settings.theme.daylight">Daylight</button>
+  <div class="theme-sheet-modes" id="themeSheetModes" role="group" aria-label="Appearance">
+    <button type="button" class="theme-mode-btn" data-mode="system">System</button>
+    <button type="button" class="theme-mode-btn" data-mode="light">Light</button>
+    <button type="button" class="theme-mode-btn" data-mode="dark">Dark</button>
+    <button type="button" class="theme-mode-btn" data-mode="daylight">Daylight</button>
   </div>
   <hr class="theme-sheet-divider" />
   <ul class="theme-sheet-grid" id="themeSheetGrid">{{THEME_ITEMS}}</ul>
   <div class="theme-sheet-footer">
-    <a href="#" id="themeSheetBrowse" class="theme-sheet-browse" data-i18n="settings.theme.sheet.browse">Add your own theme on GitHub →</a>
+    <a href="#" id="themeSheetBrowse" class="theme-sheet-browse">Add your own theme on GitHub →</a>
   </div>
 </aside>
 <script>

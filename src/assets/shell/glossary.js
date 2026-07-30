@@ -92,6 +92,7 @@ let glossaryWaitTimer = 0;
 // Every openGlossary goes through awaitGlossaryEntry, so an answer arriving with
 // nothing outstanding belongs to a lookup the user dismissed: it must not put the
 // sheet back up on its own.
+const GLOSSARY_FAILED = 'Couldn’t open the glossary.';
 let glossaryWaiting = false;
 function endGlossaryWait() {
   glossaryWaiting = false;
@@ -100,11 +101,11 @@ function endGlossaryWait() {
     glossaryWaitTimer = 0;
   }
 }
-function glossarySheetMessage(key, values) {
+function glossarySheetMessage(message) {
   endGlossaryWait();
   const text = document.createElement('p');
   text.className = 'glossary-sheet-message';
-  text.textContent = window.leafLocale.t(key, values);
+  text.textContent = message;
   glossarySheetBody.innerHTML = '';
   glossarySheetBody.appendChild(text);
 }
@@ -114,7 +115,7 @@ function awaitGlossaryEntry() {
   const waiting = document.createElement('div');
   waiting.className = 'glossary-sheet-waiting';
   waiting.setAttribute('role', 'status');
-  waiting.setAttribute('aria-label', window.leafLocale.t('glossary.loading'));
+  waiting.setAttribute('aria-label', 'Loading glossary…');
   const spinner = document.createElement('div');
   spinner.className = 'glossary-sheet-spinner';
   spinner.setAttribute('aria-hidden', 'true');
@@ -126,7 +127,7 @@ function awaitGlossaryEntry() {
   // If nothing comes back at all, the sheet still has to stop spinning.
   glossaryWaitTimer = window.setTimeout(() => {
     glossaryWaitTimer = 0;
-    glossarySheetMessage('glossary.failed');
+    glossarySheetMessage(GLOSSARY_FAILED);
   }, GLOSSARY_ANSWER_TIMEOUT_MS);
   showGlossary();
 }
@@ -134,7 +135,7 @@ function awaitGlossaryEntry() {
 // document ('missing'), or one it couldn't read.
 window.leafGlossaryFailed = (reason) => {
   if (glossarySheet.hidden) return;
-  glossarySheetMessage(reason === 'missing' ? 'glossary.missing' : 'glossary.failed');
+  glossarySheetMessage(reason === 'missing' ? 'No glossary file near this document.' : GLOSSARY_FAILED);
 };
 glossaryBackdrop.addEventListener('click', dismissGlossary);
 glossarySheetClose.addEventListener('click', dismissGlossary);
@@ -180,8 +181,7 @@ let activeHoverToken = 0;
 const lineCountCache = new Map();
 const pendingLineTokens = new Map();
 function formatLineCount(n) {
-  const num = window.leafLocale ? window.leafLocale.formatNumber(n) : String(n);
-  return num + ' ' + (n === 1 ? 'line' : 'lines');
+  return formatCount(n) + ' ' + (n === 1 ? 'line' : 'lines');
 }
 function setLinkHoverLines(count) {
   if (typeof count === 'number' && count >= 0) {
@@ -318,7 +318,7 @@ window.leafShowGlossary = (html, anchor) => {
   }
   const entry = extractGlossaryEntry(glossaryParsedRoot, anchor);
   if (!entry) {
-    glossarySheetMessage('glossary.noEntry', { term: anchor });
+    glossarySheetMessage(`No glossary entry for “${anchor}”.`);
     showGlossary();
     return;
   }

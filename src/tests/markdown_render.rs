@@ -263,42 +263,42 @@ fn renders_commonmark_blockquotes_and_nested_lists() {
 }
 
 #[test]
-fn renders_simplified_chinese_markdown_without_translating_source_content() {
-    let markdown = r#"# Leaf 🍁 使用指南
+fn renders_non_ascii_markdown_without_altering_source_content() {
+    let markdown = r#"# Leaf 🍁 Guía de uso
 
-这是一个包含中文标点、emoji 和链接的段落：[项目链接](https://example.com/leaf)。
+Un párrafo con puntuación, emoji y un enlace: [enlace al proyecto](https://example.com/leaf).
 
-## 功能列表
+## Función — αλφάβητο
 
-- 阅读 `README.md`
-- 保留 Leaf 🍁 名称
+- Leer `README.md`
+- Conservar el nombre Leaf 🍁
 
-| 项目 | 状态 |
+| Función | Estado |
 | --- | --- |
-| 预览 | 可用 |
+| Vista previa | Disponible |
 
 ```ts
-const message = "你好，Leaf";
+const message = "¡Hola, Leaf!";
 console.log(message);
 ```
 "#;
 
-    let rendered = render_markdown_document(markdown, "中文指南.md");
+    let rendered = render_markdown_document(markdown, "guía.md");
 
-    assert_eq!(rendered.title, "Leaf 🍁 使用指南");
-    assert_contains(&rendered.html, r#"<h1 id="leaf--使用指南">"#);
-    assert_contains(&rendered.html, "中文标点、emoji");
+    assert_eq!(rendered.title, "Leaf 🍁 Guía de uso");
+    assert_contains(&rendered.html, r#"<h1 id="leaf--guía-de-uso">"#);
+    assert_contains(&rendered.html, "puntuación, emoji");
     assert_contains(
         &rendered.html,
-        r#"<a href="https://example.com/leaf" rel="noopener noreferrer">项目链接</a>"#,
+        r#"<a href="https://example.com/leaf" rel="noopener noreferrer">enlace al proyecto</a>"#,
     );
-    assert_contains(&rendered.html, "<li>阅读 <code>README.md</code></li>");
-    assert_contains(&rendered.html, "<td>预览</td>");
+    assert_contains(&rendered.html, "<li>Leer <code>README.md</code></li>");
+    assert_contains(&rendered.html, "<td>Vista previa</td>");
     assert_contains(
         &rendered.html,
         r#"<pre class="highlight" data-language="TypeScript"><code class="language-typescript">"#,
     );
-    assert_contains(&rendered.html, "你好，Leaf");
+    assert_contains(&rendered.html, "¡Hola, Leaf!");
     assert!(!rendered.html.contains("Hello"));
 }
 

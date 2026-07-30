@@ -153,7 +153,7 @@ Two tests re-derive contrast across **every** theme so an unreadable palette fai
 }
 ```
 
-Then, per family, it emits a font block (`--heading-font`/`--reading-font`/`--app-font`/`--code-font`) from that family's `fonts`, placed before the locale rule so a CJK reader's reading font still wins.
+Then, per family, it emits a font block (`--heading-font`/`--reading-font`/`--app-font`/`--code-font`) from that family's `fonts`.
 
 `reading_mode_css()` assembles the full style block: the compiled theme CSS above, then the stylesheet itself from `src/assets/reading.css` — the `:root` alias layer (radius/shadow scales and short component names), then the application layout and document body CSS. The token blocks have to come first so every `var(--leaf-*)` in the stylesheet resolves. The stylesheet is an asset rather than a Rust literal so it stays editable as CSS. No Primer primitives and no font faces are embedded — fonts load separately from Google Fonts (see [Theme fonts](#theme-fonts)). The result is cached in a `OnceLock<String>` — computed once per process lifetime.
 
@@ -191,14 +191,14 @@ The folder is globbed, so there is no manifest to update. `assert_theme_sources_
 
 **4. Nothing to wire up in the UI**
 
-The theme picker builds its buttons from `theme_families()` (`theme_items_html()` in `src/lib.rs` emits one `.theme-item` per family), and the bootstrap's family list is injected from the registry — so a registered family appears in the picker automatically, with no HTML or translation edit.
+The theme picker builds its buttons from `theme_families()` (`theme_items_html()` in `src/lib.rs` emits one `.theme-item` per family), and the bootstrap's family list is injected from the registry — so a registered family appears in the picker automatically, with no HTML edit.
 
 > [!WARNING]
 > The startup token check uses exact string matching against the names in `LEAF_SEMANTIC_TOKEN_CONTRACT`. Spell every token name exactly — a single typo (e.g. `--leaf-sytax-keyword`) will not match and the assertion will fail at startup with a "missing required token" message.
 
 ## The Random family preference
 
-The theme picker appends one entry that is not a real family: **Random** (`data-family="random"`, localized via `data-i18n`). `theme_items_html()` in `src/lib.rs` emits it after the family buttons, and it never appears in `theme_families()`, the font map, or the compiled CSS — the `theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled` test asserts exactly that.
+The theme picker appends one entry that is not a real family: **Random** (`data-family="random"`). `theme_items_html()` in `src/lib.rs` emits it after the family buttons, and it never appears in `theme_families()`, the font map, or the compiled CSS — the `theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled` test asserts exactly that.
 
 The bootstrap treats family state as two axes: `familyPreference` (the persisted picker choice, which may be `random`) and the concrete `family` actually applied to `:root`. When the preference is `random`, `drawRandomFamily()` picks a concrete family — a no-repeat cycle over `REAL_FAMILIES` that avoids an immediate repeat across a reset — on first paint and on each re-pick. `window.leafTheme.getFamily()` returns the preference (so the picker keeps Random selected), while the CSS attribute uses the drawn family.
 

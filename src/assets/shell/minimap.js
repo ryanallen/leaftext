@@ -2,7 +2,7 @@
 // exist until the document is laid out — on a large file, long enough that an empty
 // rail beside a finished page looks broken rather than busy.
 function documentMinimapMarkup() {
-  return `<aside class="document-minimap is-loading" aria-label="${escapeAttr(window.leafLocale.t('minimap.aria'))}"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="document-minimap-spinner" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
+  return `<aside class="document-minimap is-loading" aria-label="Document minimap"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="document-minimap-spinner" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
 }
 function renderDocumentMinimap(model) {
   if (!window.leafMinimap.getEnabled()) {
@@ -896,7 +896,7 @@ window.addEventListener('resize', () => {
 });
 window.leafShowError = (message) => leafToast(message, 'error');
 window.leafShowOpenError = (path, reason) => {
-  window.leafShowError(window.leafLocale.t('errors.openFailed', { path, reason }));
+  window.leafShowError(`Failed to open ${path}: ${reason}`);
 };
 function escapeText(value) {
   return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
@@ -904,13 +904,18 @@ function escapeText(value) {
 function escapeAttr(value) {
   return escapeText(value).replace(/`/g, '&#96;');
 }
+// Thousands separators, so a big count reads as "2,000" rather than "2000".
+function formatCount(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toLocaleString('en-US') : String(value);
+}
 window.leafSetState(window.__leafInitialState || { recent: [], document: null });
 window.leafSetNavigation({ canGoBack: false, canGoForward: false });
 // Came up on defaults because the settings file would not read. Nothing on
 // screen distinguishes that from a first launch, so say it; the file is left
 // alone for its owner to look at.
 if (window.__leafSettingsUnreadable) {
-  window.leafShowError(window.leafLocale.t('errors.settingsUnreadable'));
+  window.leafShowError('Your settings file could not be read, so Leaf Text started with its defaults. Your saved choices are still in the file.');
 }
 // The vault list came in on the window rather than through its callback, so
 // nothing has asked about its repository yet.

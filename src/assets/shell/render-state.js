@@ -30,7 +30,7 @@ window.leafSetState = (state) => {
     // here. Closing the last tab with the map up left it on screen with nothing
     // left to leave it by.
     closeGraphView();
-    emptyDescriptionKey = pickEmptyDescriptionKey();
+    emptyDescription = pickEmptyDescription();
   }
   runViewRender(currentState.document && currentState.document.html, () => {
     resetReaderScrollOnNextRender = true;
@@ -77,7 +77,7 @@ window.leafReloadDocument = (state) => {
 window.leafSwitchTab = (state, anchor) => {
   currentState = state || { recent: [], tabs: [], active: null, document: null };
   if (!currentState.document) {
-    emptyDescriptionKey = pickEmptyDescriptionKey();
+    emptyDescription = pickEmptyDescription();
   }
   runViewRender(currentState.document && currentState.document.html, () => {
     resetReaderScrollOnNextRender = false;
@@ -167,25 +167,6 @@ window.leafRestoreScrollAnchor = (anchor) => {
     updateMinimapViewport();
   });
 };
-function renderStaticText() {
-  document.querySelectorAll('[data-i18n]').forEach((node) => {
-    node.textContent = window.leafLocale.t(node.dataset.i18n);
-  });
-  document.querySelectorAll('[data-i18n-title]').forEach((node) => {
-    node.title = window.leafLocale.t(node.dataset.i18nTitle);
-  });
-  document.querySelectorAll('[data-i18n-label]').forEach((node) => {
-    node.label = window.leafLocale.t(node.dataset.i18nLabel);
-  });
-  document.querySelectorAll('[aria-label][data-i18n-aria-label]').forEach((node) => {
-    node.setAttribute('aria-label', window.leafLocale.t(node.dataset.i18nAriaLabel));
-  });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {
-    node.setAttribute('placeholder', window.leafLocale.t(node.dataset.i18nPlaceholder));
-  });
-  graphScopeControl.setAttribute('aria-label', window.leafLocale.t('settings.graphScope.aria'));
-  minimapEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.minimap.aria'));
-}
 // Every extension the app reads. Mirrors the table in `src/format.rs`, which is
 // the source of truth — the page can't import it, so keep the two in step.
 const DOCUMENT_EXTS = 'md|markdown|mdown|xml|json|yaml|yml';
@@ -206,7 +187,7 @@ function tabDisplayName(tab) {
 function renderTabs(state) {
   const tabs = state.tabs || [];
   const active = state.active;
-  tabBar.innerHTML = tabs.map((tab, index) => `<span class="tab${index === active ? ' tab-active' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(tabDisplayName(tab))}</button><span class="tab-dirty-dot" aria-hidden="true"></span><button type="button" class="tab-close" data-tab-close="${index}" aria-label="${escapeAttr(window.leafLocale.t('actions.closeTab'))}" title="${escapeAttr(window.leafLocale.t('actions.closeTab'))}"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></span>`).join('');
+  tabBar.innerHTML = tabs.map((tab, index) => `<span class="tab${index === active ? ' tab-active' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(tabDisplayName(tab))}</button><span class="tab-dirty-dot" aria-hidden="true"></span><button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></span>`).join('');
   tabBar.querySelectorAll('[data-tab-index]').forEach((button) => {
     button.addEventListener('click', () => {
       if (suppressTabClick) return;

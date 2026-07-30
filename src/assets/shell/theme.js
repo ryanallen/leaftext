@@ -7,12 +7,14 @@ function themeFamilyName(family) {
   const item = themeSheetGrid.querySelector('.theme-item[data-family="' + family + '"]');
   return item ? item.textContent.trim() : family;
 }
+// Matches the appearance row in the theme sheet.
+const THEME_MODE_NAMES = { system: 'System', light: 'Light', dark: 'Dark', daylight: 'Daylight' };
 function updateThemeSelection() {
   const mode = window.leafTheme.getMode();
   const family = window.leafTheme.getFamily();
   if (themeCurrentLabel) {
     themeCurrentLabel.textContent =
-      themeFamilyName(family) + ' · ' + window.leafLocale.t('settings.theme.' + mode);
+      themeFamilyName(family) + ' · ' + (THEME_MODE_NAMES[mode] || mode);
   }
   themeSheetModes.querySelectorAll('.theme-mode-btn').forEach((btn) => {
     const active = btn.dataset.mode === mode;
@@ -195,13 +197,6 @@ window.leafTheme.subscribe((theme) => {
   // The code view is Monaco; repaint it (and its minimap) from our palette so it
   // tracks the theme and light/dark like everything else.
   reskinMonacoForTheme();
-});
-window.leafLocale.subscribe(() => {
-  renderStaticText();
-  renderState();
-  renderLibrary();
-  updateThemeSelection();
-  renderUpdateButton();
 });
 window.leafMinimap.subscribe((enabled) => {
   minimapEnabledControl.checked = enabled;

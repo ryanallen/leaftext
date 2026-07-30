@@ -474,9 +474,7 @@ pub(crate) fn compiled_theme_css() -> String {
         css.push_str("}\n");
     }
     // Per-family font blocks, keyed on the family (not the light/dark source, since
-    // a family's fonts are shared). Emitted at family specificity so the locale
-    // `[data-locale="zh-CN"]` rule (equal specificity, later in the sheet) can
-    // still win the reading font for CJK readers.
+    // a family's fonts are shared).
     let mut seen_families: Vec<&str> = Vec::new();
     for source in sources {
         if seen_families.contains(&source.family) {

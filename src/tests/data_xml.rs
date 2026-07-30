@@ -441,13 +441,14 @@ fn a_list_that_skipped_a_silent_item_carries_no_range() {
 #[test]
 fn json_source_ranges_survive_multi_byte_text_above_them() {
     // The reader copies whole characters and advances by their UTF-8 width, so a
-    // value below non-ASCII text still anchors where it really sits.
-    let json = "{\"标题\": \"文档\", \"shell\": \"bash\"}";
+    // value below non-ASCII text still anchors where it really sits. í is two
+    // bytes and € is three, so a character count would land short of the value.
+    let json = "{\"título\": \"documento €\", \"shell\": \"bash\"}";
 
     let (_title, _html, blocks) = render_json_document(json, None);
 
     assert_eq!(blocks.len(), 2, "{blocks:?}");
-    assert_eq!(&json[blocks[0].start..blocks[0].end], "\"文档\"");
+    assert_eq!(&json[blocks[0].start..blocks[0].end], "\"documento €\"");
     assert_eq!(&json[blocks[1].start..blocks[1].end], "\"bash\"");
 }
 
@@ -576,7 +577,7 @@ fn yaml_source_ranges_are_byte_offsets_not_character_counts() {
     // The YAML scanner's markers count *characters*; every block range in the app
     // is a byte offset. Without the conversion, any file with non-ASCII text
     // above a value would anchor that value short of where it really sits.
-    let yaml = "título: 汉字文档\nshell: bash\n";
+    let yaml = "título: documento €\nshell: bash\n";
 
     let (_title, _html, blocks) = render_yaml_document(yaml, None);
 
@@ -585,7 +586,7 @@ fn yaml_source_ranges_are_byte_offsets_not_character_counts() {
         // A range that slices cleanly is a range measured in bytes.
         assert!(yaml.get(block.start..block.end).is_some(), "{block:?}");
     }
-    assert_eq!(&yaml[blocks[0].start..blocks[0].end], "汉字文档");
+    assert_eq!(&yaml[blocks[0].start..blocks[0].end], "documento €");
     assert_eq!(&yaml[blocks[1].start..blocks[1].end], "bash");
 }
 

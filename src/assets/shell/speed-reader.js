@@ -209,7 +209,7 @@ function activeVault() {
 // What the leftmost crumb reads: the vault's name, or the whole library's label.
 function libraryRootLabel() {
   const vault = activeVault();
-  return (vault && vault.name) || window.leafLocale.t('library.title');
+  return (vault && vault.name) || 'Library';
 }
 const GRAPH_SCOPES = ['small', 'medium', 'large', 'xl'];
 let graphScope = GRAPH_SCOPES.includes(LEAF_SETTINGS.graphScope) ? LEAF_SETTINGS.graphScope : 'small';

@@ -372,16 +372,18 @@ Three or more `-`, `*`, or `_` on their own line:
 
 ___
 
-## Simplified Chinese
+## Text in any language
 
-Leaf Text offers an English and a Simplified Chinese interface, and renders CJK content without altering it:
+The interface is English. Your documents are not: anything valid UTF-8 renders as written, unaltered — accents, Greek, Cyrillic, Hebrew, Arabic, CJK, emoji:
 
-> 阅读，而非编辑。Leaf Text 只显示渲染后的 Markdown 文档。
+> Lire, sans éditer. Ανάγνωση, όχι επεξεργασία. — Leaf Text показывает готовый документ.
 
-| 功能 | 说明 |
+| Feature | Behavior |
 | :-- | :-- |
-| 全文搜索 | 支持中文前缀匹配 |
-| 前置元数据 | 可按字段筛选文库 |
+| Full-text search | Matches on any substring, whatever the script |
+| Frontmatter | Filters the library by field, whatever the value |
+
+Editing is anchored to byte offsets in the file, so a multi-byte character above the block you are editing never shifts where that block is saved.
 
 ## XML
 

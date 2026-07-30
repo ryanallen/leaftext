@@ -1,4 +1,4 @@
-//! The app shell's chrome: app bar, icons, CSP, settings menu, theme and locale bootstrap.
+//! The app shell's chrome: app bar, icons, CSP, settings menu, and theme bootstrap.
 
 use super::*;
 
@@ -55,10 +55,10 @@ fn app_shell_renders_history_controls_and_intercepts_document_links() {
     for expected in [
             r#"<button type="button" id="backButton""#,
             r#"<button type="button" id="forwardButton""#,
-            r#"<button type="button" id="homeButton" class="brand-button" data-i18n-aria-label="actions.home" data-i18n-title="actions.home.title" aria-label="Home" title="Home">"#,
+            r#"<button type="button" id="homeButton" class="brand-button" aria-label="Home" title="Home">"#,
             r#"<div class="tab-bar" id="tabBar" role="tablist" aria-label="Open documents"></div>"#,
-            r#"class="icon-button history-button" data-i18n-aria-label="actions.back""#,
-            r#"class="icon-button history-button" data-i18n-aria-label="actions.forward""#,
+            r#"class="icon-button history-button" aria-label="Back""#,
+            r#"class="icon-button history-button" aria-label="Forward""#,
             r#"<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">"#,
             r#"<path d="M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>"#,
             r#"<path d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>"#,
@@ -353,17 +353,16 @@ fn app_shell_labels_minimap_setting_and_hides_decorative_marks_from_accessibilit
     let html = app_shell_html();
 
     for expected in [
-            r#"<label class="setting-control setting-control-inline" for="minimapEnabled">"#,
-            r#"<input type="checkbox" id="minimapEnabled" aria-label="Show document minimap" aria-describedby="minimapEnabledHelp">"#,
-            r#"<span class="setting-help" id="minimapEnabledHelp" data-i18n="settings.minimap.help">Show a scrollable document overview on wider windows.</span>"#,
-            "minimapEnabledControl.setAttribute('aria-label', window.leafLocale.t('settings.minimap.aria'));",
-            "aria-label=\"${escapeAttr(window.leafLocale.t('minimap.aria'))}\"",
-            "document-minimap-track\" aria-hidden=\"true\"",
-            "document-minimap-content\" aria-hidden=\"true\"",
-            "document-minimap-viewport\" aria-hidden=\"true\"",
-        ] {
-            assert_contains(&html, expected);
-        }
+        r#"<label class="setting-control setting-control-inline" for="minimapEnabled">"#,
+        r#"<input type="checkbox" id="minimapEnabled" aria-label="Show document minimap" aria-describedby="minimapEnabledHelp">"#,
+        r#"<span class="setting-help" id="minimapEnabledHelp">Show a scrollable document overview on wider windows.</span>"#,
+        "aria-label=\"Document minimap\"",
+        "document-minimap-track\" aria-hidden=\"true\"",
+        "document-minimap-content\" aria-hidden=\"true\"",
+        "document-minimap-viewport\" aria-hidden=\"true\"",
+    ] {
+        assert_contains(&html, expected);
+    }
 
     assert!(
         !html.contains("document-minimap-track\" tabindex"),
@@ -465,7 +464,7 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
     assert_contains(&html, "media.addListener(onSystemThemeChange)");
     assert_contains(&html, r#"id="themeSheetOpen""#);
     assert_contains(&html, r#"id="themeSheetGrid""#);
-    assert_contains(&html, "settings.theme.");
+    assert_contains(&html, "const THEME_MODE_NAMES = { system: 'System', light: 'Light', dark: 'Dark', daylight: 'Daylight' };");
     assert!(!html.contains("themeVariant"));
     assert!(!html.contains("customTheme"));
     assert!(!html.contains("leafThemeSource"));
@@ -483,7 +482,7 @@ fn app_shell_groups_settings_menu_with_accessible_descriptions() {
     );
     assert_contains(
         &html,
-        r#"<summary id="settingsSummary" class="icon-button" data-i18n-aria-label="settings.heading" data-i18n-title="settings.heading" aria-label="Settings" title="Settings">"#,
+        r#"<summary id="settingsSummary" class="icon-button" aria-label="Settings" title="Settings">"#,
     );
     assert_contains(
         &html,
@@ -500,7 +499,7 @@ fn app_shell_groups_settings_menu_with_accessible_descriptions() {
     );
     assert_contains(
         &html,
-        r#"<span class="setting-help" id="minimapEnabledHelp" data-i18n="settings.minimap.help">Show a scrollable document overview on wider windows.</span>"#,
+        r#"<span class="setting-help" id="minimapEnabledHelp">Show a scrollable document overview on wider windows.</span>"#,
     );
     assert_contains(
         &html,
@@ -513,9 +512,10 @@ fn app_shell_groups_settings_menu_with_accessible_descriptions() {
         "if (settingsMenu.open && !settingsMenu.contains(event.target))",
     );
     assert_contains(&html, r#"id="themeSheet""#);
-    assert_contains(&html, r#"data-i18n="settings.theme.sheet.title""#);
-    assert!(!html.contains("localeModeHelp"));
-    assert!(!html.contains(r#"for="localeMode""#));
+    assert_contains(&html, r#"<span class="theme-sheet-title">Themes</span>"#);
+    // No language row: the interface ships in one language.
+    assert!(!html.contains("localeMode"));
+    assert!(!html.contains("leafLocale"));
 }
 
 #[test]
@@ -592,8 +592,7 @@ fn app_shell_theme_bootstrap_seeds_from_host_injected_settings() {
     }
 
     // The theme path no longer touches localStorage; the host owns persistence
-    // via setThemeMode / setThemeFamily. (The locale bootstrap keeps its own
-    // storage, so we check theme-specific markers.)
+    // via setThemeMode / setThemeFamily.
     assert!(!html.contains("leaf.themeMode"));
     assert!(!html.contains("modeStorage"));
     assert!(html.contains("send({ command: 'setThemeMode', mode: btn.dataset.mode });"));
@@ -601,124 +600,48 @@ fn app_shell_theme_bootstrap_seeds_from_host_injected_settings() {
 }
 
 #[test]
-fn app_shell_locale_persistence_adapter_normalizes_state_transitions() {
+fn app_shell_guards_shortcuts_while_a_character_is_being_composed() {
     let html = app_shell_html();
 
-    for expected in [
-            "const STORAGE_KEY = 'leaf.localeMode';",
-            "const MODE_FALLBACK = 'system';",
-            "const createModeStorage = (storageKey) => ({",
-            "const normalizeMode = (value) => (VALID_MODES.has(value) ? value : MODE_FALLBACK);",
-            "const storage = createModeStorage(STORAGE_KEY);\n  let mode = normalizeMode(storage.read());",
-            "mode = normalizeMode(nextMode);\n      storage.write(mode);\n      apply();",
-            "window.addEventListener('languagechange', () => {",
-            "if (mode === 'system') {\n      apply();\n    }",
-        ] {
-            assert_contains(&html, expected);
-        }
-}
-
-#[test]
-fn app_shell_exposes_locale_settings_translations_and_ime_guard() {
-    let html = app_shell_html();
-
-    assert_contains(&html, "leaf.localeMode");
-    assert_contains(&html, "VALID_MODES = new Set(['system', 'en', 'zh-CN'])");
-    assert_contains(&html, "root.lang = locale.resolvedLocale");
-    assert_contains(&html, "root.dataset.localeMode = locale.mode");
-    assert_contains(&html, "root.dataset.locale = locale.resolvedLocale");
-    assert_contains(&html, "let mode = normalizeMode(storage.read());");
-    assert_contains(&html, "mode = normalizeMode(nextMode);");
-    assert_contains(&html, "const TRANSLATIONS = {");
-    assert_contains(&html, "'actions.open': 'Open'");
-    assert_contains(&html, "'actions.close': 'Close file'");
-    assert_contains(&html, "'actions.open': '打开'");
-    assert_contains(&html, "'actions.close': '关闭文件'");
-    assert_contains(&html, "'settings.heading': 'Settings'");
-    assert_contains(&html, "'settings.heading': '设置'");
-    assert_contains(&html, "'settings.theme.label': 'Theme'");
-    assert_contains(&html, "'settings.theme.system': 'System'");
-    assert_contains(&html, "'settings.theme.light': 'Light'");
-    assert_contains(&html, "'settings.theme.dark': 'Dark'");
-    assert_contains(
-        &html,
-        "'errors.openFailed': 'Failed to open {path}: {reason}'",
-    );
-    assert_contains(&html, "'errors.openFailed': '无法打开 {path}：{reason}'");
-    assert_contains(&html, "TRANSLATIONS.en[key] || key");
-    assert_contains(&html, "Object.prototype.hasOwnProperty.call(values, name)");
-    assert_contains(&html, "new Intl.NumberFormat(resolveLocale(), options)");
-    assert_contains(&html, "new Intl.DateTimeFormat(resolveLocale(), options)");
-    assert_contains(
-        &html,
-        "new Intl.RelativeTimeFormat(resolveLocale(), options)",
-    );
-    assert_contains(&html, "formatFileSize(bytes)");
+    // An input method (and the emoji picker, and accented letters) sends keydown
+    // while a character is still being assembled. Acting on those keystrokes
+    // steals them from the composition, so every shortcut waits for it to end.
     assert_contains(&html, "window.addEventListener('compositionstart'");
     assert_contains(&html, "window.addEventListener('compositionupdate'");
     assert_contains(&html, "window.addEventListener('compositionend'");
     assert_contains(&html, "if (event.isComposing || composing)");
-    assert_contains(&html, "renderState();");
-    assert_contains(&html, "state.document.html");
 }
 
 #[test]
-fn app_shell_initializes_reader_state_before_locale_subscription_renders() {
-    let html = app_shell_html();
-    let state_position = html
-        .find("let currentState = { recent: [], tabs: [], active: null, document: null };")
-        .expect("app shell declares reader state");
-    let locale_subscription_position = html
-        .find("window.leafLocale.subscribe(() => {")
-        .expect("app shell subscribes to locale changes");
-
-    assert!(
-        state_position < locale_subscription_position,
-        "locale subscription renders immediately, so reader state must exist first"
-    );
-}
-
-#[test]
-fn app_shell_locale_bootstrap_keeps_initial_text_nonblank() {
+fn app_shell_markup_carries_its_own_text_before_any_script_runs() {
     let html = app_shell_html();
 
-    let subscription_position = html
-        .find("window.leafLocale.subscribe(() => {")
-        .expect("app shell subscribes to locale changes");
-    let static_text_position = html
-        .find("  renderStaticText();")
-        .expect("locale subscription refreshes static text");
-    // Anchor to the renderState() right after renderStaticText(), since other
-    // renderState() calls appear elsewhere.
-    let state_render_position = html[static_text_position..]
-        .find("  renderState();")
-        .map(|offset| static_text_position + offset)
-        .expect("locale subscription renders reader state");
+    // Every label is in the markup or in the fragment that writes it, so the
+    // first frame is never a shell of blank buttons waiting on script.
+    for expected in [
+        r#"<span class="setting-label">Theme</span>"#,
+        r#"aria-label="Open" title="Open Markdown file""#,
+        r#"<span id="settingsCheckLabel">Check for updates</span>"#,
+        "<h1>Refine your mind.</h1>",
+        "<p class=\"empty-subtitle\">Your thoughts, secure and free.</p>",
+        ">Choose file</button>",
+        "Open a file and read it in peace. It stays on your device, in plain text you own.",
+        "Files you open show up here, so you can pick up where you left off.",
+        r#"aria-label="Settings" title="Settings""#,
+    ] {
+        assert_contains(&html, expected);
+    }
+
     let initial_state_position = html
         .find("window.leafSetState(window.__leafInitialState || { recent: [], document: null });")
         .expect("app shell renders the initial empty state");
-
+    let state_declaration = html
+        .find("let currentState = { recent: [], tabs: [], active: null, document: null };")
+        .expect("app shell declares reader state");
     assert!(
-        subscription_position < static_text_position
-            && static_text_position < state_render_position
-            && state_render_position < initial_state_position,
-        "locale bootstrap must refresh shell copy before the initial empty state render"
+        state_declaration < initial_state_position,
+        "reader state must exist before the first render"
     );
-
-    for expected in [
-            "'actions.open': 'Open'",
-            "'actions.chooseFile': 'Choose file'",
-            "'actions.close': 'Close file'",
-            "'empty.description': 'Open a file and read it in peace. It stays on your device, in plain text you own.'",
-            "'empty.kicker': 'Leaf Text'",
-            "'empty.title': 'Refine your mind.'",
-            "'empty.subtitle': 'Your thoughts, secure and free.'",
-            "'empty.noRecent': 'Files you open show up here, so you can pick up where you left off.'",
-            "'settings.heading': 'Settings'",
-            "TRANSLATIONS.en[key] || key",
-        ] {
-            assert_contains(&html, expected);
-        }
 }
 
 #[test]

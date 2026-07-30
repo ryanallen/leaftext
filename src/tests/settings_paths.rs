@@ -1,40 +1,6 @@
-//! Settings, recent files, locale, the format table, and on-disk locations.
+//! Settings, recent files, the format table, and on-disk locations.
 
 use super::*;
-
-#[test]
-fn locale_modes_resolve_and_fallback_safely() {
-    assert_eq!(LocaleMode::parse("system"), Some(LocaleMode::System));
-    assert_eq!(LocaleMode::parse("en"), Some(LocaleMode::En));
-    assert_eq!(LocaleMode::parse("zh-CN"), Some(LocaleMode::ZhCn));
-    assert_eq!(LocaleMode::parse("zh-cn"), None);
-    assert_eq!(LocaleMode::parse_or_system(Some("en")), LocaleMode::En);
-    assert_eq!(
-        LocaleMode::parse_or_system(Some("not-a-locale")),
-        LocaleMode::System
-    );
-    assert_eq!(LocaleMode::parse_or_system(None), LocaleMode::System);
-    assert_eq!(LocaleMode::System.storage_value(), "system");
-    assert_eq!(LocaleMode::En.storage_value(), "en");
-    assert_eq!(LocaleMode::ZhCn.storage_value(), "zh-CN");
-    assert_eq!(
-        LocaleMode::System.resolve(Some("zh-Hans")),
-        ResolvedLocale::ZhCn
-    );
-    assert_eq!(
-        LocaleMode::System.resolve(Some("zhHans")),
-        ResolvedLocale::ZhCn
-    );
-    assert_eq!(
-        LocaleMode::System.resolve(Some("zh-TW")),
-        ResolvedLocale::ZhCn
-    );
-    assert_eq!(
-        LocaleMode::System.resolve(Some("en-US")),
-        ResolvedLocale::En
-    );
-    assert_eq!(LocaleMode::System.resolve(None).lang(), "en");
-}
 
 #[test]
 fn opening_document_records_recent_file_and_persists_it() {
@@ -376,11 +342,8 @@ fn an_unreadable_settings_file_reaches_the_page_as_a_growl() {
     assert_contains(&html, "if (window.__leafSettingsUnreadable) {");
     assert_contains(
         &html,
-        "window.leafShowError(window.leafLocale.t('errors.settingsUnreadable'));",
+        "window.leafShowError('Your settings file could not be read",
     );
-    // Both locales carry the message, so neither shows the bare key.
-    assert_contains(&html, "'errors.settingsUnreadable': 'Your settings file");
-    assert_contains(&html, "'errors.settingsUnreadable': '无法读取设置文件");
 }
 
 #[test]
@@ -562,30 +525,25 @@ fn updating_is_not_a_setting() {
     assert!(!html.contains("setAutoUpdateEnabled"));
     assert!(!html.contains("update.downloadsOff"));
 
-    // Both locale tables must carry every update string, or the button renders
-    // blank for one of them.
-    for key in [
-        "update.available",
-        "update.downloading",
-        "update.restart",
-        "update.failed",
-        "update.failedReason",
-        "update.check",
-        "update.checkTitle",
-        "update.checking",
-        "update.upToDate",
-        "update.lastChecked",
-        "update.checkedNow",
-        "update.checkFailed",
-        "update.applyFailed",
-        "update.httpError",
-        "update.noInstaller",
+    // Every state the update button can report has wording, or it renders blank.
+    for wording in [
+        "`Update to v${version}`",
+        "`Downloading v${version}… ${percent}%`",
+        "'Restart to update'",
+        "const UPDATE_FAILED = 'Update failed — open release page';",
+        "`Update failed: ${message}`",
+        "'Check for updates'",
+        "'Ask GitHub for the latest release now'",
+        "'Checking…'",
+        "'Up to date.'",
+        "`Last checked ${ago}.`",
+        "'Checked just now.'",
+        "`Could not reach GitHub: ${message || ''}`",
+        "`Installing v${updateApplyFailure.version} failed:",
+        "`GitHub answered ${res.status}`",
+        "This release publishes no installer for this platform",
     ] {
-        assert_eq!(
-            html.matches(&format!("'{key}':")).count(),
-            2,
-            "{key} is missing from a locale table"
-        );
+        assert_contains(&html, wording);
     }
 }
 
@@ -598,7 +556,7 @@ fn the_settings_panel_can_check_for_updates_on_demand() {
     // before the first answer.
     let html = app_shell_html();
     assert!(html.contains(r#"<button type="button" class="settings-check" id="settingsCheck">"#));
-    assert!(html.contains(r#"id="settingsCheckLabel" data-i18n="update.check""#));
+    assert!(html.contains(r#"<span id="settingsCheckLabel">Check for updates</span>"#));
     // No separate status line to fall back to, so the error color lives here.
     assert!(reading_mode_css().contains(".settings-check.is-error"));
     // The download's progress signals: a spinner and a fill behind the label.
@@ -617,12 +575,7 @@ fn the_settings_panel_can_check_for_updates_on_demand() {
 fn the_settings_panel_shows_the_running_version() {
     let html = app_shell_html();
     assert!(html.contains(r#"<span class="settings-version-number" id="settingsVersion">"#));
-    assert!(html.contains(r#"data-i18n="settings.version""#));
-    assert_eq!(
-        html.matches("'settings.version':").count(),
-        2,
-        "settings.version is missing from a locale table"
-    );
+    assert!(html.contains("<span>Version</span>"));
     // The number itself comes from the init script, not the markup.
     assert!(initial_version_script().contains(env!("CARGO_PKG_VERSION")));
 }

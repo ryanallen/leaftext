@@ -153,73 +153,6 @@ impl ThemeMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum LocaleMode {
-    System,
-    En,
-    ZhCn,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum ResolvedLocale {
-    En,
-    ZhCn,
-}
-
-impl LocaleMode {
-    pub fn parse(value: &str) -> Option<Self> {
-        match value {
-            "system" => Some(Self::System),
-            "en" => Some(Self::En),
-            "zh-CN" => Some(Self::ZhCn),
-            _ => None,
-        }
-    }
-
-    pub fn parse_or_system(value: Option<&str>) -> Self {
-        value.and_then(Self::parse).unwrap_or(Self::System)
-    }
-
-    pub fn storage_value(self) -> &'static str {
-        match self {
-            Self::System => "system",
-            Self::En => "en",
-            Self::ZhCn => "zh-CN",
-        }
-    }
-
-    pub fn resolve(self, system_language: Option<&str>) -> ResolvedLocale {
-        match self {
-            Self::En => ResolvedLocale::En,
-            Self::ZhCn => ResolvedLocale::ZhCn,
-            Self::System => resolve_system_locale(system_language),
-        }
-    }
-}
-
-impl ResolvedLocale {
-    pub fn lang(self) -> &'static str {
-        match self {
-            Self::En => "en",
-            Self::ZhCn => "zh-CN",
-        }
-    }
-}
-
-pub fn resolve_system_locale(system_language: Option<&str>) -> ResolvedLocale {
-    let language = system_language
-        .unwrap_or_default()
-        .trim()
-        .to_ascii_lowercase();
-    if language.starts_with("zh") {
-        ResolvedLocale::ZhCn
-    } else {
-        ResolvedLocale::En
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct OpenedDocument {
     pub title: String,
@@ -814,7 +747,6 @@ pub fn app_shell_html() -> String {
     APP_SHELL_HTML
         .replace("{{APP_SCRIPT}}", app_shell_script())
         .replace("{{THEME_BOOTSTRAP_SCRIPT}}", &theme_bootstrap_script())
-        .replace("{{LOCALE_BOOTSTRAP_SCRIPT}}", locale_bootstrap_script())
         .replace("{{APP_CSS_URL}}", &bundled_asset_url("app.css"))
         .replace("{{THEME_ITEMS}}", &theme_items_html())
         .replace(
@@ -940,9 +872,9 @@ fn theme_items_html() -> String {
         .collect();
     // "Random" is not a real family: it's a preference the bootstrap resolves to a
     // concrete family at each launch, cycling through every family without repeat
-    // before resetting. Appended after the families; localized via data-i18n.
+    // before resetting. Appended after the families.
     items.push_str(
-        &format!("<li><button type=\"button\" class=\"theme-item theme-item-random\" data-family=\"random\" aria-pressed=\"false\"><span class=\"theme-item-name\" data-i18n=\"settings.theme.family.random\">Random</span>{THEME_ITEM_CHECK_SVG}</button></li>"),
+        &format!("<li><button type=\"button\" class=\"theme-item theme-item-random\" data-family=\"random\" aria-pressed=\"false\"><span class=\"theme-item-name\">Random</span>{THEME_ITEM_CHECK_SVG}</button></li>"),
     );
     items
 }
@@ -956,12 +888,6 @@ fn theme_bootstrap_script() -> String {
     THEME_BOOTSTRAP_JS
         .replace("{{VALID_FAMILIES}}", &theme_family_ids_json())
         .replace("{{FAMILY_FONTS}}", &theme_web_font_hrefs_json())
-}
-
-fn locale_bootstrap_script() -> &'static str {
-    // Carries the whole en/zh-CN string table. An asset file rather than a Rust
-    // literal so a translator edits JavaScript instead of a raw string.
-    include_str!("assets/locale-bootstrap.js")
 }
 
 /// Reverse-DNS app id, and the two halves it is built from. macOS names the

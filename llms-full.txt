@@ -30,7 +30,7 @@
 ## Settings
 - Page: https://leaftext.com/docs/#/features/settings
 - Markdown: https://leaftext.com/docs/01-features/05-settings.md
-- Summary: Most settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView. The one exception is the interface language...
+- Summary: Settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView.
 
 ## Themes
 - Page: https://leaftext.com/docs/#/features/themes

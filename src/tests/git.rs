@@ -94,7 +94,7 @@ fn a_vault_name_becomes_something_github_will_accept() {
     assert_eq!(repo_name_for_vault("  notes // 2026!  "), "notes-2026");
     assert_eq!(repo_name_for_vault("dots.and_bars"), "dots.and_bars");
     // A name with nothing usable in it still has to produce a name.
-    assert_eq!(repo_name_for_vault("经文"), "vault");
+    assert_eq!(repo_name_for_vault("κείμενο"), "vault");
     assert_eq!(repo_name_for_vault(""), "vault");
 }
 

@@ -36,7 +36,7 @@ fn app_shell_builds_collapsed_heading_outline_under_the_title() {
     // as a bulleted list (numbers overflow the panel on deep documents) that
     // links each heading by its slug id.
     assert_contains(&html, "details.className = 'document-outline';");
-    assert_contains(&html, "summaryLabel.dataset.i18n = 'outline.title';");
+    assert_contains(&html, "summaryLabel.textContent = 'Outline';");
     assert_contains(&html, "const rootList = document.createElement('ul');");
     assert!(!html.contains("const rootList = document.createElement('ol');"));
     assert_contains(&html, "link.className = 'document-outline-link';");
@@ -45,10 +45,7 @@ fn app_shell_builds_collapsed_heading_outline_under_the_title() {
     // every block on the way to the total.
     assert_contains(&html, "summaryCount.className = 'document-outline-count';");
     assert_contains(&html, "function documentLineCount(body) {");
-    assert_contains(
-        &html,
-        "window.leafLocale.t('outline.lineCount', { count: documentLineCount(body) })",
-    );
+    assert_contains(&html, "`(${formatCount(documentLineCount(body))} lines)`");
     // The (potentially ~25k-entry) list is built lazily, only when the reader
     // first expands the outline — not at every document render.
     assert_contains(&html, "function populateDocumentOutline(details, rest) {");
@@ -59,11 +56,8 @@ fn app_shell_builds_collapsed_heading_outline_under_the_title() {
     );
     // The outline never opens on its own — closed until the reader expands it.
     assert!(!html.contains("details.open = true"));
-    // Localized label and line-count suffix present in both shipped languages.
-    assert_contains(&html, "'outline.title': 'Outline'");
-    assert_contains(&html, "'outline.title': '大纲'");
-    assert_contains(&html, "'outline.lineCount': '({count} lines)'");
-    assert_contains(&html, "'outline.lineCount': '（{count} 行）'");
+    // The label and the line-count suffix are both present.
+    assert_contains(&html, "summaryLabel.textContent = 'Outline';");
 }
 
 #[test]
@@ -76,7 +70,7 @@ fn app_shell_renders_interactive_document_minimap() {
             "document-minimap-track",
             "document-minimap-content",
             "document-minimap-viewport",
-            "window.leafLocale.t('minimap.aria')",
+            "aria-label=\"Document minimap\"",
             "aria-hidden=\"true\"><div class=\"document-minimap-content\" aria-hidden=\"true\"></div><div class=\"document-minimap-spinner\" aria-hidden=\"true\"></div><div class=\"document-minimap-viewport\" aria-hidden=\"true\"",
             "bindDocumentMinimap();",
             "function bindDocumentMinimap() {",
@@ -775,15 +769,9 @@ fn code_blocks_get_a_copy_button() {
     assert!(css.contains(".document-body pre > .code-copy {"));
     assert!(css.contains(".code-copy.is-copied .code-copy-check {"));
 
-    // Labels exist in both dictionaries.
-    for key in ["actions.copyCode", "actions.copiedCode"] {
-        let needle = format!("'{key}':");
-        let count = html.matches(&needle).count();
-        assert!(
-            count >= 2,
-            "expected EN + ZH-CN entries for {key}, found {count}"
-        );
-    }
+    // Both labels the button swaps between are present.
+    assert!(html.contains("setCodeCopyLabel(button, 'Copy code');"));
+    assert!(html.contains("setCodeCopyLabel(button, 'Copied');"));
 }
 
 #[test]

@@ -241,8 +241,8 @@
   --leaf-shadow-sheet: 0 -10px 40px rgba(0, 0, 0, 0.5);
   --leaf-shadow-tooltip: 0 10px 24px rgba(0, 0, 0, 0.35);
   --heading-font: "Noto Serif", Georgia, Cambria, "Times New Roman", serif;
-  --app-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Microsoft YaHei UI", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "Microsoft YaHei UI", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --app-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --code-font: "Noto Sans Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
 }
 * {
@@ -262,12 +262,6 @@ body {
 ::selection {
   background: var(--app-selection-background);
   color: var(--app-selection-foreground);
-}
-/* Per-family fonts are emitted by the theme compiler (from themes.md) above.
-   This locale rule follows them so a Chinese reader's CJK reading font still wins
-   (equal specificity to the family rule, later in the sheet). */
-:root[data-locale="zh-CN"] {
-  --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
 :root[data-theme="dark"] {
   /* Dark themes use a darker grain so the surface reads
@@ -2439,9 +2433,6 @@ body:has(#readerToolbar:not([hidden])) {
   line-height: var(--type-body-line);
   word-wrap: break-word;
   word-break: normal;
-}
-:root[data-locale="zh-CN"] .document-body {
-  line-height: var(--type-body-line);
 }
 /* The reader lays the whole document out up front (like the web reader), which
    keeps scrolling smooth: content-visibility skipping made off-screen blocks

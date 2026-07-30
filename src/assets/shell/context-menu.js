@@ -8,18 +8,18 @@ document.body.appendChild(contextMenu);
 let contextMenuPath = null;
 const isMacPlatform = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
 const CONTEXT_MENU_ITEMS = [
-  { action: 'open', labelKey: 'actions.open' },
+  { action: 'open', label: 'Open' },
   'separator',
-  { action: 'cut', labelKey: 'actions.cut' },
-  { action: 'copy', labelKey: 'actions.copy' },
-  { action: 'copyPath', labelKey: 'actions.copyPath' },
+  { action: 'cut', label: 'Cut' },
+  { action: 'copy', label: 'Copy' },
+  { action: 'copyPath', label: 'Copy path' },
   'separator',
-  { action: 'rename', labelKey: 'actions.rename' },
+  { action: 'rename', label: 'Rename' },
   'separator',
-  { action: 'reveal', labelKey: 'actions.revealFile' },
-  { action: 'properties', labelKey: isMacPlatform ? 'actions.getInfo' : 'actions.properties' },
+  { action: 'reveal', label: 'Reveal file' },
+  { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties' },
   'separator',
-  { action: 'delete', labelKey: 'actions.delete', danger: true },
+  { action: 'delete', label: 'Delete', danger: true },
 ];
 function hideContextMenu() {
   if (contextMenu.hidden) {
@@ -54,7 +54,7 @@ function buildContextMenu() {
     item.type = 'button';
     item.className = 'context-menu-item' + (entry.danger ? ' is-danger' : '');
     item.setAttribute('role', 'menuitem');
-    item.textContent = window.leafLocale.t(entry.labelKey);
+    item.textContent = entry.label;
     item.addEventListener('click', () => {
       const path = contextMenuPath;
       hideContextMenu();

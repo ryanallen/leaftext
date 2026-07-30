@@ -48,7 +48,7 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
     assert_contains(&html, r#"id="themeSheetGrid""#);
     assert!(!html.contains(r#"id="themeMode""#));
     assert!(!html.contains(r#"id="themeFamily""#));
-    assert_contains(&html, "settings.theme.");
+    assert_contains(&html, "const THEME_MODE_NAMES = { system: 'System', light: 'Light', dark: 'Dark', daylight: 'Daylight' };");
     // Every registered family is a pickable card in the selector sheet (name in a
     // span, with the selected-state check badge).
     for (family, name) in theme_families() {
@@ -59,12 +59,12 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
             ),
         );
     }
-    // Plus the special "Random" preference, localized via data-i18n on the name
+    // Plus the special "Random" preference
     // span (not the button, so localization can't wipe the check SVG). It is not a
     // real family, so it never appears in theme_families()/the font map/the CSS.
     assert_contains(
         &html,
-        r#"<button type="button" class="theme-item theme-item-random" data-family="random" aria-pressed="false"><span class="theme-item-name" data-i18n="settings.theme.family.random">Random</span>"#,
+        r#"<button type="button" class="theme-item theme-item-random" data-family="random" aria-pressed="false"><span class="theme-item-name">Random</span>"#,
     );
     assert!(!theme_families().iter().any(|(id, _)| *id == "random"));
     // Palettes are data-only token maps, not free-form author CSS.

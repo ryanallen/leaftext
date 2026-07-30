@@ -15,6 +15,8 @@ function isNewerVersion(candidate, current) {
   return false;
 }
 const RELEASES_PAGE = 'https://github.com/ryanallen/leaftext/releases/latest';
+// Said in two places — the check button and the update button — so it is written once.
+const UPDATE_FAILED = 'Update failed — open release page';
 const UPDATE_ASSET_SUFFIX = typeof window.__leafUpdateAsset === 'string' ? window.__leafUpdateAsset : '';
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
@@ -60,11 +62,11 @@ function formatCheckedAgo(when) {
   const units = [['day', 86400], ['hour', 3600], ['minute', 60]];
   for (const [unit, size] of units) {
     if (seconds >= size) {
-      const ago = window.leafLocale.formatRelativeTime(-Math.floor(seconds / size), unit);
-      return window.leafLocale.t('update.lastChecked', { when: ago });
+      const ago = new Intl.RelativeTimeFormat('en-US').format(-Math.floor(seconds / size), unit);
+      return `Last checked ${ago}.`;
     }
   }
-  return window.leafLocale.t('update.checkedNow');
+  return 'Checked just now.';
 }
 
 // What the last attempt actually said — this is the check button's label.
@@ -73,21 +75,16 @@ function updateNoteText() {
   // This attempt's own failure first, then the last install's — a fresh error
   // must not be masked by a stale one.
   if (status === 'checkFailed') {
-    return window.leafLocale.t('update.checkFailed', { message: message || '' }).trim();
+    return `Could not reach GitHub: ${message || ''}`.trim();
   }
   if (status === 'failed') {
-    return message
-      ? window.leafLocale.t('update.failedReason', { message })
-      : window.leafLocale.t('update.failed');
+    return message ? `Update failed: ${message}` : UPDATE_FAILED;
   }
   if (updateApplyFailure) {
-    return window.leafLocale.t('update.applyFailed', {
-      version: updateApplyFailure.version,
-      message: updateApplyFailure.message,
-    });
+    return `Installing v${updateApplyFailure.version} failed: ${updateApplyFailure.message}`;
   }
   if (status === 'available' && message) return message;
-  if (status === 'upToDate') return window.leafLocale.t('update.upToDate');
+  if (status === 'upToDate') return 'Up to date.';
   if (checkedAt) return formatCheckedAgo(checkedAt);
   return '';
 }
@@ -111,13 +108,13 @@ function renderUpdateButton() {
   settingsUpdate.classList.toggle('is-failed', status === 'failed');
   if (news) {
     const labels = {
-      available: () => window.leafLocale.t('update.available', { version }),
-      downloading: () => window.leafLocale.t('update.downloading', { version, percent }),
-      staged: () => window.leafLocale.t('update.restart', { version }),
-      failed: () => window.leafLocale.t('update.failed'),
+      available: () => `Update to v${version}`,
+      downloading: () => `Downloading v${version}… ${percent}%`,
+      staged: () => 'Restart to update',
+      failed: () => UPDATE_FAILED,
     };
     (settingsUpdateLabel || settingsUpdate).textContent = (labels[status] || labels.available)();
-    settingsUpdate.title = updateState.message || window.leafLocale.t('update.title');
+    settingsUpdate.title = updateState.message || 'A new version is available';
     if (settingsUpdateSpinner) settingsUpdateSpinner.hidden = status !== 'downloading';
     if (settingsUpdateFill) {
       settingsUpdateFill.style.width = status === 'downloading' ? `${percent}%` : '0';
@@ -135,7 +132,7 @@ function renderUpdateButton() {
   // Before the first answer it names what clicking does instead.
   if (settingsCheck) {
     settingsCheck.disabled = busy;
-    settingsCheck.title = window.leafLocale.t('update.checkTitle');
+    settingsCheck.title = 'Ask GitHub for the latest release now';
     settingsCheck.classList.toggle(
       'is-error',
       Boolean(updateApplyFailure) || status === 'failed' || status === 'checkFailed',
@@ -143,8 +140,8 @@ function renderUpdateButton() {
   }
   if (settingsCheckLabel) {
     settingsCheckLabel.textContent = busy
-      ? window.leafLocale.t('update.checking')
-      : updateNoteText() || window.leafLocale.t('update.check');
+      ? 'Checking…'
+      : updateNoteText() || 'Check for updates';
   }
   if (settingsCheckSpinner) settingsCheckSpinner.hidden = !busy;
 }
@@ -216,7 +213,7 @@ async function checkForUpdate(force) {
       cache: 'no-store',
       headers: { Accept: 'application/vnd.github+json' },
     });
-    if (!res.ok) throw new Error(window.leafLocale.t('update.httpError', { status: res.status }));
+    if (!res.ok) throw new Error(`GitHub answered ${res.status}`);
     const data = await res.json();
     const tag = data && data.tag_name;
     const newer = Boolean(tag) && isNewerVersion(tag, LEAF_VERSION);
@@ -241,7 +238,7 @@ async function checkForUpdate(force) {
         version,
         url,
         checkedAt: Date.now(),
-        message: window.leafLocale.t('update.noInstaller'),
+        message: 'This release publishes no installer for this platform — the button opens the release page.',
       });
       return;
     }

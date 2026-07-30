@@ -42,21 +42,20 @@ function renderLibrarySearch() {
     return;
   }
   if (librarySearchError) {
-    const message = (librarySearchError && librarySearchError.message) || window.leafLocale.t('library.search.error');
+    const message = (librarySearchError && librarySearchError.message) || 'Search failed.';
     librarySearchResults.innerHTML = `<p class="library-empty">${escapeText(message)}</p>`;
     return;
   }
   if (librarySearchLoading && !librarySearchHits) {
-    librarySearchResults.innerHTML = `<p class="library-empty">${escapeText(window.leafLocale.t('library.search.loading'))}</p>`;
+    librarySearchResults.innerHTML = `<p class="library-empty">Searching…</p>`;
     return;
   }
   const hits = librarySearchHits || [];
   if (!hits.length) {
-    librarySearchResults.innerHTML = `<p class="library-empty">${escapeText(window.leafLocale.t('library.search.noResults'))}</p>`;
+    librarySearchResults.innerHTML = `<p class="library-empty">No matches.</p>`;
     return;
   }
-  const count = window.leafLocale.formatNumber(hits.length);
-  const countLine = `<p class="library-results-count">${escapeText(window.leafLocale.t('library.search.count', { count }))}</p>`;
+  const countLine = `<p class="library-results-count">${escapeText(formatCount(hits.length))} results</p>`;
   librarySearchResults.innerHTML = countLine + hits.map(searchHitHtml).join('');
   bindSearchHits();
 }

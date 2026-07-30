@@ -166,10 +166,5 @@ fn the_file_list_starts_with_a_way_back_out() {
     // render alongside the empty notice.
     assert!(html.contains("libraryTree.innerHTML = renderProject(libraryEntries)\n      + `<p class=\"library-empty\">"));
 
-    let needle = "'library.up':";
-    let count = html.matches(needle).count();
-    assert!(
-        count >= 2,
-        "expected EN + ZH-CN entries for library.up, found {count}"
-    );
+    assert!(html.contains("const label = `Back to ${parent.name}`;"));
 }

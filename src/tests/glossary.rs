@@ -126,7 +126,7 @@ fn app_shell_raises_a_spinner_when_a_glossary_link_is_followed() {
     assert_contains(&html, "spinner.className = 'glossary-sheet-spinner';");
     // Neither an answer that never comes nor one the user stopped waiting for
     // may leave the sheet spinning.
-    assert_contains(&html, "glossarySheetMessage('glossary.failed');");
+    assert_contains(&html, "glossarySheetMessage(GLOSSARY_FAILED);");
     assert_contains(&html, "if (!glossaryWaiting) return;");
     assert_contains(&html, "window.leafGlossaryFailed = (reason) => {");
 
