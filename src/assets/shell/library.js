@@ -254,12 +254,27 @@ function renderProject(entries) {
   if (parent) rows.push(upRowHtml(parent));
   for (const node of entries || []) {
     if (node.kind === 'folder') {
-      rows.push(`<button type="button" class="library-nav-folder" data-nav-into="${escapeAttr(node.path)}" title="${escapeAttr(node.name)}">${FOLDER_ICON_SVG}<span class="library-file-label">${escapeText(node.name)}</span><span class="library-nav-chevron" aria-hidden="true">›</span></button>`);
+      // A folder row carries data-reveal-path so the right-click menu reaches it —
+      // before this, a folder was the one row in the pane with no menu at all.
+      rows.push(`<button type="button" class="library-nav-folder" data-nav-into="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" data-folder-path="${escapeAttr(node.path)}" title="${escapeAttr(node.name)}">${FOLDER_ICON_SVG}<span class="library-file-label">${escapeText(node.name)}</span><span class="library-nav-chevron" aria-hidden="true">›</span></button>`);
     } else {
       rows.push(fileRowHtml(node));
     }
   }
   return `<div class="library-project">${rows.join('')}</div>`;
+}
+// A browse path as somewhere on disk. Inside a vault the top level is browsed as
+// '' — a stand-in the host resolves — but paste and drop need a real folder, so that
+// resolves to the vault's own root. Outside a vault the top is the list of drive
+// roots, which is not a folder, and stays empty.
+function realFolderPath(browsePath) {
+  if (browsePath) return browsePath;
+  const vault = activeVault();
+  return (vault && vault.rootPath) || '';
+}
+// The real folder the pane is showing.
+function libraryFolderHere() {
+  return realFolderPath(libraryProjectPath);
 }
 // Enter a folder (or, from a crumb, step back out to one). '' is the top: the
 // active vault's folder, or the drive roots. The host reads it and calls back —
@@ -269,6 +284,12 @@ function setLibraryFolder(path) {
   persistLibraryState();
   send({ command: 'getFolder', path: libraryProjectPath });
 }
+// Read the current folder again, keeping where you are. The host calls this after
+// it changes what is in a folder — a paste, a delete, a rename — so the pane shows
+// the result of what you just did instead of waiting on the watcher.
+window.leafRefreshLibraryFolder = () => {
+  send({ command: 'getFolder', path: libraryProjectPath });
+};
 function bindLibraryRows() {
   libraryTree.querySelectorAll('[data-open-path]').forEach((button) => {
     button.addEventListener('click', () => {

@@ -41,7 +41,11 @@ impl Tab {
 
     /// The edit buffer for `path`, seeded from `contents` when there's no buffer
     /// yet. Re-editing the same document reuses it; a different document replaces it.
-    pub(crate) fn edit_buffer(&mut self, path: &Path, contents: String) -> &mut EditableDocument {
+    pub(crate) fn edit_buffer(
+        &mut self,
+        path: &Path,
+        contents: SourceText,
+    ) -> &mut EditableDocument {
         if self.needs_edit_seed(path) {
             self.edit = Some(EditableDocument::new(path.to_path_buf(), contents));
         }

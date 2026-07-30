@@ -1,11 +1,16 @@
-// Right-click menu for library file rows, acting on the row's path. Groups:
-// open, clipboard, rename, locate, and destructive delete last.
+// Right-click menu for the library pane and the tab bar, acting on whatever the
+// pointer is over: a file, a folder, or the folder you are browsing when it is over
+// none of them. Groups: open, clipboard, rename, locate, and destructive delete
+// last.
 const contextMenu = document.createElement('div');
 contextMenu.className = 'context-menu';
 contextMenu.hidden = true;
 contextMenu.setAttribute('role', 'menu');
 document.body.appendChild(contextMenu);
 let contextMenuPath = null;
+// What was right-clicked: 'file', 'folder', or 'here' (the pane's empty space,
+// standing for the folder being browsed). It picks which list of items to show.
+let contextMenuTargetKind = 'file';
 const isMacPlatform = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
 const CONTEXT_MENU_ITEMS = [
   { action: 'open', label: 'Open' },
@@ -21,6 +26,19 @@ const CONTEXT_MENU_ITEMS = [
   'separator',
   { action: 'delete', label: 'Delete', danger: true },
 ];
+// A folder, or the empty space in the pane, which stands for the folder you are
+// browsing. No Copy path for a place you can't open as a document; Paste is the
+// item this menu exists for.
+const FOLDER_MENU_ITEMS = [
+  { action: 'openFolder', label: 'Open folder', folderOnly: true },
+  'separator',
+  { action: 'paste', label: 'Paste' },
+  'separator',
+  // "Reveal folder" beside the file menu's "Reveal file" — one verb for the one
+  // action, rather than naming the file manager on each platform.
+  { action: 'reveal', label: 'Reveal folder' },
+  { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties' },
+];
 function hideContextMenu() {
   if (contextMenu.hidden) {
     return;
@@ -28,11 +46,31 @@ function hideContextMenu() {
   contextMenu.hidden = true;
   contextMenuPath = null;
 }
+// What Cut or Copy last put down, so Paste has something to act on. The page holds
+// it because the page is where it was chosen; it is not the system clipboard, so
+// pasting here moves what you cut *here*, and a file copied in Explorer is not it.
+let libraryTransfer = null;
 function runContextAction(action, path) {
   switch (action) {
     case 'open': send({ command: 'openRecent', path }); break;
-    case 'cut': send({ command: 'copyFile', path, cut: true }); break;
-    case 'copy': send({ command: 'copyFile', path, cut: false }); break;
+    case 'openFolder': setLibraryFolder(path); break;
+    case 'cut':
+      libraryTransfer = { path, cut: true };
+      send({ command: 'copyFile', path, cut: true });
+      break;
+    case 'copy':
+      libraryTransfer = { path, cut: false };
+      send({ command: 'copyFile', path, cut: false });
+      break;
+    case 'paste': {
+      // The cut file is consumed; a copied one can be pasted again, the way every
+      // other file manager behaves.
+      const transfer = libraryTransfer;
+      if (!transfer) break;
+      if (transfer.cut) libraryTransfer = null;
+      send({ command: 'pasteFile', path: transfer.path, intoFolder: path, cut: transfer.cut });
+      break;
+    }
     case 'copyPath': send({ command: 'copyPath', path }); break;
     case 'reveal': send({ command: 'revealFile', path }); break;
     case 'properties': send({ command: 'showProperties', path }); break;
@@ -40,9 +78,40 @@ function runContextAction(action, path) {
     case 'rename': openRenameBox(path); break;
   }
 }
+// The list this menu should show for what was right-clicked. Items that would do
+// nothing are left out rather than shown dead: Paste with nothing cut, or Open
+// folder over the folder you are already in.
+function contextMenuEntries() {
+  const entries =
+    contextMenuTargetKind === 'file' ? CONTEXT_MENU_ITEMS : FOLDER_MENU_ITEMS;
+  return tidySeparators(
+    entries.filter((entry) => {
+      if (entry === 'separator') return true;
+      if (entry.action === 'paste') return !!libraryTransfer;
+      if (entry.folderOnly) return contextMenuTargetKind === 'folder';
+      return true;
+    })
+  );
+}
+// A separator divides two groups, so one with nothing above it divides nothing —
+// which is the rule dropping an item can break. Removing an item can leave a line
+// at the top, at the bottom, or two in a row; none of those is a divider.
+function tidySeparators(entries) {
+  const kept = [];
+  for (const entry of entries) {
+    if (entry !== 'separator') {
+      kept.push(entry);
+      continue;
+    }
+    if (kept.length && kept[kept.length - 1] !== 'separator') kept.push(entry);
+  }
+  while (kept.length && kept[kept.length - 1] === 'separator') kept.pop();
+  return kept;
+}
 function buildContextMenu() {
   contextMenu.textContent = '';
-  for (const entry of CONTEXT_MENU_ITEMS) {
+  const entries = contextMenuEntries();
+  for (const entry of entries) {
     if (entry === 'separator') {
       const sep = document.createElement('div');
       sep.className = 'context-menu-separator';
@@ -58,37 +127,62 @@ function buildContextMenu() {
     item.addEventListener('click', () => {
       const path = contextMenuPath;
       hideContextMenu();
-      if (path) {
-        runContextAction(entry.action, path);
-      }
+      if (path) runContextAction(entry.action, path);
     });
     contextMenu.appendChild(item);
   }
 }
-function showContextMenu(x, y, path) {
-  if (!path) {
-    return;
-  }
-  contextMenuPath = path;
-  buildContextMenu();
+
+function clampContextMenu(x, y) {
   contextMenu.hidden = false;
   const left = Math.max(8, Math.min(x, window.innerWidth - contextMenu.offsetWidth - 8));
   const top = Math.max(8, Math.min(y, window.innerHeight - contextMenu.offsetHeight - 8));
   contextMenu.style.left = left + 'px';
   contextMenu.style.top = top + 'px';
+}
+function showContextMenu(x, y, path, kind) {
+  // An empty path is the library's own top — the drive roots, or a vault's folder
+  // seen from outside it — which is not a folder anything can be pasted into. A
+  // folder row inside it still is, and still has its menu.
+  if (!path) {
+    return;
+  }
+  contextMenuPath = path;
+  contextMenuTargetKind = kind || 'file';
+  // Nothing to offer — an empty pane with nothing cut — so no empty box either.
+  if (!contextMenuEntries().some((entry) => entry !== 'separator')) {
+    return;
+  }
+  buildContextMenu();
+  clampContextMenu(x, y);
   const first = contextMenu.querySelector('.context-menu-item');
   if (first) {
     first.focus();
   }
 }
 document.addEventListener('contextmenu', (event) => {
-  const target = event.target.closest('[data-reveal-path]');
-  if (target) {
+  // Closest wins, so a folder row inside the pane beats the pane itself, and the
+  // pane only answers where no row did — which is exactly the empty space below
+  // the last row.
+  const row = event.target.closest('[data-reveal-path]');
+  if (row) {
     event.preventDefault();
-    showContextMenu(event.clientX, event.clientY, target.getAttribute('data-reveal-path'));
-  } else {
-    hideContextMenu();
+    const kind = row.hasAttribute('data-folder-path') ? 'folder' : 'file';
+    showContextMenu(event.clientX, event.clientY, row.getAttribute('data-reveal-path'), kind);
+    return;
   }
+  // Anywhere else in the pane's scrolling area means the folder being browsed. It is
+  // the scroll box and not the row list because the list is only as tall as its
+  // rows, and the space below them is most of the pane in a small folder. It is the
+  // scroll box and not the whole pane so the search field keeps its own menu, which
+  // is the one with Paste for text in it.
+  const editable = event.target.closest('input, textarea, [contenteditable="true"]');
+  if (!editable && event.target.closest('.library-scroll')) {
+    event.preventDefault();
+    showContextMenu(event.clientX, event.clientY, libraryFolderHere(), 'here');
+    return;
+  }
+  hideContextMenu();
 });
 // On macOS a Control+click also emits a trailing left-click (ctrlKey still set)
 // that would reach the dismiss handler and close the menu instantly. Swallow it

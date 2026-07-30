@@ -461,7 +461,8 @@ fn edit_buffer_belongs_to_one_document_and_reseeds_after_navigation() {
 
     // Editing the first document creates its buffer.
     assert!(tab.needs_edit_seed(&first));
-    tab.edit_buffer(&first, "# A\n".to_string()).toggle_task(0);
+    tab.edit_buffer(&first, SourceText::utf8("# A\n".to_string()))
+        .toggle_task(0);
     assert!(tab.has_edit_for(&first));
     assert!(!tab.needs_edit_seed(&first));
 
@@ -470,16 +471,16 @@ fn edit_buffer_belongs_to_one_document_and_reseeds_after_navigation() {
     // page), and editing b.md must re-seed from b's contents.
     assert!(!tab.has_edit_for(&second));
     assert!(tab.needs_edit_seed(&second));
-    let edit = tab.edit_buffer(&second, "# B\n".to_string());
+    let edit = tab.edit_buffer(&second, SourceText::utf8("# B\n".to_string()));
     assert_eq!(edit.text(), "# B\n");
     assert!(tab.has_edit_for(&second));
     assert!(!tab.has_edit_for(&first));
 
     // Re-editing the same document reuses the buffer (unsaved edits kept).
-    let edit = tab.edit_buffer(&second, String::new());
+    let edit = tab.edit_buffer(&second, SourceText::utf8(String::new()));
     edit.replace_range(2, 3, "Bee");
     assert_eq!(edit.text(), "# Bee\n");
-    let edit = tab.edit_buffer(&second, String::new());
+    let edit = tab.edit_buffer(&second, SourceText::utf8(String::new()));
     assert_eq!(edit.text(), "# Bee\n");
 }
 
@@ -637,7 +638,10 @@ fn a_watch_event_for_unchanged_content_is_not_a_reload() {
 body
 "
     .to_string();
-    let mut edit = EditableDocument::new(PathBuf::from("notes.md"), contents.clone());
+    let mut edit = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8(contents.clone()),
+    );
 
     assert!(
         buffer_already_shows(Some(&edit), &contents),
@@ -663,4 +667,116 @@ changed
     edit.replace_range(2, 7, "Other");
     assert!(edit.is_dirty());
     assert!(!buffer_already_shows(Some(&edit), &contents));
+}
+
+/// A scratch folder for the transfer tests, named per test so they can run at once.
+fn transfer_fixture(label: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!(
+        "leaf-transfer-{label}-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    ));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    dir
+}
+
+#[test]
+fn a_cut_file_pasted_into_a_folder_moves_there() {
+    let dir = transfer_fixture("move");
+    let note = dir.join("note.md");
+    let folder = dir.join("archive");
+    fs::create_dir_all(&folder).expect("destination is created");
+    fs::write(&note, "# Note\n").expect("fixture is written");
+
+    let landed = transfer_into_folder(&note, &folder, true).expect("the move succeeds");
+    assert_eq!(landed, folder.join("note.md"));
+    assert!(!note.exists(), "the original is gone — this was a move");
+    assert_eq!(
+        fs::read_to_string(&landed).expect("the moved file is readable"),
+        "# Note\n"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_pasted_copy_leaves_the_original_where_it_was() {
+    let dir = transfer_fixture("copy");
+    let note = dir.join("note.md");
+    let folder = dir.join("archive");
+    fs::create_dir_all(&folder).expect("destination is created");
+    fs::write(&note, "# Note\n").expect("fixture is written");
+
+    let landed = transfer_into_folder(&note, &folder, false).expect("the copy succeeds");
+    assert!(note.exists(), "a copy keeps the original");
+    assert!(landed.exists());
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_transfer_never_overwrites_what_is_already_there() {
+    // The one outcome that would lose someone's work. Refusing is the whole point.
+    let dir = transfer_fixture("collide");
+    let note = dir.join("note.md");
+    let folder = dir.join("archive");
+    fs::create_dir_all(&folder).expect("destination is created");
+    fs::write(&note, "# Mine\n").expect("fixture is written");
+    fs::write(folder.join("note.md"), "# Theirs\n").expect("occupant is written");
+
+    let error = transfer_into_folder(&note, &folder, true).expect_err("the move is refused");
+    assert_eq!(error.kind(), io::ErrorKind::AlreadyExists);
+    assert!(
+        error.to_string().contains("note.md"),
+        "the message should name what collided, got: {error}"
+    );
+    assert_eq!(
+        fs::read_to_string(folder.join("note.md")).expect("the occupant is readable"),
+        "# Theirs\n",
+        "and the file that was already there is untouched"
+    );
+    assert!(note.exists(), "as is the one that was refused");
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_folder_cannot_be_put_inside_itself() {
+    let dir = transfer_fixture("recursive");
+    let outer = dir.join("outer");
+    let inner = outer.join("inner");
+    fs::create_dir_all(&inner).expect("fixture tree is created");
+
+    assert!(
+        transfer_into_folder(&outer, &inner, true).is_err(),
+        "moving a folder into its own child would consume it"
+    );
+    assert!(inner.exists(), "and the tree is left alone");
+
+    // Pasting something where it already is is a no-op, not an error.
+    let note = outer.join("note.md");
+    fs::write(&note, "# Note\n").expect("fixture is written");
+    assert!(transfer_into_folder(&note, &outer, true).is_ok());
+    assert!(note.exists());
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_folder_moves_with_everything_in_it() {
+    let dir = transfer_fixture("folder");
+    let source = dir.join("chapter");
+    let destination = dir.join("book");
+    fs::create_dir_all(&source).expect("source is created");
+    fs::create_dir_all(&destination).expect("destination is created");
+    fs::write(source.join("one.md"), "# One\n").expect("fixture is written");
+
+    let landed = transfer_into_folder(&source, &destination, true).expect("the move succeeds");
+    assert_eq!(landed, destination.join("chapter"));
+    assert!(landed.join("one.md").exists(), "contents come along");
+    assert!(!source.exists());
+
+    let _ = fs::remove_dir_all(&dir);
 }

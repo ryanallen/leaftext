@@ -15,22 +15,23 @@ use leaftext::store::{
 use leaftext::{
     all_document_extensions, app_data_dir, app_shell_html, blocks_resynced_script,
     bundled_asset_response, code_view_fetch_script, code_view_payload, config_file_path,
-    create_repo_on_github, document_pager_html, fragment_scroll_script, git_tooling,
-    glossary_failed_script, glossary_sheet_script, graph_script, image_refresh_script,
+    create_repo_on_github, document_pager_html, error_toast_script, fragment_scroll_script,
+    git_tooling, glossary_failed_script, glossary_sheet_script, graph_script, image_refresh_script,
     init_vault_repo, initial_apply_outcome_script, initial_settings_script, initial_state_script,
     initial_update_script, initial_vaults_script, initial_version_script, inspect_vault_repo,
-    is_local_image_path, is_supported_document_path, library_folder_script, line_count_script,
-    link_vault_remote, load_recent_files, load_settings, local_image_protocol_response,
-    local_image_source_dir, navigation_state_script, open_document_with_recent,
-    open_error_state_script, opened_document_from_source, pager_loaded_script, read_folder_listing,
-    render_markdown_document, repo_name_for_vault, save_recent_files, save_result_script,
-    save_settings, scroll_anchor_script, search_results_script, settings_file_path,
-    settings_unreadable_script, source_payload_url, source_updated_script, sync_vault_repo,
-    update_progress_script, update_state_script, vaults_script, webview_user_data_dir,
-    workspace_only_script, workspace_reload_script, workspace_state_script,
-    workspace_switch_script, DocumentFormat, EditableDocument, FolderListing, GitTooling,
-    GraphScope, OpenedDocument, RecentFiles, ScrollAnchor, Settings, SettingsLoad, UpdateDownload,
-    VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    is_local_image_path, is_supported_document_path, library_folder_script, library_refresh_script,
+    line_count_script, link_vault_remote, load_recent_files, load_settings,
+    local_image_protocol_response, local_image_source_dir, navigation_state_script,
+    open_document_with_recent, open_error_state_script, opened_document_from_source,
+    pager_loaded_script, read_folder_listing, read_source, render_markdown_document,
+    repo_name_for_vault, save_recent_files, save_result_script, save_settings,
+    scroll_anchor_script, search_results_script, settings_file_path, settings_unreadable_script,
+    source_payload_url, source_updated_script, sync_vault_repo, update_progress_script,
+    update_state_script, vaults_script, webview_user_data_dir, workspace_only_script,
+    workspace_reload_script, workspace_state_script, workspace_switch_script, write_source,
+    DocumentFormat, EditableDocument, FolderListing, GitTooling, GraphScope, OpenedDocument,
+    RecentFiles, ScrollAnchor, Settings, SettingsLoad, SourceText, UpdateDownload, VaultCorpus,
+    VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -538,6 +539,11 @@ fn pick_vault_folder() -> Option<PathBuf> {
 
 /// Open each dropped document as a tab. Returns `true` to block the webview's
 /// default drop behavior (a useless "copy" cursor).
+/// Dropping a file onto the window opens it.
+///
+/// Always reports the drag as handled, which is also what keeps the web view from
+/// doing anything of its own with one — including its own drag and drop. Anything
+/// in the page built on HTML drag events would need this to answer per drag instead.
 fn drag_drop_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(DragDropEvent) -> bool {
     move |event| {
         if let DragDropEvent::Drop { paths, .. } = event {

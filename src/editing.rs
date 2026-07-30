@@ -15,6 +15,10 @@ const UNDO_STACK_CAP: usize = 200;
 pub struct EditableDocument {
     pub path: PathBuf,
     pub format: DocumentFormat,
+    /// How the file was spelled when it was read — encoding, and whether it had a
+    /// byte order mark — spent again on every save so writing a document never
+    /// changes how it sits on disk.
+    pub spelling: SourceSpelling,
     text: String,
     saved: String,
     version: u64,
@@ -27,14 +31,17 @@ pub struct EditableDocument {
 
 impl EditableDocument {
     /// Start an editing session for `path` seeded with `contents`, which is
-    /// both the live buffer and the saved baseline (so it opens clean).
-    pub fn new(path: PathBuf, contents: String) -> Self {
+    /// both the live buffer and the saved baseline (so it opens clean). The spelling
+    /// travels with the contents: it is a fact about the file, and the save spends it.
+    pub fn new(path: PathBuf, contents: SourceText) -> Self {
         let format = DocumentFormat::from_path(&path);
+        let SourceText { text, spelling } = contents;
         Self {
             path,
             format,
-            saved: contents.clone(),
-            text: contents,
+            spelling,
+            saved: text.clone(),
+            text,
             version: 0,
             undo_stack: Vec::new(),
         }
@@ -102,10 +109,13 @@ impl EditableDocument {
     }
 
     /// Adopt `contents` as a fresh baseline without a save — used when
-    /// live-reload accepts an external change into a clean buffer.
-    pub fn adopt_external(&mut self, contents: String) {
-        self.saved = contents.clone();
-        self.text = contents;
+    /// live-reload accepts an external change into a clean buffer. The spelling comes
+    /// along, since an outside edit may have re-spelled the file.
+    pub fn adopt_external(&mut self, contents: SourceText) {
+        let SourceText { text, spelling } = contents;
+        self.spelling = spelling;
+        self.saved = text.clone();
+        self.text = text;
     }
 
     /// Splice `replacement` into the buffer over byte range `[start, end)` —

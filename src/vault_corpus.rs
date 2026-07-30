@@ -8,6 +8,7 @@
 //! Nothing here is written to disk. Switching vaults drops it; quitting drops
 //! it; the next session reads again on first use.
 
+use crate::read_source;
 use crate::store::{
     document_links, normalize_name_key, path_to_string, DocumentGraph, GraphEdge, GraphNode,
     GraphRequest, SearchHit,
@@ -346,7 +347,9 @@ fn collect_documents(dir: &Path, depth: usize, out: &mut Vec<PathBuf>) {
 /// Read one document. `None` when it is gone or unreadable, which is how a
 /// deleted file leaves the corpus.
 fn read_document(path: &Path) -> Option<CorpusDocument> {
-    let mut text = fs::read_to_string(path).ok()?;
+    // Decoded, not just read: a UTF-16 document in the vault should be findable
+    // by search and appear in the link graph like any other.
+    let mut text = read_source(path).ok()?.text;
     if text.len() > MAX_DOCUMENT_BYTES {
         // Cut on a character boundary, never mid-codepoint.
         let mut cut = MAX_DOCUMENT_BYTES;

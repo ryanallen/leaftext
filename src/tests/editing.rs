@@ -44,7 +44,10 @@ fn the_code_view_is_colored_by_the_active_themes_own_tokens() {
 #[test]
 fn toggle_task_flips_the_addressed_marker_and_tracks_dirty() {
     let markdown = "- [ ] one\n- [x] two\n";
-    let mut edit = EditableDocument::new(PathBuf::from("todo.md"), markdown.to_string());
+    let mut edit = EditableDocument::new(
+        PathBuf::from("todo.md"),
+        SourceText::utf8(markdown.to_string()),
+    );
     assert!(!edit.is_dirty());
 
     assert!(edit.toggle_task(0));
@@ -68,7 +71,10 @@ fn toggle_task_flips_the_addressed_marker_and_tracks_dirty() {
 
 #[test]
 fn toggle_task_is_a_noop_for_xml_documents() {
-    let mut edit = EditableDocument::new(PathBuf::from("doc.xml"), "<p>[ ]</p>".to_string());
+    let mut edit = EditableDocument::new(
+        PathBuf::from("doc.xml"),
+        SourceText::utf8("<p>[ ]</p>".to_string()),
+    );
     assert!(!edit.toggle_task(0));
     assert_eq!(edit.text(), "<p>[ ]</p>");
 }
@@ -78,7 +84,10 @@ fn checkbox_edits_flip_the_marker_but_record_no_undo() {
     // The auto-saving checkbox path flips the same byte as toggle_task, but leaves
     // nothing on the undo stack — a checkbox toggle is deliberately not undoable.
     let markdown = "- [ ] one\n- [ ] two\n";
-    let mut edit = EditableDocument::new(PathBuf::from("todo.md"), markdown.to_string());
+    let mut edit = EditableDocument::new(
+        PathBuf::from("todo.md"),
+        SourceText::utf8(markdown.to_string()),
+    );
 
     assert!(edit.toggle_task_without_undo(0));
     assert_eq!(edit.text(), "- [x] one\n- [ ] two\n");
@@ -91,7 +100,10 @@ fn checkbox_edits_flip_the_marker_but_record_no_undo() {
 
 #[test]
 fn replace_range_splices_and_clamps_safely() {
-    let mut edit = EditableDocument::new(PathBuf::from("a.md"), "hello world".to_string());
+    let mut edit = EditableDocument::new(
+        PathBuf::from("a.md"),
+        SourceText::utf8("hello world".to_string()),
+    );
     assert!(edit.replace_range(6, 11, "there"));
     assert_eq!(edit.text(), "hello there");
 
@@ -100,12 +112,14 @@ fn replace_range_splices_and_clamps_safely() {
     assert_eq!(edit.text(), "hello friend");
 
     // A start past end is treated as an insertion at start.
-    let mut edit2 = EditableDocument::new(PathBuf::from("b.md"), "abc".to_string());
+    let mut edit2 =
+        EditableDocument::new(PathBuf::from("b.md"), SourceText::utf8("abc".to_string()));
     edit2.replace_range(1, 0, "X");
     assert_eq!(edit2.text(), "aXbc");
 
     // A range that falls inside a multi-byte char snaps outward, never panics.
-    let mut edit3 = EditableDocument::new(PathBuf::from("c.md"), "café".to_string());
+    let mut edit3 =
+        EditableDocument::new(PathBuf::from("c.md"), SourceText::utf8("café".to_string()));
     edit3.replace_range(3, 4, "e"); // 'é' is two bytes (3..5)
     assert_eq!(edit3.text(), "cafe");
 }
@@ -113,7 +127,10 @@ fn replace_range_splices_and_clamps_safely() {
 #[test]
 fn undo_reverts_reading_view_edits_newest_first() {
     let markdown = "# Title\n\nBody.\n\n- [ ] task\n";
-    let mut edit = EditableDocument::new(PathBuf::from("doc.md"), markdown.to_string());
+    let mut edit = EditableDocument::new(
+        PathBuf::from("doc.md"),
+        SourceText::utf8(markdown.to_string()),
+    );
     assert!(!edit.can_undo());
 
     // An identity splice changes nothing and records no undo point.
@@ -288,7 +305,10 @@ fn block_source_map_treats_html_wrapper_open_and_close_as_separate_blocks() {
 
 #[test]
 fn editable_document_tracks_dirty_and_save() {
-    let mut doc = EditableDocument::new(PathBuf::from("notes.md"), "# Hello\n".to_string());
+    let mut doc = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8("# Hello\n".to_string()),
+    );
     assert!(!doc.is_dirty(), "a freshly opened document is clean");
     assert_eq!(doc.version(), 0);
 
@@ -317,8 +337,11 @@ fn editable_document_tracks_dirty_and_save() {
 
 #[test]
 fn editable_document_adopts_external_change_when_clean() {
-    let mut doc = EditableDocument::new(PathBuf::from("notes.md"), "original\n".to_string());
-    doc.adopt_external("changed on disk\n".to_string());
+    let mut doc = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8("original\n".to_string()),
+    );
+    doc.adopt_external(SourceText::utf8("changed on disk\n".to_string()));
     assert_eq!(doc.text(), "changed on disk\n");
     assert!(
         !doc.is_dirty(),
@@ -366,7 +389,8 @@ fn a_code_view_splice_lands_on_the_same_bytes_the_page_meant() {
         ("line one\nline two\n", "line one\nline 2\nline two\n"),
     ] {
         let (start, removed, inserted) = splice_of(before, after);
-        let mut edit = EditableDocument::new(PathBuf::from("x.md"), before.to_string());
+        let mut edit =
+            EditableDocument::new(PathBuf::from("x.md"), SourceText::utf8(before.to_string()));
         edit.splice_utf16_without_undo(start, removed, &inserted);
         assert_eq!(
             edit.text(),
@@ -379,7 +403,8 @@ fn a_code_view_splice_lands_on_the_same_bytes_the_page_meant() {
 
     // Typing in the code view is covered by the textarea's own undo, so a splice
     // records none of its own.
-    let mut edit = EditableDocument::new(PathBuf::from("x.md"), "abc".to_string());
+    let mut edit =
+        EditableDocument::new(PathBuf::from("x.md"), SourceText::utf8("abc".to_string()));
     edit.splice_utf16_without_undo(1, 1, "X");
     assert_eq!(edit.text(), "aXc");
     assert!(

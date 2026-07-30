@@ -137,9 +137,10 @@ impl<'a> JsonReader<'a> {
         &self.source[self.position..]
     }
 
-    /// Skip whitespace, comments, and a leading byte-order mark. The mark is
-    /// stepped over rather than stripped from the source so every byte range
-    /// stays an offset into the file as it sits on disk.
+    /// Skip whitespace, comments, and a leading byte order mark. Stepped over rather
+    /// than stripped: every range this reader produces is an offset into the string it
+    /// was handed, and removing three bytes would shift all of them. [`read_source`]
+    /// already takes the mark off a file, but JSON also arrives from the code view.
     fn skip_trivia(&mut self) {
         loop {
             while matches!(self.peek(), Some(b' ' | b'\t' | b'\r' | b'\n')) {

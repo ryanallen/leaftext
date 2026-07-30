@@ -17,6 +17,7 @@ Leaf Text picks a pipeline from the file extension. Markdown (`.md`, `.markdown`
 | [XML](#any-xml) | Any `.xml` file: sections, label/value fields, record tables, links |
 | [TEI XML](#tei-xml-84000-translations) | 84000 Buddhist-translation format; headings, paragraphs, verse, footnotes |
 | [JSON and YAML](#data-files-json-and-yaml) | Any `.json`, `.yaml`, or `.yml` file, read by the same shape rules as XML |
+| [Encodings](#file-encodings) | UTF-8, UTF-16 and UTF-32 by their byte order mark; saved back as they were read |
 
 ## Pipeline
 
@@ -458,6 +459,28 @@ A file that will not parse renders a single line naming the position — `JSON p
 > Data files are opened through **Open Document**, drag and drop, or the [library](03-library.md), and they are indexed and paged like any other document. Installing Leaf Text does **not** register it as the handler for `.json` or `.yaml`, so double-clicking one in your file manager still opens whatever you normally use. Only [Markdown and XML extensions are associated](../02-installation.md#file-associations).
 
 Editing works, with one limit worth knowing. The [code view](07-editing.md#code-view) edits any data file as raw text, exactly as it does Markdown and XML. In the reading view, a block is click-to-edit only where its precise byte range in the file can be *proved*: that covers every JSON value, and YAML plain scalars. YAML lists, tables, quoted strings, and block scalars (`|`, `>`) are read-only in the reading view and edited in the code view instead — an approximate range would splice an edit over the wrong bytes, so none is offered. See [Editing data files](07-editing.md#editing-data-files).
+
+## File encodings
+
+Most text files are UTF-8, and those need no thought. Leaf Text reads the others by the **byte order mark** at the start of the file — the few bytes some editors write to say how the rest is spelled:
+
+| File starts with | Read as |
+| --- | --- |
+| Nothing special, valid UTF-8 | UTF-8. Every plain-ASCII file is one of these |
+| `EF BB BF` | UTF-8 with a mark, as Notepad and PowerShell write it |
+| `FF FE` | UTF-16, little-endian |
+| `FE FF` | UTF-16, big-endian |
+| `FF FE 00 00` | UTF-32, little-endian |
+| `00 00 FE FF` | UTF-32, big-endian |
+
+**A file is saved back the way it was read.** A UTF-16 document stays UTF-16, mark and all; a file that had no mark does not gain one. Saving is not where your file quietly changes shape.
+
+**Unmarked files that are not UTF-8** — a text file from an older Windows program, say — have nothing in them that says what they are, so they are read as Windows-1252. That is an assumption, not a fact: if it is the wrong one, you get mojibake (`café` as `cafÃ©`), which is at least something you can see. Such a file becomes UTF-8 when you save it, because writing the guess back out would drop any character the guess has no room for.
+
+**Files that are not text at all** are refused rather than shown as noise. A zero byte in the first few kilobytes is the tell, and the message says where it was found — so opening a `.dat` by mistake tells you that, instead of "failed to open".
+
+> [!NOTE]
+> A byte order mark is removed from the text on the way in and put back on the way out. It is invisible, but it is a character: left in place it would keep `---` from opening [frontmatter](#frontmatter) and turn a first-line list into a paragraph.
 
 ## Next
 

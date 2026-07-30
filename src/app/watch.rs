@@ -192,8 +192,8 @@ pub(crate) fn reload_active_document(
         return;
     }
 
-    let contents = match fs::read_to_string(&path) {
-        Ok(contents) => contents,
+    let source = match read_source(&path) {
+        Ok(source) => source,
         // May be mid-save or briefly absent during an atomic rename; a later
         // event delivers the settled contents.
         Err(error) => {
@@ -201,6 +201,7 @@ pub(crate) fn reload_active_document(
             return;
         }
     };
+    let contents = source.text.clone();
 
     let hash = content_hash(&contents);
     if file_watch.active_hash == Some(hash) {
@@ -230,7 +231,7 @@ pub(crate) fn reload_active_document(
         .and_then(|tab| tab.edit.as_mut())
         .filter(|_| buffer_is_current)
     {
-        edit.adopt_external(contents.clone());
+        edit.adopt_external(source.clone());
         if in_code_view {
             let text = edit.text().to_string();
             let language = edit.format.language_token().to_string();

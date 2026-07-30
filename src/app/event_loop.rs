@@ -162,17 +162,37 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
             }
             Event::UserEvent(UserEvent::RenamePath { path, new_name }) => {
-                // The watcher notices the rename and re-lists the folder; there
-                // is no manifest to keep in step any more.
-                if let Err(error) = rename_file(&path, &new_name) {
-                    eprintln!("Failed to rename {}: {error}", path.display());
+                match rename_file(&path, &new_name) {
+                    Ok(_) => refresh_library_folder(webview.as_ref()),
+                    Err(error) => {
+                        eprintln!("Failed to rename {}: {error}", path.display());
+                        report_file_action_failure(webview.as_ref(), &error.to_string());
+                    }
                 }
             }
-            Event::UserEvent(UserEvent::DeletePath(path)) => {
-                if let Err(error) = delete_to_trash(&path) {
+            Event::UserEvent(UserEvent::TransferPath {
+                path,
+                into_folder,
+                move_it,
+            }) => match transfer_into_folder(&path, &into_folder, move_it) {
+                Ok(_) => refresh_library_folder(webview.as_ref()),
+                Err(error) => {
+                    let verb = if move_it { "move" } else { "copy" };
+                    eprintln!(
+                        "Failed to {verb} {} into {}: {error}",
+                        path.display(),
+                        into_folder.display()
+                    );
+                    report_file_action_failure(webview.as_ref(), &error.to_string());
+                }
+            },
+            Event::UserEvent(UserEvent::DeletePath(path)) => match delete_to_trash(&path) {
+                Ok(()) => refresh_library_folder(webview.as_ref()),
+                Err(error) => {
                     eprintln!("Failed to move {} to the trash: {error}", path.display());
+                    report_file_action_failure(webview.as_ref(), &error);
                 }
-            }
+            },
             Event::UserEvent(UserEvent::ShowProperties(path)) => {
                 if let Err(error) = show_properties(&path) {
                     eprintln!("Failed to show properties for {}: {error}", path.display());
@@ -349,9 +369,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     .and_then(|current_path| match classify_link_target(&href) {
                         LinkTarget::LocalDocument(target) => {
                             let path = path_from_local_link(&target, &current_path);
-                            fs::read_to_string(&path)
+                            read_source(&path)
                                 .ok()
-                                .map(|contents| contents.lines().count() as i64)
+                                .map(|source| source.text.lines().count() as i64)
                         }
                         _ => None,
                     })

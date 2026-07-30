@@ -44,6 +44,11 @@ mod editing;
 pub use editing::{
     block_source_map, kind_is_editable, task_marker_offsets, BlockSpan, EditableDocument,
 };
+mod encoding;
+pub use encoding::{
+    decode_source, encode_source, read_source, write_source, SourceEncoding, SourceSpelling,
+    SourceText,
+};
 mod updater;
 pub use updater::{
     hash_file, is_newer_version, now_unix, platform_asset_suffix, prune_staged, read_staged,
@@ -258,8 +263,8 @@ fn normalize_recent_path(path: &Path) -> PathBuf {
 
 pub fn load_document(path: impl AsRef<Path>) -> io::Result<OpenedDocument> {
     let path = path.as_ref();
-    let source = fs::read_to_string(path)?;
-    Ok(opened_document_from_source(&source, path))
+    let source = read_source(path)?;
+    Ok(opened_document_from_source(&source.text, path))
 }
 
 /// Render source already in hand, picking the renderer by the path's format: the
@@ -279,8 +284,8 @@ pub fn opened_document_from_source(source: &str, path: impl AsRef<Path>) -> Open
 /// everything else both come through here; the renderer picks by content.
 pub fn load_xml_document(path: impl AsRef<Path>) -> io::Result<OpenedDocument> {
     let path = path.as_ref();
-    let xml = fs::read_to_string(path)?;
-    Ok(opened_document_from_xml(&xml, path))
+    let xml = read_source(path)?;
+    Ok(opened_document_from_xml(&xml.text, path))
 }
 
 /// Render an XML string into an `OpenedDocument`: TEI through the TEI renderer,
@@ -972,16 +977,18 @@ pub fn app_data_dir() -> Option<PathBuf> {
     project_data_local_dir()
 }
 
-/// Read one of our own JSON config files, dropping a leading byte order mark.
-/// PowerShell and Notepad write one by default, `serde_json` refuses it, and
-/// every reader here defaults on a parse failure — so without this a file edited
-/// by hand on Windows is silently thrown away.
+/// Read one of our own JSON config files as text.
+///
+/// Goes through [`read_source`] for the byte order mark: PowerShell and Notepad
+/// write one by default, `serde_json` refuses a document that starts with one, and
+/// every reader here falls back to defaults on a parse failure — so without this a
+/// settings file someone edited by hand on Windows is silently thrown away.
+///
+/// Unlike a document, the spelling is dropped rather than kept. These are the
+/// app's own files, rewritten whole by [`save_settings`] and [`save_recent_files`]
+/// in UTF-8, and no authored text is at stake in one.
 fn read_config_text(path: impl AsRef<Path>) -> io::Result<String> {
-    let text = fs::read_to_string(path)?;
-    match text.strip_prefix('\u{feff}') {
-        Some(stripped) => Ok(stripped.to_string()),
-        None => Ok(text),
-    }
+    Ok(read_source(path)?.text)
 }
 
 pub fn load_recent_files(config_path: impl AsRef<Path>) -> RecentFiles {

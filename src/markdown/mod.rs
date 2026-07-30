@@ -72,8 +72,11 @@ pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
 
 /// Split a leading `--- ... ---` frontmatter block off the front, returning its
 /// inner text and the Markdown that follows. Detected only when `---` is the
-/// first line (after an optional BOM) and a later `---` closes it, like the
-/// indexer.
+/// first line and a later `---` closes it, like the indexer.
+///
+/// A leading mark should never arrive — [`read_source`] takes it off precisely so it
+/// can't stop a fence being first on the line — but Markdown also reaches here from
+/// the code view's buffer and from tests, so one is still stepped over.
 pub(crate) fn split_leading_frontmatter(markdown: &str) -> Option<(String, &str)> {
     let after_bom = markdown.strip_prefix('\u{feff}').unwrap_or(markdown);
     let first_end = after_bom

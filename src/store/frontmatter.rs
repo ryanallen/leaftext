@@ -1,7 +1,8 @@
 //! YAML frontmatter: locating it, parsing it, storing its fields.
 
 /// The leading frontmatter block's inner text (between the `---` fences), with
-/// fences and any UTF-8 BOM stripped.
+/// the fences and any leading byte order mark removed. A file read from disk has
+/// already had its mark taken off; this covers text from anywhere else.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FrontmatterBlock {
     pub body: String,

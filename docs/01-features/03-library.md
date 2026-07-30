@@ -15,6 +15,7 @@ The library is the part of Leaf Text that helps you find documents, not just rea
 | Graph | A force-directed map of how the vault's documents link to each other, shown on the page rather than in the pane |
 | GitHub sync | A vault can be a git repository that pushes to GitHub, with a sync button in its own header |
 | File actions | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
+| Folder actions | Right-click a folder — or the empty space in the pane — to paste, reveal it, or see its properties |
 | Narrow windows | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
 
 ## Vaults
@@ -137,10 +138,32 @@ Right-click a file row for a context menu of file actions:
 | Properties | Opens the OS file-properties view |
 | Delete | Moves the file to the Recycle Bin / Trash |
 
-Cut and Copy place the file itself on the system clipboard, so you paste it in your file manager (Explorer, Finder). Delete is reversible — the file goes to the Recycle Bin or Trash, not gone for good. Reveal and Properties map to each OS:
+Delete is reversible — the file goes to the Recycle Bin or Trash, not gone for good. Reveal and Properties map to each OS:
 
 - Windows: Explorer; the file Properties dialog.
 - macOS: Finder; Get Info.
+
+### Folders, and the space around them
+
+Right-clicking a **folder row** — or the empty space below the rows, which stands for the folder you are browsing — offers what a place can do rather than what a document can:
+
+| Action | What it does |
+| --- | --- |
+| Open folder | Goes into it. Only on a folder row; the empty space is already the folder you are in |
+| Paste | Puts what you last cut or copied into this folder. Only shown when there is something to paste |
+| Reveal folder | Shows the folder in your OS file manager |
+| Properties | Opens the OS folder-properties view |
+
+### Cut, copy, paste
+
+Cut or Copy a file, then Paste it into a folder to move or copy it there. A cut is used up by the paste; a copy can be pasted again.
+
+Two things are worth knowing:
+
+- **Nothing is overwritten.** Pasting where the name is already taken refuses and says so, rather than replacing what is there.
+- **This clipboard is Leaf Text's own.** Cut and Copy also put the file on the *system* clipboard, so you can paste it in Explorer or Finder — but the reverse does not hold: a file you copied in your file manager is not what Paste here acts on.
+
+Copying a whole folder is not supported; a folder can be pasted only as a move (Cut, then Paste).
 
 ## Live updates
 
@@ -148,6 +171,7 @@ The pane keeps up with changes on disk, so a file you just created shows up with
 
 - The same file watcher that drives live reload watches the active vault **recursively**, plus the open document's folder when it sits outside the vault. With no vault, only the folder you are browsing is watched, and not recursively — browsing a drive root should not subscribe to the whole drive.
 - A file added, renamed or removed in the folder you are looking at refreshes the list.
+- Something *you* did — a [paste, rename or delete](#file-actions) — refreshes the list the moment it lands, rather than waiting on the watcher to notice.
 - The vault's in-memory text is patched for the one file that changed, so [search](#search) and the [graph](#graph) stay current without re-reading the vault. Only a document whose text actually moved counts: a vault is a folder you work in, and git writing to itself, a saved image or an editor's temp file are not changes to your documents.
 - The [sync count](#syncing) is re-read too, whether the change was to the document you are editing or to any other file in the vault.
 

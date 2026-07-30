@@ -88,7 +88,7 @@ pub(crate) fn enter_code_view(
         .get(index)
         .is_some_and(|tab| tab.needs_edit_seed(&path));
     let contents = if needs_seed {
-        match fs::read_to_string(&path) {
+        match read_source(&path) {
             Ok(contents) => contents,
             Err(error) => {
                 eprintln!("Code view: failed to read {}: {error}", path.display());
@@ -96,7 +96,7 @@ pub(crate) fn enter_code_view(
             }
         }
     } else {
-        String::new()
+        SourceText::utf8(String::new())
     };
 
     let Some(tab) = workspace.tabs.get_mut(index) else {
@@ -219,7 +219,7 @@ pub(crate) fn save_active_document(
     let text = edit.text().to_string();
     let path_str = path.display().to_string();
 
-    let script = match fs::write(&path, &text) {
+    let script = match write_source(&path, &text, edit.spelling) {
         Ok(()) => {
             edit.mark_saved();
             // Self-save suppression: reload_active_document skips when the hash
@@ -259,7 +259,7 @@ pub(crate) fn apply_block_edit(
         .get(tab_index)
         .is_some_and(|tab| tab.needs_edit_seed(&path));
     let contents = if needs_seed {
-        match fs::read_to_string(&path) {
+        match read_source(&path) {
             Ok(contents) => contents,
             Err(error) => {
                 eprintln!("Edit block: failed to read {}: {error}", path.display());
@@ -267,7 +267,7 @@ pub(crate) fn apply_block_edit(
             }
         }
     } else {
-        String::new()
+        SourceText::utf8(String::new())
     };
     let Some(tab) = workspace.tabs.get_mut(tab_index) else {
         return false;
@@ -293,7 +293,7 @@ pub(crate) fn autosave_active_buffer(workspace: &mut Workspace, file_watch: &mut
         return;
     };
     let text = edit.text().to_string();
-    match fs::write(&edit.path, &text) {
+    match write_source(&edit.path, &text, edit.spelling) {
         Ok(()) => {
             edit.mark_saved();
             file_watch.active_hash = Some(content_hash(&text));
@@ -322,7 +322,7 @@ pub(crate) fn toggle_task_marker(
         .get(tab_index)
         .is_some_and(|tab| tab.needs_edit_seed(&path));
     let contents = if needs_seed {
-        match fs::read_to_string(&path) {
+        match read_source(&path) {
             Ok(contents) => contents,
             Err(error) => {
                 eprintln!("Toggle task: failed to read {}: {error}", path.display());
@@ -330,7 +330,7 @@ pub(crate) fn toggle_task_marker(
             }
         }
     } else {
-        String::new()
+        SourceText::utf8(String::new())
     };
     let Some(tab) = workspace.tabs.get_mut(tab_index) else {
         return;
@@ -338,7 +338,7 @@ pub(crate) fn toggle_task_marker(
     let edit = tab.edit_buffer(&path, contents);
     edit.toggle_task_without_undo(index);
     let text = edit.text().to_string();
-    match fs::write(&edit.path, &text) {
+    match write_source(&edit.path, &text, edit.spelling) {
         Ok(()) => {
             edit.mark_saved();
             file_watch.active_hash = Some(content_hash(&text));

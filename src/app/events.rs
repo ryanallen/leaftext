@@ -6,6 +6,12 @@ use super::*;
 pub(crate) enum UserEvent {
     OpenPicker,
     OpenPath(PathBuf),
+    /// Move or copy something into a folder — the library pane's paste.
+    TransferPath {
+        path: PathBuf,
+        into_folder: PathBuf,
+        move_it: bool,
+    },
     /// The webview finished its first page load, so its render hooks now exist.
     /// Sent once on boot to flush a file passed on the command line, whose render
     /// would otherwise race the load.
@@ -296,6 +302,15 @@ pub(crate) enum IpcCommand {
     Open,
     #[serde(rename = "openRecent")]
     OpenRecent { path: PathBuf },
+    /// Paste what the library pane last cut or copied into a folder. `cut` decides
+    /// move or copy; the page carries both because the page is what remembered them.
+    #[serde(rename = "pasteFile")]
+    PasteFile {
+        path: PathBuf,
+        #[serde(rename = "intoFolder")]
+        into_folder: PathBuf,
+        cut: bool,
+    },
     #[serde(rename = "revealFile")]
     RevealFile { path: PathBuf },
     #[serde(rename = "copyFile")]
@@ -497,6 +512,17 @@ pub(crate) fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<S
             }
             IpcCommand::OpenRecent { path } => {
                 let _ = proxy.send_event(UserEvent::OpenPath(path));
+            }
+            IpcCommand::PasteFile {
+                path,
+                into_folder,
+                cut,
+            } => {
+                let _ = proxy.send_event(UserEvent::TransferPath {
+                    path,
+                    into_folder,
+                    move_it: cut,
+                });
             }
             IpcCommand::RevealFile { path } => {
                 let _ = proxy.send_event(UserEvent::RevealPath(path));

@@ -310,6 +310,24 @@ pub fn glossary_failed_script(reason: &str) -> String {
     format!("window.leafGlossaryFailed({reason});")
 }
 
+/// Re-read the folder the library pane is showing.
+///
+/// Sent after the app itself changes what is in a folder — a paste, a delete, a
+/// rename. The folder watcher also notices, but only for the folder it is watching
+/// and only after its debounce, so an action taken here would otherwise leave the
+/// pane showing what was true before it.
+pub fn library_refresh_script() -> String {
+    "window.leafRefreshLibraryFolder();".to_string()
+}
+
+/// Show a message as an error toast. For the failures a person set in motion and
+/// is waiting on — a paste that collided, a drag that couldn't land — where the
+/// terminal is not where they are looking.
+pub fn error_toast_script(message: &str) -> String {
+    let message = serde_json::to_string(message).expect("toast message serializes");
+    format!("window.leafShowError({message});")
+}
+
 /// Re-fetch the local images on screen. Sent when an image file changes: nothing
 /// to re-render, but the web view would otherwise keep the copy it decoded.
 pub fn image_refresh_script() -> String {

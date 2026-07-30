@@ -72,8 +72,8 @@ pub(crate) fn show_glossary_entry(webview: Option<&WebView>, href: &str, current
     let html = match cached {
         Some(html) => html,
         None => {
-            let markdown = match fs::read_to_string(&path) {
-                Ok(markdown) => markdown,
+            let markdown = match read_source(&path) {
+                Ok(source) => source.text,
                 Err(error) => {
                     eprintln!("Failed to read glossary {}: {error}", path.display());
                     // A path the user linked to that isn't there reads the same

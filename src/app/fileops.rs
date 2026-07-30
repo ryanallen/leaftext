@@ -144,6 +144,105 @@ pub(crate) fn rename_file(path: &Path, new_name: &str) -> io::Result<PathBuf> {
     Ok(target)
 }
 
+/// Move or copy `source` into `folder`, keeping its name — the library pane's paste.
+/// A cut pastes as a move, a copy as a copy.
+///
+/// Refuses rather than guesses, in every case where guessing would lose something:
+/// a name already taken in the destination is not overwritten, and a folder cannot
+/// be put inside itself. A move within one volume is a rename; across volumes only
+/// files can go, by copying and then removing the original.
+pub(crate) fn transfer_into_folder(
+    source: &Path,
+    folder: &Path,
+    move_it: bool,
+) -> io::Result<PathBuf> {
+    if !source.exists() {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("{} is not there any more", source.display()),
+        ));
+    }
+    if !folder.is_dir() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("{} is not a folder", folder.display()),
+        ));
+    }
+    let name = source.file_name().ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "that path has no file name to keep",
+        )
+    })?;
+    let target = folder.join(name);
+
+    // Already where it is being sent: a paste into the folder the file is in.
+    // Nothing to do, and nothing wrong.
+    if same_path(&target, source) {
+        return Ok(target);
+    }
+    // A folder cannot contain itself. Without this, `rename` either errors
+    // obscurely or, worse, succeeds partway.
+    if source.is_dir() && canonical(folder).starts_with(canonical(source)) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "a folder can't be put inside itself",
+        ));
+    }
+    if target.exists() {
+        return Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            format!(
+                "{} already has something called {}",
+                folder.display(),
+                name.to_string_lossy()
+            ),
+        ));
+    }
+
+    if !move_it {
+        if source.is_dir() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "copying a whole folder isn't supported",
+            ));
+        }
+        fs::copy(source, &target)?;
+        return Ok(target);
+    }
+
+    match fs::rename(source, &target) {
+        Ok(()) => Ok(target),
+        // Different volume: rename can't span one. A file can still go by copy
+        // then remove; a folder is left to the file manager rather than half-copied
+        // by us.
+        Err(error) if source.is_file() => {
+            fs::copy(source, &target).map_err(|_| error)?;
+            match fs::remove_file(source) {
+                Ok(()) => Ok(target),
+                // The copy landed, so the file is where it was asked to be; the
+                // original outliving it is worth saying, not worth undoing.
+                Err(remove_error) => {
+                    eprintln!(
+                        "Moved {} but could not remove the original: {remove_error}",
+                        source.display()
+                    );
+                    Ok(target)
+                }
+            }
+        }
+        Err(error) => Err(error),
+    }
+}
+
+fn canonical(path: &Path) -> PathBuf {
+    fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+}
+
+fn same_path(left: &Path, right: &Path) -> bool {
+    left == right || canonical(left) == canonical(right)
+}
+
 /// Move a file to the OS trash / Recycle Bin (reversible).
 pub(crate) fn delete_to_trash(path: &Path) -> Result<(), String> {
     platform::move_to_trash(path)
@@ -192,5 +291,29 @@ pub(crate) fn show_properties(path: &Path) -> io::Result<()> {
                 format!("osascript exited with status {status}"),
             ))
         };
+    }
+}
+
+/// Ask the library pane to re-read the folder it is showing.
+///
+/// Called after this app changes what is in a folder. The folder watcher notices
+/// too, but only for the one folder it watches and only after its debounce — so
+/// without this, doing something in the pane leaves the pane showing what was true
+/// before you did it.
+pub(crate) fn refresh_library_folder(webview: Option<&WebView>) {
+    if let Some(webview) = webview {
+        if let Err(error) = webview.evaluate_script(&library_refresh_script()) {
+            eprintln!("Failed to refresh the library pane: {error}");
+        }
+    }
+}
+
+/// Tell the person what went wrong, where they are looking. These are the failures
+/// they set in motion and are waiting on, and the terminal is not where they are.
+pub(crate) fn report_file_action_failure(webview: Option<&WebView>, message: &str) {
+    if let Some(webview) = webview {
+        if let Err(error) = webview.evaluate_script(&error_toast_script(message)) {
+            eprintln!("Failed to report a file action failure: {error}");
+        }
     }
 }

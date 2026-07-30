@@ -9,6 +9,7 @@ mod app_shell_reader;
 mod app_shell_scripts;
 mod data_xml;
 mod editing;
+mod encoding;
 mod folder_tree;
 mod git;
 mod glossary;
