@@ -37,12 +37,18 @@ check-themes:
 check-spelling:
     node scripts/check-spelling.mjs
 
+# Run the WebView front-end against a fake page: that it parses, that it boots
+# (the fragments are one script, so their order is load-bearing), and that the
+# code view's edit arithmetic is right — it decides what gets written to a file.
+check-shell:
+    node scripts/check-shell.mjs
+
 # Rebuild the vendored Monaco bundle (the code view's editor). Manual, like the
 # other vendored assets — first: npm i --no-save monaco-editor@0.52.2 esbuild@0.24.0
 bundle-monaco:
     node scripts/bundle-monaco.mjs
 
-verify: format-check check test check-vendor check-themes check-spelling
+verify: format-check check test check-vendor check-themes check-spelling check-shell
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

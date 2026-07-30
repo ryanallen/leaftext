@@ -53,7 +53,7 @@ Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pip
 - `main.rs` — window, web view, protocol handlers, and the startup that assembles `AppCtx`
 - `app/` — the binary's guts. `event_loop.rs` `AppCtx` and the loop · `events.rs` `UserEvent`/`IpcCommand`/IPC bridge · `workspace.rs` tabs · `history.rs` back/forward · `watch.rs` watching and reload · `editing_cmds.rs` · `render.rs` · `glossary.rs` · `links.rs` what an href means · `fileops.rs` · `vaults.rs` the switcher, the folder reads and the corpus's lifecycle · `update_flow.rs` · `tests.rs`. `mod.rs` does `use crate::*`, so submodules inherit main.rs's imports through `use super::*` — one import list, not two that drift
 - `platform.rs` clipboard, trash, HTTPS download, update applier · `single_instance.rs`
-- `assets/` — fonts, `reading.css`, the bootstrap scripts, and `shell/` (the WebView front-end in 21 ordered fragments) via `include_str!`. **`shell/` is one script, not modules**: the fragments concatenate in `APP_SHELL_SCRIPT_PARTS` order, share one scope, and the last ends with the bootstrap call that must run last. The page has no module loader, so order is load-bearing and a fragment alone is not a valid program
+- `assets/` — fonts, `reading.css`, the bootstrap scripts, and `shell/` (the WebView front-end in 22 ordered fragments) via `include_str!`. **`shell/` is one script, not modules**: the fragments concatenate in `APP_SHELL_SCRIPT_PARTS` order, share one scope, and the last ends with the bootstrap call that must run last. The page has no module loader, so order is load-bearing and a fragment alone is not a valid program. `state.js` is first and holds **only** what more than one fragment touches — state one fragment reads belongs in that fragment. `just check-shell` runs the whole script against a fake page, so a fragment that throws on load fails the build instead of opening a blank window
 - `wix/main.wxs` MSI recipe · `scripts/` build+release · `.github/workflows/` · `Justfile` · `Cargo.toml` (`version` is the release source of truth)
 
 ## Rules each paid for in version numbers
@@ -72,7 +72,7 @@ Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pip
 
 ## Commands
 
-Needs `rustup`, `just`, `node`. Run `just verify` (fmt, check, test, vendor + theme drift, US spelling) before handing work back; `just check` / `test` / `format` individually.
+Needs `rustup`, `just`, `node`. Run `just verify` (fmt, check, test, vendor + theme drift, US spelling, front-end boot) before handing work back; `just check` / `test` / `format` / `check-shell` individually.
 
 **Say what you couldn't verify** — `cfg(target_os = "macos")` code doesn't compile on Windows, and WiX doesn't run locally.
 

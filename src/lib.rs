@@ -87,6 +87,9 @@ const APP_SHELL_HTML: &str = include_str!("assets/app-shell.html");
 /// one scope — the page has no module loader. Order is load-bearing: the last
 /// fragment ends with the bootstrap call that must run after everything else.
 const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
+    // First: the state more than one fragment touches, in scope before any of
+    // them run. See the file for why it cannot live with its own subject.
+    include_str!("assets/shell/state.js"),
     include_str!("assets/shell/dom.js"),
     include_str!("assets/shell/overflow.js"),
     include_str!("assets/shell/context-menu.js"),
