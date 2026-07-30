@@ -37,6 +37,15 @@ pub(crate) struct RenderedCache {
     pub(crate) document: OpenedDocument,
 }
 
+impl RenderedCache {
+    /// Whether this entry answers for `path` at `hash`. The path check matters:
+    /// two files can hold identical text, and a render carries the folder its
+    /// images resolve against.
+    pub(crate) fn answers_for(&self, path: &Path, hash: u64) -> bool {
+        self.hash == hash && paths_refer_to_same_document(&self.path, path)
+    }
+}
+
 impl Tab {
     /// Whether this tab holds an edit buffer for `path` specifically. A tab
     /// navigates across documents, but its edit buffer belongs to one file.

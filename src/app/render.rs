@@ -58,10 +58,9 @@ impl Reader {
             .tabs
             .get(index)
             .and_then(|tab| tab.rendered.as_ref())
+            .filter(|cache| cache.answers_for(path, hash))
         {
-            if cache.hash == hash && paths_refer_to_same_document(&cache.path, path) {
-                return Ok(cache.document.clone());
-            }
+            return Ok(cache.document.clone());
         }
         let document = opened_document_from_source(&source.text, path);
         if let Some(tab) = self.workspace.tabs.get_mut(index) {

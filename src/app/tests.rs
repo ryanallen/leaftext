@@ -780,3 +780,51 @@ fn a_folder_moves_with_everything_in_it() {
 
     let _ = fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn the_render_cache_answers_only_for_the_same_file_unchanged() {
+    // A switch reuses the last render only for the same file, unchanged.
+    let text = "# Same words in two places\n";
+    let hash = content_hash(text);
+    let path = PathBuf::from("notes/a.md");
+    let cache = RenderedCache {
+        path: path.clone(),
+        hash,
+        document: opened_document_from_source(text, &path),
+    };
+
+    assert!(cache.answers_for(&path, hash), "same file, unchanged");
+    assert!(
+        !cache.answers_for(&path, content_hash("# Edited\n")),
+        "the file changed on disk, so the old render is out"
+    );
+    assert!(
+        !cache.answers_for(Path::new("notes/b.md"), hash),
+        "another file with identical text is still another file"
+    );
+}
+
+#[test]
+fn a_tab_starts_with_nothing_cached_and_keeps_what_it_renders() {
+    // The cache lives on the tab, so one tab's render is never another's.
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("notes/a.md"));
+    workspace.open_path(PathBuf::from("notes/b.md"));
+
+    assert!(
+        workspace.tabs.iter().all(|tab| tab.rendered.is_none()),
+        "nothing is cached before anything renders"
+    );
+
+    let text = "# A\n";
+    let path = PathBuf::from("notes/a.md");
+    workspace.tabs[0].rendered = Some(RenderedCache {
+        path: path.clone(),
+        hash: content_hash(text),
+        document: opened_document_from_source(text, &path),
+    });
+    assert!(
+        workspace.tabs[1].rendered.is_none(),
+        "one tab's render is not another tab's"
+    );
+}

@@ -173,3 +173,86 @@ fn a_taken_code_view_edit_reports_only_the_dirty_state() {
 
     assert_contains(&source_updated_script(false), r#""dirty":false"#);
 }
+
+/// The two sides are joined by a name in a string, so a rename on one side is
+/// a silent no-op at runtime. Every name the host emits must exist in the page,
+/// and every one the page defines must be reached.
+#[test]
+fn the_host_and_the_page_agree_on_every_call() {
+    /// Names the page owns. `leafShowCodeView` it calls itself after fetching
+    /// the payload; the other two are state one fragment publishes for the
+    /// rest, each with a `subscribe` — the shape new shared state should copy.
+    const PAGE_ONLY: &[&str] = &[
+        "window.leafShowCodeView",
+        "window.leafMinimap",
+        "window.leafTheme",
+    ];
+
+    fn leaf_calls(text: &str) -> std::collections::BTreeSet<String> {
+        let mut found = std::collections::BTreeSet::new();
+        for (index, _) in text.match_indices("window.leaf") {
+            let rest = &text[index..];
+            let end = rest
+                .char_indices()
+                .find(|(offset, ch)| *offset > 0 && !ch.is_ascii_alphanumeric() && *ch != '.')
+                .map(|(offset, _)| offset)
+                .unwrap_or(rest.len());
+            let name = &rest[..end];
+            // `window.leafSetGraph` yes, a bare `window.leaf` no.
+            if name.len() > "window.leaf".len() {
+                found.insert(name.to_string());
+            }
+        }
+        found
+    }
+
+    // What the host emits, across every file that builds a script.
+    let source_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut host_calls = std::collections::BTreeSet::new();
+    let mut rust_files = Vec::new();
+    for directory in [source_dir.clone(), source_dir.join("app")] {
+        let entries = std::fs::read_dir(&directory).expect("source directory is readable");
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|ext| ext.to_str()) == Some("rs") {
+                rust_files.push(path);
+            }
+        }
+    }
+    assert!(
+        rust_files.len() > 10,
+        "expected to scan the whole source tree, found {} files",
+        rust_files.len()
+    );
+    for path in rust_files {
+        let text = std::fs::read_to_string(&path).expect("source file is readable");
+        host_calls.extend(leaf_calls(&text));
+    }
+
+    // Assignments only: a call inside the page is not a definition.
+    let html = app_shell_html();
+    let page_defines: std::collections::BTreeSet<String> = html
+        .match_indices(" = ")
+        .filter_map(|(index, _)| {
+            let before = &html[..index];
+            let start = before.rfind(|ch: char| ch.is_whitespace() || ch == ';')? + 1;
+            let name = before[start..].trim();
+            name.starts_with("window.leaf").then(|| name.to_string())
+        })
+        .collect();
+
+    let missing: Vec<&String> = host_calls.difference(&page_defines).collect();
+    assert!(
+        missing.is_empty(),
+        "the host calls page functions that do not exist: {missing:?}"
+    );
+
+    let unused: Vec<&String> = page_defines
+        .difference(&host_calls)
+        .filter(|name| !PAGE_ONLY.contains(&name.as_str()))
+        .collect();
+    assert!(
+        unused.is_empty(),
+        "the page defines functions no host call reaches: {unused:?}"
+    );
+}
