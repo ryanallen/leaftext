@@ -414,7 +414,7 @@ pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<
         ctx.push("</div>\n");
     }
 
-    // Front matter (summary, acknowledgements, introduction) lives in
+    // Front matter (summary, acknowledgments, introduction) lives in
     // `text > front`, a sibling of `body`. Render it collapsed by default, after
     // the title and before the body.
     if let Some(front) = root.descendants().find(|n| {

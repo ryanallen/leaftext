@@ -126,12 +126,6 @@ const undoableByPath = new Map();
 // Whether the reader is currently showing raw source instead of the rendered
 // document. Reset by renderState(), set by leafShowCodeView().
 let codeViewActive = false;
-// The large-document code editor's state and its one hidden input (see
-// code-editor.js). Declared here with the other editing globals because
-// renderState() — which tears the editor down — runs synchronously on load,
-// before code-editor.js's own top level has executed.
-let cvEd = null;
-let cvInput = null;
 // Monaco now backs the code view (see code-view.js). The editor instance, its
 // content-change subscription, and the one-time bundle loader promise live here
 // with the other editing globals because renderState() tears the editor down

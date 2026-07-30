@@ -147,11 +147,7 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {",
         "const windowsIt = rows.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;",
         "preview = buildWindowedMinimapClone(source, first, last);",
-        // The code view windows too: its rows are the color lines, and the gutter
-        // rows beside them are sliced at the same indices or every number would end
-        // up labeling the wrong line.
         "function minimapWindowRows(source) {",
-        "const code = source.querySelector('.code-view-highlight code');",
         "function buildWindowedMinimapClone(source, first, last) {",
         "into.appendChild(rows[i].cloneNode(true));",
         // Scrolling reads no geometry at all — cached metrics, arithmetic, and CSS
@@ -204,18 +200,12 @@ fn app_shell_opens_both_views_at_the_same_content_top_gap() {
     assert_contains(&css, "--reader-content-top-gap: 88px;");
     assert_contains(&html, "const READER_CONTENT_TOP_GAP = 88;");
 
-    // The code view has no scroll origin, so it pays the gap the shell's app-bar
-    // padding doesn't already cover. Both of its layers read the same var, so the
-    // color layer and the textarea over it stay aligned. (The line numbers are a
-    // counter on the color lines, so there is no third layer to keep in step.)
+    // The code view has no scroll origin of its own: the editor is handed the gap
+    // the shell's app-bar padding doesn't already cover, as padding inside its own
+    // scroll height, so no line can sit in the fade at either end.
     assert_contains(
-        &css,
-        "--cv-pad-top: calc(var(--reader-content-top-gap) - var(--app-bar-height));",
-    );
-    assert_eq!(
-        css.matches("padding: var(--cv-pad-top)").count(),
-        2,
-        "the code view's two aligned layers must share --cv-pad-top"
+        &html,
+        "top: Math.max(0, READER_CONTENT_TOP_GAP - barHeight),",
     );
 
     // 88px from the shell's top edge is 48px of clear air below the 40px bar, which
@@ -224,48 +214,6 @@ fn app_shell_opens_both_views_at_the_same_content_top_gap() {
     assert!(
         fade.contains("--reader-edge-fade-depth: 36px;"),
         "the top fade's depth must stay under the content top gap's clearance"
-    );
-}
-
-// The clone keeps nothing it inherited, so the elected element has to be the one
-// carrying the code view's type ramp, --cv-* vars and `.syn-*` ancestor. Electing
-// the `.code-view-doc` inside it shipped a thumbnail shorter than its own track.
-// Pinning both halves here means moving one without the other fails.
-#[test]
-fn app_shell_clones_the_element_holding_the_code_views_metrics() {
-    let html = app_shell_html();
-    let css = reading_mode_css();
-
-    // Two queries, not a selector list: a list returns the first match in document
-    // order, so a `.document-body` left in the DOM behind the code view would win.
-    assert_contains(
-        &html,
-        "return app.querySelector('.code-view') || app.querySelector('.document-body');",
-    );
-
-    let code_view = css_block(&css, ".code-view {");
-    for declaration in [
-        "--cv-gutter:",
-        "--cv-pad-x:",
-        "--cv-pad-y:",
-        "--cv-pad-top:",
-        "font-family: var(--code-font);",
-        "font-size:",
-        "line-height:",
-        "tab-size:",
-    ] {
-        assert!(
-            code_view.contains(declaration),
-            "the cloned element must carry the code view's {declaration} — \
-             move it and minimapSourceElement() has to follow"
-        );
-    }
-
-    // Cloning the page wrapper brings its fill along; the rail shows text on the
-    // chrome, as the reading view's clone does.
-    assert_contains(
-        &css,
-        ".document-minimap-preview.code-view {\n  background: transparent;\n}",
     );
 }
 
@@ -968,67 +916,5 @@ fn app_shell_holds_the_code_view_clear_of_the_edge_fades() {
     assert!(
         clearance >= fade,
         "the code view's top padding is {clearance}px, which does not clear the {fade}px fade"
-    );
-}
-
-#[test]
-fn code_view_line_numbers_are_a_counter_on_the_lines_they_label() {
-    // They used to be a second layer, three elements per line — 228,000 of them on
-    // a 76,000-line file — kept in step with the color lines only by wrapping
-    // identically. That held until a number was too wide for the gutter: at the
-    // fixed 3.75em, line 10,000's fifth digit wrapped, every row past it went
-    // double height, and the numbers ended a million pixels below their own text.
-    // A counter on the color lines cannot drift, because there is only one layer.
-    let html = app_shell_html();
-    let css = reading_mode_css();
-
-    let line = css_block(css, ".cv-line {");
-    assert!(
-        line.contains("counter-increment: cv-line;") && line.contains("position: relative;"),
-        "each color line counts itself and hosts its own number: {line}"
-    );
-    assert_contains(css, "counter-reset: cv-line;");
-    let number = css_block(css, ".cv-line::before {");
-    for expected in [
-        "content: counter(cv-line);",
-        "position: absolute;",
-        // Out of flow, so a wrapped line still gets one number on its first row.
-        "right: 100%;",
-        "white-space: nowrap;",
-    ] {
-        assert!(
-            number.contains(expected),
-            "{expected} missing from: {number}"
-        );
-    }
-    // The second layer, and everything that maintained it, is gone.
-    for absent in [
-        "code-view-linenums",
-        "cv-lnrow",
-        "cv-lnnum",
-        "cv-lntxt",
-        "makeGutterRow",
-    ] {
-        assert!(
-            !html.contains(absent) && !css.contains(absent),
-            "the mirrored gutter layer is gone; found {absent}"
-        );
-    }
-
-    // The gutter still has to be wide enough for the highest number, or the
-    // counter's text would overflow into the line it labels.
-    assert_contains(
-        &html,
-        "function sizeLineNumberGutter(codeView, lineCount) {",
-    );
-    assert_contains(
-        &html,
-        "codeView.style.setProperty('--cv-gutter', `max(3.75em, ${digits}ch + 1.25em)`);",
-    );
-    // Sized in `ch`, which is exact only because the code view is monospace.
-    let code_view = css_block(css, ".code-view {");
-    assert!(
-        code_view.contains("font-family: var(--code-font);"),
-        "the ch-based gutter assumes the code view's monospace font: {code_view}"
     );
 }

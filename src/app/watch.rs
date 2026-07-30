@@ -154,8 +154,8 @@ pub(crate) fn content_hash(contents: &str) -> u64 {
 ///
 /// `active_hash` is cleared whenever the active document changes, so the first event
 /// after an open never matches it — and the whole folder is watched, so one usually
-/// arrives about something else. That rebuilt the entire colored source for a file
-/// nobody had touched. A dirty buffer never claims to match, so an outside change
+/// arrives about something else. That rebuilt the whole view for a file nobody had
+/// touched. A dirty buffer never claims to match, so an outside change
 /// over unsaved edits is still reconciled.
 pub(crate) fn buffer_already_shows(edit: Option<&EditableDocument>, contents: &str) -> bool {
     edit.is_some_and(|edit| !edit.is_dirty() && edit.text() == contents)
@@ -235,14 +235,9 @@ pub(crate) fn reload_active_document(
             let text = edit.text().to_string();
             let language = edit.format.language_token().to_string();
             let display = edit.format.display_name().to_string();
-            let highlighted = edit.source_view_html();
             if let Some(webview) = webview {
                 let url = stage_source_payload(code_view_payload(
-                    highlighted,
-                    &text,
-                    &language,
-                    &display,
-                    false,
+                    &text, &language, &display, false,
                     // Live reload refreshes in place; the page keeps its scroll.
                     None,
                 ));

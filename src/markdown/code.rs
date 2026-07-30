@@ -234,32 +234,12 @@ pub(crate) const SYNTAX_STYLE_RULES: &[&[&str]] = &[
     &["parameter"],
     &["property"],
     &["punctuation"],
-    &["section"],
     &["storage"],
     &["string"],
     &["support"],
     &["tag"],
     &["type"],
     &["variable"],
-    &["entity", "attribute-name"],
-    &["entity", "name", "tag"],
-    &["markup", "bold"],
-    &["markup", "heading"],
-    &["markup", "italic"],
-    &["markup", "quote"],
-    &["markup", "raw"],
-    &["markup", "strikethrough"],
-    &["markup", "underline", "link"],
-    &["meta", "link"],
-    &["punctuation", "definition", "blockquote"],
-    &["punctuation", "definition", "bold"],
-    &["punctuation", "definition", "heading"],
-    &["punctuation", "definition", "image"],
-    &["punctuation", "definition", "italic"],
-    &["punctuation", "definition", "link"],
-    &["punctuation", "definition", "metadata"],
-    &["punctuation", "definition", "raw"],
-    &["punctuation", "list_item"],
 ];
 
 /// The class names, sorted and deduplicated — a class's index here is its bit in
@@ -303,12 +283,6 @@ fn class_bit(class: &str) -> u64 {
         .position(|name| *name == class)
         .map(|index| 1u64 << index)
         .unwrap_or(0)
-}
-
-/// The bits for a set of scope atoms named directly rather than parsed out of a
-/// syntect scope — how `source.rs` says what a Markdown construct carries.
-pub(crate) fn atom_bits(atoms: &[&str]) -> u64 {
-    atoms.iter().fold(0u64, |bits, atom| bits | class_bit(atom))
 }
 
 /// The class list for everything `carried`, as the union of the rules it

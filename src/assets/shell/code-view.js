@@ -1,8 +1,8 @@
 // ---- Editing: code view + save -------------------------------------------
-// Source-of-truth is in Rust: the host owns the buffer and re-highlights. The JS
-// only drives the code view (a textarea over a highlight layer), tracks unsaved
-// edits, and relays intent. Its mutable state is declared earlier, above the
-// subscriptions that fire renderState() synchronously on load.
+// Source-of-truth is in Rust: the host owns the buffer and the file. The JS drives
+// the code view — Monaco, loaded on first entry — tracks unsaved edits, and relays
+// intent. Its mutable state is declared earlier, above the subscriptions that fire
+// renderState() synchronously on load.
 
 function isDocumentDirty(path) {
   return !!(path && dirtyByPath.get(path));
@@ -58,302 +58,9 @@ function undoLastEdit() {
   send({ command: 'undoEdit' });
 }
 
-// The last buffer text handed to the host, so a stale re-highlight response
-// (typing continued after it was sent) is ignored rather than regressing.
+// The last buffer text the host was given: what the next splice is measured
+// against, and what proves the two copies still agree.
 let lastSentSourceText = null;
-
-// A CSS counter draws the numbers, so the only thing left to set is the gutter's
-// width: too narrow and the number wraps, making every row past 9,999 lines taller
-// than the line it labels. Monospace, so `ch` sizes it exactly.
-function sizeLineNumberGutter(codeView, lineCount) {
-  if (!codeView) return;
-  const digits = String(Math.max(1, lineCount)).length;
-  codeView.style.setProperty('--cv-gutter', `max(3.75em, ${digits}ch + 1.25em)`);
-}
-
-// A zero-width space stands in for an empty source line so its box keeps a full
-// row's height, aligning the color layer and gutter with the textarea.
-const CODE_VIEW_BLANK = '​';
-
-// Split the flat highlighter output into one HTML string per source line. The
-// highlighter closes its spans at every line break, so the straddle handling here
-// is a safety net rather than the usual path — it closes and re-opens anything
-// still open so a line's markup never leaks into the next. Returns null unless the
-// split yields exactly `expectedCount` lines, so the caller can fall back to a
-// plain render.
-function highlightedHtmlToLines(html, expectedCount) {
-  const lines = [];
-  const openStack = [];
-  let current = '';
-  const tokenRe = /<span\b[^>]*>|<\/span>|[^<]+/g;
-  let match;
-  while ((match = tokenRe.exec(html)) !== null) {
-    const token = match[0];
-    if (token[0] === '<') {
-      if (token[1] === '/') {
-        openStack.pop();
-        current += '</span>';
-      } else {
-        openStack.push(token);
-        current += token;
-      }
-    } else {
-      let start = 0;
-      for (let i = 0; i < token.length; i += 1) {
-        if (token[i] === '\n') {
-          current += token.slice(start, i);
-          current += '</span>'.repeat(openStack.length);
-          lines.push(current);
-          current = openStack.join('');
-          start = i + 1;
-        }
-      }
-      current += token.slice(start);
-    }
-  }
-  lines.push(current);
-  if (expectedCount != null && lines.length !== expectedCount) {
-    return null;
-  }
-  return lines;
-}
-
-// The inner HTML each color-layer line currently shows, one per source line. A
-// recolor compares against this to touch only changed lines; a keystroke sets an
-// edited line's entry to plain text so the next recolor repaints it.
-let codeViewColorHtml = [];
-
-// The inner markup for one color-layer line: the highlighted line when the
-// per-line split lined up, a zero-width space for a blank line (so its box keeps a
-// row's height), or plain-escaped text as a fallback.
-function colorLineInner(lineText, coloredLine) {
-  if (lineText === '') {
-    return CODE_VIEW_BLANK;
-  }
-  return coloredLine != null ? coloredLine : escapeText(lineText);
-}
-
-// The per-line inner markup for a whole buffer, colored from `html` (falling back
-// to plain-escaped text if the split doesn't line up 1:1). The single source both
-// the full build and the incremental recolor compute their line HTML from.
-function computeColorInner(html, text) {
-  const lineTexts = text.split('\n');
-  const colored = highlightedHtmlToLines(html || '', lineTexts.length);
-  return lineTexts.map((lineText, index) =>
-    colorLineInner(lineText, colored ? colored[index] : null)
-  );
-}
-
-// Rebuild the whole color layer, one `<div class="cv-line">` per source line.
-// Used on entry and as a self-heal; the keystroke/recolor paths patch instead.
-function setCodeViewColorLines(codeEl, html, text) {
-  const inner = computeColorInner(html, text);
-  codeEl.innerHTML = inner.map((line) => `<div class="cv-line">${line}</div>`).join('');
-  codeViewColorHtml = inner;
-}
-
-// Repaint after a debounced re-highlight by replacing only the lines whose markup
-// changed (edited lines, plus any whose color shifted from multi-line state like
-// a fence). Diffs against the authoritative full highlight, so unchanged lines
-// stay in place and the whole document never re-lays-out.
-function recolorCodeViewLines(codeEl, html, text) {
-  const inner = computeColorInner(html, text);
-  if (
-    codeViewColorHtml.length !== inner.length ||
-    codeEl.children.length !== inner.length
-  ) {
-    // Line structure drifted from the highlight; rebuild once to resync.
-    setCodeViewColorLines(codeEl, html, text);
-    return;
-  }
-  for (let i = 0; i < inner.length; i += 1) {
-    if (codeViewColorHtml[i] !== inner[i]) {
-      codeEl.children[i].innerHTML = inner[i];
-      codeViewColorHtml[i] = inner[i];
-    }
-  }
-}
-
-// A single color-layer line element. Freshly typed lines show as plain text (via
-// textContent, so no markup leaks); the debounced re-highlight recolors them.
-function makeColorLine(text) {
-  const div = document.createElement('div');
-  div.className = 'cv-line';
-  div.textContent = text === '' ? CODE_VIEW_BLANK : text;
-  return div;
-}
-
-
-// Replace a contiguous run of `container`'s children (its line elements are 1:1
-// with source lines) — remove `removeCount` starting at `start`, then insert one
-// element per entry in `newTexts`, built by `makeEl(text, index)`.
-function spliceLineElements(container, start, removeCount, newTexts, makeEl) {
-  let node = container.children[start] || null;
-  for (let i = 0; i < removeCount && node; i += 1) {
-    const next = node.nextSibling;
-    node.remove();
-    node = next;
-  }
-  const frag = document.createDocumentFragment();
-  for (let i = 0; i < newTexts.length; i += 1) {
-    frag.appendChild(makeEl(newTexts[i], start + i));
-  }
-  container.insertBefore(frag, node);
-}
-
-// The text nodes of one color-layer line, in document order. Their concatenated
-// data equals the line's text; the elements around them are the color spans.
-function codeLineTextNodes(root) {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const nodes = [];
-  let node = walker.nextNode();
-  while (node) {
-    nodes.push(node);
-    node = walker.nextNode();
-  }
-  return nodes;
-}
-
-// Delete `len` chars at column `start` from a color line's text nodes, leaving
-// the color spans in place. Offsets are read before any node is edited, so
-// mutating one doesn't disturb the others.
-function deleteCodeLineRange(root, start, len) {
-  if (len <= 0) return;
-  const end = start + len;
-  let offset = 0;
-  for (const node of codeLineTextNodes(root)) {
-    const nodeStart = offset;
-    const nodeEnd = offset + node.data.length;
-    offset = nodeEnd;
-    if (nodeEnd <= start) continue;
-    if (nodeStart >= end) break;
-    const from = Math.max(start, nodeStart) - nodeStart;
-    const to = Math.min(end, nodeEnd) - nodeStart;
-    node.data = node.data.slice(0, from) + node.data.slice(to);
-  }
-}
-
-// Insert `str` at column `at`, inside the color run to its left so typed text
-// inherits that color (a char added in a blue link stays blue).
-function insertCodeLineText(root, at, str) {
-  if (!str) return;
-  const nodes = codeLineTextNodes(root);
-  if (nodes.length === 0) {
-    root.appendChild(document.createTextNode(str));
-    return;
-  }
-  let offset = 0;
-  for (let i = 0; i < nodes.length; i += 1) {
-    const node = nodes[i];
-    const nodeStart = offset;
-    const nodeEnd = offset + node.data.length;
-    if (at <= nodeEnd && (at > nodeStart || i === 0)) {
-      const local = at - nodeStart;
-      node.data = node.data.slice(0, local) + str + node.data.slice(local);
-      return;
-    }
-    offset = nodeEnd;
-  }
-  const last = nodes[nodes.length - 1];
-  last.data += str;
-}
-
-// Edit one colored line's DOM in place so its colors survive the keystroke:
-// diff old vs new text to the changed span, then delete/insert only those chars
-// among the text nodes. The debounced re-highlight corrects boundary shifts after.
-// Stops the edited line dropping to plain text between keystroke and re-highlight.
-function patchColorLineText(lineEl, oldText, newText) {
-  if (newText === '') {
-    lineEl.innerHTML = CODE_VIEW_BLANK;
-    return;
-  }
-  if (oldText === '') {
-    // The line was blank (a zero-width space), so there's no coloring to
-    // preserve — show the typed text plainly.
-    lineEl.textContent = newText;
-    return;
-  }
-  const maxCommon = Math.min(oldText.length, newText.length);
-  let prefix = 0;
-  while (prefix < maxCommon && oldText[prefix] === newText[prefix]) {
-    prefix += 1;
-  }
-  let suffix = 0;
-  while (
-    suffix < maxCommon - prefix &&
-    oldText[oldText.length - 1 - suffix] === newText[newText.length - 1 - suffix]
-  ) {
-    suffix += 1;
-  }
-  deleteCodeLineRange(lineEl, prefix, oldText.length - prefix - suffix);
-  insertCodeLineText(lineEl, prefix, newText.slice(prefix, newText.length - suffix));
-}
-
-// The line text a color-layer element is currently showing, mapping the blank
-// line's zero-width-space placeholder back to an empty string.
-function colorLineText(lineEl) {
-  const text = lineEl.textContent;
-  return text === CODE_VIEW_BLANK ? '' : text;
-}
-
-// Patch only the lines a keystroke changed. A textarea edit is one contiguous
-// splice, so the shared prefix/suffix of the old and new line arrays is untouched
-// and only the range between them is rebuilt — keeping large documents from
-// re-rendering on every keystroke.
-function updateCodeViewLinesIncremental(codeEl, prevText, nextText) {
-  const prev = prevText.split('\n');
-  const next = nextText.split('\n');
-  const maxCommon = Math.min(prev.length, next.length);
-  let prefix = 0;
-  while (prefix < maxCommon && prev[prefix] === next[prefix]) {
-    prefix += 1;
-  }
-  let suffix = 0;
-  while (
-    suffix < maxCommon - prefix &&
-    prev[prev.length - 1 - suffix] === next[next.length - 1 - suffix]
-  ) {
-    suffix += 1;
-  }
-  const removeCount = prev.length - suffix - prefix;
-  const inserted = next.slice(prefix, next.length - suffix);
-  // The overwhelmingly common edit — typing within a single line — replaces one
-  // line with one line. Keep that line's existing colored element and edit only
-  // the changed characters into it, so its colors never drop to plain text. Fall
-  // back to a plain rebuild only if the element's text has drifted from what we
-  // expect (then the debounced recolor restores it).
-  if (removeCount === 1 && inserted.length === 1) {
-    const lineEl = codeEl.children[prefix];
-    if (lineEl && colorLineText(lineEl) === prev[prefix]) {
-      patchColorLineText(lineEl, prev[prefix], inserted[0]);
-      codeViewColorHtml[prefix] = lineEl.innerHTML;
-    } else {
-      spliceLineElements(codeEl, prefix, removeCount, inserted, makeColorLine);
-      codeViewColorHtml.splice(prefix, removeCount, ...inserted.map(() => null));
-    }
-    return;
-  }
-  spliceLineElements(codeEl, prefix, removeCount, inserted, makeColorLine);
-  // Keep the recolor bookkeeping in step: the edited lines now show plain text,
-  // so mark them (null) to guarantee the next recolor repaints them.
-  codeViewColorHtml.splice(prefix, removeCount, ...inserted.map(() => null));
-}
-
-// Rebuild the thumbnail once typing has actually stopped. The 180 ms edit debounce
-// is still mid-sentence, and rebuilding there cost ~66 ms in every pause; a
-// thumbnail can lag a second behind without anyone being able to tell.
-const CODE_VIEW_MINIMAP_IDLE_MS = 1200;
-let codeViewMinimapTimer = 0;
-function refreshCodeViewMinimap() {
-  if (!codeViewActive) {
-    return;
-  }
-  if (codeViewMinimapTimer) window.clearTimeout(codeViewMinimapTimer);
-  codeViewMinimapTimer = window.setTimeout(() => {
-    codeViewMinimapTimer = 0;
-    if (codeViewActive) invalidateMinimapPreview();
-  }, CODE_VIEW_MINIMAP_IDLE_MS);
-}
 
 // Hand the host the edit rather than the buffer.
 //
@@ -392,9 +99,13 @@ function sourceSpliceSince(previous, next) {
   };
 }
 
+// The editor holds the buffer; read it back before anything acts on the text.
+function syncCodeViewText() {
+  if (monacoEditor) codeViewText = monacoEditor.getValue();
+}
+
 function sendSourceUpdate() {
-  // The editor path defers rejoining its line array until the buffer is read.
-  cvSyncCodeViewText();
+  syncCodeViewText();
   if (lastSentSourceText === null) {
     lastSentSourceText = codeViewText;
     send({ command: 'updateSource', text: codeViewText });
@@ -421,7 +132,7 @@ function scheduleSourceUpdate() {
 }
 
 // Push the latest buffer to the host now, canceling any pending debounce, so a
-// save writes exactly what is in the textarea.
+// save writes exactly what is on screen.
 function flushSourceUpdate() {
   if (!codeViewActive) return;
   if (sourceUpdateTimer) {
@@ -436,15 +147,10 @@ function flushSourceUpdate() {
 // rewritten from what is on screen rather than from a buffer that has drifted.
 window.leafResyncSource = () => {
   if (!codeViewActive) return;
-  cvSyncCodeViewText();
+  syncCodeViewText();
   lastSentSourceText = codeViewText;
   send({ command: 'updateSource', text: codeViewText });
 };
-
-// The code view reuses the reader's own minimap (the scaled document clone in a
-// sticky rail, bound by bindDocumentMinimap / updated by updateMinimapViewport).
-// That machinery finds its content via minimapSourceElement(), which matches the
-// .code-view wrapper below too — no separate code-view minimap exists.
 
 function saveActiveDocument() {
   const path = activeDocumentPath();
@@ -509,26 +215,9 @@ function byteOffsetAtLineIndex(text, lineIndex) {
 // The 0-based index of the code view's top visible line, by binary search over
 // the in-order color lines.
 function topVisibleCodeLineIndex() {
-  if (monacoEditor) {
-    const ranges = monacoEditor.getVisibleRanges();
-    return ranges && ranges.length ? ranges[0].startLineNumber - 1 : null;
-  }
-  const rows = app.querySelectorAll('.cv-line');
-  if (!rows.length) return null;
-  const topEdge = app.getBoundingClientRect().top + 1;
-  let lo = 0;
-  let hi = rows.length - 1;
-  let found = rows.length - 1;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    if (rows[mid].getBoundingClientRect().bottom > topEdge) {
-      found = mid;
-      hi = mid - 1;
-    } else {
-      lo = mid + 1;
-    }
-  }
-  return found;
+  if (!monacoEditor) return null;
+  const ranges = monacoEditor.getVisibleRanges();
+  return ranges && ranges.length ? ranges[0].startLineNumber - 1 : null;
 }
 
 // Scroll the reading view so the block containing `srcOffset` sits at the top
@@ -570,7 +259,7 @@ function toggleCodeView() {
     if (codeViewActive) {
       pendingCodeViewSrcOffset = null;
       const lineIndex = topVisibleCodeLineIndex();
-      cvSyncCodeViewText();
+      syncCodeViewText();
       pendingReadingSrcOffset = lineIndex == null ? null : byteOffsetAtLineIndex(codeViewText, lineIndex);
     } else {
       pendingReadingSrcOffset = null;
@@ -1016,8 +705,36 @@ function createMonacoEditor(monaco, container, state, text) {
 // Swap the reader shell over to Monaco for the active document's source. Monaco
 // loads lazily; the spinner (armed by the toggle) stays up until the editor is
 // on screen. Re-entering (live reload) disposes and rebuilds.
+// Dispose the editor and everything hung off it. Called on re-entry (a live
+// reload rebuilds the view) and by renderState when leaving for the reading view.
+function disposeMonacoEditor() {
+  if (!monacoEditor) return;
+  if (monacoChangeSub) {
+    monacoChangeSub.dispose();
+    monacoChangeSub = null;
+  }
+  if (monacoLayoutSub) {
+    monacoLayoutSub.dispose();
+    monacoLayoutSub = null;
+  }
+  if (monacoFontsDoneHandler) {
+    document.fonts.removeEventListener('loadingdone', monacoFontsDoneHandler);
+    monacoFontsDoneHandler = null;
+  }
+  if (monacoSliderObserver) {
+    monacoSliderObserver.disconnect();
+    monacoSliderObserver = null;
+  }
+  monacoEditor.dispose();
+  monacoEditor = null;
+  codeViewWrapColumn = 0;
+  // Drop the published minimap width so a stale value can't frame the reading
+  // view if it ever read the property.
+  document.documentElement.style.removeProperty('--cv-minimap-width');
+}
+
 function renderCodeView(state) {
-  cvTeardownEditor();
+  disposeMonacoEditor();
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
   readerAnchorBlocks = null;
@@ -1067,10 +784,11 @@ window.leafLoadCodeView = (url) => {
     });
 };
 
-// Enter the code view: the host sends the highlighted source, the exact buffer
-// text, the language, and the dirty state.
+// Enter the code view: the host sends the exact buffer text, the language, and the
+// dirty state. The source itself is the weight runViewRender is deciding about —
+// building the editor on a few megabytes blocks, so the spinner goes up first.
 window.leafShowCodeView = (state) => {
-  runViewRender(state && state.html, () => {
+  runViewRender(state && state.text, () => {
     // The map was held until now (see setReaderView). Dropping it here means the
     // reading view it was covering is replaced in the same breath rather than
     // revealed, laid out, and thrown away.
@@ -1087,21 +805,12 @@ window.leafShowCodeView = (state) => {
   });
 };
 
-// Refresh the code view's color layer and dirty state after a debounced
-// re-highlight. Only recolor when the buffer still matches what was sent, or
-// stale HTML would hide newer keystrokes.
+// The host has taken a debounced edit: carry its dirty state through. Nothing
+// about the text comes back — the editor colors what it holds.
 window.leafSourceUpdated = (state) => {
   if (!codeViewActive || !state) return;
-  // Null html: the host skipped the re-highlight (buffer too large to color
-  // between keystrokes), so keep the plain-text patch the edited lines already have.
-  if (state.html != null && (lastSentSourceText === null || codeViewText === lastSentSourceText)) {
-    const code = app.querySelector('.code-view-highlight code');
-    if (code) recolorCodeViewLines(code, state.html, codeViewText);
-  }
   const path = activeDocumentPath();
   if (path) setDirtyState(path, !!state.dirty);
-  // The document settled — refresh the thumbnail once, not per keystroke.
-  refreshCodeViewMinimap();
 };
 
 // The host reports a save's outcome. On success the document is no longer dirty;

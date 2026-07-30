@@ -105,7 +105,7 @@ fn tei_front_matter_renders_collapsed_before_the_body() {
         <p>This is the summary.</p>
       </div>
       <div type="acknowledgment">
-        <head>Acknowledgements</head>
+        <head>Acknowledgments</head>
         <p>Thanks to the team.</p>
       </div>
     </front>
@@ -120,10 +120,10 @@ fn tei_front_matter_renders_collapsed_before_the_body() {
     let (_title, html) = render_xml_body(xml);
 
     // The front becomes a collapsed <details> (no `open` attribute) labeled
-    // with its section headings, and it holds the summary/acknowledgement text.
+    // with its section headings, and it holds the summary/acknowledgment text.
     assert_contains(
             &html,
-            "<details class=\"tei-front\">\n<summary class=\"tei-front-summary\">Summary, Acknowledgements</summary>",
+            "<details class=\"tei-front\">\n<summary class=\"tei-front-summary\">Summary, Acknowledgments</summary>",
         );
     assert!(
         !html.contains("<details class=\"tei-front\" open"),

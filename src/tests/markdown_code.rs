@@ -483,16 +483,20 @@ fn a_run_no_rule_styles_gets_no_element() {
 
 #[test]
 fn adjacent_tokens_that_style_the_same_share_one_element() {
-    // Emphasis over several words is one run, not one element per word.
-    let rendered = render_markdown_document("```markdown\n*one two three*\n```", "README.md");
+    // A comment's words are one run, not one element per word. (Its `//` opener
+    // carries punctuation as well, so that much is its own element.)
+    let rendered = render_markdown_document("```rust\n// one two three\n```", "README.md");
 
-    assert_contains(&rendered.html, r#">one two three</span>"#);
+    assert_contains(
+        &rendered.html,
+        r#"<span class="syn-comment"> one two three</span>"#,
+    );
 }
 
 #[test]
 fn a_syntax_span_never_straddles_a_line_break() {
-    // The code view splits this markup per source line; a span left open across
-    // the break would have to be reopened on the next line to stay balanced.
+    // A span left open across a line break has to be reopened on the next line to
+    // stay balanced, so anything reading this markup a line at a time can.
     let rendered = render_markdown_document(
         "```markdown\n## First heading\n\n## Second heading\n```",
         "README.md",

@@ -22,23 +22,22 @@ fn data_blocks_never_take_the_markdown_wysiwyg_path() {
 }
 
 #[test]
-fn code_view_colors_markdown_and_xml_delimiters() {
-    // The code editor colors each construct's delimiter too, via a
-    // punctuation.definition.* rule at higher specificity than the generic
-    // .code-view .syn-punctuation, so `#`/`[]()`/`**`/backticks/`>` aren't gray.
-    let css = reading_mode_css();
+fn the_code_view_is_colored_by_the_active_themes_own_tokens() {
+    // The editor brings its own default palette; handing it one built from the
+    // theme's tokens is what keeps the source view looking like the rest of the
+    // app when the theme changes. Rules and UI colors both, since Monaco takes
+    // them from different halves of a theme definition.
+    let html = app_shell_html();
 
-    for selector in [
-        ".code-view .syn-punctuation.syn-definition.syn-heading",
-        ".code-view .syn-punctuation.syn-definition.syn-bold",
-        ".code-view .syn-punctuation.syn-definition.syn-italic",
-        ".code-view .syn-punctuation.syn-definition.syn-raw",
-        ".code-view .syn-punctuation.syn-definition.syn-link",
-        ".code-view .syn-punctuation.syn-definition.syn-metadata",
-        ".code-view .syn-punctuation.syn-definition.syn-blockquote",
-        ".code-view .syn-entity.syn-attribute-name",
+    for expected in [
+        "rule('keyword', t('--leaf-syntax-keyword'), 'bold')",
+        "rule('comment', t('--leaf-syntax-comment'), 'italic')",
+        "'editor.background': hash('--leaf-syntax-background')",
+        "'editor.selectionBackground': hash('--leaf-editor-code-selection-background')",
+        // A theme or light/dark flip re-skins the open editor in place.
+        "window.LeafMonaco.editor.setTheme(defineLeafMonacoTheme(window.LeafMonaco));",
     ] {
-        assert_contains(css, selector);
+        assert_contains(&html, expected);
     }
 }
 
@@ -326,52 +325,6 @@ fn editable_document_adopts_external_change_when_clean() {
         !doc.is_dirty(),
         "adopting an external change leaves it clean"
     );
-}
-
-#[test]
-fn source_view_highlights_both_markdown_and_xml() {
-    // The code view reuses the reader's Rust highlighter, which has both
-    // Markdown and XML in its language table — so both formats color, not just
-    // Markdown. The output is escaped and wrapped in syntect `syn-*` spans.
-    let markdown = render_source_view_html("# Heading\n", DocumentFormat::Markdown);
-    assert!(markdown.contains("syn-"), "markdown source is highlighted");
-
-    let xml = render_source_view_html("<TEI><head>Title</head></TEI>", DocumentFormat::Xml);
-    assert!(xml.contains("syn-"), "xml source is highlighted");
-    assert!(
-        xml.contains("&lt;"),
-        "angle brackets are escaped, not raw tags"
-    );
-}
-
-#[test]
-fn the_code_views_highlight_is_memoized_against_the_buffer() {
-    // Highlighting is the slowest thing the editing model does — seconds on a
-    // multi-megabyte file — and it used to run again on every entry, so toggling
-    // to source and back paid it twice. The memo is keyed by a hash of the buffer,
-    // so an edit invalidates it without anything having to remember to.
-    let markdown = "# Title\n\nSome *prose* and a `span`.\n\n```rs\nfn main() {}\n```\n";
-    let mut edit = EditableDocument::new(PathBuf::from("note.md"), markdown.to_string());
-
-    let first = edit.source_view_html().to_string();
-    assert!(first.contains("syn-"), "the source view is highlighted");
-    assert_eq!(edit.source_view_html(), first, "a second entry reuses it");
-
-    // Any path that changes the text must produce different markup.
-    edit.set_text("# Other\n".to_string());
-    let after_set = edit.source_view_html().to_string();
-    assert_ne!(after_set, first, "set_text invalidates the memo");
-
-    edit.replace_range(0, 1, "##");
-    assert_ne!(
-        edit.source_view_html(),
-        after_set,
-        "a splice invalidates the memo"
-    );
-
-    // Back to a buffer seen before: same text, same markup.
-    edit.set_text(markdown.to_string());
-    assert_eq!(edit.source_view_html(), first);
 }
 
 #[test]

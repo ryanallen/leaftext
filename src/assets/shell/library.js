@@ -490,7 +490,7 @@ function vaultMenuItems() {
 // The expanded "change repository" panel: names where the vault points now,
 // takes a new address, and saves only on Save. Nothing here reaches GitHub --
 // it sets the address; sending files is a separate Sync -- so a wrong paste can
-// be Cancelled, and the address it replaced is remembered to put back.
+// be Canceled, and the address it replaced is remembered to put back.
 function pushChangeRepoPanel(items, vault, repo) {
   const current = repo.remoteUrl || repo.remote || '';
   items.push({ note: window.leafLocale.t('library.vaults.sync.changeRepo.current', { url: current }) });

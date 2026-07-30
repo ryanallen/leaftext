@@ -153,17 +153,10 @@ function bindDocumentMinimap() {
 // The minimap is a shrunken clone of the rendered document, so the rail shows
 // real text. The clone rebuilds only on content changes, never on scroll (which
 // only moves the viewport box and, on tall documents, the thumbnail's slide).
-// The element it mirrors: the reading view's document body, or the code view's
-// page wrapper — one shared lookup lets the pipeline serve both views.
-// It has to be `.code-view` and not the `.code-view-doc` inside it: the clone is
-// reparented into the rail, so only what sits on the cloned element survives, and
-// `.code-view` holds the editor's metrics, its --cv-* vars and the ancestor half of
-// every `.syn-*` rule. Cloning the inner element wrapped the thumbnail at the wrong
-// measure and rendered it shorter than the track the box is placed over.
-// Two queries, not a selector list: a list matches in document order, so a stray
-// `.document-body` behind the code view would win.
+// The element it mirrors: the reading view's document body. The rail is a reading-
+// view affordance — the code view has the editor's own minimap instead.
 function minimapSourceElement() {
-  return app.querySelector('.code-view') || app.querySelector('.document-body');
+  return app.querySelector('.document-body');
 }
 function bindDocumentMinimapPreview(track) {
   disconnectMinimapPreviewObservers();
@@ -650,14 +643,9 @@ function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {
   }
   return found;
 }
-// The rows a windowed clone slices, in document order. The reading view's are the
-// body's blocks; the code view's are its color lines, one per source line.
+// The rows a windowed clone slices, in document order: the body's blocks.
 function minimapWindowRows(source) {
-  if (source.classList.contains('document-body')) {
-    return Array.from(source.children);
-  }
-  const code = source.querySelector('.code-view-highlight code');
-  return code ? Array.from(code.children) : [];
+  return Array.from(source.children);
 }
 // A clone holding rows `first..last` only.
 function buildWindowedMinimapClone(source, first, last) {
@@ -672,46 +660,18 @@ function buildWindowedMinimapClone(source, first, last) {
     into.style.paddingTop = '0';
     into.style.paddingBottom = '0';
   };
-  if (source.classList.contains('document-body')) {
-    // cloneNode(false) keeps the body's own classes and attributes, so every
-    // `.document-body x` rule still matches inside the clone.
-    const preview = source.cloneNode(false);
-    slice(source, preview);
-    return preview;
-  }
-  // The code view: a shallow spine down to the color lines, which are the only
-  // per-line layer it has (the numbers are a counter on those same lines).
+  // cloneNode(false) keeps the body's own classes and attributes, so every
+  // `.document-body x` rule still matches inside the clone.
   const preview = source.cloneNode(false);
-  const doc = source.querySelector('.code-view-doc');
-  const highlight = source.querySelector('.code-view-highlight');
-  const code = highlight ? highlight.querySelector('code') : null;
-  if (!doc || !highlight || !code) {
-    return source.cloneNode(true);
-  }
-  // Both are sized to fill the reader; a window must be only as tall as the rows in
-  // it, and `min-height: 100%` here would resolve against the rail's full-document
-  // content box instead.
-  preview.style.minHeight = '0';
-  const docClone = doc.cloneNode(false);
-  docClone.style.minHeight = '0';
-  const highlightClone = highlight.cloneNode(false);
-  const codeClone = code.cloneNode(false);
-  slice(code, codeClone);
-  // The counter restarts inside the clone, so offset it or the numbers read 1..n.
-  codeClone.style.counterReset = 'cv-line ' + first;
-  highlightClone.style.paddingTop = '0';
-  highlightClone.style.paddingBottom = '0';
-  highlightClone.appendChild(codeClone);
-  docClone.appendChild(highlightClone);
-  preview.appendChild(docClone);
+  slice(source, preview);
   return preview;
 }
 // Strip the clone: nothing focusable, nothing with a duplicate id, no second copy
 // of every link for a screen reader to find.
 function stripMinimapClone(preview) {
   preview.removeAttribute('id');
-  // Drop the code view's focusable textarea from the clone; its text is invisible
-  // anyway (the color layer shows).
+  // Nothing focusable in the clone: a block being edited in place is a textarea,
+  // and a second copy of it in the rail is another tab stop holding stale text.
   preview.querySelectorAll('textarea').forEach((node) => node.remove());
   preview.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
   preview.querySelectorAll('a[href]').forEach((link) => {

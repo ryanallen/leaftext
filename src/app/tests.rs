@@ -613,20 +613,13 @@ fn a_staged_source_payload_is_served_with_the_headers_the_fetch_needs() {
 fn the_code_view_script_carries_a_url_and_not_the_source() {
     // The whole point: the megabytes stay behind the URL. A regression here is
     // silent — it still works, just slowly.
-    let payload = code_view_payload(
-        "<span>huge</span>",
-        "huge text",
-        "markdown",
-        "Markdown",
-        false,
-        None,
-    );
+    let payload = code_view_payload("huge text", "markdown", "Markdown", false, None);
     let script = code_view_fetch_script(&stage_source_payload(payload));
 
     assert!(script.contains("leafLoadCodeView"), "{script}");
     assert!(
         !script.contains("huge"),
-        "the script must not carry the source or the highlight: {script}"
+        "the script must not carry the source: {script}"
     );
     assert!(
         script.len() < 200,

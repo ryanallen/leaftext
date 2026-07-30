@@ -102,20 +102,17 @@ pub(crate) fn enter_code_view(
     let Some(tab) = workspace.tabs.get_mut(index) else {
         return;
     };
-    // Highlighting a big source takes a while; the code-view script clears it.
+    // Building the editor on a big source takes a while; the code-view script
+    // clears the spinner once it is on screen.
     begin_reader_loading(webview);
     let edit = tab.edit_buffer(&path, contents);
     let text = edit.text().to_string();
     let language = edit.format.language_token().to_string();
     let display = edit.format.display_name().to_string();
     let dirty = edit.is_dirty();
-    // Last, and nothing touches `edit` after it: the memo hands back a borrow of
-    // the cached markup rather than a fresh 26 MB copy.
-    let highlighted = edit.source_view_html();
 
     if let Some(webview) = webview {
         let url = stage_source_payload(code_view_payload(
-            highlighted,
             &text,
             &language,
             &display,
@@ -169,23 +166,14 @@ pub(crate) fn splice_source_buffer(
     }
 
     let dirty = edit.is_dirty();
-    let highlighted = (edit.text().len() <= MAX_LIVE_HIGHLIGHT_BYTES)
-        .then(|| edit.source_view_html().to_string());
     if let Some(webview) = webview {
-        if let Err(error) =
-            webview.evaluate_script(&source_updated_script(highlighted.as_deref(), dirty))
-        {
+        if let Err(error) = webview.evaluate_script(&source_updated_script(dirty)) {
             eprintln!("Code view: failed to refresh source: {error}");
         }
     }
 }
 
-/// The largest buffer re-highlighted while you type. Measured: 16 KB costs 9 ms,
-/// 256 KB ~380 ms, 4 MB 6.6 s. Ordinary source files sit far below it.
-const MAX_LIVE_HIGHLIGHT_BYTES: usize = 256 * 1024;
-
-/// Apply a debounced code-view edit to the buffer, then re-highlight and refresh
-/// the code view's color layer and dirty state.
+/// Apply a debounced code-view edit to the buffer, then refresh the dirty state.
 pub(crate) fn update_source_buffer(
     webview: Option<&WebView>,
     workspace: &mut Workspace,
@@ -203,16 +191,8 @@ pub(crate) fn update_source_buffer(
     };
     edit.set_text(text);
     let dirty = edit.is_dirty();
-    // Re-highlighting scales with the whole buffer, not the edit — 6.6 s for a 4 MB
-    // file, on this thread, every time typing pauses. Past the cap the edited lines
-    // keep the plain text the page already patched in, and color returns on the
-    // next build.
-    let highlighted = (edit.text().len() <= MAX_LIVE_HIGHLIGHT_BYTES)
-        .then(|| edit.source_view_html().to_string());
     if let Some(webview) = webview {
-        if let Err(error) =
-            webview.evaluate_script(&source_updated_script(highlighted.as_deref(), dirty))
-        {
+        if let Err(error) = webview.evaluate_script(&source_updated_script(dirty)) {
             eprintln!("Code view: failed to refresh source: {error}");
         }
     }

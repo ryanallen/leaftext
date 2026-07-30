@@ -409,7 +409,7 @@ body {
 }
 
 /* ---- TEI front matter ------------------------------------------------ */
-/* Summary, acknowledgements, and introduction from `text > front`, rendered
+/* Summary, acknowledgments, and introduction from `text > front`, rendered
    as a collapsed <details> (see site/tei-xml.js) so the reader lands on the
    translation body. Mirrors the outline toggle above. */
 .markdown-body .tei-front {

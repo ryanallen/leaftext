@@ -324,10 +324,10 @@ pub fn open_error_state_script(path: &Path, reason: &str) -> String {
     format!("window.leafShowOpenError({path}, {reason});")
 }
 
-/// Swap to the raw-source code view: highlighted source (the layer behind the
-/// textarea), the buffer text, language token and label, and dirty state.
+/// Swap to the raw-source code view: the buffer text, the language token and
+/// label the editor is opened on, and the dirty state. The editor colors its own
+/// text, so no markup travels with it.
 pub fn code_view_payload(
-    highlighted_html: &str,
     text: &str,
     language: &str,
     display_name: &str,
@@ -335,7 +335,6 @@ pub fn code_view_payload(
     scroll_fraction: Option<f64>,
 ) -> String {
     let mut state = serde_json::json!({
-        "html": highlighted_html,
         "text": text,
         "language": language,
         "displayName": display_name,
@@ -359,15 +358,10 @@ pub fn code_view_fetch_script(url: &str) -> String {
     )
 }
 
-/// Refresh the code view's highlight overlay and dirty state after a debounced
-/// re-highlight. Leaves the textarea untouched. `None` means the buffer was too
-/// large to recolor mid-typing (`MAX_LIVE_HIGHLIGHT_BYTES`), and the page keeps
-/// the color layer it has.
-pub fn source_updated_script(highlighted_html: Option<&str>, dirty: bool) -> String {
-    let state = serde_json::json!({
-        "html": highlighted_html,
-        "dirty": dirty,
-    });
+/// Tell the page the host has taken a code-view edit: only the dirty state, which
+/// is the tab's unsaved dot and the Save button. The text the page already has.
+pub fn source_updated_script(dirty: bool) -> String {
+    let state = serde_json::json!({ "dirty": dirty });
     format!("window.leafSourceUpdated({});", state)
 }
 

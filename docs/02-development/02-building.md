@@ -47,10 +47,10 @@ Before submitting a contribution, run the full suite:
 just verify
 ```
 
-This runs `cargo fmt --check`, `cargo check --all-targets`, `cargo test`, and two drift checks in sequence. All steps must pass. The `verify` recipe is defined in the project `Justfile` as:
+This runs `cargo fmt --check`, `cargo check --all-targets`, `cargo test`, two drift checks, and a spelling check in sequence. All steps must pass. The `verify` recipe is defined in the project `Justfile` as:
 
 ```text
-verify: format-check check test check-vendor check-themes
+verify: format-check check test check-vendor check-themes check-spelling
 ```
 
 A passing `just verify` is the baseline requirement before handing any work back.
@@ -58,6 +58,8 @@ A passing `just verify` is the baseline requirement before handing any work back
 The Mermaid, KaTeX, and Noto assets are embedded in the binary from `src/assets` and also served as static files from `site/`. `src/assets` is the source of truth; `check-vendor` fails if the `site/` copies have drifted. Run `just sync-vendor` to recopy them and clear the drift.
 
 Theme palettes work the same way: `src/assets/themes.md` (embedded in the binary) is compiled from the editable `themes/` folder of per-family Markdown files. `check-themes` fails if it has drifted; run `just bundle-themes` to recompile it. See [Theming](04-theming.md#palettes-are-data-themesmd).
+
+The last step is spelling: this repo writes US English, so `check-spelling` fails on the British form of any word in `scripts/check-spelling.mjs`'s list — the `-our` spelling of "color", for one. It reads only files the repo authors: vendored bundles, build output, and generated files are skipped, and the two identifiers that are British by specification (`aria-labelledby`, WiX's `ProgramMenuFolder`) are exempt.
 
 ## Individual tasks
 
@@ -71,6 +73,7 @@ Each step in the verification pipeline can also be run on its own:
 | Tests        | `cargo test`                | Run the full test suite                        |
 | Vendor check | `just check-vendor`         | Verify `site/` vendored assets match `src/assets` |
 | Themes check | `just check-themes`         | Verify `src/assets/themes.md` matches the `themes/` folder |
+| Spelling     | `just check-spelling`       | Fail on British spelling in the repo's own writing |
 | Full verify  | `just verify`               | All steps above in sequence                    |
 
 Additional convenience tasks are available via `just --list`, including `just sync-vendor` to recopy the vendored assets into `site/` and `just bundle-themes` to recompile `themes.md` from the `themes/` folder.

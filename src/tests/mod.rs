@@ -18,7 +18,6 @@ mod markdown_code;
 mod markdown_github;
 mod markdown_rawhtml;
 mod markdown_render;
-mod markdown_source;
 mod minimap;
 mod reading_css;
 mod settings_paths;

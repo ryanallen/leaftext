@@ -34,11 +34,11 @@ Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pip
 
 - `lib.rs` — render orchestration, document loading, glossary, recent files, settings, `app_shell_html()`, and the ordered `APP_SHELL_SCRIPT_PARTS` list
 - `format.rs` — `DocumentFormat`: the **only** table of readable formats and their extensions. The file dialog, drag-and-drop, link following, the pager, the library pane and the render router all ask it. A new format is one arm here plus whatever the exhaustive matches then refuse to compile — never a second list. `for_path` answers "can we open this?" (`None` if not); `from_path` answers "render it as what?" (Markdown for anything unrecognized)
-- `markdown/` — parse → GitHub extras → highlight → sanitize. `mod.rs` the pipeline · `events.rs` event-stream transforms · `headings.rs` anchors and titles · `github.rs` refs, mentions, emoji, repo context · `footnotes.rs` · `code.rs` fences and highlighting, and `SYNTAX_STYLE_RULES` — **the one table of every `.syn-` rule `reading.css` has**, which is what lets a token be a single element carrying only the classes some rule needs · `source.rs` the code view's Markdown coloring, driven by pulldown's offsets because syntect's Markdown grammar costs seconds where that parse costs milliseconds · `rawhtml.rs` **what raw HTML may keep — a security boundary** · `htmlparse.rs` tag/attribute scanning, no policy and no crate dependencies · `images.rs` image URL resolution · `image_protocol.rs` the `leaf-image://` scheme · `paths.rs` percent-coding
+- `markdown/` — parse → GitHub extras → highlight → sanitize. `mod.rs` the pipeline · `events.rs` event-stream transforms · `headings.rs` anchors and titles · `github.rs` refs, mentions, emoji, repo context · `footnotes.rs` · `code.rs` fences and highlighting, and `SYNTAX_STYLE_RULES` — **the one table of every `.syn-` rule `reading.css` has**, which is what lets a token be a single element carrying only the classes some rule needs · `rawhtml.rs` **what raw HTML may keep — a security boundary** · `htmlparse.rs` tag/attribute scanning, no policy and no crate dependencies · `images.rs` image URL resolution · `image_protocol.rs` the `leaf-image://` scheme · `paths.rs` percent-coding
 - `xml.rs` — XML entry: TEI to `tei.rs`, all other XML to the generic reading renderer here
 - `tei.rs` — TEI (84000-style); stamps `data-src-*` from `roxmltree` ranges
 - `data.rs` — JSON + YAML: both parse to one ordered tree, rendered by `xml.rs`'s shape rules and label helpers. A block gets `data-src-*` only where its range is *proved* (every JSON node; YAML plain scalars checked against the source) — the reading view splices that range verbatim, so a guessed end corrupts the file
-- `editing.rs` — source-anchored editing: `EditableDocument` owns the buffer; block source maps; code-view highlighter
+- `editing.rs` — source-anchored editing: `EditableDocument` owns the buffer; block source maps
 - `theme.rs` — token contract, Primer/Dracula tables, CSS compiler. The stylesheet itself is `assets/reading.css`; `reading_mode_css()` prepends the compiled tokens to it
 - `scripts.rs` (public) — `window.leaf*()` snippet generators, `ScrollAnchor`
 - `updater.rs` — update staging: where a download lands, the length it must reach, the manifest, the applier's verdict
@@ -69,7 +69,7 @@ Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pip
 
 ## Commands
 
-Needs `rustup`, `just`, `node`. Run `just verify` (fmt, check, test, vendor + theme drift) before handing work back; `just check` / `test` / `format` individually.
+Needs `rustup`, `just`, `node`. Run `just verify` (fmt, check, test, vendor + theme drift, US spelling) before handing work back; `just check` / `test` / `format` individually.
 
 **Say what you couldn't verify** — `cfg(target_os = "macos")` code doesn't compile on Windows, and WiX doesn't run locally.
 

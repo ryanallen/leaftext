@@ -113,7 +113,7 @@ export function renderTEI(xmlString) {
     parts.push('</div>\n');
   }
 
-  // Front matter (summary, acknowledgements, introduction) lives in
+  // Front matter (summary, acknowledgments, introduction) lives in
   // `text > front`, a sibling of `body`. Render it collapsed by default so the
   // reader lands on the translation itself; the reader can open it to read the
   // summary/introduction.
@@ -198,7 +198,7 @@ function verseBlockquote(lines) {
   return `<blockquote class="tei-verse">\n<p>${lines.join('<br>\n')}</p>\n</blockquote>\n`;
 }
 
-// Render `text > front` as a collapsed <details> so summary/acknowledgements/
+// Render `text > front` as a collapsed <details> so summary/acknowledgments/
 // introduction are available but out of the way by default. The inner content
 // uses the same block machinery as the body (headings, paragraphs, verse), so
 // its own CSS and anchors work unchanged; outline.js skips anything inside
@@ -210,7 +210,7 @@ function renderFront(front, out, ctx) {
   if (!html) return;
 
   // Label the toggle with the section names it holds (e.g. "Summary,
-  // Acknowledgements, Introduction"), falling back to a generic term.
+  // Acknowledgments, Introduction"), falling back to a generic term.
   const heads = [...front.children]
     .filter((c) => localName(c) === 'div')
     .map((d) => [...d.children].find((c) => localName(c) === 'head'))

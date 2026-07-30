@@ -42,8 +42,7 @@ mod vault_corpus;
 pub use vault_corpus::{CorpusDocument, VaultCorpus, MAX_CORPUS_DOCUMENTS};
 mod editing;
 pub use editing::{
-    block_source_map, kind_is_editable, render_source_view_html, task_marker_offsets, BlockSpan,
-    EditableDocument,
+    block_source_map, kind_is_editable, task_marker_offsets, BlockSpan, EditableDocument,
 };
 mod updater;
 pub use updater::{
@@ -95,7 +94,6 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/shell/theme.js"),
     include_str!("assets/shell/render-state.js"),
     include_str!("assets/shell/code-view.js"),
-    include_str!("assets/shell/code-editor.js"),
     include_str!("assets/shell/reading-blocks.js"),
     include_str!("assets/shell/dom-to-markdown.js"),
     include_str!("assets/shell/reading-edits.js"),

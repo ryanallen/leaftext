@@ -1,6 +1,6 @@
-//! The editing model: the source-backed document buffer, the code (raw source)
-//! view renderer, and the Markdown block source map in-viewer editing stands
-//! on. Rust owns the editable text; the webview is the interaction shell.
+//! The editing model: the source-backed document buffer and the Markdown block
+//! source map in-viewer editing stands on. Rust owns the editable text; the
+//! webview is the interaction shell.
 
 use crate::*;
 
@@ -21,13 +21,8 @@ pub struct EditableDocument {
     /// Buffer snapshots taken before each reading-view edit, newest last. The
     /// browser's native undo can't cross the re-render an edit triggers, so
     /// inline-edit undo lives here. Code-view typing is not snapshotted — the
-    /// textarea's own undo covers it.
+    /// editor's own undo covers it.
     undo_stack: Vec<String>,
-    /// The code view's syntax highlight, with a hash of the buffer it came from.
-    /// Highlighting costs 6.6 s on a 4 MB file and used to run on every entry.
-    /// Keyed by hash rather than invalidated by hand, so no future mutator can
-    /// forget to clear it; the markup is large, so it lives only as long as the tab.
-    source_view_cache: Option<(blake3::Hash, String)>,
 }
 
 impl EditableDocument {
@@ -42,7 +37,6 @@ impl EditableDocument {
             text: contents,
             version: 0,
             undo_stack: Vec::new(),
-            source_view_cache: None,
         }
     }
 
@@ -81,8 +75,8 @@ impl EditableDocument {
         &self.text
     }
 
-    /// Replace the whole buffer (the code view sends the full textarea value on
-    /// each debounced change). Returns whether the dirty state changed.
+    /// Replace the whole buffer — the code view's resync path, when a splice left
+    /// the two copies disagreeing. Returns whether the dirty state changed.
     pub fn set_text(&mut self, text: String) -> bool {
         let was_dirty = self.is_dirty();
         self.text = text;
@@ -250,40 +244,6 @@ impl EditableDocument {
         match self.format {
             DocumentFormat::Markdown => task_marker_offsets(&self.text),
             DocumentFormat::Xml | DocumentFormat::Json | DocumentFormat::Yaml => Vec::new(),
-        }
-    }
-
-    /// The highlighted source for the code view's color layer, memoized against
-    /// the buffer it was built from (see `source_view_cache`).
-    pub fn source_view_html(&mut self) -> &str {
-        let key = blake3::hash(self.text.as_bytes());
-        let hit = matches!(&self.source_view_cache, Some((cached, _)) if *cached == key);
-        if !hit {
-            let html = render_source_view_html(&self.text, self.format);
-            self.source_view_cache = Some((key, html));
-        }
-        &self
-            .source_view_cache
-            .as_ref()
-            .expect("the cache was just filled")
-            .1
-    }
-}
-
-/// Highlight raw source for the code view. Returns the inner markup for a `<code>`
-/// element, falling back to escaped text when the language has no definition.
-///
-/// Markdown goes through `color_markdown_source`, which reads it with the parser
-/// the reading view already uses; syntect's Markdown grammar costs seconds on a
-/// large file where that parse costs milliseconds. The data formats keep syntect,
-/// where they tokenize in well under a tenth of a second.
-pub fn render_source_view_html(source: &str, format: DocumentFormat) -> String {
-    match format {
-        DocumentFormat::Markdown => color_markdown_source(source),
-        DocumentFormat::Xml | DocumentFormat::Json | DocumentFormat::Yaml => {
-            language_definition(format.language_token())
-                .and_then(|language| highlight_code(source, &language))
-                .unwrap_or_else(|| encode_text(source).to_string())
         }
     }
 }

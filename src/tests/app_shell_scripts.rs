@@ -162,25 +162,14 @@ fn glossary_failed_script_gives_the_page_a_reason_to_show() {
 }
 
 #[test]
-fn a_buffer_too_large_to_recolor_while_typing_says_so_instead_of_stalling() {
-    // Re-highlighting scales with the whole buffer, not the edit: 6.6 s for a 4 MB
-    // file, on the event-loop thread, every time typing paused. Past the cap the
-    // host sends no markup and the page leaves the color layer alone rather than
-    // freezing to rebuild it.
-    let with_html = source_updated_script(Some("<span>x</span>"), true);
-    assert_contains(&with_html, r#""html":"<span>x</span>""#);
-    assert_contains(&with_html, r#""dirty":true"#);
+fn a_taken_code_view_edit_reports_only_the_dirty_state() {
+    // The editor owns what is on screen, so the acknowledgment says nothing about
+    // the text: no colored markup, and no copy of the buffer coming back down the
+    // channel the edit just went out on.
+    let taken = source_updated_script(true);
+    assert_contains(&taken, r#""dirty":true"#);
+    assert!(taken.starts_with("window.leafSourceUpdated("));
+    assert!(!taken.contains("html"), "no markup rides along: {taken}");
 
-    let skipped = source_updated_script(None, false);
-    assert_contains(&skipped, r#""html":null"#);
-    assert_contains(&skipped, r#""dirty":false"#);
-    assert!(skipped.starts_with("window.leafSourceUpdated("));
-
-    // The page must treat a null highlight as "keep what is on screen", not as a
-    // reason to blank the color layer.
-    let html = app_shell_html();
-    assert_contains(
-        &html,
-        "if (state.html != null && (lastSentSourceText === null || codeViewText === lastSentSourceText)) {",
-    );
+    assert_contains(&source_updated_script(false), r#""dirty":false"#);
 }
