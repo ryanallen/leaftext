@@ -28,7 +28,9 @@ pub(crate) fn document_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
         DocumentFormat::Xml => xml_links(content, source_abs),
         // A data file's strings are values, not prose. Scanning them as Markdown
         // invents links that were never written, so the graph leaves them out.
-        DocumentFormat::Json | DocumentFormat::Yaml => Vec::new(),
+        // Mail bodies are transfer-encoded — the scan would read base64, not
+        // links — so messages stay out too.
+        DocumentFormat::Json | DocumentFormat::Yaml | DocumentFormat::Eml => Vec::new(),
         DocumentFormat::Markdown => markdown_links(content, source_abs),
     };
     dedup_links(&mut links);

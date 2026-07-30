@@ -8,6 +8,8 @@ mod xml;
 pub(crate) use xml::*;
 mod data;
 pub(crate) use data::*;
+mod eml;
+pub(crate) use eml::*;
 mod theme;
 pub(crate) use markdown::*;
 pub use markdown::{is_local_image_path, local_image_protocol_response, local_image_source_dir};
@@ -288,6 +290,7 @@ pub fn opened_document_from_source(source: &str, path: impl AsRef<Path>) -> Open
         DocumentFormat::Xml => opened_document_from_xml(source, path),
         DocumentFormat::Json => opened_document_from_json(source, path),
         DocumentFormat::Yaml => opened_document_from_yaml(source, path),
+        DocumentFormat::Eml => opened_document_from_eml(source, path),
         DocumentFormat::Markdown => opened_document_from_markdown(source, path),
     }
 }
@@ -324,6 +327,11 @@ pub fn opened_document_from_yaml(yaml: &str, path: impl AsRef<Path>) -> OpenedDo
         DocumentFormat::Yaml,
         render_yaml_document,
     )
+}
+
+/// Render a MIME message (.eml, .mht) into an `OpenedDocument`.
+pub fn opened_document_from_eml(eml: &str, path: impl AsRef<Path>) -> OpenedDocument {
+    opened_document_from_tree(eml, path.as_ref(), DocumentFormat::Eml, render_eml_document)
 }
 
 /// Render a document that is a tree rather than prose — XML, JSON, YAML — into an

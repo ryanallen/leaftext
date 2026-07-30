@@ -15,7 +15,7 @@ Leaf Text is a free desktop app for reading and writing your own documents. Ever
 
 Your notes deserve better than a text editor. Open a file in Leaf Text and it becomes a page you actually want to read — quiet, well set, and easy to move through. Click into a sentence and you can write. Nothing saves until you say so.
 
-There's no account and no sign-up. Your files never leave your computer, and they stay [Markdown](docs/01-features/01-rendering.md), [XML](docs/01-features/01-rendering.md#xml), [JSON, and YAML](docs/01-features/01-rendering.md#data-files-json-and-yaml) — formats every other app can read, so you're never locked in.
+There's no account and no sign-up. Your files never leave your computer, and they stay [Markdown](docs/01-features/01-rendering.md), [XML](docs/01-features/01-rendering.md#xml), [JSON, and YAML](docs/01-features/01-rendering.md#data-files-json-and-yaml) — and even [saved emails](docs/01-features/01-rendering.md#email-eml) — formats every other app can read, so you're never locked in.
 
 Free, on macOS and Windows.
 
@@ -29,7 +29,7 @@ Open a `.md` file and it renders the way you'd expect — the same way GitHub do
 
 [XML opens too](docs/01-features/01-rendering.md#xml). A sitemap, a feed, a config file — [any XML](docs/01-features/01-rendering.md#any-xml) reads as sections, fields, and tables instead of tags. And [84000-style TEI](docs/01-features/01-rendering.md#tei-xml-84000-translations), the format the Buddhist canon is translated into, gets a reader that understands its conventions.
 
-[JSON and YAML open too](docs/01-features/01-rendering.md#data-files-json-and-yaml), read by the same shape rules — a lock file, a CI workflow, or a Kubernetes manifest as headed sections, aligned fields, and record tables instead of punctuation. **[Rendering →](docs/01-features/01-rendering.md)**
+[JSON and YAML open too](docs/01-features/01-rendering.md#data-files-json-and-yaml), read by the same shape rules — a lock file, a CI workflow, or a Kubernetes manifest as headed sections, aligned fields, and record tables instead of punctuation. And a [saved email](docs/01-features/01-rendering.md#email-eml) — an `.eml` from Gmail or Outlook — opens as the message it carries: headers, body, inline images, attachments. **[Rendering →](docs/01-features/01-rendering.md)**
 
 ### Write where you read
 
@@ -38,7 +38,7 @@ Open a `.md` file and it renders the way you'd expect — the same way GitHub do
 
 Click into a sentence and type. Split a paragraph with `Enter`, join it back with `Backspace`, tick a checkbox — the change lands in your file at exactly that spot, and [undo](docs/01-features/07-editing.md#undo) walks back step by step.
 
-Prefer the raw text? Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, XML, JSON, or YAML — colored like an editor. There's no autosave, ever: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
+Prefer the raw text? Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, XML, JSON, YAML, or a raw email — colored like an editor. There's no autosave, ever: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
 
 ### Find anything you've written
 

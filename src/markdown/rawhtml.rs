@@ -289,13 +289,14 @@ pub(crate) fn sanitize_rendered_html(html: &str) -> String {
     sanitizer.clean(html).to_string()
 }
 
+/// The URL schemes rendered HTML may keep. One list, shared with the email
+/// renderer, which adds only `cid:` on top of it.
+pub(crate) const RENDERED_HTML_URL_SCHEMES: [&str; 5] =
+    ["http", "https", "mailto", "glossary", LOCAL_IMAGE_PROTOCOL];
+
 pub(crate) fn configure_rendered_html_sanitizer(sanitizer: &mut Builder<'_>) {
     sanitizer
-        .url_schemes(
-            ["http", "https", "mailto", "glossary", LOCAL_IMAGE_PROTOCOL]
-                .into_iter()
-                .collect(),
-        )
+        .url_schemes(RENDERED_HTML_URL_SCHEMES.into_iter().collect())
         .add_tags(&["input"])
         .add_tag_attributes("a", &["aria-label", "class", "id", "name"])
         .add_tag_attributes("blockquote", &["class"])

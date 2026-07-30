@@ -1,8 +1,8 @@
 # Rendering
 
-> Read without the noise. Leaf Text renders your Markdown the way GitHub does — code, diagrams, math, callouts, footnotes, emoji, your own images — and opens your structured files too: 84000-style TEI translations through a reader that knows the format, any other XML through a generic one, and JSON or YAML as readable pages.
+> Read without the noise. Leaf Text renders your Markdown the way GitHub does — code, diagrams, math, callouts, footnotes, emoji, your own images — and opens your structured files too: 84000-style TEI translations through a reader that knows the format, any other XML through a generic one, JSON or YAML as readable pages, and saved emails as the message they carry.
 
-Leaf Text picks a pipeline from the file extension. Markdown (`.md`, `.markdown`, `.mdown`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. `.xml` takes a parallel path — parsed with `roxmltree`, then routed by what the file contains: a TEI document goes to the [TEI renderer](#tei-xml-84000-translations), anything else to the [generic XML renderer](#any-xml). `.json`, `.yaml`, and `.yml` go to the [data renderer](#data-files-json-and-yaml), which reads the same shapes the generic XML renderer does. All of them produce the same HTML shell. Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the XML and data sections are described rather than demonstrated, since a Markdown page cannot embed a live document of another format.
+Leaf Text picks a pipeline from the file extension. Markdown (`.md`, `.markdown`, `.mdown`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. `.xml` takes a parallel path — parsed with `roxmltree`, then routed by what the file contains: a TEI document goes to the [TEI renderer](#tei-xml-84000-translations), anything else to the [generic XML renderer](#any-xml). `.json`, `.yaml`, and `.yml` go to the [data renderer](#data-files-json-and-yaml), which reads the same shapes the generic XML renderer does. `.eml`, `.mht`, and `.mhtml` go to the [email renderer](#email-eml). All of them produce the same HTML shell. Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the XML, data, and email sections are described rather than demonstrated, since a Markdown page cannot embed a live document of another format.
 
 ## Summary
 
@@ -17,6 +17,7 @@ Leaf Text picks a pipeline from the file extension. Markdown (`.md`, `.markdown`
 | [XML](#any-xml) | Any `.xml` file: sections, label/value fields, record tables, links |
 | [TEI XML](#tei-xml-84000-translations) | 84000 Buddhist-translation format; headings, paragraphs, verse, footnotes |
 | [JSON and YAML](#data-files-json-and-yaml) | Any `.json`, `.yaml`, or `.yml` file, read by the same shape rules as XML |
+| [Email](#email-eml) | Any `.eml`, `.mht`, or `.mhtml` file: headers, the message body, inline images, attachments |
 | [Encodings](#file-encodings) | UTF-8, UTF-16 and UTF-32 by their byte order mark; saved back as they were read |
 
 ## Pipeline
@@ -36,6 +37,9 @@ flowchart LR
     K[JSON or YAML file] --> L[Ordered value tree]
     L --> M[Data renderer]
     M --> E
+    N[Email file] --> O[mail-parser MIME tree]
+    O --> P[Email renderer]
+    P --> D
 ```
 
 ## Headings
@@ -459,6 +463,26 @@ A file that will not parse renders a single line naming the position — `JSON p
 > Data files are opened through **Open Document**, drag and drop, or the [library](03-library.md), and they are indexed and paged like any other document. Installing Leaf Text does **not** register it as the handler for `.json` or `.yaml`, so double-clicking one in your file manager still opens whatever you normally use. Only [Markdown and XML extensions are associated](../02-installation.md#file-associations).
 
 Editing works, with one limit worth knowing. The [code view](07-editing.md#code-view) edits any data file as raw text, exactly as it does Markdown and XML. In the reading view, a block is click-to-edit only where its precise byte range in the file can be *proved*: that covers every JSON value, and YAML plain scalars. YAML lists, tables, quoted strings, and block scalars (`|`, `>`) are read-only in the reading view and edited in the code view instead — an approximate range would splice an edit over the wrong bytes, so none is offered. See [Editing data files](07-editing.md#editing-data-files).
+
+## Email (.eml)
+
+Leaf Text opens `.eml` files — the message format Gmail, Outlook, and Apple Mail export — as the email they carry. `.mht` and `.mhtml` web archives are the same envelope, so the one reader opens those too.
+
+On disk such a file is wild: delivery and signature headers on top, then every part of the message base64- or quoted-printable-coded. The reader undoes all of that:
+
+| In the file | Rendered as |
+|---|---|
+| `Subject:` | The page title and heading (encoded-word headers decoded) |
+| `From:`, `To:`, `Cc:`, `Date:` | A field list; each address a `mailto:` link |
+| The HTML body | The message, sanitized through the same allowlist as [inline HTML](#inline-html) |
+| A plain-text body | Paragraphs, with bare URLs linked |
+| Inline images (`cid:` references) | Embedded in place, straight from the message's own parts |
+| Attachments | A list of name, type, and size |
+
+The delivery, routing, and anti-spam headers are not shown — they are machine plumbing, and the [code view](07-editing.md#code-view) has all of them when you want the raw message. The body passes the same sanitizer every other rendered page does, and nothing in the message can reach the network: inline images come from the file itself, never from a remote server.
+
+> [!NOTE]
+> Like [data files](#data-files-json-and-yaml), emails are opened through **Open Document**, drag and drop, or the [library](03-library.md) — installing Leaf Text does not take over `.eml` from your mail app. The message body is transfer-coded in the source, so nothing in the reading view is click-to-edit; the code view edits the raw file.
 
 ## File encodings
 

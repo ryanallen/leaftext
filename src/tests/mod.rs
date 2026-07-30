@@ -11,6 +11,7 @@ mod code_intel;
 mod data_xml;
 mod doc_graph;
 mod editing;
+mod eml;
 mod encoding;
 mod folder_tree;
 mod git;

@@ -45,7 +45,7 @@
 ## Meet Leaf Text
 - Page: https://leaftext.com/docs/#/introduction
 - Markdown: https://leaftext.com/docs/01-introduction.md
-- Summary: Leaf Text turns the files you already have into pages you actually want to read. Open a Markdown, XML, JSON, or YAML document on macOS or Windows and it renders clean and calm. Keep your place with...
+- Summary: Leaf Text turns the files you already have into pages you actually want to read. Open a Markdown, XML, JSON, or YAML document — or a saved email — on macOS or Windows and it renders clean and calm....
 
 ## Architecture
 - Page: https://leaftext.com/docs/#/development/architecture
@@ -85,4 +85,4 @@
 ## Leaf Text documentation
 - Page: https://leaftext.com/docs/
 - Markdown: https://leaftext.com/docs/README.md
-- Summary: Leaf Text is a free desktop app for reading and writing your own documents. Open a local Markdown, XML, JSON, or YAML file, get a clean rendered view, write straight into the page, and keep your pl...
+- Summary: Leaf Text is a free desktop app for reading and writing your own documents. Open a local Markdown, XML, JSON, YAML, or email (.eml) file, get a clean rendered view, write straight into the page, an...

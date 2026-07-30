@@ -197,9 +197,9 @@ The pane keeps up with changes on disk, so a file you just created shows up with
 
 ## File types
 
-The pane lists every format the reader opens: Markdown (`.md`, `.markdown`, `.mdown`), [XML](01-rendering.md#xml) (`.xml`), and [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`). Anything else is left alone.
+The pane lists every format the reader opens: Markdown (`.md`, `.markdown`, `.mdown`), [XML](01-rendering.md#xml) (`.xml`), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`), and [email](01-rendering.md#email-eml) (`.eml`, `.mht`, `.mhtml`). Anything else is left alone.
 
-Data files are searchable by name and title but draw no [graph](#graph) edges at all — not even to [web addresses](#web-addresses). A string inside a `.json` or `.yaml` is a value, and scanning one as prose would invent links nobody wrote. They still appear as nodes.
+Data files are searchable by name and title but draw no [graph](#graph) edges at all — not even to [web addresses](#web-addresses). A string inside a `.json` or `.yaml` is a value, and scanning one as prose would invent links nobody wrote. Emails draw none either — their bodies are transfer-coded in the file, so a scan would read base64, not links. They still appear as nodes.
 
 ## Facts
 

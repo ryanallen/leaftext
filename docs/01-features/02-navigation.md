@@ -131,7 +131,7 @@ Key details:
 
 - The file watcher debounces events with a 200 ms window.
 - Leaf Text hashes the file contents to skip duplicate reloads, and skips a reload outright when the file already holds exactly what is on screen — the hash is unknown right after a document opens, and the whole folder is watched, so the first event to arrive is usually about something else.
-- Reload re-renders through the same pipeline the file opened with — [XML](01-rendering.md#xml) stays XML, [JSON and YAML](01-rendering.md#data-files-json-and-yaml) stay themselves, Markdown stays Markdown.
+- Reload re-renders through the same pipeline the file opened with — [XML](01-rendering.md#xml) stays XML, [JSON and YAML](01-rendering.md#data-files-json-and-yaml) stay themselves, [email](01-rendering.md#email-eml) stays email, Markdown stays Markdown.
 - The parent directory is watched instead of only the file, so atomic-save editors still work.
 - Other Markdown files changed in that same folder are indexed live, so the [library](03-library.md#live-updates) pane stays current too.
 - Replacing an [image](01-rendering.md#images) the document shows refreshes the picture in place, without a rerender, so the reader does not move.
@@ -160,7 +160,7 @@ Opening a document hands it to the Rust side to parse and render before the view
 
 A document draws its terms from a shared glossary file. You do not have to link them yourself: wherever a defined term appears in the text, Leaf Text links it for you. Clicking one does not switch documents: it opens that single glossary entry in a sheet that slides up over the page you are reading, so you keep your place underneath.
 
-- Terms are matched automatically in every format Leaf Text renders — Markdown, [XML](01-rendering.md#xml), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) — whole words, ignoring case — so the same glossary covers every page with no per-page markup.
+- Terms are matched automatically in every format Leaf Text renders — Markdown, [XML](01-rendering.md#xml), [JSON and YAML](01-rendering.md#data-files-json-and-yaml), [email](01-rendering.md#email-eml) — whole words, ignoring case — so the same glossary covers every page with no per-page markup.
 - Text that is already a link, or inside code, is left alone, and the glossary file never links its own entries to themselves.
 - Dismiss the sheet with its close button, by clicking outside it, with the `Escape` key, or by dragging the grab bar at its top downwards — a short flick is enough, and letting go partway lets it spring back.
 - The sheet rises the moment you click the term. A large glossary takes a moment to read, so it opens on a spinner and fills in when the entry is ready; a glossary small enough to answer at once never shows one. If there is no `GLOSSARY.md` to be found, or no entry under that term, the sheet says so instead of spinning.
@@ -205,16 +205,16 @@ Every document opens with an **Outline** — a table of contents built automatic
 - The collapsed header shows the document's total length — **Outline (312 lines)** — counting the body blocks: paragraphs, headings, list items, quotes, code blocks, tables. The outline's own entries are navigation rather than body, so they don't count, and neither do footnote definitions.
 - Entries nest as a bulleted list that mirrors the heading levels, so the shape of the document is visible at a glance.
 - Each entry links to its heading, so clicking one jumps straight there.
-- It is built from the rendered headings, so it behaves the same for Markdown, [XML](01-rendering.md#xml), and [JSON or YAML](01-rendering.md#data-files-json-and-yaml).
+- It is built from the rendered headings, so it behaves the same for Markdown, [XML](01-rendering.md#xml), [JSON or YAML](01-rendering.md#data-files-json-and-yaml), and [email](01-rendering.md#email-eml).
 - It appears whenever a document has a title plus at least one more heading; a document with only a title shows none.
 
 The outline lists the sections within the current document, which makes it a companion to the [minimap](04-minimap.md): the outline is the document's structure as clickable text, the minimap a scaled picture of the whole page.
 
 ## Pager
 
-When you open a Markdown, [XML](01-rendering.md#xml), [JSON, or YAML](01-rendering.md#data-files-json-and-yaml) document that sits inside a folder tree connected by `README.md` files, Leaf Text appends a **Previous / Next** bar at the bottom of the page. Clicking a button opens the adjacent document in reading order without creating an extra history entry.
+When you open a Markdown, [XML](01-rendering.md#xml), [JSON, YAML](01-rendering.md#data-files-json-and-yaml), or [email](01-rendering.md#email-eml) document that sits inside a folder tree connected by `README.md` files, Leaf Text appends a **Previous / Next** bar at the bottom of the page. Clicking a button opens the adjacent document in reading order without creating an extra history entry.
 
-Reading order follows the same depth-first walk the docs viewer uses: inside each folder, non-README documents come first (every renderable format together — Markdown, XML, JSON, and YAML — sorted by name), then each subfolder — its README acting as the folder's landing page — followed by that folder's own pages. `README` and `GLOSSARY` files (either extension) are never standalone entries in the sequence.
+Reading order follows the same depth-first walk the docs viewer uses: inside each folder, non-README documents come first (every renderable format together — Markdown, XML, JSON, YAML, and email — sorted by name), then each subfolder — its README acting as the folder's landing page — followed by that folder's own pages. `README` and `GLOSSARY` files (either extension) are never standalone entries in the sequence.
 
 Working out the Previous / Next links means scanning the folder tree, so Leaf Text does it after the document is already on screen rather than blocking the initial render. A placeholder bar shows in its place for the moment it takes, then the real buttons fill in. In a folder with a great many files the page appears immediately and the pager simply arrives a beat later.
 
@@ -229,7 +229,7 @@ Hovering a link shows a small tooltip that names what kind of link it is and sho
 | Glossary entry | A `glossary:` term link, or a link to `GLOSSARY.md#term` |
 | Full glossary | A bare `glossary:` link that opens the whole glossary |
 | In-page jump | A `#fragment` link to a heading on the current page |
-| Another page | A relative link to any document Leaf Text reads — `.md`, [`.xml`](01-rendering.md#xml), [`.json`, `.yaml`](01-rendering.md#data-files-json-and-yaml) (its line count is shown too) |
+| Another page | A relative link to any document Leaf Text reads — `.md`, [`.xml`](01-rendering.md#xml), [`.json`, `.yaml`](01-rendering.md#data-files-json-and-yaml), [`.eml`](01-rendering.md#email-eml) (its line count is shown too) |
 | External site | An `http://` or `https://` link |
 | Email link | A `mailto:` link |
 | App link | Any other URL scheme |

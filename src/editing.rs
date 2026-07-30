@@ -245,6 +245,9 @@ impl EditableDocument {
             DocumentFormat::Xml => xml_block_source_map(&self.text),
             DocumentFormat::Json => json_block_source_map(&self.text),
             DocumentFormat::Yaml => yaml_block_source_map(&self.text),
+            // Bodies are transfer-encoded, so no rendered block can prove a
+            // source range; the code view edits the raw message.
+            DocumentFormat::Eml => Vec::new(),
         }
     }
 
@@ -253,7 +256,10 @@ impl EditableDocument {
     pub fn task_offsets(&self) -> Vec<usize> {
         match self.format {
             DocumentFormat::Markdown => task_marker_offsets(&self.text),
-            DocumentFormat::Xml | DocumentFormat::Json | DocumentFormat::Yaml => Vec::new(),
+            DocumentFormat::Xml
+            | DocumentFormat::Json
+            | DocumentFormat::Yaml
+            | DocumentFormat::Eml => Vec::new(),
         }
     }
 }

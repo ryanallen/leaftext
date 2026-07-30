@@ -2,7 +2,7 @@
 
 > Write where you read. Click into a sentence and type, or drop to the raw source — both write back to the same file, and nothing saves until you say so.
 
-Leaf Text is reading-first, but it is also editable. You can edit **in the reading view itself** — click into a sentence and type, toggle a checkbox — and the change is written back into the source at exactly that spot. When you would rather work in the raw text, the **code view** swaps the page for the file's actual source — Markdown, XML, JSON, or YAML. Both paths share one source of truth and one green **Save** button. There is no autosave for text edits: nothing touches your file until you say so — the one exception is ticking a checkbox, which saves on the spot.
+Leaf Text is reading-first, but it is also editable. You can edit **in the reading view itself** — click into a sentence and type, toggle a checkbox — and the change is written back into the source at exactly that spot. When you would rather work in the raw text, the **code view** swaps the page for the file's actual source — Markdown, XML, JSON, YAML, or a raw email. Both paths share one source of truth and one green **Save** button. There is no autosave for text edits: nothing touches your file until you say so — the one exception is ticking a checkbox, which saves on the spot.
 
 ## Summary
 
@@ -13,7 +13,7 @@ Leaf Text is reading-first, but it is also editable. You can edit **in the readi
 | Interactive checkboxes | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | Undo | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits |
 | Code view | Toggle the rendered page to the raw source and back |
-| Highlighting | The source is colored in the active [theme](06-themes.md)'s syntax colors — Markdown, XML, JSON, and YAML |
+| Highlighting | The source is colored in the active [theme](06-themes.md)'s syntax colors — Markdown, XML, JSON, and YAML; [email](01-rendering.md#email-eml) source shows as plain text |
 | Line numbers | A gutter numbers each source line, staying pinned when long lines wrap |
 | Wrapped lines | Long lines wrap; the code view never scrolls sideways |
 | Minimap | The editor's own [minimap](04-minimap.md#the-code-views-minimap) rail, drawn on the window's chrome beside the page |
@@ -106,7 +106,7 @@ The [live reload](02-navigation.md#reload) watcher keeps working alongside editi
 
 ## Formats
 
-The [code view](#code-view) edits every format Leaf Text opens, as the whole-file source editor: Markdown (`.md`, `.markdown`, `.mdown`), [XML](01-rendering.md#xml) (`.xml`), and [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`).
+The [code view](#code-view) edits every format Leaf Text opens, as the whole-file source editor: Markdown (`.md`, `.markdown`, `.mdown`), [XML](01-rendering.md#xml) (`.xml`), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`), and [email](01-rendering.md#email-eml) (`.eml`, `.mht`, `.mhtml`).
 
 What the *reading view* offers differs by format, because a block can only be edited in place when the app knows the exact bytes it came from:
 
@@ -118,6 +118,7 @@ What the *reading view* offers differs by format, because a block can only be ed
 | JSON | Edit their exact source in place |
 | YAML plain values | Edit their exact source in place |
 | YAML lists, tables, quoted strings, block scalars | Read-only; edited in the code view |
+| Email | Read-only; the body is transfer-coded in the file, so no rendered block can prove a source range — edited in the code view |
 
 ### Editing data files
 

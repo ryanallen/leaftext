@@ -24,6 +24,12 @@ notify-debouncer-mini = "0.4"
 pulldown-cmark = { version = "0.13.4", default-features = false, features = [
     "html",
 ] }
+# Reads .eml MIME messages: multipart trees, base64/quoted-printable bodies,
+# encoded-word headers. `full_encoding` brings encoding_rs for the legacy
+# multibyte charsets real mail still arrives in.
+mail-parser = { version = "0.11", default-features = false, features = [
+    "full_encoding",
+] }
 rfd = "0.17.2"
 roxmltree = "0.20"
 rusqlite = { version = "0.31", features = ["bundled"] }

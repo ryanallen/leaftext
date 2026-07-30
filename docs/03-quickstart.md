@@ -7,7 +7,7 @@ There's nothing to set up. No account, no folder to designate, no plugins to cho
 ## Start
 
 1. Press `Ctrl+O` on Windows or `Cmd+O` on macOS.
-2. Pick any `.md`, `.xml`, `.json`, `.yaml`, or `.yml` file.
+2. Pick any `.md`, `.xml`, `.json`, `.yaml`, or `.eml` file.
 3. Scroll the document.
 4. Use the minimap on the right to jump.
 5. Open another file to create a new tab.
@@ -16,7 +16,7 @@ There's nothing to set up. No account, no folder to designate, no plugins to cho
 
 ```mermaid
 flowchart LR
-    A[Launch Leaf Text] --> B[Open a .md, .xml, .json, or .yaml file]
+    A[Launch Leaf Text] --> B[Open a .md, .xml, .json, .yaml, or .eml file]
     B --> C[Read in main pane]
     C --> D[Jump with minimap]
     C --> E[Open another file]
@@ -29,7 +29,7 @@ flowchart LR
 | Method | How |
 | --- | --- |
 | Keyboard | `Ctrl+O` / `Cmd+O` |
-| Drag and drop | Drop a `.md`, `.xml`, `.json`, `.yaml`, or `.yml` file onto the window |
+| Drag and drop | Drop a `.md`, `.xml`, `.json`, `.yaml`, or `.eml` file onto the window |
 | Recent files | Click a file on the no-file home screen |
 | Command line / Open with | Launch Leaf Text with a file path |
 
@@ -41,7 +41,7 @@ flowchart LR
 | Area | What it does |
 | --- | --- |
 | Tab bar | Keeps multiple documents open |
-| Main reader | Shows the rendered Markdown, [XML](01-features/01-rendering.md#xml), or [JSON/YAML](01-features/01-rendering.md#data-files-json-and-yaml) |
+| Main reader | Shows the rendered Markdown, [XML](01-features/01-rendering.md#xml), [JSON/YAML](01-features/01-rendering.md#data-files-json-and-yaml), or [email](01-features/01-rendering.md#email-eml) |
 | Outline | A collapsed list of the document's headings at the top, labeled with the document's line count, for jumping to a section |
 | Minimap | Shows the whole document and your current viewport |
 | Back / Forward | Moves through document and scroll history |
