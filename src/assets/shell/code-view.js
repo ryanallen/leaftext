@@ -748,6 +748,12 @@ function defineLeafMonacoTheme(monaco) {
     'editorLineNumber.activeForeground': '#' + fg,
     'editor.selectionBackground': hash('--leaf-editor-code-selection-background'),
     'editorCursor.foreground': '#' + fg,
+    // Nothing behind the map's glyphs: the rail is chrome and the shell's grain has to
+    // show between the lines (reading.css takes the fill off the editor's boxes for the
+    // same reason). Unset, this defaults to editor.background and the minimap pre-fills
+    // its canvas with it. Only the alpha matters — the glyphs are still antialiased
+    // against editor.background, so the map's text reads exactly as before.
+    'minimap.background': '#00000000',
     // No blue focus ring poking through the card's rounded corners.
     focusBorder: '#00000000',
     contrastBorder: '#00000000',

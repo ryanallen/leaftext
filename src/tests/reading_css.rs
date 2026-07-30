@@ -885,6 +885,37 @@ fn the_code_views_line_numbers_stand_off_the_page_frame() {
     );
 }
 
+// The minimap rail is chrome, not page: the shell's grain runs behind it. Monaco's
+// minimap canvas paints only the pixels its glyphs land in — it fills no background of
+// its own — so anything opaque behind the rail is something of ours, and the page fill
+// crossing into it is the whole reason the rail read as page-colored. Every layer
+// carrying that color has to stop at the page frame's right border.
+#[test]
+fn the_code_views_minimap_rail_shows_the_shells_grain() {
+    let css = reading_mode_css();
+    let frame_edge = "calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff))";
+
+    // The shell holds no fill of its own — it spans the rail as well as the page.
+    let shell = rule_body(css, ".reader-shell.code-view-monaco-shell {");
+    assert_contains(shell, "background: transparent;");
+    // It is painted by ::before instead, which ends where the frame's border is drawn.
+    let fill = rule_body(css, ".reader-shell.code-view-monaco-shell::before {");
+    assert_contains(fill, &format!("inset: 0 {frame_edge} 0 0;"));
+    assert_contains(fill, "background: var(--syntax-background);");
+    // Nor does either box of Monaco's that carries it: the editor's root, and the lines
+    // layer, whose 16,777,216px square is bounded only by the guard around the editor.
+    let editor = rule_body(css, ".code-view-monaco .monaco-editor,");
+    assert_contains(editor, ".monaco-editor .monaco-editor-background {");
+    assert_contains(editor, "background-color: transparent;");
+    // And neither does the edge wash, which would otherwise put the page's color back
+    // under the top and bottom of the map.
+    let fade = rule_body(css, ":root[data-code-view=\"true\"] .reader-edge-fade {");
+    assert_contains(
+        fade,
+        "margin-right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) + 1px);",
+    );
+}
+
 #[test]
 fn the_map_takes_the_column_the_minimap_is_not_using() {
     let html = app_shell_html();

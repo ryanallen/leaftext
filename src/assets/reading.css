@@ -2239,6 +2239,10 @@ body:has(#readerToolbar:not([hidden])) {
 }
 :root[data-code-view="true"] .reader-edge-fade {
   --reader-edge-fade-surface: var(--code-block-background, var(--preview-background));
+  /* And it stops where the page does, a whole minimap short of the shell's edge: out
+     that way is the rail, and a wash of the page's color across the top and bottom of
+     it would put the page back under the map. The frame's own measure, plus its border. */
+  margin-right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) + 1px);
 }
 /* The chrome's own dot grain — same circle, same 2px lattice the app bar and the
    shell are screened with — laid over the page in the page's color.
@@ -3275,6 +3279,26 @@ body:has(#readerToolbar:not([hidden])) {
   border-right: 0;
   border-bottom: 0;
   border-radius: 0;
+  /* No fill of its own: ::before paints the page and stops at the frame's right
+     border, because past that border is the minimap rail — chrome, not page, and the
+     shell's grain has to run behind it as it does behind the reading view's. */
+  background: transparent;
+}
+/* The page's fill, out to the same edge ::after strokes and no further. It lives here
+   rather than on the editor because Monaco's own background boxes cover the rail too
+   (see .code-view-monaco below); a pseudo-element paints under its element's children,
+   so this lands behind the editor without a z-index. */
+.reader-shell.code-view-monaco-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0 calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff)) 0 0;
+  background: var(--syntax-background);
+  /* The two corners the card rounds itself, so the fill can't poke outside ::after's
+     curve. The top two are the arc elements' business — each paints chrome over its
+     corner and masks the page's disc back out, hiding the square corner under it. */
+  border-bottom-left-radius: var(--leaf-radius-md);
+  border-bottom-right-radius: var(--leaf-radius-md);
+  pointer-events: none;
 }
 /* The page frame for the text area: left, right and bottom edges, with both
    bottom corners rounded. The right edge sits at the minimap's left stroke
@@ -3283,10 +3307,10 @@ body:has(#readerToolbar:not([hidden])) {
    minimap rail — no separate minimap stroke. The top edge is the app bar's divider;
    the two top corners are the arc elements (reader-corner-tl and -tr), which sit at
    z-index 11 above Monaco — a shell pseudo can't, since ::before paints behind the
-   editor's opaque background. So this box starts a radius below the divider and
-   leaves its own top corners square. Kept inside the padding box so the shell's
-   overflow:hidden doesn't clip it; pointer-events:none so Monaco still takes the
-   clicks. */
+   editor (which is exactly why the page fill lives there). So this box starts a radius
+   below the divider and leaves its own top corners square. Kept inside the padding
+   box so the shell's overflow:hidden doesn't clip it; pointer-events:none so Monaco
+   still takes the clicks. */
 .reader-shell.code-view-monaco-shell::after {
   content: "";
   position: absolute;
@@ -3321,23 +3345,33 @@ body:has(#readerToolbar:not([hidden])) {
 }
 /* The top-right corner of the faked page: the same convex arc reader-corner-tr
    draws at the card's real right corner in the reading view, moved in to the minimap
-   stroke and stripped of its chrome fill and mask — outside the corner here is the
-   code surface (the wrap gap), not the window chrome, so only the stroke should
-   show. Its z-index 11 keeps it above Monaco, which is why the corner lives here and
-   not on a shell pseudo (::before paints behind the editor's opaque background). The
-   right offset matches ::after's faked edge; the arc's own geometry (top: 100% - 1px,
-   the radius+1 box, the top/right borders) is inherited from .reader-corner(-tr). */
+   stroke. Only the offset changes — outside the corner is the shell's grain here as
+   well, now that the page fill stops at the frame (the shell's ::before), so the
+   chrome fill and the mask cutting the page's disc back out of it are both right as
+   they stand. Its z-index 11 keeps it above Monaco, which is why the corner lives here
+   and not on a shell pseudo (::before paints behind the editor). The right offset
+   matches ::after's faked edge; the arc's own geometry (top: 100% - 1px, the radius+1
+   box, the top/right borders) is inherited from .reader-corner(-tr). */
 :root[data-code-view="true"] .reader-corner-tr {
   right: calc(var(--reader-gutter) + var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
-  background: none;
-  -webkit-mask-image: none;
-  mask-image: none;
 }
 .code-view-monaco {
   position: absolute;
   inset: var(--app-bar-height) 0 0 0;
   /* How far the line numbers stand off the page frame's left border. */
   --cv-line-number-pad: 8px;
+}
+/* Neither box that carries editor.background may paint: both cover the minimap rail
+   as well as the text, and neither can be stopped at the divider — the root box is the
+   whole editor, and the lines layer is a 16,777,216px square bounded only by the
+   overflow guard around it. The shell's ::before paints the page instead.
+   That is all it takes, because the minimap's canvas writes only the pixels a glyph
+   lands in and fills no background of its own — what looked like the map's background
+   was always one of these two behind it. Off, the rail shows the shell's grain between
+   the map's lines: text on the chrome, as the reading view's rail has always drawn it. */
+.code-view-monaco .monaco-editor,
+.code-view-monaco .monaco-editor .monaco-editor-background {
+  background-color: transparent;
 }
 /* Monaco right-aligns the line numbers in a box it sizes to fit the widest one, and
    that box starts at the frame's left border — so once a file needs five digits (its

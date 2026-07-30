@@ -13,11 +13,11 @@ Leaf Text is reading-first, but it is also editable. You can edit **in the readi
 | Interactive checkboxes | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | Undo | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits |
 | Code view | Toggle the rendered page to the raw source and back |
-| Highlighting | The source is colored by the app's own highlighter — Markdown, XML, JSON, and YAML |
+| Highlighting | The source is colored in the active [theme](06-themes.md)'s syntax colors — Markdown, XML, JSON, and YAML |
 | Line numbers | A gutter numbers each source line, staying pinned when long lines wrap |
 | Wrapped lines | Long lines wrap; the code view never scrolls sideways |
-| Minimap | The same [minimap](04-minimap.md) rail as the reading view, over the source |
-| Editing | Type directly; undo/redo, selection, and clipboard work, and `Tab` inserts a tab character. Large files use a [purpose-built editor surface](#editing-the-source) so a keystroke stays fast |
+| Minimap | The editor's own [minimap](04-minimap.md#the-code-views-minimap) rail, drawn on the window's chrome beside the page |
+| Editing | Type directly; undo/redo, selection, clipboard, and IME all work, and `Tab` indents instead of moving focus. A multi-megabyte file [stays responsive](#editing-the-source) |
 | Save | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears only with unsaved changes |
 | Unsaved marker | A tab with unsaved edits shows a dot beside its name |
 | Read-only | Documents open locked. The [padlock](#the-padlock) on the reading view's toolbar unlocks the one in front of you — except checkboxes, which toggle either way |
@@ -60,18 +60,18 @@ The toggle is the code-brackets button on the [floating toolbar](02-navigation.m
 
 Opening another document while you are in the source view opens **that** document in the source view. The view is where you are working, not a property of the file you picked.
 
-- Markdown source is colored from the very parse the [reading view](01-rendering.md) renders, so the two always agree about what a construct is; [XML](01-rendering.md#xml), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) go through the same syntax highlighter that colors fenced code blocks in the reading view, and a fenced block inside a Markdown file is still colored as whatever language it declares. Each construct's *delimiters* are colored to match their content the way a code editor does — the `#` of a heading, the `[]` and `()` of a link, the `**` and backticks of bold and inline code, the `>` of a quote — rather than left as plain text, and headings and bold read in bold. An [XML](01-rendering.md#xml) file shows its tags, with element names in bold and attribute names in their own color, and a [JSON or YAML](01-rendering.md#data-files-json-and-yaml) file shows its keys, values, and punctuation the way an editor would.
-- Long lines wrap instead of scrolling sideways, and the gutter numbers *source* lines — a wrapped line keeps one number, pinned to its first row. Each number is drawn on the line it labels rather than in a column of its own, so the two cannot drift apart however the text wraps; the gutter widens to fit the highest number in the file so a number never folds onto a second line.
-- The rail on the right is the reader's own [minimap](04-minimap.md), showing a scaled thumbnail of the source; click or drag it to move, exactly as in the reading view.
+- The source is colored in the active [theme](06-themes.md#tokens)'s own syntax colors, so the code view looks like the rest of the app rather than like a foreign editor dropped into it: headings and list markers in the keyword color and bold, bold and italic text at their real weight and slant, inline and fenced code in the string color, links in the link color, block quotes in the comment color. An [XML](01-rendering.md#xml) file shows its tags and attribute names in their own colors, and a [JSON or YAML](01-rendering.md#data-files-json-and-yaml) file its keys, values, numbers, and punctuation. Switching theme or flipping light/dark re-colors the open source in place.
+- Long lines wrap instead of scrolling sideways, and the gutter numbers *source* lines — a wrapped line keeps one number, pinned to its first row. The gutter widens to fit the highest number in the file, and the numbers stand clear of the page's left border rather than against it.
+- The rail on the right is the editor's own [minimap](04-minimap.md#the-code-views-minimap): a scaled drawing of the source, with the same viewport box the reading view's rail uses. Drag the box or click the rail to move. It stands on the window's textured chrome, not on the page — the page's right border is the line between them.
 - Toggling keeps your place: the code view opens on the source line of the block you were reading, and toggling back lands the reading view on that same block. Switching to another tab and back does too — a tab left in the code view comes back in the code view, scrolled to where you left it.
 
 ## Editing the source
 
-The code view is a real editor surface: click anywhere and type.
+The code view is a real editor surface: click anywhere and type. It is Monaco — the editor Visual Studio Code is built on — compiled into the app rather than fetched from anywhere, and loaded the first time you open the source view. That first toggle spends a moment on the spinner; every one after it is immediate.
 
-- Selection, caret movement, undo and redo (`Ctrl+Z` / `Cmd+Z`), and clipboard (`Ctrl+C` / `X` / `V`) all work as you would expect. `Tab` inserts a tab character at the caret instead of moving focus; `Shift+Tab` remains the keyboard escape out of the editor.
-- A large file uses a purpose-built editor surface rather than a plain text box. A single editable element holding the whole document is what made the code view slow — seconds per keystroke on a multi-megabyte file, and a stutter on every unrelated redraw — because the cost of editable text scales with the length of the document, not the size of the edit. Past a quarter of a megabyte Leaf Text keeps the colored source as the only full-length surface and drives typing through a small off-document input, drawing the caret and selection itself, so a keystroke touches only the line it changes. Below that size the native text box is used unchanged. The difference is one of feel, not capability: the same keys, selection, and clipboard work either way. The trade-offs on the large-file path are that the platform's inline IME preview and screen-reader support are reduced (composed text still commits, and `Ctrl+C` still copies), and that copying from the right-click menu falls back to the keyboard shortcut.
-- Edits re-highlight through the same Rust path on a short debounce, so color follows what you type. Highlighting costs time in proportion to the whole file rather than the edit, so past that same quarter-megabyte mark it stops running between keystrokes: the lines you change show as plain text until the view is next built, which beats the editor freezing on every pause. The result is kept against the buffer it came from, so leaving the source view and coming back is instant unless the text changed.
+- Selection, caret movement, undo and redo (`Ctrl+Z` / `Cmd+Z`, `Ctrl+Y` / `Cmd+Shift+Z`), clipboard (`Ctrl+C` / `X` / `V`), and your platform's IME are the editor's own. `Tab` indents at the caret rather than moving focus.
+- Color follows your typing: the source is tokenized as you go, so a construct takes its color the moment you finish typing it.
+- A multi-megabyte file types and scrolls like a short one, because only the lines on screen are ever drawn. Earlier versions carried a hand-built surface to manage that; the editor does it now.
 - What reaches the host is the edit, not the file: the offset, how much was removed, and what was typed. Sending a multi-megabyte buffer on every pause in typing cost a fifth of a second of it. The message carries the buffer's new length too, so if the host's copy ever disagreed it would ask for the whole text again rather than splice into a buffer it no longer understood.
 - Each tab keeps its own edit buffer: switching tabs or toggling back to the reading view never loses unsaved work.
 - The reading view renders the *buffer*, not the disk — toggle back before saving and you see your edits rendered.
@@ -123,4 +123,4 @@ That only works where the byte range is certain, so Leaf Text offers it only whe
 
 - [Rendering](01-rendering.md) for what the saved Markdown renders as
 - [Navigation](02-navigation.md) for tabs, history, and live reload
-- [Minimap](04-minimap.md) for the rail the code view shares
+- [Minimap](04-minimap.md#the-code-views-minimap) for the rail beside the source

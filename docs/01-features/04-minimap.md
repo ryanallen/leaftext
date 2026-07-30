@@ -27,9 +27,14 @@ A `requestAnimationFrame`-throttled loop writes those on scroll, and reads no ge
 
 The Rust side produces a small `DocumentMinimap` for each document whose only job now is to report a positive line count: an empty or zero-line document reports `0` and the rail is skipped entirely. That count is the only part of the model the page is sent — the thumbnail comes from the clone, so the model's per-line detail would be megabytes of payload on a large document that nothing reads. [XML](01-rendering.md#xml) and [JSON/YAML](01-rendering.md#data-files-json-and-yaml) documents report their count from the rendered block HTML (they have no Markdown source to line-scan), so an opened `.xml`, `.json`, or `.yaml` file gets the same real-text rail as a Markdown file — the thumbnail itself is always the live clone, whatever the source format.
 
-The [code view](07-editing.md#code-view) uses this same minimap over the raw source: the identical rail, thumbnail clone, and drag/click behavior, mirroring the highlighted source text instead of the rendered page. There it renders regardless of the setting below, because with no native scrollbar it is the code view's vertical scroll affordance. What the rail clones is the code view's own container, the element the editor's type metrics and syntax colors are set on — the thumbnail is moved out of the page to build it, so anything it only inherited from a parent would be lost, and it would wrap at a different width than the source it is meant to mirror.
+## The code view's minimap
 
-It is windowed there too: the source view is the colored lines with the textarea you type into laid over them, so the clone takes a slice of those lines. The line numbers ride along, because they are drawn by a counter on the lines themselves rather than by a second column of elements.
+The [code view](07-editing.md#code-view) has a rail of its own — the editor's, not this one. It draws the source rather than cloning a page, which is what lets it stay honest on a file far too large to lay out twice, and it is always present there: with no scrollbar in the source view, the rail is how you see where you are. The reader's rail and the editor's are two implementations of one idea, so they are dressed alike — the same viewport box, the same border and rounding, the same width and standing-off from the page.
+
+Both rails are **chrome, not page**: they stand on the window's textured surface beside the card, and the page's own right border is the line between the two. In the code view that means the editor paints no background out there and the map's own drawing surface is transparent, so the chrome's dot grain shows through between the lines of the map — the map reads as text on the window rather than as a second, differently-colored page.
+
+> [!NOTE]
+> The reading view's rail is a real clone of the page; the code view's is the editor's drawing of the source. They look and behave alike on purpose, but the [minimap setting](#toggling-the-minimap) governs only the first — the code view always has its rail.
 
 ## Responsive behavior
 
