@@ -37,7 +37,7 @@ pub(crate) struct VaultState {
     pub(crate) pending_graph: Option<GraphRequest>,
     pub(crate) pending_search: Option<String>,
     /// The last graph asked for, so an edit on disk can redraw it.
-    pub(crate) last_graph: Option<GraphRequest>,
+    pub(crate) last_graph: Option<PendingGraph>,
     /// Whether the page is showing the graph. Transient, and the page owns it —
     /// this copy exists only so a file changing on disk knows whether there is
     /// a map on screen worth rebuilding.
@@ -204,11 +204,15 @@ fn apply_active_vault(
     if let Err(error) = set_active_vault_id(conn, id) {
         eprintln!("Could not remember the active vault: {error}");
     }
-    state.active = id;
     state.root = find_vault(conn, id)
         .ok()
         .flatten()
         .map(|vault| PathBuf::from(vault.root_path));
+    // An id we cannot find a folder for is no vault at all. Keeping the two in
+    // step matters because the page is told the id and decides what to offer from
+    // it, while search and the graph need the folder — set one without the other
+    // and the interface offers a vault nothing can read.
+    state.active = if state.root.is_some() { id } else { 0 };
     // A new root, so the pane starts at the top of it rather than in a folder
     // that belonged to whatever was showing before, and everything read under
     // the old one is about somewhere else.
@@ -238,9 +242,16 @@ pub(crate) fn reveal_in_library(
         .and_then(|conn| vault_containing(conn, file));
     let target = owner.as_ref().map(|vault| vault.id).unwrap_or(0);
     if target != state.active {
-        if let Some(conn) = state.conn.as_ref() {
-            if let Err(error) = set_active_vault_id(conn, target) {
-                eprintln!("Could not remember the active vault: {error}");
+        // Landing in another vault is remembered; landing outside every vault is
+        // not. Reading one loose file used to write "no vault" into the database,
+        // so opening something from a downloads folder forgot the vault you had
+        // chosen — for that session and every session after it. Opening a file is
+        // navigation, and navigation must not overwrite a choice.
+        if target != 0 {
+            if let Some(conn) = state.conn.as_ref() {
+                if let Err(error) = set_active_vault_id(conn, target) {
+                    eprintln!("Could not remember the active vault: {error}");
+                }
             }
         }
         state.active = target;
@@ -288,38 +299,82 @@ pub(crate) fn deliver_folder(
     }
 }
 
-/// The one folder the graph covers: the active vault, and only that.
-///
-/// It used to fall back to whatever folder the pane was in, which read fine
-/// until that folder was `C:\` — then opening the graph walked the whole drive,
-/// which is the crawl this all exists to be rid of. A vault is the only thing in
-/// the app that means "this is a collection", and a graph is a map of one.
-pub(crate) fn graph_root(state: &VaultState) -> Option<PathBuf> {
-    state.root.clone()
+/// A graph that was asked for: the document it was about, and the slice wanted.
+/// Kept so an edit on disk can redraw the same picture.
+#[derive(Debug, Clone)]
+pub(crate) struct PendingGraph {
+    pub(crate) document: Option<PathBuf>,
+    pub(crate) request: GraphRequest,
 }
 
-/// The link graph, off the vault's text. Waits for the read if it is the first
-/// thing to ask for it, and builds on a worker either way.
+/// What a graph is drawn over — and the key a finished one is checked against, so
+/// a map built for somewhere else is dropped rather than painted.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum GraphSource {
+    /// The active vault: every document under it. The bigger picture, because
+    /// what links *back* to a document is only ever written in another one, and a
+    /// whole collection is where `[[wiki]]` names can resolve.
+    Vault(PathBuf),
+    /// One document, its folder, and what it links to — [`document_graph`].
+    Document(PathBuf),
+}
+
+/// What the graph on screen is drawn over, given the document on screen.
+///
+/// The vault wins when it holds that document, because it is strictly more. But it
+/// is not required, and that is the point: the graph used to refuse to draw at all
+/// without a vault, which left every document outside one with no map even though
+/// its links were sitting in its own text. A vault is something you name so search
+/// has a bounded set of words — not a precondition for a document having links.
+///
+/// Only reading a *folder tree* ever needed a vault to bound it, and a document's
+/// own map does not read one.
+pub(crate) fn graph_source(state: &VaultState, document: Option<&Path>) -> Option<GraphSource> {
+    let vault = state
+        .root
+        .as_deref()
+        .filter(|root| document.is_none_or(|document| vault_holds(root, document)));
+    match (vault, document) {
+        (Some(root), _) => Some(GraphSource::Vault(root.to_path_buf())),
+        (None, Some(document)) => Some(GraphSource::Document(document.to_path_buf())),
+        // No document and no vault: nothing to be a map of. The page only offers
+        // the view with a document open, so this is not a state anyone can reach
+        // from the interface.
+        (None, None) => None,
+    }
+}
+
+/// The link graph. Off the vault's text when the vault holds the open document —
+/// waiting for that read if it is the first thing to ask for it — and off the
+/// document itself otherwise. Either way the building happens on a worker: it
+/// reads files, and the thread that answers the window must not.
 pub(crate) fn request_link_graph(
     state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
     webview: Option<&WebView>,
+    document: Option<PathBuf>,
     request: GraphRequest,
 ) {
-    state.last_graph = Some(request.clone());
-    if graph_root(state).is_none() {
-        // Nothing bounded to read. An empty graph, not an error: the page says
-        // what to do about it. Cheap enough to answer here.
-        if let Some(webview) = webview {
-            let _ = webview.evaluate_script(&graph_script(&empty_graph()));
-        }
-        return;
-    }
-    match state.corpus.clone() {
-        Some(corpus) => build_graph_off_thread(state, proxy, corpus, request),
+    let source = graph_source(state, document.as_deref());
+    state.last_graph = Some(PendingGraph {
+        document,
+        request: request.clone(),
+    });
+    match source {
+        Some(GraphSource::Vault(root)) => match state.corpus.clone() {
+            Some(corpus) => build_vault_graph_off_thread(proxy, root, corpus, request),
+            None => {
+                state.pending_graph = Some(request);
+                read_corpus(state, proxy);
+            }
+        },
+        Some(GraphSource::Document(seed)) => build_document_graph_off_thread(proxy, seed, request),
         None => {
-            state.pending_graph = Some(request);
-            read_corpus(state, proxy);
+            // An empty graph, not an error: the page shows it as nothing to draw.
+            // Cheap enough to answer here.
+            if let Some(webview) = webview {
+                let _ = webview.evaluate_script(&graph_script(&empty_graph()));
+            }
         }
     }
 }
@@ -340,17 +395,37 @@ pub(crate) fn request_vault_search(
     }
 }
 
-fn build_graph_off_thread(
-    state: &VaultState,
+fn build_vault_graph_off_thread(
     proxy: &EventLoopProxy<UserEvent>,
+    root: PathBuf,
     corpus: Arc<VaultCorpus>,
     request: GraphRequest,
 ) {
-    let scope = state.root.clone();
     let proxy = proxy.clone();
     thread::spawn(move || {
         let graph = corpus.graph(&request);
-        let _ = proxy.send_event(UserEvent::GraphReady { scope, graph });
+        let _ = proxy.send_event(UserEvent::GraphReady {
+            source: GraphSource::Vault(root),
+            graph,
+        });
+    });
+}
+
+/// The map around one document. No corpus to wait for and none to keep: the read
+/// is one folder and one hop along the document's own links, so it is done fresh
+/// here rather than cached and patched.
+fn build_document_graph_off_thread(
+    proxy: &EventLoopProxy<UserEvent>,
+    seed: PathBuf,
+    request: GraphRequest,
+) {
+    let proxy = proxy.clone();
+    thread::spawn(move || {
+        let graph = document_graph(&seed, &request);
+        let _ = proxy.send_event(UserEvent::GraphReady {
+            source: GraphSource::Document(seed),
+            graph,
+        });
     });
 }
 
@@ -368,14 +443,18 @@ fn run_search_off_thread(
     });
 }
 
-/// Paint a finished graph, unless the vault moved while it was building.
+/// Paint a finished graph, unless what it is a map of moved while it was building
+/// — the vault switched, or the reader went to another document that a different
+/// source answers for. Switching documents *inside* one vault is not that: both
+/// are the same source, and moving the highlight is the page's own job.
 pub(crate) fn deliver_graph(
     state: &VaultState,
     webview: Option<&WebView>,
-    scope: Option<PathBuf>,
+    document: Option<&Path>,
+    source: GraphSource,
     graph: DocumentGraph,
 ) {
-    if scope != state.root {
+    if graph_source(state, document) != Some(source) {
         return;
     }
     let Some(webview) = webview else {
@@ -440,49 +519,74 @@ pub(crate) fn deliver_corpus(
     let corpus = Arc::new(corpus);
     state.corpus = Some(Arc::clone(&corpus));
     if let Some(request) = state.pending_graph.take() {
-        build_graph_off_thread(state, proxy, Arc::clone(&corpus), request);
+        build_vault_graph_off_thread(proxy, corpus.root.clone(), Arc::clone(&corpus), request);
     }
     if let Some(query) = state.pending_search.take() {
         run_search_off_thread(state, proxy, corpus, query);
     }
 }
 
-/// A file under the vault changed: patch that one document. This is what "live"
-/// costs — one file read, not a scan.
+/// A file changed on disk: patch the vault's text if the vault holds it, and
+/// redraw the map if one is on screen.
 ///
 /// The graph is redrawn only when it is the view on screen. Rebuilding it for a
 /// pane nobody is looking at is what turned a burst of saves into a locked
-/// window, and rebuilding it *here* is what made each one cost the whole vault.
-///
-/// And only when the document text actually moved. A vault is a folder someone
-/// works in, and every unrelated write in it used to reach the page as a fresh
-/// graph — which the page can only receive by tearing the map down.
+/// window, and rebuilding it *here* rather than on a worker is what made each one
+/// cost the whole vault.
 pub(crate) fn refresh_corpus_path(
     state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
     changed: &Path,
     graph_showing: bool,
 ) {
-    let Some(corpus) = state.corpus.as_mut() else {
+    let corpus_moved = patch_vault_corpus(state, changed);
+    if !graph_showing {
         return;
+    }
+    let Some(pending) = state.last_graph.clone() else {
+        return;
+    };
+    match graph_source(state, pending.document.as_deref()) {
+        // The vault's text is a cache, so the cache is the thing to ask: unless
+        // patching it moved something, the map cannot have changed. A vault is a
+        // folder someone works in, and every unrelated write in it used to reach
+        // the page as a fresh graph — which the page can only receive by tearing
+        // the map down.
+        Some(GraphSource::Vault(root)) => {
+            let Some(corpus) = state.corpus.clone().filter(|_| corpus_moved) else {
+                return;
+            };
+            build_vault_graph_off_thread(proxy, root, corpus, pending.request);
+        }
+        // A document's map holds no cache to compare against, so "did this change
+        // anything" cannot be answered here. Rebuild for any document that could
+        // be in the picture and let the page drop the redraw: it compares what
+        // arrives against what it is already drawing, and an identical graph never
+        // reaches the scene.
+        Some(GraphSource::Document(seed)) => {
+            if !crate::is_supported_document_path(changed) {
+                return;
+            }
+            build_document_graph_off_thread(proxy, seed, pending.request);
+        }
+        None => {}
+    }
+}
+
+/// Bring the vault's held text up to date for one changed path, and say whether
+/// that actually moved anything.
+fn patch_vault_corpus(state: &mut VaultState, changed: &Path) -> bool {
+    let Some(corpus) = state.corpus.as_mut() else {
+        return false;
     };
     // Before the refresh: `Arc::make_mut` clones the whole vault's text when a
     // worker is mid-build, and a path that is not a document must not cost that.
     if !corpus.covers(changed) {
-        return;
+        return false;
     }
     // Cheap unless a worker is mid-build against this exact corpus, in which
     // case it clones rather than mutate out from under it.
-    if !Arc::make_mut(corpus).refresh(changed) {
-        return;
-    }
-    if !graph_showing {
-        return;
-    }
-    let (Some(request), Some(corpus)) = (state.last_graph.clone(), state.corpus.clone()) else {
-        return;
-    };
-    build_graph_off_thread(state, proxy, corpus, request);
+    Arc::make_mut(corpus).refresh(changed)
 }
 
 fn empty_graph() -> DocumentGraph {

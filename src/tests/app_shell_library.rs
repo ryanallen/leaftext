@@ -286,10 +286,14 @@ fn changing_document_does_not_change_which_view_you_are_in() {
         "expected the node click, the search hit and the source button to leave the map, found {exits}"
     );
     assert!(html.contains("if (graphExitPending) {"));
-    // And nothing else may reach for the door, bar the two states where there
-    // is nothing left to map: the home screen, and a library with no vault.
+    // And nothing else may reach for the door, bar the one state where there is
+    // nothing left to map: the home screen. Leaving a vault is no longer such a
+    // state — the open document answers for the map instead of the map closing.
     let closes = html.matches("closeGraphView();").count();
-    assert_eq!(closes, 4, "expected the two pending exits, the home screen and the leaving-a-vault guard to close the map, found {closes}");
+    assert_eq!(
+        closes, 3,
+        "expected the two pending exits and the home screen to close the map, found {closes}"
+    );
     assert!(html.contains(
         "if (!currentState.document) {
     // No document, no views."
@@ -379,10 +383,10 @@ fn only_a_document_that_moved_redraws_the_map() {
     // A vault is a folder someone works in: the watcher reports `.git` writing an
     // index, a saved image, a temp file coming and going. None of them can change
     // the corpus, and every one of them used to reach the page as a fresh graph.
-    let refresh = source
-        .find("pub(crate) fn refresh_corpus_path(")
+    let patch = source
+        .find("fn patch_vault_corpus(")
         .expect("the watcher patches the corpus a file at a time");
-    let body = &source[refresh..];
+    let body = &source[patch..];
     let covers = body
         .find("if !corpus.covers(changed) {")
         .expect("a path that is not a document is answered before anything is paid for");
@@ -393,9 +397,27 @@ fn only_a_document_that_moved_redraws_the_map() {
         covers < make_mut,
         "the cheap check has to come before the clone make_mut may pay for"
     );
+
+    // And the answer it gives gates the redraw: the vault's text is a cache, so
+    // "nothing moved" means the map on screen cannot have changed.
+    let refresh = source
+        .find("pub(crate) fn refresh_corpus_path(")
+        .expect("the watcher hands the changed path here");
+    let body = &source[refresh..];
     assert!(
-        body.contains("if !Arc::make_mut(corpus).refresh(changed) {\n        return;\n    }"),
-        "a refresh that changed nothing must not reach the graph rebuild"
+        body.contains("let corpus_moved = patch_vault_corpus(state, changed);"),
+        "the redraw has to be decided by whether the patch moved anything"
+    );
+    assert!(
+        body.contains("state.corpus.clone().filter(|_| corpus_moved)"),
+        "a refresh that changed nothing must not reach the vault graph rebuild"
+    );
+    // A document's own map has no cache to compare against, so it cannot answer
+    // that question — but it still refuses to redraw for a path that is not a
+    // document at all, which is most of what the watcher reports.
+    assert!(
+        body.contains("if !crate::is_supported_document_path(changed) {"),
+        "a document map must not rebuild for a path that is not a document"
     );
 }
 
@@ -739,16 +761,15 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     assert!(!html.contains("graphViewButton"));
     assert!(!html.contains("codeViewButton"));
     assert!(!html.contains(r#"class="save-button""#));
-    // With a document open, a view you cannot enter grays out where it stands —
-    // those states come and go as you work, and a row that reshuffles under the
-    // pointer is worse than one with a dead key.
-    assert!(html.contains("button.disabled = unavailable;"));
-    assert!(css.contains(".reader-tool:disabled {"));
-    // And hovering the dead key says why it is dead rather than what it would have
-    // done. The enterable wording is remembered first, so restoring it does not
-    // need a second copy of that sentence here.
-    assert!(html.contains("const VIEW_UNAVAILABLE_REASON = { graph: GRAPH_NEEDS_VAULT };"));
-    assert!(html.contains("button.dataset.titleEnterable = button.title || '';"));
+    // With the bar up, all three are enterable — there is no dead key, and no
+    // grayed-out state for one to sit in. The map used to be of a vault, so a
+    // document outside one had a view it could not get into; it is of the open
+    // document now, and the bar is only up when there is one.
+    assert!(!html.contains("button.disabled = unavailable;"));
+    assert!(!css.contains(".reader-tool:disabled {"));
+    assert!(!html.contains("VIEW_UNAVAILABLE_REASON"));
+    assert!(!html.contains("titleEnterable"));
+    assert!(!html.contains("Pick a vault"));
     // No document, no bar. Three views of one thing needs the thing; on the home
     // screen a toggle would be navigation, which the pane beside it already does.
     assert!(html.contains("readerToolbar.hidden = !hasDocument;"));
@@ -784,11 +805,82 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
         r#"title="Show how these documents link""#,
         "'No links to graph yet.'",
         "const GRAPH_ERROR = 'Graph failed to load.';",
-        "const GRAPH_NEEDS_VAULT = 'Pick a vault to see how its documents link.';",
         "most-linked documents.`",
     ] {
         assert!(html.contains(wording), "missing wording: {wording}");
     }
+}
+
+#[test]
+fn the_graph_needs_a_document_and_never_a_vault() {
+    let html = app_shell_html();
+
+    // What the map is of is the open document, so that — and only that — is what
+    // entering it requires. There is no vault in the test any more, which is the
+    // whole fix: a document outside every vault still links to things, and those
+    // links are written in the document itself.
+    assert!(html.contains("const next = Boolean(open) && Boolean(activeDocumentPath());"));
+    assert!(!html.contains("graphHasBoundedRoot"));
+
+    // And nothing refuses on the way in. showGraph used to tear the scene down and
+    // print a sentence whenever there was no vault; now it asks and the host
+    // always answers.
+    assert!(html.contains("function showGraph() {\n  graphActivePath = activeDocumentPath();\n  if (!graphRequested) {"));
+
+    // Leaving a vault re-reads the map rather than closing it. This is what threw
+    // the reader out of the graph on opening any file from outside their vault.
+    assert!(html.contains("refreshGraphForScope();"));
+    assert!(!html.contains("if (!graphHasBoundedRoot()) closeGraphView();"));
+
+    // And going to another document refetches at every size when the map is of a
+    // document rather than a vault: the picture itself changed, so moving the
+    // highlight inside the old one would leave the reader on a map that need not
+    // even contain the file they are on. A vault's map is the same picture for all
+    // of its documents, so that case still refetches only for Focus.
+    assert!(html.contains(
+        "const seedChanged =\n    (graphScope === 'small' || !activeVaultId) &&\n    graphScope + '|' + graphSeeds().join('\\n') !== graphSeedKey;"
+    ));
+}
+
+#[test]
+fn a_web_address_is_a_node_drawn_as_a_ring_and_opened_in_the_browser() {
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    // A ring rather than a disc, so it reads as "not one of your files" before you
+    // have read the domain under it.
+    assert!(html.contains("if (node.external) {"));
+    assert!(html.contains(
+        "gfx.circle(0, 0, radius).stroke({ width: 1.5, color: 0xffffff, alignment: 0.5 });"
+    ));
+    // With a dot at the middle for the edge to end behind: edges draw under the
+    // nodes, so a bare ring let the line run through the hollow and stop in mid-air.
+    assert!(html.contains("gfx.circle(0, 0, Math.max(1.6, radius * 0.36)).fill(0xffffff);"));
+    assert!(css.contains("radial-gradient(circle at center, var(--app-border) 1.6px"));
+    // And its own resting tint, quieter than a document's, so the documents are
+    // still what the eye lands on.
+    assert!(html.contains("external: cssVarColor('--app-border', 0x3a3f4b),"));
+    assert!(html.contains("let color = node.external ? colors.external : colors.node;"));
+
+    // Clicking one opens the browser and leaves the map exactly as it is. Nothing
+    // replaced the page, so exiting the view would throw away the picture the
+    // reader is working through.
+    assert!(html.contains("send({ command: 'openExternal', url: node.path });"));
+    assert!(html.contains("if (!moved && node.external) {"));
+    // A document still leaves the map, and still holds it until the document lands.
+    assert!(html.contains(
+        "graphExitPending = true;\n        send({ command: 'openRecent', path: node.path });"
+    ));
+
+    // The key shows up only when there are two kinds of node to tell apart, and
+    // vanishes with the scene.
+    assert!(html.contains(r#"<p id="readerGraphLegend" class="reader-graph-legend" hidden>"#));
+    assert!(html.contains("setGraphLegend(data.nodes.some((node) => node.external));"));
+    assert!(html.contains("function teardownGraphScene() {\n  setGraphLegend(false);"));
+    assert!(css.contains(".reader-graph-legend {"));
+    // Flex, so the attribute that hides it has to be spelled out.
+    assert!(css.contains(".reader-graph-legend[hidden] {"));
+    assert!(css.contains(".graph-key-external {"));
 }
 
 #[test]

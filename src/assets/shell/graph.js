@@ -45,10 +45,12 @@ const GRAPH_REBUILD_COALESCE_MS = 150;
 let graphRebuildTimer = 0;
 
 // Show the map instead of the document, or put the document back. One flag for
-// the window, not a mode each tab remembers: a graph is of the vault, and the
-// question "which tab was it on" has no answer.
+// the window, not a mode each tab remembers: switching tabs moves the highlight
+// to the new document rather than swapping the picture for another one.
 function setGraphView(open) {
-  const next = Boolean(open) && graphHasBoundedRoot();
+  // A map needs one thing: a document to be a map of. Not a vault — see
+  // graphSeeds and the host's graph_source.
+  const next = Boolean(open) && Boolean(activeDocumentPath());
   if (next === graphViewOpen) return;
   graphViewOpen = next;
   applyGraphView();
@@ -80,49 +82,25 @@ function applyGraphView() {
 // between the recent files and a map, which is navigation, not a view. The pane
 // beside it already does that, and does it better.
 //
-// A view you *can* be in but cannot enter grays out where it stands rather than
-// vanishing: those states come and go as you work, and a row that reshuffles
-// under the pointer is worse than one with a dead key in it.
+// All three are always enterable, so none of them ever grays out. There used to
+// be a dead key here: the map was of a vault, so a document outside one had a
+// view it could not get into and a tooltip explaining why. It is of the open
+// document now, and the bar is only up when there is one — so a view that cannot
+// be entered is not a state the bar has any more.
 function renderReaderToolbar(hasDocument) {
   if (!readerToolbar) return;
   readerToolbar.hidden = !hasDocument;
   if (!hasDocument) return;
   const current = graphViewOpen ? 'graph' : codeViewActive ? 'code' : 'reading';
-  const enabled = { reading: true, code: true, graph: graphHasBoundedRoot() };
   for (const button of [viewReadingButton, viewCodeButton, viewGraphButton]) {
     if (!button) continue;
-    const view = button.dataset.view;
-    const on = view === current;
+    const on = button.dataset.view === current;
     button.setAttribute('aria-pressed', String(on));
     button.classList.toggle('is-active', on);
-    const unavailable = !enabled[view] && !on;
-    button.disabled = unavailable;
-    setViewToolReason(button, unavailable);
   }
   renderReadingTools(current === 'reading');
 }
-const GRAPH_NEEDS_VAULT = 'Pick a vault to see how its documents link.';
 const GRAPH_ERROR = 'Graph failed to load.';
-// Why a view can't be entered, keyed by view — what the grayed-out key says when
-// you hover it, instead of leaving you to work it out. Only the map has a reason
-// to give: it is of a vault, so without one there is nothing to draw. The other
-// two are always enterable, and if that ever changes they keep their ordinary
-// tooltip rather than inventing an explanation. The sentence is the one the map
-// itself shows when you get there, so it is said in one place.
-const VIEW_UNAVAILABLE_REASON = { graph: GRAPH_NEEDS_VAULT };
-// Point a grayed-out view tool's tooltip at that reason, and an enterable one back
-// at what it does. The enterable wording is remembered from the markup, so there is
-// no second copy of it here to drift.
-function setViewToolReason(button, unavailable) {
-  if (!button.dataset.titleEnterable) {
-    button.dataset.titleEnterable = button.title || '';
-  }
-  const title =
-    (unavailable && VIEW_UNAVAILABLE_REASON[button.dataset.view]) ||
-    button.dataset.titleEnterable;
-  if (!title) return;
-  button.title = title;
-}
 // The reading view's own tools. None turns blue: the filled chip means "this is
 // the view you are in", and a setting inside that view must not wear it. The
 // glyph carries the state instead -- a shut padlock, a thin first letter.
@@ -220,6 +198,11 @@ function setGraphStatus(message) {
   readerGraphStatus.hidden = false;
   readerGraphStatus.textContent = message;
 }
+// The key earns its place only when there are two kinds of node to tell apart. A
+// map of documents alone explains itself.
+function setGraphLegend(hasExternal) {
+  if (readerGraphLegend) readerGraphLegend.hidden = !hasExternal;
+}
 
 function loadScriptOnce(src) {
   return new Promise((resolve, reject) => {
@@ -284,6 +267,9 @@ function graphColors() {
     // Ambient labels for the documents you are not on: the muted-foreground token
     // (a dim gray), so they read as secondary next to the active/hover labels.
     dim: cssVarColor('--app-muted-foreground', 0x8b95a5),
+    // A web address at rest. The border token — the quietest thing the theme has a
+    // name for — because these are the edge of the map rather than its subject.
+    external: cssVarColor('--app-border', 0x3a3f4b),
   };
 }
 
@@ -317,20 +303,14 @@ function requestGraphData() {
 // Entry point when the graph view becomes visible. Requests fresh data the first
 // time, then either builds the scene (data already in hand) or just moves the
 // active-node highlight (scene already built).
-// The graph is read off the disk, and the vault is the only root it reads. The
-// whole library is not a collection, it is a computer — there is no map of it
-// worth drawing and no way to read one without a crawl.
-function graphHasBoundedRoot() {
-  return Boolean(activeVaultId);
-}
+//
+// Nothing is refused here. The host decides what the map is read off — the active
+// vault when it holds the open document, otherwise that document, its folder and
+// what it links to — and either way an answer comes back. It used to refuse
+// whenever there was no vault, which is the one thing this view must not do: a
+// document's links are in the document.
 function showGraph() {
   graphActivePath = activeDocumentPath();
-  if (!graphHasBoundedRoot()) {
-    teardownGraphScene();
-    clearReaderLoading('graph');
-    setGraphStatus(GRAPH_NEEDS_VAULT);
-    return;
-  }
   if (!graphRequested) {
     requestGraphData();
   }
@@ -395,6 +375,7 @@ function refreshGraphForScope() {
 }
 
 function teardownGraphScene() {
+  setGraphLegend(false);
   if (graphRebuildTimer) { clearTimeout(graphRebuildTimer); graphRebuildTimer = 0; }
   if (graphScene) {
     if (graphScene.focusRaf) { try { cancelAnimationFrame(graphScene.focusRaf); } catch (_) { /* noop */ } }
@@ -434,9 +415,11 @@ async function buildGraphScene() {
   const data = graphData;
   if (!data || !data.nodes || !data.nodes.length) {
     clearReaderLoading('graph');
+    setGraphLegend(false);
     setGraphStatus('No links to graph yet.');
     return;
   }
+  setGraphLegend(data.nodes.some((node) => node.external));
   try {
     await loadGraphLibs();
   } catch (err) {
@@ -478,7 +461,14 @@ async function buildGraphScene() {
   // the last scene had keeps its place: d3 only seeds the ones without one, so a
   // rebuild lands on the layout that was there plus wherever the new nodes fall.
   const nodes = data.nodes.map((n) => {
-    const node = { path: n.path, label: n.label || n.path, degree: n.degree || 0 };
+    const node = {
+      path: n.path,
+      label: n.label || n.path,
+      degree: n.degree || 0,
+      // A web address rather than one of your documents: drawn as a ring, opened in
+      // the browser. See graphColors().external and the pointerup handler.
+      external: !!n.external,
+    };
     const seat = carried && carried.positions.get(n.path);
     if (seat) { node.x = seat.x; node.y = seat.y; }
     return node;
@@ -529,7 +519,21 @@ async function buildGraphScene() {
   for (const node of nodes) {
     const gfx = new PIXI.Graphics();
     // Drawn white so a tint shows the true state color; radius set once.
-    gfx.circle(0, 0, graphNodeRadius(node.degree)).fill(0xffffff);
+    //
+    // A web address is a ring rather than a disc. That reads as "this is not one of
+    // your files" before you have read its name, which matters because clicking it
+    // leaves the app — and it is one shape, so a tint still carries hover and
+    // active state exactly as it does for a document.
+    if (node.external) {
+      const radius = graphNodeRadius(node.degree);
+      gfx.circle(0, 0, radius).stroke({ width: 1.5, color: 0xffffff, alignment: 0.5 });
+      // A dot at the middle, so the edge has something to end behind. Edges are
+      // drawn under the nodes, and a bare ring let the line run on through the
+      // hollow and stop in mid-air at the center.
+      gfx.circle(0, 0, Math.max(1.6, radius * 0.36)).fill(0xffffff);
+    } else {
+      gfx.circle(0, 0, graphNodeRadius(node.degree)).fill(0xffffff);
+    }
     gfx.eventMode = 'static';
     gfx.cursor = 'pointer';
     gfx.hitArea = new PIXI.Circle(0, 0, graphNodeRadius(node.degree) + 3);

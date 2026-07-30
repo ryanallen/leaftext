@@ -125,6 +125,14 @@ pub fn vault_containing(conn: &Connection, path: &Path) -> Option<Vault> {
         .max_by_key(|vault| vault.root_path.len())
 }
 
+/// Whether a vault rooted at `root` holds `path`. The same rule
+/// [`vault_containing`] matches on, so "which vault owns this file" and "does this
+/// vault own this file" can never disagree — and so `C:\Notes` still owns
+/// `c:\notes\today.md`, which a plain `starts_with` would deny.
+pub fn vault_holds(root: &Path, path: &Path) -> bool {
+    holds(&path_to_string(root), &path_to_string(path))
+}
+
 /// Whether `root` is `path` or an ancestor of it. Compared case-insensitively on
 /// Windows, where the same file is reachable under either spelling.
 fn holds(root: &str, path: &str) -> bool {

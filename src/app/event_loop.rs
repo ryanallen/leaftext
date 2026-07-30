@@ -720,8 +720,14 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::CorpusLoaded { corpus }) => {
                 deliver_corpus(&mut vault_state, &proxy, *corpus);
             }
-            Event::UserEvent(UserEvent::GraphReady { scope, graph }) => {
-                deliver_graph(&vault_state, webview.as_ref(), scope, graph);
+            Event::UserEvent(UserEvent::GraphReady { source, graph }) => {
+                deliver_graph(
+                    &vault_state,
+                    webview.as_ref(),
+                    workspace.active_path(),
+                    source,
+                    graph,
+                );
             }
             Event::UserEvent(UserEvent::SearchReady { scope, query, hits }) => {
                 deliver_search(&vault_state, webview.as_ref(), scope, &query, hits);
@@ -747,8 +753,18 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         limit: None,
                     },
                 };
-                // Off the vault's own text, read once and shared with search.
-                request_link_graph(&mut vault_state, &proxy, webview.as_ref(), request);
+                // Off the vault's own text when the vault holds the document on
+                // screen — read once and shared with search — and off that
+                // document itself otherwise, so a file in no vault still has a
+                // map of what it links to.
+                let document = workspace.active_path().map(Path::to_path_buf);
+                request_link_graph(
+                    &mut vault_state,
+                    &proxy,
+                    webview.as_ref(),
+                    document,
+                    request,
+                );
             }
             Event::UserEvent(UserEvent::SetGraphScope { scope }) => {
                 if let Some(scope) = GraphScope::from_client(&scope) {
@@ -869,11 +885,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
 
         // Keep the watcher on the active document and on the pane's root, so
         // both live-update. A no-op unless one changed since last sync.
-        let active_path = workspace
-            .active
-            .and_then(|index| workspace.tabs.get(index))
-            .and_then(|tab| tab.history.current())
-            .map(PathBuf::as_path);
+        let active_path = workspace.active_path();
         // A vault is watched whole and recursively — the user picked that
         // folder, and its corpus has to stay live while they edit anywhere
         // inside it. A folder the pane merely browsed to is watched one level

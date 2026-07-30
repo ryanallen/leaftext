@@ -203,10 +203,14 @@ pub(crate) enum UserEvent {
         corpus: Box<VaultCorpus>,
     },
     /// A graph finished building. Both this and the search below are computed on
-    /// a worker thread: they walk every document in the vault, which is far too
-    /// much to do on the thread that answers the window.
+    /// a worker thread: they read documents off the disk, which is far too much to
+    /// do on the thread that answers the window.
+    ///
+    /// `source` is what the map is of — a vault, or one document — so a graph that
+    /// finished after the reader moved somewhere a different source answers for is
+    /// dropped rather than painted.
     GraphReady {
-        scope: Option<PathBuf>,
+        source: GraphSource,
         graph: DocumentGraph,
     },
     SearchReady {

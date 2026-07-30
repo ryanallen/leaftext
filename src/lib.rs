@@ -40,6 +40,8 @@ pub use git::{
 };
 mod vault_corpus;
 pub use vault_corpus::{CorpusDocument, VaultCorpus, MAX_CORPUS_DOCUMENTS};
+mod doc_graph;
+pub use doc_graph::document_graph;
 mod editing;
 pub use editing::{
     block_source_map, kind_is_editable, task_marker_offsets, BlockSpan, EditableDocument,

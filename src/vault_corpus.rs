@@ -10,8 +10,8 @@
 
 use crate::read_source;
 use crate::store::{
-    document_links, normalize_name_key, path_to_string, DocumentGraph, GraphEdge, GraphNode,
-    GraphRequest, SearchHit,
+    document_links, normalize_name_key, path_to_string, url_host_label, DocumentGraph, GraphEdge,
+    GraphNode, GraphRequest, SearchHit,
 };
 use crate::unique_heading_slug;
 
@@ -43,6 +43,11 @@ const MAX_DEPTH: usize = 24;
 
 /// Cap on returned hits, matching what the indexed search returned.
 const SEARCH_LIMIT: usize = 50;
+
+/// How many web addresses one document may put on the map. A link roll or a
+/// bibliography is a real document, and without a cap it would bury the notes
+/// around it under a hundred nodes nobody was looking for.
+const MAX_EXTERNAL_LINKS_PER_DOCUMENT: usize = 25;
 
 /// How many characters of context a snippet carries around its match.
 const SNIPPET_RADIUS: usize = 90;
@@ -144,79 +149,9 @@ impl VaultCorpus {
     /// The link graph over these documents. `request` narrows it the way it
     /// always has: a focused neighborhood, the densest N, or all of it.
     pub fn graph(&self, request: &GraphRequest) -> DocumentGraph {
-        let mut graph = self.build_graph();
-        graph = narrow(graph, request);
+        let mut graph = narrow(build_graph(&self.documents), request);
         graph.truncated |= self.truncated;
         graph
-    }
-
-    fn build_graph(&self) -> DocumentGraph {
-        let mut path_to_index: HashMap<&str, usize> = HashMap::with_capacity(self.documents.len());
-        let mut lower_path_to_index: HashMap<String, usize> = HashMap::new();
-        // Name keys can collide across folders; first writer wins, a fine
-        // best-effort for wiki-style links.
-        let mut name_to_index: HashMap<String, usize> = HashMap::new();
-        for (index, document) in self.documents.iter().enumerate() {
-            path_to_index.insert(document.path.as_str(), index);
-            lower_path_to_index
-                .entry(document.path.to_lowercase())
-                .or_insert(index);
-            name_to_index
-                .entry(normalize_name_key(&document.label))
-                .or_insert(index);
-        }
-
-        let mut edges: HashSet<(usize, usize)> = HashSet::new();
-        for (from, document) in self.documents.iter().enumerate() {
-            for link in document_links(&document.text, Path::new(&document.path)) {
-                let to = link
-                    .target_abs
-                    .as_deref()
-                    .and_then(|abs| {
-                        path_to_index
-                            .get(abs)
-                            .or_else(|| lower_path_to_index.get(&abs.to_lowercase()))
-                            .copied()
-                    })
-                    .or_else(|| {
-                        link.target_name
-                            .as_deref()
-                            .and_then(|name| name_to_index.get(name).copied())
-                    });
-                let Some(to) = to else { continue };
-                if to == from {
-                    continue; // a document linking itself is not an edge
-                }
-                edges.insert(if from < to { (from, to) } else { (to, from) });
-            }
-        }
-
-        let mut degree: HashMap<usize, u32> = HashMap::new();
-        for (a, b) in &edges {
-            *degree.entry(*a).or_insert(0) += 1;
-            *degree.entry(*b).or_insert(0) += 1;
-        }
-
-        DocumentGraph {
-            nodes: self
-                .documents
-                .iter()
-                .enumerate()
-                .map(|(index, document)| GraphNode {
-                    path: document.path.clone(),
-                    label: document.label.clone(),
-                    degree: *degree.get(&index).unwrap_or(&0),
-                })
-                .collect(),
-            edges: edges
-                .into_iter()
-                .map(|(a, b)| GraphEdge {
-                    source: self.documents[a].path.clone(),
-                    target: self.documents[b].path.clone(),
-                })
-                .collect(),
-            truncated: false,
-        }
     }
 
     /// Search the vault. A document matches when it carries every term, in its
@@ -346,7 +281,7 @@ fn collect_documents(dir: &Path, depth: usize, out: &mut Vec<PathBuf>) {
 
 /// Read one document. `None` when it is gone or unreadable, which is how a
 /// deleted file leaves the corpus.
-fn read_document(path: &Path) -> Option<CorpusDocument> {
+pub(crate) fn read_document(path: &Path) -> Option<CorpusDocument> {
     // Decoded, not just read: a UTF-16 document in the vault should be findable
     // by search and appear in the link graph like any other.
     let mut text = read_source(path).ok()?.text;
@@ -434,9 +369,111 @@ fn ceil_boundary(text: &str, mut at: usize) -> usize {
     at.min(limit)
 }
 
+/// The undirected link graph over a set of documents: one node each, one edge per
+/// link that resolves to another document in the set.
+///
+/// Which documents are in the set is the caller's business and the only thing that
+/// differs between a vault's map and the map around one document — how a graph is
+/// built from them is the same either way, so it is written once. Note what that
+/// means for a link out of the set: it resolves to nothing and draws no edge, so a
+/// smaller set is a smaller picture rather than a wrong one.
+pub(crate) fn build_graph(documents: &[CorpusDocument]) -> DocumentGraph {
+    let mut path_to_index: HashMap<&str, usize> = HashMap::with_capacity(documents.len());
+    let mut lower_path_to_index: HashMap<String, usize> = HashMap::new();
+    // Name keys can collide across folders; first writer wins, a fine
+    // best-effort for wiki-style links.
+    let mut name_to_index: HashMap<String, usize> = HashMap::new();
+    for (index, document) in documents.iter().enumerate() {
+        path_to_index.insert(document.path.as_str(), index);
+        lower_path_to_index
+            .entry(document.path.to_lowercase())
+            .or_insert(index);
+        name_to_index
+            .entry(normalize_name_key(&document.label))
+            .or_insert(index);
+    }
+
+    // Documents take the first indices, so a node index is a document index until
+    // the end of the list. Web addresses are appended as they are met.
+    let mut nodes: Vec<GraphNode> = documents
+        .iter()
+        .map(|document| GraphNode {
+            path: document.path.clone(),
+            label: document.label.clone(),
+            degree: 0,
+            external: false,
+        })
+        .collect();
+    let mut url_to_index: HashMap<String, usize> = HashMap::new();
+    let mut truncated = false;
+
+    let mut edges: HashSet<(usize, usize)> = HashSet::new();
+    for (from, document) in documents.iter().enumerate() {
+        let mut urls_from_here = 0usize;
+        for link in document_links(&document.text, Path::new(&document.path)) {
+            // A web address is its own node, shared by every document citing it —
+            // which is the point: it shows which of your notes lean on one source.
+            if let Some(url) = link.target_url {
+                if urls_from_here >= MAX_EXTERNAL_LINKS_PER_DOCUMENT {
+                    truncated = true;
+                    continue;
+                }
+                urls_from_here += 1;
+                let to = *url_to_index.entry(url.clone()).or_insert_with(|| {
+                    nodes.push(GraphNode {
+                        label: url_host_label(&url),
+                        path: url,
+                        degree: 0,
+                        external: true,
+                    });
+                    nodes.len() - 1
+                });
+                edges.insert((from, to));
+                continue;
+            }
+            let to = link
+                .target_abs
+                .as_deref()
+                .and_then(|abs| {
+                    path_to_index
+                        .get(abs)
+                        .or_else(|| lower_path_to_index.get(&abs.to_lowercase()))
+                        .copied()
+                })
+                .or_else(|| {
+                    link.target_name
+                        .as_deref()
+                        .and_then(|name| name_to_index.get(name).copied())
+                });
+            let Some(to) = to else { continue };
+            if to == from {
+                continue; // a document linking itself is not an edge
+            }
+            edges.insert(if from < to { (from, to) } else { (to, from) });
+        }
+    }
+
+    for (a, b) in &edges {
+        nodes[*a].degree += 1;
+        nodes[*b].degree += 1;
+    }
+
+    DocumentGraph {
+        edges: edges
+            .iter()
+            .map(|(a, b)| GraphEdge {
+                source: nodes[*a].path.clone(),
+                target: nodes[*b].path.clone(),
+            })
+            .collect(),
+        nodes,
+        truncated,
+    }
+}
+
 /// Apply the requested slice to a finished graph: a focused neighborhood, the
 /// densest N, or all of it.
-fn narrow(graph: DocumentGraph, request: &GraphRequest) -> DocumentGraph {
+pub(crate) fn narrow(graph: DocumentGraph, request: &GraphRequest) -> DocumentGraph {
     let DocumentGraph {
         nodes,
         edges,

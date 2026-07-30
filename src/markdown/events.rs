@@ -253,3 +253,24 @@ pub(crate) fn autolink_destination(text: &str, kind: &LinkKind) -> Option<String
 pub(crate) fn starts_with_url_scheme(text: &str) -> bool {
     text.starts_with("http://") || text.starts_with("https://")
 }
+
+/// The web addresses in a run of plain text, found by the same finder that turns
+/// them into links when the document is rendered.
+///
+/// One definition, deliberately: the [graph](crate::store::document_links) counts a
+/// bare URL as a link because the reader can click it, and the only way that stays
+/// true is for both to ask the same question. It was the *absence* of this that
+/// made a document of nothing but bare links draw an empty map — the renderer
+/// linkified them here and the graph parsed with a bare `Parser`, which never sees
+/// them at all.
+///
+/// Email addresses are found and dropped: `mailto:` is not somewhere a map goes.
+pub(crate) fn plain_text_urls(text: &str) -> Vec<String> {
+    let mut finder = LinkFinder::new();
+    finder.kinds(&[LinkKind::Url]).url_must_have_scheme(false);
+    finder
+        .links(text)
+        .filter_map(|link| autolink_destination(link.as_str(), link.kind()))
+        .filter(|destination| starts_with_url_scheme(destination))
+        .collect()
+}

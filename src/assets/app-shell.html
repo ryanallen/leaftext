@@ -136,6 +136,12 @@
      grid cell as the reader, shown in its place. -->
 <div id="readerGraph" class="reader-graph" hidden>
   <div id="readerGraphCanvas" class="reader-graph-canvas"></div>
+  <!-- Shown only when the drawn map has a web address in it. A ring and a domain
+       name are close to self-explanatory, but "close to" is not the same as "is",
+       and clicking one leaves the app for the browser. -->
+  <p id="readerGraphLegend" class="reader-graph-legend" hidden>
+    <span class="graph-key graph-key-document" aria-hidden="true"></span>your documents<span class="graph-key graph-key-external" aria-hidden="true"></span>web addresses
+  </p>
   <p id="readerGraphStatus" class="reader-graph-status" aria-live="polite" hidden></p>
 </div>
 <!-- Soft edges for the page. The card's top slides under an opaque bar and its

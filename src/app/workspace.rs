@@ -62,6 +62,17 @@ pub(crate) struct Workspace {
 }
 
 impl Workspace {
+    /// The document on screen, or `None` on the home screen. Asked by everything
+    /// that has to know what the reader is actually looking at — the watcher, and
+    /// what a graph is a map of — so it is answered in one place rather than by
+    /// each of them walking `active` into `tabs` into `history` again.
+    pub(crate) fn active_path(&self) -> Option<&Path> {
+        self.active
+            .and_then(|index| self.tabs.get(index))
+            .and_then(|tab| tab.history.current())
+            .map(PathBuf::as_path)
+    }
+
     /// Open `path` as a tab. If a tab is already showing that document, just
     /// activate it; otherwise append a new tab seeded with that document.
     pub(crate) fn open_path(&mut self, path: PathBuf) {

@@ -1234,9 +1234,10 @@ window.leafSetVaults = (payload) => {
     libraryChain = [];
     libraryError = null;
     persistLibraryState();
-    // A different root means a different graph — and no vault means no graph at
-    // all, so the page goes back to the document.
-    if (!graphHasBoundedRoot()) closeGraphView();
+    // A different root means a different graph, so whatever is drawn is about
+    // somewhere else now. It does not mean *no* graph: leaving a vault used to
+    // throw the reader out of the map entirely, and now the open document answers
+    // for it instead.
     refreshGraphForScope();
   }
   // The leftmost crumb reads the root's name, so the trail lays out again.

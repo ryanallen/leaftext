@@ -27,6 +27,7 @@ const libraryTree = document.getElementById('libraryTree');
 const readerGraph = document.getElementById('readerGraph');
 const readerGraphCanvas = document.getElementById('readerGraphCanvas');
 const readerGraphStatus = document.getElementById('readerGraphStatus');
+const readerGraphLegend = document.getElementById('readerGraphLegend');
 const readerToolbar = document.getElementById('readerToolbar');
 const viewReadingButton = document.getElementById('viewReadingButton');
 const viewCodeButton = document.getElementById('viewCodeButton');

@@ -54,9 +54,10 @@ pub enum NodeKind {
     File,
 }
 
-/// The link graph: one node per document, one undirected edge per resolved
-/// doc-to-doc link. `path` is the node identity the frontend opens by. All
-/// strings are file-derived and untrusted; the frontend escapes them.
+/// The link graph: one node per document *and per web address linked to*, one
+/// undirected edge per resolved link. `path` is the node identity the frontend
+/// opens by — a file path, or the URL itself for an external node. All strings are
+/// file-derived and untrusted; the frontend escapes them.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentGraph {
@@ -73,6 +74,10 @@ pub struct GraphNode {
     pub path: String,
     pub label: String,
     pub degree: u32,
+    /// A web address rather than one of your documents. Drawn hollow, labeled by
+    /// domain, and opened in the browser instead of in a tab — so the map can show
+    /// what a document points *out* at without pretending it is a file you have.
+    pub external: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

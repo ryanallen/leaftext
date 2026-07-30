@@ -3,12 +3,16 @@
 use super::*;
 
 /// One outgoing link. Exactly one hint is set: `target_abs` (a resolved absolute
-/// path) or `target_name` (a `[[wiki]]` note name). Both are matched to a file id
-/// at graph-build time, so dangling links persist without rewriting.
+/// path), `target_name` (a `[[wiki]]` note name), or `target_url` (a web address).
+/// The first two are matched to a document at graph-build time, so dangling links
+/// persist without rewriting; a URL needs no matching — it is its own node.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DocLink {
     pub target_abs: Option<String>,
     pub target_name: Option<String>,
+    /// An `http`/`https` address, in [`normalize_url`] form so that two documents
+    /// citing one page point at one node.
+    pub target_url: Option<String>,
     pub raw: String,
 }
 
@@ -28,18 +32,47 @@ pub(crate) fn document_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
 }
 
 fn dedup_links(links: &mut Vec<DocLink>) {
-    let mut seen: HashSet<(Option<String>, Option<String>)> = HashSet::new();
-    links.retain(|link| seen.insert((link.target_abs.clone(), link.target_name.clone())));
+    let mut seen: HashSet<(Option<String>, Option<String>, Option<String>)> = HashSet::new();
+    links.retain(|link| {
+        seen.insert((
+            link.target_abs.clone(),
+            link.target_name.clone(),
+            link.target_url.clone(),
+        ))
+    });
 }
 
 /// Markdown link destinations come from the parser; `<a href>` and `[[wiki]]`
 /// aren't link tags, so they're scanned from the source separately.
+///
+/// Bare URLs are neither. They are not links in the source at all — the renderer
+/// finds them in the plain text and makes them links there — so the graph walks the
+/// text the same way and asks the same finder, because a link the reader can click
+/// is a link.
 fn markdown_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
-    use pulldown_cmark::{Event, Parser, Tag};
+    use pulldown_cmark::{Event, Parser, Tag, TagEnd};
     let mut out = Vec::new();
+    // Text inside a link is that link's label, not somewhere to look for another
+    // one — the same reason the renderer's linkifier tracks this.
+    let mut link_depth = 0usize;
     for event in Parser::new(content) {
-        if let Event::Start(Tag::Link { dest_url, .. }) = event {
-            push_path_target(&mut out, &dest_url, source_abs);
+        match event {
+            Event::Start(Tag::Link { dest_url, .. }) => {
+                link_depth += 1;
+                push_target(&mut out, &dest_url, source_abs);
+            }
+            // An image is not a link to a document, so its destination is not a
+            // target — but its alt text is still inside it.
+            Event::Start(Tag::Image { .. }) => link_depth += 1,
+            Event::End(TagEnd::Link) | Event::End(TagEnd::Image) => {
+                link_depth = link_depth.saturating_sub(1);
+            }
+            Event::Text(text) if link_depth == 0 => {
+                for url in crate::plain_text_urls(text.as_ref()) {
+                    push_url(&mut out, url);
+                }
+            }
+            _ => {}
         }
     }
     collect_attr_targets(content, "href", source_abs, &mut out);
@@ -56,20 +89,88 @@ fn xml_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
     out
 }
 
-/// Push a resolved path link, skipping empty, anchor-only, and external-URL
-/// targets (those never point at a local document).
-fn push_path_target(out: &mut Vec<DocLink>, raw: &str, source_abs: &Path) {
+/// Push one link destination: a web address as itself, anything else resolved as a
+/// path relative to the document.
+///
+/// Empty and anchor-only (`#section`) destinations are neither — the second points
+/// inside the document it is written in, and a document is one node.
+fn push_target(out: &mut Vec<DocLink>, raw: &str, source_abs: &Path) {
     let trimmed = raw.trim();
-    if trimmed.is_empty() || trimmed.starts_with('#') || has_url_scheme(trimmed) {
+    if trimmed.is_empty() || trimmed.starts_with('#') {
+        return;
+    }
+    if crate::starts_with_url_scheme(trimmed) {
+        push_url(out, trimmed.to_string());
+        return;
+    }
+    // Some other scheme — `mailto:`, `file:`, `leaf-image:`, anything custom.
+    // Not an address a map can go to, and not a path either.
+    if has_url_scheme(trimmed) {
         return;
     }
     if let Some(abs) = resolve_path_target(trimmed, source_abs) {
         out.push(DocLink {
             target_abs: Some(abs),
             target_name: None,
+            target_url: None,
             raw: trimmed.to_string(),
         });
     }
+}
+
+fn push_url(out: &mut Vec<DocLink>, url: String) {
+    out.push(DocLink {
+        target_abs: None,
+        target_name: None,
+        target_url: Some(normalize_url(&url)),
+        raw: url,
+    });
+}
+
+/// The form two references to one page agree on: no `#fragment`, no trailing slash,
+/// and the scheme and host lowercased — those are case-insensitive, the path is not.
+/// So three notes citing one article share one node instead of drawing three.
+pub fn normalize_url(url: &str) -> String {
+    let trimmed = url.split('#').next().unwrap_or(url);
+    let trimmed = trimmed.strip_suffix('/').unwrap_or(trimmed);
+    match split_url_authority(trimmed) {
+        Some((authority, tail)) => format!("{authority}{tail}"),
+        None => trimmed.to_string(),
+    }
+}
+
+/// What a web address is called under its node: the host, without `www.`. The whole
+/// URL stays the node's identity and its tooltip — a domain is what fits on screen,
+/// and what tells you at a glance that this one is not your document.
+pub fn url_host_label(url: &str) -> String {
+    let Some((authority, _)) = split_url_authority(url) else {
+        return url.to_string();
+    };
+    let host = match authority.split_once("://") {
+        Some((_, host)) => host,
+        None => authority.as_str(),
+    };
+    // `user:pass@host:port` — neither half is a name worth showing.
+    let host = host.rsplit('@').next().unwrap_or(host);
+    let host = host.split(':').next().unwrap_or(host);
+    let label = host.strip_prefix("www.").unwrap_or(host);
+    if label.is_empty() {
+        url.to_string()
+    } else {
+        label.to_string()
+    }
+}
+
+/// Split an `http`/`https` URL into a lowercased `scheme://host` and everything
+/// after it. `None` for anything not shaped like one.
+fn split_url_authority(url: &str) -> Option<(String, &str)> {
+    let (scheme, rest) = url.split_once("://")?;
+    let end = rest.find(['/', '?']).unwrap_or(rest.len());
+    let (host, tail) = rest.split_at(end);
+    Some((
+        format!("{}://{}", scheme.to_lowercase(), host.to_lowercase()),
+        tail,
+    ))
 }
 
 /// Scan for `<... attr="value" ...>` and push each value as a path target. A
@@ -101,7 +202,7 @@ fn collect_attr_targets(content: &str, attr: &str, source_abs: &Path, out: &mut 
         if let Some(end_rel) = content[value_start..].find(quote as char) {
             let value = &content[value_start..value_start + end_rel];
             search_from = value_start + end_rel + 1;
-            push_path_target(out, value, source_abs);
+            push_target(out, value, source_abs);
         }
     }
 }
@@ -127,6 +228,7 @@ fn collect_wiki_links(content: &str, out: &mut Vec<DocLink>) {
         out.push(DocLink {
             target_abs: None,
             target_name: Some(normalize_name_key(name)),
+            target_url: None,
             raw: format!("[[{inner}]]"),
         });
     }

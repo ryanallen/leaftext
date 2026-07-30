@@ -8,6 +8,7 @@ mod app_shell_library;
 mod app_shell_reader;
 mod app_shell_scripts;
 mod data_xml;
+mod doc_graph;
 mod editing;
 mod encoding;
 mod folder_tree;

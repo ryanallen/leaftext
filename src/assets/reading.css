@@ -1850,6 +1850,42 @@ body.library-resizing {
 .reader-graph-canvas canvas {
   display: block;
 }
+/* The key to the two node shapes, in the map's top corner — out of the way of the
+   status line at the foot, and of the toolbar that floats over it. */
+.reader-graph-legend {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--app-muted-foreground);
+  pointer-events: none;
+}
+/* Laid out with flex, so the attribute that hides it needs saying explicitly. */
+.reader-graph-legend[hidden] {
+  display: none;
+}
+/* The swatches are the nodes themselves at rest: a filled dot and a ring, in the
+   same two tokens graphColors() hands PixiJS. */
+.graph-key {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.graph-key-document {
+  background: var(--app-muted-foreground);
+}
+.graph-key-external {
+  /* Set off from the label before it, so the two pairs read as two pairs. */
+  margin-left: 8px;
+  /* Ring plus a dot at the middle, matching the node — the dot is what an edge
+     ends behind on the canvas. */
+  border: 1.5px solid var(--app-border);
+  background: radial-gradient(circle at center, var(--app-border) 1.6px, transparent 1.6px);
+}
 .reader-graph-status {
   position: absolute;
   left: 0;
@@ -2077,7 +2113,10 @@ body:has(#readerToolbar:not([hidden])) {
   width: 17px;
   height: 17px;
 }
-.reader-tool:hover:not(:disabled) {
+/* No `:not(:disabled)` here: every tool in the bar is always enterable, and the
+   bar itself is gone when there is no document. A view that cannot be entered was
+   a state this had when the map needed a vault. */
+.reader-tool:hover {
   background: color-mix(in srgb, var(--app-muted-foreground) 16%, transparent);
   color: var(--app-foreground);
 }
@@ -2095,14 +2134,6 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-tool.is-active svg path,
 .reader-tool.is-active svg line {
   stroke-width: 2.25;
-}
-/* A view you cannot enter — no document to show source for, no vault to map —
-   stays in place and grays out, so the row never reshuffles under the pointer.
-   It keeps its tooltip while it is out — the web view still shows one for a
-   disabled button — and that tooltip is what says why (setViewToolReason). */
-.reader-tool:disabled {
-  opacity: 0.35;
-  cursor: default;
 }
 .reader-tool-divider {
   width: 1px;

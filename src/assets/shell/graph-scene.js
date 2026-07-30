@@ -33,7 +33,9 @@ function applyGraphStyles() {
   const { colors, hoverNode } = scene;
   const hoverSet = hoverNode ? scene.neighbors.get(hoverNode.path) : null;
   for (const node of scene.nodes) {
-    let color = colors.node;
+    // A web address rests dimmer than a document, so the documents are what the eye
+    // lands on: the map is of your notes, and the addresses are where they point.
+    let color = node.external ? colors.external : colors.node;
     let alpha = 1;
     let scale = 1;
     const isActive = graphActivePath && node.path === graphActivePath;
@@ -232,13 +234,19 @@ function wireGraphPointer(scene) {
       node.fx = null;
       node.fy = null;
       scene.sim.alphaTarget(0);
-      // A press that barely moved is a click: open that document.
+      // A press that barely moved is a click: go to whatever that node is.
       const moved = scene.pressGlobal
         && Math.hypot(event.global.x - scene.pressGlobal.x, event.global.y - scene.pressGlobal.y) > 4;
-      // Clicking a node is a navigation out of the map: you picked something to
-      // read. The map holds until that document is ready and then steps aside,
-      // rather than closing now and flashing the file you were already on.
-      if (!moved) {
+      if (!moved && node.external) {
+        // A web address opens in the browser, and the map stays exactly as it is.
+        // Nothing here replaced the page, so leaving the view would be throwing
+        // away the picture the reader is working through to show them the document
+        // they were already on.
+        send({ command: 'openExternal', url: node.path });
+      } else if (!moved) {
+        // Clicking a document is a navigation out of the map: you picked something
+        // to read. The map holds until that document is ready and then steps aside,
+        // rather than closing now and flashing the file you were already on.
         graphExitPending = true;
         send({ command: 'openRecent', path: node.path });
       }
@@ -398,17 +406,24 @@ function focusGraphNode(scene, node) {
   scene.focusRaf = requestAnimationFrame(step);
 }
 
-// Move the highlight to a newly active document. Focus scope refetches+rebuilds
-// (its slice is the active document's neighborhood); fixed scopes keep the scene
-// and recolor, flying the camera when `focus`. `forceRefresh` (resync gesture)
-// always rebuilds so a stale graph catches up.
+// Move the highlight to a newly active document. Refetches+rebuilds when the new
+// document means a different picture rather than a different highlight in the same
+// one; otherwise keeps the scene and recolors, flying the camera when `focus`.
+// `forceRefresh` (resync gesture) always rebuilds so a stale graph catches up.
 function graphSetActive(path, focus, forceRefresh) {
   graphActivePath = path || null;
   if (!graphViewOpen) return;
   // Focus scope's slice is the active document's neighborhood, so changed seeds
   // (a different document) mean the scene in memory is for the wrong file.
+  //
+  // With no vault that holds at every size, not just Focus: the map is then of the
+  // open document — its folder and what it links to — so another document is
+  // another map, and one drawn for the file you have left may not even contain the
+  // file you are on. A vault's map is the same picture whichever of its documents
+  // you are reading, which is why the vault case still only refetches for Focus.
   const seedChanged =
-    graphScope === 'small' && graphScope + '|' + graphSeeds().join('\n') !== graphSeedKey;
+    (graphScope === 'small' || !activeVaultId) &&
+    graphScope + '|' + graphSeeds().join('\n') !== graphSeedKey;
   // No scene, or the document's node isn't in it (a new/re-indexed file), or an
   // explicit resync: fetch a fresh slice and fly to the node once it builds.
   const staleForActive =

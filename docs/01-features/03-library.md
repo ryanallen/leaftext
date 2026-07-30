@@ -12,7 +12,7 @@ The library is the part of Leaf Text that helps you find documents, not just rea
 | File tree | One folder at a time, with a breadcrumb showing where you are and a row that steps back out |
 | Breadcrumb | The folder path above the search box; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
 | Search | Filename and content search across the active vault |
-| Graph | A force-directed map of how the vault's documents link to each other, shown on the page rather than in the pane |
+| Graph | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
 | GitHub sync | A vault can be a git repository that pushes to GitHub, with a sync button in its own header |
 | File actions | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
 | Folder actions | Right-click a folder — or the empty space in the pane — to paste, reveal it, or see its properties |
@@ -20,11 +20,11 @@ The library is the part of Leaf Text that helps you find documents, not just rea
 
 ## Vaults
 
-A **vault** is a folder you have told Leaf Text to treat as a library root. It is the unit that search, the graph and syncing all work over.
+A **vault** is a folder you have told Leaf Text to treat as a library root. It is the unit that search and syncing work over, and it is what makes the [graph](#graph) bigger — but not what makes the graph possible.
 
 The button at the left of the breadcrumb — a box, or a cloud once the vault [syncs](#github-sync) — opens the vault switcher:
 
-- **Library** is the no-vault state: the pane starts at your drive roots and browses anywhere. Search and the graph are unavailable, because neither has a bounded set of documents to work over.
+- **Library** is the no-vault state: the pane starts at your drive roots and browses anywhere. Search is unavailable, because it has no bounded set of words to read. The graph still works: it maps the open document instead of a vault.
 - **A vault** roots the pane at that folder. Everything below it is browsable, searchable and mappable.
 - **New vault…** opens a folder picker; the folder's name becomes the vault's name.
 - The settings button on a vault's row opens a panel to rename it, point it at a different folder, remove it, or connect it to [GitHub](#github-sync).
@@ -62,9 +62,19 @@ The text search reads is the same copy the [graph](#graph) reads: one pass over 
 
 ## Graph
 
-A force-directed relationship map of the vault: each **node** is a document, each **edge** is a link that resolves from one document to another (a Markdown link, an `<a href>`, a `[[wiki]]` link matched by filename, or a TEI `target=`).
+A force-directed relationship map. Each **node** is one of your documents or a [web address](#web-addresses) one of them links to; each **edge** is a link that resolves — a Markdown link, an `<a href>`, a `[[wiki]]` link matched by filename, a TEI `target=`, or a bare URL in the text.
 
-It is a **view of the page**, not a panel — reach it from the [floating toolbar](02-navigation.md#the-toolbar) under the document, beside reading and the source view. It needs a vault: the whole library is a computer, not a collection, and there is no map of one worth drawing.
+It is a **view of the page**, not a panel — reach it from the [floating toolbar](02-navigation.md#the-toolbar) under the document, beside reading and the source view. All it needs is a document open. It does **not** need a vault.
+
+What it draws over depends on where the open document lives, and you never choose between them:
+
+- **Inside your active vault** — the map is of the whole vault. Every document in it is a node, so you see what links *to* the document you are on as well as what it links to, and `[[wiki]]` names resolve against the whole collection.
+- **Anywhere else** — the map is of that document: itself, the documents in its folder, and whatever it links to, wherever those live. A link is followed one hop out; nothing below the folder is read.
+
+The second map is **smaller, not wrong**. A document only ever records what it links to — what links *back* is written in somebody else's file — so reading the folder is what recovers incoming links, and it stops there. A link to a *document* outside the set simply draws no line. [Web addresses](#web-addresses) are unaffected — those are nodes in their own right, so a document's outbound links show up either way. Put the folder in a vault and the map widens.
+
+> [!NOTE]
+> Neither map reads anything you did not point at. The vault's map reads the folder you named. A document's map reads that document, one folder listing, and one file per link. Opening the map on a file sitting at `C:\` does not walk your drive.
 
 - The map **opens framed on everything it drew** — the tightest zoom that still holds the whole layout, centered. Two documents fill the view; two thousand shrink to fit. The first pan, zoom, drag or flight hands the view over to you, and it stops reframing.
 - While the layout settles the view **follows only what leaves the frame**, then frames everything once more when it comes to rest. A force layout breathes as it works, and a camera refitting on every frame of that put the pumping on screen.
@@ -74,13 +84,21 @@ It is a **view of the page**, not a panel — reach it from the [floating toolba
 - **Drag** a node to reposition it, **drag the background** to pan, **scroll** to zoom.
 - Opening a document from the pane while the map is up **keeps the map up** and moves the highlight. Changing what you are looking at is not a reason to change how you are looking at it.
 - Closing the last tab closes the map with it: the start screen is not one of a document's views.
-- Editing a document under the vault **redraws the map in place**: every node keeps its position, your pan and zoom are kept, and the layout eases into what changed rather than laying itself out again. An edit that draws the same map — a word typed into a document that links nowhere new — changes nothing on screen at all.
+- Editing a document the map covers **redraws it in place**: every node keeps its position, your pan and zoom are kept, and the layout eases into what changed rather than laying itself out again. An edit that draws the same map — a word typed into a document that links nowhere new — changes nothing on screen at all.
 - Building the map shows the same spinner a slow document does — and so does leaving it. Whether you click a node, open a search hit, or switch to the [source](07-editing.md#code-view), the map holds until its replacement is ready rather than dropping to a half-drawn page, and the wait is shown on top of it.
 
 How many documents it draws is set by the [Graph size](05-settings.md#graph-size) setting — from a tight **Focus** neighborhood (the open document and its direct links) up to **Everything**. Smaller sizes render faster; larger ones stay responsive by easing the layout and repainting less often as it settles.
 
-> [!NOTE]
-> A link to a web address is not an edge. A sitemap full of `https://` URLs draws no lines, even when those URLs are the published form of files sitting in the vault.
+### Web addresses
+
+A `http`/`https` link is a node too, drawn as a **ring with a dot at its center** rather than a filled disc, and labeled by its domain — `reddit.com`, not the whole URL, which stays in the tooltip. **Clicking one opens your browser and leaves the map up**, because nothing replaced the page.
+
+They are found wherever the reader can click one: written out as `[text](https://…)`, in `<https://…>` angle brackets, in an `<a href>`, and **bare in the text**, by the same finder that turns bare URLs into links when the document is rendered. So the graph and the page can't disagree about what a link is.
+
+**Two documents citing one page share one node** — the point of drawing them. The scheme and host are matched case-insensitively and a `#fragment` or trailing slash is ignored, so `https://Example.org/a/`, `https://example.org/a` and `https://example.org/a#notes` are one page.
+
+- Email addresses are not nodes. Neither is any other scheme — `mailto:`, `file:`, a custom one.
+- One document contributes at most **25** web addresses. A bibliography is a real document, and without a cap it would bury the notes around it.
 
 ## GitHub sync
 
@@ -173,13 +191,14 @@ The pane keeps up with changes on disk, so a file you just created shows up with
 - A file added, renamed or removed in the folder you are looking at refreshes the list.
 - Something *you* did — a [paste, rename or delete](#file-actions) — refreshes the list the moment it lands, rather than waiting on the watcher to notice.
 - The vault's in-memory text is patched for the one file that changed, so [search](#search) and the [graph](#graph) stay current without re-reading the vault. Only a document whose text actually moved counts: a vault is a folder you work in, and git writing to itself, a saved image or an editor's temp file are not changes to your documents.
+- A [graph of one document](#graph) rather than a vault holds nothing in memory to patch, so it is simply read again — a folder listing and a file per link, which is cheap enough not to cache. It cannot go stale, and a redraw that produces the same picture never reaches the screen.
 - The [sync count](#syncing) is re-read too, whether the change was to the document you are editing or to any other file in the vault.
 
 ## File types
 
 The pane lists every format the reader opens: Markdown (`.md`, `.markdown`, `.mdown`), [XML](01-rendering.md#xml) (`.xml`), and [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`). Anything else is left alone.
 
-Data files are searchable by name and title but draw no [graph](#graph) edges: a URL inside a data file is a value rather than a link between your documents, and reading one as Markdown would invent edges that were never written.
+Data files are searchable by name and title but draw no [graph](#graph) edges at all — not even to [web addresses](#web-addresses). A string inside a `.json` or `.yaml` is a value, and scanning one as prose would invent links nobody wrote. They still appear as nodes.
 
 ## Facts
 
