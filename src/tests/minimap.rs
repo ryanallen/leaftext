@@ -384,8 +384,8 @@ fn settings_default_keeps_minimap_on() {
     let settings = Settings::default();
     assert!(settings.minimap_enabled);
     assert!(!settings.speed_reader_enabled);
-    assert_eq!(settings.theme_family, "fern");
-    assert_eq!(settings.theme_mode, "system");
+    assert_eq!(settings.theme_family, "random");
+    assert_eq!(settings.theme_mode, "daylight");
     // The pane opens on the file list, at the library root — not on a force graph
     // of every indexed document.
     assert!(settings.library_project_path.is_empty());

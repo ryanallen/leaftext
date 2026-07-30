@@ -135,11 +135,14 @@ fn app_shell_inlines_one_leaf_mark_that_tracks_the_theme() {
             html[index..element_end].contains(r#"fill="currentColor""#),
             "every inlined leaf mark fills with currentColor so it inherits the theme"
         );
+        // The mark must carry no baked-in color of its own (e.g. GitHub's green);
+        // it inherits the theme. Scoped to the mark element, since theme swatch
+        // cards legitimately embed each palette's own hex values elsewhere.
+        assert!(
+            !html[index..element_end].contains('#'),
+            "the leaf mark must not ship a baked-in color; it inherits the theme"
+        );
     }
-    assert!(
-        !html.contains("#3fb950"),
-        "the leaf mark must not ship a baked-in green; it inherits the theme color"
-    );
 
     // Both sites point that inherited color at the theme's primary token.
     let css = reading_mode_css();

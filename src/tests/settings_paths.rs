@@ -292,7 +292,7 @@ fn settings_load_tolerates_partial_json_via_serde_default() {
     let loaded = load_settings(&settings_path).settings;
     assert_eq!(loaded.library_width, 312);
     assert!(loaded.minimap_enabled);
-    assert_eq!(loaded.theme_mode, "system");
+    assert_eq!(loaded.theme_mode, "daylight");
     assert!(!loaded.library_closed);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");

@@ -3918,7 +3918,7 @@ body:has(#readerToolbar:not([hidden])) {
    "Family · Appearance" summary and a chevron on the right. */
 .setting-theme-open {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -3934,6 +3934,10 @@ body:has(#readerToolbar:not([hidden])) {
 .setting-theme-open:hover {
   border-color: var(--border-strong);
   background: var(--surface-muted);
+}
+.setting-theme-icon {
+  width: 16px;
+  height: 16px;
 }
 .setting-theme-open .setting-label {
   font-size: 13px;

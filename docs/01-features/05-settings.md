@@ -44,8 +44,8 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
   "pager_enabled": true,
   "speed_reader_enabled": false,
   "code_intel_enabled": true,
-  "theme_family": "fern",
-  "theme_mode": "system",
+  "theme_family": "random",
+  "theme_mode": "daylight",
   "theme_random_used": [],
   "graph_scope": "small",
   "library_project_path": "",
@@ -84,6 +84,7 @@ Leaf Text removes broken entries automatically and collapses equivalent path spe
 ### Theme
 
 - Saved as `theme_family` (family or `random`) and `theme_mode` (appearance)
+- New installs default to `random` and `daylight`; once you pick a theme your choice is saved and used from then on
 - Choosing [Random](06-themes.md#random) draws a fresh family at each launch; `theme_random_used` records the families already shown in the current no-repeat cycle so the rotation survives restarts
 
 ### Graph size

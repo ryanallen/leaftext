@@ -6,14 +6,14 @@ From the user side, themes are simple: open the theme picker, tap a family, pick
 
 ## Families
 
-Pick a family in the theme picker. Eleven ship, listed alphabetically, with **Fern** as the default. Each family is a plain Markdown file that opens with a screenshot of its own palette — browse them all in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview plus a light-vs-dark swatch table per family, or open one below:
+Pick a family in the theme picker. Eleven ship, listed alphabetically. A fresh install opens on [Random](#random) family with a [Daylight](#appearance) appearance; **Fern** is the fallback family if a saved choice can't be read. Each family is a plain Markdown file that opens with a screenshot of its own palette — browse them all in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview plus a light-vs-dark swatch table per family, or open one below:
 
 | Family | Palette |
 | --- | --- |
 | [Amaranth](https://github.com/ryanallen/leaftext/blob/main/themes/amaranth.md) | Clean light/dark base ramps with a violet accent |
 | [Arabica](https://github.com/ryanallen/leaftext/blob/main/themes/arabica.md) | A coffee palette — creamy latte light, dark-roast espresso dark — with an AnuPpuccin mauve accent |
 | [Bloodleaf](https://github.com/ryanallen/leaftext/blob/main/themes/bloodleaf.md) | Blood-red veins on a white ground — an over-exposed white light with a red accent and a sky-blue second hue, against a blue-black night dark |
-| [Fern](https://github.com/ryanallen/leaftext/blob/main/themes/fern.md) | **Default.** An Amaranth-based palette with a fern-green cast |
+| [Fern](https://github.com/ryanallen/leaftext/blob/main/themes/fern.md) | **Fallback family.** An Amaranth-based palette with a fern-green cast |
 | [Ginger](https://github.com/ryanallen/leaftext/blob/main/themes/ginger.md) | A warm palette — cream light, cool slate dark — with a ginger-orange accent |
 | [GitHub](https://github.com/ryanallen/leaftext/blob/main/themes/github.md) | GitHub's light/dark palette, in its own system-font stack |
 | [Goldenrod](https://github.com/ryanallen/leaftext/blob/main/themes/goldenrod.md) | A stark black-and-gold palette — honey-on-white light, near-black dark — with a golden-yellow accent |
