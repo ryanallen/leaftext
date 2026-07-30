@@ -95,9 +95,37 @@ function renderReaderToolbar(hasDocument) {
     const on = view === current;
     button.setAttribute('aria-pressed', String(on));
     button.classList.toggle('is-active', on);
-    button.disabled = !enabled[view] && !on;
+    const unavailable = !enabled[view] && !on;
+    button.disabled = unavailable;
+    setViewToolReason(button, unavailable);
   }
   renderReadingTools(current === 'reading');
+}
+// Why a view can't be entered, keyed by view — what the grayed-out key says when
+// you hover it, instead of leaving you to work it out. Only the map has a reason
+// to give: it is of a vault, so without one there is nothing to draw. The other
+// two are always enterable, and if that ever changes they keep their ordinary
+// tooltip rather than inventing an explanation. The sentence is the one the map
+// itself shows when you get there, so it is said in one place.
+const VIEW_UNAVAILABLE_REASON = { graph: 'library.graph.needsVault' };
+// Point a grayed-out view key's tooltip at that reason, and an enterable one back
+// at what it does.
+//
+// Swapped by KEY and not by text: the pass that reapplies wording after a language
+// change reads data-i18n-title off the element, so setting the title alone would
+// put the old sentence back the moment the language changed. The enterable key is
+// the one the markup already carries, remembered here before it is overwritten, so
+// there is no second copy of it in this file to drift out of step.
+function setViewToolReason(button, unavailable) {
+  if (!button.dataset.i18nTitleEnterable) {
+    button.dataset.i18nTitleEnterable = button.dataset.i18nTitle || '';
+  }
+  const key =
+    (unavailable && VIEW_UNAVAILABLE_REASON[button.dataset.view]) ||
+    button.dataset.i18nTitleEnterable;
+  if (!key) return;
+  button.dataset.i18nTitle = key;
+  button.title = window.leafLocale.t(key);
 }
 // The reading view's own tools. None turns blue: the filled chip means "this is
 // the view you are in", and a setting inside that view must not wear it. The

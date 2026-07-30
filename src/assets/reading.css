@@ -2103,7 +2103,9 @@ body:has(#readerToolbar:not([hidden])) {
   stroke-width: 2.25;
 }
 /* A view you cannot enter — no document to show source for, no vault to map —
-   stays in place and grays out, so the row never reshuffles under the pointer. */
+   stays in place and grays out, so the row never reshuffles under the pointer.
+   It keeps its tooltip while it is out — the web view still shows one for a
+   disabled button — and that tooltip is what says why (setViewToolReason). */
 .reader-tool:disabled {
   opacity: 0.35;
   cursor: default;

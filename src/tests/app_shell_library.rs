@@ -759,8 +759,13 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     // With a document open, a view you cannot enter grays out where it stands —
     // those states come and go as you work, and a row that reshuffles under the
     // pointer is worse than one with a dead key.
-    assert!(html.contains("button.disabled = !enabled[view] && !on;"));
+    assert!(html.contains("button.disabled = unavailable;"));
     assert!(css.contains(".reader-tool:disabled {"));
+    // And hovering the dead key says why it is dead rather than what it would have
+    // done. Swapped by key, so a language change keeps the reason instead of
+    // reverting to the enterable wording.
+    assert!(html.contains("const VIEW_UNAVAILABLE_REASON = { graph: 'library.graph.needsVault' };"));
+    assert!(html.contains("button.dataset.i18nTitle = key;"));
     // No document, no bar. Three views of one thing needs the thing; on the home
     // screen a toggle would be navigation, which the pane beside it already does.
     assert!(html.contains("readerToolbar.hidden = !hasDocument;"));
