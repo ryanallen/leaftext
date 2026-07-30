@@ -14,7 +14,7 @@ Settings are owned by the Rust app rather than browser storage, which keeps them
 | Pager | On / Off | On |
 | Graph size | Focus, Medium, Large, Everything | Focus |
 
-**Speed Reader** is not in this panel. It is a reading-view tool on the [floating toolbar](02-navigation.md#the-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest.
+**Speed Reader** is not in this panel. It is a reading-view tool on the [floating toolbar](02-navigation.md#the-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest. The code view's [typing help](07-editing.md#typing-help) wand works the same way: toggled where it applies, saved here.
 
 Whether the rendered page can be typed into is **not** here. It is a padlock on the document in front of you — see [Editing](07-editing.md#the-padlock).
 
@@ -43,6 +43,7 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
   "minimap_enabled": true,
   "pager_enabled": true,
   "speed_reader_enabled": false,
+  "code_intel_enabled": true,
   "theme_family": "fern",
   "theme_mode": "system",
   "theme_random_used": [],
@@ -106,6 +107,12 @@ Leaf Text removes broken entries automatically and collapses equivalent path spe
 - Quiets links to the dimmed prose color with a faint underline, until hover or keyboard focus brightens them
 - Regularizes existing bold text and adds bold lead anchors at word starts; all-caps acronyms (HTML, GFM) are bolded whole
 - Saved as `speed_reader_enabled`
+
+### Typing help
+
+- On by default, toggled with the wand on the code view's [toolbar](07-editing.md#typing-help) rather than this panel
+- Suggests your notes after `[[`, headings after `#`, previews a note on hover, and underlines [broken links](07-editing.md#typing-help) in the code view
+- Saved as `code_intel_enabled`
 
 ### Pager
 

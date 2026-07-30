@@ -107,6 +107,7 @@ function renderReaderToolbar(hasDocument) {
     button.classList.toggle('is-active', on);
   }
   renderReadingTools(current === 'reading');
+  renderCodeTools(current === 'code');
 }
 const GRAPH_ERROR = 'Graph failed to load.';
 // The reading view's own tools. None turns blue: the filled chip means "this is

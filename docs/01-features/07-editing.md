@@ -18,6 +18,7 @@ Leaf Text is reading-first, but it is also editable. You can edit **in the readi
 | Wrapped lines | Long lines wrap; the code view never scrolls sideways |
 | Minimap | The editor's own [minimap](04-minimap.md#the-code-views-minimap) rail, drawn on the window's chrome beside the page |
 | Editing | Type directly; undo/redo, selection, clipboard, and IME all work, and `Tab` indents instead of moving focus. A multi-megabyte file [stays responsive](#editing-the-source) |
+| Typing help | Type `[[` to see your notes, `#` for headings, hover a wikilink for a preview — and broken links get a wavy underline. A wand on the toolbar [turns it off](#typing-help) |
 | Save | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears only with unsaved changes |
 | Unsaved marker | A tab with unsaved edits shows a dot beside its name |
 | Read-only | Documents open locked. The [padlock](#the-padlock) on the reading view's toolbar unlocks the one in front of you — except checkboxes, which toggle either way |
@@ -75,6 +76,17 @@ The code view is a real editor surface: click anywhere and type. It is Monaco �
 - What reaches the host is the edit, not the file: the offset, how much was removed, and what was typed. Sending a multi-megabyte buffer on every pause in typing cost a fifth of a second of it. The message carries the buffer's new length too, so if the host's copy ever disagreed it would ask for the whole text again rather than splice into a buffer it no longer understood.
 - Each tab keeps its own edit buffer: switching tabs or toggling back to the reading view never loses unsaved work.
 - The reading view renders the *buffer*, not the disk — toggle back before saving and you see your edits rendered.
+
+## Typing help
+
+While you type Markdown in the code view, the editor can offer what Leaf Text already knows — the same knowledge the [graph](03-library.md#graph) and [search](03-library.md#search) run on, so it only ever sees what you pointed it at: the active [vault](03-library.md#vaults), or the document's own folder when no vault holds it.
+
+- **Type `[[`** and a popup lists your notes — the whole vault, or the folder beside the document. Keep typing to filter; pick one and the link closes itself.
+- **Type `[[Note#`** for that note's headings, or **`](#`** for the open document's own anchors. Anchors are the exact ones the [reading view](01-rendering.md#headings) gives its headings, so a completed link always lands.
+- **Hover a `[[wikilink]]`** for a card with the note's opening lines.
+- **Broken links get a wavy underline** — a moment after you stop typing, links whose file does not exist and wiki names no note answers to are marked, with a plain-words message on hover.
+
+It never interrupts prose: suggestions appear only on those triggers, never as you type ordinary words. The **wand** on the [floating toolbar](02-navigation.md#the-toolbar) — in the recess beside the view buttons, the code view's counterpart to the reading view's [padlock](#the-padlock) — turns the whole thing on and off. On by default, remembered across restarts ([settings](05-settings.md#typing-help)).
 
 ## Save
 

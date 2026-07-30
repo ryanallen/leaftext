@@ -27,6 +27,7 @@ fn apply_setting_command(settings: &mut Settings, command: IpcCommand) -> bool {
         IpcCommand::SetMinimapEnabled { enabled } => settings.minimap_enabled = enabled,
         IpcCommand::SetPagerEnabled { enabled } => settings.pager_enabled = enabled,
         IpcCommand::SetSpeedReaderEnabled { enabled } => settings.speed_reader_enabled = enabled,
+        IpcCommand::SetCodeIntelEnabled { enabled } => settings.code_intel_enabled = enabled,
         IpcCommand::SetThemeFamily { family } => settings.theme_family = family,
         IpcCommand::SetThemeMode { mode } => settings.theme_mode = mode,
         IpcCommand::SetThemeRandomBag { used } => settings.theme_random_used = used,
@@ -228,6 +229,13 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         "Failed to update document pager",
                     );
                 }
+            }
+            Event::UserEvent(UserEvent::CodeIntelReady { script }) => {
+                run_page_script(
+                    reader.page(),
+                    &script,
+                    "Failed to answer the code view's typing help",
+                );
             }
             Event::UserEvent(UserEvent::UpdateDownloadProgress { version, percent }) => {
                 run_page_script(
@@ -539,6 +547,26 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         length,
                     );
                 }
+                IpcCommand::CodeCompleteNotes { token } => {
+                    let document = reader.workspace.active_path().map(Path::to_path_buf);
+                    code_complete_notes(&mut vault_state, &proxy, document.as_deref(), token);
+                }
+                IpcCommand::CodeCompleteHeadings { token, note } => {
+                    code_complete_headings(
+                        &mut vault_state,
+                        &proxy,
+                        &reader.workspace,
+                        token,
+                        note,
+                    );
+                }
+                IpcCommand::CodeHoverNote { token, note } => {
+                    let document = reader.workspace.active_path().map(Path::to_path_buf);
+                    code_hover_note(&mut vault_state, &proxy, document.as_deref(), token, note);
+                }
+                IpcCommand::CodeLint { token } => {
+                    code_lint(&mut vault_state, &proxy, &reader.workspace, token);
+                }
                 IpcCommand::SaveDocument => {
                     save_active_document(
                         reader.webview.as_ref(),
@@ -590,6 +618,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 command @ (IpcCommand::SetMinimapEnabled { .. }
                 | IpcCommand::SetPagerEnabled { .. }
                 | IpcCommand::SetSpeedReaderEnabled { .. }
+                | IpcCommand::SetCodeIntelEnabled { .. }
                 | IpcCommand::SetThemeFamily { .. }
                 | IpcCommand::SetThemeMode { .. }
                 | IpcCommand::SetThemeRandomBag { .. }

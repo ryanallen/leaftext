@@ -111,8 +111,9 @@ fn gather(seed: &Path) -> (Vec<CorpusDocument>, bool) {
 }
 
 /// The documents directly inside one folder. Files only, and nothing below is
-/// opened — that is what keeps this bounded.
-fn folder_documents(folder: &Path) -> Vec<PathBuf> {
+/// opened — that is what keeps this bounded. The code view's completions read
+/// the same listing, which is why this is visible outside the graph.
+pub(crate) fn folder_documents(folder: &Path) -> Vec<PathBuf> {
     let Ok(entries) = fs::read_dir(folder) else {
         return Vec::new();
     };

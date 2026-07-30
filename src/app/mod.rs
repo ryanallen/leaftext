@@ -5,6 +5,7 @@
 // `use super::*` instead of each repeating the list.
 use crate::*;
 
+mod code_intel;
 mod editing_cmds;
 mod event_loop;
 mod events;
@@ -19,6 +20,7 @@ mod vaults;
 mod watch;
 mod workspace;
 
+pub(crate) use code_intel::*;
 pub(crate) use editing_cmds::*;
 pub(crate) use event_loop::*;
 pub(crate) use events::*;

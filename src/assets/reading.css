@@ -2051,9 +2051,10 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-view-tools[hidden] {
   display: none;
 }
-/* Smaller than a view button, and never filled: the filled chip is how this bar
+/* Smaller than a view button, and never blue: the blue chip is how this bar
    says which view you are in, and a setting inside a view must not wear it. On
-   is full-strength ink against the muted off state, and the glyph itself swaps. */
+   gets a page-colored fill raised out of the recess's grain, so the state reads
+   at a glance; off sits flat and muted. */
 .reader-subtool {
   display: inline-flex;
   align-items: center;
@@ -2070,6 +2071,12 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-subtool svg {
   width: 16px;
   height: 16px;
+  /* Off is thin ink — the closed padlock's weight — whatever the file says. */
+  stroke-width: 1.5;
+}
+.reader-subtool[aria-pressed="true"] svg {
+  /* On is the heavy stroke, so weight carries the state on every toggle. */
+  stroke-width: 2.75;
 }
 .reader-subtool:hover {
   background: color-mix(in srgb, var(--app-foreground) 10%, transparent);
@@ -2077,6 +2084,8 @@ body:has(#readerToolbar:not([hidden])) {
 }
 .reader-subtool[aria-pressed="true"] {
   color: var(--app-foreground);
+  background: var(--app-background);
+  box-shadow: inset 0 0 0 1px var(--app-border);
 }
 /* One button, two glyphs, and the pressed state picks which. Swapping innerHTML
    instead would rebuild the icon under the pointer on every render. */

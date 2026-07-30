@@ -6,7 +6,7 @@ Project guide for agents in this repo; `CLAUDE.md` and `CODEX.md` symlink here. 
 
 # Rule 1: Talking to the owner
 
-Plain English, few words. No jargon or abbreviations. Lead with the answer, then stop. Same in code comments: one short line, only where the code can't say it.
+Plain English, few words. No jargon or abbreviations. Lead with the answer, then stop. Keep every response under 500 characters. Same in code comments: one short line, only where the code can't say it.
 
 ---
 
@@ -49,11 +49,12 @@ Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pip
 - `folder_tree.rs` — **the library pane's files.** One folder per call: `read_folder_listing(root, path)` returns that directory's immediate children plus the trail down to it. The top is the active vault's folder, or the drive roots. Nothing below is touched, so nothing is walked that nobody opened
 - `vault_corpus.rs` — **the vault's text, in memory.** One read serves both things that must see inside every document: the link graph and search. There is no index behind it, so the files are the only copy of the truth and this is a cache the watcher patches a file at a time. Dropped on a vault switch and on quit. `build_graph` and `narrow` are free functions because `doc_graph.rs` builds its map from the same two
 - `doc_graph.rs` — **the map around one document**, for a document no vault holds. Reads the document, its folder one level down, and what it links to — bounded by the document's links, not by the disk under it, so there is no vault to require and no drive to walk. Nothing cached: a folder costs little enough to read again. **The graph never needs a vault** — a vault makes the map bigger (backlinks from anywhere, `[[wiki]]` names across the collection), and requiring one was the v0.1.407 regression
+- `code_intel.rs` — **what the code view's typing help knows.** Note and heading completions, hover previews, and broken-link markers, answered over IPC from the vault's corpus or the document's own folder — never more of the disk than the graph reads. Monaco supplies only the widgets (the popup and hover contributions are in the vendored bundle; still no worker, no header change). Heading anchors come from the renderer's own pipeline so a completed `](#anchor)` always lands, and the link scan is `store/links.rs`'s, whose `DocLink.span` places each link for the underline
 - `pager.rs` Prev/Next · `minimap.rs` model · `tests/` the library's unit tests, one file per subject, shared helpers in `mod.rs`
 - `main.rs` — window, web view, protocol handlers, and the startup that assembles `AppCtx`
-- `app/` — the binary's guts. `event_loop.rs` `AppCtx` and the loop · `events.rs` `UserEvent`/`IpcCommand`/IPC bridge · `workspace.rs` tabs · `history.rs` back/forward · `watch.rs` watching and reload · `editing_cmds.rs` · `render.rs` · `glossary.rs` · `links.rs` what an href means · `fileops.rs` · `vaults.rs` the switcher, the folder reads and the corpus's lifecycle · `update_flow.rs` · `tests.rs`. `mod.rs` does `use crate::*`, so submodules inherit main.rs's imports through `use super::*` — one import list, not two that drift
+- `app/` — the binary's guts. `event_loop.rs` `AppCtx` and the loop · `events.rs` `UserEvent`/`IpcCommand`/IPC bridge · `workspace.rs` tabs · `history.rs` back/forward · `watch.rs` watching and reload · `editing_cmds.rs` · `code_intel.rs` gathers what a typing-help ask needs and computes it on a worker · `render.rs` · `glossary.rs` · `links.rs` what an href means · `fileops.rs` · `vaults.rs` the switcher, the folder reads and the corpus's lifecycle · `update_flow.rs` · `tests.rs`. `mod.rs` does `use crate::*`, so submodules inherit main.rs's imports through `use super::*` — one import list, not two that drift
 - `platform.rs` clipboard, trash, HTTPS download, update applier · `single_instance.rs`
-- `assets/` — fonts, `reading.css`, the bootstrap scripts, and `shell/` (the WebView front-end in 22 ordered fragments) via `include_str!`. **`shell/` is one script, not modules**: the fragments concatenate in `APP_SHELL_SCRIPT_PARTS` order, share one scope, and the last ends with the bootstrap call that must run last. The page has no module loader, so order is load-bearing and a fragment alone is not a valid program. `state.js` is first and holds **only** what more than one fragment touches — state one fragment reads belongs in that fragment. `just check-shell` runs the whole script against a fake page, so a fragment that throws on load fails the build instead of opening a blank window
+- `assets/` — fonts, `reading.css`, the bootstrap scripts, and `shell/` (the WebView front-end in 23 ordered fragments) via `include_str!`. **`shell/` is one script, not modules**: the fragments concatenate in `APP_SHELL_SCRIPT_PARTS` order, share one scope, and the last ends with the bootstrap call that must run last. The page has no module loader, so order is load-bearing and a fragment alone is not a valid program. `state.js` is first and holds **only** what more than one fragment touches — state one fragment reads belongs in that fragment. `just check-shell` runs the whole script against a fake page, so a fragment that throws on load fails the build instead of opening a blank window
 - `wix/main.wxs` MSI recipe · `scripts/` build+release · `.github/workflows/` · `Justfile` · `Cargo.toml` (`version` is the release source of truth)
 
 ## Rules each paid for in version numbers
@@ -69,6 +70,12 @@ Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pip
 - **One artifact per platform.** MSI and DMG — the file a person downloads is the file the updater installs. No checksums, nothing updater-only; every extra file is one someone has to ask about. (GitHub's source archives can't be disabled.)
 - **Windows and macOS only.** Linux is gone: no workflow, no GTK/`xdg-open`/`xclip`, and `main.rs` `compile_error!`s elsewhere. Don't re-add it.
 - **Never crawl the device.** There was a background indexer that walked every drive to build a manifest of every Markdown file, and it failed on both platforms it shipped to: on macOS it wanders into `~/Documents`, `~/Desktop`, iCloud and the rest, each its own TCC consent gate, so it collects a couple of approvals, is refused the others, and *looks* like it stopped; on Windows there is nothing to refuse it, so it grinds through the whole disk — four parse threads, hashing every file — while someone is trying to read. Migration 6 drops what it built. What replaced it reads only what the user pointed at: one folder for the pane, one vault for the graph and search. A folder chosen through the file dialog carries its own macOS consent, which is the other half of why this works.
+
+# Rule 1: Talking to the owner
+
+Plain English, few words. No jargon or abbreviations. Lead with the answer, then stop. Keep every response under 500 characters. Same in code comments: one short line, only where the code can't say it.
+
+---
 
 ## Commands
 
@@ -92,3 +99,9 @@ Every crate ships to users and nobody here reviews it — a security boundary, n
 ## Conventions
 
 LF endings (`.gitattributes`); images and archives binary. Never commit build output (`dist/`, `target/`, `.release-tag`) or large binaries. **No assistant or third-party identity in the repo or its history — commits are the owner's, never a co-author trailer.**
+
+---
+
+# Rule 1: Talking to the owner
+
+Plain English, few words. No jargon or abbreviations. Lead with the answer, then stop. Keep every response under 500 characters. Same in code comments: one short line, only where the code can't say it.

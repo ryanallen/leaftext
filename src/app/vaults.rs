@@ -473,8 +473,9 @@ pub(crate) fn deliver_search(
     );
 }
 
-/// Start the one read, unless it is already running.
-fn read_corpus(state: &mut VaultState, proxy: &EventLoopProxy<UserEvent>) {
+/// Start the one read, unless it is already running. The code view's typing
+/// help also calls this: its first ask under an unread vault starts the read.
+pub(crate) fn read_corpus(state: &mut VaultState, proxy: &EventLoopProxy<UserEvent>) {
     if state.corpus_loading {
         return;
     }

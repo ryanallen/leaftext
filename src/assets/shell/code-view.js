@@ -663,6 +663,9 @@ function createMonacoEditor(monaco, container, state, text) {
     renderWhitespace: 'none',
     unicodeHighlight: { ambiguousCharacters: false, invisibleCharacters: false },
     quickSuggestions: false,
+    // No echoing back words already in the file: the only suggestions worth a
+    // popup are the ones the host answers (code-intel.js), on their triggers.
+    wordBasedSuggestions: 'off',
     occurrencesHighlight: 'off',
     // No box/stroke around the line being edited.
     renderLineHighlight: 'none',
@@ -713,6 +716,8 @@ function createMonacoEditor(monaco, container, state, text) {
   }
   pendingViewAtTop = false;
   pendingViewScrollFraction = null;
+  // Typing help: completions, hover, and the broken-link pass (code-intel.js).
+  setupCodeIntel(monaco);
   monacoEditor.focus();
 }
 
@@ -723,6 +728,7 @@ function createMonacoEditor(monaco, container, state, text) {
 // reload rebuilds the view) and by renderState when leaving for the reading view.
 function disposeMonacoEditor() {
   if (!monacoEditor) return;
+  teardownCodeIntel();
   if (monacoChangeSub) {
     monacoChangeSub.dispose();
     monacoChangeSub = null;

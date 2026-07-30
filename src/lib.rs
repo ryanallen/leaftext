@@ -42,6 +42,12 @@ mod vault_corpus;
 pub use vault_corpus::{CorpusDocument, VaultCorpus, MAX_CORPUS_DOCUMENTS};
 mod doc_graph;
 pub use doc_graph::document_graph;
+mod code_intel;
+pub use code_intel::{
+    corpus_note_items, document_headings, find_note, folder_note_items, folder_note_names,
+    known_note_names, lint_links, note_preview, read_folder_note, HeadingItem, LintMarker,
+    NoteItem,
+};
 mod editing;
 pub use editing::{
     block_source_map, kind_is_editable, task_marker_offsets, BlockSpan, EditableDocument,
@@ -104,6 +110,7 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/shell/theme.js"),
     include_str!("assets/shell/render-state.js"),
     include_str!("assets/shell/code-view.js"),
+    include_str!("assets/shell/code-intel.js"),
     include_str!("assets/shell/reading-blocks.js"),
     include_str!("assets/shell/dom-to-markdown.js"),
     include_str!("assets/shell/reading-edits.js"),
@@ -769,6 +776,7 @@ const APP_SHELL_ICONS: &[(&str, &str)] = &[
     ("{{SPEED_READER_OFF_ICON_SVG}}", SPEED_READER_OFF_ICON_SVG),
     ("{{LOCK_CLOSED_ICON_SVG}}", LOCK_CLOSED_ICON_SVG),
     ("{{LOCK_OPEN_ICON_SVG}}", LOCK_OPEN_ICON_SVG),
+    ("{{WAND_ICON_SVG}}", WAND_ICON_SVG),
     ("{{CLOUD_ICON_SVG}}", CLOUD_ICON_SVG),
     ("{{PACKAGE_OPEN_ICON_SVG}}", PACKAGE_OPEN_ICON_SVG),
     ("{{PACKAGE_ICON_SVG}}", PACKAGE_ICON_SVG),
@@ -981,6 +989,9 @@ pub struct Settings {
     pub pager_enabled: bool,
     /// Quiet prose and add bold lead anchors at word starts. Off by default.
     pub speed_reader_enabled: bool,
+    /// The code view's typing help: note and heading suggestions, and the
+    /// underline on links that lead nowhere. On by default.
+    pub code_intel_enabled: bool,
     /// Make the reading view a live editor. On by default; off keeps it
     /// read-only. The code view edits the raw source regardless.
     /// Selected theme family: `github`/`nightshade`/`amaranth`/… Raw frontend
@@ -1027,6 +1038,7 @@ impl Default for Settings {
             minimap_enabled: true,
             pager_enabled: true,
             speed_reader_enabled: false,
+            code_intel_enabled: true,
             theme_family: "fern".to_string(),
             theme_mode: "system".to_string(),
             theme_random_used: Vec::new(),

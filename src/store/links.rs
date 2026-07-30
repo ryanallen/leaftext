@@ -14,6 +14,10 @@ pub struct DocLink {
     /// citing one page point at one node.
     pub target_url: Option<String>,
     pub raw: String,
+    /// Byte range of the link in the source, where the scan knows it — the whole
+    /// `[text](url)` or `[[name]]`, or an attribute's value. The code view's
+    /// broken-link underline draws over exactly this range; `None` draws nothing.
+    pub span: Option<(usize, usize)>,
 }
 
 /// Extract a document's outgoing links, dispatching on file type. Markdown gets
@@ -55,11 +59,16 @@ fn markdown_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
     // Text inside a link is that link's label, not somewhere to look for another
     // one — the same reason the renderer's linkifier tracks this.
     let mut link_depth = 0usize;
-    for event in Parser::new(content) {
+    for (event, range) in Parser::new(content).into_offset_iter() {
         match event {
             Event::Start(Tag::Link { dest_url, .. }) => {
                 link_depth += 1;
-                push_target(&mut out, &dest_url, source_abs);
+                push_target(
+                    &mut out,
+                    &dest_url,
+                    source_abs,
+                    Some((range.start, range.end)),
+                );
             }
             // An image is not a link to a document, so its destination is not a
             // target — but its alt text is still inside it.
@@ -69,7 +78,7 @@ fn markdown_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
             }
             Event::Text(text) if link_depth == 0 => {
                 for url in crate::plain_text_urls(text.as_ref()) {
-                    push_url(&mut out, url);
+                    push_url(&mut out, url, None);
                 }
             }
             _ => {}
@@ -94,13 +103,13 @@ fn xml_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
 ///
 /// Empty and anchor-only (`#section`) destinations are neither — the second points
 /// inside the document it is written in, and a document is one node.
-fn push_target(out: &mut Vec<DocLink>, raw: &str, source_abs: &Path) {
+fn push_target(out: &mut Vec<DocLink>, raw: &str, source_abs: &Path, span: Option<(usize, usize)>) {
     let trimmed = raw.trim();
     if trimmed.is_empty() || trimmed.starts_with('#') {
         return;
     }
     if crate::starts_with_url_scheme(trimmed) {
-        push_url(out, trimmed.to_string());
+        push_url(out, trimmed.to_string(), span);
         return;
     }
     // Some other scheme — `mailto:`, `file:`, `leaf-image:`, anything custom.
@@ -114,16 +123,18 @@ fn push_target(out: &mut Vec<DocLink>, raw: &str, source_abs: &Path) {
             target_name: None,
             target_url: None,
             raw: trimmed.to_string(),
+            span,
         });
     }
 }
 
-fn push_url(out: &mut Vec<DocLink>, url: String) {
+fn push_url(out: &mut Vec<DocLink>, url: String, span: Option<(usize, usize)>) {
     out.push(DocLink {
         target_abs: None,
         target_name: None,
         target_url: Some(normalize_url(&url)),
         raw: url,
+        span,
     });
 }
 
@@ -202,7 +213,12 @@ fn collect_attr_targets(content: &str, attr: &str, source_abs: &Path, out: &mut 
         if let Some(end_rel) = content[value_start..].find(quote as char) {
             let value = &content[value_start..value_start + end_rel];
             search_from = value_start + end_rel + 1;
-            push_target(out, value, source_abs);
+            push_target(
+                out,
+                value,
+                source_abs,
+                Some((value_start, value_start + end_rel)),
+            );
         }
     }
 }
@@ -230,6 +246,7 @@ fn collect_wiki_links(content: &str, out: &mut Vec<DocLink>) {
             target_name: Some(normalize_name_key(name)),
             target_url: None,
             raw: format!("[[{inner}]]"),
+            span: Some((open - 2, open + close_rel + 2)),
         });
     }
 }

@@ -36,6 +36,7 @@ pub fn initial_settings_script(settings: &Settings) -> String {
         "minimapEnabled": settings.minimap_enabled,
         "pagerEnabled": settings.pager_enabled,
         "speedReaderEnabled": settings.speed_reader_enabled,
+        "codeIntelEnabled": settings.code_intel_enabled,
         "themeFamily": settings.theme_family,
         "themeMode": settings.theme_mode,
         "themeRandomUsed": settings.theme_random_used,
@@ -412,6 +413,39 @@ pub fn save_result_script(path: &str, ok: bool, error: Option<&str>) -> String {
 /// means "unknown" (not a readable local document); the page shows no count.
 pub fn line_count_script(token: u64, lines: i64) -> String {
     format!("window.leafLineCount({token}, {lines});")
+}
+
+/// One answer channel for every code-view IntelliSense ask: the page matches
+/// the echoed `token` to the popup, hover or lint pass that asked.
+fn code_intel_answer(token: u64, mut payload: serde_json::Value) -> String {
+    payload["token"] = serde_json::json!(token);
+    format!("window.leafCodeIntelAnswer({payload});")
+}
+
+/// The notes `[[` can complete to. Labels and folders are file names — user
+/// text — so the page escapes them before the DOM.
+pub fn code_intel_notes_script(token: u64, notes: &[crate::NoteItem]) -> String {
+    code_intel_answer(token, serde_json::json!({ "notes": notes }))
+}
+
+/// The headings `[[note#` or `](#` can complete to.
+pub fn code_intel_headings_script(token: u64, headings: &[crate::HeadingItem]) -> String {
+    code_intel_answer(token, serde_json::json!({ "headings": headings }))
+}
+
+/// A note's opening lines for the hover card, or `null` when no note answers
+/// to the name.
+pub fn code_intel_hover_script(token: u64, hover: Option<(&str, &str)>) -> String {
+    let hover = match hover {
+        Some((label, preview)) => serde_json::json!({ "label": label, "preview": preview }),
+        None => serde_json::Value::Null,
+    };
+    code_intel_answer(token, serde_json::json!({ "hover": hover }))
+}
+
+/// The broken-link markers for the active buffer, in Monaco's own coordinates.
+pub fn code_intel_lint_script(token: u64, markers: &[crate::LintMarker]) -> String {
+    code_intel_answer(token, serde_json::json!({ "markers": markers }))
 }
 
 /// Tell the page how a download ended: `staged` when an installer is verified

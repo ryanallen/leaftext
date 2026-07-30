@@ -26,6 +26,11 @@ pub(crate) const LOCK_OPEN_ICON_SVG: &str = include_str!("assets/lock-open.svg")
 pub(crate) const SPEED_READER_ON_ICON_SVG: &str = include_str!("assets/speed-reader-on.svg");
 pub(crate) const SPEED_READER_OFF_ICON_SVG: &str = include_str!("assets/speed-reader-off.svg");
 
+/// The code view's typing help, drawn as a wand: suggestions appear as if by
+/// magic, which is the honest picture for someone who has never met an editor
+/// that types back.
+pub(crate) const WAND_ICON_SVG: &str = include_str!("assets/wand.svg");
+
 /// A vault that reaches GitHub. A box says "a collection, here"; a cloud says
 /// "and somewhere else as well", which is what syncing buys.
 pub(crate) const CLOUD_ICON_SVG: &str = include_str!("assets/cloud.svg");

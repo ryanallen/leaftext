@@ -61,6 +61,10 @@ pub(crate) enum UserEvent {
     },
     /// The background pager scan completed for a document path.
     PagerLoaded { path: PathBuf, html: String },
+    /// A code-view IntelliSense answer — completions, hover or lint — already
+    /// serialized as the page script that delivers it, on the worker that
+    /// computed it. The token inside pairs it with the ask.
+    CodeIntelReady { script: String },
     /// How far along the running update download is, 0-100.
     UpdateDownloadProgress { version: String, percent: u8 },
     /// A verified installer is on disk and ready to apply.
@@ -144,6 +148,8 @@ pub(crate) enum IpcCommand {
     SetPagerEnabled { enabled: bool },
     #[serde(rename = "setSpeedReaderEnabled")]
     SetSpeedReaderEnabled { enabled: bool },
+    #[serde(rename = "setCodeIntelEnabled")]
+    SetCodeIntelEnabled { enabled: bool },
     #[serde(rename = "setThemeFamily")]
     SetThemeFamily { family: String },
     #[serde(rename = "setThemeMode")]
@@ -272,6 +278,23 @@ pub(crate) enum IpcCommand {
     /// Write the active document's buffer to disk.
     #[serde(rename = "saveDocument")]
     SaveDocument,
+    /// The code view's popup wants the notes `[[` can complete to.
+    #[serde(rename = "codeCompleteNotes")]
+    CodeCompleteNotes { token: u64 },
+    /// The headings of a named note (`[[note#`), or of the active buffer
+    /// (`](#`) when `note` is absent.
+    #[serde(rename = "codeCompleteHeadings")]
+    CodeCompleteHeadings {
+        token: u64,
+        #[serde(default)]
+        note: Option<String>,
+    },
+    /// The hover card is over `[[note]]` and wants its opening lines.
+    #[serde(rename = "codeHoverNote")]
+    CodeHoverNote { token: u64, note: String },
+    /// Check the active buffer's links and answer with broken-link markers.
+    #[serde(rename = "codeLint")]
+    CodeLint { token: u64 },
     /// Toggle a reading-view task checkbox, addressed by its document-order
     /// position among list checkboxes.
     #[serde(rename = "toggleTask")]

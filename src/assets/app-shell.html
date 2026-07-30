@@ -167,6 +167,12 @@
       <button type="button" id="readerLockButton" class="reader-subtool" aria-pressed="false" aria-label="Unlock to edit this page" title="Unlock to edit this page"><span class="reader-swap-glyph reader-glyph-off">{{LOCK_CLOSED_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{LOCK_OPEN_ICON_SVG}}</span></button>
       <button type="button" id="speedReaderButton" class="reader-subtool" aria-pressed="false" aria-label="Speed reader" title="Speed reader"><span class="reader-swap-glyph reader-glyph-off">{{SPEED_READER_OFF_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{SPEED_READER_ON_ICON_SVG}}</span></button>
     </span>
+    <!-- What the source view can do, in the same recess. One tool: the wand
+         turns typing help on and off. Arrives and leaves with the code view for
+         the same reason the padlock leaves with the reading view. -->
+    <span id="codeViewTools" class="reader-view-tools" role="group" aria-label="Source tools" hidden>
+      <button type="button" id="codeIntelButton" class="reader-subtool" aria-pressed="true" aria-label="Typing help" title="Typing help">{{WAND_ICON_SVG}}</button>
+    </span>
     <button type="button" id="viewReadingButton" class="reader-tool" data-view="reading" aria-pressed="true" aria-label="Reading" title="Reading">{{DOCUMENT_ICON_SVG}}</button>
     <button type="button" id="viewCodeButton" class="reader-tool" data-view="code" aria-pressed="false" aria-label="View source" title="View source">{{CODE_VIEW_ICON_SVG}}</button>
     <button type="button" id="viewGraphButton" class="reader-tool" data-view="graph" aria-pressed="false" aria-label="Graph" title="Show how these documents link">{{GRAPH_ICON_SVG}}</button>
