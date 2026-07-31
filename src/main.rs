@@ -29,12 +29,13 @@ use leaftext::{
     read_folder_listing, read_folder_note, read_source, render_markdown_document,
     repo_name_for_vault, save_recent_files, save_result_script, save_settings,
     scroll_anchor_script, search_results_script, settings_file_path, settings_unreadable_script,
-    source_payload_url, source_updated_script, sync_vault_repo, update_progress_script,
-    update_state_script, vaults_script, webview_user_data_dir, workspace_only_script,
-    workspace_reload_script, workspace_state_script, workspace_switch_script, write_source,
-    CorpusDocument, DocumentFormat, EditableDocument, FolderListing, GitTooling, GraphScope,
-    OpenedDocument, RecentFiles, ScrollAnchor, Settings, SettingsLoad, SourceText, UpdateDownload,
-    VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    source_payload_url, source_updated_script, sync_vault_repo, unlock_document_script,
+    update_progress_script, update_state_script, vaults_script, webview_user_data_dir,
+    workspace_only_script, workspace_reload_script, workspace_state_script,
+    workspace_switch_script, write_source, CorpusDocument, DocumentFormat, EditableDocument,
+    FolderListing, GitTooling, GraphScope, OpenedDocument, RecentFiles, ScrollAnchor, Settings,
+    SettingsLoad, SourceText, UpdateDownload, VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL,
+    LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -533,6 +534,21 @@ fn pick_document_file() -> Option<PathBuf> {
         dialog = dialog.add_filter(format.display_name(), format.extensions());
     }
     dialog.add_filter("All files", &["*"]).pick_file()
+}
+
+/// Where a document that has never had a file goes. The same filters as Open,
+/// off the same table, with the name it has been wearing as the suggestion — so
+/// the first save of a new document is a Save As and nothing is written until
+/// someone has said where.
+fn pick_save_path(current: &Path) -> Option<PathBuf> {
+    let mut dialog = FileDialog::new().set_title("Save Document As");
+    if let Some(name) = current.file_name().and_then(|name| name.to_str()) {
+        dialog = dialog.set_file_name(name);
+    }
+    for format in DocumentFormat::ALL {
+        dialog = dialog.add_filter(format.display_name(), format.extensions());
+    }
+    dialog.add_filter("All files", &["*"]).save_file()
 }
 
 /// The New vault dialog: a folder, since a vault is a folder. Nothing is written

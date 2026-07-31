@@ -186,6 +186,22 @@ fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
 }
 
 #[test]
+fn the_home_screens_new_document_button_stays_readable_on_hover() {
+    // It started life with a color and no background, so the generic
+    // `button:hover` fill stayed underneath and hover was one purple on another.
+    // Both states name a pair the theme compiler gates, so no theme can repeat it.
+    let css = reading_mode_css();
+
+    let rest = rule_body(&css, ".primary-new {");
+    assert_contains(rest, "background: transparent;");
+    assert_contains(rest, "color: var(--preview-foreground);");
+
+    let hover = rule_body(&css, ".primary-new:hover {");
+    assert_contains(hover, "background: var(--app-action-hover-background);");
+    assert_contains(hover, "color: var(--app-action-foreground);");
+}
+
+#[test]
 fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
     let css = reading_mode_css();
 

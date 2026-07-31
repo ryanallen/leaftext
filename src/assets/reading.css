@@ -1043,6 +1043,17 @@ button {
   border-color: var(--app-action-hover-background);
   color: var(--app-action-foreground);
 }
+/* Its neighbor, and it has to read as one: same rest, same hover. */
+.new-button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--app-muted-foreground);
+}
+.new-button:hover {
+  background: var(--app-action-hover-background);
+  border-color: var(--app-action-hover-background);
+  color: var(--app-action-foreground);
+}
 /* Unsaved-edits dot on a tab, sharing the close button's corner. In the row it
    was 13px of content that vanished on the tab's own hover, so a modified tab
    shrank and its label jumped the moment you pointed at it. */
@@ -3761,9 +3772,40 @@ body:has(#readerToolbar:not([hidden])) {
   font: 500 15px/1.6 var(--app-font);
   margin: 18px 0 0;
 }
+/* The two ways in, side by side: open a document you have, or start one you
+   don't. */
+.empty-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .primary-open {
   font-size: 15px;
   padding: 11px 18px;
+}
+/* Quieter than Choose file. Only one of the two can be the obvious thing to do,
+   so this one is an outline. */
+.primary-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 15px;
+  padding: 11px 16px;
+  border-color: var(--app-border);
+  background: transparent;
+  color: var(--preview-foreground);
+}
+/* Must set the background too: a color alone leaves the generic `button:hover`
+   fill underneath, which was one purple on another. This pair the theme
+   compiler gates for contrast. */
+.primary-new:hover {
+  background: var(--app-action-hover-background);
+  border-color: var(--app-action-hover-background);
+  color: var(--app-action-foreground);
+}
+.primary-new svg {
+  width: 16px;
+  height: 16px;
 }
 .recent {
   border-top: 1px solid var(--recent-border);

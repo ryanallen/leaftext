@@ -1,3 +1,8 @@
+// The header's plus, for the home screen's New document button. A function, not
+// a const: theme.js runs renderState() as it loads, long before this fragment.
+function newIconSvg() {
+  return `{{NEW_ICON_SVG}}`;
+}
 function renderState() {
   const state = currentState || { recent: [], tabs: [], active: null, document: null };
   disconnectMinimapPreviewObservers();
@@ -115,10 +120,14 @@ function renderState() {
       <h1>Refine your mind.</h1>
       <p class="empty-subtitle">Your thoughts, secure and free.</p>
       <p class="empty-description">${escapeText(emptyDescription)}</p>
-      <button type="button" class="primary-open">Choose file</button>
+      <div class="empty-actions">
+        <button type="button" class="primary-open">Choose file</button>
+        <button type="button" class="primary-new">${newIconSvg()}New document</button>
+      </div>
       ${recent.length ? `<div class="recent"><h2>Recent (${escapeText(formatCount(recent.length))})</h2><ol>${recent.map((path) => `<li><button type="button" title="Open ${escapeAttr(path)}" data-path="${escapeAttr(path)}" data-reveal-path="${escapeAttr(path)}">${escapeText(path)}</button></li>`).join('')}</ol></div>` : `<p class="empty-help">Files you open show up here, so you can pick up where you left off.</p>`}
     </section>`;
   app.querySelector('.primary-open').addEventListener('click', () => send({ command: 'open' }));
+  app.querySelector('.primary-new').addEventListener('click', () => send({ command: 'newDocument' }));
   app.querySelectorAll('[data-path]').forEach((button) => {
     button.addEventListener('click', () => send({ command: 'openRecent', path: button.dataset.path }));
   });

@@ -145,6 +145,7 @@ Key `IpcCommand` variants include:
 | ---------------------- | ------------------------------------- |
 | `open`                 | "Open" button or `Ctrl+O` / `Cmd+O`   |
 | `openRecent`           | Recent file list click                |
+| `newDocument`          | The **+** in the app bar, or **New document** on the home screen: an empty [unsaved buffer](../01-features/07-editing.md#new-document) in a new tab, with no file behind it until the first save |
 | `closeTab`             | Tab close button or `Ctrl+W`          |
 | `switchTab`            | Tab click                             |
 | `moveTab`              | Tab drag-and-drop reorder             |
@@ -182,7 +183,7 @@ Key `IpcCommand` variants include:
 | `exitCodeView`         | Toggle back from the code view to the rendered reading view |
 | `spliceSource`         | Debounced code-view edit, as the range it replaced: offset, length removed, text inserted, plus the buffer's new length so the host can prove the two copies still agree |
 | `updateSource`         | The whole buffer. Used for the first send, and to resynchronize if a `spliceSource` length check ever disagrees |
-| `saveDocument`         | The green [Save](../01-features/07-editing.md#save) button or `Ctrl+S` / `Cmd+S`: write the edit buffer to disk |
+| `saveDocument`         | The green [Save](../01-features/07-editing.md#save) button or `Ctrl+S` / `Cmd+S`: write the edit buffer to disk. A buffer with no file yet goes through the OS Save dialog first |
 | `setCodeIntelEnabled`  | The [typing help](../01-features/07-editing.md#typing-help) wand on the code view's toolbar |
 | `codeCompleteNotes`    | Typing `[[` in the code view: list the notes it can complete to |
 | `codeCompleteHeadings` | Typing `[[note#` (that note's headings) or `](#` (the open document's anchors) |

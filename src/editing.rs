@@ -19,6 +19,9 @@ pub struct EditableDocument {
     /// byte order mark — spent again on every save so writing a document never
     /// changes how it sits on disk.
     pub spelling: SourceSpelling,
+    /// True until this document has a file. It wears a name regardless, to be a
+    /// tab; this is what stops a save from writing to that name.
+    pub untitled: bool,
     text: String,
     saved: String,
     version: u64,
@@ -40,11 +43,29 @@ impl EditableDocument {
             path,
             format,
             spelling,
+            untitled: false,
             saved: text.clone(),
             text,
             version: 0,
             undo_stack: Vec::new(),
         }
+    }
+
+    /// An empty document with no file behind it. `path` is the name it wears
+    /// until the first save asks where it goes.
+    pub fn untitled(path: PathBuf) -> Self {
+        Self {
+            untitled: true,
+            ..Self::new(path, SourceText::utf8(String::new()))
+        }
+    }
+
+    /// Give a never-saved document its file. The format follows the name, since
+    /// whoever chose where it goes also chose what it is.
+    pub fn adopt_path(&mut self, path: PathBuf) {
+        self.format = DocumentFormat::from_path(&path);
+        self.path = path;
+        self.untitled = false;
     }
 
     /// Record `before` as an undo point if the buffer actually changed, keeping

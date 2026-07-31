@@ -188,6 +188,56 @@ pub(crate) fn update_source_buffer(
     );
 }
 
+/// Whether a save can go ahead, and whether the document was named on the way.
+pub(crate) enum SaveReady {
+    /// The document already had a file.
+    Ready,
+    /// It has just been given one, so everything that names it - the tab strip,
+    /// the window title, the folder images resolve against - is now stale.
+    Named,
+    /// The dialog was closed without choosing. Nothing was written.
+    Canceled,
+}
+
+/// Give the active document a file if it hasn't got one, asking where through
+/// `ask`. The first save of a new document is a Save As; every other save walks
+/// straight past this.
+pub(crate) fn name_untitled_document(
+    reader: &mut Reader,
+    ask: impl FnOnce(&Path) -> Option<PathBuf>,
+) -> SaveReady {
+    let Some(edit) = reader.workspace.active_edit() else {
+        return SaveReady::Ready;
+    };
+    if !edit.untitled {
+        return SaveReady::Ready;
+    }
+    let Some(chosen) = ask(&edit.path) else {
+        return SaveReady::Canceled;
+    };
+    let Some(index) = reader.workspace.active else {
+        return SaveReady::Canceled;
+    };
+    if let Some(tab) = reader.workspace.tabs.get_mut(index) {
+        if let Some(edit) = tab.edit.as_mut() {
+            edit.adopt_path(chosen.clone());
+        }
+        tab.history.replace_current(chosen.clone());
+        tab.title = tab_title_from_path(&chosen);
+        // Cached under the old name, and the render reads the buffer anyway.
+        tab.rendered = None;
+    }
+    // Carry the unlock across: the page holds it by path, and this document is
+    // mid-sentence.
+    run_page_script(
+        reader.page(),
+        &unlock_document_script(&chosen),
+        "Save: failed to carry the unlock onto the named document",
+    );
+    reader.record_recent(chosen);
+    SaveReady::Named
+}
+
 /// Write the active tab's edit buffer to disk. Sets the watcher's content hash
 /// to the written text so its own FileChanged for this save is a no-op.
 pub(crate) fn save_active_document(

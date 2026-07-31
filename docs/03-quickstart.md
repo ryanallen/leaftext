@@ -32,6 +32,7 @@ flowchart LR
 | Drag and drop | Drop a `.md`, `.xml`, `.json`, `.yaml`, or `.eml` file onto the window |
 | Recent files | Click a file on the no-file home screen |
 | Command line / Open with | Launch Leaf Text with a file path |
+| Start a blank one | The **+** in the app bar, or **New document** on the home screen — see [Editing](01-features/07-editing.md#new-document) |
 
 > [!TIP]
 > Recent files keeps the last 8 opened files, so reopening a doc is usually one click.
@@ -46,6 +47,7 @@ flowchart LR
 | Minimap | Shows the whole document and your current viewport |
 | Back / Forward | Moves through document and scroll history |
 | Code view | Toggles the page to its raw, editable source — see [Editing](01-features/07-editing.md) |
+| New document | The **+** beside Open, for a blank page you can type into straight away |
 | Save | A green button that appears when the source has [unsaved edits](01-features/07-editing.md#save) |
 | Library pane | Browse a folder, [search](01-features/03-library.md#search) a [vault](01-features/03-library.md#vaults)'s text, and [map](01-features/03-library.md#graph) how its documents link |
 
@@ -74,7 +76,7 @@ Mouse side buttons also trigger Back and Forward on Windows.
 
 ### Edit
 
-Click into any sentence and type — the rendered page [edits in place](01-features/07-editing.md#inline-editing-the-reading-view), checkboxes toggle, and the green **Save** button appears. For the raw source instead, click the code-brackets button left of Settings. The [Editing](01-features/07-editing.md) page covers the whole flow.
+Click into any sentence and type — the rendered page [edits in place](01-features/07-editing.md#inline-editing-the-reading-view), checkboxes toggle, and the green **Save** button appears. For the raw source instead, click the code-brackets button left of Settings. To start from nothing, press the **+** in the app bar for a [new document](01-features/07-editing.md#new-document); its first save asks where to put it. The [Editing](01-features/07-editing.md) page covers the whole flow.
 
 ### Reopen
 

@@ -81,6 +81,10 @@ pub(crate) enum IpcCommand {
     Open,
     #[serde(rename = "openRecent")]
     OpenRecent { path: PathBuf },
+    /// Start an empty document in a new tab, unlocked for typing. It has no file
+    /// until the first save, which asks where it goes.
+    #[serde(rename = "newDocument")]
+    NewDocument,
     /// Paste what the library pane last cut or copied into a folder. `cut` decides
     /// move or copy; the page carries both because the page is what remembered them.
     #[serde(rename = "pasteFile")]

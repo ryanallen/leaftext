@@ -265,6 +265,17 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         reader.render(ScrollIntent::Reset);
                     }
                 }
+                IpcCommand::NewDocument => {
+                    let path = reader.workspace.open_untitled();
+                    // Before the render, so the first paint already carries the
+                    // editors - there is nothing to click before typing.
+                    run_page_script(
+                        reader.page(),
+                        &unlock_document_script(&path),
+                        "Failed to unlock the new document",
+                    );
+                    reader.render(ScrollIntent::Reset);
+                }
                 // The page opening a file is the same act as a forwarded open.
                 IpcCommand::OpenRecent { path } => {
                     let _ = proxy.send_event(UserEvent::OpenPath(path));
@@ -568,11 +579,21 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     code_lint(&mut vault_state, &proxy, &reader.workspace, token);
                 }
                 IpcCommand::SaveDocument => {
-                    save_active_document(
-                        reader.webview.as_ref(),
-                        &mut reader.workspace,
-                        &mut file_watch,
-                    );
+                    match name_untitled_document(&mut reader, pick_save_path) {
+                        SaveReady::Canceled => {}
+                        ready => {
+                            save_active_document(
+                                reader.webview.as_ref(),
+                                &mut reader.workspace,
+                                &mut file_watch,
+                            );
+                            // The tab, the title and the image folder still say
+                            // Untitled. A plain save changes none of them.
+                            if matches!(ready, SaveReady::Named) {
+                                reader.render(ScrollIntent::Preserve);
+                            }
+                        }
+                    }
                 }
                 IpcCommand::ToggleTask { index } => {
                     toggle_task_marker(

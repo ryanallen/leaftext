@@ -63,6 +63,15 @@ impl DocumentHistory {
         self.index = Some(self.entries.len() - 1);
     }
 
+    /// Rename the current entry in place — the untitled document that has just
+    /// been given a file. Not a navigation: Back must not gain a step to a name
+    /// nothing was ever at.
+    pub(crate) fn replace_current(&mut self, path: PathBuf) {
+        if let Some(entry) = self.index.and_then(|index| self.entries.get_mut(index)) {
+            *entry = path;
+        }
+    }
+
     pub(crate) fn back_target(&self) -> Option<&PathBuf> {
         let index = self.index?;
         index

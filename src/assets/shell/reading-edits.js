@@ -182,28 +182,27 @@ function mergeBlockIntoPrevious(el, prev) {
   setPendingCaret({ srcStart: start, textOffset: junction });
 }
 
-// A fresh empty paragraph below `el`, ready to type into. Markdown cannot hold
-// an empty block, so it exists only in the DOM until its first commit, which
-// inserts `\n\n` + the typed text at the previous block's end offset. Enter
-// commits and chains another empty paragraph below (continuous writing flow);
-// Backspace on the empty block dissolves it back into the previous block's end;
-// clicking away commits, or dissolves it if nothing was typed.
-function openInsertBlockAfter(el) {
-  const insertAt = Number(el.dataset.srcEnd);
-  if (!Number.isFinite(insertAt)) return;
+// A fresh empty paragraph, ready to type into. Markdown cannot hold an empty
+// block, so it exists only in the DOM until its first commit, which splices
+// `prefix` + the typed text in at `insertAt`. Enter commits and chains another
+// empty paragraph below (continuous writing flow); Backspace on the empty block
+// dissolves it back into `previous`; clicking away commits, or dissolves it if
+// nothing was typed -- unless `keepEmpty`, since an empty document has no other
+// block to click into and removing this one would leave nowhere to type.
+function openInsertBlock(insertAt, { prefix = '\n\n', place, previous = null, keepEmpty = false }) {
   const block = document.createElement('p');
   block.className = 'leaf-editable leaf-insert-block';
   block.dataset.blockKind = 'paragraph';
   block.setAttribute('contenteditable', 'true');
   block.setAttribute('spellcheck', 'false');
-  el.insertAdjacentElement('afterend', block);
+  place(block);
   const commit = (chainBelow) => {
     if (block.__committed) return true;
     const text = inlineDomToMarkdown(block).trim();
     if (!text) return false;
     block.__committed = true;
-    sendEditCommand({ command: 'editBlock', start: insertAt, end: insertAt, text: '\n\n' + text });
-    if (chainBelow) setPendingCaret({ srcStart: insertAt + 2, insertBelow: true });
+    sendEditCommand({ command: 'editBlock', start: insertAt, end: insertAt, text: prefix + text });
+    if (chainBelow) setPendingCaret({ srcStart: insertAt + prefix.length, insertBelow: true });
     return true;
   };
   block.addEventListener('keydown', (event) => {
@@ -219,15 +218,33 @@ function openInsertBlockAfter(el) {
     }
     if (event.key === 'Backspace' && !inlineDomToMarkdown(block).trim()) {
       event.preventDefault();
+      if (!previous) return;
       block.remove();
-      el.focus({ preventScroll: true });
-      placeCaretInBlock(el, visibleTextLength(el));
+      previous.focus({ preventScroll: true });
+      placeCaretInBlock(previous, visibleTextLength(previous));
     }
   });
   block.addEventListener('blur', () => {
-    if (!commit(false)) block.remove();
+    if (!commit(false) && !keepEmpty) block.remove();
   });
   block.focus({ preventScroll: true });
+}
+function openInsertBlockAfter(el) {
+  const insertAt = Number(el.dataset.srcEnd);
+  if (!Number.isFinite(insertAt)) return;
+  openInsertBlock(insertAt, {
+    place: (block) => el.insertAdjacentElement('afterend', block),
+    previous: el,
+  });
+}
+// The first line of a document that has none. Ahead of the pager placeholder, so
+// the writing starts at the top of the page rather than under its footer.
+function openFirstBlockIn(body) {
+  openInsertBlock(0, {
+    prefix: '',
+    place: (block) => body.insertBefore(block, body.firstChild),
+    keepEmpty: true,
+  });
 }
 
 // Structural keys for a WYSIWYG block, by kind. Paragraphs and headings get the
@@ -434,6 +451,10 @@ function placePendingCaret(body) {
   if (!pending) return;
   // A caret queued for a different document must not grab focus in this page.
   if (pending.path && pending.path !== activeDocumentPath()) return;
+  if (pending.emptyDocument) {
+    openFirstBlockIn(body);
+    return;
+  }
   const target = body.querySelector(`[data-src-start="${pending.srcStart}"]`);
   if (!target) return;
   if (pending.insertBelow) {
@@ -470,6 +491,11 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   }
   if (readerEditingAllowed()) {
     bindEditableBlocks(currentDocumentFormat);
+    // An unlocked document with no blocks in it -- a new one -- has nothing to
+    // click into. Open its first line, or the page is unlocked and untypable.
+    if (currentDocumentFormat === 'markdown' && !pendingCaret && !body.querySelector('[data-src-start]')) {
+      setPendingCaret({ emptyDocument: true });
+    }
   }
   if (currentDocumentFormat === 'markdown') {
     bindTableCheckboxes();

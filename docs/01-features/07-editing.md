@@ -8,6 +8,8 @@ Leaf Text is reading-first, but it is also editable. You can edit **in the readi
 
 | Feature | What it means |
 | --- | --- |
+| New document | The **+** in the app bar (and on the home screen) starts a blank page, unlocked and ready to type |
+| Save As | A new document has no file until its first save, which asks where to put it |
 | Inline editing | Click into the rendered page and edit it directly — see [Formats](#formats) for what each one allows |
 | Block editing | `Enter` splits a block or starts a new one; `Backspace` at the start merges into the block above |
 | Interactive checkboxes | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
@@ -22,7 +24,16 @@ Leaf Text is reading-first, but it is also editable. You can edit **in the readi
 | Typing help | Type `[[` to see your notes, `#` for headings, hover a wikilink for a preview — and broken links get a wavy underline. A wand on the toolbar [turns it off](#typing-help) |
 | Save | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears only with unsaved changes |
 | Unsaved marker | A tab with unsaved edits shows a dot beside its name |
-| Read-only | Documents open locked. The [padlock](#the-padlock) on the reading view's toolbar unlocks the one in front of you — except checkboxes, which toggle either way |
+| Read-only | Documents open locked, except a [new one](#new-document). The [padlock](#the-padlock) on the reading view's toolbar unlocks the one in front of you — except checkboxes, which toggle either way |
+
+## New document
+
+The **+** beside Open in the app bar starts a blank document in a new tab. The home screen carries the same button beside **Choose file**.
+
+- It opens in the reading view, already unlocked, with the caret on the first line — there is nothing to click before you type. `Enter` starts the next paragraph, as it does anywhere else in the reading view.
+- It has **no file** yet. The tab is called *Untitled* (*Untitled 2*, and so on, when one is already open), and nothing is written anywhere until you say so.
+- The first **Save** opens your operating system's Save dialog: choose a folder and a name, and from then on it saves like any other document. Close the dialog without choosing and nothing is written.
+- Once it is saved, the tab, the window title, and [Recent files](02-navigation.md#recent-files) all take the real name, and the document stays unlocked so you can keep typing.
 
 ## Inline editing (the reading view)
 
@@ -40,7 +51,7 @@ The rendered page is a live editor. The **source stays the single source of trut
 Whether the rendered page can be typed into is a fact about *that page*, not a preference for every document you will ever open — so it is a padlock on the reading view's own tools, in the recess beside the reading button on the [floating toolbar](02-navigation.md#the-toolbar).
 
 - A shut padlock means the page is read-only. An open one means you can click into it and type.
-- Documents open **locked**. Reading is the default posture, and one click is a cheap price for not editing a file by brushing it.
+- Documents open **locked**. Reading is the default posture, and one click is a cheap price for not editing a file by brushing it. A [new document](#new-document) is the exception: it was created to be written in, so it starts unlocked.
 - The answer lasts as long as the window. A document reopened tomorrow is read-only again, which is the safe way round to be wrong.
 - **Checkboxes toggle either way.** Ticking a box is a quick action that auto-saves and records no undo, not text editing.
 - The [code view](#code-view) is an editor whatever the padlock says, so a file is never locked outright.
@@ -96,6 +107,7 @@ Saving is always explicit.
 
 - With no unsaved changes there is no save control at all. The moment the buffer differs from the file, a green **Save** button appears on the [floating toolbar](02-navigation.md#the-toolbar) and the tab shows a dot beside its name.
 - Click **Save** or press `Ctrl+S` (`Cmd+S` on macOS) to write the buffer to disk. The button and dot clear on success.
+- A [new document](#new-document) has no file yet, so its first save asks where to put it before writing anything.
 - A save does not bounce the view: the file watcher recognizes the app's own write and skips the [live reload](02-navigation.md#reload) it would otherwise trigger.
 - A file is written in the [encoding it was read in](01-rendering.md#file-encodings). A UTF-16 document stays UTF-16; a file with no byte order mark does not gain one.
 

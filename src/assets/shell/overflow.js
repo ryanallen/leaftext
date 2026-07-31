@@ -87,4 +87,5 @@ const MONACO_CSS_URL = '{{MONACO_CSS_URL}}';
 let mermaidLoadPromise = null;
 let katexLoadPromise = null;
 document.getElementById('openButton').addEventListener('click', () => send({ command: 'open' }));
+document.getElementById('newButton').addEventListener('click', () => send({ command: 'newDocument' }));
 homeButton.addEventListener('click', () => send({ command: 'goHome' }));

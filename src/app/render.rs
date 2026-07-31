@@ -47,6 +47,13 @@ impl Reader {
         }
     }
 
+    /// Put `path` in Recent and save the list. The render below records only
+    /// documents it read off the disk, so one saved out of a buffer needs this.
+    pub(crate) fn record_recent(&mut self, path: PathBuf) {
+        self.recent.record(path);
+        self.save_recent();
+    }
+
     /// The document for `path`: the tab's cached render when the file still
     /// hashes the same, a fresh render (cached on the tab) when not. The read is
     /// cheap; the render is what the cache saves.

@@ -400,6 +400,15 @@ pub fn blocks_resynced_script(
 
 /// Report the outcome of a save for `path`: `error` is null on success and a
 /// message string when the write failed.
+/// Make a document editable in the reading view without anyone clicking the
+/// padlock. Sent for a document created here — it exists to be typed into — and
+/// again when a save gives it its real name, because the page keys the unlock by
+/// path and the path just changed under it.
+pub fn unlock_document_script(path: &Path) -> String {
+    let path = serde_json::to_string(&path.display().to_string()).expect("path serializes");
+    format!("window.leafUnlockDocument({path});")
+}
+
 pub fn save_result_script(path: &str, ok: bool, error: Option<&str>) -> String {
     let path = serde_json::to_string(path).expect("path serializes");
     let error = match error {

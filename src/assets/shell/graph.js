@@ -139,6 +139,11 @@ function toggleReaderLock() {
 if (readerLockButton) {
   readerLockButton.addEventListener('click', toggleReaderLock);
 }
+// The host unlocking a page for you: a new document, and again when its first
+// save renames it -- the unlock is held by path, so it has to move with one.
+window.leafUnlockDocument = (path) => {
+  if (path) readerUnlockedByPath.add(path);
+};
 // The speed reader stays one preference for the whole app -- it is a way of
 // reading, not a property of a document. The reading toolbar is the one place it
 // is turned on and off; the glyph then shows which way it went.

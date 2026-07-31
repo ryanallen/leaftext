@@ -138,6 +138,43 @@ impl Workspace {
         self.active = Some(self.tabs.len() - 1);
     }
 
+    /// Open an empty document in a new tab and return the name it wears. The
+    /// buffer is there from the start, which is what keeps every reader of this
+    /// tab off a file that does not exist. Never inherits the code view: a blank
+    /// page is opened to be typed into, not read as source.
+    pub(crate) fn open_untitled(&mut self) -> PathBuf {
+        let path = self.next_untitled_path();
+        let mut tab = Tab {
+            title: tab_title_from_path(&path),
+            edit: Some(EditableDocument::untitled(path.clone())),
+            ..Tab::default()
+        };
+        tab.history.record(path.clone());
+        self.tabs.push(tab);
+        self.active = Some(self.tabs.len() - 1);
+        path
+    }
+
+    /// The first `Untitled` name no open tab is already using. Numbered only as
+    /// far as it has to be, so the usual case is just `Untitled.md`.
+    fn next_untitled_path(&self) -> PathBuf {
+        for index in 1.. {
+            let path = PathBuf::from(match index {
+                1 => format!("{UNTITLED_STEM}.md"),
+                _ => format!("{UNTITLED_STEM} {index}.md"),
+            });
+            let taken = self
+                .tabs
+                .iter()
+                .filter_map(|tab| tab.history.current())
+                .any(|current| current == &path);
+            if !taken {
+                return path;
+            }
+        }
+        unreachable!("an unused Untitled name always exists")
+    }
+
     /// Close the tab at `index`, then pick a sensible neighbor as active (or
     /// the home screen when no tabs remain).
     pub(crate) fn close_tab(&mut self, index: usize) {
@@ -208,6 +245,9 @@ impl Workspace {
             .collect()
     }
 }
+
+/// What a never-saved document is called until someone saves it somewhere.
+pub(crate) const UNTITLED_STEM: &str = "Untitled";
 
 /// Fallback tab label (file stem) used until the document title is known.
 pub(crate) fn tab_title_from_path(path: &Path) -> String {

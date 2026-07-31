@@ -9,6 +9,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | Feature | What it means |
 | --- | --- |
 | Tabs | Open multiple documents at once |
+| New document | The **+** in the app bar starts a blank page, ready to type — see [Editing](07-editing.md#new-document) |
 | Outline | A collapsed table of contents, built from the document's headings, at the top of each page, labeled with the document's line count |
 | Back / Forward | Move through file history and in-page jumps |
 | Scroll anchors | Restore the same reading spot after rerenders |
@@ -64,11 +65,11 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 
 **All three views are always enterable.** With the bar up there is a document, and a document can be read, edited as source, and mapped — so no view button is ever dead. The graph used to gray out without a [vault](03-library.md#vaults); it maps the [open document](03-library.md#graph) instead now. The reading tools do appear and disappear with the reading view, because a control for a view you are not in says nothing.
 
-Settings and Open stay in the app bar at the top right. They are about the app, not about the document.
+Settings, Open, and **+** ([new document](07-editing.md#new-document)) stay in the app bar at the top right. They are about the app, not about the document.
 
 ## Tabs
 
-- Opening another file creates another tab.
+- Opening another file creates another tab, and so does starting a [new document](07-editing.md#new-document).
 - Each tab keeps its own document history.
 - Each tab also keeps its own scroll history.
 - Switching away from a tab and back returns you to where you left it — the same reading position, or, for a tab in the [code view](07-editing.md#code-view), the same spot in the source.
@@ -140,7 +141,7 @@ Key details:
 
 ## Recent files
 
-The no-file home screen shows the last 8 opened files.
+The no-file home screen shows the last 8 opened files, under the **Choose file** and **New document** buttons.
 
 - Missing files are removed automatically.
 - Equivalent path spellings collapse to one entry.

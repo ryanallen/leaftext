@@ -5,6 +5,9 @@ pub(crate) const FORWARD_ICON_SVG: &str = include_str!("assets/arrow-right.svg")
 pub(crate) const SETTINGS_ICON_SVG: &str = include_str!("assets/adjustments-vertical.svg");
 pub(crate) const OPEN_LIBRARY_ICON_SVG: &str = include_str!("assets/panel.svg");
 pub(crate) const OPEN_ICON_SVG: &str = include_str!("assets/folder-open.svg");
+/// A blank page to start typing into, beside the folder that opens one you
+/// already have.
+pub(crate) const NEW_ICON_SVG: &str = include_str!("assets/plus.svg");
 pub(crate) const CODE_VIEW_ICON_SVG: &str = include_str!("assets/code-bracket.svg");
 pub(crate) const DOCUMENT_ICON_SVG: &str = include_str!("assets/document.svg");
 /// Numbering each block in the margin: plain lines when it is off, numbered
