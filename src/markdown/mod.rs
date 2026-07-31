@@ -31,6 +31,7 @@ pub(crate) use rawhtml::*;
 pub use image_protocol::{
     is_local_image_path, local_image_protocol_response, local_image_source_dir,
 };
+pub use images::markdown_image_insert_destination;
 
 use crate::*;
 

@@ -112,7 +112,7 @@ Leaf Text removes broken entries automatically and collapses equivalent path spe
 ### Typing help
 
 - On by default, toggled with the wand on the code view's [toolbar](07-editing.md#typing-help) rather than this panel
-- Suggests your notes after `[[`, headings after `#`, previews a note on hover, and underlines [broken links](07-editing.md#typing-help) in the code view
+- Monaco's IntelliSense, answered from your notes: suggests them after `[[`, headings after `#`, previews a note on hover, and underlines [broken links](07-editing.md#typing-help) in the code view
 - Saved as `code_intel_enabled`
 
 ### Pager

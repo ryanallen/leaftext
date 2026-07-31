@@ -178,6 +178,35 @@ pub(crate) fn resolve_image_destination(destination: &str, source_path: &Path) -
     local_image_protocol_url_for_relative_destination(destination, &source_dir)
 }
 
+/// What to write into a document for an image the user just picked off their
+/// disk: relative to the document's own folder when it sits under it, so the pair
+/// still resolve after both are moved or shared, and absolute otherwise (which
+/// the resolver above already reads). A destination holding a space or a bracket
+/// is wrapped in `<>`, the CommonMark form for one — without it a picture in
+/// `My Photos` would end at the space.
+pub fn markdown_image_insert_destination(image: &Path, source_path: &Path) -> String {
+    let relative = local_image_source_dir(source_path).and_then(|dir| {
+        normalize_path_lexically(image)
+            .strip_prefix(&dir)
+            .ok()
+            .map(|rest| {
+                rest.components()
+                    .map(|part| part.as_os_str().to_string_lossy().into_owned())
+                    .collect::<Vec<_>>()
+                    .join("/")
+            })
+    });
+    let destination = match relative {
+        Some(rest) if !rest.is_empty() => rest,
+        _ => image.display().to_string(),
+    };
+    if destination.contains([' ', '(', ')', '<', '>']) {
+        format!("<{destination}>")
+    } else {
+        destination
+    }
+}
+
 /// Parse a destination as a URL, except when the "scheme" is a lone letter — that
 /// is a Windows drive (`C:\imgs\pic.png`), which is a path, not a URL.
 pub(crate) fn parse_image_destination_url(destination: &str) -> Option<Url> {

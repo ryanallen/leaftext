@@ -4,6 +4,9 @@
 
 There's nothing to set up. No account, no folder to designate, no plugins to choose. Point Leaf Text at a file you already have and start reading. This page walks the shortest useful path: open a file, read it, move around, and come back to it later.
 
+> [!NOTE]
+> Not installed yet? [Install it first](02-installation.md#install) — three steps per platform. On a Mac, macOS refuses the first launch until you [let it through once](02-installation.md#mac-blocks-the-first-launch).
+
 ## Start
 
 1. Press `Ctrl+O` on Windows or `Cmd+O` on macOS.
@@ -47,6 +50,7 @@ flowchart LR
 | Minimap | Shows the whole document and your current viewport |
 | Back / Forward | Moves through document and scroll history |
 | Code view | Toggles the page to its raw, editable source — see [Editing](01-features/07-editing.md) |
+| Typing help | The wand beside the code view: Monaco's IntelliSense over your notes — see [Typing help](01-features/07-editing.md#typing-help) |
 | New document | The **+** beside Open, for a blank page you can type into straight away |
 | Save | A green button that appears when the source has [unsaved edits](01-features/07-editing.md#save) |
 | Library pane | Browse a folder, [search](01-features/03-library.md#search) a [vault](01-features/03-library.md#vaults)'s text, and [map](01-features/03-library.md#graph) how its documents link |
@@ -70,13 +74,16 @@ Click a heading in the document or click a spot in the minimap. That jump is add
 | Close tab | `Ctrl+W` | `Cmd+W` |
 | Save ([unsaved edits](01-features/07-editing.md#save)) | `Ctrl+S` | `Cmd+S` |
 | [Undo](01-features/07-editing.md#undo) the last edit | `Ctrl+Z` | `Cmd+Z` |
+| [Bold](01-features/07-editing.md#the-format-bar) the highlighted words | `Ctrl+B` | `Cmd+B` |
+| [Italic](01-features/07-editing.md#the-format-bar) the highlighted words | `Ctrl+I` | `Cmd+I` |
+| [Link](01-features/07-editing.md#the-format-bar) the highlighted words | `Ctrl+K` | `Cmd+K` |
 | Select the page | `Ctrl+A` | `Cmd+A` |
 
 Mouse side buttons also trigger Back and Forward on Windows.
 
 ### Edit
 
-Click into any sentence and type — the rendered page [edits in place](01-features/07-editing.md#inline-editing-the-reading-view), checkboxes toggle, and the green **Save** button appears. For the raw source instead, click the code-brackets button left of Settings. To start from nothing, press the **+** in the app bar for a [new document](01-features/07-editing.md#new-document); its first save asks where to put it. The [Editing](01-features/07-editing.md) page covers the whole flow.
+Click into any sentence and type — the rendered page [edits in place](01-features/07-editing.md#inline-editing-the-reading-view), checkboxes toggle, and the green **Save** button appears. Highlight words for a [format bar](01-features/07-editing.md#the-format-bar), or use the handle and plus in the left [margin](01-features/07-editing.md#the-block-gutter) to drag a block or [add one](01-features/07-editing.md#adding-a-block). For the raw source instead, click the code-brackets button left of Settings. To start from nothing, press the **+** in the app bar for a [new document](01-features/07-editing.md#new-document); its first save asks where to put it. The [Editing](01-features/07-editing.md) page covers the whole flow.
 
 ### Reopen
 

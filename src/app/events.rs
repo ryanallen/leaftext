@@ -314,6 +314,21 @@ pub(crate) enum IpcCommand {
         #[serde(default)]
         autosave: bool,
     },
+    /// Drag-reorder one run of sibling blocks in the reading view. `ranges` are
+    /// their source ranges in document order; `from` and `to` are slots in that
+    /// run. The page sends the whole run because the page is what knows which
+    /// blocks are siblings — the buffer only sees text.
+    #[serde(rename = "moveBlock")]
+    MoveBlock {
+        ranges: Vec<(usize, usize)>,
+        from: usize,
+        to: usize,
+    },
+    /// Show the image picker for the reading view's insert box. The page keeps
+    /// the insertion point against `token` and writes the block itself once the
+    /// path comes back — the host only answers "which file".
+    #[serde(rename = "pickImage")]
+    PickImage { token: u64 },
     /// Revert the most recent reading-view edit in the active document.
     #[serde(rename = "undoEdit")]
     UndoEdit,

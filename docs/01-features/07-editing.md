@@ -12,6 +12,10 @@ Leaf Text is reading-first, but it is also editable. You can edit **in the readi
 | Save As | A new document has no file until its first save, which asks where to put it |
 | Inline editing | Click into the rendered page and edit it directly — see [Formats](#formats) for what each one allows |
 | Block editing | `Enter` splits a block or starts a new one; `Backspace` at the start merges into the block above |
+| The block gutter | A [handle and a plus](#the-block-gutter) in the page's left margin: drag a block to reorder it, or add one on the empty line |
+| Adding a block | The plus opens [a row of kinds](#adding-a-block) — text, heading, list, quote, code, table, image, divider |
+| Inserting an image | The image button [asks for a file or an address](#images); nothing is copied, and the picture stays where you keep it |
+| The format bar | Highlight words and [a bar appears over them](#the-format-bar): bold, italic, strikethrough, code, link, heading, quote |
 | Interactive checkboxes | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | Undo | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits |
 | Code view | Toggle the rendered page to the raw source and back |
@@ -21,7 +25,7 @@ Leaf Text is reading-first, but it is also editable. You can edit **in the readi
 | Wrapped lines | Long lines wrap; the code view never scrolls sideways |
 | Minimap | The editor's own [minimap](04-minimap.md#the-code-views-minimap) rail, drawn on the window's chrome beside the page |
 | Editing | Type directly; undo/redo, selection, clipboard, and IME all work, and `Tab` indents instead of moving focus. A multi-megabyte file [stays responsive](#editing-the-source) |
-| Typing help | Type `[[` to see your notes, `#` for headings, hover a wikilink for a preview — and broken links get a wavy underline. A wand on the toolbar [turns it off](#typing-help) |
+| Typing help | Monaco's IntelliSense, answered from your own notes: type `[[` to see them, `#` for headings, hover a wikilink for a preview — and broken links get a wavy underline. A wand on the toolbar [turns it off](#typing-help) |
 | Save | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears only with unsaved changes |
 | Unsaved marker | A tab with unsaved edits shows a dot beside its name |
 | Read-only | Documents open locked, except a [new one](#new-document). The [padlock](#the-padlock) on the reading view's toolbar unlocks the one in front of you — except checkboxes, which toggle either way |
@@ -43,8 +47,62 @@ The rendered page is a live editor. The **source stays the single source of trut
 - **Blocks behave like a block editor.** `Enter` splits a block at the caret — a split heading stays a heading at the same level — or starts a fresh paragraph when pressed at the end (keep pressing to keep writing). `Shift+Enter` inserts a line break, and `Backspace` at the very start of a block merges it into the one above, with the caret staying put. In a list, `Enter` adds an item and `Backspace` joins items.
 - **Every other block edits its exact source.** Code blocks, [alerts](01-rendering.md#blockquotes-and-alerts), loose lists, blocks with images, footnotes, or math, and blocks containing raw HTML tags outside a small safe set (links, line breaks, bold, italic, strikethrough, inline code, and the inline HTML tags Leaf Text can rebuild exactly — `<abbr>`, `<kbd>`, `<mark>`, `<ins>`, `<sub>`, `<sup>`, `<span>`, and `<div>`) open their raw source in place when you click them, then splice back on the way out. This is also how **[XML](01-rendering.md#xml)** edits: XML carries meaning the rendered HTML cannot reconstruct, so an XML block is edited as its true source.
 - **Nothing is ever mangled.** A block only edits WYSIWYG when its rendered form can be turned back into the identical source; anything else edits its source directly. Either way the edit is a precise splice, and the [live reload](02-navigation.md#reload) watcher recognizes your own save so it never fights it.
+- **Nothing is drawn around the line you are typing in.** No ring, no box. The caret says where you are, and a page whose whole point is that it is a page should not turn into a form when you touch it. A block showing its raw source is the exception: its code tint is what says *this is source*.
 - Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way.
 - A document opens **locked**: clicks do not enter edit mode until you say so. See [The padlock](#the-padlock).
+
+## The block gutter
+
+Hover a block and two controls appear in the page's left margin: a **handle** to drag it by, and a **plus** for adding one. They act through the same source ranges every other edit uses, so this is a view onto your file rather than a second idea of the document — which is why one gutter serves every format that qualifies.
+
+- **The margin is live.** Run the pointer down the gutter strip itself and the controls follow whichever line you are level with, blocks and the spaces between them alike. You never have to hover the words first and slide left.
+- **Drag to reorder.** Take the handle and the block lifts off the page and follows the pointer, while its neighbors slide aside to open the gap it will land in. Drop it there. `Escape` puts it back. Only the blocks' own text moves through their own slots — the blank lines, indentation and punctuation between them stay where they are.
+- **Markdown and XML only.** A block can only be moved when its recorded range is the whole block. In JSON and YAML a range covers a *value* and not its key, so moving one would leave the key behind — those formats get no gutter at all, only the click-to-edit they already had.
+
+## Adding a block
+
+The plus stands on empty lines, never on a line that already says something — beside a written line it would be offering to write over it. So:
+
+- **On a blank line**, the plus is right there.
+- **While you are typing**, it waits on the line below. Press it to save the line you are on and choose what the next one is, in one go — no `Enter`, no clicking out first. Clicking that empty space instead just starts typing there, as body text.
+- **Between any two blocks**, hover the space and the plus appears in it. Clicking the space starts a line there too.
+
+Press it and a row of kinds fans out over the empty line:
+
+| | What you get |
+| --- | --- |
+| Text | An empty paragraph |
+| Heading | An empty `##` heading |
+| List | An empty list item |
+| Quote | An empty block quote |
+| Code block | An empty fence, edited as source |
+| Table | A two-column table with empty cells |
+| Image | [The image box](#images) |
+| Divider | A horizontal rule |
+
+The first four **open** a block rather than writing one: you get an empty block of that kind showing gray placeholder wording, and **nothing reaches the file until your first keystroke**. Pick Heading and change your mind and the page is as it was — no stray word left in the document. Picking a kind on a line that is already empty just changes what that line is, rather than adding a second one.
+
+In [XML](01-rendering.md#xml) the row offers what makes sense there instead: another element with the same tag as the block you pressed it beside, emptied, and a comment.
+
+### Images
+
+The image button does not write a placeholder path for you to correct. It asks:
+
+- **Choose file** opens your operating system's picker, filtered to what a page can draw.
+- Or paste an **address** for a picture on the web and press `Enter`.
+
+A picked file is **never copied anywhere** — the picture stays where you keep it. What goes into the document is where it already is: written relative to the document when it sits under the same folder, so the pair survive being moved or shared together, and as a full path when it does not. A path holding a space or a bracket is written in Markdown's `<…>` form, so it cannot end early.
+
+## The format bar
+
+Highlight words in an unlocked Markdown page and a small bar appears over them.
+
+- **Bold**, *italic*, ~~strikethrough~~, `code`, and **link** apply to the highlighted words. A button lights up when the words already carry that format, so the bar says what they are as much as what they could be — press it again to take it off.
+- **Link** opens a box for the address, filled in with the link already there if there is one. `Enter` applies it; an empty box takes the link away.
+- **Heading** and **Quote** act on the whole block the highlight sits in, and toggle back to a plain paragraph. They appear only where the block is a paragraph, heading, or quote.
+- `Ctrl+B` / `Cmd+B`, `Ctrl+I` / `Cmd+I` and `Ctrl+K` / `Cmd+K` do the first three without the bar. `Escape` dismisses it.
+
+The formatting is written into the page as you would expect it in Markdown — `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``, `[text](address)` — and saved with the block, by the same splice as any other inline edit.
 
 ## The padlock
 
@@ -94,6 +152,8 @@ The code view is a real editor surface: click anywhere and type. It is Monaco �
 
 While you type Markdown in the code view, the editor can offer what Leaf Text already knows — the same knowledge the [graph](03-library.md#graph) and [search](03-library.md#search) run on, so it only ever sees what you pointed it at: the active [vault](03-library.md#vaults), or the document's own folder when no vault holds it.
 
+This is **IntelliSense** — the completion popup, hover card and squiggly underline [Monaco](#editing-the-source) brings from Visual Studio Code. Monaco draws them; Leaf Text supplies the answers, and they are your notes rather than code. The docs call it *typing help* because that is what it does for prose.
+
 - **Type `[[`** and a popup lists your notes — the whole vault, or the folder beside the document. Keep typing to filter; pick one and the link closes itself.
 - **Type `[[Note#`** for that note's headings, or **`](#`** for the open document's own anchors. Anchors are the exact ones the [reading view](01-rendering.md#headings) gives its headings, so a completed link always lands.
 - **Hover a `[[wikilink]]`** for a card with the note's opening lines.
@@ -126,9 +186,9 @@ What the *reading view* offers differs by format, because a block can only be ed
 
 | Format | In the reading view |
 |---|---|
-| Markdown text blocks | Edit WYSIWYG — type in the rendered page, styling intact |
-| Markdown blocks that cannot round-trip losslessly | Edit their exact source in place |
-| XML | Edit their exact source in place |
+| Markdown text blocks | Edit WYSIWYG — type in the rendered page, styling intact. [Block gutter](#the-block-gutter) and [format bar](#the-format-bar) |
+| Markdown blocks that cannot round-trip losslessly | Edit their exact source in place. [Block gutter](#the-block-gutter) |
+| XML | Edit their exact source in place. [Block gutter](#the-block-gutter) |
 | JSON | Edit their exact source in place |
 | YAML plain values | Edit their exact source in place |
 | YAML lists, tables, quoted strings, block scalars | Read-only; edited in the code view |
@@ -143,6 +203,7 @@ That only works where the byte range is certain, so Leaf Text offers it only whe
 - **JSON** — everywhere. The reader knows precisely where each value begins and ends, so every value is click-to-edit.
 - **YAML plain values** — where proven. A plain scalar's source text is checked character-for-character against the value it parsed to; when they match, the range is exact and the value is editable.
 - **Everything else in YAML** — read-only in the reading view. A quoted string or a block scalar (`|`, `>`) carries quotes or an indicator that its value does not, and nothing can prove where a YAML list or mapping *ends* — its closing position points at whatever token came next. Rather than splice an edit over a guessed range and corrupt the file, Leaf Text offers no inline editor and leaves these to the code view.
+- **No [block gutter](#the-block-gutter) in either.** A data range covers a value, not the key naming it, so dragging one would leave its key behind and inserting between two would land outside the syntax that gives them meaning.
 
 > [!NOTE]
 > This is a deliberate floor, not a gap to work around: a range that is off by one byte writes an edit into the wrong place silently. Where the range cannot be proved, the code view edits the file with the full source in front of you.

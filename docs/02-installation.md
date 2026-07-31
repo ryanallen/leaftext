@@ -4,40 +4,77 @@
 
 Leaf Text is free, and it ships ready to run on macOS and Windows. There's no account to create, no plugins to pick, and no runtime to install first — download it, open it, and it works.
 
+The one snag is the same one every small app hits: neither Apple nor Microsoft has been paid to vouch for it, so each one warns you the first time. Both warnings are cleared in a few clicks, once — [macOS](#mac-blocks-the-first-launch), [Windows](#windows-warns-before-it-runs).
+
 ## Platforms
 
 | Platform | Package | Notes |
 | --- | --- | --- |
-| macOS | `.dmg` | Universal (Apple Silicon + Intel) |
-| Windows | `.msi` | Windows 10+ 64-bit |
+| macOS | `.dmg` | Universal (Apple Silicon + Intel). First launch [needs unblocking](#mac-blocks-the-first-launch) |
+| Windows | `.msi` | Windows 10+ 64-bit. Installer [may warn once](#windows-warns-before-it-runs) |
 
 A release is those two files and nothing else. The [in-app updater](#updates) installs the same `.dmg` or `.msi` you would download by hand, so there is never a file on the release page whose purpose has to be explained.
 
-Download the latest build from [GitHub Releases](https://github.com/ryanallen/leaftext/releases).
+**[Download the latest release →](https://github.com/ryanallen/leaftext/releases/latest)** — then follow the steps for your platform below.
 
 ## Install
 
 ### macOS
 
-1. Download the latest `.dmg`.
-2. Open it.
-3. Drag `leaftext.app` into `Applications`.
-4. Eject the DMG.
+**1. Download** the file ending in `-macos-universal.dmg` from the [latest release](https://github.com/ryanallen/leaftext/releases/latest). One file covers both Apple Silicon and Intel Macs.
 
-If macOS blocks the first launch because the app is from an unidentified developer:
+**2. Open the downloaded file.** A window opens showing the leaf app on one side and an **Applications** folder on the other.
+
+**3. Drag the app onto Applications.** That is the install.
+
+**4. Eject the disk image** — click the ⏏ beside its name in the Finder sidebar. You can delete the `.dmg` afterwards.
+
+**5. Open Leaf Text** from Applications or Launchpad. **The first launch will be refused** — that is expected, and clearing it takes about four clicks. See [Mac blocks the first launch](#mac-blocks-the-first-launch).
+
+### Windows
+
+**1. Download** the file ending in `.msi` from the [latest release](https://github.com/ryanallen/leaftext/releases/latest). It needs 64-bit Windows 10 or later.
+
+**2. Run the installer.** If a blue **Windows protected your PC** box appears, click **More info** → **Run anyway** — see [Windows warns before it runs](#windows-warns-before-it-runs).
+
+**3. Click Install.** The installer shows one screen: the install folder, with **Change...** to pick another. There is no elevation prompt and no confirmation screen — Leaf Text installs for the current user, and the window closes once the install finishes.
+
+**4. Launch Leaf Text** from the Start Menu, or press the Windows key and type its name.
+
+## Mac blocks the first launch
+
+macOS refuses the first launch and says it "cannot be opened" or that Apple "could not verify it is free of malware". **This is expected and it is not a report of anything found in the app.** Apple charges a yearly developer fee to have an app *notarized*; Leaf Text is free and is not enrolled, so macOS treats it the way it treats everything unnotarized. Nothing was scanned and nothing was flagged.
+
+Let it through once and it opens normally forever after. Either route works.
+
+**The easy way — no Terminal**
+
+1. Double-click **Leaf Text** in Applications. macOS refuses. Click **Done** (or **Cancel**).
+2. Open **System Settings** → **Privacy & Security**.
+3. Scroll to the **Security** section near the bottom. A line names Leaf Text as blocked, with an **Open Anyway** button. Click it.
+4. Confirm with Touch ID or your password, then click **Open** in the last box.
+
+Leaf Text opens, and every launch after this one is a normal double-click.
+
+> [!TIP]
+> On macOS 12 and earlier the same thing is one step: right-click (or Control-click) the app in Applications, choose **Open**, then **Open** again in the box that appears.
+
+**The Terminal way**
+
+If the button is not there, open Terminal (press `Cmd+Space`, type `Terminal`, press Return), paste this line, and press Return:
 
 ```sh
 xattr -cr /Applications/leaftext.app
 ```
 
+That removes the "downloaded from the internet" tag macOS attaches to the file. Then open the app normally.
+
 > [!TIP]
-> You only need to run that command once per installed app bundle.
+> Either way, you only do this once per installed app bundle.
 
-### Windows
+## Windows warns before it runs
 
-1. Download the latest `.msi`.
-2. Run the installer. It shows one screen: the install folder, with **Change...** to pick another. Click **Install**. There is no elevation prompt and no confirmation screen — Leaf Text installs for the current user, and the window closes once the install finishes.
-3. Launch **Leaf Text** from the Start Menu, or press the Windows key and type its name.
+Windows may show a blue **Windows protected your PC** box the first time you run the installer, because the MSI is not signed with a paid certificate. Click **More info**, then **Run anyway**. Your browser may also make you keep the download — choose **Keep** if it asks.
 
 Default installed path, though **Change...** puts it wherever you like and later updates keep it there:
 
@@ -75,9 +112,11 @@ Leaf Text never needs administrator rights — not to install, not to update.
 
 ```mermaid
 flowchart LR
-    A[Install Leaf Text] --> B[Launch app]
-    B --> C[Open .md, .xml, .json, .yaml, or .eml file]
-    C --> D[Read]
+    A[Download] --> B[Install]
+    B --> C[Let it through the first-launch warning]
+    C --> D[Launch app]
+    D --> E[Open .md, .xml, .json, .yaml, or .eml file]
+    E --> F[Read]
 ```
 
 Use `Ctrl+O` on Windows or `Cmd+O` on macOS to open your first file.
@@ -95,6 +134,10 @@ Each version is installed automatically once. If an install fails, the next laun
 The update status at the foot of the Settings panel always reports the outcome — up to date, when it last checked, or what went wrong — including an install that failed after a restart, which is otherwise invisible because the installer runs after Leaf Text exits. Clicking it forces a fresh check at any time. Startup is never blocked by any of this, and being offline only changes what that line says.
 
 ## FAQ
+
+### Is the warning a virus alert
+
+No. Both warnings are about *who paid whom*, not about what is in the file. macOS and Windows check whether an app carries a certificate from a paid developer program; Leaf Text is free and carries none, so both systems say they cannot vouch for it. Nothing was scanned, and nothing was found. Clearing it takes a few clicks, once — [macOS](#mac-blocks-the-first-launch), [Windows](#windows-warns-before-it-runs).
 
 ### Admin rights
 

@@ -159,6 +159,50 @@ impl EditableDocument {
         self.splice(start, end, replacement, false)
     }
 
+    /// Reorder sibling blocks by moving the text of slot `from` to slot `to`.
+    ///
+    /// `ranges` are the source ranges of one run of siblings, in document order.
+    /// The texts rotate through the slots; whatever sits *between* the slots —
+    /// blank lines in Markdown, indentation and commas in a structured file —
+    /// never moves. That is what makes one routine safe for every format: the
+    /// separators are the part a naive cut-and-paste gets wrong.
+    ///
+    /// Refuses (returns `false`, buffer untouched) unless the ranges are sorted,
+    /// non-overlapping, inside the buffer and on char boundaries — a drifted map
+    /// must not be allowed to shred a file.
+    pub fn move_blocks(&mut self, ranges: &[(usize, usize)], from: usize, to: usize) -> bool {
+        let count = ranges.len();
+        if count < 2 || from >= count || to >= count || from == to {
+            return false;
+        }
+        let mut previous_end = 0;
+        for &(start, end) in ranges {
+            if start < previous_end || end < start || end > self.text.len() {
+                return false;
+            }
+            if !self.text.is_char_boundary(start) || !self.text.is_char_boundary(end) {
+                return false;
+            }
+            previous_end = end;
+        }
+        // Which source slot each destination slot takes its text from: remove the
+        // dragged one, put it back at `to` — the same arithmetic as moving a tab.
+        let mut order: Vec<usize> = (0..count).collect();
+        let moved = order.remove(from);
+        order.insert(to, moved);
+
+        let mut rebuilt = String::new();
+        for (slot, &source) in order.iter().enumerate() {
+            let (source_start, source_end) = ranges[source];
+            rebuilt.push_str(&self.text[source_start..source_end]);
+            if let Some(&(next_start, _)) = ranges.get(slot + 1) {
+                rebuilt.push_str(&self.text[ranges[slot].1..next_start]);
+            }
+        }
+        self.replace_range(ranges[0].0, ranges[count - 1].1, &rebuilt);
+        true
+    }
+
     fn splice(&mut self, start: usize, end: usize, replacement: &str, record_undo: bool) -> bool {
         let len = self.text.len();
         let mut start = start.min(len);

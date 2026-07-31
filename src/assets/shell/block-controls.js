@@ -1,0 +1,886 @@
+// ---------------------------------------------------------------------------
+// The reading view's block gutter: Medium's plus and Obsidian's grab handle,
+// in the page's left margin.
+//
+// The block under the pointer (or holding the caret) gets a handle to drag it by,
+// and an empty line also gets a plus that writes a new block onto it. Both act
+// through the same source ranges the editors already use, so this is a view onto
+// the buffer rather than a second model of the document — and it is why one gutter
+// serves every format instead of one per renderer.
+//
+// The plus is for empty lines only. Beside a line that already says something it
+// would be offering to write over it. The space between two blocks counts as one:
+// hovering it offers the plus for a line that isn't there yet, and choosing
+// something writes the break and the block together.
+//
+// What each format is offered is decided by what its ranges cover. Markdown and
+// XML ranges are whole blocks and whole elements, so both reorder and insert are
+// exact. JSON and YAML ranges cover a *value* inside a labeled structure, so
+// moving one would leave its key behind and splicing between two would land
+// outside the syntax that gives it meaning — those get no gutter, only the
+// click-to-edit they already had.
+// ---------------------------------------------------------------------------
+
+// How wide the handle-plus pair is, matched to `.block-gutter` in reading.css.
+// The pair is shifted this far into the margin, so the plus lands just left of
+// the text the way Medium's does.
+const BLOCK_TOOLS_WIDTH = 62;
+
+// What the plus offers, per format.
+//
+// `blank` opens an empty block of that kind and writes nothing until the first
+// keystroke — see BLANK_BLOCK_SPECS. The rest have no line to type on, so they
+// splice `text` as source; `caret` asks for one inside it, and is absent for the
+// blocks that edit as raw source and have no caret to take until clicked. None of
+// them writes a word the document then has to carry.
+const MARKDOWN_INSERTS = [
+  { id: 'text', label: 'Text', icon: `{{TEXT_ICON_SVG}}`, blank: 'text' },
+  { id: 'heading', label: 'Heading', icon: `{{HEADING_ICON_SVG}}`, blank: 'heading' },
+  { id: 'list', label: 'List', icon: `{{LIST_ICON_SVG}}`, blank: 'list' },
+  { id: 'quote', label: 'Quote', icon: `{{QUOTE_ICON_SVG}}`, blank: 'quote' },
+  { id: 'code', label: 'Code block', icon: `{{CODE_VIEW_ICON_SVG}}`, text: '```\n\n```' },
+  {
+    id: 'table',
+    label: 'Table',
+    icon: `{{TABLE_ICON_SVG}}`,
+    text: '|  |  |\n| --- | --- |\n|  |  |',
+    caret: 'start',
+  },
+  // No source of its own: an image is a file or an address, so the row asks
+  // which before it writes anything. See openBlockImageBox.
+  { id: 'image', label: 'Image', icon: `{{IMAGE_ICON_SVG}}`, ask: 'image' },
+  { id: 'divider', label: 'Divider', icon: `{{DIVIDER_ICON_SVG}}`, text: '---' },
+];
+
+// XML has no schema we know, so the only element worth offering is another one
+// like the block you clicked — its own tag, emptied. A comment is legal anywhere.
+function xmlInserts(target) {
+  const options = [];
+  const tag = xmlBlockTagName(target);
+  if (tag) {
+    options.push({
+      id: 'element',
+      label: '<' + tag + '> element',
+      icon: `{{CODE_VIEW_ICON_SVG}}`,
+      text: '<' + tag + '></' + tag + '>',
+    });
+  }
+  options.push({ id: 'comment', label: 'Comment', icon: `{{COMMENT_ICON_SVG}}`, text: '<!-- note -->' });
+  return options;
+}
+
+// The tag a block's source opens with. Read from the source rather than the DOM:
+// the reading view renders an XML element as whatever HTML suits it, so the DOM
+// tag name is the renderer's choice, not the document's.
+function xmlBlockTagName(el) {
+  const start = Number(el.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  const match = /^<\s*([A-Za-z_][\w.:-]*)/.exec(sliceSourceBytes(currentDocumentSource, start, end));
+  return match ? match[1] : null;
+}
+
+// Reordering is exact only where a block's range is the whole block. See the
+// header: Markdown and XML qualify, the data formats do not.
+function blockGutterFormatAllowed() {
+  return currentDocumentFormat === 'markdown' || currentDocumentFormat === 'xml';
+}
+
+// A line with nothing on it. This is the only place the plus is offered: beside a
+// line that already says something it would be offering to write over it, and the
+// empty line below is what Enter is for. Text is not the only content — a rule, an
+// image or a table says something without a word in it.
+function blockIsEmpty(el) {
+  const tag = el.tagName.toLowerCase();
+  if (tag === 'hr' || tag === 'img') return false;
+  if (el.querySelector && el.querySelector('img, svg, hr, table, video, iframe, input')) return false;
+  return !el.textContent.trim();
+}
+
+function blockInsertOptions(target) {
+  if (currentDocumentFormat === 'markdown') return MARKDOWN_INSERTS;
+  if (currentDocumentFormat === 'xml') return xmlInserts(target);
+  return [];
+}
+
+// The gutter is rebuilt with the document (renderState replaces the reader's
+// markup wholesale), so these hold only the current render's.
+let blockGutter = null;
+let blockGutterGrip = null;
+let blockGutterAdd = null;
+let blockGutterRow = null;
+let blockGutterTarget = null;
+let blockGutterExpanded = false;
+// The block an open insert row belongs to, held so closing the row can put back
+// what opening it hid. Not the same as blockGutterTarget, which the pointer moves.
+let blockInsertHost = null;
+// The line that isn't there yet: the space between two blocks, or under the last
+// one. Hovering it aims the plus at that space, and picking something writes the
+// line break along with the block — so adding below anything is one click instead
+// of an Enter first. `{ after, before }`, either end null at the document's.
+let blockGutterGap = null;
+// The clickable overlay over the space the plus is aimed at, so starting a line
+// there needs no button. See openBlockGapLine for why it is an overlay.
+let blockGapLine = null;
+// The block holding the caret. The plus never stands on the line you are typing —
+// there is nothing to add to a line you are already writing. It moves to the line
+// below, where one press saves this line and starts the next.
+let blockCaretBlock = null;
+let blockDrag = null;
+
+// True while the focus is heading into the gutter rather than out of the page.
+// The block keeps its unsaved text then: the insert is about to commit it itself,
+// in the right order, and a blur commit here would re-render the page out from
+// under the row you are reaching for.
+function blockGutterHoldsFocus(node) {
+  return !!(blockGutter && node && blockGutter.contains(node));
+}
+
+// While the caret is in a block the gutter belongs to that block, and the pointer
+// does not get to move it. Hover aiming mid-sentence meant the controls chased the
+// mouse away from the words being typed — and every re-aim measured a page the
+// last one had just changed, which is why a small mouse move jumped whole lines.
+function blockGutterFollowsCaret() {
+  return !!(blockCaretBlock && blockCaretBlock.isConnected);
+}
+
+// A gap narrower than this is the ordinary space between two paragraphs seen
+// edge-on, not somewhere anybody means to point.
+const BLOCK_GAP_MIN = 10;
+// How far under the last block its trailing line sits, in the page's bottom pad.
+const BLOCK_TRAIL_DROP = 16;
+
+function hideBlockGutter() {
+  if (blockDrag) return;
+  blockGutterTarget = null;
+  blockGutterGap = null;
+  closeBlockGapLine();
+  collapseBlockInsertRow();
+  if (blockGutter) blockGutter.hidden = true;
+}
+
+// Make the space under the block being typed in clickable. An overlay laid over
+// the gap, NOT a box in the flow: a real element there re-lays out the page every
+// time the gutter moves, and a page that grows and shrinks a line while somebody
+// is mid-sentence is the whole of the jumping. This one costs no layout at all.
+function openBlockGapLine(after, before) {
+  if (blockGapLine && blockGapLine.__after === after && blockGapLine.__before === before) return;
+  closeBlockGapLine();
+  const layout = app.querySelector('.reader-layout');
+  if (!layout || !after) return;
+  const line = document.createElement('div');
+  line.className = 'block-gap-line';
+  line.setAttribute('aria-hidden', 'true');
+  line.__after = after;
+  line.__before = before;
+  // Clicking the space is the other way of saying it: body text, starting here,
+  // with whatever is being typed above saved on the way — no Enter, no clicking
+  // out first.
+  line.addEventListener('mousedown', (event) => {
+    event.preventDefault();
+    const host = after;
+    hideBlockGutter();
+    openLineBelow(host);
+  });
+  layout.appendChild(line);
+  blockGapLine = line;
+  positionBlockGapLine();
+}
+
+// Where the line goes, in client coordinates. Between two blocks that is the gap
+// itself. Under the last one there is no gap, only page — so rather than point at
+// the middle of the emptiness, work out where the new line will actually be: one
+// margin below the block, one line tall. That is what the plus never lined up
+// with, and why clicking the space landed the caret somewhere else.
+function blockGapSpan(after, before) {
+  if (!after) {
+    const bottom = before.getBoundingClientRect().top;
+    return { top: bottom - BLOCK_TRAIL_DROP * 2, bottom };
+  }
+  const top = after.getBoundingClientRect().bottom;
+  if (before) return { top, bottom: before.getBoundingClientRect().top };
+  const body = app.querySelector('.document-body');
+  const margin = parseFloat(window.getComputedStyle(after).marginBottom) || 0;
+  const line = (body && parseFloat(window.getComputedStyle(body).lineHeight)) || BLOCK_TRAIL_DROP * 2;
+  return { top: top + margin, bottom: top + margin + line };
+}
+
+function positionBlockGapLine() {
+  const line = blockGapLine;
+  const layout = app.querySelector('.reader-layout');
+  const body = app.querySelector('.document-body');
+  if (!line || !layout || !body || !line.__after.isConnected) return;
+  const layoutRect = layout.getBoundingClientRect();
+  const bodyRect = body.getBoundingClientRect();
+  const span = blockGapSpan(line.__after, line.__before);
+  // Clickable from the block above down to the foot of the new line: the margin
+  // over the line belongs to the line, and aiming for a bare gap is fiddly.
+  const top = Math.min(span.top, line.__after.getBoundingClientRect().bottom);
+  line.style.left = bodyRect.left - layoutRect.left + 'px';
+  line.style.width = bodyRect.width + 'px';
+  line.style.top = top - layoutRect.top + 'px';
+  line.style.height = Math.max(BLOCK_GAP_MIN, span.bottom - top) + 'px';
+}
+
+// Start a new line under `after`. A block mid-edit saves first and reopens the
+// new line on the far side of its re-render — the same two ways Enter at the end
+// of a block already goes.
+function openLineBelow(after, specId) {
+  if (!after) return;
+  if (after.__lineBelow) {
+    after.__lineBelow(specId);
+    return;
+  }
+  const start = Number(after.dataset.srcStart);
+  const end = Number(after.dataset.srcEnd);
+  // A block holding no source of its own has to own the splice (above). Opening a
+  // line under one from out here would be undone by its own save a moment later.
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end === start) return;
+  if (after.__editingActive) {
+    const text = blockDomToMarkdown(after);
+    after.__editingActive = false;
+    if (text !== after.__editBaseline) {
+      sendBlockSplice(after, start, end, text);
+      setPendingCaret({ srcStart: start, insertBelow: true, blockSpec: specId });
+      return;
+    }
+  }
+  openInsertBlockAfter(after, specId);
+}
+
+// The same, above the first block: the break goes after the new line instead.
+function openLineAbove(before, specId) {
+  const at = before && Number(before.dataset.srcStart);
+  if (!Number.isFinite(at)) return;
+  openInsertBlock(at, {
+    spec: BLANK_BLOCK_SPECS[specId] || PLAIN_LINE_SPEC,
+    separator: '',
+    suffix: currentDocumentFormat === 'markdown' ? '\n\n' : '\n',
+    place: (host) => before.insertAdjacentElement('beforebegin', host),
+  });
+}
+
+function closeBlockGapLine() {
+  if (blockGapLine) blockGapLine.remove();
+  blockGapLine = null;
+}
+
+function collapseBlockInsertRow() {
+  blockGutterExpanded = false;
+  blockImageWrite = null;
+  if (blockGutterRow) {
+    blockGutterRow.hidden = true;
+    blockGutterRow.textContent = '';
+  }
+  if (blockGutter) blockGutter.classList.remove('is-expanded');
+  if (blockInsertHost) {
+    blockInsertHost.classList.remove('is-insert-open');
+    blockInsertHost = null;
+  }
+}
+
+// Point the gutter at `el`. An open insert row pins the gutter where it is: the
+// row's own buttons are what the pointer is heading for, and moving the gutter
+// out from under it would be the click that never lands.
+function aimBlockGutter(el) {
+  if (blockDrag || blockGutterExpanded) return;
+  // The line being typed in gets its plus on the line below instead.
+  if (el && el === blockCaretBlock && !blockIsEmpty(el)) {
+    aimBlockGutterBelow(el);
+    return;
+  }
+  if (!el || el === blockGutterTarget) {
+    if (el) positionBlockGutter();
+    return;
+  }
+  blockGutterTarget = el;
+  blockGutterGap = null;
+  closeBlockGapLine();
+  const canMove = !!blockSiblingRun(el);
+  const canInsert = blockIsEmpty(el) && blockInsertOptions(el).length > 0;
+  blockGutterGrip.hidden = !canMove;
+  blockGutterAdd.hidden = !canInsert;
+  // Nothing to offer on this block, so nothing to show beside it.
+  blockGutter.hidden = !canMove && !canInsert;
+  positionBlockGutter();
+}
+
+// The document's top-level blocks, skipping the ones that exist only in the DOM:
+// a blank line waiting for its first keystroke holds no source, so a gap beside it
+// has no offset to be written at.
+function blockGutterBlocks() {
+  const body = app.querySelector('.document-body');
+  if (!body) return [];
+  return Array.from(body.children).filter(
+    (el) =>
+      el.dataset &&
+      el.dataset.srcStart != null &&
+      el.dataset.srcEnd != null &&
+      Number(el.dataset.srcEnd) > Number(el.dataset.srcStart),
+  );
+}
+
+// Point the gutter at the space the pointer is in rather than at a block. Only
+// the plus: there is nothing here to drag.
+function aimBlockGutterAtGap(clientY) {
+  if (blockDrag || blockGutterExpanded) return;
+  const blocks = blockGutterBlocks();
+  let after = null;
+  let before = null;
+  for (const el of blocks) {
+    const rect = el.getBoundingClientRect();
+    // Level with a block but outside it — the left margin, say. That is still
+    // that block's line, not a gap.
+    if (clientY >= rect.top && clientY <= rect.bottom) {
+      aimBlockGutter(el);
+      return;
+    }
+    if (rect.bottom < clientY) after = el;
+    else {
+      before = el;
+      break;
+    }
+  }
+  if (!after && !before) return;
+  const top = after ? after.getBoundingClientRect().bottom : 0;
+  const bottom = before ? before.getBoundingClientRect().top : top + BLOCK_TRAIL_DROP * 2;
+  if (after && before && bottom - top < BLOCK_GAP_MIN) {
+    aimBlockGutter(clientY - top < bottom - clientY ? after : before);
+    return;
+  }
+  aimBlockGutterAtSpace(after, before);
+}
+
+// The space below the line being typed in: the plus waits there, so pressing it
+// saves this line and starts the next in one go.
+function aimBlockGutterBelow(el) {
+  let before = el.nextElementSibling;
+  while (before && before.dataset.srcStart == null) {
+    before = before.nextElementSibling;
+  }
+  aimBlockGutterAtSpace(el, before);
+}
+
+// Point the gutter at the space between two blocks, and make that space
+// clickable. Only the plus: there is nothing here to drag.
+function aimBlockGutterAtSpace(after, before) {
+  if (blockGutterGap && blockGutterGap.after === after && blockGutterGap.before === before) {
+    positionBlockGutter();
+    return;
+  }
+  if (!blockInsertOptions(after || before).length) {
+    hideBlockGutter();
+    return;
+  }
+  blockGutterTarget = null;
+  blockGutterGap = { after, before };
+  openBlockGapLine(after, before);
+  blockGutterGrip.hidden = true;
+  blockGutterAdd.hidden = false;
+  blockGutter.hidden = false;
+  positionBlockGutter();
+}
+
+// Place the gutter beside its block: vertically on the block's first line, and
+// horizontally in the left margin. Where the margin is narrower than the tools
+// (a window too narrow for the measure to be centered) they hug the page edge and
+// overlap the first few pixels of text instead of disappearing — a page you can
+// still restructure beats a tidy one you can't.
+function positionBlockGutter() {
+  const layout = app.querySelector('.reader-layout');
+  const body = app.querySelector('.document-body');
+  const centerY = blockGutterAnchorY();
+  if (!blockGutter || !layout || !body || centerY == null) {
+    if (blockGutter) blockGutter.hidden = true;
+    return;
+  }
+  const layoutRect = layout.getBoundingClientRect();
+  const bodyRect = body.getBoundingClientRect();
+  const margin = Math.max(0, bodyRect.left - layoutRect.left);
+  const shift = Math.min(margin, BLOCK_TOOLS_WIDTH + 10);
+  blockGutter.style.left = bodyRect.left - layoutRect.left + 'px';
+  blockGutter.style.top = centerY - layoutRect.top + 'px';
+  blockGutter.style.setProperty('--block-gutter-shift', shift + 'px');
+  positionBlockGapLine();
+}
+
+// The line the gutter sits on: a block's first line, or the middle of the gap it
+// is offering to fill. Null once whatever it was aimed at has left the page.
+function blockGutterAnchorY() {
+  if (blockGutterGap) {
+    const { after, before } = blockGutterGap;
+    if ((after && !after.isConnected) || (before && !before.isConnected)) return null;
+    const span = blockGapSpan(after, before);
+    return (span.top + span.bottom) / 2;
+  }
+  const target = blockGutterTarget;
+  if (!target || !target.isConnected) return null;
+  const rect = target.getBoundingClientRect();
+  const lineHeight = parseFloat(window.getComputedStyle(target).lineHeight) || rect.height;
+  return rect.top + Math.min(lineHeight, rect.height) / 2;
+}
+
+// Open the insert row: the plus becomes a cross, and the options fan out to the
+// right of it over the (usually empty) line, the way Medium's does.
+function expandBlockInsertRow() {
+  const target = blockGutterTarget;
+  const gap = blockGutterGap;
+  // Which document the options are for: the block itself, or the block the gap
+  // hangs off (XML asks it what tag to offer).
+  const source = target || (gap && (gap.after || gap.before));
+  if (!source || !blockGutterRow) return;
+  const options = blockInsertOptions(source);
+  if (!options.length) return;
+  blockGutterRow.textContent = '';
+  for (const option of options) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'block-insert-option';
+    button.title = option.label;
+    button.setAttribute('aria-label', option.label);
+    button.innerHTML = option.icon;
+    const write = (chosen) => (gap ? runGapInsert(gap, chosen) : runBlockInsert(target, chosen));
+    button.addEventListener('click', () => (option.ask === 'image' ? openBlockImageBox(write) : write(option)));
+    blockGutterRow.appendChild(button);
+  }
+  blockGutterRow.hidden = false;
+  blockGutterExpanded = true;
+  blockGutter.classList.add('is-expanded');
+  // The row lies across the line it was opened on. On a blank line that line's
+  // wording is a printed placeholder, so it reads as text struck through by the
+  // controls; take it away while the row is up. A gap has nothing to hide.
+  if (target) {
+    blockInsertHost = target;
+    target.classList.add('is-insert-open');
+  }
+}
+
+// What the image option asks before it writes anything: a file off this computer,
+// or an address. Two ways in because a document holds both — a picture beside it
+// in the folder, and one that lives on the web — and neither is a path anyone
+// should have to type into a placeholder by hand.
+//
+// The picture is never copied anywhere. What goes in the document is where it
+// already is: relative to the document when it sits under it, so the pair survive
+// being moved together, and absolute when it doesn't.
+let blockImageWrite = null;
+let blockImageToken = 0;
+
+function openBlockImageBox(write) {
+  if (!blockGutterRow) return;
+  blockImageWrite = write;
+  blockImageToken += 1;
+  const token = blockImageToken;
+  blockGutterRow.textContent = '';
+
+  const choose = document.createElement('button');
+  choose.type = 'button';
+  choose.className = 'block-insert-choose';
+  choose.textContent = 'Choose file';
+  choose.addEventListener('click', () => send({ command: 'pickImage', token }));
+
+  const url = document.createElement('input');
+  url.type = 'text';
+  url.className = 'block-insert-url';
+  url.spellcheck = false;
+  url.placeholder = 'or paste an image address';
+  url.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const address = url.value.trim();
+      if (address) writeBlockImage(address, '');
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      collapseBlockInsertRow();
+      hideBlockGutter();
+    }
+  });
+
+  blockGutterRow.appendChild(choose);
+  blockGutterRow.appendChild(url);
+  url.focus();
+}
+
+function writeBlockImage(destination, alt) {
+  const write = blockImageWrite;
+  blockImageWrite = null;
+  if (!write) return;
+  write({ id: 'image', text: '![' + alt.replace(/[[\]]/g, '') + '](' + destination + ')' });
+}
+
+// The picker's answer. A token from a box that has since closed is dropped: the
+// document may have moved on while the dialog was up.
+window.leafImagePicked = (token, destination, alt) => {
+  if (token !== blockImageToken || !destination) return;
+  writeBlockImage(destination, alt || '');
+};
+
+// Where the buffer ends for the block above the gap. A block being typed in ends
+// wherever its unsaved text ends, so it is saved first and the offset taken from
+// what was written — insert at the old end and the new block would land inside the
+// sentence, or the sentence would be thrown away.
+function gapInsertOffsetAfter(after) {
+  const start = Number(after.dataset.srcStart);
+  const end = Number(after.dataset.srcEnd);
+  if (!after.__editingActive || !Number.isFinite(start) || !Number.isFinite(end)) return end;
+  const text = blockDomToMarkdown(after);
+  after.__editingActive = false;
+  if (text === after.__editBaseline) return end;
+  sendBlockSplice(after, start, end, text);
+  return start + utf8ByteLength(text);
+}
+
+// Write a block into the space between two blocks, making the line for it: the
+// source plus the break that separates it from its new neighbor. This is what
+// spares an Enter first — the line and what goes on it arrive as one edit.
+function runGapInsert(gap, option) {
+  const { after, before } = gap;
+  collapseBlockInsertRow();
+  hideBlockGutter();
+  const separator = currentDocumentFormat === 'markdown' ? '\n\n' : '\n';
+  // A block to type in rather than source to write: open one on the line below.
+  if (option.blank) {
+    if (after) openLineBelow(after, option.blank);
+    else openLineAbove(before, option.blank);
+    return;
+  }
+  // A block that exists only in the DOM carries its own splice: what was typed
+  // into it is not in the buffer yet, so the one edit has to write both.
+  if (after && after.__insertBlockWith) {
+    after.__insertBlockWith(option);
+    return;
+  }
+  if (after) {
+    const at = gapInsertOffsetAfter(after);
+    if (!Number.isFinite(at)) return;
+    sendEditCommand({ command: 'editBlock', start: at, end: at, text: separator + option.text });
+    if (option.caret) {
+      setPendingCaret({ srcStart: at + utf8ByteLength(separator) });
+    }
+    return;
+  }
+  // Above the first block: the break goes after the new block instead.
+  const at = Number(before.dataset.srcStart);
+  if (!Number.isFinite(at)) return;
+  sendEditCommand({ command: 'editBlock', start: at, end: at, text: option.text + separator });
+  if (option.caret) setPendingCaret({ srcStart: at });
+}
+
+// Write an option's source onto `target`'s line, which is the empty line the plus
+// was pressed on — so the block takes that line rather than landing on either side
+// of it. The caret follows it in, with a placeholder left selected so the first
+// keystroke replaces it.
+function runBlockInsert(target, option) {
+  const start = Number(target.dataset.srcStart);
+  const end = Number(target.dataset.srcEnd);
+  collapseBlockInsertRow();
+  hideBlockGutter();
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  // This line is empty and about to be a different kind of empty line. Nothing is
+  // written: the block swaps for one of the chosen kind, still waiting on its
+  // first word.
+  if (option.blank) {
+    if (target.__becomeBlock) target.__becomeBlock(option.blank);
+    else openLineAbove(target, option.blank);
+    return;
+  }
+  // A block that exists only in the DOM (a blank line, a new document's title)
+  // owns its own splice: it has to carry whatever was typed into it along with
+  // the new block, since none of it is in the buffer yet.
+  if (target.__insertBlockWith) {
+    target.__insertBlockWith(option);
+    return;
+  }
+  // The plus is only offered on an empty line, and replacing the range is only
+  // safe there. Checked again here rather than trusted: a drifted button is a
+  // paragraph overwritten.
+  if (!blockIsEmpty(target)) return;
+  sendEditCommand({ command: 'editBlock', start, end, text: option.text });
+  if (option.caret) setPendingCaret({ srcStart: start });
+}
+
+// The run of siblings a block can move within: the blocks sharing its parent, in
+// document order. Refused unless every range is present, ordered and
+// non-overlapping — the host refuses the same way, and a drifted map must not be
+// given the chance to shred a file.
+function blockSiblingRun(target) {
+  if (!blockGutterFormatAllowed()) return null;
+  const parent = target.parentElement;
+  if (!parent) return null;
+  // A zero-length range is a block that exists only in the DOM — a blank line
+  // waiting for its first keystroke. It holds no text to drag and contributes no
+  // source, so it is left out of the run rather than allowed to invalidate it;
+  // `target` then fails the membership test below and gets no handle.
+  const elements = Array.from(parent.children).filter(
+    (el) =>
+      el.dataset &&
+      el.dataset.srcStart != null &&
+      el.dataset.srcEnd != null &&
+      Number(el.dataset.srcEnd) > Number(el.dataset.srcStart),
+  );
+  if (elements.length < 2 || !elements.includes(target)) return null;
+  const ranges = [];
+  let previousEnd = -1;
+  for (const el of elements) {
+    const start = Number(el.dataset.srcStart);
+    const end = Number(el.dataset.srcEnd);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start < previousEnd) return null;
+    previousEnd = end;
+    ranges.push([start, end]);
+  }
+  return { elements, ranges };
+}
+
+// Where the block would land: the first neighbor whose middle the pointer has
+// passed. Measured against positions taken before anything moved, so the blocks
+// sliding aside can't change the answer that decided to slide them.
+function blockDropIndex(layoutY) {
+  const before = blockDrag.baselines.findIndex((mid) => layoutY < mid);
+  return before === -1 ? blockDrag.others.length : before;
+}
+
+// One slot: the block plus the space between it and its neighbor. This is what
+// the blocks it passes step by, so each lands exactly where the dragged one was.
+function blockSlotHeight(elements, index) {
+  const rect = elements[index].getBoundingClientRect();
+  const next = elements[index + 1];
+  if (next) return next.getBoundingClientRect().top - rect.top;
+  const previous = elements[index - 1];
+  if (previous) return rect.bottom - previous.getBoundingClientRect().bottom;
+  return rect.height;
+}
+
+// The block lifted off the page and carried by the pointer. A copy, because the
+// original stays in the flow holding its space — that is what makes the gap the
+// neighbors open the same size as the thing about to fill it.
+function startBlockGhost() {
+  const ghost = document.createElement('div');
+  ghost.className = 'block-drag-ghost';
+  ghost.setAttribute('aria-hidden', 'true');
+  const copy = blockDrag.target.cloneNode(true);
+  copy.removeAttribute('contenteditable');
+  copy.removeAttribute('id');
+  for (const el of copy.querySelectorAll('[id]')) el.removeAttribute('id');
+  ghost.appendChild(copy);
+  ghost.style.left = blockDrag.left + 'px';
+  ghost.style.width = blockDrag.width + 'px';
+  blockDrag.layout.appendChild(ghost);
+  blockDrag.ghost = ghost;
+}
+
+// Open the gap where the block would land: everything between its old slot and
+// the new one steps one slot the other way. A transform, so nothing reflows — a
+// page of blocks re-laid-out on every pointer move is the version that stutters.
+function slideBlocksAside() {
+  const { others, from, to, span } = blockDrag;
+  others.forEach((el, index) => {
+    let shift = 0;
+    if (index >= from && index < to) shift = -span;
+    else if (index < from && index >= to) shift = span;
+    el.style.transform = shift ? 'translateY(' + shift + 'px)' : '';
+  });
+}
+
+function beginBlockDrag(event) {
+  const target = blockGutterTarget;
+  const run = target && blockSiblingRun(target);
+  const layout = app.querySelector('.reader-layout');
+  if (!run || !layout) return;
+  // A block mid-edit has uncommitted text; moving its range before that text is
+  // in the buffer would move the old wording.
+  commitActiveEditingBlock();
+  const from = run.elements.indexOf(target);
+  const others = run.elements.filter((el) => el !== target);
+  const layoutRect = layout.getBoundingClientRect();
+  const rect = target.getBoundingClientRect();
+  blockDrag = {
+    target,
+    layout,
+    ranges: run.ranges,
+    from,
+    others,
+    baselines: others.map((el) => {
+      const box = el.getBoundingClientRect();
+      return box.top + box.height / 2 - layoutRect.top;
+    }),
+    span: blockSlotHeight(run.elements, from),
+    // Layout-relative, like the gutter's: the layout scrolls with the blocks, so
+    // measuring against it means a scroll mid-drag moves nothing out of step.
+    left: rect.left - layoutRect.left,
+    width: rect.width,
+    grabOffset: event.clientY - rect.top,
+    to: from,
+    pointerId: event.pointerId,
+    startY: event.clientY,
+    moved: false,
+  };
+  event.preventDefault();
+  try {
+    event.currentTarget.setPointerCapture(event.pointerId);
+  } catch (_) {}
+}
+
+function moveBlockDrag(event) {
+  if (!blockDrag || event.pointerId !== blockDrag.pointerId) return;
+  if (!blockDrag.moved) {
+    if (Math.abs(event.clientY - blockDrag.startY) < 4) return;
+    blockDrag.moved = true;
+    blockDrag.target.classList.add('is-block-dragging');
+    document.body.classList.add('is-block-dragging');
+    if (blockGutter) blockGutter.classList.add('is-dragging');
+    startBlockGhost();
+  }
+  const layoutY = event.clientY - blockDrag.layout.getBoundingClientRect().top;
+  blockDrag.ghost.style.top = layoutY - blockDrag.grabOffset + 'px';
+  blockDrag.to = blockDropIndex(layoutY);
+  slideBlocksAside();
+}
+
+function endBlockDrag(commit) {
+  if (!blockDrag) return;
+  const drag = blockDrag;
+  blockDrag = null;
+  if (drag.ghost) drag.ghost.remove();
+  for (const el of drag.others) el.style.transform = '';
+  drag.target.classList.remove('is-block-dragging');
+  document.body.classList.remove('is-block-dragging');
+  if (blockGutter) blockGutter.classList.remove('is-dragging');
+  if (!drag.moved || !commit || drag.to === drag.from) {
+    hideBlockGutter();
+    return;
+  }
+  sendEditCommand({ command: 'moveBlock', ranges: drag.ranges, from: drag.from, to: drag.to });
+  hideBlockGutter();
+}
+
+// Build the gutter for the render that just landed, and wire it to the document
+// body. One gutter for the whole page, moved to whichever block is being pointed
+// at — a control per block would be one more element per block on a document that
+// may hold fifty thousand of them.
+function bindBlockControls() {
+  blockGutter = null;
+  blockGutterGrip = null;
+  blockGutterAdd = null;
+  blockGutterRow = null;
+  blockGutterTarget = null;
+  blockGutterGap = null;
+  blockGapLine = null;
+  blockCaretBlock = null;
+  blockGutterExpanded = false;
+  blockImageWrite = null;
+  blockDrag = null;
+  const layout = app.querySelector('.reader-layout');
+  const body = app.querySelector('.document-body');
+  if (!layout || !body) return;
+  if (!readerEditingAllowed() || !blockGutterFormatAllowed()) return;
+
+  blockGutter = document.createElement('div');
+  blockGutter.className = 'block-gutter';
+  blockGutter.hidden = true;
+  blockGutter.innerHTML = `<div class="block-gutter-tools">
+      <button type="button" class="block-grip" title="Drag to reorder" aria-label="Drag to reorder this block">{{GRIP_ICON_SVG}}</button>
+      <button type="button" class="block-add" title="Insert a block" aria-label="Insert a block"><span class="block-add-open">{{NEW_ICON_SVG}}</span><span class="block-add-close">{{CLOSE_ICON_SVG}}</span></button>
+    </div><div class="block-insert-row" hidden></div>`;
+  blockGutterGrip = blockGutter.querySelector('.block-grip');
+  blockGutterAdd = blockGutter.querySelector('.block-add');
+  blockGutterRow = blockGutter.querySelector('.block-insert-row');
+  layout.appendChild(blockGutter);
+
+  blockGutterGrip.addEventListener('pointerdown', (event) => {
+    if (event.button === 0) beginBlockDrag(event);
+  });
+  blockGutterGrip.addEventListener('pointermove', moveBlockDrag);
+  blockGutterGrip.addEventListener('pointerup', () => endBlockDrag(true));
+  blockGutterGrip.addEventListener('pointercancel', () => endBlockDrag(false));
+  blockGutterAdd.addEventListener('click', () => {
+    if (blockGutterExpanded) collapseBlockInsertRow();
+    else expandBlockInsertRow();
+  });
+  // Reaching for the gutter must not take the focus off the line being typed:
+  // the block keeps its unsaved words until whatever was pressed saves them
+  // itself, in the order that keeps the offsets true.
+  blockGutter.addEventListener('mousedown', (event) => {
+    if (event.target.closest && event.target.closest('input')) return;
+    event.preventDefault();
+  });
+
+  // Hovering a block aims the gutter at it; the gutter itself counts as its own
+  // block, or moving onto the plus would take the gutter away from under you.
+  // Hovering the space between blocks aims it at that space instead.
+  body.addEventListener('pointermove', (event) => {
+    if (blockDrag || blockGutterFollowsCaret()) return;
+    if (blockGutter.contains(event.target)) return;
+    const el = event.target.closest ? event.target.closest('[data-src-start]') : null;
+    if (el) aimBlockGutter(el);
+    else aimBlockGutterAtGap(event.clientY);
+  });
+  // The margin the controls live in counts as the page too. Reaching them meant
+  // hovering the words first and then sliding left, which is a trip out of the
+  // gutter and back for every block — the line the pointer is level with is
+  // answer enough.
+  layout.addEventListener('pointermove', (event) => {
+    if (blockDrag || blockGutterFollowsCaret()) return;
+    if (blockGutter.contains(event.target)) return;
+    if (event.target.closest && event.target.closest('.document-body')) return;
+    const bodyRect = body.getBoundingClientRect();
+    const reach = bodyRect.left - event.clientX;
+    const inMargin = reach >= 0 && reach <= BLOCK_TOOLS_WIDTH + 30;
+    // The page under the last block is the last block's line too — clicking down
+    // there is how you carry on writing, so the plus has to be reachable without
+    // first finding the words above it.
+    const underPage =
+      event.clientY > bodyRect.bottom && event.clientX >= bodyRect.left && event.clientX <= bodyRect.right;
+    if (!inMargin && !underPage) return;
+    aimBlockGutterAtGap(event.clientY);
+  });
+  layout.addEventListener('pointerleave', () => {
+    if (blockGutterExpanded || blockGutterFollowsCaret()) return;
+    hideBlockGutter();
+  });
+  // The caret is the other way of saying "this block": type into one and its
+  // controls are there without going looking for them.
+  body.addEventListener('focusin', (event) => {
+    if (!event.target.closest) return;
+    blockCaretBlock = event.target.closest('[data-src-start][contenteditable="true"]');
+    aimBlockGutter(event.target.closest('[data-src-start]'));
+  });
+  body.addEventListener('focusout', (event) => {
+    if (blockGutterHoldsFocus(event.relatedTarget)) return;
+    if (!blockCaretBlock || blockCaretBlock.contains(event.relatedTarget)) return;
+    blockCaretBlock = null;
+    if (!blockGutterExpanded) hideBlockGutter();
+  });
+  // The first word turns a blank line into a line with something on it, which is
+  // where the plus stops belonging to it and starts belonging to the one below.
+  body.addEventListener('input', () => {
+    if (blockCaretBlock && blockGutterTarget === blockCaretBlock) aimBlockGutter(blockCaretBlock);
+  });
+}
+
+// Escape closes the insert row before anything else takes it — an open row is the
+// most local thing on screen.
+window.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  if (blockDrag) {
+    endBlockDrag(false);
+    return;
+  }
+  if (blockGutterExpanded) collapseBlockInsertRow();
+});
+document.addEventListener('pointerup', () => endBlockDrag(true));
+document.addEventListener('pointercancel', () => endBlockDrag(false));
+// A click anywhere but the row closes it, the way every other menu here behaves.
+window.addEventListener(
+  'click',
+  (event) => {
+    if (!blockGutterExpanded || !blockGutter) return;
+    if (blockGutter.contains(event.target)) return;
+    collapseBlockInsertRow();
+  },
+  true,
+);
+window.addEventListener('resize', () => {
+  if (blockGutterTarget) positionBlockGutter();
+});

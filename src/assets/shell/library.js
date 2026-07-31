@@ -154,23 +154,24 @@ function activeDocumentPath() {
   if (active == null || !tabs[active]) return null;
   return tabs[active].path || null;
 }
+// What the pager came back as, per document. Every render emits the skeleton and
+// waits to be told what to put there, which flashed a pulsing box at the foot of
+// the page on every edit. The remembered answer goes back before the paint; the
+// ask still goes out, so a neighbor added since still lands.
+const pagerHtmlByPath = new Map();
+
 function requestDocumentPager(path) {
   const placeholder = app.querySelector('.document-body .docs-pager-loading');
   if (!placeholder || !path) return;
+  if (pagerHtmlByPath.has(path)) applyDocumentPager(placeholder, pagerHtmlByPath.get(path));
   send({ command: 'loadPager', path });
 }
-window.leafSetPager = (state) => {
-  if (!state || state.path !== activeDocumentPath()) return;
-  const body = app.querySelector('.document-body');
-  const current = body ? body.querySelector('.docs-pager') : null;
-  if (!current) return;
-  if (!state.html) {
-    current.remove();
-    scheduleReaderLayoutUpdate();
-    return;
-  }
+
+// Swap `current` for the pager `html` describes, or take it away when there is
+// none. `current` may be the skeleton or a pager already standing.
+function applyDocumentPager(current, html) {
   const wrapper = document.createElement('div');
-  wrapper.innerHTML = state.html;
+  if (html) wrapper.innerHTML = html;
   const pager = wrapper.firstElementChild;
   if (!pager) {
     current.remove();
@@ -178,6 +179,27 @@ window.leafSetPager = (state) => {
     return;
   }
   current.replaceWith(pager);
+  bindDocumentLinks();
+  scheduleReaderLayoutUpdate();
+}
+
+window.leafSetPager = (state) => {
+  if (!state || state.path !== activeDocumentPath()) return;
+  pagerHtmlByPath.set(state.path, state.html || '');
+  const body = app.querySelector('.document-body');
+  const current = body ? body.querySelector('.docs-pager') : null;
+  if (current) {
+    applyDocumentPager(current, state.html);
+    return;
+  }
+  // Nothing there to replace: a remembered "no neighbors" already took the
+  // skeleton away, and this answer says there is one after all.
+  if (!body || !state.html) return;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = state.html;
+  const pager = wrapper.firstElementChild;
+  if (!pager) return;
+  body.appendChild(pager);
   bindDocumentLinks();
   scheduleReaderLayoutUpdate();
 };

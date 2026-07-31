@@ -5,9 +5,13 @@ Leaf Text is a free desktop app for reading and writing your own documents. Ever
 
 ![Leaf Text — a readable Markdown and XML document open in the app](imgs/leaftext.png)
 
-<a href="https://github.com/ryanallen/leaftext/releases"><img alt="Download" src="https://img.shields.io/badge/download-latest-0ea5e9?style=flat&labelColor=4b5563"></a>
-<a href="https://github.com/ryanallen/leaftext/releases"><img alt="macOS" src="https://img.shields.io/badge/macOS-Universal-silver?style=flat&labelColor=4b5563"></a>
-<a href="https://github.com/ryanallen/leaftext/releases"><img alt="Windows" src="https://img.shields.io/badge/Windows-x64-0078d4?style=flat&labelColor=4b5563"></a>
+<a href="https://github.com/ryanallen/leaftext/releases/latest"><img alt="Download" src="https://img.shields.io/badge/download-latest-0ea5e9?style=flat&labelColor=4b5563"></a>
+<a href="https://github.com/ryanallen/leaftext/releases/latest"><img alt="macOS" src="https://img.shields.io/badge/macOS-Universal-silver?style=flat&labelColor=4b5563"></a>
+<a href="https://github.com/ryanallen/leaftext/releases/latest"><img alt="Windows" src="https://img.shields.io/badge/Windows-x64-0078d4?style=flat&labelColor=4b5563"></a>
+
+**[Download it →](https://github.com/ryanallen/leaftext/releases/latest)** · **[How to install it →](docs/02-installation.md#install)** · **[Mac won't open it? →](docs/02-installation.md#mac-blocks-the-first-launch)**
+
+> **Read this if you're on a Mac.** macOS refuses the first launch of any app Apple hasn't been paid to vouch for, and Leaf Text is free, so it hasn't. Nothing was scanned and nothing was found. Let it through once — **System Settings → Privacy & Security → Open Anyway** — and it opens normally from then on. [The four clicks, spelled out →](docs/02-installation.md#mac-blocks-the-first-launch)
 
 **[Get started →](docs/03-quickstart.md)** · **[Read the docs →](docs/)** · **[View the project on GitHub →](https://github.com/ryanallen/leaftext)**
 
@@ -36,7 +40,7 @@ Open a `.md` file and it renders the way you'd expect — the same way GitHub do
 ![Inline editing in the rendered page, with save and undo button](imgs/editing.png)
 ![Editing in code view, with save and undo button](imgs/code-view.png)
 
-Click into a sentence and type. Split a paragraph with `Enter`, join it back with `Backspace`, tick a checkbox — the change lands in your file at exactly that spot, and [undo](docs/01-features/07-editing.md#undo) walks back step by step.
+Click into a sentence and type. Split a paragraph with `Enter`, join it back with `Backspace`, tick a checkbox — the change lands in your file at exactly that spot, and [undo](docs/01-features/07-editing.md#undo) walks back step by step. Highlight words for a [format bar](docs/01-features/07-editing.md#the-format-bar), or reach into the left margin to [drag a block](docs/01-features/07-editing.md#the-block-gutter) or [add one](docs/01-features/07-editing.md#adding-a-block).
 
 Prefer the raw text? Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, XML, JSON, YAML, or a raw email — colored like an editor. There's no autosave, ever: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
 
@@ -92,25 +96,28 @@ Updates download quietly in the background and are checked against a published d
 
 ## Get it
 
-Leaf Text is free. Download it from [Releases](https://github.com/ryanallen/leaftext/releases) — the full walkthrough, including troubleshooting, is in the [Installation guide](docs/02-installation.md).
+Leaf Text is free. **[Download the latest release](https://github.com/ryanallen/leaftext/releases/latest)**, then follow your platform below — or the fuller walkthrough in the **[Installation guide](docs/02-installation.md#install)**.
 
 ### macOS
 
-Grab the universal DMG, mount it, and drag **Leaf Text** onto the **Applications** shortcut.
+1. Download the file ending in **`-macos-universal.dmg`**. One file covers Apple Silicon and Intel.
+2. Open it. Drag the leaf app onto the **Applications** folder beside it.
+3. Eject the disk image, then open **Leaf Text** from Applications.
 
-**First launch — "not verified"**
+**First launch — macOS will refuse it**
 
-macOS quarantines anything downloaded from the internet. If it tells you Leaf Text can't be opened because it's from an unidentified developer, run this in Terminal once:
+Expected. Apple charges a yearly fee to notarize an app; Leaf Text is free and isn't enrolled, so macOS blocks anything unnotarized on sight. Nothing was scanned and nothing was found. Let it through once:
 
-```sh
-xattr -cr /Applications/leaftext.app
-```
+1. Double-click **Leaf Text**, then click **Done** on the refusal.
+2. Open **System Settings** → **Privacy & Security**.
+3. Scroll to the bottom. Click **Open Anyway** on the line naming Leaf Text.
+4. Confirm with Touch ID or your password, then click **Open**.
 
-Then open it normally.
+Every launch after that is an ordinary double-click. On macOS 12 and earlier it's shorter: right-click the app → **Open** → **Open**. If the **Open Anyway** button never appears, open Terminal and run `xattr -cr /Applications/leaftext.app` instead. **[More detail →](docs/02-installation.md#mac-blocks-the-first-launch)**
 
 ### Windows
 
-Grab the 64-bit MSI. It installs just for you, with no admin prompt. Here by default, though **Change...** puts it anywhere you like and updates keep it there:
+Grab the 64-bit MSI and run it. If a blue **Windows protected your PC** box appears, click **More info** → **Run anyway** — the installer isn't signed with a paid certificate. It installs just for you, with no admin prompt. Here by default, though **Change...** puts it anywhere you like and updates keep it there:
 
 ```text
 %LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe

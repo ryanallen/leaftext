@@ -12,7 +12,8 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 
 | You want to... | Start here |
 | --- | --- |
-| Install the app | [Installation](02-installation.md) |
+| Install the app | [Installation](02-installation.md#install) |
+| Get past the Mac first-launch block | [Mac blocks the first launch](02-installation.md#mac-blocks-the-first-launch) |
 | Open your first file | [Quickstart](03-quickstart.md) |
 | Check rendering support | [Rendering](01-features/01-rendering.md) |
 | Change the look | [Themes](01-features/06-themes.md) |
@@ -30,7 +31,9 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 - Find anything you've written in the [library pane](01-features/03-library.md), or see how it connects in the [graph view](01-features/03-library.md#graph).
 - Edit a file in another app and Leaf Text [picks up the change](01-features/02-navigation.md#reload) without losing your place.
 - [Write where you read](01-features/07-editing.md#inline-editing-the-reading-view): click into a sentence and type, split and merge blocks with `Enter` and `Backspace`, tick checkboxes, and [undo](01-features/07-editing.md#undo) step by step.
+- Restructure without leaving the page: drag a block by its handle in the [margin](01-features/07-editing.md#the-block-gutter), [add one](01-features/07-editing.md#adding-a-block) on the empty line below, and highlight words for a [format bar](01-features/07-editing.md#the-format-bar).
 - Switch any document to its raw source in the [code view](01-features/07-editing.md#code-view) — highlighted, line-numbered, editable — and [save](01-features/07-editing.md#save) only when you say so.
+- Get [typing help](01-features/07-editing.md#typing-help) while you write there: Monaco's IntelliSense, answered from your own notes — `[[` completes a note name, `#` a heading, and a broken link is underlined.
 - Start from nothing with the **+** in the app bar: a [new document](01-features/07-editing.md#new-document) opens ready to type, and its first save is where you choose the file.
 - Turn on [Speed Reader](01-features/05-settings.md#speed-reader) to dim the page back and mark each word's start, so your eye follows the reading path down.
 

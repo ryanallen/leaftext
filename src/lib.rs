@@ -12,7 +12,10 @@ mod eml;
 pub(crate) use eml::*;
 mod theme;
 pub(crate) use markdown::*;
-pub use markdown::{is_local_image_path, local_image_protocol_response, local_image_source_dir};
+pub use markdown::{
+    is_local_image_path, local_image_protocol_response, local_image_source_dir,
+    markdown_image_insert_destination,
+};
 pub(crate) use theme::*;
 mod scripts;
 pub use scripts::*;
@@ -116,6 +119,8 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/shell/reading-blocks.js"),
     include_str!("assets/shell/dom-to-markdown.js"),
     include_str!("assets/shell/reading-edits.js"),
+    include_str!("assets/shell/block-controls.js"),
+    include_str!("assets/shell/selection-toolbar.js"),
     include_str!("assets/shell/render-document.js"),
     include_str!("assets/shell/glossary.js"),
     include_str!("assets/shell/decorate.js"),
@@ -791,6 +796,20 @@ const APP_SHELL_ICONS: &[(&str, &str)] = &[
     ("{{PACKAGE_ICON_SVG}}", PACKAGE_ICON_SVG),
     ("{{FOLDER_ICON_SVG}}", FOLDER_ICON_SVG),
     ("{{GRAPH_ICON_SVG}}", GRAPH_ICON_SVG),
+    ("{{GRIP_ICON_SVG}}", GRIP_ICON_SVG),
+    ("{{CLOSE_ICON_SVG}}", CLOSE_ICON_SVG),
+    ("{{TEXT_ICON_SVG}}", TEXT_ICON_SVG),
+    ("{{HEADING_ICON_SVG}}", HEADING_ICON_SVG),
+    ("{{LIST_ICON_SVG}}", LIST_ICON_SVG),
+    ("{{QUOTE_ICON_SVG}}", QUOTE_ICON_SVG),
+    ("{{TABLE_ICON_SVG}}", TABLE_ICON_SVG),
+    ("{{IMAGE_ICON_SVG}}", IMAGE_ICON_SVG),
+    ("{{DIVIDER_ICON_SVG}}", DIVIDER_ICON_SVG),
+    ("{{COMMENT_ICON_SVG}}", COMMENT_ICON_SVG),
+    ("{{BOLD_ICON_SVG}}", BOLD_ICON_SVG),
+    ("{{ITALIC_ICON_SVG}}", ITALIC_ICON_SVG),
+    ("{{STRIKETHROUGH_ICON_SVG}}", STRIKETHROUGH_ICON_SVG),
+    ("{{LINK_ICON_SVG}}", LINK_ICON_SVG),
 ];
 
 pub fn app_shell_html() -> String {

@@ -19,12 +19,13 @@ use leaftext::{
     config_file_path, corpus_note_items, create_repo_on_github, document_graph, document_headings,
     document_pager_html, error_toast_script, find_note, folder_note_items, folder_note_names,
     fragment_scroll_script, git_tooling, glossary_failed_script, glossary_sheet_script,
-    graph_script, image_refresh_script, init_vault_repo, initial_apply_outcome_script,
-    initial_document_exts_script, initial_settings_script, initial_state_script,
-    initial_update_script, initial_vaults_script, initial_version_script, inspect_vault_repo,
-    is_local_image_path, is_supported_document_path, known_note_names, library_folder_script,
-    library_refresh_script, line_count_script, link_vault_remote, lint_links, load_recent_files,
-    load_settings, local_image_protocol_response, local_image_source_dir, navigation_state_script,
+    graph_script, image_picked_script, image_refresh_script, init_vault_repo,
+    initial_apply_outcome_script, initial_document_exts_script, initial_settings_script,
+    initial_state_script, initial_update_script, initial_vaults_script, initial_version_script,
+    inspect_vault_repo, is_local_image_path, is_supported_document_path, known_note_names,
+    library_folder_script, library_refresh_script, line_count_script, link_vault_remote,
+    lint_links, load_recent_files, load_settings, local_image_protocol_response,
+    local_image_source_dir, markdown_image_insert_destination, navigation_state_script,
     note_preview, open_error_state_script, opened_document_from_source, pager_loaded_script,
     read_folder_listing, read_folder_note, read_source, render_markdown_document,
     repo_name_for_vault, save_recent_files, save_result_script, save_settings,
@@ -549,6 +550,21 @@ fn pick_save_path(current: &Path) -> Option<PathBuf> {
         dialog = dialog.add_filter(format.display_name(), format.extensions());
     }
     dialog.add_filter("All files", &["*"]).save_file()
+}
+
+/// The Insert image dialog. Filtered to what a web view can draw, since a
+/// document can only show what the page can.
+fn pick_image_file() -> Option<PathBuf> {
+    FileDialog::new()
+        .set_title("Choose an image")
+        .add_filter(
+            "Images",
+            &[
+                "png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "avif", "ico",
+            ],
+        )
+        .add_filter("All files", &["*"])
+        .pick_file()
 }
 
 /// The New vault dialog: a folder, since a vault is a folder. Nothing is written

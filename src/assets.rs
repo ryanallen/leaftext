@@ -52,6 +52,31 @@ pub(crate) const PACKAGE_ICON_SVG: &str = include_str!("assets/package.svg");
 pub(crate) const FOLDER_ICON_SVG: &str = include_str!("assets/folder.svg");
 /// Linked nodes: the library pane's toggle between the file list and the graph.
 pub(crate) const GRAPH_ICON_SVG: &str = include_str!("assets/graph.svg");
+
+/// The reading view's block gutter: the handle you drag a block by, and the
+/// plus that opens the insert row. The plus reuses [`NEW_ICON_SVG`] — one plus
+/// glyph for every "add something" in the app — and closes back to the cross.
+pub(crate) const GRIP_ICON_SVG: &str = include_str!("assets/grip-vertical.svg");
+pub(crate) const CLOSE_ICON_SVG: &str = include_str!("assets/x-mark.svg");
+
+/// What the insert row offers. Each glyph names the block it writes, so the row
+/// reads without labels — which is the only way it fits in a page's margin.
+pub(crate) const TEXT_ICON_SVG: &str = include_str!("assets/text.svg");
+pub(crate) const HEADING_ICON_SVG: &str = include_str!("assets/heading.svg");
+pub(crate) const LIST_ICON_SVG: &str = include_str!("assets/list-bullet.svg");
+pub(crate) const QUOTE_ICON_SVG: &str = include_str!("assets/text-quote.svg");
+pub(crate) const TABLE_ICON_SVG: &str = include_str!("assets/table.svg");
+pub(crate) const IMAGE_ICON_SVG: &str = include_str!("assets/photo.svg");
+pub(crate) const DIVIDER_ICON_SVG: &str = include_str!("assets/minus.svg");
+pub(crate) const COMMENT_ICON_SVG: &str = include_str!("assets/message-square.svg");
+
+/// The selection toolbar's formats. Letterforms for the ones that have one, so
+/// the bar reads the way every other editor's does; the block buttons reuse the
+/// insert row's heading and quote glyphs, because they make the same two things.
+pub(crate) const BOLD_ICON_SVG: &str = include_str!("assets/bold.svg");
+pub(crate) const ITALIC_ICON_SVG: &str = include_str!("assets/italic.svg");
+pub(crate) const STRIKETHROUGH_ICON_SVG: &str = include_str!("assets/strikethrough.svg");
+pub(crate) const LINK_ICON_SVG: &str = include_str!("assets/link.svg");
 // The one copy of the leaf mark. Both the header logomark and the library's
 // per-file badge inline this same glyph, so it takes the theme color from
 // `currentColor` at each site instead of carrying a color of its own.

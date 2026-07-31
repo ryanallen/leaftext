@@ -409,6 +409,15 @@ pub fn unlock_document_script(path: &Path) -> String {
     format!("window.leafUnlockDocument({path});")
 }
 
+/// Hand the page the image it asked the picker for. `token` is the insert box
+/// that opened the dialog — the page dropped it if the document changed while
+/// the dialog was up, and an answer to a box nobody is holding is ignored.
+pub fn image_picked_script(token: u64, destination: &str, alt: &str) -> String {
+    let destination = serde_json::to_string(destination).expect("destination serializes");
+    let alt = serde_json::to_string(alt).expect("alt serializes");
+    format!("window.leafImagePicked({token}, {destination}, {alt});")
+}
+
 pub fn save_result_script(path: &str, ok: bool, error: Option<&str>) -> String {
     let path = serde_json::to_string(path).expect("path serializes");
     let error = match error {

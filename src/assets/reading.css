@@ -3040,11 +3040,14 @@ body:has(#readerToolbar:not([hidden])) {
 .document-body .leaf-editable {
   cursor: text;
 }
+/* Nothing at all around the block you are typing in. It carried a blue ring once,
+   then a shaded band; both drew a box on a page whose whole point is that it is a
+   page and not a form. The caret says where you are, and the words are already
+   there to be read. A raw-source block is the one exception below — its code tint
+   is what says "this is source", not "this is selected". */
 .document-body .leaf-editable:focus,
 .document-body .leaf-editable:focus-visible {
-  outline: 2px solid var(--leaf-accent, var(--markdown-blockquote-border));
-  outline-offset: 2px;
-  border-radius: var(--leaf-radius-xs);
+  outline: none;
 }
 .document-body .leaf-editing-source {
   font-family: var(--leaf-code-font, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
@@ -3057,9 +3060,343 @@ body:has(#readerToolbar:not([hidden])) {
 .document-body .leaf-insert-block {
   min-height: 1.5em;
 }
+/* The gray wording a blank block shows: printed rather than typed, so it is not
+   in the document and cannot be committed. Switched off by the first keystroke
+   (see makeBlankBlock) rather than by `:empty`, which a contenteditable's
+   leftover <br> would defeat. */
+.document-body .leaf-insert-block[data-blank="true"][data-placeholder]::before {
+  content: attr(data-placeholder);
+  color: var(--preview-muted-foreground);
+  pointer-events: none;
+}
+/* The block gutter's insert row lies across this line while it is open, and a
+   placeholder under it reads as text struck through by the controls. */
+.document-body .leaf-insert-block.is-insert-open[data-blank="true"][data-placeholder]::before {
+  content: none;
+}
+/* A heading's underline belongs to a heading that says something. On a blank page
+   it is a line drawn under nothing, which is the difference between a title and a
+   field. Kept as a transparent color so the space it holds doesn't move when the
+   first letter arrives. */
+.document-body h1.leaf-insert-block[data-blank="true"],
+.document-body h2.leaf-insert-block[data-blank="true"] {
+  border-bottom-color: transparent;
+}
 /* Links inside an editable block keep the pointer cursor, not the text caret. */
 .document-body .leaf-editable a {
   cursor: pointer;
+}
+
+/* ---- The block gutter --------------------------------------------------
+   The handle you drag a block by and the plus that writes a new one, in the
+   page's left margin. Positioned inside .reader-layout (the reader's positioned
+   ancestor), so it scrolls with the document instead of being chased down the
+   page by a scroll handler. See block-controls.js.
+
+   --block-gutter-shift is how far left of the text the pair sits; the script sets
+   it from the margin actually available, so a window too narrow to center the
+   measure keeps the controls at the page edge rather than losing them. */
+.block-gutter[hidden] {
+  display: none;
+}
+.block-gutter {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translate(calc(-1 * var(--block-gutter-shift, 72px)), -50%);
+}
+.block-gutter-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  /* Page-colored, so where the margin is too narrow to hold them the tools read
+     over the start of a line instead of dissolving into it. */
+  background: var(--preview-background);
+  border-radius: var(--leaf-radius-pill);
+}
+.block-gutter button {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--preview-muted-foreground);
+  cursor: pointer;
+}
+.block-gutter button[hidden] {
+  display: none;
+}
+.block-gutter svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+.block-grip {
+  width: 22px;
+  height: 30px;
+  cursor: grab;
+}
+.block-grip:active {
+  cursor: grabbing;
+}
+.block-gutter .block-add,
+.block-gutter .block-insert-option {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--reading-rule);
+  border-radius: var(--leaf-radius-full);
+  background: var(--preview-background);
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+.block-gutter .block-grip:hover,
+.block-gutter .block-add:hover,
+.block-gutter .block-insert-option:hover {
+  color: var(--leaf-accent, var(--preview-foreground));
+  border-color: var(--leaf-accent, var(--preview-border));
+}
+.block-add-close {
+  display: none;
+}
+.block-gutter.is-expanded .block-add-open {
+  display: none;
+}
+.block-gutter.is-expanded .block-add-close {
+  display: block;
+}
+/* The space under the line being typed in, made clickable. Laid over the gap
+   rather than opened in it: a real box there re-lays out the page every time the
+   gutter moves, and the page growing and shrinking a line mid-sentence is what
+   made whole lines jump under the pointer. Invisible — the plus is the mark. */
+.block-gap-line {
+  position: absolute;
+  z-index: 2;
+  cursor: text;
+}
+/* The image box: which picture, before anything is written. Its own row so the
+   field has the width of the line rather than the width of a button. */
+.block-insert-choose {
+  flex: none;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--reading-rule);
+  border-radius: var(--leaf-radius-pill);
+  background: var(--preview-background);
+  color: var(--preview-foreground);
+  font: 600 12px var(--app-font);
+  cursor: pointer;
+}
+.block-insert-choose:hover {
+  border-color: var(--leaf-accent, var(--preview-border));
+  color: var(--leaf-accent, var(--preview-foreground));
+}
+.block-insert-url {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 320px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--reading-rule);
+  border-radius: var(--leaf-radius-sm);
+  background: var(--preview-background);
+  color: var(--preview-foreground);
+  font: 13px var(--app-font);
+}
+.block-insert-url:focus {
+  border-color: var(--leaf-accent, var(--preview-border));
+  outline: none;
+}
+/* The options fan out to the right of the cross, over the (nearly always empty)
+   line the plus was pressed on — the rule is the divider between "close this" and
+   "pick one of these". */
+.block-insert-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 10px;
+  border-left: 1px solid var(--reading-rule);
+  background: var(--preview-background);
+}
+.block-insert-row[hidden] {
+  display: none;
+}
+/* The tools are the handle you grabbed; once the block itself is following the
+   pointer they are one thing too many. Faded rather than hidden, so the grip
+   holding the pointer capture stays where the drag started. */
+.block-gutter.is-dragging {
+  opacity: 0;
+}
+/* The block being carried. A copy lifted off the page, over the gap its
+   neighbors open for it. */
+.block-drag-ghost {
+  position: absolute;
+  z-index: 5;
+  padding: 2px 10px;
+  margin-left: -10px;
+  border-radius: var(--leaf-radius-lg);
+  background: var(--preview-background);
+  box-shadow: var(--shadow);
+  opacity: 0.92;
+  pointer-events: none;
+}
+.block-drag-ghost > * {
+  margin: 0;
+}
+/* The original keeps its space while it is away — the neighbors step over it,
+   and stepping over something visible would just be two copies of one block. */
+.document-body .is-block-dragging {
+  visibility: hidden;
+}
+/* Blocks slide to open the gap rather than jumping to it, so the page reads as
+   making room. Only while a drag is on: no document pays for this at rest. */
+body.is-block-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+body.is-block-dragging .document-body [data-src-start] {
+  transition: transform 0.14s ease;
+}
+/* ---- The selection toolbar ---------------------------------------------
+   What highlighted text can become, floating over it. Positioned inside
+   .reader-layout like the block gutter, so it travels with the words instead of
+   being chased down the page by a scroll handler. See selection-toolbar.js.
+
+   --selection-arrow is where the point sits along the bar: the script keeps it
+   over the words even where the bar itself had to stop at the page edge. */
+.selection-toolbar[hidden] {
+  display: none;
+}
+.selection-toolbar {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  /* Transparent, not gone: the border holds the box's size while ::after paints
+     the visible face — the same arrangement the reader's bottom toolbar uses, and
+     for the same reason. A negative-z child paints over its parent's own
+     background, so the only way the dot shadow (::before) gets behind an opaque
+     face is for the face to be a later negative-z child itself. */
+  border: 1px solid transparent;
+  border-radius: var(--leaf-radius-lg);
+  background: transparent;
+  /* Only the contact line stays smooth; the soft spread is the dot screen. */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  font-family: var(--app-font);
+  transform: translate(-50%, -100%);
+}
+/* The bar's drop shadow: the same 2px dot lattice the reader's toolbar throws,
+   in shadow ink, thinning away under a mask — a halftone shadow rather than a
+   smooth blur. Fixed attachment keeps its dots on the one window-anchored
+   lattice every grained surface shares. */
+.selection-toolbar::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -13px -20px -10px;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.55) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  -webkit-mask-image: radial-gradient(ellipse farthest-side at 50% 55%, #000 30%, transparent 98%);
+  mask-image: radial-gradient(ellipse farthest-side at 50% 55%, #000 30%, transparent 98%);
+}
+/* The face — fill and hairline. inset -1px re-covers the border box the
+   element's transparent border holds in layout. */
+.selection-toolbar::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -1px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--leaf-radius-lg);
+  background: var(--app-surface-elevated);
+  pointer-events: none;
+}
+/* The point, drawn as a rotated corner of the bar so it takes the same border
+   and background without a second color to keep in step. A real element, so it
+   paints above both layers behind it. */
+.selection-toolbar-point {
+  position: absolute;
+  bottom: -5px;
+  left: var(--selection-arrow, 50%);
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-right: 1px solid var(--app-border);
+  border-bottom: 1px solid var(--app-border);
+  background: var(--app-surface-elevated);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+.selection-format-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.selection-toolbar.is-linking .selection-format-row {
+  display: none;
+}
+.selection-link-row {
+  display: none;
+  padding: 0 4px;
+}
+.selection-toolbar.is-linking .selection-link-row {
+  display: block;
+}
+.selection-link-input {
+  width: 240px;
+  padding: 6px 8px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--leaf-radius-sm);
+  background: var(--app-surface);
+  color: var(--app-foreground);
+  font: 13px var(--app-font);
+}
+.selection-link-input:focus {
+  border-color: var(--leaf-accent, var(--app-border));
+  outline: none;
+}
+.selection-format {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--leaf-radius-sm);
+  background: none;
+  color: var(--app-foreground);
+  cursor: pointer;
+}
+.selection-format[hidden] {
+  display: none;
+}
+.selection-format svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+}
+.selection-format:hover {
+  background: var(--app-surface-muted);
+}
+/* Lit for a format the highlighted words already carry — the bar says what they
+   are as much as what they could be. */
+.selection-format.is-active {
+  color: var(--leaf-accent, var(--app-foreground));
+}
+.selection-format-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 5px;
+  background: var(--app-border);
+}
+.selection-toolbar:not(.has-block-formats) .selection-format-divider {
+  display: none;
 }
 .document-body blockquote {
   border-left: 0.25em solid var(--markdown-blockquote-border);

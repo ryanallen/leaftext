@@ -623,6 +623,34 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         resync_editing_state(reader.page(), &reader.workspace);
                     }
                 }
+                IpcCommand::MoveBlock { ranges, from, to } => {
+                    if apply_block_move(&mut reader.workspace, &ranges, from, to) {
+                        reader.render(ScrollIntent::Preserve);
+                        resync_editing_state(reader.page(), &reader.workspace);
+                    }
+                }
+                IpcCommand::PickImage { token } => {
+                    // The dialog blocks this thread, like Open's does. What comes
+                    // back is a destination for the document to hold, not a file
+                    // to copy: the picture stays where the user keeps it.
+                    if let Some(image) = pick_image_file() {
+                        let source = reader
+                            .workspace
+                            .active_path()
+                            .map(Path::to_path_buf)
+                            .unwrap_or_default();
+                        let destination = markdown_image_insert_destination(&image, &source);
+                        let alt = image
+                            .file_stem()
+                            .map(|stem| stem.to_string_lossy().into_owned())
+                            .unwrap_or_default();
+                        run_page_script(
+                            reader.page(),
+                            &image_picked_script(token, &destination, &alt),
+                            "Failed to hand the page the picked image",
+                        );
+                    }
+                }
                 IpcCommand::UndoEdit => {
                     // Pop the buffer back one edit, re-render, and resync so undoing
                     // the only edit also clears the Save button.

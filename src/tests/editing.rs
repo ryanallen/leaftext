@@ -125,6 +125,64 @@ fn replace_range_splices_and_clamps_safely() {
 }
 
 #[test]
+fn moving_a_block_rotates_the_text_and_leaves_the_separators_alone() {
+    let markdown = "# Title\n\nFirst.\n\nSecond.\n";
+    let mut edit = EditableDocument::new(
+        PathBuf::from("doc.md"),
+        SourceText::utf8(markdown.to_string()),
+    );
+    // The three blocks, as the reading view stamps them: heading, then two
+    // paragraphs. The blank lines between them are not in any range.
+    let ranges = [(0, 7), (9, 15), (17, 24)];
+
+    // Drag the last paragraph to the top: the texts rotate, the `\n\n` gaps and
+    // the trailing newline stay exactly where they were.
+    assert!(edit.move_blocks(&ranges, 2, 0));
+    assert_eq!(edit.text(), "Second.\n\n# Title\n\nFirst.\n");
+    assert!(edit.can_undo());
+
+    // One undo puts the whole move back — a drag is one edit, not three splices.
+    assert!(edit.undo());
+    assert_eq!(edit.text(), markdown);
+}
+
+#[test]
+fn moving_a_block_refuses_a_range_list_it_cannot_trust() {
+    let mut edit = EditableDocument::new(
+        PathBuf::from("doc.md"),
+        SourceText::utf8("# Title\n\nBody.\n".to_string()),
+    );
+    let good = [(0, 7), (9, 14)];
+
+    // A no-op, a slot that isn't there, and a run of one have nothing to move.
+    assert!(!edit.move_blocks(&good, 0, 0));
+    assert!(!edit.move_blocks(&good, 0, 9));
+    assert!(!edit.move_blocks(&[(0, 7)], 0, 0));
+    // Overlapping, out of order, and past the end of the buffer: a drifted map
+    // must not get to shred the file.
+    assert!(!edit.move_blocks(&[(0, 9), (5, 14)], 1, 0));
+    assert!(!edit.move_blocks(&[(9, 14), (0, 7)], 1, 0));
+    assert!(!edit.move_blocks(&[(0, 7), (9, 99)], 1, 0));
+    assert_eq!(edit.text(), "# Title\n\nBody.\n");
+    assert!(!edit.can_undo());
+}
+
+#[test]
+fn moving_a_field_in_a_structured_file_keeps_its_commas_in_place() {
+    // JSON separators live between the ranges, so rotating the values through
+    // their own slots is the one move that can't invalidate the syntax.
+    let json = "{\n  \"a\": 1,\n  \"b\": 2\n}\n";
+    let mut edit = EditableDocument::new(
+        PathBuf::from("doc.json"),
+        SourceText::utf8(json.to_string()),
+    );
+    let a = json.find("\"a\"").expect("key a is in the source");
+    let b = json.find("\"b\"").expect("key b is in the source");
+    assert!(edit.move_blocks(&[(a, a + 6), (b, b + 6)], 1, 0));
+    assert_eq!(edit.text(), "{\n  \"b\": 2,\n  \"a\": 1\n}\n");
+}
+
+#[test]
 fn undo_reverts_reading_view_edits_newest_first() {
     let markdown = "# Title\n\nBody.\n\n- [ ] task\n";
     let mut edit = EditableDocument::new(

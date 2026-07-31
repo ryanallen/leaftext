@@ -291,6 +291,22 @@ pub(crate) fn apply_block_edit(
     true
 }
 
+/// Seed the edit buffer, then drag-reorder a run of sibling blocks in it. One
+/// undo step, like any other reading-view edit. Returns whether the buffer moved
+/// (the caller re-renders when so); a range list the buffer can't trust moves
+/// nothing.
+pub(crate) fn apply_block_move(
+    workspace: &mut Workspace,
+    ranges: &[(usize, usize)],
+    from: usize,
+    to: usize,
+) -> bool {
+    let Some((_, edit)) = seeded_active_edit(workspace, "Move block") else {
+        return false;
+    };
+    edit.move_blocks(ranges, from, to)
+}
+
 /// Write the active buffer to disk for an auto-saving edit (a checkbox toggle):
 /// no Save-button round-trip. The version bump plus watcher-hash update keep our
 /// own write from bouncing back through the file watcher as an external change.
