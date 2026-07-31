@@ -77,9 +77,15 @@ function placeCaretInBlock(el, offset) {
 // captured when editing began (so a no-edit focus costs nothing). If the caret
 // already moved into another block, carry it across this commit's re-render
 // (adjusting for the splice's offset shift) so it isn't dumped out.
-function commitBlockEdit(el, text) {
-  const start = Number(el.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
+//
+// `range` overrides the block's own: a fenced code block edits the inside of its
+// fences, so what it writes back is narrower than the block.
+function commitBlockEdit(el, text, range) {
+  // A block the page has already replaced describes a buffer that has moved on —
+  // a re-render blurs it, and that blur must not splice yesterday's offsets.
+  if (!el.isConnected) return;
+  const start = range ? range.start : Number(el.dataset.srcStart);
+  const end = range ? range.end : Number(el.dataset.srcEnd);
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   if (text === el.__editBaseline) return;
   sendEditCommand({ command: 'editBlock', start, end, text });
@@ -567,15 +573,46 @@ function wireMarkdownEditable(el) {
   el.addEventListener('keydown', (event) => handleWysiwygKeydown(el, event));
 }
 
+// A fenced code block's inside, as offsets into `src`. The fences are what make it a
+// code block, so offering them for editing put one backspace between the reader and
+// a broken document. Null unless BOTH are found — this range is spliced verbatim, so
+// an indented or unterminated block falls back to editing the whole thing.
+function fencedCodeInnerSpan(src) {
+  const open = /^[ \t]*(`{3,}|~{3,})[^\n]*\n/.exec(src);
+  if (!open) return null;
+  const fence = open[1];
+  // Matched at the end so a fence drawn inside the code cannot be taken for the
+  // one that closes the block, and only by a run at least as long as the opener's.
+  const close = new RegExp('\\n[ \\t]*' + fence[0] + '{' + fence.length + ',}[ \\t]*$').exec(src);
+  if (!close) return null;
+  const from = open[0].length;
+  // close.index is the newline ending the last code line, which belongs to the
+  // separator. Below `from` it is the opener's own: an empty fence, no range to edit.
+  if (close.index < from) return null;
+  return { from, to: close.index };
+}
+
 // Wire `el` as a raw-source editor, for XML blocks and Markdown blocks that
 // don't round-trip WYSIWYG. The block swaps to its exact source on focus and
 // splices it back on blur; no change restores the rendered view, a real change
 // triggers a host re-render. Unlike a WYSIWYG block it is not an editing host up
 // front — `contenteditable` goes on at pointerdown, one block at a time.
 function wireSourceEditable(el) {
-  const start = Number(el.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  const blockStart = Number(el.dataset.srcStart);
+  const blockEnd = Number(el.dataset.srcEnd);
+  if (!Number.isFinite(blockStart) || !Number.isFinite(blockEnd)) return;
+  let start = blockStart;
+  let end = blockEnd;
+  if (el.dataset.blockKind === 'code_block') {
+    const src = sliceSourceBytes(currentDocumentSource, blockStart, blockEnd);
+    const span = fencedCodeInnerSpan(src);
+    // The span counts characters and the buffer counts bytes, and the code inside can
+    // be anything — so both ends are converted rather than assumed ASCII.
+    if (span) {
+      start = blockStart + utf8ByteLength(src.slice(0, span.from));
+      end = blockStart + utf8ByteLength(src.slice(0, span.to));
+    }
+  }
   el.addEventListener('pointerdown', (event) => {
     if (el.dataset.editingSource === 'true') return;
     // Let a link click navigate; source editing starts from a click on any
@@ -623,7 +660,7 @@ function wireSourceEditable(el) {
     // Hand the host re-render (leafReloadDocument) that same above-anchor: its own
     // top-visible capture would target this block while it is momentarily zero-height.
     pendingEditAnchor = aboveAnchor;
-    commitBlockEdit(el, text);
+    commitBlockEdit(el, text, { start, end });
     // The host re-renders the document from the buffer, which restores styling.
   });
 }

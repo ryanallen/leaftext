@@ -3134,12 +3134,14 @@ body:has(#readerToolbar:not([hidden])) {
   width: 18px;
   height: 18px;
 }
-.block-grip {
+/* Scoped like `.block-gutter button` above, or that rule's pointer outweighs the
+   grab whatever the order. The handle is for carrying, not for clicking. */
+.block-gutter .block-grip {
   width: 22px;
   height: 30px;
   cursor: grab;
 }
-.block-grip:active {
+.block-gutter .block-grip:active {
   cursor: grabbing;
 }
 .block-gutter .block-add,
@@ -3381,8 +3383,23 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 17px;
   height: 17px;
 }
-.selection-format:hover {
+/* The second H, drawn smaller. Same glyph at two sizes is the pair's whole
+   message — the size the words become. */
+.selection-format.is-small-heading svg {
+  width: 12px;
+  height: 12px;
+}
+.selection-format:hover:not(:disabled) {
   background: var(--app-surface-muted);
+}
+/* The kind the block already is: grayed, not pressable. Overrides the app-wide
+   disabled fill — in a floating bar a filled box reads as pressed, not unavailable. */
+.selection-format:disabled,
+.selection-format:disabled:hover {
+  border: 0;
+  background: none;
+  color: var(--app-muted-foreground);
+  cursor: default;
 }
 /* Lit for a format the highlighted words already carry — the bar says what they
    are as much as what they could be. */

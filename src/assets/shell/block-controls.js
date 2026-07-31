@@ -136,10 +136,9 @@ function blockGutterHoldsFocus(node) {
   return !!(blockGutter && node && blockGutter.contains(node));
 }
 
-// While the caret is in a block the gutter belongs to that block, and the pointer
-// does not get to move it. Hover aiming mid-sentence meant the controls chased the
-// mouse away from the words being typed — and every re-aim measured a page the
-// last one had just changed, which is why a small mouse move jumped whole lines.
+// True while a block holds the caret: it keeps the controls when the pointer leaves,
+// and no other gap is offered a click-to-insert line. Hover still moves the gutter
+// between blocks — freezing it meant an open document could not be reordered.
 function blockGutterFollowsCaret() {
   return !!(blockCaretBlock && blockCaretBlock.isConnected);
 }
@@ -282,10 +281,11 @@ function collapseBlockInsertRow() {
 // Point the gutter at `el`. An open insert row pins the gutter where it is: the
 // row's own buttons are what the pointer is heading for, and moving the gutter
 // out from under it would be the click that never lands.
-function aimBlockGutter(el) {
+function aimBlockGutter(el, fromMargin) {
   if (blockDrag || blockGutterExpanded) return;
-  // The line being typed in gets its plus on the line below instead.
-  if (el && el === blockCaretBlock && !blockIsEmpty(el)) {
+  // The line being typed in gets its plus below, so a new line is one click away.
+  // Not from the margin: over there the hand is reaching for the handle.
+  if (!fromMargin && el && el === blockCaretBlock && !blockIsEmpty(el)) {
     aimBlockGutterBelow(el);
     return;
   }
@@ -322,7 +322,7 @@ function blockGutterBlocks() {
 
 // Point the gutter at the space the pointer is in rather than at a block. Only
 // the plus: there is nothing here to drag.
-function aimBlockGutterAtGap(clientY) {
+function aimBlockGutterAtGap(clientY, fromMargin) {
   if (blockDrag || blockGutterExpanded) return;
   const blocks = blockGutterBlocks();
   let after = null;
@@ -332,7 +332,7 @@ function aimBlockGutterAtGap(clientY) {
     // Level with a block but outside it — the left margin, say. That is still
     // that block's line, not a gap.
     if (clientY >= rect.top && clientY <= rect.bottom) {
-      aimBlockGutter(el);
+      aimBlockGutter(el, fromMargin);
       return;
     }
     if (rect.bottom < clientY) after = el;
@@ -345,9 +345,13 @@ function aimBlockGutterAtGap(clientY) {
   const top = after ? after.getBoundingClientRect().bottom : 0;
   const bottom = before ? before.getBoundingClientRect().top : top + BLOCK_TRAIL_DROP * 2;
   if (after && before && bottom - top < BLOCK_GAP_MIN) {
-    aimBlockGutter(clientY - top < bottom - clientY ? after : before);
+    aimBlockGutter(clientY - top < bottom - clientY ? after : before, fromMargin);
     return;
   }
+  // Mid-edit the only space on offer is the one below the line being typed: a
+  // click-to-insert line over any other gap turns a click at those words into a
+  // blank line.
+  if (blockGutterFollowsCaret()) return;
   aimBlockGutterAtSpace(after, before);
 }
 
@@ -688,9 +692,6 @@ function beginBlockDrag(event) {
   const run = target && blockSiblingRun(target);
   const layout = app.querySelector('.reader-layout');
   if (!run || !layout) return;
-  // A block mid-edit has uncommitted text; moving its range before that text is
-  // in the buffer would move the old wording.
-  commitActiveEditingBlock();
   const from = run.elements.indexOf(target);
   const others = run.elements.filter((el) => el !== target);
   const layoutRect = layout.getBoundingClientRect();
@@ -738,6 +739,34 @@ function moveBlockDrag(event) {
   slideBlocksAside();
 }
 
+// Save the line being typed in, on the way to moving a block. At the drop and not
+// the grab: an edit re-renders the page, and a re-render mid-drag rebuilt the gutter
+// out from under the block being carried, so typing then dragging did nothing.
+function commitBeforeBlockMove() {
+  const active = document.activeElement;
+  if (!active || !active.__editingActive || !active.dataset) return null;
+  const start = Number(active.dataset.srcStart);
+  const end = Number(active.dataset.srcEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  const text = blockDomToMarkdown(active);
+  active.__editingActive = false;
+  if (text === active.__editBaseline) return null;
+  sendBlockSplice(active, start, end, text);
+  return { start, end, delta: utf8ByteLength(text) - (end - start) };
+}
+
+// The run's ranges in the buffer the save just wrote: the saved block takes its new
+// length and everything past it slides by the same delta. Exact, not estimated — a
+// drifted range list shreds a file, which is what move_blocks refuses.
+function rangesAfterCommit(ranges, saved) {
+  if (!saved) return ranges;
+  return ranges.map(([start, end]) => {
+    if (start === saved.start && end === saved.end) return [start, end + saved.delta];
+    if (start >= saved.end) return [start + saved.delta, end + saved.delta];
+    return [start, end];
+  });
+}
+
 function endBlockDrag(commit) {
   if (!blockDrag) return;
   const drag = blockDrag;
@@ -751,7 +780,8 @@ function endBlockDrag(commit) {
     hideBlockGutter();
     return;
   }
-  sendEditCommand({ command: 'moveBlock', ranges: drag.ranges, from: drag.from, to: drag.to });
+  const ranges = rangesAfterCommit(drag.ranges, commitBeforeBlockMove());
+  sendEditCommand({ command: 'moveBlock', ranges, from: drag.from, to: drag.to });
   hideBlockGutter();
 }
 
@@ -810,7 +840,7 @@ function bindBlockControls() {
   // block, or moving onto the plus would take the gutter away from under you.
   // Hovering the space between blocks aims it at that space instead.
   body.addEventListener('pointermove', (event) => {
-    if (blockDrag || blockGutterFollowsCaret()) return;
+    if (blockDrag) return;
     if (blockGutter.contains(event.target)) return;
     const el = event.target.closest ? event.target.closest('[data-src-start]') : null;
     if (el) aimBlockGutter(el);
@@ -821,7 +851,7 @@ function bindBlockControls() {
   // gutter and back for every block — the line the pointer is level with is
   // answer enough.
   layout.addEventListener('pointermove', (event) => {
-    if (blockDrag || blockGutterFollowsCaret()) return;
+    if (blockDrag) return;
     if (blockGutter.contains(event.target)) return;
     if (event.target.closest && event.target.closest('.document-body')) return;
     const bodyRect = body.getBoundingClientRect();
@@ -833,7 +863,7 @@ function bindBlockControls() {
     const underPage =
       event.clientY > bodyRect.bottom && event.clientX >= bodyRect.left && event.clientX <= bodyRect.right;
     if (!inMargin && !underPage) return;
-    aimBlockGutterAtGap(event.clientY);
+    aimBlockGutterAtGap(event.clientY, inMargin);
   });
   layout.addEventListener('pointerleave', () => {
     if (blockGutterExpanded || blockGutterFollowsCaret()) return;

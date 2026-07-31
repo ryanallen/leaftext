@@ -267,7 +267,88 @@ check('the page boots', () => {
 // splices that straight into the text it will write to disk. These are the
 // functions that work it out.
 if (booted) {
-  const { sourceSpliceSince, lineIndexAtByteOffset, byteOffsetAtLineIndex } = booted;
+  const { sourceSpliceSince, lineIndexAtByteOffset, byteOffsetAtLineIndex, rangesAfterCommit, fencedCodeInnerSpan } =
+    booted;
+
+  check('a fenced code block offers its inside and never its fences', () => {
+    // The reader edits the inside only, so the fences cannot be typed away. The
+    // span is spliced verbatim: a wrong end writes code over a fence.
+    const inside = (src) => {
+      const span = fencedCodeInnerSpan(src);
+      return span ? src.slice(span.from, span.to) : null;
+    };
+    const keeps = (src, want) => {
+      const got = inside(src);
+      if (got !== want) throw new Error(`${JSON.stringify(src)} -> ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`);
+      // Replacing the span must leave both fences standing.
+      if (got !== null) {
+        const span = fencedCodeInnerSpan(src);
+        const rebuilt = src.slice(0, span.from) + 'X' + src.slice(span.to);
+        if (!/^[ \t]*(`{3,}|~{3,})/.test(rebuilt) || !/(`{3,}|~{3,})[ \t]*$/.test(rebuilt)) {
+          throw new Error(`rewriting ${JSON.stringify(src)} broke a fence: ${JSON.stringify(rebuilt)}`);
+        }
+      }
+    };
+
+    keeps('```\ncode\n```', 'code');
+    keeps('```rust\nlet x = 1;\n```', 'let x = 1;'); // the language stays on the fence
+    keeps('```\n\n```', ''); // what the insert row writes: one empty line
+    keeps('```\na\nb\n```', 'a\nb'); // several lines
+    keeps('```\ncode\n\n```', 'code\n'); // a trailing blank line is code
+    keeps('~~~\ncode\n~~~', 'code'); // tildes
+    keeps('````\n```\n````', '```'); // a fence inside a longer fence
+    keeps('  ```\n  code\n  ```', '  code'); // indented, inside a list
+    keeps('```\ncafé 😀\n```', 'café 😀'); // multi-byte, where the offsets matter
+    keeps('    indented code', null); // no fences to hide
+    keeps('```\nunterminated', null); // no end to trust
+    keeps('```\n```', null); // no line inside to edit
+  });
+
+  check('a save before a block move shifts the ranges it moved', () => {
+    // Dragging a block after typing in one sends two edits: the save, then the
+    // move against the buffer the save wrote. Ranges that drift here reorder the
+    // wrong text, so the host refuses a list that is not sorted and disjoint.
+    const ranges = [
+      [0, 10],
+      [12, 20],
+      [22, 30],
+    ];
+    const same = (got, want) => {
+      if (JSON.stringify(got) !== JSON.stringify(want)) {
+        throw new Error(`got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`);
+      }
+    };
+    const sorted = (got) => {
+      let previousEnd = -1;
+      for (const [start, end] of got) {
+        if (start < previousEnd || end < start) throw new Error(`out of order: ${JSON.stringify(got)}`);
+        previousEnd = end;
+      }
+    };
+
+    same(rangesAfterCommit(ranges, null), ranges); // nothing was typed
+    // The middle block grew by 5: it keeps its start, and the one after it slides.
+    const grown = rangesAfterCommit(ranges, { start: 12, end: 20, delta: 5 });
+    same(grown, [
+      [0, 10],
+      [12, 25],
+      [27, 35],
+    ]);
+    sorted(grown);
+    // And shrank by 6.
+    const shrunk = rangesAfterCommit(ranges, { start: 12, end: 20, delta: -6 });
+    same(shrunk, [
+      [0, 10],
+      [12, 14],
+      [16, 24],
+    ]);
+    sorted(shrunk);
+    // A block edited outside the run counts too: one below it leaves the run
+    // alone, one above it slides the whole run.
+    same(rangesAfterCommit(ranges, { start: 40, end: 44, delta: 9 }), ranges);
+    const pushed = rangesAfterCommit([[12, 20]], { start: 0, end: 10, delta: 3 });
+    same(pushed, [[15, 23]]);
+  });
 
   check('an edit is described as the part that changed', () => {
     const apply = (previous, next) => {

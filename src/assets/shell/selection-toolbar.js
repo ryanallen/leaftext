@@ -4,9 +4,9 @@
 //
 // The inline buttons work on the DOM of a block that is already a live editor, so
 // bold is a `<strong>` the block's own blur commit serializes into `**` — one path
-// into the buffer, not a second one beside it. The block buttons (heading, quote)
-// are the exception: a block's KIND is source rather than markup, so those splice
-// the block's range the way Enter and Backspace already do.
+// into the buffer, not a second one beside it. The block buttons (text, the two
+// heading sizes, quote) are the exception: a block's KIND is source rather than
+// markup, so those splice the block's range the way Enter and Backspace already do.
 //
 // Only WYSIWYG Markdown blocks are offered anything. A raw-source block is showing
 // its own `**` while you edit it, and a bar that wrote a second pair over the
@@ -29,11 +29,17 @@ const INLINE_FORMATS = [
   { id: 'link', label: 'Link', icon: `{{LINK_ICON_SVG}}`, tag: 'a' },
 ];
 
-// The two block buttons. Offered only where the whole block is one of these
-// kinds, since each is written by rewriting that block's source from its text.
+// What the whole block can become, in the order the bar shows them. Each is written
+// by rewriting that block's source from its text.
+//
+// Four states, one button each, and the one the block already is grays out rather
+// than toggling: Text is the way out of a heading, and the size buttons only resize.
+// Pressing the size you are on and having the heading come off said the wrong thing.
 const BLOCK_FORMATS = [
-  { id: 'heading', label: 'Heading', icon: `{{HEADING_ICON_SVG}}` },
-  { id: 'quote', label: 'Quote', icon: `{{QUOTE_ICON_SVG}}` },
+  { id: 'text', label: 'Text', icon: `{{TEXT_ICON_SVG}}` },
+  { id: 'heading', label: 'Big heading', icon: `{{HEADING_ICON_SVG}}`, level: 2 },
+  { id: 'subheading', label: 'Small heading', icon: `{{HEADING_ICON_SVG}}`, level: 3, small: true },
+  { id: 'quote', label: 'Quote', icon: `{{QUOTE_ICON_SVG}}`, quote: true },
 ];
 const BLOCK_FORMAT_KINDS = new Set(['paragraph', 'heading', 'blockquote']);
 
@@ -121,11 +127,13 @@ function syncSelectionToolbar() {
   positionSelectionToolbar(range);
 }
 
-// Light the buttons the selection already answers to, and hide the block pair
-// where the block is not one of the kinds they rewrite.
+// Light the inline buttons the selection already answers to, gray the block button
+// the block already is, and hide the block row where the block is not one of the
+// kinds it rewrites.
 function markSelectionToolbarState() {
   const kind = selectionToolbarBlock.dataset.blockKind;
   const blockable = BLOCK_FORMAT_KINDS.has(kind);
+  const already = blockable ? currentBlockFormatId(selectionToolbarBlock, kind) : null;
   for (const [id, button] of selectionToolbarButtons) {
     const format = INLINE_FORMATS.find((item) => item.id === id);
     if (format) {
@@ -133,9 +141,30 @@ function markSelectionToolbarState() {
       continue;
     }
     button.hidden = !blockable;
-    button.classList.toggle('is-active', id === 'heading' ? kind === 'heading' : kind === 'blockquote');
+    button.disabled = id === already;
   }
   selectionToolbar.classList.toggle('has-block-formats', blockable);
+}
+
+// Which block button the highlighted block already is — the one thing the bar has
+// nothing to do, so it grays out.
+function currentBlockFormatId(block, kind) {
+  if (kind === 'blockquote') return 'quote';
+  if (kind !== 'heading') return 'text';
+  return headingButtonLevel(blockHeadingLevel(block)) === 2 ? 'heading' : 'subheading';
+}
+
+// A heading's level, read from the tag the renderer chose — the same place the
+// serializer takes it from. 0 for anything that is not a heading.
+function blockHeadingLevel(block) {
+  return Number(block.tagName.substring(1)) || 0;
+}
+
+// Which of the two H's a heading counts as: six Markdown levels, two sizes, so a
+// document's own `#` rounds to the big one and anything past `###` to the small one.
+// Rounding only decides which button grays — no level is rewritten by being shown.
+function headingButtonLevel(level) {
+  return level <= 2 ? 2 : 3;
 }
 
 function selectionFormatActive(format) {
@@ -288,31 +317,30 @@ function commitSelectionLink() {
 }
 
 // Rewrite the block as another kind. Its text comes back through the same
-// serializer the blur commit uses, stripped of the markers the old kind carried,
-// so switching between kinds never stacks one on top of another. Pressing the
-// button the block already answers to puts it back to a plain paragraph.
-function applyBlockFormat(id) {
+// serializer the blur commit uses, stripped of the markers the old kind carried, so
+// switching between kinds never stacks one on top of another — and the button for
+// the kind it already is is disabled, so there is no toggle to reason about.
+function applyBlockFormat(format) {
   const block = selectionToolbarBlock;
   if (!block) return;
   const start = Number(block.dataset.srcStart);
   const end = Number(block.dataset.srcEnd);
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
-  const kind = block.dataset.blockKind;
   const body = blockBodyMarkdown(block);
   hideSelectionToolbar();
   if (!body) return;
   let text;
-  if (id === 'heading') {
+  if (format.level) {
     // A heading is one line, so a multi-line block folds into one becoming one.
-    text = kind === 'heading' ? body : '## ' + body.replace(/\s*\n+\s*/g, ' ');
+    text = '#'.repeat(format.level) + ' ' + body.replace(/\s*\n+\s*/g, ' ');
+  } else if (format.quote) {
+    text = body
+      .split('\n')
+      .map((line) => ('> ' + line).trimEnd())
+      .join('\n');
   } else {
-    text =
-      kind === 'blockquote'
-        ? body
-        : body
-            .split('\n')
-            .map((line) => ('> ' + line).trimEnd())
-            .join('\n');
+    // Text: the markers came off with the body, so there is nothing to add back.
+    text = body;
   }
   sendBlockSplice(block, start, end, text);
   setPendingCaret({ srcStart: start, textOffset: 0 });
@@ -342,7 +370,7 @@ function syncSelectionToolbarSoon() {
 function selectionToolbarButton(format, onPress) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'selection-format';
+  button.className = format.small ? 'selection-format is-small-heading' : 'selection-format';
   button.title = format.label;
   button.setAttribute('aria-label', format.label);
   button.innerHTML = format.icon;
@@ -392,7 +420,7 @@ function bindSelectionToolbar() {
   divider.className = 'selection-format-divider';
   selectionToolbarRow.appendChild(divider);
   for (const format of BLOCK_FORMATS) {
-    const button = selectionToolbarButton(format, () => applyBlockFormat(format.id));
+    const button = selectionToolbarButton(format, () => applyBlockFormat(format));
     selectionToolbarButtons.set(format.id, button);
     selectionToolbarRow.appendChild(button);
   }
