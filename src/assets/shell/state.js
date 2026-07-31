@@ -71,6 +71,12 @@ let pendingReadingSrcOffset = null;
 // below the edge (which read as an unwanted little scroll-down). Consumed by the
 // next render in either direction.
 let pendingViewAtTop = false;
+// Where each view was when the toggle left it, and where the toggle put it. Every
+// position the toggle re-derives rounds back to a block or line start, so a round
+// trip loses a little and repeated toggling walks up the document; a view that
+// hasn't moved since it landed gets its exact pixel back instead. One document at
+// a time, dropped when the file or its text changes.
+let viewHandoff = null;
 
 // ---- reading-view editing (reading-edits.js) -------------------------------
 

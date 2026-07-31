@@ -54,7 +54,21 @@ function renderState() {
     // the code view was scrolled to. This wins over the reset-to-top the
     // host's Reset intent would otherwise run, and doesn't depend on the racy
     // fraction hand-off.
-    if (pendingViewAtTop) {
+    const exactRestore = takeExactViewRestore(state.document.path || activeDocumentPath());
+    if (exactRestore) {
+      // The code view never moved, so take the pixel back rather than re-derive it
+      // from a block — that rounds backwards and walks up over repeated toggles.
+      pendingViewAtTop = false;
+      pendingReadingSrcOffset = null;
+      pendingViewScrollFraction = null;
+      resetReaderScrollOnNextRender = false;
+      window.requestAnimationFrame(() => {
+        setReaderScrollTop(exactRestore.readerScrollTop);
+        recordReaderLanded();
+        readerScrollAnchor = captureReaderScrollAnchor();
+        updateMinimapViewport();
+      });
+    } else if (pendingViewAtTop) {
       // Toggled from the very top of the code view: land flush at the reader's
       // content start, not aligned on the first block below its top padding.
       pendingViewAtTop = false;
@@ -65,11 +79,17 @@ function renderState() {
       const srcOffset = pendingReadingSrcOffset;
       pendingReadingSrcOffset = null;
       resetReaderScrollOnNextRender = false;
+      // Keep the fraction only as this landing's fallback; a later unrelated
+      // render must not inherit it and scroll a fresh document part-way down.
+      const fallbackFraction = pendingViewScrollFraction;
+      pendingViewScrollFraction = null;
       window.requestAnimationFrame(() => {
         if (!scrollReadingToSrcOffset(srcOffset)) {
+          pendingViewScrollFraction = fallbackFraction;
           resetReaderScrollToContentStart();
           return;
         }
+        recordReaderLanded();
         readerScrollAnchor = captureReaderScrollAnchor();
         updateMinimapViewport();
       });

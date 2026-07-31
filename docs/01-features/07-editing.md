@@ -13,6 +13,7 @@ Leaf Text is reading-first, but it is also editable. You can edit **in the readi
 | Interactive checkboxes | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | Undo | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits |
 | Code view | Toggle the rendered page to the raw source and back |
+| Your place is kept | Toggling between the two views [holds your position](#code-view), and toggling back and forth returns you to the exact spot |
 | Highlighting | The source is colored in the active [theme](06-themes.md)'s syntax colors — Markdown, XML, JSON, and YAML; [email](01-rendering.md#email-eml) source shows as plain text |
 | Line numbers | A gutter numbers each source line, staying pinned when long lines wrap |
 | Wrapped lines | Long lines wrap; the code view never scrolls sideways |
@@ -65,6 +66,7 @@ Opening another document while you are in the source view opens **that** documen
 - Long lines wrap instead of scrolling sideways, and the gutter numbers *source* lines — a wrapped line keeps one number, pinned to its first row. The gutter widens to fit the highest number in the file, and the numbers stand clear of the page's left border rather than against it.
 - The rail on the right is the editor's own [minimap](04-minimap.md#the-code-views-minimap): a scaled drawing of the source, with the same viewport box the reading view's rail uses. Drag the box or click the rail to move. It stands on the window's textured chrome, not on the page — the page's right border is the line between them.
 - Toggling keeps your place: the code view opens on the source line of the block you were reading, and toggling back lands the reading view on that same block. Switching to another tab and back does too — a tab left in the code view comes back in the code view, scrolled to where you left it.
+- **Toggling back and forth stays put.** Working out where you are in the other view can only be approximate — the two views wrap the same file to different heights, so a position has to be rounded to the nearest block or line, and rounding the same place twice does not return it unchanged. So when you toggle away and straight back without scrolling in between, the view you return to takes back the exact position it handed over, rather than a position worked out a second time. Scroll while you are there and the block-for-line landing takes over again, which is what you want then.
 
 ## Editing the source
 

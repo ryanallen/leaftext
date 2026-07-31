@@ -159,13 +159,26 @@ function saveActiveDocument() {
   send({ command: 'saveDocument' });
 }
 
-// How far down the reader shell is scrolled, as a 0..1 fraction of its
-// scrollable range. Approximate by design — the two views wrap differently —
-// but it keeps "top is top" and "middle is middle" across the toggle.
+// How far down the active view is scrolled, as a 0..1 fraction of its scrollable
+// range. Approximate by design — the two views wrap differently — but it keeps
+// "top is top" and "middle is middle" across the toggle. Monaco scrolls itself and
+// the shell around it doesn't, so in the code view only Monaco knows.
 function viewScrollFraction() {
+  if (codeViewActive && monacoEditor) {
+    const scrollable = monacoEditor.getScrollHeight() - monacoEditor.getLayoutInfo().height;
+    if (scrollable <= 0) return 0;
+    return Math.min(1, Math.max(0, monacoEditor.getScrollTop() / scrollable));
+  }
   const scrollable = app.scrollHeight - app.clientHeight;
   if (scrollable <= 0) return 0;
   return Math.min(1, Math.max(0, app.scrollTop / scrollable));
+}
+
+// Whether the active view sits at its very top. Same split as above: asking the
+// shell in the code view always says yes, which sent every toggle back to the top.
+function viewAtTop() {
+  if (codeViewActive && monacoEditor) return monacoEditor.getScrollTop() <= 1;
+  return app.scrollTop <= 1;
 }
 
 // The source byte offset of the block at the top of the reading viewport, or
@@ -220,6 +233,50 @@ function topVisibleCodeLineIndex() {
   return ranges && ranges.length ? ranges[0].startLineNumber - 1 : null;
 }
 
+// The handoff record for `path`, started fresh when the document changes.
+function viewHandoffFor(path) {
+  if (!viewHandoff || viewHandoff.path !== path) {
+    viewHandoff = {
+      path,
+      // Where each view sat when the toggle left it.
+      readerScrollTop: null,
+      codeScrollTop: null,
+      // And where the toggle put it. Still equal means nobody scrolled it since.
+      readerLanded: null,
+      codeLanded: null,
+      // Armed by the toggle, consumed by the landing render.
+      restoreExact: false,
+    };
+  }
+  return viewHandoff;
+}
+
+// A saved position is spent once the text under it moves.
+function forgetViewHandoff() {
+  viewHandoff = null;
+}
+
+// Read and clear the arm flag: one landing per toggle, so a live reload or a tab
+// switch can't reuse it.
+function takeExactViewRestore(path) {
+  const handoff = viewHandoff && viewHandoff.path === path ? viewHandoff : null;
+  if (!handoff || !handoff.restoreExact) return null;
+  handoff.restoreExact = false;
+  return handoff;
+}
+
+// Whether a view is still where the toggle put it. 1px of slack: the landing
+// clamps and rounds, so the readback is not always the value written.
+function viewStillLanded(now, landed) {
+  return now != null && landed != null && Math.abs(now - landed) <= 1;
+}
+
+// Note where the reading view came to rest, whichever landing put it there.
+function recordReaderLanded() {
+  const path = activeDocumentPath();
+  if (path) viewHandoffFor(path).readerLanded = app.scrollTop;
+}
+
 // Scroll the reading view so the block containing `srcOffset` sits at the top
 // edge: the deterministic landing for leaving the code view. Falls back to
 // no-op (caller keeps its own fallback) when the block map is missing.
@@ -246,23 +303,33 @@ function scrollReadingToSrcOffset(srcOffset) {
 // across. Named rather than inline on a listener: the floating bar's view group
 // calls it, and so did the button that used to live in the app bar.
 function toggleCodeView() {
-    if (!activeDocumentPath()) return;
+    const path = activeDocumentPath();
+    if (!path) return;
+    const handoff = viewHandoffFor(path);
     // Carry the current position across the toggle; the destination view's
     // render consumes it and lands at the same relative spot.
     pendingViewScrollFraction = viewScrollFraction();
     // At the very top, land flush at the top of the other view — don't align the
     // first block below the edge, which reads as a stray scroll-down.
-    pendingViewAtTop = app.scrollTop <= 1;
+    pendingViewAtTop = viewAtTop();
     // Entering the code view: remember which source line the reader is on, so
     // it opens there. Leaving: remember which line the code view is on, so the
     // reading view lands on that block. The fraction stays as the fallback.
+    // Either way, note where this view is now, and whether the view we're going
+    // back to can simply have its own last pixel returned — see viewHandoffFor.
     if (codeViewActive) {
       pendingCodeViewSrcOffset = null;
+      handoff.codeScrollTop = monacoEditor ? monacoEditor.getScrollTop() : null;
+      handoff.restoreExact =
+        handoff.readerScrollTop != null && viewStillLanded(handoff.codeScrollTop, handoff.codeLanded);
       const lineIndex = topVisibleCodeLineIndex();
       syncCodeViewText();
       pendingReadingSrcOffset = lineIndex == null ? null : byteOffsetAtLineIndex(codeViewText, lineIndex);
     } else {
       pendingReadingSrcOffset = null;
+      handoff.readerScrollTop = graphViewOpen ? null : app.scrollTop;
+      handoff.restoreExact =
+        handoff.codeScrollTop != null && viewStillLanded(handoff.readerScrollTop, handoff.readerLanded);
       // Coming from the map there is no reading position to carry, and asking for
       // one measures a document that is not on screen.
       pendingCodeViewSrcOffset = graphViewOpen ? null : topReadingBlockSourceOffset();
@@ -688,6 +755,8 @@ function createMonacoEditor(monaco, container, state, text) {
     codeViewText = monacoEditor.getValue();
     const path = activeDocumentPath();
     if (path) setDirtyState(path, true);
+    // The saved pixel pair described the old text; an edit moves what is under it.
+    forgetViewHandoff();
     scheduleSourceUpdate();
   });
   // Keep the wrap gap in step with the width: set it now, then on every relayout.
@@ -710,10 +779,16 @@ function createMonacoEditor(monaco, container, state, text) {
   }
   const srcOffset = pendingCodeViewSrcOffset;
   pendingCodeViewSrcOffset = null;
-  if (srcOffset != null && !pendingViewAtTop) {
+  const exact = takeExactViewRestore(activeDocumentPath());
+  if (exact) {
+    // The reader never moved, so take the pixel back rather than re-derive it.
+    monacoEditor.setScrollTop(exact.codeScrollTop);
+  } else if (srcOffset != null && !pendingViewAtTop) {
     const lineIndex = lineIndexAtByteOffset(text, srcOffset);
     monacoEditor.revealLineNearTop(lineIndex + 1);
   }
+  // Read back where it settled, not what was asked for: the landing can clamp.
+  viewHandoffFor(activeDocumentPath()).codeLanded = monacoEditor.getScrollTop();
   pendingViewAtTop = false;
   pendingViewScrollFraction = null;
   // Typing help: completions, hover, and the broken-link pass (code-intel.js).

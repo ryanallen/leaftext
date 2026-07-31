@@ -431,6 +431,7 @@ function resetReaderScrollToContentStart() {
     } else {
       setReaderScrollTop(content.topOffset);
     }
+    recordReaderLanded();
     readerScrollAnchor = captureReaderScrollAnchor();
     updateMinimapViewport();
   });
