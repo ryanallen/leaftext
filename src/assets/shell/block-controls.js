@@ -162,22 +162,21 @@ function hideBlockGutter() {
 // the gap, NOT a box in the flow: a real element there re-lays out the page every
 // time the gutter moves, and a page that grows and shrinks a line while somebody
 // is mid-sentence is the whole of the jumping. This one costs no layout at all.
-function openBlockGapLine(after, before) {
-  if (blockGapLine && blockGapLine.__after === after && blockGapLine.__before === before) return;
+function openBlockGapLine(gap) {
+  if (blockGapLine && sameBlockGap(blockGapLine.__gap, gap)) return;
   closeBlockGapLine();
   const layout = app.querySelector('.reader-layout');
-  if (!layout || !after) return;
+  if (!layout || !gap.after) return;
   const line = document.createElement('div');
   line.className = 'block-gap-line';
   line.setAttribute('aria-hidden', 'true');
-  line.__after = after;
-  line.__before = before;
+  line.__gap = gap;
   // Clicking the space is the other way of saying it: body text, starting here,
   // with whatever is being typed above saved on the way — no Enter, no clicking
   // out first.
   line.addEventListener('mousedown', (event) => {
     event.preventDefault();
-    const host = after;
+    const host = gap.after;
     hideBlockGutter();
     openLineBelow(host);
   });
@@ -186,20 +185,29 @@ function openBlockGapLine(after, before) {
   positionBlockGapLine();
 }
 
-// Where the line goes, in client coordinates. Between two blocks that is the gap
-// itself. Under the last one there is no gap, only page — so rather than point at
-// the middle of the emptiness, work out where the new line will actually be: one
-// margin below the block, one line tall. That is what the plus never lined up
-// with, and why clicking the space landed the caret somewhere else.
-function blockGapSpan(after, before) {
-  if (!after) {
-    const bottom = before.getBoundingClientRect().top;
+// The same space: the two things it stands between, whatever they are.
+function sameBlockGap(a, b) {
+  return !!a && !!b && a.above === b.above && a.below === b.below;
+}
+
+// Where the line goes, in client coordinates. Measured from `above` and `below` —
+// whatever actually stands there, the outline and the pager included — so a line is
+// never offered across something the page drew rather than the document.
+//
+// Under the last thing on the page there is no gap, only page, so rather than point
+// at the middle of the emptiness work out where the new line will really be: one
+// margin down, one line tall. Pointing at the emptiness is what landed the caret
+// somewhere else.
+function blockGapSpan(gap) {
+  const { above, below } = gap;
+  if (!above) {
+    const bottom = below.getBoundingClientRect().top;
     return { top: bottom - BLOCK_TRAIL_DROP * 2, bottom };
   }
-  const top = after.getBoundingClientRect().bottom;
-  if (before) return { top, bottom: before.getBoundingClientRect().top };
+  const top = above.getBoundingClientRect().bottom;
+  if (below) return { top, bottom: below.getBoundingClientRect().top };
   const body = app.querySelector('.document-body');
-  const margin = parseFloat(window.getComputedStyle(after).marginBottom) || 0;
+  const margin = parseFloat(window.getComputedStyle(above).marginBottom) || 0;
   const line = (body && parseFloat(window.getComputedStyle(body).lineHeight)) || BLOCK_TRAIL_DROP * 2;
   return { top: top + margin, bottom: top + margin + line };
 }
@@ -208,17 +216,24 @@ function positionBlockGapLine() {
   const line = blockGapLine;
   const layout = app.querySelector('.reader-layout');
   const body = app.querySelector('.document-body');
-  if (!line || !layout || !body || !line.__after.isConnected) return;
+  if (!line || !layout || !body || !blockGapStanding(line.__gap)) return;
   const layoutRect = layout.getBoundingClientRect();
   const bodyRect = body.getBoundingClientRect();
-  const span = blockGapSpan(line.__after, line.__before);
-  // Clickable from the block above down to the foot of the new line: the margin
+  const span = blockGapSpan(line.__gap);
+  // Clickable from the thing above down to the foot of the new line: the margin
   // over the line belongs to the line, and aiming for a bare gap is fiddly.
-  const top = Math.min(span.top, line.__after.getBoundingClientRect().bottom);
+  const top = Math.min(span.top, line.__gap.above.getBoundingClientRect().bottom);
   line.style.left = bodyRect.left - layoutRect.left + 'px';
   line.style.width = bodyRect.width + 'px';
   line.style.top = top - layoutRect.top + 'px';
   line.style.height = Math.max(BLOCK_GAP_MIN, span.bottom - top) + 'px';
+}
+
+// Whether the space still exists: both ends still on the page, and something above to
+// measure from.
+function blockGapStanding(gap) {
+  if (!gap || !gap.above || !gap.above.isConnected) return false;
+  return !gap.below || gap.below.isConnected;
 }
 
 // Start a new line under `after`. A block mid-edit saves first and reopens the
@@ -305,80 +320,112 @@ function aimBlockGutter(el, fromMargin) {
   positionBlockGutter();
 }
 
-// The document's top-level blocks, skipping the ones that exist only in the DOM:
-// a blank line waiting for its first keystroke holds no source, so a gap beside it
-// has no offset to be written at.
-function blockGutterBlocks() {
+// Everything standing in the body, whether the document put it there or the page did.
+// The outline and the pager hold no source range, but they take up room — a gap
+// measured as though they were not there laid a click-to-insert line across the
+// outline, and the click that should have opened it started a new line instead.
+function blockGutterOccupants() {
   const body = app.querySelector('.document-body');
   if (!body) return [];
-  return Array.from(body.children).filter(
-    (el) =>
-      el.dataset &&
-      el.dataset.srcStart != null &&
-      el.dataset.srcEnd != null &&
-      Number(el.dataset.srcEnd) > Number(el.dataset.srcStart),
-  );
+  return Array.from(body.children).filter((el) => {
+    const rect = el.getBoundingClientRect();
+    return rect.bottom > rect.top;
+  });
+}
+
+// Whether the gutter has anything to say about this element at all. A range, even an
+// empty one, means the document put it here; no range means the page did.
+function blockHasRange(el) {
+  return !!(el.dataset && el.dataset.srcStart != null && el.dataset.srcEnd != null);
+}
+
+// A block a new line can be written beside. A zero-length range is a block that exists
+// only in the DOM — a blank line waiting for its first keystroke — with no offset in
+// the buffer to write at.
+function blockHasSource(el) {
+  return blockHasRange(el) && Number(el.dataset.srcEnd) > Number(el.dataset.srcStart);
+}
+
+// The nearest block with source, searching out from `index` in one direction.
+function nearestSourceBlock(occupants, index, step) {
+  for (let i = index; i >= 0 && i < occupants.length; i += step) {
+    if (blockHasSource(occupants[i])) return occupants[i];
+  }
+  return null;
 }
 
 // Point the gutter at the space the pointer is in rather than at a block. Only
 // the plus: there is nothing here to drag.
 function aimBlockGutterAtGap(clientY, fromMargin) {
   if (blockDrag || blockGutterExpanded) return;
-  const blocks = blockGutterBlocks();
-  let after = null;
-  let before = null;
-  for (const el of blocks) {
-    const rect = el.getBoundingClientRect();
-    // Level with a block but outside it — the left margin, say. That is still
-    // that block's line, not a gap.
+  const occupants = blockGutterOccupants();
+  let aboveIndex = -1;
+  for (let i = 0; i < occupants.length; i += 1) {
+    const rect = occupants[i].getBoundingClientRect();
+    // Level with something, even out in the margin: that is its line, not a gap.
+    // Something the page drew has nothing to offer, and nothing may be laid over it —
+    // an overlay across the outline is what stopped the outline opening.
     if (clientY >= rect.top && clientY <= rect.bottom) {
-      aimBlockGutter(el, fromMargin);
+      if (blockHasRange(occupants[i])) aimBlockGutter(occupants[i], fromMargin);
+      else hideBlockGutter();
       return;
     }
-    if (rect.bottom < clientY) after = el;
-    else {
-      before = el;
-      break;
-    }
+    if (rect.bottom < clientY) aboveIndex = i;
+    else break;
   }
-  if (!after && !before) return;
-  const top = after ? after.getBoundingClientRect().bottom : 0;
-  const bottom = before ? before.getBoundingClientRect().top : top + BLOCK_TRAIL_DROP * 2;
-  if (after && before && bottom - top < BLOCK_GAP_MIN) {
-    aimBlockGutter(clientY - top < bottom - clientY ? after : before, fromMargin);
+  // The space itself is bounded by its real neighbors; the new line is written beside
+  // the nearest block that has a range to write at, which may be further out.
+  const gap = {
+    above: aboveIndex >= 0 ? occupants[aboveIndex] : null,
+    below: occupants[aboveIndex + 1] || null,
+    after: nearestSourceBlock(occupants, aboveIndex, -1),
+    before: nearestSourceBlock(occupants, aboveIndex + 1, 1),
+  };
+  if (!gap.above && !gap.below) return;
+  const span = blockGapSpan(gap);
+  if (gap.above && gap.below && span.bottom - span.top < BLOCK_GAP_MIN) {
+    const nearer = clientY - span.top < span.bottom - clientY ? gap.above : gap.below;
+    if (blockHasRange(nearer)) aimBlockGutter(nearer, fromMargin);
+    else hideBlockGutter();
     return;
   }
   // Mid-edit the only space on offer is the one below the line being typed: a
   // click-to-insert line over any other gap turns a click at those words into a
   // blank line.
   if (blockGutterFollowsCaret()) return;
-  aimBlockGutterAtSpace(after, before);
+  aimBlockGutterAtSpace(gap);
 }
 
 // The space below the line being typed in: the plus waits there, so pressing it
 // saves this line and starts the next in one go.
 function aimBlockGutterBelow(el) {
-  let before = el.nextElementSibling;
-  while (before && before.dataset.srcStart == null) {
-    before = before.nextElementSibling;
+  let below = el.nextElementSibling;
+  while (below && below.getBoundingClientRect().bottom <= below.getBoundingClientRect().top) {
+    below = below.nextElementSibling;
   }
-  aimBlockGutterAtSpace(el, before);
+  let before = below;
+  while (before && !blockHasSource(before)) before = before.nextElementSibling;
+  aimBlockGutterAtSpace({ above: el, below: below || null, after: el, before: before || null });
 }
 
 // Point the gutter at the space between two blocks, and make that space
 // clickable. Only the plus: there is nothing here to drag.
-function aimBlockGutterAtSpace(after, before) {
-  if (blockGutterGap && blockGutterGap.after === after && blockGutterGap.before === before) {
+function aimBlockGutterAtSpace(gap) {
+  if (sameBlockGap(blockGutterGap, gap)) {
     positionBlockGutter();
     return;
   }
-  if (!blockInsertOptions(after || before).length) {
+  if (!gap.after && !gap.before) {
+    hideBlockGutter();
+    return;
+  }
+  if (!blockInsertOptions(gap.after || gap.before).length) {
     hideBlockGutter();
     return;
   }
   blockGutterTarget = null;
-  blockGutterGap = { after, before };
-  openBlockGapLine(after, before);
+  blockGutterGap = gap;
+  openBlockGapLine(gap);
   blockGutterGrip.hidden = true;
   blockGutterAdd.hidden = false;
   blockGutter.hidden = false;
@@ -412,9 +459,8 @@ function positionBlockGutter() {
 // is offering to fill. Null once whatever it was aimed at has left the page.
 function blockGutterAnchorY() {
   if (blockGutterGap) {
-    const { after, before } = blockGutterGap;
-    if ((after && !after.isConnected) || (before && !before.isConnected)) return null;
-    const span = blockGapSpan(after, before);
+    if (!blockGapStanding(blockGutterGap)) return null;
+    const span = blockGapSpan(blockGutterGap);
     return (span.top + span.bottom) / 2;
   }
   const target = blockGutterTarget;
@@ -617,13 +663,7 @@ function blockSiblingRun(target) {
   // waiting for its first keystroke. It holds no text to drag and contributes no
   // source, so it is left out of the run rather than allowed to invalidate it;
   // `target` then fails the membership test below and gets no handle.
-  const elements = Array.from(parent.children).filter(
-    (el) =>
-      el.dataset &&
-      el.dataset.srcStart != null &&
-      el.dataset.srcEnd != null &&
-      Number(el.dataset.srcEnd) > Number(el.dataset.srcStart),
-  );
+  const elements = Array.from(parent.children).filter(blockHasSource);
   if (elements.length < 2 || !elements.includes(target)) return null;
   const ranges = [];
   let previousEnd = -1;

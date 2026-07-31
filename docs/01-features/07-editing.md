@@ -68,6 +68,7 @@ The plus stands on empty lines, never on a line that already says something — 
 - **On a blank line**, the plus is right there.
 - **While you are typing**, it waits on the line below. Press it to save the line you are on and choose what the next one is, in one go — no `Enter`, no clicking out first. Clicking that empty space instead just starts typing there, as body text.
 - **Between any two blocks**, hover the space and the plus appears in it. Clicking the space starts a line there too.
+- **Never over something the page drew.** The [outline](02-navigation.md#outline) and the pager are not part of your document, so no clickable space is offered across them — clicking the outline opens the outline, unlocked or not.
 
 Press it and a row of kinds fans out over the empty line:
 

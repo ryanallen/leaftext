@@ -109,11 +109,6 @@ pub(crate) enum GithubToken {
         number: String,
         text: String,
     },
-    Commit {
-        owner: String,
-        repo: String,
-        hash: String,
-    },
     Mention {
         text: String,
     },
@@ -159,9 +154,7 @@ pub(crate) fn next_github_token(
                 ':' => emoji_token(tail),
                 '@' => mention_token(tail),
                 '#' => issue_token(tail, repository),
-                'A'..='Z' | 'a'..='z' | '0'..='9' => {
-                    issue_token(tail, repository).or_else(|| commit_token(tail, repository))
-                }
+                'A'..='Z' | 'a'..='z' | '0'..='9' => issue_token(tail, repository),
                 _ => None,
             }?;
             Some((index, index + token_text_len(&token), token))
@@ -172,7 +165,6 @@ pub(crate) fn next_github_token(
 pub(crate) fn token_text_len(token: &GithubToken) -> usize {
     match token {
         GithubToken::Issue { text, .. } => text.len(),
-        GithubToken::Commit { hash, .. } => hash.len(),
         GithubToken::Mention { text } => text.len(),
         GithubToken::Emoji { shortcode, .. } => shortcode.len(),
     }
@@ -267,32 +259,6 @@ pub(crate) fn issue_token_with_context(
     })
 }
 
-pub(crate) fn commit_token(
-    text: &str,
-    repository: Option<&RepositoryContext>,
-) -> Option<GithubToken> {
-    let repository = repository?;
-    let hash_len = text
-        .chars()
-        .take_while(|char| char.is_ascii_hexdigit())
-        .count();
-    if hash_len != 7 && hash_len != 40 {
-        return None;
-    }
-    let hash = &text[..hash_len];
-    if !hash.chars().any(|char| char.is_ascii_alphabetic())
-        || !is_token_boundary(text[hash_len..].chars().next())
-    {
-        return None;
-    }
-
-    Some(GithubToken::Commit {
-        owner: repository.owner.clone(),
-        repo: repository.repo.clone(),
-        hash: hash.to_string(),
-    })
-}
-
 pub(crate) fn take_identifier(text: &str) -> Option<usize> {
     let mut end = 0;
     for (index, char) in text.char_indices() {
@@ -346,13 +312,6 @@ pub(crate) fn render_github_token(token: &GithubToken) -> String {
             encode_double_quoted_attribute(repo),
             encode_double_quoted_attribute(number),
             encode_text(text)
-        ),
-        GithubToken::Commit { owner, repo, hash } => format!(
-            r#"<a class="github-ref commit-ref" href="https://github.com/{}/{}/commit/{}"><code>{}</code></a>"#,
-            encode_double_quoted_attribute(owner),
-            encode_double_quoted_attribute(repo),
-            encode_double_quoted_attribute(hash),
-            encode_text(hash)
         ),
         GithubToken::Mention { text } => format!(
             r#"<span class="github-mention">{}</span>"#,

@@ -3,7 +3,7 @@
 use super::*;
 
 #[test]
-fn renders_github_issue_pull_request_and_commit_references_with_context() {
+fn renders_github_issue_and_pull_request_references_with_context() {
     let markdown = "Fixes #123, GH-456, ryanallen/leaf#789, and a1b2c3d.";
 
     let rendered = render_markdown_document(markdown, "README.md");
@@ -20,10 +20,22 @@ fn renders_github_issue_pull_request_and_commit_references_with_context() {
         &rendered.html,
         r#"<a class="github-ref issue-ref" href="https://github.com/ryanallen/leaf/issues/789" rel="noopener noreferrer">ryanallen/leaf#789</a>"#,
     );
+}
+
+#[test]
+fn leaves_bare_hex_runs_alone_instead_of_linking_them_as_commits() {
+    // Hex is too ordinary to claim: `f0f0f0f` is a color, not a commit.
+    let markdown = "Colors f0f0f0f and ffffff, plus a1b2c3d and \
+         0123456789abcdef0123456789abcdef01234567.";
+
+    let rendered = render_markdown_document(markdown, "README.md");
+
     assert_contains(
         &rendered.html,
-        r#"<a class="github-ref commit-ref" href="https://github.com/ryanallen/leaftext/commit/a1b2c3d" rel="noopener noreferrer"><code>a1b2c3d</code></a>"#,
+        "Colors f0f0f0f and ffffff, plus a1b2c3d and 0123456789abcdef0123456789abcdef01234567.",
     );
+    assert!(!rendered.html.contains("/commit/"));
+    assert!(!rendered.html.contains("commit-ref"));
 }
 
 #[test]

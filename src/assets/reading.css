@@ -2986,12 +2986,6 @@ body:has(#readerToolbar:not([hidden])) {
   padding: 0.08em 0.42em;
   text-decoration: none;
 }
-.document-body .commit-ref code {
-  background: transparent;
-  color: inherit;
-  font-size: 0.95em;
-  padding: 0;
-}
 .document-body .emoji {
   font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
 }

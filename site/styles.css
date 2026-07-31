@@ -612,11 +612,6 @@ body {
 .markdown-body .github-ref:hover {
   text-decoration: underline;
 }
-.markdown-body .commit-ref code {
-  background: none;
-  padding: 0;
-  color: inherit;
-}
 .markdown-body .github-mention {
   color: var(--link);
   font-weight: 600;

@@ -267,13 +267,14 @@ Leaftext renders GitHub shortcodes:
 
 ## GitHub references
 
-Inside a Git repo, issue, PR, and commit references link to the repo; @mentions are highlighted:
+Inside a Git repo, issue and PR references link to the repo; @mentions are highlighted:
 
 - Issue or PR: #1, GH-2
 - Cross-repo issue: ryanallen/leaftext#3
-- Commit: e4d3ec8
 - Mention: @ryanallen
 - Team mention: @ryanallen/maintainers
+
+Bare commit hashes are **not** linked. GitHub turns any run of 7 or 40 hex characters into a commit link, so a color like `f0f0f0f` becomes a link to a commit that probably does not exist. Hex is too ordinary to claim. Write the link yourself when you want one.
 
 ## Footnotes
 

@@ -401,8 +401,7 @@ export function renderMarkdown(src) {
       return d ? keep(`<a href="${escAttr(d.url)}">${inlineLite(txt)}</a>`) : m;
     });
     // GitHub refs, emoji, and bare autolinks on the remaining plain text. Each
-    // result is stashed so the emphasis pass can't touch it. URLs/www/email run
-    // first so a commit SHA can't match hex inside a URL; the SHA runs last.
+    // result is stashed so the emphasis pass can't touch it.
     s = s.replace(/(^|[^"'(<\w])(https?:\/\/[^\s<>)]+[^\s<>).,;:])/g, (_m, pre, url) =>
       pre + keep(`<a href="${escAttr(url)}">${esc(url)}</a>`)
     );
@@ -429,9 +428,6 @@ export function renderMarkdown(src) {
     s = s.replace(
       /(^|[^\w`/])@([A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\/[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)?)/g,
       (_m, pre, who) => pre + keep(`<span class="github-mention">@${who}</span>`)
-    );
-    s = s.replace(/(^|[^\w/])([0-9a-f]{7,40})\b/g, (_m, pre, sha) =>
-      pre + keep(`<a class="github-ref commit-ref" href="https://github.com/${GH_REPO}/commit/${sha}"><code>${sha}</code></a>`)
     );
     // Emphasis. Strong before em; underscore emphasis only at word edges so
     // snake_case_words are left alone.
