@@ -3622,6 +3622,19 @@ body.is-block-dragging .document-body [data-src-start] {
   height: auto;
   max-width: 100%;
 }
+/* A diagram swapped for its source is a code block again. The rules above strip
+   the block's ground, padding and alignment so the drawing can float in the
+   page, and they outrank .leaf-editing-source — so without this, clicking a
+   diagram leaves its mermaid centered on bare page. */
+.document-body pre.mermaid[data-processed="true"][data-editing-source="true"] {
+  background: var(--code-block-background);
+  color: var(--code-block-foreground);
+  padding: 1em;
+  text-align: left;
+}
+.document-body pre.mermaid[data-processed="true"][data-editing-source="true"]::before {
+  content: attr(data-language);
+}
 .document-body .syn-comment {
   color: var(--syntax-comment);
   font-style: italic;
