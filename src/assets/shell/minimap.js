@@ -1,3 +1,115 @@
+// ---- The rail's width: whatever the code view's map comes out as -------------
+//
+// The code view's minimap is Monaco's, and Monaco has no width setting — it works one
+// out from the room the window can spare it. The rail does the same arithmetic here,
+// so both views' pages end at the same place without the code view ever having been
+// opened. Monaco's own figures, and its defaults for the parts the code view leaves
+// alone; the last one is the only guess, and it moves the answer by a fraction of a
+// pixel.
+const MONACO_FONT_SIZE = 14;
+const MONACO_MINIMAP_MAX_COLUMN = 120;
+// The map's own left inset, and the character it draws a column with: one pixel of
+// the screen over the pixel ratio, doubled on the sharpest screens.
+const MONACO_MINIMAP_INSET = 8;
+function monacoMinimapCharWidth() {
+  const ratio = window.devicePixelRatio || 1;
+  return (ratio >= 2 ? 2 : 1) / ratio;
+}
+// The three gutters left of the text: the icon margin (a line tall), the line
+// numbers (five digits at least), and the fold arrows' lane.
+const MONACO_LINE_NUMBER_MIN_DIGITS = 5;
+const MONACO_DECORATIONS_WIDTH = 10 + 16;
+const MONACO_LINE_HEIGHT_RATIO = 1.35;
+
+// The code font at Monaco's size, measured the way Monaco measures it: the width of an
+// 'n', and of the widest digit. Off the page in a run of copies, divided back down, so
+// the answer keeps its fractions. Measured on demand rather than kept, because a theme
+// brings its own code font and a face lands after the page has asked for it.
+const MONACO_MEASURE_RUN = 32;
+function monacoCodeFontWidths() {
+  const family = getComputedStyle(document.documentElement)
+    .getPropertyValue('--code-font')
+    .trim();
+  if (!family || !document.body) return null;
+  const ruler = document.createElement('span');
+  ruler.style.cssText = `position:absolute;top:-9999px;left:-9999px;white-space:pre;font:${MONACO_FONT_SIZE}px ${family}`;
+  document.body.appendChild(ruler);
+  const runWidth = (glyph) => {
+    ruler.textContent = glyph.repeat(MONACO_MEASURE_RUN);
+    return ruler.getBoundingClientRect().width / MONACO_MEASURE_RUN;
+  };
+  const char = runWidth('n');
+  let digit = 0;
+  for (const glyph of '0123456789') digit = Math.max(digit, runWidth(glyph));
+  ruler.remove();
+  return char > 0 && digit > 0 ? { char, digit } : null;
+}
+
+// How wide the editor is in the code view — the whole reader area, since the rail's
+// column collapses there. Measured off the window's own grid rather than the reading
+// view's shell, which is narrower by exactly the rail this is sizing.
+function codeViewEditorWidth() {
+  if (!libraryShell) return 0;
+  const root = getComputedStyle(document.documentElement);
+  const library = Number.parseFloat(root.getPropertyValue('--library-rail-width'));
+  const gutter = Number.parseFloat(root.getPropertyValue('--reader-gutter'));
+  const width =
+    libraryShell.clientWidth -
+    (Number.isFinite(library) ? library : 0) -
+    (Number.isFinite(gutter) ? gutter : 0);
+  return width > 0 ? width : 0;
+}
+
+// Monaco's minimap width for that editor: a hundred and twenty of its columns, or the
+// share of the leftover room it is willing to spend, whichever is smaller. The
+// leftover is the editor less the gutters; nothing is taken off for a scrollbar,
+// because the code view turns Monaco's off.
+function monacoMinimapWidth() {
+  const editor = codeViewEditorWidth();
+  const font = monacoCodeFontWidths();
+  if (!editor || !font) return 0;
+  const column = monacoMinimapCharWidth();
+  const gutters =
+    Math.round(MONACO_LINE_HEIGHT_RATIO * MONACO_FONT_SIZE) +
+    Math.round(MONACO_LINE_NUMBER_MIN_DIGITS * font.digit) +
+    MONACO_DECORATIONS_WIDTH;
+  const spare = Math.max(0, Math.floor(((editor - gutters - 2) * column) / (font.char + column)));
+  return Math.min(
+    Math.floor(MONACO_MINIMAP_MAX_COLUMN * column),
+    spare + MONACO_MINIMAP_INSET
+  );
+}
+
+// Hand it to the stylesheet, which sizes the rail and the page's column from it. Left
+// alone when it can't be worked out, so the stylesheet's own figure stands.
+function syncMinimapWidthToCodeView() {
+  const width = monacoMinimapWidth();
+  if (width > 0) {
+    document.documentElement.style.setProperty('--minimap-width', `${width}px`);
+  }
+}
+
+// The window resizing, the library pane being dragged, and a code font arriving all
+// change the answer, and none of them announces itself the same way.
+let minimapWidthFrame = 0;
+function scheduleMinimapWidthSync() {
+  if (minimapWidthFrame) return;
+  minimapWidthFrame = requestAnimationFrame(() => {
+    minimapWidthFrame = 0;
+    syncMinimapWidthToCodeView();
+  });
+}
+window.addEventListener('resize', scheduleMinimapWidthSync);
+if (document.fonts && document.fonts.addEventListener) {
+  document.fonts.addEventListener('loadingdone', scheduleMinimapWidthSync);
+}
+// The reader, not the window's grid: dragging the pane resizes this and leaves the
+// grid alone. Its own width is not read above, so setting the rail can't feed back in.
+if (window.ResizeObserver && app) {
+  new ResizeObserver(scheduleMinimapWidthSync).observe(app);
+}
+syncMinimapWidthToCodeView();
+
 // The rail starts loading: the thumbnail clones the rendered document, so it can't
 // exist until the document is laid out — on a large file, long enough that an empty
 // rail beside a finished page looks broken rather than busy.
