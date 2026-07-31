@@ -238,7 +238,7 @@ $$
 
 `mermaid` fences are rendered with the bundled Mermaid runtime, fully offline. If Mermaid fails, Leaftext leaves the source visible instead of a blank block.
 
-Diagrams take your theme's colors and body font — boxes the theme's muted surface, subgraphs its sunken one, arrows its muted ink, and a Gantt chart the theme's own active, done and critical colors. Switch theme and every diagram on the page is redrawn to match. The twelve-color scale a mindmap or pie chart cycles through stays Mermaid's own, for the reason given in [Themes → Diagrams](06-themes.md#diagrams).
+Diagrams take your theme's colors and body font — boxes the theme's muted surface, subgraphs its sunken one, arrows its muted ink, and a Gantt chart the theme's own active, done and critical colors. Switch theme and every diagram on the page is redrawn to match. The twelve-color scale a mindmap or pie chart cycles through is your theme's primary hue turned around the wheel, as described in [Themes → Diagrams](06-themes.md#diagrams).
 
 Two details worth knowing. Clicking a diagram on an unlocked page swaps it for the Mermaid behind it, so a diagram is editable in place like any other block ([Editing](07-editing.md)). And a `---` front-matter block inside a `mermaid` fence is stripped before the diagram is drawn, so `title:` and `config:` written that way have no effect — use a `%%{init: { ... }}%%` line instead.
 

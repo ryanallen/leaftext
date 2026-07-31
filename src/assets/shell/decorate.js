@@ -23,12 +23,6 @@ function loadMermaid() {
 }
 // A diagram takes the page's colors, over mermaid's own light/dark theme.
 //
-// The twelve-color categorical scale (mindmap, timeline, kanban, journey, pie, git
-// graph) is left to mermaid: `base` overwrites every `cScale` with darken(75) in
-// dark mode and darken(25) in light *after* our override lands, then labels all
-// twelve with one default ink — near-black boxes carrying near-black text, which is
-// what v0.1.423 shipped. Mermaid's own palettes are picked to match.
-//
 // mermaid variable → the page token it takes its color from. A variable missing
 // from here keeps mermaid's value; check-shell.mjs holds every name in this table
 // to the ones reading.css defines.
@@ -41,8 +35,7 @@ const MERMAID_COLOR_MAP = {
   errorBkgColor: '--danger',
 
   // Flowcharts. Boxes are surfaces, not brand color: forty brand-colored boxes is
-  // a poster. `labelTextColor` is deliberately absent — mermaid falls back to it
-  // for any categorical label, so setting it reaches into the scale above.
+  // a poster.
   mainBkg: '--surface-muted',
   nodeBorder: '--border-strong',
   nodeTextColor: '--reading-ink',
@@ -102,13 +95,14 @@ const MERMAID_COLOR_MAP = {
   todayLineColor: '--danger',
   gridColor: '--border',
 
-  // Pie. The slices come from the seeds; these are the parts around them.
+  // Pie. The slices are the categorical scale below; these are the parts around
+  // them.
   pieTitleTextColor: '--reading-heading',
   pieLegendTextColor: '--reading-ink',
   pieStrokeColor: '--reading-background',
   pieOuterStrokeColor: '--border-strong',
 
-  // Git graph: the branch colors are derived, the labels are ours.
+  // Git graph: the branch colors are the categorical scale below, the labels ours.
   commitLabelColor: '--reading-ink',
   commitLabelBackground: '--surface-muted',
   tagLabelColor: '--reading-ink',
@@ -138,6 +132,27 @@ const MERMAID_COLOR_MAP = {
   relationColor: '--muted-foreground',
   relationLabelBackground: '--reading-background',
   relationLabelColor: '--reading-ink',
+};
+
+// The twelve-color categorical scale (mindmap, timeline, kanban, journey, pie,
+// git graph). Every entry is named, because mermaid re-applies what it is handed
+// *after* its own arithmetic: a `cScale` we set survives, a color that only feeds
+// the scale gets darkened out of reach — which is what v0.1.423 shipped.
+//
+// 150° a step so that neighbors, which is what a timeline puts side by side, land
+// opposite rather than one notch apart; twelve such steps still visit all twelve
+// hues. Entries share a luminance, not a lightness — a yellow and a blue at one
+// lightness are nowhere near one weight, and one weight is what lets one ink read
+// on all twelve. A mindmap needs that: its labels are HTML and take the page's
+// ink whatever `cScaleLabel` says.
+const MERMAID_SCALE_SEED = '--primary';
+const MERMAID_SCALE_STEPS = 12;
+const MERMAID_SCALE_HUE_STEP = 150;
+// Off the page but under the page's ink, and the mirror of that in light mode.
+// Saturated enough that twelve hues stay apart when the primary is nearly gray.
+const MERMAID_SCALE_SHAPE = {
+  light: { luminance: 0.45, minSaturation: 0.42, maxSaturation: 0.85 },
+  dark: { luminance: 0.12, minSaturation: 0.38, maxSaturation: 0.85 },
 };
 
 // mermaid variable → the fill its text is printed on, so the ink can be measured
@@ -231,10 +246,9 @@ function colorContrast(a, b) {
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
 }
 
-// The theme ink that reads best on every one of `fillTokens`. The worst fill
-// decides: one ink is only as readable as it is on the poorer surface.
-function readableInk(style, fillTokens) {
-  const fills = fillTokens.map((token) => themeTokenValue(style, token)).filter(Boolean);
+// The theme ink that reads best on every one of `fills`. The worst fill decides:
+// one ink is only as readable as it is on the poorer surface.
+function inkOn(style, fills) {
   if (!fills.length) return '';
   let best = '';
   let bestRatio = 0;
@@ -258,7 +272,97 @@ function readableInk(style, fillTokens) {
   return best;
 }
 
-// The per-state gantt label colors, as CSS.
+// The same, given tokens rather than colors.
+function readableInk(style, fillTokens) {
+  return inkOn(style, fillTokens.map((token) => themeTokenValue(style, token)).filter(Boolean));
+}
+
+function colorChannels(color) {
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim());
+  if (!hex) return null;
+  const digits = hex[1].length === 3 ? hex[1].replace(/./g, '$&$&') : hex[1];
+  const value = parseInt(digits, 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+// Hue and saturation only: the scale sets its own lightness, so that is the one
+// part of the seed we throw away.
+function colorHueSaturation(channels) {
+  const [r, g, b] = channels.map((byte) => byte / 255);
+  const high = Math.max(r, g, b);
+  const low = Math.min(r, g, b);
+  const span = high - low;
+  const lightness = (high + low) / 2;
+  if (!span) return [0, 0];
+  const saturation = span / (1 - Math.abs(2 * lightness - 1));
+  let hue;
+  if (high === r) hue = ((g - b) / span) % 6;
+  else if (high === g) hue = (b - r) / span + 2;
+  else hue = (r - g) / span + 4;
+  return [((hue * 60) + 360) % 360, Math.min(1, saturation)];
+}
+
+function hslColor(hue, saturation, lightness) {
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const section = ((hue % 360) + 360) % 360 / 60;
+  const second = chroma * (1 - Math.abs((section % 2) - 1));
+  const base = [
+    [chroma, second, 0], [second, chroma, 0], [0, chroma, second],
+    [0, second, chroma], [second, 0, chroma], [chroma, 0, second],
+  ][Math.floor(section) % 6];
+  const offset = lightness - chroma / 2;
+  return '#' + base
+    .map((part) => Math.round((part + offset) * 255).toString(16).padStart(2, '0'))
+    .join('');
+}
+
+// One hue at one weight. Luminance rises with lightness, so halving converges.
+function colorAtLuminance(hue, saturation, luminance) {
+  let low = 0;
+  let high = 1;
+  let color = hslColor(hue, saturation, 0.5);
+  for (let pass = 0; pass < 12; pass += 1) {
+    const middle = (low + high) / 2;
+    color = hslColor(hue, saturation, middle);
+    if (colorLuminance(color) < luminance) low = middle;
+    else high = middle;
+  }
+  return color;
+}
+
+// The categorical scale, seeded from the theme's primary. Empty if the seed is
+// not something we can measure, which leaves mermaid's own palette in place
+// rather than guessing at one.
+function mermaidCategoricalScale(style, darkMode) {
+  const seed = colorChannels(themeTokenValue(style, MERMAID_SCALE_SEED));
+  if (!seed) return [];
+  const shape = darkMode ? MERMAID_SCALE_SHAPE.dark : MERMAID_SCALE_SHAPE.light;
+  const [hue, saturation] = colorHueSaturation(seed);
+  const spread = Math.min(shape.maxSaturation, Math.max(shape.minSaturation, saturation));
+  const scale = [];
+  for (let step = 0; step < MERMAID_SCALE_STEPS; step += 1) {
+    scale.push(colorAtLuminance(hue + step * MERMAID_SCALE_HUE_STEP, spread, shape.luminance));
+  }
+  return scale;
+}
+
+// C4 paints its relation lines and labels a hardcoded #444444 — 1.5:1 on a dark
+// page, with no theme variable and no class behind it. Nothing else mermaid draws
+// sets `fill` or `stroke` as an attribute to that value, so the attribute is the
+// only handle.
+const MERMAID_C4_RELATION_COLOR = '#444444';
+
+function mermaidC4RelationCss(style) {
+  const ink = themeTokenValue(style, '--muted-foreground');
+  if (!ink) return '';
+  return [
+    'text[fill="' + MERMAID_C4_RELATION_COLOR + '"] { fill: ' + ink + ' !important; }',
+    'line[stroke="' + MERMAID_C4_RELATION_COLOR + '"] { stroke: ' + ink + ' !important; }',
+  ].join('\n');
+}
+
+// The per-state gantt label colors, as CSS. Mermaid's own gantt rules carry
+// `!important` on the active and done states, so ours have to as well.
 function mermaidGanttStateCss(style) {
   const rules = [];
   for (const [selector, fillToken] of MERMAID_GANTT_STATE_INKS) {
@@ -268,7 +372,7 @@ function mermaidGanttStateCss(style) {
     for (let section = 0; section < MERMAID_GANTT_SECTIONS; section += 1) {
       selectors.push('.' + selector + section);
     }
-    rules.push(selectors.join(', ') + ' { fill: ' + ink + '; }');
+    rules.push(selectors.join(', ') + ' { fill: ' + ink + ' !important; }');
   }
   return rules.join('\n');
 }
@@ -296,6 +400,28 @@ function mermaidThemeVariables() {
   if (plot.length) xyChart.plotColorPalette = plot.join(', ');
   if (Object.keys(xyChart).length) variables.xyChart = xyChart;
 
+  // The scale, and an ink measured on each entry. The git graph and the journey
+  // keep it under their own names and have to be pointed at it — left alone the
+  // one labels branch 1 `white` whatever it lands on, the other bands the chart
+  // midnight blue and magenta in every theme.
+  const scale = mermaidCategoricalScale(style, variables.darkMode);
+  scale.forEach((color, index) => {
+    variables['cScale' + index] = color;
+    variables['cScaleLabel' + index] = inkOn(style, [color]);
+    if (index < 8) {
+      variables['git' + index] = color;
+      variables['gitBranchLabel' + index] = inkOn(style, [color]);
+      variables['fillType' + index] = color;
+    }
+  });
+  if (scale.length) {
+    // One variable for all twelve slices, so it is measured against all twelve.
+    variables.pieSectionTextColor = inkOn(style, scale);
+    // Mermaid's 0.7 mixes three tenths of the page into every slice, which on a
+    // light page is two pale slices nobody can tell apart.
+    variables.pieOpacity = '1';
+  }
+
   return variables;
 }
 
@@ -315,11 +441,12 @@ function mermaidRuntimeConfig() {
     startOnLoad: false,
     securityLevel: 'strict',
     // Appended after mermaid's own stylesheet, so it settles what a variable
-    // cannot: one ink per gantt state.
-    themeCSS: mermaidGanttStateCss(style),
-    // Mermaid's own light and dark palettes underneath, not `base`: they ship a
-    // hand-picked categorical scale with inks to match, and `base` computes that
-    // scale itself out of our reach. See the header.
+    // cannot: one ink per gantt state, and C4's one hardcoded color.
+    themeCSS: [mermaidGanttStateCss(style), mermaidC4RelationCss(style)]
+      .filter(Boolean)
+      .join('\n'),
+    // Mermaid's own light and dark palettes underneath, never `base`: `base`
+    // recomputes the categorical scale and darkens every entry it derives.
     theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default',
     fontFamily,
     themeVariables,

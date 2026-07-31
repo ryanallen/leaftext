@@ -210,8 +210,8 @@ function buildGallery(families) {
       'foreground, and a Gantt chart the theme\'s own active / done / critical colors. Text ' +
       'printed inside one of those fills takes whichever of the theme\'s inks reads on it, ' +
       'measured rather than assumed. The twelve-color categorical scale a mindmap or pie chart ' +
-      "cycles through stays Mermaid's, because Mermaid recomputes that scale after any color " +
-      'it is handed.',
+      "cycles through is the family's own primary, its hue stepped around the wheel with every " +
+      'entry held to the same weight, so one ink reads on all twelve.',
   );
   lines.push('');
   lines.push('## Gallery');

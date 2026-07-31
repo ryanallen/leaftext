@@ -7,7 +7,7 @@ Every theme in Leaftext is plain data — one Markdown file per family, right he
 
 11 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full ~100-token contract inside its file.
 
-Mermaid diagrams take these same tokens, so a family says nothing about diagrams and gets them anyway: boxes the muted surface, subgraphs the sunken one, arrows the muted foreground, and a Gantt chart the theme's own active / done / critical colors. Text printed inside one of those fills takes whichever of the theme's inks reads on it, measured rather than assumed. The twelve-color categorical scale a mindmap or pie chart cycles through stays Mermaid's, because Mermaid recomputes that scale after any color it is handed.
+Mermaid diagrams take these same tokens, so a family says nothing about diagrams and gets them anyway: boxes the muted surface, subgraphs the sunken one, arrows the muted foreground, and a Gantt chart the theme's own active / done / critical colors. Text printed inside one of those fills takes whichever of the theme's inks reads on it, measured rather than assumed. The twelve-color categorical scale a mindmap or pie chart cycles through is the family's own primary, its hue stepped around the wheel with every entry held to the same weight, so one ink reads on all twelve.
 
 ## Gallery
 

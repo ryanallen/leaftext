@@ -134,7 +134,7 @@ If a theme source misses one required token, Leaftext fails the contract check i
 
 - **Boxes and subgraphs** take the theme's muted and sunken surfaces, with document ink for their labels — so a large flowchart reads as part of the page rather than a foreign object dropped on it.
 - **Arrows, axis lines and borders** take the muted ink and border colors.
-- **Categorical colors** — the twelve a pie chart, timeline, mindmap, kanban board or git graph cycles through — stay Mermaid's own. Mermaid recomputes that scale after any color it is handed, so those families keep its hand-picked palette and its matching label inks rather than a theme color it would darken past readability. Everything around them (the page, the title, the arrows) is still the theme's.
+- **Categorical colors** — the twelve a pie chart, timeline, mindmap, kanban board or git graph cycles through — are the theme's primary hue turned around the color wheel, twelve steps of 150° so that neighboring items land on opposite colors rather than near-identical ones. Every entry is held to the same weight, not the same lightness, which is what lets one ink read on all twelve.
 - **State colors** mean what they mean elsewhere in the app: a Gantt chart's active bar is the accent, its done bar the success color, its critical bar the danger color, and today's line the same.
 - **Labels** are set in the theme's body font, the same face as the words around the diagram.
 - **Text printed inside a colored fill** — a Gantt bar's label, a plotted point — takes whichever of the theme's inks reads best on that fill, measured for contrast rather than assumed. A brand color is often a mid tone that neither white nor black sits comfortably on, so the ink is chosen per color and per theme.

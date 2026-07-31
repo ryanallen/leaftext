@@ -265,17 +265,22 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
         "diagrams.sort((a, b) => mermaidReaderDistance(a) - mermaidReaderDistance(b));",
         "const MERMAID_BATCH_SIZE = 3;",
         // The structural colors of a diagram are the page's tokens. Mermaid's own
-        // light/dark palette stays underneath for the categorical scale, which
-        // `base` recomputes out of our reach — see decorate.js.
+        // light/dark palette stays underneath, never `base`, which recomputes the
+        // categorical scale out of our reach — see decorate.js.
         "theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default',",
         "function mermaidThemeVariables() {",
         "const MERMAID_COLOR_MAP = {",
         // The ink for text inside a fill is measured against that fill, not assumed.
-        "function readableInk(style, fillTokens) {",
+        "function inkOn(style, fills) {",
         "const MERMAID_INK_CANDIDATES = [",
+        // Every categorical entry is named, and they all weigh the same, so one
+        // ink reads on all twelve.
+        "function mermaidCategoricalScale(style, darkMode) {",
+        "function colorAtLuminance(hue, saturation, luminance) {",
+        "variables['cScaleLabel' + index] = inkOn(style, [color]);",
         // One variable, four differently colored gantt bars: only CSS can say that.
         "function mermaidGanttStateCss(style) {",
-        "themeCSS: mermaidGanttStateCss(style),",
+        "themeCSS: [mermaidGanttStateCss(style), mermaidC4RelationCss(style)]",
         // A theme switch cannot recolor an SVG, so the diagram is drawn again.
         "function repaintMermaidDiagrams() {",
         "attributeFilter: ['data-theme', 'data-leaf-theme'],",
