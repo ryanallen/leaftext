@@ -279,7 +279,7 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
     }
     reader
         .window
-        .set_title(&format!("{} - Leaf Text", document.title));
+        .set_title(&format!("{} - Leaftext", document.title));
 
     let image_source_path = fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
     if let Ok(mut current) = reader.image_dir.lock() {

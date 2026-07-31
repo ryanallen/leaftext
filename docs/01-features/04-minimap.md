@@ -50,7 +50,7 @@ On screens narrower than 600 px the minimap gutters shrink alongside the preview
 
 ## Toggling the minimap
 
-The minimap can be toggled from **Settings** in the app bar. The setting is persisted across restarts via `{config_dir}/leaftext/settings.json` as the `minimap_enabled` field, so Leaf Text reopens in the same state you left it.
+The minimap can be toggled from **Settings** in the app bar. The setting is persisted across restarts via `{config_dir}/leaftext/settings.json` as the `minimap_enabled` field, so Leaftext reopens in the same state you left it.
 
 When the minimap is off, its column collapses to zero and the page widens back out to the window gutter, so no empty band remains to the right of the document. The reader's native scrollbar comes back as a thin one at that point: with no rail there would otherwise be nothing at all showing where you are in a long page. While the rail is present the scrollbar stays hidden, because the rail is that indicator.
 

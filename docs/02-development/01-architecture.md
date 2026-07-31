@@ -1,8 +1,8 @@
 # Architecture
 
-> Leaf Text is a Rust desktop app using tao for windowing and wry for WebView. The Markdown pipeline, the IPC bridge, the vault registry, and the git integration are all covered here.
+> Leaftext is a Rust desktop app using tao for windowing and wry for WebView. The Markdown pipeline, the IPC bridge, the vault registry, and the git integration are all covered here.
 
-Leaf Text is a single Rust binary that embeds a WebView (via `wry`) inside a native window (via `tao`). The Markdown rendering pipeline runs on the Rust side; the result is injected into the WebView as HTML. All user interaction — opening files, navigating history, adjusting settings — flows through a typed IPC bridge between JavaScript running in the WebView and the Rust host.
+Leaftext is a single Rust binary that embeds a WebView (via `wry`) inside a native window (via `tao`). The Markdown rendering pipeline runs on the Rust side; the result is injected into the WebView as HTML. All user interaction — opening files, navigating history, adjusting settings — flows through a typed IPC bridge between JavaScript running in the WebView and the Rust host.
 
 ## Core crates
 
@@ -29,7 +29,7 @@ Features are trimmed for the same reason. `syntect` is taken with `default-featu
 
 ## Source files
 
-Leaf Text's Rust source is split by concern. Where a concern grew past one file it became a directory whose `mod.rs` holds the shared vocabulary and the pipeline that orders the stages, with one sibling file per stage. Both crate roots live in `src/` — `lib.rs` for the library, `main.rs` for the binary — so the binary's modules sit under `src/app/` to keep the two namespaces apart.
+Leaftext's Rust source is split by concern. Where a concern grew past one file it became a directory whose `mod.rs` holds the shared vocabulary and the pipeline that orders the stages, with one sibling file per stage. Both crate roots live in `src/` — `lib.rs` for the library, `main.rs` for the binary — so the binary's modules sit under `src/app/` to keep the two namespaces apart.
 
 - **`src/main.rs`** — Entry point. Builds the window and the WebView2 instance, registers the custom protocol handlers, and runs the startup sequence that assembles the event loop's state. It tunes WebView2 with a trimmed browser-argument set (site isolation and background networking off, GPU and the renderer kept hot) to reduce the process/background footprint of a single-window offline reader.
 - **`src/app/`** — The binary's guts. `event_loop.rs` holds `AppCtx` (the state the loop owns between events) and the loop itself: one arm per thing the window, the page or the watcher can report. Around it, `events.rs` (`IpcCommand` — the page's whole vocabulary — plus `UserEvent` for the app's own signals, the IPC bridge, and `off_loop`, the one way work is handed to a worker thread), `workspace.rs` (`Workspace` and `Tab` — a new tab inherits the [source view](../01-features/07-editing.md#code-view) from the one you were in), `history.rs` (back/forward and the scroll position each entry remembers), `watch.rs` (the `FileWatch` live-reload watcher), `vaults.rs` (the vault switcher, the folder reads, and the corpus's lifecycle), `vault_git.rs` (the [GitHub panel](../01-features/03-library.md#github-sync)'s four jobs, each on its own thread), `editing_cmds.rs`, `code_intel.rs` (gathers what a [typing help](../01-features/07-editing.md#typing-help) ask needs — the corpus or the document's folder, the edit buffer — and computes the answer on a worker), `render.rs` (`Reader`: the window, the page, the tabs and the recents that every render needs, bundled so a render is one call, plus the per-tab render cache), `glossary.rs`, `links.rs` (what a clicked href means), `fileops.rs`, and `update_flow.rs`.
@@ -202,7 +202,7 @@ Key `IpcCommand` variants include:
 | `deleteFile`           | File row context menu: move to Recycle Bin / Trash |
 | `showProperties`       | File or folder context menu: OS properties view |
 | `pasteFile`            | Folder context menu: [move or copy](../01-features/03-library.md#cut-copy-paste) what was cut or copied into that folder |
-| `goHome`               | Clicking the Leaf Text logo            |
+| `goHome`               | Clicking the Leaftext logo            |
 | `setLibraryState`      | Entering a folder, or stepping back out of one |
 | `setLibraryLayout`     | Library pane resize or collapse       |
 | `setWindowChrome`      | Theme change repainting the window border and dark-mode flag (Windows) |

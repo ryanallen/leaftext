@@ -1,19 +1,19 @@
 # Building
 
-> Set up a Rust development environment, clone the repository, and run the Leaf Text verification suite with `just verify` before contributing.
+> Set up a Rust development environment, clone the repository, and run the Leaftext verification suite with `just verify` before contributing.
 
-Leaf Text is a Rust application (edition 2021). Building from source requires the Rust toolchain and the `just` command runner.
+Leaftext is a Rust application (edition 2021). Building from source requires the Rust toolchain and the `just` command runner.
 
 ## Prerequisites
 
-Before building Leaf Text, make sure the following are installed:
+Before building Leaftext, make sure the following are installed:
 
 - **Rust (stable toolchain)** — install via [rustup](https://rustup.rs/). The project targets Rust 2021 edition as declared in `Cargo.toml`.
-- **`just` command runner** — install with `cargo install just`. Leaf Text uses a `Justfile` to orchestrate formatting, type-checking, testing, and releases.
+- **`just` command runner** — install with `cargo install just`. Leaftext uses a `Justfile` to orchestrate formatting, type-checking, testing, and releases.
 - **Platform-specific WebView dependency**: none to install. macOS provides WKWebView, and Windows provides WebView2 through the Microsoft Edge WebView2 Runtime.
 
 > [!NOTE]
-> Leaf Text builds for Windows and macOS only. Any other target stops the build with a `compile_error!` in `src/main.rs` rather than failing later in a platform code path.
+> Leaftext builds for Windows and macOS only. Any other target stops the build with a `compile_error!` in `src/main.rs` rather than failing later in a platform code path.
 
 ## Clone and build
 
@@ -35,7 +35,7 @@ Launch the app directly from the source tree:
 cargo run
 ```
 
-This compiles (if needed) and starts Leaf Text. Open a Markdown file with `Ctrl+O` / `Cmd+O`.
+This compiles (if needed) and starts Leaftext. Open a Markdown file with `Ctrl+O` / `Cmd+O`.
 
 Dependencies are compiled with optimizations even in this debug build (`[profile.dev.package."*"]` in `Cargo.toml`). Parsing, sanitizing, and syntax highlighting all happen inside crates, so leaving them unoptimized made a development build several times slower than the one users get — slow enough to send you hunting performance problems that do not exist in a release build. Dependencies change rarely, so they are compiled once and cached; rebuilds of this crate stay at debug speed.
 

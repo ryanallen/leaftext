@@ -106,7 +106,7 @@ Open **Settings**, then **Theme** to slide up the theme picker. It lists every f
 
 ## Fonts
 
-Leaf Text does not bundle fonts. Instead, the active theme's font is fetched from **Google Fonts** when the theme activates, and the WebView caches it on disk so later launches are instant:
+Leaftext does not bundle fonts. Instead, the active theme's font is fetched from **Google Fonts** when the theme activates, and the WebView caches it on disk so later launches are instant:
 
 - Each family carries its own type: **Fern** uses Noto (Sans/Serif/Sans Mono); **Nightshade** pairs Fraunces headings with Inter and Fira Code; **Halcyon** uses IBM Plex Sans/Mono; **Amaranth** uses the Source family (Serif 4 / Sans 3 / Code Pro); **Sage** uses Inter with JetBrains Mono; **Arabica** pairs Rubik with JetBrains Mono; **Goldenrod** pairs Space Grotesk with Space Mono; **Ginger** pairs Nunito with Inconsolata; **Pippin** pairs DM Sans with DM Mono; **Bloodleaf** pairs Archivo with Roboto Mono.
 - The **GitHub** family is the exception: it uses your OS's native font stack (like github.com) and fetches nothing.
@@ -126,7 +126,7 @@ The semantic token set covers:
 - minimap colors
 - focus and selection styling
 
-If a theme source misses one required token, Leaf Text fails the contract check instead of silently rendering with broken fallback colors. See [Theming](../02-development/04-theming.md#the-token-contract) for the full contract.
+If a theme source misses one required token, Leaftext fails the contract check instead of silently rendering with broken fallback colors. See [Theming](../02-development/04-theming.md#the-token-contract) for the full contract.
 
 ## Add your own
 
@@ -144,7 +144,7 @@ Every palette is pure data, compiled from [`themes.md`](../02-development/04-the
 
 ## Windows
 
-On Windows, Leaf Text uses a frameless window with its own title bar rather than the native one, so nothing the OS draws sits above the app. The app bar doubles as the title bar: drag it to move the window, double-click to maximize or restore, and its right edge carries the minimize / maximize / close buttons, which take the same rounded hover chip as the other toolbar icons (close turns red instead of the accent color). The taskbar still shows the leaf icon, and the window border follows the theme's divider color so the app reads as a distinct surface against the desktop.
+On Windows, Leaftext uses a frameless window with its own title bar rather than the native one, so nothing the OS draws sits above the app. The app bar doubles as the title bar: drag it to move the window, double-click to maximize or restore, and its right edge carries the minimize / maximize / close buttons, which take the same rounded hover chip as the other toolbar icons (close turns red instead of the accent color). The taskbar still shows the leaf icon, and the window border follows the theme's divider color so the app reads as a distinct surface against the desktop.
 
 ## Next
 

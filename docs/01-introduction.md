@@ -1,8 +1,8 @@
-# Meet Leaf Text
+# Meet Leaftext
 
 > Refine your mind. Your thoughts, secure and free — a free desktop app for reading and writing your own documents, on your own machine.
 
-Leaf Text turns the files you already have into pages you actually want to read. Open a Markdown, [XML](01-features/01-rendering.md#xml), [JSON, or YAML](01-features/01-rendering.md#data-files-json-and-yaml) document — or a [saved email](01-features/01-rendering.md#email-eml) — on macOS or Windows and it renders clean and calm. Keep your place with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), a [minimap](01-features/04-minimap.md), and a searchable [library](01-features/03-library.md). When something needs changing, [click into the sentence and type](01-features/07-editing.md#inline-editing-the-reading-view) — or drop to the raw source in the [code view](01-features/07-editing.md#code-view) — then [save](01-features/07-editing.md#save) when you're ready.
+Leaftext turns the files you already have into pages you actually want to read. Open a Markdown, [XML](01-features/01-rendering.md#xml), [JSON, or YAML](01-features/01-rendering.md#data-files-json-and-yaml) document — or a [saved email](01-features/01-rendering.md#email-eml) — on macOS or Windows and it renders clean and calm. Keep your place with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), a [minimap](01-features/04-minimap.md), and a searchable [library](01-features/03-library.md). When something needs changing, [click into the sentence and type](01-features/07-editing.md#inline-editing-the-reading-view) — or drop to the raw source in the [code view](01-features/07-editing.md#code-view) — then [save](01-features/07-editing.md#save) when you're ready.
 
 **Your thoughts stay yours.** No account, no cloud, no telemetry. Your documents never leave your device, and they stay plain Markdown, XML, JSON, YAML, and email files that any other app can open, so you're never locked in.
 
@@ -29,7 +29,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 - Jump to any section from the [outline](01-features/02-navigation.md#outline) at the top of each document.
 - Move [back and forward](01-features/02-navigation.md#history) through documents and in-page jumps, like a browser.
 - Find anything you've written in the [library pane](01-features/03-library.md), or see how it connects in the [graph view](01-features/03-library.md#graph).
-- Edit a file in another app and Leaf Text [picks up the change](01-features/02-navigation.md#reload) without losing your place.
+- Edit a file in another app and Leaftext [picks up the change](01-features/02-navigation.md#reload) without losing your place.
 - [Write where you read](01-features/07-editing.md#inline-editing-the-reading-view): click into a sentence and type, split and merge blocks with `Enter` and `Backspace`, tick checkboxes, and [undo](01-features/07-editing.md#undo) step by step.
 - Restructure without leaving the page: drag a block by its handle in the [margin](01-features/07-editing.md#the-block-gutter), [add one](01-features/07-editing.md#adding-a-block) on the empty line below, and highlight words for a [format bar](01-features/07-editing.md#the-format-bar).
 - Switch any document to its raw source in the [code view](01-features/07-editing.md#code-view) — highlighted, line-numbered, editable — and [save](01-features/07-editing.md#save) only when you say so.
@@ -54,13 +54,13 @@ flowchart LR
 # Release Notes
 
 > [!TIP]
-> Drag this file into Leaf Text.
+> Drag this file into Leaftext.
 
 - [x] Ship docs refresh
 - [ ] Review screenshots
 
 ```ts
-console.log("Hello from Leaf Text");
+console.log("Hello from Leaftext");
 ```
 ~~~
 

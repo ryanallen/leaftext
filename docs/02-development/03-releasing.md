@@ -2,7 +2,7 @@
 
 > Bump `Cargo.toml` and commit it first, then run `just release <version>` to verify, tag, and push. CI automatically builds the Windows MSI and the macOS DMG.
 
-Leaf Text releases are managed with a single `just release <version>` command — but it does **not** bump the version for you. You edit `version` in `Cargo.toml` to the new value and commit it first; `just release <version>` then verifies that `Cargo.toml` already matches the version you pass, tags the release, and pushes. CI takes over from there to build all platform artifacts and attach them to the GitHub Release.
+Leaftext releases are managed with a single `just release <version>` command — but it does **not** bump the version for you. You edit `version` in `Cargo.toml` to the new value and commit it first; `just release <version>` then verifies that `Cargo.toml` already matches the version you pass, tags the release, and pushes. CI takes over from there to build all platform artifacts and attach them to the GitHub Release.
 
 ## Release command
 

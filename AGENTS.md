@@ -1,4 +1,4 @@
-# Leaf Text
+# Leaftext
 
 Project guide for agents in this repo; `CLAUDE.md` and `CODEX.md` symlink here. **A guide, not a log** — no changelog entries, no "gaps I closed". Edit only to change standing guidance.
 

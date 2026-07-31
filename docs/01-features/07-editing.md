@@ -2,7 +2,7 @@
 
 > Write where you read. Click into a sentence and type, or drop to the raw source — both write back to the same file, and nothing saves until you say so.
 
-Leaf Text is reading-first, but it is also editable. You can edit **in the reading view itself** — click into a sentence and type, toggle a checkbox — and the change is written back into the source at exactly that spot. When you would rather work in the raw text, the **code view** swaps the page for the file's actual source — Markdown, XML, JSON, YAML, or a raw email. Both paths share one source of truth and one green **Save** button. There is no autosave for text edits: nothing touches your file until you say so — the one exception is ticking a checkbox, which saves on the spot.
+Leaftext is reading-first, but it is also editable. You can edit **in the reading view itself** — click into a sentence and type, toggle a checkbox — and the change is written back into the source at exactly that spot. When you would rather work in the raw text, the **code view** swaps the page for the file's actual source — Markdown, XML, JSON, YAML, or a raw email. Both paths share one source of truth and one green **Save** button. There is no autosave for text edits: nothing touches your file until you say so — the one exception is ticking a checkbox, which saves on the spot.
 
 ## Summary
 
@@ -45,7 +45,7 @@ The rendered page is a live editor. The **source stays the single source of trut
 
 - **Click into a sentence and type.** Paragraphs, headings, **lists, tables, and block quotes** edit in place with their styling intact — bold stays bold, links stay links, table pipes, list markers, and `>` prefixes are rewritten for you — and your change is written back into the Markdown at that spot. Interactive **checkboxes** toggle their `[ ]` / `[x]` marker in the source, in task lists and [table cells](01-rendering.md#tables) alike. A checkbox is a quick action rather than an edit: it saves to disk immediately, records no undo step, and stays clickable even when reading-view editing is turned off.
 - **Blocks behave like a block editor.** `Enter` splits a block at the caret — a split heading stays a heading at the same level — or starts a fresh paragraph when pressed at the end (keep pressing to keep writing). `Shift+Enter` inserts a line break, and `Backspace` at the very start of a block merges it into the one above, with the caret staying put. In a list, `Enter` adds an item and `Backspace` joins items.
-- **Every other block edits its exact source.** Code blocks, [alerts](01-rendering.md#blockquotes-and-alerts), loose lists, blocks with images, footnotes, or math, and blocks containing raw HTML tags outside a small safe set (links, line breaks, bold, italic, strikethrough, inline code, and the inline HTML tags Leaf Text can rebuild exactly — `<abbr>`, `<kbd>`, `<mark>`, `<ins>`, `<sub>`, `<sup>`, `<span>`, and `<div>`) open their raw source in place when you click them, then splice back on the way out. This is also how **[XML](01-rendering.md#xml)** edits: XML carries meaning the rendered HTML cannot reconstruct, so an XML block is edited as its true source.
+- **Every other block edits its exact source.** Code blocks, [alerts](01-rendering.md#blockquotes-and-alerts), loose lists, blocks with images, footnotes, or math, and blocks containing raw HTML tags outside a small safe set (links, line breaks, bold, italic, strikethrough, inline code, and the inline HTML tags Leaftext can rebuild exactly — `<abbr>`, `<kbd>`, `<mark>`, `<ins>`, `<sub>`, `<sup>`, `<span>`, and `<div>`) open their raw source in place when you click them, then splice back on the way out. This is also how **[XML](01-rendering.md#xml)** edits: XML carries meaning the rendered HTML cannot reconstruct, so an XML block is edited as its true source.
 - **Nothing is ever mangled.** A block only edits WYSIWYG when its rendered form can be turned back into the identical source; anything else edits its source directly. Either way the edit is a precise splice, and the [live reload](02-navigation.md#reload) watcher recognizes your own save so it never fights it.
 - **Nothing is drawn around the line you are typing in.** No ring, no box. The caret says where you are, and a page whose whole point is that it is a page should not turn into a form when you touch it. A block showing its raw source is the exception: its code tint is what says *this is source*.
 - Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way.
@@ -150,9 +150,9 @@ The code view is a real editor surface: click anywhere and type. It is Monaco �
 
 ## Typing help
 
-While you type Markdown in the code view, the editor can offer what Leaf Text already knows — the same knowledge the [graph](03-library.md#graph) and [search](03-library.md#search) run on, so it only ever sees what you pointed it at: the active [vault](03-library.md#vaults), or the document's own folder when no vault holds it.
+While you type Markdown in the code view, the editor can offer what Leaftext already knows — the same knowledge the [graph](03-library.md#graph) and [search](03-library.md#search) run on, so it only ever sees what you pointed it at: the active [vault](03-library.md#vaults), or the document's own folder when no vault holds it.
 
-This is **IntelliSense** — the completion popup, hover card and squiggly underline [Monaco](#editing-the-source) brings from Visual Studio Code. Monaco draws them; Leaf Text supplies the answers, and they are your notes rather than code. The docs call it *typing help* because that is what it does for prose.
+This is **IntelliSense** — the completion popup, hover card and squiggly underline [Monaco](#editing-the-source) brings from Visual Studio Code. Monaco draws them; Leaftext supplies the answers, and they are your notes rather than code. The docs call it *typing help* because that is what it does for prose.
 
 - **Type `[[`** and a popup lists your notes — the whole vault, or the folder beside the document. Keep typing to filter; pick one and the link closes itself.
 - **Type `[[Note#`** for that note's headings, or **`](#`** for the open document's own anchors. Anchors are the exact ones the [reading view](01-rendering.md#headings) gives its headings, so a completed link always lands.
@@ -180,7 +180,7 @@ The [live reload](02-navigation.md#reload) watcher keeps working alongside editi
 
 ## Formats
 
-The [code view](#code-view) edits every format Leaf Text opens, as the whole-file source editor: Markdown (`.md`, `.markdown`, `.mdown`), [XML](01-rendering.md#xml) (`.xml`), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`), and [email](01-rendering.md#email-eml) (`.eml`, `.mht`, `.mhtml`).
+The [code view](#code-view) edits every format Leaftext opens, as the whole-file source editor: Markdown (`.md`, `.markdown`, `.mdown`), [XML](01-rendering.md#xml) (`.xml`), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`), and [email](01-rendering.md#email-eml) (`.eml`, `.mht`, `.mhtml`).
 
 What the *reading view* offers differs by format, because a block can only be edited in place when the app knows the exact bytes it came from:
 
@@ -198,11 +198,11 @@ What the *reading view* offers differs by format, because a block can only be ed
 
 A data file is edited as *source*, never as rendered text. Click a JSON value in the reading view and you get the real thing — `"0.1.380"` with its quotes — which is what keeps an edit from turning a string into something the file no longer parses as.
 
-That only works where the byte range is certain, so Leaf Text offers it only where it is:
+That only works where the byte range is certain, so Leaftext offers it only where it is:
 
 - **JSON** — everywhere. The reader knows precisely where each value begins and ends, so every value is click-to-edit.
 - **YAML plain values** — where proven. A plain scalar's source text is checked character-for-character against the value it parsed to; when they match, the range is exact and the value is editable.
-- **Everything else in YAML** — read-only in the reading view. A quoted string or a block scalar (`|`, `>`) carries quotes or an indicator that its value does not, and nothing can prove where a YAML list or mapping *ends* — its closing position points at whatever token came next. Rather than splice an edit over a guessed range and corrupt the file, Leaf Text offers no inline editor and leaves these to the code view.
+- **Everything else in YAML** — read-only in the reading view. A quoted string or a block scalar (`|`, `>`) carries quotes or an indicator that its value does not, and nothing can prove where a YAML list or mapping *ends* — its closing position points at whatever token came next. Rather than splice an edit over a guessed range and corrupt the file, Leaftext offers no inline editor and leaves these to the code view.
 - **No [block gutter](#the-block-gutter) in either.** A data range covers a value, not the key naming it, so dragging one would leave its key behind and inserting between two would land outside the syntax that gives them meaning.
 
 > [!NOTE]

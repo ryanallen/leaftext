@@ -15,7 +15,7 @@ function renderState() {
   document.documentElement.dataset.codeView = 'false';
   renderTabs(state);
   if (state.document) {
-    document.title = `${state.document.title} - Leaf Text`;
+    document.title = `${state.document.title} - Leaftext`;
     app.className = 'reader-shell has-document';
     const minimapHtml = renderDocumentMinimap(state.document.minimap);
     const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';
@@ -108,7 +108,7 @@ function renderState() {
     return;
   }
   resetReaderScrollOnNextRender = false;
-  document.title = 'Leaf Text';
+  document.title = 'Leaftext';
   app.className = 'reader-shell empty';
   // No document, no rail — and the shell's column collapses with it.
   setMinimapMarkup('');
@@ -116,7 +116,7 @@ function renderState() {
   const recent = state.recent || [];
   app.innerHTML = `
     <section class="empty-state">
-      <p class="kicker">Leaf Text</p>
+      <p class="kicker">Leaftext</p>
       <h1>Refine your mind.</h1>
       <p class="empty-subtitle">Your thoughts, secure and free.</p>
       <p class="empty-description">${escapeText(emptyDescription)}</p>

@@ -1,9 +1,9 @@
 # Refine your mind.
 ## Your thoughts, secure and free.
 
-Leaf Text is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own.
+Leaftext is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own.
 
-![Leaf Text — a readable Markdown and XML document open in the app](imgs/leaftext.png)
+![Leaftext — a readable Markdown and XML document open in the app](imgs/leaftext.png)
 
 <a href="https://github.com/ryanallen/leaftext/releases/latest"><img alt="Download" src="https://img.shields.io/badge/download-latest-0ea5e9?style=flat&labelColor=4b5563"></a>
 <a href="https://github.com/ryanallen/leaftext/releases/latest"><img alt="macOS" src="https://img.shields.io/badge/macOS-Universal-silver?style=flat&labelColor=4b5563"></a>
@@ -11,13 +11,13 @@ Leaf Text is a free desktop app for reading and writing your own documents. Ever
 
 **[Download it →](https://github.com/ryanallen/leaftext/releases/latest)** · **[How to install it →](docs/02-installation.md#install)** · **[Mac won't open it? →](docs/02-installation.md#mac-blocks-the-first-launch)**
 
-> **Read this if you're on a Mac.** macOS refuses the first launch of any app Apple hasn't been paid to vouch for, and Leaf Text is free, so it hasn't. Nothing was scanned and nothing was found. Let it through once — **System Settings → Privacy & Security → Open Anyway** — and it opens normally from then on. [The four clicks, spelled out →](docs/02-installation.md#mac-blocks-the-first-launch)
+> **Read this if you're on a Mac.** macOS refuses the first launch of any app Apple hasn't been paid to vouch for, and Leaftext is free, so it hasn't. Nothing was scanned and nothing was found. Let it through once — **System Settings → Privacy & Security → Open Anyway** — and it opens normally from then on. [The four clicks, spelled out →](docs/02-installation.md#mac-blocks-the-first-launch)
 
 **[Get started →](docs/03-quickstart.md)** · **[Read the docs →](docs/)** · **[View the project on GitHub →](https://github.com/ryanallen/leaftext)**
 
 ---
 
-Your notes deserve better than a text editor. Open a file in Leaf Text and it becomes a page you actually want to read — quiet, well set, and easy to move through. Click into a sentence and you can write. Nothing saves until you say so.
+Your notes deserve better than a text editor. Open a file in Leaftext and it becomes a page you actually want to read — quiet, well set, and easy to move through. Click into a sentence and you can write. Nothing saves until you say so.
 
 There's no account and no sign-up. Your files never leave your computer, and they stay [Markdown](docs/01-features/01-rendering.md), [XML](docs/01-features/01-rendering.md#xml), [JSON, and YAML](docs/01-features/01-rendering.md#data-files-json-and-yaml) — and even [saved emails](docs/01-features/01-rendering.md#email-eml) — formats every other app can read, so you're never locked in.
 
@@ -27,7 +27,7 @@ Free, on macOS and Windows.
 
 ### Read without the noise
 
-![Leaf Text reading view rendering a Markdown document](imgs/rendering.png)
+![Leaftext reading view rendering a Markdown document](imgs/rendering.png)
 
 Open a `.md` file and it renders the way you'd expect — the same way GitHub does, with the extras people actually use: [highlighted code](docs/01-features/01-rendering.md#code), [diagrams](docs/01-features/01-rendering.md#mermaid-diagrams), [math](docs/01-features/01-rendering.md#math), [callouts](docs/01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](docs/01-features/01-rendering.md#footnotes), [emoji](docs/01-features/01-rendering.md#emoji), task lists, and [your own images](docs/01-features/01-rendering.md#images).
 
@@ -58,7 +58,7 @@ The [graph view](docs/01-features/03-library.md#graph) maps the links between yo
 
 ![Tabs and Back/Forward history in the app bar](imgs/navigation.png)
 
-It moves like a browser: [tabs](docs/01-features/02-navigation.md#tabs), Back and Forward through your [history](docs/01-features/02-navigation.md#history), an [outline](docs/01-features/02-navigation.md#outline) at the top of every document, and a Previous/Next [pager](docs/01-features/05-settings.md#pager) that reads a folder in order. Change a file in another app and Leaf Text [picks it up](docs/01-features/02-navigation.md#reload) without losing your spot. **[Navigation →](docs/01-features/02-navigation.md)**
+It moves like a browser: [tabs](docs/01-features/02-navigation.md#tabs), Back and Forward through your [history](docs/01-features/02-navigation.md#history), an [outline](docs/01-features/02-navigation.md#outline) at the top of every document, and a Previous/Next [pager](docs/01-features/05-settings.md#pager) that reads a folder in order. Change a file in another app and Leaftext [picks it up](docs/01-features/02-navigation.md#reload) without losing your spot. **[Navigation →](docs/01-features/02-navigation.md)**
 
 ### Take in the whole page at once
 
@@ -90,27 +90,27 @@ No account. No cloud. No telemetry. Nothing you open, write, or search ever leav
 
 The app touches the network exactly twice, and neither one carries your words: it asks GitHub whether a newer version exists, and it fetches a theme's font from Google Fonts the first time you pick that theme.
 
-Your [settings](docs/01-features/05-settings.md) are a JSON file on your machine, and your documents are the files you already had. Delete Leaf Text tomorrow and every word you wrote is still sitting in the folder you put it in, readable by anything.
+Your [settings](docs/01-features/05-settings.md) are a JSON file on your machine, and your documents are the files you already had. Delete Leaftext tomorrow and every word you wrote is still sitting in the folder you put it in, readable by anything.
 
 Updates download quietly in the background and are checked against a published digest, then wait for you to click **Restart to update**. Nothing installs on its own. **[Settings →](docs/01-features/05-settings.md#updates)**
 
 ## Get it
 
-Leaf Text is free. **[Download the latest release](https://github.com/ryanallen/leaftext/releases/latest)**, then follow your platform below — or the fuller walkthrough in the **[Installation guide](docs/02-installation.md#install)**.
+Leaftext is free. **[Download the latest release](https://github.com/ryanallen/leaftext/releases/latest)**, then follow your platform below — or the fuller walkthrough in the **[Installation guide](docs/02-installation.md#install)**.
 
 ### macOS
 
 1. Download the file ending in **`-macos-universal.dmg`**. One file covers Apple Silicon and Intel.
 2. Open it. Drag the leaf app onto the **Applications** folder beside it.
-3. Eject the disk image, then open **Leaf Text** from Applications.
+3. Eject the disk image, then open **Leaftext** from Applications.
 
 **First launch — macOS will refuse it**
 
-Expected. Apple charges a yearly fee to notarize an app; Leaf Text is free and isn't enrolled, so macOS blocks anything unnotarized on sight. Nothing was scanned and nothing was found. Let it through once:
+Expected. Apple charges a yearly fee to notarize an app; Leaftext is free and isn't enrolled, so macOS blocks anything unnotarized on sight. Nothing was scanned and nothing was found. Let it through once:
 
-1. Double-click **Leaf Text**, then click **Done** on the refusal.
+1. Double-click **Leaftext**, then click **Done** on the refusal.
 2. Open **System Settings** → **Privacy & Security**.
-3. Scroll to the bottom. Click **Open Anyway** on the line naming Leaf Text.
+3. Scroll to the bottom. Click **Open Anyway** on the line naming Leaftext.
 4. Confirm with Touch ID or your password, then click **Open**.
 
 Every launch after that is an ordinary double-click. On macOS 12 and earlier it's shorter: right-click the app → **Open** → **Open**. If the **Open Anyway** button never appears, open Terminal and run `xattr -cr /Applications/leaftext.app` instead. **[More detail →](docs/02-installation.md#mac-blocks-the-first-launch)**
@@ -129,7 +129,7 @@ Your library index and browser data live alongside it:
 %LOCALAPPDATA%\ryanallen\leaftext\data
 ```
 
-Launch it from the Start Menu, or tap the Windows key and type **Leaf Text**. One Start Menu entry, no desktop shortcut.
+Launch it from the Start Menu, or tap the Windows key and type **Leaftext**. One Start Menu entry, no desktop shortcut.
 
 > **Upgrading from v0.1.364 or earlier?** Uninstall the old version first, from **Settings → Apps**. Those installed machine-wide into `C:\Program Files`, and a per-user package can't remove one, so you'd end up with two copies.
 
@@ -137,7 +137,7 @@ Launch it from the Start Menu, or tap the Windows key and type **Leaf Text**. On
 
 New here? The **[Quickstart](docs/03-quickstart.md)** gets you reading in a couple of minutes. Then browse the **[full documentation](docs/01-introduction.md)**.
 
-The pages are plain Markdown under [`docs/`](docs/) — the same format the app reads, so you can open them in Leaf Text itself.
+The pages are plain Markdown under [`docs/`](docs/) — the same format the app reads, so you can open them in Leaftext itself.
 
 ---
 

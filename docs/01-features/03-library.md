@@ -1,8 +1,8 @@
 # Library
 
-> Point Leaf Text at a folder and it becomes a vault: a browsable file tree, a searchable body of text, and a map of how those documents link to each other. Nothing is crawled, nothing is written into your folder, and a vault can sync itself to GitHub.
+> Point Leaftext at a folder and it becomes a vault: a browsable file tree, a searchable body of text, and a map of how those documents link to each other. Nothing is crawled, nothing is written into your folder, and a vault can sync itself to GitHub.
 
-The library is the part of Leaf Text that helps you find documents, not just read the one you already opened. It lives in a left-side pane, and everything it shows is read from disk when you ask for it.
+The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane, and everything it shows is read from disk when you ask for it.
 
 ## Summary
 
@@ -20,7 +20,7 @@ The library is the part of Leaf Text that helps you find documents, not just rea
 
 ## Vaults
 
-A **vault** is a folder you have told Leaf Text to treat as a library root. It is the unit that search and syncing work over, and it is what makes the [graph](#graph) bigger — but not what makes the graph possible.
+A **vault** is a folder you have told Leaftext to treat as a library root. It is the unit that search and syncing work over, and it is what makes the [graph](#graph) bigger — but not what makes the graph possible.
 
 The button at the left of the breadcrumb — a box, or a cloud once the vault [syncs](#github-sync) — opens the vault switcher:
 
@@ -30,7 +30,7 @@ The button at the left of the breadcrumb — a box, or a cloud once the vault [s
 - The settings button on a vault's row opens a panel to rename it, point it at a different folder, remove it, or connect it to [GitHub](#github-sync).
 
 > [!NOTE]
-> **Nothing is written into your folder.** A vault is a row in Leaf Text's own database, not a marker file. Removing a vault forgets it; the folder and its files are untouched.
+> **Nothing is written into your folder.** A vault is a row in Leaftext's own database, not a marker file. Removing a vault forgets it; the folder and its files are untouched.
 
 ## File tree
 
@@ -107,7 +107,7 @@ A vault can be a git repository that pushes to GitHub. Open a vault's settings f
 
 ### What it needs
 
-**git is the only requirement.** Leaf Text never holds a token: it runs the `git` already on your machine, which already knows who you are and how to sign in.
+**git is the only requirement.** Leaftext never holds a token: it runs the `git` already on your machine, which already knows who you are and how to sign in.
 
 | What is installed | What the panel offers |
 | --- | --- |
@@ -123,7 +123,7 @@ The panel also warns before the fact about the two things git needs and often la
 
 The settings panel names the address the vault points at now. **Change repo…** opens a field for a new one, with **Save** and **Cancel**: nothing changes until you press Save, and the address it replaces is offered back with one press in case the change was a mistake.
 
-Setting or changing the address only points the vault — it never pushes on its own. Sending your files is always a separate, deliberate [Sync](#syncing), so naming a repository can never overwrite what is already in it. Leaf Text also refuses to act on a repository the vault folder merely sits *inside*; it works only on a repository the folder is the root of.
+Setting or changing the address only points the vault — it never pushes on its own. Sending your files is always a separate, deliberate [Sync](#syncing), so naming a repository can never overwrite what is already in it. Leaftext also refuses to act on a repository the vault folder merely sits *inside*; it works only on a repository the folder is the root of.
 
 ### Syncing
 
@@ -180,7 +180,7 @@ Cut or Copy a file, then Paste it into a folder to move or copy it there. A cut 
 Two things are worth knowing:
 
 - **Nothing is overwritten.** Pasting where the name is already taken refuses and says so, rather than replacing what is there.
-- **This clipboard is Leaf Text's own.** Cut and Copy also put the file on the *system* clipboard, so you can paste it in Explorer or Finder — but the reverse does not hold: a file you copied in your file manager is not what Paste here acts on.
+- **This clipboard is Leaftext's own.** Cut and Copy also put the file on the *system* clipboard, so you can paste it in Explorer or Finder — but the reverse does not hold: a file you copied in your file manager is not what Paste here acts on.
 
 Copying a whole folder is not supported; a folder can be pasted only as a move (Cut, then Paste).
 

@@ -167,7 +167,7 @@ export function decorateAnchorLinks(root, label = 'Link to this section') {
     // attribute and drawn by CSS (::before content), NOT as a text node: that
     // keeps the digit out of the document's text content, so a search crawler
     // rendering the page never glues the gutter number onto the following
-    // sentence in the result snippet (e.g. "7Leaf Text opens…"). It stays
+    // sentence in the result snippet (e.g. "7Leaftext opens…"). It stays
     // aria-hidden for the same reason — it is a pointer affordance, not content.
     const num = document.createElement('span');
     num.className = 'anchor-link-num';

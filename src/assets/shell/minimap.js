@@ -1028,7 +1028,7 @@ window.leafSetNavigation({ canGoBack: false, canGoForward: false });
 // screen distinguishes that from a first launch, so say it; the file is left
 // alone for its owner to look at.
 if (window.__leafSettingsUnreadable) {
-  window.leafShowError('Your settings file could not be read, so Leaf Text started with its defaults. Your saved choices are still in the file.');
+  window.leafShowError('Your settings file could not be read, so Leaftext started with its defaults. Your saved choices are still in the file.');
 }
 // The vault list came in on the window rather than through its callback, so
 // nothing has asked about its repository yet.

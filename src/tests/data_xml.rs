@@ -287,7 +287,7 @@ fn xml_with_a_doctype_still_renders() {
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>CFBundleName</key>
-  <string>Leaf Text</string>
+  <string>Leaftext</string>
 </dict></plist>"#;
 
     let (_title, html) = render_xml_body(xml);

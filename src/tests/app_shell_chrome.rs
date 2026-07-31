@@ -27,7 +27,7 @@ fn app_shell_stays_well_under_navigate_to_string_budget() {
     // WebView2 loads the shell through `ICoreWebView2::NavigateToString`, which
     // rejects content past ~2 MB with E_INVALIDARG (0x80070057) — the string is
     // measured as UTF-16, so the real ceiling is ~1M ASCII chars. Inlining the
-    // ~1.3 MB reading-mode stylesheet blew past it (regression: "Leaf Text could
+    // ~1.3 MB reading-mode stylesheet blew past it (regression: "Leaftext could
     // not start"). All heavy CSS now loads via `app.css` over the asset
     // protocol, so the shell is a small skeleton + inline bootstrap/app script.
     // This test fails loudly if any large blob is inlined back into the shell.

@@ -1,8 +1,8 @@
-# Leaf Text documentation
+# Leaftext documentation
 
 > Everything in `docs/` — what each page covers, how the pages fit together, and how the folder becomes [leaftext.com/docs](https://leaftext.com/docs).
 
-Leaf Text is a free desktop app for reading and writing your own documents. Open a local Markdown, XML, JSON, YAML, or email (`.eml`) file, get a clean rendered view, write straight into the page, and keep your place with tabs, history, a minimap, and a searchable library. Nothing leaves your device. These docs cover the whole app, from installing it to the startup-validated theme contract behind the scenes.
+Leaftext is a free desktop app for reading and writing your own documents. Open a local Markdown, XML, JSON, YAML, or email (`.eml`) file, get a clean rendered view, write straight into the page, and keep your place with tabs, history, a minimap, and a searchable library. Nothing leaves your device. These docs cover the whole app, from installing it to the startup-validated theme contract behind the scenes.
 
 ## Map
 
@@ -29,7 +29,7 @@ flowchart LR
 
 | Page | What it covers |
 | --- | --- |
-| [Introduction](01-introduction.md) | What Leaf Text is, the feature overview, and where to go for each task |
+| [Introduction](01-introduction.md) | What Leaftext is, the feature overview, and where to go for each task |
 | [Installation](02-installation.md) | Step-by-step installs for macOS (`.dmg`) and Windows (`.msi`), how to get past the [first-launch block on a Mac](02-installation.md#mac-blocks-the-first-launch), plus [updates](01-features/05-settings.md#updates) and data paths |
 | [Quickstart](03-quickstart.md) | The smallest useful path through the app: open a file, read, jump, and reopen — with the core shortcuts |
 
@@ -49,7 +49,7 @@ How the app behaves, page by page:
 
 ## Development
 
-For anyone building, extending, or releasing Leaf Text:
+For anyone building, extending, or releasing Leaftext:
 
 | Page | What it covers |
 | --- | --- |
@@ -80,4 +80,4 @@ node docs/render-docs-check.mjs
 ```
 
 > [!TIP]
-> Every page here is readable two ways: rendered on the website, or opened directly in Leaf Text itself — the app these docs describe.
+> Every page here is readable two ways: rendered on the website, or opened directly in Leaftext itself — the app these docs describe.

@@ -121,7 +121,7 @@ fn startup_failure_message_includes_recovery_hint() {
     let error = io::Error::new(io::ErrorKind::NotFound, "webview runtime missing");
     let message = startup_failure_message(&error);
 
-    assert!(message.contains("Leaf Text could not start."));
+    assert!(message.contains("Leaftext could not start."));
     assert!(message.contains("webview runtime missing"));
     assert!(message.contains("Microsoft Edge WebView2 Runtime"));
 }
@@ -131,7 +131,7 @@ fn startup_failure_message_identifies_webview_access_denied() {
     let error = io::Error::new(io::ErrorKind::PermissionDenied, "Access is denied.");
     let message = startup_failure_message(&error);
 
-    assert!(message.contains("Leaf Text could not start."));
+    assert!(message.contains("Leaftext could not start."));
     assert!(message.contains("Access is denied."));
     assert!(message.contains("per-user browser data folder"));
     assert!(message.contains("webview2"));

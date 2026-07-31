@@ -5,7 +5,7 @@
 // you are currently looking at. Click or drag the rail to jump anywhere. It
 // replaces the page scrollbar (styles.css hides that).
 //
-// This is the same idea as the minimap in the Leaf Text desktop app: instead of
+// This is the same idea as the minimap in the Leaftext desktop app: instead of
 // drawing an abstract bar, we clone the actual rendered document and shrink it
 // with a CSS transform, so what you see in the rail is a real (tiny) thumbnail
 // of the page. The only difference here is that the page scrolls the window,

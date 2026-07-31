@@ -164,7 +164,7 @@ jobs:
             <key>CFBundleDevelopmentRegion</key>
             <string>en</string>
             <key>CFBundleDisplayName</key>
-            <string>Leaf Text</string>
+            <string>Leaftext</string>
             <key>CFBundleExecutable</key>
             <string>leaftext</string>
             <key>CFBundleIdentifier</key>
@@ -172,7 +172,7 @@ jobs:
             <key>CFBundleInfoDictionaryVersion</key>
             <string>6.0</string>
             <key>CFBundleName</key>
-            <string>Leaf Text</string>
+            <string>Leaftext</string>
             <key>CFBundlePackageType</key>
             <string>APPL</string>
             <key>CFBundleShortVersionString</key>
@@ -186,15 +186,15 @@ jobs:
             <key>NSPrincipalClass</key>
             <string>NSApplication</string>
             <key>NSDesktopFolderUsageDescription</key>
-            <string>Leaf Text indexes Markdown files in your Desktop folder so they appear in the library and search.</string>
+            <string>Leaftext indexes Markdown files in your Desktop folder so they appear in the library and search.</string>
             <key>NSDocumentsFolderUsageDescription</key>
-            <string>Leaf Text indexes Markdown files in your Documents folder so they appear in the library and search.</string>
+            <string>Leaftext indexes Markdown files in your Documents folder so they appear in the library and search.</string>
             <key>NSDownloadsFolderUsageDescription</key>
-            <string>Leaf Text indexes Markdown files in your Downloads folder so they appear in the library and search.</string>
+            <string>Leaftext indexes Markdown files in your Downloads folder so they appear in the library and search.</string>
             <key>NSRemovableVolumesUsageDescription</key>
-            <string>Leaf Text indexes Markdown files on connected drives so they appear in the library and search.</string>
+            <string>Leaftext indexes Markdown files on connected drives so they appear in the library and search.</string>
             <key>NSNetworkVolumesUsageDescription</key>
-            <string>Leaf Text indexes Markdown files on network volumes so they appear in the library and search.</string>
+            <string>Leaftext indexes Markdown files on network volumes so they appear in the library and search.</string>
             <!-- Without this the bundle claims no documents: Finder shows a blank
                  icon for .md files, leaftext is absent from Open With, and Get
                  Info offers no way to make it the default. Viewer, not Editor:
@@ -365,7 +365,7 @@ jobs:
               local attempt
               for attempt in 1 2 3 4 5; do
                 rm -f "${dmg_path}"
-                if hdiutil create -volname "Leaf Text ${tag}" -srcfolder "${dmg_root}" -ov -format UDZO "${dmg_path}"; then
+                if hdiutil create -volname "Leaftext ${tag}" -srcfolder "${dmg_root}" -ov -format UDZO "${dmg_path}"; then
                   return 0
                 fi
                 if [ "${attempt}" = "5" ]; then

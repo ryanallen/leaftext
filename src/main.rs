@@ -267,7 +267,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     // `mut` is used only by the non-Windows icon block below.
     #[allow(unused_mut)]
     let mut window_builder = WindowBuilder::new()
-        .with_title("Leaf Text")
+        .with_title("Leaftext")
         .with_inner_size(LogicalSize::new(
             settings.window_width as f64,
             settings.window_height as f64,
@@ -450,14 +450,14 @@ fn startup_failure_message(error: &dyn Error) -> String {
     if error_text.contains("0x80070005") || error_text.contains("Access is denied") {
         let webview_data_dir = webview_user_data_dir()
             .map(|path| path.display().to_string())
-            .unwrap_or_else(|| "the per-user Leaf Text data folder".to_string());
+            .unwrap_or_else(|| "the per-user Leaftext data folder".to_string());
         return format!(
-            "Leaf Text could not start.\n\n{error}\n\nWebView2 could not access its per-user browser data folder:\n{webview_data_dir}\n\nMake sure your Windows account can write to that folder, then try launching Leaf Text again."
+            "Leaftext could not start.\n\n{error}\n\nWebView2 could not access its per-user browser data folder:\n{webview_data_dir}\n\nMake sure your Windows account can write to that folder, then try launching Leaftext again."
         );
     }
 
     format!(
-        "Leaf Text could not start.\n\n{error}\n\nIf this happens on Windows, make sure the Microsoft Edge WebView2 Runtime is installed and try launching Leaf Text again."
+        "Leaftext could not start.\n\n{error}\n\nIf this happens on Windows, make sure the Microsoft Edge WebView2 Runtime is installed and try launching Leaftext again."
     )
 }
 
@@ -519,7 +519,7 @@ fn source_payload_protocol_handler(
 
 fn show_startup_error(message: &str) {
     let _ = rfd::MessageDialog::new()
-        .set_title("Leaf Text could not start")
+        .set_title("Leaftext could not start")
         .set_description(message)
         .set_level(rfd::MessageLevel::Error)
         .show();

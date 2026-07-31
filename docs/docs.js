@@ -33,7 +33,7 @@ import { applySpeedReaderIfEnabled } from '../site/speed-reader.js';
 
 // Site identity is DERIVED at runtime, never hardcoded, so this one file is
 // shared verbatim across sites (leaftext, emptyguru, …) through the site/
-// junction — nothing here says "Leaf Text", so nothing drifts:
+// junction — nothing here says "Leaftext", so nothing drifts:
 //   • Brand + subtitle come from the page <title> ("Brand — Subtitle").
 //   • The "← back" link is the site root, always one level above /docs.
 //   • The repo (only needed for the GitHub tree fallback on Pages) is read from

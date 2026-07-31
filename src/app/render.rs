@@ -113,7 +113,7 @@ impl Reader {
                 {
                     if let Some(title) = self.workspace.tabs.get(index).map(|tab| tab.title.clone())
                     {
-                        self.window.set_title(&format!("{title} - Leaf Text"));
+                        self.window.set_title(&format!("{title} - Leaftext"));
                     }
                     // Restoring a tab (switching back) lands at its saved code-view
                     // position; a reorder preserves the page's current scroll (None,
@@ -200,7 +200,7 @@ impl Reader {
                     tab.title = document.title.clone();
                 }
                 self.window
-                    .set_title(&format!("{} - Leaf Text", document.title));
+                    .set_title(&format!("{} - Leaftext", document.title));
                 let image_source_path = fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
                 self.set_image_dir(local_image_source_dir(&image_source_path));
                 let tabs = self.workspace.tab_summaries();
@@ -228,7 +228,7 @@ impl Reader {
                 run_page_script(self.page(), &script, "Failed to update document view");
             }
             None => {
-                self.window.set_title("Leaf Text");
+                self.window.set_title("Leaftext");
                 self.set_image_dir(None);
                 let tabs = self.workspace.tab_summaries();
                 run_page_script(

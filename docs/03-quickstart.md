@@ -2,7 +2,7 @@
 
 > Open your first file and get comfortable with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), the [minimap](01-features/04-minimap.md), and the [library](01-features/03-library.md) — a few minutes, start to finish.
 
-There's nothing to set up. No account, no folder to designate, no plugins to choose. Point Leaf Text at a file you already have and start reading. This page walks the shortest useful path: open a file, read it, move around, and come back to it later.
+There's nothing to set up. No account, no folder to designate, no plugins to choose. Point Leaftext at a file you already have and start reading. This page walks the shortest useful path: open a file, read it, move around, and come back to it later.
 
 > [!NOTE]
 > Not installed yet? [Install it first](02-installation.md#install) — three steps per platform. On a Mac, macOS refuses the first launch until you [let it through once](02-installation.md#mac-blocks-the-first-launch).
@@ -19,7 +19,7 @@ There's nothing to set up. No account, no folder to designate, no plugins to cho
 
 ```mermaid
 flowchart LR
-    A[Launch Leaf Text] --> B[Open a .md, .xml, .json, .yaml, or .eml file]
+    A[Launch Leaftext] --> B[Open a .md, .xml, .json, .yaml, or .eml file]
     B --> C[Read in main pane]
     C --> D[Jump with minimap]
     C --> E[Open another file]
@@ -34,7 +34,7 @@ flowchart LR
 | Keyboard | `Ctrl+O` / `Cmd+O` |
 | Drag and drop | Drop a `.md`, `.xml`, `.json`, `.yaml`, or `.eml` file onto the window |
 | Recent files | Click a file on the no-file home screen |
-| Command line / Open with | Launch Leaf Text with a file path |
+| Command line / Open with | Launch Leaftext with a file path |
 | Start a blank one | The **+** in the app bar, or **New document** on the home screen — see [Editing](01-features/07-editing.md#new-document) |
 
 > [!TIP]
@@ -59,7 +59,7 @@ flowchart LR
 
 ### New tab
 
-Press `Ctrl+O` / `Cmd+O` again. Leaf Text opens the next file in a new tab instead of replacing the current one.
+Press `Ctrl+O` / `Cmd+O` again. Leaftext opens the next file in a new tab instead of replacing the current one.
 
 ### Jump
 
@@ -106,7 +106,7 @@ Save this as `demo.md` and open it:
 
 ```rust
 fn main() {
-    println!("Leaf Text");
+    println!("Leaftext");
 }
 ```
 ~~~
