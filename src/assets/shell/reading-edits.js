@@ -301,6 +301,17 @@ function openInsertBlock(
       setPendingCaret({ srcStart: insertAt + utf8ByteLength(lead) });
     }
   };
+  // What the format bar does here. This line is not in the buffer, so its own commit
+  // carries the marker — a splice from outside landed beside the words, and the blur
+  // commit then wrote them again.
+  block.__commitAs = (marker) => {
+    if (block.__committed) return;
+    const typed = inlineDomToMarkdown(block).trim();
+    if (!typed) return;
+    block.__committed = true;
+    sendEditCommand({ command: 'editBlock', start: insertAt, end: insertAt, text: separator + marker + typed + suffix });
+    setPendingCaret({ srcStart: insertAt + utf8ByteLength(separator), textOffset: 0 });
+  };
   // The plus pressed on this very line: it is empty, so it becomes the kind that
   // was picked rather than growing a second block beside it.
   block.__becomeBlock = (specId) => {
@@ -368,6 +379,7 @@ function openMediumStart(body) {
   let storyHost = makeBlankBlock('p', 'paragraph', 'Turn over a new leaf...', 0);
   let story = storyHost;
   let storyMarker = '';
+  let titleMarker = '# ';
   body.insertBefore(storyHost, body.firstChild);
   body.insertBefore(title, body.firstChild);
   let committed = false;
@@ -383,7 +395,7 @@ function openMediumStart(body) {
     if (!titleText && !storyText && !extra) return false;
     committed = true;
     const parts = [];
-    if (titleText) parts.push('# ' + titleText);
+    if (titleText) parts.push(titleMarker + titleText);
     if (storyText) parts.push(storyMarker + storyText);
     const lead = parts.length ? parts.join('\n\n') + '\n\n' : '';
     const text = extra ? lead + extra.text : parts.join('\n\n');
@@ -424,10 +436,19 @@ function openMediumStart(body) {
     wireStartBlock(story);
     story.focus({ preventScroll: true });
   };
+  // The format bar on either of the pair. All it can do is change the marker that
+  // line commits with — neither is in the buffer for a splice to land on.
+  title.__commitAs = (marker, target) => {
+    if (committed) return;
+    if (target === title) titleMarker = marker;
+    else storyMarker = marker;
+    commit(false);
+  };
   const carryPairHooks = (block) => {
     block.__insertBlockWith = title.__insertBlockWith;
     block.__lineBelow = title.__lineBelow;
     block.__becomeBlock = title.__becomeBlock;
+    block.__commitAs = title.__commitAs;
   };
   const inPair = (node) => !!node && (title.contains(node) || story.contains(node));
   const wireStartBlock = (block) => {

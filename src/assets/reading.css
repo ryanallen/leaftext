@@ -3383,11 +3383,14 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 17px;
   height: 17px;
 }
-/* The second H, drawn smaller. Same glyph at two sizes is the pair's whole
-   message — the size the words become. */
-.selection-format.is-small-heading svg {
-  width: 12px;
-  height: 12px;
+/* One H at two sizes, which is the whole message: bigger, or smaller. */
+.selection-format.is-heading-bigger svg {
+  width: 20px;
+  height: 20px;
+}
+.selection-format.is-heading-smaller svg {
+  width: 13px;
+  height: 13px;
 }
 .selection-format:hover:not(:disabled) {
   background: var(--app-surface-muted);

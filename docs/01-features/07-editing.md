@@ -15,7 +15,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | The block gutter | A [handle and a plus](#the-block-gutter) in the page's left margin: drag a block to reorder it, or add one on the empty line |
 | Adding a block | The plus opens [a row of kinds](#adding-a-block) — text, heading, list, quote, code, table, image, divider |
 | Inserting an image | The image button [asks for a file or an address](#images); nothing is copied, and the picture stays where you keep it |
-| The format bar | Highlight words and [a bar appears over them](#the-format-bar): bold, italic, strikethrough, code, link, then text, two heading sizes and quote for the whole block |
+| The format bar | Highlight words and [a bar appears over them](#the-format-bar): bold, italic, strikethrough, code, link, then text, bigger/smaller heading and quote for the whole block |
 | Interactive checkboxes | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | Undo | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits |
 | Code view | Toggle the rendered page to the raw source and back |
@@ -101,9 +101,10 @@ Highlight words in an unlocked Markdown page and a small bar appears over them.
 
 - **Bold**, *italic*, ~~strikethrough~~, `code`, and **link** apply to the highlighted words. A button lights up when the words already carry that format, so the bar says what they are as much as what they could be — press it again to take it off.
 - **Link** opens a box for the address, filled in with the link already there if there is one. `Enter` applies it; an empty box takes the link away.
-- **Text**, **Big heading**, **Small heading** and **Quote** act on the whole block the highlight sits in. They appear only where the block is a paragraph, heading, or quote.
-- These four don't toggle — **the one the block already is grays out**, so the bar says what the block is and every press is a straight answer. **Text** is the way out of a heading or a quote; the two **H**s only ever resize.
-- The headings are the same H drawn at two sizes: big writes `##`, small writes `###`. A document's own `#` title counts as big, and any level below `###` counts as small. That rounding only decides which button grays — no heading level is rewritten just by being shown.
+- **Text**, a **bigger** and a **smaller** heading, and **Quote** act on the whole block the highlight sits in. They appear only where the block is a paragraph, heading, or quote.
+- These don't toggle — **a button with nowhere to go grays out**, so every press is a straight answer. **Text** is the way out of a heading or a quote, and grays out on body text.
+- The two **H**s are the same glyph at two sizes, and they move **one level per press**: `######` → `#####` → … → `#`. All six levels are reachable, so a document can carry as many `#` headings as you want. The bigger H grays out at `#` and the smaller at `######`.
+- On body text or a quote, the bigger H makes it a `##` heading — the ordinary section heading, with `#` one more press away. The smaller H grays out there, since body text has no size to shrink.
 - `Ctrl+B` / `Cmd+B`, `Ctrl+I` / `Cmd+I` and `Ctrl+K` / `Cmd+K` do the first three without the bar. `Escape` dismisses it.
 
 The formatting is written into the page as you would expect it in Markdown — `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``, `[text](address)` — and saved with the block, by the same splice as any other inline edit.

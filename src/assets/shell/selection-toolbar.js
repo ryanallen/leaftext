@@ -32,15 +32,21 @@ const INLINE_FORMATS = [
 // What the whole block can become, in the order the bar shows them. Each is written
 // by rewriting that block's source from its text.
 //
-// Four states, one button each, and the one the block already is grays out rather
-// than toggling: Text is the way out of a heading, and the size buttons only resize.
-// Pressing the size you are on and having the heading come off said the wrong thing.
+// Nothing here toggles: a button with nowhere to go grays out, and Text is the way
+// out of a heading. Pressing the size you were on and having the heading come off
+// said the wrong thing.
+//
+// The H's are a bigger and a smaller, one level per press. Relative rather than fixed
+// levels so all six are reachable, including the `#` a document may hold many of.
 const BLOCK_FORMATS = [
   { id: 'text', label: 'Text', icon: `{{TEXT_ICON_SVG}}` },
-  { id: 'heading', label: 'Big heading', icon: `{{HEADING_ICON_SVG}}`, level: 2 },
-  { id: 'subheading', label: 'Small heading', icon: `{{HEADING_ICON_SVG}}`, level: 3, small: true },
+  { id: 'bigger', label: 'Bigger heading', icon: `{{HEADING_ICON_SVG}}`, step: -1, cls: 'is-heading-bigger' },
+  { id: 'smaller', label: 'Smaller heading', icon: `{{HEADING_ICON_SVG}}`, step: 1, cls: 'is-heading-smaller' },
   { id: 'quote', label: 'Quote', icon: `{{QUOTE_ICON_SVG}}`, quote: true },
 ];
+// Where a paragraph or a quote steps in when made a heading: the ordinary section
+// heading, with `#` one more press of the bigger H away.
+const HEADING_ENTRY_LEVEL = 2;
 const BLOCK_FORMAT_KINDS = new Set(['paragraph', 'heading', 'blockquote']);
 
 // Rebuilt with the document, like the block gutter: renderState replaces the
@@ -133,7 +139,7 @@ function syncSelectionToolbar() {
 function markSelectionToolbarState() {
   const kind = selectionToolbarBlock.dataset.blockKind;
   const blockable = BLOCK_FORMAT_KINDS.has(kind);
-  const already = blockable ? currentBlockFormatId(selectionToolbarBlock, kind) : null;
+  const level = kind === 'heading' ? blockHeadingLevel(selectionToolbarBlock) : 0;
   for (const [id, button] of selectionToolbarButtons) {
     const format = INLINE_FORMATS.find((item) => item.id === id);
     if (format) {
@@ -141,30 +147,31 @@ function markSelectionToolbarState() {
       continue;
     }
     button.hidden = !blockable;
-    button.disabled = id === already;
+    button.disabled = !blockFormatChanges(BLOCK_FORMATS.find((item) => item.id === id), kind, level);
   }
   selectionToolbar.classList.toggle('has-block-formats', blockable);
 }
 
-// Which block button the highlighted block already is — the one thing the bar has
-// nothing to do, so it grays out.
-function currentBlockFormatId(block, kind) {
-  if (kind === 'blockquote') return 'quote';
-  if (kind !== 'heading') return 'text';
-  return headingButtonLevel(blockHeadingLevel(block)) === 2 ? 'heading' : 'subheading';
+// Whether pressing a block button would change anything. False grays it out: nothing
+// is bigger than `#`, nothing smaller than `######`, and Text is already text.
+function blockFormatChanges(format, kind, level) {
+  if (format.step) return !!steppedHeadingLevel(level, format.step);
+  if (format.quote) return kind !== 'blockquote';
+  return kind !== 'paragraph';
+}
+
+// The level one press lands on, or 0 where it has nowhere to go. Only the bigger H
+// steps body text in — there is nothing to shrink about a paragraph.
+function steppedHeadingLevel(level, step) {
+  if (!level) return step < 0 ? HEADING_ENTRY_LEVEL : 0;
+  const next = level + step;
+  return next >= 1 && next <= 6 ? next : 0;
 }
 
 // A heading's level, read from the tag the renderer chose — the same place the
 // serializer takes it from. 0 for anything that is not a heading.
 function blockHeadingLevel(block) {
   return Number(block.tagName.substring(1)) || 0;
-}
-
-// Which of the two H's a heading counts as: six Markdown levels, two sizes, so a
-// document's own `#` rounds to the big one and anything past `###` to the small one.
-// Rounding only decides which button grays — no level is rewritten by being shown.
-function headingButtonLevel(level) {
-  return level <= 2 ? 2 : 3;
 }
 
 function selectionFormatActive(format) {
@@ -326,17 +333,31 @@ function applyBlockFormat(format) {
   const start = Number(block.dataset.srcStart);
   const end = Number(block.dataset.srcEnd);
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  const kind = block.dataset.blockKind;
+  // Recomputed rather than trusted to the disabled button: a level outside 1-6 is not
+  // a heading Markdown can write.
+  const marker = blockFormatMarker(format, kind === 'heading' ? blockHeadingLevel(block) : 0);
+  if (marker === null) return;
+  // An empty range is a block that exists only in the page: its words are not in the
+  // buffer for a splice to replace, so its own commit carries the marker. Splicing
+  // from out here wrote the marker beside the words and then wrote them twice.
+  if (end === start) {
+    if (!block.__commitAs) return;
+    hideSelectionToolbar();
+    block.__commitAs(marker, block);
+    return;
+  }
   const body = blockBodyMarkdown(block);
   hideSelectionToolbar();
   if (!body) return;
   let text;
-  if (format.level) {
+  if (format.step) {
     // A heading is one line, so a multi-line block folds into one becoming one.
-    text = '#'.repeat(format.level) + ' ' + body.replace(/\s*\n+\s*/g, ' ');
+    text = marker + body.replace(/\s*\n+\s*/g, ' ');
   } else if (format.quote) {
     text = body
       .split('\n')
-      .map((line) => ('> ' + line).trimEnd())
+      .map((line) => (marker + line).trimEnd())
       .join('\n');
   } else {
     // Text: the markers came off with the body, so there is nothing to add back.
@@ -344,6 +365,14 @@ function applyBlockFormat(format) {
   }
   sendBlockSplice(block, start, end, text);
   setPendingCaret({ srcStart: start, textOffset: 0 });
+}
+
+// The Markdown a block button puts in front of the text, or null where the press has
+// nowhere to go and nothing should be written.
+function blockFormatMarker(format, level) {
+  if (!format.step) return format.quote ? '> ' : '';
+  const next = steppedHeadingLevel(level, format.step);
+  return next ? '#'.repeat(next) + ' ' : null;
 }
 
 // A block's words with its kind's markers taken off — a heading's `#`s, a quote's
@@ -370,7 +399,7 @@ function syncSelectionToolbarSoon() {
 function selectionToolbarButton(format, onPress) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = format.small ? 'selection-format is-small-heading' : 'selection-format';
+  button.className = format.cls ? 'selection-format ' + format.cls : 'selection-format';
   button.title = format.label;
   button.setAttribute('aria-label', format.label);
   button.innerHTML = format.icon;

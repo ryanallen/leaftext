@@ -270,6 +270,47 @@ if (booted) {
   const { sourceSpliceSince, lineIndexAtByteOffset, byteOffsetAtLineIndex, rangesAfterCommit, fencedCodeInnerSpan } =
     booted;
 
+  check('the format bar steps heading levels and stops at both ends', () => {
+    const { steppedHeadingLevel, blockFormatChanges } = booted;
+    const BIGGER = -1;
+    const SMALLER = 1;
+    const is = (got, want, what) => {
+      if (got !== want) throw new Error(`${what}: got ${got}, wanted ${want}`);
+    };
+
+    is(steppedHeadingLevel(6, BIGGER), 5, 'h6 bigger'); // one level, not a jump
+    is(steppedHeadingLevel(2, BIGGER), 1, 'h2 bigger'); // h1 is reachable
+    is(steppedHeadingLevel(1, SMALLER), 2, 'h1 smaller');
+    is(steppedHeadingLevel(1, BIGGER), 0, 'h1 bigger'); // nothing above `#`
+    is(steppedHeadingLevel(6, SMALLER), 0, 'h6 smaller'); // nothing below `######`
+    is(steppedHeadingLevel(0, BIGGER), 2, 'text bigger'); // body text steps in at `##`
+    is(steppedHeadingLevel(0, SMALLER), 0, 'text smaller'); // nothing to shrink
+
+    // What grays out. A button with nowhere to go must be the disabled one.
+    const bigger = { step: BIGGER };
+    const smaller = { step: SMALLER };
+    const text = {};
+    const quote = { quote: true };
+    is(blockFormatChanges(bigger, 'heading', 1), false, 'bigger at h1');
+    is(blockFormatChanges(smaller, 'heading', 6), false, 'smaller at h6');
+    is(blockFormatChanges(bigger, 'heading', 6), true, 'bigger at h6');
+    is(blockFormatChanges(text, 'paragraph', 0), false, 'text on a paragraph');
+    is(blockFormatChanges(text, 'heading', 2), true, 'text on a heading');
+    is(blockFormatChanges(quote, 'blockquote', 0), false, 'quote on a quote');
+    is(blockFormatChanges(quote, 'paragraph', 0), true, 'quote on a paragraph');
+
+    // The marker each press writes. Null means write nothing at all — a freshly typed
+    // line commits through this, so a bad marker there writes the words twice.
+    const { blockFormatMarker } = booted;
+    is(blockFormatMarker(bigger, 6), '##### ', 'h6 bigger marker');
+    is(blockFormatMarker(bigger, 2), '# ', 'h2 bigger marker');
+    is(blockFormatMarker(bigger, 1), null, 'h1 bigger marker');
+    is(blockFormatMarker(smaller, 6), null, 'h6 smaller marker');
+    is(blockFormatMarker(bigger, 0), '## ', 'text bigger marker');
+    is(blockFormatMarker(text, 2), '', 'text marker');
+    is(blockFormatMarker(quote, 0), '> ', 'quote marker');
+  });
+
   check('a fenced code block offers its inside and never its fences', () => {
     // The reader edits the inside only, so the fences cannot be typed away. The
     // span is spliced verbatim: a wrong end writes code over a fence.
