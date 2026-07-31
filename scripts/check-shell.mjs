@@ -451,6 +451,38 @@ if (booted) {
       throw new Error('the third line does not account for multi-byte characters');
     }
   });
+
+  // Diagrams are drawn in the theme's own colors, read off :root at render time.
+  // A token that does not exist reads as an empty string, mermaid falls back to
+  // its own palette, and the diagram quietly stops matching the page — so every
+  // name in the maps is held to the ones the stylesheet actually defines.
+  check('the mermaid theme map only names tokens the stylesheet defines', () => {
+    // Read from the fragment rather than the booted page: a `const` in the shell
+    // script is not a property of the context, and the map should not have to
+    // become one to be checked.
+    const fragment = readFileSync(join(root, 'src/assets/shell/decorate.js'), 'utf8');
+    const maps = fragment.slice(
+      fragment.indexOf('const MERMAID_COLOR_MAP'),
+      fragment.indexOf('function themeTokenValue'),
+    );
+    if (!maps) throw new Error('could not find the mermaid theme maps in decorate.js');
+    const used = [...new Set([...maps.matchAll(/'(--[a-z0-9-]+)'/g)].map((m) => m[1]))];
+    if (used.length < 15) throw new Error(`expected the whole map, got ${used.length} tokens`);
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const defined = new Set([...css.matchAll(/^\s{2}(--[a-z0-9-]+):/gm)].map((m) => m[1]));
+    if (defined.size < 50) throw new Error(`only found ${defined.size} tokens in reading.css`);
+    const missing = used.filter((token) => !defined.has(token));
+    if (missing.length) throw new Error(`not defined in reading.css: ${missing.join(', ')}`);
+  });
+
+  // The diagram's labels are set in the theme's body font, which theme.rs emits
+  // per family rather than reading.css.
+  check('the theme compiler emits the font the diagrams ask for', () => {
+    const theme = readFileSync(join(root, 'src/theme.rs'), 'utf8');
+    if (!theme.includes('--reading-font')) {
+      throw new Error('theme.rs no longer emits --reading-font');
+    }
+  });
 }
 
 // ---- report -----------------------------------------------------------------

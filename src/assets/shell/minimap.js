@@ -786,7 +786,17 @@ function stripMinimapClone(preview) {
   // Nothing focusable in the clone: a block being edited in place is a textarea,
   // and a second copy of it in the rail is another tab stop holding stale text.
   preview.querySelectorAll('textarea').forEach((node) => node.remove());
-  preview.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
+  preview.querySelectorAll('[id]').forEach((node) => {
+    // Everything except the inside of a diagram. Mermaid scopes an SVG's colors by
+    // that SVG's own id (`#mermaid-7 .node rect { fill: … }`) and points its
+    // arrowheads at markers by id, so stripping those ids left every shape at the
+    // SVG default: black fills and no arrowheads, which is what the rail was
+    // showing on a page full of diagrams. Keeping them duplicates ids the page
+    // never looks up, and the markers they resolve to are the originals — the same
+    // geometry, drawn at a different scale.
+    if (node.closest('svg')) return;
+    node.removeAttribute('id');
+  });
   preview.querySelectorAll('a[href]').forEach((link) => {
     // Glossary terms blend into the body text via an href-based rule; stripping
     // the href for a11y would drop that blend, so tag them first for a class-based

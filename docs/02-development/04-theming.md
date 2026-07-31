@@ -136,10 +136,11 @@ This surfaces as a test-time or launch-time failure (any run that compiles the t
 
 ## Accessibility gate
 
-Two tests re-derive contrast across **every** theme so an unreadable palette fails `just verify` instead of shipping:
+Three tests re-derive contrast across **every** theme so an unreadable palette fails `just verify` instead of shipping (the third covers diagrams):
 
 - `theme_compiler_gates_readable_pairs_for_every_source` checks text pairs (foreground on background, code, selection, syntax) at **4.5:1** (WCAG AA for text).
 - `theme_compiler_gates_interactive_chrome_contrast` checks icons and controls on filled backgrounds — buttons, nav, badges, and the tab-close hover — at **3:1** (WCAG 1.4.11 for non-text UI).
+- `theme_compiler_gates_diagram_colors_for_every_source` checks the pairs a Mermaid diagram makes: labels on box and subgraph surfaces at **4.5:1**, arrows on the page at **3:1**, and every colored fill (primary, accent, success, warning, danger) required to have at least one theme ink that reads on it at **4.5:1**. See [Diagram colors](#diagram-colors).
 
 ## `compiled_theme_css()`
 
@@ -166,6 +167,29 @@ Fonts are **per-theme data**. Each source's `fonts` block carries three CSS font
 - In `theme_bootstrap_script()`, `applyFamilyFont()` runs on every `apply()` (first paint and each switch): it points a single `<link id="leafThemeFont">` at the active family's URL, or removes it for a family that fetches nothing. Because each stack ends in system fallbacks, text is readable before the web font loads and while offline.
 
 Each family declares its own faces — Fern loads **Noto** (Sans / Serif / Sans Mono), Nightshade **Fraunces + Inter + Fira Code**, Halcyon **IBM Plex Sans/Mono**, Amaranth the **Source** family, Sage **Inter + JetBrains Mono**, Arabica **Rubik + JetBrains Mono**, Goldenrod **Space Grotesk + Space Mono**, Ginger **Nunito + Inconsolata**, Pippin **DM Sans + DM Mono**, Bloodleaf **Archivo + Roboto Mono**; **GitHub** declares an empty `google`, so it uses the OS's native font stack and fetches nothing. The Content-Security-Policy in `src/assets/app-shell.html` allows `https://fonts.googleapis.com` (the stylesheet) under `style-src` and `https://fonts.gstatic.com` (the woff2 files) under `font-src`.
+
+## Diagram colors
+
+Mermaid's own light and dark theme is the base, and the colors that carry structure are overridden from the tokens on `:root`, read at render time in `src/assets/shell/decorate.js`. So a theme file contains **no diagram tokens at all** and still themes flowcharts, sequences, state and class diagrams, ER diagrams, Gantt charts, quadrants and requirement diagrams. That is deliberate: a per-family diagram palette would be roughly forty values × 22 sources of hand-copied color, and every copy is a place for the copies to drift.
+
+Three tables do the work:
+
+- `MERMAID_COLOR_MAP` — Mermaid variable → the page token it takes its color from. Flowchart boxes, subgraph surfaces, sequence actors, Gantt states, pie strokes, quadrant fills, requirement boxes, and the arrows and labels shared by all of them.
+- `MERMAID_INK_MAP` — Mermaid variable → `[the fill its text sits on, the ink the theme chose for that fill]`. See below.
+- `MERMAID_XYCHART_COLOR_MAP` plus `MERMAID_PLOT_TOKENS` — the XY chart keeps its colors in a group of its own, and its plot palette is the theme's primary, accent, success, warning, danger and done, in that order.
+
+**The categorical scale is Mermaid's, on purpose.** The twelve colors a mindmap, timeline, kanban board, journey, pie chart or git graph cycles through (`cScale0-11`, `git0-7`) cannot be set from here, and trying cost a patch release. Mermaid's `base` theme takes the override and then **overwrites it**: `darken(color, 75)` in dark mode, `darken(color, 25)` in light, applied to every `cScale` value after ours lands, with a single default ink labeling all twelve. On a saturated brand color that is a near-black box carrying near-black text — v0.1.423's bug was not a bad color on our side, it was a color we never got to choose. Mermaid's light and dark themes ship a hand-picked scale with inks to match, so those families keep it and stay legible.
+
+Two things follow. `labelTextColor` is deliberately **not** in the map: Mermaid falls back to it for any categorical label it has no color for, so setting it reaches into that scale and puts one ink on twelve fills it was never measured against. And the fills that *are* ours — Gantt bars, the sequence number badge, a quadrant point, the XY plot palette — get their ink measured, because nothing rewrites those.
+
+**Ink is measured, not assumed.** For text printed *inside* a colored fill, `readableInk()` computes the WCAG contrast of three candidates — the ink the theme chose for that color, the page's own ink, and the page itself — and takes the best. A theme's `*-foreground` is the right ink for its own buttons and says nothing about a diagram: GitHub's greens and blues are meant to be read as text on a page, so they are mid tones, and white on them comes out at 2.3:1. Measuring fixes that for every family without touching a single palette.
+
+Two consequences worth remembering:
+
+- **The memo key carries the family.** `mermaidCacheKey()` keys the rendered-SVG cache on family *and* appearance, because two themes of the same appearance draw the same diagram in different colors.
+- **A theme switch redraws.** An SVG holds its colors as literal values, so `repaintMermaidDiagrams()` puts the Mermaid text back and renders again. A `MutationObserver` on the root element's `data-theme`/`data-leaf-theme` is what triggers it, so the picker and the system's own light/dark switch both work without either knowing diagrams exist.
+
+`check-shell.mjs` holds every token name in those tables to the ones `reading.css` defines — a name that does not exist reads as an empty string, Mermaid falls back to its own palette, and the diagram quietly stops matching the page.
 
 ## Adding a theme
 

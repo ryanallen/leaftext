@@ -128,6 +128,23 @@ The semantic token set covers:
 
 If a theme source misses one required token, Leaftext fails the contract check instead of silently rendering with broken fallback colors. See [Theming](../02-development/04-theming.md#the-token-contract) for the full contract.
 
+## Diagrams
+
+[Mermaid diagrams](01-rendering.md#mermaid-diagrams) are drawn in the theme's own colors, so every family themes every kind of diagram without saying anything about diagrams at all:
+
+- **Boxes and subgraphs** take the theme's muted and sunken surfaces, with document ink for their labels — so a large flowchart reads as part of the page rather than a foreign object dropped on it.
+- **Arrows, axis lines and borders** take the muted ink and border colors.
+- **Categorical colors** — the twelve a pie chart, timeline, mindmap, kanban board or git graph cycles through — stay Mermaid's own. Mermaid recomputes that scale after any color it is handed, so those families keep its hand-picked palette and its matching label inks rather than a theme color it would darken past readability. Everything around them (the page, the title, the arrows) is still the theme's.
+- **State colors** mean what they mean elsewhere in the app: a Gantt chart's active bar is the accent, its done bar the success color, its critical bar the danger color, and today's line the same.
+- **Labels** are set in the theme's body font, the same face as the words around the diagram.
+- **Text printed inside a colored fill** — a Gantt bar's label, a plotted point — takes whichever of the theme's inks reads best on that fill, measured for contrast rather than assumed. A brand color is often a mid tone that neither white nor black sits comfortably on, so the ink is chosen per color and per theme.
+
+Switching theme redraws every diagram on the page: an SVG already drawn holds its colors as literal values, so the only way to recolor one is to draw it again.
+
+Every theme is gated on this. `theme_compiler_gates_diagram_colors_for_every_source` re-derives the pairs a diagram makes across all 22 sources — labels at 4.5:1, arrows at 3:1, and every colored fill required to have a readable ink — so a palette that would make diagrams unreadable fails `just verify` rather than shipping.
+
+One known rough edge: a **mindmap** can clip a long node label. Mermaid sizes that box from its own measurement of the text, and it comes out short of the theme's font. The other diagram types are unaffected.
+
 ## Add your own
 
 The theme picker links to the project on GitHub for making your own theme. A theme is pure data — a map of contract tokens to values plus a font block — authored as a file under `themes/` and compiled into the bundle, so it can be validated against the contract without injecting third-party CSS. See [Theming → Adding a theme](../02-development/04-theming.md#adding-a-theme) for the full recipe.

@@ -204,6 +204,16 @@ function buildGallery(families) {
       'family also defines the full ~100-token contract inside its file.',
   );
   lines.push('');
+  lines.push(
+    'Mermaid diagrams take these same tokens, so a family says nothing about diagrams and ' +
+      'gets them anyway: boxes the muted surface, subgraphs the sunken one, arrows the muted ' +
+      'foreground, and a Gantt chart the theme\'s own active / done / critical colors. Text ' +
+      'printed inside one of those fills takes whichever of the theme\'s inks reads on it, ' +
+      'measured rather than assumed. The twelve-color categorical scale a mindmap or pie chart ' +
+      "cycles through stays Mermaid's, because Mermaid recomputes that scale after any color " +
+      'it is handed.',
+  );
+  lines.push('');
   lines.push('## Gallery');
   lines.push('');
 

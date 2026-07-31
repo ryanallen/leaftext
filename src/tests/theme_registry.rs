@@ -248,6 +248,73 @@ fn theme_compiler_gates_readable_pairs_for_every_source() {
 }
 
 #[test]
+fn theme_compiler_gates_diagram_colors_for_every_source() {
+    // Mermaid diagrams are drawn in these tokens rather than mermaid's own palette
+    // (MERMAID_COLOR_MAP in decorate.js), so a diagram is exactly as readable as
+    // the pairs the theme puts together. Gate the pairs the page actually makes.
+    let css = reading_mode_css();
+
+    for source in theme_sources() {
+        // A label on a box, on a subgraph, and on the page it all sits on.
+        for (foreground, background) in [
+            ("--leaf-markdown-foreground", "--leaf-surface-muted"),
+            ("--leaf-markdown-foreground", "--leaf-surface-sunken"),
+            ("--leaf-markdown-foreground", "--leaf-markdown-background"),
+        ] {
+            let ratio = contrast_ratio(
+                css_token_for_source(css, source, foreground),
+                css_token_for_source(css, source, background),
+            );
+            assert!(
+                ratio >= 4.5,
+                "expected {} diagram label {foreground} on {background} contrast {ratio:.2} to be at least 4.5",
+                source.id
+            );
+        }
+
+        // Arrows and axis lines: a graphic, not prose, so 3:1 (WCAG 1.4.11).
+        let arrows = contrast_ratio(
+            css_token_for_source(css, source, "--leaf-muted-foreground"),
+            css_token_for_source(css, source, "--leaf-markdown-background"),
+        );
+        assert!(
+            arrows >= 3.0,
+            "expected {} diagram arrows contrast {arrows:.2} to be at least 3.0",
+            source.id
+        );
+
+        // Text printed inside a colored fill — a gantt bar, a pie slice, a plotted
+        // point. The page picks whichever of three inks reads best on the fill
+        // (readableInk in decorate.js): the ink the theme chose for that color, the
+        // page's own ink, or the page itself. Gated the same way, because a brand
+        // color is often a mid tone that neither end alone sits well on — GitHub's
+        // green with white on it was 2.5:1 before this rule existed.
+        for (fill, own_ink) in [
+            ("--leaf-primary", "--leaf-primary-foreground"),
+            ("--leaf-accent", "--leaf-accent-foreground"),
+            ("--leaf-success", "--leaf-success-foreground"),
+            ("--leaf-warning", "--leaf-warning-foreground"),
+            ("--leaf-danger", "--leaf-danger-foreground"),
+        ] {
+            let fill_color = css_token_for_source(css, source, fill);
+            let best = [
+                own_ink,
+                "--leaf-markdown-foreground",
+                "--leaf-markdown-background",
+            ]
+            .into_iter()
+            .map(|ink| contrast_ratio(css_token_for_source(css, source, ink), fill_color))
+            .fold(0.0_f64, f64::max);
+            assert!(
+                best >= 4.5,
+                "expected {} to have an ink readable on {fill}: best contrast {best:.2}, wanted 4.5",
+                source.id
+            );
+        }
+    }
+}
+
+#[test]
 fn theme_compiler_gates_interactive_chrome_contrast() {
     // Icons/controls on filled backgrounds, incl. hover. WCAG 1.4.11 gates non-text
     // contrast at 3:1 (text is 4.5:1). The tab-close hover regressed here once (white

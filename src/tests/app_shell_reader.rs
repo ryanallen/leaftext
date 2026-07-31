@@ -256,11 +256,25 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
         "function loadMermaid() {",
         "function renderMermaidDiagrams() {",
         "pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"])",
-        "mermaid.initialize({",
+        "mermaid.initialize(mermaidRuntimeConfig())",
         "securityLevel: 'strict'",
-        "fontFamily: \"'Noto Sans', sans-serif\"",
-        "return mermaid.run({ nodes: diagrams });",
+        "await mermaid.run({ nodes: batch });",
         "diagram.dataset.mermaidRender = 'failed';",
+        // Nearest the reader first, a few at a time: a page of sixty diagrams
+        // must not freeze the window while they are drawn.
+        "diagrams.sort((a, b) => mermaidReaderDistance(a) - mermaidReaderDistance(b));",
+        "const MERMAID_BATCH_SIZE = 3;",
+        // The structural colors of a diagram are the page's tokens. Mermaid's own
+        // light/dark palette stays underneath for the categorical scale, which
+        // `base` recomputes out of our reach — see decorate.js.
+        "theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default',",
+        "function mermaidThemeVariables() {",
+        "const MERMAID_COLOR_MAP = {",
+        // The ink for text inside a colored fill is measured, not assumed.
+        "function readableInk(style, fill, ownInkToken) {",
+        // A theme switch cannot recolor an SVG, so the diagram is drawn again.
+        "function repaintMermaidDiagrams() {",
+        "attributeFilter: ['data-theme', 'data-leaf-theme'],",
     ] {
         assert_contains(&html, expected);
     }
