@@ -140,7 +140,7 @@ Three tests re-derive contrast across **every** theme so an unreadable palette f
 
 - `theme_compiler_gates_readable_pairs_for_every_source` checks text pairs (foreground on background, code, selection, syntax) at **4.5:1** (WCAG AA for text).
 - `theme_compiler_gates_interactive_chrome_contrast` checks icons and controls on filled backgrounds — buttons, nav, badges, and the tab-close hover — at **3:1** (WCAG 1.4.11 for non-text UI).
-- `theme_compiler_gates_diagram_colors_for_every_source` checks the pairs a Mermaid diagram makes: labels on box and subgraph surfaces at **4.5:1**, arrows on the page at **3:1**, and every colored fill (primary, accent, success, warning, danger) required to have at least one theme ink that reads on it at **4.5:1**. See [Diagram colors](#diagram-colors).
+- `theme_compiler_gates_diagram_colors_for_every_source` re-derives **every pair a Mermaid diagram makes** out of our tokens: label text on the page, on box and subgraph surfaces, and on quadrant panels at **4.5:1**; arrows and outlines as graphics at **3:1**; and each fill we set — Gantt's four bar states, the sequence number, the error box, the quadrant panels — required to have one theme ink that reads on it at **4.5:1**, worst case across the group. See [Diagram colors](#diagram-colors).
 
 ## `compiled_theme_css()`
 
@@ -175,14 +175,20 @@ Mermaid's own light and dark theme is the base, and the colors that carry struct
 Three tables do the work:
 
 - `MERMAID_COLOR_MAP` — Mermaid variable → the page token it takes its color from. Flowchart boxes, subgraph surfaces, sequence actors, Gantt states, pie strokes, quadrant fills, requirement boxes, and the arrows and labels shared by all of them.
-- `MERMAID_INK_MAP` — Mermaid variable → `[the fill its text sits on, the ink the theme chose for that fill]`. See below.
+- `MERMAID_INK_MAP` — Mermaid variable → the fills its text is printed on. See below.
+- `MERMAID_INK_CANDIDATES` — every ink a diagram may print in: the page's two, plus the inks the theme picked for its colored surfaces. All theme colors, so a diagram never prints in one the theme does not contain.
+- `MERMAID_GANTT_STATE_INKS` — the one case a variable cannot express, emitted as CSS. See below.
 - `MERMAID_XYCHART_COLOR_MAP` plus `MERMAID_PLOT_TOKENS` — the XY chart keeps its colors in a group of its own, and its plot palette is the theme's primary, accent, success, warning, danger and done, in that order.
 
 **The categorical scale is Mermaid's, on purpose.** The twelve colors a mindmap, timeline, kanban board, journey, pie chart or git graph cycles through (`cScale0-11`, `git0-7`) cannot be set from here, and trying cost a patch release. Mermaid's `base` theme takes the override and then **overwrites it**: `darken(color, 75)` in dark mode, `darken(color, 25)` in light, applied to every `cScale` value after ours lands, with a single default ink labeling all twelve. On a saturated brand color that is a near-black box carrying near-black text — v0.1.423's bug was not a bad color on our side, it was a color we never got to choose. Mermaid's light and dark themes ship a hand-picked scale with inks to match, so those families keep it and stay legible.
 
 Two things follow. `labelTextColor` is deliberately **not** in the map: Mermaid falls back to it for any categorical label it has no color for, so setting it reaches into that scale and puts one ink on twelve fills it was never measured against. And the fills that *are* ours — Gantt bars, the sequence number badge, a quadrant point, the XY plot palette — get their ink measured, because nothing rewrites those.
 
-**Ink is measured, not assumed.** For text printed *inside* a colored fill, `readableInk()` computes the WCAG contrast of three candidates — the ink the theme chose for that color, the page's own ink, and the page itself — and takes the best. A theme's `*-foreground` is the right ink for its own buttons and says nothing about a diagram: GitHub's greens and blues are meant to be read as text on a page, so they are mid tones, and white on them comes out at 2.3:1. Measuring fixes that for every family without touching a single palette.
+**Ink is measured, not assumed.** For text printed *inside* a colored fill, `readableInk()` computes the WCAG contrast of every ink the theme owns — the page's two, plus each `*-foreground` — and takes the best. Where one variable serves several fills, the *worst* of them decides. A theme's `*-foreground` is the right ink for its own buttons and says nothing about a diagram: GitHub's greens and blues are meant to be read as text on a page, so they are mid tones, and white on them comes out at 2.3:1. Measuring fixes that for every family without touching a palette.
+
+**What the text sits on is the whole question**, and getting it wrong looks exactly like getting the color wrong. A quadrant point's label is drawn on the quadrant, not on the point; measuring it against the point shipped white text on a pale gray panel. A sequence number sits on the signal line. So `MERMAID_INK_MAP` maps a variable to *the fills its text lands on*, and the gate re-derives the same pairs.
+
+**A Gantt bar is where variables run out.** Mermaid keeps one label color for four differently colored bars — ordinary, active, done, critical — and no single ink clears 4.5:1 on all four (2.67:1 at best in Goldenrod light). Mermaid appends `themeCSS` *after* its own stylesheet, so `mermaidGanttStateCss()` emits one rule per state (`.taskText0-3`, `.activeText0-3`, `.doneText0-3`, `.critText0-3`, and the two crit-done variants), each with the ink measured against that state's own bar. That is the one place CSS beats a variable, and the only place it is used.
 
 Two consequences worth remembering:
 

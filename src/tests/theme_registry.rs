@@ -249,65 +249,122 @@ fn theme_compiler_gates_readable_pairs_for_every_source() {
 
 #[test]
 fn theme_compiler_gates_diagram_colors_for_every_source() {
-    // Mermaid diagrams are drawn in these tokens rather than mermaid's own palette
-    // (MERMAID_COLOR_MAP in decorate.js), so a diagram is exactly as readable as
-    // the pairs the theme puts together. Gate the pairs the page actually makes.
+    // Every pair a mermaid diagram puts together out of our tokens
+    // (MERMAID_COLOR_MAP and MERMAID_INK_MAP in decorate.js). A diagram is exactly
+    // as readable as these, and the mistake this catches is not a bad color — it is
+    // ink measured against the wrong background. A quadrant point's label is drawn
+    // on the quadrant, not on the point, and measuring it against the point shipped
+    // white text on a pale gray panel in v0.1.423.
+    //
+    // Text is gated at 4.5:1 (WCAG AA), a line or a border at 3:1 (WCAG 1.4.11) —
+    // except a node's outline against its own fill, which is a hairline both themes
+    // draw deliberately faint and which also stands against the page.
     let css = reading_mode_css();
+    let text_pairs = [
+        (
+            "diagram text",
+            "--leaf-markdown-foreground",
+            "--leaf-markdown-background",
+            4.5,
+        ),
+        (
+            "title",
+            "--leaf-markdown-heading",
+            "--leaf-markdown-background",
+            4.5,
+        ),
+        (
+            "node label",
+            "--leaf-markdown-foreground",
+            "--leaf-surface-muted",
+            4.5,
+        ),
+        (
+            "subgraph label",
+            "--leaf-markdown-foreground",
+            "--leaf-surface-sunken",
+            4.5,
+        ),
+        (
+            "quadrant axis label",
+            "--leaf-muted-foreground",
+            "--leaf-markdown-background",
+            4.5,
+        ),
+        (
+            "arrows",
+            "--leaf-muted-foreground",
+            "--leaf-markdown-background",
+            3.0,
+        ),
+        (
+            "node outline",
+            "--leaf-border-strong",
+            "--leaf-markdown-background",
+            1.2,
+        ),
+        (
+            "subgraph outline",
+            "--leaf-border",
+            "--leaf-markdown-background",
+            1.1,
+        ),
+    ];
+    // A fill we chose, and the text printed inside it. The ink is measured against
+    // every fill in the group and the worst one decides, because one variable can
+    // serve several fills — `readableInk` in decorate.js picks the same way.
+    let inked_fills: [(&str, &[&str]); 7] = [
+        ("gantt bar", &["--leaf-primary"]),
+        ("gantt active bar", &["--leaf-accent"]),
+        ("gantt done bar", &["--leaf-success"]),
+        ("gantt critical bar", &["--leaf-danger"]),
+        ("sequence number", &["--leaf-muted-foreground"]),
+        ("error box", &["--leaf-danger"]),
+        (
+            "quadrant point label",
+            &["--leaf-surface-muted", "--leaf-surface-sunken"],
+        ),
+    ];
+    // Every ink a diagram may print in — the page's two, plus the inks the theme
+    // picked for its colored surfaces. Mirrors MERMAID_INK_CANDIDATES.
+    let inks = [
+        "--leaf-markdown-foreground",
+        "--leaf-markdown-background",
+        "--leaf-primary-foreground",
+        "--leaf-accent-foreground",
+        "--leaf-success-foreground",
+        "--leaf-danger-foreground",
+    ];
 
     for source in theme_sources() {
-        // A label on a box, on a subgraph, and on the page it all sits on.
-        for (foreground, background) in [
-            ("--leaf-markdown-foreground", "--leaf-surface-muted"),
-            ("--leaf-markdown-foreground", "--leaf-surface-sunken"),
-            ("--leaf-markdown-foreground", "--leaf-markdown-background"),
-        ] {
+        for (what, foreground, background, floor) in text_pairs {
             let ratio = contrast_ratio(
                 css_token_for_source(css, source, foreground),
                 css_token_for_source(css, source, background),
             );
             assert!(
-                ratio >= 4.5,
-                "expected {} diagram label {foreground} on {background} contrast {ratio:.2} to be at least 4.5",
+                ratio >= floor,
+                "expected {} diagram {what} ({foreground} on {background}) contrast {ratio:.2} to be at least {floor:.1}",
                 source.id
             );
         }
 
-        // Arrows and axis lines: a graphic, not prose, so 3:1 (WCAG 1.4.11).
-        let arrows = contrast_ratio(
-            css_token_for_source(css, source, "--leaf-muted-foreground"),
-            css_token_for_source(css, source, "--leaf-markdown-background"),
-        );
-        assert!(
-            arrows >= 3.0,
-            "expected {} diagram arrows contrast {arrows:.2} to be at least 3.0",
-            source.id
-        );
-
-        // Text printed inside a colored fill — a gantt bar, a pie slice, a plotted
-        // point. The page picks whichever of three inks reads best on the fill
-        // (readableInk in decorate.js): the ink the theme chose for that color, the
-        // page's own ink, or the page itself. Gated the same way, because a brand
-        // color is often a mid tone that neither end alone sits well on — GitHub's
-        // green with white on it was 2.5:1 before this rule existed.
-        for (fill, own_ink) in [
-            ("--leaf-primary", "--leaf-primary-foreground"),
-            ("--leaf-accent", "--leaf-accent-foreground"),
-            ("--leaf-success", "--leaf-success-foreground"),
-            ("--leaf-warning", "--leaf-warning-foreground"),
-            ("--leaf-danger", "--leaf-danger-foreground"),
-        ] {
-            let fill_color = css_token_for_source(css, source, fill);
-            let best = [
-                own_ink,
-                "--leaf-markdown-foreground",
-                "--leaf-markdown-background",
-            ]
-            .into_iter()
-            .map(|ink| contrast_ratio(css_token_for_source(css, source, ink), fill_color))
-            .fold(0.0_f64, f64::max);
+        for (what, fills) in inked_fills {
+            let best = inks
+                .iter()
+                .map(|ink| {
+                    let ink_color = css_token_for_source(css, source, ink);
+                    fills
+                        .iter()
+                        .map(|fill| {
+                            contrast_ratio(ink_color, css_token_for_source(css, source, fill))
+                        })
+                        .fold(f64::INFINITY, f64::min)
+                })
+                .fold(0.0_f64, f64::max);
             assert!(
                 best >= 4.5,
-                "expected {} to have an ink readable on {fill}: best contrast {best:.2}, wanted 4.5",
+                "expected {} to have one ink readable on the {what} fill(s) {fills:?}: best worst-case contrast {best:.2}, wanted 4.5",
                 source.id
             );
         }

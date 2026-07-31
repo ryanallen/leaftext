@@ -270,8 +270,12 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
         "theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default',",
         "function mermaidThemeVariables() {",
         "const MERMAID_COLOR_MAP = {",
-        // The ink for text inside a colored fill is measured, not assumed.
-        "function readableInk(style, fill, ownInkToken) {",
+        // The ink for text inside a fill is measured against that fill, not assumed.
+        "function readableInk(style, fillTokens) {",
+        "const MERMAID_INK_CANDIDATES = [",
+        // One variable, four differently colored gantt bars: only CSS can say that.
+        "function mermaidGanttStateCss(style) {",
+        "themeCSS: mermaidGanttStateCss(style),",
         // A theme switch cannot recolor an SVG, so the diagram is drawn again.
         "function repaintMermaidDiagrams() {",
         "attributeFilter: ['data-theme', 'data-leaf-theme'],",

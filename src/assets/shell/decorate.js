@@ -21,31 +21,16 @@ function loadMermaid() {
   });
   return mermaidLoadPromise;
 }
-// ---------------------------------------------------------------------------
-// A diagram is drawn in the page's own colors — as far as mermaid allows.
+// A diagram takes the page's colors, over mermaid's own light/dark theme.
 //
-// Mermaid's own light and dark themes stay the base, and the parts of a diagram
-// that mean something structural are overridden from the theme tokens already on
-// :root: boxes, borders, labels, arrows, subgraphs, actors, task states. A theme
-// file says nothing about diagrams and gets those anyway.
+// The twelve-color categorical scale (mindmap, timeline, kanban, journey, pie, git
+// graph) is left to mermaid: `base` overwrites every `cScale` with darken(75) in
+// dark mode and darken(25) in light *after* our override lands, then labels all
+// twelve with one default ink — near-black boxes carrying near-black text, which is
+// what v0.1.423 shipped. Mermaid's own palettes are picked to match.
 //
-// **What is deliberately left alone: the twelve-color categorical scale** that a
-// mindmap, timeline, kanban board, journey, pie chart or git graph paints itself
-// with. Those cannot be set from here. Mermaid's `base` theme overwrites every
-// `cScale` value with `darken(color, 75)` in dark mode and `darken(color, 25)` in
-// light — after our override lands — and then labels the result with a single
-// default ink. That is what produced near-black boxes carrying near-black text
-// in v0.1.423: not a bad choice of color on our side, a color we never got to
-// choose. Its light and dark themes ship a hand-picked scale with matching
-// labels instead, so those families keep mermaid's palette and stay legible. The
-// diagrams almost every document actually holds — flowcharts and sequences — are
-// themed, because their colors are ours to set.
-// ---------------------------------------------------------------------------
-
-// mermaid variable → the page token it takes its color from. One table: a
-// variable missing from here keeps mermaid's own value, which is the point for
-// the scale families above and the drift this guards everywhere else.
-// `mermaid_theme_map_uses_real_tokens` in check-shell.mjs holds every name in it
+// mermaid variable → the page token it takes its color from. A variable missing
+// from here keeps mermaid's value; check-shell.mjs holds every name in this table
 // to the ones reading.css defines.
 const MERMAID_COLOR_MAP = {
   // The page the diagram is drawn on, and the ink on it.
@@ -54,14 +39,10 @@ const MERMAID_COLOR_MAP = {
   titleColor: '--reading-heading',
   lineColor: '--muted-foreground',
   errorBkgColor: '--danger',
-  errorTextColor: '--danger-foreground',
 
-  // Flowcharts. Boxes are surfaces rather than brand color: a page of forty
-  // brand-colored boxes is a poster, not a diagram.
-  //
-  // `labelTextColor` is deliberately absent: mermaid falls back to it for every
-  // categorical label it has no color for, so setting it reaches into the scale
-  // families and puts one ink on twelve fills it was not measured against.
+  // Flowcharts. Boxes are surfaces, not brand color: forty brand-colored boxes is
+  // a poster. `labelTextColor` is deliberately absent — mermaid falls back to it
+  // for any categorical label, so setting it reaches into the scale above.
   mainBkg: '--surface-muted',
   nodeBorder: '--border-strong',
   nodeTextColor: '--reading-ink',
@@ -111,9 +92,7 @@ const MERMAID_COLOR_MAP = {
   altSectionBkgColor: '--reading-background',
   taskBkgColor: '--primary',
   taskBorderColor: '--primary',
-  taskTextDarkColor: '--reading-ink',
   taskTextOutsideColor: '--reading-ink',
-  taskTextClickableColor: '--link',
   activeTaskBkgColor: '--accent',
   activeTaskBorderColor: '--accent',
   doneTaskBkgColor: '--success',
@@ -125,7 +104,6 @@ const MERMAID_COLOR_MAP = {
 
   // Pie. The slices come from the seeds; these are the parts around them.
   pieTitleTextColor: '--reading-heading',
-  pieSectionTextColor: '--reading-ink',
   pieLegendTextColor: '--reading-ink',
   pieStrokeColor: '--reading-background',
   pieOuterStrokeColor: '--border-strong',
@@ -162,26 +140,46 @@ const MERMAID_COLOR_MAP = {
   relationLabelColor: '--reading-ink',
 };
 
-// mermaid variable → `[the fill its text sits on, the ink the theme picked for
-// that color]`. These are the labels printed *inside* something colored — a gantt
-// bar, a pie slice, a plotted point — and the ink is measured rather than
-// assumed, because it is the one place a token alone gets it wrong.
+// mermaid variable → the fill its text is printed on, so the ink can be measured
+// against it. A theme's `*-foreground` is the ink for its own buttons and says
+// nothing about a diagram: GitHub's greens are mid tones meant to be read as
+// text, so white on one is 2.3:1.
 //
-// GitHub's palette is why. Its blues and greens are meant to be read as text on
-// a page, so they are mid tones; white on them comes out at 2.3:1, and the theme
-// is not wrong — the assumption that a brand color takes its own foreground on
-// top is. Measuring three candidates (the theme's own choice, the page's ink, the
-// page itself) clears 4.5:1 on every color in all eleven families, and will on
-// the next family too, which is the point of measuring instead of listing.
+// Naming the wrong fill looks exactly like naming the wrong color — a quadrant
+// point's label sits on the quadrant, not on the point, and measuring it against
+// the point shipped white text on a pale gray panel. Gantt bars are set per state
+// below: four colors, one variable, no ink that reads on all of them.
 const MERMAID_INK_MAP = {
-  primaryTextColor: ['--primary', '--primary-foreground'],
-  secondaryTextColor: ['--accent', '--accent-foreground'],
-  tertiaryTextColor: ['--success', '--success-foreground'],
-  taskTextColor: ['--primary', '--primary-foreground'],
-  taskTextLightColor: ['--primary', '--primary-foreground'],
-  sequenceNumberColor: ['--primary', '--primary-foreground'],
-  quadrantPointTextFill: ['--primary', '--primary-foreground'],
+  taskTextColor: ['--primary'],
+  taskTextLightColor: ['--primary'],
+  sequenceNumberColor: ['--muted-foreground'],
+  errorTextColor: ['--danger'],
+  quadrantPointTextFill: ['--surface-muted', '--surface-sunken'],
 };
+
+// Every ink a diagram may print in — all theme colors, so a diagram never prints
+// in one the theme does not contain.
+const MERMAID_INK_CANDIDATES = [
+  '--reading-ink',
+  '--reading-background',
+  '--primary-foreground',
+  '--accent-foreground',
+  '--success-foreground',
+  '--danger-foreground',
+];
+
+// A bar's state is its color, so each state's text class takes the ink measured
+// against its own bar. Mermaid appends `themeCSS` after its own stylesheet, which
+// is the only way to give one variable four values.
+const MERMAID_GANTT_STATE_INKS = [
+  ['taskText', '--primary'],
+  ['activeText', '--accent'],
+  ['doneText', '--success'],
+  ['critText', '--danger'],
+  ['activeCritText', '--danger'],
+  ['doneCritText', '--danger'],
+];
+const MERMAID_GANTT_SECTIONS = 4;
 
 // The XY chart keeps its colors in a group of its own rather than beside the
 // rest, so it needs its own pass. Its plot palette *is* ours to set: mermaid does
@@ -233,18 +231,46 @@ function colorContrast(a, b) {
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
 }
 
-function readableInk(style, fill, ownInkToken) {
+// The theme ink that reads best on every one of `fillTokens`. The worst fill
+// decides: one ink is only as readable as it is on the poorer surface.
+function readableInk(style, fillTokens) {
+  const fills = fillTokens.map((token) => themeTokenValue(style, token)).filter(Boolean);
+  if (!fills.length) return '';
   let best = '';
   let bestRatio = 0;
-  for (const token of [ownInkToken, '--reading-ink', '--reading-background']) {
-    const ink = token ? themeTokenValue(style, token) : '';
-    const ratio = ink ? colorContrast(fill, ink) : null;
-    if (ratio != null && ratio > bestRatio) {
+  for (const token of MERMAID_INK_CANDIDATES) {
+    const ink = themeTokenValue(style, token);
+    if (!ink) continue;
+    let worst = Infinity;
+    for (const fill of fills) {
+      const ratio = colorContrast(fill, ink);
+      if (ratio == null) {
+        worst = 0;
+        break;
+      }
+      worst = Math.min(worst, ratio);
+    }
+    if (worst > bestRatio) {
       best = ink;
-      bestRatio = ratio;
+      bestRatio = worst;
     }
   }
   return best;
+}
+
+// The per-state gantt label colors, as CSS.
+function mermaidGanttStateCss(style) {
+  const rules = [];
+  for (const [selector, fillToken] of MERMAID_GANTT_STATE_INKS) {
+    const ink = readableInk(style, [fillToken]);
+    if (!ink) continue;
+    const selectors = [];
+    for (let section = 0; section < MERMAID_GANTT_SECTIONS; section += 1) {
+      selectors.push('.' + selector + section);
+    }
+    rules.push(selectors.join(', ') + ' { fill: ' + ink + '; }');
+  }
+  return rules.join('\n');
 }
 
 // The theme, as mermaid wants it. A token the page has not defined is left out
@@ -257,8 +283,8 @@ function mermaidThemeVariables() {
     const value = themeTokenValue(style, token);
     if (value) variables[name] = value;
   }
-  for (const [name, [fillToken, ownInkToken]] of Object.entries(MERMAID_INK_MAP)) {
-    const value = readableInk(style, themeTokenValue(style, fillToken), ownInkToken);
+  for (const [name, fillTokens] of Object.entries(MERMAID_INK_MAP)) {
+    const value = readableInk(style, fillTokens);
     if (value) variables[name] = value;
   }
   const xyChart = {};
@@ -281,12 +307,16 @@ function mermaidFontFamily() {
 }
 
 function mermaidRuntimeConfig() {
+  const style = window.getComputedStyle(document.documentElement);
   const fontFamily = mermaidFontFamily();
   const themeVariables = mermaidThemeVariables();
   themeVariables.fontFamily = fontFamily;
   return {
     startOnLoad: false,
     securityLevel: 'strict',
+    // Appended after mermaid's own stylesheet, so it settles what a variable
+    // cannot: one ink per gantt state.
+    themeCSS: mermaidGanttStateCss(style),
     // Mermaid's own light and dark palettes underneath, not `base`: they ship a
     // hand-picked categorical scale with inks to match, and `base` computes that
     // scale itself out of our reach. See the header.
@@ -335,28 +365,22 @@ function renderMermaidDiagrams() {
   if (!diagrams.length) {
     return;
   }
-  // Nearest the reader first, and a few at a time. A diagram costs the better
-  // part of a tenth of a second to draw, so a page holding sixty of them spent
-  // five seconds frozen before this: one batch, one thread, nothing painted until
-  // the last one was done. Ordering by distance puts the diagrams being looked at
-  // on screen straight away, and yielding between batches keeps scrolling alive
-  // while the rest arrive.
+  // Nearest the reader first, a few at a time. Sixty diagrams in one batch froze
+  // the window for five seconds, nothing painted until the last was done.
   diagrams.sort((a, b) => mermaidReaderDistance(a) - mermaidReaderDistance(b));
   mermaidRenderGeneration += 1;
   drawMermaidBatches(diagrams, mermaidRenderGeneration);
 }
 
-// How far a diagram is from the middle of the window, for deciding what to draw
-// first. Off-page elements sort last rather than being skipped: everything gets
-// drawn, the order is only what changes.
+// How far a diagram is from the middle of the window. Everything still gets
+// drawn; only the order changes.
 function mermaidReaderDistance(diagram) {
   const rect = diagram.getBoundingClientRect();
   const middle = (window.innerHeight || 800) / 2;
   return Math.abs(rect.top + rect.height / 2 - middle);
 }
 
-// How many diagrams share one turn of the event loop. Small enough that a slow
-// one cannot hold the window, big enough not to pay for a yield per diagram.
+// Small enough that one slow diagram cannot hold the window.
 const MERMAID_BATCH_SIZE = 3;
 // Which render pass is the current one. A theme switch mid-draw starts another,
 // and the one it interrupted must stop rather than finish painting the old colors
@@ -398,11 +422,9 @@ function drawMermaidBatches(diagrams, generation) {
     });
 }
 
-// Draw the diagrams again in the theme that just arrived. A theme change repaints
-// the page by swapping tokens, but an SVG already drawn holds the old colors as
-// literal values, so the only way to recolor one is to draw it again from the
-// text it came from. A diagram that failed before is given another go: this may
-// be a theme it can be drawn in.
+// Draw the diagrams again in the theme that just arrived: an SVG holds its colors
+// as literal values, so recoloring one means drawing it again. One that failed
+// before gets another go — this may be a theme it can be drawn in.
 function repaintMermaidDiagrams() {
   const diagrams = Array.from(app.querySelectorAll('pre.mermaid'));
   let any = false;
@@ -417,12 +439,10 @@ function repaintMermaidDiagrams() {
   if (any) renderMermaidDiagrams();
 }
 
-// Mermaid measures a label to size the box it draws around it, so a diagram drawn
-// before the theme's web font has arrived is measured in the fallback face and
-// then clipped when the real one lands — which is what cut "Sequence" down to
-// "Sequenc" on a mindmap. The font loader is what knows when that happened.
-//
-// Once per theme: a repaint asks for no new faces, so this cannot chase itself.
+// Mermaid sizes a label's box from its own measurement, so a diagram drawn before
+// the theme's web font arrives is measured in the fallback and clipped when the
+// real face lands. Once per theme — a repaint asks for no new faces, so this
+// cannot chase itself.
 let mermaidFontRepaintDone = false;
 function repaintMermaidDiagramsForFonts() {
   if (mermaidFontRepaintDone) return;
