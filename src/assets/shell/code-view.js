@@ -532,6 +532,8 @@ function reskinMonacoForTheme() {
   if (codeFont) monacoEditor.updateOptions({ fontFamily: codeFont });
   // A theme brings its own code font, so the wrap has to be re-fitted to it.
   refitCodeViewToFont();
+  // And the pinned heading rows re-colored — see restyleStickyHeadings.
+  restyleStickyHeadings();
 }
 
 // Re-fit the wrap column to whatever the code font is measuring right now.
@@ -793,6 +795,8 @@ function createMonacoEditor(monaco, container, state, text) {
   pendingViewScrollFraction = null;
   // Typing help: completions, hover, and the broken-link pass (code-intel.js).
   setupCodeIntel(monaco);
+  // And the heading trail pinned at the top edge (code-sticky.js).
+  setupStickyHeadings(monaco);
   monacoEditor.focus();
 }
 
@@ -804,6 +808,7 @@ function createMonacoEditor(monaco, container, state, text) {
 function disposeMonacoEditor() {
   if (!monacoEditor) return;
   teardownCodeIntel();
+  teardownStickyHeadings();
   if (monacoChangeSub) {
     monacoChangeSub.dispose();
     monacoChangeSub = null;

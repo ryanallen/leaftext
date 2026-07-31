@@ -228,6 +228,10 @@
      because three things have to land on it: the frame, the app bar's divider,
      and the top-right corner arc, all measured from the window's right edge. */
   --cv-minimap-standoff: 4px;
+  /* How far the code view's line numbers stand off the page frame's left border.
+     Said here because the pinned heading rows draw their own gutter and have to
+     land on the same column. */
+  --cv-line-number-pad: 8px;
   /* How much width the rail takes out of the page's column. Zero until a
      document actually has a minimap, or turning it off would leave a dead band.
      Set from `body` (below) rather than the shell: the app bar's divider and
@@ -3786,8 +3790,6 @@ body.is-block-dragging .document-body [data-src-start] {
 .code-view-monaco {
   position: absolute;
   inset: var(--app-bar-height) 0 0 0;
-  /* How far the line numbers stand off the page frame's left border. */
-  --cv-line-number-pad: 8px;
 }
 /* Neither box that carries editor.background may paint: both cover the minimap rail
    as well as the text, and neither can be stopped at the divider — the root box is the
@@ -3836,6 +3838,88 @@ body.is-block-dragging .document-body [data-src-start] {
      this box's width back (dragging works off the pointer), so narrowing the drawing
      changes nothing else. */
   width: calc(100% - 1px) !important;
+}
+/* ---- Code view: the pinned heading trail ----------------------------------
+   The headings you are reading under, held at the top of the source. Built by
+   code-sticky.js as plain rows over the editor, positioned from Monaco's own
+   layout so they land on the same columns the real lines do.
+
+   A sibling of the editor, at z-index 5, so the rows paint ABOVE
+   .reader-edge-fade (4) rather than under its wash — the fade would dissolve the
+   one thing here meant to stay readable. The frame's own borders (the shell's
+   ::after, also 5 but later in tree order) still paint over the rows' edges,
+   which is why this box can run right up to the frame. */
+.code-sticky {
+  position: absolute;
+  top: var(--app-bar-height);
+  left: 0;
+  /* Stops where the page does: at the frame's right border, the minimap's
+     divider. The same measure the frame and the app bar's divider use. */
+  right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
+  z-index: 5;
+  /* Height is the row count, written by the script — the stack slides up out of
+     the box as a section ends, and the box shortens with it. */
+  height: 0;
+}
+.code-sticky[hidden] {
+  display: none;
+}
+/* The rows themselves, on the page's own fill, clipped so a departing stack
+   slides away instead of spilling under the app bar. The shadow is the rows'
+   own: the page's edge fade is behind them now and casts nothing. */
+.code-sticky-rows {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--syntax-background);
+  box-shadow: 0 2px 6px -2px color-mix(in srgb, black 45%, transparent);
+}
+/* And the dissolve for what slides under them — the chrome's dot screen in the
+   page's color, at falling alpha, exactly the recipe .reader-edge-fade uses. A
+   wash would read as a band; an even screen going transparent has no rows in it.
+   `fixed` so the lattice is the window's, in phase with every other surface. */
+.code-sticky::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 18px;
+  --fade-dot: var(--syntax-background);
+  background-image: radial-gradient(circle, var(--fade-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0 2px, transparent);
+  mask-image: linear-gradient(to bottom, #000 0 2px, transparent);
+  pointer-events: none;
+}
+.code-sticky-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  white-space: pre;
+  cursor: pointer;
+}
+.code-sticky-row:hover {
+  background: var(--app-action-hover-background);
+}
+/* Both columns are Monaco's, read back and restated: the gutter is right-aligned
+   in the width Monaco sized it to, nudged off the frame's border by the same
+   --cv-line-number-pad the real numbers get. */
+.code-sticky-number {
+  position: absolute;
+  top: 0;
+  text-align: right;
+  color: var(--leaf-syntax-comment);
+  transform: translateX(var(--cv-line-number-pad));
+}
+.code-sticky-text {
+  position: absolute;
+  top: 0;
+  right: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .document-body .math {
   font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;

@@ -24,6 +24,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | Line numbers | A gutter numbers each source line, staying pinned when long lines wrap |
 | Wrapped lines | Long lines wrap; the code view never scrolls sideways |
 | Minimap | The editor's own [minimap](04-minimap.md#the-code-views-minimap) rail, drawn on the window's chrome beside the page |
+| Pinned headings | In Markdown source, the headings you are reading under [stay at the top edge](#pinned-headings) as you scroll; click one to jump to it |
 | Editing | Type directly; undo/redo, selection, clipboard, and IME all work, and `Tab` indents instead of moving focus. A multi-megabyte file [stays responsive](#editing-the-source) |
 | Typing help | Monaco's IntelliSense, answered from your own notes: type `[[` to see them, `#` for headings, hover a wikilink for a preview — and broken links get a wavy underline. A wand on the toolbar [turns it off](#typing-help) |
 | Save | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears only with unsaved changes |
@@ -142,6 +143,16 @@ Opening another document while you are in the source view opens **that** documen
 - The rail on the right is the editor's own [minimap](04-minimap.md#the-code-views-minimap): a scaled drawing of the source, with the same viewport box the reading view's rail uses. Drag the box or click the rail to move. It stands on the window's textured chrome, not on the page — the page's right border is the line between them.
 - Toggling keeps your place: the code view opens on the source line of the block you were reading, and toggling back lands the reading view on that same block. Switching to another tab and back does too — a tab left in the code view comes back in the code view, scrolled to where you left it.
 - **Toggling back and forth stays put.** Working out where you are in the other view can only be approximate — the two views wrap the same file to different heights, so a position has to be rounded to the nearest block or line, and rounding the same place twice does not return it unchanged. So when you toggle away and straight back without scrolling in between, the view you return to takes back the exact position it handed over, rather than a position worked out a second time. Scroll while you are there and the block-for-line landing takes over again, which is what you want then.
+
+## Pinned headings
+
+Scroll a Markdown file in the [code view](#code-view) and the heading you are under stays at the top edge instead of scrolling away, so you can always see where you are.
+
+- A **deeper** heading stacks below the one above it: inside `## Why this exists` under `# Architectural opportunities`, both are pinned, in that order — the trail down to where you are. A heading at the **same level or above** replaces the one it matches rather than stacking, so the trail never repeats itself. Five rows is the limit.
+- Each row is the source line itself — its own line number, its own syntax colors — so what is pinned reads exactly as it does in the file. As a section ends, its row is pushed up and off by the next heading arriving beneath it.
+- **Click a row to jump to it.** The heading lands where its row was standing, so the line you clicked does not move.
+- The rows sit above the page's top fade, with a soft dissolve of their own for the text sliding under them.
+- Markdown only. [XML, JSON, and YAML](01-rendering.md#xml) have no headings, and their structure is nesting rather than a trail.
 
 ## Editing the source
 
