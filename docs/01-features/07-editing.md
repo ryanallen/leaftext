@@ -202,7 +202,21 @@ There is no SVG. Mermaid's SVG is a web page in an SVG's clothing — a styleshe
 
 ### What it refuses
 
-The canvas fails closed: a diagram it cannot fully model opens with the canvas switched off and a line saying so, and the **text pane still edits it normally**. That covers subgraphs, `classDef` and `style` lines, `click` handlers, the `@{ shape: … }` family, and edge lengths used as layout hints. It never quietly drops the half it did not understand.
+The canvas fails closed: a diagram it cannot fully model opens with the canvas switched off and a line saying so, and the **text pane still edits it normally**. It never quietly drops the half it did not understand, and one unmodeled line switches the canvas off for the whole diagram rather than half of it. What it refuses:
+
+| In the diagram | Example |
+| --- | --- |
+| Typed shapes | `A@{ shape: cyl }` |
+| Subgraphs, including their own `direction` | `subgraph … end` |
+| Styling of any kind | `classDef`, `class`, `:::name`, `style`, `linkStyle` |
+| Click handlers | `click A "https://…"` |
+| Edge length used as a layout hint | `A ---> B` |
+| Invisible links | `A ~~~ B` |
+| Named and animated edges | `A e1@--> B`, `e1@{ animate: true }` |
+| Markdown labels, and labels broken across lines | ``A["`**bold**`"]`` |
+| A hyphen in a box's name | `read-file` |
+
+Every other kind of Mermaid diagram — sequence, class, state, pie, Gantt and the rest — is text-only here too: the canvas draws flowcharts. Export still works on all of them.
 
 > [!NOTE]
 > Saving rewrites the block in one spelling: always `flowchart` rather than `graph`, every label quoted, and every box declared on its own line. It is the same diagram and it renders identically anywhere Mermaid runs — but a file you hand-wrote will come back tidied.

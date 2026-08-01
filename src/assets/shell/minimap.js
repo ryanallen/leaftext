@@ -594,7 +594,10 @@ function restoreReaderScrollAnchor(anchor) {
   const offsetY = Number.isFinite(anchor?.offsetY) ? anchor.offsetY : 0;
   setReaderScrollTop(app.scrollTop + rect.top - shellRect.top + offsetY);
 }
-function scheduleReaderLayoutUpdate(anchor = readerScrollAnchor || captureReaderScrollAnchor()) {
+// The anchor is read in the frame, never at the call. A diagram pass holds the
+// thread long enough that this frame can run after a scroll that came later, and
+// an anchor taken at the call is the place before it — the top, often enough.
+function scheduleReaderLayoutUpdate() {
   if (readerLayoutFrame) {
     return;
   }
@@ -604,16 +607,17 @@ function scheduleReaderLayoutUpdate(anchor = readerScrollAnchor || captureReader
     // cached geometry can't outlive it.
     invalidateMinimapMetrics();
     correctReaderScrollOrigin();
-    // A minimap drag owns the scroll: `anchor` predates it (the drag skips the
-    // refresh to keep layout reads off the pointer path), so re-pinning would throw
-    // the reader back to where the drag started. Leave the box alone too; endDrag
-    // settles both. A wheel gesture owns it for the same reason — `anchor` is
+    // A minimap drag owns the scroll: the drag skips the refresh to keep layout
+    // reads off the pointer path, so re-pinning would throw the reader back to
+    // where the drag started. Leave the box alone too; endDrag settles both. A
+    // wheel gesture owns it for the same reason — readerScrollAnchor is
     // deliberately only refreshed once the scroll settles, so re-pinning to it
     // mid-gesture would drag the reader back.
     if (minimapDragging || readerScrolling) {
       return;
     }
-    restoreReaderScrollAnchor(anchor);
+    // Past the guard, settleReaderScroll has run, so the anchor is current.
+    restoreReaderScrollAnchor(readerScrollAnchor || captureReaderScrollAnchor());
     readerScrollAnchor = captureReaderScrollAnchor();
     updateMinimapViewport();
   });

@@ -122,6 +122,8 @@ The same anchor also holds your place while a document is still settling. Images
 
 The anchor is recorded a moment after scrolling stops rather than on every frame of it. Reading it means measuring the document, which on a large file is expensive enough that doing it per wheel click is what makes the wheel feel slow. While a scroll or a drag is in flight the reader's position is yours, so the re-pin stands aside until the gesture settles — re-pinning mid-gesture would pull against the very scroll that is happening.
 
+A re-pin reads your place at the moment it runs, never the moment it was queued. Drawing a page of [Mermaid diagrams](01-rendering.md#mermaid-diagrams) holds the window for a beat at a time, so a re-pin asked for before you scrolled can land after it — and the place it restores has to be where you are now, not where you were.
+
 ### Recent files
 
 ![The Leaftext home screen with no document open: the Choose file and New document buttons above a list of the last eight files opened, each with its folder path](../../imgs/home.png)

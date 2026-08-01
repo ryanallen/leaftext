@@ -610,9 +610,9 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
             "function resolveReaderAnchorElement(anchor) {",
             "function restoreReaderScrollAnchor(anchor) {",
             "setReaderScrollTop(app.scrollTop + rect.top - shellRect.top + offsetY);",
-            "function scheduleReaderLayoutUpdate(anchor = readerScrollAnchor || captureReaderScrollAnchor()) {",
+            "function scheduleReaderLayoutUpdate() {",
             "correctReaderScrollOrigin();",
-            "restoreReaderScrollAnchor(anchor);",
+            "restoreReaderScrollAnchor(readerScrollAnchor || captureReaderScrollAnchor());",
             "readerScrollAnchor = captureReaderScrollAnchor();",
             "window.addEventListener('resize', () => {",
             "scheduleReaderLayoutUpdate();",
@@ -662,11 +662,21 @@ fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
         .find("if (minimapDragging || readerScrolling) {")
         .expect("the layout pass should bail while a drag or a scroll owns the reader");
     let repin = update_body
-        .find("restoreReaderScrollAnchor(anchor);")
+        .find("restoreReaderScrollAnchor(readerScrollAnchor || captureReaderScrollAnchor());")
         .expect("the layout pass should re-pin the reader anchor");
     assert!(
         gesture_guard < repin,
         "the gesture bail must come before the anchor re-pin, or a drag gets yanked back to where it started"
+    );
+
+    // The anchor is read in the frame, never captured at the call. A diagram pass
+    // holds the thread for hundreds of milliseconds, so a pass queued during it
+    // runs after the scroll that happened meanwhile has settled. An anchor taken
+    // at the call is then the reader's place *before* that scroll, and restoring
+    // it drags them back — to the top, if that is where they started reading.
+    assert!(
+        !html.contains("function scheduleReaderLayoutUpdate(anchor"),
+        "scheduleReaderLayoutUpdate must not take an anchor at call time — a pass queued during a diagram batch would restore the reader's place from before the scroll that happened while the thread was busy"
     );
 
     // The clamp and the anchor capture both force a layout, which on a large

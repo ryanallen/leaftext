@@ -134,6 +134,8 @@ function closeFlowSheet() {
 function saveFlowSheet() {
   if (!flowSession) return;
   closeFlowLabelBox(true);
+  // Before the disabled check: the flush is what it reads.
+  flushFlowCode();
   if (flowSheetSave && flowSheetSave.disabled) return;
   const save = flowSession.save;
   const text = flowSession.text;
@@ -292,12 +294,22 @@ function flowSelectionStillThere() {
     : !!flowFindEdge(graph, flowSelection.id);
 }
 
+// Typing waits 180ms before it is read, so anything acting on the text takes what
+// is in the field first — otherwise Save writes the text from before the last
+// keystroke and closes, and those characters are gone.
+function flushFlowCode() {
+  window.clearTimeout(flowCodeTimer);
+  if (!flowSession || !flowCode || flowCode.value === flowSession.text) return;
+  setFlowText(flowCode.value, 'code');
+}
+
 if (flowCode) {
   flowCode.addEventListener('input', () => {
     if (!flowSession) return;
     window.clearTimeout(flowCodeTimer);
     flowCodeTimer = window.setTimeout(() => setFlowText(flowCode.value, 'code'), 180);
   });
+  flowCode.addEventListener('blur', flushFlowCode);
 }
 if (flowSheetCancel) flowSheetCancel.addEventListener('click', closeFlowSheet);
 if (flowSheetSave) flowSheetSave.addEventListener('click', saveFlowSheet);
@@ -1722,6 +1734,7 @@ async function exportFlowDiagram(kind) {
   if (!flowSession) return;
   closeFlowLabelBox(true);
   closeFlowMenu();
+  flushFlowCode();
   try {
     if (kind === 'md') {
       send({ command: 'exportDiagram', format: 'md', data: '```mermaid\n' + flowSession.text + '\n```\n' });
