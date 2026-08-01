@@ -45,6 +45,10 @@ const FLOW_SHAPES = [
 // closer settles it. See takeFlowNode.
 const FLOW_SHAPES_BY_OPENER = FLOW_SHAPES.slice().sort((a, b) => b.open.length - a.open.length);
 
+// The order every list of shapes is shown in. Alphabetical, so a shape sits
+// where you last saw it; the table above keeps the order the parser wants.
+const FLOW_SHAPES_BY_LABEL = FLOW_SHAPES.slice().sort((a, b) => a.label.localeCompare(b.label));
+
 // The catalog behind a function: a `const` in the shell script is not reachable
 // from check-shell.mjs and a function is.
 function flowShapeCatalog() {

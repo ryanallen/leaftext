@@ -1157,11 +1157,8 @@ if (flowCanvas) {
     // A + handle pressed and released without travelling is a click: pick the
     // shape, and it arrives joined up on the side the handle sits.
     if (drag.kind === 'bud' && !drag.moved) {
-      openFlowShapePicker(
-        event.clientX,
-        event.clientY,
-        (shape) => addFlowNode(shape, flowBudRelation(graph, drag.from, drag.side)),
-        flowNewNodeShape(graph, drag.from),
+      openFlowShapePicker(event.clientX, event.clientY, (shape) =>
+        addFlowNode(shape, flowBudRelation(graph, drag.from, drag.side)),
       );
       return;
     }
@@ -1194,11 +1191,8 @@ if (flowCanvas) {
         return;
       }
       const where = flowSlotAt(flowPointIn(event));
-      openFlowShapePicker(
-        event.clientX,
-        event.clientY,
-        (shape) => addFlowNode(shape, { ...flowBudRelation(graph, drag.from, drag.side), before: where }),
-        flowNewNodeShape(graph, drag.from),
+      openFlowShapePicker(event.clientX, event.clientY, (shape) =>
+        addFlowNode(shape, { ...flowBudRelation(graph, drag.from, drag.side), before: where }),
       );
       return;
     }
@@ -1321,16 +1315,10 @@ function flowMenuItems(spot) {
   return flowShapeChoices((id) => addFlowNode(id, { before: flowSlotAt(point) }));
 }
 
-// Every shape, as something to pick. `first` floats one to the top — a + handle
-// puts the shape you would most likely want there, so the common chain is still
-// one glance and one click.
-function flowShapeChoices(make, first) {
-  const shapes = FLOW_SHAPES.slice();
-  if (first) {
-    const at = shapes.findIndex((shape) => shape.id === first);
-    if (at > 0) shapes.unshift(shapes.splice(at, 1)[0]);
-  }
-  return shapes.map((shape) => ({
+// Every shape, as something to pick. Always the same order: a list that
+// reshuffles itself has to be read every time.
+function flowShapeChoices(make) {
+  return FLOW_SHAPES_BY_LABEL.map((shape) => ({
     label: shape.label,
     chip: shape.id,
     hint: shape.hint,
@@ -1341,8 +1329,8 @@ function flowShapeChoices(make, first) {
 // Pick a shape, right where the pointer is. This is what a + handle and a
 // double-click on empty space both open, so a new box is the shape you meant
 // rather than the one we guessed and left you to fix.
-function openFlowShapePicker(x, y, make, first) {
-  openFlowMenuWith(x, y, flowShapeChoices(make, first), true);
+function openFlowShapePicker(x, y, make) {
+  openFlowMenuWith(x, y, flowShapeChoices(make), true);
 }
 
 function openFlowMenu(x, y, spot) {
@@ -1554,7 +1542,7 @@ function drawFlowInspector() {
   // Every group is generated from the table it belongs to.
   if (node) {
     flowInspector.appendChild(
-      flowChoiceGroup('Shape', FLOW_SHAPES, node.shape, (id) => flowShapeChip(id), (id) => {
+      flowChoiceGroup('Shape', FLOW_SHAPES_BY_LABEL, node.shape, (id) => flowShapeChip(id), (id) => {
         node.shape = id;
       }),
     );

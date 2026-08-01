@@ -163,7 +163,7 @@ The canvas is Mermaid's own drawing of your diagram, not a second picture of it 
 
 Everything is done on the canvas itself.
 
-- **Double-click empty space** to add a box. A picker opens where you clicked, showing every shape drawn as itself.
+- **Double-click empty space** to add a box. A picker opens where you clicked, showing every shape drawn as itself, always in the same alphabetical order.
 - **Hover a box** for its **+** handles. Click one and the same picker opens; the box you choose arrives already joined on that side. Drag a handle onto another box instead and it connects the two.
 - **Double-click a box** — or press `Enter` with it selected — to rename it in place. A new box opens straight into its name field.
 - **Drag a box onto a line** to move it into that line: `A → B` becomes `A → this → B`, and the chain it came from closes up behind it. Drop it on another box to move it beside that one, or on empty space and it settles back where the layout puts it.
@@ -185,7 +185,7 @@ The canvas fits the diagram when it opens and centers it. Drag empty space to pa
 
 ### What it can draw
 
-- **Fourteen shapes** — process, event, terminal, subprocess, database, circle, double circle, decision, preparation, input, output, manual operation, manual input, and flag. Selecting a box shows all of them, and hovering one says what it means.
+- **Fourteen shapes** — circle, database, decision, double circle, event, flag, input, manual input, manual operation, output, preparation, process, subprocess, and terminal. Selecting a box shows all of them, and hovering one says what it means.
 - **Connectors** — solid, dotted or thick, with an arrow, nothing, a circle or a cross at the end, or the same at both ends. Any of them can carry a label.
 - **Front matter, `%%{init}%%` directives and comments** written in the block are carried through a save untouched.
 
