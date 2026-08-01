@@ -928,6 +928,12 @@ fn the_code_views_minimap_rail_shows_the_shells_grain() {
         fade,
         "margin-right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) + 1px);",
     );
+    // Monaco's own scrolled-content shadow spans the editor's whole top edge, the
+    // map included; over the rail it read as a smudge on the chrome. The theme
+    // turns it off, and widget shadows with it.
+    let html = app_shell_html();
+    assert!(html.contains("'scrollbar.shadow': '#00000000',"));
+    assert!(html.contains("'widget.shadow': '#00000000',"));
 }
 
 #[test]

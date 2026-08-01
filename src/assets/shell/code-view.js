@@ -510,6 +510,10 @@ function defineLeafMonacoTheme(monaco) {
     // its canvas with it. Only the alpha matters — the glyphs are still antialiased
     // against editor.background, so the map's text reads exactly as before.
     'minimap.background': '#00000000',
+    // No scrolled-content shadow: Monaco lays it across the whole editor top,
+    // minimap included, and over the rail it reads as a smudge on the chrome.
+    'scrollbar.shadow': '#00000000',
+    'widget.shadow': '#00000000',
     // No blue focus ring poking through the card's rounded corners.
     focusBorder: '#00000000',
     contrastBorder: '#00000000',
