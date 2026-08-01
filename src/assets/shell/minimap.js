@@ -689,8 +689,29 @@ function measureDocumentMinimap(track) {
   }
   return { source, sourceWidth, contentWidth, sourceTop, trackRect, trackHeight, viewportHeight, scrollHeight, scrollable, scrollTop, previewScale, scaledDocumentHeight };
 }
-function scheduleMinimapPreviewUpdate() {
+// A diagram pass rebuilds the document a batch at a time, and each batch would
+// otherwise rebuild the clone — cloning every SVG in the rail's window, over and
+// over. Hold the rail for the pass and build it once at the end: a moment stale,
+// never wrong. Counted, so one pass finishing cannot release another's hold.
+let minimapPreviewHolds = 0;
+function pauseMinimapPreview() {
+  minimapPreviewHolds += 1;
   if (minimapPreviewFrame) {
+    window.cancelAnimationFrame(minimapPreviewFrame);
+    minimapPreviewFrame = 0;
+  }
+}
+function resumeMinimapPreview() {
+  if (!minimapPreviewHolds) {
+    return;
+  }
+  minimapPreviewHolds -= 1;
+  if (!minimapPreviewHolds) {
+    scheduleMinimapPreviewUpdate();
+  }
+}
+function scheduleMinimapPreviewUpdate() {
+  if (minimapPreviewFrame || minimapPreviewHolds) {
     return;
   }
   minimapPreviewFrame = window.requestAnimationFrame(() => {

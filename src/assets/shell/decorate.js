@@ -520,28 +520,36 @@ function drawMermaidBatches(diagrams, generation) {
       // Re-read every time: the theme in force at this render is what these
       // diagrams must be drawn in, not the one that was in force at the last.
       mermaid.initialize(mermaidRuntimeConfig());
-      for (let at = 0; at < diagrams.length; at += MERMAID_BATCH_SIZE) {
-        if (generation !== mermaidRenderGeneration) return;
-        const batch = diagrams.slice(at, at + MERMAID_BATCH_SIZE).filter((diagram) => diagram.isConnected);
-        if (!batch.length) continue;
-        try {
-          await mermaid.run({ nodes: batch });
-        } catch (error) {
-          // One bad diagram must not cost the rest of the page: mermaid has
-          // already drawn its own error into the offender, so mark this batch and
-          // carry on with the next.
-          console.error(error);
-          for (const diagram of batch) diagram.dataset.mermaidRender = 'failed';
+      // The rail mirrors the document, so every batch would rebuild it. One
+      // rebuild for the pass instead; the reader's own re-pin still runs per
+      // batch, which is what holds the reading position as diagrams grow.
+      pauseMinimapPreview();
+      try {
+        for (let at = 0; at < diagrams.length; at += MERMAID_BATCH_SIZE) {
+          if (generation !== mermaidRenderGeneration) return;
+          const batch = diagrams.slice(at, at + MERMAID_BATCH_SIZE).filter((diagram) => diagram.isConnected);
+          if (!batch.length) continue;
+          try {
+            await mermaid.run({ nodes: batch });
+          } catch (error) {
+            // One bad diagram must not cost the rest of the page: mermaid has
+            // already drawn its own error into the offender, so mark this batch and
+            // carry on with the next.
+            console.error(error);
+            for (const diagram of batch) diagram.dataset.mermaidRender = 'failed';
+          }
+          for (const diagram of batch) {
+            if (diagram.dataset.mermaidRender === 'failed' || diagram.__mermaidSource == null) continue;
+            if (mermaidRenderCache.size >= MERMAID_CACHE_CAP) mermaidRenderCache.clear();
+            mermaidRenderCache.set(mermaidCacheKey(diagram.__mermaidSource), diagram.innerHTML);
+          }
+          // Each batch changed the block layout; drop the cached anchor list, and
+          // let whatever else watches the page catch up before the next one.
+          readerAnchorBlocks = null;
+          await new Promise((resolve) => window.setTimeout(resolve, 0));
         }
-        for (const diagram of batch) {
-          if (diagram.dataset.mermaidRender === 'failed' || diagram.__mermaidSource == null) continue;
-          if (mermaidRenderCache.size >= MERMAID_CACHE_CAP) mermaidRenderCache.clear();
-          mermaidRenderCache.set(mermaidCacheKey(diagram.__mermaidSource), diagram.innerHTML);
-        }
-        // Each batch changed the block layout; drop the cached anchor list, and
-        // let whatever else watches the page catch up before the next one.
-        readerAnchorBlocks = null;
-        await new Promise((resolve) => window.setTimeout(resolve, 0));
+      } finally {
+        resumeMinimapPreview();
       }
     })
     .catch((error) => {

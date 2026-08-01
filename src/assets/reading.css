@@ -3544,6 +3544,13 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-body pre.mermaid {
   position: relative;
 }
+/* Mermaid measures a diagram hundreds of times while drawing it, and each read
+   of a dirty page relaid out the whole document. Layout containment keeps those
+   reads inside the block. Layout only — size containment would flatten the
+   block to nothing, and paint containment would clip what overflows it. */
+.document-body pre.mermaid {
+  contain: layout;
+}
 .document-body pre.highlight::before,
 .document-body pre.mermaid::before {
   content: attr(data-language);
