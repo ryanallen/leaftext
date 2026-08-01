@@ -29,12 +29,9 @@ function bindSearchHits() {
 }
 // Swap between the tree and the search results. A non-empty query shows the
 // results pane (loading, error, no-results, or the ranked hits); an empty query
-// restores the tree exactly as it was, including the active view and filters.
+// puts the file list back exactly as it was.
 function renderLibrarySearch() {
   const active = !!librarySearchQuery;
-  // A query replaces the file list with its results; clearing it puts the list
-  // back. The graph is on the page now, so it is none of this function's
-  // business.
   librarySearchResults.hidden = !active;
   libraryTree.hidden = active;
   if (!active) {
@@ -74,14 +71,14 @@ function runLibrarySearch(value) {
   renderLibrarySearch();
   send({ command: 'search', query, scope: librarySearchScopePaths() });
 }
-// The document paths to restrict a search to, or null for the whole library. The
-// file list narrows to the folder it is inside (the root narrows to nothing) and
-// the graph to the nodes it drew; a set too large to bind also searches all.
+// The folder on screen, sent as the search's scope — null at the root, or when
+// the set is over SEARCH_SCOPE_CAP. Advisory: the host searches the whole active
+// vault and ignores it.
 function librarySearchScopePaths() {
   let paths;
   if (libraryProjectPath) {
     // The documents on screen. Only this folder, not the ones under it: the pane
-    // reads one folder at a time and has never looked inside the rest.
+    // reads one folder at a time.
     paths = (libraryEntries || []).filter((node) => node.kind === 'file').map((node) => node.path);
   } else {
     return null;
@@ -117,20 +114,15 @@ window.leafSetSearchResults = (payload) => {
   }
   renderLibrarySearch();
 };
-// Paint the pane from the seeded settings, then ask for the tree. The host owns
-// indexing and starts the rescan itself, so there's no JS-initiated crawl on boot.
+// Paint the pane from the seeded settings, then ask for the folder on screen.
 renderLibrary();
 applyPaneLayout();
 send({ command: 'getFolder', path: libraryProjectPath });
 // Updates. The check compares the running version against the latest GitHub
-// release; if a newer one publishes this platform's installer, the page downloads
-// it and streams it to the host, which writes, hashes, and stages it. The button
-// then offers a restart. Every failure is reported in the panel — a check that
-// found nothing must not look like one that never ran.
-//
-// The download lives here rather than in Rust because the web view already has
-// an OS-maintained TLS stack; the host owns everything that decides whether the
-// bytes are allowed to run.
+// release; if a newer one publishes this platform's installer, the host is asked
+// to fetch, hash, and stage it, and the button then offers a restart. Every
+// failure is reported in the panel — a check that found nothing must not look
+// like one that never ran.
 const settingsAlertDot = document.getElementById('settingsAlertDot');
 const settingsUpdate = document.getElementById('settingsUpdate');
 const settingsUpdateLabel = document.getElementById('settingsUpdateLabel');

@@ -1,7 +1,6 @@
 # Refine your mind.
-## Your thoughts, secure and free.
 
-Leaftext is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own.
+**Your thoughts, secure and free.** Leaftext is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own.
 
 ![Leaftext — a readable Markdown and XML document open in the app](imgs/leaftext.png)
 
@@ -23,54 +22,51 @@ There's no account and no sign-up. Your files never leave your computer, and the
 
 Free, on macOS and Windows.
 
-## What you can do
+## Find it fast
 
-### Read without the noise
+| If you want to… | Go to |
+| --- | --- |
+| See what it looks like | [Read your files](#read-your-files) |
+| Write in the page, not in an editor | [Write where you read](#write-where-you-read) |
+| Search your notes and see how they link | [Keep a library](#keep-a-library) |
+| Keep your place across long documents | [Move around](#move-around) |
+| Change the look | [Make it yours](#make-it-yours) |
+| Know what leaves your machine | [Your thoughts stay yours](#your-thoughts-stay-yours) |
+| Install it | [Install it](#install-it) |
+| Learn the whole app | [Learn it](#learn-it) |
+| Build it from source | [Development](#development) |
+
+## Read your files
+
+### Markdown, rendered the way GitHub renders it
 
 ![Leaftext reading view rendering a Markdown document](imgs/rendering.png)
 
-Open a `.md` file and it renders the way you'd expect — the same way GitHub does, with the extras people actually use: [highlighted code](docs/01-features/01-rendering.md#code), [diagrams](docs/01-features/01-rendering.md#mermaid-diagrams), [math](docs/01-features/01-rendering.md#math), [callouts](docs/01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](docs/01-features/01-rendering.md#footnotes), [emoji](docs/01-features/01-rendering.md#emoji), task lists, and [your own images](docs/01-features/01-rendering.md#images).
+Open a `.md` file and it renders the way you'd expect, with the extras people actually use: [highlighted code](docs/01-features/01-rendering.md#code), [math](docs/01-features/01-rendering.md#math), [callouts](docs/01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](docs/01-features/01-rendering.md#footnotes), [emoji](docs/01-features/01-rendering.md#emoji), [task lists](docs/01-features/01-rendering.md#task-lists), [tables](docs/01-features/01-rendering.md#tables), [collapsible sections](docs/01-features/01-rendering.md#collapsible-sections), [frontmatter](docs/01-features/01-rendering.md#frontmatter), and [your own images](docs/01-features/01-rendering.md#images). **[Rendering →](docs/01-features/01-rendering.md)**
 
-[XML opens too](docs/01-features/01-rendering.md#xml). A sitemap, a feed, a config file — [any XML](docs/01-features/01-rendering.md#any-xml) reads as sections, fields, and tables instead of tags. And [84000-style TEI](docs/01-features/01-rendering.md#tei-xml-84000-translations), the format the Buddhist canon is translated into, gets a reader that understands its conventions.
+### Diagrams that take your theme's colors
 
-[JSON and YAML open too](docs/01-features/01-rendering.md#data-files-json-and-yaml), read by the same shape rules — a lock file, a CI workflow, or a Kubernetes manifest as headed sections, aligned fields, and record tables instead of punctuation. And a [saved email](docs/01-features/01-rendering.md#email-eml) — an `.eml` from Gmail or Outlook — opens as the message it carries: headers, body, inline images, attachments. **[Rendering →](docs/01-features/01-rendering.md)**
+![A Mermaid flowchart and a pie chart rendered inside a document, drawn in the current theme's colors and body font rather than Mermaid's defaults](imgs/mermaid.png)
 
-### Write where you read
+Write a `mermaid` code fence and get a diagram — flowchart, sequence, gantt, mindmap, pie — drawn offline in your theme's own colors and font. Switch theme and every diagram on the page is redrawn to match. **[Diagrams →](docs/01-features/01-rendering.md#mermaid-diagrams)**
 
-![Inline editing in the rendered page, with save and undo button](imgs/editing.png)
-![Editing in code view, with save and undo button](imgs/code-view.png)
+### XML, sitemaps, feeds, and Buddhist canon
 
-Click into a sentence and type. Split a paragraph with `Enter`, join it back with `Backspace`, tick a checkbox — the change lands in your file at exactly that spot, and [undo](docs/01-features/07-editing.md#undo) walks back step by step. Highlight words for a [format bar](docs/01-features/07-editing.md#the-format-bar), or reach into the left margin to [drag a block](docs/01-features/07-editing.md#the-block-gutter) or [add one](docs/01-features/07-editing.md#adding-a-block).
+![An RSS feed opened in Leaftext, rendered as a channel heading, a field list, and one section per item instead of raw tags](imgs/xml.png)
 
-Prefer the raw text? Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, XML, JSON, YAML, or a raw email — colored like an editor. There's no autosave, ever: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
+[Any XML](docs/01-features/01-rendering.md#any-xml) reads as sections, fields, and tables instead of tags — a sitemap, a feed, a `pom.xml`. And [84000-style TEI](docs/01-features/01-rendering.md#tei-xml-84000-translations), the format the Buddhist canon is translated into, gets a reader that understands its conventions: titles, front matter, nested divisions, verse, endnotes. **[XML →](docs/01-features/01-rendering.md#xml)**
 
-### Find anything you've written
+### JSON and YAML as pages
 
-![The library pane with the document graph view](imgs/graph.png)
+![A GitHub Actions workflow YAML file opened in Leaftext, rendered as headed sections and aligned label/value fields rather than indented punctuation](imgs/data.png)
 
-A side pane that knows every Markdown file you own. [Search the words inside them](docs/01-features/03-library.md#search), or walk your folders with a [breadcrumb](docs/01-features/03-library.md#project) that always says where you are. The index is a plain SQLite file on your own disk — nothing is uploaded to search it. **[Library →](docs/01-features/03-library.md)**
+A lock file, a CI workflow, or a Kubernetes manifest as headed sections, aligned fields, and record tables instead of punctuation — read by the same shape rules as XML, so the same field is named the same way in both. **[JSON and YAML →](docs/01-features/01-rendering.md#data-files-json-and-yaml)**
 
-### See how your ideas connect
+### Saved email
 
-The [graph view](docs/01-features/03-library.md#graph) maps the links between your documents, so you can see the shape of what you've written instead of scrolling a list. Notes you'd forgotten turn out to be next door to the one you're reading. **[Graph →](docs/01-features/03-library.md#graph)**
+![An .eml file opened in Leaftext, showing the subject as the page heading, From/To/Date as a field list, and the message body with an inline image](imgs/email.png)
 
-### Never lose your place
-
-![Tabs and Back/Forward history in the app bar](imgs/navigation.png)
-
-It moves like a browser: [tabs](docs/01-features/02-navigation.md#tabs), Back and Forward through your [history](docs/01-features/02-navigation.md#history), an [outline](docs/01-features/02-navigation.md#outline) at the top of every document, and a Previous/Next [pager](docs/01-features/05-settings.md#pager) that reads a folder in order. Change a file in another app and Leaftext [picks it up](docs/01-features/02-navigation.md#reload) without losing your spot. **[Navigation →](docs/01-features/02-navigation.md)**
-
-### Take in the whole page at once
-
-![The minimap rail showing a scaled clone of the document](imgs/minimap.png)
-
-A tiny version of your document runs down the side — real text, not abstract bars — with a marker showing where you are. You'll recognize a section by its shape. Click to jump, or drag to scroll. **[Minimap →](docs/01-features/04-minimap.md)**
-
-### Point at any line
-
-![Block permalink numbers in the left-margin gutter](imgs/permalink.png)
-
-Every block — heading, paragraph, list item, table, code fence — has a stable address in the margin. Click it to copy a link that lands on that exact spot, in the app and on the web. Turn the numbers off if you'd rather not see them. **[Rendering →](docs/01-features/01-rendering.md)**
+An `.eml` from Gmail, Outlook, or Apple Mail opens as the message it carries: headers, body, inline images, attachments — instead of a wall of base64. Nothing in the message reaches the network. **[Email →](docs/01-features/01-rendering.md#email-eml)**
 
 ### Read faster when you need to
 
@@ -78,13 +74,111 @@ Every block — heading, paragraph, list item, table, code fence — has a stabl
 
 Turn on Speed Reader and the page dims back while bold anchors mark the start of each word. Your eye follows the path down instead of hunting for it. **[Speed Reader →](docs/01-features/05-settings.md#speed-reader)**
 
-### Make it look like yours
+## Write where you read
+
+### Click into a sentence and type
+
+![Inline editing in the rendered page, with save and undo button](imgs/editing.png)
+
+Split a paragraph with `Enter`, join it back with `Backspace`, tick a checkbox — the change lands in your file at exactly that spot, and [undo](docs/01-features/07-editing.md#undo) walks back step by step. There's no autosave, ever: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
+
+### A format bar where the words are
+
+![A few highlighted words in a paragraph with the format bar floating above them, showing bold, italic, strikethrough, code, link, and the heading and quote buttons](imgs/format-bar.png)
+
+Highlight words and a small bar appears over them: bold, italic, strikethrough, code, link — then text, a bigger or smaller heading, and quote for the whole block. A button with nowhere to go grays out. **[The format bar →](docs/01-features/07-editing.md#the-format-bar)**
+
+### Reach into the margin to move a block
+
+![The left margin of a document showing the drag handle and plus control, with one paragraph lifted mid-drag and its neighbors sliding aside to open the gap](imgs/block-gutter.png)
+
+Take the handle and a block lifts off the page; drop it where its neighbors have opened a gap. Press the plus on an empty line and [a row of block kinds](docs/01-features/07-editing.md#adding-a-block) fans out — text, heading, list, quote, code, table, image, flowchart, divider. **[The block gutter →](docs/01-features/07-editing.md#the-block-gutter)**
+
+### Draw a flowchart instead of typing one
+
+![The flowchart editor open as a full-window sheet: a diagram on the canvas at left with a selected box showing its plus handles, and the matching Mermaid text in the pane at right](imgs/flowchart-editor.png)
+
+A canvas beside the Mermaid text, each following the other. Double-click to add a box, drag a handle onto another to connect them, right-click for the rest. Open it on any diagram already in a page. **[The flowchart editor →](docs/01-features/07-editing.md#the-flowchart-editor)**
+
+### Or work in the raw source
+
+![Editing in code view, with save and undo button](imgs/code-view.png)
+
+Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, XML, JSON, YAML, or a raw email — colored like an editor, with line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). **[Code view →](docs/01-features/07-editing.md#code-view)**
+
+### Typing help drawn from your own notes
+
+![The code view with a completion popup open after typing two square brackets, listing note names from the vault, and a wavy underline beneath a broken link further down](imgs/typing-help.png)
+
+Type `[[` and your notes are listed. Type `#` for a heading. Hover a wikilink for a preview, and a link that answers to nothing gets a wavy underline. It knows only what you pointed it at. **[Typing help →](docs/01-features/07-editing.md#typing-help)**
+
+## Keep a library
+
+### Point it at a folder and it becomes a vault
+
+![The library pane open beside a document, showing the vault switcher, the folder breadcrumb, the search box, and a file list of one folder](imgs/library.png)
+
+A side pane that browses one folder at a time, with a breadcrumb that always says where you are. Name a folder a **vault** and it becomes the thing search and syncing work over. Nothing is crawled, and nothing is written into your folder. **[Library →](docs/01-features/03-library.md)**
+
+### Search everything you've written
+
+![Search results in the library pane: a filename match at the top, then content matches each with a snippet showing the search terms in context](imgs/search.png)
+
+Name matches first, then content matches ranked by how often the terms appear, each with a snippet. There's no index on disk — the text is read once and held in memory, so nothing can go stale against your files, and nothing is uploaded to search it. **[Search →](docs/01-features/03-library.md#search)**
+
+### See how your ideas connect
+
+![The library pane with the document graph view](imgs/graph.png)
+
+The [graph view](docs/01-features/03-library.md#graph) maps the links between your documents, so you can see the shape of what you've written instead of scrolling a list. Notes you'd forgotten turn out to be next door to the one you're reading. Web addresses are nodes too, so two notes citing one page share it. **[Graph →](docs/01-features/03-library.md#graph)**
+
+### Push a vault to GitHub
+
+![A vault's settings panel showing the connected GitHub repository, and the sync button at the end of the breadcrumb carrying a count of changes waiting to be pushed](imgs/github-sync.png)
+
+A vault can be a git repository that pushes to GitHub. Leaftext never holds a token — it runs the `git` already on your machine. A sync button appears on the breadcrumb whenever there's work that hasn't reached GitHub. **[GitHub sync →](docs/01-features/03-library.md#github-sync)**
+
+## Move around
+
+### Never lose your place
+
+![Tabs and Back/Forward history in the app bar](imgs/navigation.png)
+
+It moves like a browser: [tabs](docs/01-features/02-navigation.md#tabs), Back and Forward through your [history](docs/01-features/02-navigation.md#history), and an [outline](docs/01-features/02-navigation.md#outline) at the top of every document. Change a file in another app and Leaftext [picks it up](docs/01-features/02-navigation.md#reload) without losing your spot. **[Navigation →](docs/01-features/02-navigation.md)**
+
+### Take in the whole page at once
+
+![The minimap rail showing a scaled clone of the document](imgs/minimap.png)
+
+A tiny version of your document runs down the side — real text, not abstract bars — with a marker showing where you are. You'll recognize a section by its shape. Click to jump, or drag to scroll. **[Minimap →](docs/01-features/04-minimap.md)**
+
+### Read a folder in order
+
+![The Previous / Next pager bar at the foot of a document, each button naming the document it leads to](imgs/pager.png)
+
+Where folders are joined by `README.md` files, a **Previous / Next** bar appears at the bottom of each page, so a folder of notes reads like a book. **[Pager →](docs/01-features/02-navigation.md#pager)**
+
+### Define a word once for a whole set of notes
+
+![A glossary term underlined in a paragraph, with its entry open in a bottom sheet sliding up over the page, the document still visible behind it](imgs/glossary-sheet.png)
+
+Write one `GLOSSARY.md` and every mention of a defined term, across every document, links to it — and clicking one opens a sheet over the page instead of taking you away from it. **[Glossary →](docs/01-features/02-navigation.md#glossary)**
+
+## Make it yours
+
+### Eleven themes, light and dark
 
 ![Amaranth theme](imgs/themes/themes.png)
 
-Eleven themes — [Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) — each in light and dark, plus System and Daylight if you'd rather the app follow the time of day. Everything moves together: text, code, callouts, minimap. Each theme's font is fetched from Google Fonts the first time you choose it. **[Themes →](docs/01-features/06-themes.md)**
+[Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) — each in light and dark, plus System and Daylight if you'd rather the app follow the time of day. Everything moves together: text, code, callouts, diagrams, minimap. Each theme's font is fetched from Google Fonts the first time you choose it. **[Themes →](docs/01-features/06-themes.md)**
 
-### Your thoughts stay yours
+### Settings you can read
+
+![The Settings dropdown open in the app bar, showing theme, appearance, minimap, pager and graph size, with the version and update status at its foot](imgs/settings.png)
+
+Theme, appearance, minimap, pager, graph size — and at the foot, the version you're running and whether an update is waiting. It's all a plain JSON file on your machine, not an account. **[Settings →](docs/01-features/05-settings.md)**
+
+## Your thoughts stay yours
 
 No account. No cloud. No telemetry. Nothing you open, write, or search ever leaves your machine.
 
@@ -92,19 +186,23 @@ The app touches the network exactly twice, and neither one carries your words: i
 
 Your [settings](docs/01-features/05-settings.md) are a JSON file on your machine, and your documents are the files you already had. Delete Leaftext tomorrow and every word you wrote is still sitting in the folder you put it in, readable by anything.
 
-Updates download quietly in the background and are checked against a published digest, then wait for you to click **Restart to update**. Nothing installs on its own. **[Settings →](docs/01-features/05-settings.md#updates)**
+Updates download quietly in the background and are checked against a published digest, then wait for you to click **Restart to update**. Nothing installs on its own. **[Updates →](docs/01-features/05-settings.md#updates)**
 
-## Get it
+## Install it
 
 Leaftext is free. **[Download the latest release](https://github.com/ryanallen/leaftext/releases/latest)**, then follow your platform below — or the fuller walkthrough in the **[Installation guide](docs/02-installation.md#install)**.
 
 ### macOS
 
+![The mounted Leaftext disk image in the Finder: the leaf app icon on the left with an arrow pointing to the Applications folder shortcut on the right](imgs/install-mac.png)
+
 1. Download the file ending in **`-macos-universal.dmg`**. One file covers Apple Silicon and Intel.
 2. Open it. Drag the leaf app onto the **Applications** folder beside it.
 3. Eject the disk image, then open **Leaftext** from Applications.
 
-**First launch — macOS will refuse it**
+#### First launch — macOS will refuse it
+
+![The macOS System Settings Privacy & Security pane scrolled to the Security section, where a line names Leaftext as blocked with an Open Anyway button beside it](imgs/install-mac-open-anyway.png)
 
 Expected. Apple charges a yearly fee to notarize an app; Leaftext is free and isn't enrolled, so macOS blocks anything unnotarized on sight. Nothing was scanned and nothing was found. Let it through once:
 
@@ -117,13 +215,15 @@ Every launch after that is an ordinary double-click. On macOS 12 and earlier it'
 
 ### Windows
 
+![The blue Windows protected your PC dialog with the More info link expanded, showing the Run anyway button](imgs/install-windows.png)
+
 Grab the 64-bit MSI and run it. If a blue **Windows protected your PC** box appears, click **More info** → **Run anyway** — the installer isn't signed with a paid certificate. It installs just for you, with no admin prompt. Here by default, though **Change...** puts it anywhere you like and updates keep it there:
 
 ```text
 %LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe
 ```
 
-Your library index and browser data live alongside it:
+Your app data lives alongside it:
 
 ```text
 %LOCALAPPDATA%\ryanallen\leaftext\data
@@ -133,9 +233,26 @@ Launch it from the Start Menu, or tap the Windows key and type **Leaftext**. One
 
 > **Upgrading from v0.1.364 or earlier?** Uninstall the old version first, from **Settings → Apps**. Those installed machine-wide into `C:\Program Files`, and a per-user package can't remove one, so you'd end up with two copies.
 
+### Opening files with it
+
+Installing registers Leaftext for every extension it reads — `.md`, `.markdown`, `.mdown`, `.xml`, `.json`, `.yaml`, `.yml`, `.eml`, `.mht`, `.mhtml` — so those files carry the leaf icon. An extension another app already owns keeps its app until you say otherwise. **[File associations →](docs/02-installation.md#file-associations)**
+
 ## Learn it
 
 New here? The **[Quickstart](docs/03-quickstart.md)** gets you reading in a couple of minutes. Then browse the **[full documentation](docs/01-introduction.md)**.
+
+| Page | What it covers |
+| --- | --- |
+| [Quickstart](docs/03-quickstart.md) | Open a file, read it, move around, come back to it |
+| [Installation](docs/02-installation.md) | Both platforms, the first-launch warnings, file associations, updates |
+| [Rendering](docs/01-features/01-rendering.md) | Every syntax and format it reads, with live examples |
+| [Navigation](docs/01-features/02-navigation.md) | Tabs, history, outline, pager, glossary, link hints, live reload |
+| [Library](docs/01-features/03-library.md) | Vaults, the file tree, search, the graph, GitHub sync, file actions |
+| [Minimap](docs/01-features/04-minimap.md) | The side rail, in both the reading view and the code view |
+| [Settings](docs/01-features/05-settings.md) | Every preference, its default, and where it is stored |
+| [Themes](docs/01-features/06-themes.md) | The eleven families, appearance, fonts, diagram colors |
+| [Editing](docs/01-features/07-editing.md) | Inline editing, the block gutter, the flowchart editor, code view, save |
+| [Glossary](docs/GLOSSARY.md) | Every word Leaftext uses for a part of itself |
 
 The pages are plain Markdown under [`docs/`](docs/) — the same format the app reads, so you can open them in Leaftext itself.
 
@@ -143,7 +260,7 @@ The pages are plain Markdown under [`docs/`](docs/) — the same format the app 
 
 ## Development
 
-See [Building](docs/02-development/02-building.md), [Architecture](docs/02-development/01-architecture.md), and [Releasing](docs/02-development/03-releasing.md) for the full developer docs.
+See [Building](docs/02-development/02-building.md), [Architecture](docs/02-development/01-architecture.md), [Theming](docs/02-development/04-theming.md), and [Releasing](docs/02-development/03-releasing.md) for the full developer docs.
 
 Run the full verification suite before handing work back:
 

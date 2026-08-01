@@ -459,8 +459,8 @@ function mermaidRuntimeConfig() {
 const mermaidRenderCache = new Map();
 const MERMAID_CACHE_CAP = 200;
 // Keyed on the family as well as light or dark: two themes of the same
-// appearance draw the same diagram in different colors, and a key that could not
-// tell them apart handed back the previous theme's picture.
+// appearance draw the same diagram in different colors, and a key that cannot
+// tell them apart hands back the previous theme's picture.
 function mermaidCacheKey(source) {
   const root = document.documentElement.dataset;
   return (root.themeFamily || '') + '\n' + (root.theme || '') + '\n' + source;
@@ -562,8 +562,8 @@ function drawMermaidBatches(diagrams, generation) {
 }
 
 // A drawn diagram gets a corner button that reopens it in the flowchart sheet.
-// A plain click still does what it always did — swap to the source in place —
-// so nothing is taken away and there is no surprise.
+// A plain click still swaps to the source in place, so the button takes nothing
+// away.
 function addMermaidEditButton(diagram) {
   if (currentDocumentFormat !== 'markdown' || !readerEditingAllowed()) return;
   if (!Number.isFinite(Number(diagram.dataset.srcStart)) || !Number.isFinite(Number(diagram.dataset.srcEnd))) return;
@@ -770,7 +770,7 @@ function isNavOutlineItem(el) {
   return text === linkText.replace(/\s+/g, '');
 }
 // How long the document is, in body blocks. Counted rather than stamped — the total
-// is all anyone reads, so numbering 50,000 blocks to reach it bought nothing.
+// is all anyone reads, so numbering 50,000 blocks to reach it buys nothing.
 function documentLineCount(body) {
   let lines = 0;
   body.querySelectorAll(DOCUMENT_LINE_SELECTOR).forEach((target) => {

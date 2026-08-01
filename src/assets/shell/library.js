@@ -155,7 +155,7 @@ function activeDocumentPath() {
   return tabs[active].path || null;
 }
 // What the pager came back as, per document. Every render emits the skeleton and
-// waits to be told what to put there, which flashed a pulsing box at the foot of
+// waits to be told what to put there, which flashes a pulsing box at the foot of
 // the page on every edit. The remembered answer goes back before the paint; the
 // ask still goes out, so a neighbor added since still lands.
 const pagerHtmlByPath = new Map();
@@ -204,8 +204,6 @@ window.leafSetPager = (state) => {
   scheduleReaderLayoutUpdate();
 };
 // The folder holding `filePath`, or '' when it has no parent worth showing.
-// A string operation, because that is all it takes — the old version walked a
-// whole in-memory tree to answer the same question.
 function parentFolderOf(filePath) {
   const cut = Math.max((filePath || '').lastIndexOf('/'), (filePath || '').lastIndexOf('\\'));
   return cut > 0 ? filePath.slice(0, cut) : '';
@@ -252,8 +250,6 @@ function fileRowHtml(node) {
   const current = isSelected ? ' aria-current="true"' : '';
   return `<button type="button" class="library-file${selected}"${current} data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(node.path)}">${LEAF_FILE_ICON}<span class="library-file-label">${escapeText(label)}</span></button>`;
 }
-// The rows for the folder we're inside — already ordered by the host, folders
-// first. Walking back out is the breadcrumb's job, so no "up" row here.
 // Where "up" goes: the folder above this one, or the root when this is the
 // first level in. Null at the top, where there is nothing above — a vault's own
 // folder, or the drive roots. Leaving a vault is the switcher's job, not this
@@ -276,8 +272,7 @@ function renderProject(entries) {
   if (parent) rows.push(upRowHtml(parent));
   for (const node of entries || []) {
     if (node.kind === 'folder') {
-      // A folder row carries data-reveal-path so the right-click menu reaches it —
-      // before this, a folder was the one row in the pane with no menu at all.
+      // A folder row carries data-reveal-path so the right-click menu reaches it.
       rows.push(`<button type="button" class="library-nav-folder" data-nav-into="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" data-folder-path="${escapeAttr(node.path)}" title="${escapeAttr(node.name)}">${FOLDER_ICON_SVG}<span class="library-file-label">${escapeText(node.name)}</span><span class="library-nav-chevron" aria-hidden="true">›</span></button>`);
     } else {
       rows.push(fileRowHtml(node));
@@ -354,8 +349,9 @@ function crumbElisionHtml(hidden) {
   const label = escapeAttr(`Skipped folders: ${names.join(' › ')}`);
   return `<button type="button" class="library-crumb is-elided" data-crumb-more="1" title="${label}" aria-label="${label}" aria-haspopup="menu" aria-expanded="false">…</button>`;
 }
-// What the trail was last laid out for. The library re-renders on every indexer
-// push, and rebuilding the crumbs threw away the "…" an open menu hangs off.
+// What the trail was last laid out for. The library re-renders whenever a disk
+// change touches the folder on screen, and rebuilding the crumbs throws away the
+// "…" an open menu hangs off.
 let libraryCrumbFitKey = null;
 function crumbFitKey(segments) {
   return segments.map((segment) => segment.path + '>' + segment.name).join('|')
@@ -747,10 +743,10 @@ function refreshVaultGitPanel(id) {
   if (active && active.classList.contains('crumb-menu-input') && crumbMenu.contains(active)) return;
   showCrumbMenu(crumbMenuOwner, editVaultMenuItems(crumbMenuVault));
 }
-// A status answer only changes a row's glyph (box vs cloud). Rebuilding the
-// whole menu for that -- which is what this used to do -- tore down every row,
-// so a click landing mid-rebuild hit a node already gone: the button that "only
-// worked sometimes". Swap just the glyph in place instead. Skipped while the
+// A status answer only changes a row's glyph (box vs cloud). Rebuilding the whole
+// menu for that tears down every row, so a click landing mid-rebuild hits a node
+// already gone: the button that "only works sometimes". Swap just the glyph in
+// place instead. Skipped while the
 // settings panel owns the menu (crumbMenuVault set), which has no such rows.
 function refreshSwitcherGlyphs() {
   if (crumbMenu.hidden || crumbMenuOwner !== libraryVaultSwitch || crumbMenuVault) return;
@@ -775,9 +771,9 @@ let syncSpinUntil = 0;
 let syncSpinTimer = 0;
 let syncFadeTimer = 0;
 // Held from the click until the host reports how it went. Without it the turn
-// stops the moment anything else redraws the button -- a watcher tick mid-push
-// was enough -- and a spinner that pauses reads as a failure, which is the one
-// thing it must not say while the push is still running.
+// stops the moment anything else redraws the button -- a watcher tick mid-push is
+// enough -- and a spinner that pauses reads as a failure, which is the one thing
+// it must not say while the push is still running.
 let syncInFlight = false;
 function renderVaultSyncButton() {
   if (!librarySyncButton) return;
@@ -836,8 +832,8 @@ if (librarySyncButton) {
 // Where the active vault's repository stands. Called from both ways the page
 // learns which vault is active, because they share no path: a switch arrives
 // through `leafSetVaults`, but a cold launch reads `__leafVaults` off the window
-// and never calls it. Hooked to the callback alone, this only ever fired if you
-// changed vaults.
+// and never calls it. Hooked to the callback alone, this would only ever fire
+// when you changed vaults.
 function requestActiveVaultStatus() {
   renderVaultSyncButton();
   if (activeVaultId) send({ command: 'getVaultStatus', id: activeVaultId });
@@ -845,9 +841,9 @@ function requestActiveVaultStatus() {
 window.leafSetVaultStatus = (id, repo) => {
   if (typeof id !== 'number' || !repo) return;
   const previous = vaultGitByVault.get(id);
-  // Only the folder's state. Saying `busy: false` here would end the spin from
-  // a watcher tick that happened to land mid-push, which is what made the turn
-  // stutter -- a job is over when the job says so, not when a file moves.
+  // Only the folder's state. Saying `busy: false` here would end the spin from a
+  // watcher tick that happened to land mid-push, stuttering the turn -- a job is
+  // over when the job says so, not when a file moves.
   vaultGitByVault.set(id, Object.assign({}, previous || { id, tooling: {} }, { repo }));
   renderVaultSyncButton();
   renderLibraryVaultSwitch();
@@ -863,9 +859,9 @@ window.leafSetVaultGit = (state) => {
   renderVaultSyncButton();
   refreshVaultGitPanel(state.id);
   // Anything the user pressed a button for says how it went, whether or not the
-  // panel is open -- the header's button can start a sync with the panel shut,
-  // and until now a failure there was silent. Reading the folder carries no
-  // message, so opening the panel does not growl at anyone.
+  // panel is open -- the header's button can start a sync with the panel shut, and
+  // a failure there must not be silent. Reading the folder carries no message, so
+  // opening the panel does not growl at anyone.
   if (state.message) {
     leafToast(syncOutcomeText(state), state.error ? 'error' : 'ok');
   }
@@ -1082,7 +1078,7 @@ function showCrumbMenu(button, items) {
     // Act on the press, not on the full click. A click only fires when press and
     // release land on the same element, so a redraw slipping in between -- and
     // this menu redraws itself whenever git answers, which is exactly while it is
-    // open -- swallowed the click and the button did nothing. Pressing fires the
+    // open -- swallows the click and the button does nothing. Pressing fires the
     // instant the button is touched, before any redraw can replace it.
     item.addEventListener('pointerdown', (event) => {
       if (event.button !== 0) return;
@@ -1153,8 +1149,8 @@ function scheduleCrumbFit() {
   });
 }
 // Every pane-width change calls scheduleCrumbFit itself (the divider drag and
-// applyPaneLayout) — a ResizeObserver here proved unreliable in the web view,
-// delivering its first observation and nothing after. Keep one anyway, on the band
+// applyPaneLayout) — a ResizeObserver here is unreliable in the web view, which
+// delivers its first observation and nothing after. Keep one anyway, on the band
 // rather than the trail (the band's width comes from the pane, so a refit can't
 // feed back into what it measures), for the widths nothing else announces: a
 // zoom change, or a font arriving late and re-measuring every crumb.
@@ -1257,9 +1253,8 @@ window.leafSetVaults = (payload) => {
     libraryError = null;
     persistLibraryState();
     // A different root means a different graph, so whatever is drawn is about
-    // somewhere else now. It does not mean *no* graph: leaving a vault used to
-    // throw the reader out of the map entirely, and now the open document answers
-    // for it instead.
+    // somewhere else now. It does not mean *no* graph: leaving a vault must not
+    // throw the reader out of the map, so the open document answers for it.
     refreshGraphForScope();
   }
   // The leftmost crumb reads the root's name, so the trail lays out again.

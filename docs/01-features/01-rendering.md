@@ -42,7 +42,19 @@ flowchart LR
     P --> D
 ```
 
-## Headings
+## Markdown
+
+Everything in this section is a live example: what you are reading is drawn by the same engine that draws your documents. Leaftext parses [CommonMark](../GLOSSARY.md#commonmark) and [GFM](../GLOSSARY.md#gfm), then adds the GitHub extras people actually use.
+
+| | |
+| --- | --- |
+| Structure | [Headings](#headings) · [Lists](#lists) · [Tables](#tables) · [Task lists](#task-lists) · [Horizontal rules](#horizontal-rules) · [Collapsible sections](#collapsible-sections) · [Frontmatter](#frontmatter) |
+| Words | [Text formatting](#text-formatting) · [Blockquotes and alerts](#blockquotes-and-alerts) · [Footnotes](#footnotes) · [Emoji](#emoji) · [Text in any language](#text-in-any-language) |
+| Links | [Links and autolinks](#links-and-autolinks) · [GitHub references](#github-references) · [Buttons](#buttons-leaf-extension) |
+| Media | [Code](#code) · [Images](#images) · [Math](#math) · [Mermaid diagrams](#mermaid-diagrams) |
+| Raw HTML | [Inline HTML](#inline-html) — a [security boundary](#inline-html), not a passthrough |
+
+### Headings
 
 All six ATX heading levels render:
 
@@ -55,7 +67,7 @@ All six ATX heading levels render:
 
 Every heading gets a slug `id`, so `#slug` links and the [outline](02-navigation.md#outline) resolve against it. Blocks carrying an explicit author-supplied `id` keep theirs — see [Inline HTML](#inline-html).
 
-## Text formatting
+### Text formatting
 
 - *Italic* and _italic_
 - **Bold** and __bold__
@@ -67,7 +79,7 @@ Every heading gets a slug `id`, so `#slug` links and the [outline](02-navigation
 A trailing backslash forces a hard line break,\
 so this sentence continues on the next line.
 
-## Lists
+### Lists
 
 Unordered, with nesting:
 
@@ -94,7 +106,7 @@ Ordered lists nest into a classic outline (I, A, 1, a, i):
 2. Shrubs
 3. Ground cover
 
-## Blockquotes and alerts
+### Blockquotes and alerts
 
 A blockquote, nested:
 
@@ -121,7 +133,7 @@ GitHub-style alerts render with theme-aware colors (all five):
 
 Standard blockquotes also use a hanging indent for each authored line, so when a long quoted line wraps in the reader the continuation stays inset and you can distinguish a soft wrap from a Markdown hard line break.
 
-## Code
+### Code
 
 Language-tagged fenced code blocks get syntax coloring, a language badge, and a Copy button. Hover a block to reveal the button.
 
@@ -155,7 +167,7 @@ no language, no highlighting
 
 Supported language tags include `ts`, `tsx`, `js`, `jsx`, `json`, `html`, `css`, `scss`, `md`, `bash`, `zsh`, `yaml`, `toml`, `xml`, `ini`, `rust`, `python`, `sql`, `diff`, `dotenv`, `dockerfile`, `graphql`, and plain text.
 
-## Tables
+### Tables
 
 GFM tables with a header row and a body:
 
@@ -174,13 +186,13 @@ A table cell whose entire content is a task-list marker — `[ ]` or `[x]` — r
 | Search files    | [x]   |
 | Edit the source | [ ]   |
 
-## Task lists
+### Task lists
 
 - [x] Render a page
 - [x] Search the library
 - [ ] Reformat the source on save (out of scope — edits are saved verbatim)
 
-## Links and autolinks
+### Links and autolinks
 
 - Inline link: [the Leaftext repo](https://github.com/ryanallen/leaftext)
 - Reference link: [CommonMark][cm]
@@ -192,7 +204,7 @@ A table cell whose entire content is a task-list marker — `[ ]` or `[x]` — r
 
 [cm]: https://commonmark.org
 
-## Buttons (Leaf extension)
+### Buttons (Leaf extension)
 
 This one is a Leaftext addition, not standard Markdown. Wrap an ordinary inline
 link in braces and it renders as a button styled like the app's action controls,
@@ -214,7 +226,7 @@ button follows a link like any other (external URLs open in your browser,
 relative `.md` paths open in the reader). Written inside code the wrapper stays
 literal, so this page can show the syntax without turning it into a button.
 
-## Images
+### Images
 
 Image paths are resolved against the open file: relative paths (including `../` at any depth), absolute paths, and `file://` URLs all load. The title shows on hover:
 
@@ -226,7 +238,7 @@ Every local picture is measured as the page is built — its size comes out of i
 
 Images always show the file that is on disk. Overwriting one refreshes it in the open document straight away ([Reload](02-navigation.md#reload)), and every rerender re-reads them, so a replaced picture never lingers as a cached copy. A missing one that later appears is found by that same refresh.
 
-## Math
+### Math
 
 Inline math uses `$…$`: the mass–energy equivalence is $E = mc^2$.
 
@@ -236,7 +248,7 @@ $$
 \int_{a}^{b} f(x)\,dx = F(b) - F(a)
 $$
 
-## Mermaid diagrams
+### Mermaid diagrams
 
 `mermaid` fences are rendered with the bundled Mermaid runtime, fully offline. If Mermaid fails, Leaftext leaves the source visible instead of a blank block. A page of many diagrams draws them a few at a time, nearest what you are reading first, so the window stays yours while the rest of the page fills in.
 
@@ -261,7 +273,7 @@ sequenceDiagram
     Reader-->>UI: leafSetLibraryFolder(listing)
 ```
 
-## Emoji
+### Emoji
 
 Leaftext renders GitHub shortcodes:
 
@@ -271,7 +283,7 @@ Leaftext renders GitHub shortcodes:
 - `:white_check_mark:` → :white_check_mark:
 - `:shipit:` → :shipit:
 
-## GitHub references
+### GitHub references
 
 Inside a Git repo, issue and PR references link to the repo; @mentions are highlighted:
 
@@ -282,7 +294,7 @@ Inside a Git repo, issue and PR references link to the repo; @mentions are highl
 
 Bare commit hashes are **not** linked. GitHub turns any run of 7 or 40 hex characters into a commit link, so a color like `f0f0f0f` becomes a link to a commit that probably does not exist. Hex is too ordinary to claim. Write the link yourself when you want one.
 
-## Footnotes
+### Footnotes
 
 Footnotes collect at the foot of the page, each with a back-link.[^one] Reference one twice[^one] or add more.[^two]
 
@@ -290,7 +302,7 @@ Footnotes collect at the foot of the page, each with a back-link.[^one] Referenc
 [^one]: Click the back-arrow to jump back.
 [^two]: With `inline code` and a [link](https://commonmark.org).
 
-## Frontmatter
+### Frontmatter
 
 A leading `--- … ---` block becomes a metadata table at the top of the page:
 
@@ -314,7 +326,7 @@ pinned: true
 - Only the **leading** block counts; a later `---` is a horizontal rule.
 - Malformed frontmatter still renders — just without the table.
 
-## Collapsible sections
+### Collapsible sections
 
 `<details>` / `<summary>` fold content away. Add `open` to start expanded.
 
@@ -335,7 +347,7 @@ Tucked away until you open it.
 
 </details>
 
-## Inline HTML
+### Inline HTML
 
 Leaftext sanitizes raw HTML with `ammonia`: a curated set of **safe** tags is allowed; the rest is stripped, keeping the inner text.
 
@@ -374,7 +386,7 @@ Markdown italic can wrap an HTML heading — useful for centering and italicisin
 
 Stripped for safety: `<script>`, inline event handlers such as `onclick=`, `javascript:` URLs, and disallowed elements such as `<iframe>` and `<form>`.
 
-## Horizontal rules
+### Horizontal rules
 
 Three or more `-`, `*`, or `_` on their own line:
 
@@ -384,7 +396,7 @@ Three or more `-`, `*`, or `_` on their own line:
 
 ___
 
-## Text in any language
+### Text in any language
 
 The interface is English. Your documents are not: anything valid UTF-8 renders as written, unaltered — accents, Greek, Cyrillic, Hebrew, Arabic, CJK, emoji:
 
@@ -399,11 +411,15 @@ Editing is anchored to byte offsets in the file, so a multi-byte character above
 
 ## XML
 
+![An XML sitemap opened in Leaftext, rendered as a table of URL records with columns for URL, last modified and priority, instead of raw tags](../../imgs/xml.png)
+
 Leaftext opens `.xml` files alongside `.md` files — the same "Open Document" dialog accepts both, and the [library](03-library.md) indexes both. Which XML renderer runs is decided by the file itself, not by its name: a document with a `<TEI>` root or a `<teiHeader>` goes to the [TEI renderer](#tei-xml-84000-translations); everything else goes to the generic one.
 
 Doctypes are read and ignored, so plists, XHTML, and DocBook open normally. A file that is not well-formed renders as a single line naming the parse position — `XML parse error. expected 'b' tag, not 'a' at 1:7` — instead of a blank page.
 
 ### Any XML
+
+![An RSS feed opened in Leaftext: the channel title as the page heading, the channel fields as an aligned label and value list, then one section per item](../../imgs/xml-feed.png)
 
 Most XML carries no reading conventions to follow, so the generic renderer works from the shape of the tree:
 
@@ -422,6 +438,8 @@ A file that names no title of its own — a sitemap has nowhere to say what it i
 A sitemap, for example, renders as a table of its `<url>` records; an RSS or Atom feed as its channel title, its channel fields, then one section per item; a Maven POM as its project fields plus a table of dependencies.
 
 ### TEI XML (84000 translations)
+
+![An 84000 TEI translation open in Leaftext: the English main title as the page heading with the Sanskrit title in muted italics beneath it, the front matter collapsed into a disclosure, and a verse stanza rendered as a quoted block](../../imgs/xml-tei.png)
 
 TEI documents have conventions worth following, so they get their own renderer.
 
@@ -446,6 +464,8 @@ Both XML renderers walk the `roxmltree` DOM and produce the same HTML structure 
 The web reader on this site (`site/reader.js`) renders `.xml` through `renderTEI()` from `tei-xml.js`, which uses `DOMParser` — the TEI path only, fully offline. The generic XML renderer is app-side.
 
 ## Data files (JSON and YAML)
+
+![A GitHub Actions workflow YAML file opened in Leaftext, rendered as headed sections per job with aligned label and value fields and a table of steps, rather than indented punctuation](../../imgs/data.png)
 
 Leaftext opens `.json`, `.yaml`, and `.yml` as pages. A data file is a tree of mappings, lists, and values rather than prose, so it is read by the same shape rules as [any XML](#any-xml) — and shares that renderer's labels, so a sitemap and the JSON next to it name the same field the same way.
 
@@ -472,6 +492,8 @@ A file that will not parse renders a single line naming the position — `JSON p
 Editing works, with one limit worth knowing. The [code view](07-editing.md#code-view) edits any data file as raw text, exactly as it does Markdown and XML. In the reading view, a block is click-to-edit only where its precise byte range in the file can be *proved*: that covers every JSON value, and YAML plain scalars. YAML lists, tables, quoted strings, and block scalars (`|`, `>`) are read-only in the reading view and edited in the code view instead — an approximate range would splice an edit over the wrong bytes, so none is offered. See [Editing data files](07-editing.md#editing-data-files).
 
 ## Email (.eml)
+
+![An .eml file opened in Leaftext: the subject as the page heading, From, To and Date as a field list of mailto links, the message body below with an inline image, and a list of attachments at the foot](../../imgs/email.png)
 
 Leaftext opens `.eml` files — the message format Gmail, Outlook, and Apple Mail export — as the email they carry. `.mht` and `.mhtml` web archives are the same envelope, so the one reader opens those too.
 

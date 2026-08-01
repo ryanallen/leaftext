@@ -33,8 +33,8 @@ const INLINE_FORMATS = [
 // by rewriting that block's source from its text.
 //
 // Nothing here toggles: a button with nowhere to go grays out, and Text is the way
-// out of a heading. Pressing the size you were on and having the heading come off
-// said the wrong thing.
+// out of a heading. Pressing the size you are on and having the heading come off
+// says the wrong thing.
 //
 // The H's are a bigger and a smaller, one level per press. Relative rather than fixed
 // levels so all six are reachable, including the `#` a document may hold many of.
@@ -340,7 +340,7 @@ function applyBlockFormat(format) {
   if (marker === null) return;
   // An empty range is a block that exists only in the page: its words are not in the
   // buffer for a splice to replace, so its own commit carries the marker. Splicing
-  // from out here wrote the marker beside the words and then wrote them twice.
+  // from out here writes the marker beside the words and then writes them twice.
   if (end === start) {
     if (!block.__commitAs) return;
     hideSelectionToolbar();

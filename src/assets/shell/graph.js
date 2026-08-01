@@ -36,8 +36,8 @@ const GRAPH_LABEL_GAP = 4; // screen px between a node and the top of its label
 // Active/hover labels still show at any size.
 const GRAPH_AMBIENT_LABEL_MAX = 400;
 // Where a rebuild that inherited the last layout starts the simulation: a nudge to
-// absorb what changed, not a fresh layout. Full alpha threw the whole map out from
-// the center again, which is what a save looked like from the reader's side.
+// absorb what changed, not a fresh layout. Full alpha throws the whole map out from
+// the center again, which is what a save looks like from the reader's side.
 const GRAPH_WARM_ALPHA = 0.3;
 // Arrowheads, in world units like the node radii, so a head holds its size against
 // the circle it points at through any zoom.
@@ -90,11 +90,8 @@ function applyGraphView() {
 // between the recent files and a map, which is navigation, not a view. The pane
 // beside it already does that, and does it better.
 //
-// All three are always enterable, so none of them ever grays out. There used to
-// be a dead key here: the map was of a vault, so a document outside one had a
-// view it could not get into and a tooltip explaining why. It is of the open
-// document now, and the bar is only up when there is one — so a view that cannot
-// be entered is not a state the bar has any more.
+// All three are always enterable, so none of them ever grays out: the map is of
+// the open document, and the bar is only up when there is one.
 function renderReaderToolbar(hasDocument) {
   if (!readerToolbar) return;
   readerToolbar.hidden = !hasDocument;
@@ -320,9 +317,9 @@ function requestGraphData() {
 //
 // Nothing is refused here. The host decides what the map is read off — the active
 // vault when it holds the open document, otherwise that document, its folder and
-// what it links to — and either way an answer comes back. It used to refuse
-// whenever there was no vault, which is the one thing this view must not do: a
-// document's links are in the document.
+// what it links to — and either way an answer comes back. Refusing for want of a
+// vault is the one thing this view must not do: a document's links are in the
+// document.
 function showGraph() {
   graphActivePath = activeDocumentPath();
   if (!graphRequested) {
@@ -543,7 +540,7 @@ async function buildGraphScene() {
       const radius = graphNodeRadius(node.degree);
       gfx.circle(0, 0, radius).stroke({ width: 1.5, color: 0xffffff, alignment: 0.5 });
       // A dot at the middle, so the edge has something to end behind. Edges are
-      // drawn under the nodes, and a bare ring let the line run on through the
+      // drawn under the nodes, and a bare ring lets the line run on through the
       // hollow and stop in mid-air at the center.
       gfx.circle(0, 0, Math.max(1.6, radius * 0.36)).fill(0xffffff);
     } else {

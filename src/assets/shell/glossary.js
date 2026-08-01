@@ -271,7 +271,7 @@ if (canHoverLinks) {
     linkHoverTipDetail.textContent = info.detail;
     const token = ++activeHoverToken;
     setLinkHoverLines(null);
-    // Only in-app Markdown page links carry a line count; nothing else does.
+    // Only in-app page links carry a line count; nothing else does.
     if (info.kind === 'Another page') {
       const key = link.href || rawHref;
       if (lineCountCache.has(key)) {
@@ -327,9 +327,9 @@ window.leafShowGlossary = (html, anchor) => {
   glossarySheetBody.scrollTop = 0;
   showGlossary();
 };
-// One delegated click listener for every document link, bound once — a per-link
-// binding cost a major slice of open time on large documents. Delegation also
-// handles links added later (the async pager) with no rebinding.
+// One delegated click listener for every document link, bound once — binding each
+// link separately costs a major slice of open time on large documents. Delegation
+// also handles links added later (the async pager) with no rebinding.
 let documentLinksBound = false;
 function bindDocumentLinks() {
   if (documentLinksBound) {

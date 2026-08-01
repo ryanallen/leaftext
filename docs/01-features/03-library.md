@@ -4,21 +4,25 @@
 
 The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane, and everything it shows is read from disk when you ask for it.
 
+![The library pane open beside a document: the vault switcher at top left, the folder breadcrumb beneath it, the search box, and a file list showing folders first and then files](../../imgs/library.png)
+
 ## Summary
 
 | Feature | What you get |
 | --- | --- |
-| Vaults | A folder you name as a library root. The switcher beside the breadcrumb creates, edits and moves between them |
-| File tree | One folder at a time, with a breadcrumb showing where you are and a row that steps back out |
-| Breadcrumb | The folder path above the search box; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
-| Search | Filename and content search across the active vault |
-| Graph | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
-| GitHub sync | A vault can be a git repository that pushes to GitHub, with a sync button in its own header |
-| File actions | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
-| Folder actions | Right-click a folder — or the empty space in the pane — to paste, reveal it, or see its properties |
-| Narrow windows | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
+| [Vaults](#vaults) | A folder you name as a library root. The switcher beside the breadcrumb creates, edits and moves between them |
+| [File tree](#file-tree) | One folder at a time, with a breadcrumb showing where you are and a row that steps back out |
+| [Breadcrumb](#file-tree) | The folder path above the search box; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
+| [Search](#search) | Filename and content search across the active vault |
+| [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
+| [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, with a sync button in its own header |
+| [File actions](#file-actions) | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
+| [Folder actions](#folders-and-the-space-around-them) | Right-click a folder — or the empty space in the pane — to paste, reveal it, or see its properties |
+| [Narrow windows](#narrow-windows) | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
 
 ## Vaults
+
+![The vault switcher open: the Library entry at the top for the no-vault state, then each named vault with a settings button on its row, and New vault at the foot](../../imgs/vault-switcher.png)
 
 A **vault** is a folder you have told Leaftext to treat as a library root. It is the unit that search and syncing work over, and it is what makes the [graph](#graph) bigger — but not what makes the graph possible.
 
@@ -32,7 +36,9 @@ The button at the left of the breadcrumb — a box, or a cloud once the vault [s
 > [!NOTE]
 > **Nothing is written into your folder.** A vault is a row in Leaftext's own database, not a marker file. Removing a vault forgets it; the folder and its files are untouched.
 
-## File tree
+## Browsing
+
+### File tree
 
 The pane lists one folder at a time — the folder you are in, not a whole hierarchy.
 
@@ -45,104 +51,29 @@ The pane lists one folder at a time — the folder you are in, not a whole hiera
 
 Each call reads exactly one directory, so nothing below what you opened is ever touched.
 
-## Search
+### File types
 
-Search covers the active vault. With no vault the field is hidden rather than left to return nothing — a box that looks like it works and does not is worse than no box.
+The pane lists every format the reader opens: Markdown (`.md`, `.markdown`, `.mdown`), [XML](01-rendering.md#xml) (`.xml`), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`), and [email](01-rendering.md#email-eml) (`.eml`, `.mht`, `.mhtml`). Anything else is left alone.
 
-| Search type | Behavior |
-| --- | --- |
-| Name matches | Ranked first |
-| Content matches | Ranked by how often the terms appear, with snippets |
-| Multiple terms | Every term must appear, in the name or the body |
-| Result limit | Top 50 |
+Data files are searchable by name and title but draw no [graph](#graph) edges at all — not even to [web addresses](#web-addresses). A string inside a `.json` or `.yaml` is a value, and scanning one as prose would invent links nobody wrote. Emails draw none either — their bodies are transfer-coded in the file, so a scan would read base64, not links. They still appear as nodes.
 
-Opening a content result jumps to the nearest heading above the match.
+### Skipped folders
 
-The text search reads is the same copy the [graph](#graph) reads: one pass over the vault, held in memory, patched a file at a time by the [watcher](#live-updates) and dropped when you switch vaults or quit. There is no index on disk, so nothing can go stale relative to your files.
+Browsing skips hidden folders and the common heavy or generated ones:
 
-## Graph
+- `node_modules`
+- `target`
+- `vendor`
+- `dist`
+- `build`
+- `.venv`
+- `__pycache__`
 
-A force-directed relationship map. Each **node** is one of your documents or a [web address](#web-addresses) one of them links to; each **edge** is a link that resolves — a Markdown link, an `<a href>`, a `[[wiki]]` link matched by filename, a TEI `target=`, or a bare URL in the text.
-
-It is a **view of the page**, not a panel — reach it from the [floating toolbar](02-navigation.md#the-toolbar) under the document, beside reading and the source view. All it needs is a document open. It does **not** need a vault.
-
-What it draws over depends on where the open document lives, and you never choose between them:
-
-- **Inside your active vault** — the map is of the whole vault. Every document in it is a node, so you see what links *to* the document you are on as well as what it links to, and `[[wiki]]` names resolve against the whole collection.
-- **Anywhere else** — the map is of that document: itself, the documents in its folder, and whatever it links to, wherever those live. A link is followed one hop out; nothing below the folder is read.
-
-The second map is **smaller, not wrong**. A document only ever records what it links to — what links *back* is written in somebody else's file — so reading the folder is what recovers incoming links, and it stops there. A link to a *document* outside the set simply draws no line. [Web addresses](#web-addresses) are unaffected — those are nodes in their own right, so a document's outbound links show up either way. Put the folder in a vault and the map widens.
-
-> [!NOTE]
-> Neither map reads anything you did not point at. The vault's map reads the folder you named. A document's map reads that document, one folder listing, and one file per link. Opening the map on a file sitting at `C:\` does not walk your drive.
-
-- The map **opens framed on everything it drew** — the tightest zoom that still holds the whole layout, centered. Two documents fill the view; two thousand shrink to fit. The first pan, zoom, drag or flight hands the view over to you, and it stops reframing.
-- While the layout settles the view **follows only what leaves the frame**, then frames everything once more when it comes to rest. A force layout breathes as it works, and a camera refitting on every frame of that put the pumping on screen.
-- The document you are reading is highlighted in the accent color and pulled larger.
-- **Names** float in dim gray beneath the nodes. They stay a fixed size as you zoom and are decluttered by fit: where the layout is open every name shows, and where nodes crowd only the ones that clear their neighbors do. The document you are on always keeps its name, and hovering shows the hovered node's name and its neighbors'.
-- **Edges point the way the link was written.** An arrowhead sits where the line meets the document being linked *to*. Two documents that link each other get one line with a head at both ends, not two lines on top of each other. Heads are left off a very dense map, and while you are zoomed far out — at that size they are ink and nothing else.
-- **Click** a node to open that document — the map holds until the document is ready, then steps aside. **Hover** to light up a node's direct links and dim the rest.
-- **Drag** a node to reposition it, **drag the background** to pan, **scroll** to zoom.
-- Opening a document from the pane while the map is up **keeps the map up** and moves the highlight. Changing what you are looking at is not a reason to change how you are looking at it.
-- Closing the last tab closes the map with it: the start screen is not one of a document's views.
-- Editing a document the map covers **redraws it in place**: every node keeps its position, your pan and zoom are kept, and the layout eases into what changed rather than laying itself out again. An edit that draws the same map — a word typed into a document that links nowhere new — changes nothing on screen at all.
-- Building the map shows the same spinner a slow document does — and so does leaving it. Whether you click a node, open a search hit, or switch to the [source](07-editing.md#code-view), the map holds until its replacement is ready rather than dropping to a half-drawn page, and the wait is shown on top of it.
-
-How many documents it draws is set by the [Graph size](05-settings.md#graph-size) setting — from a tight **Focus** neighborhood (the open document and its direct links) up to **Everything**. Smaller sizes render faster; larger ones stay responsive by easing the layout and repainting less often as it settles.
-
-### Web addresses
-
-A `http`/`https` link is a node too, drawn as a **ring with a dot at its center** rather than a filled disc, and labeled by its domain — `reddit.com`, not the whole URL, which stays in the tooltip. **Clicking one opens your browser and leaves the map up**, because nothing replaced the page.
-
-They are found wherever the reader can click one: written out as `[text](https://…)`, in `<https://…>` angle brackets, in an `<a href>`, and **bare in the text**, by the same finder that turns bare URLs into links when the document is rendered. So the graph and the page can't disagree about what a link is.
-
-**Two documents citing one page share one node** — the point of drawing them. The scheme and host are matched case-insensitively and a `#fragment` or trailing slash is ignored, so `https://Example.org/a/`, `https://example.org/a` and `https://example.org/a#notes` are one page.
-
-- Email addresses are not nodes. Neither is any other scheme — `mailto:`, `file:`, a custom one.
-- One document contributes at most **25** web addresses. A bibliography is a real document, and without a cap it would bury the notes around it.
-
-## GitHub sync
-
-A vault can be a git repository that pushes to GitHub. Open a vault's settings from the switcher to see where it stands.
-
-### What it needs
-
-**git is the only requirement.** Leaftext never holds a token: it runs the `git` already on your machine, which already knows who you are and how to sign in.
-
-| What is installed | What the panel offers |
-| --- | --- |
-| git and [`gh`](https://cli.github.com) | **Create a private repo** — one click, made and pushed |
-| git alone | **Create it on GitHub ↗** — opens GitHub with the name filled in; paste the address back and the panel points the vault at it |
-| neither | A link to install git, and nothing else |
-
-On Windows, Git for Windows installs Git Credential Manager and sets it as the default, so the first push opens a browser once and never asks again. On macOS the bundled credential helper cannot sign in to GitHub any more, so `gh` or Git Credential Manager has to be installed; the panel says so rather than letting a push fail.
-
-The panel also warns before the fact about the two things git needs and often lacks: an identity (`user.name` and `user.email`) and a way to authenticate.
-
-### Changing the repository
-
-The settings panel names the address the vault points at now. **Change repo…** opens a field for a new one, with **Save** and **Cancel**: nothing changes until you press Save, and the address it replaces is offered back with one press in case the change was a mistake.
-
-Setting or changing the address only points the vault — it never pushes on its own. Sending your files is always a separate, deliberate [Sync](#syncing), so naming a repository can never overwrite what is already in it. Leaftext also refuses to act on a repository the vault folder merely sits *inside*; it works only on a repository the folder is the root of.
-
-### Syncing
-
-**Sync** commits everything changed, pulls with a rebase, and pushes. Commit messages describe the change — `Update README.md`, or `Update 4 files` — and carry no mention of the app.
-
-A **sync button appears at the end of the vault's breadcrumb** whenever there is work that has not reached GitHub, carrying the count. It spins while it works and fades out still spinning, and a growl in the corner says where the push landed. It is absent when there is nothing to send.
-
-The count is uncommitted changes plus unpushed commits — both answerable from disk. Whether the *remote* has moved needs a fetch, so it is not checked in the background; behind-counts appear in the vault's settings panel and after a sync, where you have asked for them.
-
-> [!IMPORTANT]
-> A rebase that hits a conflict is undone before the sync returns. There is no merge view in a reader, so the panel says what happened and leaves the folder as it found it, for you to resolve in git.
-
-### Repositories inside repositories
-
-A vault whose folder already holds a repository somewhere below it — a project vault with the code in `app/` — has that named in the panel. Creating a repository at the vault root adds those nested ones to a new `.gitignore`, with the reason written beside them: each has its own remote, and tracking one from outside records a pointer nobody else can resolve.
-
-A vault sitting *inside* someone else's repository is told so too. Creating a repository there is legal and common, but it should not be a surprise afterwards.
+At a drive root, system directories such as `Windows`, `Program Files`, `AppData` and `Library` are skipped too. Symlinks and Windows reparse points are not descended.
 
 ## File actions
+
+![A right-click context menu open on a file row in the library pane, listing Open, Cut, Copy, Copy path, Rename, Reveal file, Properties and Delete](../../imgs/file-actions.png)
 
 Right-click a file row for a context menu of file actions:
 
@@ -184,6 +115,115 @@ Two things are worth knowing:
 
 Copying a whole folder is not supported; a folder can be pasted only as a move (Cut, then Paste).
 
+## Search
+
+![Search results in the library pane: a filename match ranked at the top, then content matches each showing the document name and a snippet with the search terms highlighted in context](../../imgs/search.png)
+
+Search covers the active vault. With no vault the field is hidden rather than left to return nothing — a box that looks like it works and does not is worse than no box.
+
+| Search type | Behavior |
+| --- | --- |
+| Name matches | Ranked first |
+| Content matches | Ranked by how often the terms appear, with snippets |
+| Multiple terms | Every term must appear, in the name or the body |
+| Result limit | Top 50 |
+
+Opening a content result jumps to the nearest heading above the match.
+
+The text search reads is the same copy the [graph](#graph) reads: one pass over the vault, held in memory, patched a file at a time by the [watcher](#live-updates) and dropped when you switch vaults or quit. There is no index on disk, so nothing can go stale relative to your files.
+
+## Graph
+
+![The graph view filling the page: dozens of document nodes joined by arrowed lines, the open document highlighted larger in the accent color, names floating in dim gray beneath the nodes](../../imgs/graph.png)
+
+A force-directed relationship map. Each **node** is one of your documents or a [web address](#web-addresses) one of them links to; each **edge** is a link that resolves — a Markdown link, an `<a href>`, a `[[wiki]]` link matched by filename, a TEI `target=`, or a bare URL in the text.
+
+It is a **view of the page**, not a panel — reach it from the [floating toolbar](02-navigation.md#the-floating-toolbar) under the document, beside reading and the source view. All it needs is a document open. It does **not** need a vault.
+
+### What it maps
+
+What it draws over depends on where the open document lives, and you never choose between them:
+
+- **Inside your active vault** — the map is of the whole vault. Every document in it is a node, so you see what links *to* the document you are on as well as what it links to, and `[[wiki]]` names resolve against the whole collection.
+- **Anywhere else** — the map is of that document: itself, the documents in its folder, and whatever it links to, wherever those live. A link is followed one hop out; nothing below the folder is read.
+
+The second map is **smaller, not wrong**. A document only ever records what it links to — what links *back* is written in somebody else's file — so reading the folder is what recovers incoming links, and it stops there. A link to a *document* outside the set simply draws no line. [Web addresses](#web-addresses) are unaffected — those are nodes in their own right, so a document's outbound links show up either way. Put the folder in a vault and the map widens.
+
+> [!NOTE]
+> Neither map reads anything you did not point at. The vault's map reads the folder you named. A document's map reads that document, one folder listing, and one file per link. Opening the map on a file sitting at `C:\` does not walk your drive.
+
+### Moving around it
+
+- The map **opens framed on everything it drew** — the tightest zoom that still holds the whole layout, centered. Two documents fill the view; two thousand shrink to fit. The first pan, zoom, drag or flight hands the view over to you, and it stops reframing.
+- While the layout settles the view **follows only what leaves the frame**, then frames everything once more when it comes to rest. A force layout breathes as it works, and a camera refitting on every frame of that put the pumping on screen.
+- The document you are reading is highlighted in the accent color and pulled larger.
+- **Names** float in dim gray beneath the nodes. They stay a fixed size as you zoom and are decluttered by fit: where the layout is open every name shows, and where nodes crowd only the ones that clear their neighbors do. The document you are on always keeps its name, and hovering shows the hovered node's name and its neighbors'.
+- **Edges point the way the link was written.** An arrowhead sits where the line meets the document being linked *to*. Two documents that link each other get one line with a head at both ends, not two lines on top of each other. Heads are left off a very dense map, and while you are zoomed far out — at that size they are ink and nothing else.
+- **Click** a node to open that document — the map holds until the document is ready, then steps aside. **Hover** to light up a node's direct links and dim the rest.
+- **Drag** a node to reposition it, **drag the background** to pan, **scroll** to zoom.
+- Opening a document from the pane while the map is up **keeps the map up** and moves the highlight. Changing what you are looking at is not a reason to change how you are looking at it.
+- Closing the last tab closes the map with it: the start screen is not one of a document's views.
+- Editing a document the map covers **redraws it in place**: every node keeps its position, your pan and zoom are kept, and the layout eases into what changed rather than laying itself out again. An edit that draws the same map — a word typed into a document that links nowhere new — changes nothing on screen at all.
+- Building the map shows the same spinner a slow document does — and so does leaving it. Whether you click a node, open a search hit, or switch to the [source](07-editing.md#code-view), the map holds until its replacement is ready rather than dropping to a half-drawn page, and the wait is shown on top of it.
+
+### How much it draws
+
+How many documents it draws is set by the [Graph size](05-settings.md#graph-size) setting — from a tight **Focus** neighborhood (the open document and its direct links) up to **Everything**. Smaller sizes render faster; larger ones stay responsive by easing the layout and repainting less often as it settles.
+
+### Web addresses
+
+A `http`/`https` link is a node too, drawn as a **ring with a dot at its center** rather than a filled disc, and labeled by its domain — `reddit.com`, not the whole URL, which stays in the tooltip. **Clicking one opens your browser and leaves the map up**, because nothing replaced the page.
+
+They are found wherever the reader can click one: written out as `[text](https://…)`, in `<https://…>` angle brackets, in an `<a href>`, and **bare in the text**, by the same finder that turns bare URLs into links when the document is rendered. So the graph and the page can't disagree about what a link is.
+
+**Two documents citing one page share one node** — the point of drawing them. The scheme and host are matched case-insensitively and a `#fragment` or trailing slash is ignored, so `https://Example.org/a/`, `https://example.org/a` and `https://example.org/a#notes` are one page.
+
+- Email addresses are not nodes. Neither is any other scheme — `mailto:`, `file:`, a custom one.
+- One document contributes at most **25** web addresses. A bibliography is a real document, and without a cap it would bury the notes around it.
+
+## GitHub sync
+
+![A vault's settings panel showing the connected GitHub repository address with a Change repo button beside it, and the sync button at the end of the breadcrumb carrying a count of changes waiting to be pushed](../../imgs/github-sync.png)
+
+A vault can be a git repository that pushes to GitHub. Open a vault's settings from the switcher to see where it stands.
+
+### What it needs
+
+**git is the only requirement.** Leaftext never holds a token: it runs the `git` already on your machine, which already knows who you are and how to sign in.
+
+| What is installed | What the panel offers |
+| --- | --- |
+| git and [`gh`](https://cli.github.com) | **Create a private repo** — one click, made and pushed |
+| git alone | **Create it on GitHub ↗** — opens GitHub with the name filled in; paste the address back and the panel points the vault at it |
+| neither | A link to install git, and nothing else |
+
+On Windows, Git for Windows installs Git Credential Manager and sets it as the default, so the first push opens a browser once and never asks again. On macOS the bundled credential helper cannot sign in to GitHub any more, so `gh` or Git Credential Manager has to be installed; the panel says so rather than letting a push fail.
+
+The panel also warns before the fact about the two things git needs and often lacks: an identity (`user.name` and `user.email`) and a way to authenticate.
+
+### Changing the repository
+
+The settings panel names the address the vault points at now. **Change repo…** opens a field for a new one, with **Save** and **Cancel**: nothing changes until you press Save, and the address it replaces is offered back with one press in case the change was a mistake.
+
+Setting or changing the address only points the vault — it never pushes on its own. Sending your files is always a separate, deliberate [Sync](#syncing), so naming a repository can never overwrite what is already in it. Leaftext also refuses to act on a repository the vault folder merely sits *inside*; it works only on a repository the folder is the root of.
+
+### Syncing
+
+**Sync** commits everything changed, pulls with a rebase, and pushes. Commit messages describe the change — `Update README.md`, or `Update 4 files` — and carry no mention of the app.
+
+A **sync button appears at the end of the vault's breadcrumb** whenever there is work that has not reached GitHub, carrying the count. It spins while it works and fades out still spinning, and a growl in the corner says where the push landed. It is absent when there is nothing to send.
+
+The count is uncommitted changes plus unpushed commits — both answerable from disk. Whether the *remote* has moved needs a fetch, so it is not checked in the background; behind-counts appear in the vault's settings panel and after a sync, where you have asked for them.
+
+> [!IMPORTANT]
+> A rebase that hits a conflict is undone before the sync returns. There is no merge view in a reader, so the panel says what happened and leaves the folder as it found it, for you to resolve in git.
+
+### Repositories inside repositories
+
+A vault whose folder already holds a repository somewhere below it — a project vault with the code in `app/` — has that named in the panel. Creating a repository at the vault root adds those nested ones to a new `.gitignore`, with the reason written beside them: each has its own remote, and tracking one from outside records a pointer nobody else can resolve.
+
+A vault sitting *inside* someone else's repository is told so too. Creating a repository there is legal and common, but it should not be a surprise afterwards.
+
 ## Live updates
 
 The pane keeps up with changes on disk, so a file you just created shows up without a refresh.
@@ -194,39 +234,6 @@ The pane keeps up with changes on disk, so a file you just created shows up with
 - The vault's in-memory text is patched for the one file that changed, so [search](#search) and the [graph](#graph) stay current without re-reading the vault. Only a document whose text actually moved counts: a vault is a folder you work in, and git writing to itself, a saved image or an editor's temp file are not changes to your documents.
 - A [graph of one document](#graph) rather than a vault holds nothing in memory to patch, so it is simply read again — a folder listing and a file per link, which is cheap enough not to cache. It cannot go stale, and a redraw that produces the same picture never reaches the screen.
 - The [sync count](#syncing) is re-read too, whether the change was to the document you are editing or to any other file in the vault.
-
-## File types
-
-The pane lists every format the reader opens: Markdown (`.md`, `.markdown`, `.mdown`), [XML](01-rendering.md#xml) (`.xml`), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`), and [email](01-rendering.md#email-eml) (`.eml`, `.mht`, `.mhtml`). Anything else is left alone.
-
-Data files are searchable by name and title but draw no [graph](#graph) edges at all — not even to [web addresses](#web-addresses). A string inside a `.json` or `.yaml` is a value, and scanning one as prose would invent links nobody wrote. Emails draw none either — their bodies are transfer-coded in the file, so a scan would read base64, not links. They still appear as nodes.
-
-## Facts
-
-| Item | Value |
-| --- | --- |
-| Vault registry | `manifest.db` — the vaults you have named, and which one is active |
-| Vault text | Held in memory for the active vault only; dropped on a switch and on quit |
-| Documents read | Up to 5,000 per vault |
-| Search results | Top 50 |
-| Folder listing | One directory per click |
-
-> [!NOTE]
-> `manifest.db` keeps its name from when it held a file index. It no longer does — anything that reads a document reads the disk. What it holds now is the list of folders you called vaults, which is why losing it loses that list.
-
-### Skipped folders
-
-Browsing skips hidden folders and the common heavy or generated ones:
-
-- `node_modules`
-- `target`
-- `vendor`
-- `dist`
-- `build`
-- `.venv`
-- `__pycache__`
-
-At a drive root, system directories such as `Windows`, `Program Files`, `AppData` and `Library` are skipped too. Symlinks and Windows reparse points are not descended.
 
 ## Layout
 
@@ -248,12 +255,27 @@ The active vault is saved in `manifest.db` beside the vault list, not in [settin
 
 ### Narrow windows
 
+![A narrow Leaftext window with the library open as a full-width sheet over the document, the breadcrumb and search box at its top and the app bar still visible above it](../../imgs/library-sheet.png)
+
 Below the point where a pane and a usable reader both fit, the library stops being a column beside the page and becomes a sheet over it. The same panel button opens it: it slides in from the left at full width, covering the document, with the path and search box in their usual places at the top. Picking a document dismisses it, since the page you just opened is behind it. The app bar stays above the sheet, so the button that opened it also closes it.
 
 The sheet is not saved. It describes the current view rather than a preference, so widening the window puts the pane back beside the page and there is no sheet to restore.
 
+## Facts
+
+| Item | Value |
+| --- | --- |
+| Vault registry | `manifest.db` — the vaults you have named, and which one is active |
+| Vault text | Held in memory for the active vault only; dropped on a switch and on quit |
+| Documents read | Up to 5,000 per vault |
+| Search results | Top 50 |
+| Folder listing | One directory per click |
+
+> [!NOTE]
+> `manifest.db` keeps its name from when it held a file index. It no longer does — anything that reads a document reads the disk. What it holds now is the list of folders you called vaults, which is why losing it loses that list.
+
 ## Next
 
 - [Settings](05-settings.md)
-- [Navigation](02-navigation.md#the-toolbar)
+- [Navigation](02-navigation.md#the-floating-toolbar)
 - [Architecture](../02-development/01-architecture.md)

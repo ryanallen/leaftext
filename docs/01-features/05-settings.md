@@ -4,17 +4,21 @@
 
 Settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView.
 
+![The Settings dropdown open under the app bar: the theme row, the appearance control, the minimap, pager and graph size toggles, and at the foot the version number beside the update status line](../../imgs/settings.png)
+
 ## Options
 
 | Setting | Options | Default |
 | --- | --- | --- |
-| Theme | Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage, Random | Fern |
-| Appearance | System, Light, Dark, Daylight | System |
-| Minimap | On / Off | On |
-| Pager | On / Off | On |
-| Graph size | Focus, Medium, Large, Everything | Focus |
+| [Theme](#theme) | Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage, Random | Fern |
+| [Appearance](06-themes.md#appearance) | System, Light, Dark, Daylight | System |
+| [Minimap](#minimap) | On / Off | On |
+| [Pager](#pager) | On / Off | On |
+| [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus |
 
-**Speed Reader** is not in this panel. It is a reading-view tool on the [floating toolbar](02-navigation.md#the-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest. The code view's [typing help](07-editing.md#typing-help) wand works the same way: toggled where it applies, saved here.
+Two more preferences are saved here but toggled elsewhere, where they apply: the [Speed Reader](#speed-reader) and [typing help](#typing-help).
+
+**Speed Reader** is not in this panel. It is a reading-view tool on the [floating toolbar](02-navigation.md#the-floating-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest. The code view's [typing help](07-editing.md#typing-help) wand works the same way: toggled where it applies, saved here.
 
 Whether the rendered page can be typed into is **not** here. It is a padlock on the document in front of you — see [Editing](07-editing.md#the-padlock).
 
@@ -103,7 +107,9 @@ Leaftext removes broken entries automatically and collapses equivalent path spel
 
 ### Speed Reader
 
-- Off by default, toggled from the reading view's [toolbar](02-navigation.md#the-toolbar) rather than this panel
+![The same paragraph with Speed Reader on: the prose dimmed back and the first few letters of each word set in bold, so a path of anchors runs down the page](../../imgs/speedreader.png)
+
+- Off by default, toggled from the reading view's [toolbar](02-navigation.md#the-floating-toolbar) rather than this panel
 - Dims non-anchor prose text (including headings) so bold lead anchors carry the most contrast against the background
 - Quiets links to the dimmed prose color with a faint underline, until hover or keyboard focus brightens them
 - Regularizes existing bold text and adds bold lead anchors at word starts; all-caps acronyms (HTML, GFM) are bolded whole

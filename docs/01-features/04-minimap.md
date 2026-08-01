@@ -2,6 +2,21 @@
 
 > Take in the whole page at once. A tiny version of your document runs down the side — real text, not abstract bars — with a marker showing where you are. Click to jump to any section; drag the marker to scroll.
 
+![The minimap rail down the right edge of the window, showing a scaled clone of the document with recognizable headings, a code block and dense paragraphs, and the viewport indicator box marking the part currently on screen](../../imgs/minimap.png)
+
+## Summary
+
+| Feature | What you get |
+| --- | --- |
+| [Real text](#how-it-works) | A scaled clone of the rendered page, not a synthesized pattern of lines — so you recognize a section by its shape |
+| [Viewport indicator](#how-it-works) | A box marking what is on screen; click the rail to jump, drag the box to scroll |
+| [Whether it appears](#whether-the-rail-appears) | Skipped entirely for an empty document; shown for every format, including XML, JSON and YAML |
+| [The code view's rail](#the-code-views-minimap) | The editor's own map of the source, always present there |
+| [Responsive widths](#responsive-behavior) | The lane narrows with the window, and is never hidden |
+| [Toggle](#toggling-the-minimap) | On by default; **Settings** turns it off and the page widens out |
+
+## What it is
+
 The minimap is a scaled side-rail showing the actual document beside the reading view. It sits outside the page rather than on it — the page's border stops 4 px short and the rail stands on the same textured chrome as the [library](03-library.md) pane and the app bar, held off the window edge by the same gutter the page card is. It gives you spatial orientation in long documents and lets you jump to any section by clicking or dragging. Because it is a real rendering of the page, you can recognize where you are from the shape of the text itself: a heading, a code block, a verse, a dense paragraph.
 
 ## How it works
@@ -28,6 +43,8 @@ A `requestAnimationFrame`-throttled loop writes those on scroll, and reads no ge
 The Rust side produces a small `DocumentMinimap` for each document whose only job now is to report a positive line count: an empty or zero-line document reports `0` and the rail is skipped entirely. That count is the only part of the model the page is sent — the thumbnail comes from the clone, so the model's per-line detail would be megabytes of payload on a large document that nothing reads. [XML](01-rendering.md#xml) and [JSON/YAML](01-rendering.md#data-files-json-and-yaml) documents report their count from the rendered block HTML (they have no Markdown source to line-scan), so an opened `.xml`, `.json`, or `.yaml` file gets the same real-text rail as a Markdown file — the thumbnail itself is always the live clone, whatever the source format.
 
 ## The code view's minimap
+
+![The code view with the editor's own minimap rail at the right, drawing the source rather than a cloned page, standing on the window's textured chrome with the page's border between the two](../../imgs/minimap-code.png)
 
 The [code view](07-editing.md#code-view) has a rail of its own — the editor's, not this one. It draws the source rather than cloning a page, which is what lets it stay honest on a file far too large to lay out twice, and it is always present there: with no scrollbar in the source view, the rail is how you see where you are. The reader's rail and the editor's are two implementations of one idea, so they are dressed alike — the same viewport box, the same border and rounding, the same width and standing-off from the page.
 
@@ -56,3 +73,9 @@ When the minimap is off, its column collapses to zero and the page widens back o
 
 > [!TIP]
 > Use the minimap to quickly gauge document length and find dense sections at a glance. Because it is a real rendering of the page, headings, code blocks, verse, and dense paragraphs each keep their own shape — so you can pick out section breaks and dense passages in the rail from the layout itself, without reading a word.
+
+## Next
+
+- [Navigation → Outline](02-navigation.md#outline) — the rail's companion: the document's structure as clickable text
+- [Settings → Minimap](05-settings.md#minimap) — the on/off preference and where it is stored
+- [Editing → Code view](07-editing.md#code-view) — the view the second rail belongs to

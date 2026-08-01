@@ -45,9 +45,8 @@ const FLOW_SHAPES = [
 // closer settles it. See takeFlowNode.
 const FLOW_SHAPES_BY_OPENER = FLOW_SHAPES.slice().sort((a, b) => b.open.length - a.open.length);
 
-// The catalog itself. A `const` in the shell script is not reachable from
-// check-shell.mjs and a function is, and the shape table is the one thing there
-// that has to be checked whole rather than a row at a time.
+// The catalog behind a function: a `const` in the shell script is not reachable
+// from check-shell.mjs and a function is.
 function flowShapeCatalog() {
   return FLOW_SHAPES;
 }

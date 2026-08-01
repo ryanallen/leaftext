@@ -240,10 +240,6 @@ let libraryWidth = Number.isFinite(LEAF_SETTINGS.libraryWidth) && LEAF_SETTINGS.
 // that folder: where it is, the trail down to it, and what is in it. There is no
 // tree here and no index behind it — nothing is known about a folder until it is
 // opened.
-// The pane shows one folder at a time, read off the disk by the host. These are
-// that folder: where it is, the trail down to it, and what is in it. There is no
-// tree here and no index behind it — nothing is known about a folder until it is
-// opened.
 let libraryEntries = [];
 let libraryChain = [];
 let libraryError = null;
@@ -256,18 +252,16 @@ let librarySearchTimer = 0;
 let librarySearchHits = null;
 let librarySearchError = null;
 let librarySearchLoading = false;
-// Search covers the folder the pane is showing (see librarySearchScopePaths).
-// Above this many paths it can't be bound in one IN clause, so the query runs
-// against the whole library instead.
+// Above this many paths the scope is dropped and the query goes out unscoped
+// (see librarySearchScopePaths).
 const SEARCH_SCOPE_CAP = 1500;
 // A heading anchor to scroll to once a clicked result's document has rendered.
 let pendingSearchJump = null;
-// Which documents you have unlocked for editing in the reading view. This used
-// to be one switch in Settings governing everything you would ever open, which
-// is the wrong shape for the question: whether a page is yours to type into is a
-// fact about that page, not about the app. Locked is the default, and the answer
-// lasts as long as the window — a document reopened tomorrow is read-only again,
-// which is the safe way round to be wrong.
+// Which documents you have unlocked for editing in the reading view. Per
+// document, not one switch in Settings: whether a page is yours to type into is
+// a fact about that page, not about the app. Locked is the default, and the
+// answer lasts as long as the window — a document reopened tomorrow is read-only
+// again, which is the safe way round to be wrong.
 const readerUnlockedByPath = new Set();
 function readerEditingAllowed() {
   const path = activeDocumentPath();

@@ -56,9 +56,8 @@ function renderState() {
     observeReaderReflow();
     scheduleMinimapPreviewUpdate();
     // Returning from the code view: land on the block holding the source line
-    // the code view was scrolled to. This wins over the reset-to-top the
-    // host's Reset intent would otherwise run, and doesn't depend on the racy
-    // fraction hand-off.
+    // the code view was scrolled to. This wins over the reset-to-top the host's
+    // Reset intent would otherwise run.
     const exactRestore = takeExactViewRestore(state.document.path || activeDocumentPath());
     if (exactRestore) {
       // The code view never moved, so take the pixel back rather than re-derive it

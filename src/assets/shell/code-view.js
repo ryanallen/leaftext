@@ -175,7 +175,7 @@ function viewScrollFraction() {
 }
 
 // Whether the active view sits at its very top. Same split as above: asking the
-// shell in the code view always says yes, which sent every toggle back to the top.
+// shell in the code view always says yes, which sends every toggle back to the top.
 function viewAtTop() {
   if (codeViewActive && monacoEditor) return monacoEditor.getScrollTop() <= 1;
   return app.scrollTop <= 1;
@@ -300,8 +300,7 @@ function scrollReadingToSrcOffset(srcOffset) {
 }
 
 // Swap between the rendered page and its source, carrying the reader's place
-// across. Named rather than inline on a listener: the floating bar's view group
-// calls it, and so did the button that used to live in the app bar.
+// across. Called from the toolbar's view group — see setReaderView.
 function toggleCodeView() {
     const path = activeDocumentPath();
     if (!path) return;
@@ -370,8 +369,8 @@ window.addEventListener('keydown', (event) => {
 // The raw-source code view is Monaco (the VS Code editor): it owns line
 // wrapping, virtualized rendering of huge files, and its own colored minimap.
 // The vendored bundle loads lazily on first entry; edits relay back to the host
-// as source splices (the same IPC the old editor used). Monaco scrolls
-// internally, so the reader shell does not scroll here and carries no rail.
+// as source splices. Monaco scrolls internally, so the reader shell does not
+// scroll here and carries no rail.
 
 // Load the vendored Monaco bundle once, over the same leaf-asset channel the
 // other runtimes use (stylesheet linked, script injected). Monaco is handed an
@@ -548,10 +547,9 @@ function reskinMonacoForTheme() {
 // not finished loading yet, so what gets measured is the fallback standing in for it,
 // and the fallback's width is not the width the text ends up drawn at. Too narrow a
 // measurement and the wrap runs out under the minimap; too wide and it stops well
-// short. Nothing corrected it afterwards: a font arriving changes no geometry, so
-// onDidLayoutChange never fires for it. That is the whole of why the wrap looked like
-// a property of the theme — it was really down to whether that theme's font happened
-// to be loaded already, and how close the fallback was.
+// short. Nothing else corrects it: a font arriving changes no geometry, so
+// onDidLayoutChange never fires for it — which makes the wrap look like a property
+// of the theme when it is really down to whether that theme's font had loaded yet.
 //
 // So: force the measurement again, then re-derive. The cache has to go first because
 // it is keyed on the column number alone, and the same count against a different font
@@ -588,7 +586,7 @@ function codeViewWrapRightGapPx() {
 // is Monaco's OWN natural wrap column ('on' would land there — flush to the
 // minimap), so pulling a whole number of columns off it lands the wrap a
 // deterministic distance short. Deriving the column from contentWidth by hand
-// instead double-floored the pixel gap and drifted to ~1 column, leaving the text
+// instead double-floors the pixel gap and drifts to ~1 column, leaving the text
 // nearly touching the rail. The gap in columns is the pixel gap over the monospace
 // char width, rounded up so it never comes out short. The minimap width goes to
 // --cv-minimap-width because only Monaco knows it and the page frame (top divider,
@@ -658,7 +656,7 @@ function clampMinimapSliderToRail() {
 //
 // But an observer only reports a *change*, and opening the code view already at the
 // bottom positions the box in Monaco's first render — one write, nothing watching yet,
-// so it stayed cut off until a resize wrote again. So check on the way in too: now, in
+// so it stays cut off until a resize writes again. So check on the way in too: now, in
 // case that render ran, and next frame in case it had not.
 function watchMinimapSlider() {
   const rail = app.querySelector('.code-view-monaco .monaco-editor .minimap');
@@ -678,15 +676,15 @@ function watchMinimapSlider() {
 // both of those edges are under .reader-edge-fade — the ~36px of page that
 // dissolves to its own color where the document slides under the app bar and where
 // it meets the card's stroke. Scrolled to either end there is nothing left to
-// dissolve, so the wash lands on text that is meant to be read: the first line came
+// dissolve, so the wash lands on text that is meant to be read: the first line comes
 // out half erased. The reading view never shows this because its page carries the
 // same clearance as padding; this is that padding, inside the editor's own scroll
 // height, so no line can ever sit in the wash.
 //
 // Both numbers are taken from the reading view rather than restated. The top gap is
 // READER_CONTENT_TOP_GAP, measured from the shell's top edge, and the editor's box
-// already starts below the app bar — so the bar's height comes off it, exactly as
-// --cv-pad-top did. The bottom is what .document-body leaves: the content pad plus
+// already starts below the app bar — so the bar's height comes off it. The bottom
+// is what .document-body leaves: the content pad plus
 // the room the floating toolbar needs, which is declared on <body> (a :has() rule),
 // not the root, so it has to be read from there or it comes back 0 and the last
 // line ends up under the bar.
@@ -706,8 +704,7 @@ function monacoEditorPadding() {
 
 // Create the editor in `container`, relay content changes to the source-splice
 // path, and land where the reader was if a source offset was carried across the
-// toggle. Skinned for now with Monaco's own light/dark theme — the Leaf theme
-// converter comes next.
+// toggle. Skinned with the theme defineLeafMonacoTheme builds from our palette.
 function createMonacoEditor(monaco, container, state, text) {
   const codeFont = getComputedStyle(document.documentElement)
     .getPropertyValue('--code-font')
@@ -804,9 +801,6 @@ function createMonacoEditor(monaco, container, state, text) {
   monacoEditor.focus();
 }
 
-// Swap the reader shell over to Monaco for the active document's source. Monaco
-// loads lazily; the spinner (armed by the toggle) stays up until the editor is
-// on screen. Re-entering (live reload) disposes and rebuilds.
 // Dispose the editor and everything hung off it. Called on re-entry (a live
 // reload rebuilds the view) and by renderState when leaving for the reading view.
 function disposeMonacoEditor() {
@@ -837,6 +831,9 @@ function disposeMonacoEditor() {
   document.documentElement.style.removeProperty('--cv-minimap-width');
 }
 
+// Swap the reader shell over to Monaco for the active document's source. Monaco
+// loads lazily; the spinner (armed by the toggle) stays up until the editor is
+// on screen. Re-entering (live reload) disposes and rebuilds.
 function renderCodeView(state) {
   disposeMonacoEditor();
   disconnectMinimapPreviewObservers();
@@ -874,8 +871,8 @@ function renderCodeView(state) {
     });
 }
 
-// Enter the code view by fetching the payload the host staged. The colored source
-// is megabytes, and handed over as script it had to cross the webview's process
+// Enter the code view by fetching the payload the host staged. The source runs to
+// megabytes, and handing it over as script means crossing the webview's process
 // boundary — seconds on a large file — so the host sends only this URL. A failure
 // leaves the reading view up rather than a half-built editor.
 window.leafLoadCodeView = (url) => {

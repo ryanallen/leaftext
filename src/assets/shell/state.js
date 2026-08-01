@@ -63,8 +63,8 @@ let pendingViewScrollFraction = null;
 // (rendered height and source length diverge). Consumed by the next renderCodeView.
 let pendingCodeViewSrcOffset = null;
 // The mirror for leaving the code view: byte offset of the top source line,
-// consumed by the next reading render so it lands on that block. Replaces a racy
-// fraction hand-off that dropped the reader to the top of the document.
+// consumed by the next reading render so it lands on that block. A fraction races
+// the render here and drops the reader to the top of the document.
 let pendingReadingSrcOffset = null;
 // True when the source view was scrolled to the very top as the toggle fired, so
 // the destination lands flush at the top instead of aligning the first block just

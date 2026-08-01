@@ -4,33 +4,35 @@
 
 Leaftext is reading-first, but it is also editable. You can edit **in the reading view itself** — click into a sentence and type, toggle a checkbox — and the change is written back into the source at exactly that spot. When you would rather work in the raw text, the **code view** swaps the page for the file's actual source — Markdown, XML, JSON, YAML, or a raw email. Both paths share one source of truth and one green **Save** button. There is no autosave for text edits: nothing touches your file until you say so — the one exception is ticking a checkbox, which saves on the spot.
 
+![The same document twice: on the left the rendered page mid-edit with a caret in a paragraph and the green Save button showing, on the right the same file in the code view as raw Markdown](../../imgs/editing.png)
+
 ## Summary
 
 | Feature | What it means |
 | --- | --- |
-| New document | The **+** in the app bar (and on the home screen) starts a blank page, unlocked and ready to type |
-| Save As | A new document has no file until its first save, which asks where to put it |
-| Inline editing | Click into the rendered page and edit it directly — see [Formats](#formats) for what each one allows |
-| Block editing | `Enter` splits a block or starts a new one; `Backspace` at the start merges into the block above |
-| The block gutter | A [handle and a plus](#the-block-gutter) in the page's left margin: drag a block to reorder it, or add one on the empty line |
-| Adding a block | The plus opens [a row of kinds](#adding-a-block) — text, heading, list, quote, code, table, image, divider |
-| Inserting an image | The image button [asks for a file or an address](#images); nothing is copied, and the picture stays where you keep it |
-| Drawing a flowchart | The flowchart button, and a corner button on any drawn diagram, open [a canvas beside the Mermaid text](#the-flowchart-editor) |
-| The format bar | Highlight words and [a bar appears over them](#the-format-bar): bold, italic, strikethrough, code, link, then text, bigger/smaller heading and quote for the whole block |
-| Interactive checkboxes | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
-| Undo | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits |
-| Code view | Toggle the rendered page to the raw source and back |
-| Your place is kept | Toggling between the two views [holds your position](#code-view), and toggling back and forth returns you to the exact spot |
-| Highlighting | The source is colored in the active [theme](06-themes.md)'s syntax colors — Markdown, XML, JSON, and YAML; [email](01-rendering.md#email-eml) source shows as plain text |
-| Line numbers | A gutter numbers each source line, staying pinned when long lines wrap |
-| Wrapped lines | Long lines wrap; the code view never scrolls sideways |
-| Minimap | The editor's own [minimap](04-minimap.md#the-code-views-minimap) rail, drawn on the window's chrome beside the page |
-| Pinned headings | In Markdown source, the headings you are reading under [stay at the top edge](#pinned-headings) as you scroll; click one to jump to it |
-| Editing | Type directly; undo/redo, selection, clipboard, and IME all work, and `Tab` indents instead of moving focus. A multi-megabyte file [stays responsive](#editing-the-source) |
-| Typing help | Monaco's IntelliSense, answered from your own notes: type `[[` to see them, `#` for headings, hover a wikilink for a preview — and broken links get a wavy underline. A wand on the toolbar [turns it off](#typing-help) |
-| Save | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears only with unsaved changes |
-| Unsaved marker | A tab with unsaved edits shows a dot beside its name |
-| Read-only | Documents open locked, except a [new one](#new-document). The [padlock](#the-padlock) on the reading view's toolbar unlocks the one in front of you — except checkboxes, which toggle either way |
+| [New document](#new-document) | The **+** in the app bar (and on the home screen) starts a blank page, unlocked and ready to type |
+| [Save As](#new-document) | A new document has no file until its first save, which asks where to put it |
+| [Inline editing](#inline-editing-the-reading-view) | Click into the rendered page and edit it directly — see [Formats](#formats) for what each one allows |
+| [Block editing](#inline-editing-the-reading-view) | `Enter` splits a block or starts a new one; `Backspace` at the start merges into the block above |
+| [The block gutter](#the-block-gutter) | A handle and a plus in the page's left margin: drag a block to reorder it, or add one on the empty line |
+| [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider |
+| [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
+| [Drawing a flowchart](#the-flowchart-editor) | The flowchart button, and a corner button on any drawn diagram, open a canvas beside the Mermaid text |
+| [The format bar](#the-format-bar) | Highlight words and a bar appears over them: bold, italic, strikethrough, code, link, then text, bigger/smaller heading and quote for the whole block |
+| [Interactive checkboxes](#inline-editing-the-reading-view) | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
+| [Undo](#undo) | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits |
+| [The padlock](#the-padlock) | Documents open locked, except a [new one](#new-document). The padlock unlocks the one in front of you — except checkboxes, which toggle either way |
+| [Code view](#code-view) | Toggle the rendered page to the raw source and back |
+| [Your place is kept](#code-view) | Toggling between the two views holds your position, and toggling back and forth returns you to the exact spot |
+| [Highlighting](#code-view) | The source is colored in the active [theme](06-themes.md)'s syntax colors — Markdown, XML, JSON, and YAML; [email](01-rendering.md#email-eml) source shows as plain text |
+| [Line numbers](#code-view) | A gutter numbers each source line, staying pinned when long lines wrap |
+| [Wrapped lines](#code-view) | Long lines wrap; the code view never scrolls sideways |
+| [Minimap](04-minimap.md#the-code-views-minimap) | The editor's own minimap rail, drawn on the window's chrome beside the page |
+| [Pinned headings](#pinned-headings) | In Markdown source, the headings you are reading under stay at the top edge as you scroll; click one to jump to it |
+| [Editing the source](#editing-the-source) | Type directly; undo/redo, selection, clipboard, and IME all work, and `Tab` indents instead of moving focus. A multi-megabyte file stays responsive |
+| [Typing help](#typing-help) | Monaco's IntelliSense, answered from your own notes: type `[[` to see them, `#` for headings, hover a wikilink for a preview — and broken links get a wavy underline |
+| [Save](#save) | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears only with unsaved changes |
+| [Unsaved marker](#save) | A tab with unsaved edits shows a dot beside its name |
 
 ## New document
 
@@ -41,7 +43,9 @@ The **+** beside Open in the app bar starts a blank document in a new tab. The h
 - The first **Save** opens your operating system's Save dialog: choose a folder and a name, and from then on it saves like any other document. Close the dialog without choosing and nothing is written.
 - Once it is saved, the tab, the window title, and [Recent files](02-navigation.md#recent-files) all take the real name, and the document stays unlocked so you can keep typing.
 
-## Inline editing (the reading view)
+## Writing in the page
+
+### Inline editing (the reading view)
 
 The rendered page is a live editor. The **source stays the single source of truth** — every edit is anchored to the exact byte range of the source it came from and spliced back there, so what you see and what is saved never drift apart. Editing is intentional per block and never rewrites parts of the file you did not touch.
 
@@ -55,7 +59,9 @@ The rendered page is a live editor. The **source stays the single source of trut
 - Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way.
 - A document opens **locked**: clicks do not enter edit mode until you say so. See [The padlock](#the-padlock).
 
-## The block gutter
+### The block gutter
+
+![The left margin of a document showing the drag handle and plus control level with a paragraph, and one block lifted mid-drag with its neighbors sliding aside to open the gap it will land in](../../imgs/block-gutter.png)
 
 Hover a block and two controls appear in the page's left margin: a **handle** to drag it by, and a **plus** for adding one. They act through the same source ranges every other edit uses, so this is a view onto your file rather than a second idea of the document — which is why one gutter serves every format that qualifies.
 
@@ -64,7 +70,9 @@ Hover a block and two controls appear in the page's left margin: a **handle** to
 - **It stays available while you write.** Hover any other block mid-edit and its handle is there; the margin reaches the line you are typing in too, so that one can be dragged as well. Drag after typing and the line you were on is saved first, then moved — one gesture, both edits.
 - **Markdown and XML only.** A block can only be moved when its recorded range is the whole block. In JSON and YAML a range covers a *value* and not its key, so moving one would leave the key behind — those formats get no gutter at all, only the click-to-edit they already had.
 
-## Adding a block
+### Adding a block
+
+![The insert row fanned out over an empty line: a row of buttons for text, heading, list, quote, code block, table, image, flowchart and divider, each drawn with its own icon](../../imgs/insert-row.png)
 
 The plus stands on empty lines, never on a line that already says something — beside a written line it would be offering to write over it. So:
 
@@ -91,7 +99,7 @@ The first four **open** a block rather than writing one: you get an empty block 
 
 In [XML](01-rendering.md#xml) the row offers what makes sense there instead: another element with the same tag as the block you pressed it beside, emptied, and a comment.
 
-### Images
+#### Images
 
 The image button does not write a placeholder path for you to correct. It asks:
 
@@ -100,7 +108,47 @@ The image button does not write a placeholder path for you to correct. It asks:
 
 A picked file is **never copied anywhere** — the picture stays where you keep it. What goes into the document is where it already is: written relative to the document when it sits under the same folder, so the pair survive being moved or shared together, and as a full path when it does not. A path holding a space or a bracket is written in Markdown's `<…>` form, so it cannot end early.
 
+### The format bar
+
+![A few highlighted words in a paragraph with the format bar floating above them: bold, italic, strikethrough, code and link, then the text, bigger heading, smaller heading and quote buttons, with one lit up and one grayed out](../../imgs/format-bar.png)
+
+Highlight words in an unlocked Markdown page and a small bar appears over them.
+
+- **Bold**, *italic*, ~~strikethrough~~, `code`, and **link** apply to the highlighted words. A button lights up when the words already carry that format, so the bar says what they are as much as what they could be — press it again to take it off.
+- **Link** opens a box for the address, filled in with the link already there if there is one. `Enter` applies it; an empty box takes the link away.
+- **Text**, a **bigger** and a **smaller** heading, and **Quote** act on the whole block the highlight sits in. They appear only where the block is a paragraph, heading, or quote.
+- These don't toggle — **a button with nowhere to go grays out**, so every press is a straight answer. **Text** is the way out of a heading or a quote, and grays out on body text.
+- The two **H**s are the same glyph at two sizes, and they move **one level per press**: `######` → `#####` → … → `#`. All six levels are reachable, so a document can carry as many `#` headings as you want. The bigger H grays out at `#` and the smaller at `######`.
+- On body text or a quote, the bigger H makes it a `##` heading — the ordinary section heading, with `#` one more press away. The smaller H grays out there, since body text has no size to shrink.
+- `Ctrl+B` / `Cmd+B`, `Ctrl+I` / `Cmd+I` and `Ctrl+K` / `Cmd+K` do the first three without the bar. `Escape` dismisses it.
+
+The formatting is written into the page as you would expect it in Markdown — `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``, `[text](address)` — and saved with the block, by the same splice as any other inline edit.
+
+### The padlock
+
+Whether the rendered page can be typed into is a fact about *that page*, not a preference for every document you will ever open — so it is a padlock on the reading view's own tools, in the recess beside the reading button on the [floating toolbar](02-navigation.md#the-floating-toolbar).
+
+- A shut padlock means the page is read-only. An open one means you can click into it and type.
+- Documents open **locked**. Reading is the default posture, and one click is a cheap price for not editing a file by brushing it. A [new document](#new-document) is the exception: it was created to be written in, so it starts unlocked.
+- The answer lasts as long as the window. A document reopened tomorrow is read-only again, which is the safe way round to be wrong.
+- **Checkboxes toggle either way.** Ticking a box is a quick action that auto-saves and records no undo, not text editing.
+- The [code view](#code-view) is an editor whatever the padlock says, so a file is never locked outright.
+- Flipping the padlock commits whatever block was mid-edit rather than discarding it.
+
+The other reading-view tool lives in the same recess: the [speed reader](05-settings.md#speed-reader), which stays an app-wide preference because it is a way of reading rather than a property of a file. Neither it nor the padlock is filled in the accent color — that treatment means "this is the view you are in", and a setting inside a view must not wear it.
+
+### Undo
+
+Reading-view edits are undoable, step by step.
+
+- Every inline edit — a typed change, a block split or merge — records one undo step. An **Undo** button appears beside Save whenever there is a step to take back, and disappears when there is nothing left to undo. (Checkbox toggles are the exception: they auto-save and are not undoable.)
+- Click it, or press `Ctrl+Z` (`Cmd+Z` on macOS), to revert the most recent edit. While you are still typing inside a block, the platform's own undo handles keystrokes as usual; the app-level undo covers edits that have already been written into the buffer.
+- A successful **Save** makes the current text the new baseline and clears the undo history, so Undo only ever steps back through edits made since your last save — it never walks you below saved text.
+- [The flowchart editor](#the-flowchart-editor) keeps its own history while it is open, because everything you do in there arrives here as a single edit.
+
 ## The flowchart editor
+
+![The flowchart editor open as a full-window sheet: the diagram on the canvas at left with one box selected showing its plus handles, the matching Mermaid text in the pane at right, and the Flow direction control along the top](../../imgs/flowchart-editor.png)
 
 A flowchart is a [Mermaid](01-rendering.md#mermaid-diagrams) block like any other, and it can always be written as text. It can also be drawn. There are two ways in:
 
@@ -148,45 +196,13 @@ The canvas fails closed: a diagram it cannot fully model opens with the canvas s
 > [!NOTE]
 > Saving rewrites the block in one spelling: always `flowchart` rather than `graph`, every label quoted, and every box declared on its own line. It is the same diagram and it renders identically anywhere Mermaid runs — but a file you hand-wrote will come back tidied.
 
-## The format bar
+## Working in the source
 
-Highlight words in an unlocked Markdown page and a small bar appears over them.
+### Code view
 
-- **Bold**, *italic*, ~~strikethrough~~, `code`, and **link** apply to the highlighted words. A button lights up when the words already carry that format, so the bar says what they are as much as what they could be — press it again to take it off.
-- **Link** opens a box for the address, filled in with the link already there if there is one. `Enter` applies it; an empty box takes the link away.
-- **Text**, a **bigger** and a **smaller** heading, and **Quote** act on the whole block the highlight sits in. They appear only where the block is a paragraph, heading, or quote.
-- These don't toggle — **a button with nowhere to go grays out**, so every press is a straight answer. **Text** is the way out of a heading or a quote, and grays out on body text.
-- The two **H**s are the same glyph at two sizes, and they move **one level per press**: `######` → `#####` → … → `#`. All six levels are reachable, so a document can carry as many `#` headings as you want. The bigger H grays out at `#` and the smaller at `######`.
-- On body text or a quote, the bigger H makes it a `##` heading — the ordinary section heading, with `#` one more press away. The smaller H grays out there, since body text has no size to shrink.
-- `Ctrl+B` / `Cmd+B`, `Ctrl+I` / `Cmd+I` and `Ctrl+K` / `Cmd+K` do the first three without the bar. `Escape` dismisses it.
+![The code view showing a Markdown file as raw source: line numbers down the left, headings and list markers colored in the theme's own syntax colors, and the editor's minimap rail standing on the window chrome at the right](../../imgs/code-view.png)
 
-The formatting is written into the page as you would expect it in Markdown — `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``, `[text](address)` — and saved with the block, by the same splice as any other inline edit.
-
-## The padlock
-
-Whether the rendered page can be typed into is a fact about *that page*, not a preference for every document you will ever open — so it is a padlock on the reading view's own tools, in the recess beside the reading button on the [floating toolbar](02-navigation.md#the-toolbar).
-
-- A shut padlock means the page is read-only. An open one means you can click into it and type.
-- Documents open **locked**. Reading is the default posture, and one click is a cheap price for not editing a file by brushing it. A [new document](#new-document) is the exception: it was created to be written in, so it starts unlocked.
-- The answer lasts as long as the window. A document reopened tomorrow is read-only again, which is the safe way round to be wrong.
-- **Checkboxes toggle either way.** Ticking a box is a quick action that auto-saves and records no undo, not text editing.
-- The [code view](#code-view) is an editor whatever the padlock says, so a file is never locked outright.
-- Flipping the padlock commits whatever block was mid-edit rather than discarding it.
-
-The other reading-view tool lives in the same recess: the [speed reader](05-settings.md#speed-reader), which stays an app-wide preference because it is a way of reading rather than a property of a file. Neither it nor the padlock is filled in the accent color — that treatment means "this is the view you are in", and a setting inside a view must not wear it.
-
-## Undo
-
-Reading-view edits are undoable, step by step.
-
-- Every inline edit — a typed change, a block split or merge — records one undo step. An **Undo** button appears beside Save whenever there is a step to take back, and disappears when there is nothing left to undo. (Checkbox toggles are the exception: they auto-save and are not undoable.)
-- Click it, or press `Ctrl+Z` (`Cmd+Z` on macOS), to revert the most recent edit. While you are still typing inside a block, the platform's own undo handles keystrokes as usual; the app-level undo covers edits that have already been written into the buffer.
-- A successful **Save** makes the current text the new baseline and clears the undo history, so Undo only ever steps back through edits made since your last save — it never walks you below saved text.
-- [The flowchart editor](#the-flowchart-editor) keeps its own history while it is open, because everything you do in there arrives here as a single edit.
-
-## Code view
-
-The toggle is the code-brackets button on the [floating toolbar](02-navigation.md#the-toolbar) under the page, beside reading and the [graph](03-library.md#graph). Click it and the rendered page is replaced by the file's raw source; click the reading button to come back.
+The toggle is the code-brackets button on the [floating toolbar](02-navigation.md#the-floating-toolbar) under the page, beside reading and the [graph](03-library.md#graph). Click it and the rendered page is replaced by the file's raw source; click the reading button to come back.
 
 Opening another document while you are in the source view opens **that** document in the source view. The view is where you are working, not a property of the file you picked.
 
@@ -196,17 +212,7 @@ Opening another document while you are in the source view opens **that** documen
 - Toggling keeps your place: the code view opens on the source line of the block you were reading, and toggling back lands the reading view on that same block. Switching to another tab and back does too — a tab left in the code view comes back in the code view, scrolled to where you left it.
 - **Toggling back and forth stays put.** Working out where you are in the other view can only be approximate — the two views wrap the same file to different heights, so a position has to be rounded to the nearest block or line, and rounding the same place twice does not return it unchanged. So when you toggle away and straight back without scrolling in between, the view you return to takes back the exact position it handed over, rather than a position worked out a second time. Scroll while you are there and the block-for-line landing takes over again, which is what you want then.
 
-## Pinned headings
-
-Scroll a Markdown file in the [code view](#code-view) and the heading you are under stays at the top edge instead of scrolling away, so you can always see where you are.
-
-- A **deeper** heading stacks below the one above it: inside `## Why this exists` under `# Architectural opportunities`, both are pinned, in that order — the trail down to where you are. A heading at the **same level or above** replaces the one it matches rather than stacking, so the trail never repeats itself. Five rows is the limit.
-- Each row is the source line itself — its own line number, its own syntax colors — so what is pinned reads exactly as it does in the file. As a section ends, its row is pushed up and off by the next heading arriving beneath it.
-- **Click a row to jump to it.** The heading lands where its row was standing, so the line you clicked does not move.
-- The rows sit above the page's top fade, with a soft dissolve of their own for the text sliding under them.
-- Markdown only. [XML, JSON, and YAML](01-rendering.md#xml) have no headings, and their structure is nesting rather than a trail.
-
-## Editing the source
+### Editing the source
 
 The code view is a real editor surface: click anywhere and type. It is Monaco — the editor Visual Studio Code is built on — compiled into the app rather than fetched from anywhere, and loaded the first time you open the source view. That first toggle spends a moment on the spinner; every one after it is immediate.
 
@@ -217,7 +223,21 @@ The code view is a real editor surface: click anywhere and type. It is Monaco �
 - Each tab keeps its own edit buffer: switching tabs or toggling back to the reading view never loses unsaved work.
 - The reading view renders the *buffer*, not the disk — toggle back before saving and you see your edits rendered.
 
-## Typing help
+### Pinned headings
+
+![The Markdown code view scrolled into a subsection, with two heading rows pinned at the top edge — the parent heading above the current one, each showing its own line number and syntax colors](../../imgs/pinned-headings.png)
+
+Scroll a Markdown file in the [code view](#code-view) and the heading you are under stays at the top edge instead of scrolling away, so you can always see where you are.
+
+- A **deeper** heading stacks below the one above it: inside `## Why this exists` under `# Architectural opportunities`, both are pinned, in that order — the trail down to where you are. A heading at the **same level or above** replaces the one it matches rather than stacking, so the trail never repeats itself. Five rows is the limit.
+- Each row is the source line itself — its own line number, its own syntax colors — so what is pinned reads exactly as it does in the file. As a section ends, its row is pushed up and off by the next heading arriving beneath it.
+- **Click a row to jump to it.** The heading lands where its row was standing, so the line you clicked does not move.
+- The rows sit above the page's top fade, with a soft dissolve of their own for the text sliding under them.
+- Markdown only. [XML, JSON, and YAML](01-rendering.md#xml) have no headings, and their structure is nesting rather than a trail.
+
+### Typing help
+
+![The code view with a completion popup open after typing two square brackets, listing note names from the vault, and a wavy underline beneath a broken link further down the file](../../imgs/typing-help.png)
 
 While you type Markdown in the code view, the editor can offer what Leaftext already knows — the same knowledge the [graph](03-library.md#graph) and [search](03-library.md#search) run on, so it only ever sees what you pointed it at: the active [vault](03-library.md#vaults), or the document's own folder when no vault holds it.
 
@@ -228,19 +248,21 @@ This is **IntelliSense** — the completion popup, hover card and squiggly under
 - **Hover a `[[wikilink]]`** for a card with the note's opening lines.
 - **Broken links get a wavy underline** — a moment after you stop typing, links whose file does not exist and wiki names no note answers to are marked, with a plain-words message on hover.
 
-It never interrupts prose: suggestions appear only on those triggers, never as you type ordinary words. The **wand** on the [floating toolbar](02-navigation.md#the-toolbar) — in the recess beside the view buttons, the code view's counterpart to the reading view's [padlock](#the-padlock) — turns the whole thing on and off. On by default, remembered across restarts ([settings](05-settings.md#typing-help)).
+It never interrupts prose: suggestions appear only on those triggers, never as you type ordinary words. The **wand** on the [floating toolbar](02-navigation.md#the-floating-toolbar) — in the recess beside the view buttons, the code view's counterpart to the reading view's [padlock](#the-padlock) — turns the whole thing on and off. On by default, remembered across restarts ([settings](05-settings.md#typing-help)).
 
-## Save
+## Saving
+
+### Save
 
 Saving is always explicit.
 
-- With no unsaved changes there is no save control at all. The moment the buffer differs from the file, a green **Save** button appears on the [floating toolbar](02-navigation.md#the-toolbar) and the tab shows a dot beside its name.
+- With no unsaved changes there is no save control at all. The moment the buffer differs from the file, a green **Save** button appears on the [floating toolbar](02-navigation.md#the-floating-toolbar) and the tab shows a dot beside its name.
 - Click **Save** or press `Ctrl+S` (`Cmd+S` on macOS) to write the buffer to disk. The button and dot clear on success.
 - A [new document](#new-document) has no file yet, so its first save asks where to put it before writing anything.
 - A save does not bounce the view: the file watcher recognizes the app's own write and skips the [live reload](02-navigation.md#reload) it would otherwise trigger.
 - A file is written in the [encoding it was read in](01-rendering.md#file-encodings). A UTF-16 document stays UTF-16; a file with no byte order mark does not gain one.
 
-## External changes
+### External changes
 
 The [live reload](02-navigation.md#reload) watcher keeps working alongside editing:
 

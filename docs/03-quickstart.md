@@ -2,20 +2,18 @@
 
 > Open your first file and get comfortable with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), the [minimap](01-features/04-minimap.md), and the [library](01-features/03-library.md) — a few minutes, start to finish.
 
-There's nothing to set up. No account, no folder to designate, no plugins to choose. Point Leaftext at a file you already have and start reading. This page walks the shortest useful path: open a file, read it, move around, and come back to it later.
+There's nothing to set up. No account, no folder to designate, no plugins to choose. Point Leaftext at a file you already have and start reading. This page walks the shortest useful path: open a file, read it, move around, edit a line, and come back to it later.
 
 > [!NOTE]
 > Not installed yet? [Install it first](02-installation.md#install) — three steps per platform. On a Mac, macOS refuses the first launch until you [let it through once](02-installation.md#mac-blocks-the-first-launch).
 
-## Start
+## The five minutes
 
 1. Press `Ctrl+O` on Windows or `Cmd+O` on macOS.
 2. Pick any `.md`, `.xml`, `.json`, `.yaml`, or `.eml` file.
-3. Scroll the document.
-4. Use the minimap on the right to jump.
-5. Open another file to create a new tab.
-
-## Flow
+3. Scroll the document, and use the [minimap](#jump) on the right to jump.
+4. Open another file to create a [new tab](#a-second-tab).
+5. Click into a sentence and [type](#4-edit-a-line).
 
 ```mermaid
 flowchart LR
@@ -27,51 +25,73 @@ flowchart LR
     F --> G[Back / Forward keeps history per tab]
 ```
 
-## Open
+## 1. Open a file
+
+![The Leaftext home screen with no document open: the Choose file and New document buttons, and the recent files list beneath them](../imgs/home.png)
 
 | Method | How |
 | --- | --- |
 | Keyboard | `Ctrl+O` / `Cmd+O` |
 | Drag and drop | Drop a `.md`, `.xml`, `.json`, `.yaml`, or `.eml` file onto the window |
 | Recent files | Click a file on the no-file home screen |
-| Command line / Open with | Launch Leaftext with a file path |
+| Command line / Open with | Launch Leaftext with a file path, or double-click an [associated file](02-installation.md#file-associations) |
 | Start a blank one | The **+** in the app bar, or **New document** on the home screen — see [Editing](01-features/07-editing.md#new-document) |
 
 > [!TIP]
 > Recent files keeps the last 8 opened files, so reopening a doc is usually one click.
 
-## UI
+## 2. Know what you are looking at
+
+![The Leaftext window labeled part by part: the app bar with its tab strip across the top, the library pane at left, the rendered page with its collapsed outline in the middle, the minimap rail at right, and the floating toolbar over the foot of the page](../imgs/ui-tour.png)
+
+### The app bar, across the top
 
 | Area | What it does |
 | --- | --- |
+| Leaf mark | Returns to the home screen |
+| Library button | Opens and closes the [library pane](01-features/03-library.md) |
+| Back / Forward | Moves through document and scroll history |
 | Tab bar | Keeps multiple documents open |
+| Open, **+**, Settings | Open a file, start a [new document](01-features/07-editing.md#new-document), change [preferences](01-features/05-settings.md) |
+
+### The page itself
+
+| Area | What it does |
+| --- | --- |
 | Main reader | Shows the rendered Markdown, [XML](01-features/01-rendering.md#xml), [JSON/YAML](01-features/01-rendering.md#data-files-json-and-yaml), or [email](01-features/01-rendering.md#email-eml) |
 | Outline | A collapsed list of the document's headings at the top, labeled with the document's line count, for jumping to a section |
 | Minimap | Shows the whole document and your current viewport |
-| Back / Forward | Moves through document and scroll history |
-| Code view | Toggles the page to its raw, editable source — see [Editing](01-features/07-editing.md) |
-| Typing help | The wand beside the code view: Monaco's IntelliSense over your notes — see [Typing help](01-features/07-editing.md#typing-help) |
-| New document | The **+** beside Open, for a blank page you can type into straight away |
-| Save | A green button that appears when the source has [unsaved edits](01-features/07-editing.md#save) |
-| Library pane | Browse a folder, [search](01-features/03-library.md#search) a [vault](01-features/03-library.md#vaults)'s text, and [map](01-features/03-library.md#graph) how its documents link |
+| Pager | Previous / Next at the foot, where a folder is joined by `README.md` files |
 
-## Basics
+### The floating toolbar, over the foot of the page
 
-### New tab
+| Control | What it does |
+| --- | --- |
+| Reading / Code / Graph | The three ways of looking at the open document; the one you are in is filled in the accent color |
+| Padlock | Unlocks the page so you can [type into it](01-features/07-editing.md#the-padlock) |
+| Speed reader | Dims the prose and marks each word's start — see [Speed Reader](01-features/05-settings.md#speed-reader) |
+| Typing help | The wand beside the code view: suggestions drawn from your own notes — see [Typing help](01-features/07-editing.md#typing-help) |
+| Undo / Save | Appear only when there is something to undo or [save](01-features/07-editing.md#save) |
 
-Press `Ctrl+O` / `Cmd+O` again. Leaftext opens the next file in a new tab instead of replacing the current one.
+## 3. Move around
+
+### A second tab
+
+Press `Ctrl+O` / `Cmd+O` again. Leaftext opens the next file in a new tab instead of replacing the current one. Each tab keeps its own history and its own place in the document.
 
 ### Jump
 
-Click a heading in the document or click a spot in the minimap. That jump is added to scroll history, so Back takes you to the previous reading position.
+Click a heading in the [outline](01-features/02-navigation.md#outline), or click a spot in the [minimap](01-features/04-minimap.md). That jump is added to scroll history, so Back takes you to the previous reading position.
 
-### History
+### Shortcuts worth knowing
 
 | Action | Windows | macOS |
 | --- | --- | --- |
+| Open a file | `Ctrl+O` | `Cmd+O` |
+| Close tab | `Ctrl+W` | `Cmd+W` |
+| Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
 | Back | `Alt+Left` | `Cmd+Left` |
 | Forward | `Alt+Right` | `Cmd+Right` |
-| Close tab | `Ctrl+W` | `Cmd+W` |
 | Save ([unsaved edits](01-features/07-editing.md#save)) | `Ctrl+S` | `Cmd+S` |
 | [Undo](01-features/07-editing.md#undo) the last edit | `Ctrl+Z` | `Cmd+Z` |
 | [Bold](01-features/07-editing.md#the-format-bar) the highlighted words | `Ctrl+B` | `Cmd+B` |
@@ -81,15 +101,24 @@ Click a heading in the document or click a spot in the minimap. That jump is add
 
 Mouse side buttons also trigger Back and Forward on Windows.
 
-### Edit
+## 4. Edit a line
 
-Click into any sentence and type — the rendered page [edits in place](01-features/07-editing.md#inline-editing-the-reading-view), checkboxes toggle, and the green **Save** button appears. Highlight words for a [format bar](01-features/07-editing.md#the-format-bar), or use the handle and plus in the left [margin](01-features/07-editing.md#the-block-gutter) to drag a block or [add one](01-features/07-editing.md#adding-a-block). For the raw source instead, click the code-brackets button left of Settings. To start from nothing, press the **+** in the app bar for a [new document](01-features/07-editing.md#new-document); its first save asks where to put it. The [Editing](01-features/07-editing.md) page covers the whole flow.
+Documents open **locked**, so a stray click never changes a file. Open the [padlock](01-features/07-editing.md#the-padlock) on the floating toolbar, then click into any sentence and type — the rendered page [edits in place](01-features/07-editing.md#inline-editing-the-reading-view), and the green **Save** button appears.
 
-### Reopen
+- Highlight words for a [format bar](01-features/07-editing.md#the-format-bar).
+- Use the handle and plus in the left [margin](01-features/07-editing.md#the-block-gutter) to drag a block or [add one](01-features/07-editing.md#adding-a-block).
+- For the raw source instead, click the code-brackets button on the toolbar.
+- To start from nothing, press the **+** in the app bar for a [new document](01-features/07-editing.md#new-document); its first save asks where to put it.
 
-Close the last tab and you will land on the no-file view again, where recent files are listed for quick reopening.
+Checkboxes are the exception to the padlock: a `- [ ]` box is clickable either way, and ticking it saves on the spot.
 
-## Demo
+The [Editing](01-features/07-editing.md) page covers the whole flow.
+
+## 5. Come back to it
+
+Close the last tab and you will land on the home screen again, where [recent files](01-features/02-navigation.md#recent-files) are listed for quick reopening. To keep a whole folder within reach instead, name it a [vault](01-features/03-library.md#vaults) — then the [library pane](01-features/03-library.md) browses it, [search](01-features/03-library.md#search) covers it, and the [graph](01-features/03-library.md#graph) maps it.
+
+## Try it on this file
 
 Save this as `demo.md` and open it:
 
@@ -118,3 +147,4 @@ That single file lets you verify headings, task lists, callouts, and syntax high
 - [Rendering](01-features/01-rendering.md) for supported syntax and examples
 - [Navigation](01-features/02-navigation.md) for tabs, history, and live reload
 - [Library](01-features/03-library.md) for [vaults](01-features/03-library.md#vaults), search, and [GitHub sync](01-features/03-library.md#github-sync)
+- [Editing](01-features/07-editing.md) for the whole writing flow

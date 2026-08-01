@@ -21,6 +21,8 @@ A release is those two files and nothing else. The [in-app updater](#updates) in
 
 ### macOS
 
+![The mounted Leaftext disk image in the Finder: the leaf app icon on the left with an arrow pointing to the Applications folder shortcut on the right](../imgs/install-mac.png)
+
 **1. Download** the file ending in `-macos-universal.dmg` from the [latest release](https://github.com/ryanallen/leaftext/releases/latest). One file covers both Apple Silicon and Intel Macs.
 
 **2. Open the downloaded file.** A window opens showing the leaf app on one side and an **Applications** folder on the other.
@@ -33,6 +35,8 @@ A release is those two files and nothing else. The [in-app updater](#updates) in
 
 ### Windows
 
+![The Leaftext MSI installer's single screen, showing the install folder with the Change button beside it and the Install button below](../imgs/install-windows-msi.png)
+
 **1. Download** the file ending in `.msi` from the [latest release](https://github.com/ryanallen/leaftext/releases/latest). It needs 64-bit Windows 10 or later.
 
 **2. Run the installer.** If a blue **Windows protected your PC** box appears, click **More info** → **Run anyway** — see [Windows warns before it runs](#windows-warns-before-it-runs).
@@ -41,7 +45,13 @@ A release is those two files and nothing else. The [in-app updater](#updates) in
 
 **4. Launch Leaftext** from the Start Menu, or press the Windows key and type its name.
 
-## Mac blocks the first launch
+## The first-launch warnings
+
+Both platforms warn once, for the same reason, and neither warning is about what is in the file.
+
+### Mac blocks the first launch
+
+![The macOS System Settings Privacy & Security pane scrolled to the Security section, where a line names Leaftext as blocked with an Open Anyway button beside it](../imgs/install-mac-open-anyway.png)
 
 macOS refuses the first launch and says it "cannot be opened" or that Apple "could not verify it is free of malware". **This is expected and it is not a report of anything found in the app.** Apple charges a yearly developer fee to have an app *notarized*; Leaftext is free and is not enrolled, so macOS treats it the way it treats everything unnotarized. Nothing was scanned and nothing was flagged.
 
@@ -72,17 +82,38 @@ That removes the "downloaded from the internet" tag macOS attaches to the file. 
 > [!TIP]
 > Either way, you only do this once per installed app bundle.
 
-## Windows warns before it runs
+### Windows warns before it runs
+
+![The blue Windows protected your PC dialog with the More info link expanded, showing the Run anyway button](../imgs/install-windows.png)
 
 Windows may show a blue **Windows protected your PC** box the first time you run the installer, because the MSI is not signed with a paid certificate. Click **More info**, then **Run anyway**. Your browser may also make you keep the download — choose **Keep** if it asks.
 
-Default installed path, though **Change...** puts it wherever you like and later updates keep it there:
+## Where it goes
+
+Leaftext installs into your user profile on both platforms, which is what lets it update itself without ever asking for administrator rights.
+
+| Platform | The app | Its data |
+| --- | --- | --- |
+| macOS | `/Applications/leaftext.app` | `~/Library/Application Support/com.ryanallen.leaftext` |
+| Windows | `%LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe` | `%APPDATA%\ryanallen\leaftext\config` and `%LOCALAPPDATA%\ryanallen\leaftext\data` |
+
+On Windows, **Change...** during the install puts the app wherever you like, and later updates keep it there. The WebView2 browser data sits under the data folder:
 
 ```text
-%LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe
+%LOCALAPPDATA%\ryanallen\leaftext\data\webview2
 ```
 
+The data folders are independent of where the app is installed, so reinstalling or moving it keeps your settings, [recent files](01-features/02-navigation.md#recent-files), and [vaults](01-features/03-library.md#vaults). The full per-platform list is in [Settings → Paths](01-features/05-settings.md#paths).
+
+> [!NOTE]
+> The installer adds one Start Menu entry and no desktop shortcut. Drag it to the desktop or taskbar if you want it there too.
+
+> [!IMPORTANT]
+> **Upgrading from v0.1.364 or earlier: uninstall the old version first.** Those installed into `C:\Program Files` for the whole machine, and a per-user package has no authority to remove one. Install the new version without doing so and you will have two copies. Uninstall from **Settings → Apps**, then install.
+
 ## File associations
+
+![A file in Explorer showing the green leaf icon, with the Open with menu expanded and Leaftext listed in it](../imgs/file-associations.png)
 
 Installing registers Leaftext as a handler for every extension it reads — `.md`, `.markdown`, `.mdown`, `.xml`, `.json`, `.yaml`, `.yml`, `.eml`, `.mht`, and `.mhtml` — so those files carry the leaf icon and appear under **Open with**. On Windows the entries are per-user (`HKCU`), like the install itself.
 
@@ -91,22 +122,10 @@ An extension no app has claimed opens in Leaftext on its own. One that already h
 - **Windows** — right-click a file, **Open with** → **Choose another app** → **Leaftext** → *Always use this app*. Or **Settings** → **Apps** → **Default apps** → **Leaftext**.
 - **macOS** — select a file, **Get Info** → **Open with** → **Leaftext** → **Change All…**
 
+Double-clicking a file while Leaftext is already open adds it as a [tab](01-features/02-navigation.md#tabs) in the running window rather than starting a second copy.
+
 > [!NOTE]
 > Explorer and Finder cache icons. A newly registered icon sometimes only appears after the shell refreshes — signing out and back in is the reliable way to force it.
-
-WebView2 data lives here:
-
-```text
-%LOCALAPPDATA%\ryanallen\leaftext\data\webview2
-```
-
-Leaftext never needs administrator rights — not to install, not to update.
-
-> [!NOTE]
-> The installer adds one Start Menu entry and no desktop shortcut. Drag it to the desktop or taskbar if you want it there too.
-
-> [!IMPORTANT]
-> **Upgrading from v0.1.364 or earlier: uninstall the old version first.** Those installed into `C:\Program Files` for the whole machine, and a per-user package has no authority to remove one. Install the new version without doing so and you will have two copies. Uninstall from **Settings → Apps**, then install.
 
 ## Launch
 
@@ -119,9 +138,11 @@ flowchart LR
     E --> F[Read]
 ```
 
-Use `Ctrl+O` on Windows or `Cmd+O` on macOS to open your first file.
+Use `Ctrl+O` on Windows or `Cmd+O` on macOS to open your first file. The [Quickstart](03-quickstart.md) takes it from there.
 
 ## Updates
+
+![The Settings panel with an update waiting: the update button at the top of the panel showing its download progress, and the version and update status at the foot](../imgs/update.png)
 
 Leaftext checks GitHub Releases for a newer version at every launch, and re-checks in the background at most every six hours while the window stays open. When one is available, a green dot appears over the Settings button and a button appears at the top of the [Settings](01-features/05-settings.md#updates) menu.
 
@@ -133,20 +154,36 @@ Each version is installed automatically once. If an install fails, the next laun
 
 The update status at the foot of the Settings panel always reports the outcome — up to date, when it last checked, or what went wrong — including an install that failed after a restart, which is otherwise invisible because the installer runs after Leaftext exits. Clicking it forces a fresh check at any time. Startup is never blocked by any of this, and being offline only changes what that line says.
 
+## Uninstall
+
+- **macOS** — drag `leaftext.app` from Applications to the Trash. Your documents are untouched; the app's own data stays in `~/Library/Application Support/com.ryanallen.leaftext` until you delete that folder too.
+- **Windows** — **Settings** → **Apps** → **Leaftext** → **Uninstall**. Same story: your files and folders are yours, and only the app is removed.
+
+Nothing you wrote is inside Leaftext. Every document is the plain file you already had, in the folder you put it in.
+
 ## FAQ
 
 ### Is the warning a virus alert
 
 No. Both warnings are about *who paid whom*, not about what is in the file. macOS and Windows check whether an app carries a certificate from a paid developer program; Leaftext is free and carries none, so both systems say they cannot vouch for it. Nothing was scanned, and nothing was found. Clearing it takes a few clicks, once — [macOS](#mac-blocks-the-first-launch), [Windows](#windows-warns-before-it-runs).
 
-### Admin rights
+### Does it need administrator rights
 
-No, never. Leaftext installs into your user profile and runs from there, so neither installing nor updating needs administrator rights. App data lives alongside it: `%APPDATA%\ryanallen\leaftext\config` for settings and recent files, `%LOCALAPPDATA%\ryanallen\leaftext\data` for the WebView2 cache and the library index.
+No, never. Leaftext installs into your user profile and runs from there, so neither installing nor updating needs administrator rights. See [Where it goes](#where-it-goes).
 
-### Data paths
+### Does it need an internet connection
 
-See [Settings](01-features/05-settings.md#paths).
+Only for two things, neither of which carries your words: checking GitHub for a newer version, and fetching a [theme's font](01-features/06-themes.md#fonts) from Google Fonts the first time you pick that theme. Reading, writing, searching, and diagrams all work offline.
 
-### Next
+### Where are my settings stored
 
-Go to [Quickstart](03-quickstart.md).
+See [Settings → Paths](01-features/05-settings.md#paths).
+
+### Can I install it on Linux
+
+No. Leaftext builds for macOS and Windows only.
+
+## Next
+
+- [Quickstart](03-quickstart.md) — open your first file.
+- [Settings](01-features/05-settings.md) — every preference and where it lives.

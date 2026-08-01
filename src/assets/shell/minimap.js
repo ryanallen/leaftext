@@ -810,9 +810,9 @@ function stripMinimapClone(preview) {
   preview.querySelectorAll('[id]').forEach((node) => {
     // Everything except the inside of a diagram. Mermaid scopes an SVG's colors by
     // that SVG's own id (`#mermaid-7 .node rect { fill: … }`) and points its
-    // arrowheads at markers by id, so stripping those ids left every shape at the
-    // SVG default: black fills and no arrowheads, which is what the rail was
-    // showing on a page full of diagrams. Keeping them duplicates ids the page
+    // arrowheads at markers by id, so stripping those ids leaves every shape at the
+    // SVG default: black fills and no arrowheads, all down the rail on a page full
+    // of diagrams. Keeping them duplicates ids the page
     // never looks up, and the markers they resolve to are the originals — the same
     // geometry, drawn at a different scale.
     if (node.closest('svg')) return;
@@ -855,7 +855,7 @@ function updateDocumentMinimapPreview() {
   // Skip the clone when nothing shaping the thumbnail changed: same content
   // version, wrap width, rail width, and the window still covers the view. The
   // common resize (height-only, or a width change within the capped column) just
-  // repositions the box off the existing clone — the cloneNode below is what made
+  // repositions the box off the existing clone — the cloneNode below is what makes
   // resize feel like a reload.
   if (
     content.querySelector('.document-minimap-preview') &&
@@ -996,7 +996,7 @@ function placeMinimapViewport(minimap, metrics, scrollTopOverride) {
 }
 // The scroll listener must stay cheap. clampReaderScrollPosition() and
 // captureReaderScrollAnchor() each force a layout — ~400ms on a 4MB glossary, which
-// is the wheel taking two seconds to answer — and once a frame was still too often.
+// is the wheel taking two seconds to answer — and once a frame is still too often.
 // Nothing reads either mid-gesture (the anchor serves the reflow re-pin and tab
 // switches; the clamp only has to hold at rest), so they settle after the wheel
 // stops and the handler itself reads no geometry at all.

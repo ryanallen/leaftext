@@ -120,8 +120,7 @@ function renderUpdateButton() {
       settingsUpdateFill.style.width = status === 'downloading' ? `${percent}%` : '0';
     }
     // Only a staged, verified installer offers to install. Everything else falls
-    // back to the release page, which is what the app did before it could update
-    // itself, and is always a safe thing for the button to do.
+    // back to the release page, which is always a safe thing for the button to do.
     settingsUpdate.disabled = status === 'downloading';
     settingsUpdate.onclick = status === 'staged'
       ? () => send({ command: 'applyUpdate' })
@@ -151,9 +150,8 @@ function setUpdateState(next) {
   renderUpdateButton();
 }
 
-// Terminal states pushed by the host once it has written and verified (or
-// rejected) the download. Progress is tracked here, since this side is the one
-// doing the fetching.
+// Progress and terminal states, pushed by the host: it does the fetching, then
+// writes and verifies (or rejects) what it got.
 window.leafUpdateState = (state) => {
   if (!state || typeof state !== 'object') return;
   setUpdateState({
@@ -184,8 +182,8 @@ let updateCheckInFlight = false;
 
 async function checkForUpdate(force) {
   if (!LEAF_VERSION || updateCheckInFlight) return;
-  // The host owns the download and it outlives this call, so the guard above no
-  // longer covers it; re-checking mid-download would reset the progress bar.
+  // The host owns the download and it outlives this call, so the guard above
+  // does not cover it; re-checking mid-download would reset the progress bar.
   if (updateState.status === 'downloading') return;
 
   // An installer verified in an earlier session is still good; offer it before
@@ -295,7 +293,7 @@ let minimapBodyObserver = null;
 // to rebuild (see updateDocumentMinimapPreview).
 let minimapBuiltRange = null;
 // Rail geometry, cached for the scroll path: scrolling changes none of it, and
-// re-measuring per wheel click forced a fresh layout of the whole document.
+// re-measuring per wheel click forces a fresh layout of the whole document.
 let minimapScrollMetrics = null;
 let readerLayoutFrame = 0;
 let readerScrollAnchor = null;

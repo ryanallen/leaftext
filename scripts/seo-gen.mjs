@@ -110,6 +110,9 @@ function summaryOf(relPath) {
     const line = block.trim();
     if (!line || line.startsWith('#') || line.startsWith('<') || line.startsWith('|') || line.startsWith('>'))
       continue;
+    // A block that is nothing but images is a screenshot, not a description.
+    // Alt text describes a picture; it never summarizes the page.
+    if (!line.replace(/!\[[^\[\]]*\]\([^)]*\)/g, '').trim()) continue;
     const plain = line
       .replace(/!\[([^\[\]]*)\]\([^)]*\)/g, '$1')
       .replace(/\[([^\[\]]*)\]\([^)]*\)/g, '$1')

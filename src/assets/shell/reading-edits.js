@@ -217,7 +217,7 @@ function makeBlankBlock(tag, kind, placeholder, insertAt) {
 // The blocks the insert row OPENS rather than writes: an empty block of that
 // kind, showing gray wording, with nothing in the buffer until the first
 // keystroke — `marker` is the Markdown that keystroke commits behind. Splicing
-// the word "Heading" in instead left it there when you changed your mind.
+// the word "Heading" in instead leaves it there when you change your mind.
 // A line Enter opened rather than the row: it says nothing, because you are
 // already writing and being told to write would be noise.
 const PLAIN_LINE_SPEC = { tag: 'p', kind: 'paragraph', placeholder: '', marker: '' };
@@ -302,8 +302,8 @@ function openInsertBlock(
     }
   };
   // What the format bar does here. This line is not in the buffer, so its own commit
-  // carries the marker — a splice from outside landed beside the words, and the blur
-  // commit then wrote them again.
+  // carries the marker — a splice from outside lands beside the words, and the blur
+  // commit then writes them again.
   block.__commitAs = (marker) => {
     if (block.__committed) return;
     const typed = inlineDomToMarkdown(block).trim();
@@ -418,8 +418,8 @@ function openMediumStart(body) {
   title.__insertBlockWith = (option) => commit(false, option);
   // Clicking the space below the pair. Neither block is in the buffer yet, so it
   // has to go through this same one splice — an insert of its own would be undone
-  // by the pair's own save a moment later, which is why the new line used to
-  // flash and vanish on a document's first one.
+  // by the pair's own save a moment later, and the new line would flash and vanish
+  // on a document's first one.
   title.__lineBelow = (specId) => {
     if (!commit(true, null, specId)) story.focus({ preventScroll: true });
   };
@@ -595,7 +595,7 @@ function wireMarkdownEditable(el) {
 }
 
 // A fenced code block's inside, as offsets into `src`. The fences are what make it a
-// code block, so offering them for editing put one backspace between the reader and
+// code block, so offering them for editing puts one backspace between the reader and
 // a broken document. Null unless BOTH are found — this range is spliced verbatim, so
 // an indented or unterminated block falls back to editing the whole thing.
 function fencedCodeInnerSpan(src) {
@@ -713,8 +713,8 @@ function bindEditableBlocks(format) {
     if (wysiwyg) {
       wysiwygBlocks.push(el);
     } else if (Number.isFinite(Number(el.dataset.srcStart)) && Number.isFinite(Number(el.dataset.srcEnd))) {
-      // A block with an unusable range gets neither the class nor a listener, the
-      // same as before — wireSourceEditable's own guard would have dropped it.
+      // A block with an unusable range gets neither the class nor a listener;
+      // wireSourceEditable's own guard would drop it anyway.
       sourceBlocks.push(el);
     }
   });

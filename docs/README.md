@@ -15,14 +15,14 @@ flowchart LR
     D --> F[Navigation]
     D --> G[Library]
     D --> H[Minimap]
-    D --> I[Themes]
-    D --> J[Settings]
-    D --> P[Editing]
-    C --> K[Development]
-    K --> L[Architecture]
-    K --> M[Building]
-    K --> N[Theming]
-    K --> O[Releasing]
+    D --> I[Settings]
+    D --> J[Themes]
+    D --> K[Editing]
+    C --> L[Development]
+    L --> M[Architecture]
+    L --> N[Building]
+    L --> O[Releasing]
+    L --> P[Theming]
 ```
 
 ## Start here
@@ -30,22 +30,40 @@ flowchart LR
 | Page | What it covers |
 | --- | --- |
 | [Introduction](01-introduction.md) | What Leaftext is, the feature overview, and where to go for each task |
-| [Installation](02-installation.md) | Step-by-step installs for macOS (`.dmg`) and Windows (`.msi`), how to get past the [first-launch block on a Mac](02-installation.md#mac-blocks-the-first-launch), plus [updates](01-features/05-settings.md#updates) and data paths |
+| [Installation](02-installation.md) | Step-by-step installs for macOS (`.dmg`) and Windows (`.msi`), how to get past the [first-launch block on a Mac](02-installation.md#mac-blocks-the-first-launch), [file associations](02-installation.md#file-associations), [updates](01-features/05-settings.md#updates), and data paths |
 | [Quickstart](03-quickstart.md) | The smallest useful path through the app: open a file, read, jump, and reopen — with the core shortcuts |
 
 ## Features
 
-How the app behaves, page by page:
+How the app behaves, page by page. They are numbered in reading order, and each one ends with where to go next.
 
 | Page | What it covers |
 | --- | --- |
-| [Rendering](01-features/01-rendering.md) | The full supported syntax with live examples: CommonMark, GFM, syntax highlighting, Mermaid, math, alerts, footnotes, emoji, Leaf buttons, local images, XML (any file, plus 84000 TEI translations), JSON/YAML, and email (`.eml`) |
-| [Navigation](01-features/02-navigation.md) | Tabs, Back/Forward history, the outline, scroll anchors, live reload, recent files, link hints, the pager, and the single-window rule |
-| [Library](01-features/03-library.md) | The left-side pane backed by a local SQLite index: the Project file list with its breadcrumb path, the graph view, filename and content search, and file actions |
-| [Minimap](01-features/04-minimap.md) | The scaled real-text document clone in the side rail: how it renders, when it rebuilds, responsive widths, and the on/off toggle |
-| [Themes](01-features/06-themes.md) | The eleven theme families (Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage), light/dark/System/Daylight appearance, on-demand Google Fonts, and the semantic token contract |
-| [Settings](01-features/05-settings.md) | Every preference, its default, and the JSON files on disk that store them |
-| [Editing](01-features/07-editing.md) | Inline editing in the rendered page (blocks, checkboxes, undo), the raw-source code view, and the explicit Save flow |
+| [Rendering](01-features/01-rendering.md) | The full supported syntax with live examples: CommonMark, GFM, syntax highlighting, Mermaid, math, alerts, footnotes, emoji, Leaf buttons, local images, XML (any file, plus 84000 TEI translations), JSON/YAML, email (`.eml`), and file encodings |
+| [Navigation](01-features/02-navigation.md) | Tabs, Back/Forward history, the toolbar, the outline, scroll anchors, live reload, recent files, the glossary sheet, link hints, the pager, and the single-window rule |
+| [Library](01-features/03-library.md) | The left-side pane: vaults, the file tree and its breadcrumb, search, the graph view, GitHub sync, file actions, live updates, and narrow-window layout |
+| [Minimap](01-features/04-minimap.md) | The scaled real-text document clone in the side rail: how it renders, when it rebuilds, the code view's own rail, responsive widths, and the on/off toggle |
+| [Settings](01-features/05-settings.md) | Every preference, its default, and the JSON files on disk that store them — including [updates](01-features/05-settings.md#updates) and [paths](01-features/05-settings.md#paths) |
+| [Themes](01-features/06-themes.md) | The eleven families (Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage), light/dark/System/Daylight appearance, on-demand Google Fonts, diagram colors, and the semantic token contract |
+| [Editing](01-features/07-editing.md) | Writing in the rendered page (blocks, the gutter, the format bar, the flowchart editor), the raw-source code view with typing help, and the explicit Save flow |
+
+### Which page answers which question
+
+| Question | Page |
+| --- | --- |
+| Does it render *this* syntax? | [Rendering](01-features/01-rendering.md#summary) |
+| Can it open my `.xml` / `.json` / `.yaml` / `.eml`? | [Rendering](01-features/01-rendering.md#xml) |
+| How do I keep several documents open? | [Navigation → Tabs](01-features/02-navigation.md#tabs) |
+| What are the keyboard shortcuts? | [Navigation → Shortcuts](01-features/02-navigation.md#shortcuts) |
+| How do I search my notes? | [Library → Search](01-features/03-library.md#search) |
+| What is a vault, and do I need one? | [Library → Vaults](01-features/03-library.md#vaults) |
+| How do I push my notes to GitHub? | [Library → GitHub sync](01-features/03-library.md#github-sync) |
+| How do I edit without leaving the page? | [Editing → Inline editing](01-features/07-editing.md#inline-editing-the-reading-view) |
+| Why can't I click into this block? | [Editing → Formats](01-features/07-editing.md#formats) |
+| How do I draw a flowchart? | [Editing → The flowchart editor](01-features/07-editing.md#the-flowchart-editor) |
+| Where are my settings stored? | [Settings → Paths](01-features/05-settings.md#paths) |
+| How do updates work? | [Settings → Updates](01-features/05-settings.md#updates) |
+| How do I change the look? | [Themes → Choose](01-features/06-themes.md#choose) |
 
 ## Development
 
@@ -55,12 +73,16 @@ For anyone building, extending, or releasing Leaftext:
 | --- | --- |
 | [Architecture](02-development/01-architecture.md) | The Rust binary end to end: tao windowing, wry WebView, the Markdown pipeline, the XML, JSON/YAML, and email renderers, the IPC bridge, the vault registry, the git integration, and every source file's role |
 | [Building](02-development/02-building.md) | Toolchain prerequisites, platform WebView dependencies, and the `just verify` suite |
-| [Theming](02-development/04-theming.md) | The startup-validated contract of ~100 `--leaf-*` CSS custom properties, the theme sources, and how the CSS is compiled and validated |
 | [Releasing](02-development/03-releasing.md) | `just release <version>`: the version bump, the tag push, and the CI builds it triggers on Windows and macOS |
+| [Theming](02-development/04-theming.md) | The startup-validated contract of ~100 `--leaf-*` CSS custom properties, the theme sources, and how the CSS is compiled and validated |
 
 ## Shared reference
 
-- [Glossary](GLOSSARY.md) — one shared glossary for all pages. Linking a term like `[minimap](GLOSSARY.md#minimap)` opens the entry in a bottom sheet over the current page instead of navigating away.
+| Page | What it covers |
+| --- | --- |
+| [Glossary](GLOSSARY.md) | Every word Leaftext uses for a part of itself, alphabetically — one entry per feature and subfeature |
+
+The glossary is not an ordinary page: every term in it is matched automatically wherever it appears across these docs, and clicking one opens that entry in a bottom sheet over the page you are reading rather than navigating away. Linking one by hand works too — `[minimap](GLOSSARY.md#minimap)`.
 
 ## How this folder ships
 
@@ -72,6 +94,10 @@ These pages are plain Markdown, but the folder is also a deployable site:
 | `docs.js` | Fills the sidebar navigation and renders the page chosen by the URL route |
 | `docs.css` | Docs-only chrome: the sidebar and the page pager |
 | `render-docs-check.mjs` | Headless smoke test — renders every `.md` file here with the site renderer and fails loudly on errors or empty output |
+
+### Page order and file names
+
+The sidebar is built from the real file tree, not from a hand-written list. A leading number orders a file or folder and is stripped from the label and the URL, so `01-features/07-editing.md` is shown as **Editing** and addressed as `#/features/editing`. Add a page and the nav follows; renumber one and its address does not change.
 
 Before shipping doc changes, run the check from the repo root:
 

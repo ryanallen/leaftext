@@ -354,7 +354,7 @@ function graphBoundsInView(scene, minX, minY, maxX, maxY) {
 // stops at 4x rather than filling the screen with two dots.
 //
 // `follow` is the settling case: it moves only when the layout has left the frame.
-// A force layout breathes, and refitting on every tick of that put the pumping on
+// A force layout breathes, and refitting on every tick of that puts the pumping on
 // screen. Following what escapes and leaving the rest to the fit at `end` keeps
 // the same guarantee — nothing off screen — without the ride.
 function fitGraphToView(scene, follow) {
@@ -454,8 +454,9 @@ function graphSetActive(path, focus, forceRefresh) {
   const seedChanged =
     (graphScope === 'small' || !activeVaultId) &&
     graphScope + '|' + graphSeeds().join('\n') !== graphSeedKey;
-  // No scene, or the document's node isn't in it (a new/re-indexed file), or an
-  // explicit resync: fetch a fresh slice and fly to the node once it builds.
+  // No scene, or the document's node isn't in it (a file added since the scene was
+  // built), or an explicit resync: fetch a fresh slice and fly to the node once it
+  // builds.
   const staleForActive =
     focus && !!graphActivePath && (!graphScene || !graphScene.nodeByPath.has(graphActivePath));
   if (forceRefresh || seedChanged || staleForActive) {

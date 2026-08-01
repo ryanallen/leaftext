@@ -141,7 +141,7 @@ function blockGutterHoldsFocus(node) {
 
 // True while a block holds the caret: it keeps the controls when the pointer leaves,
 // and no other gap is offered a click-to-insert line. Hover still moves the gutter
-// between blocks — freezing it meant an open document could not be reordered.
+// between blocks — freezing it leaves an open document impossible to reorder.
 function blockGutterFollowsCaret() {
   return !!(blockCaretBlock && blockCaretBlock.isConnected);
 }
@@ -199,8 +199,8 @@ function sameBlockGap(a, b) {
 //
 // Under the last thing on the page there is no gap, only page, so rather than point
 // at the middle of the emptiness work out where the new line will really be: one
-// margin down, one line tall. Pointing at the emptiness is what landed the caret
-// somewhere else.
+// margin down, one line tall. Pointing at the emptiness lands the caret somewhere
+// else.
 function blockGapSpan(gap) {
   const { above, below } = gap;
   if (!above) {
@@ -325,8 +325,8 @@ function aimBlockGutter(el, fromMargin) {
 
 // Everything standing in the body, whether the document put it there or the page did.
 // The outline and the pager hold no source range, but they take up room — a gap
-// measured as though they were not there laid a click-to-insert line across the
-// outline, and the click that should have opened it started a new line instead.
+// measured as though they were not there lays a click-to-insert line across the
+// outline, so the click that should open it starts a new line instead.
 function blockGutterOccupants() {
   const body = app.querySelector('.document-body');
   if (!body) return [];
@@ -367,7 +367,7 @@ function aimBlockGutterAtGap(clientY, fromMargin) {
     const rect = occupants[i].getBoundingClientRect();
     // Level with something, even out in the margin: that is its line, not a gap.
     // Something the page drew has nothing to offer, and nothing may be laid over it —
-    // an overlay across the outline is what stopped the outline opening.
+    // an overlay across the outline stops the outline opening.
     if (clientY >= rect.top && clientY <= rect.bottom) {
       if (blockHasRange(occupants[i])) aimBlockGutter(occupants[i], fromMargin);
       else hideBlockGutter();
@@ -723,7 +723,7 @@ function startBlockGhost() {
 
 // Open the gap where the block would land: everything between its old slot and
 // the new one steps one slot the other way. A transform, so nothing reflows — a
-// page of blocks re-laid-out on every pointer move is the version that stutters.
+// page of blocks re-laid-out on every pointer move stutters.
 function slideBlocksAside() {
   const { others, from, to, span } = blockDrag;
   others.forEach((el, index) => {
@@ -787,8 +787,8 @@ function moveBlockDrag(event) {
 }
 
 // Save the line being typed in, on the way to moving a block. At the drop and not
-// the grab: an edit re-renders the page, and a re-render mid-drag rebuilt the gutter
-// out from under the block being carried, so typing then dragging did nothing.
+// the grab: an edit re-renders the page, and a re-render mid-drag rebuilds the gutter
+// out from under the block being carried, so typing then dragging does nothing.
 function commitBeforeBlockMove() {
   const active = document.activeElement;
   if (!active || !active.__editingActive || !active.dataset) return null;
@@ -893,9 +893,9 @@ function bindBlockControls() {
     if (el) aimBlockGutter(el);
     else aimBlockGutterAtGap(event.clientY);
   });
-  // The margin the controls live in counts as the page too. Reaching them meant
-  // hovering the words first and then sliding left, which is a trip out of the
-  // gutter and back for every block — the line the pointer is level with is
+  // The margin the controls live in counts as the page too. Without that, reaching
+  // them means hovering the words first and then sliding left — a trip out of the
+  // gutter and back for every block, when the line the pointer is level with is
   // answer enough.
   layout.addEventListener('pointermove', (event) => {
     if (blockDrag) return;

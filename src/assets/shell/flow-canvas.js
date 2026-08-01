@@ -487,8 +487,7 @@ function flowBudRelation(graph, id, side) {
 
 // ---- how big it is drawn ---------------------------------------------------
 
-// A big diagram in a small window is one you pan, not one you squint at. The
-// scroll box was always there; this is what lets you get the whole thing into it.
+// A big diagram in a small window is one you pan, not one you squint at.
 const FLOW_ZOOM_MIN = 0.25;
 const FLOW_ZOOM_MAX = 2.5;
 
@@ -954,7 +953,7 @@ function flowTargetAt(x, y) {
 
 // True only for the bare surface: the scroll box, the stage, the overlay, or
 // mermaid's SVG root. Anything deeper is part of the drawing, and treating it as
-// empty space is how a double-click on a box ended up adding another one.
+// empty space is how a double-click on a box adds another one.
 function flowPointIsBare(target) {
   if (!target || !target.closest) return false;
   if (target === flowCanvas) return true;
@@ -1052,7 +1051,7 @@ if (flowCanvas) {
     const edge = flowEdgeUnder(target);
     // Nothing here calls preventDefault: on a pointerdown it suppresses the
     // compatibility mouse events, dblclick included, so double-clicking a shape
-    // to rename it did nothing. Text selection is held off in the stylesheet.
+    // to rename it does nothing. Text selection is held off in the stylesheet.
     const grab = () => {
       try {
         flowCanvas.setPointerCapture(event.pointerId);
@@ -1245,8 +1244,8 @@ if (flowCanvas) {
       return;
     }
     // Only genuinely empty space adds a box. Anything inside mermaid's drawing
-    // is part of a box or a line, and a double-click there that quietly added a
-    // third box — because the ring over it had gone missing — is exactly the
+    // is part of a box or a line, and a double-click there that quietly adds a
+    // third box — because the ring over it has gone missing — is exactly the
     // kind of guess this should not make.
     if (!flowPointIsBare(event.target)) return;
     // Nothing stores where a box sits, so the point decides where it lands in
@@ -1416,8 +1415,7 @@ function flowBudAnchor(id, side) {
 function flowNewNodeShape(graph, fromId) {
   const node = flowFindNode(graph, fromId);
   if (!node) return FLOW_SHAPES[0].id;
-  // A decision's answers are steps, and so is whatever follows a terminal.
-  // Everything else carries on as itself.
+  // And so is whatever follows a terminal.
   if (node.shape === 'diam' || node.shape === 'stadium') return 'rect';
   return node.shape;
 }
@@ -1608,10 +1606,6 @@ function flowChoiceGroup(caption, options, current, chip, apply) {
   }
   return group;
 }
-
-// ---- the live preview ------------------------------------------------------
-
-
 
 // ---- the two ways in -------------------------------------------------------
 
