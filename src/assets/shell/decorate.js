@@ -481,6 +481,7 @@ function renderMermaidDiagrams() {
     if (cached) {
       diagram.innerHTML = cached;
       diagram.dataset.processed = 'true';
+      addMermaidEditButton(diagram);
       restored = true;
       return;
     }
@@ -541,7 +542,10 @@ function drawMermaidBatches(diagrams, generation) {
           for (const diagram of batch) {
             if (diagram.dataset.mermaidRender === 'failed' || diagram.__mermaidSource == null) continue;
             if (mermaidRenderCache.size >= MERMAID_CACHE_CAP) mermaidRenderCache.clear();
+            // Memo first, button second: the cache holds innerHTML, and a button
+            // baked into it would come back on every restore and stack up.
             mermaidRenderCache.set(mermaidCacheKey(diagram.__mermaidSource), diagram.innerHTML);
+            addMermaidEditButton(diagram);
           }
           // Each batch changed the block layout; drop the cached anchor list, and
           // let whatever else watches the page catch up before the next one.
@@ -555,6 +559,44 @@ function drawMermaidBatches(diagrams, generation) {
     .catch((error) => {
       console.error(error);
     });
+}
+
+// A drawn diagram gets a corner button that reopens it in the flowchart sheet.
+// A plain click still does what it always did — swap to the source in place —
+// so nothing is taken away and there is no surprise.
+function addMermaidEditButton(diagram) {
+  if (currentDocumentFormat !== 'markdown' || !readerEditingAllowed()) return;
+  if (!Number.isFinite(Number(diagram.dataset.srcStart)) || !Number.isFinite(Number(diagram.dataset.srcEnd))) return;
+  if (diagram.querySelector('.mermaid-edit')) return;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'mermaid-edit';
+  button.title = 'Open in the flowchart editor';
+  button.setAttribute('aria-label', 'Open in the flowchart editor');
+  button.innerHTML = `{{WORKFLOW_ICON_SVG}}`;
+  diagram.appendChild(button);
+}
+
+// Delegated, not per-button: a diagram restored from its own rendered HTML (an
+// abandoned source edit does exactly that) brings the markup back without the
+// listeners. The capture pass is what keeps the press off the block underneath,
+// whose own pointerdown would swap the diagram to source before the click lands.
+if (app) {
+  app.addEventListener(
+    'pointerdown',
+    (event) => {
+      const button = event.target && event.target.closest ? event.target.closest('.mermaid-edit') : null;
+      if (button) event.stopPropagation();
+    },
+    true,
+  );
+  app.addEventListener('click', (event) => {
+    const button = event.target && event.target.closest ? event.target.closest('.mermaid-edit') : null;
+    if (!button) return;
+    event.preventDefault();
+    const diagram = button.closest('pre.mermaid');
+    if (diagram) openMermaidBlockSheet(diagram);
+  });
 }
 
 // Draw the diagrams again in the theme that just arrived: an SVG holds its colors

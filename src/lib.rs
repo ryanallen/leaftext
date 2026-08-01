@@ -124,6 +124,12 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/shell/selection-toolbar.js"),
     include_str!("assets/shell/render-document.js"),
     include_str!("assets/shell/glossary.js"),
+    // The flowchart sheet, in dependency order: the grammar, then where the
+    // boxes go, then the sheet that asks both. decorate.js follows, because the
+    // button it puts on a rendered diagram opens this.
+    include_str!("assets/shell/flow-model.js"),
+    include_str!("assets/shell/flow-layout.js"),
+    include_str!("assets/shell/flow-canvas.js"),
     include_str!("assets/shell/decorate.js"),
     include_str!("assets/shell/minimap.js"),
 ];
@@ -807,6 +813,7 @@ const APP_SHELL_ICONS: &[(&str, &str)] = &[
     ("{{IMAGE_ICON_SVG}}", IMAGE_ICON_SVG),
     ("{{DIVIDER_ICON_SVG}}", DIVIDER_ICON_SVG),
     ("{{COMMENT_ICON_SVG}}", COMMENT_ICON_SVG),
+    ("{{WORKFLOW_ICON_SVG}}", WORKFLOW_ICON_SVG),
     ("{{BOLD_ICON_SVG}}", BOLD_ICON_SVG),
     ("{{ITALIC_ICON_SVG}}", ITALIC_ICON_SVG),
     ("{{STRIKETHROUGH_ICON_SVG}}", STRIKETHROUGH_ICON_SVG),

@@ -70,6 +70,10 @@ pub(crate) const IMAGE_ICON_SVG: &str = include_str!("assets/photo.svg");
 pub(crate) const DIVIDER_ICON_SVG: &str = include_str!("assets/minus.svg");
 pub(crate) const COMMENT_ICON_SVG: &str = include_str!("assets/message-square.svg");
 
+/// A flowchart, in the insert row and on a rendered diagram's corner button.
+/// One glyph for both, because both open the same sheet.
+pub(crate) const WORKFLOW_ICON_SVG: &str = include_str!("assets/workflow.svg");
+
 /// The selection toolbar's formats. Letterforms for the ones that have one, so
 /// the bar reads the way every other editor's does; the block buttons reuse the
 /// insert row's heading and quote glyphs, because they make the same two things.

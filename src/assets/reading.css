@@ -4813,6 +4813,592 @@ body.is-block-dragging .document-body [data-src-start] {
   color: var(--link-hover);
   text-decoration: underline;
 }
+/* ---- The flowchart sheet ------------------------------------------------
+   Full screen, unlike the other two sheets: it is an editor, not something to
+   glance at, and it has two panes to fit. No grab bar for the same reason — a
+   sheet you can flick away is wrong over unsaved work. */
+.flow-sheet-backdrop[hidden],
+.flow-sheet[hidden] {
+  display: none;
+}
+.flow-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 42;
+}
+.flow-sheet-backdrop.open {
+  opacity: 1;
+}
+.flow-sheet {
+  position: fixed;
+  inset: 16px;
+  z-index: 43;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-elevated);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--leaf-radius-xl);
+  box-shadow: var(--leaf-shadow-sheet);
+  font-family: var(--app-font);
+  transform: translateY(12px);
+  opacity: 0;
+  transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.22s ease;
+}
+.flow-sheet.open {
+  transform: none;
+  opacity: 1;
+}
+.flow-sheet-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.flow-sheet-title {
+  font-size: 14px;
+  font-weight: 800;
+}
+.flow-sheet-actions {
+  display: flex;
+  gap: 8px;
+}
+.flow-sheet-cancel,
+.flow-sheet-save {
+  padding: 7px 14px;
+  border: 1px solid var(--settings-control-border);
+  border-radius: var(--leaf-radius-md);
+  background: var(--settings-control-background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.flow-sheet-save {
+  border-color: transparent;
+  background: var(--app-action-background);
+  color: var(--app-action-foreground);
+  font-weight: 700;
+}
+.flow-sheet-cancel:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+}
+.flow-sheet-save:hover {
+  background: var(--app-action-hover-background);
+}
+.flow-sheet-panes {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+}
+.flow-pane {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.flow-pane-code {
+  border-left: 1px solid var(--border);
+}
+.flow-toolbar {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+/* Fourteen shapes: they wrap rather than scroll, so none of them hides. */
+.flow-toolbar-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.flow-toolbar-view {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.flow-add,
+.flow-choice {
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  border: 1px solid var(--settings-control-border);
+  border-radius: var(--leaf-radius-md);
+  background: var(--settings-control-background);
+  color: var(--foreground);
+  cursor: pointer;
+}
+.flow-add:hover:not(:disabled),
+.flow-choice:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+}
+.flow-add:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+/* The little drawing on a palette button: the same outline the canvas draws,
+   which is why a new shape needs no icon of its own. */
+.flow-chip {
+  display: block;
+  width: 42px;
+  height: 26px;
+}
+.flow-chip .flow-node-shape {
+  stroke-width: 1.2;
+}
+.flow-chip-line {
+  stroke: var(--foreground);
+  stroke-width: 1.6;
+  fill: none;
+}
+.flow-chip-line.is-dotted {
+  stroke-dasharray: 4 3;
+}
+.flow-chip-line.is-thick {
+  stroke-width: 3.2;
+}
+.flow-chip .flow-end-mark {
+  fill: var(--foreground);
+  stroke: none;
+}
+.flow-chip .flow-end-mark.is-open {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-width: 1.6;
+}
+.flow-zoom {
+  display: flex;
+}
+.flow-zoom button {
+  min-width: 28px;
+  padding: 5px 7px;
+  border: 1px solid var(--settings-control-border);
+  border-radius: 0;
+  background: var(--settings-control-background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.flow-zoom button:first-child {
+  border-radius: var(--leaf-radius-md) 0 0 var(--leaf-radius-md);
+}
+.flow-zoom button:last-child {
+  border-radius: 0 var(--leaf-radius-md) var(--leaf-radius-md) 0;
+}
+.flow-zoom button + button {
+  border-left: 0;
+}
+.flow-zoom button:hover {
+  background: var(--surface-muted);
+}
+.flow-toolbar-direction {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--app-muted-foreground);
+  font-size: 12px;
+}
+.flow-toolbar-direction select {
+  padding: 5px 8px;
+  border: 1px solid var(--settings-control-border);
+  border-radius: var(--leaf-radius-md);
+  background: var(--settings-control-background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 12px;
+}
+/* What the thing under the pointer is for. Fourteen shapes is more than anyone
+   knows by outline, so hovering one says what it means; otherwise it carries the
+   gestures the canvas answers to. */
+.flow-hint {
+  flex: none;
+  margin: 0;
+  padding: 6px 14px 8px;
+  min-height: 1.4em;
+  color: var(--app-muted-foreground);
+  font-size: 11.5px;
+}
+/* The drawing surface. It scrolls rather than shrinks: a big diagram in a small
+   window is a diagram you pan, not one you squint at. */
+.flow-canvas {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+  background: var(--surface);
+  outline: none;
+}
+.flow-canvas.is-disabled {
+  background: var(--surface-muted);
+}
+.flow-canvas.is-connecting {
+  cursor: crosshair;
+}
+.flow-canvas.is-dragging,
+.flow-canvas.is-panning {
+  cursor: grabbing;
+}
+/* The diagram's own box at the current zoom. It exists so the rename field can
+   be laid over the shape it belongs to and scroll with it. */
+.flow-stage {
+  position: relative;
+}
+.flow-svg {
+  display: block;
+  overflow: visible;
+}
+.flow-node {
+  cursor: grab;
+}
+/* The box travels with the pointer. Nothing stores where you put it, so it
+   settles back into the layout on release — but a box that would not move at
+   all reads as a broken one. It stops answering the pointer while it travels,
+   or it would be the box every drop lands on. */
+.flow-node.is-dragging {
+  pointer-events: none;
+  opacity: 0.75;
+}
+/* Where the drop would land. */
+.flow-node.is-drop .flow-node-shape,
+.flow-node.is-drop .flow-node-mark {
+  stroke: var(--link);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 4;
+}
+/* The line that follows the pointer while a connection is drawn or moved. */
+.flow-rubber {
+  stroke: var(--link);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  pointer-events: none;
+}
+/* A selected line's two ends: grab either to point it somewhere else. */
+.flow-edge-end {
+  fill: var(--link);
+  stroke: var(--surface);
+  stroke-width: 2;
+  cursor: crosshair;
+}
+/* Right-click anything on the canvas. The gestures are quicker once they are
+   known; this is where they are named, and where the rarer ones live at all. */
+.flow-menu {
+  position: absolute;
+  z-index: 4;
+  min-width: 180px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--leaf-radius-lg);
+  background: var(--surface-elevated);
+  box-shadow: var(--leaf-shadow-tooltip);
+  font-size: 12.5px;
+}
+/* Adding on empty space offers all fourteen, so that list gets two columns and
+   its own scroll rather than a menu taller than the window. */
+.flow-menu.is-shapes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.flow-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: var(--leaf-radius-md);
+  background: none;
+  color: var(--foreground);
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.flow-menu-item:hover {
+  background: var(--surface-muted);
+}
+.flow-menu-item .flow-chip {
+  flex: none;
+  width: 30px;
+  height: 19px;
+}
+/* Renaming happens over the thing being renamed, not in a strip at the bottom. */
+.flow-label-box {
+  position: absolute;
+  z-index: 2;
+  padding: 0 6px;
+  border: 2px solid var(--link);
+  border-radius: var(--leaf-radius-sm);
+  background: var(--surface-elevated);
+  color: var(--foreground);
+  font-family: var(--app-font);
+  text-align: center;
+  outline: none;
+}
+.flow-node-shape {
+  fill: var(--surface-elevated);
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+/* The parts of a shape that are ink only: a cylinder's rim, a double circle's
+   inner ring, the strokes of a cross. */
+.flow-node-shape.is-open,
+.flow-node-mark {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+.flow-node.is-selected .flow-node-shape,
+.flow-node.is-selected .flow-node-mark {
+  stroke: var(--link);
+  stroke-width: 2.5;
+}
+.flow-node-label {
+  fill: var(--foreground);
+  font-family: var(--app-font);
+  font-size: 13px;
+  pointer-events: none;
+}
+/* The two + handles on a box: click one for the next box on that side, or drag
+   it onto a box that already exists to join the two. They appear on the box you
+   are pointing at, so a page of boxes is not a page of buttons. */
+.flow-bud {
+  opacity: 0;
+  cursor: crosshair;
+  transition: opacity 0.1s ease;
+}
+.flow-node:hover .flow-bud,
+.flow-node.is-selected .flow-bud {
+  opacity: 1;
+}
+.flow-bud-disc {
+  fill: var(--link);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+.flow-bud-plus {
+  stroke: var(--surface);
+  stroke-width: 2;
+  stroke-linecap: round;
+  fill: none;
+}
+.flow-bud:hover .flow-bud-disc {
+  fill: var(--link-hover);
+}
+/* What sits at a line's tip. Filled for an arrow or a circle, stroked for a
+   cross — and a second copy in the selected color, because a marker draws in its
+   own context and never sees the line that pointed at it. */
+.flow-end-mark {
+  fill: var(--border-strong);
+  stroke: none;
+}
+.flow-end-mark.is-open {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1.6;
+}
+.flow-end-mark.is-selected {
+  fill: var(--link);
+}
+.flow-end-mark.is-open.is-selected {
+  fill: none;
+  stroke: var(--link);
+}
+.flow-edge {
+  color: var(--border-strong);
+  cursor: pointer;
+}
+.flow-edge.is-selected {
+  color: var(--link);
+}
+.flow-edge-line {
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+.flow-edge.is-dotted .flow-edge-line {
+  stroke-dasharray: 6 5;
+}
+.flow-edge.is-thick .flow-edge-line {
+  stroke-width: 3.4;
+}
+.flow-edge.is-selected .flow-edge-line {
+  stroke-width: 2.4;
+}
+.flow-edge.is-thick.is-selected .flow-edge-line {
+  stroke-width: 4.2;
+}
+/* Dropping a box on a line puts the box in that line. */
+.flow-edge.is-drop .flow-edge-line {
+  stroke: var(--link);
+  stroke-width: 4;
+  stroke-dasharray: 6 4;
+}
+/* A line is a couple of pixels of ink; this is what a click lands on. */
+.flow-edge-hit {
+  stroke: transparent;
+  stroke-width: 14;
+}
+.flow-edge-label {
+  fill: var(--app-muted-foreground);
+  font-family: var(--app-font);
+  font-size: 11px;
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 4;
+  pointer-events: none;
+}
+.flow-notice {
+  flex: none;
+  margin: 0;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  color: var(--app-muted-foreground);
+  font-size: 12px;
+}
+.flow-inspector[hidden] {
+  display: none;
+}
+.flow-inspector {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+.flow-field {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--settings-control-border);
+  border-radius: var(--leaf-radius-md);
+  background: var(--settings-control-background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 13px;
+}
+.flow-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.flow-choice.is-current {
+  border-color: var(--link);
+  box-shadow: inset 0 0 0 1px var(--link);
+}
+.flow-delete {
+  padding: 6px 10px;
+  border: 1px solid var(--settings-control-border);
+  border-radius: var(--leaf-radius-md);
+  background: var(--settings-control-background);
+  color: var(--danger);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.flow-code {
+  flex: 1 1 45%;
+  min-height: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--syntax-background);
+  color: var(--syntax-foreground);
+  font-family: var(--code-font);
+  font-size: 12.5px;
+  line-height: 1.55;
+  resize: none;
+  outline: none;
+  white-space: pre;
+  overflow: auto;
+}
+.flow-preview {
+  flex: 1 1 55%;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 12px;
+  background: var(--surface);
+}
+.flow-preview svg {
+  max-width: 100%;
+}
+/* A document marks a failed diagram and moves on; an editor has to say what is
+   wrong, so mermaid's own message is printed here. */
+.flow-preview-error {
+  flex: none;
+  margin: 0;
+  padding: 10px 14px;
+  border-top: 1px solid var(--app-error-border);
+  color: var(--app-error-foreground);
+  font-family: var(--code-font);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+@media (max-width: 860px) {
+  .flow-sheet-panes {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .flow-pane-code {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+}
+/* The corner button that reopens a drawn diagram in the sheet. Positioned on
+   the block itself, and shown on hover so it is absent from a page being read. */
+.document-body pre.mermaid {
+  position: relative;
+}
+.mermaid-edit {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--leaf-radius-md);
+  background: var(--surface-elevated);
+  color: var(--app-muted-foreground);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+.document-body pre.mermaid:hover .mermaid-edit,
+.mermaid-edit:focus-visible {
+  opacity: 1;
+}
+.mermaid-edit:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--foreground);
+}
+.mermaid-edit svg {
+  width: 16px;
+  height: 16px;
+}
 @media (min-width: 760px) {
   .glossary-sheet,
   .theme-sheet {

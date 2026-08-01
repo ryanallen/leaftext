@@ -222,6 +222,42 @@
     <a href="#" id="themeSheetBrowse" class="theme-sheet-browse">Add your own theme on GitHub →</a>
   </div>
 </aside>
+<div id="flowBackdrop" class="flow-sheet-backdrop" hidden></div>
+<!-- The flowchart sheet: a canvas and a code pane, peers over one graph. Both
+     panes are built by flow-canvas.js; only the frame is declared here. -->
+<aside id="flowSheet" class="flow-sheet" role="dialog" aria-modal="true" aria-label="Flowchart" hidden>
+  <div class="flow-sheet-head">
+    <span class="flow-sheet-title" id="flowSheetTitle">Flowchart</span>
+    <div class="flow-sheet-actions">
+      <button type="button" id="flowSheetCancel" class="flow-sheet-cancel">Cancel</button>
+      <button type="button" id="flowSheetSave" class="flow-sheet-save">Save</button>
+    </div>
+  </div>
+  <div class="flow-sheet-panes">
+    <section class="flow-pane flow-pane-canvas" aria-label="Diagram">
+      <div class="flow-toolbar">
+        <div class="flow-toolbar-add" id="flowAddRow" role="group" aria-label="Add a box"></div>
+        <div class="flow-toolbar-view">
+          <label class="flow-toolbar-direction">Flow <select id="flowDirection"></select></label>
+          <div class="flow-zoom" role="group" aria-label="Zoom">
+            <button type="button" id="flowZoomOut" aria-label="Zoom out">&minus;</button>
+            <button type="button" id="flowZoomFit" aria-label="Fit the diagram">Fit</button>
+            <button type="button" id="flowZoomIn" aria-label="Zoom in">+</button>
+          </div>
+        </div>
+      </div>
+      <p class="flow-hint" id="flowHint"></p>
+      <div class="flow-canvas" id="flowCanvas" tabindex="0"></div>
+      <p class="flow-notice" id="flowNotice" hidden></p>
+      <div class="flow-inspector" id="flowInspector" hidden></div>
+    </section>
+    <section class="flow-pane flow-pane-code" aria-label="Mermaid text">
+      <textarea id="flowCode" class="flow-code" spellcheck="false" aria-label="Mermaid text"></textarea>
+      <div class="flow-preview" id="flowPreview"></div>
+      <p class="flow-preview-error" id="flowPreviewError" hidden></p>
+    </section>
+  </div>
+</aside>
 <script>
 {{APP_SCRIPT}}
 </script>

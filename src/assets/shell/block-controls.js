@@ -49,6 +49,9 @@ const MARKDOWN_INSERTS = [
   // No source of its own: an image is a file or an address, so the row asks
   // which before it writes anything. See openBlockImageBox.
   { id: 'image', label: 'Image', icon: `{{IMAGE_ICON_SVG}}`, ask: 'image' },
+  // Nothing to write until a diagram has been drawn: the sheet opens, and Save
+  // hands back one mermaid block. See openBlockFlowSheet.
+  { id: 'flow', label: 'Flowchart', icon: `{{WORKFLOW_ICON_SVG}}`, ask: 'flow' },
   { id: 'divider', label: 'Divider', icon: `{{DIVIDER_ICON_SVG}}`, text: '---' },
 ];
 
@@ -490,7 +493,11 @@ function expandBlockInsertRow() {
     button.setAttribute('aria-label', option.label);
     button.innerHTML = option.icon;
     const write = (chosen) => (gap ? runGapInsert(gap, chosen) : runBlockInsert(target, chosen));
-    button.addEventListener('click', () => (option.ask === 'image' ? openBlockImageBox(write) : write(option)));
+    button.addEventListener('click', () => {
+      if (option.ask === 'image') openBlockImageBox(write);
+      else if (option.ask === 'flow') openBlockFlowSheet(write);
+      else write(option);
+    });
     blockGutterRow.appendChild(button);
   }
   blockGutterRow.hidden = false;

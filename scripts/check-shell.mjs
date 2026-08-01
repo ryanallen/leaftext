@@ -452,6 +452,246 @@ if (booted) {
     }
   });
 
+  // The flowchart sheet reads and writes mermaid, and Save splices what it wrote
+  // straight into the document. Everything dangerous is parseFlow refusing
+  // correctly, so both halves of that are held here: what we write must come
+  // back unchanged, and what we cannot model must come back null — never a
+  // partial graph the canvas could then save over.
+  check('a flowchart we wrote survives the round trip', () => {
+    const { parseFlow, renderFlow } = booted;
+    const same = (text) => {
+      const graph = parseFlow(text);
+      if (!graph) throw new Error(`refused text we wrote: ${JSON.stringify(text)}`);
+      const back = renderFlow(graph);
+      if (back !== text) {
+        throw new Error(`${JSON.stringify(text)} -> ${JSON.stringify(back)}`);
+      }
+    };
+
+    same('flowchart TD\n    A["Start"]');
+    same('flowchart LR\n    A["Start"]\n    B{"Choose"}\n    A --> B');
+    same('flowchart TD\n    A("Go")\n    B["Stop"]\n    A -->|"yes"| B');
+    same('flowchart TD\n    A["a"]\n    B["b"]\n    A --- B'); // the open line
+    same('flowchart BT\n    A["a"]\n    B["b"]\n    C["c"]\n    A --> B\n    B --> C');
+    // Every shape in the catalog, written and read back as itself. The pairs
+    // that share an opener (`[/…/]` against `[/…\\]`) are what this is for.
+    same(
+      'flowchart TD\n' +
+        [
+          'a1["rect"]',
+          'a2("rounded")',
+          'a3{"diamond"}',
+          'a4(["stadium"])',
+          'a5[["subroutine"]]',
+          'a6[("cylinder")]',
+          'a7(("circle"))',
+          'a8((("double")))',
+          'a9{{"hexagon"}}',
+          'b1>"flag"]',
+          'b2[/"lean right"/]',
+          'b3[\\"lean left"\\]',
+          'b4[/"trapezoid"\\]',
+          'b5[\\"trapezoid alt"/]',
+        ]
+          .map((line) => '    ' + line)
+          .join('\n'),
+    );
+    // And every connector: three line styles against seven pairs of ends.
+    same(
+      'flowchart LR\n    A["a"]\n    B["b"]\n' +
+        [
+          'A --> B',
+          'A --- B',
+          'A --o B',
+          'A --x B',
+          'A <--> B',
+          'A o--o B',
+          'A x--x B',
+          'A -.-> B',
+          'A -.- B',
+          'A -.-o B',
+          'A -.-x B',
+          'A <-.-> B',
+          'A o-.-o B',
+          'A x-.-x B',
+          'A ==> B',
+          'A === B',
+          'A ==o B',
+          'A ==x B',
+          'A <==> B',
+          'A o==o B',
+          'A x==x B',
+        ]
+          .map((line) => '    ' + line)
+          .join('\n'),
+    );
+    same('flowchart TD\n    A["a"]\n    B["b"]\n    A -.->|"maybe"| B');
+    same('flowchart TD\n    A["a"]\n    B["b"]\n    A ==>|"definitely"| B');
+    same('flowchart TD\n    A["say #quot;hi#quot;"]'); // a quote inside a label
+    same('flowchart TD\n    A["café 😀"]'); // multi-byte, where the offsets matter
+    same('flowchart TD\n    A["one<br/>two"]'); // a line break in a label
+    same('flowchart TD\n    A["a"]\n    A --> A'); // a node pointing at itself
+    // Front matter, directives and comments are kept exactly, because the canvas
+    // models none of them and a save must not be where they go missing.
+    same('---\ntitle: Plan\n---\nflowchart TD\n    A["a"]');
+    same('%%{init: {"flowchart": {"curve": "linear"}}}%%\nflowchart TD\n    A["a"]');
+    same('flowchart TD\n    %% a note\n    accTitle: The plan\n    A["a"]');
+  });
+
+  check('a flowchart we cannot model is refused whole', () => {
+    const { parseFlow } = booted;
+    const refused = (text, why) => {
+      const graph = parseFlow(text);
+      if (graph) throw new Error(`${why}: parsed ${JSON.stringify(text)} instead of refusing`);
+    };
+
+    // Shapes past phase 2, and brackets that are a syntax error either way.
+    refused('flowchart TD\n    A@{ shape: bolt }', 'typed shape');
+    refused('flowchart TD\n    A["`**bold**`"]', 'markdown label');
+    refused('flowchart TD\n    A[/x]', 'an opener with the wrong closer');
+    refused('flowchart TD\n    A[[x]', 'a subroutine missing half its closer');
+    refused('flowchart TD\n    A((x)', 'a circle missing half its closer');
+    // Edges past phase 2.
+    refused('flowchart TD\n    A ~~~ B', 'invisible');
+    refused('flowchart TD\n    A ----> B', 'rank hint');
+    refused('flowchart TD\n    A -.....-> B', 'a long dotted edge');
+    refused('flowchart TD\n    A e1@--> B', 'a named edge');
+    // Everything that changes what the diagram means.
+    refused('flowchart TD\n    subgraph one\n    A\n    end', 'subgraph');
+    refused('flowchart TD\n    A:::warn', 'class shorthand');
+    refused('flowchart TD\n    classDef warn fill:#f9f', 'classDef');
+    refused('flowchart TD\n    style A fill:#f9f', 'style');
+    refused('flowchart TD\n    linkStyle 0 stroke:#f00', 'linkStyle');
+    refused('flowchart TD\n    click A "https://example.com"', 'click');
+    refused('flowchart TD\n    A["x"]; B["y"]', 'two statements on a line');
+    // And things that are not a flowchart at all.
+    refused('sequenceDiagram\n    a ->> b: hi', 'another diagram type');
+    refused('flowchart TD', 'a header with nothing under it');
+    refused('---\ntitle: Plan\nflowchart TD\n    A', 'unterminated front matter');
+  });
+
+  // Deleting the last box leaves a diagram that is legal to be halfway through
+  // and illegal to write down — mermaid cannot draw an empty flowchart. That is
+  // the reason the canvas never re-reads its own output: round-tripping through
+  // the text here would hand back null and leave the canvas with no graph at
+  // all, which is what used to make the last delete unrecoverable.
+  check('an emptied diagram is still a graph the canvas can add to', () => {
+    const { parseFlow, renderFlow, flowDeleteNode, flowAddNode, flowMoveNode } = booted;
+    const graph = parseFlow('flowchart TD\n    n1(["Start"])');
+    if (!graph) throw new Error('the starter diagram did not parse');
+    flowDeleteNode(graph, 'n1');
+    if (graph.nodes.length) throw new Error('the box was not removed');
+    const bare = renderFlow(graph);
+    if (bare !== 'flowchart TD') throw new Error(`emptied to ${JSON.stringify(bare)}`);
+    if (parseFlow(bare) !== null) throw new Error('a header with nothing under it should be refused');
+    flowAddNode(graph, 'rect', 'Next');
+    const back = renderFlow(graph);
+    if (back !== 'flowchart TD\n    n1["Next"]') throw new Error(`came back as ${JSON.stringify(back)}`);
+
+    // Dragging a box among its neighbors is a reorder of the declarations, and
+    // that order is what the layout reads. It has to go the way the pointer did.
+    const three = parseFlow('flowchart TD\n    A["a"]\n    B["b"]\n    C["c"]');
+    const order = () => three.nodes.map((node) => node.id).join('');
+    flowMoveNode(three, 'A', null); // dropped past the end
+    if (order() !== 'BCA') throw new Error(`moving A to the end gave ${order()}`);
+    flowMoveNode(three, 'A', 'B'); // dropped on B, from below
+    if (order() !== 'ABC') throw new Error(`moving A before B gave ${order()}`);
+  });
+
+  // The gestures that rewire a chain rather than just add to it. Each one has to
+  // leave a diagram that still says something, because the reader is dragging a
+  // box around, not editing a graph on purpose.
+  check('rewiring a chain leaves it connected', () => {
+    const { parseFlow, renderFlow, flowSpliceIntoEdge, flowExtractNode, flowFlipEdge, flowDuplicateNode } = booted;
+    const chain = () =>
+      parseFlow('flowchart TD\n    A["a"]\n    B["b"]\n    C["c"]\n    X["x"]\n    A --> B\n    B --> C');
+    const edges = (graph) => graph.edges.map((edge) => edge.fromNode + '>' + edge.toNode).join(' ');
+
+    // A loose box dropped on a line goes into that line.
+    const into = chain();
+    flowSpliceIntoEdge(into, 'X', into.edges[0].id);
+    if (edges(into) !== 'A>X X>B B>C') throw new Error(`splice gave ${edges(into)}`);
+
+    // A box taken out of the middle closes the gap behind it, or the chain it
+    // was in silently comes apart.
+    const out = chain();
+    flowExtractNode(out, 'B');
+    if (edges(out) !== 'A>C') throw new Error(`extract gave ${edges(out)}`);
+
+    // Out of one chain and into another is those two, in that order.
+    const moved = chain();
+    flowExtractNode(moved, 'B');
+    flowSpliceIntoEdge(moved, 'B', moved.edges[0].id);
+    if (edges(moved) !== 'A>B B>C') throw new Error(`move gave ${edges(moved)}`);
+
+    // Flipping keeps the line's look and only turns it around.
+    const flipped = chain();
+    flipped.edges[0].label = 'yes';
+    flipped.edges[0].line = 'dotted';
+    flowFlipEdge(flipped, flipped.edges[0].id);
+    if (edges(flipped) !== 'B>A B>C') throw new Error(`flip gave ${edges(flipped)}`);
+    if (flipped.edges[0].label !== 'yes' || flipped.edges[0].line !== 'dotted') {
+      throw new Error('flipping a line changed how it looks');
+    }
+
+    // A duplicate is a new box beside the original, joined to nothing.
+    const copied = chain();
+    const copy = flowDuplicateNode(copied, 'B');
+    if (!copy || copy.id === 'B') throw new Error('the copy reused the original id');
+    if (edges(copied) !== 'A>B B>C') throw new Error(`duplicating added lines: ${edges(copied)}`);
+    if (renderFlow(copied).split('\n')[3] !== '    ' + copy.id + '["b"]') {
+      throw new Error('the copy did not land beside the original');
+    }
+  });
+
+  check('a flowchart written by hand is read the way mermaid reads it', () => {
+    const { parseFlow, renderFlow } = booted;
+    const becomes = (text, want) => {
+      const graph = parseFlow(text);
+      if (!graph) throw new Error(`refused ${JSON.stringify(text)}`);
+      const back = renderFlow(graph);
+      if (back !== want) throw new Error(`${JSON.stringify(text)} -> ${JSON.stringify(back)}`);
+      // And what we wrote is a fixed point, or Save would keep rewriting the file.
+      if (renderFlow(parseFlow(back)) !== back) throw new Error(`${JSON.stringify(back)} is not stable`);
+    };
+
+    // The older keyword, no direction, bare ids, an unquoted label, a chain, and
+    // the between-the-dashes label form — all normalized on the way out.
+    becomes('graph\n  A --> B', 'flowchart TD\n    A["A"]\n    B["B"]\n    A --> B');
+    becomes('flowchart LR\n  A[Do it] --> B', 'flowchart LR\n    A["Do it"]\n    B["B"]\n    A --> B');
+    becomes(
+      'flowchart TD\n  A --> B --> C',
+      'flowchart TD\n    A["A"]\n    B["B"]\n    C["C"]\n    A --> B\n    B --> C',
+    );
+    becomes(
+      'flowchart TD\n  A -- yes --> B',
+      'flowchart TD\n    A["A"]\n    B["B"]\n    A -->|"yes"| B',
+    );
+    // The dotted and thick spellings of the same thing, which mermaid writes
+    // with different dashes around the label.
+    becomes(
+      'flowchart TD\n  A -. maybe .-> B',
+      'flowchart TD\n    A["A"]\n    B["B"]\n    A -.->|"maybe"| B',
+    );
+    becomes(
+      'flowchart TD\n  A == surely ==> B',
+      'flowchart TD\n    A["A"]\n    B["B"]\n    A ==>|"surely"| B',
+    );
+    becomes(
+      'flowchart TD\n  A -. no .- B',
+      'flowchart TD\n    A["A"]\n    B["B"]\n    A -.-|"no"| B',
+    );
+    // The `&` shorthand is read as the edges it means — every pairing of the
+    // group before the arrow with the group after it.
+    becomes(
+      'flowchart LR\n  A & B --> C & D',
+      'flowchart LR\n' +
+        ['A["A"]', 'B["B"]', 'C["C"]', 'D["D"]', 'A --> C', 'A --> D', 'B --> C', 'B --> D']
+          .map((line) => '    ' + line)
+          .join('\n'),
+    );
+  });
+
   // Diagrams are drawn in the theme's own colors, read off :root at render time.
   // A token that does not exist reads as an empty string, mermaid falls back to
   // its own palette, and the diagram quietly stops matching the page — so every
