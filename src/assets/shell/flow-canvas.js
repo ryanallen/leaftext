@@ -845,6 +845,9 @@ if (flowCanvas) {
     const bud = near('.flow-bud');
     const node = near('.flow-node');
     const edge = near('.flow-edge');
+    // Nothing here calls preventDefault: on a pointerdown it suppresses the
+    // compatibility mouse events, dblclick included, so double-clicking a shape
+    // to rename it did nothing. Text selection is held off in the stylesheet.
     const grab = () => {
       try {
         flowCanvas.setPointerCapture(event.pointerId);
@@ -854,20 +857,17 @@ if (flowCanvas) {
     };
     closeFlowLabelBox(true);
     if (endpoint) {
-      event.preventDefault();
       flowDrag = { kind: 'retarget', edge: endpoint.dataset.edge, end: endpoint.dataset.endpoint, moved: false };
       grab();
       return;
     }
     if (bud) {
-      event.preventDefault();
       selectFlow('node', bud.dataset.node);
       flowDrag = { kind: 'bud', from: bud.dataset.node, side: bud.dataset.bud, moved: false };
       grab();
       return;
     }
     if (node) {
-      event.preventDefault();
       selectFlow('node', node.dataset.node);
       flowDrag = {
         kind: 'reorder',
@@ -880,7 +880,6 @@ if (flowCanvas) {
       return;
     }
     if (edge) {
-      event.preventDefault();
       selectFlow('edge', edge.dataset.edge);
       return;
     }

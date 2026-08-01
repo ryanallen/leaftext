@@ -5053,6 +5053,10 @@ body.is-block-dragging .document-body [data-src-start] {
   padding: 12px;
   background: var(--surface);
   outline: none;
+  /* Stops a drag sweeping a selection across the diagram. A preventDefault on
+     the pointerdown would too, but it also eats dblclick. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 .flow-canvas.is-disabled {
   background: var(--surface-muted);
@@ -5169,6 +5173,9 @@ body.is-block-dragging .document-body [data-src-start] {
   font-family: var(--app-font);
   text-align: center;
   outline: none;
+  /* The canvas around it turns selection off; this is the one place you type. */
+  user-select: text;
+  -webkit-user-select: text;
 }
 .flow-node-shape {
   fill: var(--surface-elevated);

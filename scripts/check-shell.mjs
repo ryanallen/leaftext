@@ -778,6 +778,30 @@ if (booted) {
     );
   });
 
+  // Double-clicking a shape renames it, and that only works because nothing in
+  // the canvas's pointerdown calls preventDefault: on a pointerdown it suppresses
+  // the compatibility mouse events, and dblclick is one of them. The failure is
+  // silent — every drag still works, the double-click just does nothing — so it
+  // is held here rather than left to be rediscovered.
+  check('the canvas keeps the double-click that renames a box', () => {
+    const fragment = readFileSync(join(root, 'src/assets/shell/flow-canvas.js'), 'utf8');
+    const opened = fragment.indexOf("flowCanvas.addEventListener('pointerdown'");
+    const closed = fragment.indexOf("flowCanvas.addEventListener('pointermove'");
+    if (opened < 0 || closed < opened) throw new Error('could not find the canvas pointerdown handler');
+    const handler = fragment.slice(opened, closed);
+    if (/event\.preventDefault\(\)/.test(handler)) {
+      throw new Error('pointerdown calls preventDefault, which kills dblclick on a shape');
+    }
+    if (!/flowCanvas\.addEventListener\('dblclick'/.test(fragment)) {
+      throw new Error('the canvas has no dblclick handler to keep');
+    }
+    // And the text selection that preventDefault used to hold off is held off
+    // by the stylesheet instead, or dragging a box sweeps a selection with it.
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const rule = css.slice(css.indexOf('.flow-canvas {'), css.indexOf('.flow-canvas.is-disabled'));
+    if (!/user-select:\s*none/.test(rule)) throw new Error('.flow-canvas does not turn text selection off');
+  });
+
   // Diagrams are drawn in the theme's own colors, read off :root at render time.
   // A token that does not exist reads as an empty string, mermaid falls back to
   // its own palette, and the diagram quietly stops matching the page — so every
