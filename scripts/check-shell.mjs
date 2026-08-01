@@ -588,6 +588,13 @@ if (booted) {
     const back = renderFlow(graph);
     if (back !== 'flowchart TD\n    n1["Next"]') throw new Error(`came back as ${JSON.stringify(back)}`);
 
+    // The sheet's undo is a copied graph, and it copies with JSON. So the graph
+    // has to be plain data all the way down — put a function or a Map on it and
+    // stepping back would quietly hand back something that isn't the same graph.
+    const rich = parseFlow('---\ntitle: Plan\n---\nflowchart LR\n    %% note\n    A["a"]\n    B{"b"}\n    A -.->|"maybe"| B');
+    const copied = JSON.parse(JSON.stringify(rich));
+    if (renderFlow(copied) !== renderFlow(rich)) throw new Error('a copied graph is not the same graph');
+
     // Dragging a box among its neighbors is a reorder of the declarations, and
     // that order is what the layout reads. It has to go the way the pointer did.
     const three = parseFlow('flowchart TD\n    A["a"]\n    B["b"]\n    C["c"]');
@@ -642,6 +649,85 @@ if (booted) {
     if (renderFlow(copied).split('\n')[3] !== '    ' + copy.id + '["b"]') {
       throw new Error('the copy did not land beside the original');
     }
+  });
+
+  // A box's four + handles all mean the same thing — the next step, that way —
+  // and the chart turns when that way is across the flow. The reading depends
+  // entirely on the direction, and getting it backwards would put "the next
+  // step" above the one it follows: wrong in a way that still looks like a
+  // diagram, so nothing on screen would give it away.
+  check('every + handle means the next step, that way', () => {
+    const { flowBudPoints, flowBudIntent } = booted;
+    const box = { x: 0, y: 0, width: 100, height: 40 };
+    const at = flowBudPoints(box);
+    const sits = (side, x, y) => {
+      if (at[side].x !== x || at[side].y !== y) {
+        throw new Error(`the ${side} handle sits at ${at[side].x},${at[side].y}`);
+      }
+    };
+    // The handles are on the four sides and do not move; only their meaning does.
+    sits('up', 50, 0);
+    sits('down', 50, 40);
+    sits('left', 0, 20);
+    sits('right', 100, 20);
+
+    const means = (direction, side, want) => {
+      const got = flowBudIntent(direction, side);
+      const said = got.step + (got.turn ? ' turning ' + got.turn : '');
+      if (said !== want) throw new Error(`${direction} ${side}: ${said}, wanted ${want}`);
+    };
+    // With the flow, against it, and across it — for each of the four charts.
+    means('TD', 'down', 'next');
+    means('TD', 'up', 'previous');
+    means('TD', 'right', 'next turning LR');
+    means('TD', 'left', 'next turning RL');
+    means('LR', 'right', 'next');
+    means('LR', 'left', 'previous');
+    means('LR', 'down', 'next turning TD');
+    means('LR', 'up', 'next turning BT');
+    means('BT', 'up', 'next');
+    means('BT', 'down', 'previous');
+    means('RL', 'left', 'next');
+    means('RL', 'right', 'previous');
+    // TB is TD spelled the older way, and has to read the same.
+    means('TB', 'down', 'next');
+    means('TB', 'up', 'previous');
+  });
+
+  check('only the first box is asked which way the chart runs', () => {
+    const { parseFlow, flowBudSidesFor, flowAddNode } = booted;
+    const same = (got, want, what) => {
+      if (JSON.stringify(got) !== JSON.stringify(want)) {
+        throw new Error(`${what}: got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`);
+      }
+    };
+    // One box, no direction settled: all four sides, and taking one settles it.
+    const lone = parseFlow('flowchart TD\n    A["a"]');
+    same(flowBudSidesFor(lone), ['up', 'down', 'left', 'right'], 'a chart of one box');
+    // Two boxes: only the pair along the flow, so nothing can spin the diagram
+    // round under the pointer. Turning it is the Flow picker's job from here.
+    const pair = parseFlow('flowchart TD\n    A["a"]\n    B["b"]\n    A --> B');
+    same(flowBudSidesFor(pair), ['down', 'up'], 'a top-down chart');
+    same(flowBudSidesFor(parseFlow('flowchart LR\n    A["a"]\n    B["b"]')), ['right', 'left'], 'left to right');
+    same(flowBudSidesFor(parseFlow('flowchart BT\n    A["a"]\n    B["b"]')), ['up', 'down'], 'bottom up');
+    same(flowBudSidesFor(parseFlow('flowchart RL\n    A["a"]\n    B["b"]')), ['left', 'right'], 'right to left');
+    // And a second box takes the other two away.
+    flowAddNode(lone, 'rect', 'b');
+    same(flowBudSidesFor(lone), ['down', 'up'], 'once there are two');
+  });
+
+  check('a handle across the flow turns the chart and carries on', () => {
+    const { parseFlow, renderFlow, flowBudRelation, flowAddNode, flowConnect } = booted;
+    const graph = parseFlow('flowchart TD\n    A["a"]\n    B["b"]\n    A --> B');
+    // What the canvas does with what the handle asked for.
+    const relation = flowBudRelation(graph, 'B', 'right');
+    if (relation.turn) graph.direction = relation.turn;
+    const added = flowAddNode(graph, 'rect', 'c');
+    if (relation.connectFrom) flowConnect(graph, relation.connectFrom, added.id);
+    const want = 'flowchart LR\n    A["a"]\n    B["b"]\n    n1["c"]\n    A --> B\n    B --> n1';
+    if (renderFlow(graph) !== want) throw new Error(`turning right gave ${JSON.stringify(renderFlow(graph))}`);
+    // And the handle it turned toward is now the plain "next step" one.
+    if (flowBudRelation(graph, 'n1', 'right').turn) throw new Error('the chart did not stay turned');
   });
 
   check('a flowchart written by hand is read the way mermaid reads it', () => {

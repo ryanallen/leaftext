@@ -10,9 +10,9 @@
 //
 // Fail closed. parseFlow returns null on anything it does not fully understand,
 // never a partial graph: a canvas that quietly drops the half it didn't read
-// turns "I tidied my diagram" into lost work. Everything outside phase 1 —
-// subgraphs, classes, styles, clicks, typed `@{}` shapes, dotted and thick
-// edges — falls out of that rule for free, because nothing here matches it.
+// turns "I tidied my diagram" into lost work. Subgraphs, classes, styles,
+// clicks and typed `@{}` shapes are refused by that rule alone, because nothing
+// here matches them.
 //
 // Field names follow jsoncanvas.org, at no cost today and so that reading a
 // `.canvas` file later reuses this model instead of growing a second one.
@@ -271,10 +271,9 @@ function flowTrapezoidOutline(b, way) {
 }
 
 // A connector is a line style and a pair of ends, and mermaid spells it as the
-// product of the two — so these are two tables, not one of twenty-one rows. A
-// token is `head + body + tail`, and the labeled form mermaid also accepts is
-// `head + labelOpen + text + labelBody + tail`. Every spelling below falls out
-// of those two lines; nothing else is written down.
+// product of the two — so these are two tables, not one of twenty-one rows.
+// A token is `head + body + tail`; the labeled form mermaid also takes is
+// `head + labelOpen + text + labelBody + tail`. Everything below falls out:
 //
 //   solid  --- --> --o --x <--> o--o x--x        -- text -->
 //   dotted -.- -.-> -.-o -.-x <-.-> o-.-o x-.-x  -. text .->
@@ -419,12 +418,11 @@ function takeFlowLabel(rest, close) {
   return { text: raw.trim(), rest: rest.slice(end + close.length) };
 }
 
-// One node, either declared with a shape (`A["text"]`) or just named (`A`).
-// A named-only node carries no shape and no text; the caller supplies both.
-//
-// An opener that leads nowhere is stepped over rather than refused, because
-// several of them are shared — but the brackets are then still sitting in
-// `rest`, no connector matches them, and the statement fails. Closed either way.
+// One node, declared with a shape (`A["text"]`) or just named (`A`); a named-only
+// node carries neither shape nor text and the caller supplies both. An opener
+// that leads nowhere is stepped over rather than refused, since several are
+// shared — its brackets are then still in `rest`, no connector matches them, and
+// the statement fails anyway.
 function takeFlowNode(rest) {
   const id = FLOW_ID_RE.exec(rest);
   if (!id) return null;

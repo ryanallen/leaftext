@@ -4908,28 +4908,43 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-pane-code {
   border-left: 1px solid var(--border);
 }
-.flow-toolbar {
-  flex: none;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-}
-/* Fourteen shapes: they wrap rather than scroll, so none of them hides. */
-.flow-toolbar-add {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.flow-toolbar-view {
-  flex: none;
+/* What is left of the chrome, now that making things happens on the canvas:
+   how far back you can step, which way the flow runs, and how big it is drawn. */
+.flow-sheet-tools {
+  flex: 1;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
 }
-.flow-add,
+.flow-steps {
+  display: flex;
+  gap: 2px;
+}
+.flow-steps button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--leaf-radius-md);
+  background: transparent;
+  color: var(--app-muted-foreground);
+  cursor: pointer;
+}
+.flow-steps button:hover:not(:disabled) {
+  background: var(--surface-muted);
+  color: var(--foreground);
+}
+.flow-steps button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.flow-steps svg {
+  width: 16px;
+  height: 16px;
+}
 .flow-choice {
   display: grid;
   place-items: center;
@@ -4940,16 +4955,11 @@ body.is-block-dragging .document-body [data-src-start] {
   color: var(--foreground);
   cursor: pointer;
 }
-.flow-add:hover:not(:disabled),
 .flow-choice:hover {
   border-color: var(--border-strong);
   background: var(--surface-muted);
 }
-.flow-add:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-/* The little drawing on a palette button: the same outline the canvas draws,
+/* The little drawing on a shape button: the same outline the canvas draws,
    which is why a new shape needs no icon of its own. */
 .flow-chip {
   display: block;
@@ -5006,14 +5016,14 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-zoom button:hover {
   background: var(--surface-muted);
 }
-.flow-toolbar-direction {
+.flow-sheet-direction {
   display: flex;
   align-items: center;
   gap: 6px;
   color: var(--app-muted-foreground);
   font-size: 12px;
 }
-.flow-toolbar-direction select {
+.flow-sheet-direction select {
   padding: 5px 8px;
   border: 1px solid var(--settings-control-border);
   border-radius: var(--leaf-radius-md);
@@ -5038,6 +5048,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-canvas {
   flex: 1;
   min-height: 0;
+  display: flex;
   overflow: auto;
   padding: 12px;
   background: var(--surface);
@@ -5054,9 +5065,16 @@ body.is-block-dragging .document-body [data-src-start] {
   cursor: grabbing;
 }
 /* The diagram's own box at the current zoom. It exists so the rename field can
-   be laid over the shape it belongs to and scroll with it. */
+   be laid over the shape it belongs to and scroll with it.
+
+   `margin: auto` on a flex child is what centers it: the obvious
+   `justify-content: center` clips the top and left off anything larger than the
+   scroll box, and a diagram is often larger. Auto margins collapse to nothing
+   when it overflows, so both cases land right. */
 .flow-stage {
   position: relative;
+  flex: none;
+  margin: auto;
 }
 .flow-svg {
   display: block;

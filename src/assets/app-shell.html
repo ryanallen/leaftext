@@ -226,8 +226,22 @@
 <!-- The flowchart sheet: a canvas and a code pane, peers over one graph. Both
      panes are built by flow-canvas.js; only the frame is declared here. -->
 <aside id="flowSheet" class="flow-sheet" role="dialog" aria-modal="true" aria-label="Flowchart" hidden>
+  <!-- Every way of making something lives on the canvas: double-click, a box's
+       + handles, or right-click. What is left up here is chrome. -->
   <div class="flow-sheet-head">
     <span class="flow-sheet-title" id="flowSheetTitle">Flowchart</span>
+    <div class="flow-sheet-tools">
+      <div class="flow-steps" role="group" aria-label="History">
+        <button type="button" id="flowUndo" aria-label="Undo" title="Undo"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" /></svg></button>
+        <button type="button" id="flowRedo" aria-label="Redo" title="Redo"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3" /></svg></button>
+      </div>
+      <label class="flow-sheet-direction">Flow <select id="flowDirection"></select></label>
+      <div class="flow-zoom" role="group" aria-label="Zoom">
+        <button type="button" id="flowZoomOut" aria-label="Zoom out">&minus;</button>
+        <button type="button" id="flowZoomFit" aria-label="Fit the diagram">Fit</button>
+        <button type="button" id="flowZoomIn" aria-label="Zoom in">+</button>
+      </div>
+    </div>
     <div class="flow-sheet-actions">
       <button type="button" id="flowSheetCancel" class="flow-sheet-cancel">Cancel</button>
       <button type="button" id="flowSheetSave" class="flow-sheet-save">Save</button>
@@ -235,17 +249,6 @@
   </div>
   <div class="flow-sheet-panes">
     <section class="flow-pane flow-pane-canvas" aria-label="Diagram">
-      <div class="flow-toolbar">
-        <div class="flow-toolbar-add" id="flowAddRow" role="group" aria-label="Add a box"></div>
-        <div class="flow-toolbar-view">
-          <label class="flow-toolbar-direction">Flow <select id="flowDirection"></select></label>
-          <div class="flow-zoom" role="group" aria-label="Zoom">
-            <button type="button" id="flowZoomOut" aria-label="Zoom out">&minus;</button>
-            <button type="button" id="flowZoomFit" aria-label="Fit the diagram">Fit</button>
-            <button type="button" id="flowZoomIn" aria-label="Zoom in">+</button>
-          </div>
-        </div>
-      </div>
       <p class="flow-hint" id="flowHint"></p>
       <div class="flow-canvas" id="flowCanvas" tabindex="0"></div>
       <p class="flow-notice" id="flowNotice" hidden></p>

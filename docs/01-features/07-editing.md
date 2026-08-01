@@ -15,6 +15,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | The block gutter | A [handle and a plus](#the-block-gutter) in the page's left margin: drag a block to reorder it, or add one on the empty line |
 | Adding a block | The plus opens [a row of kinds](#adding-a-block) — text, heading, list, quote, code, table, image, divider |
 | Inserting an image | The image button [asks for a file or an address](#images); nothing is copied, and the picture stays where you keep it |
+| Drawing a flowchart | The flowchart button, and a corner button on any drawn diagram, open [a canvas beside the Mermaid text](#the-flowchart-editor) |
 | The format bar | Highlight words and [a bar appears over them](#the-format-bar): bold, italic, strikethrough, code, link, then text, bigger/smaller heading and quote for the whole block |
 | Interactive checkboxes | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | Undo | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits |
@@ -48,7 +49,7 @@ The rendered page is a live editor. The **source stays the single source of trut
 - **Blocks behave like a block editor.** `Enter` splits a block at the caret — a split heading stays a heading at the same level — or starts a fresh paragraph when pressed at the end (keep pressing to keep writing). `Shift+Enter` inserts a line break, and `Backspace` at the very start of a block merges it into the one above, with the caret staying put. In a list, `Enter` adds an item and `Backspace` joins items.
 - **Every other block edits its exact source.** Code blocks, [alerts](01-rendering.md#blockquotes-and-alerts), loose lists, blocks with images, footnotes, or math, and blocks containing raw HTML tags outside a small safe set (links, line breaks, bold, italic, strikethrough, inline code, and the inline HTML tags Leaftext can rebuild exactly — `<abbr>`, `<kbd>`, `<mark>`, `<ins>`, `<sub>`, `<sup>`, `<span>`, and `<div>`) open their raw source in place when you click them, then splice back on the way out. This is also how **[XML](01-rendering.md#xml)** edits: XML carries meaning the rendered HTML cannot reconstruct, so an XML block is edited as its true source.
 - **A code block hands you the code, not the fences.** Click into one and you get what is inside the ``` ``` ``` lines; the fences and the language tag stay out of reach, so there is no way to backspace through them and lose the block. Delete every line and you still have an empty code block. An indented code block has no fences to hide, and neither does an unterminated one — those open whole, as before.
-- **A diagram edits as its diagram.** Clicking a rendered [Mermaid diagram](01-rendering.md#mermaid-diagrams) swaps it for the Mermaid behind it, on the same code tint as any other source block; click away and it is drawn again.
+- **A diagram edits as its diagram.** Clicking a rendered [Mermaid diagram](01-rendering.md#mermaid-diagrams) swaps it for the Mermaid behind it, on the same code tint as any other source block; click away and it is drawn again. A drawn diagram also carries a small button in its corner, shown on hover, that opens it in [the flowchart editor](#the-flowchart-editor) instead.
 - **Nothing is ever mangled.** A block only edits WYSIWYG when its rendered form can be turned back into the identical source; anything else edits its source directly. Either way the edit is a precise splice, and the [live reload](02-navigation.md#reload) watcher recognizes your own save so it never fights it.
 - **Nothing is drawn around the line you are typing in.** No ring, no box. The caret says where you are, and a page whose whole point is that it is a page should not turn into a form when you touch it. A block showing its raw source is the exception: its code tint is what says *this is source*.
 - Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way.
@@ -83,6 +84,7 @@ Press it and a row of kinds fans out over the empty line:
 | Code block | An empty fence, edited as source |
 | Table | A two-column table with empty cells |
 | Image | [The image box](#images) |
+| Flowchart | [The flowchart editor](#the-flowchart-editor) |
 | Divider | A horizontal rule |
 
 The first four **open** a block rather than writing one: you get an empty block of that kind showing gray placeholder wording, and **nothing reaches the file until your first keystroke**. Pick Heading and change your mind and the page is as it was — no stray word left in the document. Picking a kind on a line that is already empty just changes what that line is, rather than adding a second one.
@@ -97,6 +99,52 @@ The image button does not write a placeholder path for you to correct. It asks:
 - Or paste an **address** for a picture on the web and press `Enter`.
 
 A picked file is **never copied anywhere** — the picture stays where you keep it. What goes into the document is where it already is: written relative to the document when it sits under the same folder, so the pair survive being moved or shared together, and as a full path when it does not. A path holding a space or a bracket is written in Markdown's `<…>` form, so it cannot end early.
+
+## The flowchart editor
+
+A flowchart is a [Mermaid](01-rendering.md#mermaid-diagrams) block like any other, and it can always be written as text. It can also be drawn. There are two ways in:
+
+- The **flowchart** button in the [insert row](#adding-a-block), which starts a new one.
+- The **corner button** on a diagram already in the page, shown when you hover it. A plain click still swaps that diagram for its source, as before; the button is the other option, not a replacement.
+
+Either opens a full-window sheet with two panes: a **canvas** on the left and the **Mermaid text** on the right, above a live preview of what the document will actually render. They are peers over one diagram — draw on the canvas and the text follows; type in the text and the canvas follows. **Nothing is written until Save**, which writes the whole block as one edit, so the document's [Undo](#undo) puts the diagram back in one press. **Cancel writes nothing.**
+
+### Drawing
+
+Everything is done on the canvas itself.
+
+- **Double-click empty space** to add a box. A picker opens where you clicked, showing every shape drawn as itself.
+- **Hover a box** for its **+** handles. Click one and the same picker opens; the box you choose arrives already joined on that side. Drag a handle onto another box instead and it connects the two.
+- **Double-click a box** — or press `Enter` with it selected — to rename it in place. A new box opens straight into its name field.
+- **Drag a box onto a line** to move it into that line: `A → B` becomes `A → this → B`, and the chain it came from closes up behind it. Drop it on another box to move it beside that one, or on empty space and it settles back where the layout puts it.
+- **Select a line** and both its ends become handles: drag either onto a different box to point it somewhere else.
+- **Right-click anything** for the same actions in words, plus duplicate, flip a line, and take a box out of its chain.
+- **Delete** removes whatever is selected. `Ctrl+Z` / `Cmd+Z` and `Ctrl+Shift+Z` step back and forward inside the sheet — separate from the document's own undo, which only sees the finished diagram.
+
+A line at the top of the pane says what the thing under your pointer is for, and what letting go of a drag would do.
+
+### Which way it runs
+
+A chart has one direction, and the first box is what decides it: while there is only one box it carries **four** + handles, and the one you take sets the chart running that way. From the second box on it carries **two** — the next step and the one before — so nothing can spin a settled diagram round by accident. **Flow** at the top of the sheet turns it after that.
+
+### Where the boxes go
+
+**Nothing about position is stored in your document**, so the layout decides it and the diagram is laid out fresh every time. Dragging a box still moves it under your pointer and still means something — it changes where the box sits in the order — but it settles back into place on release rather than staying where you dropped it. What you see is close to what the document will draw.
+
+The canvas fits the diagram when it opens and centers it. Drag empty space to pan, and use the zoom buttons or `Ctrl` + scroll.
+
+### What it can draw
+
+- **Fourteen shapes** — step, rounded step, decision, start/end, subroutine, database, circle, double circle, preparation, flag, input, output, manual operation, manual input. Selecting a box shows all of them, and hovering one says what it means.
+- **Connectors** — solid, dotted or thick, with an arrow, nothing, a circle or a cross at the end, or the same at both ends. Any of them can carry a label.
+- **Front matter, `%%{init}%%` directives and comments** written in the block are carried through a save untouched.
+
+### What it refuses
+
+The canvas fails closed: a diagram it cannot fully model opens with the canvas switched off and a line saying so, and the **text pane still edits it normally**. That covers subgraphs, `classDef` and `style` lines, `click` handlers, the `@{ shape: … }` family, and edge lengths used as layout hints. It never quietly drops the half it did not understand.
+
+> [!NOTE]
+> Saving rewrites the block in one spelling: always `flowchart` rather than `graph`, every label quoted, and every box declared on its own line. It is the same diagram and it renders identically anywhere Mermaid runs — but a file you hand-wrote will come back tidied.
 
 ## The format bar
 
@@ -132,6 +180,7 @@ Reading-view edits are undoable, step by step.
 - Every inline edit — a typed change, a block split or merge — records one undo step. An **Undo** button appears beside Save whenever there is a step to take back, and disappears when there is nothing left to undo. (Checkbox toggles are the exception: they auto-save and are not undoable.)
 - Click it, or press `Ctrl+Z` (`Cmd+Z` on macOS), to revert the most recent edit. While you are still typing inside a block, the platform's own undo handles keystrokes as usual; the app-level undo covers edits that have already been written into the buffer.
 - A successful **Save** makes the current text the new baseline and clears the undo history, so Undo only ever steps back through edits made since your last save — it never walks you below saved text.
+- [The flowchart editor](#the-flowchart-editor) keeps its own history while it is open, because everything you do in there arrives here as a single edit.
 
 ## Code view
 

@@ -17,7 +17,8 @@ const flowSheet = document.getElementById('flowSheet');
 const flowSheetTitle = document.getElementById('flowSheetTitle');
 const flowSheetCancel = document.getElementById('flowSheetCancel');
 const flowSheetSave = document.getElementById('flowSheetSave');
-const flowAddRow = document.getElementById('flowAddRow');
+const flowUndoButton = document.getElementById('flowUndo');
+const flowRedoButton = document.getElementById('flowRedo');
 const flowDirectionPicker = document.getElementById('flowDirection');
 const flowHint = document.getElementById('flowHint');
 const flowCanvas = document.getElementById('flowCanvas');
@@ -48,6 +49,12 @@ let flowZoom = 1;
 let flowPlaced = null;
 // The box being typed into on the canvas, if any.
 let flowLabelBox = null;
+// Steps back and forward, and the state as of the last settled point. `before`
+// is what a change undoes to, re-taken after every change — which is how one
+// place can record a step without every caller having to remember to.
+const flowHistory = { past: [], future: [] };
+let flowBefore = null;
+const FLOW_HISTORY_CAP = 100;
 
 // Why the canvas is off. The code pane still works on every one of these, which
 // is why refusing costs the reader nothing.
@@ -55,11 +62,14 @@ const FLOW_UNMODELED = 'The canvas can’t model this diagram yet — edit it as
 const FLOW_NOTHING_YET = 'Nothing here yet. Double-click anywhere to add the first box.';
 const FLOW_TIP_IDLE =
   'Double-click empty space to add a box · double-click a box to rename it · right-click anything for more.';
-const FLOW_TIP_NODE = 'Its + handles add the next box · drag it onto a line to put it in that line · Delete removes it.';
+const FLOW_TIP_NODE =
+  'Its + handles add the step before or after it · drag it onto a line to put it in that line · Delete removes it.';
+// The first box is the one that decides which way the whole chart runs, so it is
+// the only one offered all four handles. After that, Flow up top turns it.
+const FLOW_TIP_FIRST = 'Its four + handles start the chart running that way. After that, Flow up top turns it.';
 const FLOW_TIP_EDGE = 'Drag either end onto another box to reconnect it · Delete removes it.';
 // What a drag is offering, said while it is still in the air. Every drop this
 // canvas takes is one of these, so none of them has to be guessed at.
-const FLOW_TIP_PLACING = 'Drop on empty space to add it · on a box to change that box’s shape · on a line to put it in.';
 const FLOW_TIP_MOVING = 'Drop on a line to put this box in it · on another box to move it beside that one.';
 const FLOW_TIP_BUD = 'Let go on empty space for a new box · on another box to connect to it.';
 
@@ -74,7 +84,10 @@ function openFlowSheet({ title, text, save }) {
   flowSelection = null;
   flowZoom = 1;
   if (flowSheetTitle) flowSheetTitle.textContent = title || 'Flowchart';
-  buildFlowPalette();
+  buildFlowControls();
+  flowHistory.past.length = 0;
+  flowHistory.future.length = 0;
+  flowBefore = null;
   setFlowText(flowSession.text, 'open');
   flowBackdrop.hidden = false;
   flowSheet.hidden = false;
@@ -83,6 +96,7 @@ function openFlowSheet({ title, text, save }) {
     flowSheet.classList.add('open');
     // Only now does the pane have a size to fit the diagram into.
     fitFlowCanvas();
+    centerFlowCanvas();
   });
   document.addEventListener('keydown', onFlowSheetKey);
   if (flowCanvas) flowCanvas.focus({ preventScroll: true });
@@ -135,8 +149,17 @@ function onFlowSheetKey(event) {
     closeFlowSheet();
     return;
   }
+  // A field has its own undo and its own idea of Delete; leave it to it.
   const inField = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
-  if (inField || !flowSelection || !flowSession.graph) return;
+  if (inField) return;
+  const key = String(event.key).toLowerCase();
+  if ((event.ctrlKey || event.metaKey) && (key === 'z' || key === 'y')) {
+    event.preventDefault();
+    if (key === 'y' || event.shiftKey) redoFlow();
+    else undoFlow();
+    return;
+  }
+  if (!flowSelection || !flowSession.graph) return;
   if (event.key === 'Delete' || event.key === 'Backspace') {
     event.preventDefault();
     deleteFlowSelection();
@@ -156,11 +179,13 @@ function onFlowSheetKey(event) {
 // back, so an edit can never cost the canvas its graph.
 function setFlowText(text, from) {
   if (!flowSession) return;
+  if (from === 'code') recordFlowStep();
   flowSession.text = text;
   flowSession.graph = parseFlow(text);
   if (flowSelection && !flowSelectionStillThere()) flowSelection = null;
   if (from !== 'code' && flowCode) flowCode.value = text;
   redrawFlowSheet();
+  flowBefore = flowSnapshot();
 }
 
 // The canvas moved. The graph is already the truth, so this only writes it out —
@@ -168,18 +193,80 @@ function setFlowText(text, from) {
 // leave the canvas dead the moment you deleted the last box.
 function flowGraphChanged() {
   if (!flowSession || !flowSession.graph) return;
+  recordFlowStep();
   flowSession.text = renderFlow(flowSession.graph);
   if (flowCode) flowCode.value = flowSession.text;
   if (flowSelection && !flowSelectionStillThere()) flowSelection = null;
   redrawFlowSheet();
+  flowBefore = flowSnapshot();
 }
 
 function redrawFlowSheet() {
   drawFlowCanvas();
   drawFlowInspector();
   updateFlowSaveState();
+  updateFlowHistoryButtons();
   queueFlowPreview();
 }
+
+// ---- stepping back ---------------------------------------------------------
+
+// The sheet keeps its own history, because one Save is one document undo and
+// nobody wants "undo" to mean "throw the whole diagram away". A step is the
+// graph and the text together: restoring only the text would re-read it, and an
+// emptied diagram does not survive that trip.
+function flowSnapshot() {
+  if (!flowSession) return null;
+  return {
+    text: flowSession.text,
+    graph: flowSession.graph ? JSON.parse(JSON.stringify(flowSession.graph)) : null,
+    selection: flowSelection ? { kind: flowSelection.kind, id: flowSelection.id } : null,
+  };
+}
+
+function recordFlowStep() {
+  if (!flowBefore) return;
+  flowHistory.past.push(flowBefore);
+  if (flowHistory.past.length > FLOW_HISTORY_CAP) flowHistory.past.shift();
+  flowHistory.future.length = 0;
+}
+
+function applyFlowState(state) {
+  if (!state || !flowSession) return;
+  closeFlowLabelBox(false);
+  flowSession.text = state.text;
+  flowSession.graph = state.graph ? JSON.parse(JSON.stringify(state.graph)) : null;
+  flowSelection = state.selection ? { kind: state.selection.kind, id: state.selection.id } : null;
+  if (flowCode) flowCode.value = state.text;
+  redrawFlowSheet();
+  flowBefore = flowSnapshot();
+}
+
+function undoFlow() {
+  if (!flowSession || !flowHistory.past.length) return;
+  const now = flowSnapshot();
+  const back = flowHistory.past.pop();
+  applyFlowState(back);
+  flowHistory.future.push(now);
+  updateFlowHistoryButtons();
+}
+
+function redoFlow() {
+  if (!flowSession || !flowHistory.future.length) return;
+  const now = flowSnapshot();
+  const forward = flowHistory.future.pop();
+  applyFlowState(forward);
+  flowHistory.past.push(now);
+  updateFlowHistoryButtons();
+}
+
+function updateFlowHistoryButtons() {
+  if (flowUndoButton) flowUndoButton.disabled = !flowHistory.past.length;
+  if (flowRedoButton) flowRedoButton.disabled = !flowHistory.future.length;
+}
+
+if (flowUndoButton) flowUndoButton.addEventListener('click', undoFlow);
+if (flowRedoButton) flowRedoButton.addEventListener('click', redoFlow);
 
 // An empty diagram is a legal thing to be halfway through and not a legal thing
 // to write: mermaid cannot draw a flowchart with nothing in it.
@@ -231,7 +318,12 @@ function restoreFlowHint() {
   }
   const node = flowFindNode(graph, flowSelection.id);
   const shape = node && flowShape(node.type);
-  setFlowHint(shape ? shape.label + ' — ' + shape.hint + ' ' + FLOW_TIP_NODE : FLOW_TIP_IDLE);
+  if (!shape) {
+    setFlowHint(FLOW_TIP_IDLE);
+    return;
+  }
+  const tip = graph.nodes.length <= 1 ? FLOW_TIP_FIRST : FLOW_TIP_NODE;
+  setFlowHint(shape.label + ' — ' + shape.hint + ' ' + tip);
 }
 
 // ---- the palette and the direction ----------------------------------------
@@ -281,26 +373,7 @@ function flowEdgeChip(lineId, endId) {
   );
 }
 
-// Generated from the shape catalog, so a shape the parser cannot read can never
-// be offered here.
-function buildFlowPalette() {
-  if (flowAddRow && !flowAddRow.childElementCount) {
-    for (const shape of FLOW_SHAPES) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'flow-add';
-      button.dataset.shape = shape.id;
-      button.title = shape.label + ' — ' + shape.hint;
-      button.setAttribute('aria-label', 'Add a ' + shape.label.toLowerCase() + '. ' + shape.hint);
-      button.innerHTML = flowShapeChip(shape.id);
-      wireFlowPaletteDrag(button, shape);
-      button.addEventListener('pointerenter', () => setFlowHint(shape.label + ' — ' + shape.hint));
-      button.addEventListener('focus', () => setFlowHint(shape.label + ' — ' + shape.hint));
-      button.addEventListener('pointerleave', restoreFlowHint);
-      button.addEventListener('blur', restoreFlowHint);
-      flowAddRow.appendChild(button);
-    }
-  }
+function buildFlowControls() {
   if (flowDirectionPicker && !flowDirectionPicker.childElementCount) {
     for (const direction of FLOW_DIRECTIONS) {
       const option = document.createElement('option');
@@ -316,77 +389,16 @@ function buildFlowPalette() {
   }
 }
 
-// The one way a box is ever made. Everything that adds one — the palette, a +
-// handle, a double-click on empty space, the menu — comes through here and says
-// where it goes in the order and what it hangs off, so they cannot disagree
-// about what happens next.
-// A palette button is a button and a thing you can pick up. Pressing and
-// releasing without moving is the click; carrying it onto the canvas drops it
-// where you let go. The move and release are handled here rather than on the
-// canvas, because the pointer is captured by the button for the whole drag.
-function wireFlowPaletteDrag(button, shape) {
-  // A keyboard press on a button still fires `click` with no pointer behind it,
-  // which is the only click this button ever sees — the mouse goes through the
-  // pointer handlers below.
-  button.addEventListener('click', (event) => {
-    if (event.detail === 0) addFlowNodeFromPalette(shape.id);
-  });
-  button.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0 || !flowSession || !flowSession.graph) return;
-    event.preventDefault();
-    closeFlowLabelBox(true);
-    flowDrag = { kind: 'place', shape: shape.id, startX: event.clientX, startY: event.clientY, moved: false };
-    try {
-      button.setPointerCapture(event.pointerId);
-    } catch (error) {
-      /* the drag still works without capture */
-    }
-  });
-  button.addEventListener('pointermove', (event) => {
-    if (!flowDrag || flowDrag.kind !== 'place') return;
-    const far = Math.abs(event.clientX - flowDrag.startX) + Math.abs(event.clientY - flowDrag.startY);
-    if (!flowDrag.moved && far <= 4) return;
-    flowDrag.moved = true;
-    setFlowHint(FLOW_TIP_PLACING);
-    markFlowDropTarget(flowTargetAt(event.clientX, event.clientY));
-  });
-  button.addEventListener('pointerup', (event) => {
-    const drag = flowDrag;
-    flowDrag = null;
-    markFlowDropTarget(null);
-    if (!drag || drag.kind !== 'place') return;
-    if (!drag.moved) {
-      addFlowNodeFromPalette(shape.id);
-      return;
-    }
-    const graph = flowSession && flowSession.graph;
-    if (!graph) return;
-    const over = flowTargetAt(event.clientX, event.clientY);
-    if (!over) {
-      restoreFlowHint();
-      return;
-    }
-    // Onto a box: that box becomes this shape. Onto a line: a new box of this
-    // shape goes into the line. Onto the surface: a new box, near the pointer.
-    if (over.kind === 'node') {
-      const node = flowFindNode(graph, over.id);
-      if (node) node.type = shape.id;
-      flowSelection = { kind: 'node', id: over.id };
-      flowGraphChanged();
-      return;
-    }
-    if (over.kind === 'edge') {
-      addFlowNode(shape.id, { intoEdge: over.id });
-      return;
-    }
-    addFlowNode(shape.id, { before: flowSlotAt(flowPointAt(event.clientX, event.clientY)) });
-  });
-}
-
+// The one way a box is ever made. A + handle, a double-click on empty space and
+// the menu all come through here saying where it goes in the order and what it
+// hangs off, so they cannot disagree about what happens next.
 function addFlowNode(shapeId, options) {
   const graph = flowSession && flowSession.graph;
   if (!graph) return null;
-  const { before, connectFrom, connectTo, intoEdge } = options || {};
+  const { before, connectFrom, connectTo, turn, intoEdge } = options || {};
+  // Asked for across the flow: the chart turns, so the new step lands on the
+  // side it was asked for rather than wherever the old direction would put it.
+  if (turn) graph.direction = turn;
   const node = flowAddNode(graph, shapeId, flowShape(shapeId).label);
   if (before !== undefined) flowMoveNode(graph, node.id, before);
   if (connectFrom) flowConnect(graph, connectFrom, node.id);
@@ -397,14 +409,6 @@ function addFlowNode(shapeId, options) {
   // Straight into typing its name: a box called "Step" helps nobody.
   openFlowLabelBox('node', node.id);
   return node;
-}
-
-// Clicking a palette button with a box selected carries on from that box, which
-// is how a flowchart is drawn — one step after another. With nothing selected it
-// starts a loose one.
-function addFlowNodeFromPalette(shapeId) {
-  const selected = flowSelection && flowSelection.kind === 'node' ? flowSelection.id : null;
-  addFlowNode(shapeId, { connectFrom: selected });
 }
 
 // Where a point on the canvas falls in the declaration order: the id to put a
@@ -442,9 +446,6 @@ function drawFlowCanvas() {
   if (flowNotice) {
     flowNotice.hidden = !!graph && !empty;
     flowNotice.textContent = graph ? (empty ? FLOW_NOTHING_YET : '') : FLOW_UNMODELED;
-  }
-  if (flowAddRow) {
-    for (const button of flowAddRow.children) button.disabled = !graph;
   }
   if (flowDirectionPicker) {
     flowDirectionPicker.disabled = !graph;
@@ -492,8 +493,9 @@ function flowCanvasMarkup(layout) {
   }
   parts.push('<defs>' + defs.join('') + '</defs>');
   const direction = flowSession.graph.direction;
+  const sides = flowBudSidesFor(flowSession.graph);
   for (const edge of layout.edges) parts.push(flowEdgeMarkup(edge));
-  for (const node of layout.nodes) parts.push(flowNodeMarkup(node, direction));
+  for (const node of layout.nodes) parts.push(flowNodeMarkup(node, direction, sides));
   parts.push('</svg></div>');
   return parts.join('');
 }
@@ -599,29 +601,60 @@ function flowRound(value) {
   return typeof value === 'number' ? Math.round(value * 100) / 100 : value;
 }
 
-// Where a box's two + handles sit: one downstream, one upstream, on the sides
-// the flow actually runs between. They move with the direction, so "the next
-// box" is always the one below in a top-down chart and to the right in a
-// left-to-right one.
-function flowBudPoints(node, direction) {
+// A box's + handles, one per side, all meaning the next step *that way*. A chart
+// has one direction, so a step asked for across the flow can only land where it
+// was asked for if the chart turns — see flowBudSidesFor for who may ask.
+const FLOW_BUD_SIDES = ['up', 'down', 'left', 'right'];
+const FLOW_BUD_WORDS = { up: 'above', down: 'below', left: 'to the left', right: 'to the right' };
+// A mermaid direction and a side of a box are the same fact, said two ways.
+const FLOW_DIRECTION_WAY = { TD: 'down', TB: 'down', BT: 'up', LR: 'right', RL: 'left' };
+const FLOW_WAY_DIRECTION = { down: 'TD', up: 'BT', right: 'LR', left: 'RL' };
+const FLOW_OPPOSITE_WAY = { up: 'down', down: 'up', left: 'right', right: 'left' };
+
+function flowBudPoints(node) {
   const cx = node.x + node.width / 2;
   const cy = node.y + node.height / 2;
-  const horizontal = direction === 'LR' || direction === 'RL';
-  const forward = direction === 'BT' || direction === 'RL' ? -1 : 1;
-  const far = horizontal ? node.x + node.width : node.y + node.height;
-  const near = horizontal ? node.x : node.y;
-  const after = forward > 0 ? far : near;
-  const before = forward > 0 ? near : far;
-  return horizontal
-    ? { after: { x: after, y: cy }, before: { x: before, y: cy } }
-    : { after: { x: cx, y: after }, before: { x: cx, y: before } };
+  return {
+    up: { x: cx, y: node.y },
+    down: { x: cx, y: node.y + node.height },
+    left: { x: node.x, y: cy },
+    right: { x: node.x + node.width, y: cy },
+  };
 }
 
-// One + handle. Click it for a new connected box on that side, or drag it onto
-// a box that already exists to connect the two.
-function flowBudMarkup(id, side, at) {
+// What a handle does, which depends on which way the chart already runs. With
+// the flow it is the next step; against it, the step before this one; across it,
+// the next step and the chart turns to follow.
+function flowBudIntent(direction, side) {
+  const way = FLOW_DIRECTION_WAY[direction] || 'down';
+  if (side === way) return { step: 'next' };
+  if (side === FLOW_OPPOSITE_WAY[way]) return { step: 'previous' };
+  return { step: 'next', turn: FLOW_WAY_DIRECTION[side] };
+}
+
+function flowBudTitle(direction, side) {
+  const intent = flowBudIntent(direction, side);
+  if (intent.step === 'previous') return 'Add the step before this';
+  if (!intent.turn) return 'Add the next step';
+  return 'Start the chart running ' + FLOW_BUD_WORDS[side];
+}
+
+// Which sides get a handle. A chart of one box has not said which way it runs,
+// so all four are offered and the one you take settles it. After that only the
+// two along the flow appear: a handle that spun the whole diagram round under
+// you would be a trap, and the Flow picker is how it turns from then on.
+function flowBudSidesFor(graph) {
+  if (graph.nodes.length <= 1) return FLOW_BUD_SIDES;
+  const way = FLOW_DIRECTION_WAY[graph.direction] || 'down';
+  return [way, FLOW_OPPOSITE_WAY[way]];
+}
+
+// One + handle. Click it and pick the shape you want, or drag it onto a box that
+// already exists to connect the two.
+function flowBudMarkup(id, side, at, direction) {
   return (
     '<g class="flow-bud" data-bud="' + side + '" data-node="' + escapeAttr(id) + '">' +
+    '<title>' + escapeText(flowBudTitle(direction, side)) + '</title>' +
     '<circle class="flow-bud-disc" cx="' + flowRound(at.x) + '" cy="' + flowRound(at.y) + '" r="8"/>' +
     '<path class="flow-bud-plus" d="M' + flowRound(at.x - 4) + ' ' + flowRound(at.y) +
     ' h8 M' + flowRound(at.x) + ' ' + flowRound(at.y - 4) + ' v8"/>' +
@@ -629,19 +662,26 @@ function flowBudMarkup(id, side, at) {
   );
 }
 
-function flowNodeMarkup(node, direction) {
+// What a + handle makes, as addFlowNode's arguments.
+function flowBudRelation(graph, id, side) {
+  const intent = flowBudIntent(graph.direction, side);
+  const relation = intent.step === 'previous' ? { connectTo: id } : { connectFrom: id };
+  if (intent.turn) relation.turn = intent.turn;
+  return relation;
+}
+
+function flowNodeMarkup(node, direction, sides) {
   const selected = flowSelection && flowSelection.kind === 'node' && flowSelection.id === node.id;
   const cx = node.x + node.width / 2;
   const cy = node.y + node.height / 2;
   const outline = flowOutlineMarkup(node.type, { x: node.x, y: node.y, w: node.width, h: node.height, cx, cy });
-  const buds = flowBudPoints(node, direction);
+  const buds = flowBudPoints(node);
   return (
     '<g class="flow-node' + (selected ? ' is-selected' : '') + '" data-node="' + escapeAttr(node.id) + '">' +
     outline +
     '<text class="flow-node-label" x="' + cx + '" y="' + cy +
     '" text-anchor="middle" dominant-baseline="middle">' + escapeText(flowClampLabel(node)) + '</text>' +
-    flowBudMarkup(node.id, 'after', buds.after) +
-    flowBudMarkup(node.id, 'before', buds.before) +
+    sides.map((side) => flowBudMarkup(node.id, side, buds[side], direction)).join('') +
     '</g>'
   );
 }
@@ -686,6 +726,14 @@ function fitFlowCanvas() {
   const tall = flowCanvas.clientHeight - 24;
   if (room <= 0 || tall <= 0) return;
   setFlowZoom(Math.min(1, room / flowSize.width, tall / flowSize.height));
+}
+
+// A diagram smaller than the pane is centered by the layout (see .flow-stage);
+// one bigger than it opens on its middle rather than its top-left corner.
+function centerFlowCanvas() {
+  if (!flowCanvas) return;
+  flowCanvas.scrollLeft = Math.max(0, (flowCanvas.scrollWidth - flowCanvas.clientWidth) / 2);
+  flowCanvas.scrollTop = Math.max(0, (flowCanvas.scrollHeight - flowCanvas.clientHeight) / 2);
 }
 
 if (flowZoomIn) flowZoomIn.addEventListener('click', () => setFlowZoom(flowZoom * 1.2));
@@ -903,11 +951,15 @@ if (flowCanvas) {
     const spot = flowTargetAt(event.clientX, event.clientY);
     const over = spot && spot.kind === 'node' ? spot.id : null;
 
-    // A + handle pressed and released without travelling is a click: the next
-    // box in the chain, on the side the handle sits.
+    // A + handle pressed and released without travelling is a click: pick the
+    // shape, and it arrives joined up on the side the handle sits.
     if (drag.kind === 'bud' && !drag.moved) {
-      const side = drag.side === 'before' ? { connectTo: drag.from } : { connectFrom: drag.from };
-      addFlowNode(flowNewNodeShape(graph, drag.from), side);
+      openFlowShapePicker(
+        event.clientX,
+        event.clientY,
+        (shape) => addFlowNode(shape, flowBudRelation(graph, drag.from, drag.side)),
+        flowNewNodeShape(graph, drag.from),
+      );
       return;
     }
     if (!drag.moved) return;
@@ -927,7 +979,9 @@ if (flowCanvas) {
       // near where the pointer stopped.
       if (over && over !== drag.from) {
         const edge =
-          drag.side === 'before' ? flowConnect(graph, over, drag.from) : flowConnect(graph, drag.from, over);
+          flowBudIntent(graph.direction, drag.side).step === 'previous'
+            ? flowConnect(graph, over, drag.from)
+            : flowConnect(graph, drag.from, over);
         if (edge) flowSelection = { kind: 'edge', id: edge.id };
         flowGraphChanged();
         return;
@@ -936,9 +990,13 @@ if (flowCanvas) {
         drawFlowCanvas();
         return;
       }
-      const side = drag.side === 'before' ? { connectTo: drag.from } : { connectFrom: drag.from };
-      side.before = flowSlotAt(flowPointIn(event));
-      addFlowNode(flowNewNodeShape(graph, drag.from), side);
+      const where = flowSlotAt(flowPointIn(event));
+      openFlowShapePicker(
+        event.clientX,
+        event.clientY,
+        (shape) => addFlowNode(shape, { ...flowBudRelation(graph, drag.from, drag.side), before: where }),
+        flowNewNodeShape(graph, drag.from),
+      );
       return;
     }
     // A box dropped on a line goes into that line: `A --> B` becomes
@@ -960,9 +1018,8 @@ if (flowCanvas) {
       return;
     }
     // Dropped on another box: the dragged one takes that box's place in the
-    // declaration order, which is what decides where it sits on its rank.
-    // Dragged from above it lands after it, from below it lands before — so the
-    // box goes the way the pointer went.
+    // declaration order, which is what decides where it sits on its rank. From
+    // above it lands after, from below before, so it goes the way the pointer did.
     const order = graph.nodes.map((node) => node.id);
     const was = order.indexOf(drag.from);
     const onto = order.indexOf(over);
@@ -986,7 +1043,8 @@ if (flowCanvas) {
     // Empty space. Nothing stores where a box sits, so the point decides where
     // it lands in the order rather than on the page — near enough that it
     // appears about where it was asked for.
-    addFlowNode(FLOW_SHAPES[0].id, { before: flowSlotAt(flowPointIn(event)) });
+    const where = flowSlotAt(flowPointIn(event));
+    openFlowShapePicker(event.clientX, event.clientY, (shape) => addFlowNode(shape, { before: where }));
   });
 
   flowCanvas.addEventListener('contextmenu', (event) => {
@@ -1052,21 +1110,45 @@ function flowMenuItems(spot) {
     ];
   }
   const point = flowPointAt(flowMenuAt.x, flowMenuAt.y);
-  return FLOW_SHAPES.map((shape) => ({
-    label: 'Add ' + shape.label.toLowerCase(),
+  return flowShapeChoices((id) => addFlowNode(id, { before: flowSlotAt(point) }));
+}
+
+// Every shape, as something to pick. `first` floats one to the top — a + handle
+// puts the shape you would most likely want there, so the common chain is still
+// one glance and one click.
+function flowShapeChoices(make, first) {
+  const shapes = FLOW_SHAPES.slice();
+  if (first) {
+    const at = shapes.findIndex((shape) => shape.id === first);
+    if (at > 0) shapes.unshift(shapes.splice(at, 1)[0]);
+  }
+  return shapes.map((shape) => ({
+    label: shape.label,
     chip: shape.id,
     hint: shape.hint,
-    run: () => addFlowNode(shape.id, { before: flowSlotAt(point) }),
+    run: () => make(shape.id),
   }));
 }
 
+// Pick a shape, right where the pointer is. This is what a + handle and a
+// double-click on empty space both open, so a new box is the shape you meant
+// rather than the one we guessed and left you to fix.
+function openFlowShapePicker(x, y, make, first) {
+  openFlowMenuWith(x, y, flowShapeChoices(make, first), true);
+}
+
 function openFlowMenu(x, y, spot) {
+  flowMenuAt = { x, y };
+  openFlowMenuWith(x, y, flowMenuItems(spot), spot.kind === 'canvas');
+}
+
+function openFlowMenuWith(x, y, items, asGrid) {
   closeFlowMenu();
   flowMenuAt = { x, y };
   const menu = document.createElement('div');
-  menu.className = 'flow-menu' + (spot.kind === 'canvas' ? ' is-shapes' : '');
+  menu.className = 'flow-menu' + (asGrid ? ' is-shapes' : '');
   menu.setAttribute('role', 'menu');
-  for (const item of flowMenuItems(spot)) {
+  for (const item of items) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'flow-menu-item';
@@ -1111,8 +1193,8 @@ function onFlowMenuOutside(event) {
 function flowBudAnchor(id, side) {
   const placed = flowPlaced && flowPlaced.nodes.find((node) => node.id === id);
   if (!placed) return { x: 0, y: 0 };
-  const graph = flowSession && flowSession.graph;
-  return flowBudPoints(placed, graph ? graph.direction : 'TD')[side === 'before' ? 'before' : 'after'];
+  const points = flowBudPoints(placed);
+  return points[side] || points.down;
 }
 
 // What shape the next box should be. A decision's answers are steps, and
