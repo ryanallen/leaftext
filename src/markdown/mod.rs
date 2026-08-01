@@ -77,7 +77,8 @@ pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
 
 /// Split a leading `--- ... ---` frontmatter block off the front, returning its
 /// inner text and the Markdown that follows. Detected only when `---` is the
-/// first line and a later `---` closes it, like the indexer.
+/// first line and a later `---` closes it — the same rule
+/// [`extract_frontmatter`](crate::store::extract_frontmatter) reads by.
 ///
 /// A leading mark should never arrive — [`read_source`] takes it off precisely so it
 /// can't stop a fence being first on the line — but Markdown also reaches here from

@@ -239,7 +239,7 @@
   --reader-minimap-column: 0px;
   /* Elevation shadows by role, so overlays swap in one place. The resting card
      shadow stays per-theme as --shadow (from --leaf-shadow); these cover the
-     overlays that were previously baked inline. */
+     overlays that would otherwise be baked inline at each site. */
   --leaf-shadow-popover: 0 6px 18px -6px color-mix(in srgb, black 55%, transparent),
     0 0 0 1px color-mix(in srgb, var(--app-muted-foreground) 20%, transparent);
   --leaf-shadow-sheet: 0 -10px 40px rgba(0, 0, 0, 0.5);
@@ -297,9 +297,8 @@ body {
   height: var(--app-bar-height);
   padding: 0;
   /* The chrome shade under a fine dithered dot grid, for a rough old-cassette
-     texture. Flat and opaque, not the frosted translucent fill it used to be: a
-     translucent bar takes its tone from whatever sits behind it, so it can never
-     match the pane it meets. */
+     texture. Flat and opaque, never translucent: a translucent bar takes its tone
+     from whatever sits behind it, so it can never match the pane it meets. */
   background-color: var(--chrome-surface);
   background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
@@ -431,7 +430,7 @@ body {
   max-width: 132px;
   /* The extra on the right reserves the close button's corner, which is out of
      flow and so buys no room of its own. Without it a short name ends underneath
-     the button — the dirty dot used to be padding the two apart by accident. */
+     the button. */
   padding: 0 12px 0 4px;
   /* A cell hanging off the reader divider (z-index 1) so the active tab can cover it,
      top corners rounded to the page's radius. The transparent strokes reserve the
@@ -577,7 +576,7 @@ body {
   background: var(--app-action-hover-background);
   border-color: transparent;
   /* The contrast color that pairs with the action background — white icons on a
-     light accent (Fern green, Amaranth lavender) were unreadable. */
+     light accent (Fern green, Amaranth lavender) are unreadable. */
   color: var(--app-action-foreground);
 }
 .history-actions {
@@ -648,8 +647,8 @@ body {
   display: flex;
 }
 /* Folded as a group, but stacked once inside: the panel is only as wide as the
-   chevron's corner allows, and a three-across row overflows it — maximize and
-   close were clipped clean off. */
+   chevron's corner allows, and a three-across row overflows it, clipping
+   maximize and close clean off. */
 .app-overflow-panel .window-controls {
   flex-direction: column;
   gap: 4px;
@@ -1059,8 +1058,8 @@ button {
   color: var(--app-action-foreground);
 }
 /* Unsaved-edits dot on a tab, sharing the close button's corner. In the row it
-   was 13px of content that vanished on the tab's own hover, so a modified tab
-   shrank and its label jumped the moment you pointed at it. */
+   is 13px of content that vanishes on the tab's own hover, so a modified tab
+   shrinks and its label jumps the moment you point at it. */
 .tab-dirty-dot {
   display: none;
   position: absolute;
@@ -1457,8 +1456,8 @@ body.library-resizing {
   background-color: var(--chrome-surface);
 }
 .library-search-wrap:focus-within {
-  /* A neutral white focus border rather than the accent, which reads green in
-     the Primer themes. */
+  /* A neutral white focus border rather than the accent, which is a strong color
+     of its own in most families. */
   border-color: color-mix(in srgb, #ffffff 85%, transparent);
 }
 :root[data-theme="light"] .library-search-wrap:focus-within {
@@ -1594,7 +1593,7 @@ body.library-resizing {
   align-items: center;
   gap: 3px;
   /* A bigger target than the glyph inside it: the whole thing is one button, and
-     it was easy to miss at 20px. */
+     20px of it is easy to miss. */
   height: 26px;
   padding: 0 7px;
   border: 0;
@@ -1629,7 +1628,7 @@ body.library-resizing {
   margin-left: auto;
   color: var(--accent);
 }
-/* A vault's row: the row itself switches to it, and the pencil at its end opens
+/* A vault's row: the row itself switches to it, and the button at its end opens
    everything else you can do to it. One visible button, so nothing about the
    vault is hidden behind a right-click. */
 .crumb-menu-row {
@@ -2178,8 +2177,7 @@ body:has(#readerToolbar:not([hidden])) {
   height: 17px;
 }
 /* No `:not(:disabled)` here: every tool in the bar is always enterable, and the
-   bar itself is gone when there is no document. A view that cannot be entered was
-   a state this had when the map needed a vault. */
+   bar itself is gone when there is no document. */
 .reader-tool:hover {
   background: color-mix(in srgb, var(--app-muted-foreground) 16%, transparent);
   color: var(--app-foreground);
@@ -3038,9 +3036,9 @@ body:has(#readerToolbar:not([hidden])) {
 .document-body .leaf-editable {
   cursor: text;
 }
-/* Nothing at all around the block you are typing in. It carried a blue ring once,
-   then a shaded band; both drew a box on a page whose whole point is that it is a
-   page and not a form. The caret says where you are, and the words are already
+/* Nothing at all around the block you are typing in. A ring or a shaded band
+   draws a box on a page whose whole point is that it is a page and not a form.
+   The caret says where you are, and the words are already
    there to be read. A raw-source block is the one exception below — its code tint
    is what says "this is source", not "this is selected". */
 .document-body .leaf-editable:focus,
@@ -4176,7 +4174,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-minimap-preview * {
   pointer-events: none !important;
 }
-/* The clone strips hrefs, so the href-based glossary blend no longer matches and
+/* The clone strips hrefs, so the href-based glossary blend cannot match and
    terms would show accent-blue. updateDocumentMinimapPreview tags them
    .glossary-term before stripping; re-blend them to body text here. */
 .document-minimap-preview a.glossary-term {
@@ -4256,7 +4254,7 @@ body.is-block-dragging .document-body [data-src-start] {
   color: var(--preview-foreground);
 }
 /* Must set the background too: a color alone leaves the generic `button:hover`
-   fill underneath, which was one purple on another. This pair the theme
+   fill underneath, which is one purple on another. This pair the theme
    compiler gates for contrast. */
 .primary-new:hover {
   background: var(--app-action-hover-background);
@@ -4923,8 +4921,8 @@ body.is-block-dragging .document-body [data-src-start] {
   flex-direction: column;
 }
 
-/* What is left of the chrome, now that making things happens on the canvas:
-   how far back you can step, which way the flow runs, and how big it is drawn. */
+/* The chrome the canvas leaves to the strip: how far back you can step, which
+   way the flow runs, and how big it is drawn. */
 .flow-sheet-tools {
   flex: 1;
   display: flex;

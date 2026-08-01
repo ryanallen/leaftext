@@ -71,9 +71,8 @@ pub(crate) fn render_xml_document(
     (title, ctx.out, ctx.blocks)
 }
 
-/// The title and body HTML for any XML string, without the block map. The crawl
-/// used this to title a file it had no intention of rendering; nothing does now
-/// but the tests, which use it to check the title and the body in one call.
+/// The title and body HTML for any XML string, without the block map. Test-only:
+/// it checks the title and the body in one call.
 #[cfg(test)]
 pub(crate) fn render_xml_body(xml: &str) -> (Option<String>, String) {
     let (title, html, _) = render_xml_document(xml, None);

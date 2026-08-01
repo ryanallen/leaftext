@@ -32,7 +32,7 @@ fn app_shell_builds_collapsed_heading_outline_under_the_title() {
     // A title plus at least one section, inserted just under the title.
     assert_contains(&html, "if (headings.length < 2) return;");
     assert_contains(&html, "title.insertAdjacentElement('afterend', details);");
-    // Collapsed <details> with a localized "Outline" summary, entries nested
+    // Collapsed <details> with an "Outline" summary, entries nested
     // as a bulleted list (numbers overflow the panel on deep documents) that
     // links each heading by its slug id.
     assert_contains(&html, "details.className = 'document-outline';");
@@ -164,9 +164,9 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         ".document-minimap-preview a.glossary-term {\n  color: inherit;\n}",
     );
 
-    // The real-text clone replaces the old abstract canvas entirely (no 2D
-    // context, palette, or line-model rows). Checked across both the shell
-    // markup/script and the linked stylesheet since styles no longer inline.
+    // The thumbnail is a real-text clone, never an abstract canvas: no 2D context,
+    // no palette, no line-model rows. Checked across both the shell markup/script
+    // and the linked stylesheet, since the styles are not inlined.
     for forbidden in [
         "document-minimap-canvas",
         "canvas.getContext('2d')",
@@ -237,8 +237,8 @@ fn app_shell_maps_minimap_geometry_proportionally() {
         !html.contains("function minimapViewportGeometry(metrics) {"),
         "the clone minimap replaces the canvas geometry helper"
     );
-    // The content-visibility-era clone-offset workaround is gone: the reader renders
-    // in full, so the box reads the exact scroll position, not a block-offset table.
+    // The reader renders in full, so the box reads the exact scroll position rather
+    // than a table of block offsets.
     assert!(
         !html.contains("minimapCloneOffsets") && !html.contains("minimapReaderTrueScrolled"),
         "the full-render minimap drops the clone-offset scroll estimate"
@@ -609,9 +609,9 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
 #[test]
 fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
     // The scroll listener is deliberately inert during a minimap drag, so the minimap
-    // must record the anchor itself. When it didn't, the anchor kept the pre-drag
+    // must record the anchor itself. Without that, the anchor keeps the pre-drag
     // position and the next late reflow — most visibly the async bottom pager landing
-    // seconds after the document — restored it and threw the reader back up the page.
+    // seconds after the document — restores it and throws the reader back up the page.
     let html = app_shell_html();
 
     for expected in [
@@ -657,7 +657,7 @@ fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
     ] {
         assert_contains(&html, expected);
     }
-    // The old per-frame version must be gone, or the stall comes back with it.
+    // And nothing clamps per frame, or the stall is back.
     assert!(
         !html.contains(
             "readerScrollFrame = window.requestAnimationFrame(() => {\n    readerScrollFrame = 0;\n    clampReaderScrollPosition();"
@@ -801,8 +801,8 @@ fn code_blocks_get_a_copy_button() {
 fn select_all_in_the_reading_view_selects_only_the_page() {
     let html = app_shell_html();
 
-    // Ctrl/Cmd+A used to select the whole shell — library pane, toolbar and all —
-    // so copying a page dragged the chrome along. The shortcut selects just the
+    // A native Ctrl/Cmd+A selects the whole shell — library pane, toolbar and all —
+    // so copying a page drags the chrome along. The shortcut selects just the
     // rendered document, and stands aside for editable fields and the code view,
     // whose native select-all is scoped already.
     assert!(html.contains("event.key.toLowerCase() === 'a'"));
@@ -814,9 +814,8 @@ fn select_all_in_the_reading_view_selects_only_the_page() {
 
 #[test]
 fn app_shell_code_view_is_a_worker_free_monaco_with_its_own_minimap() {
-    // The code view is Monaco now: it renders only what's on screen, so typing
-    // never re-lays-out the whole document — the stutter the old hand-built color
-    // layer fought line by line. Guard the load-bearing choices of that swap.
+    // The code view is Monaco: it renders only what's on screen, so typing never
+    // re-lays-out the whole document. Guard the load-bearing choices behind that.
     let html = app_shell_html();
 
     // Entering the code view mounts a Monaco container and clears the reader's
@@ -850,10 +849,10 @@ fn app_shell_code_view_is_a_worker_free_monaco_with_its_own_minimap() {
 // been measured — and every theme brings its own code font. Monaco measures a font
 // when it is told to use it, which for a web font is before the face has arrived, so
 // it measures the fallback; a font landing changes no geometry, so the layout event
-// the column rides never fires to correct it. The wrap therefore looked like a
+// the column rides never fires to correct it. Uncorrected, the wrap reads as a
 // property of the theme: text running under the minimap on some, stopping short on
-// others, depending only on whether that font was already loaded and how wide the
-// fallback was.
+// others, depending only on whether that font is loaded already and how wide the
+// fallback is.
 //
 // The re-fit is pinned here because it has to keep working for fonts nobody has picked
 // yet: it is driven by the web view saying "faces finished loading", which names no
@@ -893,8 +892,8 @@ fn app_shell_refits_the_code_view_wrap_to_whatever_font_is_actually_measured() {
 // The edge fades dissolve the top and bottom of the page so a line sliced by the app
 // bar's edge or the card's stroke doesn't read as a rendering fault. Scrolled to
 // either end there is no slice to hide — and Monaco puts line 1 and the last line
-// flush against those same two edges, so the wash fell on text instead: the first
-// line of every document came up half erased. The editor therefore has to hold its
+// flush against those same two edges, so the wash falls on text instead and the
+// first line comes up half erased. The editor therefore has to hold its
 // content clear of both edges the way the reading view's page does, which is why the
 // clearance is READ from the reading view's own numbers rather than typed again here.
 #[test]

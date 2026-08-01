@@ -828,24 +828,24 @@ if (booted) {
   });
 
   // The sheet has one picture in it and mermaid draws it. Two would mean one of
-  // them was a lie, and it was always ours — so nothing in the flowchart code
-  // may draw a shape, and there is no second pane to draw it into.
+  // them is a lie, and it would be ours — so nothing in the flowchart code may
+  // draw a shape, and there is no second pane to draw it into.
   check('mermaid is the only thing that draws a flowchart', () => {
     const model = readFileSync(join(root, 'src/assets/shell/flow-model.js'), 'utf8');
     const canvas = readFileSync(join(root, 'src/assets/shell/flow-canvas.js'), 'utf8');
     const page = readFileSync(join(root, 'src/assets/app-shell.html'), 'utf8');
-    // Our own outlines are gone, and so is the layout that placed them.
+    // No outlines of our own, and no layout of ours placing them.
     for (const gone of ['outline:', 'grow:', 'layoutFlow', 'flowNodeSize', 'flowEdgeGeometry']) {
       if (model.includes(gone) || canvas.includes(gone)) throw new Error(`${gone} is back`);
     }
     if (/<(polygon|ellipse)\b/.test(canvas)) throw new Error('the canvas is drawing shapes again');
-    // One drawing surface: the preview pane beside it is gone.
+    // One drawing surface: no preview pane beside it.
     if (page.includes('flowPreview')) throw new Error('the second picture is back in the page');
     if (!canvas.includes("mermaid.render('leafFlowDraw'")) throw new Error('the canvas no longer renders with mermaid');
     // The handles are laid over mermaid's drawing, keyed off what it tags.
     // Mermaid writes a box's id on `id` as `flowchart-<id>-<n>`, not on
-    // `data-id` — reading the wrong attribute found nothing and left the canvas
-    // with no handles at all, silently. Both spellings are read now.
+    // `data-id` — reading the wrong attribute finds nothing and leaves the canvas
+    // with no handles at all, silently. Both spellings are read.
     if (!canvas.includes("svg.querySelectorAll('g.node, g[data-id]')")) {
       throw new Error('nothing reads mermaid’s boxes');
     }
@@ -853,9 +853,9 @@ if (booted) {
     if (!canvas.includes('flowEdgeDomId')) throw new Error('nothing maps mermaid’s lines back to ours');
   });
 
-  // jsoncanvas.org's field names were borrowed against a `.canvas` reader we
-  // never wrote, and mermaid cannot draw a `.canvas` file, so the last reason
-  // went with the swap. A node has a shape; an edge runs from one box to another.
+  // Nothing here borrows jsoncanvas.org's field names: mermaid cannot draw a
+  // `.canvas` file, so there is nothing to be compatible with. A node has a
+  // shape; an edge runs from one box to another.
   check('the graph says what it means and borrows nothing', () => {
     const { parseFlow } = booted;
     const graph = parseFlow('flowchart TD\n    A["a"]\n    B["b"]\n    A -.->|"maybe"| B');

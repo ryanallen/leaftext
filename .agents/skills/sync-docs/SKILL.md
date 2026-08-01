@@ -39,30 +39,48 @@ Look at the actual source for anything relevant — the docs must describe real 
 
 ### 2. Map changes to doc pages
 
+Pages carry an ordering prefix (`docs/01-features/03-library.md`); the prefix is
+stripped from the route, so that page is `#/01-features/03-library` in the SPA and
+`03-library.md` from a sibling.
+
 | App area / source | Doc page(s) to update |
 |:--|:--|
-| Render pipeline, GFM/CommonMark coverage, syntax languages, emoji, alerts, math, footnotes, local images, sanitizer allowlist (`src/lib.rs` render path) | `docs/features/markdown-rendering.md` |
-| Tabs, document/scroll history, `ScrollAnchor`, live reload, recent files, shortcuts (`src/main.rs`) | `docs/features/navigation.md` |
-| Library pane, indexer, SQLite manifest, crawl/skip rules, throttling (`src/indexer.rs`) | `docs/features/library.md` |
-| Minimap model and behavior (`build_minimap_model`, minimap UI) | `docs/features/minimap.md` |
-| Themes, theme sources, token contract (`LEAF_SEMANTIC_TOKEN_CONTRACT`, `compiled_theme_css`) | `docs/features/themes.md` and `docs/development/theming.md` |
-| Settings struct, `settings.json`, persistence, localization | `docs/features/settings.md` |
-| Crates, IPC commands, source-file roles, data structures | `docs/development/architecture.md` |
-| Toolchain, `Justfile`, `just verify`, platform build deps | `docs/development/building.md` |
-| Release flow (`Justfile` `release`, `scripts/prepare-release.mts`, `.github/workflows/release-*`), version | `docs/development/releasing.md` |
-| Install paths, platforms, data dirs, app id (`wix/`, `leaf.rc`, `Cargo.toml`) | `docs/installation.md` |
-| The pitch, the feature list, the keyboard-shortcut tour | `docs/introduction.md`, `docs/quickstart.md` |
+| Render pipeline, GFM/CommonMark coverage, syntax languages, emoji, alerts, math, footnotes, local images, sanitizer allowlist (`src/markdown/`, `src/xml.rs`, `src/tei.rs`, `src/data.rs`, `src/eml.rs`) | `docs/01-features/01-rendering.md` |
+| A new readable format — one arm in `src/format.rs`, plus its extensions | `docs/01-features/01-rendering.md`, `docs/01-features/03-library.md#file-types`, `docs/02-installation.md#file-associations`, and the format lists in `README.md` |
+| Tabs, document/scroll history, `ScrollAnchor`, live reload, recent files, shortcuts (`src/app/workspace.rs`, `src/app/history.rs`, `src/app/watch.rs`, `src/assets/shell/theme.js`) | `docs/01-features/02-navigation.md` |
+| Library pane, vaults, the in-memory corpus, search, the graph, GitHub sync (`src/folder_tree.rs`, `src/vault_corpus.rs`, `src/doc_graph.rs`, `src/store/vaults.rs`, `src/git.rs`, `src/app/vaults.rs`, `src/app/vault_git.rs`) | `docs/01-features/03-library.md` |
+| Minimap model and behavior (`src/minimap.rs`, `src/assets/shell/minimap.js`) | `docs/01-features/04-minimap.md` |
+| Themes, theme sources, token contract (`LEAF_SEMANTIC_TOKEN_CONTRACT`, `reading_mode_css`, `themes/*.md`) | `docs/01-features/06-themes.md` and `docs/02-development/04-theming.md` |
+| Settings struct, `settings.json`, persistence, the updater's user-facing behavior | `docs/01-features/05-settings.md` |
+| Reading-view editing, the block gutter, the format bar, the flowchart sheet, the code view, typing help (`src/editing.rs`, `src/code_intel.rs`, `src/assets/shell/reading-edits.js`, `block-controls.js`, `selection-toolbar.js`, `flow-*.js`, `code-view.js`) | `docs/01-features/07-editing.md` |
+| Which Monaco colorizers are bundled (`scripts/bundle-monaco.mjs`) | `docs/01-features/07-editing.md#code-view` — a format with no grammar opens as uncolored text, and the page says which |
+| Crates, IPC commands, source-file roles, data structures | `docs/02-development/01-architecture.md` |
+| Toolchain, `Justfile`, `just verify`, platform build deps | `docs/02-development/02-building.md` |
+| Release flow (`Justfile` `release`, `scripts/prepare-release.mts`, `.github/workflows/release-*`), version | `docs/02-development/03-releasing.md` |
+| Install paths, platforms, data dirs, app id (`wix/`, `leaf.rc`, `Cargo.toml`) | `docs/02-installation.md` |
+| The pitch, the feature list, the keyboard-shortcut tour | `docs/01-introduction.md`, `docs/03-quickstart.md`, `README.md` |
+| A word Leaftext uses for a part of itself | `docs/GLOSSARY.md` |
 
-Update **every** page a change touches. A renamed setting, for example, may appear in both `settings.md` and `library.md`.
+Update **every** page a change touches. A renamed setting, for example, may appear
+in both `05-settings.md` and `03-library.md`.
+
+**The README is a doc page for this purpose.** It carries its own copy of the
+feature tour, the network/privacy claims, the install steps and the format lists,
+so a change to any of those lands there as well as in `docs/`. Claims about what
+reaches the network, what is written to disk, and when an update installs itself
+are the ones worth re-deriving from the source rather than trusting: they are the
+promises a reader is most entitled to, and the easiest to leave behind.
 
 ### 3. Edit the page(s)
 
 **Sweep each touched page for stale enumerations — don't just append.** A page usually carries one or more *enumerations* that mirror the code: a Summary/overview table, a keyboard-shortcut list, an IPC-command or settings table, a feature matrix. Adding a new section below does **not** fix a row that is now wrong or missing in a table above — that drift is silent and is the most common miss. For every touched page, find each such table/list and **re-derive it from the source**, not from memory. Known enumerations to re-check whenever the relevant area changes:
 
-- `docs/features/library.md` — the **Summary** table (one row per library capability) and the **File actions** table (one row per right-click menu item).
-- `docs/development/architecture.md` — the **IPC command** table (one row per `IpcCommand` variant in `src/main.rs`) and the **source-file roles** list.
-- `docs/features/navigation.md` and `docs/quickstart.md` — the **keyboard-shortcut** lists.
-- `docs/features/settings.md` — the **settings** table (one row per field in the settings struct).
+- `docs/01-features/03-library.md` — the **Summary** table (one row per library capability), the **File actions** table (one row per right-click menu item in `src/assets/shell/context-menu.js`), and the **Facts** table.
+- `docs/02-development/01-architecture.md` — the **IPC command** table (one row per `IpcCommand` variant in `src/app/events.rs`, grouped where the code groups them) and the **source-file roles** list.
+- `docs/01-features/02-navigation.md` and `docs/03-quickstart.md` — the **keyboard-shortcut** lists (the handlers are in `src/assets/shell/theme.js`, `code-view.js`, `selection-toolbar.js` and `navigation.js`).
+- `docs/01-features/05-settings.md` — the **settings** table (one row per field in `Settings` in `src/lib.rs`).
+- `docs/01-features/07-editing.md` — the **Summary** table and the block-kind list the insert row offers (`MARKDOWN_INSERTS` in `block-controls.js`).
+- `docs/01-features/06-themes.md` and `README.md` — the **family list and count** (`themes/*.md`, one file per family).
 
 A useful check: enumerate the source (e.g. the `IpcCommand` variants, the menu items, the settings fields) and confirm the doc table has exactly those rows — no extras, none missing.
 
@@ -81,15 +99,23 @@ A useful check: enumerate the source (e.g. the `IpcCommand` variants, the menu i
 
 **Do NOT use** Mintlify/MDX components (`<Tabs>`, `<Tab>`, `<Steps>`, `<Step>`, `<Card>`, `<CardGroup>`, `<Accordion>`, `<Note>`, `<Tip>`, `<Warning>`) or `theme={null}` on code fences. Convert those concepts to plain Markdown: tabs/steps/accordions → `###` subheadings or `**1. …**` numbered bold lines; cards → a bullet list of links; callouts → the `> [!TYPE]` alerts above.
 
-**Cross-page links** must be relative `.md` paths so they work both on GitHub and in the SPA: from `docs/installation.md` link `quickstart.md`; from `docs/features/navigation.md` link a sibling as `themes.md` and a top-level page as `../installation.md`. `docs.js` intercepts these and turns them into `#/route` navigations.
+**Cross-page links** must be relative `.md` paths, written with the **prefixed file
+name**, so they work both on GitHub and in the SPA: from `docs/02-installation.md`
+link `03-quickstart.md`; from `docs/01-features/02-navigation.md` link a sibling as
+`06-themes.md` and a top-level page as `../02-installation.md`. `docs.js` intercepts
+these and turns them into `#/route` navigations, stripping the prefixes.
 
 ### 4. If you add or remove a page
 
-Three places must stay in sync:
+**The nav builds itself.** `docs.js` derives the sidebar, the mobile dropdown and
+the pager from the folder listing (`site/docs-nav.js`), so there is no table to
+edit — the `NN-` prefix on the file name is what sets its place in the order, and a
+folder's `README.md` is that folder's index. Two places to keep in sync:
 
-1. The `.md` file under `docs/` (create or delete).
-2. The `NAV` table in `docs/docs.js` — add/remove the `{ route, title }` entry in the right group and order. `route` is the path under `docs/` without `.md`.
-3. The **Documentation** list in the root `README.md` — keep the `docs/<route>.md` relative links current.
+1. The `.md` file under `docs/` (create or delete), named with the prefix that puts
+   it where you want it. Renumber its siblings if it has to land between two of them.
+2. The **Documentation** list in the root `README.md` — keep the `docs/<path>.md`
+   relative links current.
 
 ### 5. Regenerate the SEO / AIO / LLM discovery files
 
@@ -136,7 +162,7 @@ Leave the changes uncommitted. Tell the user what pages changed. If they want it
 
 ## Reference
 
-- `docs/docs.js` — the `NAV` table (sidebar + mobile dropdown + pager) and the routing/link-interception logic.
+- `docs/docs.js` — the shell, the routing and the link interception. Its nav comes from `site/docs-nav.js`, which reads the folder listing, so there is no page list in it.
 - `docs/index.html`, `docs/docs.css` — the docs shell and chrome.
 - `site/markdown.js` — the renderer that defines what Markdown the docs may use.
 - `README.md` — the **Documentation** section with relative `docs/<route>.md` links.

@@ -372,8 +372,8 @@ fn app_data_dir_is_the_local_data_root_not_the_webview_cache() {
     assert!(!path.ends_with("webview2"));
 }
 
-/// These paths are where every installed copy already keeps its settings,
-/// recent files, and search index, so they are a compatibility contract, not a
+/// These paths are where every installed copy already keeps its settings, recent
+/// files, and vault registry, so they are a compatibility contract, not a
 /// preference. They were captured from the `directories` crate's
 /// `ProjectDirs::from("com", "ryanallen", "leaftext")` before that dependency
 /// was replaced with the plain environment lookups in `project_config_dir` and
@@ -524,8 +524,9 @@ fn installer_claims_every_readable_extension() {
     }
 }
 
-/// The pager, the file dialog, drag-and-drop, link following and the library index
-/// each used to carry their own list. Anything the app can open must page too.
+/// The pager, the file dialog, drag-and-drop, link following and the library pane
+/// all ask `format.rs` rather than carrying a list. Anything the app can open must
+/// page too.
 #[test]
 fn every_readable_format_is_a_pager_page_and_an_in_app_link() {
     for extension in all_document_extensions() {

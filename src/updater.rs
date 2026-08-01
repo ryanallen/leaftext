@@ -28,9 +28,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
-/// Check at most this often. The app used to ask GitHub on every single launch,
-/// which against an unauthenticated 60-requests-per-hour limit is a lot of
-/// spend for an answer that changes at most daily.
+/// Check at most this often. Asking GitHub on every launch is a lot of spend
+/// against an unauthenticated 60-requests-per-hour limit, for an answer that
+/// changes at most daily.
 pub const UPDATE_CHECK_INTERVAL_SECS: u64 = 6 * 60 * 60;
 
 /// Refuse a download larger than this. The installers run about 6 MB; the cap
@@ -78,8 +78,8 @@ pub fn is_newer_version(candidate: &str, current: &str) -> bool {
 /// Whether an installer may be fetched from this URL.
 ///
 /// Untrusted input aimed at a native HTTP client: the URL comes off the network
-/// by way of the page, which no longer has a content policy standing behind it.
-/// HTTPS only, and only hosts GitHub serves releases from.
+/// by way of the page, and no content policy stands behind it here. HTTPS only,
+/// and only hosts GitHub serves releases from.
 pub fn update_url_is_allowed(url: &str) -> bool {
     let Ok(parsed) = url::Url::parse(url) else {
         return false;
@@ -111,7 +111,7 @@ pub fn platform_asset_suffix() -> &'static str {
     }
 }
 
-/// Root of the staging area, beside the search index in the app data folder.
+/// Root of the staging area, beside the vault registry in the app data folder.
 pub fn updates_dir(data_dir: &Path) -> PathBuf {
     data_dir.join("updates")
 }

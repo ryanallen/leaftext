@@ -106,15 +106,15 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
         assert_contains(css, token);
     }
 
-    // No fonts are bundled into the stylesheet anymore — the app uses system
-    // fonts, and web-font themes fetch from Google Fonts on activation.
+    // No fonts are bundled into the stylesheet: the app uses system fonts, and
+    // web-font themes fetch from Google Fonts on activation.
     assert!(
         !css.contains("@font-face") && !css.contains("data:font/woff2"),
         "reading-mode CSS must not embed bundled font faces"
     );
-    // The Primer primitive cascade is gone: every theme, github included, is now
-    // a self-contained literal palette, so the compiled CSS carries no Primer
-    // primitive blocks or `var(--bgColor-*)` indirection.
+    // Every theme, github included, is a self-contained literal palette, so the
+    // compiled CSS carries no Primer primitive blocks and no `var(--bgColor-*)`
+    // indirection.
     assert!(!css.contains("--base-color-neutral-0"));
     assert!(!css.contains("var(--bgColor-default)"));
     assert!(!css.contains("var(--prettylights-syntax-comment)"));
@@ -129,7 +129,7 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
         css,
         r#":root[data-leaf-theme="nightshade"][data-leaf-appearance="dark"]"#,
     );
-    // GitHub's tokens are concrete hex now, like every other family.
+    // GitHub's tokens are concrete hex, like every other family's.
     assert_contains(css, "--leaf-background: #ffffff;");
     assert_contains(css, "--leaf-syntax-comment: #59636e;");
     assert_contains(css, "--surface-page: var(--leaf-markdown-background);");
@@ -187,9 +187,9 @@ fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
 
 #[test]
 fn the_home_screens_new_document_button_stays_readable_on_hover() {
-    // It started life with a color and no background, so the generic
-    // `button:hover` fill stayed underneath and hover was one purple on another.
-    // Both states name a pair the theme compiler gates, so no theme can repeat it.
+    // With a color and no background of its own, the generic `button:hover` fill
+    // stays underneath and hover is one purple on another. Both states name a pair
+    // the theme compiler gates, so no theme can repeat it.
     let css = reading_mode_css();
 
     let rest = rule_body(&css, ".primary-new {");
@@ -484,12 +484,11 @@ fn reading_mode_css_offsets_document_by_measured_scroll_origin() {
 
 #[test]
 fn reading_mode_css_pins_reader_to_its_grid_cell() {
-    // The reader must be explicitly placed in the library-shell grid. When it
-    // was auto-placed, unhiding the .reader-loading overlay (explicitly at
-    // column 2, row 1) evicted the reader into an implicit row in the 0px
-    // library column, reflowing the whole document at zero width and turning
-    // every in-flight scroll computation into garbage — the "page jumps all
-    // over the place" bug.
+    // The reader must be explicitly placed in the library-shell grid. Auto-placed,
+    // unhiding the .reader-loading overlay (explicitly at column 2, row 1) evicts
+    // the reader into an implicit row in the 0px library column, reflowing the
+    // whole document at zero width and turning every in-flight scroll computation
+    // into garbage — the "page jumps all over the place" bug.
     let css = reading_mode_css();
     let shell_rule_start = css
         .find(".reader-shell {")
@@ -544,8 +543,8 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
     assert_contains(bar, "width: 14px;");
     assert_eq!(rule.matches("linear-gradient(").count(), 2);
     // The wash spans the same depth as the screen over it, not its own. Given a
-    // shorter one its ramp ended where the screen's carried on, and the break in
-    // slope read as a bright line at the halfway mark.
+    // shorter one its ramp ends where the screen's carries on, and the break in
+    // slope reads as a bright line at the halfway mark.
     assert_contains(rule, "background-size: 100% var(--reader-edge-fade-depth);");
     assert_contains(
         rule,
@@ -578,8 +577,8 @@ fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
     assert_contains(shared, "height: var(--reader-edge-fade-depth);");
     // One window-anchored lattice across every grained surface.
     assert_contains(shared, "background-attachment: fixed;");
-    // One even screen. A second dot layer means a size ramp came back, and every
-    // version of that read as stacked bands.
+    // One even screen. A second dot layer is a size ramp, which reads as stacked
+    // bands.
     assert_eq!(shared.matches("radial-gradient(").count(), 1);
 
     // Opposite directions, and both taking their hold from the same variable the
@@ -642,7 +641,7 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
             "--minimap-preview-width: 46px;",
             // The rail is chrome, not page: its own shell column, a lead-in
             // holding the card's right border off it, the window gutter beyond
-            // it, and no bleed or sticky, because it no longer lives in the
+            // it, and no bleed or sticky, because it does not live in the
             // scroller it tracks.
             ".reader-minimap {",
             "grid-column: 3;",
@@ -703,21 +702,21 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
             "the minimap thumbnail lane fills the rail inside the exact 8px padding on both edges"
         );
     // The slide is a transform, not `top`: the lane moves every frame, and as a
-    // layout property `top` made the browser re-lay-out the page to move it —
+    // layout property `top` makes the browser re-lay-out the page to move it —
     // 128ms worst frame on a 4MB glossary against 44ms, the no-rail floor.
     assert!(
         css.contains("  will-change: transform;"),
         "the thumbnail lane must be promoted for its transform, not for `top`"
     );
     // The reader renders the whole document up front, so it must NOT use
-    // content-visibility (which flashed blocks blank and jumped the minimap box).
+    // content-visibility, which flashes blocks blank and jumps the minimap box.
     assert!(
         !css.contains("content-visibility: auto"),
         "the reader must render in full (no content-visibility) so scrolling matches the web"
     );
-    // Same invariant, enforced from the other side now that the rail is chrome:
-    // its column is exactly the rail plus the lead-in, so no dead strip can open
-    // up between the page's right border and the rail, or past it.
+    // Same invariant from the other side: the rail is chrome, so its column is
+    // exactly the rail plus the lead-in, and no dead strip can open up between the
+    // page's right border and the rail, or past it.
     assert_contains(
         css,
         "--reader-minimap-column: calc(var(--minimap-width) + var(--reader-minimap-gap));",
@@ -901,9 +900,9 @@ fn the_code_views_line_numbers_stand_off_the_page_frame() {
 
 // The minimap rail is chrome, not page: the shell's grain runs behind it. Monaco's
 // minimap canvas paints only the pixels its glyphs land in — it fills no background of
-// its own — so anything opaque behind the rail is something of ours, and the page fill
-// crossing into it is the whole reason the rail read as page-colored. Every layer
-// carrying that color has to stop at the page frame's right border.
+// its own — so anything opaque behind the rail is something of ours, and a page fill
+// crossing into it is what makes the rail read as page-colored. Every layer carrying
+// that color has to stop at the page frame's right border.
 #[test]
 fn the_code_views_minimap_rail_shows_the_shells_grain() {
     let css = reading_mode_css();

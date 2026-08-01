@@ -1,4 +1,4 @@
-//! The SQLite index, search, and Prev/Next paging.
+//! Prev/Next paging: the label rule, and which files are pages.
 
 use super::*;
 

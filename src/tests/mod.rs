@@ -101,8 +101,8 @@ fn css_token(css: &str, theme: ResolvedTheme, name: &str) -> Rgb {
     let leaf_alias_block = css_block(css, ":root {");
     let mut blocks = vec![leaf_alias_block];
     // The `:root` aliases point at `--leaf-*` tokens defined in the github family
-    // block, which hold concrete hex now (no Primer indirection). Load it so the
-    // var() chain resolves for the default theme.
+    // block, which hold concrete hex. Load it so the var() chain resolves for the
+    // default theme.
     let family_block = match theme {
         ResolvedTheme::Light => {
             r#":root[data-leaf-theme="github"][data-leaf-appearance="light"] {"#

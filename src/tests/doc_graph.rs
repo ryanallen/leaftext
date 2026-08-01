@@ -47,8 +47,8 @@ fn linked(graph: &DocumentGraph, a: &str, b: &str) -> bool {
 #[test]
 fn a_document_in_no_vault_still_has_a_map_of_what_it_links_to() {
     let dir = graph_dir("loose");
-    // No vault anywhere near this: just a folder with documents in it, which is
-    // the state that used to have no graph at all.
+    // No vault anywhere near this: just a folder with documents in it, which still
+    // has to draw a map.
     let seed = dir.join("opening.md");
     write(
         &seed,
@@ -91,7 +91,7 @@ fn a_link_out_of_the_folder_is_followed_but_the_tree_below_is_not() {
     );
     write(&dir.join("elsewhere").join("further.md"), "# Further\n");
     // Below the seed's own folder. One level is the rule, so this is not read —
-    // descending is how a bounded read becomes the crawl this replaced.
+    // descending is how a bounded read becomes a crawl.
     write(&here.join("below").join("deep.md"), "# Deep\n");
 
     let graph = document_graph(&seed, &GraphRequest::default());

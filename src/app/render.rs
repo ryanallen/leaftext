@@ -14,8 +14,7 @@ pub(crate) fn run_page_script(webview: Option<&WebView>, script: &str, what: &st
 
 /// What it takes to put a document on screen: the window to title, the page to
 /// write to, the tabs to draw, the recents to record, and where images resolve
-/// from. One bundle because they always travel together — every render used to
-/// pass all six by hand.
+/// from. One bundle because they always travel together.
 pub(crate) struct Reader {
     pub(crate) window: tao::window::Window,
     pub(crate) webview: Option<WebView>,

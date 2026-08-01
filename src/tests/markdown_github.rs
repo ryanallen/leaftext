@@ -320,8 +320,8 @@ fn renders_leaf_button_link_custom_markdown() {
         &rendered.html,
         r#"<a href="https://example.com" rel="noopener noreferrer">link</a>"#,
     );
-    // Brackets are link syntax, never a button wrapper: the old `[[…]()]` form now
-    // renders as what it literally is.
+    // Brackets are link syntax, never a button wrapper, so `[[…]()]` renders as
+    // what it literally is.
     assert_contains(&rendered.html, ">Bracketed</a>]");
     assert!(!rendered.html.contains(">Bracketed</a></a>"));
     // An unbalanced wrapper is prose, and keeps both of its braces.

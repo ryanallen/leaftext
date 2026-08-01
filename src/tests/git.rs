@@ -50,9 +50,9 @@ fn a_commit_says_what_changed_and_not_who_made_it() {
 
     // The shape that shipped a wrong message. `status --porcelain` writes two
     // status columns, and for a plain modification the first is a blank -- which
-    // a `trim()` on git's whole output helpfully removed, leaving the path read
-    // one byte late as "EADME.md". The reader now survives either form, and the
-    // caller no longer mangles it on the way in.
+    // a `trim()` on git's whole output helpfully removes, leaving the path read
+    // one byte late as "EADME.md". Both forms have to read the same, and the
+    // caller must not trim git's output on the way in.
     assert_eq!(commit_message(" M README.md"), "Update README.md");
     assert_eq!(commit_message("M README.md"), "Update README.md");
     assert_eq!(

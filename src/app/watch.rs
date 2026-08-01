@@ -3,7 +3,7 @@
 use super::*;
 
 /// Turns filesystem changes into `UserEvent::FileChanged` for the active
-/// document's directory (live-reload) and, in Project view, the browsed folder.
+/// document's directory (live-reload) and for the folder the library pane shows.
 /// Watches the parent directory, not the file, to survive editors that save by
 /// renaming a temp file over the original.
 pub(crate) struct FileWatch {
@@ -48,7 +48,7 @@ impl FileWatch {
     }
 
     /// Point the watcher at the active document's folder and, when given, the
-    /// Project view's folder (recursively). Cheap after every event: diffs the
+    /// library pane's folder (recursively). Cheap after every event: diffs the
     /// desired set against what's watched and no-ops when nothing changed.
     pub(crate) fn sync(
         &mut self,
@@ -101,8 +101,8 @@ impl FileWatch {
 /// `\\?\` verbatim form — and the watcher reports every event in the form the
 /// watch was registered with. The pane's folder and the vault's root are held
 /// plain, and both are checked with plain equality, so an untranslated event
-/// matched nothing: a file appearing in the shown folder never refreshed the
-/// pane, and the vault's text was never patched. Translate once, here at the
+/// matches nothing: a file appearing in the shown folder never refreshes the
+/// pane, and the vault's text is never patched. Translate once, here at the
 /// boundary. On macOS every absolute path starts with `/`, so this is a no-op.
 pub(crate) fn plain_event_path(path: PathBuf) -> PathBuf {
     let text = path.to_string_lossy();
@@ -175,9 +175,9 @@ pub(crate) fn content_hash(contents: &str) -> u64 {
 ///
 /// `active_hash` is cleared whenever the active document changes, so the first event
 /// after an open never matches it — and the whole folder is watched, so one usually
-/// arrives about something else. That rebuilt the whole view for a file nobody had
-/// touched. A dirty buffer never claims to match, so an outside change
-/// over unsaved edits is still reconciled.
+/// arrives about something else. Ungated, that rebuilds the whole view for a file
+/// nobody touched. A dirty buffer never claims to match, so an outside change over
+/// unsaved edits is still reconciled.
 pub(crate) fn buffer_already_shows(edit: Option<&EditableDocument>, contents: &str) -> bool {
     edit.is_some_and(|edit| !edit.is_dirty() && edit.text() == contents)
 }

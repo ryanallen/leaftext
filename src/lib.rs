@@ -861,10 +861,6 @@ pub fn app_shell_html() -> String {
     html
 }
 
-/// The theme picker's family buttons for the selector bottom sheet, one per
-/// family, rendered from [`theme_families`] so the built-in list stays the
-/// single source of truth. Family names are trusted (proper nouns defined in
-/// `theme.rs`), ids are `[a-z0-9-]`.
 /// Selected-state check badge shown on the active theme card (Heroicons
 /// check-circle, stroked in the accent color via `currentColor`). Hidden until
 /// the card is `.is-active`.
@@ -977,7 +973,7 @@ fn theme_bootstrap_script() -> String {
 /// Reverse-DNS app id, and the two halves it is built from. macOS names the
 /// per-app folder with the whole id; Windows nests organization inside
 /// application. Both spellings are load-bearing: they are where every existing
-/// install already keeps its settings, recent files, and search index.
+/// install already keeps its settings, recent files, and vault registry.
 /// Only macOS spells the qualifier into a path; Windows ignores it entirely.
 #[cfg(target_os = "macos")]
 const APP_QUALIFIER: &str = "com";
@@ -992,7 +988,7 @@ const APP_NAME: &str = "leaftext";
 /// These reproduce, exactly, the layout the `directories` crate produced for
 /// `ProjectDirs::from("com", "ryanallen", "leaftext")` — including the `config`
 /// leaf on Windows, which is easy to miss and would strand every existing
-/// user's settings if it were dropped. [`project_dirs_match_the_documented_layout`]
+/// user's settings if it were dropped. `project_dirs_match_the_documented_layout`
 /// pins both.
 pub fn project_config_dir() -> Option<PathBuf> {
     #[cfg(windows)]
@@ -1010,7 +1006,8 @@ pub fn project_config_dir() -> Option<PathBuf> {
     }
 }
 
-/// Machine-local per-user data root (WebView2's cache and the search index).
+/// Machine-local per-user data root (WebView2's cache, the vault registry, and
+/// staged updates).
 ///
 /// Windows: `%LOCALAPPDATA%\ryanallen\leaftext\data`.
 /// macOS: `~/Library/Application Support/com.ryanallen.leaftext`, which is the
@@ -1049,9 +1046,9 @@ pub fn webview_user_data_dir() -> Option<PathBuf> {
     project_data_local_dir().map(|dir| dir.join("webview2"))
 }
 
-/// The app data root for leaftext's own files (the indexer manifest lives here).
-/// The local data dir itself, not the WebView2 cache subfolder, so the manifest
-/// isn't entangled with the browser's storage.
+/// The app data root for leaftext's own files: `manifest.db` (the vault registry)
+/// and staged updates. The local data dir itself, not the WebView2 cache
+/// subfolder, so neither is entangled with the browser's storage.
 pub fn app_data_dir() -> Option<PathBuf> {
     project_data_local_dir()
 }
@@ -1102,8 +1099,6 @@ pub struct Settings {
     /// The code view's typing help: note and heading suggestions, and the
     /// underline on links that lead nowhere. On by default.
     pub code_intel_enabled: bool,
-    /// Make the reading view a live editor. On by default; off keeps it
-    /// read-only. The code view edits the raw source regardless.
     /// Selected theme family: `github`/`nightshade`/`amaranth`/… Raw frontend
     /// string; the frontend normalizes anything unexpected back to `github`.
     pub theme_family: String,
@@ -1116,8 +1111,8 @@ pub struct Settings {
     pub theme_random_used: Vec<String>,
     /// How much of the link graph the graph view draws (see [`GraphScope`]).
     pub graph_scope: GraphScope,
-    /// The folder Project view is inside (empty string = the root). Restored on
-    /// launch, so the pane reopens where it was left.
+    /// The folder the library pane is inside (empty string = the root). Restored
+    /// on launch, so the pane reopens where it was left.
     pub library_project_path: String,
     /// Whether the library pane is collapsed shut. Open by default.
     pub library_closed: bool,

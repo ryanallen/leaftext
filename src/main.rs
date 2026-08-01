@@ -274,8 +274,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         ))
         .with_min_inner_size(LogicalSize::new(380.0, 480.0))
         .with_maximized(settings.window_maximized);
-    // On Windows we drop the native title bar (removing just its icon always fell
-    // back to a placeholder) for a custom one: the app bar is the drag region and
+    // On Windows we drop the native title bar (removing just its icon falls back
+    // to a placeholder) for a custom one: the app bar is the drag region and
     // carries our own window controls (wired via IPC). undecorated_shadow keeps the
     // shadow and edge resize; the taskbar leaf rides the exe icon. Others: native.
     #[cfg(windows)]
@@ -324,8 +324,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .unwrap_or_default();
 
     // The vault registry, so the leftmost crumb reads the active vault's name on
-    // the first paint. Opening the manifest here also applies its migrations
-    // before the indexer's threads touch it.
+    // the first paint. Opening the manifest here is also what applies its
+    // migrations, before anything else reads it.
     let data_dir = app_data_dir();
     let vault_state = VaultState::load(data_dir.as_deref());
 
@@ -577,7 +577,6 @@ fn pick_vault_folder() -> Option<PathBuf> {
 
 /// Open each dropped document as a tab. Returns `true` to block the webview's
 /// default drop behavior (a useless "copy" cursor).
-/// Dropping a file onto the window opens it.
 ///
 /// Always reports the drag as handled, which is also what keeps the web view from
 /// doing anything of its own with one — including its own drag and drop. Anything

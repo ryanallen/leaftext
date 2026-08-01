@@ -1,8 +1,8 @@
 //! What the app reads: the one table of formats and the extensions that name
 //! them. The file dialog, drag-and-drop, the link classifier, the pager, the
-//! library indexer, the render router and the code view all ask this one. A
-//! second list anywhere drifts, and drift here is silent — a file opens but its
-//! folder won't page, or a link to it leaves the app.
+//! library pane, the render router and the code view all ask this one. A second
+//! list anywhere drifts, and drift here is silent — a file opens but its folder
+//! won't page, or a link to it leaves the app.
 //!
 //! Adding a format means adding an arm here. Every match on `DocumentFormat` is
 //! exhaustive on purpose, so the compiler names each site that has to answer for
@@ -106,7 +106,7 @@ pub fn all_document_extensions() -> Vec<&'static str> {
 
 /// True when `path` names a file the app can open. The one answer behind the
 /// file dialog, drag-and-drop, in-app link following, the pager and the library
-/// index, so all five agree on what a document is.
+/// pane, so all five agree on what a document is.
 pub fn is_supported_document_path(path: &Path) -> bool {
     DocumentFormat::for_path(path).is_some()
 }

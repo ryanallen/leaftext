@@ -266,8 +266,8 @@ fn a_binary_is_refused_and_the_message_says_where() {
 
 #[test]
 fn a_zero_byte_in_valid_utf8_still_opens() {
-    // U+0000 is legal UTF-8 and such files open today. The binary test runs only
-    // after UTF-8 has been ruled out, so this keeps working.
+    // U+0000 is legal UTF-8, and such files open: the binary test runs only after
+    // UTF-8 has been ruled out.
     let read = decode_source(b"a\x00b").expect("a NUL inside valid UTF-8 is not a binary");
     assert_eq!(read.spelling.encoding, SourceEncoding::Utf8);
     assert_eq!(read.text, "a\u{0}b");
@@ -298,7 +298,7 @@ fn a_document_read_in_utf16_saves_back_as_utf16() {
     // The checkbox is on the first line deliberately. With the mark left in the
     // text, pulldown-cmark reads `\u{feff}- [ ] one` as a paragraph and there is no
     // task marker to flip at all — so this fixture is also the test that the mark
-    // came off.
+    // comes off.
     let dir = std::env::temp_dir().join(format!("leaf-encoding-save-{}", unique_suffix()));
     fs::create_dir_all(&dir).expect("fixture directory is created");
     let path = dir.join("notes.md");
@@ -321,8 +321,7 @@ fn a_document_read_in_utf16_saves_back_as_utf16() {
 
 #[test]
 fn a_marked_utf8_document_can_edit_its_first_line() {
-    // The same fix, for the case that was quietly broken before any of this: a
-    // UTF-8 file with a mark whose first line is a list.
+    // The same rule for a UTF-8 file with a mark whose first line is a list.
     let source = decode_source("- [ ] one\n".as_bytes().to_vec().as_slice())
         .expect("unmarked control decodes");
     let marked = decode_source(format!("\u{feff}- [ ] one\n").as_bytes()).expect("marked decodes");
@@ -343,8 +342,8 @@ fn a_marked_utf8_document_can_edit_its_first_line() {
 
 #[test]
 fn documents_that_used_to_fail_to_open_now_open() {
-    // Before this, both of these were "Failed to open …": `read_to_string` is
-    // UTF-8-or-fail, and neither of these files is UTF-8.
+    // `read_to_string` is UTF-8-or-fail and neither of these files is UTF-8, so
+    // both have to reach the reader through the decoder.
     let dir = std::env::temp_dir().join(format!("leaf-encoding-open-{}", unique_suffix()));
     fs::create_dir_all(&dir).expect("fixture directory is created");
 

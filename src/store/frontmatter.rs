@@ -86,7 +86,7 @@ fn parse_inline_array(inner: &str) -> Vec<String> {
 
 /// Parse a frontmatter block into normalized key/value fields. Unrecognized
 /// lines are skipped. Returns `Err` only when the block has content but nothing
-/// parsed as a mapping (the file is still indexed either way).
+/// parsed as a mapping — the document still renders either way.
 pub fn parse_frontmatter(block: &FrontmatterBlock) -> Result<ParsedFrontmatter, MetadataError> {
     let mut fields: Vec<FrontmatterField> = Vec::new();
     let mut bad_lines = 0usize;

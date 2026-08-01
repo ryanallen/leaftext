@@ -255,11 +255,3 @@ fn data_leaf_attribute_prefixes_survive_sanitizing() {
     assert!(cleaned.contains(r#"data-src-start="10""#));
     assert!(cleaned.contains(r#"data-src-end="20""#));
 }
-
-// ---------------------------------------------------------------------------
-// Updates
-//
-// The staging code decides whether downloaded bytes are allowed to reach an
-// installer, so its refusals matter more than its successes. Each test below
-// covers one way a download can be wrong.
-// ---------------------------------------------------------------------------

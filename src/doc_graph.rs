@@ -9,9 +9,9 @@
 //! word in it. A map of one document does not need that, and must not do it: this
 //! reads the document, the folder it sits in (one level, no further), and
 //! whatever the document points at. So the work is bounded by how many links the
-//! document has, not by how big the disk under it is — which is the whole reason
-//! this exists rather than the old fallback to "whatever folder the pane is
-//! showing", where opening the map at `C:\` walked the drive.
+//! document has, not by how big the disk under it is. Falling back to "whatever
+//! folder the pane is showing" instead means opening the map at `C:\` walks the
+//! drive.
 //!
 //! **What it cannot see.** An outgoing link is written in the document; an
 //! incoming one is only ever written in somebody else's. Reading the folder

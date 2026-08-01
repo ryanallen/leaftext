@@ -227,8 +227,8 @@ fn theme_source_from_file(file: ThemeFile) -> ThemeSource {
 
 /// The registered theme sources (each family's light/dark pair). Parsed once
 /// from the bundled `src/assets/themes.md` and leaked to `&'static` so every
-/// consumer keeps working against `&'static` fields. Palettes are data now: to
-/// add or edit a theme, edit the per-family Markdown files under `themes/` and
+/// consumer keeps working against `&'static` fields. Palettes are data: to add
+/// or edit a theme, edit the per-family Markdown files under `themes/` and
 /// run `just bundle-themes` — this function only loads the compiled bundle.
 pub(crate) fn theme_sources() -> &'static [ThemeSource] {
     static SOURCES: OnceLock<Vec<ThemeSource>> = OnceLock::new();

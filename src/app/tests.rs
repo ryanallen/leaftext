@@ -663,7 +663,7 @@ fn a_document_opened_while_reading_source_opens_in_source() {
     );
 
     // The view is where the reader is working, not a property of the file they
-    // picked. Opening one from the pane used to throw them back to the page.
+    // picked, so opening one from the pane must not throw them back to the page.
     workspace.tabs[0].code_view = true;
     workspace.open_path(PathBuf::from("/notes/second.md"));
     assert_eq!(workspace.active, Some(1));
@@ -730,8 +730,8 @@ fn the_code_view_script_carries_a_url_and_not_the_source() {
 
 #[test]
 fn a_watch_event_for_unchanged_content_is_not_a_reload() {
-    // With the code view open, re-sending rebuilt the entire colored source — so a
-    // spurious event for an untouched file read as the view redrawing itself with
+    // With the code view open, re-sending rebuilds the entire colored source — so a
+    // spurious event for an untouched file reads as the view redrawing itself with
     // new colors a moment after it appeared.
     let contents = "# Title
 

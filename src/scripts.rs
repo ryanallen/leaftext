@@ -3,7 +3,7 @@ use crate::*;
 
 /// `f(<state>);` — the state written out as a JavaScript value.
 ///
-/// Not `JSON.parse("…")`, which was tried here and is slower. That trick wins when
+/// Not `JSON.parse("…")`, which is slower here. That trick wins when
 /// a payload is dense structure (the blocks array alone parses 3x faster that way)
 /// and loses on long strings, because the text is scanned and unescaped once as a
 /// JS string before the JSON reader sees it at all. A document payload is mostly
@@ -398,8 +398,6 @@ pub fn blocks_resynced_script(
     format!("window.leafBlocksResynced({});", state)
 }
 
-/// Report the outcome of a save for `path`: `error` is null on success and a
-/// message string when the write failed.
 /// Make a document editable in the reading view without anyone clicking the
 /// padlock. Sent for a document created here — it exists to be typed into — and
 /// again when a save gives it its real name, because the page keys the unlock by
@@ -418,6 +416,8 @@ pub fn image_picked_script(token: u64, destination: &str, alt: &str) -> String {
     format!("window.leafImagePicked({token}, {destination}, {alt});")
 }
 
+/// Report the outcome of a save for `path`: `error` is null on success and a
+/// message string when the write failed.
 pub fn save_result_script(path: &str, ok: bool, error: Option<&str>) -> String {
     let path = serde_json::to_string(path).expect("path serializes");
     let error = match error {

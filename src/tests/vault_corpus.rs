@@ -104,7 +104,7 @@ fn the_same_read_answers_search() {
     let corpus = VaultCorpus::read(&root);
 
     let hits = corpus.search("dharma");
-    // A named file outranks a body match, the way the indexed search did.
+    // A named file outranks a body match.
     assert_eq!(titles(&hits), vec!["dharma", "opening"]);
     assert!(hits[0].score > hits[1].score);
 

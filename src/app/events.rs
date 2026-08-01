@@ -1,10 +1,9 @@
 //! The event vocabulary, and the IPC bridge the page talks over.
 //!
 //! [`IpcCommand`] is the page's whole vocabulary, and the loop handles it
-//! directly — there used to be a second, mirrored enum here and a
-//! field-by-field copier between the two, which meant every command was written
-//! out three times and the copies could drift. Now a command is one variant and
-//! one handler arm.
+//! directly: one variant, one handler arm. A second, mirrored enum with a
+//! field-by-field copier between the two writes every command out three times
+//! and lets the copies drift.
 
 use super::*;
 
@@ -251,8 +250,9 @@ pub(crate) enum IpcCommand {
     /// Persist the graph size the frontend just selected.
     #[serde(rename = "setGraphScope")]
     SetGraphScope { scope: String },
-    /// Run a full-text search. `scope`, when present, restricts results to those
-    /// document paths (the Focus search scope).
+    /// Run a full-text search over the active vault's text. `scope` is the folder
+    /// the pane is showing, sent as a hint and currently ignored — the whole vault
+    /// is searched either way (see `event_loop.rs`).
     #[serde(rename = "search")]
     Search {
         query: String,

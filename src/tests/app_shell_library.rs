@@ -7,8 +7,8 @@ fn a_narrow_window_opens_the_library_as_a_sliding_sheet() {
     let html = app_shell_html();
 
     for expected in [
-        // The button used to do nothing on a narrow window: it cleared the
-        // user-closed flag, but libraryTooNarrow() still forced the pane shut.
+        // Clearing the user-closed flag is not enough on a narrow window:
+        // libraryTooNarrow() still forces the pane shut, so the sheet is what opens.
         "if (libraryTooNarrow()) {\n    librarySheetOpen = !librarySheetOpen;",
         // View state, not a preference — a window opened wide has no sheet.
         "let librarySheetOpen = false;",
@@ -70,8 +70,8 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
 
     for expected in [
         // Folding is driven by the tab strip actually overflowing, not a width
-        // budget: the old fit reserved a 56px sliver for the tabs and let a
-        // title be sliced in half long before anything folded.
+        // budget: a budget reserves a sliver for the tabs and lets a title be
+        // sliced in half long before anything folds.
         "if (tabBar.scrollWidth <= tabBar.clientWidth + 1) break;",
         "overflowPanel.prepend(el);",
         // Rightmost first, and everything is unfolded before re-measuring so a
@@ -106,9 +106,9 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
     let css = reading_mode_css();
     assert_contains(css, ".app-trailing.has-overflow .overflow-toggle {");
     assert_contains(css, ".app-trailing.overflow-open .app-overflow-panel {");
-    // Stacked inside the panel: it is only as wide as the chevron's corner
-    // allows, and the inline three-across row overflowed it, clipping maximize
-    // and close off the end.
+    // Stacked inside the panel: it is only as wide as the chevron's corner allows,
+    // and an inline three-across row overflows it, clipping maximize and close off
+    // the end.
     let folded_controls = css
         .split(".app-overflow-panel .window-controls {")
         .nth(1)
@@ -136,7 +136,7 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
     );
 
     // The panel drops under the chevron, which is the trailing group's left
-    // edge — anchoring it right put it out at the window corner instead.
+    // edge — anchoring it right puts it out at the window corner instead.
     let panel = css
         .split(".app-overflow-panel {")
         .nth(1)
@@ -146,7 +146,7 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
         panel.contains("left: 0;") && !panel.contains("right: 0;"),
         "the panel must hang off the chevron, not the far corner: {panel}"
     );
-    // The all-or-nothing fold is gone, window controls and all.
+    // Nothing folds as one block — the window controls fold like every other item.
     assert!(
         !css.contains(".app-trailing.collapsed"),
         "the trailing group no longer folds as one block"
@@ -226,7 +226,7 @@ fn app_shell_includes_library_pane_settings_and_wording() {
     assert!(!html.contains("setIndexingEnabled"));
     assert!(!html.contains("settings.indexing.label"));
     assert!(html.contains("command: 'setLibraryState',"));
-    // The pane has one job now: the files. The graph moved to the page.
+    // The pane has one job: the files. The graph lives on the page.
     assert!(!html.contains("const LIBRARY_VIEWS"));
     // Markdown rows carry the leaf mark; folder rows get the enter chevron.
     assert!(html.contains(r#"${LEAF_FILE_ICON}<span class="library-file-label">"#));
@@ -234,7 +234,7 @@ fn app_shell_includes_library_pane_settings_and_wording() {
 
     // Library callbacks, the host-injected settings global it seeds from, and
     // the boot-time render + folder load. The pane is filled by
-    // leafSetLibraryFolder now; there is no indexer left to report state.
+    // leafSetLibraryFolder, and nothing reports scan state.
     assert!(html.contains("window.leafSetLibraryFolder ="));
     assert!(!html.contains("window.leafSetLibraryState ="));
     assert!(!html.contains("window.leafSetScanProgress ="));
@@ -273,8 +273,8 @@ fn app_shell_includes_library_pane_settings_and_wording() {
 fn changing_document_does_not_change_which_view_you_are_in() {
     let html = app_shell_html();
 
-    // Opening a file from the pane while the map is up used to snap back to the
-    // reading view, so picking what to look at also picked how. Only a gesture
+    // Opening a file from the pane while the map is up must not snap back to the
+    // reading view: picking what to look at is not picking how. Only a gesture
     // that *means* "leave the map" closes it: a node click, a search hit (whose
     // anchor has nothing to scroll to on a canvas), and pressing the source
     // button. Each holds the map until its destination is ready rather than
@@ -287,8 +287,8 @@ fn changing_document_does_not_change_which_view_you_are_in() {
     );
     assert!(html.contains("if (graphExitPending) {"));
     // And nothing else may reach for the door, bar the one state where there is
-    // nothing left to map: the home screen. Leaving a vault is no longer such a
-    // state — the open document answers for the map instead of the map closing.
+    // nothing left to map: the home screen. Leaving a vault is not such a state —
+    // the open document answers for the map instead of the map closing.
     let closes = html.matches("closeGraphView();").count();
     assert_eq!(
         closes, 3,
@@ -326,12 +326,12 @@ fn the_map_opens_framing_everything_and_then_leaves_the_view_alone() {
     let html = app_shell_html();
 
     // A view parked at 1:1 on an arbitrary center cannot answer the first thing
-    // a map is asked: how much is there. Two documents sat lost in the middle of
+    // a map is asked: how much is there. Two documents sit lost in the middle of
     // an empty field. So it fits, clamped to the zoom limits the wheel obeys.
     assert!(html.contains("function fitGraphToView(scene, follow)"));
     assert!(html.contains("autoFit: carried ? carried.autoFit : true,"));
     // While it settles the camera follows only what leaves the frame. A force
-    // layout breathes, and refitting on every tick put that pumping on screen.
+    // layout breathes, and refitting on every tick puts that pumping on screen.
     assert!(html.contains("if (scene.autoFit) fitGraphToView(scene, true);"));
     assert!(
         html.contains("if (follow && graphBoundsInView(scene, minX, minY, maxX, maxY)) return;")
@@ -382,7 +382,7 @@ fn only_a_document_that_moved_redraws_the_map() {
 
     // A vault is a folder someone works in: the watcher reports `.git` writing an
     // index, a saved image, a temp file coming and going. None of them can change
-    // the corpus, and every one of them used to reach the page as a fresh graph.
+    // the corpus, so none of them may reach the page as a fresh graph.
     let patch = source
         .find("fn patch_vault_corpus(")
         .expect("the watcher patches the corpus a file at a time");
@@ -426,9 +426,9 @@ fn saving_the_document_you_are_reading_still_updates_the_sync_count() {
     let source = include_str!("../app/event_loop.rs");
 
     // A change to the open document takes the live-reload branch; a change to
-    // anything else takes the other one. The status refresh sat in the second,
-    // so the commonest edit there is -- saving the file you are looking at --
-    // left the header's count stale until something else happened to move.
+    // anything else takes the other one. A status refresh in only the second
+    // leaves the commonest edit there is -- saving the file you are looking at --
+    // with the header's count stale until something else happens to move.
     let refresh = source
         .find("refresh_vault_status(&vault_state, &proxy, vault_state.active);")
         .expect("the watcher refreshes the vault's status");
@@ -440,11 +440,11 @@ fn saving_the_document_you_are_reading_still_updates_the_sync_count() {
         "the status refresh must run before the branch, or it only fires for          files you are not editing"
     );
 
-    // And nothing between the event and the refresh. A containment check lived
-    // here and discarded every event: the watcher reports paths under what it
-    // watched, and that was canonicalised — a `\?\` verbatim prefix on
-    // Windows, which does not share a component with the plain `C:\…` the vault
-    // registry holds. One `git status` off the loop is cheaper than being wrong.
+    // And nothing between the event and the refresh. A containment check here
+    // discards every event: the watcher reports paths under what it watched, and
+    // that is canonicalised — a `\?\` verbatim prefix on Windows, which does not
+    // share a component with the plain `C:\…` the vault registry holds. One
+    // `git status` off the loop is cheaper than being wrong.
     assert!(!source.contains("changed.starts_with(root)"));
 }
 
@@ -453,8 +453,8 @@ fn one_growl_serves_every_thing_worth_saying_in_passing() {
     let html = app_shell_html();
     let css = reading_mode_css();
 
-    // There was already an error growl; this is that one generalized rather than
-    // a second thing in the same corner doing the same job.
+    // One growl for both tones, rather than a second thing in the same corner
+    // doing the same job.
     assert!(html.contains("function leafToast(message, tone) {"));
     assert!(html.contains("window.leafShowError = (message) => leafToast(message, 'error');"));
     assert!(!html.contains("error.className = 'app-error';"));
@@ -518,15 +518,15 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
 
     // A push that finishes in a tenth of a second still has to look like work,
     // and whatever happened has to reach you whether or not the panel is open --
-    // starting a sync from here used to fail silently with the panel shut.
+    // a sync started from here must not fail silently with the panel shut.
     assert!(html.contains("const SYNC_MIN_SPIN_MS = 700;"));
     assert!(html.contains("syncSpinUntil = performance.now() + SYNC_MIN_SPIN_MS;"));
     assert!(html.contains("librarySyncButton.classList.toggle('is-busy', spinning);"));
 
     // Once it turns it does not stop until the answer is in. Anything else
-    // redrawing the button mid-push -- a watcher tick was enough -- used to end
-    // the turn, and a spinner that pauses reads as a failure at the one moment
-    // it must not. Only a finished job releases it.
+    // redrawing the button mid-push -- a watcher tick is enough -- ends the turn,
+    // and a spinner that pauses reads as a failure at the one moment it must not.
+    // Only a finished job releases it.
     assert!(html.contains("let syncInFlight = false;"));
     assert!(html.contains("    syncInFlight = true;"));
     assert!(
@@ -646,9 +646,9 @@ fn editing_the_reading_view_is_a_padlock_on_the_document_not_a_global_switch() {
     let html = app_shell_html();
     let css = reading_mode_css();
 
-    // It used to be one checkbox in Settings governing every document you would
-    // ever open, which is the wrong shape for the question: whether a page is
-    // yours to type into is a fact about that page. Nothing of it is left.
+    // One checkbox in Settings governing every document you would ever open is the
+    // wrong shape for the question: whether a page is yours to type into is a fact
+    // about that page. Nothing of that is left.
     assert!(!html.contains("readerEditingEnabled"));
     assert!(!html.contains("settings.readerEditing"));
     assert!(!html.contains("setReaderEditingEnabled"));
@@ -697,8 +697,8 @@ fn editing_the_reading_view_is_a_padlock_on_the_document_not_a_global_switch() {
     assert!(html.contains("button.setAttribute('aria-pressed', String(on));"));
 
     // The speed reader stays one preference for the whole app -- a way of
-    // reading, not a property of a document -- driven now from the reading
-    // toolbar's own control alone.
+    // reading, not a property of a document -- driven from the reading toolbar's
+    // own control alone.
     for icon in [SPEED_READER_ON_ICON_SVG, SPEED_READER_OFF_ICON_SVG] {
         let icon = normalize_svg_icon_colors(icon);
         assert!(
@@ -755,16 +755,15 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     // in the reader's own cell, not parented to the scroller.
     assert!(css.contains(".reader-toolbar {"));
     assert!(css.contains("  align-self: end;"));
-    // Save and undo came down with it, and nothing of the four is left up top.
+    // Save and undo sit in the same bar; none of the four is up in the app bar.
     assert!(html.contains(r#"id="undoButton" class="reader-tool undo-button""#));
     assert!(html.contains(r#"id="saveButton" class="reader-tool-save""#));
     assert!(!html.contains("graphViewButton"));
     assert!(!html.contains("codeViewButton"));
     assert!(!html.contains(r#"class="save-button""#));
     // With the bar up, all three are enterable — there is no dead key, and no
-    // grayed-out state for one to sit in. The map used to be of a vault, so a
-    // document outside one had a view it could not get into; it is of the open
-    // document now, and the bar is only up when there is one.
+    // grayed-out state for one to sit in. The map is of the open document, and the
+    // bar is only up when there is one.
     assert!(!html.contains("button.disabled = unavailable;"));
     assert!(!css.contains(".reader-tool:disabled {"));
     assert!(!html.contains("VIEW_UNAVAILABLE_REASON"));
@@ -816,19 +815,18 @@ fn the_graph_needs_a_document_and_never_a_vault() {
     let html = app_shell_html();
 
     // What the map is of is the open document, so that — and only that — is what
-    // entering it requires. There is no vault in the test any more, which is the
-    // whole fix: a document outside every vault still links to things, and those
-    // links are written in the document itself.
+    // entering it requires. No vault appears in this test: a document outside every
+    // vault still links to things, and those links are written in the document
+    // itself.
     assert!(html.contains("const next = Boolean(open) && Boolean(activeDocumentPath());"));
     assert!(!html.contains("graphHasBoundedRoot"));
 
-    // And nothing refuses on the way in. showGraph used to tear the scene down and
-    // print a sentence whenever there was no vault; now it asks and the host
-    // always answers.
+    // And nothing refuses on the way in: showGraph asks, and the host always
+    // answers, vault or no vault.
     assert!(html.contains("function showGraph() {\n  graphActivePath = activeDocumentPath();\n  if (!graphRequested) {"));
 
-    // Leaving a vault re-reads the map rather than closing it. This is what threw
-    // the reader out of the graph on opening any file from outside their vault.
+    // Leaving a vault re-reads the map rather than closing it: closing here is what
+    // throws the reader out of the graph on opening a file from outside their vault.
     assert!(html.contains("refreshGraphForScope();"));
     assert!(!html.contains("if (!graphHasBoundedRoot()) closeGraphView();"));
 
@@ -854,7 +852,7 @@ fn a_web_address_is_a_node_drawn_as_a_ring_and_opened_in_the_browser() {
         "gfx.circle(0, 0, radius).stroke({ width: 1.5, color: 0xffffff, alignment: 0.5 });"
     ));
     // With a dot at the middle for the edge to end behind: edges draw under the
-    // nodes, so a bare ring let the line run through the hollow and stop in mid-air.
+    // nodes, so a bare ring lets the line run through the hollow and stop in mid-air.
     assert!(html.contains("gfx.circle(0, 0, Math.max(1.6, radius * 0.36)).fill(0xffffff);"));
     assert!(css.contains("radial-gradient(circle at center, var(--app-border) 1.6px"));
 
@@ -949,8 +947,8 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     assert!(html.contains("function fitLibraryCrumbs()"));
     assert!(html.contains("libraryCrumbTrail.classList.add('is-measuring')"));
     // Every width change asks for the refit outright — a ResizeObserver alone
-    // delivered its first observation in the web view and nothing after, so a
-    // divider drag never re-fit the trail.
+    // delivers its first observation in the web view and nothing after, so a
+    // divider drag never re-fits the trail.
     assert!(html.contains("document.documentElement.style.setProperty('--library-rail-width', libraryWidth + 'px');\n    // The breadcrumb shows as much of the path as fits, so it refits mid-drag.\n    scheduleCrumbFit();"));
     assert!(html.contains("refitAppBar();\n  // Opening, closing, or re-clamping the pane changes the breadcrumb's room too.\n  scheduleCrumbFit();"));
     assert!(html.contains("window.addEventListener('resize', scheduleCrumbFit);"));
@@ -963,7 +961,7 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     assert!(html.contains("run: () => setLibraryFolder(segment.path),"));
     assert!(css.contains(".crumb-menu {"));
     // A fit that would draw the same crumbs at the same width leaves the DOM alone,
-    // or an indexer push would rebuild the trail under an open "…" menu.
+    // or a watcher tick would rebuild the trail under an open "…" menu.
     assert!(html.contains("function crumbFitKey(segments)"));
     assert!(html.contains("if (key === libraryCrumbFitKey) return;"));
     // Entering a folder is the same move as a crumb, so both go through one path.
@@ -1034,8 +1032,8 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     assert!(html.contains("function renderLibraryVaultSwitch()"));
     assert!(html.contains("const label = `Switch vault (in ${libraryRootLabel()})`;"));
 
-    // The leftmost crumb is a place again: it goes to the root, and nothing in
-    // the trail opens a menu.
+    // The leftmost crumb is a place: it goes to the root, and nothing in the trail
+    // opens a menu.
     assert!(html.contains("[{ path: '', name: libraryRootLabel() }]"));
     assert!(!html.contains("data-crumb-switcher"));
     assert!(!html.contains("library-crumb-switcher"));
@@ -1043,7 +1041,7 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     assert!(html.contains("function libraryRootLabel()"));
     assert!(html.contains("return (vault && vault.name) || 'Library';"));
 
-    // The menu itself is unchanged: the whole library, every vault, New vault…
+    // The menu is the whole library, then every vault, then New vault…
     assert!(html.contains("function vaultMenuItems()"));
     assert!(html.contains("selected: !activeVaultId,"));
     assert!(html.contains("selected: vault.id === activeVaultId,"));
@@ -1087,7 +1085,7 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
     assert!(!html.contains("crumbMenu.addEventListener('contextmenu'"));
     // Only the crumb-trail buttons toggle the menu shut on a second click. A
     // click inside it that swaps the rows must not close it — that is the bug
-    // where the pencil looked like it did nothing.
+    // where a row's own button looks like it did nothing.
     assert!(html.contains("function toggleCrumbMenu(button, items)"));
     assert!(html.contains("toggleCrumbMenu(libraryVaultSwitch, vaultMenuItems());"));
     assert!(html.contains("toggleCrumbMenu(more, folderMenuItems(hidden));"));
@@ -1164,7 +1162,7 @@ fn leaving_the_map_for_a_document_shows_the_spinner() {
     // Clicking a node navigates out of the map, and the map deliberately holds
     // until the document is ready rather than flashing the file you were on. The
     // wait is a whole document being read, so with the spinner suppressed the map
-    // just sits there looking frozen — which is what it did.
+    // just sits there looking frozen.
     let html = app_shell_html();
 
     // The gesture arms the exit before the request goes out.
@@ -1184,8 +1182,8 @@ fn leaving_the_map_for_a_document_shows_the_spinner() {
 #[test]
 fn going_from_the_map_to_the_source_does_not_lay_out_the_reading_view_on_the_way() {
     // The map covers the reading view with `hidden`, so revealing it lays out the
-    // whole document — and going map -> source dropped the map first, which meant
-    // laying out a document only to replace it a moment later. That showed up as
+    // whole document — and going map -> source by dropping the map first means
+    // laying out a document only to replace it a moment later, which shows up as
     // the reading view flashing under a spinner between the two views.
     let html = app_shell_html();
 

@@ -32,7 +32,7 @@ const NESTED_SCAN_DEPTH: usize = 3;
 
 /// Directories never worth descending into while looking for nested repos.
 /// Deliberately short: this is a bounded scan of a folder the user pointed at,
-/// not the device crawl this app deleted.
+/// never a crawl of the device.
 const SCAN_SKIPS: &[&str] = &[
     "node_modules",
     "target",

@@ -104,8 +104,8 @@ fn a_folder_outside_the_vault_or_gone_falls_back_to_the_top() {
 
 #[test]
 fn the_whole_library_starts_at_the_drive_roots() {
-    // No vault: the top level is the drives, which is what Library has always
-    // shown — and the one listing that reads no directory at all.
+    // No vault: the top level is the drives — the one listing that reads no
+    // directory at all.
     let listing = read_folder_listing(None, "");
     assert!(listing.path.is_empty());
     assert!(listing.chain.is_empty());

@@ -259,10 +259,9 @@ pub(crate) fn starts_with_url_scheme(text: &str) -> bool {
 ///
 /// One definition, deliberately: the [graph](crate::store::document_links) counts a
 /// bare URL as a link because the reader can click it, and the only way that stays
-/// true is for both to ask the same question. It was the *absence* of this that
-/// made a document of nothing but bare links draw an empty map — the renderer
-/// linkified them here and the graph parsed with a bare `Parser`, which never sees
-/// them at all.
+/// true is for both to ask the same question. Without it, a document of nothing but
+/// bare links draws an empty map — the renderer linkifies them here, and a bare
+/// `Parser` never sees them at all.
 ///
 /// Email addresses are found and dropped: `mailto:` is not somewhere a map goes.
 pub(crate) fn plain_text_urls(text: &str) -> Vec<String> {

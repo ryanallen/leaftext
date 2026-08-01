@@ -1,11 +1,11 @@
 //! The vault switcher: registering a folder as a library root, and pointing the
 //! pane at one.
 //!
-//! Everything a vault is lives in the index database — the folder is never
+//! Everything a vault is lives in `manifest.db` — the folder itself is never
 //! written to. A vault scopes the library pane and nothing else: opening a file
-//! from outside it still works exactly as before.
+//! from outside it still works.
 //!
-//! The pane's files do not come from the index at all. They are read off the
+//! The pane's files do not come from the database at all. They are read off the
 //! folder, one folder at a time, by [`request_folder`].
 
 use super::*;
@@ -14,8 +14,8 @@ use super::*;
 /// was last told about. Held by the loop so a folder read that lands after a
 /// switch can be discarded.
 pub(crate) struct VaultState {
-    /// Read-write connection to the same manifest the indexer uses. Opened after
-    /// the worker has migrated it, so the tables are already there.
+    /// Read-write connection to `manifest.db`. `open_db` applies the migrations on
+    /// the way in, so the tables are already there.
     pub(crate) conn: Option<Connection>,
     pub(crate) active: i64,
     pub(crate) root: Option<PathBuf>,
@@ -45,9 +45,8 @@ pub(crate) struct VaultState {
 }
 
 impl VaultState {
-    /// Load the registry at startup. With no database (the indexer failed to
-    /// open one) there are no vaults and the pane is the whole library, which is
-    /// what it was before vaults existed.
+    /// Load the registry at startup. With no database — it could not be opened —
+    /// there are no vaults and the pane is the whole library.
     pub(crate) fn load(data_dir: Option<&Path>) -> Self {
         let conn = data_dir.and_then(|dir| match open_db(dir) {
             Ok(conn) => Some(conn),
@@ -172,7 +171,7 @@ pub(crate) fn change_vault_folder(
 }
 
 /// Forget a vault. Removing the one on screen falls back to the whole library,
-/// which the caller then asks the indexer for.
+/// whose folder the caller then reads off the disk.
 pub(crate) fn remove_vault_row(id: i64, state: &mut VaultState, webview: Option<&WebView>) {
     let Some(conn) = state.conn.as_ref() else {
         return;
@@ -226,8 +225,8 @@ fn apply_active_vault(
 /// not the one on screen, then open the folder holding it.
 ///
 /// Going to a file should land you where the file *is*. Without this the pane
-/// only ever navigated inside whatever vault happened to be active, so a file
-/// from somewhere else clamped back to that vault's root and the trail read as
+/// only ever navigates inside whatever vault happens to be active, so a file
+/// from somewhere else clamps back to that vault's root and the trail reads as
 /// the wrong place entirely. A file in no vault lands on the whole library, for
 /// the same reason in reverse.
 pub(crate) fn reveal_in_library(
@@ -243,10 +242,10 @@ pub(crate) fn reveal_in_library(
     let target = owner.as_ref().map(|vault| vault.id).unwrap_or(0);
     if target != state.active {
         // Landing in another vault is remembered; landing outside every vault is
-        // not. Reading one loose file used to write "no vault" into the database,
-        // so opening something from a downloads folder forgot the vault you had
-        // chosen — for that session and every session after it. Opening a file is
-        // navigation, and navigation must not overwrite a choice.
+        // not. Writing "no vault" into the database for one loose file forgets the
+        // vault you chose — for that session and every session after it — so
+        // opening something from a downloads folder would cost you it. Opening a
+        // file is navigation, and navigation must not overwrite a choice.
         if target != 0 {
             if let Some(conn) = state.conn.as_ref() {
                 if let Err(error) = set_active_vault_id(conn, target) {
@@ -320,10 +319,10 @@ pub(crate) enum GraphSource {
 /// What the graph on screen is drawn over, given the document on screen.
 ///
 /// The vault wins when it holds that document, because it is strictly more. But it
-/// is not required, and that is the point: the graph used to refuse to draw at all
-/// without a vault, which left every document outside one with no map even though
-/// its links were sitting in its own text. A vault is something you name so search
-/// has a bounded set of words — not a precondition for a document having links.
+/// is not required, and that is the point: refusing to draw without a vault leaves
+/// every document outside one with no map, even though its links are sitting in
+/// its own text. A vault is something you name so search has a bounded set of
+/// words — not a precondition for a document having links.
 ///
 /// Only reading a *folder tree* ever needed a vault to bound it, and a document's
 /// own map does not read one.
@@ -515,9 +514,9 @@ pub(crate) fn deliver_corpus(
 /// redraw the map if one is on screen.
 ///
 /// The graph is redrawn only when it is the view on screen. Rebuilding it for a
-/// pane nobody is looking at is what turned a burst of saves into a locked
-/// window, and rebuilding it *here* rather than on a worker is what made each one
-/// cost the whole vault.
+/// pane nobody is looking at turns a burst of saves into a locked window, and
+/// rebuilding it *here* rather than on a worker makes each one cost the whole
+/// vault.
 pub(crate) fn refresh_corpus_path(
     state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
@@ -534,7 +533,7 @@ pub(crate) fn refresh_corpus_path(
     match graph_source(state, pending.document.as_deref()) {
         // The vault's text is a cache, so the cache is the thing to ask: unless
         // patching it moved something, the map cannot have changed. A vault is a
-        // folder someone works in, and every unrelated write in it used to reach
+        // folder someone works in, and unasked, every unrelated write in it reaches
         // the page as a fresh graph — which the page can only receive by tearing
         // the map down.
         Some(GraphSource::Vault(root)) => {

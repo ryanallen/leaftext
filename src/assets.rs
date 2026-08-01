@@ -10,9 +10,6 @@ pub(crate) const OPEN_ICON_SVG: &str = include_str!("assets/folder-open.svg");
 pub(crate) const NEW_ICON_SVG: &str = include_str!("assets/plus.svg");
 pub(crate) const CODE_VIEW_ICON_SVG: &str = include_str!("assets/code-bracket.svg");
 pub(crate) const DOCUMENT_ICON_SVG: &str = include_str!("assets/document.svg");
-/// Numbering each block in the margin: plain lines when it is off, numbered
-/// ones when it is on. The glyph is the margin it makes.
-
 /// Sending a vault to GitHub and taking back what is there. The same round
 /// arrows the updater's language uses, because it is the same idea.
 pub(crate) const SYNC_ICON_SVG: &str = include_str!("assets/arrow-path.svg");
@@ -236,8 +233,8 @@ pub(crate) fn bundled_asset_bytes(uri: &str) -> Option<(&'static str, &'static [
     let url = Url::parse(uri).ok()?;
     let path = url.path().trim_start_matches('/');
     match path {
-        // The whole reading-mode stylesheet (fonts, Primer primitives, compiled
-        // theme tokens, and app layout) is served here as a linked stylesheet
+        // The whole reading-mode stylesheet (font faces, the compiled theme
+        // tokens, and app layout) is served here as a linked stylesheet
         // rather than inlined into the shell HTML. WebView2 loads the shell via
         // `NavigateToString`, which rejects strings past ~2 MB (UTF-16) with
         // E_INVALIDARG; keeping this ~1.3 MB of CSS out of that string is what

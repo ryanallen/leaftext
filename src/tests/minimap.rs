@@ -132,7 +132,7 @@ fn minimap_model_keeps_fenced_code_lines_together() {
 #[test]
 fn html_minimap_model_charts_tei_blocks() {
     // A TEI document renders straight to HTML; the model must come from the
-    // rendered blocks, not stay empty (which left the rail blank).
+    // rendered blocks, not stay empty — an empty model leaves the rail blank.
     let xml = "<TEI><teiHeader><fileDesc><titleStmt><title>A Sutra</title>\
             </titleStmt></fileDesc></teiHeader><text><body>\
             <p>A short opening line.</p>\
@@ -294,8 +294,8 @@ fn minimap_model_covers_released_categories_without_source_payloads() {
         );
     }
     // The model holds shape, never text. Checked against the spans serialized on
-    // their own: `DocumentMinimap` no longer serializes them as part of the document
-    // payload, but they are still the only place source text could have leaked to.
+    // their own: `DocumentMinimap` does not carry them in the document payload, but
+    // they are still the only place source text could leak to.
     let held = serde_json::to_string(&model.spans).expect("minimap spans serialize");
     for forbidden in [
         "Heading",
@@ -386,8 +386,7 @@ fn settings_default_keeps_minimap_on() {
     assert!(!settings.speed_reader_enabled);
     assert_eq!(settings.theme_family, "random");
     assert_eq!(settings.theme_mode, "daylight");
-    // The pane opens on the file list, at the library root — not on a force graph
-    // of every indexed document.
+    // The pane opens on the file list, at the library root.
     assert!(settings.library_project_path.is_empty());
     // The pane is open by default, with the 240px fallback width.
     assert!(!settings.library_closed);

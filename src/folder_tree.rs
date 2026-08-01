@@ -5,8 +5,7 @@
 //! and it costs the same whether the folder sits in a vault or at the top of a
 //! drive. Nothing is walked that nobody opened.
 //!
-//! The top level is the vault's own folder, or — with no vault — the drive
-//! roots, which is what "Library" has always shown.
+//! The top level is the vault's own folder, or — with no vault — the drive roots.
 
 use crate::store::{
     detect_roots, is_dir_reparse, is_system_dir, path_to_string, root_label, FileTreeNode, NodeKind,
@@ -139,9 +138,8 @@ fn read_entries(dir: &Path) -> Vec<FileTreeNode> {
     let Ok(entries) = fs::read_dir(dir) else {
         return Vec::new();
     };
-    // A drive root carries the OS's own furniture, which the crawl has always
-    // skipped by the same rule: only directly under a root, where the name is
-    // known to be system-owned.
+    // A drive root carries the OS's own furniture. Skipped only directly under a
+    // root, where the name is known to be system-owned.
     let at_drive_root = dir.parent().is_none();
 
     let mut folders: Vec<FileTreeNode> = Vec::new();

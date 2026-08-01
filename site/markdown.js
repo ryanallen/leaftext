@@ -159,7 +159,7 @@ const EMOJI = {
 // ---- Frontmatter ----------------------------------------------------------
 // A leading `--- … ---` block renders as a compact metadata table at the top of
 // the document, matching the desktop app. The parser is a small, documented YAML
-// subset (the same rules the app's indexer uses).
+// subset (the same rules the app's own reader follows).
 
 // Drop one surrounding pair of matching quotes.
 function stripQuotes(s) {

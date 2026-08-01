@@ -148,7 +148,7 @@ impl EditableDocument {
         self.splice(start, end, replacement, true)
     }
 
-    /// Like [`replace_range`] but records no undo snapshot — for the auto-saving
+    /// Like `replace_range` but records no undo snapshot — for the auto-saving
     /// checkbox path, which is deliberately not undoable.
     pub fn replace_range_without_undo(
         &mut self,
@@ -273,7 +273,7 @@ impl EditableDocument {
         self.flip_task(index, true)
     }
 
-    /// Like [`toggle_task`] but records no undo snapshot — for the auto-saving
+    /// Like `toggle_task` but records no undo snapshot — for the auto-saving
     /// checkbox path, which is deliberately not undoable.
     pub fn toggle_task_without_undo(&mut self, index: usize) -> bool {
         self.flip_task(index, false)
@@ -303,7 +303,7 @@ impl EditableDocument {
     /// offsets, XML via roxmltree node ranges, JSON and YAML via their readers.
     /// The reading view attaches these to rendered blocks so an edit knows which
     /// source range to splice. JSON and YAML blocks are mapped but never
-    /// editable — see [`crate::data`] for why.
+    /// editable — see `data.rs` for why.
     pub fn block_source_map(&self) -> Vec<BlockSpan> {
         match self.format {
             DocumentFormat::Markdown => block_source_map(&self.text),

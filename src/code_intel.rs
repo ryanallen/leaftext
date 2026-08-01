@@ -221,7 +221,7 @@ pub fn note_preview(text: &str) -> String {
 
 /// Every link in `text` that points at nothing: a path with no file behind it,
 /// or a `[[name]]` no known note answers to. `known_names` is the vault's (or
-/// the folder's) note names in [`normalize_name_key`] form.
+/// the folder's) note names in `normalize_name_key` form.
 ///
 /// Web addresses are never checked — nothing local can vouch for them — and a
 /// link the scan cannot place in the source draws no marker.

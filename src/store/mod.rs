@@ -1,6 +1,6 @@
 //! The vault store, and the parsers that go with it.
 //!
-//! There is no index here any more and no crawl. The library pane reads one
+//! There is no index here and no crawl. The library pane reads one
 //! folder off the disk at a time; the graph and search read the active vault's
 //! text into memory once and share it. What is left is a small SQLite database
 //! holding which folders are vaults and which one is open, plus two parsers —

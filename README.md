@@ -80,7 +80,7 @@ Turn on Speed Reader and the page dims back while bold anchors mark the start of
 
 ![Inline editing in the rendered page, with save and undo button](imgs/editing.png)
 
-Split a paragraph with `Enter`, join it back with `Backspace`, tick a checkbox — the change lands in your file at exactly that spot, and [undo](docs/01-features/07-editing.md#undo) walks back step by step. There's no autosave, ever: nothing touches your file until you press **Save**. **[Editing →](docs/01-features/07-editing.md)**
+Split a paragraph with `Enter`, join it back with `Backspace` — the change lands in your file at exactly that spot, and [undo](docs/01-features/07-editing.md#undo) walks back step by step. Text edits never autosave: nothing touches your file until you press **Save**. Ticking a checkbox is the one exception — that saves on the spot, and works even with editing locked. **[Editing →](docs/01-features/07-editing.md)**
 
 ### A format bar where the words are
 
@@ -104,7 +104,7 @@ A canvas beside the Mermaid text, each following the other. Double-click to add 
 
 ![Editing in code view, with save and undo button](imgs/code-view.png)
 
-Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, XML, JSON, YAML, or a raw email — colored like an editor, with line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). **[Code view →](docs/01-features/07-editing.md#code-view)**
+Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, XML, JSON, YAML, or a raw email — with line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, XML and YAML come colored in your theme's own syntax colors. **[Code view →](docs/01-features/07-editing.md#code-view)**
 
 ### Typing help drawn from your own notes
 
@@ -128,7 +128,7 @@ Name matches first, then content matches ranked by how often the terms appear, e
 
 ### See how your ideas connect
 
-![The library pane with the document graph view](imgs/graph.png)
+![The graph view filling the page: document nodes joined by arrowed lines, the open document highlighted larger in the accent color, names floating beneath the nodes](imgs/graph.png)
 
 The [graph view](docs/01-features/03-library.md#graph) maps the links between your documents, so you can see the shape of what you've written instead of scrolling a list. Notes you'd forgotten turn out to be next door to the one you're reading. Web addresses are nodes too, so two notes citing one page share it. **[Graph →](docs/01-features/03-library.md#graph)**
 
@@ -180,13 +180,25 @@ Theme, appearance, minimap, pager, graph size — and at the foot, the version y
 
 ## Your thoughts stay yours
 
-No account. No cloud. No telemetry. Nothing you open, write, or search ever leaves your machine.
+No account. No cloud. No telemetry. Nothing you open, write, or search leaves your machine on its own.
 
-The app touches the network exactly twice, and neither one carries your words: it asks GitHub whether a newer version exists, and it fetches a theme's font from Google Fonts the first time you pick that theme.
+### What reaches the network
+
+Three things, and none of them carries a word you wrote:
+
+- **The release check** — it asks GitHub whether a newer version exists.
+- **The update download** — when one does, it fetches that installer.
+- **A theme's font** — from Google Fonts, the first time you pick that theme.
+
+The one exception is the one you ask for: [GitHub sync](docs/01-features/03-library.md#github-sync) pushes a vault to your own repository, using the `git` already on your machine. Nothing syncs unless you set it up and press the button.
+
+### Your files stay your files
 
 Your [settings](docs/01-features/05-settings.md) are a JSON file on your machine, and your documents are the files you already had. Delete Leaftext tomorrow and every word you wrote is still sitting in the folder you put it in, readable by anything.
 
-Updates download quietly in the background and are checked against a published digest, then wait for you to click **Restart to update**. Nothing installs on its own. **[Updates →](docs/01-features/05-settings.md#updates)**
+### How an update lands
+
+An installer downloads in the background, is checked for the length the release advertised, and is re-hashed before it is ever run. Then the **next launch installs it, before any window opens** — the one moment Windows lets an app replace itself — or press **Restart to update** if you would rather not wait. Each version is installed automatically once; after that it waits for a click. **[Updates →](docs/01-features/05-settings.md#updates)**
 
 ## Install it
 

@@ -63,9 +63,9 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
             &format!(r#"<span class="theme-item-name">{name}</span>"#),
         );
     }
-    // Plus the special "Random" preference
-    // span (not the button, so localization can't wipe the check SVG). It is not a
-    // real family, so it never appears in theme_families()/the font map/the CSS.
+    // Plus the special "Random" preference: its name is a span of its own inside
+    // the button, so the check SVG beside it is never part of the label. It is not
+    // a real family, so it never appears in theme_families()/the font map/the CSS.
     assert_contains(
         &html,
         r#"<button type="button" class="theme-item theme-item-random" data-family="random""#,

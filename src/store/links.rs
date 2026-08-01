@@ -270,8 +270,8 @@ pub(super) fn has_url_scheme(target: &str) -> bool {
     false
 }
 
-/// Resolve a relative link target to an absolute path string (crawl normal form),
-/// stripping `#fragment`/`?query` and percent-decoding. `None` for path-less targets.
+/// Resolve a relative link target to an absolute path string, stripping
+/// `#fragment`/`?query` and percent-decoding. `None` for path-less targets.
 fn resolve_path_target(raw: &str, source_abs: &Path) -> Option<String> {
     let without_fragment = raw.split(['#', '?']).next().unwrap_or("").trim();
     if without_fragment.is_empty() {

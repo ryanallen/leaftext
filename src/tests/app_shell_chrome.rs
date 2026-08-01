@@ -308,7 +308,7 @@ fn app_shell_persists_minimap_enabled_setting() {
             assert_contains(&html, expected);
         }
 
-    // The host owns persistence now: no localStorage-backed settings remain.
+    // The host owns persistence: no localStorage-backed settings.
     assert!(
         !html.contains("createBooleanStorage"),
         "settings must be persisted by the host, not the non-durable localStorage shim"
@@ -320,9 +320,8 @@ fn app_shell_persists_and_applies_speed_reader_setting() {
     let html = app_shell_html();
     let css = reading_mode_css();
 
-    // The setting persists and applies, but it is driven from the reading
-    // toolbar's own control now, not a Settings checkbox -- that row was removed
-    // once the toolbar carried the toggle, so nothing here reads back from it.
+    // The setting persists and applies, but the reading toolbar's own control is
+    // what drives it — there is no Settings checkbox to read back from.
     for expected in [
         "let speedReaderEnabled = LEAF_SETTINGS.speedReaderEnabled === true;",
         "function setSpeedReaderEnabled(enabled) {",
@@ -441,7 +440,7 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
     assert_contains(&html, "root.dataset.leafTheme = family;");
     assert_contains(&html, "root.dataset.leafAppearance = theme.resolvedTheme;");
     assert_contains(&html, "root.dataset.themeMode = mode");
-    // The dead Primer color-mode attributes are gone from the bootstrap.
+    // And no Primer color-mode attributes beside them.
     assert!(!html.contains("root.dataset.colorMode"));
     assert!(!html.contains("root.dataset.resolvedColorMode"));
     assert_contains(&html, "root.dataset.themeFamily = family;");
@@ -594,8 +593,8 @@ fn app_shell_theme_bootstrap_seeds_from_host_injected_settings() {
         assert_contains(&html, expected);
     }
 
-    // The theme path no longer touches localStorage; the host owns persistence
-    // via setThemeMode / setThemeFamily.
+    // The theme path never touches localStorage; the host owns persistence via
+    // setThemeMode / setThemeFamily.
     assert!(!html.contains("leaf.themeMode"));
     assert!(!html.contains("modeStorage"));
     assert!(html.contains("send({ command: 'setThemeMode', mode: btn.dataset.mode });"));
@@ -745,7 +744,8 @@ fn an_unsaved_tab_does_not_resize_when_you_reach_for_it() {
         css,
         ".tab-modified:not(:hover):not(:focus-within) .tab-close {\n  opacity: 0;\n}",
     );
-    // The old rule resized the tab and only ever covered the active one.
+    // A rule keyed on the active tab's hover resizes the tab, and covers only that
+    // one tab.
     assert!(
         !css.contains(".tab-active:hover .tab-dirty-dot"),
         "the hover rule that resized the tab is gone"

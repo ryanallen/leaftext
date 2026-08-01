@@ -41,7 +41,7 @@ const MAX_DOCUMENT_BYTES: usize = 2 * 1024 * 1024;
 /// How deep the walk goes.
 const MAX_DEPTH: usize = 24;
 
-/// Cap on returned hits, matching what the indexed search returned.
+/// Cap on returned hits: past this, a query is one to narrow rather than scroll.
 const SEARCH_LIMIT: usize = 50;
 
 /// How many web addresses one document may put on the map. A link roll or a
@@ -54,7 +54,7 @@ const SNIPPET_RADIUS: usize = 90;
 
 /// The markers a snippet wraps its match in. STX/ETX cannot occur in a document,
 /// so the page escapes the whole snippet for the DOM first and only then swaps
-/// these for `<mark>` — the same contract FTS5's `snippet()` was held to.
+/// these for `<mark>`.
 const MARK_OPEN: char = '\u{2}';
 const MARK_CLOSE: char = '\u{3}';
 
@@ -114,8 +114,8 @@ impl VaultCorpus {
     /// Returns whether the corpus is actually different afterwards. The watcher
     /// reports every write under the vault — `.git` bookkeeping, an image, a save
     /// whose bytes did not change — and the graph is redrawn off this answer, so
-    /// "nothing changed" has to be sayable: that churn used to tear the map down
-    /// and rebuild it over and over while someone was reading it.
+    /// "nothing changed" has to be sayable: unanswered, that churn tears the map
+    /// down and rebuilds it over and over while someone is reading it.
     pub fn refresh(&mut self, path: &Path) -> bool {
         if !self.covers(path) {
             return false;
@@ -146,8 +146,8 @@ impl VaultCorpus {
         }
     }
 
-    /// The link graph over these documents. `request` narrows it the way it
-    /// always has: a focused neighborhood, the densest N, or all of it.
+    /// The link graph over these documents. `request` narrows it: a focused
+    /// neighborhood, the densest N, or all of it.
     pub fn graph(&self, request: &GraphRequest) -> DocumentGraph {
         let mut graph = narrow(build_graph(&self.documents), request);
         graph.truncated |= self.truncated;
@@ -196,8 +196,7 @@ impl VaultCorpus {
         let mut score = 0.0f64;
         for term in terms {
             if name.contains(term) {
-                // A named file is a strong hit — the same bias the indexed
-                // search had when it put filename matches above content.
+                // A named file is a strong hit: a name match outranks a body one.
                 score += 100.0;
             }
             score += body.matches(term.as_str()).count().min(20) as f64;
@@ -408,8 +407,8 @@ pub(crate) fn build_graph(documents: &[CorpusDocument]) -> DocumentGraph {
     let mut truncated = false;
 
     // Deduped directed: `(a, b)` and `(b, a)` are two different facts. Sorting the
-    // pair here is what used to collapse them, killing the duplicate at the cost of
-    // forgetting which end wrote the link.
+    // pair here collapses them, killing the duplicate at the cost of forgetting
+    // which end wrote the link.
     let mut directed: HashSet<(usize, usize)> = HashSet::new();
     for (from, document) in documents.iter().enumerate() {
         let mut urls_from_here = 0usize;

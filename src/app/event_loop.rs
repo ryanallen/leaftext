@@ -159,9 +159,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     .is_some_and(|current| paths_refer_to_same_document(&changed, current));
                 // Above the split, or it misses the commonest change of all —
                 // saving the document you are reading takes the other branch.
-                // Unfiltered on purpose: a containment check here compared the
+                // Unfiltered on purpose: a containment check here compares the
                 // watcher's canonicalised path against the registry's plain one
-                // and discarded every event. One `git status`, off the loop, on
+                // and so discards every event. One `git status`, off the loop, on
                 // an already-debounced event, is cheaper than being wrong.
                 if vault_state.active != 0 {
                     refresh_vault_status(&vault_state, &proxy, vault_state.active);
@@ -178,7 +178,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     // And the vault's text is a cache of the disk, so it is
                     // patched a file at a time rather than re-read. The graph is
                     // only redrawn when the graph is the view on screen —
-                    // rebuilding it for a pane nobody is looking at is what made
+                    // rebuilding it for a pane nobody is looking at is what makes
                     // a burst of saves lock the window.
                     let graph_showing = vault_state.graph_open;
                     refresh_corpus_path(&mut vault_state, &proxy, &changed, graph_showing);

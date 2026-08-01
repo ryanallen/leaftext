@@ -4,7 +4,7 @@ use super::*;
 
 #[test]
 fn links_terms_with_diacritics_without_panicking() {
-    // Regression: slicing the original with lowercased-copy offsets panicked on
+    // Regression: slicing the original with lowercased-copy offsets panics on
     // the diacritics these documents are full of. Terms are (term, slug),
     // longest-first.
     let terms = vec![
