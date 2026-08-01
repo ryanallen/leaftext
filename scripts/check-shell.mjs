@@ -574,7 +574,7 @@ if (booted) {
   // and illegal to write down — mermaid cannot draw an empty flowchart. That is
   // the reason the canvas never re-reads its own output: round-tripping through
   // the text here would hand back null and leave the canvas with no graph at
-  // all, which is what used to make the last delete unrecoverable.
+  // all, leaving the canvas with nothing to add to.
   check('an emptied diagram is still a graph the canvas can add to', () => {
     const { parseFlow, renderFlow, flowDeleteNode, flowAddNode, flowMoveNode } = booted;
     const graph = parseFlow('flowchart TD\n    n1(["Start"])');
@@ -612,7 +612,7 @@ if (booted) {
     const { parseFlow, renderFlow, flowSpliceIntoEdge, flowExtractNode, flowFlipEdge, flowDuplicateNode } = booted;
     const chain = () =>
       parseFlow('flowchart TD\n    A["a"]\n    B["b"]\n    C["c"]\n    X["x"]\n    A --> B\n    B --> C');
-    const edges = (graph) => graph.edges.map((edge) => edge.fromNode + '>' + edge.toNode).join(' ');
+    const edges = (graph) => graph.edges.map((edge) => edge.from + '>' + edge.to).join(' ');
 
     // A loose box dropped on a line goes into that line.
     const into = chain();
@@ -657,19 +657,14 @@ if (booted) {
   // step" above the one it follows: wrong in a way that still looks like a
   // diagram, so nothing on screen would give it away.
   check('every + handle means the next step, that way', () => {
-    const { flowBudPoints, flowBudIntent } = booted;
-    const box = { x: 0, y: 0, width: 100, height: 40 };
-    const at = flowBudPoints(box);
-    const sits = (side, x, y) => {
-      if (at[side].x !== x || at[side].y !== y) {
-        throw new Error(`the ${side} handle sits at ${at[side].x},${at[side].y}`);
-      }
-    };
-    // The handles are on the four sides and do not move; only their meaning does.
-    sits('up', 50, 0);
-    sits('down', 50, 40);
-    sits('left', 0, 20);
-    sits('right', 100, 20);
+    const { flowBudIntent } = booted;
+    // Where each handle sits is the stylesheet's business now — a handle is
+    // placed on its own side of the box mermaid drew. What each one *means* is
+    // this file's, and that is what the direction decides.
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    for (const side of ['up', 'down', 'left', 'right']) {
+      if (!css.includes('.flow-bud.is-' + side)) throw new Error(`no rule places the ${side} handle`);
+    }
 
     const means = (direction, side, want) => {
       const got = flowBudIntent(direction, side);
@@ -782,7 +777,7 @@ if (booted) {
   // the canvas's pointerdown calls preventDefault: on a pointerdown it suppresses
   // the compatibility mouse events, and dblclick is one of them. The failure is
   // silent — every drag still works, the double-click just does nothing — so it
-  // is held here rather than left to be rediscovered.
+  // is held here rather than left to be found by hand.
   check('the canvas keeps the double-click that renames a box', () => {
     const fragment = readFileSync(join(root, 'src/assets/shell/flow-canvas.js'), 'utf8');
     const opened = fragment.indexOf("flowCanvas.addEventListener('pointerdown'");
@@ -795,11 +790,88 @@ if (booted) {
     if (!/flowCanvas\.addEventListener\('dblclick'/.test(fragment)) {
       throw new Error('the canvas has no dblclick handler to keep');
     }
-    // And the text selection that preventDefault used to hold off is held off
-    // by the stylesheet instead, or dragging a box sweeps a selection with it.
+    // The stylesheet is what holds text selection off instead, or dragging a
+    // box sweeps a selection across the diagram.
     const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
     const rule = css.slice(css.indexOf('.flow-canvas {'), css.indexOf('.flow-canvas.is-disabled'));
     if (!/user-select:\s*none/.test(rule)) throw new Error('.flow-canvas does not turn text selection off');
+  });
+
+  // The ring around a selected box stands 8px off the shape and follows its
+  // corners — nested corners in reverse, so the outer radius is the inner plus
+  // the gap. Mermaid builds its shapes with rough.js, so there is no `rx` to
+  // read and the inner radius is measured: walk in along the corner's diagonal
+  // until the fill starts. Turning that distance back into a radius is the part
+  // that is easy to get wrong and invisible when it is.
+  check('a corner radius is recovered from how far in the fill starts', () => {
+    const { flowCornerRadiusFrom } = booted;
+    // A circular corner of radius r has its center at (r, r), so along the
+    // diagonal the fill begins at t = r(1 − 1/√2). Feed that t back in.
+    const insetFor = (radius) => radius * (1 - Math.SQRT1_2);
+    for (const radius of [0, 5, 20, 28, 30, 64]) {
+      const got = flowCornerRadiusFrom(insetFor(radius));
+      if (Math.abs(got - radius) > 0.001) {
+        throw new Error(`a corner of ${radius} came back as ${got.toFixed(2)}`);
+      }
+    }
+    // The wrong constant — the Euclidean gap r(√2 − 1) — is out by exactly √2,
+    // which reads as "the ring did nothing" rather than as a broken number.
+    const wrong = insetFor(28) / (Math.SQRT2 - 1);
+    if (Math.abs(wrong - 28) < 0.001) throw new Error('the two constants are indistinguishable');
+
+    // And a pill: its inner radius is half its height, so the ring around it —
+    // half its height plus the gap — is exactly half the ring's own height.
+    const gap = 8;
+    const height = 56;
+    const ring = flowCornerRadiusFrom(insetFor(height / 2)) + gap;
+    if (Math.abs(ring - (height + gap * 2) / 2) > 0.001) throw new Error('a pill does not stay a pill');
+  });
+
+  // The sheet has one picture in it and mermaid draws it. Two would mean one of
+  // them was a lie, and it was always ours — so nothing in the flowchart code
+  // may draw a shape, and there is no second pane to draw it into.
+  check('mermaid is the only thing that draws a flowchart', () => {
+    const model = readFileSync(join(root, 'src/assets/shell/flow-model.js'), 'utf8');
+    const canvas = readFileSync(join(root, 'src/assets/shell/flow-canvas.js'), 'utf8');
+    const page = readFileSync(join(root, 'src/assets/app-shell.html'), 'utf8');
+    // Our own outlines are gone, and so is the layout that placed them.
+    for (const gone of ['outline:', 'grow:', 'layoutFlow', 'flowNodeSize', 'flowEdgeGeometry']) {
+      if (model.includes(gone) || canvas.includes(gone)) throw new Error(`${gone} is back`);
+    }
+    if (/<(polygon|ellipse)\b/.test(canvas)) throw new Error('the canvas is drawing shapes again');
+    // One drawing surface: the preview pane beside it is gone.
+    if (page.includes('flowPreview')) throw new Error('the second picture is back in the page');
+    if (!canvas.includes("mermaid.render('leafFlowDraw'")) throw new Error('the canvas no longer renders with mermaid');
+    // The handles are laid over mermaid's drawing, keyed off what it tags.
+    // Mermaid writes a box's id on `id` as `flowchart-<id>-<n>`, not on
+    // `data-id` — reading the wrong attribute found nothing and left the canvas
+    // with no handles at all, silently. Both spellings are read now.
+    if (!canvas.includes("svg.querySelectorAll('g.node, g[data-id]')")) {
+      throw new Error('nothing reads mermaid’s boxes');
+    }
+    if (!canvas.includes('flowchart-(.+)-')) throw new Error('the box id is not unwrapped from mermaid’s spelling');
+    if (!canvas.includes('flowEdgeDomId')) throw new Error('nothing maps mermaid’s lines back to ours');
+  });
+
+  // jsoncanvas.org's field names were borrowed against a `.canvas` reader we
+  // never wrote, and mermaid cannot draw a `.canvas` file, so the last reason
+  // went with the swap. A node has a shape; an edge runs from one box to another.
+  check('the graph says what it means and borrows nothing', () => {
+    const { parseFlow } = booted;
+    const graph = parseFlow('flowchart TD\n    A["a"]\n    B["b"]\n    A -.->|"maybe"| B');
+    const nodeFields = Object.keys(graph.nodes[0]).sort().join(',');
+    if (nodeFields !== 'id,shape,text') throw new Error(`a node carries ${nodeFields}`);
+    const edgeFields = Object.keys(graph.edges[0]).sort().join(',');
+    if (edgeFields !== 'ends,from,id,label,line,to') throw new Error(`an edge carries ${edgeFields}`);
+    for (const path of ['src/assets/shell/flow-model.js', 'src/assets/shell/flow-canvas.js']) {
+      const source = readFileSync(join(root, path), 'utf8');
+      for (const borrowed of ['fromNode', 'toNode', 'toEnd', 'jsoncanvas']) {
+        // The model's header explains why the names went; that mention is fine.
+        const hits = source.split(borrowed).length - 1;
+        const allowed = borrowed === 'jsoncanvas' && path.endsWith('flow-model.js') ? 1 : 0;
+        if (hits > allowed) throw new Error(`${borrowed} is back in ${path}`);
+      }
+    }
   });
 
   // Diagrams are drawn in the theme's own colors, read off :root at render time.

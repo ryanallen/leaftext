@@ -1,224 +1,43 @@
 // ---------------------------------------------------------------------------
 // The flowchart grammar and the graph behind it. No DOM here, not one selector:
-// this is the half check-shell.mjs can run in Node, and the half a future
-// `.canvas` reader would share.
+// this is the half check-shell.mjs can run in Node.
 //
 // One table. FLOW_SHAPES, and FLOW_EDGE_LINES against FLOW_EDGE_ENDS, are read
 // in both directions — parseFlow matches what they spell, renderFlow writes it,
-// the layout sizes from them and the sheet's palette is drawn from them. So a
-// shape the parser cannot read can never be offered, and a new one is one row.
+// and the sheet's palette is generated from them. So a shape the parser cannot
+// read can never be offered, and a new one is one row.
+//
+// A node has an `id`, a `shape` and its `text`; an edge runs `from` one to
+// another, with a `line` style and a pair of `ends`. Mermaid's subject matter,
+// said plainly — don't borrow another format's field names for it.
 //
 // Fail closed. parseFlow returns null on anything it does not fully understand,
 // never a partial graph: a canvas that quietly drops the half it didn't read
 // turns "I tidied my diagram" into lost work. Subgraphs, classes, styles,
 // clicks and typed `@{}` shapes are refused by that rule alone, because nothing
 // here matches them.
-//
-// Field names follow jsoncanvas.org, at no cost today and so that reading a
-// `.canvas` file later reuses this model instead of growing a second one.
 // ---------------------------------------------------------------------------
 
-// The classic bracket family, all fourteen. One row is a shape: how it is
-// spelled (`open`/`close`), how much room it needs around its text (`grow`), and
-// what it looks like (`outline`). The outline returns numbers, not markup — the
-// canvas turns those into SVG, so this file still has no presentation in it, and
-// the palette is drawn from the same rows the parser matches against. A shape
-// missing from here cannot be spelled, sized, drawn or offered.
+// The shapes, keyed by the name mermaid knows each one by — the id is what gets
+// written into the file. A row says what a shape is called, what it is for, and
+// how it is spelled. Nothing here says what one looks like: mermaid draws the
+// canvas, so a second drawing of the same shape could only ever be a second
+// drawing that was wrong.
 const FLOW_SHAPES = [
-  {
-    id: 'rect',
-    label: 'Step',
-    hint: 'A step: something that happens.',
-    open: '[',
-    close: ']',
-    grow: [1, 1],
-    outline: (b) => [{ kind: 'rect', x: b.x, y: b.y, w: b.w, h: b.h, rx: 6 }],
-  },
-  {
-    id: 'rounded',
-    label: 'Rounded step',
-    hint: 'A step, drawn softer. Same meaning as a plain step.',
-    open: '(',
-    close: ')',
-    grow: [1, 1],
-    outline: (b) => [{ kind: 'rect', x: b.x, y: b.y, w: b.w, h: b.h, rx: 14 }],
-  },
-  {
-    id: 'diamond',
-    label: 'Decision',
-    hint: 'A question, with a labeled line out for each answer.',
-    open: '{',
-    close: '}',
-    grow: [1.4, 1.4],
-    outline: (b) => [
-      {
-        kind: 'poly',
-        points: [
-          [b.cx, b.y],
-          [b.x + b.w, b.cy],
-          [b.cx, b.y + b.h],
-          [b.x, b.cy],
-        ],
-      },
-    ],
-  },
-  {
-    id: 'stadium',
-    label: 'Start or end',
-    hint: 'Where the flow starts, and where it stops.',
-    open: '([',
-    close: '])',
-    grow: [1.1, 1],
-    outline: (b) => [{ kind: 'rect', x: b.x, y: b.y, w: b.w, h: b.h, rx: b.h / 2 }],
-  },
-  {
-    id: 'subroutine',
-    label: 'Subroutine',
-    hint: 'A step spelled out somewhere else.',
-    open: '[[',
-    close: ']]',
-    grow: [1.2, 1],
-    outline: (b) => [
-      { kind: 'rect', x: b.x, y: b.y, w: b.w, h: b.h, rx: 4 },
-      { kind: 'line', x1: b.x + 9, y1: b.y, x2: b.x + 9, y2: b.y + b.h },
-      { kind: 'line', x1: b.x + b.w - 9, y1: b.y, x2: b.x + b.w - 9, y2: b.y + b.h },
-    ],
-  },
-  {
-    id: 'cylinder',
-    label: 'Database',
-    hint: 'Data being stored or read.',
-    open: '[(',
-    close: ')]',
-    grow: [1, 1.4],
-    outline: (b) => {
-      const lip = Math.min(10, b.h / 5);
-      return [
-        {
-          kind: 'path',
-          d: [
-            ['M', b.x, b.y + lip],
-            ['A', b.w / 2, lip, 0, 0, 0, b.x + b.w, b.y + lip],
-            ['L', b.x + b.w, b.y + b.h - lip],
-            ['A', b.w / 2, lip, 0, 0, 0, b.x, b.y + b.h - lip],
-            ['Z'],
-          ],
-        },
-        // The rim, drawn over the body so the top reads as a lid.
-        {
-          kind: 'path',
-          open: true,
-          d: [
-            ['M', b.x, b.y + lip],
-            ['A', b.w / 2, lip, 0, 0, 1, b.x + b.w, b.y + lip],
-          ],
-        },
-      ];
-    },
-  },
-  {
-    id: 'circle',
-    label: 'Circle',
-    hint: 'A jump: the flow carries on at the matching circle.',
-    open: '((',
-    close: '))',
-    grow: [1.15, 1.6],
-    square: true,
-    outline: (b) => [{ kind: 'circle', cx: b.cx, cy: b.cy, r: Math.min(b.w, b.h) / 2 }],
-  },
-  {
-    id: 'double-circle',
-    label: 'Double circle',
-    hint: 'The end of the whole flow.',
-    open: '(((',
-    close: ')))',
-    grow: [1.3, 1.8],
-    square: true,
-    outline: (b) => [
-      { kind: 'circle', cx: b.cx, cy: b.cy, r: Math.min(b.w, b.h) / 2 },
-      { kind: 'circle', open: true, cx: b.cx, cy: b.cy, r: Math.min(b.w, b.h) / 2 - 6 },
-    ],
-  },
-  {
-    id: 'hexagon',
-    label: 'Preparation',
-    hint: 'Getting ready — setting something up before the next step.',
-    open: '{{',
-    close: '}}',
-    grow: [1.3, 1],
-    outline: (b) => {
-      const notch = Math.min(22, b.w * 0.18);
-      return [
-        {
-          kind: 'poly',
-          points: [
-            [b.x + notch, b.y],
-            [b.x + b.w - notch, b.y],
-            [b.x + b.w, b.cy],
-            [b.x + b.w - notch, b.y + b.h],
-            [b.x + notch, b.y + b.h],
-            [b.x, b.cy],
-          ],
-        },
-      ];
-    },
-  },
-  {
-    id: 'asymmetric',
-    label: 'Flag',
-    hint: 'A note pinned to the flow.',
-    open: '>',
-    close: ']',
-    grow: [1.2, 1],
-    outline: (b) => [
-      {
-        kind: 'poly',
-        points: [
-          [b.x, b.y],
-          [b.x + b.w, b.y],
-          [b.x + b.w, b.y + b.h],
-          [b.x, b.y + b.h],
-          [b.x + 16, b.cy],
-        ],
-      },
-    ],
-  },
-  {
-    id: 'lean-r',
-    label: 'Input',
-    hint: 'Something going in.',
-    open: '[/',
-    close: '/]',
-    grow: [1.3, 1],
-    outline: (b) => flowLeanOutline(b, 1),
-  },
-  {
-    id: 'lean-l',
-    label: 'Output',
-    hint: 'Something coming out.',
-    open: '[\\',
-    close: '\\]',
-    grow: [1.3, 1],
-    outline: (b) => flowLeanOutline(b, -1),
-  },
-  {
-    id: 'trapezoid',
-    label: 'Manual operation',
-    hint: 'A step done by hand.',
-    open: '[/',
-    close: '\\]',
-    grow: [1.35, 1],
-    outline: (b) => flowTrapezoidOutline(b, 1),
-  },
-  {
-    id: 'trapezoid-alt',
-    label: 'Manual input',
-    hint: 'Something typed in by hand.',
-    open: '[\\',
-    close: '/]',
-    grow: [1.35, 1],
-    outline: (b) => flowTrapezoidOutline(b, -1),
-  },
+  { id: 'rect', label: 'Process', hint: 'A step: something that happens.', open: '[', close: ']' },
+  { id: 'rounded', label: 'Event', hint: 'A step, drawn softer. Same meaning as a process.', open: '(', close: ')' },
+  { id: 'stadium', label: 'Terminal', hint: 'Where the flow starts, and where it stops.', open: '([', close: '])' },
+  { id: 'fr-rect', label: 'Subprocess', hint: 'A step spelled out somewhere else.', open: '[[', close: ']]' },
+  { id: 'cyl', label: 'Database', hint: 'Data being stored or read.', open: '[(', close: ')]' },
+  { id: 'circle', label: 'Circle', hint: 'A jump: the flow carries on at the matching circle.', open: '((', close: '))' },
+  { id: 'dbl-circ', label: 'Double circle', hint: 'The end of the whole flow.', open: '(((', close: ')))' },
+  { id: 'diam', label: 'Decision', hint: 'A question, with a labeled line out for each answer.', open: '{', close: '}' },
+  { id: 'hex', label: 'Preparation', hint: 'Setting something up before the next step.', open: '{{', close: '}}' },
+  { id: 'lean-r', label: 'Input', hint: 'Something going in.', open: '[/', close: '/]' },
+  { id: 'lean-l', label: 'Output', hint: 'Something coming out.', open: '[\\', close: '\\]' },
+  { id: 'trap-b', label: 'Manual operation', hint: 'A step done by hand.', open: '[/', close: '\\]' },
+  { id: 'trap-t', label: 'Manual input', hint: 'Something typed in by hand.', open: '[\\', close: '/]' },
+  { id: 'odd', label: 'Flag', hint: 'A note pinned to the flow.', open: '>', close: ']' },
 ];
 
 // A shape's opener does not always decide which shape it is — `[/x/]` and
@@ -226,48 +45,11 @@ const FLOW_SHAPES = [
 // closer settles it. See takeFlowNode.
 const FLOW_SHAPES_BY_OPENER = FLOW_SHAPES.slice().sort((a, b) => b.open.length - a.open.length);
 
-function flowSkew(b) {
-  return Math.min(24, b.w * 0.2);
-}
-
-// The two parallelograms: the same four corners, leaning one way or the other.
-function flowLeanOutline(b, way) {
-  const skew = flowSkew(b);
-  const points =
-    way > 0
-      ? [
-          [b.x + skew, b.y],
-          [b.x + b.w, b.y],
-          [b.x + b.w - skew, b.y + b.h],
-          [b.x, b.y + b.h],
-        ]
-      : [
-          [b.x, b.y],
-          [b.x + b.w - skew, b.y],
-          [b.x + b.w, b.y + b.h],
-          [b.x + skew, b.y + b.h],
-        ];
-  return [{ kind: 'poly', points }];
-}
-
-// The two trapezoids: narrow at the top, or narrow at the bottom.
-function flowTrapezoidOutline(b, way) {
-  const skew = flowSkew(b);
-  const points =
-    way > 0
-      ? [
-          [b.x + skew, b.y],
-          [b.x + b.w - skew, b.y],
-          [b.x + b.w, b.y + b.h],
-          [b.x, b.y + b.h],
-        ]
-      : [
-          [b.x, b.y],
-          [b.x + b.w, b.y],
-          [b.x + b.w - skew, b.y + b.h],
-          [b.x + skew, b.y + b.h],
-        ];
-  return [{ kind: 'poly', points }];
+// The catalog itself. A `const` in the shell script is not reachable from
+// check-shell.mjs and a function is, and the shape table is the one thing there
+// that has to be checked whole rather than a row at a time.
+function flowShapeCatalog() {
+  return FLOW_SHAPES;
 }
 
 // A connector is a line style and a pair of ends, and mermaid spells it as the
@@ -314,7 +96,7 @@ function flowEdgeToken(line, end) {
 const FLOW_EDGE_TOKENS = [];
 for (const line of FLOW_EDGE_LINES) {
   for (const end of FLOW_EDGE_ENDS) {
-    FLOW_EDGE_TOKENS.push({ token: flowEdgeToken(line, end), line: line.id, toEnd: end.id });
+    FLOW_EDGE_TOKENS.push({ token: flowEdgeToken(line, end), line: line.id, ends: end.id });
   }
 }
 FLOW_EDGE_TOKENS.sort((a, b) => b.token.length - a.token.length);
@@ -332,7 +114,7 @@ for (const line of FLOW_EDGE_LINES) {
       re: new RegExp('^' + flowEscapeRe(open) + '[ \\t]*([^-<>|=\\n]+?)[ \\t]*' + flowEscapeRe(close)),
       weight: open.length * 10 + close.length,
       line: line.id,
-      toEnd: end.id,
+      ends: end.id,
     });
   }
 }
@@ -431,9 +213,9 @@ function takeFlowNode(rest) {
     if (!after.startsWith(shape.open)) continue;
     const label = takeFlowLabel(after.slice(shape.open.length), shape.close);
     if (!label) continue;
-    return { node: { id: id[0], type: shape.id, text: label.text }, rest: label.rest };
+    return { node: { id: id[0], shape: shape.id, text: label.text }, rest: label.rest };
   }
-  return { node: { id: id[0], type: null, text: null }, rest: after };
+  return { node: { id: id[0], shape: null, text: null }, rest: after };
 }
 
 // The nodes one connector reaches at once: `A & B` is two, joined by `&`.
@@ -463,7 +245,7 @@ function takeFlowLink(rest) {
     if (!/[^\s.]/.test(match[1])) continue;
     const label = flowLinkLabel(match[1]);
     if (label === false) return null;
-    return { link: { label, line: form.line, toEnd: form.toEnd }, rest: rest.slice(match[0].length) };
+    return { link: { label, line: form.line, ends: form.ends }, rest: rest.slice(match[0].length) };
   }
   for (const spelling of FLOW_EDGE_TOKENS) {
     if (!rest.startsWith(spelling.token)) continue;
@@ -476,7 +258,7 @@ function takeFlowLink(rest) {
       if (label === false) return null;
       after = after.slice(end + 1);
     }
-    return { link: { label, line: spelling.line, toEnd: spelling.toEnd }, rest: after };
+    return { link: { label, line: spelling.line, ends: spelling.ends }, rest: after };
   }
   return null;
 }
@@ -505,14 +287,14 @@ function parseFlowStatement(line) {
     if (!group) return null;
     for (const node of group.nodes) declared.push(node);
     if (previous) {
-      for (const fromNode of previous) {
+      for (const from of previous) {
         for (const node of group.nodes) {
           links.push({
-            fromNode,
-            toNode: node.id,
+            from,
+            to: node.id,
             label: pending.label,
             line: pending.line,
-            toEnd: pending.toEnd,
+            ends: pending.ends,
           });
         }
       }
@@ -579,27 +361,27 @@ function parseFlow(text) {
       if (!node) {
         // A node mentioned only in an edge shows its own id, which is what
         // mermaid draws. Writing it back as a declaration says the same thing.
-        node = { id: found.id, type: FLOW_SHAPES[0].id, text: found.id, declared: false };
+        node = { id: found.id, shape: FLOW_SHAPES[0].id, text: found.id, declared: false };
         byId.set(node.id, node);
         graph.nodes.push(node);
       }
-      if (found.type) {
+      if (found.shape) {
         // Two shapes for one node is a document whose meaning depends on which
         // one mermaid keeps. Not one to guess at.
         if (node.declared) return null;
         node.declared = true;
-        node.type = found.type;
+        node.shape = found.shape;
         node.text = found.text;
       }
     }
     for (const link of statement.links) {
       graph.edges.push({
         id: 'e' + (graph.edges.length + 1),
-        fromNode: link.fromNode,
-        toNode: link.toNode,
+        from: link.from,
+        to: link.to,
         label: link.label,
         line: link.line,
-        toEnd: link.toEnd,
+        ends: link.ends,
       });
     }
   }
@@ -617,13 +399,13 @@ function renderFlow(graph) {
   lines.push('flowchart ' + graph.direction);
   for (const note of graph.notes) lines.push(FLOW_INDENT + note);
   for (const node of graph.nodes) {
-    const shape = flowShape(node.type);
+    const shape = flowShape(node.shape);
     lines.push(FLOW_INDENT + node.id + shape.open + '"' + encodeFlowLabel(node.text) + '"' + shape.close);
   }
   for (const edge of graph.edges) {
-    const token = flowEdgeToken(flowEdgeLine(edge.line), flowEdgeEnd(edge.toEnd));
+    const token = flowEdgeToken(flowEdgeLine(edge.line), flowEdgeEnd(edge.ends));
     const label = edge.label ? '|"' + encodeFlowLabel(edge.label) + '"|' : '';
-    lines.push(FLOW_INDENT + edge.fromNode + ' ' + token + label + ' ' + edge.toNode);
+    lines.push(FLOW_INDENT + edge.from + ' ' + token + label + ' ' + edge.to);
   }
   return lines.join('\n');
 }
@@ -640,7 +422,7 @@ function flowNextId(graph, prefix) {
 }
 
 function flowAddNode(graph, type, text) {
-  const node = { id: flowNextId(graph, 'n'), type: flowShape(type).id, text: text || 'Step' };
+  const node = { id: flowNextId(graph, 'n'), shape: flowShape(type).id, text: text || 'Step' };
   graph.nodes.push(node);
   return node;
 }
@@ -655,11 +437,11 @@ function flowFindEdge(graph, id) {
 
 // Connect two nodes, unless that edge is already drawn. Returns the edge either
 // way, so the canvas can select it.
-function flowConnect(graph, fromNode, toNode) {
-  if (!flowFindNode(graph, fromNode) || !flowFindNode(graph, toNode)) return null;
-  const existing = graph.edges.find((edge) => edge.fromNode === fromNode && edge.toNode === toNode);
+function flowConnect(graph, from, to) {
+  if (!flowFindNode(graph, from) || !flowFindNode(graph, to)) return null;
+  const existing = graph.edges.find((edge) => edge.from === from && edge.to === to);
   if (existing) return existing;
-  const edge = { id: flowNextId(graph, 'e'), fromNode, toNode, label: null, line: 'solid', toEnd: 'arrow' };
+  const edge = { id: flowNextId(graph, 'e'), from, to, label: null, line: 'solid', ends: 'arrow' };
   graph.edges.push(edge);
   return edge;
 }
@@ -670,34 +452,34 @@ function flowConnect(graph, fromNode, toNode) {
 function flowSpliceIntoEdge(graph, id, edgeId) {
   const edge = flowFindEdge(graph, edgeId);
   if (!edge || !flowFindNode(graph, id)) return null;
-  if (edge.fromNode === id || edge.toNode === id) return null;
+  if (edge.from === id || edge.to === id) return null;
   const rest = {
     id: flowNextId(graph, 'e'),
-    fromNode: id,
-    toNode: edge.toNode,
+    from: id,
+    to: edge.to,
     label: null,
     line: edge.line,
-    toEnd: edge.toEnd,
+    ends: edge.ends,
   };
-  edge.toNode = id;
+  edge.to = id;
   graph.edges.splice(graph.edges.indexOf(edge) + 1, 0, rest);
   return rest;
 }
 
 // Unhook a node from everything, leaving the node itself where it is.
 function flowDetachNode(graph, id) {
-  graph.edges = graph.edges.filter((edge) => edge.fromNode !== id && edge.toNode !== id);
+  graph.edges = graph.edges.filter((edge) => edge.from !== id && edge.to !== id);
 }
 
 // Pull a node out of the middle of a chain and close the gap behind it: what
 // reached it is joined to what left it, then its own lines go. Without the
 // healing, taking one step out of `A --> B --> C` would leave A and C strangers.
 function flowExtractNode(graph, id) {
-  const incoming = graph.edges.filter((edge) => edge.toNode === id && edge.fromNode !== id);
-  const outgoing = graph.edges.filter((edge) => edge.fromNode === id && edge.toNode !== id);
+  const incoming = graph.edges.filter((edge) => edge.to === id && edge.from !== id);
+  const outgoing = graph.edges.filter((edge) => edge.from === id && edge.to !== id);
   for (const into of incoming) {
     for (const out of outgoing) {
-      if (into.fromNode !== out.toNode) flowConnect(graph, into.fromNode, out.toNode);
+      if (into.from !== out.to) flowConnect(graph, into.from, out.to);
     }
   }
   flowDetachNode(graph, id);
@@ -707,7 +489,7 @@ function flowExtractNode(graph, id) {
 function flowDuplicateNode(graph, id) {
   const node = flowFindNode(graph, id);
   if (!node) return null;
-  const copy = { id: flowNextId(graph, 'n'), type: node.type, text: node.text };
+  const copy = { id: flowNextId(graph, 'n'), shape: node.shape, text: node.text };
   graph.nodes.splice(graph.nodes.indexOf(node) + 1, 0, copy);
   return copy;
 }
@@ -716,14 +498,14 @@ function flowDuplicateNode(graph, id) {
 function flowFlipEdge(graph, id) {
   const edge = flowFindEdge(graph, id);
   if (!edge) return;
-  const from = edge.fromNode;
-  edge.fromNode = edge.toNode;
-  edge.toNode = from;
+  const from = edge.from;
+  edge.from = edge.to;
+  edge.to = from;
 }
 
 function flowDeleteNode(graph, id) {
   graph.nodes = graph.nodes.filter((node) => node.id !== id);
-  graph.edges = graph.edges.filter((edge) => edge.fromNode !== id && edge.toNode !== id);
+  graph.edges = graph.edges.filter((edge) => edge.from !== id && edge.to !== id);
 }
 
 function flowDeleteEdge(graph, id) {

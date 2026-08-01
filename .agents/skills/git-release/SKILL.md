@@ -38,11 +38,14 @@ Do not skip this even for app releases: a code change is exactly when the docs m
 
 Before step 0 commits anything, review the comments **you** added or changed in this session's code edits and condense any that are too long. Fresh comments tend to over-explain — a 4-line block where 1–2 lines carry the point.
 
-1. See the uncommitted diff: `git diff -- 'src/*'` (add other code globs as needed). Focus on **added/changed** comment lines only — don't rewrite pre-existing comments.
+1. See the uncommitted diff: `git diff -- 'src/*'` (add other code globs as needed). **Scope is the file, not the author.** Every comment in a file this release touches is in scope; files it doesn't touch are not, so a release never sprawls into an unrelated comment refactor. Who wrote a comment, and when, says nothing about whether it is still true — and "only tidy your own" is a ratchet that lets wrong ones pile up.
 2. For each comment you introduced, apply the bar:
    - **Keep the *why*, cut the *what*.** The code shows what it does; the comment explains why it's needed or what breaks without it.
    - **Match the surrounding density.** A new comment should be no longer than nearby existing ones for similar code. If the block next door explains itself in one line, yours should too.
    - **One line if it fits.** Collapse multi-line blocks that restate the same idea, drop incidental specifics (exact pixel values, obvious mechanics) unless load-bearing, and cut hedging.
+   - **Cut the history, keep the rule.** A comment narrating how the code got here is a changelog entry, and git already holds it: *"an earlier version divided by …"*, *"this used to …"*, *"two attempts read zero"*, *"we removed X"*, *"the first draft did Y"*, *"this replaced Z"*. Delete the narration outright. Where it exists to stop a mistake recurring, keep the standing rule and drop the story — **"don't do X, it breaks Y" earns its line; "we used to do X" does not.** A comment naming a function, field, file, or behavior that no longer exists is deleted or corrected, never left.
+
+     **Shipped history is not drafting history.** A version number is evidence the rule is real and costly, and those comments stay as they are: *"v0.1.365 shipped without a Start Menu entry and was unreachable"*, *"v0.1.423 shipped near-black boxes"*, *"unlocking a 50,000-block glossary took 148 SECONDS that way"*. That is the repo's memory of what it paid for (see AGENTS.md, *Rules each paid for in version numbers*). What gets cut is the account of this feature being built — attempts, rewrites, and what an earlier draft of the same function did.
 3. Edit them down in place. This makes the working tree dirty (or dirtier) — that's expected; step 0 commits the condensed versions.
 
 This is a quality gate, not a git operation — never commit, tag, or push here.

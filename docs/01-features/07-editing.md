@@ -107,7 +107,9 @@ A flowchart is a [Mermaid](01-rendering.md#mermaid-diagrams) block like any othe
 - The **flowchart** button in the [insert row](#adding-a-block), which starts a new one.
 - The **corner button** on a diagram already in the page, shown when you hover it. A plain click still swaps that diagram for its source, as before; the button is the other option, not a replacement.
 
-Either opens a full-window sheet with two panes: a **canvas** on the left and the **Mermaid text** on the right, above a live preview of what the document will actually render. They are peers over one diagram — draw on the canvas and the text follows; type in the text and the canvas follows. **Nothing is written until Save**, which writes the whole block as one edit, so the document's [Undo](#undo) puts the diagram back in one press. **Cancel writes nothing.**
+Either opens a full-window sheet with two panes: a **canvas** on the left and the **Mermaid text** on the right. They are peers over one diagram — draw on the canvas and the text follows; type in the text and the canvas follows. Drag the bar between them to give either pane more room; arrow keys move it too, and a double-click puts it back. **Nothing is written until Save**, which writes the whole block as one edit, so the document's [Undo](#undo) puts the diagram back in one press. **Cancel writes nothing.**
+
+The canvas is Mermaid's own drawing of your diagram, not a second picture of it — the same renderer the page uses, so what you are working on is exactly what the document will show. Selection rings and **+** handles are laid over it. When Mermaid refuses a diagram it says why under the canvas, which is the one place this differs from a page: a document marks a failed diagram and moves on, an editor has to tell you.
 
 ### Drawing
 
@@ -129,13 +131,13 @@ A chart has one direction, and the first box is what decides it: while there is 
 
 ### Where the boxes go
 
-**Nothing about position is stored in your document**, so the layout decides it and the diagram is laid out fresh every time. Dragging a box still moves it under your pointer and still means something — it changes where the box sits in the order — but it settles back into place on release rather than staying where you dropped it. What you see is close to what the document will draw.
+**Nothing about position is stored in your document**, so Mermaid lays the diagram out fresh every time. Dragging a box still moves it under your pointer and still means something — it changes where the box sits in the order — but it settles back into place on release rather than staying where you dropped it. Since Mermaid does the placing here and in the page, what you see is what the document will draw.
 
 The canvas fits the diagram when it opens and centers it. Drag empty space to pan, and use the zoom buttons or `Ctrl` + scroll.
 
 ### What it can draw
 
-- **Fourteen shapes** — step, rounded step, decision, start/end, subroutine, database, circle, double circle, preparation, flag, input, output, manual operation, manual input. Selecting a box shows all of them, and hovering one says what it means.
+- **Fourteen shapes** — process, event, terminal, subprocess, database, circle, double circle, decision, preparation, input, output, manual operation, manual input, and flag. Selecting a box shows all of them, and hovering one says what it means.
 - **Connectors** — solid, dotted or thick, with an arrow, nothing, a circle or a cross at the end, or the same at both ends. Any of them can carry a label.
 - **Front matter, `%%{init}%%` directives and comments** written in the block are carried through a save untouched.
 

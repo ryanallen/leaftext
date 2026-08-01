@@ -4897,7 +4897,24 @@ body.is-block-dragging .document-body [data-src-start] {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  /* How wide the text pane is, dragged by the bar between the two. */
+  grid-template-columns: minmax(0, 1fr) 5px var(--flow-code-width, 340px);
+}
+/* The bar between the picture and the text. Thin ink, a wide grab area. */
+.flow-split {
+  position: relative;
+  background: var(--border);
+  cursor: col-resize;
+}
+.flow-split::after {
+  content: '';
+  position: absolute;
+  inset: 0 -4px;
+}
+.flow-split:hover,
+.flow-split:focus-visible {
+  background: var(--link);
+  outline: none;
 }
 .flow-pane {
   min-width: 0;
@@ -4905,9 +4922,7 @@ body.is-block-dragging .document-body [data-src-start] {
   display: flex;
   flex-direction: column;
 }
-.flow-pane-code {
-  border-left: 1px solid var(--border);
-}
+
 /* What is left of the chrome, now that making things happens on the canvas:
    how far back you can step, which way the flow runs, and how big it is drawn. */
 .flow-sheet-tools {
@@ -4959,15 +4974,13 @@ body.is-block-dragging .document-body [data-src-start] {
   border-color: var(--border-strong);
   background: var(--surface-muted);
 }
-/* The little drawing on a shape button: the same outline the canvas draws,
-   which is why a new shape needs no icon of its own. */
+/* The little drawing on a shape button is mermaid's too — one tiny diagram per
+   shape, so a button cannot show something the canvas draws differently. */
 .flow-chip {
   display: block;
-  width: 42px;
-  height: 26px;
-}
-.flow-chip .flow-node-shape {
-  stroke-width: 1.2;
+  width: 46px;
+  height: 28px;
+  max-width: none;
 }
 .flow-chip-line {
   stroke: var(--foreground);
@@ -4980,11 +4993,11 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-chip-line.is-thick {
   stroke-width: 3.2;
 }
-.flow-chip .flow-end-mark {
+.flow-end-mark {
   fill: var(--foreground);
   stroke: none;
 }
-.flow-chip .flow-end-mark.is-open {
+.flow-end-mark.is-open {
   fill: none;
   stroke: var(--foreground);
   stroke-width: 1.6;
@@ -5068,53 +5081,145 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-canvas.is-panning {
   cursor: grabbing;
 }
-/* The diagram's own box at the current zoom. It exists so the rename field can
-   be laid over the shape it belongs to and scroll with it.
-
-   `margin: auto` on a flex child is what centers it: the obvious
-   `justify-content: center` clips the top and left off anything larger than the
-   scroll box, and a diagram is often larger. Auto margins collapse to nothing
-   when it overflows, so both cases land right. */
+/* The diagram's own box at the current zoom: mermaid's SVG, with our handles
+   laid over it. It is `position: relative` so the overlay and the rename field
+   can be placed in its pixels, and `margin: auto` centers it — the obvious
+   `justify-content` clips the top-left off anything larger than the scroll box. */
 .flow-stage {
   position: relative;
   flex: none;
   margin: auto;
 }
-.flow-svg {
+.flow-stage > svg {
   display: block;
-  overflow: visible;
 }
-.flow-node {
+/* Rings, handles and drop marks. The layer itself lets the pointer through to
+   mermaid's own boxes and lines; only its children answer. */
+.flow-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.flow-overlay > * {
+  pointer-events: auto;
+}
+/* One box's worth of handles, sized to the shape mermaid drew. It owns its own
+   ring and buds so hovering one box cannot light up another's — which a sibling
+   selector across a flat overlay does. */
+.flow-node-tools {
+  position: absolute;
+  pointer-events: none;
+}
+/* The ring is what a click lands on, and what a drag carries. Invisible until
+   it matters. */
+/* Its radius is set per box, from the shape mermaid drew plus the gap — see
+   FLOW_RING_GAP. `border-box` so the border grows inward and the standoff stays
+   the 8px it says it is. */
+.flow-ring {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  pointer-events: auto;
   cursor: grab;
 }
-/* The box travels with the pointer. Nothing stores where you put it, so it
-   settles back into the layout on release — but a box that would not move at
-   all reads as a broken one. It stops answering the pointer while it travels,
-   or it would be the box every drop lands on. */
-.flow-node.is-dragging {
-  pointer-events: none;
-  opacity: 0.75;
+.flow-node-tools:hover .flow-ring {
+  border-color: var(--border-strong);
 }
-/* Where the drop would land. */
-.flow-node.is-drop .flow-node-shape,
-.flow-node.is-drop .flow-node-mark {
-  stroke: var(--link);
-  stroke-width: 2.5;
-  stroke-dasharray: 6 4;
+.flow-node-tools.is-selected .flow-ring {
+  border-color: var(--link);
+}
+.flow-node-tools.is-drop .flow-ring {
+  border-color: var(--link);
+  border-style: dashed;
+}
+/* The box travels with the pointer and stops answering it, or it would be the
+   box every drop landed on. Nothing stores where you put it, so it settles back
+   into mermaid's layout on release. */
+.flow-node-tools.is-dragging {
+  pointer-events: none;
+  opacity: 0.6;
+}
+/* A box's + handles, on its four sides. They show on the box you are pointing
+   at, so a page of boxes is not a page of buttons. */
+.flow-bud {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  padding: 0;
+  border: 2px solid var(--surface);
+  border-radius: var(--leaf-radius-full);
+  background: var(--link);
+  color: var(--surface);
+  font: 700 14px/1 var(--app-font);
+  opacity: 0;
+  pointer-events: auto;
+  cursor: crosshair;
+  transition: opacity 0.1s ease;
+}
+.flow-bud.is-up {
+  left: 50%;
+  top: 0;
+}
+.flow-bud.is-down {
+  left: 50%;
+  top: 100%;
+}
+.flow-bud.is-left {
+  left: 0;
+  top: 50%;
+}
+.flow-bud.is-right {
+  left: 100%;
+  top: 50%;
+}
+.flow-node-tools:hover .flow-bud,
+.flow-node-tools.is-selected .flow-bud,
+.flow-bud:focus-visible {
+  opacity: 1;
+}
+.flow-bud:hover {
+  background: var(--link-hover);
+}
+/* A selected line's two ends: grab either to point it somewhere else. */
+.flow-edge-end {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  padding: 0;
+  border: 2px solid var(--surface);
+  border-radius: var(--leaf-radius-full);
+  background: var(--link);
+  cursor: crosshair;
 }
 /* The line that follows the pointer while a connection is drawn or moved. */
+.flow-rubber-band {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
 .flow-rubber {
   stroke: var(--link);
   stroke-width: 2;
   stroke-dasharray: 5 4;
-  pointer-events: none;
 }
-/* A selected line's two ends: grab either to point it somewhere else. */
-.flow-edge-end {
-  fill: var(--link);
-  stroke: var(--surface);
-  stroke-width: 2;
-  cursor: crosshair;
+/* Mermaid's own line, when it is the one selected or the one a box would drop
+   into. Its drawing, our state. */
+.flow-stage path[data-id].is-selected {
+  stroke: var(--link) !important;
+  stroke-width: 2.5px !important;
+}
+.flow-stage path[data-id].is-drop {
+  stroke: var(--link) !important;
+  stroke-width: 4px !important;
+  stroke-dasharray: 6 4 !important;
 }
 /* Right-click anything on the canvas. The gestures are quicker once they are
    known; this is where they are named, and where the rarer ones live at all. */
@@ -5129,14 +5234,27 @@ body.is-block-dragging .document-body [data-src-start] {
   box-shadow: var(--leaf-shadow-tooltip);
   font-size: 12.5px;
 }
-/* Adding on empty space offers all fourteen, so that list gets two columns and
-   its own scroll rather than a menu taller than the window. */
+/* Picking a shape offers every one, so that list gets two columns and its own
+   scroll rather than a menu taller than the window. */
 .flow-menu.is-shapes {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2px;
-  max-height: 60vh;
+  max-height: 62vh;
   overflow-y: auto;
+}
+.flow-menu-heading {
+  grid-column: 1 / -1;
+  margin: 6px 0 2px;
+  padding: 0 9px;
+  color: var(--app-muted-foreground);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.flow-menu-heading:first-child {
+  margin-top: 0;
 }
 .flow-menu-item {
   display: flex;
@@ -5155,16 +5273,17 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .flow-menu-item:hover {
   background: var(--surface-muted);
+  border-color: transparent;
 }
 .flow-menu-item .flow-chip {
   flex: none;
-  width: 30px;
-  height: 19px;
+  width: 34px;
+  height: 22px;
 }
 /* Renaming happens over the thing being renamed, not in a strip at the bottom. */
 .flow-label-box {
   position: absolute;
-  z-index: 2;
+  z-index: 5;
   padding: 0 6px;
   border: 2px solid var(--link);
   border-radius: var(--leaf-radius-sm);
@@ -5177,118 +5296,6 @@ body.is-block-dragging .document-body [data-src-start] {
   user-select: text;
   -webkit-user-select: text;
 }
-.flow-node-shape {
-  fill: var(--surface-elevated);
-  stroke: var(--border-strong);
-  stroke-width: 1.5;
-}
-/* The parts of a shape that are ink only: a cylinder's rim, a double circle's
-   inner ring, the strokes of a cross. */
-.flow-node-shape.is-open,
-.flow-node-mark {
-  fill: none;
-  stroke: var(--border-strong);
-  stroke-width: 1.5;
-}
-.flow-node.is-selected .flow-node-shape,
-.flow-node.is-selected .flow-node-mark {
-  stroke: var(--link);
-  stroke-width: 2.5;
-}
-.flow-node-label {
-  fill: var(--foreground);
-  font-family: var(--app-font);
-  font-size: 13px;
-  pointer-events: none;
-}
-/* The two + handles on a box: click one for the next box on that side, or drag
-   it onto a box that already exists to join the two. They appear on the box you
-   are pointing at, so a page of boxes is not a page of buttons. */
-.flow-bud {
-  opacity: 0;
-  cursor: crosshair;
-  transition: opacity 0.1s ease;
-}
-.flow-node:hover .flow-bud,
-.flow-node.is-selected .flow-bud {
-  opacity: 1;
-}
-.flow-bud-disc {
-  fill: var(--link);
-  stroke: var(--surface);
-  stroke-width: 2;
-}
-.flow-bud-plus {
-  stroke: var(--surface);
-  stroke-width: 2;
-  stroke-linecap: round;
-  fill: none;
-}
-.flow-bud:hover .flow-bud-disc {
-  fill: var(--link-hover);
-}
-/* What sits at a line's tip. Filled for an arrow or a circle, stroked for a
-   cross — and a second copy in the selected color, because a marker draws in its
-   own context and never sees the line that pointed at it. */
-.flow-end-mark {
-  fill: var(--border-strong);
-  stroke: none;
-}
-.flow-end-mark.is-open {
-  fill: none;
-  stroke: var(--border-strong);
-  stroke-width: 1.6;
-}
-.flow-end-mark.is-selected {
-  fill: var(--link);
-}
-.flow-end-mark.is-open.is-selected {
-  fill: none;
-  stroke: var(--link);
-}
-.flow-edge {
-  color: var(--border-strong);
-  cursor: pointer;
-}
-.flow-edge.is-selected {
-  color: var(--link);
-}
-.flow-edge-line {
-  stroke: currentColor;
-  stroke-width: 1.6;
-}
-.flow-edge.is-dotted .flow-edge-line {
-  stroke-dasharray: 6 5;
-}
-.flow-edge.is-thick .flow-edge-line {
-  stroke-width: 3.4;
-}
-.flow-edge.is-selected .flow-edge-line {
-  stroke-width: 2.4;
-}
-.flow-edge.is-thick.is-selected .flow-edge-line {
-  stroke-width: 4.2;
-}
-/* Dropping a box on a line puts the box in that line. */
-.flow-edge.is-drop .flow-edge-line {
-  stroke: var(--link);
-  stroke-width: 4;
-  stroke-dasharray: 6 4;
-}
-/* A line is a couple of pixels of ink; this is what a click lands on. */
-.flow-edge-hit {
-  stroke: transparent;
-  stroke-width: 14;
-}
-.flow-edge-label {
-  fill: var(--app-muted-foreground);
-  font-family: var(--app-font);
-  font-size: 11px;
-  paint-order: stroke;
-  stroke: var(--surface);
-  stroke-width: 4;
-  pointer-events: none;
-}
 .flow-notice {
   flex: none;
   margin: 0;
@@ -5296,6 +5303,14 @@ body.is-block-dragging .document-body [data-src-start] {
   border-top: 1px solid var(--border);
   color: var(--app-muted-foreground);
   font-size: 12px;
+}
+/* A document marks a failed diagram and moves on; an editor has to say what is
+   wrong, so mermaid's own message is printed here. */
+.flow-notice.is-error {
+  border-top-color: var(--app-error-border);
+  color: var(--app-error-foreground);
+  font-family: var(--code-font);
+  white-space: pre-wrap;
 }
 .flow-inspector[hidden] {
   display: none;
@@ -5355,38 +5370,13 @@ body.is-block-dragging .document-body [data-src-start] {
   white-space: pre;
   overflow: auto;
 }
-.flow-preview {
-  flex: 1 1 55%;
-  min-height: 0;
-  display: grid;
-  place-items: center;
-  overflow: auto;
-  padding: 12px;
-  background: var(--surface);
-}
-.flow-preview svg {
-  max-width: 100%;
-}
-/* A document marks a failed diagram and moves on; an editor has to say what is
-   wrong, so mermaid's own message is printed here. */
-.flow-preview-error {
-  flex: none;
-  margin: 0;
-  padding: 10px 14px;
-  border-top: 1px solid var(--app-error-border);
-  color: var(--app-error-foreground);
-  font-family: var(--code-font);
-  font-size: 12px;
-  white-space: pre-wrap;
-}
 @media (max-width: 860px) {
   .flow-sheet-panes {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 5px minmax(0, 0.6fr);
   }
-  .flow-pane-code {
-    border-left: 0;
-    border-top: 1px solid var(--border);
+  .flow-split {
+    cursor: row-resize;
   }
 }
 /* The corner button that reopens a drawn diagram in the sheet. Positioned on

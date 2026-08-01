@@ -8,8 +8,8 @@
 // button then puts the whole diagram back, which is what a reader means by
 // "undo that". Cancel writes nothing.
 //
-// The grammar lives in flow-model.js and the placement in flow-layout.js. This
-// file knows neither — it asks.
+// The grammar lives in flow-model.js. Mermaid draws the canvas and places every
+// box; this file measures the result and lays its handles over it.
 // ---------------------------------------------------------------------------
 
 const flowBackdrop = document.getElementById('flowBackdrop');
@@ -25,11 +25,10 @@ const flowCanvas = document.getElementById('flowCanvas');
 const flowZoomIn = document.getElementById('flowZoomIn');
 const flowZoomOut = document.getElementById('flowZoomOut');
 const flowZoomFit = document.getElementById('flowZoomFit');
+const flowSplit = document.getElementById('flowSplit');
 const flowInspector = document.getElementById('flowInspector');
 const flowNotice = document.getElementById('flowNotice');
 const flowCode = document.getElementById('flowCode');
-const flowPreview = document.getElementById('flowPreview');
-const flowPreviewError = document.getElementById('flowPreviewError');
 
 // What the sheet is editing, for as long as it is open. `graph` is null while
 // the text is something the canvas cannot model; `text` is authoritative either
@@ -38,8 +37,13 @@ let flowSession = null;
 let flowSelection = null;
 let flowDrag = null;
 let flowCodeTimer = 0;
-let flowPreviewTimer = 0;
-let flowPreviewSeq = 0;
+// Drawing is a round trip through mermaid, so it is debounced, and whatever
+// mermaid says when it refuses is what the notice shows.
+let flowDrawTimer = 0;
+let flowDrawError = '';
+// True when mermaid drew the diagram but we could not find our boxes in it, so
+// the handles are missing. Silent, otherwise, and indistinguishable from a bug.
+let flowLostBoxes = false;
 let flowLastFocus = null;
 // The drawn diagram's own size, how much of life size it is shown at, and where
 // the last draw put everything — which is what lets a label box be placed over
@@ -59,6 +63,7 @@ const FLOW_HISTORY_CAP = 100;
 // Why the canvas is off. The code pane still works on every one of these, which
 // is why refusing costs the reader nothing.
 const FLOW_UNMODELED = 'The canvas can’t model this diagram yet — edit it as text below.';
+const FLOW_LOST_BOXES = 'Drawn, but the canvas can’t find its boxes to put handles on — edit it as text below.';
 const FLOW_NOTHING_YET = 'Nothing here yet. Double-click anywhere to add the first box.';
 const FLOW_TIP_IDLE =
   'Double-click empty space to add a box · double-click a box to rename it · right-click anything for more.';
@@ -85,6 +90,7 @@ function openFlowSheet({ title, text, save }) {
   flowZoom = 1;
   if (flowSheetTitle) flowSheetTitle.textContent = title || 'Flowchart';
   buildFlowControls();
+  loadFlowChips();
   flowHistory.past.length = 0;
   flowHistory.future.length = 0;
   flowBefore = null;
@@ -110,7 +116,7 @@ function closeFlowSheet() {
   flowSelection = null;
   flowDrag = null;
   window.clearTimeout(flowCodeTimer);
-  window.clearTimeout(flowPreviewTimer);
+  window.clearTimeout(flowDrawTimer);
   document.removeEventListener('keydown', onFlowSheetKey);
   flowBackdrop.classList.remove('open');
   flowSheet.classList.remove('open');
@@ -188,9 +194,9 @@ function setFlowText(text, from) {
   flowBefore = flowSnapshot();
 }
 
-// The canvas moved. The graph is already the truth, so this only writes it out —
-// re-reading our own text would be work for nothing, and it is what used to
-// leave the canvas dead the moment you deleted the last box.
+// The canvas moved. The graph is already the truth, so this only writes it out.
+// Never parse it back: an emptied diagram does not survive the trip, and the
+// canvas would be left with no graph to add to.
 function flowGraphChanged() {
   if (!flowSession || !flowSession.graph) return;
   recordFlowStep();
@@ -201,13 +207,6 @@ function flowGraphChanged() {
   flowBefore = flowSnapshot();
 }
 
-function redrawFlowSheet() {
-  drawFlowCanvas();
-  drawFlowInspector();
-  updateFlowSaveState();
-  updateFlowHistoryButtons();
-  queueFlowPreview();
-}
 
 // ---- stepping back ---------------------------------------------------------
 
@@ -317,7 +316,7 @@ function restoreFlowHint() {
     return;
   }
   const node = flowFindNode(graph, flowSelection.id);
-  const shape = node && flowShape(node.type);
+  const shape = node && flowShape(node.shape);
   if (!shape) {
     setFlowHint(FLOW_TIP_IDLE);
     return;
@@ -332,17 +331,6 @@ function restoreFlowHint() {
 const FLOW_CHIP_W = 42;
 const FLOW_CHIP_H = 26;
 
-// A shape, drawn small. The same `outline` the canvas draws from, so a palette
-// button cannot show one thing and the canvas another — and adding a shape adds
-// its button with no work here at all.
-function flowShapeChip(type) {
-  const box = { x: 3, y: 3, w: FLOW_CHIP_W - 6, h: FLOW_CHIP_H - 6, cx: FLOW_CHIP_W / 2, cy: FLOW_CHIP_H / 2 };
-  return (
-    '<svg class="flow-chip" viewBox="0 0 ' + FLOW_CHIP_W + ' ' + FLOW_CHIP_H + '" aria-hidden="true">' +
-    flowOutlineMarkup(type, box) +
-    '</svg>'
-  );
-}
 
 // One end, drawn where a marker would put it. Markers need a `defs` block and a
 // document-unique id; a chip is one glyph, so it draws the glyph.
@@ -439,167 +427,14 @@ function flowSlotAt(point) {
 
 // ---- the canvas ------------------------------------------------------------
 
-function drawFlowCanvas() {
-  if (!flowCanvas) return;
-  const graph = flowSession && flowSession.graph;
-  const empty = !!graph && !graph.nodes.length;
-  if (flowNotice) {
-    flowNotice.hidden = !!graph && !empty;
-    flowNotice.textContent = graph ? (empty ? FLOW_NOTHING_YET : '') : FLOW_UNMODELED;
-  }
-  if (flowDirectionPicker) {
-    flowDirectionPicker.disabled = !graph;
-    if (graph) flowDirectionPicker.value = graph.direction === 'TB' ? 'TD' : graph.direction;
-  }
-  flowCanvas.classList.toggle('is-disabled', !graph);
-  restoreFlowHint();
-  if (!graph) {
-    flowSize = null;
-    flowPlaced = null;
-    flowCanvas.innerHTML = '';
-    return;
-  }
-  flowPlaced = layoutFlow(graph);
-  flowSize = { width: Math.max(1, flowPlaced.width), height: Math.max(1, flowPlaced.height) };
-  // Every selection redraws the whole surface, and replacing its contents sends
-  // the scroll box back to the corner. Put it back, or picking a box halfway
-  // down a diagram would throw the view away.
-  const left = flowCanvas.scrollLeft;
-  const top = flowCanvas.scrollTop;
-  flowCanvas.innerHTML = flowCanvasMarkup(flowPlaced);
-  flowCanvas.scrollLeft = left;
-  flowCanvas.scrollTop = top;
-}
 
-// The stage is the diagram's own box at the current zoom. It exists so the label
-// editor can be placed over a shape in the diagram's own coordinates, and so it
-// scrolls with the drawing rather than sitting still over it.
-function flowCanvasMarkup(layout) {
-  const parts = [];
-  const width = Math.round(flowSize.width * flowZoom);
-  const height = Math.round(flowSize.height * flowZoom);
-  parts.push('<div class="flow-stage" style="width:' + width + 'px;height:' + height + 'px">');
-  // The viewBox is the diagram's own size and the width/height are that scaled:
-  // zooming changes only the two attributes, so it never has to be redrawn.
-  parts.push(
-    '<svg class="flow-svg" viewBox="0 0 ' + flowSize.width + ' ' + flowSize.height +
-      '" width="' + width + '" height="' + height + '" xmlns="http://www.w3.org/2000/svg">',
-  );
-  // One marker per end and state, not one recolored: a marker renders in its own
-  // context, so `currentColor` inside it never sees the line that pointed at it.
-  const defs = [];
-  for (const mark of ['arrow', 'circle', 'cross']) {
-    defs.push(flowEndMarker(mark, false), flowEndMarker(mark, true));
-  }
-  parts.push('<defs>' + defs.join('') + '</defs>');
-  const direction = flowSession.graph.direction;
-  const sides = flowBudSidesFor(flowSession.graph);
-  for (const edge of layout.edges) parts.push(flowEdgeMarkup(edge));
-  for (const node of layout.nodes) parts.push(flowNodeMarkup(node, direction, sides));
-  parts.push('</svg></div>');
-  return parts.join('');
-}
 
-const FLOW_END_GLYPHS = {
-  arrow: '<path class="flow-end-mark" d="M0 0 10 5 0 10z"/>',
-  circle: '<circle class="flow-end-mark" cx="5" cy="5" r="4"/>',
-  cross: '<path class="flow-end-mark is-open" d="M1.5 1.5 8.5 8.5 M8.5 1.5 1.5 8.5"/>',
-};
 
-function flowEndMarkerId(mark, selected) {
-  return 'flowEnd' + mark.charAt(0).toUpperCase() + mark.slice(1) + (selected ? 'On' : '');
-}
 
-function flowEndMarker(mark, selected) {
-  // A circle and a cross sit centered on the tip; only the arrow points.
-  const refX = mark === 'arrow' ? 9 : 5;
-  return (
-    '<marker id="' + flowEndMarkerId(mark, selected) +
-    '" viewBox="0 0 10 10" refX="' + refX +
-    '" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
-    FLOW_END_GLYPHS[mark].replace('flow-end-mark', 'flow-end-mark' + (selected ? ' is-selected' : '')) +
-    '</marker>'
-  );
-}
 
-function flowEdgePath(edge) {
-  return (
-    'M' + edge.from.x + ' ' + edge.from.y +
-    ' C' + edge.control1.x + ' ' + edge.control1.y +
-    ' ' + edge.control2.x + ' ' + edge.control2.y +
-    ' ' + edge.to.x + ' ' + edge.to.y
-  );
-}
 
-function flowEdgeMarkup(edge) {
-  const selected = flowSelection && flowSelection.kind === 'edge' && flowSelection.id === edge.id;
-  const d = flowEdgePath(edge);
-  const ends = flowEdgeEnd(edge.toEnd);
-  const startMark = flowEndMark(ends.head);
-  const endMark = flowEndMark(ends.tail);
-  const markers =
-    (startMark ? ' marker-start="url(#' + flowEndMarkerId(startMark, selected) + ')"' : '') +
-    (endMark ? ' marker-end="url(#' + flowEndMarkerId(endMark, selected) + ')"' : '');
-  const parts = [
-    '<g class="flow-edge is-' + flowEdgeLine(edge.line).id + (selected ? ' is-selected' : '') +
-      '" data-edge="' + escapeAttr(edge.id) + '">',
-    // A line is a few pixels of ink; this is what a click actually lands on.
-    '<path class="flow-edge-hit" d="' + d + '" fill="none"/>',
-    '<path class="flow-edge-line" d="' + d + '" fill="none"' + markers + '/>',
-  ];
-  if (edge.label) {
-    parts.push(
-      '<text class="flow-edge-label" x="' + edge.labelAt.x + '" y="' + edge.labelAt.y +
-        '" text-anchor="middle" dominant-baseline="middle">' + escapeText(edge.label) + '</text>',
-    );
-  }
-  // Both ends become grab handles once the line is picked, so where a line goes
-  // is changed the same way it was drawn in the first place.
-  if (selected) {
-    for (const which of ['from', 'to']) {
-      parts.push(
-        '<circle class="flow-edge-end" data-endpoint="' + which + '" data-edge="' + escapeAttr(edge.id) +
-          '" cx="' + edge[which].x + '" cy="' + edge[which].y + '" r="6"/>',
-      );
-    }
-  }
-  parts.push('</g>');
-  return parts.join('');
-}
 
-// The box a shape's own row describes, turned into SVG. The row hands back
-// numbers; the only place that knows what a `<polygon>` is, is here.
-function flowOutlineMarkup(type, box) {
-  const parts = flowShape(type).outline(box);
-  return parts
-    .map((part) => {
-      const cls = ' class="flow-node-shape' + (part.open ? ' is-open' : '') + '"';
-      if (part.kind === 'rect') {
-        return (
-          '<rect' + cls + ' x="' + part.x + '" y="' + part.y + '" width="' + part.w +
-          '" height="' + part.h + '" rx="' + flowRound(part.rx) + '"/>'
-        );
-      }
-      if (part.kind === 'circle') {
-        return '<circle' + cls + ' cx="' + part.cx + '" cy="' + part.cy + '" r="' + flowRound(part.r) + '"/>';
-      }
-      if (part.kind === 'line') {
-        return (
-          '<line class="flow-node-mark" x1="' + part.x1 + '" y1="' + part.y1 +
-          '" x2="' + part.x2 + '" y2="' + part.y2 + '"/>'
-        );
-      }
-      if (part.kind === 'poly') {
-        return '<polygon' + cls + ' points="' + part.points.map((p) => flowRound(p[0]) + ' ' + flowRound(p[1])).join(', ') + '"/>';
-      }
-      return '<path' + cls + ' d="' + part.d.map((step) => step.map(flowRound).join(' ')).join(' ') + '"/>';
-    })
-    .join('');
-}
 
-function flowRound(value) {
-  return typeof value === 'number' ? Math.round(value * 100) / 100 : value;
-}
 
 // A box's + handles, one per side, all meaning the next step *that way*. A chart
 // has one direction, so a step asked for across the flow can only land where it
@@ -611,16 +446,6 @@ const FLOW_DIRECTION_WAY = { TD: 'down', TB: 'down', BT: 'up', LR: 'right', RL: 
 const FLOW_WAY_DIRECTION = { down: 'TD', up: 'BT', right: 'LR', left: 'RL' };
 const FLOW_OPPOSITE_WAY = { up: 'down', down: 'up', left: 'right', right: 'left' };
 
-function flowBudPoints(node) {
-  const cx = node.x + node.width / 2;
-  const cy = node.y + node.height / 2;
-  return {
-    up: { x: cx, y: node.y },
-    down: { x: cx, y: node.y + node.height },
-    left: { x: node.x, y: cy },
-    right: { x: node.x + node.width, y: cy },
-  };
-}
 
 // What a handle does, which depends on which way the chart already runs. With
 // the flow it is the next step; against it, the step before this one; across it,
@@ -649,18 +474,6 @@ function flowBudSidesFor(graph) {
   return [way, FLOW_OPPOSITE_WAY[way]];
 }
 
-// One + handle. Click it and pick the shape you want, or drag it onto a box that
-// already exists to connect the two.
-function flowBudMarkup(id, side, at, direction) {
-  return (
-    '<g class="flow-bud" data-bud="' + side + '" data-node="' + escapeAttr(id) + '">' +
-    '<title>' + escapeText(flowBudTitle(direction, side)) + '</title>' +
-    '<circle class="flow-bud-disc" cx="' + flowRound(at.x) + '" cy="' + flowRound(at.y) + '" r="8"/>' +
-    '<path class="flow-bud-plus" d="M' + flowRound(at.x - 4) + ' ' + flowRound(at.y) +
-    ' h8 M' + flowRound(at.x) + ' ' + flowRound(at.y - 4) + ' v8"/>' +
-    '</g>'
-  );
-}
 
 // What a + handle makes, as addFlowNode's arguments.
 function flowBudRelation(graph, id, side) {
@@ -670,30 +483,7 @@ function flowBudRelation(graph, id, side) {
   return relation;
 }
 
-function flowNodeMarkup(node, direction, sides) {
-  const selected = flowSelection && flowSelection.kind === 'node' && flowSelection.id === node.id;
-  const cx = node.x + node.width / 2;
-  const cy = node.y + node.height / 2;
-  const outline = flowOutlineMarkup(node.type, { x: node.x, y: node.y, w: node.width, h: node.height, cx, cy });
-  const buds = flowBudPoints(node);
-  return (
-    '<g class="flow-node' + (selected ? ' is-selected' : '') + '" data-node="' + escapeAttr(node.id) + '">' +
-    outline +
-    '<text class="flow-node-label" x="' + cx + '" y="' + cy +
-    '" text-anchor="middle" dominant-baseline="middle">' + escapeText(flowClampLabel(node)) + '</text>' +
-    sides.map((side) => flowBudMarkup(node.id, side, buds[side], direction)).join('') +
-    '</g>'
-  );
-}
 
-// The box was sized from the label, up to a limit; past it the text is cut
-// rather than allowed to run outside its own shape. A shape that grew wider than
-// its text holds no more of it, so the room is measured before that growth.
-function flowClampLabel(node) {
-  const text = String(node.text == null ? node.id : node.text).replace(/<br\s*\/?>/gi, ' ');
-  const room = Math.floor((node.width / flowShape(node.type).grow[0] - 18) / 7.4);
-  return text.length > room ? text.slice(0, Math.max(1, room - 1)) + '…' : text;
-}
 
 // ---- how big it is drawn ---------------------------------------------------
 
@@ -707,15 +497,11 @@ function setFlowZoom(next) {
   if (Math.abs(clamped - flowZoom) < 0.001) return;
   closeFlowLabelBox(true);
   flowZoom = clamped;
-  const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
-  const svg = stage && stage.querySelector('.flow-svg');
-  if (!svg || !flowSize) return;
-  const width = Math.round(flowSize.width * flowZoom);
-  const height = Math.round(flowSize.height * flowZoom);
-  svg.setAttribute('width', width);
-  svg.setAttribute('height', height);
-  stage.style.width = width + 'px';
-  stage.style.height = height + 'px';
+  // The drawing is the same drawing, only bigger — so it is resized rather than
+  // asked for again, and only the measurements have to be taken afresh.
+  sizeFlowStage();
+  measureFlowDiagram();
+  drawFlowOverlay();
 }
 
 // As large as it goes without spilling, and never enlarged past life size — a
@@ -736,6 +522,49 @@ function centerFlowCanvas() {
   flowCanvas.scrollTop = Math.max(0, (flowCanvas.scrollHeight - flowCanvas.clientHeight) / 2);
 }
 
+// ---- how much room the text gets -------------------------------------------
+
+// The text pane is dragged to whatever width suits what you are doing: mostly
+// drawing, mostly typing, or halfway. Arrow keys move it too, so it is not a
+// mouse-only control. The canvas re-fits after, since its room just changed.
+const FLOW_CODE_MIN = 180;
+
+function setFlowCodeWidth(pixels) {
+  if (!flowSheet) return;
+  const room = flowSheet.clientWidth || 900;
+  const width = Math.round(Math.max(FLOW_CODE_MIN, Math.min(room - 320, pixels)));
+  flowSheet.style.setProperty('--flow-code-width', width + 'px');
+  sizeFlowStage();
+  measureFlowDiagram();
+  drawFlowOverlay();
+}
+
+function flowCodeWidth() {
+  return flowCode ? flowCode.getBoundingClientRect().width : 340;
+}
+
+if (flowSplit) {
+  flowSplit.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const start = event.clientX;
+    const was = flowCodeWidth();
+    const move = (moved) => setFlowCodeWidth(was - (moved.clientX - start));
+    const done = () => {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', done);
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', done);
+  });
+  flowSplit.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    setFlowCodeWidth(flowCodeWidth() + (event.key === 'ArrowLeft' ? 24 : -24));
+  });
+  flowSplit.addEventListener('dblclick', () => setFlowCodeWidth(340));
+}
+
 if (flowZoomIn) flowZoomIn.addEventListener('click', () => setFlowZoom(flowZoom * 1.2));
 if (flowZoomOut) flowZoomOut.addEventListener('click', () => setFlowZoom(flowZoom / 1.2));
 if (flowZoomFit) flowZoomFit.addEventListener('click', fitFlowCanvas);
@@ -749,6 +578,354 @@ if (flowCanvas) {
     },
     { passive: false },
   );
+}
+
+// ---- the canvas, which is mermaid's own drawing ----------------------------
+//
+// There is one picture in this sheet and mermaid draws it. Nothing here knows
+// what a decision or a database looks like: the text goes to mermaid, its SVG
+// goes on the stage, and then we measure it to find out where our boxes landed.
+// Handles, rings and drop marks are an overlay on top, in stage pixels.
+//
+// Never draw a shape here. Two pictures of one diagram means one of them is a
+// lie, and it would be this one.
+
+// Mermaid tags each box `data-id="<the id you wrote>"` and each line
+// `data-id="L_<from>_<to>_<n>"`, counting from zero per pair. Both mappings are
+// exact, so nothing here is matched by guesswork.
+function flowEdgeDomId(from, to, nth) {
+  return 'L_' + from + '_' + to + '_' + nth;
+}
+
+// Mermaid writes a box's id as `flowchart-<the id you wrote>-<n>`, on `id`
+// rather than `data-id`. Both spellings are read: which one it uses depends on
+// the renderer it took, and matching neither leaves every box unclickable.
+function flowNodeIdFromDom(raw, known) {
+  if (!raw) return null;
+  if (known.has(raw)) return raw;
+  const stripped = /^flowchart-(.+)-\d+$/.exec(raw);
+  return stripped && known.has(stripped[1]) ? stripped[1] : null;
+}
+
+let flowRenderSeq = 0;
+
+function redrawFlowSheet() {
+  drawFlowNotice();
+  queueFlowDiagram();
+  drawFlowOverlay();
+  drawFlowInspector();
+  updateFlowSaveState();
+  updateFlowHistoryButtons();
+}
+
+function drawFlowNotice() {
+  if (!flowNotice) return;
+  const graph = flowSession && flowSession.graph;
+  const message = !graph
+    ? FLOW_UNMODELED
+    : !graph.nodes.length
+      ? FLOW_NOTHING_YET
+      : flowDrawError || (flowLostBoxes ? FLOW_LOST_BOXES : '');
+  flowNotice.hidden = !message;
+  flowNotice.textContent = message || '';
+  flowNotice.classList.toggle('is-error', !!graph && (!!flowDrawError || flowLostBoxes));
+  if (flowCanvas) flowCanvas.classList.toggle('is-disabled', !graph);
+  if (flowDirectionPicker) {
+    flowDirectionPicker.disabled = !graph;
+    if (graph) flowDirectionPicker.value = graph.direction === 'TB' ? 'TD' : graph.direction;
+  }
+  restoreFlowHint();
+}
+
+// Drawing is a round trip through mermaid, so it is debounced and the answer is
+// stamped: a render that finishes after a newer one started is dropped rather
+// than painted over it.
+function queueFlowDiagram() {
+  window.clearTimeout(flowDrawTimer);
+  flowDrawTimer = window.setTimeout(drawFlowDiagram, 120);
+}
+
+function drawFlowDiagram() {
+  if (!flowSession || !flowCanvas) return;
+  const graph = flowSession.graph;
+  const attempt = (flowRenderSeq += 1);
+  if (!graph || !graph.nodes.length) {
+    flowCanvas.innerHTML = '';
+    flowPlaced = null;
+    flowSize = null;
+    flowDrawError = '';
+    drawFlowNotice();
+    return;
+  }
+  const text = flowSession.text;
+  loadMermaid()
+    .then(async (mermaid) => {
+      mermaid.initialize(mermaidRuntimeConfig());
+      const { svg } = await mermaid.render('leafFlowDraw' + attempt, text);
+      if (!flowSession || attempt !== flowRenderSeq) return;
+      flowDrawError = '';
+      const left = flowCanvas.scrollLeft;
+      const top = flowCanvas.scrollTop;
+      flowCanvas.innerHTML = '<div class="flow-stage">' + svg + '<div class="flow-overlay"></div></div>';
+      sizeFlowStage();
+      measureFlowDiagram();
+      drawFlowOverlay();
+      flowCanvas.scrollLeft = left;
+      flowCanvas.scrollTop = top;
+      drawFlowNotice();
+    })
+    .catch((error) => {
+      if (!flowSession || attempt !== flowRenderSeq) return;
+      // Mermaid leaves the element it was drawing into behind when it throws.
+      const orphan = document.getElementById('dleafFlowDraw' + attempt);
+      if (orphan && orphan.remove) orphan.remove();
+      flowDrawError = (error && error.message) || 'This diagram cannot be drawn.';
+      drawFlowNotice();
+    });
+}
+
+// Mermaid sizes its SVG to suit itself. The stage takes the diagram's own
+// dimensions from the viewBox and scales them by the zoom, so one number moves
+// everything and the overlay's pixels stay the diagram's pixels.
+function sizeFlowStage() {
+  const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
+  const svg = stage && stage.querySelector('svg');
+  if (!svg) return;
+  const box = (svg.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+  const natural = box.length === 4 && box[2] > 0 ? { width: box[2], height: box[3] } : null;
+  if (natural) flowSize = natural;
+  if (!flowSize) return;
+  const width = Math.max(1, Math.round(flowSize.width * flowZoom));
+  const height = Math.max(1, Math.round(flowSize.height * flowZoom));
+  svg.setAttribute('width', width);
+  svg.setAttribute('height', height);
+  svg.style.maxWidth = 'none';
+  stage.style.width = width + 'px';
+  stage.style.height = height + 'px';
+}
+
+// Where mermaid put everything, in pixels relative to the stage. Read off the
+// drawing rather than worked out, which is the whole point of the swap.
+function measureFlowDiagram() {
+  const graph = flowSession && flowSession.graph;
+  const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
+  const svg = stage && stage.querySelector('svg');
+  if (!graph || !svg) {
+    flowPlaced = null;
+    return;
+  }
+  const origin = stage.getBoundingClientRect();
+  const known = new Set(graph.nodes.map((node) => node.id));
+  const nodes = [];
+  // Every group carrying a `data-id`. Mermaid names a box either by the id you
+  // wrote or by its own `flowchart-<id>-<n>` spelling depending on the renderer
+  // it took, so both are read rather than one being assumed.
+  svg.querySelectorAll('g.node, g[data-id]').forEach((group) => {
+    const id = flowNodeIdFromDom(group.id, known) || flowNodeIdFromDom(group.dataset.id, known);
+    if (!id) return;
+    const rect = group.getBoundingClientRect();
+    if (!rect.width && !rect.height) return;
+    nodes.push({
+      id,
+      x: rect.left - origin.left,
+      y: rect.top - origin.top,
+      width: rect.width,
+      height: rect.height,
+      radius: flowDrawnRadius(group, rect),
+    });
+  });
+  const edges = [];
+  const seen = new Map();
+  for (const edge of graph.edges) {
+    const pair = edge.from + '_' + edge.to;
+    const nth = seen.get(pair) || 0;
+    seen.set(pair, nth + 1);
+    const name = flowEdgeDomId(edge.from, edge.to, nth);
+    const path =
+      svg.querySelector('path[data-id="' + name + '"]') || svg.querySelector('path[id="' + name + '"]');
+    if (!path || typeof path.getTotalLength !== 'function') continue;
+    const at = (length) => {
+      const point = path.getPointAtLength(length).matrixTransform(path.getScreenCTM());
+      return { x: point.x - origin.left, y: point.y - origin.top };
+    };
+    const total = path.getTotalLength();
+    edges.push({ id: edge.id, path, from: at(0), to: at(total), at: at(total / 2) });
+  }
+  flowPlaced = { nodes, edges };
+  flowLostBoxes = graph.nodes.length && !nodes.length;
+}
+
+// A corner's radius from how far in along its diagonal the fill starts. Its own
+// function because the constant is easy to get wrong and impossible to see when
+// it is — the Euclidean gap, (√2 − 1), is the wrong one and misses by that
+// factor. The harness holds it.
+function flowCornerRadiusFrom(inset) {
+  return inset / (1 - Math.SQRT1_2);
+}
+
+// How round the corners of the shape mermaid drew are, in stage pixels. Read off
+// the drawing for the same reason everything else is: a table of radii here
+// would be a second opinion about a shape we do not draw.
+function flowDrawnRadius(group, rect) {
+  // The biggest thing in the group, not the first: a node holds its label's
+  // background and any decoration too, and document order does not say which
+  // one is the outline. The outline is the one that covers the others.
+  let outline = null;
+  let widest = 0;
+  group.querySelectorAll('rect, circle, ellipse, polygon, path').forEach((drawn) => {
+    let box;
+    try {
+      box = drawn.getBBox();
+    } catch (error) {
+      return;
+    }
+    const area = box.width * box.height;
+    if (area > widest) {
+      widest = area;
+      outline = drawn;
+    }
+  });
+  const svg = outline && outline.ownerSVGElement;
+  if (!outline || !svg || typeof outline.isPointInFill !== 'function') return 0;
+  let box;
+  try {
+    box = outline.getBBox();
+  } catch (error) {
+    return 0;
+  }
+  const reach = Math.min(box.width, box.height) / 2;
+  if (!(reach > 0)) return 0;
+
+  // Measured, not read off an attribute: mermaid builds these with rough.js, so
+  // there is no `rx` and no arc to look up. Walk in along the corner's diagonal
+  // until the fill starts, which works however it chose to draw. A circular
+  // corner of
+  // radius r has its center at (r, r), so the fill begins at (t, t) where
+  // (r − t)√2 = r — that is, t = r(1 − 1/√2), and r is t divided by it.
+  const probe = svg.createSVGPoint();
+  const filled = (x, y) => {
+    probe.x = x;
+    probe.y = y;
+    try {
+      return outline.isPointInFill(probe);
+    } catch (error) {
+      return false;
+    }
+  };
+  if (filled(box.x + 0.5, box.y + 0.5)) return 0; // a square corner
+  let inside = reach;
+  let outside = 0;
+  for (let step = 0; step < 14; step += 1) {
+    const mid = (inside + outside) / 2;
+    if (filled(box.x + mid, box.y + mid)) inside = mid;
+    else outside = mid;
+  }
+  const radius = flowCornerRadiusFrom(inside) * flowZoom;
+  // Nothing can be rounder than a pill.
+  return Number.isFinite(radius) ? Math.max(0, Math.min(radius, Math.min(rect.width, rect.height) / 2)) : 0;
+}
+
+// ---- the overlay -----------------------------------------------------------
+
+// How far the ring stands off the shape it is around.
+const FLOW_RING_GAP = 8;
+
+// Rings, + handles, line ends and drop marks. Plain elements over the drawing,
+// so nothing has to be drawn twice and a selection costs no render.
+function drawFlowOverlay() {
+  const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
+  const layer = stage && stage.querySelector('.flow-overlay');
+  if (!layer) return;
+  layer.textContent = '';
+  const graph = flowSession && flowSession.graph;
+  if (!graph || !flowPlaced) return;
+  // A line is selected by coloring mermaid's own path; there is nothing to
+  // overlay on a curve we did not draw.
+  for (const placed of flowPlaced.edges) {
+    placed.path.classList.toggle('is-selected', !!flowSelection && flowSelection.id === placed.id);
+  }
+  const sides = flowBudSidesFor(graph);
+  for (const box of flowPlaced.nodes) {
+    const chosen = flowSelection && flowSelection.kind === 'node' && flowSelection.id === box.id;
+    const tools = document.createElement('div');
+    tools.className = 'flow-node-tools' + (chosen ? ' is-selected' : '');
+    tools.dataset.node = box.id;
+    tools.style.left = box.x - FLOW_RING_GAP + 'px';
+    tools.style.top = box.y - FLOW_RING_GAP + 'px';
+    tools.style.width = box.width + FLOW_RING_GAP * 2 + 'px';
+    tools.style.height = box.height + FLOW_RING_GAP * 2 + 'px';
+    const ring = document.createElement('div');
+    ring.className = 'flow-ring';
+    ring.dataset.node = box.id;
+    // Nested corners, in reverse: the inner radius is the outer minus the gap,
+    // so the outer is the inner plus it. A square shape still gets the gap's
+    // worth of round, which is what keeps the two outlines parallel.
+    ring.style.borderRadius = Math.round(box.radius + FLOW_RING_GAP) + 'px';
+    tools.appendChild(ring);
+    // The buds sit on the wrapper's own sides, so nothing has to be measured
+    // twice and they follow the box wherever mermaid puts it.
+    for (const side of sides) {
+      const bud = document.createElement('button');
+      bud.type = 'button';
+      bud.className = 'flow-bud is-' + side;
+      bud.dataset.bud = side;
+      bud.dataset.node = box.id;
+      bud.title = flowBudTitle(graph.direction, side);
+      bud.textContent = '+';
+      tools.appendChild(bud);
+    }
+    layer.appendChild(tools);
+  }
+  const chosenEdge = flowSelection && flowSelection.kind === 'edge' ? flowSelection.id : null;
+  for (const placed of flowPlaced.edges) {
+    if (placed.id !== chosenEdge) continue;
+    for (const which of ['from', 'to']) {
+      const grip = document.createElement('button');
+      grip.type = 'button';
+      grip.className = 'flow-edge-end';
+      grip.dataset.endpoint = which;
+      grip.dataset.edge = placed.id;
+      grip.title = 'Drag onto another box to move this end';
+      grip.style.left = placed[which].x + 'px';
+      grip.style.top = placed[which].y + 'px';
+      layer.appendChild(grip);
+    }
+  }
+}
+
+
+// ---- the little pictures in the picker -------------------------------------
+
+// A shape's button shows the shape, and mermaid draws that too — one tiny
+// diagram per shape, rendered once when the sheet opens and kept for the
+// session. The picker names every shape as well, so it reads before they land.
+const flowChipCache = new Map();
+let flowChipsAsked = false;
+
+function flowShapeChip(id) {
+  return flowChipCache.get(id) || '';
+}
+
+function loadFlowChips() {
+  if (flowChipsAsked) return;
+  flowChipsAsked = true;
+  loadMermaid()
+    .then(async (mermaid) => {
+      mermaid.initialize(mermaidRuntimeConfig());
+      for (const shape of FLOW_SHAPES) {
+        const label = '" "';
+        const body = shape.open ? shape.open + label + shape.close : '@{ shape: ' + shape.id + ', label: " " }';
+        try {
+          const { svg } = await mermaid.render('leafFlowChip-' + shape.id, 'flowchart LR\n  c' + body);
+          flowChipCache.set(shape.id, svg.replace(/<svg /, '<svg class="flow-chip" preserveAspectRatio="xMidYMid meet" '));
+        } catch (error) {
+          // A shape this copy of mermaid will not draw simply has no picture.
+          flowChipCache.set(shape.id, '');
+        }
+      }
+      if (flowSession) drawFlowInspector();
+    })
+    .catch(() => {});
 }
 
 // ---- pointer work on the canvas -------------------------------------------
@@ -766,40 +943,68 @@ function flowTargetAt(x, y) {
   if (!flowCanvas) return null;
   const found = document.elementFromPoint(x, y);
   if (!found || !found.closest || !flowCanvas.contains(found)) return null;
-  const node = found.closest('.flow-node');
-  if (node) return { kind: 'node', id: node.dataset.node };
-  const edge = found.closest('.flow-edge');
-  if (edge) return { kind: 'edge', id: edge.dataset.edge };
+  const ring = found.closest('.flow-ring');
+  if (ring) return { kind: 'node', id: ring.dataset.node };
+  const bud = found.closest('.flow-bud');
+  if (bud) return { kind: 'node', id: bud.dataset.node };
+  const edge = flowEdgeUnder(found);
+  if (edge) return { kind: 'edge', id: edge };
   return { kind: 'canvas', id: null };
 }
 
-// A pointer position in the diagram's own coordinates, so a rubber-band line can
-// be drawn in the same space the boxes were placed in.
+// True only for the bare surface: the scroll box, the stage, the overlay, or
+// mermaid's SVG root. Anything deeper is part of the drawing, and treating it as
+// empty space is how a double-click on a box ended up adding another one.
+function flowPointIsBare(target) {
+  if (!target || !target.closest) return false;
+  if (target === flowCanvas) return true;
+  if (target.classList && (target.classList.contains('flow-stage') || target.classList.contains('flow-overlay'))) {
+    return true;
+  }
+  return target.tagName === 'svg' || target.tagName === 'SVG';
+}
+
+// A pointer position in stage pixels — the same space the measurements are in,
+// so the rubber band and the drop tests need no conversion.
 function flowPointAt(x, y) {
   const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
   if (!stage) return { x: 0, y: 0 };
   const rect = stage.getBoundingClientRect();
-  return { x: (x - rect.left) / flowZoom, y: (y - rect.top) / flowZoom };
+  return { x: x - rect.left, y: y - rect.top };
 }
 
 function flowPointIn(event) {
   return flowPointAt(event.clientX, event.clientY);
 }
 
+// Which of our lines a mermaid element belongs to. Mermaid names its paths from
+// the two ends, so the answer comes from the measurement rather than a search.
+function flowEdgeUnder(element) {
+  if (!flowPlaced || !element) return null;
+  const path = element.closest ? element.closest('path[data-id], g[data-id]') : null;
+  if (!path) return null;
+  const found = flowPlaced.edges.find((edge) => edge.path === path || edge.path.dataset.id === path.dataset.id);
+  return found ? found.id : null;
+}
+
+// A box's handles, which is what a drag carries and what a drop lights up.
 function flowGroupFor(id) {
-  return flowCanvas ? flowCanvas.querySelector('.flow-node[data-node="' + id + '"]') : null;
+  return flowCanvas ? flowCanvas.querySelector('.flow-node-tools[data-node="' + id + '"]') : null;
 }
 
 // The line that follows the pointer while a connection is being made or moved.
 function drawFlowRubber(from, to) {
-  const svg = flowCanvas && flowCanvas.querySelector('.flow-svg');
-  if (!svg) return;
-  let line = svg.querySelector('.flow-rubber');
-  if (!line) {
-    line = document.createElementNS(FLOW_SVG_NS, 'line');
-    line.setAttribute('class', 'flow-rubber');
-    svg.appendChild(line);
+  const layer = flowCanvas && flowCanvas.querySelector('.flow-overlay');
+  if (!layer) return;
+  let band = layer.querySelector('.flow-rubber-band');
+  if (!band) {
+    band = document.createElementNS(FLOW_SVG_NS, 'svg');
+    band.setAttribute('class', 'flow-rubber-band');
+    band.appendChild(document.createElementNS(FLOW_SVG_NS, 'line'));
+    layer.appendChild(band);
   }
+  const line = band.firstChild;
+  line.setAttribute('class', 'flow-rubber');
   line.setAttribute('x1', from.x);
   line.setAttribute('y1', from.y);
   line.setAttribute('x2', to.x);
@@ -807,8 +1012,8 @@ function drawFlowRubber(from, to) {
 }
 
 function clearFlowRubber() {
-  const line = flowCanvas && flowCanvas.querySelector('.flow-rubber');
-  if (line) line.remove();
+  const band = flowCanvas && flowCanvas.querySelector('.flow-rubber-band');
+  if (band) band.remove();
 }
 
 // What the pointer is over, lit up so a drop is never a guess. Takes what
@@ -824,8 +1029,8 @@ function markFlowDropTarget(target) {
     return;
   }
   if (spot.kind !== 'edge') return;
-  const line = flowCanvas.querySelector('.flow-edge[data-edge="' + spot.id + '"]');
-  if (line) line.classList.add('is-drop');
+  const placed = flowPlaced && flowPlaced.edges.find((edge) => edge.id === spot.id);
+  if (placed) placed.path.classList.add('is-drop');
 }
 
 // Where a line being re-aimed still holds on: the end that is not moving.
@@ -843,8 +1048,8 @@ if (flowCanvas) {
     const near = (selector) => (target && target.closest ? target.closest(selector) : null);
     const endpoint = near('.flow-edge-end');
     const bud = near('.flow-bud');
-    const node = near('.flow-node');
-    const edge = near('.flow-edge');
+    const node = near('.flow-ring');
+    const edge = flowEdgeUnder(target);
     // Nothing here calls preventDefault: on a pointerdown it suppresses the
     // compatibility mouse events, dblclick included, so double-clicking a shape
     // to rename it did nothing. Text selection is held off in the stylesheet.
@@ -880,7 +1085,7 @@ if (flowCanvas) {
       return;
     }
     if (edge) {
-      selectFlow('edge', edge.dataset.edge);
+      selectFlow('edge', edge);
       return;
     }
     // Empty space: nothing is selected any more, and the pointer now carries
@@ -918,9 +1123,9 @@ if (flowCanvas) {
       const group = flowGroupFor(flowDrag.from);
       if (group) {
         group.classList.add('is-dragging');
-        const dx = (event.clientX - flowDrag.startX) / flowZoom;
-        const dy = (event.clientY - flowDrag.startY) / flowZoom;
-        group.setAttribute('transform', 'translate(' + flowRound(dx) + ' ' + flowRound(dy) + ')');
+        const dx = event.clientX - flowDrag.startX;
+        const dy = event.clientY - flowDrag.startY;
+        group.style.transform = 'translate(' + Math.round(dx) + 'px,' + Math.round(dy) + 'px)';
       }
       markFlowDropTarget(flowTargetAt(event.clientX, event.clientY));
       return;
@@ -965,11 +1170,11 @@ if (flowCanvas) {
     if (drag.kind === 'retarget') {
       const edge = flowFindEdge(graph, drag.edge);
       if (!edge || !over) {
-        drawFlowCanvas();
+        drawFlowOverlay();
         return;
       }
-      if (drag.end === 'from') edge.fromNode = over;
-      else edge.toNode = over;
+      if (drag.end === 'from') edge.from = over;
+      else edge.to = over;
       flowGraphChanged();
       return;
     }
@@ -986,7 +1191,7 @@ if (flowCanvas) {
         return;
       }
       if (!spot) {
-        drawFlowCanvas();
+        drawFlowOverlay();
         return;
       }
       const where = flowSlotAt(flowPointIn(event));
@@ -1002,7 +1207,7 @@ if (flowCanvas) {
     // `A --> this --> B`. This is how a step is added part-way through a chain.
     if (spot && spot.kind === 'edge') {
       const edge = flowFindEdge(graph, spot.id);
-      if (edge && edge.fromNode !== drag.from && edge.toNode !== drag.from) {
+      if (edge && edge.from !== drag.from && edge.to !== drag.from) {
         // Out of wherever it was, with that chain closed up behind it, and into
         // this one. Leaving its old lines behind would say it is in two places.
         flowExtractNode(graph, drag.from);
@@ -1013,7 +1218,7 @@ if (flowCanvas) {
     }
     if (!over || over === drag.from) {
       // Nothing under the pointer: the box goes back where the layout puts it.
-      drawFlowCanvas();
+      drawFlowOverlay();
       return;
     }
     // Dropped on another box: the dragged one takes that box's place in the
@@ -1029,19 +1234,24 @@ if (flowCanvas) {
   flowCanvas.addEventListener('dblclick', (event) => {
     if (!flowSession || !flowSession.graph) return;
     const near = (selector) => (event.target && event.target.closest ? event.target.closest(selector) : null);
-    const node = near('.flow-node');
-    const edge = near('.flow-edge');
+    const node = near('.flow-ring');
+    const edge = flowEdgeUnder(event.target);
     if (node) {
       openFlowLabelBox('node', node.dataset.node);
       return;
     }
     if (edge) {
-      openFlowLabelBox('edge', edge.dataset.edge);
+      openFlowLabelBox('edge', edge);
       return;
     }
-    // Empty space. Nothing stores where a box sits, so the point decides where
-    // it lands in the order rather than on the page — near enough that it
-    // appears about where it was asked for.
+    // Only genuinely empty space adds a box. Anything inside mermaid's drawing
+    // is part of a box or a line, and a double-click there that quietly added a
+    // third box — because the ring over it had gone missing — is exactly the
+    // kind of guess this should not make.
+    if (!flowPointIsBare(event.target)) return;
+    // Nothing stores where a box sits, so the point decides where it lands in
+    // the order rather than on the page — near enough that it appears about
+    // where it was asked for.
     const where = flowSlotAt(flowPointIn(event));
     openFlowShapePicker(event.clientX, event.clientY, (shape) => addFlowNode(shape, { before: where }));
   });
@@ -1188,12 +1398,17 @@ function onFlowMenuOutside(event) {
   closeFlowMenu();
 }
 
-// Where a connection being drawn hangs from: the + handle it left.
+// Where a connection being drawn hangs from: the + handle it left, on the side
+// of the box mermaid drew.
 function flowBudAnchor(id, side) {
-  const placed = flowPlaced && flowPlaced.nodes.find((node) => node.id === id);
-  if (!placed) return { x: 0, y: 0 };
-  const points = flowBudPoints(placed);
-  return points[side] || points.down;
+  const box = flowPlaced && flowPlaced.nodes.find((node) => node.id === id);
+  if (!box) return { x: 0, y: 0 };
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  if (side === 'up') return { x: cx, y: box.y - FLOW_RING_GAP };
+  if (side === 'left') return { x: box.x - FLOW_RING_GAP, y: cy };
+  if (side === 'right') return { x: box.x + box.width + FLOW_RING_GAP, y: cy };
+  return { x: cx, y: box.y + box.height + FLOW_RING_GAP };
 }
 
 // What shape the next box should be. A decision's answers are steps, and
@@ -1201,13 +1416,15 @@ function flowBudAnchor(id, side) {
 function flowNewNodeShape(graph, fromId) {
   const node = flowFindNode(graph, fromId);
   if (!node) return FLOW_SHAPES[0].id;
-  if (node.type === 'diamond' || node.type === 'stadium') return 'rect';
-  return node.type;
+  // A decision's answers are steps, and so is whatever follows a terminal.
+  // Everything else carries on as itself.
+  if (node.shape === 'diam' || node.shape === 'stadium') return 'rect';
+  return node.shape;
 }
 
 function selectFlow(kind, id) {
   flowSelection = kind ? { kind, id } : null;
-  drawFlowCanvas();
+  drawFlowOverlay();
   drawFlowInspector();
 }
 
@@ -1244,13 +1461,14 @@ function openFlowLabelBox(kind, id) {
   field.value = (kind === 'node' ? subject.text : subject.label) || '';
   field.placeholder = kind === 'node' ? 'Name this box' : 'Label this line';
   field.setAttribute('aria-label', field.placeholder);
-  const width = kind === 'node' ? Math.max(70, placed.width - 14) : 140;
-  const left = kind === 'node' ? placed.x + (placed.width - width) / 2 : placed.labelAt.x - width / 2;
-  const top = (kind === 'node' ? placed.y + placed.height / 2 : placed.labelAt.y) - 13;
-  field.style.left = Math.round(left * flowZoom) + 'px';
-  field.style.top = Math.round(top * flowZoom) + 'px';
-  field.style.width = Math.round(width * flowZoom) + 'px';
-  field.style.height = Math.round(26 * flowZoom) + 'px';
+  const tall = Math.max(20, Math.round(26 * flowZoom));
+  const width = kind === 'node' ? Math.max(70, placed.width - 10) : Math.max(90, 140 * flowZoom);
+  const left = kind === 'node' ? placed.x + (placed.width - width) / 2 : placed.at.x - width / 2;
+  const top = (kind === 'node' ? placed.y + placed.height / 2 : placed.at.y) - tall / 2;
+  field.style.left = Math.round(left) + 'px';
+  field.style.top = Math.round(top) + 'px';
+  field.style.width = Math.round(width) + 'px';
+  field.style.height = tall + 'px';
   field.style.fontSize = Math.max(9, Math.round(13 * flowZoom)) + 'px';
   // The canvas below would take this as a click on empty space and deselect.
   field.addEventListener('pointerdown', (event) => event.stopPropagation());
@@ -1329,7 +1547,7 @@ function drawFlowInspector() {
     // under the caret would take the focus out of the field being typed in.
     flowSession.text = renderFlow(graph);
     if (flowCode) flowCode.value = flowSession.text;
-    queueFlowPreview();
+    queueFlowDiagram();
   });
   label.addEventListener('change', () => flowGraphChanged());
   flowInspector.appendChild(label);
@@ -1338,8 +1556,8 @@ function drawFlowInspector() {
   // Every group is generated from the table it belongs to.
   if (node) {
     flowInspector.appendChild(
-      flowChoiceGroup('Shape', FLOW_SHAPES, node.type, (id) => flowShapeChip(id), (id) => {
-        node.type = id;
+      flowChoiceGroup('Shape', FLOW_SHAPES, node.shape, (id) => flowShapeChip(id), (id) => {
+        node.shape = id;
       }),
     );
   } else {
@@ -1349,8 +1567,8 @@ function drawFlowInspector() {
       }),
     );
     flowInspector.appendChild(
-      flowChoiceGroup('Ends', FLOW_EDGE_ENDS, edge.toEnd, (id) => flowEdgeChip(edge.line, id), (id) => {
-        edge.toEnd = id;
+      flowChoiceGroup('Ends', FLOW_EDGE_ENDS, edge.ends, (id) => flowEdgeChip(edge.line, id), (id) => {
+        edge.ends = id;
       }),
     );
   }
@@ -1393,50 +1611,7 @@ function flowChoiceGroup(caption, options, current, chip, apply) {
 
 // ---- the live preview ------------------------------------------------------
 
-// Where the sheet differs from the page on purpose: a document marks a failed
-// diagram and moves on, an editor has to say what is wrong. Mermaid's own
-// message is the whole point of the pane.
-function queueFlowPreview() {
-  window.clearTimeout(flowPreviewTimer);
-  flowPreviewTimer = window.setTimeout(drawFlowPreview, 220);
-}
 
-function drawFlowPreview() {
-  if (!flowSession || !flowPreview) return;
-  const graph = flowSession.graph;
-  // An empty diagram is a state to be in, not an error to report.
-  if (graph && !graph.nodes.length) {
-    flowPreview.textContent = '';
-    if (flowPreviewError) {
-      flowPreviewError.hidden = true;
-      flowPreviewError.textContent = '';
-    }
-    return;
-  }
-  const text = flowSession.text;
-  const attempt = (flowPreviewSeq += 1);
-  const id = 'leafFlowPreview' + attempt;
-  loadMermaid()
-    .then(async (mermaid) => {
-      mermaid.initialize(mermaidRuntimeConfig());
-      const { svg } = await mermaid.render(id, text);
-      if (!flowSession || attempt !== flowPreviewSeq) return;
-      flowPreview.innerHTML = svg;
-      if (flowPreviewError) {
-        flowPreviewError.hidden = true;
-        flowPreviewError.textContent = '';
-      }
-    })
-    .catch((error) => {
-      if (!flowSession || attempt !== flowPreviewSeq) return;
-      // Mermaid leaves the element it was drawing into behind when it throws.
-      const orphan = document.getElementById('d' + id);
-      if (orphan && orphan.remove) orphan.remove();
-      if (!flowPreviewError) return;
-      flowPreviewError.textContent = (error && error.message) || 'This diagram cannot be drawn.';
-      flowPreviewError.hidden = false;
-    });
-}
 
 // ---- the two ways in -------------------------------------------------------
 
