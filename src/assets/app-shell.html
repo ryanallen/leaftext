@@ -70,16 +70,9 @@
           <span class="setting-label">Show next/previous</span>
           <span class="setting-help" id="pagerEnabledHelp">Add Previous and Next links at the bottom of each document, ordered by the folder tree.</span>
         </label>
-        <!-- Update status, always present. Without it a check that found nothing,
-             was throttled, or failed is indistinguishable from one that never
-             ran, and the only way to see the updater work is to wait. It is also
-             the button that forces one. -->
+        <!-- The version, and nothing about the updater: it checks and downloads on
+             its own, and the only thing worth a word is the restart button above. -->
         <div class="settings-footer">
-          <button type="button" class="settings-check" id="settingsCheck">
-            <span class="settings-spinner" id="settingsCheckSpinner" aria-hidden="true" hidden></span>
-            <!-- Separate span so the spinner survives the text swap. -->
-            <span id="settingsCheckLabel">Check for updates</span>
-          </button>
           <p class="settings-version">
             <span>Version</span>
             <span class="settings-version-number" id="settingsVersion"></span>

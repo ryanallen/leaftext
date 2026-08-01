@@ -811,11 +811,10 @@ body.is-maximized #winMaximize .wc-restore {
   border-color: transparent;
   color: var(--app-action-foreground);
 }
-/* Update dot over the settings button, revealed by the frontend's version check.
-   The ring keeps it legible on the bar's textured/hover fill. Green means there
-   is something to install, amber that the last attempt failed; while bytes are
-   moving it becomes a spinning ring, so the gear reports progress with the panel
-   shut. */
+/* Update dot over the settings button — the whole of what the updater says with
+   the panel shut. The ring keeps it legible on the bar's textured/hover fill.
+   Green means a restart would install a new version; while bytes are moving it
+   becomes a spinning ring instead. Nothing else raises it. */
 .settings-alert-dot {
   position: absolute;
   top: 4px;
@@ -826,9 +825,6 @@ body.is-maximized #winMaximize .wc-restore {
   border-radius: var(--leaf-radius-full);
   background: var(--success);
   box-shadow: 0 0 0 2px var(--app-surface);
-}
-.settings-alert-dot.is-failed {
-  background: var(--warning);
 }
 .settings-alert-dot.is-downloading {
   width: 10px;
@@ -855,8 +851,8 @@ body.is-maximized #winMaximize .wc-restore {
 .settings-update[hidden] {
   display: none;
 }
-/* Progress behind the label, left to right. Zero width at rest, so a state with
-   no percent (available, staged, failed) shows nothing. */
+/* Progress behind the label, left to right. Zero width at rest, so the staged
+   button — no percent — shows nothing. */
 .settings-update-fill {
   position: absolute;
   left: 0;
@@ -870,19 +866,7 @@ body.is-maximized #winMaximize .wc-restore {
 .settings-update-label {
   position: relative;
 }
-/* Failed: amber outline rather than the green go-ahead, since the click opens
-   the release page instead of installing. */
-.settings-update.is-failed {
-  border-color: var(--warning);
-  background: transparent;
-  color: var(--warning);
-}
-.settings-update.is-failed:hover {
-  background: color-mix(in srgb, var(--warning) 16%, transparent);
-  border-color: var(--warning);
-}
-/* One spinner for both update controls: the panel button while it downloads and
-   the check row while it asks GitHub. */
+/* Spinner in the update button while it downloads. */
 .settings-spinner {
   width: 12px;
   height: 12px;
@@ -896,51 +880,15 @@ body.is-maximized #winMaximize .wc-restore {
 .settings-spinner[hidden] {
   display: none;
 }
-/* The check row: version on the right, a quiet text button on the left that
-   forces a check now. The scheduled check is throttled to a few hours, so this
-   is the only way to see the updater answer on demand. */
+/* The version row at the foot of the panel. */
 .settings-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 10px;
 }
-/* Doubles as the update status, so its label can be a whole network error
-   message: wrap it and let it keep the version beside it uncrushed. */
-.settings-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--app-muted-foreground);
-  font: 600 11px var(--app-font);
-  letter-spacing: 0.02em;
-  text-align: left;
-  overflow-wrap: anywhere;
-}
-/* Before :disabled, so a check already running reads as busy rather than broken;
-   :hover outranks both, since a failed status is still the button you click. */
-.settings-check.is-error {
-  color: var(--warning);
-}
-.settings-check:hover:not(:disabled) {
-  background: transparent;
-  border-color: transparent;
-  color: var(--accent);
-  text-decoration: underline;
-}
-.settings-check:disabled {
-  background: transparent;
-  border-color: transparent;
-  color: var(--app-muted-foreground);
-  cursor: default;
-}
-/* Running version at the foot of the panel: quiet, one line, selectable so it
-   can be pasted into a bug report. Never shrinks — the status beside it wraps
-   instead. */
+/* Running version: quiet, one line, selectable so it can be pasted into a bug
+   report. */
 .settings-version {
   margin: 0;
   display: flex;

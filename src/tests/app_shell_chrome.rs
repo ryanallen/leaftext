@@ -623,7 +623,7 @@ fn app_shell_markup_carries_its_own_text_before_any_script_runs() {
     for expected in [
         r#"<span class="setting-label">Theme</span>"#,
         r#"aria-label="Open" title="Open Markdown file""#,
-        r#"<span id="settingsCheckLabel">Check for updates</span>"#,
+        "<span>Version</span>",
         "<h1>Refine your mind.</h1>",
         "<p class=\"empty-subtitle\">Your thoughts, secure and free.</p>",
         ">Choose file</button>",

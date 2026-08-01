@@ -558,50 +558,44 @@ fn updating_is_not_a_setting() {
     assert!(!html.contains("setAutoUpdateEnabled"));
     assert!(!html.contains("update.downloadsOff"));
 
-    // Every state the update button can report has wording, or it renders blank.
+    // The two states worth a word, and nothing else.
     for wording in [
-        "`Update to v${version}`",
         "`Downloading v${version}… ${percent}%`",
         "'Restart to update'",
-        "const UPDATE_FAILED = 'Update failed — open release page';",
-        "`Update failed: ${message}`",
-        "'Check for updates'",
-        "'Ask GitHub for the latest release now'",
-        "'Checking…'",
-        "'Up to date.'",
-        "`Last checked ${ago}.`",
-        "'Checked just now.'",
-        "`Could not reach GitHub: ${message || ''}`",
-        "`Installing v${updateApplyFailure.version} failed:",
-        "`GitHub answered ${res.status}`",
-        "This release publishes no installer for this platform",
     ] {
         assert_contains(&html, wording);
     }
 }
 
 #[test]
-fn the_settings_panel_can_check_for_updates_on_demand() {
-    // The scheduled check is throttled to hours, so without a control that forces
-    // one there is no way to find out whether updating works — the symptom that
-    // made the whole updater look broken. The button's label is the status itself,
-    // so one control both reports and re-checks; `update.check` is only the text
-    // before the first answer.
+fn the_updater_only_speaks_when_it_can_install() {
+    // A check that found nothing, could not reach GitHub, or found a release with
+    // no installer for this platform is the app's own business — there is nothing
+    // for the reader to do about any of it. Reporting it made the panel look like
+    // it was asking for work it should be doing itself.
     let html = app_shell_html();
-    assert!(html.contains(r#"<button type="button" class="settings-check" id="settingsCheck">"#));
-    assert!(html.contains(r#"<span id="settingsCheckLabel">Check for updates</span>"#));
-    // No separate status line to fall back to, so the error color lives here.
-    assert!(reading_mode_css().contains(".settings-check.is-error"));
-    // The download's progress signals: a spinner and a fill behind the label.
+    for gone in [
+        "Check for updates",
+        "Up to date",
+        "Last checked",
+        "Checked just now",
+        "Could not reach GitHub",
+        "Update failed",
+        "publishes no installer",
+        "`Update to v${version}`",
+        "settingsCheck",
+    ] {
+        assert!(!html.contains(gone), "the updater still says {gone:?}");
+    }
+
+    // What is left: the download's spinner and progress fill, and the dot the
+    // gear raises with the panel shut.
     assert!(html.contains(r#"id="settingsUpdateSpinner""#));
     assert!(html.contains(r#"id="settingsUpdateFill""#));
-
     let css = reading_mode_css();
     assert!(css.contains(".settings-spinner"));
-    // Green for news, amber for a failure: the dot is all a user sees with the
-    // panel shut.
     assert!(css.contains(".settings-alert-dot.is-downloading"));
-    assert!(css.contains(".settings-alert-dot.is-failed"));
+    assert!(!css.contains(".settings-check"));
 }
 
 #[test]

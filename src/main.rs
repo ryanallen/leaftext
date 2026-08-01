@@ -20,23 +20,22 @@ use leaftext::{
     document_pager_html, error_toast_script, find_note, folder_note_items, folder_note_names,
     fragment_scroll_script, git_tooling, glossary_failed_script, glossary_sheet_script,
     graph_script, image_picked_script, image_refresh_script, init_vault_repo,
-    initial_apply_outcome_script, initial_document_exts_script, initial_settings_script,
-    initial_state_script, initial_update_script, initial_vaults_script, initial_version_script,
-    inspect_vault_repo, is_local_image_path, is_supported_document_path, known_note_names,
-    library_folder_script, library_refresh_script, line_count_script, link_vault_remote,
-    lint_links, load_recent_files, load_settings, local_image_protocol_response,
-    local_image_source_dir, markdown_image_insert_destination, navigation_state_script,
-    note_preview, notice_toast_script, open_error_state_script, opened_document_from_source,
-    pager_loaded_script, read_folder_listing, read_folder_note, read_source,
-    render_markdown_document, repo_name_for_vault, save_recent_files, save_result_script,
-    save_settings, scroll_anchor_script, search_results_script, settings_file_path,
-    settings_unreadable_script, source_payload_url, source_updated_script, sync_vault_repo,
-    unlock_reading_script, update_progress_script, update_state_script, vaults_script,
-    webview_user_data_dir, workspace_only_script, workspace_reload_script, workspace_state_script,
-    workspace_switch_script, write_source, CorpusDocument, DocumentFormat, EditableDocument,
-    FolderListing, GitTooling, GraphScope, OpenedDocument, RecentFiles, ScrollAnchor, Settings,
-    SettingsLoad, SourceText, UpdateDownload, VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL,
-    LOCAL_IMAGE_PROTOCOL,
+    initial_document_exts_script, initial_settings_script, initial_state_script,
+    initial_update_script, initial_vaults_script, initial_version_script, inspect_vault_repo,
+    is_local_image_path, is_supported_document_path, known_note_names, library_folder_script,
+    library_refresh_script, line_count_script, link_vault_remote, lint_links, load_recent_files,
+    load_settings, local_image_protocol_response, local_image_source_dir,
+    markdown_image_insert_destination, navigation_state_script, note_preview, notice_toast_script,
+    open_error_state_script, opened_document_from_source, pager_loaded_script, read_folder_listing,
+    read_folder_note, read_source, render_markdown_document, repo_name_for_vault,
+    save_recent_files, save_result_script, save_settings, scroll_anchor_script,
+    search_results_script, settings_file_path, settings_unreadable_script, source_payload_url,
+    source_updated_script, sync_vault_repo, unlock_reading_script, update_progress_script,
+    update_state_script, vaults_script, webview_user_data_dir, workspace_only_script,
+    workspace_reload_script, workspace_state_script, workspace_switch_script, write_source,
+    CorpusDocument, DocumentFormat, EditableDocument, FolderListing, GitTooling, GraphScope,
+    OpenedDocument, RecentFiles, ScrollAnchor, Settings, SettingsLoad, SourceText, UpdateDownload,
+    VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -251,17 +250,17 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     }
 
     // What the detached applier had to say about the last install, if it ran. Read
-    // once and deleted; the page reports a failure in the settings panel.
-    let apply_outcome = app_data_dir().and_then(|data_dir| {
-        let outcome = leaftext::take_apply_outcome(&data_dir);
-        if let Some(outcome) = outcome.as_ref().filter(|outcome| !outcome.ok) {
+    // once and deleted, and only printed: the page says nothing about updates it
+    // cannot install, and a failed one retries on its own.
+    if let Some(data_dir) = app_data_dir() {
+        if let Some(outcome) = leaftext::take_apply_outcome(&data_dir).filter(|outcome| !outcome.ok)
+        {
             eprintln!(
                 "Installing v{} failed: {}",
                 outcome.version, outcome.message
             );
         }
-        outcome
-    });
+    }
 
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
     // `mut` is used only by the non-Windows icon block below.
@@ -341,7 +340,6 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .with_initialization_script(initial_document_exts_script())
         .with_initialization_script(initial_version_script())
         .with_initialization_script(initial_update_script())
-        .with_initialization_script(initial_apply_outcome_script(apply_outcome.as_ref()))
         // Whether the OS window is frameless (Windows), so the frontend shows its
         // own title-bar chrome — drag region + minimize/maximize/close buttons.
         .with_initialization_script(format!("window.__leafFrameless = {};", cfg!(windows)))

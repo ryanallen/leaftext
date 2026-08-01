@@ -14,135 +14,59 @@ function isNewerVersion(candidate, current) {
   }
   return false;
 }
-const RELEASES_PAGE = 'https://github.com/ryanallen/leaftext/releases/latest';
-// Said in two places — the check button and the update button — so it is written once.
-const UPDATE_FAILED = 'Update failed — open release page';
 const UPDATE_ASSET_SUFFIX = typeof window.__leafUpdateAsset === 'string' ? window.__leafUpdateAsset : '';
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
-// What the update controls are currently reporting.
+// What the updater is doing.
 //
 //   idle         nothing asked yet (a throttled launch lands here)
 //   checking     a release request is in flight
 //   upToDate     GitHub answered and this is the newest version
 //   checkFailed  the check itself broke — offline, rate-limited, malformed
-//   available    a newer release exists but publishes no installer for this
-//                platform, so it cannot be installed for us
+//   available    a newer release exists, but carries nothing this platform can
+//                install, so the app cannot act on it
 //   downloading  bytes are moving; `percent` is live
 //   staged       a verified installer is on disk and the app can restart into it
 //   failed       the download or its verification broke
 //
-// The last four raise the dot on the gear; the quiet ones only write the note,
-// since a permanent amber dot for a laptop that is merely offline would be noise.
+// Only `downloading` and `staged` reach the screen. There is nothing a reader
+// can do about the rest, so saying them is noise: the updater fetches on its own
+// and speaks once it can install.
 let updateState = {
   status: 'idle',
   version: '',
-  url: RELEASES_PAGE,
   percent: 0,
-  message: '',
   checkedAt: Number(LEAF_SETTINGS.updateLastChecked || 0) * 1000,
 };
-// Why the last install did not take, from the applier's record: `{ version,
-// message }`, or null. Kept raw so a locale change re-renders it, and sticky for
-// the session — a failed install stays true until the next one succeeds.
-const updateApplyFailure = (() => {
-  const applied = window.__leafUpdateApply;
-  if (!applied || typeof applied !== 'object' || applied.ok) return null;
-  return {
-    version: String(applied.version || '').replace(/^v/i, ''),
-    message: String(applied.message || ''),
-  };
-})();
-const UPDATE_NEWS_STATES = ['available', 'downloading', 'staged', 'failed'];
-
-// "Last checked 3 hours ago", from the coarsest unit that fits. Relative rather
-// than a timestamp: the only thing worth knowing is whether the answer is stale.
-function formatCheckedAgo(when) {
-  const seconds = Math.max(0, Math.round((Date.now() - when) / 1000));
-  const units = [['day', 86400], ['hour', 3600], ['minute', 60]];
-  for (const [unit, size] of units) {
-    if (seconds >= size) {
-      const ago = new Intl.RelativeTimeFormat('en-US').format(-Math.floor(seconds / size), unit);
-      return `Last checked ${ago}.`;
-    }
-  }
-  return 'Checked just now.';
-}
-
-// What the last attempt actually said — this is the check button's label.
-function updateNoteText() {
-  const { status, message, checkedAt } = updateState;
-  // This attempt's own failure first, then the last install's — a fresh error
-  // must not be masked by a stale one.
-  if (status === 'checkFailed') {
-    return `Could not reach GitHub: ${message || ''}`.trim();
-  }
-  if (status === 'failed') {
-    return message ? `Update failed: ${message}` : UPDATE_FAILED;
-  }
-  if (updateApplyFailure) {
-    return `Installing v${updateApplyFailure.version} failed: ${updateApplyFailure.message}`;
-  }
-  if (status === 'available' && message) return message;
-  if (status === 'upToDate') return 'Up to date.';
-  if (checkedAt) return formatCheckedAgo(checkedAt);
-  return '';
-}
 
 function renderUpdateButton() {
   if (!settingsUpdate) return;
   const { status, version, percent } = updateState;
-  const news = UPDATE_NEWS_STATES.indexOf(status) !== -1;
-  const busy = status === 'checking' || status === 'downloading';
+  const downloading = status === 'downloading';
+  const news = downloading || status === 'staged';
 
-  // The dot on the gear, all a user sees with the panel shut: green for something
-  // to install, a spinning ring while it downloads, amber when the attempt broke.
+  // The mark on the gear, all a user sees with the panel shut: a spinning ring
+  // while the new version downloads, a dot once a restart would install it.
   if (settingsAlertDot) {
     settingsAlertDot.hidden = !news;
-    settingsAlertDot.className = 'settings-alert-dot'
-      + (status === 'downloading' ? ' is-downloading' : '')
-      + (status === 'failed' ? ' is-failed' : '');
+    settingsAlertDot.className = 'settings-alert-dot' + (downloading ? ' is-downloading' : '');
   }
 
   settingsUpdate.hidden = !news;
-  settingsUpdate.classList.toggle('is-failed', status === 'failed');
   if (news) {
-    const labels = {
-      available: () => `Update to v${version}`,
-      downloading: () => `Downloading v${version}… ${percent}%`,
-      staged: () => 'Restart to update',
-      failed: () => UPDATE_FAILED,
-    };
-    (settingsUpdateLabel || settingsUpdate).textContent = (labels[status] || labels.available)();
-    settingsUpdate.title = updateState.message || 'A new version is available';
-    if (settingsUpdateSpinner) settingsUpdateSpinner.hidden = status !== 'downloading';
-    if (settingsUpdateFill) {
-      settingsUpdateFill.style.width = status === 'downloading' ? `${percent}%` : '0';
-    }
-    // Only a staged, verified installer offers to install. Everything else falls
-    // back to the release page, which is always a safe thing for the button to do.
-    settingsUpdate.disabled = status === 'downloading';
-    settingsUpdate.onclick = status === 'staged'
-      ? () => send({ command: 'applyUpdate' })
-      : () => send({ command: 'openExternal', url: updateState.url || RELEASES_PAGE });
+    (settingsUpdateLabel || settingsUpdate).textContent = downloading
+      ? `Downloading v${version}… ${percent}%`
+      : 'Restart to update';
+    settingsUpdate.title = downloading
+      ? 'Downloading the new version'
+      : 'Restart to install the new version';
+    if (settingsUpdateSpinner) settingsUpdateSpinner.hidden = !downloading;
+    if (settingsUpdateFill) settingsUpdateFill.style.width = downloading ? `${percent}%` : '0';
+    // Only a staged, verified installer is clickable — a download in flight has
+    // nothing to offer yet.
+    settingsUpdate.disabled = downloading;
+    settingsUpdate.onclick = downloading ? null : () => send({ command: 'applyUpdate' });
   }
-
-  // The status is the button's own label, so one control reports and re-checks.
-  // Before the first answer it names what clicking does instead.
-  if (settingsCheck) {
-    settingsCheck.disabled = busy;
-    settingsCheck.title = 'Ask GitHub for the latest release now';
-    settingsCheck.classList.toggle(
-      'is-error',
-      Boolean(updateApplyFailure) || status === 'failed' || status === 'checkFailed',
-    );
-  }
-  if (settingsCheckLabel) {
-    settingsCheckLabel.textContent = busy
-      ? 'Checking…'
-      : updateNoteText() || 'Check for updates';
-  }
-  if (settingsCheckSpinner) settingsCheckSpinner.hidden = !busy;
 }
 
 function setUpdateState(next) {
@@ -157,7 +81,6 @@ window.leafUpdateState = (state) => {
   setUpdateState({
     status: state.status || 'failed',
     version: state.version || updateState.version,
-    message: state.message || '',
     percent: typeof state.percent === 'number' ? state.percent : 0,
   });
 };
@@ -176,7 +99,7 @@ function downloadUpdate(version, installer) {
   });
 }
 
-// Guards two overlapping checks: the periodic tick firing while a manual check
+// Guards two overlapping checks: the periodic tick firing while the launch check
 // (or its download) is still running.
 let updateCheckInFlight = false;
 
@@ -194,16 +117,15 @@ async function checkForUpdate(force) {
     return;
   }
 
-  // Only the periodic tick is throttled; launching and clicking both ask GitHub
-  // at once. One request per launch is nothing against a 60-per-hour limit, and an
-  // update the app sat on until the interval elapsed reads as a broken updater.
+  // Only the periodic tick is throttled; launch asks GitHub outright. One request
+  // per launch is nothing against a 60-per-hour limit, and an update the app sat
+  // on until the interval elapsed reads as a broken updater.
   if (!force && updateState.checkedAt && Date.now() - updateState.checkedAt < UPDATE_CHECK_INTERVAL_MS) {
-    renderUpdateButton();
     return;
   }
 
   updateCheckInFlight = true;
-  setUpdateState({ status: 'checking', message: '', percent: 0 });
+  setUpdateState({ status: 'checking', percent: 0 });
   try {
     // no-store: a cached 200 from the last check would make a forced one answer
     // with yesterday's release.
@@ -222,46 +144,29 @@ async function checkForUpdate(force) {
     }
 
     const version = String(tag).replace(/^v/i, '');
-    const url = data.html_url || RELEASES_PAGE;
     const assets = Array.isArray(data.assets) ? data.assets : [];
     const installer = UPDATE_ASSET_SUFFIX
       ? assets.find((asset) => asset && typeof asset.name === 'string' && asset.name.endsWith(UPDATE_ASSET_SUFFIX))
       : null;
 
-    // No installer for this platform: notify only, and say so, or a release that
-    // failed to publish one reads as a broken updater.
+    // Nothing this platform can install, so nothing is said — sending someone off
+    // to install it by hand is work, not news.
     if (!installer) {
-      setUpdateState({
-        status: 'available',
-        version,
-        url,
-        checkedAt: Date.now(),
-        message: 'This release publishes no installer for this platform — the button opens the release page.',
-      });
+      setUpdateState({ status: 'available', version, checkedAt: Date.now() });
       return;
     }
-    setUpdateState({ status: 'available', version, url, checkedAt: Date.now(), message: '' });
+    setUpdateState({ status: 'available', version, checkedAt: Date.now() });
     downloadUpdate(version, installer);
-  } catch (error) {
-    // Offline, rate-limited, or a malformed answer. `checkedAt` is deliberately
-    // left alone so the next tick retries instead of waiting out the interval.
-    setUpdateState({ status: 'checkFailed', message: String((error && error.message) || error) });
+  } catch {
+    // Offline, rate-limited, or malformed — all silent. `checkedAt` is left alone
+    // so the next tick retries instead of waiting out the interval.
+    setUpdateState({ status: 'checkFailed' });
   } finally {
     updateCheckInFlight = false;
   }
 }
-if (settingsCheck) {
-  settingsCheck.addEventListener('click', () => checkForUpdate(true));
-}
-// Opening the panel re-renders, so "last checked 3 hours ago" is current rather
-// than however stale it was when the page loaded.
-if (settingsMenu) {
-  settingsMenu.addEventListener('toggle', () => {
-    if (settingsMenu.open) renderUpdateButton();
-  });
-}
-// Paint the row before anything asks the network, so the panel is never blank on
-// a build with no version to compare.
+// Paint before anything asks the network, so the gear never flashes a mark on a
+// build with no version to compare.
 renderUpdateButton();
 // Every launch, unthrottled: opening the app is the moment a user expects it to
 // know whether it is current.

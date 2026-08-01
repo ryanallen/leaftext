@@ -135,21 +135,6 @@ pub fn initial_update_script() -> String {
     )
 }
 
-/// How the last install attempt ended, as `window.__leafUpdateApply`, or `null`
-/// when there is nothing to report. The page turns a failure into a line in the
-/// settings panel — the only place a detached installer's error can surface.
-pub fn initial_apply_outcome_script(outcome: Option<&crate::ApplyOutcome>) -> String {
-    let value = match outcome {
-        Some(outcome) => serde_json::json!({
-            "version": outcome.version,
-            "ok": outcome.ok,
-            "message": outcome.message,
-        }),
-        None => serde_json::Value::Null,
-    };
-    format!("window.__leafUpdateApply = {value};")
-}
-
 pub fn document_state_script(document: &OpenedDocument, recent: &[PathBuf]) -> String {
     let recent: Vec<String> = recent
         .iter()

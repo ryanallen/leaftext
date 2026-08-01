@@ -120,15 +120,12 @@ applyPaneLayout();
 send({ command: 'getFolder', path: libraryProjectPath });
 // Updates. The check compares the running version against the latest GitHub
 // release; if a newer one publishes this platform's installer, the host is asked
-// to fetch, hash, and stage it, and the button then offers a restart. Every
-// failure is reported in the panel — a check that found nothing must not look
-// like one that never ran.
+// to fetch, hash, and stage it, and the button then offers a restart. Nothing
+// else is shown — the checking, the finding, and the failing are the app's own
+// business.
 const settingsAlertDot = document.getElementById('settingsAlertDot');
 const settingsUpdate = document.getElementById('settingsUpdate');
 const settingsUpdateLabel = document.getElementById('settingsUpdateLabel');
 const settingsUpdateFill = document.getElementById('settingsUpdateFill');
 const settingsUpdateSpinner = document.getElementById('settingsUpdateSpinner');
-const settingsCheck = document.getElementById('settingsCheck');
-const settingsCheckLabel = document.getElementById('settingsCheckLabel');
-const settingsCheckSpinner = document.getElementById('settingsCheckSpinner');
 const LEAF_VERSION = typeof window.__leafVersion === 'string' ? window.__leafVersion : null;

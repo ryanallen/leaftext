@@ -311,24 +311,10 @@ fn a_successful_install_records_no_failure() {
 }
 
 #[test]
-fn the_page_is_told_how_the_last_install_went() {
-    // Null when there is nothing to report, so the page has no note to show.
-    assert_eq!(
-        initial_apply_outcome_script(None),
-        "window.__leafUpdateApply = null;"
-    );
-
-    let outcome = ApplyOutcome {
-        version: "0.1.400".to_string(),
-        ok: false,
-        message: "the installer failed with code 1603".to_string(),
-        finished_at: 1_780_000_000,
-    };
-    let script = initial_apply_outcome_script(Some(&outcome));
-    assert!(script.starts_with("window.__leafUpdateApply = {"));
-    assert!(script.contains(r#""ok":false"#));
-    assert!(script.contains("0.1.400"));
-    assert!(script.contains("1603"));
+fn the_applier_s_verdict_never_reaches_the_page() {
+    // It goes to stderr and nowhere else. A reader can do nothing about a failed
+    // install — the next check retries it — so the panel stays quiet.
+    assert!(!app_shell_html().contains("__leafUpdateApply"));
 }
 
 #[test]
