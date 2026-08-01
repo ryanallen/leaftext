@@ -26,13 +26,13 @@ use leaftext::{
     library_folder_script, library_refresh_script, line_count_script, link_vault_remote,
     lint_links, load_recent_files, load_settings, local_image_protocol_response,
     local_image_source_dir, markdown_image_insert_destination, navigation_state_script,
-    note_preview, open_error_state_script, opened_document_from_source, pager_loaded_script,
-    read_folder_listing, read_folder_note, read_source, render_markdown_document,
-    repo_name_for_vault, save_recent_files, save_result_script, save_settings,
-    scroll_anchor_script, search_results_script, settings_file_path, settings_unreadable_script,
-    source_payload_url, source_updated_script, sync_vault_repo, unlock_reading_script,
-    update_progress_script, update_state_script, vaults_script, webview_user_data_dir,
-    workspace_only_script, workspace_reload_script, workspace_state_script,
+    note_preview, notice_toast_script, open_error_state_script, opened_document_from_source,
+    pager_loaded_script, read_folder_listing, read_folder_note, read_source,
+    render_markdown_document, repo_name_for_vault, save_recent_files, save_result_script,
+    save_settings, scroll_anchor_script, search_results_script, settings_file_path,
+    settings_unreadable_script, source_payload_url, source_updated_script, sync_vault_repo,
+    unlock_reading_script, update_progress_script, update_state_script, vaults_script,
+    webview_user_data_dir, workspace_only_script, workspace_reload_script, workspace_state_script,
     workspace_switch_script, write_source, CorpusDocument, DocumentFormat, EditableDocument,
     FolderListing, GitTooling, GraphScope, OpenedDocument, RecentFiles, ScrollAnchor, Settings,
     SettingsLoad, SourceText, UpdateDownload, VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL,
@@ -550,6 +550,17 @@ fn pick_save_path(current: &Path) -> Option<PathBuf> {
         dialog = dialog.add_filter(format.display_name(), format.extensions());
     }
     dialog.add_filter("All files", &["*"]).save_file()
+}
+
+/// Where an exported flowchart goes. One filter, for the format the sheet was
+/// asked for: an export is one file of one kind, so offering the others would
+/// only be a way to name it wrong.
+fn pick_export_path(name: &str, label: &str, extension: &str) -> Option<PathBuf> {
+    FileDialog::new()
+        .set_title("Export Diagram")
+        .set_file_name(name)
+        .add_filter(label, &[extension])
+        .save_file()
 }
 
 /// The Insert image dialog. Filtered to what a web view can draw, since a

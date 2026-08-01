@@ -432,14 +432,22 @@ function mermaidFontFamily() {
   return themeTokenValue(style, '--reading-font') || "'Noto Sans', sans-serif";
 }
 
-function mermaidRuntimeConfig() {
+// `htmlLabels` off puts a label in an SVG `<text>` rather than a
+// `<foreignObject>`, which an SVG loaded as an image drops outright. The page
+// keeps the foreign object; anything bound for a picture asks for text. Stated
+// on every call because `mermaid.initialize` merges: a config quiet about it
+// leaves the last answer in place for the next diagram drawn.
+function mermaidRuntimeConfig(options) {
+  const htmlLabels = !options || options.htmlLabels !== false;
   const style = window.getComputedStyle(document.documentElement);
-  const fontFamily = mermaidFontFamily();
+  const fontFamily = (options && options.fontFamily) || mermaidFontFamily();
   const themeVariables = mermaidThemeVariables();
   themeVariables.fontFamily = fontFamily;
   return {
     startOnLoad: false,
     securityLevel: 'strict',
+    htmlLabels,
+    flowchart: { htmlLabels },
     // Appended after mermaid's own stylesheet, so it settles what a variable
     // cannot: one ink per gantt state, and C4's one hardcoded color.
     themeCSS: [mermaidGanttStateCss(style), mermaidC4RelationCss(style)]

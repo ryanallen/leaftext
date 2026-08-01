@@ -56,7 +56,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 
 - [Write where you read](01-features/07-editing.md#inline-editing-the-reading-view): click into a sentence and type, split and merge blocks with `Enter` and `Backspace`, tick checkboxes, and [undo](01-features/07-editing.md#undo) step by step.
 - Restructure without leaving the page: drag a block by its handle in the [margin](01-features/07-editing.md#the-block-gutter), [add one](01-features/07-editing.md#adding-a-block) on the empty line below, and highlight words for a [format bar](01-features/07-editing.md#the-format-bar).
-- Draw a flowchart instead of typing one in the [flowchart editor](01-features/07-editing.md#the-flowchart-editor) — a canvas beside the Mermaid text, both kept in step — and open any diagram already in a page the same way.
+- Draw a flowchart instead of typing one in the [flowchart editor](01-features/07-editing.md#the-flowchart-editor) — a canvas beside the Mermaid text, both kept in step — open any diagram already in a page the same way, and [export](01-features/07-editing.md#export) one as its own Markdown file or picture.
 - Switch any document to its raw source in the [code view](01-features/07-editing.md#code-view) — highlighted, line-numbered, editable — and [save](01-features/07-editing.md#save) only when you say so.
 - Get [typing help](01-features/07-editing.md#typing-help) while you write there: Monaco's IntelliSense, answered from your own notes — `[[` completes a note name, `#` a heading, and a broken link is underlined.
 - Start from nothing with the **+** in the app bar: a [new document](01-features/07-editing.md#new-document) opens ready to type, and its first save is where you choose the file.

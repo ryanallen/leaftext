@@ -702,6 +702,14 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     // would throw away the undo stack and the place in the file.
     assert!(html.contains("function setReadingUnlocked(unlocked)"));
     assert!(html.contains("  commitActiveEditingBlock();\n  readingUnlocked = next;"));
+    // And the page stays where the reader left it. The same words are on screen
+    // either way, so the rebuild that binds the blocks must not double as a jump
+    // to the top — renderState() alone replaces the body and the scroll with it.
+    assert!(html.contains(
+        "  send({ command: 'setReadingUnlocked', enabled: readingUnlocked });\n  renderStateKeepingPlace();"
+    ));
+    assert!(html.contains("function renderStateKeepingPlace() {"));
+    assert!(html.contains("    restoreReaderScrollAnchor(anchor);"));
     assert!(html.contains("monacoEditor.updateOptions({ readOnly: !codeUnlocked });"));
     assert!(html.contains("readOnly: !codeUnlocked,"));
     // And a refused keystroke says so, rather than reading as a dead editor.

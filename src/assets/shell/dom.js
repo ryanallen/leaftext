@@ -281,17 +281,24 @@ if (window.__leafFrameless) {
   // is what tells the second click apart from the tail of a drag.
   let pressedAtX = null;
   let pressedAtY = null;
-  appBar.addEventListener('mousedown', (event) => {
-    const wasX = pressedAtX;
-    const wasY = pressedAtY;
-    pressedAtX = null;
-    pressedAtY = null;
-    if (event.button !== 0 || !isDragTarget(event.target)) return;
-    pressedAtX = window.screenX;
-    pressedAtY = window.screenY;
-    const windowStayedPut = window.screenX === wasX && window.screenY === wasY;
-    send({ command: event.detail === 2 && windowStayedPut ? 'windowToggleMaximize' : 'windowDrag' });
-  });
+  const dragWindowFrom = (bar) => {
+    if (!bar) return;
+    bar.addEventListener('mousedown', (event) => {
+      const wasX = pressedAtX;
+      const wasY = pressedAtY;
+      pressedAtX = null;
+      pressedAtY = null;
+      if (event.button !== 0 || !isDragTarget(event.target)) return;
+      pressedAtX = window.screenX;
+      pressedAtY = window.screenY;
+      const windowStayedPut = window.screenX === wasX && window.screenY === wasY;
+      send({ command: event.detail === 2 && windowStayedPut ? 'windowToggleMaximize' : 'windowDrag' });
+    });
+  };
+  dragWindowFrom(appBar);
+  // The flowchart sheet covers the app bar, so its header is the drag bar while
+  // it is open — otherwise the window cannot be moved without closing the sheet.
+  dragWindowFrom(document.getElementById('flowSheetHead'));
 }
 // Reflect the real maximized state: body.is-maximized swaps the maximize glyph
 // for restore-down (CSS) and the label follows. Defined unconditionally (not just

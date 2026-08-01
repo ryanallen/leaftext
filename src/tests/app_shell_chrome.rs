@@ -790,10 +790,18 @@ fn the_app_bar_maximizes_from_the_second_press_not_from_a_dblclick() {
         "an app-bar dblclick can never fire once a drag starts; decide on mousedown"
     );
     let handler = html
-        .split_once("appBar.addEventListener('mousedown'")
-        .expect("the app bar decides window drags on mousedown")
+        .split_once("bar.addEventListener('mousedown'")
+        .expect("a drag bar decides window drags on mousedown")
         .1;
-    let handler = &handler[..handler.find("\n  });").expect("the handler closes")];
+    let handler = &handler[..handler.find("\n    });").expect("the handler closes")];
+    // The app bar is one of them. The flowchart sheet covers the whole window,
+    // so its header is the other — without it the window cannot be moved until
+    // the diagram is put away.
+    assert_contains(&html, "dragWindowFrom(appBar);");
+    assert_contains(
+        &html,
+        "dragWindowFrom(document.getElementById('flowSheetHead'));",
+    );
     assert!(
         handler.contains("windowToggleMaximize") && handler.contains("event.detail === 2"),
         "the second press is what maximizes: {handler}"

@@ -456,7 +456,13 @@ function readerAnchorBlockList(source) {
     !readerAnchorBlocks[0].isConnected ||
     !readerAnchorBlocks[readerAnchorBlocks.length - 1].isConnected;
   if (stale) {
-    readerAnchorBlocks = Array.from(source.querySelectorAll(READER_ANCHOR_SELECTOR));
+    // Never what is inside a drawing. A mermaid label is a `<p>` in a
+    // `<foreignObject>`, so diagrams landing add hundreds of slots to this list;
+    // the reader's place is "the nth block after this heading", and slots
+    // appearing above it walk the restore back toward the top.
+    readerAnchorBlocks = Array.from(source.querySelectorAll(READER_ANCHOR_SELECTOR)).filter(
+      (block) => !block.closest('svg'),
+    );
     readerAnchorBlocksCount = count;
     readerAnchorBlocksSource = source;
   }
@@ -696,6 +702,13 @@ function measureDocumentMinimap(track) {
 let minimapPreviewHolds = 0;
 function pauseMinimapPreview() {
   minimapPreviewHolds += 1;
+  // Say it is working rather than hold up a thumbnail about to be replaced
+  // wholesale: diagrams land seconds after the words, and watching the old clone
+  // swap out is worse than watching the real one arrive.
+  if (minimapPreviewHolds === 1) {
+    const minimap = document.querySelector('.document-minimap');
+    if (minimap) minimap.classList.add('is-loading');
+  }
   if (minimapPreviewFrame) {
     window.cancelAnimationFrame(minimapPreviewFrame);
     minimapPreviewFrame = 0;
@@ -1039,6 +1052,9 @@ window.addEventListener('resize', () => {
   scheduleMinimapPreviewUpdate();
 });
 window.leafShowError = (message) => leafToast(message, 'error');
+// The other half: something the person asked for that worked, said where they
+// are looking rather than left silent.
+window.leafShowNotice = (message) => leafToast(message, 'ok');
 window.leafShowOpenError = (path, reason) => {
   window.leafShowError(`Failed to open ${path}: ${reason}`);
 };

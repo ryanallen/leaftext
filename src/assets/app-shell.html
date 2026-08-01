@@ -223,7 +223,7 @@
 <aside id="flowSheet" class="flow-sheet" role="dialog" aria-modal="true" aria-label="Flowchart" hidden>
   <!-- Every way of making something lives on the canvas: double-click, a box's
        + handles, or right-click. What is left up here is chrome. -->
-  <div class="flow-sheet-head">
+  <div class="flow-sheet-head" id="flowSheetHead">
     <span class="flow-sheet-title" id="flowSheetTitle">Flowchart</span>
     <div class="flow-sheet-tools">
       <div class="flow-steps" role="group" aria-label="History">
@@ -231,13 +231,17 @@
         <button type="button" id="flowRedo" aria-label="Redo" title="Redo"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3" /></svg></button>
       </div>
       <label class="flow-sheet-direction">Flow <select id="flowDirection"></select></label>
+      <!-- The same three the reading view puts on a drawn diagram, so looking at
+           one is the same gesture wherever you are. Each tooltip names the other
+           way of doing it: the wheel and the drag announce themselves nowhere. -->
       <div class="flow-zoom" role="group" aria-label="Zoom">
-        <button type="button" id="flowZoomOut" aria-label="Zoom out">&minus;</button>
-        <button type="button" id="flowZoomFit" aria-label="Fit the diagram">Fit</button>
-        <button type="button" id="flowZoomIn" aria-label="Zoom in">+</button>
+        <button type="button" id="flowZoomOut" title="Zoom out — or Ctrl and the wheel" aria-label="Zoom out">{{ZOOM_OUT_ICON_SVG}}</button>
+        <button type="button" id="flowZoomFit" title="Whole diagram, back where it started" aria-label="Fit the diagram">{{FIT_ICON_SVG}}</button>
+        <button type="button" id="flowZoomIn" title="Zoom in — or Ctrl and the wheel. Drag empty space to move it" aria-label="Zoom in">{{ZOOM_IN_ICON_SVG}}</button>
       </div>
     </div>
     <div class="flow-sheet-actions">
+      <button type="button" id="flowSheetExport" class="flow-sheet-export">Export</button>
       <button type="button" id="flowSheetCancel" class="flow-sheet-cancel">Cancel</button>
       <button type="button" id="flowSheetSave" class="flow-sheet-save">Save</button>
     </div>

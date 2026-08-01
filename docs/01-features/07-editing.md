@@ -18,6 +18,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider |
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
 | [Drawing a flowchart](#the-flowchart-editor) | The flowchart button, and the one in any drawn diagram's corner, open a canvas beside the Mermaid text |
+| [Exporting a diagram](#export) | The flowchart sheet writes the diagram out as its own file — Markdown or PNG |
 | [The format bar](#the-format-bar) | Highlight words and a bar appears over them: bold, italic, strikethrough, code, link, then text, bigger/smaller heading and quote for the whole block |
 | [Interactive checkboxes](#inline-editing-the-reading-view) | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | [Undo](#undo) | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits |
@@ -131,7 +132,7 @@ Whether a document can be typed into is a padlock in the recess beside the view 
 - **There are two of them, one per editable view.** The reading view has its own and the [code view](#code-view) has its own, and they are independent — unlocking the page you read is not consent to rewrite the file by hand, and unlocking the source does not open the rendered page under your cursor. The button in the bar holds whichever one the view you are in belongs to, and its tooltip says which: *the page* or *the source*.
 - **Both open locked**, and both are remembered ([settings](05-settings.md#the-padlocks)). Reading is the default posture, and one click is a cheap price for not editing a file by brushing it. A [new document](#new-document) is the exception: it was created to be written in, so it opens with the reading view already unlocked. The source keeps its own answer.
 - **Checkboxes toggle either way.** Ticking a box is a quick action that auto-saves and records no undo, not text editing.
-- Flipping the reading view's padlock commits whatever block was mid-edit rather than discarding it.
+- Flipping the reading view's padlock commits whatever block was mid-edit rather than discarding it, and leaves you where you were reading — the same words are on screen either way.
 - Typing into a locked source is refused rather than swallowed: the keystroke does nothing and a message in the corner says the source is locked and where the padlock is.
 
 The recess holds the tools of the view you are in — the padlock in both, the [speed reader](05-settings.md#speed-reader) in the reading view, the [typing help](#typing-help) wand in the source. None of them is filled in the accent color: that treatment means "this is the view you are in", and a setting inside a view must not wear it.
@@ -180,7 +181,18 @@ A chart has one direction, and the first box is what decides it: while there is 
 
 **Nothing about position is stored in your document**, so Mermaid lays the diagram out fresh every time. Dragging a box still moves it under your pointer and still means something — it changes where the box sits in the order — but it settles back into place on release rather than staying where you dropped it. Since Mermaid does the placing here and in the page, what you see is what the document will draw.
 
-The canvas fits the diagram when it opens and centers it. Drag empty space to pan, and use the zoom buttons or `Ctrl` + scroll.
+The canvas fits the diagram when it opens and centers it. Drag empty space to pan, and use the zoom buttons or `Ctrl` + scroll — the same lens, frame and lens buttons a [drawn diagram](01-rendering.md#mermaid-diagrams) carries in the page.
+
+The sheet is the whole window, so its header stands in for the app bar while it is open: drag empty space along it to move the window, double-click to maximize.
+
+### Export
+
+**Export** at the top of the sheet writes the diagram out as a file of its own. It never touches the document you opened it from — Save is still the only thing that writes into the page — and it asks where the file goes.
+
+- **Markdown** — the Mermaid text in a `mermaid` fence, as a document of its own.
+- **PNG** — the drawing as a picture, at twice life size, on the page color behind it.
+
+There is no SVG. Mermaid's SVG is a web page in an SVG's clothing — a stylesheet keyed to a generated id, labels that are really HTML, a font list full of CSS keywords no font is named after — and drawing programs read those as instructions they cannot follow.
 
 ### What it can draw
 

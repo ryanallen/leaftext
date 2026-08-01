@@ -147,14 +147,15 @@ function setSubtoolState(button, on, label) {
 }
 // The reading view's padlock. Flipping it re-renders the document, which is
 // what binds or drops the editable blocks; any block mid-edit is committed
-// first rather than silently discarded.
+// first rather than silently discarded. The reader stays where they were — the
+// same words are on screen either way.
 function setReadingUnlocked(unlocked) {
   const next = Boolean(unlocked);
   if (next === readingUnlocked) return;
   commitActiveEditingBlock();
   readingUnlocked = next;
   send({ command: 'setReadingUnlocked', enabled: readingUnlocked });
-  renderState();
+  renderStateKeepingPlace();
 }
 // The source view's, which is Monaco's readOnly option. Set, not rebuilt: a
 // re-render there would throw away the editor, its undo stack and the place in

@@ -333,6 +333,12 @@ pub(crate) enum IpcCommand {
     /// path comes back — the host only answers "which file".
     #[serde(rename = "pickImage")]
     PickImage { token: u64 },
+    /// Write the flowchart sheet's diagram out as a file of its own. `format` is
+    /// `md` or `png`; `data` is the text for the first and base64 for the picture,
+    /// since IPC carries a string and a PNG is bytes. The page has already made
+    /// the file — the host only asks where it goes and puts it there.
+    #[serde(rename = "exportDiagram")]
+    ExportDiagram { format: String, data: String },
     /// Revert the most recent reading-view edit in the active document.
     #[serde(rename = "undoEdit")]
     UndoEdit,

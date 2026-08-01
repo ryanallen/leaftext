@@ -17,6 +17,7 @@ const flowSheet = document.getElementById('flowSheet');
 const flowSheetTitle = document.getElementById('flowSheetTitle');
 const flowSheetCancel = document.getElementById('flowSheetCancel');
 const flowSheetSave = document.getElementById('flowSheetSave');
+const flowSheetExport = document.getElementById('flowSheetExport');
 const flowUndoButton = document.getElementById('flowUndo');
 const flowRedoButton = document.getElementById('flowRedo');
 const flowDirectionPicker = document.getElementById('flowDirection');
@@ -268,13 +269,19 @@ if (flowUndoButton) flowUndoButton.addEventListener('click', undoFlow);
 if (flowRedoButton) flowRedoButton.addEventListener('click', redoFlow);
 
 // An empty diagram is a legal thing to be halfway through and not a legal thing
-// to write: mermaid cannot draw a flowchart with nothing in it.
+// to write: mermaid cannot draw a flowchart with nothing in it. Export is off for
+// the same reason — there is no drawing to make a file out of.
 function updateFlowSaveState() {
-  if (!flowSheetSave) return;
   const graph = flowSession && flowSession.graph;
   const empty = !!graph && !graph.nodes.length;
-  flowSheetSave.disabled = empty;
-  flowSheetSave.title = empty ? 'Add a box before saving' : '';
+  if (flowSheetSave) {
+    flowSheetSave.disabled = empty;
+    flowSheetSave.title = empty ? 'Add a box before saving' : '';
+  }
+  if (flowSheetExport) {
+    flowSheetExport.disabled = empty;
+    flowSheetExport.title = empty ? 'Add a box before exporting' : 'Save this diagram as its own file';
+  }
 }
 
 function flowSelectionStillThere() {
@@ -1593,6 +1600,155 @@ function flowChoiceGroup(caption, options, current, chip, apply) {
     group.appendChild(button);
   }
   return group;
+}
+
+// ---- taking the diagram out ------------------------------------------------
+
+// Two files, one diagram: the mermaid text as a Markdown document of its own, or
+// the drawing as a picture. Nothing here touches the document the sheet was
+// opened from — an export is a file beside it, and Save is still the only thing
+// that writes into the page.
+//
+// The drawing is always asked for again rather than lifted off the stage: what is
+// on screen carries the zoom, the selection ring and our handles.
+//
+// **Don't add SVG.** Mermaid's SVG is a web page in an SVG's clothing — a
+// stylesheet keyed to a generated id, labels that are HTML, a font list full of
+// CSS keywords no font is named after — and a drawing program reads those as
+// instructions it cannot follow.
+
+// Twice life size, so a picture pasted somewhere and scaled up still reads.
+const FLOW_PNG_SCALE = 2;
+
+const FLOW_EXPORTS = [
+  { id: 'md', label: 'Markdown', hint: 'The mermaid text, in a document of its own' },
+  { id: 'png', label: 'PNG', hint: 'The drawing as a picture, to paste anywhere' },
+];
+
+let flowExportSeq = 0;
+
+// The page color behind the diagram. A drawing on its own has no page to sit on,
+// and a pale-ink theme on nothing is a file that looks blank.
+function flowExportBackground() {
+  const style = window.getComputedStyle(document.documentElement);
+  return (style.getPropertyValue('--surface') || '').trim() || '#ffffff';
+}
+
+// Text as base64, through its own bytes: `btoa` takes one character per byte, so
+// a label with an accent or an emoji in it has to be encoded first.
+function flowBase64(text) {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return window.btoa(binary);
+}
+
+// The room around the drawing, so the picture is not the boxes cropped to their
+// own edges. The reading view pays the same in padding.
+const FLOW_EXPORT_MARGIN = 24;
+
+// The drawing on its way to becoming pixels, and no further: a web view will only
+// rasterize an SVG by loading it as an image, so one has to exist for a moment.
+// It is never written to a file — see the header. `htmlLabels` off because an
+// image-loaded SVG drops a `<foreignObject>`, leaving shapes with no text in them.
+async function flowDrawingSvg() {
+  if (!flowSession || !flowSession.text) return null;
+  const mermaid = await loadMermaid();
+  mermaid.initialize(mermaidRuntimeConfig({ htmlLabels: false }));
+  const name = 'leafFlowExport' + (flowExportSeq += 1);
+  let drawn;
+  try {
+    drawn = (await mermaid.render(name, flowSession.text)).svg;
+  } catch (error) {
+    // Mermaid leaves the element it was drawing into behind when it throws.
+    const orphan = document.getElementById('d' + name);
+    if (orphan && orphan.remove) orphan.remove();
+    throw error;
+  }
+  const root = new DOMParser().parseFromString(drawn, 'image/svg+xml').documentElement;
+  const box = (root.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+  // Anything unexpected and the drawing goes out exactly as mermaid wrote it,
+  // rather than half-edited by us.
+  if (root.tagName !== 'svg' || box.length !== 4 || !(box[2] > 0)) return drawn;
+  // The drawing keeps its own coordinates and the view widens around it, which
+  // is what puts the margin outside every box rather than moving anything.
+  const left = box[0] - FLOW_EXPORT_MARGIN;
+  const top = box[1] - FLOW_EXPORT_MARGIN;
+  const width = box[2] + FLOW_EXPORT_MARGIN * 2;
+  const height = box[3] + FLOW_EXPORT_MARGIN * 2;
+  root.setAttribute('viewBox', left + ' ' + top + ' ' + width + ' ' + height);
+  root.setAttribute('width', width);
+  root.setAttribute('height', height);
+  root.style.maxWidth = 'none';
+  const behind = root.ownerDocument.createElementNS(FLOW_SVG_NS, 'rect');
+  behind.setAttribute('x', left);
+  behind.setAttribute('y', top);
+  behind.setAttribute('width', width);
+  behind.setAttribute('height', height);
+  behind.setAttribute('fill', flowExportBackground());
+  root.insertBefore(behind, root.firstChild);
+  return new XMLSerializer().serializeToString(root);
+}
+
+// The drawing, as pixels. The markup goes in as a data URL, which is why the
+// page's img-src allows `data:`.
+function flowExportPngBase64(svgText) {
+  return new Promise((resolve, reject) => {
+    const picture = new Image();
+    picture.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(picture.naturalWidth * FLOW_PNG_SCALE));
+      canvas.height = Math.max(1, Math.round(picture.naturalHeight * FLOW_PNG_SCALE));
+      const ink = canvas.getContext('2d');
+      if (!ink) {
+        reject(new Error('This window cannot make a picture.'));
+        return;
+      }
+      // Painted again here: a PNG has no transparency to fall back on once it is
+      // dropped into something with a page color of its own.
+      ink.fillStyle = flowExportBackground();
+      ink.fillRect(0, 0, canvas.width, canvas.height);
+      ink.drawImage(picture, 0, 0, canvas.width, canvas.height);
+      resolve((canvas.toDataURL('image/png').split(',')[1] || '').trim());
+    };
+    picture.onerror = () => reject(new Error('The drawing could not be turned into a picture.'));
+    picture.src = 'data:image/svg+xml;base64,' + flowBase64(svgText);
+  });
+}
+
+// The host is handed finished bytes and asked only where they go: it shows the
+// Save dialog, writes the file, and says how it went.
+async function exportFlowDiagram(kind) {
+  if (!flowSession) return;
+  closeFlowLabelBox(true);
+  closeFlowMenu();
+  try {
+    if (kind === 'md') {
+      send({ command: 'exportDiagram', format: 'md', data: '```mermaid\n' + flowSession.text + '\n```\n' });
+      return;
+    }
+    const drawing = await flowDrawingSvg();
+    if (!drawing) return;
+    send({ command: 'exportDiagram', format: 'png', data: await flowExportPngBase64(drawing) });
+  } catch (error) {
+    leafToast((error && error.message) || 'That diagram could not be exported.', 'error');
+  }
+}
+
+if (flowSheetExport) {
+  flowSheetExport.addEventListener('click', () => {
+    const spot = flowSheetExport.getBoundingClientRect();
+    openFlowMenuWith(
+      spot.left,
+      spot.bottom + 6,
+      FLOW_EXPORTS.map((kind) => ({
+        label: kind.label,
+        hint: kind.hint,
+        run: () => exportFlowDiagram(kind.id),
+      })),
+      false,
+    );
+  });
 }
 
 // ---- the two ways in -------------------------------------------------------

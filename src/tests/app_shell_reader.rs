@@ -164,12 +164,13 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         ".document-minimap-preview a.glossary-term {\n  color: inherit;\n}",
     );
 
-    // The thumbnail is a real-text clone, never an abstract canvas: no 2D context,
-    // no palette, no line-model rows. Checked across both the shell markup/script
-    // and the linked stylesheet, since the styles are not inlined.
+    // The thumbnail is a real-text clone, never an abstract canvas: no drawing
+    // surface of its own, no palette, no line-model rows. Named markers rather
+    // than "no 2D context anywhere" — the diagram export rasterizes one. Checked
+    // across the shell and the linked stylesheet, since the styles are not inlined.
     for forbidden in [
         "document-minimap-canvas",
-        "canvas.getContext('2d')",
+        "minimapCanvas",
         "function drawDocumentMinimapCanvas() {",
         "const scaleY = cssHeight / model.line_count;",
         "readColor('--minimap-heading'",
@@ -293,6 +294,22 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
         "runtimes must be self-hosted, not loaded from a CDN"
     );
     assert!(html.contains(LOCAL_ASSET_PROTOCOL));
+}
+
+#[test]
+fn a_diagram_bound_for_a_picture_puts_its_labels_in_text() {
+    // A mermaid label is a `<foreignObject>` holding a `<div>`, and an SVG loaded
+    // as an image drops one outright — which came out as boxes with nothing
+    // written in them. Stated on every call, not only the picture's: initialize
+    // merges, so a config quiet about it leaves that answer behind for the page.
+    let html = app_shell_html();
+
+    assert_contains(
+        &html,
+        "mermaid.initialize(mermaidRuntimeConfig({ htmlLabels: false }));",
+    );
+    assert_contains(&html, "    htmlLabels,\n    flowchart: { htmlLabels },");
+    assert_contains(&html, "mermaid.initialize(mermaidRuntimeConfig())");
 }
 
 #[test]
@@ -582,7 +599,12 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
             "function captureReaderScrollAnchor() {",
             // Capture and restore share one cached block list so a serialized
             // {section, block} anchor always resolves back to the element it named.
-            "readerAnchorBlocks = Array.from(source.querySelectorAll(READER_ANCHOR_SELECTOR));",
+            "readerAnchorBlocks = Array.from(source.querySelectorAll(READER_ANCHOR_SELECTOR)).filter(",
+            // And never what is inside a drawing. A mermaid label is a `<p>` in a
+            // `<foreignObject>`, so a page of diagrams grows hundreds of them the
+            // moment they land — each taking a slot in this list, above the
+            // reader, walking the restore back toward the top a batch at a time.
+            "(block) => !block.closest('svg'),",
             "const blocks = readerAnchorBlockList(source);",
             "return { section, block: targetIndex - (sectionIndex < 0 ? 0 : sectionIndex), offsetY };",
             "function resolveReaderAnchorElement(anchor) {",

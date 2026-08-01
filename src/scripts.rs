@@ -319,6 +319,13 @@ pub fn error_toast_script(message: &str) -> String {
     format!("window.leafShowError({message});")
 }
 
+/// The same, for something that worked — a file written where the person asked
+/// for it. Silence reads as nothing having happened.
+pub fn notice_toast_script(message: &str) -> String {
+    let message = serde_json::to_string(message).expect("toast message serializes");
+    format!("window.leafShowNotice({message});")
+}
+
 /// Re-fetch the local images on screen. Sent when an image file changes: nothing
 /// to re-render, but the web view would otherwise keep the copy it decoded.
 pub fn image_refresh_script() -> String {

@@ -71,6 +71,31 @@ window.leafReloadDocument = (state) => {
     });
   });
 };
+// Re-render the document the page already has, staying where the reader is. For
+// the page's own re-renders — the reading padlock — where the text did not change
+// and the only reason to rebuild is that the blocks bind differently.
+// renderState() replaces the document body, and the scroll goes with it.
+function renderStateKeepingPlace() {
+  const anchor = captureReaderScrollAnchor();
+  // Nothing on screen to hold onto — a document still arriving. Let the render
+  // land wherever it was already going to.
+  if (!anchor) {
+    renderState();
+    return;
+  }
+  resetReaderScrollOnNextRender = false;
+  renderState();
+  readerScrollAnchor = anchor;
+  // Restored before the paint, so the toggle never flashes at the top for a
+  // frame, and again next frame once the fresh document has settled.
+  restoreReaderScrollAnchor(anchor);
+  updateMinimapViewport();
+  window.requestAnimationFrame(() => {
+    restoreReaderScrollAnchor(anchor);
+    readerScrollAnchor = captureReaderScrollAnchor();
+    updateMinimapViewport();
+  });
+}
 // Switch to another tab and land where it was last left. `anchor` is a content
 // anchor that survives the re-render, null the first time (starts at the top).
 // Skips the reset-to-top that leafSetState runs so a tab click never jumps up.

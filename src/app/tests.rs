@@ -928,3 +928,41 @@ fn a_tab_starts_with_nothing_cached_and_keeps_what_it_renders() {
         "one tab's render is not another tab's"
     );
 }
+
+#[test]
+fn an_exported_picture_is_decoded_exactly_or_not_at_all() {
+    // A PNG reaches the host as base64 because IPC carries a string. The bytes
+    // are then written straight to a file, so a decoder that is off by one pads
+    // out a picture nobody can open — and a wrong byte is invisible until then.
+    let round_trip = |bytes: &[u8], encoded: &str| {
+        assert_eq!(
+            decode_base64(encoded).as_deref(),
+            Some(bytes),
+            "{encoded} did not come back as its bytes"
+        );
+    };
+
+    round_trip(b"", "");
+    round_trip(b"f", "Zg==");
+    round_trip(b"fo", "Zm8=");
+    round_trip(b"foo", "Zm9v");
+    round_trip(b"foob", "Zm9vYg==");
+    round_trip(b"fooba", "Zm9vYmE=");
+    round_trip(b"foobar", "Zm9vYmFy");
+    // The first eight bytes of every PNG, which is what the page will send.
+    round_trip(
+        &[0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a],
+        "iVBORw0KGgo=",
+    );
+    // Both of the last two alphabet characters, and every bit set.
+    round_trip(&[0xff, 0xff, 0xff], "////");
+    round_trip(&[0xfb, 0xff, 0xfe], "+//+");
+    // A data URL split across lines is still the same picture.
+    round_trip(b"foobar", "Zm9v\nYmFy\r\n");
+
+    // Anything that is not base64 is refused whole rather than half-decoded:
+    // a truncated picture written to disk looks like a file and is not one.
+    assert_eq!(decode_base64("data:image/png;base64,Zm9v"), None);
+    assert_eq!(decode_base64("Zm9v*"), None);
+    assert_eq!(decode_base64("Zm9-v"), None);
+}

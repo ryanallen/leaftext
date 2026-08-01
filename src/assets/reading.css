@@ -3570,6 +3570,35 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-body pre.mermaid {
   contain: layout;
 }
+/* A diagram not drawn yet is not its own source code — showing that text gives
+   the reader words that vanish a second later. The ink goes, the block keeps its
+   laid-out height, and a spinner stands in the middle. A diagram mermaid refused
+   keeps everything: it drew its own error in there, and that is the answer. */
+.document-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]) {
+  min-height: 88px;
+  color: transparent;
+  overflow: hidden;
+  user-select: none;
+}
+.document-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"])::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: var(--leaf-radius-full);
+  border: 2px solid color-mix(in srgb, var(--preview-foreground) 22%, transparent);
+  border-top-color: var(--accent);
+  animation: leaf-reader-spin 0.8s linear infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .document-body pre.mermaid:not([data-processed="true"])::after {
+    animation-duration: 1.6s;
+  }
+}
 .document-body pre.highlight::before,
 .document-body pre.mermaid::before {
   content: attr(data-language);
@@ -4915,6 +4944,11 @@ body.is-block-dragging .document-body [data-src-start] {
   gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
+  /* The sheet covers the app bar, so this strip is what the window is dragged
+     by while it is open — and a drag must not sweep a selection across the
+     title on the way. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 .flow-sheet-title {
   font-size: 14px;
@@ -4924,6 +4958,7 @@ body.is-block-dragging .document-body [data-src-start] {
   display: flex;
   gap: 8px;
 }
+.flow-sheet-export,
 .flow-sheet-cancel,
 .flow-sheet-save {
   padding: 7px 14px;
@@ -4941,9 +4976,14 @@ body.is-block-dragging .document-body [data-src-start] {
   color: var(--app-action-foreground);
   font-weight: 700;
 }
+.flow-sheet-export:hover,
 .flow-sheet-cancel:hover {
   border-color: var(--border-strong);
   background: var(--surface-muted);
+}
+.flow-sheet-export:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .flow-sheet-save:hover {
   background: var(--app-action-hover-background);
@@ -5060,17 +5100,23 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-zoom {
   display: flex;
 }
+/* Shaped like the reading view's diagram controls (.mermaid-zoom), on the
+   sheet's own control surface so it sits with the Flow picker beside it. */
 .flow-zoom button {
-  min-width: 28px;
-  padding: 5px 7px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border: 1px solid var(--settings-control-border);
   border-radius: 0;
   background: var(--settings-control-background);
-  color: var(--foreground);
-  font: inherit;
-  font-size: 12px;
-  line-height: 1;
+  color: var(--app-muted-foreground);
   cursor: pointer;
+}
+.flow-zoom svg {
+  width: 16px;
+  height: 16px;
 }
 .flow-zoom button:first-child {
   border-radius: var(--leaf-radius-md) 0 0 var(--leaf-radius-md);
@@ -5082,7 +5128,9 @@ body.is-block-dragging .document-body [data-src-start] {
   border-left: 0;
 }
 .flow-zoom button:hover {
+  border-color: var(--border-strong);
   background: var(--surface-muted);
+  color: var(--foreground);
 }
 .flow-sheet-direction {
   display: flex;
@@ -5283,9 +5331,12 @@ body.is-block-dragging .document-body [data-src-start] {
   z-index: 4;
   min-width: 180px;
   padding: 4px;
-  border: 1px solid var(--border);
+  /* The app-chrome pair, the same one .context-menu is built from: the reading
+     surfaces this used are two shades that a dark theme draws almost alike, so
+     the hover was there and invisible. */
+  border: 1px solid var(--app-border);
   border-radius: var(--leaf-radius-lg);
-  background: var(--surface-elevated);
+  background: var(--app-surface-elevated);
   box-shadow: var(--leaf-shadow-tooltip);
   font-size: 12.5px;
 }
@@ -5319,16 +5370,17 @@ body.is-block-dragging .document-body [data-src-start] {
   padding: 6px 9px;
   border: 0;
   border-radius: var(--leaf-radius-md);
-  background: none;
-  color: var(--foreground);
+  background: transparent;
+  color: var(--settings-control-foreground);
   font: inherit;
   text-align: left;
   white-space: nowrap;
   cursor: pointer;
 }
-.flow-menu-item:hover {
-  background: var(--surface-muted);
-  border-color: transparent;
+.flow-menu-item:hover,
+.flow-menu-item:focus-visible {
+  background: var(--app-surface-muted);
+  outline: none;
 }
 .flow-menu-item .flow-chip {
   flex: none;
