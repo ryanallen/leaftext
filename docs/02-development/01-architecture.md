@@ -206,8 +206,8 @@ Key `IpcCommand` variants include:
 | `setLibraryState`      | Entering a folder, or stepping back out of one |
 | `setLibraryLayout`     | Library pane resize or collapse       |
 | `setWindowChrome`      | Theme change repainting the window border and dark-mode flag (Windows) |
-| `windowDrag`           | Frameless title bar: start moving the window (mousedown on empty app-bar space) |
-| `windowMinimize` / `windowToggleMaximize` / `windowClose` | The custom minimize / maximize / close buttons on the frameless Windows title bar |
+| `windowDrag`           | Frameless title bar: start moving the window (a press on empty app-bar space) |
+| `windowMinimize` / `windowToggleMaximize` / `windowClose` | The custom minimize / maximize / close buttons on the frameless Windows title bar. A double-click on empty app-bar space also sends `windowToggleMaximize`, decided on the second press: dragging hands the window to a Windows move loop that swallows the page's `dblclick` |
 
 Results flow back from Rust to JavaScript via `webview.evaluate_script()`, calling `window.leafSetState()`, `window.leafSwitchTab()`, `window.leafSetWorkspace()` (tabs with no document, for a tab opening straight into the [source view](../01-features/07-editing.md#code-view)), `window.leafReloadDocument()`, `window.leafSetNavigation()`, `window.leafSetLibraryFolder()`, `window.leafSetVaults()`, `window.leafSetVaultStatus()`, `window.leafSetVaultGit()`, `window.leafSetGraph()`, `window.leafSetSearchResults()`, `window.leafShowGlossary()`, `window.leafShowCodeView()`, `window.leafSourceUpdated()`, `window.leafSaved()`, `window.leafCodeIntelAnswer()` (every [typing help](../01-features/07-editing.md#typing-help) answer, matched to its ask by an echoed token), `window.leafRefreshImages()`, and related entry points.
 

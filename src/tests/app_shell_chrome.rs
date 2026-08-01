@@ -781,6 +781,32 @@ fn app_shell_fills_every_placeholder() {
 }
 
 #[test]
+fn the_app_bar_maximizes_from_the_second_press_not_from_a_dblclick() {
+    // A drag hands the window to a Windows move loop that swallows every later
+    // mouse event, so an app-bar dblclick listener is dead code.
+    let html = app_shell_html();
+    assert!(
+        !html.contains("appBar.addEventListener('dblclick'"),
+        "an app-bar dblclick can never fire once a drag starts; decide on mousedown"
+    );
+    let handler = html
+        .split_once("appBar.addEventListener('mousedown'")
+        .expect("the app bar decides window drags on mousedown")
+        .1;
+    let handler = &handler[..handler.find("\n  });").expect("the handler closes")];
+    assert!(
+        handler.contains("windowToggleMaximize") && handler.contains("event.detail === 2"),
+        "the second press is what maximizes: {handler}"
+    );
+    // A dragged window carries the page under the cursor, so a press just after
+    // a quick drag also counts as 2. Only the window's corner tells them apart.
+    assert!(
+        handler.contains("window.screenX"),
+        "detail alone maximizes after a fast drag; check the window stayed put: {handler}"
+    );
+}
+
+#[test]
 fn document_extensions_ride_to_the_page_from_the_format_table() {
     // The boot script must carry every extension the format table declares.
     let script = initial_document_exts_script();

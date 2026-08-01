@@ -274,11 +274,24 @@ if (window.__leafFrameless) {
   const isDragTarget = (target) =>
     target &&
     !target.closest('button, a, input, select, textarea, [role="tab"], .tab, .window-controls, .settings-menu');
+  // Maximize is decided on the way down: a drag hands the window to a Windows
+  // move loop that swallows every later mouse event, so an app-bar dblclick can
+  // never fire. event.detail is the click count, but it counts in page
+  // coordinates and a dragged window carries the page under the cursor — so a
+  // press just after a quick drag also arrives as 2. An unmoved window.screenX
+  // is what tells the second click apart from the tail of a drag.
+  let pressedAtX = null;
+  let pressedAtY = null;
   appBar.addEventListener('mousedown', (event) => {
-    if (event.button === 0 && isDragTarget(event.target)) send({ command: 'windowDrag' });
-  });
-  appBar.addEventListener('dblclick', (event) => {
-    if (isDragTarget(event.target)) send({ command: 'windowToggleMaximize' });
+    const wasX = pressedAtX;
+    const wasY = pressedAtY;
+    pressedAtX = null;
+    pressedAtY = null;
+    if (event.button !== 0 || !isDragTarget(event.target)) return;
+    pressedAtX = window.screenX;
+    pressedAtY = window.screenY;
+    const windowStayedPut = window.screenX === wasX && window.screenY === wasY;
+    send({ command: event.detail === 2 && windowStayedPut ? 'windowToggleMaximize' : 'windowDrag' });
   });
 }
 // Reflect the real maximized state: body.is-maximized swaps the maximize glyph
