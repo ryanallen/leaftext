@@ -71,6 +71,12 @@ pub(crate) const COMMENT_ICON_SVG: &str = include_str!("assets/message-square.sv
 /// One glyph for both, because both open the same sheet.
 pub(crate) const WORKFLOW_ICON_SVG: &str = include_str!("assets/workflow.svg");
 
+/// How a drawn diagram is looked at: a lens that takes more or less in, and the
+/// frame that puts the whole thing back the way the page drew it.
+pub(crate) const ZOOM_IN_ICON_SVG: &str = include_str!("assets/zoom-in.svg");
+pub(crate) const ZOOM_OUT_ICON_SVG: &str = include_str!("assets/zoom-out.svg");
+pub(crate) const FIT_ICON_SVG: &str = include_str!("assets/fit.svg");
+
 /// The selection toolbar's formats. Letterforms for the ones that have one, so
 /// the bar reads the way every other editor's does; the block buttons reuse the
 /// insert row's heading and quote glyphs, because they make the same two things.

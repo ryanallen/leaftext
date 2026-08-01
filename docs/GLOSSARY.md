@@ -163,7 +163,7 @@ the [typing help](GLOSSARY.md#typing-help) wand, [Undo](GLOSSARY.md#undo) and
 A full-window sheet for drawing a [Mermaid](GLOSSARY.md#mermaid-diagram) flowchart
 instead of typing it: a canvas on the left, the Mermaid text on the right, each
 following the other. Open it from the [insert row](GLOSSARY.md#insert-row) or from
-the corner button on a diagram already in the page. Nothing is written until Save.
+the flowchart button on a diagram already in the page. Nothing is written until Save.
 See [Editing](01-features/07-editing.md#the-flowchart-editor).
 
 ## Footnote
@@ -312,8 +312,10 @@ way. Bare commit hashes are deliberately not linked.
 
 A `mermaid` fenced [code block](GLOSSARY.md#code-block), drawn as a diagram by the
 bundled Mermaid runtime — fully offline, in your [theme's](GLOSSARY.md#theme-family)
-own colors and body font. Click one on an unlocked page to edit its text, or use its
-corner button to open the [flowchart editor](GLOSSARY.md#flowchart-editor).
+own colors and body font. Drag the drawing to move it inside its cell, and zoom with
+`Ctrl` and the wheel or the buttons in its corner. On an unlocked page two more
+buttons appear: one opens its text to edit, the other the
+[flowchart editor](GLOSSARY.md#flowchart-editor).
 
 ## Minimap
 

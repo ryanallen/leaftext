@@ -3613,24 +3613,60 @@ body.is-block-dragging .document-body [data-src-start] {
   display: block;
 }
 .document-body pre.mermaid[data-processed="true"] {
-  background: transparent;
+  /* The code block's own cell, kept rather than cleared: a diagram you drag
+     around needs an edge to be inside of. The grain is restated here because
+     the shared rule further down loses to this selector — same token and the
+     same 2px window-anchored lattice, so it is one texture with every other
+     reading surface. */
+  background-color: var(--code-block-background);
+  background-image: radial-gradient(circle, var(--reader-surface-grain) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
   border: 0;
   color: var(--preview-foreground);
-  padding: 0;
+  padding: 0.75em;
   text-align: center;
+  /* A window onto the drawing: zooming moves the picture inside rather than the
+     page around it. At life size nothing is clipped, so a page nobody zooms
+     looks exactly as it did. */
+  overflow: hidden;
+  /* Grab, not the text caret .leaf-editable gives every editable block: the
+     source opens from the corner button now, not from a press. */
+  cursor: grab;
 }
 .document-body pre.mermaid[data-processed="true"]::before {
   content: none;
 }
-.document-body pre.mermaid[data-processed="true"] svg {
+/* Direct child, always: the drawing is the block's own SVG, and the corner
+   buttons hold SVGs of their own. A descendant selector here takes every icon
+   with it — they pile up at the pan offset and leave empty buttons behind. */
+.document-body pre.mermaid[data-processed="true"] > svg {
   display: inline-block;
   height: auto;
   max-width: 100%;
 }
-/* A diagram swapped for its source is a code block again. The rules above strip
-   the block's ground, padding and alignment so the drawing can float in the
-   page, and they outrank .leaf-editing-source — so without this, clicking a
-   diagram leaves its mermaid centered on bare page. */
+/* Moved or zoomed, the drawing comes out of the flow and the block holds the
+   height the page gave it, so the words around a diagram never shift. Only ever
+   translated — a CSS scale re-lays out the labels inside mermaid's
+   foreignObjects against boxes that did not grow with them and clips every one,
+   so the size is set on the SVG instead. */
+.document-body pre.mermaid[data-processed="true"].is-moved {
+  height: var(--mermaid-box-height);
+}
+.document-body pre.mermaid[data-processed="true"].is-moved > svg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) translate(var(--mermaid-pan-x, 0px), var(--mermaid-pan-y, 0px));
+}
+.document-body pre.mermaid[data-processed="true"].is-panning {
+  cursor: grabbing;
+}
+/* A diagram swapped for its source is a code block again. The rules above center
+   it, tighten its padding and print it in the preview ink, and they outrank
+   .leaf-editing-source — so without this the mermaid sits centered in a diagram's
+   cell rather than reading as the source it now is. */
 .document-body pre.mermaid[data-processed="true"][data-editing-source="true"] {
   background: var(--code-block-background);
   color: var(--code-block-foreground);
@@ -4005,10 +4041,10 @@ body.is-block-dragging .document-body [data-src-start] {
 /* The chrome's grain over the reading view's tinted surfaces, so a code block or
    table header reads as a dithered cell rather than a flat wash. Must stay after
    the rules that set those fills: each uses the `background:` shorthand, which at
-   equal specificity would blank the image. A rendered Mermaid diagram and the
-   frontmatter table drop it on their own — both clear the fill at higher
-   specificity, taking the grain with it. Cells only — the code view is a whole page,
-   so graining it dithers the editor. */
+   equal specificity would blank the image. The frontmatter table drops it on its
+   own — it clears the fill at higher specificity, taking the grain with it; a
+   rendered diagram outranks this rule too and so restates it. Cells only — the
+   code view is a whole page, so graining it dithers the editor. */
 .document-body .document-outline,
 .document-body .tei-front,
 .document-body pre,
@@ -5377,40 +5413,73 @@ body.is-block-dragging .document-body [data-src-start] {
     cursor: row-resize;
   }
 }
-/* The corner button that reopens a drawn diagram in the sheet. Positioned on
-   the block itself, and shown on hover so it is absent from a page being read. */
+/* A drawn diagram's corner controls: what it can be opened as, top right, and
+   how it is looked at, bottom right. Both sit on the block itself and appear on
+   hover, so a page being read carries none of them. */
 .document-body pre.mermaid {
   position: relative;
 }
-.mermaid-edit {
+.mermaid-tools,
+.mermaid-zoom {
   position: absolute;
-  top: 6px;
   right: 6px;
+  display: flex;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.mermaid-tools {
+  top: 6px;
+  gap: 6px;
+}
+.mermaid-zoom {
+  bottom: 6px;
+}
+.document-body pre.mermaid:hover .mermaid-tools,
+.document-body pre.mermaid:hover .mermaid-zoom,
+.mermaid-tools:focus-within,
+.mermaid-zoom:focus-within {
+  opacity: 1;
+}
+.mermaid-tool,
+.mermaid-zoom button {
   display: grid;
   place-items: center;
-  width: 28px;
   height: 28px;
   padding: 0;
   border: 1px solid var(--border);
   border-radius: var(--leaf-radius-md);
   background: var(--surface-elevated);
   color: var(--app-muted-foreground);
-  opacity: 0;
   cursor: pointer;
-  transition: opacity 0.12s ease;
 }
-.document-body pre.mermaid:hover .mermaid-edit,
-.mermaid-edit:focus-visible {
-  opacity: 1;
+.mermaid-tool,
+.mermaid-zoom button {
+  width: 28px;
 }
-.mermaid-edit:hover {
+.mermaid-tool:hover,
+.mermaid-zoom button:hover {
   border-color: var(--border-strong);
   background: var(--surface-muted);
   color: var(--foreground);
 }
-.mermaid-edit svg {
+.mermaid-tool svg,
+.mermaid-zoom svg {
   width: 16px;
   height: 16px;
+}
+/* One control in three parts, so it reads as the zoom rather than three buttons
+   that happen to be near each other. */
+.mermaid-zoom button {
+  border-radius: 0;
+}
+.mermaid-zoom button:first-child {
+  border-radius: var(--leaf-radius-md) 0 0 var(--leaf-radius-md);
+}
+.mermaid-zoom button:last-child {
+  border-radius: 0 var(--leaf-radius-md) var(--leaf-radius-md) 0;
+}
+.mermaid-zoom button + button {
+  border-left: 0;
 }
 @media (min-width: 760px) {
   .glossary-sheet,

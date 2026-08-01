@@ -448,10 +448,17 @@ fn reading_surfaces_carry_the_chrome_dot_grain() {
     }
 
     // The grain rule has to follow the fills it grains: at equal specificity a
-    // `background:` shorthand declared later blanks the image again.
-    let grain = css
-        .find("var(--reader-surface-grain)")
-        .expect("reader grain rule");
+    // `background:` shorthand declared later blanks the image again. Found by its
+    // own selector list, not by the first mention of the token — a surface that
+    // outranks this rule restates the grain for itself, and the first mention is
+    // one of those.
+    let shared = css
+        .find(".document-body tr:nth-child(2n) td {")
+        .expect("the shared grain rule");
+    let grain = shared
+        + css[shared..]
+            .find("var(--reader-surface-grain)")
+            .expect("reader grain rule");
     for fill in [
         ".document-body .document-outline {",
         ".document-body pre {",
@@ -1022,4 +1029,34 @@ fn anything_that_hides_itself_is_allowed_to() {
             );
         }
     }
+}
+
+#[test]
+fn a_diagrams_own_drawing_is_moved_and_its_button_icons_are_not() {
+    // A drawn diagram is a block holding two things that are both SVG: its own
+    // drawing, and the icons inside the corner buttons. Every rule that sizes or
+    // moves the drawing has to say `> svg`, because the descendant form takes the
+    // icons too — they fly to the pan offset and the buttons are left empty,
+    // which is what shipped the first time this was written.
+    let css = reading_mode_css();
+    let block = ".document-body pre.mermaid[data-processed=\"true\"]";
+
+    for rule in css.split(block).skip(1) {
+        let Some(selector) = rule.split('{').next() else {
+            continue;
+        };
+        // Only the rules that reach an SVG inside the block.
+        if !selector.contains("svg") {
+            continue;
+        }
+        assert!(
+            selector.contains("> svg"),
+            "`{block}{selector}` reaches every SVG in the block, including the \
+             corner buttons' icons. Say `> svg` so it is the drawing alone."
+        );
+    }
+
+    // And the rules themselves are still here to be checked.
+    assert_contains(css, &format!("{block} > svg {{"));
+    assert_contains(css, &format!("{block}.is-moved > svg {{"));
 }

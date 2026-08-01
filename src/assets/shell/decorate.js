@@ -481,7 +481,7 @@ function renderMermaidDiagrams() {
     if (cached) {
       diagram.innerHTML = cached;
       diagram.dataset.processed = 'true';
-      addMermaidEditButton(diagram);
+      addMermaidControls(diagram);
       restored = true;
       return;
     }
@@ -545,7 +545,7 @@ function drawMermaidBatches(diagrams, generation) {
             // Memo first, button second: the cache holds innerHTML, and a button
             // baked into it would come back on every restore and stack up.
             mermaidRenderCache.set(mermaidCacheKey(diagram.__mermaidSource), diagram.innerHTML);
-            addMermaidEditButton(diagram);
+            addMermaidControls(diagram);
           }
           // Each batch changed the block layout; drop the cached anchor list, and
           // let whatever else watches the page catch up before the next one.
@@ -561,41 +561,266 @@ function drawMermaidBatches(diagrams, generation) {
     });
 }
 
-// A drawn diagram gets a corner button that reopens it in the flowchart sheet.
-// A plain click still swaps to the source in place, so the button takes nothing
-// away.
-function addMermaidEditButton(diagram) {
+// A drawn diagram gets its corner controls. The drawing itself is dragged to
+// move it, so the source opens from a button here rather than from a press
+// anywhere on the block — see wireSourceEditable, which stands aside for these.
+function addMermaidControls(diagram) {
+  addMermaidZoomControls(diagram);
+  addMermaidEditButtons(diagram);
+}
+
+function addMermaidEditButtons(diagram) {
   if (currentDocumentFormat !== 'markdown' || !readerEditingAllowed()) return;
   if (!Number.isFinite(Number(diagram.dataset.srcStart)) || !Number.isFinite(Number(diagram.dataset.srcEnd))) return;
-  if (diagram.querySelector('.mermaid-edit')) return;
+  if (diagram.querySelector('.mermaid-tools')) return;
+  const tools = document.createElement('div');
+  tools.className = 'mermaid-tools';
+  tools.appendChild(mermaidToolButton('source', 'Edit the Mermaid text of this diagram', `{{CODE_VIEW_ICON_SVG}}`));
+  tools.appendChild(mermaidToolButton('sheet', 'Open in the flowchart editor, to draw it', `{{WORKFLOW_ICON_SVG}}`));
+  diagram.appendChild(tools);
+}
+
+function mermaidToolButton(tool, label, icon) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'mermaid-edit';
-  button.title = 'Open in the flowchart editor';
-  button.setAttribute('aria-label', 'Open in the flowchart editor');
-  button.innerHTML = `{{WORKFLOW_ICON_SVG}}`;
-  diagram.appendChild(button);
+  button.className = 'mermaid-tool';
+  button.dataset.mermaidTool = tool;
+  button.title = label;
+  button.setAttribute('aria-label', label);
+  button.innerHTML = icon;
+  return button;
+}
+
+// Zoom is not an editing affordance: a locked document gets it too. Each tooltip
+// names the other way of doing the same thing, because the wheel and the drag
+// have nothing on screen to announce them.
+const MERMAID_ZOOM_BUTTONS = [
+  ['out', 'Zoom out — or Ctrl and the wheel', `{{ZOOM_OUT_ICON_SVG}}`],
+  ['fit', 'Whole diagram, back where it started — or double-click it', `{{FIT_ICON_SVG}}`],
+  ['in', 'Zoom in — or Ctrl and the wheel. Drag the diagram to move it', `{{ZOOM_IN_ICON_SVG}}`],
+];
+function addMermaidZoomControls(diagram) {
+  if (diagram.querySelector('.mermaid-zoom')) return;
+  const group = document.createElement('div');
+  group.className = 'mermaid-zoom';
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', 'Zoom');
+  for (const [step, label, icon] of MERMAID_ZOOM_BUTTONS) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.mermaidZoom = step;
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.innerHTML = icon;
+    group.appendChild(button);
+  }
+  diagram.appendChild(group);
+}
+
+// ---- the drawing inside its box --------------------------------------------
+
+// The block keeps the height it was laid out at and the drawing moves inside it,
+// so leaning into one diagram never shifts the words around it.
+const MERMAID_ZOOM_MIN = 0.5;
+const MERMAID_ZOOM_MAX = 8;
+
+// Held on the block, never as a style on the SVG: the render cache stores the
+// SVG's own markup, and a size baked into that would come back zoomed on every
+// restore.
+function mermaidView(diagram) {
+  return diagram.__mermaidView || { zoom: 1, x: 0, y: 0 };
+}
+
+// Panning is bounded by the box, not by the drawing's edges: a diagram that fills
+// its box still has to move, because a box taller than the window is read by
+// dragging it up rather than by scrolling the page away from it. This much stays
+// inside, so it can never be pushed out of sight and lost.
+const MERMAID_PAN_KEEP = 48;
+
+// The drawing as it sits on an untouched page, taken the first time one is moved
+// — the last moment it is still what the page laid out. Zoom counts from here,
+// not from the viewBox: a diagram wider than the column is already drawn shrunk
+// to fit, and that is what "life size" has to mean or Fit would not put it back.
+function mermaidNatural(diagram, svg) {
+  if (!diagram.__mermaidNatural) {
+    const drawn = svg.getBoundingClientRect();
+    diagram.__mermaidNatural = {
+      width: drawn.width,
+      height: drawn.height,
+      boxHeight: diagram.getBoundingClientRect().height,
+      attrWidth: svg.getAttribute('width'),
+      attrHeight: svg.getAttribute('height'),
+      maxWidth: svg.style.maxWidth,
+    };
+  }
+  return diagram.__mermaidNatural;
+}
+
+// The SVG is resized, never scaled: a CSS scale re-lays out the HTML inside
+// mermaid's foreignObject labels against boxes that did not grow with them, and
+// every label loses its last letter. The flowchart sheet sizes its stage the
+// same way, for the same reason.
+function setMermaidView(diagram, next) {
+  // The block's own drawing, not the icons in the corner buttons.
+  const svg = diagram.querySelector(':scope > svg');
+  if (!svg) return;
+  const natural = mermaidNatural(diagram, svg);
+  const zoom = Math.max(MERMAID_ZOOM_MIN, Math.min(MERMAID_ZOOM_MAX, next.zoom));
+  const width = natural.width * zoom;
+  const height = natural.height * zoom;
+  const roomX = Math.max(0, (width + diagram.clientWidth) / 2 - MERMAID_PAN_KEEP);
+  const roomY = Math.max(0, (height + natural.boxHeight) / 2 - MERMAID_PAN_KEEP);
+  const view = {
+    zoom,
+    x: Math.max(-roomX, Math.min(roomX, next.x)),
+    y: Math.max(-roomY, Math.min(roomY, next.y)),
+  };
+  diagram.__mermaidView = view;
+  if (view.zoom === 1 && view.x === 0 && view.y === 0) {
+    resetMermaidView(diagram, svg, natural);
+    return;
+  }
+  // Out of flow, so the block keeps the height the page gave it however big the
+  // drawing gets.
+  diagram.classList.add('is-moved');
+  diagram.style.setProperty('--mermaid-box-height', natural.boxHeight + 'px');
+  diagram.style.setProperty('--mermaid-pan-x', view.x + 'px');
+  diagram.style.setProperty('--mermaid-pan-y', view.y + 'px');
+  svg.setAttribute('width', String(Math.max(1, Math.round(width))));
+  svg.setAttribute('height', String(Math.max(1, Math.round(height))));
+  svg.style.maxWidth = 'none';
+}
+
+// Back to the drawing the page laid out, mermaid's own sizing and all.
+function resetMermaidView(diagram, svg, natural) {
+  diagram.classList.remove('is-moved');
+  diagram.style.removeProperty('--mermaid-box-height');
+  diagram.style.removeProperty('--mermaid-pan-x');
+  diagram.style.removeProperty('--mermaid-pan-y');
+  if (natural.attrWidth == null) svg.removeAttribute('width');
+  else svg.setAttribute('width', natural.attrWidth);
+  if (natural.attrHeight == null) svg.removeAttribute('height');
+  else svg.setAttribute('height', natural.attrHeight);
+  svg.style.maxWidth = natural.maxWidth;
+}
+
+// Zoom about a point, holding whatever sits under it still — otherwise leaning
+// in on one corner walks the thing you were looking at off the box.
+function zoomMermaidAt(diagram, factor, clientX, clientY) {
+  const view = mermaidView(diagram);
+  const zoom = Math.max(MERMAID_ZOOM_MIN, Math.min(MERMAID_ZOOM_MAX, view.zoom * factor));
+  const box = diagram.getBoundingClientRect();
+  const atX = clientX - (box.left + box.width / 2);
+  const atY = clientY - (box.top + box.height / 2);
+  const scale = zoom / view.zoom;
+  setMermaidView(diagram, {
+    zoom,
+    x: atX - (atX - view.x) * scale,
+    y: atY - (atY - view.y) * scale,
+  });
+}
+
+function mermaidCenterZoom(diagram, factor) {
+  const box = diagram.getBoundingClientRect();
+  zoomMermaidAt(diagram, factor, box.left + box.width / 2, box.top + box.height / 2);
+}
+
+// The drawn diagram under a pointer, or nothing — one swapped for its source is
+// a code block being typed in and answers to none of this.
+function mermaidDiagramFor(target) {
+  if (!target || !target.closest) return null;
+  const diagram = target.closest('pre.mermaid[data-processed="true"]');
+  if (!diagram || diagram.dataset.editingSource === 'true') return null;
+  return diagram;
 }
 
 // Delegated, not per-button: a diagram restored from its own rendered HTML (an
 // abandoned source edit does exactly that) brings the markup back without the
-// listeners. The capture pass is what keeps the press off the block underneath,
-// whose own pointerdown would swap the diagram to source before the click lands.
+// listeners. The capture pass keeps a press on a control off the block
+// underneath, whose gutter and selection handling would otherwise answer first.
+let mermaidPan = null;
 if (app) {
   app.addEventListener(
     'pointerdown',
     (event) => {
-      const button = event.target && event.target.closest ? event.target.closest('.mermaid-edit') : null;
-      if (button) event.stopPropagation();
+      const control = event.target && event.target.closest ? event.target.closest('.mermaid-tool, .mermaid-zoom button') : null;
+      if (control) event.stopPropagation();
     },
     true,
   );
-  app.addEventListener('click', (event) => {
-    const button = event.target && event.target.closest ? event.target.closest('.mermaid-edit') : null;
-    if (!button) return;
+  // Left or middle button, the two every canvas drags with.
+  app.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 && event.button !== 1) return;
+    const diagram = mermaidDiagramFor(event.target);
+    if (!diagram) return;
+    if (event.target.closest('.mermaid-tools, .mermaid-zoom, a')) return;
+    // Keeps the drag from selecting the labels it passes over. It holds focus
+    // where it was too, so a block being edited elsewhere is closed by hand.
+    if (document.activeElement && document.activeElement.isContentEditable) document.activeElement.blur();
     event.preventDefault();
-    const diagram = button.closest('pre.mermaid');
-    if (diagram) openMermaidBlockSheet(diagram);
+    mermaidPan = { diagram, pointer: event.pointerId, x: event.clientX, y: event.clientY, from: mermaidView(diagram) };
+    diagram.setPointerCapture(event.pointerId);
+    diagram.classList.add('is-panning');
+  });
+  app.addEventListener('pointermove', (event) => {
+    if (!mermaidPan || event.pointerId !== mermaidPan.pointer) return;
+    setMermaidView(mermaidPan.diagram, {
+      zoom: mermaidPan.from.zoom,
+      x: mermaidPan.from.x + (event.clientX - mermaidPan.x),
+      y: mermaidPan.from.y + (event.clientY - mermaidPan.y),
+    });
+  });
+  const endMermaidPan = () => {
+    if (!mermaidPan) return;
+    mermaidPan.diagram.classList.remove('is-panning');
+    mermaidPan = null;
+  };
+  app.addEventListener('pointerup', endMermaidPan);
+  app.addEventListener('pointercancel', endMermaidPan);
+  // Ctrl or Cmd and the wheel, the way every canvas does it — and what a trackpad
+  // pinch arrives as. A plain wheel is left alone so it still scrolls the page.
+  app.addEventListener(
+    'wheel',
+    (event) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      const diagram = mermaidDiagramFor(event.target);
+      if (!diagram) return;
+      event.preventDefault();
+      zoomMermaidAt(diagram, event.deltaY < 0 ? 1.1 : 1 / 1.1, event.clientX, event.clientY);
+    },
+    { passive: false },
+  );
+  app.addEventListener('click', (event) => {
+    if (!event.target || !event.target.closest) return;
+    const zoomButton = event.target.closest('.mermaid-zoom button');
+    if (zoomButton) {
+      event.preventDefault();
+      const diagram = zoomButton.closest('pre.mermaid');
+      if (!diagram) return;
+      const step = zoomButton.dataset.mermaidZoom;
+      if (step === 'fit') setMermaidView(diagram, { zoom: 1, x: 0, y: 0 });
+      else mermaidCenterZoom(diagram, step === 'in' ? 1.25 : 1 / 1.25);
+      return;
+    }
+    const tool = event.target.closest('.mermaid-tool');
+    if (!tool) return;
+    event.preventDefault();
+    const diagram = tool.closest('pre.mermaid');
+    if (!diagram) return;
+    if (tool.dataset.mermaidTool === 'source') startBlockSourceEdit(diagram);
+    else openMermaidBlockSheet(diagram);
+  });
+  // Double-click puts it back where it started, so there is a way out of a pan
+  // that went too far without reaching for the Fit button.
+  app.addEventListener('dblclick', (event) => {
+    const diagram = mermaidDiagramFor(event.target);
+    if (!diagram || event.target.closest('.mermaid-tools, .mermaid-zoom, a')) return;
+    setMermaidView(diagram, { zoom: 1, x: 0, y: 0 });
+  });
+  // Otherwise the middle button opens the web view's own scroll-anywhere puck
+  // over a diagram already being dragged with it.
+  app.addEventListener('auxclick', (event) => {
+    if (event.button === 1 && mermaidDiagramFor(event.target)) event.preventDefault();
   });
 }
 

@@ -634,12 +634,11 @@ function wireSourceEditable(el) {
       end = blockStart + utf8ByteLength(src.slice(0, span.to));
     }
   }
-  el.addEventListener('pointerdown', (event) => {
+  // Held on the block so a control elsewhere can open the same edit: a drawn
+  // diagram is dragged to pan, so its source comes from a corner button instead
+  // (decorate.js). Everything else still opens on a press.
+  el.__startSourceEdit = () => {
     if (el.dataset.editingSource === 'true') return;
-    // Let a link click navigate; source editing starts from a click on any
-    // non-link part of the block.
-    if (event.target && event.target.closest && event.target.closest('a')) return;
-    event.preventDefault();
     // Swapping a rendered block (often a tall image) for its one-line source
     // collapses its height; pin the reader to the block above first, or a near-top
     // image shrinking the document would clamp the scroll to the top. focus() must
@@ -658,6 +657,15 @@ function wireSourceEditable(el) {
       readerScrollAnchor = aboveAnchor;
       restoreReaderScrollAnchor(aboveAnchor);
     }
+  };
+  el.addEventListener('pointerdown', (event) => {
+    if (el.dataset.editingSource === 'true') return;
+    // Let a link click navigate; source editing starts from a click on any
+    // non-link part of the block.
+    if (event.target && event.target.closest && event.target.closest('a')) return;
+    if (el.dataset.processed === 'true' && el.classList.contains('mermaid')) return;
+    event.preventDefault();
+    el.__startSourceEdit();
   });
   el.addEventListener('blur', () => {
     if (el.dataset.editingSource !== 'true') return;
@@ -684,6 +692,12 @@ function wireSourceEditable(el) {
     commitBlockEdit(el, text, { start, end });
     // The host re-renders the document from the buffer, which restores styling.
   });
+}
+
+// A block opened from somewhere other than a press on it. Silent on a block that
+// was never wired: a diagram in a locked document has no edit to open.
+function startBlockSourceEdit(el) {
+  if (el && typeof el.__startSourceEdit === 'function') el.__startSourceEdit();
 }
 
 // Wire up every mapped block. Clean text blocks, tight lists, and tables edit

@@ -254,7 +254,11 @@ $$
 
 Diagrams take your theme's colors and body font — boxes the theme's muted surface, subgraphs its sunken one, arrows its muted ink, and a Gantt chart the theme's own active, done and critical colors. Switch theme and every diagram on the page is redrawn to match. The twelve-color scale a mindmap or pie chart cycles through is your theme's primary hue turned around the wheel, as described in [Themes → Diagrams](06-themes.md#diagrams).
 
-Three details worth knowing. Clicking a diagram on an unlocked page swaps it for the Mermaid behind it, so a diagram is editable in place like any other block ([Editing](07-editing.md)). Hovering one also shows a small button in its corner, which opens it in [the flowchart editor](07-editing.md#the-flowchart-editor) — a canvas beside the Mermaid text, for drawing a flowchart rather than typing it. And a `---` front-matter block inside a `mermaid` fence is stripped before the diagram is drawn, so `title:` and `config:` written that way have no effect — use a `%%{init: { ... }}%%` line instead.
+A drawn diagram sits in its own cell, on the same tint and dot grain as a code block, and you can look around inside it. Drag the drawing to move it; `Ctrl` and the wheel — or `Cmd`, or a trackpad pinch — to zoom, with buttons for the same in the corner. Zooming never changes the block's height, so the words around a diagram hold still while you lean into it, and **Fit** or a double-click puts it back. A plain wheel scrolls the page as always.
+
+Hovering a diagram on an unlocked page also shows two buttons in the opposite corner: one swaps it for the Mermaid behind it, editable in place like any other block ([Editing](07-editing.md)), and one opens it in [the flowchart editor](07-editing.md#the-flowchart-editor) — a canvas beside the Mermaid text, for drawing a flowchart rather than typing it.
+
+One more detail: a `---` front-matter block inside a `mermaid` fence is stripped before the diagram is drawn, so `title:` and `config:` written that way have no effect — use a `%%{init: { ... }}%%` line instead.
 
 ```mermaid
 flowchart TD
