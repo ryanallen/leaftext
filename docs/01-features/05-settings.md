@@ -16,11 +16,15 @@ Settings are owned by the Rust app rather than browser storage, which keeps them
 | [Pager](#pager) | On / Off | On |
 | [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus |
 
-Two more preferences are saved here but toggled elsewhere, where they apply: the [Speed Reader](#speed-reader) and [typing help](#typing-help).
+Four more preferences are saved here but toggled elsewhere, where they apply: the [Speed Reader](#speed-reader), [typing help](#typing-help), and [the two padlocks](#the-padlocks).
 
 **Speed Reader** is not in this panel. It is a reading-view tool on the [floating toolbar](02-navigation.md#the-floating-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest. The code view's [typing help](07-editing.md#typing-help) wand works the same way: toggled where it applies, saved here.
 
-Whether the rendered page can be typed into is **not** here. It is a padlock on the document in front of you — see [Editing](07-editing.md#the-padlock).
+### The padlocks
+
+Whether a document can be typed into is **not** in this panel either. It is the [padlock](07-editing.md#the-padlock) on the floating toolbar, and there are two — one for the reading view, one for the source — because unlocking the page you read is not consent to rewrite the file by hand.
+
+Both are saved (`reading_unlocked`, `code_unlocked`), so the answer you gave last time is the answer next launch, on every document. Both start locked.
 
 ## Open
 
@@ -48,6 +52,8 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
   "pager_enabled": true,
   "speed_reader_enabled": false,
   "code_intel_enabled": true,
+  "reading_unlocked": false,
+  "code_unlocked": false,
   "theme_family": "random",
   "theme_mode": "daylight",
   "theme_random_used": [],

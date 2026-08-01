@@ -227,13 +227,8 @@ pub(crate) fn name_untitled_document(
         // Cached under the old name, and the render reads the buffer anyway.
         tab.rendered = None;
     }
-    // Carry the unlock across: the page holds it by path, and this document is
-    // mid-sentence.
-    run_page_script(
-        reader.page(),
-        &unlock_document_script(&chosen),
-        "Save: failed to carry the unlock onto the named document",
-    );
+    // No unlock to carry onto the new name: the padlock is a setting, not a
+    // fact about a path.
     reader.record_recent(chosen);
     SaveReady::Named
 }

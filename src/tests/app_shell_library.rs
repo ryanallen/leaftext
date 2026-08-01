@@ -642,43 +642,73 @@ fn a_vault_can_be_put_on_github_from_its_own_settings() {
 }
 
 #[test]
-fn editing_the_reading_view_is_a_padlock_on_the_document_not_a_global_switch() {
+fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     let html = app_shell_html();
     let css = reading_mode_css();
 
-    // One checkbox in Settings governing every document you would ever open is the
-    // wrong shape for the question: whether a page is yours to type into is a fact
-    // about that page. Nothing of that is left.
+    // Not a checkbox buried in Settings: the bar carries it, in a recess beside
+    // the view buttons, so the answer to "can I type here" is where the typing
+    // is. Nothing of the old Settings switch is left.
     assert!(!html.contains("readerEditingEnabled"));
     assert!(!html.contains("settings.readerEditing"));
     assert!(!html.contains("setReaderEditingEnabled"));
 
-    // The bar carries it instead, in a recess beside the button that turns the
-    // reading view on -- the tools arrive and leave with the view, the way a
-    // drawing app's pens only exist in draw mode. The source view is an editor
-    // however the padlock is set, and neither tool means anything on a map.
+    // One recess, whose contents follow the view you are in. The padlock stands
+    // in both editable views because it is one switch for both; the speed reader
+    // belongs to the reading view and the wand to the source view. The map has
+    // no tools, so the recess goes with it.
     assert!(html.contains(r#"id="readerViewTools" class="reader-view-tools""#));
     assert!(html.contains(r#"id="readerLockButton" class="reader-subtool""#));
     assert!(html.contains(r#"id="speedReaderButton" class="reader-subtool""#));
-    assert!(html.contains("readerViewTools.hidden = !onReadingView;"));
-    assert!(html.contains("renderReadingTools(current === 'reading');"));
+    assert!(html.contains(r#"id="codeIntelButton" class="reader-subtool""#));
+    assert!(html.contains("const editable = current === 'reading' || current === 'code';"));
+    assert!(html.contains("readerViewTools.hidden = !editable;"));
+    assert!(html.contains("readerLockButton.hidden = !editable;"));
+    assert!(html.contains("speedReaderButton.hidden = current !== 'reading';"));
+    assert!(html.contains("codeIntelButton.hidden = !onCodeView;"));
+    assert!(html.contains("renderViewTools(current);"));
     // Sunk into the bar and grained like it, rather than laid on top of it.
     assert!(css.contains(".reader-view-tools {"));
     assert!(css.contains("  box-shadow: inset 0 1px 2px"));
     assert!(css.contains(".reader-view-tools[hidden] {"));
-    // Never filled: the filled chip is how the bar says which view you are in,
-    // and a setting inside a view must not wear the same badge.
+    // Both the recess and the buttons in it set a display of their own, which
+    // beats the browser's rule for [hidden] unless it is restated.
+    assert!(css.contains(".reader-subtool[hidden] {"));
+    // Never blue: the blue chip is how the bar says which view you are in, and a
+    // setting inside a view must not wear the same badge. It is lit instead --
+    // a fill pushed off the page color, in a hairline frame, so which tools are
+    // on is answered without reading the glyphs.
     assert!(!html.contains("readerLockButton.classList.toggle('is-active'"));
     assert!(!css.contains(".reader-subtool.is-active"));
-    assert!(css.contains(".reader-subtool[aria-pressed=\"true\"] {"));
+    assert!(css.contains(".reader-subtool[aria-pressed=\"true\"],\n"));
+    assert!(css.contains(
+        "  background: color-mix(in srgb, var(--app-background) 88%, var(--app-foreground));\n  box-shadow: inset 0 0 0 1px var(--app-border-strong);"
+    ));
 
-    // Locked until you say otherwise, and only for the document in front of you.
-    assert!(html.contains("const readerUnlockedByPath = new Set();"));
-    assert!(html.contains("return !!path && readerUnlockedByPath.has(path);"));
+    // Two padlocks, both locked until you say otherwise, each a saved setting
+    // rather than an answer you give again on every file you open. Unlocking the
+    // page you read must not also hand over the file's own text.
+    assert!(html.contains("let readingUnlocked = LEAF_SETTINGS.readingUnlocked === true;"));
+    assert!(html.contains("let codeUnlocked = LEAF_SETTINGS.codeUnlocked === true;"));
+    assert!(html.contains("  return readingUnlocked;"));
     assert!(html.contains("if (readerEditingAllowed()) {"));
-    // Flipping it commits whatever block was mid-edit rather than dropping it.
-    assert!(html.contains("function toggleReaderLock()"));
-    assert!(html.contains("  commitActiveEditingBlock();\n  if (readerUnlockedByPath.has(path))"));
+    assert!(html.contains("send({ command: 'setReadingUnlocked', enabled: readingUnlocked });"));
+    assert!(html.contains("send({ command: 'setCodeUnlocked', enabled: codeUnlocked });"));
+    // One button, holding whichever one the view you are in belongs to.
+    assert!(html.contains("    if (codeViewActive) setCodeUnlocked(!codeUnlocked);\n    else setReadingUnlocked(!readingUnlocked);"));
+    assert!(html.contains("onCodeView ? codeUnlocked : readingUnlocked,"));
+    // Flipping the page's commits whatever block was mid-edit rather than
+    // dropping it; the source's is an option, because rebuilding the editor
+    // would throw away the undo stack and the place in the file.
+    assert!(html.contains("function setReadingUnlocked(unlocked)"));
+    assert!(html.contains("  commitActiveEditingBlock();\n  readingUnlocked = next;"));
+    assert!(html.contains("monacoEditor.updateOptions({ readOnly: !codeUnlocked });"));
+    assert!(html.contains("readOnly: !codeUnlocked,"));
+    // And a refused keystroke says so, rather than reading as a dead editor.
+    assert!(html.contains("monacoEditor.onDidAttemptReadOnlyEdit(growlLockedForReading)"));
+    assert!(html.contains(
+        "leafToast('The source is locked. Click the padlock in the toolbar to edit it.');"
+    ));
 
     // Both glyphs ship, and the pressed state picks which one shows — swapping
     // innerHTML would rebuild the icon under the pointer on every render.
@@ -692,7 +722,7 @@ fn editing_the_reading_view_is_a_padlock_on_the_document_not_a_global_switch() {
     assert!(css.contains(".reader-subtool[aria-pressed=\"true\"] .reader-glyph-on {"));
     // The glyph shown is the state you are in, not the one a click would take you
     // to, so pressed (unlocked, or the speed reader running) shows the on glyph.
-    assert!(html.contains("setSubtoolState(readerLockButton, unlocked,"));
+    assert!(html.contains("      viewLockTooltip(onCodeView)\n"));
     assert!(html.contains("setSubtoolState(speedReaderButton, speedReaderEnabled,"));
     assert!(html.contains("button.setAttribute('aria-pressed', String(on));"));
 
@@ -711,11 +741,15 @@ fn editing_the_reading_view_is_a_padlock_on_the_document_not_a_global_switch() {
         html.contains("send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });")
     );
 
+    // The tooltip names which padlock this is, or one button standing for two
+    // switches would say the same thing whichever one it is holding.
     for wording in [
-        "'Lock this page (read-only)'",
-        "'Unlock to edit this page'",
+        "'The page is unlocked. Click to lock it for reading.'",
+        "'The page is locked. Click to unlock and edit it here.'",
+        "'The source is unlocked. Click to lock it for reading.'",
+        "'The source is locked. Click to unlock and edit the text.'",
         "'Speed reader'",
-        r#"aria-label="Reading tools""#,
+        r#"aria-label="Editing tools""#,
     ] {
         assert!(html.contains(wording), "missing wording: {wording}");
     }

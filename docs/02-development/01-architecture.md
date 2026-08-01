@@ -160,6 +160,8 @@ Key `IpcCommand` variants include:
 | `setMinimapEnabled`    | Minimap toggle in Settings menu       |
 | `setPagerEnabled`      | Pager toggle in Settings menu         |
 | `setSpeedReaderEnabled` | Speed Reader toggle on the reading toolbar |
+| `setReadingUnlocked`   | The reading view's [padlock](../01-features/07-editing.md#the-padlock) |
+| `setCodeUnlocked`      | The source view's padlock, which is a separate switch |
 | `updateChecked`        | A release check finished: reset the six-hour throttle |
 | `updateDownload`       | The release the check found: fetch that URL natively, hash it, and stage it |
 | `applyUpdate`          | The "Restart to update" button: launch the installer and exit |

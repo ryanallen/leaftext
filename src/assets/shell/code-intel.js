@@ -50,9 +50,10 @@ window.leafCodeIntelAnswer = (payload) => {
 };
 
 // ---- the toolbar toggle -----------------------------------------------------
-// Lives in the same recess as the reading view's padlock, and arrives and
-// leaves with the code view for the same reason. Plain words on the tooltip:
-// the person reading a vault has not necessarily met an editor that types back.
+// Shares the recess with the padlock, and arrives and leaves with the code view
+// the way the speed reader does with the reading view. Plain words on the
+// tooltip: the person reading a vault has not necessarily met an editor that
+// types back.
 
 function codeIntelTooltip() {
   return codeIntelEnabled
@@ -61,7 +62,8 @@ function codeIntelTooltip() {
 }
 
 function renderCodeTools(onCodeView) {
-  if (codeViewTools) codeViewTools.hidden = !onCodeView;
+  if (!codeIntelButton) return;
+  codeIntelButton.hidden = !onCodeView;
   if (!onCodeView) return;
   setSubtoolState(codeIntelButton, codeIntelEnabled, codeIntelTooltip());
 }

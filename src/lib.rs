@@ -1102,6 +1102,11 @@ pub struct Settings {
     /// The code view's typing help: note and heading suggestions, and the
     /// underline on links that lead nowhere. On by default.
     pub code_intel_enabled: bool,
+    /// The padlocks, one per editable view: typing in the page and typing in
+    /// the source are two different risks, so unlocking one is not consent to
+    /// the other. Both off by default, the safe way round to be wrong.
+    pub reading_unlocked: bool,
+    pub code_unlocked: bool,
     /// Selected theme family: `github`/`nightshade`/`amaranth`/… Raw frontend
     /// string; the frontend normalizes anything unexpected back to `github`.
     pub theme_family: String,
@@ -1147,6 +1152,8 @@ impl Default for Settings {
             pager_enabled: true,
             speed_reader_enabled: false,
             code_intel_enabled: true,
+            reading_unlocked: false,
+            code_unlocked: false,
             theme_family: "random".to_string(),
             theme_mode: "daylight".to_string(),
             theme_random_used: Vec::new(),

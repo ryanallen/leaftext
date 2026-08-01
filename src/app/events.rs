@@ -153,6 +153,10 @@ pub(crate) enum IpcCommand {
     SetSpeedReaderEnabled { enabled: bool },
     #[serde(rename = "setCodeIntelEnabled")]
     SetCodeIntelEnabled { enabled: bool },
+    #[serde(rename = "setReadingUnlocked")]
+    SetReadingUnlocked { enabled: bool },
+    #[serde(rename = "setCodeUnlocked")]
+    SetCodeUnlocked { enabled: bool },
     #[serde(rename = "setThemeFamily")]
     SetThemeFamily { family: String },
     #[serde(rename = "setThemeMode")]

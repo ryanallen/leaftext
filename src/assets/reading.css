@@ -186,10 +186,11 @@
      apart from its neighbors without any outline. Overridden darker still for
      dark themes. */
   --library-header-grain: rgba(0, 0, 0, 0.3);
-  /* The same grain for the reading view's tinted surfaces. Lighter than the
-     chrome's: body text sits on these, so it darkens the fill without competing
-     with the words. */
-  --reader-surface-grain: rgba(0, 0, 0, 0.08);
+  /* The reading view's tinted surfaces — the outline, a diagram's cell, a code
+     block, a table head — take the chrome's grain rather than one of their own.
+     Screen them lighter and they read as a second texture, brighter than the
+     pane beside them, which is what the dots are there to prevent. */
+  --reader-surface-grain: var(--app-bar-grain);
   /* The untinted table rows — the ones carrying no fill, so the grain above has
      nothing to speckle. Dark themes only: on a light theme these are the near-white
      rows, where a dot dark enough to see reads as a gray screen-door mesh laid over
@@ -273,7 +274,6 @@ body {
      show against the already-dark surface. */
   --app-bar-grain: rgba(0, 0, 0, 0.35);
   --library-header-grain: rgba(0, 0, 0, 0.72);
-  --reader-surface-grain: rgba(0, 0, 0, 0.3);
   /* Light, not dark — the one grain in the app that goes the other way. This row is
      the darkest surface there is, so darkening it has nowhere to go: black at any
      alpha shifts `#0d1117` by ~10 and `#2a2d3d` by ~32, faint and uneven across
@@ -2089,18 +2089,29 @@ body:has(#readerToolbar:not([hidden])) {
   opacity: 0.5;
   cursor: default;
 }
+/* Exactly as tall as a view button, so the recess and the buttons beside it
+   share one top and one bottom edge and sit the same 4px off the bar's stroke;
+   its own tools are smaller and center inside it. No margin on the left, where
+   an inset of its own would land on top of the bar's padding and leave that
+   side twice as deep as the other three. */
 .reader-view-tools {
   display: inline-flex;
   align-items: center;
+  box-sizing: border-box;
+  height: 30px;
   gap: 1px;
-  margin: 0 2px 0 4px;
-  padding: 2px;
+  margin: 0 2px 0 0;
+  padding: 0 2px;
   border-radius: var(--leaf-radius-md, 8px);
-  background-color: color-mix(in srgb, var(--app-foreground) 9%, var(--chrome-surface));
+  /* A well cut into the bar: a wash of shadow over its face, and more inside
+     the top edge. Black at an alpha, never a mix toward the foreground — that
+     lightens on a dark theme, which is a recess lit from inside. Not a shade
+     mixed from the chrome token either, so the bar stays one color. */
+  background-color: rgba(0, 0, 0, 0.16);
   background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-attachment: fixed;
-  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--app-foreground) 16%, transparent);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 .reader-view-tools[hidden] {
   display: none;
@@ -2122,6 +2133,11 @@ body:has(#readerToolbar:not([hidden])) {
   color: var(--app-muted-foreground);
   cursor: pointer;
 }
+/* The tools in the recess come and go with the view, and a display of our own
+   beats the browser's rule for [hidden] — so say it again here. */
+.reader-subtool[hidden] {
+  display: none;
+}
 .reader-subtool svg {
   width: 16px;
   height: 16px;
@@ -2136,10 +2152,15 @@ body:has(#readerToolbar:not([hidden])) {
   background: color-mix(in srgb, var(--app-foreground) 10%, transparent);
   color: var(--app-foreground);
 }
-.reader-subtool[aria-pressed="true"] {
+/* On is a lit chip in its own frame: the page color pushed away from the
+   recess, so it lifts off the grain on a light theme and a dark one alike, and
+   a hairline drawing the edge of what is switched on. The page color alone is
+   the tone of the bar behind it and reads as nothing. */
+.reader-subtool[aria-pressed="true"],
+.reader-subtool[aria-pressed="true"]:hover {
   color: var(--app-foreground);
-  background: var(--app-background);
-  box-shadow: inset 0 0 0 1px var(--app-border);
+  background: color-mix(in srgb, var(--app-background) 88%, var(--app-foreground));
+  box-shadow: inset 0 0 0 1px var(--app-border-strong);
 }
 /* One button, two glyphs, and the pressed state picks which. Swapping innerHTML
    instead would rebuild the icon under the pointer on every render. */

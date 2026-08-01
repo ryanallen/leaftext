@@ -30,7 +30,7 @@ use leaftext::{
     read_folder_listing, read_folder_note, read_source, render_markdown_document,
     repo_name_for_vault, save_recent_files, save_result_script, save_settings,
     scroll_anchor_script, search_results_script, settings_file_path, settings_unreadable_script,
-    source_payload_url, source_updated_script, sync_vault_repo, unlock_document_script,
+    source_payload_url, source_updated_script, sync_vault_repo, unlock_reading_script,
     update_progress_script, update_state_script, vaults_script, webview_user_data_dir,
     workspace_only_script, workspace_reload_script, workspace_state_script,
     workspace_switch_script, write_source, CorpusDocument, DocumentFormat, EditableDocument,

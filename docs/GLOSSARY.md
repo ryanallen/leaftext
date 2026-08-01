@@ -342,7 +342,8 @@ responsive by drawing only the lines on screen.
 
 A blank page in a new [tab](GLOSSARY.md#tab), started with the **+** in the
 [app bar](GLOSSARY.md#app-bar) or on the [home screen](GLOSSARY.md#home-screen). It
-opens unlocked with the caret ready, is called
+opens with the reading view's [padlock](GLOSSARY.md#padlock) off and the caret ready,
+is called
 [*Untitled*](GLOSSARY.md#untitled) until its first
 [save](GLOSSARY.md#save), and has no file until then.
 
@@ -371,10 +372,12 @@ button never fold.
 ## Padlock
 
 The lock on the [floating toolbar](GLOSSARY.md#floating-toolbar) that says whether
-the page in front of you can be typed into. Documents open locked; a
-[new document](GLOSSARY.md#new-document) opens unlocked. The answer lasts as long as
-the window. Checkboxes toggle either way, and the [code view](GLOSSARY.md#code-view)
-is an editor whatever the padlock says.
+you can type into the view you are in. There are two — one for the
+[reading view](GLOSSARY.md#reading-view), one for the
+[code view](GLOSSARY.md#code-view) — and they are independent, so unlocking the page
+you read does not open the file's own text. Both start locked and both are
+remembered across restarts; a [new document](GLOSSARY.md#new-document) opens with the
+reading view's turned off for you. Checkboxes toggle either way.
 
 ## Pager
 

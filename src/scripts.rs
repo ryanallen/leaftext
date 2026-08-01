@@ -37,6 +37,8 @@ pub fn initial_settings_script(settings: &Settings) -> String {
         "pagerEnabled": settings.pager_enabled,
         "speedReaderEnabled": settings.speed_reader_enabled,
         "codeIntelEnabled": settings.code_intel_enabled,
+        "readingUnlocked": settings.reading_unlocked,
+        "codeUnlocked": settings.code_unlocked,
         "themeFamily": settings.theme_family,
         "themeMode": settings.theme_mode,
         "themeRandomUsed": settings.theme_random_used,
@@ -398,13 +400,11 @@ pub fn blocks_resynced_script(
     format!("window.leafBlocksResynced({});", state)
 }
 
-/// Make a document editable in the reading view without anyone clicking the
-/// padlock. Sent for a document created here — it exists to be typed into — and
-/// again when a save gives it its real name, because the page keys the unlock by
-/// path and the path just changed under it.
-pub fn unlock_document_script(path: &Path) -> String {
-    let path = serde_json::to_string(&path.display().to_string()).expect("path serializes");
-    format!("window.leafUnlockDocument({path});")
+/// Unlock the reading view without anyone clicking the padlock. Sent for a
+/// document created here, which exists to be typed into and would otherwise
+/// open untypable. The source's padlock is its own and is left alone.
+pub fn unlock_reading_script() -> String {
+    "window.leafUnlockReading();".to_string()
 }
 
 /// Hand the page the image it asked the picker for. `token` is the insert box

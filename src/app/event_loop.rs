@@ -28,6 +28,8 @@ fn apply_setting_command(settings: &mut Settings, command: IpcCommand) -> bool {
         IpcCommand::SetPagerEnabled { enabled } => settings.pager_enabled = enabled,
         IpcCommand::SetSpeedReaderEnabled { enabled } => settings.speed_reader_enabled = enabled,
         IpcCommand::SetCodeIntelEnabled { enabled } => settings.code_intel_enabled = enabled,
+        IpcCommand::SetReadingUnlocked { enabled } => settings.reading_unlocked = enabled,
+        IpcCommand::SetCodeUnlocked { enabled } => settings.code_unlocked = enabled,
         IpcCommand::SetThemeFamily { family } => settings.theme_family = family,
         IpcCommand::SetThemeMode { mode } => settings.theme_mode = mode,
         IpcCommand::SetThemeRandomBag { used } => settings.theme_random_used = used,
@@ -266,12 +268,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::NewDocument => {
-                    let path = reader.workspace.open_untitled();
+                    reader.workspace.open_untitled();
                     // Before the render, so the first paint already carries the
                     // editors - there is nothing to click before typing.
                     run_page_script(
                         reader.page(),
-                        &unlock_document_script(&path),
+                        &unlock_reading_script(),
                         "Failed to unlock the new document",
                     );
                     reader.render(ScrollIntent::Reset);
@@ -668,6 +670,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 | IpcCommand::SetPagerEnabled { .. }
                 | IpcCommand::SetSpeedReaderEnabled { .. }
                 | IpcCommand::SetCodeIntelEnabled { .. }
+                | IpcCommand::SetReadingUnlocked { .. }
+                | IpcCommand::SetCodeUnlocked { .. }
                 | IpcCommand::SetThemeFamily { .. }
                 | IpcCommand::SetThemeMode { .. }
                 | IpcCommand::SetThemeRandomBag { .. }

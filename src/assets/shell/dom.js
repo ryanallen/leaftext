@@ -35,7 +35,6 @@ const viewGraphButton = document.getElementById('viewGraphButton');
 const readerViewTools = document.getElementById('readerViewTools');
 const readerLockButton = document.getElementById('readerLockButton');
 const speedReaderButton = document.getElementById('speedReaderButton');
-const codeViewTools = document.getElementById('codeViewTools');
 const codeIntelButton = document.getElementById('codeIntelButton');
 const libraryCrumbTrail = document.getElementById('libraryCrumbTrail');
 const libraryVaultSwitch = document.getElementById('libraryVaultSwitch');

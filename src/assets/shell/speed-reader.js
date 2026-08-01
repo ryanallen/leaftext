@@ -257,15 +257,14 @@ let librarySearchLoading = false;
 const SEARCH_SCOPE_CAP = 1500;
 // A heading anchor to scroll to once a clicked result's document has rendered.
 let pendingSearchJump = null;
-// Which documents you have unlocked for editing in the reading view. Per
-// document, not one switch in Settings: whether a page is yours to type into is
-// a fact about that page, not about the app. Locked is the default, and the
-// answer lasts as long as the window — a document reopened tomorrow is read-only
-// again, which is the safe way round to be wrong.
-const readerUnlockedByPath = new Set();
+// The padlocks: whether documents open ready to type into. Saved settings, not
+// a question asked again on every file you open. One per editable view, because
+// typing in the page and typing in the source are two different risks and
+// unlocking one is not consent to the other. Both locked by default.
+let readingUnlocked = LEAF_SETTINGS.readingUnlocked === true;
+let codeUnlocked = LEAF_SETTINGS.codeUnlocked === true;
 function readerEditingAllowed() {
-  const path = activeDocumentPath();
-  return !!path && readerUnlockedByPath.has(path);
+  return readingUnlocked;
 }
 // Set by the one gesture that means "leave the map": clicking a node, or a
 // search hit whose whole point is landing on the matching line. Everything else

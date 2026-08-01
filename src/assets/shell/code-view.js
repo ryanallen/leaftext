@@ -702,6 +702,25 @@ function monacoEditorPadding() {
   };
 }
 
+// Point the live editor at the source's own padlock -- not the reading view's:
+// unlocking the page you read is not consent to rewrite the file by hand.
+function applyCodeViewReadOnly() {
+  if (!monacoEditor) return;
+  monacoEditor.updateOptions({ readOnly: !codeUnlocked });
+}
+
+// A refused keystroke otherwise looks like a broken editor: the cursor moves,
+// the text does not, nothing says why. A held key refuses an edit per repeat,
+// so the growl has a floor -- one message, not a stutter of them.
+const LOCKED_GROWL_GAP_MS = 1500;
+let lastLockedGrowl = 0;
+function growlLockedForReading() {
+  const now = Date.now();
+  if (now - lastLockedGrowl < LOCKED_GROWL_GAP_MS) return;
+  lastLockedGrowl = now;
+  leafToast('The source is locked. Click the padlock in the toolbar to edit it.');
+}
+
 // Create the editor in `container`, relay content changes to the source-splice
 // path, and land where the reader was if a source offset was carried across the
 // toggle. Skinned with the theme defineLeafMonacoTheme builds from our palette.
@@ -720,6 +739,10 @@ function createMonacoEditor(monaco, container, state, text) {
     // create, and on every layout change after.
     wordWrap: 'bounded',
     wordWrapColumn: 120,
+    // The source's padlock. Read-only still scrolls, selects and copies -- it
+    // only refuses the typing, and a refusal growls (see growlLockedForReading)
+    // rather than passing in silence.
+    readOnly: !codeUnlocked,
     // showSlider 'always' — the viewport box stays visible instead of only on hover.
     minimap: { enabled: true, showSlider: 'always' },
     automaticLayout: true,
@@ -762,6 +785,7 @@ function createMonacoEditor(monaco, container, state, text) {
     forgetViewHandoff();
     scheduleSourceUpdate();
   });
+  monacoReadOnlySub = monacoEditor.onDidAttemptReadOnlyEdit(growlLockedForReading);
   // Keep the wrap gap in step with the width: set it now, then on every relayout.
   monacoLayoutSub = monacoEditor.onDidLayoutChange(() => {
     applyCodeViewWrapColumn();
@@ -814,6 +838,10 @@ function disposeMonacoEditor() {
   if (monacoLayoutSub) {
     monacoLayoutSub.dispose();
     monacoLayoutSub = null;
+  }
+  if (monacoReadOnlySub) {
+    monacoReadOnlySub.dispose();
+    monacoReadOnlySub = null;
   }
   if (monacoFontsDoneHandler) {
     document.fonts.removeEventListener('loadingdone', monacoFontsDoneHandler);

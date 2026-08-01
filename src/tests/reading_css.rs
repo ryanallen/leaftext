@@ -207,9 +207,8 @@ fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
 
     // Dark themes grain both stripes; light themes leave the untinted rows plain,
     // because there a dot dark enough to see reads as a gray mesh over the table.
-    assert_contains(css, "--reader-surface-grain: rgba(0, 0, 0, 0.08);");
+    assert_contains(css, "--reader-surface-grain: var(--app-bar-grain);");
     assert_contains(css, "--reader-row-grain: transparent;");
-    assert_contains(css, "--reader-surface-grain: rgba(0, 0, 0, 0.3);");
     // Lighter, not darker — the untinted row is the darkest surface in the app, so
     // darkening it has nowhere to go and lands unevenly across theme families.
     assert_contains(css, "--reader-row-grain: rgba(255, 255, 255, 0.07);");
@@ -429,9 +428,13 @@ fn app_css_is_served_over_the_asset_protocol_not_inlined() {
 fn reading_surfaces_carry_the_chrome_dot_grain() {
     let css = reading_mode_css();
 
-    // Its own token, lighter than the chrome's: body text sits on these.
-    assert_contains(css, "--reader-surface-grain: rgba(0, 0, 0, 0.08);");
-    assert_contains(css, "--reader-surface-grain: rgba(0, 0, 0, 0.3);");
+    // The chrome's own value, not one of its own: a lighter screen made the
+    // reading panels a second texture, brighter than the pane beside them.
+    assert_contains(css, "--reader-surface-grain: var(--app-bar-grain);");
+    assert!(
+        !css.contains("--reader-surface-grain: rgba"),
+        "the reader grain must stay one value with the chrome's, not a table of its own"
+    );
 
     // Every tinted reading surface takes the grain, on the chrome's lattice.
     for expected in [

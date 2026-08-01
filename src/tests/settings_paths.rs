@@ -175,6 +175,8 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
         pager_enabled: false,
         speed_reader_enabled: true,
         code_intel_enabled: false,
+        reading_unlocked: true,
+        code_unlocked: false,
         theme_family: "nightshade".to_string(),
         theme_mode: "dark".to_string(),
         theme_random_used: vec!["fern".to_string(), "github".to_string()],

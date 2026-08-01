@@ -34,6 +34,9 @@ let monacoChangeSub = null;
 // the column it last set — kept here so teardown disposes/resets them.
 let monacoLayoutSub = null;
 let codeViewWrapColumn = 0;
+// Typing into a locked file. Monaco reports the refused keystroke rather than
+// acting on it; the growl is what turns a dead editor into an explanation.
+let monacoReadOnlySub = null;
 // The `document.fonts` listener that re-fits that column when a face finishes
 // loading. A font arriving changes no geometry, so no layout event announces it —
 // see refitCodeViewToFont. Held here so teardown can unsubscribe: it outlives the

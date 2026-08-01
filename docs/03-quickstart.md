@@ -68,7 +68,7 @@ flowchart LR
 | Control | What it does |
 | --- | --- |
 | Reading / Code / Graph | The three ways of looking at the open document; the one you are in is filled in the accent color |
-| Padlock | Unlocks the page so you can [type into it](01-features/07-editing.md#the-padlock) |
+| Padlock | Unlocks the view you are in so you can [type into it](01-features/07-editing.md#the-padlock) — the page and the source have one each |
 | Speed reader | Dims the prose and marks each word's start — see [Speed Reader](01-features/05-settings.md#speed-reader) |
 | Typing help | The wand beside the code view: suggestions drawn from your own notes — see [Typing help](01-features/07-editing.md#typing-help) |
 | Undo / Save | Appear only when there is something to undo or [save](01-features/07-editing.md#save) |
@@ -103,11 +103,11 @@ Mouse side buttons also trigger Back and Forward on Windows.
 
 ## 4. Edit a line
 
-Documents open **locked**, so a stray click never changes a file. Open the [padlock](01-features/07-editing.md#the-padlock) on the floating toolbar, then click into any sentence and type — the rendered page [edits in place](01-features/07-editing.md#inline-editing-the-reading-view), and the green **Save** button appears.
+Documents open **locked**, so a stray click never changes a file. Open the [padlock](01-features/07-editing.md#the-padlock) on the floating toolbar, then click into any sentence and type — the rendered page [edits in place](01-features/07-editing.md#inline-editing-the-reading-view), and the green **Save** button appears. Leaftext remembers the answer, so you only do this once.
 
 - Highlight words for a [format bar](01-features/07-editing.md#the-format-bar).
 - Use the handle and plus in the left [margin](01-features/07-editing.md#the-block-gutter) to drag a block or [add one](01-features/07-editing.md#adding-a-block).
-- For the raw source instead, click the code-brackets button on the toolbar.
+- For the raw source instead, click the code-brackets button on the toolbar. It has a padlock of its own, so unlocking the page does not open the file's text.
 - To start from nothing, press the **+** in the app bar for a [new document](01-features/07-editing.md#new-document); its first save asks where to put it.
 
 Checkboxes are the exception to the padlock: a `- [ ]` box is clickable either way, and ticking it saves on the spot.

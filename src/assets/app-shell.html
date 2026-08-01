@@ -160,21 +160,16 @@
      scroll away with the document. -->
 <div id="readerToolbar" class="reader-toolbar" role="toolbar" aria-label="Views and edits" hidden>
   <div class="reader-tool-group" role="group" aria-label="Views">
-    <!-- What the reading view can do, in a recess to the left of the three view
-         buttons rather than wedged between them, so reading / source / graph
-         always read as one unbroken group. These tools arrive and leave with the
-         reading view: the source view is an editor however the padlock is set and
-         neither means anything on a map, so a control for a view you are not in
-         is noise. Sunk and grained rather than same-level buttons, which would
-         read as three more views. -->
-    <span id="readerViewTools" class="reader-view-tools" role="group" aria-label="Reading tools" hidden>
-      <button type="button" id="readerLockButton" class="reader-subtool" aria-pressed="false" aria-label="Unlock to edit this page" title="Unlock to edit this page"><span class="reader-swap-glyph reader-glyph-off">{{LOCK_CLOSED_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{LOCK_OPEN_ICON_SVG}}</span></button>
+    <!-- What the view you are in can do, in one recess to the left of the three
+         view buttons rather than wedged between them, so reading / source /
+         graph always read as one unbroken group. The padlock is the app's one
+         answer to "can I type here", so it stands in both editable views; the
+         speed reader and the wand each belong to one. Nothing on a map, so the
+         recess goes with it. Sunk and grained rather than same-level buttons,
+         which would read as more views. -->
+    <span id="readerViewTools" class="reader-view-tools" role="group" aria-label="Editing tools" hidden>
+      <button type="button" id="readerLockButton" class="reader-subtool" aria-pressed="false" aria-label="Unlock to edit" title="Unlock to edit"><span class="reader-swap-glyph reader-glyph-off">{{LOCK_CLOSED_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{LOCK_OPEN_ICON_SVG}}</span></button>
       <button type="button" id="speedReaderButton" class="reader-subtool" aria-pressed="false" aria-label="Speed reader" title="Speed reader"><span class="reader-swap-glyph reader-glyph-off">{{SPEED_READER_OFF_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{SPEED_READER_ON_ICON_SVG}}</span></button>
-    </span>
-    <!-- What the source view can do, in the same recess. One tool: the wand
-         turns typing help on and off. Arrives and leaves with the code view for
-         the same reason the padlock leaves with the reading view. -->
-    <span id="codeViewTools" class="reader-view-tools" role="group" aria-label="Source tools" hidden>
       <button type="button" id="codeIntelButton" class="reader-subtool" aria-pressed="true" aria-label="Typing help" title="Typing help">{{WAND_ICON_SVG}}</button>
     </span>
     <button type="button" id="viewReadingButton" class="reader-tool" data-view="reading" aria-pressed="true" aria-label="Reading" title="Reading">{{DOCUMENT_ICON_SVG}}</button>

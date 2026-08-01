@@ -103,19 +103,41 @@ function renderReaderToolbar(hasDocument) {
     button.setAttribute('aria-pressed', String(on));
     button.classList.toggle('is-active', on);
   }
-  renderReadingTools(current === 'reading');
-  renderCodeTools(current === 'code');
+  renderViewTools(current);
 }
 const GRAPH_ERROR = 'Graph failed to load.';
-// The reading view's own tools. None turns blue: the filled chip means "this is
-// the view you are in", and a setting inside that view must not wear it. The
-// glyph carries the state instead -- a shut padlock, a thin first letter.
-function renderReadingTools(onReadingView) {
-  if (readerViewTools) readerViewTools.hidden = !onReadingView;
-  if (!onReadingView) return;
-  const unlocked = readerEditingAllowed();
-  setSubtoolState(readerLockButton, unlocked, unlocked ? 'Lock this page (read-only)' : 'Unlock to edit this page');
-  setSubtoolState(speedReaderButton, speedReaderEnabled, 'Speed reader');
+// The tools of the view you are in. None turns blue: the filled chip means
+// "this is the view you are in", and a setting inside that view must not wear
+// it. The glyph carries the state instead -- a shut padlock, a thin first
+// letter. The padlock stands in both editable views, but it is a different
+// switch in each and its tooltip says which; the map has no tools at all.
+function viewLockTooltip(onCodeView) {
+  if (onCodeView) {
+    return codeUnlocked
+      ? 'The source is unlocked. Click to lock it for reading.'
+      : 'The source is locked. Click to unlock and edit the text.';
+  }
+  return readingUnlocked
+    ? 'The page is unlocked. Click to lock it for reading.'
+    : 'The page is locked. Click to unlock and edit it here.';
+}
+function renderViewTools(current) {
+  const editable = current === 'reading' || current === 'code';
+  if (readerViewTools) readerViewTools.hidden = !editable;
+  if (readerLockButton) {
+    readerLockButton.hidden = !editable;
+    const onCodeView = current === 'code';
+    setSubtoolState(
+      readerLockButton,
+      onCodeView ? codeUnlocked : readingUnlocked,
+      viewLockTooltip(onCodeView)
+    );
+  }
+  if (speedReaderButton) {
+    speedReaderButton.hidden = current !== 'reading';
+    setSubtoolState(speedReaderButton, speedReaderEnabled, 'Speed reader');
+  }
+  renderCodeTools(current === 'code');
 }
 function setSubtoolState(button, on, label) {
   if (!button) return;
@@ -123,23 +145,40 @@ function setSubtoolState(button, on, label) {
   button.title = label;
   button.setAttribute('aria-label', label);
 }
-// Flipping it re-renders the document, which is what binds or drops the editable
-// blocks. Any block mid-edit is committed first rather than silently discarded.
-function toggleReaderLock() {
-  const path = activeDocumentPath();
-  if (!path) return;
+// The reading view's padlock. Flipping it re-renders the document, which is
+// what binds or drops the editable blocks; any block mid-edit is committed
+// first rather than silently discarded.
+function setReadingUnlocked(unlocked) {
+  const next = Boolean(unlocked);
+  if (next === readingUnlocked) return;
   commitActiveEditingBlock();
-  if (readerUnlockedByPath.has(path)) readerUnlockedByPath.delete(path);
-  else readerUnlockedByPath.add(path);
+  readingUnlocked = next;
+  send({ command: 'setReadingUnlocked', enabled: readingUnlocked });
   renderState();
 }
-if (readerLockButton) {
-  readerLockButton.addEventListener('click', toggleReaderLock);
+// The source view's, which is Monaco's readOnly option. Set, not rebuilt: a
+// re-render there would throw away the editor, its undo stack and the place in
+// the file, and nothing about the text has changed.
+function setCodeUnlocked(unlocked) {
+  const next = Boolean(unlocked);
+  if (next === codeUnlocked) return;
+  codeUnlocked = next;
+  send({ command: 'setCodeUnlocked', enabled: codeUnlocked });
+  applyCodeViewReadOnly();
+  renderReaderToolbar(!!activeDocumentPath());
 }
-// The host unlocking a page for you: a new document, and again when its first
-// save renames it -- the unlock is held by path, so it has to move with one.
-window.leafUnlockDocument = (path) => {
-  if (path) readerUnlockedByPath.add(path);
+// One button, and it holds whichever padlock the view you are in belongs to.
+if (readerLockButton) {
+  readerLockButton.addEventListener('click', () => {
+    if (codeViewActive) setCodeUnlocked(!codeUnlocked);
+    else setReadingUnlocked(!readingUnlocked);
+  });
+}
+// The host turning a padlock off for you: a new document exists to be typed
+// into and opens in the reading view, so that one must not open locked. The
+// source keeps its own answer.
+window.leafUnlockReading = () => {
+  setReadingUnlocked(true);
 };
 // The speed reader stays one preference for the whole app -- it is a way of
 // reading, not a property of a document. The reading toolbar is the one place it
@@ -148,7 +187,7 @@ if (speedReaderButton) {
   speedReaderButton.addEventListener('click', () => {
     setSpeedReaderEnabled(!speedReaderEnabled);
     send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });
-    renderReadingTools(true);
+    renderViewTools('reading');
   });
 }
 // Going to a view. Each is a way of showing the same thing, so entering one

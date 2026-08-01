@@ -10,7 +10,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 
 | Feature | What it means |
 | --- | --- |
-| [New document](#new-document) | The **+** in the app bar (and on the home screen) starts a blank page, unlocked and ready to type |
+| [New document](#new-document) | The **+** in the app bar (and on the home screen) starts a blank page, its reading view unlocked and ready to type |
 | [Save As](#new-document) | A new document has no file until its first save, which asks where to put it |
 | [Inline editing](#inline-editing-the-reading-view) | Click into the rendered page and edit it directly — see [Formats](#formats) for what each one allows |
 | [Block editing](#inline-editing-the-reading-view) | `Enter` splits a block or starts a new one; `Backspace` at the start merges into the block above |
@@ -21,7 +21,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [The format bar](#the-format-bar) | Highlight words and a bar appears over them: bold, italic, strikethrough, code, link, then text, bigger/smaller heading and quote for the whole block |
 | [Interactive checkboxes](#inline-editing-the-reading-view) | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | [Undo](#undo) | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits |
-| [The padlock](#the-padlock) | Documents open locked, except a [new one](#new-document). The padlock unlocks the one in front of you — except checkboxes, which toggle either way |
+| [The padlock](#the-padlock) | Two padlocks, one for the reading view and one for the source, each remembered. Both start locked, except in a [new document](#new-document) — and checkboxes toggle either way |
 | [Code view](#code-view) | Toggle the rendered page to the raw source and back |
 | [Your place is kept](#code-view) | Toggling between the two views holds your position, and toggling back and forth returns you to the exact spot |
 | [Highlighting](#code-view) | The source is colored in the active [theme](06-themes.md)'s syntax colors — Markdown, XML and YAML; `.json` and [email](01-rendering.md#email-eml) source show as uncolored text |
@@ -38,10 +38,10 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 
 The **+** beside Open in the app bar starts a blank document in a new tab. The home screen carries the same button beside **Choose file**.
 
-- It opens in the reading view, already unlocked, with the caret on the first line — there is nothing to click before you type. `Enter` starts the next paragraph, as it does anywhere else in the reading view.
+- It opens in the reading view, whose [padlock](#the-padlock) is turned off for you, with the caret on the first line — there is nothing to click before you type. `Enter` starts the next paragraph, as it does anywhere else in the reading view.
 - It has **no file** yet. The tab is called *Untitled* (*Untitled 2*, and so on, when one is already open), and nothing is written anywhere until you say so.
 - The first **Save** opens your operating system's Save dialog: choose a folder and a name, and from then on it saves like any other document. Close the dialog without choosing and nothing is written.
-- Once it is saved, the tab, the window title, and [Recent files](02-navigation.md#recent-files) all take the real name, and the document stays unlocked so you can keep typing.
+- Once it is saved, the tab, the window title, and [Recent files](02-navigation.md#recent-files) all take the real name, and you can keep typing — the padlock is a setting, not something the new name resets.
 
 ## Writing in the page
 
@@ -57,7 +57,7 @@ The rendered page is a live editor. The **source stays the single source of trut
 - **Nothing is ever mangled.** A block only edits WYSIWYG when its rendered form can be turned back into the identical source; anything else edits its source directly. Either way the edit is a precise splice, and the [live reload](02-navigation.md#reload) watcher recognizes your own save so it never fights it.
 - **Nothing is drawn around the line you are typing in.** No ring, no box. The caret says where you are, and a page whose whole point is that it is a page should not turn into a form when you touch it. A block showing its raw source is the exception: its code tint is what says *this is source*.
 - Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way.
-- A document opens **locked**: clicks do not enter edit mode until you say so. See [The padlock](#the-padlock).
+- The reading view opens **locked**: clicks do not enter edit mode until you say so. See [The padlock](#the-padlock).
 
 ### The block gutter
 
@@ -126,16 +126,15 @@ The formatting is written into the page as you would expect it in Markdown — `
 
 ### The padlock
 
-Whether the rendered page can be typed into is a fact about *that page*, not a preference for every document you will ever open — so it is a padlock on the reading view's own tools, in the recess beside the reading button on the [floating toolbar](02-navigation.md#the-floating-toolbar).
+Whether a document can be typed into is a padlock in the recess beside the view buttons on the [floating toolbar](02-navigation.md#the-floating-toolbar). A shut padlock means read-only; an open one means you can type.
 
-- A shut padlock means the page is read-only. An open one means you can click into it and type.
-- Documents open **locked**. Reading is the default posture, and one click is a cheap price for not editing a file by brushing it. A [new document](#new-document) is the exception: it was created to be written in, so it starts unlocked.
-- The answer lasts as long as the window. A document reopened tomorrow is read-only again, which is the safe way round to be wrong.
+- **There are two of them, one per editable view.** The reading view has its own and the [code view](#code-view) has its own, and they are independent — unlocking the page you read is not consent to rewrite the file by hand, and unlocking the source does not open the rendered page under your cursor. The button in the bar holds whichever one the view you are in belongs to, and its tooltip says which: *the page* or *the source*.
+- **Both open locked**, and both are remembered ([settings](05-settings.md#the-padlocks)). Reading is the default posture, and one click is a cheap price for not editing a file by brushing it. A [new document](#new-document) is the exception: it was created to be written in, so it opens with the reading view already unlocked. The source keeps its own answer.
 - **Checkboxes toggle either way.** Ticking a box is a quick action that auto-saves and records no undo, not text editing.
-- The [code view](#code-view) is an editor whatever the padlock says, so a file is never locked outright.
-- Flipping the padlock commits whatever block was mid-edit rather than discarding it.
+- Flipping the reading view's padlock commits whatever block was mid-edit rather than discarding it.
+- Typing into a locked source is refused rather than swallowed: the keystroke does nothing and a message in the corner says the source is locked and where the padlock is.
 
-The other reading-view tool lives in the same recess: the [speed reader](05-settings.md#speed-reader), which stays an app-wide preference because it is a way of reading rather than a property of a file. Neither it nor the padlock is filled in the accent color — that treatment means "this is the view you are in", and a setting inside a view must not wear it.
+The recess holds the tools of the view you are in — the padlock in both, the [speed reader](05-settings.md#speed-reader) in the reading view, the [typing help](#typing-help) wand in the source. None of them is filled in the accent color: that treatment means "this is the view you are in", and a setting inside a view must not wear it.
 
 ### Undo
 
@@ -214,8 +213,9 @@ Opening another document while you are in the source view opens **that** documen
 
 ### Editing the source
 
-The code view is a real editor surface: click anywhere and type. It is Monaco — the editor Visual Studio Code is built on — compiled into the app rather than fetched from anywhere, and loaded the first time you open the source view. That first toggle spends a moment on the spinner; every one after it is immediate.
+The code view is a real editor surface: unlock it with the [padlock](#the-padlock), then click anywhere and type. It is Monaco — the editor Visual Studio Code is built on — compiled into the app rather than fetched from anywhere, and loaded the first time you open the source view. That first toggle spends a moment on the spinner; every one after it is immediate.
 
+- Locked, it still scrolls, selects and copies — it only refuses the typing, and says so in the corner rather than letting the keystroke vanish.
 - Selection, caret movement, undo and redo (`Ctrl+Z` / `Cmd+Z`, `Ctrl+Y` / `Cmd+Shift+Z`), clipboard (`Ctrl+C` / `X` / `V`), and your platform's IME are the editor's own. `Tab` indents at the caret rather than moving focus.
 - Color follows your typing: the source is tokenized as you go, so a construct takes its color the moment you finish typing it.
 - A multi-megabyte file types and scrolls like a short one, because only the lines on screen are ever drawn. Earlier versions carried a hand-built surface to manage that; the editor does it now.
