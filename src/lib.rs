@@ -811,6 +811,7 @@ const APP_SHELL_ICONS: &[(&str, &str)] = &[
     ("{{ITALIC_ICON_SVG}}", ITALIC_ICON_SVG),
     ("{{STRIKETHROUGH_ICON_SVG}}", STRIKETHROUGH_ICON_SVG),
     ("{{LINK_ICON_SVG}}", LINK_ICON_SVG),
+    ("{{MISSING_IMAGE_ICON_SVG}}", MISSING_IMAGE_ICON_SVG),
 ];
 
 pub fn app_shell_html() -> String {

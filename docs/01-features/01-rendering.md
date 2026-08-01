@@ -222,7 +222,9 @@ Image paths are resolved against the open file: relative paths (including `../` 
 
 Allowed image types include SVG, PNG, JPEG, GIF, APNG, AVIF, BMP, ICO, and WebP.
 
-Images always show the file that is on disk. Overwriting one refreshes it in the open document straight away ([Reload](02-navigation.md#reload)), and every rerender re-reads them, so a replaced picture never lingers as a cached copy.
+Every local picture is measured as the page is built — its size comes out of its own header — so the space it needs is held before it decodes and the words around it never jump. A picture Leaftext cannot find keeps its place too, marked with one glyph in the page's ink, with its alt text on hover. The same mark shows on both platforms.
+
+Images always show the file that is on disk. Overwriting one refreshes it in the open document straight away ([Reload](02-navigation.md#reload)), and every rerender re-reads them, so a replaced picture never lingers as a cached copy. A missing one that later appears is found by that same refresh.
 
 ## Math
 
@@ -236,7 +238,7 @@ $$
 
 ## Mermaid diagrams
 
-`mermaid` fences are rendered with the bundled Mermaid runtime, fully offline. If Mermaid fails, Leaftext leaves the source visible instead of a blank block.
+`mermaid` fences are rendered with the bundled Mermaid runtime, fully offline. If Mermaid fails, Leaftext leaves the source visible instead of a blank block. A page of many diagrams draws them a few at a time, nearest what you are reading first, so the window stays yours while the rest of the page fills in.
 
 Diagrams take your theme's colors and body font — boxes the theme's muted surface, subgraphs its sunken one, arrows its muted ink, and a Gantt chart the theme's own active, done and critical colors. Switch theme and every diagram on the page is redrawn to match. The twelve-color scale a mindmap or pie chart cycles through is your theme's primary hue turned around the wheel, as described in [Themes → Diagrams](06-themes.md#diagrams).
 

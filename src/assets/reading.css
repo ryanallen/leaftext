@@ -4080,6 +4080,11 @@ body.is-block-dragging .document-body [data-src-start] {
   margin: 0 auto var(--type-spacing);
   max-width: 100%;
 }
+/* A picture that would not load. decorate.js swaps in our own mark, sized by its
+   own attributes, so this rule is decoration and not the drawing. */
+.document-body img[data-image-missing="true"] {
+  opacity: 0.75;
+}
 .document-body hr {
   border: 0;
   height: 1px;

@@ -10,6 +10,7 @@ mod github;
 mod headings;
 mod htmlparse;
 mod image_protocol;
+mod image_size;
 mod images;
 mod paths;
 mod rawhtml;
@@ -22,6 +23,7 @@ pub(crate) use github::*;
 pub(crate) use headings::*;
 pub(crate) use htmlparse::*;
 pub(crate) use image_protocol::*;
+pub(crate) use image_size::*;
 pub(crate) use images::*;
 pub(crate) use paths::*;
 pub(crate) use rawhtml::*;
@@ -68,7 +70,9 @@ pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
     let body = render_markdown_events_to_html(events);
     let body = resolve_rendered_html_image_urls(&body, source.source_path);
     let body = format!("{frontmatter_html}{body}");
-    sanitize_rendered_html(&body)
+    // The size goes on last, after the sanitizer: the numbers are ours, and `img`
+    // keeps the attribute list it was given.
+    stamp_image_intrinsic_sizes(&sanitize_rendered_html(&body), source.source_path)
 }
 
 /// Split a leading `--- ... ---` frontmatter block off the front, returning its

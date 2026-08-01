@@ -83,6 +83,11 @@ pub(crate) const LINK_ICON_SVG: &str = include_str!("assets/link.svg");
 pub(crate) const LEAF_ICON_SVG: &str = include_str!("assets/leaf.svg");
 pub(crate) const FOOTNOTE_BACKREF_ICON_SVG: &str = include_str!("assets/arrow-uturn-left.svg");
 
+/// A picture the reading view could not load — one glyph for both platforms,
+/// which each draw their own. Handed to the image as its source with the ink
+/// already painted in: an SVG loaded as an image cannot see `currentColor`.
+pub(crate) const MISSING_IMAGE_ICON_SVG: &str = include_str!("assets/missing-image.svg");
+
 // Bundled runtimes (mermaid, KaTeX, graph libs) compiled into the binary and
 // served over a custom protocol, so math/diagrams render offline. Loaded
 // lazily by the page only when a document needs them.

@@ -596,6 +596,7 @@ if (typeof MutationObserver === 'function') {
   new MutationObserver(() => {
     mermaidFontRepaintDone = false;
     repaintMermaidDiagrams();
+    repaintMissingImages();
   }).observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['data-theme', 'data-leaf-theme'],
@@ -821,6 +822,9 @@ function isLocalImageSrc(src) {
 function stampLocalImages(root = app) {
   if (!root) return;
   root.querySelectorAll('img[src]').forEach((img) => {
+    // A missing one is showing our glyph, not its file: put its own source back
+    // first, so this stamp is the re-fetch that finds the file if it has arrived.
+    restoreMissingImage(img);
     // getAttribute, not .src: the property is absolute and hides the prefix.
     const src = img.getAttribute('src') || '';
     if (!isLocalImageSrc(src)) return;
@@ -836,6 +840,54 @@ window.leafRefreshImages = () => {
   stampLocalImages();
   scheduleMinimapPreviewUpdate();
 };
+// The one broken-image mark, handed to the image as its source rather than
+// fetched or masked — an image that loads draws the same everywhere. The ink is
+// painted in because an SVG loaded as an image cannot see `currentColor`.
+const MISSING_IMAGE_SIZE = 40;
+function missingImageSource() {
+  const style = window.getComputedStyle(document.documentElement);
+  const ink = themeTokenValue(style, '--preview-muted-foreground') || '#8b8b8b';
+  const svg = `{{MISSING_IMAGE_ICON_SVG}}`.replace(/currentColor/g, ink);
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+// Its own source is kept, so a re-fetch once the file appears can go back to it.
+// The alt moves to the tooltip: left on, the platform prints it beside our mark.
+function markMissingImage(img) {
+  if (!(img instanceof HTMLImageElement) || img.dataset.imageMissing === 'true') return;
+  img.dataset.imageMissing = 'true';
+  img.dataset.imageMissingAlt = img.alt || '';
+  img.dataset.imageMissingSrc = img.getAttribute('src') || '';
+  if (img.alt && !img.title) img.title = img.alt;
+  img.alt = '';
+  img.width = MISSING_IMAGE_SIZE;
+  img.height = MISSING_IMAGE_SIZE;
+  img.src = missingImageSource();
+}
+// Point a marked image back at its own source, so the next stamp can try it again.
+function restoreMissingImage(img) {
+  if (img.dataset.imageMissing !== 'true') return;
+  const src = img.dataset.imageMissingSrc || '';
+  img.alt = img.dataset.imageMissingAlt || '';
+  img.removeAttribute('width');
+  img.removeAttribute('height');
+  delete img.dataset.imageMissing;
+  delete img.dataset.imageMissingAlt;
+  delete img.dataset.imageMissingSrc;
+  if (src) img.setAttribute('src', src);
+}
+// The glyph carries the ink it was painted with, so a new theme is a new glyph.
+function repaintMissingImages() {
+  if (!app) return;
+  const source = missingImageSource();
+  app.querySelectorAll('img[data-image-missing="true"]').forEach((img) => {
+    img.src = source;
+  });
+}
+// Capture phase, because `error` does not bubble — one listener covers every
+// image, including the ones the page adds later.
+if (app) {
+  app.addEventListener('error', (event) => markMissingImage(event.target), true);
+}
 function setCodeCopyLabel(button, label) {
   button.setAttribute('aria-label', label);
   button.title = label;

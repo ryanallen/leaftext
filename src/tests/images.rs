@@ -2,6 +2,129 @@
 
 use super::*;
 
+/// The one broken-image mark reaches the page inlined and goes on as a `data:`
+/// source with the ink painted in. Miss any of the three — the glyph, the paint,
+/// the CSP grant — and it is the platform's own mark back, or an empty box.
+#[test]
+fn the_missing_image_glyph_is_inlined_painted_and_allowed() {
+    let html = app_shell_html();
+
+    assert_contains(&html, "stroke=\"currentColor\"");
+    for expected in [
+        // The glyph itself, inlined where the page can reach it.
+        "M6.3,22.1c-1.1,0-2-.9-2-2V4.1",
+        "const svg = `<svg",
+        ".replace(/currentColor/g, ink)",
+        "data:image/svg+xml,${encodeURIComponent(svg)}",
+        // Its own source is kept, so a re-fetch can find the file if it arrives.
+        "img.dataset.imageMissingSrc = img.getAttribute('src')",
+        "restoreMissingImage(img);",
+    ] {
+        assert_contains(&html, expected);
+    }
+    assert!(
+        !html.contains("{{MISSING_IMAGE_ICON_SVG}}"),
+        "the glyph placeholder must be filled"
+    );
+
+    let img_src = html
+        .lines()
+        .find(|line| line.contains("Content-Security-Policy"))
+        .expect("shell declares a Content-Security-Policy")
+        .split(';')
+        .map(str::trim)
+        .find(|directive| directive.starts_with("img-src"))
+        .expect("CSP declares an explicit img-src directive");
+
+    assert!(
+        img_src.contains("data:"),
+        "img-src must allow data: or the glyph never draws: {img_src}"
+    );
+}
+
+/// Every format the reading view can be handed, each stating 5 by 9 in its own
+/// way, so the page can reserve the space before the picture decodes. A file we
+/// can't read the size out of is left alone rather than guessed at.
+#[test]
+fn reads_the_pixel_size_out_of_each_image_header() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-image-size-{unique}"));
+    fs::create_dir_all(&dir).expect("test image directory is created");
+
+    let mut png = tiny_png_bytes().to_vec();
+    png[16..20].copy_from_slice(&5u32.to_be_bytes());
+    png[20..24].copy_from_slice(&9u32.to_be_bytes());
+
+    let mut gif = b"GIF89a".to_vec();
+    gif.extend_from_slice(&5u16.to_le_bytes());
+    gif.extend_from_slice(&9u16.to_le_bytes());
+
+    // Rows stored bottom-up, so the height arrives negative — an order, not a size.
+    let mut bmp = b"BM".to_vec();
+    bmp.resize(18, 0);
+    bmp.extend_from_slice(&5i32.to_le_bytes());
+    bmp.extend_from_slice(&(-9i32).to_le_bytes());
+
+    let mut lossy = b"RIFF\0\0\0\0WEBPVP8 \0\0\0\0".to_vec();
+    lossy.extend_from_slice(&[0, 0, 0, 0x9d, 0x01, 0x2a]);
+    lossy.extend_from_slice(&5u16.to_le_bytes());
+    lossy.extend_from_slice(&9u16.to_le_bytes());
+
+    let mut lossless = b"RIFF\0\0\0\0WEBPVP8L\0\0\0\0\x2f".to_vec();
+    lossless.extend_from_slice(&(4u32 | (8u32 << 14)).to_le_bytes());
+
+    let mut extended = b"RIFF\0\0\0\0WEBPVP8X\0\0\0\0\0\0\0\0".to_vec();
+    extended.extend_from_slice(&[4, 0, 0, 8, 0, 0]);
+
+    // An APP0 block first, so the frame header is reached by walking the chain.
+    let mut jpeg = vec![
+        0xff, 0xd8, 0xff, 0xe0, 0x00, 0x04, 0x00, 0x00, 0xff, 0xc0, 0x00, 0x11, 8,
+    ];
+    jpeg.extend_from_slice(&9u16.to_be_bytes());
+    jpeg.extend_from_slice(&5u16.to_be_bytes());
+
+    let cases: [(&str, Vec<u8>, Option<(u32, u32)>); 10] = [
+        ("header.png", png, Some((5, 9))),
+        ("header.gif", gif, Some((5, 9))),
+        ("header.bmp", bmp, Some((5, 9))),
+        ("lossy.webp", lossy, Some((5, 9))),
+        ("lossless.webp", lossless, Some((5, 9))),
+        ("extended.webp", extended, Some((5, 9))),
+        ("header.jpg", jpeg, Some((5, 9))),
+        (
+            "sized.svg",
+            br#"<svg xmlns="http://www.w3.org/2000/svg" width="5px" height="9"></svg>"#.to_vec(),
+            Some((5, 9)),
+        ),
+        (
+            // A percentage sizes against the page, so the box is the only answer.
+            "boxed.svg",
+            br#"<svg width="100%" viewBox="0 0 5 9"></svg>"#.to_vec(),
+            Some((5, 9)),
+        ),
+        ("not-an-image.png", b"nothing of the sort".to_vec(), None),
+    ];
+
+    let read: Vec<(&str, Option<(u32, u32)>)> = cases
+        .iter()
+        .map(|(name, bytes, _)| {
+            let path = dir.join(name);
+            fs::write(&path, bytes).expect("test image is written");
+            (*name, image_pixel_size(&path))
+        })
+        .collect();
+
+    fs::remove_dir_all(&dir).expect("test image directory is removed");
+
+    for ((name, _, expected), (_, actual)) in cases.iter().zip(read) {
+        assert_eq!(actual, *expected, "{name}");
+    }
+    assert_eq!(image_pixel_size(&dir.join("gone.png")), None);
+}
+
 #[test]
 fn sanitizer_allows_local_image_protocol_urls() {
     let sanitized = sanitize_rendered_html(
@@ -396,7 +519,7 @@ fn local_image_protocol_serves_rendered_markdown_image_bytes() {
         &rendered.html,
         &expected_img(
             "nested/space%20image.png",
-            r#"alt="Space image" title="Local""#,
+            r#"alt="Space image" title="Local" width="1" height="1""#,
         ),
     );
     assert_eq!(response.status, 200);
@@ -424,7 +547,10 @@ fn local_image_protocol_serves_raw_html_svg_bytes() {
 
     fs::remove_dir_all(&dir).expect("test svg directory is removed");
 
-    assert_contains(&rendered.html, &expected_img("logo.svg", r#"alt="Logo""#));
+    assert_contains(
+        &rendered.html,
+        &expected_img("logo.svg", r#"alt="Logo" width="2" height="2""#),
+    );
     assert_eq!(response.status, 200);
     assert_eq!(response.content_type, "image/svg+xml");
     assert_eq!(response.body, svg);
@@ -460,15 +586,27 @@ fn local_image_protocol_serves_requested_markdown_and_html_image_paths() {
     let source_dir = local_image_source_dir(&markdown_path).expect("source dir resolves");
 
     for expected in [
-        expected_img("imgs/pic.png", r#"alt="alt" title="alt""#),
-        expected_img("__leaf_parent__/shared/pic.png", r#"alt="alt" title="alt""#),
-        expected_img("imgs/pic%20one.png", r#"alt="alt" title="alt""#),
+        expected_img(
+            "imgs/pic.png",
+            r#"alt="alt" title="alt" width="1" height="1""#,
+        ),
+        expected_img(
+            "__leaf_parent__/shared/pic.png",
+            r#"alt="alt" title="alt" width="1" height="1""#,
+        ),
+        expected_img(
+            "imgs/pic%20one.png",
+            r#"alt="alt" title="alt" width="1" height="1""#,
+        ),
     ] {
         assert_contains(&rendered.html, &expected);
     }
     assert_contains(
         &rendered.html,
-        &format!(r#"<img src="{}">"#, local_img("imgs/pic.png")),
+        &format!(
+            r#"<img src="{}" width="1" height="1">"#,
+            local_img("imgs/pic.png")
+        ),
     );
     assert_contains(
         &rendered.html,
@@ -515,13 +653,16 @@ fn local_image_protocol_serves_nested_document_image_paths() {
 
     assert_contains(
         &rendered.html,
-        &expected_img("imgs/pic.png", r#"alt="Nested" title="Nested""#),
+        &expected_img(
+            "imgs/pic.png",
+            r#"alt="Nested" title="Nested" width="1" height="1""#,
+        ),
     );
     assert_contains(
         &rendered.html,
         &expected_img(
             "__leaf_parent__/shared/pic.png",
-            r#"alt="Shared" title="Shared""#,
+            r#"alt="Shared" title="Shared" width="1" height="1""#,
         ),
     );
 
@@ -567,7 +708,7 @@ fn local_image_protocol_loads_any_depth_above_the_document_and_reports_missing_i
         &rendered.html,
         &expected_img(
             "__leaf_parent__/__leaf_parent__/imgs/pic.png",
-            r#"alt="Up two" title="Up two""#,
+            r#"alt="Up two" title="Up two" width="1" height="1""#,
         ),
     );
     assert_contains(
