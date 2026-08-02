@@ -79,6 +79,7 @@ pub(crate) struct ThemeFile {
     pub(crate) fonts: ThemeFonts,
 }
 
+// GENERATED from design/colors.md by `just bundle-tokens` — do not edit by hand.
 pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
     "--lt-background",
     "--lt-foreground",
@@ -102,13 +103,9 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
     "--lt-link",
     "--lt-link-hover",
     "--lt-shadow",
-    "--lt-editor-inline-code-background",
-    "--lt-editor-inline-code-foreground",
-    "--lt-editor-code-background",
-    "--lt-editor-code-foreground",
-    "--lt-editor-code-border",
-    "--lt-editor-code-selection-background",
-    "--lt-editor-code-selection-foreground",
+    "--lt-focus-ring",
+    "--lt-focus-selection-background",
+    "--lt-focus-selection-foreground",
     "--lt-markdown-background",
     "--lt-markdown-foreground",
     "--lt-markdown-heading",
@@ -134,17 +131,13 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
     "--lt-markdown-math-inline-background",
     "--lt-markdown-keyboard-background",
     "--lt-markdown-keyboard-border",
-    "--lt-minimap-viewport-border",
-    "--lt-minimap-viewport-background",
-    "--lt-navigation-button-hover-background",
-    "--lt-navigation-button-disabled-background",
-    "--lt-navigation-button-disabled-foreground",
-    "--lt-navigation-recent-border",
-    "--lt-navigation-recent-item-foreground",
-    "--lt-navigation-recent-item-hover-foreground",
-    "--lt-focus-ring",
-    "--lt-focus-selection-background",
-    "--lt-focus-selection-foreground",
+    "--lt-editor-inline-code-background",
+    "--lt-editor-inline-code-foreground",
+    "--lt-editor-code-background",
+    "--lt-editor-code-foreground",
+    "--lt-editor-code-border",
+    "--lt-editor-code-selection-background",
+    "--lt-editor-code-selection-foreground",
     "--lt-syntax-background",
     "--lt-syntax-foreground",
     "--lt-syntax-comment",
@@ -162,7 +155,16 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
     "--lt-syntax-deleted-background",
     "--lt-syntax-changed",
     "--lt-syntax-changed-background",
+    "--lt-navigation-button-hover-background",
+    "--lt-navigation-button-disabled-background",
+    "--lt-navigation-button-disabled-foreground",
+    "--lt-navigation-recent-border",
+    "--lt-navigation-recent-item-foreground",
+    "--lt-navigation-recent-item-hover-foreground",
+    "--lt-minimap-viewport-border",
+    "--lt-minimap-viewport-background",
 ];
+// END GENERATED
 
 /// Leak an owned string to `&'static str`. Called only for the theme table,
 /// which is parsed once and lives for the whole process, so the leak is bounded.
@@ -566,12 +568,16 @@ pub(crate) fn theme_web_font_hrefs_json() -> String {
 pub(crate) fn reading_mode_css() -> &'static str {
     static READING_MODE_CSS: OnceLock<String> = OnceLock::new();
 
-    // An asset, not a Rust literal, so it stays editable as CSS. Its every
-    // `var(--lt-*)` resolves against the compiled tokens, so those go first.
+    // Assets, not Rust literals, so they stay editable as CSS. Every
+    // `var(--lt-*)` resolves against what came before it: the per-theme colors,
+    // then the app-wide scales, then the rules that spend both.
+    const TOKENS_CSS: &str = include_str!("assets/tokens.css");
     const READING_CSS: &str = include_str!("assets/reading.css");
 
     READING_MODE_CSS.get_or_init(|| {
         let mut css = compiled_theme_css();
+        css.push('\n');
+        css.push_str(TOKENS_CSS);
         css.push('\n');
         css.push_str(READING_CSS);
         css

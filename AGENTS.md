@@ -38,7 +38,8 @@ Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document 
 - **`markdown/rawhtml.rs` is a security boundary** — what raw HTML may keep, standing between hostile input and the web view.
 - **`src/assets/shell/` is one scope, not modules.** The fragments concatenate in `APP_SHELL_SCRIPT_PARTS` order, the page has no module loader, so order is load-bearing and a fragment alone is not a valid program. `state.js` is first and holds **only** what more than one fragment touches. The two flowchart fragments are served as `flow.js` over `leaf-asset://` because the shell reaches WebView2 as one string with a ~2 MB ceiling; same scope, same order, just not inside that string — and the next thing to grow goes the same way rather than pushing the budget.
 - **Mermaid diagrams take the theme's own tokens**, mapped in `decorate.js`. Never a per-theme diagram palette. The `cScale` categorical scale is ours, named entry by entry, held to one luminance — v0.1.423 shipped near-black boxes with near-black labels by leaving it to mermaid's arithmetic.
-- **`themes/` is the source of a color**, compiled into `src/assets/themes.md` by `just bundle-themes`; `just check-themes` fails on drift. `theme.rs` emits a property for any row it finds, so a stale row is dead CSS in every theme.
+- **`design/` is the source of a token, `themes/` of a color's value.** `design/colors.md` lists the 82 names and compiles to the contract in `theme.rs`; `design/tokens.md` holds the other 162 values and compiles to `src/assets/tokens.css`; `design/components.md` is a row per component. `just bundle-tokens` generates, `just check-tokens` fails on drift and on a theme row nobody lists. `themes/` holds the values, compiled by `just bundle-themes`. Never edit a generated file. `theme.rs` emits a property for any row it finds, so a stale row would be dead CSS in every theme.
+- **No hand-written value in `reading.css`.** A color, spacing, text size, weight, stroke, line height, letter spacing, opacity, duration, easing, shadow or layer comes from a token; `just check-literals` fails on one and names the line. Widths, heights, positional offsets and a document's `em` sizing are not tokens — they are one component's geometry, or they follow the text.
 - **Never crawl the disk.** `folder_tree.rs` reads one folder per call; `vault_corpus.rs` reads one vault; `doc_graph.rs` is bounded by a document's links. See the crawl rule below.
 
 ## Skills
@@ -76,7 +77,7 @@ In `.claude/settings.json`, pointing at `scripts/`. Each runs by hand with `--ch
 
 ## Commands
 
-Needs `rustup`, `just`, `node`. `/check` is the gate before handing work back: `just verify` (fmt, check, test, vendor + theme drift, US spelling, front-end boot, identity, the two hooks) with a test pass in front of it. `just check` / `test` / `format` / `check-shell` run individually.
+Needs `rustup`, `just`, `node`. `/check` is the gate before handing work back: `just verify` (fmt, check, test, vendor + theme + token drift, no hand-written values, US spelling, front-end boot, identity, the two hooks) with a test pass in front of it. `just check` / `test` / `format` / `check-shell` run individually.
 
 **Say what you couldn't verify** — `cfg(target_os = "macos")` code doesn't compile on Windows, and WiX doesn't run locally.
 

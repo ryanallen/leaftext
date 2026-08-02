@@ -32,7 +32,7 @@ fn a_narrow_window_opens_the_library_as_a_sliding_sheet() {
         "position: absolute;",
         "width: 100%;",
         "transform: translateX(-100%);",
-        "transition: transform 0.22s ease;",
+        "transition: transform var(--lt-duration-220) var(--lt-ease);",
     ] {
         assert_contains(sheet, expected);
     }
@@ -123,13 +123,13 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
         .nth(1)
         .and_then(|rest| rest.split('}').next())
         .expect("stylesheet defines .app-bar-lead")
-        .contains("padding: 0 16px 0 12px;");
+        .contains("padding: 0 var(--lt-space-16) 0 var(--lt-space-12);");
     let trailing_inset = css
         .split(".app-trailing {")
         .nth(1)
         .and_then(|rest| rest.split('}').next())
         .expect("stylesheet defines .app-trailing")
-        .contains("padding-left: 16px;");
+        .contains("padding-left: var(--lt-space-16);");
     assert!(
         lead_inset && trailing_inset,
         "the tab strip's shoulders must stay symmetric"
@@ -154,7 +154,9 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
     // The narrow bar must not add its own inset: the lead already carries the
     // 12px that lines the logo up with the library header below it.
     assert!(
-        !css.contains("  .app-bar {\n    gap: 8px;\n    padding: 0 12px;\n  }"),
+        !css.contains(
+            "  .app-bar {\n    gap: var(--lt-space-8);\n    padding: 0 var(--lt-space-12);\n  }"
+        ),
         "the narrow override shifted the whole left group right"
     );
 }
@@ -669,7 +671,7 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert!(html.contains("renderViewTools(current);"));
     // Sunk into the bar and grained like it, rather than laid on top of it.
     assert!(css.contains(".reader-view-tools {"));
-    assert!(css.contains("  box-shadow: inset 0 1px 2px"));
+    assert!(css.contains("  box-shadow: var(--lt-shadow-inset);"));
     assert!(css.contains(".reader-view-tools[hidden] {"));
     // Both the recess and the buttons in it set a display of their own, which
     // beats the browser's rule for [hidden] unless it is restated.
@@ -682,7 +684,7 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert!(!css.contains(".reader-subtool.is-active"));
     assert!(css.contains(".reader-subtool[aria-pressed=\"true\"],\n"));
     assert!(css.contains(
-        "  background: color-mix(in srgb, var(--lt-background) 88%, var(--lt-foreground));\n  box-shadow: inset 0 0 0 1px var(--lt-border-strong);"
+        "  background: color-mix(in srgb, var(--lt-background) 88%, var(--lt-foreground));\n  box-shadow: var(--lt-shadow-edge-strong);"
     ));
 
     // Two padlocks, both locked until you say otherwise, each a saved setting

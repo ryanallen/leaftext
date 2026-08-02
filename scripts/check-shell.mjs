@@ -1295,8 +1295,10 @@ if (booted) {
       theme.indexOf('fn leak_str'),
     );
     const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const tokens = readFileSync(join(root, 'src/assets/tokens.css'), 'utf8');
     const defined = new Set([
       ...[...contract.matchAll(/'?"(--lt-[a-z0-9-]+)"/g)].map((m) => m[1]),
+      ...[...tokens.matchAll(/^\s{2}(--[a-z0-9-]+):/gm)].map((m) => m[1]),
       ...[...css.matchAll(/^\s{2}(--[a-z0-9-]+):/gm)].map((m) => m[1]),
     ]);
     if (defined.size < 50) throw new Error(`only found ${defined.size} tokens`);

@@ -58,9 +58,9 @@ fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
         "color: var(--lt-foreground);",
         "background-color: var(--lt-surface);",
         "color: var(--lt-muted-foreground);",
-        "border: 1px solid var(--lt-border);",
+        "border: var(--lt-stroke-1) solid var(--lt-border);",
         "background: var(--lt-surface-elevated);",
-        "outline: 3px solid var(--lt-focus-ring);",
+        "outline: var(--lt-stroke-3) solid var(--lt-focus-ring);",
         "background: var(--lt-focus-selection-background);",
         "color: var(--lt-focus-selection-foreground);",
         "background: var(--lt-markdown-background);",
@@ -71,7 +71,7 @@ fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
         "border-left: 0.25em solid var(--lt-markdown-blockquote-border);",
         "color: var(--lt-markdown-blockquote-foreground);",
         "border-left-color: var(--lt-markdown-alert-warning);",
-        "border: 1px solid var(--lt-markdown-table-border);",
+        "border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);",
         "background: var(--lt-markdown-table-header-background);",
         "background: var(--lt-markdown-thematic-break);",
         "background: var(--lt-editor-code-background);",
@@ -81,8 +81,8 @@ fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
         "background: var(--lt-editor-code-selection-background);",
         "color: var(--lt-editor-code-selection-foreground);",
         "background: var(--lt-markdown-keyboard-background);",
-        "border-top: 1px solid var(--lt-navigation-recent-border);",
-        "border: 1px solid var(--lt-minimap-viewport-border);",
+        "border-top: var(--lt-stroke-1) solid var(--lt-navigation-recent-border);",
+        "border: var(--lt-stroke-1) solid var(--lt-minimap-viewport-border);",
     ] {
         assert_contains(css, rule);
     }
@@ -117,7 +117,7 @@ fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
     assert_contains(css, "--reader-row-grain: transparent;");
     // Lighter, not darker — the untinted row is the darkest surface in the app, so
     // darkening it has nowhere to go and lands unevenly across theme families.
-    assert_contains(css, "--reader-row-grain: rgba(255, 255, 255, 0.07);");
+    assert_contains(css, "--reader-row-grain: var(--lt-grain-lift);");
 
     // The zeroed value must be the light default and the lift the dark override,
     // not the reverse — that swap is exactly what this pins.
@@ -125,7 +125,7 @@ fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
         .find("--reader-row-grain: transparent;")
         .expect("light themes zero the row grain");
     let dark = css
-        .find("--reader-row-grain: rgba(255, 255, 255, 0.07);")
+        .find("--reader-row-grain: var(--lt-grain-lift);")
         .expect("dark themes set the row grain");
     let dark_block = css
         .find("[data-theme=\"dark\"]")
@@ -265,11 +265,11 @@ fn reading_mode_css_uses_web_reader_document_rhythm() {
             ".document-body p,\n.document-body ul,\n.document-body ol,\n.document-body blockquote,\n.document-body table,\n.document-body pre {\n  margin: 0 0 var(--type-spacing);\n}",
             ".document-body h1,\n.document-body h2,\n.document-body h3,\n.document-body h4,\n.document-body h5,\n.document-body h6 {",
             "margin: var(--type-spacing) 0 var(--type-spacing);",
-            ".document-body strong {\n  font-weight: 600;\n}",
+            ".document-body strong {\n  font-weight: var(--lt-weight-600);\n}",
             ".document-body ul,\n.document-body ol {\n  padding-left: 2em;\n}",
             ".document-body li + li {\n  margin-top: 0.25em;\n}",
             ".document-body li > ul,\n.document-body li > ol {\n  margin: 0.25em 0 0;\n}",
-            ".document-body input[type=\"checkbox\"] {\n  accent-color: var(--lt-markdown-checkbox, #6e7681);\n  margin-right: 0.4em;\n}",
+            ".document-body input[type=\"checkbox\"] {\n  accent-color: var(--lt-checkbox-accent);\n  margin-right: 0.4em;\n}",
             ".document-body blockquote {\n  border-left: 0.25em solid var(--lt-markdown-blockquote-border);\n  color: var(--lt-markdown-blockquote-foreground);\n  padding: 0 1em;\n}",
             ".document-body blockquote:not(.markdown-alert) p {\n  padding-left: 1.25em;\n  text-indent: -1.25em;\n}",
             ".document-body blockquote:not(.markdown-alert) p.blockquote-lines {\n  padding-left: 0;\n  text-indent: 0;\n}",
@@ -277,12 +277,12 @@ fn reading_mode_css_uses_web_reader_document_rhythm() {
             ".document-body code {",
             "font-size: 0.875em;\n  padding: 0.2em 0.4em;",
             ".document-body pre {",
-            "line-height: 1.45;",
+            "line-height: var(--lt-leading-1-45);",
             "padding: 1em;",
             ".document-body table {",
             "overflow: auto;",
             "width: max-content;",
-            ".document-body th,\n.document-body td {\n  border: 1px solid var(--lt-markdown-table-border);\n  padding: 0.375em 0.8125em;\n}",
+            ".document-body th,\n.document-body td {\n  border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);\n  padding: 0.375em 0.8125em;\n}",
             ".document-body hr {\n  border: 0;\n  height: 1px;\n  margin: var(--type-spacing) 0;",
             "@media (max-width: 600px) {\n  :root {\n    --reader-content-pad: 16px;",
         ] {
@@ -290,11 +290,11 @@ fn reading_mode_css_uses_web_reader_document_rhythm() {
         }
 
     for old_rhythm in [
-        ".document-body > * {\n  margin-block: 0 16px;\n}",
+        ".document-body > * {\n  margin-block: 0 var(--lt-space-16);\n}",
         "margin-block-start: calc(var(--type-base) * 4);",
         "margin-block-start: calc(var(--type-base) * 1.5);",
-        "padding-top: 136px;",
-        "padding: 320px 0 88px;",
+        "padding-top: var(--lt-space-136);",
+        "padding: var(--lt-space-320) 0 var(--lt-space-88);",
     ] {
         assert!(
             !css.contains(old_rhythm),
@@ -448,7 +448,7 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
     // the bands hold off its gutter instead. It closes with the minimap rail.
     assert_contains(
         rule,
-        "margin: 0 calc(var(--reader-scrollbar) + 1px) 1px 1px;",
+        "margin: 0 calc(var(--reader-scrollbar) + var(--lt-space-1)) var(--lt-space-1) var(--lt-space-1);",
     );
     assert_contains(css, "  --reader-scrollbar: 14px;");
     let railed = rule_body(css, "body:has(.document-minimap) {");
@@ -534,7 +534,10 @@ fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
     assert_contains(top, "mask-image: linear-gradient(\n    to bottom,");
     assert_contains(bottom, "mask-image: linear-gradient(\n    to top,");
     for edge in [top, bottom] {
-        assert_contains(edge, "#000 0 var(--reader-edge-fade-hold),");
+        assert_contains(
+            edge,
+            "var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),",
+        );
         // WebView2 is Chromium, but WKWebView wants the prefix.
         assert_contains(edge, "-webkit-mask-image:");
         assert!(!edge.contains("transform:"));
@@ -677,7 +680,7 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
     );
     assert_contains(
         css,
-        "border: 4px solid transparent;\n  background-clip: padding-box;",
+        "border: var(--lt-stroke-4) solid transparent;\n  background-clip: padding-box;",
     );
     // Keyed off the renderer's class, never :has() — scrollbar styles do not
     // re-resolve when a :has() match flips, so the bar outlives the rail.
@@ -887,7 +890,7 @@ fn the_code_views_minimap_rail_shows_the_shells_grain() {
     let fade = rule_body(css, ":root[data-code-view=\"true\"] .reader-edge-fade {");
     assert_contains(
         fade,
-        "margin-right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) + 1px);",
+        "margin-right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) + var(--lt-space-1));",
     );
     // Monaco's own scrolled-content shadow spans the editor's whole top edge, the
     // map included; over the rail it read as a smudge on the chrome. The theme

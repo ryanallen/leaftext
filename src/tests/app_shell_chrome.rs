@@ -245,11 +245,11 @@ fn app_shell_inlines_one_leaf_mark_that_tracks_the_theme() {
 
 #[test]
 fn app_shell_normalizes_literal_svg_icon_colors_to_current_color() {
-    let icon = r##"<svg><path fill="#fff" stroke="#FFFFFF"/><path fill='white' stroke='none'/><path fill="#fff0eb" stroke="currentColor"/><path fill="rgb(255, 255, 255)" stroke="rebeccapurple"/><path fill-rule="evenodd"/><path style="fill:#fff; stroke: hsl(0 0% 100%); fill-opacity: 0.5"/></svg>"##;
+    let icon = r##"<svg><path fill="#fff" stroke="#FFFFFF"/><path fill='white' stroke='none'/><path fill="#fff0eb" stroke="currentColor"/><path fill="rgb(255, 255, 255)" stroke="rebeccapurple"/><path fill-rule="evenodd"/><path style="fill:#fff; stroke: hsl(0 0% 100%); fill-opacity: var(--lt-opacity-50)"/></svg>"##;
 
     assert_eq!(
         normalize_svg_icon_colors(icon),
-        r##"<svg><path fill="currentColor" stroke="currentColor"/><path fill='currentColor' stroke='none'/><path fill="currentColor" stroke="currentColor"/><path fill="currentColor" stroke="currentColor"/><path fill-rule="evenodd"/><path style="fill:currentColor; stroke: currentColor; fill-opacity: 0.5"/></svg>"##
+        r##"<svg><path fill="currentColor" stroke="currentColor"/><path fill='currentColor' stroke='none'/><path fill="currentColor" stroke="currentColor"/><path fill="currentColor" stroke="currentColor"/><path fill-rule="evenodd"/><path style="fill:currentColor; stroke: currentColor; fill-opacity: var(--lt-opacity-50)"/></svg>"##
     );
 }
 
@@ -312,7 +312,7 @@ fn app_shell_styles_history_controls_with_neutral_icon_treatment() {
         ".history-button:hover:not(:disabled)",
         ".history-button:disabled,\n.history-button:disabled:hover",
         "color: var(--lt-muted-foreground);",
-        "opacity: 0.46;",
+        "opacity: var(--lt-opacity-46);",
     ] {
         assert_contains(css, expected);
     }
@@ -352,7 +352,7 @@ fn app_shell_header_keeps_one_chrome_shade_with_dividers() {
         // lattice and no seam between them reads as a hairline.
         "background-attachment: fixed;",
         // The bar keeps a hairline top divider in the outer border color.
-        "border-top: 1px solid var(--lt-border);",
+        "border-top: var(--lt-stroke-1) solid var(--lt-border);",
         // The bottom divider is drawn by ::after (not border-bottom) so the
         // active tab can paint over it and read as joined to the page below.
         ".app-bar::after {",
@@ -430,7 +430,7 @@ fn app_shell_persists_and_applies_speed_reader_setting() {
         r#":root[data-speed-reader="true"] .document-body a:hover,"#,
         "color: var(--lt-link-hover);",
         r#":root[data-speed-reader="true"] .document-body .speed-reader-anchor"#,
-        "font-weight: 700;",
+        "font-weight: var(--lt-weight-700);",
     ] {
         assert_contains(css, expected);
     }
@@ -844,7 +844,7 @@ fn an_unsaved_tab_does_not_resize_when_you_reach_for_it() {
         .and_then(|rest| rest.split('}').next())
         .expect("stylesheet defines a tab");
     assert!(
-        tab.contains("padding: 0 12px 0 4px;"),
+        tab.contains("padding: 0 var(--lt-space-12) 0 var(--lt-space-4);"),
         "a short name would otherwise end under the close button: {tab}"
     );
 }

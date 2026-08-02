@@ -135,6 +135,6 @@ fn app_shell_raises_a_spinner_when_a_glossary_link_is_followed() {
     let css = reading_mode_css();
     assert_contains(
         &css,
-        "  animation: leaf-glossary-wait-in 0.2s ease 0.3s forwards;",
+        "  animation: leaf-glossary-wait-in var(--lt-duration-200) var(--lt-ease) var(--lt-duration-300) forwards;",
     );
 }

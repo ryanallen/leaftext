@@ -33,9 +33,26 @@ bundle-themes:
 check-themes:
     node scripts/bundle-themes.mjs --check
 
+# Compile design/colors.md into the token contract in theme.rs, and design/tokens.md
+# into src/assets/tokens.css. design/ is the source of a token.
+bundle-tokens:
+    node scripts/bundle-tokens.mjs
+
+# Fail if the generated token files have drifted from design/, if a theme file sets a
+# color design/colors.md does not list, or if a component row names a class family
+# nothing styles.
+check-tokens:
+    node scripts/bundle-tokens.mjs --check
+
 # Fail on British spelling in the repo's own writing (US English throughout).
 check-spelling:
     node scripts/check-spelling.mjs
+
+# Fail on a hand-written value in reading.css — a color, spacing, size, weight,
+# stroke, line height, letter spacing, opacity, duration, shadow or layer. Every one
+# comes from design/tokens.md or design/colors.md.
+check-literals:
+    node scripts/check-literals.mjs
 
 # Fail on an assistant or third-party identity anywhere in the repo or its history:
 # a co-author trailer, a generated-by credit, an assistant as a commit author.
@@ -65,7 +82,7 @@ bundle-monaco:
 squeeze-png source target:
     cargo run --quiet -- --squeeze-png "{{ source }}" "{{ target }}"
 
-verify: format-check check test check-vendor check-themes check-spelling check-shell check-identity check-hooks
+verify: format-check check test check-vendor check-themes check-tokens check-literals check-spelling check-shell check-identity check-hooks
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:
