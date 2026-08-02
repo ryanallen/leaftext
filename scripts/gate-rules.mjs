@@ -12,7 +12,7 @@
 //
 // Never blocks: any failure exits 0, because a broken hook must not stop a turn.
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -62,9 +62,12 @@ export function isMeta(prompt) {
   return META.some((m) => first === m || first.startsWith(m + ':'));
 }
 
-// `/git-release` in this message, and only this message, authorizes a git write.
+// `/git-release` typed as this message's command, and nothing else, authorizes a
+// git write. Anchored to the start because that is where a slash command is: a
+// match anywhere let a message that merely *quoted* the string grant one, and
+// pasting a transcript back is exactly how that happened.
 export function hasReleaseLicense(prompt) {
-  return /(^|[\s"'`(])\/git-release\b/i.test(prompt);
+  return /^\/git-release\b/i.test(prompt.trim());
 }
 
 // The `# Rule 1` section of AGENTS.md, up to the rule after it.
@@ -112,8 +115,14 @@ function writeLicense(granted, prompt) {
 function selfTest() {
   const cases = [
     ['plain message', false],
+    ['/git-release', true],
     ['/git-release 0.1.441', true],
-    ['ship it with /git-release please', true],
+    ['  /git-release  ', true],
+    // v0.1.442: the release ran off a message that only quoted the transcript.
+    // A mention is not an instruction, wherever in the message it sits.
+    ['ship it with /git-release please', false],
+    ['i ran /git-release and you refused, why', false],
+    ['> /git-release\n\n● Running the pre-steps', false],
     ['read .agents/skills/git-release/SKILL.md', false],
     ['tell me about git-release', false],
   ];
@@ -147,7 +156,19 @@ function selfTest() {
 if (process.argv.includes('--check')) {
   selfTest();
 } else {
-  const prompt = promptOf(readStdin());
+  const raw = readStdin();
+  // What the host actually sends, kept for the last few turns. A slash command
+  // may reach here expanded, or not at all, and the license turns on which —
+  // guessing at that is what cost v0.1.442 a refused release. Untracked.
+  try {
+    const log = join(root, '.tmp', 'prompt-payloads.jsonl');
+    mkdirSync(dirname(log), { recursive: true });
+    const kept = (existsSync(log) ? readFileSync(log, 'utf8').split('\n').filter(Boolean) : []).slice(-19);
+    writeFileSync(log, [...kept, JSON.stringify({ at: new Date().toISOString(), raw: raw.slice(0, 4000) })].join('\n') + '\n');
+  } catch {
+    // A diagnostic that cannot be written is not worth failing a turn over.
+  }
+  const prompt = promptOf(raw);
   writeLicense(hasReleaseLicense(prompt), prompt);
   if (prompt && !isMeta(prompt)) {
     let rule = '';
