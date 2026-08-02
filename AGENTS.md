@@ -68,10 +68,11 @@ In `.agents/skills/`, which `.claude/` and `.codex/` symlink to. Invoke by name.
 
 ## Hooks
 
-In `.claude/settings.json`, pointing at `scripts/`. Each runs by hand with `--check`, and `just verify` runs both.
+In `.claude/settings.json`, pointing at `scripts/`. Each runs by hand with `--check`, and `just verify` runs all three.
 
 - `gate-rules.mjs` on `UserPromptSubmit` — prints Rule 1 out of this file before every message, plus a line for whatever the message touches, and records the license in `.tmp/git-license`. Granted only when the message **starts** with `/git-release`: matching it anywhere let a message that merely quoted the string release v0.1.442. It also keeps the last 20 raw payloads in `.tmp/prompt-payloads.jsonl`, untracked — the license turns on what the host puts in `prompt`, and a turn where that went wrong is otherwise unreconstructable.
 - `gate-git.mjs` on the shell tools — refuses a git write when that file does not say the license was given this turn.
+- `gate-voice.mjs` on `Stop` — refuses to end the turn on a reply over Rule 1's 500-character ceiling, or one opening with praise or an apology. Only the countable half of Rule 1; the rest stays a reminder. Printing the rule every turn was not enough on its own, which is why this exists.
 
 ## Rules each paid for in version numbers
 

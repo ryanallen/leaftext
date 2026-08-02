@@ -53,7 +53,7 @@ This runs formatting, type checking, the tests, the drift checks over everything
 verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-shell check-identity check-hooks
 ```
 
-The design-system steps are the ones worth knowing about. `check-tokens`, `check-icons`, `check-gallery` and `check-design-docs` fail when a generated file has drifted from the four files in `design/` it is built from — the stylesheet's fixed values, the icon classes, the page at [leaftext.com/gallery.html](https://leaftext.com/gallery.html), and [Design system](05-design-system.md). `check-classes` fails on a class in `reading.css` that `design/components.md` does not account for, so new interface joins the design system rather than growing beside it. `check-literals` fails on a color, size, spacing or duration typed into `reading.css` instead of coming from a value. `check-verify` fails when a check exists but this recipe does not run it. `check-identity` fails on an assistant credited anywhere in the repo or its history, and `check-hooks` self-tests the two hooks.
+The design-system steps are the ones worth knowing about. `check-tokens`, `check-icons`, `check-gallery` and `check-design-docs` fail when a generated file has drifted from the four files in `design/` it is built from — the stylesheet's fixed values, the icon classes, the page at [leaftext.com/gallery.html](https://leaftext.com/gallery.html), and [Design system](05-design-system.md). `check-classes` fails on a class in `reading.css` that `design/components.md` does not account for, so new interface joins the design system rather than growing beside it. `check-literals` fails on a color, size, spacing or duration typed into `reading.css` instead of coming from a value. `check-verify` fails when a check exists but this recipe does not run it. `check-identity` fails on an assistant credited anywhere in the repo or its history, and `check-hooks` self-tests the three hooks.
 
 A passing `just verify` is the baseline requirement before handing any work back.
 
@@ -87,7 +87,7 @@ Each step in the verification pipeline can also be run on its own:
 | Spelling     | `just check-spelling`       | Fail on British spelling in the repo's own writing |
 | Front end    | `just check-shell`          | Run the page's script against a stand-in page: it parses, it boots, and its edit offsets are right |
 | Identity     | `just check-identity`       | Fail on an assistant credited in the repo or its history |
-| Hooks        | `just check-hooks`          | Self-test the two hooks |
+| Hooks        | `just check-hooks`          | Self-test the three hooks |
 | Full verify  | `just verify`               | All steps above in sequence                    |
 
 Additional convenience tasks are available via `just --list`, including `just sync-vendor` to recopy the vendored assets into `site/` and `just bundle-themes` to recompile `themes.md` from the `themes/` folder.

@@ -98,11 +98,13 @@ check-literals:
 check-identity:
     node scripts/check-identity.mjs
 
-# Self-test the two hooks in .claude/settings.json: that Rule 1 is still findable
-# in AGENTS.md and written once, and that a git write is refused without a license.
+# Self-test the three hooks in .claude/settings.json: that Rule 1 is still findable
+# in AGENTS.md and written once, that a git write is refused without a license, and
+# that a reply over Rule 1's ceiling, or opening with praise, is refused.
 check-hooks:
     node scripts/gate-rules.mjs --check
     node scripts/gate-git.mjs --check
+    node scripts/gate-voice.mjs --check
 
 # Run the WebView front-end against a fake page: that it parses, that it boots
 # (the fragments are one script, so their order is load-bearing), and that the
