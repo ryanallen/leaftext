@@ -101,4 +101,19 @@ pwsh scripts/capture-screenshot.ps1 -Doc docs/01-features/01-rendering.md -Out s
 just squeeze-png shot.bmp imgs/rendering.png --palette
 ```
 
-The script closes any running copy first (the app is single-instance, so a second launch hands the file over and exits), writes the window size and theme into `settings.json` because the webview lays out at the size it was created with, and restores your own settings afterward.
+`just doc-images` lists every picture the documentation asks for and which of them are not there, so a page cannot quietly point at a screenshot nobody took. It is not part of `just verify`: there is a backlog of missing ones, and a check that is red before anybody touches it stops being read. The repo's `sync-docs` skill runs it instead, so the pass that edits a page also takes what the page asks for.
+
+The script closes any running copy first (the app is single-instance, so a second launch hands the file over and exits), and writes the window size and theme into a `settings.json` of its own, because the webview lays out at the size it was created with. That file, the recent-files list and the vault registry all live in a throwaway profile under `-Work`: the app resolves both roots from `%APPDATA%` and `%LOCALAPPDATA%`, so a screenshot never reads or writes your own.
+
+Beyond `-Doc`, `-Width`, `-Height`, `-ThemeFamily` and `-ThemeMode`:
+
+| Option | What it is for |
+| --- | --- |
+| `-LibraryOpen` | Opens the [library](../01-features/03-library.md) pane |
+| `-Vault <folder>` | Registers a [vault](../01-features/03-library.md#vaults). The search box and the vault switcher do not exist without one |
+| `-Recents <files>` | Fills the home screen's [recent files](../01-features/02-navigation.md#recent-files) list |
+| `-Unlocked` | Lifts the [padlocks](../01-features/07-editing.md#the-padlock), for a picture of typing in the page or the source |
+| `-Do <steps>` | Drives the window before the shot: `click:X,Y`, `rclick:X,Y`, `move:X,Y`, `drag:X1,Y1,X2,Y2`, `hold:…` (a drag caught mid-gesture), `scroll:X,Y,NOTCHES`, `type:text`, `key:{ESC}`, `wait:MS` |
+| `-Crop "X,Y,W,H"` | Cuts the shot down to one control |
+
+`-Do` and `-Crop` coordinates are pixels in the captured image, so they are measured off a shot already taken at the same size: take one plain picture, look at it, then aim. `PrintWindow` does not draw the pointer, but it does draw what the pointer is over — a hover state photographs, the cursor arrow never appears.

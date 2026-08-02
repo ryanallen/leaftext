@@ -62,7 +62,7 @@ The rendered page is a live editor. The **source stays the single source of trut
 
 ### The block gutter
 
-![The left margin of a document showing the drag handle and plus control level with a paragraph, and one block lifted mid-drag with its neighbors sliding aside to open the gap it will land in](../../imgs/block-gutter.png)
+![One block lifted out of a document mid-drag, floating over the page while its neighbors slide together to close the gap it left](../../imgs/block-gutter.png)
 
 Hover a block and two controls appear in the page's left margin: a **handle** to drag it by, and a **plus** for adding one. They act through the same source ranges every other edit uses, so this is a view onto your file rather than a second idea of the document — which is why one gutter serves every format that qualifies.
 
@@ -148,7 +148,7 @@ Reading-view edits are undoable, step by step.
 
 ## The flowchart editor
 
-![The flowchart editor open as a full-window sheet: the diagram on the canvas at left with one box selected showing its plus handles, the matching Mermaid text in the pane at right, and the Flow direction control along the top](../../imgs/flowchart-editor.png)
+![The flowchart editor open as a full-window sheet: the diagram on the canvas at left, the matching Mermaid text in the pane at right, and the Flow direction control along the top](../../imgs/flowchart-editor.png)
 
 A flowchart is a [Mermaid](01-rendering.md#mermaid-diagrams) block like any other, and it can always be written as text. It can also be drawn. There are two ways in:
 

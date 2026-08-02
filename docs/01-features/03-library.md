@@ -255,7 +255,7 @@ The active vault is saved in `manifest.db` beside the vault list, not in [settin
 
 ### Narrow windows
 
-![A narrow Leaftext window with the library open as a full-width sheet over the document, the breadcrumb and search box at its top and the app bar still visible above it](../../imgs/library-sheet.png)
+![A narrow Leaftext window with the library open as a full-width sheet over the document, the vault name and search box at its top and the leaf and library button still visible above it](../../imgs/library-sheet.png)
 
 Below the point where a pane and a usable reader both fit, the library stops being a column beside the page and becomes a sheet over it. The same panel button opens it: it slides in from the left at full width, covering the document, with the path and search box in their usual places at the top. Picking a document dismisses it, since the page you just opened is behind it. The app bar stays above the sheet, so the button that opened it also closes it.
 

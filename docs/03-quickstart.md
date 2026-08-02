@@ -42,7 +42,7 @@ flowchart LR
 
 ## 2. Know what you are looking at
 
-![The Leaftext window labeled part by part: the app bar with its tab strip across the top, the library pane at left, the rendered page with its collapsed outline in the middle, the minimap rail at right, and the floating toolbar over the foot of the page](../imgs/ui-tour.png)
+![The whole Leaftext window at once: the app bar with its tab strip across the top, the library pane at left, the rendered page with its collapsed outline in the middle, the minimap rail at right, and the floating toolbar over the foot of the page](../imgs/ui-tour.png)
 
 ### The app bar, across the top
 

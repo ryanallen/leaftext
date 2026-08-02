@@ -1330,6 +1330,33 @@ if (booted) {
       throw new Error('theme.rs no longer emits --reading-font');
     }
   });
+
+  // An icon is a name on a masked span, never a drawing (see the icon rule in
+  // AGENTS.md). Code that swaps one and looks for an `svg` finds nothing and
+  // fails in silence: a vault on GitHub kept its box for a release because of
+  // exactly this. The flow canvas is the exception — the thing it reaches for
+  // there really is mermaid's rendered SVG, not an icon.
+  check('nothing looks for an svg where the page draws a masked span', () => {
+    const offenders = [];
+    for (const name of names) {
+      if (name === 'shell/flow-canvas.js') continue;
+      const text = readFileSync(join(root, 'src/assets', name), 'utf8');
+      if (/querySelector(All)?\(\s*['"]svg['"]\s*\)/.test(text)) offenders.push(name);
+    }
+    if (offenders.length) throw new Error(`looks for an svg: ${offenders.join(', ')}`);
+  });
+
+  // Mermaid sizes a box from its own measurement of the label, so measuring in
+  // the fallback face and painting in the theme's takes the last letter off
+  // every box in the diagram. v0.1.441 shipped that.
+  check('diagrams are measured only once the fonts have landed', () => {
+    const decorate = readFileSync(join(root, 'src/assets/shell/decorate.js'), 'utf8');
+    const draw = decorate.slice(decorate.indexOf('function drawMermaidBatches'));
+    const wait = draw.indexOf('document.fonts.ready');
+    const init = draw.indexOf('mermaid.initialize');
+    if (wait < 0) throw new Error('the draw path no longer waits for the fonts');
+    if (init < 0 || wait > init) throw new Error('the fonts are waited for after the diagrams are measured');
+  });
 }
 
 // ---- report -----------------------------------------------------------------

@@ -52,7 +52,7 @@ Write a `mermaid` code fence and get a diagram — flowchart, sequence, gantt, m
 
 ### XML, sitemaps, feeds, and Buddhist canon
 
-![An RSS feed opened in Leaftext, rendered as a channel heading, a field list, and one section per item instead of raw tags](imgs/xml.png)
+![An XML sitemap opened in Leaftext, rendered as a table of URL records with columns for URL, last modified and priority, instead of raw tags](imgs/xml.png)
 
 [Any XML](docs/01-features/01-rendering.md#any-xml) reads as sections, fields, and tables instead of tags — a sitemap, a feed, a `pom.xml`. And [84000-style TEI](docs/01-features/01-rendering.md#tei-xml-84000-translations), the format the Buddhist canon is translated into, gets a reader that understands its conventions: titles, front matter, nested divisions, verse, endnotes. **[XML →](docs/01-features/01-rendering.md#xml)**
 
@@ -90,13 +90,13 @@ Highlight words and a small bar appears over them: bold, italic, strikethrough, 
 
 ### Reach into the margin to move a block
 
-![The left margin of a document showing the drag handle and plus control, with one paragraph lifted mid-drag and its neighbors sliding aside to open the gap](imgs/block-gutter.png)
+![One paragraph lifted out of a document mid-drag, floating over the page while its neighbors slide together to close the gap it left](imgs/block-gutter.png)
 
 Take the handle and a block lifts off the page; drop it where its neighbors have opened a gap. Press the plus on an empty line and [a row of block kinds](docs/01-features/07-editing.md#adding-a-block) fans out — text, heading, list, quote, code, table, image, flowchart, divider. **[The block gutter →](docs/01-features/07-editing.md#the-block-gutter)**
 
 ### Draw a flowchart instead of typing one
 
-![The flowchart editor open as a full-window sheet: a diagram on the canvas at left with a selected box showing its plus handles, and the matching Mermaid text in the pane at right](imgs/flowchart-editor.png)
+![The flowchart editor open as a full-window sheet: a diagram on the canvas at left, and the matching Mermaid text in the pane at right](imgs/flowchart-editor.png)
 
 A canvas beside the Mermaid text, each following the other. Double-click to add a box and name it, pick from [forty-seven shapes](docs/01-features/07-editing.md#what-it-can-draw) grouped by what they are for, drag a handle onto another box to connect them, and group boxes together. Every other kind of diagram opens the same sheet as a live preview. Open it on any diagram already in a page, and [export](docs/01-features/07-editing.md#export) the finished thing as its own Markdown file or picture. **[The flowchart editor →](docs/01-features/07-editing.md#the-flowchart-editor)**
 

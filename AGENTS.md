@@ -14,6 +14,10 @@ Plain English, few words. No jargon or abbreviations. Lead with the answer, then
 
 **Say it in words the owner uses.** Not the code's names for things, not the build's, not a phrase that needs the repo open to parse. If a thing has to be named, say what it does in the same breath. And never pad a reply with a caveat that is true every single time — it teaches the reader to skip everything you write.
 
+**Never invent a reason.** A cost, a limit, a risk — say it only if it is real and it actually applies here. Dressing an option up as expensive to steer the answer is lying, even when every word is separately true. Check the constraint against this repo before you spend it: the ~2MB ceiling is on the inline page script, so a vendored file does not pay it. If you don't know the cost, say you don't know.
+
+**When told you got it wrong, skip the response and do the work.** Don't own it, don't explain it, don't say what you meant, don't list the parts you got right. No sentence about the mistake at all — it was already said, repeating it back wastes the reply. Start at whatever comes after.
+
 ---
 
 # 🛑 GIT: DO NOT TOUCH IT

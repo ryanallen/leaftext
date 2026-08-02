@@ -526,6 +526,11 @@ let mermaidRenderGeneration = 0;
 function drawMermaidBatches(diagrams, generation) {
   loadMermaid()
     .then(async (mermaid) => {
+      // A box is only as wide as mermaid measured its label, so measuring in the
+      // fallback face and painting in the theme's takes the last letter off every
+      // one of them. Wait for the faces the page has asked for before measuring.
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      if (generation !== mermaidRenderGeneration) return;
       // Re-read every time: the theme in force at this render is what these
       // diagrams must be drawn in, not the one that was in force at the last.
       mermaid.initialize(mermaidRuntimeConfig());
@@ -847,17 +852,18 @@ function repaintMermaidDiagrams() {
     any = true;
   }
   if (any) renderMermaidDiagrams();
+  return any;
 }
 
-// Mermaid sizes a label's box from its own measurement, so a diagram drawn before
-// the theme's web font arrives is measured in the fallback and clipped when the
-// real face lands. Once per theme — a repaint asks for no new faces, so this
-// cannot chase itself.
+// The backstop for a face that lands after a diagram was drawn anyway. Once per
+// theme — a repaint asks for no new faces, so this cannot chase itself — and
+// only spent on a page that had diagrams to repaint: the app's own faces finish
+// long before a document is open, and burning the one shot there is how every
+// box came to be measured in the fallback and shipped clipped in v0.1.441.
 let mermaidFontRepaintDone = false;
 function repaintMermaidDiagramsForFonts() {
   if (mermaidFontRepaintDone) return;
-  mermaidFontRepaintDone = true;
-  repaintMermaidDiagrams();
+  if (repaintMermaidDiagrams()) mermaidFontRepaintDone = true;
 }
 if (document.fonts && typeof document.fonts.addEventListener === 'function') {
   document.fonts.addEventListener('loadingdone', repaintMermaidDiagramsForFonts);

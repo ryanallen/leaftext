@@ -1,13 +1,13 @@
 ---
 name: sync-docs
-description: Update the docs under docs/ (and the /docs site nav) so they match the current app. Reviews recent app/feature changes and edits the right doc page(s), keeping them renderable by the leaftext web renderer, then regenerates the SEO/AIO/LLM discovery files (robots.txt, sitemap.xml, sitemap-md.txt, llms.txt, llms-full.txt) so search and AI crawlers stay current. Run it before a release or whenever app behavior changes. Never touches git. Use when the user says "sync the docs", "update the docs", "bundle the docs", "refresh documentation", "update the sitemap/llms.txt", or "make the docs match the code".
+description: Update the docs under docs/ (and the /docs site nav) so they match the current app. Reviews recent app/feature changes and edits the right doc page(s), keeping them renderable by the leaftext web renderer, takes any screenshot a page asks for and does not have, then regenerates the SEO/AIO/LLM discovery files (robots.txt, sitemap.xml, sitemap-md.txt, llms.txt, llms-full.txt) so search and AI crawlers stay current. Run it before a release or whenever app behavior changes. Never touches git. Use when the user says "sync the docs", "update the docs", "bundle the docs", "refresh documentation", "update the sitemap/llms.txt", or "make the docs match the code".
 argument-hint: "[topic | since-ref]"
 user-invocable: true
 ---
 
 # Sync Docs
 
-Keep the user-facing documentation in `docs/` truthful to the app. This is a **docs-only** task: edit Markdown (and, if pages are added or removed, the site nav and README list), then regenerate the SEO/AIO/LLM discovery files with `scripts/seo-gen.mjs` (step 5). **Never run git** — releasing is a separate step handled by `/git-release`.
+Keep the user-facing documentation in `docs/` truthful to the app. This is a **docs-only** task: edit Markdown (and, if pages are added or removed, the site nav and README list), take any screenshot a page asks for and does not have (step 5), then regenerate the SEO/AIO/LLM discovery files with `scripts/seo-gen.mjs` (step 6). **Never run git** — releasing is a separate step handled by `/git-release`.
 
 The docs are served at **leaftext.com/docs** by the static SPA in `docs/` (`index.html` + `docs.js` + `docs.css`). Each page is a plain `.md` file; `docs.js` renders it with the same renderer the root site uses (`site/markdown.js`) and routes by `#/<path>` (a route is the file path under `docs/` without `.md`).
 
@@ -124,7 +124,61 @@ folder's `README.md` is that folder's index. Two places to keep in sync:
 2. The **Documentation** list in the root `README.md` — keep the `docs/<path>.md`
    relative links current.
 
-### 5. Regenerate the SEO / AIO / LLM discovery files
+### 5. Take the pictures the pages ask for
+
+A page that names a screenshot nobody took renders a broken frame at leaftext.com.
+Nothing else in the repo notices, so this step is where it is caught.
+
+```bash
+node scripts/doc-images.mjs            # every reference, and which are not there
+node scripts/doc-images.mjs --missing  # page, reference, file — one per line
+```
+
+Take each missing one. Two commands, per picture — the app photographs itself, then
+the same encoder the diagram export uses writes the PNG:
+
+```bash
+pwsh scripts/capture-screenshot.ps1 -Doc <the document to open> -Out shot.bmp
+just squeeze-png shot.bmp imgs/<name>.png --palette
+```
+
+- **The file name is already chosen** — it is whatever the page asks for. Write it
+  there; never rename the reference to match a file you happened to make.
+- **`-Doc` is what should be on screen**, and a screenshot of a feature has to
+  *show* that feature. Omit it for the home screen. `-LibraryOpen` opens the library
+  pane; `-Vault <folder>` registers one, which is the only way the search box and the
+  vault switcher exist at all; `-Recents <files>` fills the home screen's list;
+  `-Unlocked` lifts the padlocks, which typing in the page or the source needs.
+  `-ThemeFamily` and `-ThemeMode` pin the theme (leave them at Fern light unless the
+  picture is about a theme, so the set looks like one app). `-Width`/`-Height` change
+  the window, and the page lays out at the size the window was created with.
+- **`-Do` drives the window** before the shot, so a picture can show a menu, a sheet,
+  a hover or a selection rather than only a document. Steps are `click:X,Y`,
+  `rclick:X,Y`, `move:X,Y`, `drag:X1,Y1,X2,Y2`, `hold:…` (a drag caught mid-gesture),
+  `scroll:X,Y,NOTCHES`, `type:text`, `key:{ESC}`, `wait:MS`. **Coordinates are pixels
+  in the captured image**, so measure them off the last shot you took at the same
+  size — take one plain shot first, look at it, then aim.
+- **`-Crop "X,Y,W,H"`, same pixels.** Detail shots ship cropped: a whole window
+  around a 200 px control is a picture of the window.
+- `--palette` cuts the image to 256 colors: it halves the file and is the only step
+  that moves a pixel. Use it for every screenshot.
+- The shot runs against a throwaway profile under `-Work`, never the owner's — their
+  settings, recent files and vault registry are not read or written. Nothing here
+  needs `settings.json` hand-edited.
+- **Anything the window cannot be made to show is not faked.** A macOS install
+  dialog, an installer that cannot be built here, a state that needs a real GitHub
+  repo or a pending release: leave the reference, say which pictures are still
+  missing and why, in the hand-back.
+- **Check every shot against the sentence that asks for it.** The alt text is a
+  promise about what is in the frame; where the window will not produce it, fix the
+  alt rather than shipping a picture that does not match.
+- Batch politely: each capture launches the app and waits several seconds, so take
+  them in one pass rather than one per edit.
+
+A new reference is part of the same edit that adds it — writing `![…](imgs/x.png)`
+and moving on is what built the backlog this step exists to drain.
+
+### 6. Regenerate the SEO / AIO / LLM discovery files
 
 The files AI crawlers and search engines read are generated from the docs, not hand-maintained. After editing docs — and always after adding or removing a page — regenerate them:
 
@@ -142,9 +196,10 @@ It rewrites five files at the repo root (the deployed site root) from `README.md
 
 Page list, titles, summaries, and `<lastmod>` dates are all derived from the current files, so there is no list to maintain by hand. It is deterministic — byte-identical output for the same tree, so a no-op run leaves git untouched. (`<lastmod>` reads the last commit date per file; it refreshes on the next run after you commit.)
 
-### 6. Verify
+### 7. Verify
 
 - Grep the changed files for leftovers: no `<Tabs`, `<Card`, `<Step`, `<Note`, `<Tip`, `<Warning`, `<Accordion`, or `theme={null}`.
+- `node scripts/doc-images.mjs` — every picture a touched page asks for is there, and any that are not are named in the hand-back with the reason.
 - Re-run `node scripts/seo-gen.mjs` and confirm it leaves the discovery files unchanged (a dirty tree here means step 5 was skipped or a doc changed after it ran).
 - For every touched page, confirm each Summary/overview table, shortcut list, and enumerated command/settings/feature table matches the source one-for-one — no stale, missing, or extra rows.
 - Confirm every internal link resolves to a real `.md` / route, and that each `#anchor` (including the anchor half of a deep link) matches a real heading slug on the target page.
@@ -163,7 +218,7 @@ Page list, titles, summaries, and `<lastmod>` dates are all derived from the cur
   node docs/render-docs-check.mjs   # renders every docs/*.md and fails on a throw
   ```
 
-### 7. Hand back — do NOT release
+### 8. Hand back — do NOT release
 
 Leave the changes uncommitted. Tell the user what pages changed. If they want it published, that is a separate, explicit `/git-release` (site-only: no version bump).
 
@@ -173,5 +228,7 @@ Leave the changes uncommitted. Tell the user what pages changed. If they want it
 - `docs/index.html`, `docs/docs.css` — the docs shell and chrome.
 - `site/markdown.js` — the renderer that defines what Markdown the docs may use.
 - `README.md` — the **Documentation** section with relative `docs/<route>.md` links.
+- `scripts/doc-images.mjs` — which pictures the docs ask for, and which are missing.
+- `scripts/capture-screenshot.ps1` + `just squeeze-png` — how a picture gets taken. See [Building](../../../docs/02-development/02-building.md#documentation-screenshots).
 - `scripts/seo-gen.mjs` — regenerates the SEO/AIO/LLM discovery files (`robots.txt`, `sitemap.xml`, `sitemap-md.txt`, `llms.txt`, `llms-full.txt`) from `README.md` + `docs/`.
 - `/git-release` — the separate skill that commits and pushes (site-only changes don't bump the version).

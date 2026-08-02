@@ -585,7 +585,31 @@ fn a_vault_that_reaches_github_wears_a_cloud() {
 
     // And the switcher button wears the mark of the vault it stands for; only
     // the glyph is replaced, the caret beside it is ours.
-    assert!(html.contains("if (glyph) glyph.outerHTML = vaultGlyph(true, activeVaultId);"));
+    assert!(html.contains("setVaultGlyph(libraryVaultSwitch, vaultGlyph(true, activeVaultId));"));
+
+    // An icon is a name on a masked span, never a drawing. Both swaps went
+    // looking for an `svg`, found nothing, and left every vault wearing a box
+    // however far its repository reached -- so both go through one helper now,
+    // and that helper looks for the span.
+    assert!(html.contains("const glyph = host && host.querySelector('.lt-icon');"));
+    assert_eq!(html.matches("setVaultGlyph(").count(), 3);
+}
+
+#[test]
+fn rebuilding_the_breadcrumb_leaves_the_vault_switcher_open() {
+    let html = app_shell_page();
+
+    // Opening the switcher asks every vault about its repository. On a vault that
+    // is one, git touches the folder, the watcher reports it, and the library
+    // re-renders -- so a crumb rebuild that closed any open menu closed the one
+    // that had just asked the question, and the switcher could not be opened at
+    // all beside a GitHub vault. Only a menu hanging off the trail dies with it.
+    assert!(html.contains(
+        "if (crumbMenuOwner && libraryCrumbTrail.contains(crumbMenuOwner)) hideCrumbMenu();"
+    ));
+    // The switcher is not in the trail, which is what makes the guard hold.
+    assert!(html.contains("id=\"libraryVaultSwitch\""));
+    assert!(html.contains("toggleCrumbMenu(libraryVaultSwitch, vaultMenuItems());"));
 }
 
 #[test]

@@ -118,8 +118,13 @@ bundle-monaco:
 # A screenshot BMP in, the smallest PNG out — the same encoder the flowchart
 # export uses (src/png.rs), so documentation images and diagrams cannot drift
 # onto two implementations. Used by scripts/capture-screenshot.ps1.
-squeeze-png source target:
-    cargo run --quiet -- --squeeze-png "{{ source }}" "{{ target }}"
+squeeze-png source target *flags:
+    cargo run --quiet -- --squeeze-png "{{ source }}" "{{ target }}" {{ flags }}
+
+# Which pictures the docs ask for, and which are not there. Not in `verify`: the
+# backlog would make it red before anybody touched it. `/sync-docs` runs it.
+doc-images:
+    node scripts/doc-images.mjs
 
 verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-shell check-identity check-hooks
 

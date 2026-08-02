@@ -368,8 +368,11 @@ function fitLibraryCrumbs() {
   const fullHtml = segments.map((segment, index) => crumbHtml(segment, index === last)).join(CRUMB_SEP_HTML);
   let hidden = [];
   let shown = segments;
-  // Past here the trail is rebuilt, so an open menu loses the "…" it hangs off.
-  hideCrumbMenu();
+  // Past here the trail is rebuilt, so a menu hanging off the "…" loses the button
+  // under it. Only that one: the switcher stands outside the trail, and closing it
+  // here left it unopenable beside a git vault, where asking about the repository
+  // brings a watcher event round to shut the menu that asked.
+  if (crumbMenuOwner && libraryCrumbTrail.contains(crumbMenuOwner)) hideCrumbMenu();
   // Measure with shrinking off and the "…" in the row, so every box reports the
   // width it actually wants. A closed pane measures zero — draw the whole path and
   // let the reopen (which resizes the band) refit it.
@@ -747,8 +750,7 @@ function refreshSwitcherGlyphs() {
   if (crumbMenu.hidden || crumbMenuOwner !== libraryVaultSwitch || crumbMenuVault) return;
   for (const item of crumbMenu.querySelectorAll('.crumb-menu-item[data-vault-id]')) {
     const id = Number(item.dataset.vaultId);
-    const glyph = item.querySelector('svg');
-    if (glyph) glyph.outerHTML = vaultGlyph(id === 0 ? !activeVaultId : id === activeVaultId, id);
+    setVaultGlyph(item, vaultGlyph(id === 0 ? !activeVaultId : id === activeVaultId, id));
   }
 }
 // The header's sync button: shown only when this vault has a remote and work
@@ -924,6 +926,12 @@ function vaultSyncs(id) {
 function vaultGlyph(current, id) {
   if (vaultSyncs(id)) return CLOUD_ICON_SVG;
   return current ? PACKAGE_OPEN_ICON_SVG : PACKAGE_ICON_SVG;
+}
+// An icon is a masked span, not a drawing. Both callers looked for an `svg`,
+// found none, and swapped nothing — which is why a vault on GitHub kept its box.
+function setVaultGlyph(host, markup) {
+  const glyph = host && host.querySelector('.lt-icon');
+  if (glyph) glyph.outerHTML = markup;
 }
 // Ask about any vault we have not looked at yet. Bounded by the number of vaults
 // and answered off the event loop, so opening the menu never waits on git.
@@ -1155,8 +1163,7 @@ function renderLibraryVaultSwitch() {
   if (!libraryVaultSwitch) return;
   // The button shows the vault you are in, so it wears that vault's mark. The
   // caret is ours and stays; only the glyph before it is replaced.
-  const glyph = libraryVaultSwitch.querySelector('svg');
-  if (glyph) glyph.outerHTML = vaultGlyph(true, activeVaultId);
+  setVaultGlyph(libraryVaultSwitch, vaultGlyph(true, activeVaultId));
   const label = `Switch vault (in ${libraryRootLabel()})`;
   libraryVaultSwitch.title = label;
   libraryVaultSwitch.setAttribute('aria-label', label);

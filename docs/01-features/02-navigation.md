@@ -149,7 +149,7 @@ Opening a document hands it to the Rust side to parse and render before the view
 
 ### Outline
 
-![A document's collapsed Outline row just under its title, reading Outline (312 lines), and the same outline expanded below it into a nested bulleted list of the document's headings](../../imgs/outline.png)
+![A document's Outline row just under its title, reading Outline (117 lines), expanded below into a nested bulleted list of the document's headings](../../imgs/outline.png)
 
 Every document opens with an **Outline** — a table of contents built automatically from the document's headings — tucked just under the title. It starts collapsed, so it never crowds the top of the page; click it to expand.
 
