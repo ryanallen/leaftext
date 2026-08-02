@@ -70,6 +70,9 @@ embed-resource = "2.5"
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
     "Win32_System_ApplicationInstallationAndServicing",
+    # SetStdHandle, which points the journal's file at stderr. No console is
+    # ever created — this build has none; it only swaps where stderr goes.
+    "Win32_System_Console",
     "Win32_System_DataExchange",
     "Win32_System_Memory",
     "Win32_System_Threading",

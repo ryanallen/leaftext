@@ -966,3 +966,275 @@ fn an_exported_picture_is_decoded_exactly_or_not_at_all() {
     assert_eq!(decode_base64("Zm9v*"), None);
     assert_eq!(decode_base64("Zm9-v"), None);
 }
+
+/// An address only this test uses, so a running copy of the app is never the
+/// thing answering — a named pipe on Windows, a socket file elsewhere.
+fn test_pipe_address(name: &str) -> String {
+    #[cfg(windows)]
+    {
+        format!(
+            r"\\.\pipe\leaftext-journal-test-{name}-{}",
+            std::process::id()
+        )
+    }
+    #[cfg(unix)]
+    {
+        std::env::temp_dir()
+            .join(format!(
+                "leaftext-journal-test-{name}-{}",
+                std::process::id()
+            ))
+            .to_string_lossy()
+            .to_string()
+    }
+}
+
+#[test]
+fn the_pipe_answers_and_refuses_out_loud() {
+    // The transport itself: a real listener, a real client, and a round trip
+    // through both. Everything above it is the same code the app serves with.
+    let address = test_pipe_address("round-trip");
+    pipe::listen(address.clone(), |request| {
+        pipe::answer(request, |ask| match ask {
+            pipe::Ask::Eval { script } => Some(Ok(serde_json::json!(format!("ran {script}")))),
+            _ => Some(Ok(serde_json::json!({ "tabs": [] }))),
+        })
+    });
+
+    let reply = pipe::ask(&address, r#"{"ask":"version"}"#).expect("the pipe answered");
+    let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
+    assert_eq!(reply["ok"], true);
+    assert_eq!(reply["answer"], env!("CARGO_PKG_VERSION"));
+
+    // What only the window knows comes back through the reply channel.
+    let reply = pipe::ask(&address, r#"{"ask":"state"}"#).expect("the pipe answered");
+    let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
+    assert_eq!(reply["answer"]["tabs"].as_array().map(Vec::len), Some(0));
+
+    // An ask nobody wrote is refused with a message rather than dropped. The
+    // page's IPC drops what it cannot parse because a page typo is our own bug;
+    // here it is somebody waiting for an answer that would never come.
+    let reply = pipe::ask(&address, r#"{"ask":"sudo"}"#).expect("the pipe answered");
+    let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
+    assert_eq!(reply["ok"], false);
+    let error = reply["error"].as_str().unwrap_or_default();
+    assert!(
+        error.contains("not an ask this app knows") && error.contains("version"),
+        "a refusal should say what it does answer: {error}"
+    );
+
+    // Not even JSON is the same answer, not a hang and not a dropped connection.
+    let reply = pipe::ask(&address, "log please").expect("the pipe answered");
+    assert!(reply.contains("\"ok\":false"), "{reply}");
+
+    // `eval` carries its script through the same round trip.
+    let reply = pipe::ask(&address, r#"{"ask":"eval","script":"1+1"}"#).expect("the pipe answered");
+    let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
+    assert_eq!(reply["answer"], "ran 1+1");
+}
+
+#[test]
+fn a_window_that_cannot_run_it_says_so_rather_than_timing_out() {
+    // Two different failures, told apart: nothing to run the script in is an
+    // answer the app has, and it should not cost the asker two seconds of
+    // waiting to find out.
+    let reply = pipe::answer(r#"{"ask":"eval","script":"1+1"}"#, |_| {
+        Some(Err("there is no window to run it in".to_string()))
+    });
+    let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
+    assert_eq!(reply["ok"], false);
+    assert_eq!(reply["error"], "there is no window to run it in");
+}
+
+#[test]
+fn a_blocked_event_loop_answers_no_reply_rather_than_hanging() {
+    // The failure this whole shape exists to avoid: an app too busy to answer
+    // must not take the asker down with it. Asserted against the reply channel
+    // directly, with no window in play, so a bug here fails a test instead of
+    // hanging the suite.
+    // The sender stays alive and is never filled, which is what a hung window
+    // looks like from here — a dropped one would end the wait for the wrong
+    // reason. The app waits two seconds; the kind of ending is what matters.
+    let (_reply, answers) = std::sync::mpsc::sync_channel::<Result<serde_json::Value, String>>(1);
+    assert_eq!(
+        answers.recv_timeout(std::time::Duration::from_millis(250)),
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout),
+        "the wait must end on the clock, not on the channel closing"
+    );
+
+    // And that is the refusal the asker gets.
+    let text = pipe::answer(r#"{"ask":"eval","script":"while(true){}"}"#, |_| None);
+    let text: serde_json::Value = serde_json::from_str(&text).expect("a JSON reply");
+    assert_eq!(text["ok"], false);
+    assert!(text["error"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("did not answer in time"));
+}
+
+#[cfg(windows)]
+#[test]
+fn an_asker_is_told_the_pipe_ended_not_that_it_was_taken_away() {
+    // The bug that made every question fail while the tests stayed green:
+    // `DisconnectNamedPipe` hands the asker "the pipe is being closed" (232)
+    // *after* a perfectly good reply, and node reports that as a failure.
+    // Closing the handle instead gives "the pipe ended" (109), which every
+    // client reads as the end of the answer. The round trip alone missed it
+    // because it stops reading once it has the reply.
+    const ERROR_BROKEN_PIPE: u32 = 109;
+    let address = test_pipe_address("ending");
+    pipe::listen(address.clone(), |request| {
+        pipe::answer(request, |_| Some(Ok(serde_json::json!(null))))
+    });
+
+    let (reply, ending) =
+        pipe::ask_then_ending(&address, r#"{"ask":"version"}"#).expect("the pipe answered");
+    assert!(reply.contains("\"ok\":true"), "{reply}");
+    assert_eq!(
+        ending, ERROR_BROKEN_PIPE,
+        "the asker should be told the pipe ended, not that it was taken away"
+    );
+}
+
+#[test]
+fn the_page_reports_an_error_in_words_the_host_understands() {
+    // The page's own errors travel as JSON over the same IPC as everything else,
+    // and the host drops what it cannot parse. So a field renamed on one side is
+    // silent: errors simply stop arriving. This is the exact message journal.js
+    // builds — see the matching check in scripts/check-shell.mjs.
+    let sent = r#"{"command":"logError","message":"Error: boom\n at app.js:1","count":4}"#;
+    match serde_json::from_str::<IpcCommand>(sent) {
+        Ok(IpcCommand::LogError { message, count }) => {
+            assert!(message.contains("boom"));
+            assert_eq!(count, 4);
+        }
+        other => panic!("the page's error report did not arrive: {other:?}"),
+    }
+}
+
+#[test]
+fn the_journal_hands_back_the_last_lines_asked_for() {
+    // `log` with a line count is how a report quotes the end of a long session.
+    // Off by one here and the last line — the one that says what just went
+    // wrong — is the one left out.
+    let written = "one\ntwo\nthree\nfour\n";
+    assert_eq!(
+        journal::tail(written, Some(2)),
+        "three\nfour",
+        "the last two, in the order they were written"
+    );
+    assert_eq!(
+        journal::tail(written, Some(99)),
+        "one\ntwo\nthree\nfour",
+        "asking for more lines than there are is not an error"
+    );
+    assert_eq!(journal::tail(written, Some(0)), "");
+    assert_eq!(
+        journal::tail(written, None),
+        written,
+        "no count means the whole file, trailing newline and all"
+    );
+}
+
+#[test]
+fn a_window_that_never_answers_is_reported_not_waited_on() {
+    // Asking a hung app what it is doing is the point of the pipe, so the one
+    // thing it must never do is hang with it.
+    let reply = pipe::answer(r#"{"ask":"state"}"#, |_| None);
+    let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
+    assert_eq!(reply["ok"], false);
+    assert!(reply["error"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("did not answer in time"));
+}
+
+/// A folder of its own per journal test: these write real files and one of them
+/// runs in a second process, so they must not land on each other.
+fn journal_dir(name: &str) -> PathBuf {
+    std::env::temp_dir().join("leaf-journal").join(name)
+}
+
+#[test]
+fn the_journal_rolls_to_exactly_two_files() {
+    // The cap is the whole promise: a log nobody empties has to stop growing on
+    // its own, and one previous copy is what survives a restart-after-a-crash.
+    let dir = journal_dir("roll");
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("a temp folder");
+    let live = journal::log_path(&dir);
+    let previous = journal::previous_log_path(&dir);
+
+    // Under the cap, nothing moves.
+    fs::write(&live, "small").expect("a journal to write");
+    journal::roll(&dir);
+    assert!(
+        live.exists() && !previous.exists(),
+        "a small journal stays put"
+    );
+
+    // Over it, the journal becomes the previous copy.
+    fs::write(&live, vec![b'x'; 1024 * 1024]).expect("a full journal");
+    journal::roll(&dir);
+    assert!(!live.exists(), "the full journal was moved aside");
+    assert_eq!(
+        fs::read(&previous).expect("the previous copy").len(),
+        1024 * 1024
+    );
+
+    // A second roll overwrites that copy rather than starting a third file.
+    fs::write(&live, vec![b'y'; 1024 * 1024]).expect("a second full journal");
+    journal::roll(&dir);
+    assert_eq!(
+        fs::read(&previous).expect("the previous copy").first(),
+        Some(&b'y'),
+        "the newer copy replaced the older one"
+    );
+    let files = fs::read_dir(&dir).expect("the folder").count();
+    assert_eq!(files, 1, "two files at the very most, and never a third");
+}
+
+#[test]
+fn a_data_folder_that_cannot_be_written_does_not_stop_the_app() {
+    // Instrumentation never takes the app down. A file sitting where the data
+    // folder should be is the portable version of "you cannot write here".
+    let dir = journal_dir("blocked");
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(dir.parent().expect("a parent")).expect("a temp folder");
+    fs::write(&dir, "not a folder").expect("a file in the way");
+
+    // Returns rather than panicking, and leaves stderr where it was — nothing is
+    // redirected in this process, so the rest of the suite still prints normally.
+    journal::start_in(&dir);
+}
+
+#[test]
+fn a_panic_reaches_the_journal() {
+    // A crash is the one thing that cannot be reproduced by asking. This runs in
+    // a second process for two reasons: a panic here would be caught by the test
+    // harness instead of the hook, and the redirect is process-wide — done in
+    // this process it would swallow every other test's output.
+    const CHILD: &str = "LEAFTEXT_JOURNAL_PANIC_CHILD";
+    let dir = journal_dir("panic");
+
+    if std::env::var_os(CHILD).is_some() {
+        journal::start_in(&dir);
+        panic!("the journal should be holding this");
+    }
+
+    let _ = fs::remove_dir_all(&dir);
+    let child = Command::new(std::env::current_exe().expect("this test binary"))
+        // --nocapture matters: with the harness capturing output, `eprintln!` is
+        // diverted before it ever reaches the handle the journal swapped.
+        .args(["a_panic_reaches_the_journal", "--nocapture"])
+        .env(CHILD, "1")
+        .output()
+        .expect("a second copy of the test binary");
+
+    assert!(!child.status.success(), "the child was supposed to panic");
+    let written = fs::read_to_string(journal::log_path(&dir)).expect("a journal file");
+    assert!(
+        written.contains("panic at") && written.contains("the journal should be holding this"),
+        "the panic did not reach the journal: {written:?}"
+    );
+}

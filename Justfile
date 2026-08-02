@@ -123,12 +123,27 @@ bundle-monaco:
 squeeze-png source target *flags:
     cargo run --quiet -- --squeeze-png "{{ source }}" "{{ target }}" {{ flags }}
 
+# Ask a running copy of the app something over its pipe. A developer tool, never
+# shipped: one MSI and one DMG is the rule. `just mcp` is the same program
+# speaking MCP on stdin/stdout, which is how an AI gets at it.
+ask request:
+    node scripts/mcp-leaftext.mjs --ask '{{ request }}'
+
+mcp:
+    node scripts/mcp-leaftext.mjs
+
+# Fail if the MCP wrapper and src/pipe.rs disagree about what can be asked, or
+# about where to ask it. Offline: the wrapper itself needs the app running, this
+# reads two files.
+check-mcp:
+    node scripts/check-mcp.mjs
+
 # Which pictures the docs ask for, and which are not there. Not in `verify`: the
 # backlog would make it red before anybody touched it. `/sync-docs` runs it.
 doc-images:
     node scripts/doc-images.mjs
 
-verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-shell check-identity check-hooks
+verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-shell check-identity check-hooks check-mcp
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

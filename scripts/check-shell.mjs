@@ -1359,6 +1359,95 @@ if (booted) {
   });
 }
 
+// ---- 4. the page reports its own errors -------------------------------------
+
+// journal.js leads the list so that a fragment throwing as it loads is reported
+// instead of vanishing. That claim is about load order, so it is checked by
+// loading things in order — journal.js, then a fragment that throws — rather
+// than by reading the list and trusting it.
+
+/** journal.js alone, plus whatever tail the test wants, against a recording ipc. */
+function runJournal(tail = '') {
+  const sent = [];
+  const errors = [];
+  const sandbox = {
+    console: { log() {}, warn() {}, debug() {}, error: (...args) => errors.push(args) },
+    ipc: { postMessage: (text) => sent.push(JSON.parse(text)) },
+    addEventListener(name, handler) {
+      this.listeners[name] = handler;
+    },
+    listeners: {},
+  };
+  sandbox.window = sandbox;
+  sandbox.globalThis = sandbox;
+  const context = vm.createContext(sandbox);
+  const source = readFileSync(join(root, 'src/assets/shell/journal.js'), 'utf8') + tail;
+  let threw = null;
+  try {
+    new vm.Script(source, { filename: 'journal-check.js' }).runInContext(context);
+  } catch (error) {
+    threw = error;
+  }
+  return { sandbox, sent, errors, threw };
+}
+
+check('journal.js leads the list, so a later fragment can throw into it', () => {
+  const first = names[0];
+  if (first !== 'shell/journal.js') {
+    throw new Error(`journal.js must be first in APP_SHELL_SCRIPT_PARTS, found ${first}`);
+  }
+
+  // A fragment appended after it throws as it loads. Node has no window.onerror
+  // dispatch, so the throw comes back here — what matters is that the handler was
+  // already installed when it happened, and that it turns the throw into a report.
+  const { sandbox, sent, threw } = runJournal('\nthrow new Error("a fragment broke");\n');
+  if (!threw) throw new Error('the appended fragment was supposed to throw');
+  if (typeof sandbox.onerror !== 'function') {
+    throw new Error('window.onerror was not installed before the fragment ran');
+  }
+
+  sandbox.onerror(threw.message, 'app.js', 12, 3, threw);
+  if (sent.length !== 1) throw new Error(`expected one message, got ${sent.length}`);
+  const [message] = sent;
+  if (message.command !== 'logError') throw new Error(`sent ${message.command}, not logError`);
+  if (!message.message.includes('a fragment broke')) {
+    throw new Error(`the report lost the message: ${message.message}`);
+  }
+  if (!message.message.includes('app.js:12:3')) {
+    throw new Error(`the report lost the place: ${message.message}`);
+  }
+});
+
+check('a repeated error is counted, not repeated', () => {
+  // Two of the eight console.error calls in the shell sit inside per-diagram
+  // loops. Sending every one would fill the log file in seconds.
+  const { sandbox, sent, errors } = runJournal();
+  for (let i = 0; i < 100; i += 1) sandbox.console.error('the same thing went wrong');
+
+  // Every call still reaches the real console — the web view's own log is not
+  // quietened, only the file.
+  if (errors.length !== 100) throw new Error(`the console lost calls: ${errors.length} of 100`);
+  // 1, 2, 4, 8, 16, 32, 64 — seven, and the last one says how far it got.
+  if (sent.length !== 7) throw new Error(`expected 7 messages for 100 errors, got ${sent.length}`);
+  if (sent[sent.length - 1].count !== 64) {
+    throw new Error(`the count did not ride along: ${sent[sent.length - 1].count}`);
+  }
+
+  // A different message is its own count, not folded into the first.
+  sandbox.console.error('something else');
+  if (sent[sent.length - 1].count !== 1) throw new Error('two messages shared one count');
+});
+
+check('an unhandled rejection reaches the same place', () => {
+  const { sandbox, sent } = runJournal();
+  const onRejection = sandbox.listeners.unhandledrejection;
+  if (typeof onRejection !== 'function') throw new Error('nothing listens for a rejection');
+  onRejection({ reason: new Error('a promise gave up') });
+  if (sent.length !== 1 || !sent[0].message.includes('a promise gave up')) {
+    throw new Error(`the rejection did not arrive: ${JSON.stringify(sent)}`);
+  }
+});
+
 // ---- report -----------------------------------------------------------------
 
 if (failures.length) {

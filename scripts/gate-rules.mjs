@@ -95,7 +95,7 @@ export function context(prompt, rule) {
   out.push('', hasReleaseLicense(prompt)
     ? '- `/git-release` is in this message: one git write is authorized, for this turn only.'
     : '- No `/git-release` in this message. Git writes are refused by scripts/gate-git.mjs. Do not offer or hint at one; a dirty tree is the correct end state.');
-  out.push('- Before handing work back: `just verify`. Say what changed in plain words — and name something as unproven only when this machine could not build the part you changed.');
+  out.push('- Before handing work back: `just verify`. Say what changed in plain words. Never mention that the Mac build or the installer cannot be built here — it is true every time, it is already known, and saying it is the padding Rule 1 refuses.');
   return out.join('\n');
 }
 

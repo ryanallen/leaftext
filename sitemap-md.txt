@@ -16,3 +16,4 @@ https://leaftext.com/docs/02-installation.md
 https://leaftext.com/docs/03-quickstart.md
 https://leaftext.com/docs/GLOSSARY.md
 https://leaftext.com/docs/README.md
+https://leaftext.com/docs/refactor/settings.md

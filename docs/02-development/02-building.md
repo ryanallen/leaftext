@@ -88,9 +88,25 @@ Each step in the verification pipeline can also be run on its own:
 | Front end    | `just check-shell`          | Run the page's script against a stand-in page: it parses, it boots, and its edit offsets are right |
 | Identity     | `just check-identity`       | Fail on an assistant credited in the repo or its history |
 | Hooks        | `just check-hooks`          | Self-test the three hooks |
+| Ask pipe     | `just check-mcp`            | Fail when the MCP wrapper and `src/pipe.rs` disagree about what can be asked, or where |
 | Full verify  | `just verify`               | All steps above in sequence                    |
 
 Additional convenience tasks are available via `just --list`, including `just sync-vendor` to recopy the vendored assets into `site/` and `just bundle-themes` to recompile `themes.md` from the `themes/` folder.
+
+### Asking a running app
+
+A running Leaftext answers questions on a local channel — see `src/pipe.rs`. `just ask '<json>'` puts one question to it and prints the reply:
+
+```bash
+just ask '{"ask":"version"}'
+just ask '{"ask":"state"}'
+just ask '{"ask":"log","lines":40}'
+just ask '{"ask":"eval","script":"document.title"}'
+```
+
+`just mcp` runs the same program as an MCP server on stdin/stdout, so an AI gets one tool per ask. It is **not a shipped artifact**: one MSI and one DMG is the rule, and every extra file in a release is one somebody has to ask about. Neither release workflow builds it, and `just verify` cannot run it because it needs the app running — `check-mcp` covers what can be checked offline, which is that the tools and the app's asks still agree.
+
+`eval` runs arbitrary JavaScript inside the app. It is the reason the pipe beats reading the journal afterwards, and it is reachable by anything running under the same account.
 
 ### Documentation screenshots
 

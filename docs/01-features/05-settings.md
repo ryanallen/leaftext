@@ -41,6 +41,8 @@ Click **Settings** in the app bar. The panel opens as a dropdown and updates the
 | `{data_dir}/manifest.db` | The [vaults](03-library.md#vaults) you have named, and which one is active |
 | `{data_dir}/webview2` | WebView2 data |
 | `{data_dir}/updates` | Verified installer waiting to be applied ([Updates](#updates)) |
+| `{data_dir}/journal.log` | What the app printed this run, and any crash ([Journal](#journal)) |
+| `{data_dir}/journal.prev.log` | The previous journal, kept when the live one fills up |
 
 Here `{config_dir}` and `{data_dir}` are the per-app directories derived from the app id `com.ryanallen.leaftext` — they already include the vendor/app path segments (there is no extra `leaftext/` component to add). See [Paths](#paths) for the real per-platform locations.
 
@@ -158,6 +160,15 @@ Leaftext removes broken entries automatically and collapses equivalent path spel
 - Saved as `window_width` and `window_height` (in logical, DPI-independent pixels) plus `window_maximized`
 - The size is stored separately from the maximized state, so un-maximizing returns to the windowed dimensions rather than the full-screen ones
 - Window position is not restored — only the size and maximized state
+
+## Journal
+
+Leaftext keeps a plain text note of what it did, at `{data_dir}/journal.log`. It is written for bug reports: if something goes wrong, that file is what to attach.
+
+- It holds what the app printed and the details of a crash — nothing else
+- **Your writing is never in it.** File paths are recorded, document text is not
+- It stops at about a megabyte, at which point it becomes `journal.prev.log` and a fresh one starts. That is two files, and it never grows past them
+- It is safe to delete, and it is not sent anywhere — nothing leaves your machine unless you attach it yourself
 
 ## Paths
 

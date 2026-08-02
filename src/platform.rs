@@ -1,4 +1,5 @@
-//! Native clipboard, Recycle Bin/Trash, and HTTPS download.
+//! Native clipboard, Recycle Bin/Trash, HTTPS download, and the stderr redirect
+//! behind the journal.
 //!
 //! Each is one system call or one bundled tool on each platform, so they talk to
 //! the OS directly rather than through a cross-platform crate. That keeps whole
@@ -9,6 +10,9 @@
 //! single-instance guard); macOS shells out, matching how the file-manager
 //! reveal, file-copy, and Get Info actions in `main.rs` already work.
 
+#[cfg(unix)]
+use std::ffi::c_int;
+use std::fs::File;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -18,6 +22,41 @@ pub use windows_impl::{download_to, move_to_trash, set_clipboard_text};
 
 #[cfg(target_os = "macos")]
 pub use macos_impl::{download_to, move_to_trash, set_clipboard_text};
+
+/// Point this process's stderr at an already-open file. The Windows build has no
+/// console, so without this everything the app prints is thrown away.
+///
+/// Takes the file by value on purpose: on Windows the handle *becomes* stderr, so
+/// closing it would leave the process printing into a dead handle. Returns whether
+/// the swap took.
+#[cfg(windows)]
+pub fn redirect_stderr(file: File) -> bool {
+    use std::os::windows::io::IntoRawHandle;
+    use windows_sys::Win32::System::Console::{SetStdHandle, STD_ERROR_HANDLE};
+
+    // Never closed: it is stderr for the rest of the run.
+    let handle = file.into_raw_handle();
+    unsafe { SetStdHandle(STD_ERROR_HANDLE, handle) != 0 }
+}
+
+/// The same, on any Unix.
+///
+/// `dup2` is declared here rather than pulling in `libc` for one symbol — the
+/// alternative is a whole crate that buys nothing else in this build. Gated on
+/// any Unix, not the Mac by name: the call is identical on Linux, so a Linux
+/// build would need no edit here.
+#[cfg(unix)]
+pub fn redirect_stderr(file: File) -> bool {
+    use std::os::unix::io::AsRawFd;
+
+    extern "C" {
+        fn dup2(oldfd: c_int, newfd: c_int) -> c_int;
+    }
+
+    const STDERR: c_int = 2;
+    // dup2 copies the descriptor, so this file may close on the way out.
+    unsafe { dup2(file.as_raw_fd(), STDERR) != -1 }
+}
 
 /// How much of a download to hold before handing it on. Large enough that a
 /// 6 MB installer is a hundred or so calls, small enough that progress moves.

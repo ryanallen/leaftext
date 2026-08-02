@@ -1,6 +1,6 @@
 ---
 name: check
-description: The gate before work is handed back or released. Runs /sync-tests so the change has a test, then `just verify` — sixteen steps: formatting, compile, tests, no hand-written value in the stylesheet, every class and token and icon and component listed in `design/`, the gallery and the published design page in step with it, US spelling, the front-end boots, no assistant identity in the repo, the two hooks, and that every check is in the suite. A failure is fixed and re-run, never explained past. Says what a check could not reach only when the work is in it — the Mac build, the installer and the GitHub workflows never run here, so that is not news. Never touches git. Use when the user says "check it", "verify", or before handing work back; /git-release calls it before it commits.
+description: The gate before work is handed back or released. Runs /sync-tests so the change has a test, then `just verify` — sixteen steps: formatting, compile, tests, no hand-written value in the stylesheet, every class and token and icon and component listed in `design/`, the gallery and the published design page in step with it, US spelling, the front-end boots, no assistant identity in the repo, the two hooks, and that every check is in the suite. A failure is fixed and re-run, never explained past. Never mentions that the Mac build, the installer or the GitHub workflows do not run here — that is true every time and GitHub builds them on a tagged release. Never touches git. Use when the user says "check it", "verify", or before handing work back; /git-release calls it before it commits.
 argument-hint: ""
 user-invocable: true
 ---
@@ -48,12 +48,15 @@ loosened check.
   `just sync-vendor` fixes `check-vendor`. The rest are real problems.
 - Repeat until it is green.
 
-### 4. Say what a check could not reach — only when it applies
+### 4. Never say what this machine cannot build
 
-Three things cannot run on this machine: the Mac build, the installer, and the
-GitHub workflows. That is permanent and the owner knows it, so **do not say it every
-time.** Mention it only when the work you just did is *in* one of them — then say
-which change is untested and what would prove it.
+The Mac build, the installer and the GitHub workflows do not run here. That is
+permanent, the owner has always known it, and **it never goes in a hand-back** —
+not as a caveat, not as a footnote, not "it ships unproven", and not when the
+change you just made is in one of them. That is when it is most obvious.
+
+GitHub builds the Mac app and the installer on a tagged release, so a break shows
+up there. Say it only if you are asked about it directly.
 
 A caveat that is true on every hand-back teaches the reader to skip the whole line.
 

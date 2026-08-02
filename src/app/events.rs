@@ -70,6 +70,50 @@ pub(crate) enum UserEvent {
     UpdateDownloadStaged { version: String },
     /// The download or its verification failed; nothing is staged.
     UpdateDownloadFailed { version: String, message: String },
+    /// Somebody on the ask pipe wants to know what is open. `reply` is how the
+    /// answer gets back to them — the pipe thread is waiting on it with a
+    /// timeout, so a loop too busy to fill it costs that asker two seconds and
+    /// nothing else.
+    PipeState { reply: PipeReply },
+    /// Somebody on the ask pipe wants a line of JavaScript run in the page.
+    /// `evaluate_script_with_callback` must be called from this thread and
+    /// answers later, so the reply channel is filled by the callback rather than
+    /// by the arm that starts it.
+    PipeEval { script: String, reply: PipeReply },
+}
+
+/// Where an ask-pipe answer goes back to. `Err` is a refusal with a reason, so a
+/// window that cannot answer says why instead of running the asker's clock out.
+pub(crate) type PipeReply = std::sync::mpsc::SyncSender<Result<serde_json::Value, String>>;
+
+/// What the ask pipe's `state` answers with: enough to know what the app is
+/// looking at without asking for anything the loop would have to go to disk for.
+pub(crate) fn pipe_state(reader: &Reader, vaults: &VaultState) -> serde_json::Value {
+    let tabs: Vec<serde_json::Value> = reader
+        .workspace
+        .tabs
+        .iter()
+        .map(|tab| {
+            serde_json::json!({
+                "title": tab.title,
+                "path": tab.history.current().map(|path| path.display().to_string()),
+                "codeView": tab.code_view,
+                "unsaved": tab.edit.as_ref().is_some_and(|edit| edit.is_dirty()),
+            })
+        })
+        .collect();
+
+    serde_json::json!({
+        "version": env!("CARGO_PKG_VERSION"),
+        "activeTab": reader.workspace.active,
+        "activePath": reader.workspace.active_path().map(|path| path.display().to_string()),
+        "tabs": tabs,
+        "vault": {
+            "id": vaults.active,
+            "root": vaults.root.as_ref().map(|root| root.display().to_string()),
+            "folder": vaults.folder,
+        },
+    })
 }
 
 #[derive(Debug, Deserialize)]
@@ -369,6 +413,11 @@ pub(crate) enum IpcCommand {
     /// Install the staged update and relaunch.
     #[serde(rename = "applyUpdate")]
     ApplyUpdate,
+    /// Something threw in the page. `count` is how many times that same text has
+    /// been seen, because `journal.js` collapses repeats rather than sending
+    /// every one — see the fragment for why.
+    #[serde(rename = "logError")]
+    LogError { message: String, count: u32 },
 }
 
 pub(crate) fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {

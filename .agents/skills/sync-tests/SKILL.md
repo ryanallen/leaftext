@@ -1,6 +1,6 @@
 ---
 name: sync-tests
-description: Make the tests match the code, the way sync-docs makes the docs match the app. Names the test that covers each change, writes the ones that are missing, and says what cannot be tested when the change is in something this machine cannot run (Mac-only code, the installer, the GitHub workflows). With no argument it works the uncommitted diff; pass a path to audit a file or folder whether or not it changed, or a git ref to work everything since it. Runs `cargo test` and `just check-shell` and never touches git. Use when the user says "sync the tests", "what test covers this", "is this tested", or before a release.
+description: Make the tests match the code, the way sync-docs makes the docs match the app. Names the test that covers each change, writes the ones that are missing, and says what cannot be tested when a change needs a real window, live selection or a held pointer — never that Mac code, the installer or the workflows do not build here, which is true every time and so worth nothing. With no argument it works the uncommitted diff; pass a path to audit a file or folder whether or not it changed, or a git ref to work everything since it. Runs `cargo test` and `just check-shell` and never touches git. Use when the user says "sync the tests", "what test covers this", "is this tested", or before a release.
 argument-hint: "[path | since-ref]"
 user-invocable: true
 ---
@@ -101,15 +101,13 @@ Both, every time — a Rust change can break the front-end check through
 
 ### 5. Say what cannot be tested — about this change, not in general
 
-If the change you audited is in one of these, say so and say which part is unproven:
+Only one thing is worth saying here: a change that needs a **real window, live
+selected text, or a held pointer** has no test, and it is worth naming which part.
 
-- Mac-only code: it does not compile on Windows, so its tests do not run here.
-- The installer recipe under `wix/`: no local runner, so it ships unproven.
-- The GitHub workflows: they only run on GitHub.
-- Anything needing a real window, live selected text, or a held pointer.
-
-If the change is in none of them, say nothing about them. A list repeated on every
-hand-back is a list nobody reads.
+**Never say that Mac code, the installer or the GitHub workflows are unproven.**
+GitHub compiles all three on a tagged release, and the sentence is true on every
+hand-back — which is what makes it noise. A list repeated every time is a list
+nobody reads.
 
 ### 6. Hand back
 

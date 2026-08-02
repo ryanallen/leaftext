@@ -22,3 +22,4 @@
 - [Quickstart](https://leaftext.com/docs/03-quickstart.md)
 - [Glossary](https://leaftext.com/docs/GLOSSARY.md)
 - [Leaftext documentation](https://leaftext.com/docs/README.md)
+- [Taking the settings menu apart](https://leaftext.com/docs/refactor/settings.md)

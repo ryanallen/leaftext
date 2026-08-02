@@ -4,6 +4,8 @@
 compile_error!("leaftext builds for Windows and macOS only");
 
 mod app;
+mod journal;
+mod pipe;
 mod platform;
 mod single_instance;
 
@@ -252,6 +254,11 @@ fn squeeze_png(source: &str, target: &str, palette: bool) -> Result<String, Box<
 }
 
 fn run_app() -> Result<(), Box<dyn Error>> {
+    // First, so everything below has somewhere to print. Not in the tool modes
+    // above (`--squeeze-png`, `--dump-css`): those are run from a terminal that
+    // is already watching stderr.
+    journal::start();
+
     // A file passed on the command line. Used to hand off to a running instance,
     // or to open on boot if we're the first instance.
     let arg_path = env::args_os().nth(1).map(PathBuf::from);
@@ -348,6 +355,10 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             });
         }
     });
+
+    // Answers questions about this running app on a local channel. Nothing it
+    // does can change the app; see src/pipe.rs.
+    pipe::serve(proxy.clone());
 
     let handler = ipc_handler(proxy.clone());
     let drag_drop_handler = drag_drop_handler(proxy.clone());

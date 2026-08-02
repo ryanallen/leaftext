@@ -196,6 +196,8 @@ The one exception is the one you ask for: [GitHub sync](docs/01-features/03-libr
 
 Your [settings](docs/01-features/05-settings.md) are a JSON file on your machine, and your documents are the files you already had. Delete Leaftext tomorrow and every word you wrote is still sitting in the folder you put it in, readable by anything.
 
+Leaftext also keeps a plain text [journal](docs/01-features/05-settings.md#journal) of what it did, so a bug report has something to attach. It records file paths and errors — never a word you wrote — it stops at about a megabyte, and it goes nowhere unless you send it.
+
 ### How an update lands
 
 An installer downloads in the background, is checked for the length the release advertised, and is re-hashed before it is ever run. Then the **next launch installs it, before any window opens** — the one moment Windows lets an app replace itself — or press **Restart to update** if you would rather not wait. Each version is installed automatically once; after that it waits for a click. **[Updates →](docs/01-features/05-settings.md#updates)**
