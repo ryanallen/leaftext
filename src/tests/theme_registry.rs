@@ -202,10 +202,6 @@ fn theme_compiler_gates_readable_pairs_for_every_source() {
             ("--leaf-markdown-heading-5", "--leaf-markdown-background"),
             ("--leaf-markdown-heading-6", "--leaf-markdown-background"),
             (
-                "--leaf-markdown-inline-code-foreground",
-                "--leaf-markdown-inline-code-background",
-            ),
-            (
                 "--leaf-editor-code-foreground",
                 "--leaf-editor-code-background",
             ),
@@ -388,18 +384,9 @@ fn theme_compiler_gates_interactive_chrome_contrast() {
                 "--leaf-navigation-button-hover-background",
             ),
             (
-                "--leaf-navigation-button-foreground",
-                "--leaf-navigation-button-background",
-            ),
-            (
-                "--leaf-navigation-button-foreground",
-                "--leaf-navigation-button-hover-background",
-            ),
-            (
                 "--leaf-markdown-badge-foreground",
                 "--leaf-markdown-badge-background",
             ),
-            ("--leaf-secondary-foreground", "--leaf-secondary"),
         ] {
             let ratio = contrast_ratio(
                 css_token_for_source(css, source, foreground),

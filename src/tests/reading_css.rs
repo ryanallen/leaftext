@@ -10,31 +10,22 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
         "--background:",
         "--foreground:",
         "--surface:",
-        "--surface-page:",
-        "--surface-raised:",
         "--surface-elevated:",
         "--surface-muted:",
         "--surface-sunken:",
-        "--surface-inset:",
-        "--surface-card:",
         "--border:",
         "--border-strong:",
-        "--muted:",
         "--muted-foreground:",
         "--primary:",
         "--primary-foreground:",
-        "--secondary:",
-        "--secondary-foreground:",
         "--accent:",
         "--accent-foreground:",
         "--danger:",
         "--danger-foreground:",
         "--warning:",
-        "--warning-foreground:",
         "--success:",
         "--success-foreground:",
         "--done:",
-        "--done-foreground:",
         "--link:",
         "--link-hover:",
         "--selection:",
@@ -59,22 +50,12 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
         "--preview-border:",
         "--markdown-inline-code-background:",
         "--markdown-inline-code-foreground:",
-        "--markdown-blockquote-background:",
         "--markdown-alert-warning-border:",
-        "--markdown-alert-done-border:",
         "--markdown-table-cell-border:",
         "--markdown-table-heading-background:",
         "--markdown-thematic-break:",
-        "--minimap-background:",
-        "--minimap-border:",
         "--minimap-viewport-border:",
         "--minimap-viewport-background:",
-        "--minimap-heading:",
-        "--minimap-paragraph:",
-        "--minimap-blank:",
-        "--minimap-list:",
-        "--minimap-blockquote:",
-        "--minimap-code:",
         "--code-block-background:",
         "--code-block-foreground:",
         "--code-block-border:",
@@ -132,7 +113,10 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
     // GitHub's tokens are concrete hex, like every other family's.
     assert_contains(css, "--leaf-background: #ffffff;");
     assert_contains(css, "--leaf-syntax-comment: #59636e;");
-    assert_contains(css, "--surface-page: var(--leaf-markdown-background);");
+    assert_contains(
+        css,
+        "--reading-background: var(--leaf-markdown-background);",
+    );
     assert_contains(css, "--syntax-comment: var(--leaf-syntax-comment);");
     assert_contains(css, "--leaf-syntax-inserted: #116329;");
     assert_contains(css, "--syntax-inserted: var(--leaf-syntax-inserted);");
@@ -275,13 +259,8 @@ fn reading_mode_css_maps_role_aliases_to_released_tokens() {
         "--code-block-background: var(--leaf-editor-code-background);",
         "--code-block-foreground: var(--leaf-editor-code-foreground);",
         "--code-block-selection-foreground: var(--leaf-editor-code-selection-foreground);",
-        "--minimap-background: var(--leaf-minimap-background);",
-        "--minimap-border: var(--leaf-minimap-border);",
         "--minimap-viewport-border: var(--leaf-minimap-viewport-border);",
         "--minimap-viewport-background: var(--leaf-minimap-viewport-background);",
-        "--minimap-heading: var(--leaf-minimap-heading);",
-        "--minimap-paragraph: var(--leaf-minimap-paragraph);",
-        "--minimap-code: var(--leaf-minimap-code);",
     ] {
         assert_contains(css, alias);
     }
@@ -720,7 +699,7 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
             "minimap track padding would double-inset the preview lane and keep the viewport overlay from reading as edge-to-edge"
         );
     assert!(
-            !css.contains("border-left: 1px solid var(--minimap-border);"),
+            !rule_body(&css, ".document-minimap-track {").contains("border-left"),
             "minimap track border must not consume layout width because the preview lane needs exactly 8px from both minimap edges"
         );
     assert!(

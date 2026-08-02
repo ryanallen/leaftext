@@ -3,10 +3,6 @@
   /* App bar height, shared by the bar itself and everything that offsets content
      below the fixed bar (document padding, library pane, minimap). */
   --app-bar-height: 40px;
-  --surface-page: var(--leaf-markdown-background);
-  --surface-raised: var(--leaf-surface-raised);
-  --surface-card: var(--leaf-surface-card);
-  --surface-inset: var(--leaf-surface-inset);
   --background: var(--leaf-background);
   --foreground: var(--leaf-foreground);
   --surface: var(--leaf-surface);
@@ -15,22 +11,17 @@
   --surface-sunken: var(--leaf-surface-sunken);
   --border: var(--leaf-border);
   --border-strong: var(--leaf-border-strong);
-  --muted: var(--leaf-muted-background);
   --muted-foreground: var(--leaf-muted-foreground);
   --primary: var(--leaf-primary);
   --primary-foreground: var(--leaf-primary-foreground);
-  --secondary: var(--leaf-secondary);
-  --secondary-foreground: var(--leaf-secondary-foreground);
   --accent: var(--leaf-accent);
   --accent-foreground: var(--leaf-accent-foreground);
   --danger: var(--leaf-danger);
   --danger-foreground: var(--leaf-danger-foreground);
   --warning: var(--leaf-warning);
-  --warning-foreground: var(--leaf-warning-foreground);
   --success: var(--leaf-success);
   --success-foreground: var(--leaf-success-foreground);
   --done: var(--leaf-done);
-  --done-foreground: var(--leaf-done-foreground);
   --link: var(--leaf-link);
   --link-hover: var(--leaf-link-hover);
   --selection: var(--leaf-focus-selection-background);
@@ -41,8 +32,6 @@
   --reading-heading: var(--leaf-markdown-heading);
   --reading-link: var(--leaf-markdown-link);
   --reading-rule: var(--leaf-markdown-rule);
-  --reading-code-bg: var(--leaf-editor-inline-code-background);
-  --reading-quote-bar: var(--leaf-markdown-blockquote-border);
   --markdown-code-background: var(--leaf-editor-inline-code-background);
   --markdown-code-foreground: var(--leaf-editor-inline-code-foreground);
   --markdown-blockquote-border: var(--leaf-markdown-blockquote-border);
@@ -74,10 +63,8 @@
   --app-border: var(--border);
   --app-border-strong: var(--border-strong);
   --app-surface: var(--surface);
-  --app-surface-raised: var(--surface-raised);
   --app-surface-elevated: var(--surface-elevated);
   --app-surface-muted: var(--surface-muted);
-  --app-surface-inset: var(--surface-inset);
   /* One shade for every piece of app chrome — top bar, library pane, its two
      bands, the search field. No per-surface tint or mix: any variant shows up as a
      tone seam where two of them meet. */
@@ -145,13 +132,11 @@
   --type-h6-weight: 600;
   --markdown-inline-code-background: var(--markdown-code-background);
   --markdown-inline-code-foreground: var(--markdown-code-foreground);
-  --markdown-blockquote-background: var(--leaf-markdown-blockquote-background);
   --markdown-alert-note-border: var(--leaf-markdown-alert-note);
   --markdown-alert-tip-border: var(--leaf-markdown-alert-tip);
   --markdown-alert-important-border: var(--leaf-markdown-alert-important);
   --markdown-alert-warning-border: var(--leaf-markdown-alert-warning);
   --markdown-alert-caution-border: var(--leaf-markdown-alert-caution);
-  --markdown-alert-done-border: var(--leaf-markdown-alert-done);
   --markdown-badge-background: var(--leaf-markdown-badge-background);
   --markdown-badge-foreground: var(--leaf-markdown-badge-foreground);
   --markdown-table-cell-border: var(--markdown-table-border);
@@ -164,16 +149,8 @@
   --recent-border: var(--leaf-navigation-recent-border);
   --recent-item-foreground: var(--leaf-navigation-recent-item-foreground);
   --recent-item-hover-foreground: var(--leaf-navigation-recent-item-hover-foreground);
-  --minimap-background: var(--leaf-minimap-background);
-  --minimap-border: var(--leaf-minimap-border);
   --minimap-viewport-border: var(--leaf-minimap-viewport-border);
   --minimap-viewport-background: var(--leaf-minimap-viewport-background);
-  --minimap-heading: var(--leaf-minimap-heading);
-  --minimap-paragraph: var(--leaf-minimap-paragraph);
-  --minimap-blank: var(--leaf-minimap-blank);
-  --minimap-list: var(--leaf-minimap-list);
-  --minimap-blockquote: var(--leaf-minimap-blockquote);
-  --minimap-code: var(--leaf-minimap-code);
   --code-block-background: var(--leaf-editor-code-background);
   --code-block-foreground: var(--leaf-editor-code-foreground);
   --code-block-border: var(--leaf-editor-code-border);
@@ -1061,16 +1038,7 @@ button:disabled:hover {
   background: var(--settings-control-background);
   color: var(--settings-control-foreground);
 }
-.close-button {
-  border-color: transparent;
-  background: var(--settings-control-background);
-  color: var(--settings-control-foreground);
-}
 .history-button:hover:not(:disabled) {
-  border-color: transparent;
-  background: var(--settings-control-background);
-}
-.close-button:hover:not(:disabled) {
   border-color: transparent;
   background: var(--settings-control-background);
 }
@@ -1895,7 +1863,7 @@ body:has(#readerToolbar:not([hidden])) {
   /* Off the page's bottom edge by the same 8px the card is held off the frame. */
   margin-bottom: 8px;
   padding: 4px;
-  border-radius: var(--leaf-radius-lg, 12px);
+  border-radius: var(--leaf-radius-lg);
   /* Transparent, not gone: the border keeps the box's size while ::after
      paints the visible face — see below. */
   border: 1px solid transparent;
@@ -1913,7 +1881,7 @@ body:has(#readerToolbar:not([hidden])) {
   position: absolute;
   z-index: -1;
   inset: -1px;
-  border-radius: var(--leaf-radius-lg, 12px);
+  border-radius: var(--leaf-radius-lg);
   border: 1px solid var(--app-border);
   /* Opaque: the page scrolls underneath it. */
   background: var(--chrome-surface);
@@ -2059,7 +2027,7 @@ body:has(#readerToolbar:not([hidden])) {
   gap: 1px;
   margin: 0 2px 0 0;
   padding: 0 2px;
-  border-radius: var(--leaf-radius-md, 8px);
+  border-radius: var(--leaf-radius-md);
   /* A well cut into the bar: a wash of shadow over its face, and more inside
      the top edge. Black at an alpha, never a mix toward the foreground — that
      lightens on a dark theme, which is a recess lit from inside. Not a shade
@@ -2997,9 +2965,6 @@ body:has(#readerToolbar:not([hidden])) {
 .document-body ol ol ol ol ol {
   list-style-type: lower-roman;
 }
-.document-body .task-list-item {
-  list-style: none;
-}
 .document-body input[type="checkbox"] {
   accent-color: var(--leaf-markdown-checkbox, #6e7681);
   margin-right: 0.4em;
@@ -3886,7 +3851,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .code-view-monaco .monaco-editor .minimap-slider {
   background: var(--leaf-minimap-viewport-background) !important;
   border: 1px solid var(--leaf-minimap-viewport-border);
-  border-radius: var(--leaf-radius-sm, 6px);
+  border-radius: var(--leaf-radius-sm);
   box-sizing: border-box;
   /* Hold the box a pixel clear of the rail's outer edge, or its right stroke is
      a coin toss. Monaco sizes the box to the full width of the rail, and the rail

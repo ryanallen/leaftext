@@ -203,11 +203,6 @@ window.leafSetPager = (state) => {
   bindDocumentLinks();
   scheduleReaderLayoutUpdate();
 };
-// The folder holding `filePath`, or '' when it has no parent worth showing.
-function parentFolderOf(filePath) {
-  const cut = Math.max((filePath || '').lastIndexOf('/'), (filePath || '').lastIndexOf('\\'));
-  return cut > 0 ? filePath.slice(0, cut) : '';
-}
 function scrollSelectedLibraryRowIntoView() {
   const row = libraryTree.querySelector('.library-file.is-selected');
   // Centered so a deeply nested file lands away from the app bar and bottom edge.
