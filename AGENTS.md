@@ -47,8 +47,11 @@ In `.agents/skills/`, which `.claude/` and `.codex/` symlink to. Invoke by name.
 
 | skill | when |
 | --- | --- |
+| `check` | before handing work back. Runs `sync-tests`, then `just verify`, then says what could not be checked here. |
+| `sync-tests` | the change needs a test that would have caught it. `check` calls it. |
 | `sync-docs` | app behavior changed, or before a release. Edits `docs/`, never git. |
-| `git-release` | only on `/git-release`. Runs `sync-docs`, then commits, tags and pushes. |
+| `code-comments` | the comment bar, in one place: why not what, one line if it fits, cut the drafting history. |
+| `git-release` | only on `/git-release`. Runs `sync-docs`, `code-comments` and `check`, then commits, tags and pushes. |
 
 ## Hooks
 
@@ -73,7 +76,7 @@ In `.claude/settings.json`, pointing at `scripts/`. Each runs by hand with `--ch
 
 ## Commands
 
-Needs `rustup`, `just`, `node`. Run `just verify` (fmt, check, test, vendor + theme drift, US spelling, front-end boot, the two hooks) before handing work back; `just check` / `test` / `format` / `check-shell` individually.
+Needs `rustup`, `just`, `node`. `/check` is the gate before handing work back: `just verify` (fmt, check, test, vendor + theme drift, US spelling, front-end boot, identity, the two hooks) with a test pass in front of it. `just check` / `test` / `format` / `check-shell` run individually.
 
 **Say what you couldn't verify** — `cfg(target_os = "macos")` code doesn't compile on Windows, and WiX doesn't run locally.
 

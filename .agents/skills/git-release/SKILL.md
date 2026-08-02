@@ -1,6 +1,6 @@
 ---
 name: git-release
-description: Commit and push releases. Always runs the sync-docs skill first to keep the docs truthful, then proceeds. App (Rust) changes bump the version, tag, and trigger CI builds; site-only changes (README/index.html/site/imgs) just push — no version bump. Always cleans up GitHub Pages deployments to keep only the newest. Never co-authors commits. Use only when user instructs git operations like "bump and push", "release version X", or "release the site". Use when user says bump, release, push with tag, commit and push.
+description: Commit and push releases. Runs sync-docs, code-comments, then check (tests plus `just verify`) before it commits — a tag never goes out on untested code. App (Rust) changes bump the version, tag, and trigger CI builds; site-only changes (README/index.html/site/imgs) just push — no version bump. Always cleans up GitHub Pages deployments to keep only the newest. The commits are the owner's, never co-authored. Use only when user instructs git operations like "bump and push", "release version X", or "release the site". Use when user says bump, release, push with tag, commit and push.
 disable-model-invocation: true
 argument-hint: "[version] [message]"
 user-invocable: true
@@ -36,19 +36,17 @@ Do not skip this even for app releases: a code change is exactly when the docs m
 
 ### Pre-step: Trim verbose code comments (always, before committing)
 
-Before step 0 commits anything, review the comments **you** added or changed in this session's code edits and condense any that are too long. Fresh comments tend to over-explain — a 4-line block where 1–2 lines carry the point.
+Run [code-comments](../code-comments/SKILL.md): `/code-comments`. It holds the bar — why not what, the density next door, one line if it fits, cut the drafting history and keep the version-numbered history — and it edits comments in place, leaving them uncommitted for step 0.
 
-1. See the uncommitted diff: `git diff -- 'src/*'` (add other code globs as needed). **Scope is the file, not the author.** Every comment in a file this release touches is in scope; files it doesn't touch are not, so a release never sprawls into an unrelated comment refactor. Who wrote a comment, and when, says nothing about whether it is still true — and "only tidy your own" is a ratchet that lets wrong ones pile up.
-2. For each comment you introduced, apply the bar:
-   - **Keep the *why*, cut the *what*.** The code shows what it does; the comment explains why it's needed or what breaks without it.
-   - **Match the surrounding density.** A new comment should be no longer than nearby existing ones for similar code. If the block next door explains itself in one line, yours should too.
-   - **One line if it fits.** Collapse multi-line blocks that restate the same idea, drop incidental specifics (exact pixel values, obvious mechanics) unless load-bearing, and cut hedging.
-   - **Cut the history, keep the rule.** A comment narrating how the code got here is a changelog entry, and git already holds it: *"an earlier version divided by …"*, *"this used to …"*, *"two attempts read zero"*, *"we removed X"*, *"the first draft did Y"*, *"this replaced Z"*. Delete the narration outright. Where it exists to stop a mistake recurring, keep the standing rule and drop the story — **"don't do X, it breaks Y" earns its line; "we used to do X" does not.** A comment naming a function, field, file, or behavior that no longer exists is deleted or corrected, never left.
+The bar lives there, not here. One copy.
 
-     **Shipped history is not drafting history.** A version number is evidence the rule is real and costly, and those comments stay as they are: *"v0.1.365 shipped without a Start Menu entry and was unreachable"*, *"v0.1.423 shipped near-black boxes"*, *"unlocking a 50,000-block glossary took 148 SECONDS that way"*. That is the repo's memory of what it paid for (see AGENTS.md, *Rules each paid for in version numbers*). What gets cut is the account of this feature being built — attempts, rewrites, and what an earlier draft of the same function did.
-3. Edit them down in place. This makes the working tree dirty (or dirtier) — that's expected; step 0 commits the condensed versions.
+### Pre-step: Check (always, last before committing)
 
-This is a quality gate, not a git operation — never commit, tag, or push here.
+Run [check](../check/SKILL.md): `/check`. It runs `/sync-tests` — so the change being released has a test that would have caught it — and then `just verify`.
+
+1. This is the **last** pre-step, after `sync-docs` and `code-comments`, so `verify` runs over the tree that is about to be committed.
+2. If it is not green, **the release stops here.** Fix the cause, re-run `/check` from the top, and only then continue. A tag on untested code is the thing this pre-step exists to prevent.
+3. It reports what cannot be checked on this machine — macOS-gated code, WiX, the workflows. Carry that into the hand-back; do not treat it as a failure.
 
 ### 0. Commit any uncommitted changes
 
@@ -164,7 +162,7 @@ git push origin --delete <old-tag-1> <old-tag-2> ...
 **User says:** "Release the site" (only `README.md` and `site/` changed).
 
 **Actions:**
-1. Run `/sync-docs` first; let it finish (any doc edits stay uncommitted).
+1. Run `/sync-docs`, then `/code-comments`, then `/check`; let each finish (their edits stay uncommitted).
 2. Commit changes with a short message.
 3. Detect site-only (no app paths in the diff) → **no version bump, no tag**.
 4. Prune old github-pages deployments, keeping the currently active one.
@@ -175,7 +173,7 @@ git push origin --delete <old-tag-1> <old-tag-2> ...
 **User says:** "Bump to 0.1.104 and push" (Rust changed).
 
 **Actions:**
-1. Run `/sync-docs` first; let it finish (any doc edits stay uncommitted).
+1. Run `/sync-docs`, then `/code-comments`, then `/check` — green before anything is committed.
 2. Commit changes.
 3. Detect app release.
 4. `Cargo.toml` + `Cargo.lock` → `0.1.104`; commit `Release v0.1.104`.
@@ -199,8 +197,14 @@ Cause: remote tags weren't deleted. Solution: `git push origin --delete v<old-ve
 **Deployments keep piling up.**
 Cause: the prune (step 7) was skipped. Re-run it any time — safe standalone, outside a release.
 
+**`just verify` is not green.**
+Cause: the release was started on a tree that does not pass. Solution: it is not a release problem — fix the cause, re-run `/check`, and continue. Never tag past it.
+
 ## Reference
 
+- [check](../check/SKILL.md) — tests plus `just verify`; the gate before step 0.
+- [sync-tests](../sync-tests/SKILL.md) — what `/check` runs first.
+- [code-comments](../code-comments/SKILL.md) — the comment bar, in one place.
 - [AGENTS.md](../AGENTS.md) — Release flow and version strategy
 - `Cargo.toml`: source of truth for the app version (app releases only)
 - `Cargo.lock`: must match `Cargo.toml` for CI builds

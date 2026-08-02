@@ -37,6 +37,11 @@ check-themes:
 check-spelling:
     node scripts/check-spelling.mjs
 
+# Fail on an assistant or third-party identity anywhere in the repo or its history:
+# a co-author trailer, a generated-by credit, an assistant as a commit author.
+check-identity:
+    node scripts/check-identity.mjs
+
 # Self-test the two hooks in .claude/settings.json: that Rule 1 is still findable
 # in AGENTS.md and written once, and that a git write is refused without a license.
 check-hooks:
@@ -60,7 +65,7 @@ bundle-monaco:
 squeeze-png source target:
     cargo run --quiet -- --squeeze-png "{{ source }}" "{{ target }}"
 
-verify: format-check check test check-vendor check-themes check-spelling check-shell check-hooks
+verify: format-check check test check-vendor check-themes check-spelling check-shell check-identity check-hooks
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:
