@@ -27,7 +27,10 @@ const flowZoomIn = document.getElementById('flowZoomIn');
 const flowZoomOut = document.getElementById('flowZoomOut');
 const flowZoomFit = document.getElementById('flowZoomFit');
 const flowSplit = document.getElementById('flowSplit');
-const flowInspector = document.getElementById('flowInspector');
+const flowPicker = document.getElementById('flowPicker');
+const flowPickerHead = document.getElementById('flowPickerHead');
+const flowPickerBody = document.getElementById('flowPickerBody');
+const flowPickerClose = document.getElementById('flowPickerClose');
 const flowNotice = document.getElementById('flowNotice');
 const flowCode = document.getElementById('flowCode');
 
@@ -61,9 +64,11 @@ const flowHistory = { past: [], future: [] };
 let flowBefore = null;
 const FLOW_HISTORY_CAP = 100;
 
-// Why the canvas is off. The code pane still works on every one of these, which
-// is why refusing costs the reader nothing.
-const FLOW_UNMODELED = 'The canvas can’t model this diagram yet — edit it as text below.';
+// Why the canvas is off, for when flowRefusal cannot name the line that beat
+// it. The diagram is still drawn and the code pane still edits it, which is why
+// refusing costs the reader nothing.
+const FLOW_UNMODELED = 'The canvas can’t model this diagram yet.';
+const FLOW_AS_TEXT = ' Edit it as text below; the picture follows what you type.';
 const FLOW_LOST_BOXES = 'Drawn, but the canvas can’t find its boxes to put handles on — edit it as text below.';
 const FLOW_NOTHING_YET = 'Nothing here yet. Double-click anywhere to add the first box.';
 const FLOW_TIP_IDLE =
@@ -74,9 +79,15 @@ const FLOW_TIP_NODE =
 // the only one offered all four handles. After that, Flow up top turns it.
 const FLOW_TIP_FIRST = 'Its four + handles start the chart running that way. After that, Flow up top turns it.';
 const FLOW_TIP_EDGE = 'Drag either end onto another box to reconnect it · Delete removes it.';
+// The same sentence the text pane carries, on the button that does it — the
+// pane is easy to have scrolled past, and this is the last moment to say so.
+const FLOW_SAVE_REWRITES = 'Save rewrites the whole block: one box to a line, every label quoted.';
+// A diagram the canvas cannot model. It is drawn, and that is all it is.
+const FLOW_TIP_PREVIEW = 'Drag to move the picture · Ctrl-scroll to zoom · type below to change it.';
 // What a drag is offering, said while it is still in the air. Every drop this
 // canvas takes is one of these, so none of them has to be guessed at.
-const FLOW_TIP_MOVING = 'Drop on a line to put this box in it · on another box to move it beside that one.';
+const FLOW_TIP_MOVING =
+  'Drop on a line to put this box in it · on another box to move it beside that one · in a group to join it, outside to leave it.';
 const FLOW_TIP_BUD = 'Let go on empty space for a new box · on another box to connect to it.';
 
 // ---- opening and closing ---------------------------------------------------
@@ -90,6 +101,7 @@ function openFlowSheet({ title, text, save }) {
   flowSelection = null;
   flowZoom = 1;
   if (flowSheetTitle) flowSheetTitle.textContent = title || 'Flowchart';
+  readyFlowPicker();
   buildFlowControls();
   loadFlowChips();
   flowHistory.past.length = 0;
@@ -116,6 +128,13 @@ function closeFlowSheet() {
   flowSession = null;
   flowSelection = null;
   flowDrag = null;
+  // The picker goes with it, and without its slide: the whole editor is leaving.
+  flowPickerAdd = null;
+  flowPickerName = '';
+  if (flowPicker) {
+    flowPicker.classList.remove('open');
+    flowPicker.hidden = true;
+  }
   window.clearTimeout(flowCodeTimer);
   window.clearTimeout(flowDrawTimer);
   document.removeEventListener('keydown', onFlowSheetKey);
@@ -149,10 +168,14 @@ function onFlowSheetKey(event) {
   if (!flowSession) return;
   if (event.key === 'Escape') {
     event.preventDefault();
-    // One thing at a time: the menu goes first, and the sheet only when there
-    // is nothing else open over it.
+    // One thing at a time: the menu goes first, then the picker if it is asking
+    // which shape to add, and the sheet only when there is nothing over it.
     if (flowMenu) {
       closeFlowMenu();
+      return;
+    }
+    if (flowPickerAdd) {
+      closeFlowAddPicker();
       return;
     }
     closeFlowSheet();
@@ -278,7 +301,7 @@ function updateFlowSaveState() {
   const empty = !!graph && !graph.nodes.length;
   if (flowSheetSave) {
     flowSheetSave.disabled = empty;
-    flowSheetSave.title = empty ? 'Add a box before saving' : '';
+    flowSheetSave.title = empty ? 'Add a box before saving' : FLOW_SAVE_REWRITES;
   }
   if (flowSheetExport) {
     flowSheetExport.disabled = empty;
@@ -289,9 +312,9 @@ function updateFlowSaveState() {
 function flowSelectionStillThere() {
   const graph = flowSession && flowSession.graph;
   if (!graph || !flowSelection) return false;
-  return flowSelection.kind === 'node'
-    ? !!flowFindNode(graph, flowSelection.id)
-    : !!flowFindEdge(graph, flowSelection.id);
+  if (flowSelection.kind === 'node') return !!flowFindNode(graph, flowSelection.id);
+  if (flowSelection.kind === 'group') return !!flowFindGroup(graph, flowSelection.id);
+  return !!flowFindEdge(graph, flowSelection.id);
 }
 
 // Typing waits 180ms before it is read, so anything acting on the text takes what
@@ -326,7 +349,13 @@ function setFlowHint(text) {
 
 function restoreFlowHint() {
   const graph = flowSession && flowSession.graph;
-  if (!graph || !flowSelection) {
+  // No graph is a picture, not a canvas: the gestures it does answer to are the
+  // two that only move the view, and the text pane is where it changes.
+  if (!graph) {
+    setFlowHint(FLOW_TIP_PREVIEW);
+    return;
+  }
+  if (!flowSelection) {
     setFlowHint(FLOW_TIP_IDLE);
     return;
   }
@@ -402,19 +431,23 @@ function buildFlowControls() {
 function addFlowNode(shapeId, options) {
   const graph = flowSession && flowSession.graph;
   if (!graph) return null;
-  const { before, connectFrom, connectTo, turn, intoEdge } = options || {};
+  const { before, connectFrom, connectTo, turn, intoEdge, text } = options || {};
   // Asked for across the flow: the chart turns, so the new step lands on the
   // side it was asked for rather than wherever the old direction would put it.
   if (turn) graph.direction = turn;
-  const node = flowAddNode(graph, shapeId, flowShape(shapeId).label);
+  // The name typed into the picker before a shape was chosen, if there was one.
+  // Otherwise the shape's own name, which is a placeholder to be typed over.
+  const named = (text || '').trim();
+  const node = flowAddNode(graph, shapeId, named || flowShape(shapeId).label);
   if (before !== undefined) flowMoveNode(graph, node.id, before);
   if (connectFrom) flowConnect(graph, connectFrom, node.id);
   if (connectTo) flowConnect(graph, node.id, connectTo);
   if (intoEdge) flowSpliceIntoEdge(graph, node.id, intoEdge);
   flowSelection = { kind: 'node', id: node.id };
   flowGraphChanged();
-  // Straight into typing its name: a box called "Step" helps nobody.
-  openFlowLabelBox('node', node.id);
+  // Straight into typing its name: a box called "Step" helps nobody. Already
+  // named, and there is nothing to ask.
+  if (!named) openFlowLabelBox('node', node.id);
   return node;
 }
 
@@ -526,16 +559,32 @@ function setFlowZoom(next) {
 // three-box diagram blown up to fill the pane looks broken, not helpful.
 function fitFlowCanvas() {
   if (!flowCanvas || !flowSize) return;
+  setFlowPan(0, 0);
   const room = flowCanvas.clientWidth - 24;
   const tall = flowCanvas.clientHeight - 24;
   if (room <= 0 || tall <= 0) return;
   setFlowZoom(Math.min(1, room / flowSize.width, tall / flowSize.height));
 }
 
-// A diagram smaller than the pane is centered by the layout (see .flow-stage);
-// one bigger than it opens on its middle rather than its top-left corner.
+// Where the diagram has been dragged to, in stage pixels. The layout centers
+// the stage and this moves it from there, so a diagram that fits the pane can
+// still be pushed out from under the picker — which scrolling could never do,
+// there being nothing to scroll.
+const flowPan = { x: 0, y: 0 };
+
+function setFlowPan(x, y) {
+  flowPan.x = x;
+  flowPan.y = y;
+  if (!flowCanvas) return;
+  flowCanvas.style.setProperty('--flow-pan-x', Math.round(x) + 'px');
+  flowCanvas.style.setProperty('--flow-pan-y', Math.round(y) + 'px');
+}
+
+// Back to the middle: the drag undone, and a diagram bigger than the pane
+// scrolled to its own middle rather than its top-left corner.
 function centerFlowCanvas() {
   if (!flowCanvas) return;
+  setFlowPan(0, 0);
   flowCanvas.scrollLeft = Math.max(0, (flowCanvas.scrollWidth - flowCanvas.clientWidth) / 2);
   flowCanvas.scrollTop = Math.max(0, (flowCanvas.scrollHeight - flowCanvas.clientHeight) / 2);
 }
@@ -631,7 +680,7 @@ function redrawFlowSheet() {
   drawFlowNotice();
   queueFlowDiagram();
   drawFlowOverlay();
-  drawFlowInspector();
+  drawFlowPicker();
   updateFlowSaveState();
   updateFlowHistoryButtons();
 }
@@ -639,14 +688,17 @@ function redrawFlowSheet() {
 function drawFlowNotice() {
   if (!flowNotice) return;
   const graph = flowSession && flowSession.graph;
+  // Mermaid refusing to draw it beats us refusing to model it: one is a blank
+  // pane the reader has to explain, the other is a pane full of diagram.
+  const problem = flowDrawError || (graph && flowLostBoxes ? FLOW_LOST_BOXES : '');
   const message = !graph
-    ? FLOW_UNMODELED
+    ? problem || (flowRefusal(flowSession ? flowSession.text : '') || FLOW_UNMODELED) + FLOW_AS_TEXT
     : !graph.nodes.length
       ? FLOW_NOTHING_YET
-      : flowDrawError || (flowLostBoxes ? FLOW_LOST_BOXES : '');
+      : problem;
   flowNotice.hidden = !message;
   flowNotice.textContent = message || '';
-  flowNotice.classList.toggle('is-error', !!graph && (!!flowDrawError || flowLostBoxes));
+  flowNotice.classList.toggle('is-error', !!problem);
   if (flowCanvas) flowCanvas.classList.toggle('is-disabled', !graph);
   if (flowDirectionPicker) {
     flowDirectionPicker.disabled = !graph;
@@ -666,8 +718,13 @@ function queueFlowDiagram() {
 function drawFlowDiagram() {
   if (!flowSession || !flowCanvas) return;
   const graph = flowSession.graph;
+  const text = flowSession.text;
   const attempt = (flowRenderSeq += 1);
-  if (!graph || !graph.nodes.length) {
+  // A diagram the canvas cannot model is still drawn, from its text — a pie
+  // chart, a gantt, a flowchart using something we don't read yet. It gets no
+  // handles, but a live picture is most of what an editor is for, and the code
+  // pane is the only way to edit these. Only an empty graph draws nothing.
+  if ((graph && !graph.nodes.length) || !text.trim()) {
     flowCanvas.innerHTML = '';
     flowPlaced = null;
     flowSize = null;
@@ -675,7 +732,6 @@ function drawFlowDiagram() {
     drawFlowNotice();
     return;
   }
-  const text = flowSession.text;
   loadMermaid()
     .then(async (mermaid) => {
       mermaid.initialize(mermaidRuntimeConfig());
@@ -752,6 +808,25 @@ function measureFlowDiagram() {
       radius: flowDrawnRadius(group, rect),
     });
   });
+  // The boxes around boxes. Mermaid draws each one as `g.cluster`, named the
+  // way it names a node, so the same two spellings are read — and a cluster is
+  // measured only to put a title strip on it, never a handle: the whole of what
+  // the canvas does to a group is rename it, empty it out, or take it away.
+  const groups = [];
+  const knownGroups = new Set((graph.groups || []).map((group) => group.id));
+  svg.querySelectorAll('g.cluster').forEach((drawn) => {
+    const id = flowNodeIdFromDom(drawn.id, knownGroups) || flowNodeIdFromDom(drawn.dataset.id, knownGroups);
+    if (!id) return;
+    const rect = drawn.getBoundingClientRect();
+    if (!rect.width && !rect.height) return;
+    groups.push({
+      id,
+      x: rect.left - origin.left,
+      y: rect.top - origin.top,
+      width: rect.width,
+      height: rect.height,
+    });
+  });
   const edges = [];
   const seen = new Map();
   for (const edge of graph.edges) {
@@ -769,7 +844,7 @@ function measureFlowDiagram() {
     const total = path.getTotalLength();
     edges.push({ id: edge.id, path, from: at(0), to: at(total), at: at(total / 2) });
   }
-  flowPlaced = { nodes, edges };
+  flowPlaced = { nodes, edges, groups };
   flowLostBoxes = graph.nodes.length && !nodes.length;
 }
 
@@ -941,7 +1016,7 @@ function loadFlowChips() {
           flowChipCache.set(shape.id, '');
         }
       }
-      if (flowSession) drawFlowInspector();
+      if (flowSession) drawFlowPicker();
     })
     .catch(() => {});
 }
@@ -967,7 +1042,32 @@ function flowTargetAt(x, y) {
   if (bud) return { kind: 'node', id: bud.dataset.node };
   const edge = flowEdgeUnder(found);
   if (edge) return { kind: 'edge', id: edge };
+  // Inside a group's box, but on nothing in it. Only asked after the boxes and
+  // the lines, so a group never takes a drop meant for what it holds — and the
+  // innermost wins, because a nested group is inside its parent's box too.
+  const inside = flowGroupAt(x, y);
+  if (inside) return { kind: 'group', id: inside };
   return { kind: 'canvas', id: null };
+}
+
+// The smallest drawn group the point falls in. Measured off the cluster mermaid
+// drew, so it is the box the reader can see.
+function flowGroupAt(x, y) {
+  const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
+  if (!stage || !flowPlaced || !flowPlaced.groups) return null;
+  const origin = stage.getBoundingClientRect();
+  const at = { x: x - origin.left, y: y - origin.top };
+  let best = null;
+  let smallest = Infinity;
+  for (const box of flowPlaced.groups) {
+    if (at.x < box.x || at.x > box.x + box.width || at.y < box.y || at.y > box.y + box.height) continue;
+    const area = box.width * box.height;
+    if (area < smallest) {
+      smallest = area;
+      best = box.id;
+    }
+  }
+  return best;
 }
 
 // True only for the bare surface: the scroll box, the stage, the overlay, or
@@ -1010,6 +1110,21 @@ function flowGroupFor(id) {
   return flowCanvas ? flowCanvas.querySelector('.flow-node-tools[data-node="' + id + '"]') : null;
 }
 
+// The cluster mermaid drew for one of our groups. Named the two ways it names a
+// box, so it is looked up the same way rather than by a selector that only
+// works on one of the renderers.
+function flowClusterFor(id) {
+  const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
+  if (!stage) return null;
+  const wanted = new Set([id]);
+  let found = null;
+  stage.querySelectorAll('svg g.cluster').forEach((drawn) => {
+    if (found) return;
+    if (flowNodeIdFromDom(drawn.id, wanted) || flowNodeIdFromDom(drawn.dataset.id, wanted)) found = drawn;
+  });
+  return found;
+}
+
 // The line that follows the pointer while a connection is being made or moved.
 function drawFlowRubber(from, to) {
   const layer = flowCanvas && flowCanvas.querySelector('.flow-overlay');
@@ -1046,6 +1161,11 @@ function markFlowDropTarget(target) {
     if (group) group.classList.add('is-drop');
     return;
   }
+  if (spot.kind === 'group') {
+    const drawn = flowClusterFor(spot.id);
+    if (drawn) drawn.classList.add('is-drop');
+    return;
+  }
   if (spot.kind !== 'edge') return;
   const placed = flowPlaced && flowPlaced.edges.find((edge) => edge.id === spot.id);
   if (placed) placed.path.classList.add('is-drop');
@@ -1058,10 +1178,32 @@ function flowFixedEnd(edgeId, moving) {
   return moving === 'from' ? placed.to : placed.from;
 }
 
+// The pointer carries the view when there is nothing under it to take hold of —
+// which is the whole of a diagram the canvas cannot model.
+function beginFlowPan(event) {
+  flowDrag = {
+    kind: 'pan',
+    startX: event.clientX,
+    startY: event.clientY,
+    panX: flowPan.x,
+    panY: flowPan.y,
+    moved: false,
+  };
+  try {
+    flowCanvas.setPointerCapture(event.pointerId);
+  } catch (error) {
+    /* the drag still works without capture */
+  }
+}
+
 if (flowCanvas) {
   flowCanvas.addEventListener('pointerdown', (event) => {
-    const graph = flowSession && flowSession.graph;
-    if (!graph || event.button !== 0) return;
+    if (!flowSession || event.button !== 0) return;
+    const graph = flowSession.graph;
+    if (!graph) {
+      beginFlowPan(event);
+      return;
+    }
     const target = event.target;
     const near = (selector) => (target && target.closest ? target.closest(selector) : null);
     const endpoint = near('.flow-edge-end');
@@ -1109,23 +1251,17 @@ if (flowCanvas) {
     // Empty space: nothing is selected any more, and the pointer now carries
     // the view — which is how you get around a diagram bigger than the pane.
     selectFlow(null, null);
-    flowDrag = {
-      kind: 'pan',
-      startX: event.clientX,
-      startY: event.clientY,
-      left: flowCanvas.scrollLeft,
-      top: flowCanvas.scrollTop,
-      moved: false,
-    };
-    grab();
+    beginFlowPan(event);
   });
 
   flowCanvas.addEventListener('pointermove', (event) => {
     if (!flowDrag) return;
     if (flowDrag.kind === 'pan') {
       flowDrag.moved = true;
-      flowCanvas.scrollLeft = flowDrag.left - (event.clientX - flowDrag.startX);
-      flowCanvas.scrollTop = flowDrag.top - (event.clientY - flowDrag.startY);
+      setFlowPan(
+        flowDrag.panX + (event.clientX - flowDrag.startX),
+        flowDrag.panY + (event.clientY - flowDrag.startY),
+      );
       flowCanvas.classList.add('is-panning');
       return;
     }
@@ -1176,8 +1312,8 @@ if (flowCanvas) {
     // A + handle pressed and released without travelling is a click: pick the
     // shape, and it arrives joined up on the side the handle sits.
     if (drag.kind === 'bud' && !drag.moved) {
-      openFlowShapePicker(event.clientX, event.clientY, (shape) =>
-        addFlowNode(shape, flowBudRelation(graph, drag.from, drag.side)),
+      openFlowAddPicker((shape, named) =>
+        addFlowNode(shape, { ...flowBudRelation(graph, drag.from, drag.side), text: named }),
       );
       return;
     }
@@ -1210,8 +1346,8 @@ if (flowCanvas) {
         return;
       }
       const where = flowSlotAt(flowPointIn(event));
-      openFlowShapePicker(event.clientX, event.clientY, (shape) =>
-        addFlowNode(shape, { ...flowBudRelation(graph, drag.from, drag.side), before: where }),
+      openFlowAddPicker((shape, named) =>
+        addFlowNode(shape, { ...flowBudRelation(graph, drag.from, drag.side), before: where, text: named }),
       );
       return;
     }
@@ -1227,6 +1363,27 @@ if (flowCanvas) {
         flowGraphChanged();
         return;
       }
+    }
+    // Dropped inside a group's box, on nothing in it: the box joins that group.
+    // Dropped on the bare surface with a group behind it: it leaves the one it
+    // was in. Both are the same gesture read two ways, and it is the only way
+    // to move a box between groups without going through the menu.
+    const moving = flowFindNode(graph, drag.from);
+    if (spot && spot.kind === 'group') {
+      // Dropped back in the group it was already in: nothing happened, and a
+      // step in the history that undoes to the same picture is a step wasted.
+      if (moving && moving.group === spot.id) {
+        drawFlowOverlay();
+        return;
+      }
+      flowMoveNodeToGroup(graph, drag.from, spot.id);
+      flowGraphChanged();
+      return;
+    }
+    if (spot && spot.kind === 'canvas' && moving && moving.group) {
+      flowMoveNodeToGroup(graph, drag.from, null);
+      flowGraphChanged();
+      return;
     }
     if (!over || over === drag.from) {
       // Nothing under the pointer: the box goes back where the layout puts it.
@@ -1265,15 +1422,21 @@ if (flowCanvas) {
     // the order rather than on the page — near enough that it appears about
     // where it was asked for.
     const where = flowSlotAt(flowPointIn(event));
-    openFlowShapePicker(event.clientX, event.clientY, (shape) => addFlowNode(shape, { before: where }));
+    openFlowAddPicker((shape, named) => addFlowNode(shape, { before: where, text: named }));
   });
 
   flowCanvas.addEventListener('contextmenu', (event) => {
     if (!flowSession || !flowSession.graph) return;
     event.preventDefault();
     const spot = flowTargetAt(event.clientX, event.clientY) || { kind: 'canvas', id: null };
-    if (spot.kind !== 'canvas') selectFlow(spot.kind, spot.id);
-    else selectFlow(null, null);
+    // Empty space has nothing to act on, so the question is which box to add —
+    // and that is the picker's question, in the picker's sheet.
+    if (spot.kind === 'canvas' || spot.kind === 'group') {
+      const where = flowSlotAt(flowPointIn(event));
+      openFlowAddPicker((shape, named) => addFlowNode(shape, { before: where, text: named }));
+      return;
+    }
+    selectFlow(spot.kind, spot.id);
     openFlowMenu(event.clientX, event.clientY, spot);
   });
 }
@@ -1314,6 +1477,7 @@ function flowMenuItems(spot) {
           flowGraphChanged();
         },
       },
+      ...flowGroupItems(graph, spot.id),
       { label: 'Delete box', run: deleteFlowSelection },
     ];
   }
@@ -1330,40 +1494,85 @@ function flowMenuItems(spot) {
       { label: 'Delete line', run: deleteFlowSelection },
     ];
   }
-  const point = flowPointAt(flowMenuAt.x, flowMenuAt.y);
-  return flowShapeChoices((id) => addFlowNode(id, { before: flowSlotAt(point) }));
+  return [];
 }
 
-// Every shape, as something to pick. Always the same order: a list that
-// reshuffles itself has to be read every time.
-function flowShapeChoices(make) {
-  return FLOW_SHAPES_BY_LABEL.map((shape) => ({
-    label: shape.label,
-    chip: shape.id,
-    hint: shape.hint,
-    run: () => make(shape.id),
-  }));
-}
-
-// Pick a shape, right where the pointer is. This is what a + handle and a
-// double-click on empty space both open, so a new box is the shape you meant
-// rather than the one we guessed and left you to fix.
-function openFlowShapePicker(x, y, make) {
-  openFlowMenuWith(x, y, flowShapeChoices(make), true);
+// What a box can do about the group it is in. A group is a box around boxes and
+// the canvas has no gesture that draws one, so this menu is the whole of it:
+// make one, join one, leave one, or take one away. The group's own name is
+// renamed from here too, because a cluster has no handle to double-click.
+function flowGroupItems(graph, id) {
+  const node = flowFindNode(graph, id);
+  if (!node) return [];
+  const items = [];
+  // Renamed the way everything else on the canvas is: a field over the thing,
+  // here over the group's own title strip. The draw has to land first, so the
+  // field has somewhere to sit.
+  const rename = (groupId) => {
+    window.setTimeout(() => openFlowLabelBox('group', groupId), 160);
+  };
+  items.push({
+    label: 'Put it in a new group',
+    run: () => {
+      const group = flowGroupNodes(graph, [id], 'Group');
+      flowGraphChanged();
+      if (group) rename(group.id);
+    },
+  });
+  // Only the groups it could actually join: its own is not one of them, and
+  // neither is a group holding boxes from somewhere else in the nesting.
+  for (const group of graph.groups || []) {
+    if (group.id === node.group) continue;
+    items.push({
+      label: 'Move it into ' + (group.text || group.id),
+      run: () => {
+        flowMoveNodeToGroup(graph, id, group.id);
+        flowGraphChanged();
+      },
+    });
+  }
+  if (node.group) {
+    const group = flowFindGroup(graph, node.group);
+    items.push({
+      label: 'Take it out of ' + (group.text || node.group),
+      run: () => {
+        flowMoveNodeToGroup(graph, id, group ? group.parent : null);
+        flowGraphChanged();
+      },
+    });
+    items.push({ label: 'Rename the group', run: () => openFlowLabelBox('group', node.group) });
+    items.push({
+      label: 'Remove the group, keep the boxes',
+      run: () => {
+        flowUngroup(graph, node.group);
+        flowGraphChanged();
+      },
+    });
+  }
+  return items;
 }
 
 function openFlowMenu(x, y, spot) {
   flowMenuAt = { x, y };
-  openFlowMenuWith(x, y, flowMenuItems(spot), spot.kind === 'canvas');
+  openFlowMenuWith(x, y, flowMenuItems(spot));
 }
 
-function openFlowMenuWith(x, y, items, asGrid) {
+function openFlowMenuWith(x, y, items) {
   closeFlowMenu();
   flowMenuAt = { x, y };
   const menu = document.createElement('div');
-  menu.className = 'flow-menu' + (asGrid ? ' is-shapes' : '');
+  menu.className = 'flow-menu';
   menu.setAttribute('role', 'menu');
   for (const item of items) {
+    // A heading is a label for the run below it, not something to click. It
+    // spans both columns of the grid — see .flow-menu-heading.
+    if (item.heading) {
+      const caption = document.createElement('div');
+      caption.className = 'flow-menu-heading';
+      caption.textContent = item.heading;
+      menu.appendChild(caption);
+      continue;
+    }
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'flow-menu-item';
@@ -1430,13 +1639,16 @@ function flowNewNodeShape(graph, fromId) {
 function selectFlow(kind, id) {
   flowSelection = kind ? { kind, id } : null;
   drawFlowOverlay();
-  drawFlowInspector();
+  drawFlowPicker();
 }
 
 function deleteFlowSelection() {
   const graph = flowSession && flowSession.graph;
   if (!graph || !flowSelection) return;
   if (flowSelection.kind === 'node') flowDeleteNode(graph, flowSelection.id);
+  // Deleting a group takes the box away, not what is in it: the boxes are the
+  // work, and there is no gesture to get them back.
+  else if (flowSelection.kind === 'group') flowUngroup(graph, flowSelection.id);
   else flowDeleteEdge(graph, flowSelection.id);
   flowSelection = null;
   flowGraphChanged();
@@ -1452,24 +1664,36 @@ function openFlowLabelBox(kind, id) {
   closeFlowLabelBox(true);
   const stage = flowCanvas.querySelector('.flow-stage');
   if (!stage) return;
-  const subject =
-    kind === 'node' ? flowFindNode(graph, id) : flowFindEdge(graph, id);
-  const placed =
-    kind === 'node'
-      ? flowPlaced.nodes.find((entry) => entry.id === id)
-      : flowPlaced.edges.find((entry) => entry.id === id);
+  const find = {
+    node: () => flowFindNode(graph, id),
+    edge: () => flowFindEdge(graph, id),
+    group: () => flowFindGroup(graph, id),
+  };
+  const where = {
+    node: () => flowPlaced.nodes.find((entry) => entry.id === id),
+    edge: () => flowPlaced.edges.find((entry) => entry.id === id),
+    group: () => (flowPlaced.groups || []).find((entry) => entry.id === id),
+  };
+  const subject = find[kind] && find[kind]();
+  const placed = where[kind] && where[kind]();
   if (!subject || !placed) return;
   const field = document.createElement('input');
   field.type = 'text';
   field.className = 'flow-label-box';
   field.spellcheck = false;
-  field.value = (kind === 'node' ? subject.text : subject.label) || '';
-  field.placeholder = kind === 'node' ? 'Name this box' : 'Label this line';
+  field.value = (kind === 'edge' ? subject.label : subject.text) || '';
+  field.placeholder =
+    kind === 'node' ? 'Name this box' : kind === 'group' ? 'Name this group' : 'Label this line';
   field.setAttribute('aria-label', field.placeholder);
   const tall = Math.max(20, Math.round(26 * flowZoom));
-  const width = kind === 'node' ? Math.max(70, placed.width - 10) : Math.max(90, 140 * flowZoom);
-  const left = kind === 'node' ? placed.x + (placed.width - width) / 2 : placed.at.x - width / 2;
-  const top = (kind === 'node' ? placed.y + placed.height / 2 : placed.at.y) - tall / 2;
+  const width =
+    kind === 'edge' ? Math.max(90, 140 * flowZoom) : Math.max(70, placed.width - 10);
+  const left = kind === 'edge' ? placed.at.x - width / 2 : placed.x + (placed.width - width) / 2;
+  // A group's name is drawn along its top edge, so that is where the field goes
+  // — over the title, not over the boxes it holds.
+  const middle =
+    kind === 'edge' ? placed.at.y : kind === 'group' ? placed.y + tall / 2 + 2 : placed.y + placed.height / 2;
+  const top = middle - tall / 2;
   field.style.left = Math.round(left) + 'px';
   field.style.top = Math.round(top) + 'px';
   field.style.width = Math.round(width) + 'px';
@@ -1515,6 +1739,10 @@ function closeFlowLabelBox(keep) {
     const node = flowFindNode(graph, box.id);
     if (!node) return;
     node.text = value.trim() || node.id;
+  } else if (box.kind === 'group') {
+    const group = flowFindGroup(graph, box.id);
+    if (!group) return;
+    group.text = value.trim() || group.id;
   } else {
     const edge = flowFindEdge(graph, box.id);
     if (!edge) return;
@@ -1523,95 +1751,198 @@ function closeFlowLabelBox(keep) {
   flowGraphChanged();
 }
 
-// ---- what the selection can be changed to ---------------------------------
+// ---- the picker: one sheet for choosing and for changing --------------------
+//
+// Adding a box and changing one are the same question — which shape — so they
+// are the same sheet, in the same order, with the same headings. It slides up
+// from the bottom of the canvas and goes back down when there is nothing
+// selected and nothing being added.
 
-function drawFlowInspector() {
-  if (!flowInspector) return;
+// The callback waiting for a shape, while the sheet is open to add a box, and
+// the name typed into the field above it in the meantime.
+let flowPickerAdd = null;
+let flowPickerName = '';
+let flowPickerReady = false;
+
+// Pushed down and away by its grab bar, like every other sheet. Wired on the
+// first open rather than at load: this fragment is served ahead of the inline
+// script, so `makeSheetDraggable` is not there yet when it runs.
+function readyFlowPicker() {
+  if (flowPickerReady || !flowPicker) return;
+  flowPickerReady = true;
+  const grip = flowPicker.querySelector('.leaf-sheet-grip');
+  if (typeof makeSheetDraggable === 'function' && grip) {
+    makeSheetDraggable(flowPicker, grip, dismissFlowPicker);
+  }
+  if (flowPickerClose) flowPickerClose.addEventListener('click', dismissFlowPicker);
+}
+
+function openFlowAddPicker(make) {
+  flowPickerAdd = make;
+  flowPickerName = '';
+  selectFlow(null, null);
+  drawFlowPicker();
+  // The field is the first thing in the sheet and the first thing to do with
+  // it: a name can be typed before the shape is chosen, or after, or not at all.
+  window.setTimeout(() => {
+    const field = flowPickerHead && flowPickerHead.querySelector('.flow-field');
+    if (field && flowPickerAdd) field.focus();
+  }, 60);
+}
+
+function closeFlowAddPicker() {
+  if (!flowPickerAdd) return;
+  flowPickerAdd = null;
+  flowPickerName = '';
+  drawFlowPicker();
+}
+
+// Nothing selected and nothing being added: the sheet has said all it has to.
+function dismissFlowPicker() {
+  flowPickerAdd = null;
+  flowPickerName = '';
+  selectFlow(null, null);
+  drawFlowPicker();
+}
+
+function drawFlowPicker() {
+  if (!flowPicker || !flowPickerBody || !flowPickerHead) return;
   const graph = flowSession && flowSession.graph;
   const selection = flowSelection;
-  flowInspector.textContent = '';
+  flowPickerHead.textContent = '';
+  flowPickerBody.textContent = '';
   const node = graph && selection && selection.kind === 'node' ? flowFindNode(graph, selection.id) : null;
   const edge = graph && selection && selection.kind === 'edge' ? flowFindEdge(graph, selection.id) : null;
-  if (!node && !edge) {
-    flowInspector.hidden = true;
+  const adding = !!flowPickerAdd && !!graph;
+  const was = flowPicker.classList.contains('open');
+  if (!node && !edge && !adding) {
+    flowPicker.classList.remove('open');
+    // Hidden only after it has slid back down, or it would vanish instead.
+    window.setTimeout(() => {
+      if (!flowPicker.classList.contains('open')) flowPicker.hidden = true;
+    }, 280);
     return;
   }
-  flowInspector.hidden = false;
+  flowPicker.hidden = false;
+  // Pushed part-way down to see the diagram behind it, the sheet stays there
+  // while it is open — picking a second box does not shove it back up. It comes
+  // back flush only when it has been away and returns.
+  if (!was && typeof resetSheetDrag === 'function') resetSheetDrag(flowPicker);
+  requestAnimationFrame(() => flowPicker.classList.add('open'));
 
-  const label = document.createElement('input');
-  label.type = 'text';
-  label.className = 'flow-field';
-  label.spellcheck = false;
-  label.placeholder = node ? 'Name this box' : 'Label this line';
-  label.value = (node ? node.text : edge.label) || '';
-  label.setAttribute('aria-label', node ? 'Box name' : 'Line label');
-  label.addEventListener('input', () => {
-    if (node) node.text = label.value;
-    else edge.label = label.value.trim() || null;
-    // The text and the preview follow every keystroke; redrawing the canvas
-    // under the caret would take the focus out of the field being typed in.
-    flowSession.text = renderFlow(graph);
-    if (flowCode) flowCode.value = flowSession.text;
-    queueFlowDiagram();
-  });
-  label.addEventListener('change', () => flowGraphChanged());
-  flowInspector.appendChild(label);
+  flowPickerHead.appendChild(adding ? flowPickerNameField() : flowPickerField(graph, node, edge));
 
   // A box picks its shape; a line picks its style and what sits at its tips.
   // Every group is generated from the table it belongs to.
-  if (node) {
-    flowInspector.appendChild(
-      flowChoiceGroup('Shape', FLOW_SHAPES_BY_LABEL, node.shape, (id) => flowShapeChip(id), (id) => {
+  if (adding) {
+    const make = flowPickerAdd;
+    for (const family of flowShapeFamilies()) {
+      flowPickerChoices(family.name, family.shapes, null, (id) => flowShapeChip(id), (id) => {
+        const named = flowPickerName;
+        flowPickerAdd = null;
+        flowPickerName = '';
+        make(id, named);
+      });
+    }
+  } else if (node) {
+    for (const family of flowShapeFamilies()) {
+      flowPickerChoices(family.name, family.shapes, node.shape, (id) => flowShapeChip(id), (id) => {
         node.shape = id;
-      }),
-    );
+        flowGraphChanged();
+      });
+    }
   } else {
-    flowInspector.appendChild(
-      flowChoiceGroup('Line', FLOW_EDGE_LINES, edge.line, (id) => flowEdgeChip(id, 'none'), (id) => {
-        edge.line = id;
-      }),
-    );
-    flowInspector.appendChild(
-      flowChoiceGroup('Ends', FLOW_EDGE_ENDS, edge.ends, (id) => flowEdgeChip(edge.line, id), (id) => {
-        edge.ends = id;
-      }),
-    );
+    // An invisible line is the one style that takes no ends — mermaid spells it
+    // `~~~` and nothing else. Picking it drops the ends; picking an end back
+    // makes the line solid again, rather than offering a spelling that is not.
+    flowPickerChoices('Line', FLOW_EDGE_LINES, edge.line, (id) => flowEdgeChip(id, 'none'), (id) => {
+      edge.line = id;
+      if (flowEdgeLine(id).only) edge.ends = flowEdgeLine(id).only;
+      flowGraphChanged();
+    });
+    flowPickerChoices('Ends', FLOW_EDGE_ENDS, edge.ends, (id) => flowEdgeChip(edge.line, id), (id) => {
+      edge.ends = id;
+      const line = flowEdgeLine(edge.line);
+      if (line.only && line.only !== id) edge.line = FLOW_EDGE_LINES[0].id;
+      flowGraphChanged();
+    });
   }
 
+  if (!node && !edge) return;
   const remove = document.createElement('button');
   remove.type = 'button';
   remove.className = 'flow-delete';
   remove.textContent = node ? 'Delete box' : 'Delete line';
   remove.title = 'Or press Delete';
   remove.addEventListener('click', deleteFlowSelection);
-  flowInspector.appendChild(remove);
+  flowPickerBody.appendChild(remove);
 }
 
-// One row of the inspector: a caption and a button per row of `options`, each
-// drawn by `chip` and applied by `apply`.
-function flowChoiceGroup(caption, options, current, chip, apply) {
-  const group = document.createElement('div');
-  group.className = 'flow-choices';
-  group.setAttribute('role', 'group');
-  group.setAttribute('aria-label', caption);
+// The name for the box about to be added. It is held here rather than on a box
+// that does not exist yet, and picking a shape does not touch it: someone who
+// typed "Read the file" and then chose a cylinder meant both.
+function flowPickerNameField() {
+  const field = document.createElement('input');
+  field.type = 'text';
+  field.className = 'flow-field';
+  field.spellcheck = false;
+  field.placeholder = 'Name this box, then pick its shape';
+  field.value = flowPickerName;
+  field.setAttribute('aria-label', 'Name this box');
+  field.addEventListener('input', () => {
+    flowPickerName = field.value;
+  });
+  return field;
+}
+
+// The name of the selected box, or the label on the selected line.
+function flowPickerField(graph, node, edge) {
+  const field = document.createElement('input');
+  field.type = 'text';
+  field.className = 'flow-field';
+  field.spellcheck = false;
+  field.placeholder = node ? 'Name this box' : 'Label this line';
+  field.value = (node ? node.text : edge.label) || '';
+  field.setAttribute('aria-label', node ? 'Box name' : 'Line label');
+  field.addEventListener('input', () => {
+    if (node) node.text = field.value;
+    else edge.label = field.value.trim() || null;
+    // The text and the preview follow every keystroke; redrawing the canvas
+    // under the caret would take the focus out of the field being typed in.
+    flowSession.text = renderFlow(graph);
+    if (flowCode) flowCode.value = flowSession.text;
+    queueFlowDiagram();
+  });
+  field.addEventListener('change', () => flowGraphChanged());
+  return field;
+}
+
+// One heading and the run of choices under it, each drawn by `chip` and applied
+// by `apply`. The same rows the right-click menu is built from, so a shape reads
+// the same wherever it is offered.
+function flowPickerChoices(caption, options, current, chip, apply) {
+  if (!options.length) return;
+  const heading = document.createElement('div');
+  heading.className = 'flow-menu-heading';
+  heading.textContent = caption;
+  flowPickerBody.appendChild(heading);
   for (const option of options) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'flow-choice' + (option.id === current ? ' is-current' : '');
+    button.className = 'flow-menu-item' + (option.id === current ? ' is-current' : '');
     button.title = option.hint ? option.label + ' — ' + option.hint : option.label;
     button.setAttribute('aria-label', caption + ': ' + option.label);
     button.innerHTML = chip(option.id);
-    button.addEventListener('click', () => {
-      apply(option.id);
-      flowGraphChanged();
-    });
+    const text = document.createElement('span');
+    text.textContent = option.label;
+    button.appendChild(text);
+    button.addEventListener('click', () => apply(option.id));
     if (option.hint) {
       button.addEventListener('pointerenter', () => setFlowHint(option.label + ' — ' + option.hint));
       button.addEventListener('pointerleave', restoreFlowHint);
     }
-    group.appendChild(button);
+    flowPickerBody.appendChild(button);
   }
-  return group;
 }
 
 // ---- taking the diagram out ------------------------------------------------

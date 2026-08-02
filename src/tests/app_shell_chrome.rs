@@ -23,6 +23,88 @@ fn app_shell_csp_allows_bundled_data_fonts() {
 }
 
 #[test]
+fn every_bottom_sheet_is_the_same_bottom_sheet() {
+    // The glossary, the theme picker and the flowchart editor's shape picker all
+    // slide up from the bottom, and all differ only in what they are anchored to
+    // and filled with. A fourth that forgets the class gets no slide and no grip.
+    let html = app_shell_html();
+    let css = reading_mode_css();
+
+    for sheet in ["glossarySheet", "themeSheet", "flowPicker"] {
+        let at = html
+            .find(&format!("id=\"{sheet}\""))
+            .unwrap_or_else(|| panic!("{sheet} is in the shell"));
+        // The whole opening tag: the class may be written either side of the id.
+        let opens = html[..at].rfind('<').unwrap_or(0);
+        let shuts = html[at..]
+            .find('>')
+            .map(|end| at + end)
+            .unwrap_or(html.len());
+        let tag = &html[opens..shuts];
+        assert!(
+            tag.contains("leaf-sheet"),
+            "{sheet} is a bottom sheet but does not wear the class: {tag}"
+        );
+    }
+    // One grab bar and one X, each defined once.
+    assert_eq!(html.matches("class=\"leaf-sheet-grip\"").count(), 3);
+    assert_eq!(html.matches("class=\"leaf-sheet-close\"").count(), 3);
+    for bespoke in [
+        ".glossary-sheet-grip",
+        ".theme-sheet-grip",
+        ".glossary-sheet-close",
+        ".theme-sheet-close",
+    ] {
+        assert!(
+            !css.contains(bespoke),
+            "a sheet has grown its own `{bespoke}` again"
+        );
+    }
+    assert_contains(&css, ".leaf-sheet-close {");
+    assert_contains(&css, ".leaf-sheet-grip {");
+    assert_contains(&css, ".leaf-sheet.open {");
+    // And the reader's scrollbar is one definition too, worn by class.
+    assert_contains(&css, ".leaf-scroll::-webkit-scrollbar-thumb {");
+    assert_contains(&html, "flow-picker-body leaf-scroll");
+}
+
+#[test]
+fn the_flowchart_editor_is_served_beside_the_shell_not_inside_it() {
+    // It is the largest pair of fragments the front-end has, and the shell goes
+    // to WebView2 as one string with a ceiling on it. So it is linked, and the
+    // link has to be there: a script tag pointing at nothing is a sheet that
+    // opens empty, and nothing else in the page would say why.
+    let html = app_shell_html();
+    let script = app_shell_flow_script();
+
+    assert_contains(&html, "<script src=\"");
+    assert_contains(&html, "flow.js\"></script>");
+    assert!(
+        !html.contains("function parseFlow("),
+        "the flowchart grammar is inlined into the shell again"
+    );
+    assert_contains(script, "function parseFlow(");
+    assert_contains(script, "function openFlowSheet(");
+    // Served, and served as script: a wrong content type is a silent no-op.
+    let (content_type, body) =
+        bundled_asset_bytes("leaf-asset://local/flow.js").expect("flow.js is a bundled asset");
+    assert_eq!(content_type, "text/javascript; charset=utf-8");
+    assert_eq!(body, script.as_bytes());
+    // It loads before the script that calls into it, or the first thing to open
+    // a diagram finds nothing there.
+    let linked = html
+        .find("flow.js\"></script>")
+        .expect("the flow script is linked");
+    let inline = html
+        .find("\n<script>\n")
+        .expect("the shell has its inline script");
+    assert!(
+        linked < inline,
+        "the flowchart editor loads after the script that uses it"
+    );
+}
+
+#[test]
 fn app_shell_stays_well_under_navigate_to_string_budget() {
     // WebView2 loads the shell through `ICoreWebView2::NavigateToString`, which
     // rejects content past ~2 MB with E_INVALIDARG (0x80070057) — the string is
@@ -260,7 +342,10 @@ fn app_shell_header_keeps_one_chrome_shade_with_dividers() {
         // One flat chrome shade under the dot grid. No translucent fill or backdrop
         // blur: either makes the bar's tone depend on what sits behind it.
         "background-color: var(--chrome-surface);",
-        "radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);",
+        // The dot grid itself is one token now — `--leaf-grain-dot` is the ink,
+        // and the bar's is the default the token already carries.
+        "background-image: var(--leaf-grain-image);",
+        "--leaf-grain-dot: var(--app-bar-grain);",
         "background-size: 2px 2px;",
         // The grain tiles from the window, so every grained surface shares one
         // lattice and no seam between them reads as a hairline.

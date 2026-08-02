@@ -25,9 +25,15 @@ const check = (name, run) => {
 
 function shellSource() {
   const lib = readFileSync(join(root, 'src/lib.rs'), 'utf8');
-  const list = lib.match(/APP_SHELL_SCRIPT_PARTS: &\[&str\] = &\[([\s\S]*?)\];/);
-  if (!list) throw new Error('could not find APP_SHELL_SCRIPT_PARTS in src/lib.rs');
-  const names = [...list[1].matchAll(/include_str!\("assets\/(.*?)"\)/g)].map((m) => m[1]);
+  const partsNamed = (constant) => {
+    const list = lib.match(new RegExp(constant + ': &\\[&str\\] = &\\[([\\s\\S]*?)\\];'));
+    if (!list) throw new Error(`could not find ${constant} in src/lib.rs`);
+    return [...list[1].matchAll(/include_str!\("assets\/(.*?)"\)/g)].map((m) => m[1]);
+  };
+  // The flowchart editor is a script tag of its own, loaded before the inline
+  // one — so it is first here too, or this would boot them in an order the page
+  // never uses.
+  const names = partsNamed('APP_SHELL_FLOW_SCRIPT_PARTS').concat(partsNamed('APP_SHELL_SCRIPT_PARTS'));
   if (names.length < 10) throw new Error(`expected the whole fragment list, got ${names.length}`);
   return {
     names,
@@ -224,7 +230,6 @@ function runShell(source) {
     __leafVaults: { vaults: [], active: 0 },
     __leafVersion: '0.0.0',
     __leafUpdateAsset: '',
-    __leafUpdateApply: null,
     __leafDocumentExts: ['md', 'markdown', 'mdown', 'xml', 'json', 'yaml', 'yml'],
     __leafSettingsUnreadable: false,
   };
@@ -536,38 +541,430 @@ if (booted) {
     same('---\ntitle: Plan\n---\nflowchart TD\n    A["a"]');
     same('%%{init: {"flowchart": {"curve": "linear"}}}%%\nflowchart TD\n    A["a"]');
     same('flowchart TD\n    %% a note\n    accTitle: The plan\n    A["a"]');
+    // Hyphens in a box name, against the arrow that starts one character later.
+    same('flowchart LR\n    read-file["Read"]\n    write-file["Write"]\n    read-file --> write-file');
+    // The thirty-three shapes that have no brackets are written the typed way,
+    // and that is the only way they are ever written.
+    same('flowchart TD\n    A@{ shape: cloud, label: "Somewhere else" }');
+    same(
+      'flowchart LR\n' +
+        [
+          'a@{ shape: sm-circ, label: "" }',
+          'b@{ shape: doc, label: "Write it down" }',
+          'c@{ shape: lin-cyl, label: "Disk" }',
+          'd@{ shape: fr-circ, label: "" }',
+        ]
+          .map((line) => '    ' + line)
+          .join('\n') +
+        '\n    a --> b\n    b --> c\n    c --> d',
+    );
+  });
+
+  // The canvas has no gesture that draws a box around boxes, so the menu is the
+  // whole of it: make a group, join one, leave one, take one away. Each has to
+  // leave a diagram that still says something.
+  check('the canvas can make and unmake a group', () => {
+    const { parseFlow, renderFlow, flowGroupNodes, flowUngroup, flowMoveNodeToGroup, flowFindGroup } = booted;
+    const one = (text) => {
+      const graph = parseFlow(text);
+      if (!graph) throw new Error(`refused ${JSON.stringify(text)}`);
+      return graph;
+    };
+
+    const graph = one('flowchart TD\n    A["a"]\n    B["b"]\n    C["c"]\n    A --> B\n    B --> C');
+    const made = flowGroupNodes(graph, ['A', 'B'], 'First half');
+    if (!made) throw new Error('the group was not made');
+    if (made.id !== 'g1') throw new Error(`the group is called ${made.id}`);
+    const written = renderFlow(graph);
+    if (!written.includes('subgraph g1["First half"]')) throw new Error(`no group in ${written}`);
+    if (renderFlow(parseFlow(written)) !== written) throw new Error('the made group does not round-trip');
+
+    // A box joins and leaves; the group holds whatever is left.
+    flowMoveNodeToGroup(graph, 'C', 'g1');
+    if (graph.nodes.find((node) => node.id === 'C').group !== 'g1') throw new Error('C did not join');
+    flowMoveNodeToGroup(graph, 'C', null);
+    if (graph.nodes.find((node) => node.id === 'C').group !== null) throw new Error('C did not leave');
+
+    // A group inside a group: taking the outer one away leaves the inner one
+    // where the outer one was, rather than orphaning it.
+    const inner = flowGroupNodes(graph, ['A'], 'Inner');
+    if (inner.parent !== 'g1') throw new Error(`the inner group's parent is ${inner.parent}`);
+    flowUngroup(graph, 'g1');
+    if (flowFindGroup(graph, 'g1')) throw new Error('the outer group is still there');
+    if (flowFindGroup(graph, inner.id).parent !== null) throw new Error('the inner group was orphaned');
+    if (graph.nodes.find((node) => node.id === 'B').group !== null) throw new Error('B kept a group that is gone');
+    if (!renderFlow(graph).includes('A["a"]')) throw new Error('a box went with the group');
+
+    // Boxes from two different groups cannot be gathered into one: there would
+    // be no answer to which group the new one goes in.
+    const split = one('flowchart TD\n  subgraph one\n    A[a]\n  end\n  subgraph two\n    B[b]\n  end');
+    if (flowGroupNodes(split, ['A', 'B'], 'Both')) throw new Error('boxes from two groups should not group');
+
+    // An arrow pointing at a group goes when the group does.
+    const aimed = one('flowchart LR\n  X[x] --> g\n  subgraph g [G]\n    A[a]\n  end');
+    flowUngroup(aimed, 'g');
+    if (aimed.edges.some((edge) => edge.to === 'g')) throw new Error('an arrow still points at the group');
+  });
+
+  // A connector can be stretched, and mermaid reads the extra length as a rank
+  // hint — so the length is part of what the diagram means, and losing it on a
+  // save would redraw the whole layout. The invisible link is the one line style
+  // that takes no ends at all.
+  check('a connector keeps its length, and the invisible one takes no ends', () => {
+    const { parseFlow, renderFlow } = booted;
+    const one = (text) => {
+      const graph = parseFlow(text);
+      if (!graph) throw new Error(`refused ${JSON.stringify(text)}`);
+      return graph;
+    };
+    const same = (text) => {
+      const back = renderFlow(one(text));
+      if (back !== text) throw new Error(`${JSON.stringify(text)} -> ${JSON.stringify(back)}`);
+    };
+    const stretch = (spelling, expected) => {
+      const graph = one(`flowchart LR\n    A["a"]\n    B["b"]\n    A ${spelling} B`);
+      if (graph.edges[0].stretch !== expected) {
+        throw new Error(`${spelling} came back stretched ${graph.edges[0].stretch}, wanted ${expected}`);
+      }
+    };
+
+    stretch('-->', 0);
+    stretch('--->', 1);
+    stretch('---->', 2);
+    stretch('---', 0);
+    stretch('----', 1);
+    stretch('-.->', 0);
+    stretch('-..->', 1);
+    stretch('-.....->', 4);
+    stretch('==>', 0);
+    stretch('===>', 1);
+    stretch('<-->', 0);
+    stretch('<--->', 1);
+    stretch('~~~', 0);
+    // Every stretched spelling is written back exactly as long as it was read.
+    for (const spelling of ['--->', '---->', '----', '-..->', '===>', '====', '<--->', 'o---o', 'x---x', '~~~~']) {
+      same(`flowchart LR\n    A["a"]\n    B["b"]\n    A ${spelling} B`);
+    }
+    same('flowchart LR\n    A["a"]\n    B["b"]\n    A ~~~ B');
+    // A label still rides on a stretched arrow.
+    const labeled = one('flowchart LR\n    A --->|"yes"| B');
+    if (labeled.edges[0].label !== 'yes' || labeled.edges[0].stretch !== 1) {
+      throw new Error(`the label or the length was lost: ${JSON.stringify(labeled.edges[0])}`);
+    }
+  });
+
+  // A line can be given a name, and the one thing that uses the name is an
+  // animation. Both ride on the edge, so deleting the line takes them with it.
+  check('a named line keeps its name and its animation', () => {
+    const { parseFlow, renderFlow, flowDeleteEdge } = booted;
+    const one = (text) => {
+      const graph = parseFlow(text);
+      if (!graph) throw new Error(`refused ${JSON.stringify(text)}`);
+      return graph;
+    };
+    const same = (text) => {
+      const back = renderFlow(one(text));
+      if (back !== text) throw new Error(`${JSON.stringify(text)} -> ${JSON.stringify(back)}`);
+    };
+
+    const named = one('flowchart LR\n    A["a"]\n    B["b"]\n    A e1@--> B');
+    if (named.edges[0].name !== 'e1') throw new Error(`the name came back as ${named.edges[0].name}`);
+    same('flowchart LR\n    A["a"]\n    B["b"]\n    A e1@--> B');
+    same('flowchart LR\n    A["a"]\n    B["b"]\n    A e1@--> B\n    e1@{ animate: true }');
+    same('flowchart LR\n    A["a"]\n    B["b"]\n    A e1@==>|"go"| B\n    e1@{ animation: fast }');
+    // The same spelling with a shape in it is a box, not an animation.
+    const box = one('flowchart LR\n    A@{ shape: cyl, label: "Cache" }');
+    if (box.nodes[0].shape !== 'cyl') throw new Error('a typed box was read as an animation');
+    // An animation for a name no line carries is refused, not dropped.
+    if (parseFlow('flowchart LR\n    A --> B\n    e1@{ animate: true }')) {
+      throw new Error('an animation with no line should be refused');
+    }
+    // Deleting the line takes its name and its animation with it.
+    const doomed = one('flowchart LR\n    A["a"]\n    B["b"]\n    A e1@--> B\n    e1@{ animate: true }');
+    flowDeleteEdge(doomed, doomed.edges[0].id);
+    if (renderFlow(doomed).includes('e1')) throw new Error('the animation outlived its line');
+  });
+
+  // Mermaid's markdown label — backticks inside the quotes — is the label's own
+  // text as far as the model is concerned. It is kept whole rather than refused,
+  // because a bold word in a box is not a reason to turn the canvas off.
+  check('a markdown label survives the round trip', () => {
+    const { parseFlow, renderFlow } = booted;
+    const same = (text) => {
+      const graph = parseFlow(text);
+      if (!graph) throw new Error(`refused ${JSON.stringify(text)}`);
+      const back = renderFlow(graph);
+      if (back !== text) throw new Error(`${JSON.stringify(text)} -> ${JSON.stringify(back)}`);
+    };
+    same('flowchart TD\n    A["`**bold** and *italic*`"]');
+    // Mermaid wraps a markdown label where the break is, so the break is part
+    // of the label and the statement is not over until the quote closes.
+    same('flowchart TD\n    A["`A longer label that\nwraps where you put the break`"]');
+    const broken = parseFlow('flowchart TD\n  A["`one\ntwo`"] --> B[after]');
+    if (!broken) throw new Error('a label across two lines was refused');
+    if (broken.nodes[0].text !== '`one\ntwo`') throw new Error(`the break was lost: ${JSON.stringify(broken.nodes[0].text)}`);
+    if (broken.edges.length !== 1) throw new Error('the arrow after the label went missing');
+    // A quote that never closes at all is still refused, and says so.
+    if (parseFlow('flowchart TD\n    A["never closed')) throw new Error('an unclosed label should be refused');
+    same('flowchart LR\n    A["`a **bold** step`"]\n    B["plain"]\n    A --> B');
+    // A bare backtick is still refused: mermaid needs the quotes for markdown,
+    // and a label we cannot quote back is one we cannot write.
+    if (parseFlow('flowchart TD\n    A[`bold`]')) throw new Error('a bare backtick label should be refused');
+  });
+
+  // The picker shows the shapes under headings, and it is built from the
+  // families — so a shape whose family is misspelled is a shape nobody can ever
+  // choose, and it would go missing quietly.
+  check('every shape sits under exactly one heading', () => {
+    const { flowShapeCatalog, flowShapeFamilies } = booted;
+    const all = flowShapeCatalog();
+    const families = flowShapeFamilies();
+    const seen = [];
+    for (const family of families) {
+      if (!family.shapes.length) throw new Error(`the heading "${family.name}" has no shapes under it`);
+      const labels = family.shapes.map((shape) => shape.label);
+      const sorted = labels.slice().sort((a, b) => a.localeCompare(b));
+      if (labels.join('|') !== sorted.join('|')) throw new Error(`"${family.name}" is not alphabetical: ${labels}`);
+      seen.push(...family.shapes.map((shape) => shape.id));
+    }
+    if (seen.length !== all.length) {
+      const missing = all.filter((shape) => !seen.includes(shape.id)).map((shape) => shape.id);
+      throw new Error(`${all.length} shapes, ${seen.length} under a heading — missing ${missing}`);
+    }
+    if (new Set(seen).size !== seen.length) throw new Error('a shape is under two headings');
+  });
+
+  // A subgraph is a box around boxes, and which one a box is in rides on the
+  // box — so dragging a box among its neighbors cannot take it out of its group,
+  // and deleting one cannot leave the group holding a name that is gone.
+  check('subgraphs keep their boxes, their nesting and their direction', () => {
+    const { parseFlow, renderFlow, flowDeleteNode, flowMoveNode, flowAddNode } = booted;
+    const one = (text) => {
+      const graph = parseFlow(text);
+      if (!graph) throw new Error(`refused ${JSON.stringify(text)}`);
+      return graph;
+    };
+    const stable = (text) => {
+      const back = renderFlow(one(text));
+      if (renderFlow(one(back)) !== back) throw new Error(`${JSON.stringify(back)} is not stable`);
+      return back;
+    };
+
+    // The three spellings of a group's name, all round-tripping as the same one.
+    const named = one('flowchart TD\n  subgraph writing [Writing]\n    A[Draft]\n  end');
+    if (named.groups[0].id !== 'writing' || named.groups[0].text !== 'Writing') {
+      throw new Error(`the group came back as ${JSON.stringify(named.groups[0])}`);
+    }
+    if (one('flowchart TD\n  subgraph one\n    A[a]\n  end').groups[0].text !== 'one') {
+      throw new Error('a group named only once should use that name as its title');
+    }
+    if (one('flowchart TD\n  subgraph "The middle"\n    A[a]\n  end').groups[0].text !== 'The middle') {
+      throw new Error('a quoted title was not read');
+    }
+
+    stable('flowchart TD\n  subgraph writing [Writing]\n    A[Draft] --> B[Revise]\n  end\n  B --> C[Ship]');
+    // Nested, each with its own direction.
+    const nested = stable(
+      'flowchart LR\n' +
+        '  subgraph outer [Outer]\n    direction TB\n' +
+        '    subgraph inner [Inner]\n      direction LR\n      A --> B\n    end\n' +
+        '    inner --> C[After]\n  end\n  C --> D[Outside]',
+    );
+    if (!nested.includes('        direction LR')) throw new Error(`the inner direction moved: ${nested}`);
+    const deep = one(nested);
+    if (deep.groups.find((group) => group.id === 'inner').parent !== 'outer') {
+      throw new Error('the nesting was lost');
+    }
+    // An arrow may name the group itself, and §19 points at one declared later.
+    // That name is a group, not a box invented for it.
+    const grouped = one('flowchart LR\n  A[Input] --> group\n  subgraph group [The middle]\n    B --> C\n  end\n  group --> D[Output]');
+    if (grouped.nodes.some((node) => node.id === 'group')) throw new Error('the group was also read as a box');
+    if (!grouped.edges.some((edge) => edge.to === 'group')) throw new Error('the arrow into the group went missing');
+    stable('flowchart LR\n  A[Input] --> group\n  subgraph group [The middle]\n    B --> C\n  end\n  group --> D[Output]');
+
+    // A box named in passing outside and spelled out inside belongs inside.
+    const adopted = one('flowchart TD\n  A --> B\n  subgraph g [G]\n    B[Spelled out here]\n  end');
+    if (adopted.nodes.find((node) => node.id === 'B').group !== 'g') throw new Error('the box did not join its group');
+
+    // What the canvas does to a grouped diagram: reordering keeps membership,
+    // deleting takes the box out and leaves the group standing.
+    const edited = one('flowchart TD\n  subgraph g [G]\n    A[a]\n    B[b]\n  end\n  C[c]');
+    flowMoveNode(edited, 'A', null);
+    if (edited.nodes.find((node) => node.id === 'A').group !== 'g') throw new Error('a reorder moved a box out of its group');
+    if (!renderFlow(edited).includes('        A["a"]')) throw new Error('the box left its group on the page');
+    flowDeleteNode(edited, 'A');
+    flowDeleteNode(edited, 'B');
+    const emptied = renderFlow(edited);
+    if (!emptied.includes('subgraph g["G"]') || !emptied.includes('end')) throw new Error('the empty group went missing');
+    // A box added on the canvas is added outside every group.
+    flowAddNode(edited, 'rect', 'New');
+    if (edited.nodes[edited.nodes.length - 1].group !== null) throw new Error('a new box landed in a group');
+
+    // A group takes a class and a style the way a box does.
+    stable('flowchart TD\n  classDef zone fill:#eee\n  subgraph g [G]\n    A[a]\n  end\n  class g zone\n  style g stroke:#333');
+  });
+
+  // Color is the one part of a diagram the canvas has no way to set, and every
+  // way of writing it names something the reader can then delete. So it rides on
+  // the box and the line it paints, and is written back off them.
+  check('classes and styles ride on what they paint', () => {
+    const { parseFlow, renderFlow, flowDeleteNode, flowFlipEdge } = booted;
+    const one = (text) => {
+      const graph = parseFlow(text);
+      if (!graph) throw new Error(`refused ${JSON.stringify(text)}`);
+      return graph;
+    };
+    const stable = (text) => {
+      const back = renderFlow(one(text));
+      if (renderFlow(one(back)) !== back) throw new Error(`${JSON.stringify(back)} is not stable`);
+      return back;
+    };
+
+    // `:::` on the box and a `class` line say the same thing, and both come back
+    // as the line — the typed form cannot carry `:::`, so there is one spelling.
+    const painted = stable(
+      'flowchart LR\n' +
+        '  classDef warn fill:#ffe4e6\n' +
+        '  A[Start] --> B[Careful]:::warn\n' +
+        '  B --> C[Fine]\n' +
+        '  B --> D[Also fine]\n' +
+        '  class C,D ok',
+    );
+    if (!painted.includes('    classDef warn fill:#ffe4e6')) throw new Error('the classDef went missing');
+    if (!painted.includes('    class B warn')) throw new Error(`:::warn was not carried: ${painted}`);
+    if (!painted.includes('    class C,D ok')) throw new Error(`the class line was not carried: ${painted}`);
+
+    stable('flowchart LR\n  A[Plain] --> B[Picked out]\n  style B fill:#ffe066,stroke-width:2px');
+    stable('flowchart LR\n  classDef default fill:#eef2ff\n  A[a] --> B[b]');
+    const lined = stable('flowchart LR\n  A --> B --> C --> D\n  linkStyle 0 stroke:#16a34a\n  linkStyle 2 stroke:#7c3aed');
+    if (!lined.includes('    linkStyle 0 stroke:#16a34a') || !lined.includes('    linkStyle 2 stroke:#7c3aed')) {
+      throw new Error(`the link styles moved: ${lined}`);
+    }
+    stable('flowchart LR\n  A --> B\n  linkStyle default stroke:#888');
+
+    // Deleting a box takes its color with it, rather than leaving a rule that
+    // paints a box mermaid would then have to invent.
+    const doomed = one('flowchart LR\n  A[a] --> B[b]\n  style B fill:#f00\n  class B warn\n  classDef warn color:#fff');
+    flowDeleteNode(doomed, 'B');
+    const after = renderFlow(doomed);
+    if (after.includes('style B') || after.includes('class B')) throw new Error(`B's paint outlived it: ${after}`);
+    if (!after.includes('classDef warn')) throw new Error('the classDef should stay — it names no box');
+
+    // A line style follows its own line, not the number it happened to have.
+    const flipped = one('flowchart LR\n  A --> B\n  B --> C\n  linkStyle 1 stroke:#f00');
+    flowFlipEdge(flipped, flipped.edges[1].id);
+    if (!renderFlow(flipped).includes('linkStyle 1 stroke:#f00')) throw new Error('the line lost its color');
+  });
+
+  // Typed boxes — `A@{ shape: cyl }` — are the only way to reach the shapes the
+  // brackets never covered, and mermaid takes several names for each one. We
+  // read them all and write the short one, so a file gains no second spelling.
+  check('a typed box is read, and written the shortest way', () => {
+    const { parseFlow, renderFlow, flowShapeCatalog } = booted;
+    const one = (text) => {
+      const graph = parseFlow(text);
+      if (!graph) throw new Error(`refused ${JSON.stringify(text)}`);
+      return graph;
+    };
+
+    // Every shape in the catalog, said the typed way, comes back as itself.
+    for (const shape of flowShapeCatalog()) {
+      const graph = one(`flowchart TD\n    A@{ shape: ${shape.id}, label: "x" }`);
+      if (graph.nodes[0].shape !== shape.id) {
+        throw new Error(`typed ${shape.id} came back as ${graph.nodes[0].shape}`);
+      }
+      // And so does every other name mermaid answers to for it.
+      for (const alias of shape.also || []) {
+        const aliased = one(`flowchart TD\n    A@{ shape: ${alias}, label: "x" }`);
+        if (aliased.nodes[0].shape !== shape.id) {
+          throw new Error(`${alias} came back as ${aliased.nodes[0].shape}, not ${shape.id}`);
+        }
+      }
+    }
+
+    // A shape with brackets is written in them, however it was written before.
+    if (renderFlow(one('flowchart TD\n  A@{ shape: cylinder, label: "Cache" }')) !== 'flowchart TD\n    A[("Cache")]') {
+      throw new Error('a typed cylinder was not written back in brackets');
+    }
+    // The typed form may follow a box already declared, and changes its shape
+    // without touching the label it already had — section 14 of the guide.
+    const attached = one('flowchart LR\n  A[Plain] --> B[Becomes a cylinder]\n  B@{ shape: cyl }');
+    const b = attached.nodes.find((node) => node.id === 'B');
+    if (b.shape !== 'cyl' || b.text !== 'Becomes a cylinder') {
+      throw new Error(`the attached shape gave ${JSON.stringify(b)}`);
+    }
+    // A label with the punctuation the braces are made of.
+    const awkward = one('flowchart TD\n    A@{ shape: rect, label: "one, two }" }');
+    if (awkward.nodes[0].text !== 'one, two }') throw new Error(`the label came back as ${awkward.nodes[0].text}`);
   });
 
   check('a flowchart we cannot model is refused whole', () => {
-    const { parseFlow } = booted;
+    const { parseFlow, flowRefusal } = booted;
     const refused = (text, why) => {
       const graph = parseFlow(text);
       if (graph) throw new Error(`${why}: parsed ${JSON.stringify(text)} instead of refusing`);
+      // Refusing silently is the bug the notice was written to fix: every one of
+      // these has to come back with something the reader can act on.
+      if (!flowRefusal(text)) throw new Error(`${why}: refused ${JSON.stringify(text)} without saying why`);
     };
 
     // Shapes past phase 2, and brackets that are a syntax error either way.
-    refused('flowchart TD\n    A@{ shape: bolt }', 'typed shape');
-    refused('flowchart TD\n    A["`**bold**`"]', 'markdown label');
+    refused('flowchart TD\n    A@{ shape: nosuchshape }', 'a shape mermaid does not have');
+    refused('flowchart TD\n    A@{ shape: rect, icon: "fa:bell" }', 'an icon box');
+    refused('flowchart TD\n    A@{ shape: rect, w: 40, h: 20 }', 'a box given a size');
+    refused('flowchart TD\n    A@{ shape: rect, label: "x"', 'braces that never close');
     refused('flowchart TD\n    A[/x]', 'an opener with the wrong closer');
     refused('flowchart TD\n    A[[x]', 'a subroutine missing half its closer');
     refused('flowchart TD\n    A((x)', 'a circle missing half its closer');
     // Edges past phase 2.
-    refused('flowchart TD\n    A ~~~ B', 'invisible');
-    refused('flowchart TD\n    A ----> B', 'rank hint');
-    refused('flowchart TD\n    A -.....-> B', 'a long dotted edge');
-    refused('flowchart TD\n    A e1@--> B', 'a named edge');
     // Everything that changes what the diagram means.
-    refused('flowchart TD\n    subgraph one\n    A\n    end', 'subgraph');
-    refused('flowchart TD\n    A:::warn', 'class shorthand');
-    refused('flowchart TD\n    classDef warn fill:#f9f', 'classDef');
-    refused('flowchart TD\n    style A fill:#f9f', 'style');
-    refused('flowchart TD\n    linkStyle 0 stroke:#f00', 'linkStyle');
+    refused('flowchart TD\n    A["a"]\n    end', 'an end with no subgraph');
+    refused('flowchart TD\n    subgraph one\n    A["a"]', 'a subgraph that never ends');
+    refused('flowchart TD\n    A["a"]\n    direction LR', 'a direction outside a subgraph');
+    refused('flowchart TD\n    A["a"]\n    subgraph A\n    end', 'a subgraph named after a box');
+    refused('flowchart TD\n    A["a"]\n    style nosuch fill:#f9f', 'a style for a box that is not there');
+    refused('flowchart TD\n    A["a"]\n    class nosuch warn', 'a class for a box that is not there');
+    refused('flowchart TD\n    A["a"]\n    B["b"]\n    A --> B\n    linkStyle 3 stroke:#f00', 'a style past the last line');
     refused('flowchart TD\n    click A "https://example.com"', 'click');
     refused('flowchart TD\n    A["x"]; B["y"]', 'two statements on a line');
     // And things that are not a flowchart at all.
     refused('sequenceDiagram\n    a ->> b: hi', 'another diagram type');
     refused('flowchart TD', 'a header with nothing under it');
     refused('---\ntitle: Plan\nflowchart TD\n    A', 'unterminated front matter');
+  });
+
+  // A refusal the reader can do something about: which line, and what on it.
+  // The line number is what makes it worth saying at all, so it is counted from
+  // the top of the block the way the code pane numbers it — front matter and
+  // comments included.
+  check('a refusal names the line and the feature', () => {
+    const { parseFlow, flowRefusal } = booted;
+    const says = (text, ...parts) => {
+      const said = flowRefusal(text);
+      for (const part of parts) {
+        if (!said.includes(part)) throw new Error(`${JSON.stringify(text)} -> ${JSON.stringify(said)}, wanted ${part}`);
+      }
+    };
+
+    says('flowchart TD\n    A["a"]\n    end', 'Line 3', '`end` with no subgraph');
+    says('flowchart TD\n    A["a"]\n    direction LR', 'Line 3', 'a direction outside a subgraph');
+    says('flowchart TD\n    A["a"]\n    style nosuch fill:#f9f', 'Line 3', 'a box that isn’t there');
+    says('flowchart TD\n    A["a"]\n    B["b"]\n    A --> B\n    linkStyle 9 stroke:#f00', 'Line 5', 'a line that isn’t there');
+    says('flowchart TD\n    A@{ shape: nosuchshape }', 'Line 2', 'a shape name mermaid doesn’t have');
+    says('flowchart TD\n    A@{ shape: rect, icon: "fa:bell" }', 'Line 2', 'more than a shape and a label');
+    says('flowchart TD\n    A["x"]; B["y"]', 'Line 2', 'a semicolon');
+    says('flowchart TD\n    A["a"]\n    A{"a"}', 'Line 3', 'a second shape');
+    // Front matter is part of the block, so it counts toward the line number.
+    says('---\ntitle: Plan\n---\nflowchart TD\n    A["a"]\n    click A "https://example.com"', 'Line 6');
+    // The ones with no line to point at say what is wrong with the whole block.
+    says('sequenceDiagram\n    a ->> b: hi', 'sequenceDiagram');
+    says('pie\n    "a": 1', 'pie');
+    says('flowchart TD', 'no boxes');
+    says('---\ntitle: Plan\nflowchart TD\n    A', 'front matter');
+    // And text the canvas does model says nothing at all.
+    const fine = 'flowchart TD\n    A["a"]\n    B["b"]\n    A --> B';
+    if (!parseFlow(fine)) throw new Error('the sample diagram did not parse');
+    if (flowRefusal(fine)) throw new Error(`a diagram that parses gave ${JSON.stringify(flowRefusal(fine))}`);
   });
 
   // Deleting the last box leaves a diagram that is legal to be halfway through
@@ -860,9 +1257,9 @@ if (booted) {
     const { parseFlow } = booted;
     const graph = parseFlow('flowchart TD\n    A["a"]\n    B["b"]\n    A -.->|"maybe"| B');
     const nodeFields = Object.keys(graph.nodes[0]).sort().join(',');
-    if (nodeFields !== 'id,shape,text') throw new Error(`a node carries ${nodeFields}`);
+    if (nodeFields !== 'classes,group,id,shape,style,text') throw new Error(`a node carries ${nodeFields}`);
     const edgeFields = Object.keys(graph.edges[0]).sort().join(',');
-    if (edgeFields !== 'ends,from,id,label,line,to') throw new Error(`an edge carries ${edgeFields}`);
+    if (edgeFields !== 'animate,ends,from,id,label,line,name,stretch,style,to') throw new Error(`an edge carries ${edgeFields}`);
     for (const path of ['src/assets/shell/flow-model.js', 'src/assets/shell/flow-canvas.js']) {
       const source = readFileSync(join(root, path), 'utf8');
       for (const borrowed of ['fromNode', 'toNode', 'toEnd', 'jsoncanvas']) {

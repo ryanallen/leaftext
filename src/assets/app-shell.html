@@ -185,18 +185,18 @@
 </div>
 </div>
 <div id="glossaryBackdrop" class="glossary-backdrop" hidden></div>
-<aside id="glossarySheet" class="glossary-sheet" role="dialog" aria-modal="true" aria-label="Glossary" hidden>
-  <div class="glossary-sheet-grip"></div>
-  <button type="button" id="glossarySheetClose" class="glossary-sheet-close" aria-label="Close glossary"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
+<aside id="glossarySheet" class="leaf-sheet glossary-sheet" role="dialog" aria-modal="true" aria-label="Glossary" hidden>
+  <div class="leaf-sheet-grip"></div>
+  <button type="button" id="glossarySheetClose" class="leaf-sheet-close" aria-label="Close glossary"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
   <div id="glossarySheetBody" class="glossary-sheet-body document-body"></div>
   <div class="glossary-sheet-footer"><button type="button" id="glossaryFullLink" class="glossary-sheet-fulllink">Open the full glossary</button></div>
 </aside>
 <div id="themeBackdrop" class="theme-sheet-backdrop" hidden></div>
-<aside id="themeSheet" class="theme-sheet" role="dialog" aria-modal="true" aria-label="Themes" hidden>
-  <div class="theme-sheet-grip"></div>
+<aside id="themeSheet" class="leaf-sheet theme-sheet" role="dialog" aria-modal="true" aria-label="Themes" hidden>
+  <div class="leaf-sheet-grip"></div>
   <div class="theme-sheet-head">
     <span class="theme-sheet-title">Themes</span>
-    <button type="button" id="themeSheetClose" class="theme-sheet-close" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
+    <button type="button" id="themeSheetClose" class="leaf-sheet-close" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
   </div>
   <div class="theme-sheet-modes" id="themeSheetModes" role="group" aria-label="Appearance">
     <button type="button" class="theme-mode-btn" data-mode="system">System</button>
@@ -244,14 +244,36 @@
       <p class="flow-hint" id="flowHint"></p>
       <div class="flow-canvas" id="flowCanvas" tabindex="0"></div>
       <p class="flow-notice" id="flowNotice" hidden></p>
-      <div class="flow-inspector" id="flowInspector" hidden></div>
     </section>
     <div class="flow-split" id="flowSplit" role="separator" aria-orientation="vertical" aria-label="Resize the text pane" tabindex="0"></div>
     <section class="flow-pane flow-pane-code" aria-label="Mermaid text">
+      <!-- Said here because here is where it shows: Save writes the diagram out
+           afresh rather than patching the lines someone typed. Tidying one box
+           and finding the whole block reflowed is a nasty surprise to have to
+           work out for yourself. -->
+      <p class="flow-code-note">Save rewrites the whole block: one box to a line, every label quoted.</p>
       <textarea id="flowCode" class="flow-code" spellcheck="false" aria-label="Mermaid text"></textarea>
     </section>
   </div>
+  <!-- What a box or a line can be changed to, and the same sheet the shape
+       picker uses: one component, so adding a box and changing one read the same
+       way. A child of the sheet rather than of the canvas pane, so it slides up
+       centered on the whole editor and not on the half left of the text. -->
+  <aside class="leaf-sheet flow-picker" id="flowPicker" role="dialog" aria-label="Shapes" hidden>
+    <div class="leaf-sheet-grip"></div>
+    <button type="button" id="flowPickerClose" class="leaf-sheet-close" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
+    <!-- The name stays put while the shapes scroll under it: it is the one field
+         in here, and losing it off the top mid-list is how a box ends up unnamed. -->
+    <div class="flow-picker-head" id="flowPickerHead"></div>
+    <div class="flow-picker-body leaf-scroll" id="flowPickerBody"></div>
+  </aside>
 </aside>
+<!-- The flowchart editor, over the asset protocol rather than inline: it is the
+     largest thing the shell carries and the page is handed to WebView2 as one
+     string with a ceiling on it. A plain script tag, so it shares the one scope
+     the rest of the front-end has, and it is first so everything it declares is
+     there before the script below runs. -->
+<script src="{{FLOW_SCRIPT_URL}}"></script>
 <script>
 {{APP_SCRIPT}}
 </script>

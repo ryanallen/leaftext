@@ -37,6 +37,7 @@ function openThemeSheet() {
   loadThemeCardFonts();
   requestAnimationFrame(() => {
     themeBackdrop.classList.add('open');
+    resetSheetDrag(themeSheet);
     themeSheet.classList.add('open');
   });
 }
@@ -165,7 +166,7 @@ if (themeBackdrop) {
   themeBackdrop.addEventListener('click', closeThemeSheet);
 }
 if (themeSheet) {
-  makeSheetDraggable(themeSheet, themeSheet.querySelector('.theme-sheet-grip'), closeThemeSheet);
+  makeSheetDraggable(themeSheet, themeSheet.querySelector('.leaf-sheet-grip'), closeThemeSheet);
 }
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && themeSheet && !themeSheet.hidden) {

@@ -191,6 +191,12 @@
      Screen them lighter and they read as a second texture, brighter than the
      pane beside them, which is what the dots are there to prevent. */
   --reader-surface-grain: var(--app-bar-grain);
+  /* The dot lattice itself, spelled once. Every grained surface pulls the image
+     from here and pairs it with its own background-color; a surface that needs a
+     different speckle sets `--leaf-grain-dot` and gets the same circles in its
+     own ink, because the color inside resolves where the image is used. */
+  --leaf-grain-dot: var(--app-bar-grain);
+  --leaf-grain-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
   /* The untinted table rows — the ones carrying no fill, so the grain above has
      nothing to speckle. Dark themes only: on a light theme these are the near-white
      rows, where a dot dark enough to see reads as a gray screen-door mesh laid over
@@ -300,7 +306,7 @@ body {
      texture. Flat and opaque, never translucent: a translucent bar takes its tone
      from whatever sits behind it, so it can never match the pane it meets. */
   background-color: var(--chrome-surface);
-  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   background-repeat: repeat;
   /* Tile the grain from the window, not this element's box, so every grained
@@ -444,7 +450,8 @@ body {
   border-radius: var(--leaf-radius-md) var(--leaf-radius-md) 0 0;
   /* An inactive tab reads as a darker cell by tiling the header's cassette grain
      at its heavier weight — denser ink, no outline needed. */
-  background-image: radial-gradient(circle, var(--library-header-grain) 0 0.6px, transparent 0.7px);
+  --leaf-grain-dot: var(--library-header-grain);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   background-repeat: repeat;
   cursor: grab;
@@ -1105,7 +1112,7 @@ body:has(.document-minimap) {
      window frame by (see --reader-gutter), so the texture runs unbroken from the
      bar, down the rail, and around the page. */
   background-color: var(--chrome-surface);
-  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   background-attachment: fixed;
 }
@@ -1181,7 +1188,7 @@ body:has(.library-overlay) .tab-bar {
      sitting under it. The tree rows on top are transparent, so the whole pane
      carries the texture. */
   background-color: var(--chrome-surface);
-  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   background-attachment: fixed;
   color: var(--preview-foreground);
@@ -1213,7 +1220,7 @@ body:has(.library-overlay) .tab-bar {
   width: calc(var(--leaf-radius-md) + 1px);
   height: calc(var(--leaf-radius-md) + 1px);
   background-color: var(--chrome-surface);
-  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   /* The same window-anchored lattice as every other grained surface, so a corner
      stays in phase with the bar and pane around it. */
@@ -1453,7 +1460,7 @@ body.library-resizing {
   display: flex;
   align-items: center;
   background-color: var(--chrome-surface);
-  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -1923,7 +1930,8 @@ body:has(#readerToolbar:not([hidden])) {
   z-index: -1;
   inset: -14px -22px -9px;
   pointer-events: none;
-  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.55) 0 0.6px, transparent 0.7px);
+  --leaf-grain-dot: rgba(0, 0, 0, 0.55);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -2056,7 +2064,7 @@ body:has(#readerToolbar:not([hidden])) {
      lightens on a dark theme, which is a recess lit from inside. Not a shade
      mixed from the chrome token either, so the bar stays one color. */
   background-color: rgba(0, 0, 0, 0.16);
-  background-image: radial-gradient(circle, var(--app-bar-grain) 0 0.6px, transparent 0.7px);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   background-attachment: fixed;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
@@ -2319,9 +2327,9 @@ body:has(#readerToolbar:not([hidden])) {
   left: 0;
   right: 0;
   height: var(--reader-edge-fade-depth);
-  /* Alias only so the circle fits one line, like the bar's it has to match. */
-  --fade-dot: var(--reader-edge-fade-surface);
-  background-image: radial-gradient(circle, var(--fade-dot) 0 0.6px, transparent 0.7px);
+  /* The chrome's own lattice, in the page's color rather than the bar's. */
+  --leaf-grain-dot: var(--reader-edge-fade-surface);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -3264,7 +3272,8 @@ body.is-block-dragging .document-body [data-src-start] {
   z-index: -1;
   inset: -13px -20px -10px;
   pointer-events: none;
-  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.55) 0 0.6px, transparent 0.7px);
+  --leaf-grain-dot: rgba(0, 0, 0, 0.55);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -3617,7 +3626,8 @@ body.is-block-dragging .document-body [data-src-start] {
      same 2px window-anchored lattice, so it is one texture with every other
      reading surface. */
   background-color: var(--code-block-background);
-  background-image: radial-gradient(circle, var(--reader-surface-grain) 0 0.6px, transparent 0.7px);
+  --leaf-grain-dot: var(--reader-surface-grain);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -3937,8 +3947,8 @@ body.is-block-dragging .document-body [data-src-start] {
   left: 0;
   right: 0;
   height: 18px;
-  --fade-dot: var(--syntax-background);
-  background-image: radial-gradient(circle, var(--fade-dot) 0 0.6px, transparent 0.7px);
+  --leaf-grain-dot: var(--syntax-background);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -4048,7 +4058,8 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-body pre,
 .document-body th,
 .document-body tr:nth-child(2n) td {
-  background-image: radial-gradient(circle, var(--reader-surface-grain) 0 0.6px, transparent 0.7px);
+  --leaf-grain-dot: var(--reader-surface-grain);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -4059,7 +4070,8 @@ body.is-block-dragging .document-body [data-src-start] {
    themes zero the token rather than drop the rule, keeping one selector to reason
    about against the frontmatter opt-out below. */
 .document-body tr:nth-child(2n + 1) td {
-  background-image: radial-gradient(circle, var(--reader-row-grain) 0 0.6px, transparent 0.7px);
+  --leaf-grain-dot: var(--reader-row-grain);
+  background-image: var(--leaf-grain-image);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -4378,50 +4390,50 @@ body.is-block-dragging .document-body [data-src-start] {
    A glossary link opens the term here, sliding up over the reading view; the
    document keeps its place underneath. The body reuses .document-body so the
    entry is styled like ordinary Markdown. See window.leafShowGlossary. */
-.glossary-backdrop[hidden],
-.glossary-sheet[hidden] {
+.glossary-backdrop[hidden] {
   display: none;
 }
-.glossary-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: 40;
-}
-.glossary-backdrop.open {
-  opacity: 1;
-}
-.glossary-sheet {
-  position: fixed;
+/* ---- the bottom sheet, once ------------------------------------------------
+   Three things slide up from the bottom edge: the glossary, the theme picker,
+   and the flowchart editor's own. They differ in what they are anchored to and
+   what they are filled with, and in nothing else — so that is all their own
+   classes say, and everything below is shared. `makeSheetDraggable` is the
+   matching half in dom.js: --sheet-drag is how far the pointer has carried the
+   sheet, and the transition is off for the length of the drag so it tracks the
+   pointer exactly. */
+.leaf-sheet {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 41;
   display: flex;
   flex-direction: column;
   max-height: 78vh;
-  background: var(--background);
-  color: var(--foreground);
   border-top-left-radius: var(--leaf-radius-2xl);
   border-top-right-radius: var(--leaf-radius-2xl);
   box-shadow: var(--leaf-shadow-sheet);
   transform: translateY(100%);
   transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
 }
-.glossary-sheet.open {
+/* The same cassette grain the app bar and the reading surfaces wear, so a sheet
+   reads as one of this app's surfaces rather than a plain card dropped on it.
+   The color under it is each sheet's own; only the lattice is shared, and it is
+   anchored to the window so every grained surface keeps one phase. */
+.leaf-sheet {
+  background-image: var(--leaf-grain-image);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
+.leaf-sheet[hidden] {
+  display: none;
+}
+.leaf-sheet.open {
   transform: translateY(var(--sheet-drag, 0px));
 }
-/* Both sheets can be pushed down and away by their grab bar (makeSheetDraggable):
-   --sheet-drag is how far the pointer has carried the sheet, and the transition
-   is off for the length of the drag so it tracks the pointer exactly. */
-.glossary-sheet.is-dragging,
-.theme-sheet.is-dragging {
+.leaf-sheet.is-dragging {
   transition: none;
 }
-.glossary-sheet-grip,
-.theme-sheet-grip {
+.leaf-sheet-grip {
   flex: none;
   display: flex;
   align-items: center;
@@ -4436,17 +4448,80 @@ body.is-block-dragging .document-body [data-src-start] {
   -webkit-user-select: none;
   touch-action: none;
 }
-.glossary-sheet-grip::before,
-.theme-sheet-grip::before {
+.leaf-sheet-grip::before {
   content: '';
   width: 40px;
   height: 4px;
   border-radius: var(--leaf-radius-pill);
   background: var(--border-strong);
 }
-.glossary-sheet.is-dragging .glossary-sheet-grip,
-.theme-sheet.is-dragging .theme-sheet-grip {
+.leaf-sheet.is-dragging .leaf-sheet-grip {
   cursor: grabbing;
+}
+/* The X. One look for all three; where it sits is the only thing that differs,
+   because the theme sheet has a header row to put it in and the others don't. */
+.leaf-sheet-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--leaf-radius-lg);
+  background: none;
+  color: var(--app-muted-foreground);
+  cursor: pointer;
+}
+.leaf-sheet-close:hover {
+  background: var(--surface-muted);
+  color: var(--foreground);
+}
+.leaf-sheet-close svg {
+  width: 18px;
+  height: 18px;
+}
+.glossary-sheet > .leaf-sheet-close,
+.flow-picker > .leaf-sheet-close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  z-index: 1;
+}
+/* The reader's own scrollbar, as something anything can wear. Never set
+   `scrollbar-width` on an element carrying this: in Chromium either standard
+   scrollbar property silently kills every ::-webkit-scrollbar rule on it. */
+.leaf-scroll::-webkit-scrollbar {
+  /* 4px of inset each side plus the 6px the thumb actually shows. */
+  width: 14px;
+}
+.leaf-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.leaf-scroll::-webkit-scrollbar-thumb {
+  /* A transparent border with the fill clipped inside it is the only way to
+     inset a webkit thumb. */
+  border: 4px solid transparent;
+  background-clip: padding-box;
+  border-radius: var(--leaf-radius-md);
+  background-color: color-mix(in srgb, var(--app-muted-foreground) 35%, transparent);
+  min-height: 56px;
+}
+.glossary-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 40;
+}
+.glossary-backdrop.open {
+  opacity: 1;
+}
+.glossary-sheet {
+  position: fixed;
+  z-index: 41;
+  background: var(--background);
+  color: var(--foreground);
 }
 /* Settings row that opens the theme selector: label on the left, the current
    "Family · Appearance" summary and a chevron on the right. */
@@ -4492,8 +4567,7 @@ body.is-block-dragging .document-body [data-src-start] {
   line-height: 1;
 }
 /* Theme selector bottom sheet — same slide-up pattern as the glossary sheet. */
-.theme-sheet-backdrop[hidden],
-.theme-sheet[hidden] {
+.theme-sheet-backdrop[hidden] {
   display: none;
 }
 .theme-sheet-backdrop {
@@ -4509,26 +4583,12 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .theme-sheet {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
   z-index: 41;
-  display: flex;
-  flex-direction: column;
   gap: 14px;
-  max-height: 78vh;
   padding: 0 20px 24px;
   background: var(--surface-elevated);
   color: var(--foreground);
-  border-top-left-radius: var(--leaf-radius-2xl);
-  border-top-right-radius: var(--leaf-radius-2xl);
-  box-shadow: var(--leaf-shadow-sheet);
   font-family: var(--app-font);
-  transform: translateY(100%);
-  transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.theme-sheet.open {
-  transform: translateY(var(--sheet-drag, 0px));
 }
 .theme-sheet-head {
   display: flex;
@@ -4539,27 +4599,6 @@ body.is-block-dragging .document-body [data-src-start] {
   font-size: 15px;
   font-weight: 800;
   color: var(--foreground);
-}
-.theme-sheet-close {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: var(--leaf-radius-lg);
-  background: transparent;
-  color: var(--app-muted-foreground);
-  cursor: pointer;
-}
-.theme-sheet-close:hover {
-  background: var(--surface-muted);
-  border-color: transparent;
-  color: var(--foreground);
-}
-.theme-sheet-close svg {
-  width: 18px;
-  height: 18px;
 }
 .theme-sheet-modes {
   display: grid;
@@ -4759,26 +4798,6 @@ body.is-block-dragging .document-body [data-src-start] {
   font-size: 0.74rem;
   line-height: 1.2;
 }
-.glossary-sheet-close {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  display: flex;
-  padding: 6px;
-  border: 0;
-  border-radius: var(--leaf-radius-md);
-  background: none;
-  color: var(--muted-foreground);
-  cursor: pointer;
-}
-.glossary-sheet-close svg {
-  width: 22px;
-  height: 22px;
-}
-.glossary-sheet-close:hover {
-  color: var(--foreground);
-  background: var(--surface-elevated);
-}
 .glossary-sheet-body {
   /* Override .document-body's reading-measure width + scroll-origin margin so
      the entry fills the sheet and its scrollbar sits at the right edge. */
@@ -4874,6 +4893,9 @@ body.is-block-dragging .document-body [data-src-start] {
   color: var(--foreground);
   border: 1px solid var(--border);
   border-radius: var(--leaf-radius-xl);
+  /* The panes fill the sheet corner to corner, so without this the two bottom
+     corners are squared off by whatever is drawn in them. */
+  overflow: hidden;
   box-shadow: var(--leaf-shadow-sheet);
   font-family: var(--app-font);
   transform: translateY(12px);
@@ -5003,20 +5025,6 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 16px;
   height: 16px;
 }
-.flow-choice {
-  display: grid;
-  place-items: center;
-  padding: 2px;
-  border: 1px solid var(--settings-control-border);
-  border-radius: var(--leaf-radius-md);
-  background: var(--settings-control-background);
-  color: var(--foreground);
-  cursor: pointer;
-}
-.flow-choice:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-muted);
-}
 /* The little drawing on a shape button is mermaid's too — one tiny diagram per
    shape, so a button cannot show something the canvas draws differently. */
 .flow-chip {
@@ -5035,6 +5043,12 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .flow-chip-line.is-thick {
   stroke-width: 3.2;
+}
+/* A line that isn't drawn at all. Shown as the ghost of one, because a button
+   with nothing on it reads as a button that failed to load. */
+.flow-chip-line.is-invisible {
+  stroke-dasharray: 1 4;
+  opacity: 0.4;
 }
 .flow-end-mark {
   fill: var(--foreground);
@@ -5140,6 +5154,11 @@ body.is-block-dragging .document-body [data-src-start] {
   position: relative;
   flex: none;
   margin: auto;
+  /* Where the diagram has been dragged to. A transform rather than a scroll,
+     because a diagram smaller than the pane has nothing to scroll and dragging
+     one has to work anyway — most of all with the picker covering the bottom.
+     The overlay is inside the stage, so the handles come along for free. */
+  transform: translate(var(--flow-pan-x, 0px), var(--flow-pan-y, 0px));
 }
 .flow-stage > svg {
   display: block;
@@ -5272,6 +5291,14 @@ body.is-block-dragging .document-body [data-src-start] {
   stroke-width: 4px !important;
   stroke-dasharray: 6 4 !important;
 }
+/* A group about to take the box being dragged. Mermaid draws the cluster's
+   outline as a rect inside the group, so the mark goes on that rather than on
+   the group itself — which has no stroke of its own to change. */
+.flow-stage g.cluster.is-drop rect {
+  stroke: var(--link) !important;
+  stroke-width: 2px !important;
+  stroke-dasharray: 6 4 !important;
+}
 /* Right-click anything on the canvas. The gestures are quicker once they are
    known; this is where they are named, and where the rarer ones live at all. */
 .flow-menu {
@@ -5287,15 +5314,6 @@ body.is-block-dragging .document-body [data-src-start] {
   background: var(--app-surface-elevated);
   box-shadow: var(--leaf-shadow-tooltip);
   font-size: 12.5px;
-}
-/* Picking a shape offers every one, so that list gets two columns and its own
-   scroll rather than a menu taller than the window. */
-.flow-menu.is-shapes {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2px;
-  max-height: 62vh;
-  overflow-y: auto;
 }
 .flow-menu-heading {
   grid-column: 1 / -1;
@@ -5367,20 +5385,42 @@ body.is-block-dragging .document-body [data-src-start] {
   font-family: var(--code-font);
   white-space: pre-wrap;
 }
-.flow-inspector[hidden] {
-  display: none;
-}
-.flow-inspector {
-  flex: none;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
+/* The picker: what a box or a line can be changed to, and what a new box can
+   be. One sheet for both, sliding up from the bottom of the canvas — see
+   .leaf-sheet, which the glossary and the theme picker are built from too. */
+.flow-picker {
+  /* Measured against the whole editor — the sheet is `position: fixed` — so it
+     is centered on the modal rather than on the half of it left of the text. */
+  position: absolute;
+  z-index: 5;
+  max-height: 62%;
+  background: var(--app-surface-elevated);
+  color: var(--foreground);
   border-top: 1px solid var(--border);
 }
+/* The one field in the sheet, in a row of its own that does not scroll. */
+.flow-picker-head {
+  flex: none;
+  padding: 2px 12px 4px;
+}
+.flow-picker-head .flow-field {
+  width: min(360px, 100%);
+}
+.flow-picker-body {
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  padding: 4px 10px 12px;
+}
+/* Delete belongs to the whole selection rather than to one column of choices,
+   so it gets the row to itself — and is not worth the whole width of it. */
+.flow-picker-body > .flow-delete {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-top: 8px;
+}
 .flow-field {
-  flex: 1 1 160px;
   min-width: 0;
   padding: 6px 9px;
   border: 1px solid var(--settings-control-border);
@@ -5390,13 +5430,18 @@ body.is-block-dragging .document-body [data-src-start] {
   font: inherit;
   font-size: 13px;
 }
-.flow-choices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.flow-choice.is-current {
+/* The browser's own focus ring is a second outline around a control that already
+   has a border, drawn in a blue that belongs to no theme here. One ring, in the
+   theme's link color, sitting just outside the border. */
+.flow-field:focus,
+.flow-field:focus-visible {
+  outline: none;
   border-color: var(--link);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--link) 30%, transparent);
+}
+/* The one already chosen. An outline rather than a fill: the row carries a
+   drawing of the shape, and a fill behind it fights the drawing. */
+.flow-menu-item.is-current {
   box-shadow: inset 0 0 0 1px var(--link);
 }
 .flow-delete {
@@ -5408,6 +5453,15 @@ body.is-block-dragging .document-body [data-src-start] {
   font: inherit;
   font-size: 12px;
   cursor: pointer;
+}
+/* What Save will do to the text below it. Muted and one line: it is a fact to
+   have read once, not a warning to be argued with every time. */
+.flow-code-note {
+  flex: none;
+  margin: 0;
+  padding: 8px 14px 6px;
+  color: var(--app-muted-foreground);
+  font-size: 11.5px;
 }
 .flow-code {
   flex: 1 1 45%;
@@ -5502,16 +5556,23 @@ body.is-block-dragging .document-body [data-src-start] {
 .mermaid-zoom button + button {
   border-left: 0;
 }
+/* Wide enough that a sheet across the whole width would be a line of text you
+   have to sweep your head along: every sheet becomes a centered column instead.
+   On the component, so all three do it and a fourth gets it for nothing. */
 @media (min-width: 760px) {
-  .glossary-sheet,
-  .theme-sheet {
+  .leaf-sheet {
     left: 50%;
     right: auto;
-    width: min(680px, 92vw);
+    width: min(680px, 92%);
     transform: translateX(-50%) translateY(100%);
   }
-  .glossary-sheet.open,
-  .theme-sheet.open {
+  .leaf-sheet.open {
     transform: translateX(-50%) translateY(var(--sheet-drag, 0px));
+  }
+  /* Except the flowchart picker, which is two columns of drawings rather than a
+     column of text. It takes nearly the whole editor, because that is what it
+     takes to read forty-seven shapes without scrolling for every one. */
+  .flow-picker {
+    width: 85%;
   }
 }

@@ -124,17 +124,31 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/shell/selection-toolbar.js"),
     include_str!("assets/shell/render-document.js"),
     include_str!("assets/shell/glossary.js"),
-    // The flowchart sheet: the grammar, then the sheet that asks it. Mermaid
-    // draws the canvas, so there is no layout of ours in between.
-    include_str!("assets/shell/flow-model.js"),
-    include_str!("assets/shell/flow-canvas.js"),
     include_str!("assets/shell/decorate.js"),
     include_str!("assets/shell/minimap.js"),
+];
+
+/// The flowchart sheet: the grammar, then the sheet that asks it. Mermaid draws
+/// the canvas, so there is no layout of ours in between.
+///
+/// Served as `flow.js` over the asset protocol rather than inlined, because the
+/// shell goes to WebView2 as one string with a ceiling on it and these two are
+/// the largest pair in the front-end. Still one script tag and one scope — the
+/// page has no module loader — and it loads before the inline script, so
+/// everything it declares is there when that one runs.
+const APP_SHELL_FLOW_SCRIPT_PARTS: &[&str] = &[
+    include_str!("assets/shell/flow-model.js"),
+    include_str!("assets/shell/flow-canvas.js"),
 ];
 
 fn app_shell_script() -> &'static str {
     static SCRIPT: OnceLock<String> = OnceLock::new();
     SCRIPT.get_or_init(|| APP_SHELL_SCRIPT_PARTS.concat())
+}
+
+pub(crate) fn app_shell_flow_script() -> &'static str {
+    static SCRIPT: OnceLock<String> = OnceLock::new();
+    SCRIPT.get_or_init(|| APP_SHELL_FLOW_SCRIPT_PARTS.concat())
 }
 pub const LOCAL_IMAGE_PROTOCOL: &str = "leaf-image";
 const LOCAL_IMAGE_HOST: &str = "local";
@@ -827,6 +841,7 @@ pub fn app_shell_html() -> String {
         .replace("{{APP_SCRIPT}}", app_shell_script())
         .replace("{{THEME_BOOTSTRAP_SCRIPT}}", &theme_bootstrap_script())
         .replace("{{APP_CSS_URL}}", &bundled_asset_url("app.css"))
+        .replace("{{FLOW_SCRIPT_URL}}", &bundled_asset_url("flow.js"))
         .replace("{{THEME_ITEMS}}", &theme_items_html())
         .replace(
             "{{MERMAID_SCRIPT_URL}}",

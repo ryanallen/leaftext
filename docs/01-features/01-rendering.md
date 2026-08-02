@@ -258,7 +258,7 @@ A drawn diagram sits in its own cell, on the same tint and dot grain as a code b
 
 Hovering a diagram on an unlocked page also shows two buttons in the opposite corner: one swaps it for the Mermaid behind it, editable in place like any other block ([Editing](07-editing.md)), and one opens it in [the flowchart editor](07-editing.md#the-flowchart-editor) — a canvas beside the Mermaid text, for drawing a flowchart rather than typing it.
 
-One more detail: a `---` front-matter block inside a `mermaid` fence is stripped before the diagram is drawn, so `title:` and `config:` written that way have no effect — use a `%%{init: { ... }}%%` line instead.
+One more detail: a `---` front-matter block inside a `mermaid` fence reaches Mermaid intact, so `title:`, `config:`, `look:` and `layout:` written that way all work, as does a `%%{init: { ... }}%%` line.
 
 ```mermaid
 flowchart TD

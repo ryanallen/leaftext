@@ -35,38 +35,14 @@ pub(crate) fn render_code_block(capture: &CodeBlockCapture) -> String {
     )
 }
 
+// The block goes to mermaid exactly as it was written, front matter and all:
+// mermaid 11 reads `title:`, `config:`, `look:` and `layout:` itself. Cut that
+// section out here and the page draws it one way, the flowchart sheet another.
 pub(crate) fn render_mermaid_code_block(code: &str) -> String {
     format!(
         r#"<pre class="mermaid" data-language="mermaid">{}</pre>"#,
-        encode_text(mermaid_source_for_runtime(code))
+        encode_text(code)
     )
-}
-
-pub(crate) fn mermaid_source_for_runtime(code: &str) -> &str {
-    strip_mermaid_yaml_frontmatter(code).unwrap_or(code)
-}
-
-pub(crate) fn strip_mermaid_yaml_frontmatter(code: &str) -> Option<&str> {
-    let first_line_end = code.find('\n')?;
-    let first_line = code[..first_line_end].trim_end_matches('\r');
-    if first_line.trim() != "---" {
-        return None;
-    }
-
-    let mut offset = first_line_end + 1;
-    for line in code[offset..].split_inclusive('\n') {
-        let line_without_newline = line
-            .strip_suffix('\n')
-            .unwrap_or(line)
-            .trim_end_matches('\r');
-        let next_offset = offset + line.len();
-        if line_without_newline.trim() == "---" {
-            return Some(&code[next_offset..]);
-        }
-        offset = next_offset;
-    }
-
-    None
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

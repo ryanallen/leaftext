@@ -304,8 +304,10 @@ fn a_diagram_bound_for_a_picture_puts_its_labels_in_text() {
     // merges, so a config quiet about it leaves that answer behind for the page.
     let html = app_shell_html();
 
+    // The picture's own call is in the flowchart editor, which is served beside
+    // the shell rather than inside it.
     assert_contains(
-        &html,
+        app_shell_flow_script(),
         "mermaid.initialize(mermaidRuntimeConfig({ htmlLabels: false }));",
     );
     assert_contains(&html, "    htmlLabels,\n    flowchart: { htmlLabels },");

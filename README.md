@@ -98,7 +98,7 @@ Take the handle and a block lifts off the page; drop it where its neighbors have
 
 ![The flowchart editor open as a full-window sheet: a diagram on the canvas at left with a selected box showing its plus handles, and the matching Mermaid text in the pane at right](imgs/flowchart-editor.png)
 
-A canvas beside the Mermaid text, each following the other. Double-click to add a box, drag a handle onto another to connect them, right-click for the rest. Open it on any diagram already in a page, and [export](docs/01-features/07-editing.md#export) the finished thing as its own Markdown file or picture. **[The flowchart editor →](docs/01-features/07-editing.md#the-flowchart-editor)**
+A canvas beside the Mermaid text, each following the other. Double-click to add a box and name it, pick from [forty-seven shapes](docs/01-features/07-editing.md#what-it-can-draw) grouped by what they are for, drag a handle onto another box to connect them, and group boxes together. Every other kind of diagram opens the same sheet as a live preview. Open it on any diagram already in a page, and [export](docs/01-features/07-editing.md#export) the finished thing as its own Markdown file or picture. **[The flowchart editor →](docs/01-features/07-editing.md#the-flowchart-editor)**
 
 ### Or work in the raw source
 

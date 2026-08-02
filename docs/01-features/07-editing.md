@@ -163,12 +163,13 @@ The canvas is Mermaid's own drawing of your diagram, not a second picture of it 
 
 Everything is done on the canvas itself.
 
-- **Double-click empty space** to add a box. A picker opens where you clicked, showing every shape drawn as itself, always in the same alphabetical order.
+- **Double-click empty space** to add a box. The picker slides up from the bottom of the sheet: a field for the name, then every shape under a heading for what it is for — basics, steps, start and stop, in and out, by hand, data, documents, notes — alphabetical inside each. Type the name first or leave it and rename later; picking a shape never overwrites what you typed.
 - **Hover a box** for its **+** handles. Click one and the same picker opens; the box you choose arrives already joined on that side. Drag a handle onto another box instead and it connects the two.
-- **Double-click a box** — or press `Enter` with it selected — to rename it in place. A new box opens straight into its name field.
-- **Drag a box onto a line** to move it into that line: `A → B` becomes `A → this → B`, and the chain it came from closes up behind it. Drop it on another box to move it beside that one, or on empty space and it settles back where the layout puts it.
+- **Select a box or a line** and the picker opens on it, holding its name and every shape it could be instead — the same sheet, so choosing a shape and changing one read the same way. Drag the sheet's grab bar down to park it out of the way, or close it with the **X**.
+- **Double-click a box** — or press `Enter` with it selected — to rename it in place.
+- **Drag a box onto a line** to move it into that line: `A → B` becomes `A → this → B`, and the chain it came from closes up behind it. Drop it on another box to move it beside that one, inside a group's box to put it in that group, or outside one to take it out.
 - **Select a line** and both its ends become handles: drag either onto a different box to point it somewhere else.
-- **Right-click anything** for the same actions in words, plus duplicate, flip a line, and take a box out of its chain.
+- **Right-click anything** for the same actions in words, plus duplicate, flip a line, take a box out of its chain, and everything to do with groups: put a box in a new one, move it to another, take it out, rename the group, or remove the group and keep the boxes.
 - **Delete** removes whatever is selected. `Ctrl+Z` / `Cmd+Z` and `Ctrl+Shift+Z` step back and forward inside the sheet — separate from the document's own undo, which only sees the finished diagram.
 
 A line at the top of the pane says what the thing under your pointer is for, and what letting go of a drag would do.
@@ -181,7 +182,7 @@ A chart has one direction, and the first box is what decides it: while there is 
 
 **Nothing about position is stored in your document**, so Mermaid lays the diagram out fresh every time. Dragging a box still moves it under your pointer and still means something — it changes where the box sits in the order — but it settles back into place on release rather than staying where you dropped it. Since Mermaid does the placing here and in the page, what you see is what the document will draw.
 
-The canvas fits the diagram when it opens and centers it. Drag empty space to pan, and use the zoom buttons or `Ctrl` + scroll — the same lens, frame and lens buttons a [drawn diagram](01-rendering.md#mermaid-diagrams) carries in the page.
+The canvas fits the diagram when it opens and centers it. Drag empty space to move it — any diagram, not only one too big for the pane, so a picture can be pushed out from under the picker — and use the zoom buttons or `Ctrl` + scroll. They are the same lens, frame and lens buttons a [drawn diagram](01-rendering.md#mermaid-diagrams) carries in the page, and the middle one puts it back where it started.
 
 The sheet is the whole window, so its header stands in for the app bar while it is open: drag empty space along it to move the window, double-click to maximize.
 
@@ -196,30 +197,30 @@ There is no SVG. Mermaid's SVG is a web page in an SVG's clothing — a styleshe
 
 ### What it can draw
 
-- **Fourteen shapes** — circle, database, decision, double circle, event, flag, input, manual input, manual operation, output, preparation, process, subprocess, and terminal. Selecting a box shows all of them, and hovering one says what it means.
-- **Connectors** — solid, dotted or thick, with an arrow, nothing, a circle or a cross at the end, or the same at both ends. Any of them can carry a label.
+The canvas models the whole of Mermaid's flowchart language:
+
+- **Forty-seven shapes** — the fourteen the brackets spell, and the thirty-three only `A@{ shape: … }` can reach. The picker groups them by what they are for and hovering one says what it means. Both spellings are read, along with every other name Mermaid answers to for a shape, and a box is written back the shorter of its two ways.
+- **Connectors** — solid, dotted, thick or invisible, with an arrow, nothing, a circle or a cross at the end, or the same at both ends. Any of them can carry a label, be stretched to push a box further down the layout (`A ---> B`), be given a name, and be animated.
+- **Subgraphs** — nesting, a `direction` of their own, and arrows pointing at the group itself. A box says which group it is in, so reordering never moves it out of one.
+- **Labels** — quoted, unquoted, with Markdown inside the quotes, and broken across two lines.
+- **Color** — `classDef`, `class`, `:::name`, `style` and `linkStyle` are read onto the box or the line they paint and written back off it, so deleting a box takes its color with it. The canvas has no color picker; it carries what your diagram already says.
 - **Front matter, `%%{init}%%` directives and comments** written in the block are carried through a save untouched.
 
 ### What it refuses
 
-The canvas fails closed: a diagram it cannot fully model opens with the canvas switched off and a line saying so, and the **text pane still edits it normally**. It never quietly drops the half it did not understand, and one unmodeled line switches the canvas off for the whole diagram rather than half of it. What it refuses:
+The canvas fails closed: a diagram it cannot fully model opens with the canvas switched off, and the **text pane still edits it normally**. It never quietly drops the half it did not understand, and one unmodeled line switches the canvas off for the whole diagram rather than half of it. Two things do that:
 
 | In the diagram | Example |
 | --- | --- |
-| Typed shapes | `A@{ shape: cyl }` |
-| Subgraphs, including their own `direction` | `subgraph … end` |
-| Styling of any kind | `classDef`, `class`, `:::name`, `style`, `linkStyle` |
 | Click handlers | `click A "https://…"` |
-| Edge length used as a layout hint | `A ---> B` |
-| Invisible links | `A ~~~ B` |
-| Named and animated edges | `A e1@--> B`, `e1@{ animate: true }` |
-| Markdown labels, and labels broken across lines | ``A["`**bold**`"]`` |
-| A hyphen in a box's name | `read-file` |
+| Icon and image boxes | `A@{ icon: "fa:bell" }`, `B@{ img: "…" }` |
 
-Every other kind of Mermaid diagram — sequence, class, state, pie, Gantt and the rest — is text-only here too: the canvas draws flowcharts. Export still works on all of them.
+Neither works anywhere in Leaftext — see [Mermaid diagrams](01-rendering.md#mermaid-diagrams). When the canvas does switch off it names the line that stopped it and what on that line did, rather than leaving you to find it.
+
+**Every other kind of Mermaid diagram** — sequence, class, state, pie, Gantt and the rest — opens the same sheet as a **live preview** beside its text: drawn as you type, pannable and zoomable, but without handles, because the canvas draws flowcharts. Export works on all of them.
 
 > [!NOTE]
-> Saving rewrites the block in one spelling: always `flowchart` rather than `graph`, every label quoted, and every box declared on its own line. It is the same diagram and it renders identically anywhere Mermaid runs — but a file you hand-wrote will come back tidied.
+> Saving rewrites the block in one spelling: always `flowchart` rather than `graph`, every label quoted, every box declared on its own line, and each shape spelled the shorter of its two ways. It is the same diagram and it renders identically anywhere Mermaid runs — but a file you hand-wrote will come back tidied. The sheet says so above the text pane.
 
 ## Working in the source
 

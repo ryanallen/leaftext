@@ -248,6 +248,11 @@ pub(crate) fn bundled_asset_bytes(uri: &str) -> Option<(&'static str, &'static [
         // resources carry no such limit. `app_shell_size_stays_under_navigate_
         // to_string_budget` guards the inlined shell against regressing.
         "app.css" => Some(("text/css; charset=utf-8", reading_mode_css().as_bytes())),
+        // The flowchart editor, out of the shell string for the same reason.
+        "flow.js" => Some((
+            "text/javascript; charset=utf-8",
+            app_shell_flow_script().as_bytes(),
+        )),
         "mermaid.min.js" => Some(("text/javascript; charset=utf-8", MERMAID_JS)),
         "pixi.min.js" => Some(("text/javascript; charset=utf-8", PIXI_JS)),
         "pixi-unsafe-eval.min.js" => Some(("text/javascript; charset=utf-8", PIXI_UNSAFE_EVAL_JS)),

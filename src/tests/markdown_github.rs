@@ -237,14 +237,16 @@ xychart-beta
 
     let rendered = render_markdown_document(markdown, "README.md");
 
+    // Front matter reaches mermaid, which is what reads it. Cutting it here made
+    // the page and the flowchart sheet draw one block two ways.
     assert_contains(
         &rendered.html,
-        r#"<pre class="mermaid" data-language="mermaid">xychart-beta"#,
+        r#"<pre class="mermaid" data-language="mermaid">---"#,
     );
+    assert_contains(&rendered.html, "config:\n  xyChart:\n    width: 700");
     assert_contains(&rendered.html, "xychart-beta");
     assert_contains(&rendered.html, r#"title "Component Adoption %""#);
     assert_contains(&rendered.html, "0 --&gt; 100");
-    assert!(!rendered.html.contains("---\nconfig:"));
     assert!(!rendered
         .html
         .contains(r#"<pre class="highlight" data-language="mermaid""#));

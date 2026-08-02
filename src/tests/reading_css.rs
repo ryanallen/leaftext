@@ -238,10 +238,7 @@ fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
         .expect("the frontmatter table opts out");
 
     // The row grain belongs to the untinted stripe, not the tinted one.
-    assert_contains(
-        &css[odd..],
-        "radial-gradient(circle, var(--reader-row-grain)",
-    );
+    assert_contains(&css[odd..], "--leaf-grain-dot: var(--reader-row-grain);");
     // Same 2px lattice on both, so the dots line up down the page across a stripe.
     assert_contains(&css[odd..], "background-size: 2px 2px;");
 
@@ -443,7 +440,8 @@ fn reading_surfaces_carry_the_chrome_dot_grain() {
         ".document-body pre,",
         ".document-body th,",
         ".document-body tr:nth-child(2n) td {",
-        "radial-gradient(circle, var(--reader-surface-grain) 0 0.6px, transparent 0.7px);",
+        "--leaf-grain-dot: var(--reader-surface-grain);",
+        "background-image: var(--leaf-grain-image);",
         "background-size: 2px 2px;",
         "background-attachment: fixed;",
     ] {
@@ -572,10 +570,14 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
 #[test]
 fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
     // The edge is the chrome's dot screen in the page's color, so it has to be
-    // the same circle on the same lattice — retune the bar's grain and this has
-    // to come with it or the two stop matching.
+    // the same circle on the same lattice — which is now one token both pull
+    // from, rather than the same string written twice and kept in step by hand.
     let css = reading_mode_css();
-    let grain = " 0 0.6px, transparent 0.7px";
+    let grain = "background-image: var(--leaf-grain-image);";
+    assert_contains(
+        css,
+        "--leaf-grain-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);",
+    );
     let bar = rule_body(css, ".app-bar {");
     assert_contains(bar, grain);
     assert_contains(bar, "background-size: 2px 2px;");
@@ -589,7 +591,8 @@ fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
     assert_contains(shared, "background-attachment: fixed;");
     // One even screen. A second dot layer is a size ramp, which reads as stacked
     // bands.
-    assert_eq!(shared.matches("radial-gradient(").count(), 1);
+    assert_eq!(shared.matches("var(--leaf-grain-image)").count(), 1);
+    assert_eq!(shared.matches("radial-gradient(").count(), 0);
 
     // Opposite directions, and both taking their hold from the same variable the
     // wash does: the two fades cover one span, and any daylight between their
@@ -1062,4 +1065,69 @@ fn a_diagrams_own_drawing_is_moved_and_its_button_icons_are_not() {
     // And the rules themselves are still here to be checked.
     assert_contains(css, &format!("{block} > svg {{"));
     assert_contains(css, &format!("{block}.is-moved > svg {{"));
+}
+
+#[test]
+fn the_flowchart_canvas_is_dragged_by_the_stage_not_by_its_scrollbars() {
+    // A diagram smaller than the pane has nothing to scroll, so scroll-panning
+    // did nothing for exactly the diagrams most likely to be hidden under the
+    // picker. The stage is moved instead, and the handles ride along because the
+    // overlay is inside it.
+    let css = reading_mode_css();
+
+    assert_contains(
+        &css,
+        "transform: translate(var(--flow-pan-x, 0px), var(--flow-pan-y, 0px));",
+    );
+    // The sheet's own corners: the panes fill it, so it has to clip them.
+    let sheet = css
+        .split(".flow-sheet {")
+        .nth(1)
+        .expect("the flowchart sheet has a rule");
+    let sheet = &sheet[..sheet.find('}').expect("the rule closes")];
+    assert!(
+        sheet.contains("border-radius") && sheet.contains("overflow: hidden"),
+        "the flowchart sheet must clip its rounded corners: {sheet}"
+    );
+}
+
+#[test]
+fn anything_marked_hidden_is_actually_hidden() {
+    // A rule that matches `[hidden]` and then sets a `display` of its own beats
+    // the browser's own `[hidden] { display: none }` and leaves the thing on the
+    // page — laid out, invisible, and still taking clicks. That is how a stray
+    // comment between two selectors put the glossary backdrop across the bottom
+    // fifth of the home screen and ate every link under it.
+    let css = reading_mode_css();
+
+    for rule in css.split('}') {
+        let Some((selector, body)) = rule.split_once('{') else {
+            continue;
+        };
+        // Only the selector itself, never a comment sitting above it.
+        // Comments are cut out of the selector rather than cut off before it: a
+        // comment *between* two selectors is exactly how this went wrong, and
+        // reading only what follows it would hide the half that matters.
+        let mut selector = selector.to_string();
+        while let Some(opens) = selector.find("/*") {
+            let Some(shuts) = selector[opens..].find("*/") else {
+                break;
+            };
+            selector.replace_range(opens..opens + shuts + 2, " ");
+        }
+        let selector = selector.trim();
+        // `:not([hidden])` is the opposite claim — it matches what is showing.
+        if !selector.replace(":not([hidden])", "").contains("[hidden]") {
+            continue;
+        }
+        let display = body
+            .split(';')
+            .map(str::trim)
+            .find(|line| line.starts_with("display:"));
+        assert_eq!(
+            display,
+            Some("display: none"),
+            "`{selector}` matches a hidden element but sets {display:?}"
+        );
+    }
 }

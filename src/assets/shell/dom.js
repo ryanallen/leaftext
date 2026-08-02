@@ -129,18 +129,33 @@ document.addEventListener('pointercancel', () => endTabDrag(false));
 // custom property rather than an inline transform, because the wide layout also
 // centers the sheet with translateX(-50%) -- composing the two in CSS keeps that
 // rule the only place that knows about the centering.
-const SHEET_DISMISS_PX = 88;
-const SHEET_FLICK_PX_PER_MS = 0.5;
+// Let go part-way down and the sheet stays there. That is the whole point of
+// dragging one: something behind it is being read, and a sheet that springs
+// back the moment you release it is a sheet you cannot see past. It only leaves
+// when it is most of the way gone, or thrown there.
+const SHEET_PARK_MIN_PX = 20;
+const SHEET_DISMISS_FRACTION = 0.6;
+const SHEET_FLICK_FRACTION = 0.2;
+const SHEET_FLICK_PX_PER_MS = 0.9;
+
+function resetSheetDrag(sheet) {
+  if (sheet) sheet.style.removeProperty('--sheet-drag');
+}
 function makeSheetDraggable(sheet, grip, dismiss) {
   if (!sheet || !grip) return;
   let drag = null;
   grip.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return;
     event.preventDefault(); // don't start a text selection on the way down
+    // From wherever it is sitting, not from flush: a sheet parked half-way down
+    // has to be draggable back up, and a drag that always started at zero could
+    // only ever push it further away.
+    const parked = parseFloat(sheet.style.getPropertyValue('--sheet-drag')) || 0;
     drag = {
       id: event.pointerId,
       startY: event.clientY,
-      dy: 0,
+      from: parked,
+      dy: parked,
       lastY: event.clientY,
       lastT: event.timeStamp,
       speed: 0,
@@ -150,8 +165,9 @@ function makeSheetDraggable(sheet, grip, dismiss) {
   });
   grip.addEventListener('pointermove', (event) => {
     if (!drag || event.pointerId !== drag.id) return;
-    // Downward only: dragging up would lift the sheet off the window's edge.
-    drag.dy = Math.max(0, event.clientY - drag.startY);
+    // Never above flush: dragging up past that would lift the sheet off the
+    // window's edge and show a gap under it.
+    drag.dy = Math.max(0, drag.from + (event.clientY - drag.startY));
     const dt = event.timeStamp - drag.lastT;
     if (dt > 0) drag.speed = (event.clientY - drag.lastY) / dt;
     drag.lastY = event.clientY;
@@ -160,13 +176,20 @@ function makeSheetDraggable(sheet, grip, dismiss) {
   });
   const finish = (event) => {
     if (!drag || event.pointerId !== drag.id) return;
-    const leaving = drag.dy > SHEET_DISMISS_PX || (drag.speed > SHEET_FLICK_PX_PER_MS && drag.dy > 12);
+    // Measured against the sheet's own height, not a fixed number of pixels: a
+    // tall sheet dragged 90px has barely moved, a short one is nearly gone.
+    const tall = sheet.getBoundingClientRect().height || 1;
+    const dy = drag.dy;
+    const leaving =
+      dy > tall * SHEET_DISMISS_FRACTION ||
+      (drag.speed > SHEET_FLICK_PX_PER_MS && dy > tall * SHEET_FLICK_FRACTION);
     drag = null;
     // Dropping the class first puts the transition back, so both endings
     // animate from wherever the drag left the sheet.
     sheet.classList.remove('is-dragging');
     if (!leaving) {
-      sheet.style.removeProperty('--sheet-drag');
+      // Nudged rather than moved: sit flush again. Anything more stays put.
+      if (dy < SHEET_PARK_MIN_PX) sheet.style.removeProperty('--sheet-drag');
       return;
     }
     // The sheet's own close slides it to translateY(100%) from here; the offset

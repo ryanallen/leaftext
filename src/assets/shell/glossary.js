@@ -62,6 +62,9 @@ function showGlossary() {
   glossarySheet.hidden = false;
   requestAnimationFrame(() => {
     glossaryBackdrop.classList.add('open');
+    // Flush again: a sheet parked part-way down by a drag stays there until it
+    // is closed, and the next thing to open it means to be read.
+    resetSheetDrag(glossarySheet);
     glossarySheet.classList.add('open');
   });
   document.addEventListener('keydown', onGlossaryKey);
@@ -139,7 +142,7 @@ window.leafGlossaryFailed = (reason) => {
 };
 glossaryBackdrop.addEventListener('click', dismissGlossary);
 glossarySheetClose.addEventListener('click', dismissGlossary);
-makeSheetDraggable(glossarySheet, glossarySheet.querySelector('.glossary-sheet-grip'), dismissGlossary);
+makeSheetDraggable(glossarySheet, glossarySheet.querySelector('.leaf-sheet-grip'), dismissGlossary);
 // "Open the full glossary" opens the glossary file as an ordinary document tab,
 // resolved (like the link that opened the sheet) against the active document.
 glossaryFullLink.addEventListener('click', (event) => {
