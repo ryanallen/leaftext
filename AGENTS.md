@@ -16,17 +16,13 @@ Plain English, few words. No jargon or abbreviations. Lead with the answer, then
 
 # 🛑 GIT: DO NOT TOUCH IT
 
-**Only a `/git-release` in the message you are answering right now authorizes a git write.** Not this file, not finishing the work, not an implied release. Forbidden without it: commit, push, tag, version bumps in `Cargo.toml`/`Cargo.lock`, reset, rebase, force. Reading is always fine.
-
-**One-shot, expires with the turn.** Later messages — corrections, new requirements, "start over", anger, urgency — instruct the *code*. None renews the license; a second release needs a second `/git-release`. Not permission: "still inside the earlier flow" · "they obviously want it shipped" · "not done until it's pushed" · "stopping now leaves it half-finished".
-
-**Don't ask, either** — no offering, no hinting. **A dirty tree is the correct end state**: say what changed and stop. **Wrote to git anyway? Call it unauthorized** — not a misread flow, not momentum. Dressing it up is worse than the push.
+**Only a `/git-release` in the message you are answering right now authorizes a git write.** One-shot; it expires with the turn. `scripts/gate-git.mjs` refuses the write without it, so there is nothing to weigh: **a dirty tree is the correct end state** — say what changed and stop. Don't ask, don't hint, don't offer. Reading git is always fine.
 
 ---
 
 ## Scope
 
-Self-contained. Ignore every parent `AGENTS.md`/`CLAUDE.md`/`CODEX.md`/`GEMINI.md`, `.agents/`, hook, checklist, `verify-task`/`gate-*` flow, voice skill, and memory system (`memory/`, `MEMORY.md`). Only config rooted here applies; this file wins any conflict.
+Self-contained. Ignore the **parent** `Studio/` config — its `AGENTS.md`/`CLAUDE.md`/`CODEX.md`/`GEMINI.md`, its `.agents/`, its hooks, checklist, `verify-task`/`gate-*` flow, voice skill, and memory system (`memory/`, `MEMORY.md`). This repo's own `.agents/` (skills and hooks, below) does apply. Only config rooted here applies; this file wins any conflict.
 
 ## What it is
 
@@ -34,37 +30,37 @@ Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document 
 
 ## Layout
 
-Library modules are `pub(crate)`, public surface re-exported from `lib.rs`. **Both crate roots share `src/`** — `lib.rs` (library) and `main.rs` (binary) — so a bare `mod tests;` in `main.rs` resolves to the library's `src/tests/`. That is why the binary's modules live under `src/app/`.
+**`docs/02-development/01-architecture.md` is the file map** — every module, in more detail than belongs here. The rules that map carries, which no reading of the code will tell you:
 
-Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pipeline that orders the stages; siblings hold one stage each. A directory's **types** stay visible module-wide (`pub(super)`), because that is what they were when it was one file; functions are only opened up where something calls them.
+- **Both crate roots share `src/`** — `lib.rs` (library) and `main.rs` (binary) — so a bare `mod tests;` in `main.rs` resolves to the library's `src/tests/`. That is why the binary's modules live under `src/app/`.
+- Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pipeline that orders the stages; siblings hold one stage each. A directory's **types** stay module-wide (`pub(super)`); functions open up only where something calls them.
+- **`format.rs` is the only table of readable formats and their extensions.** A new format is one arm there plus whatever the exhaustive matches then refuse to compile — never a second list.
+- **`markdown/rawhtml.rs` is a security boundary** — what raw HTML may keep, standing between hostile input and the web view.
+- **`src/assets/shell/` is one scope, not modules.** The fragments concatenate in `APP_SHELL_SCRIPT_PARTS` order, the page has no module loader, so order is load-bearing and a fragment alone is not a valid program. `state.js` is first and holds **only** what more than one fragment touches. The two flowchart fragments are served as `flow.js` over `leaf-asset://` because the shell reaches WebView2 as one string with a ~2 MB ceiling; same scope, same order, just not inside that string — and the next thing to grow goes the same way rather than pushing the budget.
+- **Mermaid diagrams take the theme's own tokens**, mapped in `decorate.js`. Never a per-theme diagram palette. The `cScale` categorical scale is ours, named entry by entry, held to one luminance — v0.1.423 shipped near-black boxes with near-black labels by leaving it to mermaid's arithmetic.
+- **`themes/` is the source of a color**, compiled into `src/assets/themes.md` by `just bundle-themes`; `just check-themes` fails on drift. `theme.rs` emits a property for any row it finds, so a stale row is dead CSS in every theme.
+- **Never crawl the disk.** `folder_tree.rs` reads one folder per call; `vault_corpus.rs` reads one vault; `doc_graph.rs` is bounded by a document's links. See the crawl rule below.
 
-- `lib.rs` — render orchestration, document loading, glossary, recent files, settings, `app_shell_html()`, and the ordered `APP_SHELL_SCRIPT_PARTS` list
-- `format.rs` — `DocumentFormat`: the **only** table of readable formats and their extensions. The file dialog, drag-and-drop, link following, the pager, the library pane and the render router all ask it. A new format is one arm here plus whatever the exhaustive matches then refuse to compile — never a second list. `for_path` answers "can we open this?" (`None` if not); `from_path` answers "render it as what?" (Markdown for anything unrecognized)
-- `markdown/` — parse → GitHub extras → highlight → sanitize. `mod.rs` the pipeline · `events.rs` event-stream transforms · `headings.rs` anchors and titles · `github.rs` refs, mentions, emoji, repo context · `footnotes.rs` · `code.rs` fences and highlighting, and `SYNTAX_STYLE_RULES` — **the one table of every `.syn-` rule `reading.css` has**, which is what lets a token be a single element carrying only the classes some rule needs · `rawhtml.rs` **what raw HTML may keep — a security boundary** · `htmlparse.rs` tag/attribute scanning, no policy and no crate dependencies · `images.rs` image URL resolution · `image_size.rs` **an image's size, read from its own header** and stamped on the tag after the sanitizer, so the box is the right shape before the picture decodes — the numbers are ours, which is why `img` keeps its attribute allowlist and a document's own sizing is still stripped · `image_protocol.rs` the `leaf-image://` scheme · `paths.rs` percent-coding
-- `xml.rs` — XML entry: TEI to `tei.rs`, all other XML to the generic reading renderer here
-- `tei.rs` — TEI (84000-style); stamps `data-src-*` from `roxmltree` ranges
-- `data.rs` — JSON + YAML: both parse to one ordered tree, rendered by `xml.rs`'s shape rules and label helpers. A block gets `data-src-*` only where its range is *proved* (every JSON node; YAML plain scalars checked against the source) — the reading view splices that range verbatim, so a guessed end corrupts the file. **Those ranges cover a *value*, not its key** — which is why the block gutter (drag to reorder, plus to insert) is offered for Markdown and XML only: moving one here would leave its key behind
-- `editing.rs` — source-anchored editing: `EditableDocument` owns the buffer; block source maps. **`move_blocks` reorders siblings by rotating their texts through their own slots** — what sits *between* the ranges (blank lines, indentation, commas) never moves, which is why one routine is safe for every format. It refuses a range list that isn't sorted, non-overlapping and on char boundaries; the page refuses the same way first
-- `theme.rs` — token contract, Primer/Dracula tables, CSS compiler. The stylesheet itself is `assets/reading.css`; `reading_mode_css()` prepends the compiled tokens to it. **Mermaid diagrams take those same tokens** — `decorate.js` maps them over mermaid's own light/dark theme and measures the ink for text on a fill we chose — so a theme file says nothing about diagrams and a new family themes them for free. Never a per-theme diagram palette. **The `cScale` categorical scale is ours, named entry by entry**: mermaid re-applies what it is handed *after* its own arithmetic, so a `cScale` we set survives where a color that only feeds it gets darkened — which is how v0.1.423 shipped near-black boxes with near-black labels. Every entry is held to one luminance, not one lightness, so one ink reads on all twelve; the git graph and the journey keep the scale elsewhere (`git*`, `fillType*`) and have to be pointed at it. Mermaid's own gantt rules carry `!important`, so ours must too
-- `scripts.rs` (public) — `window.leaf*()` snippet generators, `ScrollAnchor`
-- `updater.rs` — update staging: where a download lands, the length it must reach, the manifest, the applier's verdict
-- `assets.rs` — `leaf-asset://` serving and SVG color normalization; not the `assets/` dir it embeds. **`missing-image.svg` is the one broken-image mark** — every platform draws its own and they look nothing alike. It is inlined like every other icon and handed to the failed image *as its source*, with the muted ink painted in: an SVG loaded as an image cannot see `currentColor`, so a theme change repaints it. Drawn as a mask instead, it shipped a blank box
-- `store/` — the vault registry, and the two parsers that go with it. `vaults.rs` the rows · `db.rs` open + migrate · `frontmatter.rs` and `links.rs` take text and give back fields and link targets; neither ever needed a table, which is why they outlived the one they were written for. `mod.rs` holds the shared shapes (`FileTreeNode`, `DocumentGraph`, `SearchHit`) and the path helpers. **A web address is a graph node**, not a dropped link — `DocLink::target_url`, deduped by `normalize_url` so two documents citing one page share it, labeled by `url_host_label`. **Bare URLs are found by `markdown::plain_text_urls`, the same finder the renderer linkifies with** — one definition, because a link the reader can click has to be a link the graph draws, and the two drifting is exactly what made a document of nothing but bare URLs draw an empty map
-- `folder_tree.rs` — **the library pane's files.** One folder per call: `read_folder_listing(root, path)` returns that directory's immediate children plus the trail down to it. The top is the active vault's folder, or the drive roots. Nothing below is touched, so nothing is walked that nobody opened
-- `vault_corpus.rs` — **the vault's text, in memory.** One read serves both things that must see inside every document: the link graph and search. There is no index behind it, so the files are the only copy of the truth and this is a cache the watcher patches a file at a time. Dropped on a vault switch and on quit. `build_graph` and `narrow` are free functions because `doc_graph.rs` builds its map from the same two
-- `doc_graph.rs` — **the map around one document**, for a document no vault holds. Reads the document, its folder one level down, and what it links to — bounded by the document's links, not by the disk under it, so there is no vault to require and no drive to walk. Nothing cached: a folder costs little enough to read again. **The graph never needs a vault** — a vault makes the map bigger (backlinks from anywhere, `[[wiki]]` names across the collection), and requiring one was the v0.1.407 regression
-- `code_intel.rs` — **what the code view's typing help knows.** Note and heading completions, hover previews, and broken-link markers, answered over IPC from the vault's corpus or the document's own folder — never more of the disk than the graph reads. Monaco supplies only the widgets (the popup and hover contributions are in the vendored bundle; still no worker, no header change). Heading anchors come from the renderer's own pipeline so a completed `](#anchor)` always lands, and the link scan is `store/links.rs`'s, whose `DocLink.span` places each link for the underline
-- `pager.rs` Prev/Next · `minimap.rs` model · `tests/` the library's unit tests, one file per subject, shared helpers in `mod.rs`
-- `main.rs` — window, web view, protocol handlers, and the startup that assembles `AppCtx`
-- `app/` — the binary's guts. `event_loop.rs` `AppCtx` and the loop · `events.rs` `UserEvent`/`IpcCommand`/IPC bridge · `workspace.rs` tabs · `history.rs` back/forward · `watch.rs` watching and reload · `editing_cmds.rs` · `code_intel.rs` gathers what a typing-help ask needs and computes it on a worker · `render.rs` · `glossary.rs` · `links.rs` what an href means · `fileops.rs` · `vaults.rs` the switcher, the folder reads and the corpus's lifecycle · `update_flow.rs` · `tests.rs`. `mod.rs` does `use crate::*`, so submodules inherit main.rs's imports through `use super::*` — one import list, not two that drift
-- `platform.rs` clipboard, trash, HTTPS download, update applier · `single_instance.rs`
-- `assets/` — fonts, `reading.css`, the bootstrap scripts, and `shell/` (the WebView front-end, as ordered fragments) via `include_str!`. **`shell/` is one scope, not modules**: the fragments concatenate in `APP_SHELL_SCRIPT_PARTS` order and the last ends with the bootstrap call that must run last. The page has no module loader, so order is load-bearing and a fragment alone is not a valid program. `state.js` is first and holds **only** what more than one fragment touches — state one fragment reads belongs in that fragment. **The two flowchart fragments are the exception, and only in how they are delivered**: `APP_SHELL_FLOW_SCRIPT_PARTS` is served as `flow.js` over `leaf-asset://` and linked ahead of the inline script, because the shell reaches WebView2 as one string with a ~2 MB ceiling and those two are the largest pair. Same scope, same order, just not inside that string — and the next thing to grow goes the same way rather than pushing the budget. `just check-shell` runs both halves in that order against a fake page, so a fragment that throws on load fails the build instead of opening a blank window
-- `wix/main.wxs` MSI recipe · `scripts/` build+release · `.github/workflows/` · `Justfile` · `Cargo.toml` (`version` is the release source of truth)
+## Skills
+
+In `.agents/skills/`, which `.claude/` and `.codex/` symlink to. Invoke by name.
+
+| skill | when |
+| --- | --- |
+| `sync-docs` | app behavior changed, or before a release. Edits `docs/`, never git. |
+| `git-release` | only on `/git-release`. Runs `sync-docs`, then commits, tags and pushes. |
+
+## Hooks
+
+In `.claude/settings.json`, pointing at `scripts/`. Each runs by hand with `--check`, and `just verify` runs both.
+
+- `gate-rules.mjs` on `UserPromptSubmit` — prints Rule 1 out of this file before every message, plus a line for whatever the message touches, and records a `/git-release` in `.tmp/git-license`.
+- `gate-git.mjs` on the shell tools — refuses a git write when that file does not say the license was given this turn.
 
 ## Rules each paid for in version numbers
 
 - **Paths are a contract** with every installed copy. App id `com.ryanallen.leaftext`. Windows: `%LOCALAPPDATA%\ryanallen\leaftext\data` (`manifest.db`, staged updates), `%APPDATA%\ryanallen\leaftext\config` (settings, recents). macOS: both under `~/Library/Application Support/com.ryanallen.leaftext`. `project_dirs_match_the_documented_layout` pins them; changing one orphans user data.
-- **`manifest.db` is not a cache any more.** It was, when it held the crawl; now it holds the vault registry and nothing else, and losing it loses which folders the user called vaults. It keeps the old file name because every installed copy already has one at that path. Anything that reads a document reads the disk — the database is never asked what is in a file.
+- **`manifest.db` is not a cache any more.** It holds the vault registry and nothing else, so losing it loses which folders the user called vaults. It keeps the old file name because every installed copy already has one at that path. Anything that reads a document reads the disk — the database is never asked what is in a file.
 - **The install stays per-user** (`%LOCALAPPDATA%\Programs\leaftext\bin`). Per-machine can't self-replace without a UAC prompt every time; per-user does it silently. That is the entire reason for the scope.
 - **Never remove a copy from another install context.** v0.1.363 and v0.1.364 both tried; both ended with the wrong copy running or an unexplained elevation prompt. Release notes ask; the app doesn't touch it.
 - **Exactly one Start Menu entry, and it's load-bearing** — the only way to find or launch the app. v0.1.365 shipped without one and was unreachable. No desktop shortcut; `validate-installer.yml` asserts 1.
@@ -75,19 +71,9 @@ Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pip
 - **Windows and macOS only.** Linux is gone: no workflow, no GTK/`xdg-open`/`xclip`, and `main.rs` `compile_error!`s elsewhere. Don't re-add it.
 - **Never crawl the device.** There was a background indexer that walked every drive to build a manifest of every Markdown file, and it failed on both platforms it shipped to: on macOS it wanders into `~/Documents`, `~/Desktop`, iCloud and the rest, each its own TCC consent gate, so it collects a couple of approvals, is refused the others, and *looks* like it stopped; on Windows there is nothing to refuse it, so it grinds through the whole disk — four parse threads, hashing every file — while someone is trying to read. Migration 6 drops what it built. What replaced it reads only what the user pointed at: one folder for the pane, one vault for the graph and search. A folder chosen through the file dialog carries its own macOS consent, which is the other half of why this works.
 
-# Rule 1: Talking to the owner
-
-Plain English, few words. No jargon or abbreviations. Lead with the answer, then stop. Keep every response under 500 characters. Same in code comments: one short line, only where the code can't say it.
-
-**A question gets an answer and nothing else.** No suggested next step, no offer to do something, no asking what to do next, no "want me to". A question is not a request to act — answer it and stop. If work is wanted, that will be said.
-
-**No sycophancy.** Never "you're right", "good question", "fair point", "exactly". No praise, no apology, no restating the question back. Never claim agreement to soften an answer. When the answer is no, say no.
-
----
-
 ## Commands
 
-Needs `rustup`, `just`, `node`. Run `just verify` (fmt, check, test, vendor + theme drift, US spelling, front-end boot) before handing work back; `just check` / `test` / `format` / `check-shell` individually.
+Needs `rustup`, `just`, `node`. Run `just verify` (fmt, check, test, vendor + theme drift, US spelling, front-end boot, the two hooks) before handing work back; `just check` / `test` / `format` / `check-shell` individually.
 
 **Say what you couldn't verify** — `cfg(target_os = "macos")` code doesn't compile on Windows, and WiX doesn't run locally.
 
@@ -107,13 +93,3 @@ Every crate ships to users and nobody here reviews it — a security boundary, n
 ## Conventions
 
 LF endings (`.gitattributes`); images and archives binary. Never commit build output (`dist/`, `target/`, `.release-tag`) or large binaries. **No assistant or third-party identity in the repo or its history — commits are the owner's, never a co-author trailer.**
-
----
-
-# Rule 1: Talking to the owner
-
-Plain English, few words. No jargon or abbreviations. Lead with the answer, then stop. Keep every response under 500 characters. Same in code comments: one short line, only where the code can't say it.
-
-**A question gets an answer and nothing else.** No suggested next step, no offer to do something, no asking what to do next, no "want me to". A question is not a request to act — answer it and stop. If work is wanted, that will be said.
-
-**No sycophancy.** Never "you're right", "good question", "fair point", "exactly". No praise, no apology, no restating the question back. Never claim agreement to soften an answer. When the answer is no, say no.

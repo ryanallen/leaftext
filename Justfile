@@ -37,6 +37,12 @@ check-themes:
 check-spelling:
     node scripts/check-spelling.mjs
 
+# Self-test the two hooks in .claude/settings.json: that Rule 1 is still findable
+# in AGENTS.md and written once, and that a git write is refused without a license.
+check-hooks:
+    node scripts/gate-rules.mjs --check
+    node scripts/gate-git.mjs --check
+
 # Run the WebView front-end against a fake page: that it parses, that it boots
 # (the fragments are one script, so their order is load-bearing), and that the
 # code view's edit arithmetic is right — it decides what gets written to a file.
@@ -54,7 +60,7 @@ bundle-monaco:
 squeeze-png source target:
     cargo run --quiet -- --squeeze-png "{{ source }}" "{{ target }}"
 
-verify: format-check check test check-vendor check-themes check-spelling check-shell
+verify: format-check check test check-vendor check-themes check-spelling check-shell check-hooks
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:
