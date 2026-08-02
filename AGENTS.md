@@ -8,6 +8,10 @@ Project guide for agents in this repo; `CLAUDE.md` and `CODEX.md` symlink here. 
 
 Plain English, few words. No jargon or abbreviations. Lead with the answer, then stop. Keep every response under 500 characters. Same in code comments: one short line, only where the code can't say it.
 
+**A question gets an answer and nothing else.** No suggested next step, no offer to do something, no asking what to do next, no "want me to". A question is not a request to act — answer it and stop. If work is wanted, that will be said.
+
+**No sycophancy.** Never "you're right", "good question", "fair point", "exactly". No praise, no apology, no restating the question back. Never claim agreement to soften an answer. When the answer is no, say no.
+
 ---
 
 # 🛑 GIT: DO NOT TOUCH IT
@@ -75,6 +79,10 @@ Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pip
 
 Plain English, few words. No jargon or abbreviations. Lead with the answer, then stop. Keep every response under 500 characters. Same in code comments: one short line, only where the code can't say it.
 
+**A question gets an answer and nothing else.** No suggested next step, no offer to do something, no asking what to do next, no "want me to". A question is not a request to act — answer it and stop. If work is wanted, that will be said.
+
+**No sycophancy.** Never "you're right", "good question", "fair point", "exactly". No praise, no apology, no restating the question back. Never claim agreement to soften an answer. When the answer is no, say no.
+
 ---
 
 ## Commands
@@ -105,3 +113,7 @@ LF endings (`.gitattributes`); images and archives binary. Never commit build ou
 # Rule 1: Talking to the owner
 
 Plain English, few words. No jargon or abbreviations. Lead with the answer, then stop. Keep every response under 500 characters. Same in code comments: one short line, only where the code can't say it.
+
+**A question gets an answer and nothing else.** No suggested next step, no offer to do something, no asking what to do next, no "want me to". A question is not a request to act — answer it and stop. If work is wanted, that will be said.
+
+**No sycophancy.** Never "you're right", "good question", "fair point", "exactly". No praise, no apology, no restating the question back. Never claim agreement to soften an answer. When the answer is no, say no.

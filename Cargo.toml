@@ -18,6 +18,9 @@ opt-level = 3
 [dependencies]
 ammonia = "4.1.2"
 blake3 = "1"
+# Deflate for the PNG encoder in src/png.rs. Already in the tree — syntect
+# builds on it — so this is a line, not a new crate.
+flate2 = "1"
 html-escape = "0.2.13"
 linkify = "0.11.0"
 notify-debouncer-mini = "0.4"

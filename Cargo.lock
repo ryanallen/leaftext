@@ -1395,6 +1395,7 @@ dependencies = [
  "ammonia",
  "blake3",
  "embed-resource",
+ "flate2",
  "html-escape",
  "linkify",
  "mail-parser",

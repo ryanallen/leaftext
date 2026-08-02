@@ -342,9 +342,10 @@ fn app_shell_header_keeps_one_chrome_shade_with_dividers() {
         // One flat chrome shade under the dot grid. No translucent fill or backdrop
         // blur: either makes the bar's tone depend on what sits behind it.
         "background-color: var(--chrome-surface);",
-        // The dot grid itself is one token now — `--leaf-grain-dot` is the ink,
-        // and the bar's is the default the token already carries.
-        "background-image: var(--leaf-grain-image);",
+        // The circles are written here rather than pulled from a variable holding
+        // the finished gradient: the ink has to resolve on the element that draws
+        // it, or a surface setting its own would silently get this one's.
+        "background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);",
         "--leaf-grain-dot: var(--app-bar-grain);",
         "background-size: 2px 2px;",
         // The grain tiles from the window, so every grained surface shares one

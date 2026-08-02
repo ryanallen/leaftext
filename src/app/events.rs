@@ -338,7 +338,16 @@ pub(crate) enum IpcCommand {
     /// since IPC carries a string and a PNG is bytes. The page has already made
     /// the file — the host only asks where it goes and puts it there.
     #[serde(rename = "exportDiagram")]
-    ExportDiagram { format: String, data: String },
+    /// `data` is Markdown for a `md` export, and base64 RGBA pixels for a `png`
+    /// one — the page sends pixels so the host's encoder does the writing.
+    ExportDiagram {
+        format: String,
+        data: String,
+        #[serde(default)]
+        width: u32,
+        #[serde(default)]
+        height: u32,
+    },
     /// Revert the most recent reading-view edit in the active document.
     #[serde(rename = "undoEdit")]
     UndoEdit,

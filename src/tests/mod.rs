@@ -23,6 +23,7 @@ mod markdown_github;
 mod markdown_rawhtml;
 mod markdown_render;
 mod minimap;
+mod png;
 mod reading_css;
 mod settings_paths;
 mod theme_registry;

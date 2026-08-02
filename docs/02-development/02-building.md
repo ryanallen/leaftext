@@ -80,3 +80,14 @@ Each step in the verification pipeline can also be run on its own:
 | Full verify  | `just verify`               | All steps above in sequence                    |
 
 Additional convenience tasks are available via `just --list`, including `just sync-vendor` to recopy the vendored assets into `site/` and `just bundle-themes` to recompile `themes.md` from the `themes/` folder.
+
+### Documentation screenshots
+
+`scripts/capture-screenshot.ps1` photographs the app for the documentation, and `just squeeze-png <in.bmp> <out.png>` writes the file — the same encoder the [diagram export](../01-features/07-editing.md#export) uses, so there is only one of them. Add `--palette` for a screenshot: it cuts the image to 256 colors, which halves the file and is the one step that moves a pixel.
+
+```bash
+pwsh scripts/capture-screenshot.ps1 -Doc docs/01-features/01-rendering.md -Out shot.bmp
+just squeeze-png shot.bmp imgs/rendering.png --palette
+```
+
+The script closes any running copy first (the app is single-instance, so a second launch hands the file over and exits), writes the window size and theme into `settings.json` because the webview lays out at the size it was created with, and restores your own settings afterward.

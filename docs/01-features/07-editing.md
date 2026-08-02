@@ -191,7 +191,7 @@ The sheet is the whole window, so its header stands in for the app bar while it 
 **Export** at the top of the sheet writes the diagram out as a file of its own. It never touches the document you opened it from — Save is still the only thing that writes into the page — and it asks where the file goes.
 
 - **Markdown** — the Mermaid text in a `mermaid` fence, as a document of its own.
-- **PNG** — the drawing as a picture, at twice life size, on the page color behind it.
+- **PNG** — the drawing as a picture, at twice life size, on the page color behind it. The page hands the host raw pixels and the host writes the file: a diagram is flat fill and few colors, so it goes out as a palette image, one byte a pixel and exactly the colors drawn.
 
 There is no SVG. Mermaid's SVG is a web page in an SVG's clothing — a stylesheet keyed to a generated id, labels that are really HTML, a font list full of CSS keywords no font is named after — and drawing programs read those as instructions they cannot follow.
 

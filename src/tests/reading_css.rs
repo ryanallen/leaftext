@@ -441,7 +441,7 @@ fn reading_surfaces_carry_the_chrome_dot_grain() {
         ".document-body th,",
         ".document-body tr:nth-child(2n) td {",
         "--leaf-grain-dot: var(--reader-surface-grain);",
-        "background-image: var(--leaf-grain-image);",
+        "background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);",
         "background-size: 2px 2px;",
         "background-attachment: fixed;",
     ] {
@@ -569,14 +569,18 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
 
 #[test]
 fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
-    // The edge is the chrome's dot screen in the page's color, so it has to be
-    // the same circle on the same lattice — which is now one token both pull
-    // from, rather than the same string written twice and kept in step by hand.
+    // The edge is the chrome's dot screen in the page's color, so it has to be the
+    // same circle on the same lattice as the bar — and each rule has to write the
+    // circles itself. A custom property holding the whole gradient resolves its ink
+    // where it is declared, so one at `:root` outranks every `--leaf-grain-dot`
+    // below it: v0.1.439 screened the chrome's dark ink over a light page, 239-255
+    // gray where the page is 255.
     let css = reading_mode_css();
-    let grain = "background-image: var(--leaf-grain-image);";
-    assert_contains(
-        css,
-        "--leaf-grain-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);",
+    let grain = "background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);";
+    assert!(
+        !css.contains("--leaf-grain-image:"),
+        "the lattice must not go through a variable holding the whole gradient: the ink \
+         inside it would resolve at the root and no override could reach it"
     );
     let bar = rule_body(css, ".app-bar {");
     assert_contains(bar, grain);
@@ -585,14 +589,27 @@ fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
     let shared = rule_body(css, ".reader-edge-fade::before,");
     assert_contains(shared, grain);
     assert_contains(shared, "background-size: 2px 2px;");
+    // And the ink is the page's own color, which is the whole point: over a flat
+    // page the screen cannot be seen, and over a tinted block at the edge it still
+    // carries the lattice.
+    assert_contains(shared, "--leaf-grain-dot: var(--reader-edge-fade-surface);");
+    assert_contains(
+        rule_body(css, ".reader-edge-fade {"),
+        "--reader-edge-fade-surface: var(--preview-background);",
+    );
+    assert_contains(
+        rule_body(css, ".reader-shell {"),
+        "background: var(--preview-background);",
+    );
     // Depth is one number, shared with the wash under the screen.
     assert_contains(shared, "height: var(--reader-edge-fade-depth);");
     // One window-anchored lattice across every grained surface.
     assert_contains(shared, "background-attachment: fixed;");
     // One even screen. A second dot layer is a size ramp, which reads as stacked
     // bands.
-    assert_eq!(shared.matches("var(--leaf-grain-image)").count(), 1);
-    assert_eq!(shared.matches("radial-gradient(").count(), 0);
+    // One even screen. A second dot layer is a size ramp, which reads as stacked
+    // bands.
+    assert_eq!(shared.matches("radial-gradient(").count(), 1);
 
     // Opposite directions, and both taking their hold from the same variable the
     // wash does: the two fades cover one span, and any daylight between their

@@ -48,6 +48,12 @@ check-shell:
 bundle-monaco:
     node scripts/bundle-monaco.mjs
 
+# A screenshot BMP in, the smallest PNG out — the same encoder the flowchart
+# export uses (src/png.rs), so documentation images and diagrams cannot drift
+# onto two implementations. Used by scripts/capture-screenshot.ps1.
+squeeze-png source target:
+    cargo run --quiet -- --squeeze-png "{{ source }}" "{{ target }}"
+
 verify: format-check check test check-vendor check-themes check-spelling check-shell
 
 # Cut a release: commit, tag, and push so CI builds all platforms.

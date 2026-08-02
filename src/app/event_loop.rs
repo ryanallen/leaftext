@@ -653,12 +653,24 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         );
                     }
                 }
-                IpcCommand::ExportDiagram { format, data } => {
+                IpcCommand::ExportDiagram {
+                    format,
+                    data,
+                    width,
+                    height,
+                } => {
                     // The dialog blocks this thread, like Open's does. The active
                     // document only names the file it suggests; nothing about it
                     // is read or written.
                     let document = reader.workspace.active_path().map(Path::to_path_buf);
-                    export_diagram(reader.page(), document.as_deref(), &format, &data);
+                    export_diagram(
+                        reader.page(),
+                        document.as_deref(),
+                        &format,
+                        &data,
+                        width,
+                        height,
+                    );
                 }
                 IpcCommand::UndoEdit => {
                     // Pop the buffer back one edit, re-render, and resync so undoing

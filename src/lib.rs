@@ -62,6 +62,8 @@ pub use encoding::{
     decode_source, encode_source, read_source, write_source, SourceEncoding, SourceSpelling,
     SourceText,
 };
+mod png;
+pub use png::{encode_rgba, encode_rgba_paletted, rgba_from_bmp};
 mod updater;
 pub use updater::{
     hash_file, is_newer_version, now_unix, platform_asset_suffix, prune_staged, read_staged,

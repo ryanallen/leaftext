@@ -17,25 +17,26 @@ use leaftext::{
     bundled_asset_response, code_intel_headings_script, code_intel_hover_script,
     code_intel_lint_script, code_intel_notes_script, code_view_fetch_script, code_view_payload,
     config_file_path, corpus_note_items, create_repo_on_github, document_graph, document_headings,
-    document_pager_html, error_toast_script, find_note, folder_note_items, folder_note_names,
-    fragment_scroll_script, git_tooling, glossary_failed_script, glossary_sheet_script,
-    graph_script, image_picked_script, image_refresh_script, init_vault_repo,
-    initial_document_exts_script, initial_settings_script, initial_state_script,
-    initial_update_script, initial_vaults_script, initial_version_script, inspect_vault_repo,
-    is_local_image_path, is_supported_document_path, known_note_names, library_folder_script,
-    library_refresh_script, line_count_script, link_vault_remote, lint_links, load_recent_files,
-    load_settings, local_image_protocol_response, local_image_source_dir,
-    markdown_image_insert_destination, navigation_state_script, note_preview, notice_toast_script,
-    open_error_state_script, opened_document_from_source, pager_loaded_script, read_folder_listing,
-    read_folder_note, read_source, render_markdown_document, repo_name_for_vault,
-    save_recent_files, save_result_script, save_settings, scroll_anchor_script,
-    search_results_script, settings_file_path, settings_unreadable_script, source_payload_url,
-    source_updated_script, sync_vault_repo, unlock_reading_script, update_progress_script,
-    update_state_script, vaults_script, webview_user_data_dir, workspace_only_script,
-    workspace_reload_script, workspace_state_script, workspace_switch_script, write_source,
-    CorpusDocument, DocumentFormat, EditableDocument, FolderListing, GitTooling, GraphScope,
-    OpenedDocument, RecentFiles, ScrollAnchor, Settings, SettingsLoad, SourceText, UpdateDownload,
-    VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    document_pager_html, encode_rgba, encode_rgba_paletted, error_toast_script, find_note,
+    folder_note_items, folder_note_names, fragment_scroll_script, git_tooling,
+    glossary_failed_script, glossary_sheet_script, graph_script, image_picked_script,
+    image_refresh_script, init_vault_repo, initial_document_exts_script, initial_settings_script,
+    initial_state_script, initial_update_script, initial_vaults_script, initial_version_script,
+    inspect_vault_repo, is_local_image_path, is_supported_document_path, known_note_names,
+    library_folder_script, library_refresh_script, line_count_script, link_vault_remote,
+    lint_links, load_recent_files, load_settings, local_image_protocol_response,
+    local_image_source_dir, markdown_image_insert_destination, navigation_state_script,
+    note_preview, notice_toast_script, open_error_state_script, opened_document_from_source,
+    pager_loaded_script, read_folder_listing, read_folder_note, read_source,
+    render_markdown_document, repo_name_for_vault, rgba_from_bmp, save_recent_files,
+    save_result_script, save_settings, scroll_anchor_script, search_results_script,
+    settings_file_path, settings_unreadable_script, source_payload_url, source_updated_script,
+    sync_vault_repo, unlock_reading_script, update_progress_script, update_state_script,
+    vaults_script, webview_user_data_dir, workspace_only_script, workspace_reload_script,
+    workspace_state_script, workspace_switch_script, write_source, CorpusDocument, DocumentFormat,
+    EditableDocument, FolderListing, GitTooling, GraphScope, OpenedDocument, RecentFiles,
+    ScrollAnchor, Settings, SettingsLoad, SourceText, UpdateDownload, VaultCorpus, VaultRepo,
+    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -80,6 +81,23 @@ fn main() {
     if let Some(request) = platform::parse_apply_request(env::args()) {
         if let Err(error) = platform::run_update_apply(&request) {
             eprintln!("Update failed: {error}");
+        }
+        return;
+    }
+
+    // Behind `just squeeze-png`: documentation images go out through the same
+    // encoder the diagram export uses, never a second one. Opens no window.
+    let argv: Vec<String> = env::args().collect();
+    if argv.len() >= 4 && argv[1] == "--squeeze-png" {
+        // Cuts to 256 colors first — half the file on a screenshot, and the one
+        // step that moves a pixel, so no export asks for it.
+        let palette = argv.iter().any(|arg| arg == "--palette");
+        match squeeze_png(&argv[2], &argv[3], palette) {
+            Ok(report) => println!("{report}"),
+            Err(error) => {
+                eprintln!("squeeze-png failed: {error}");
+                std::process::exit(1);
+            }
         }
         return;
     }
@@ -204,6 +222,24 @@ fn apply_window_chrome(
     _border_b: u8,
     _dark: bool,
 ) {
+}
+
+/// A BMP in, the smallest PNG we can write out. BMP because the screenshot tool
+/// can save one without an encoder of its own, which keeps this the only encoder
+/// in the project.
+fn squeeze_png(source: &str, target: &str, palette: bool) -> Result<String, Box<dyn Error>> {
+    let bmp = std::fs::read(source)?;
+    let before = bmp.len();
+    let (rgba, width, height) =
+        rgba_from_bmp(&bmp).ok_or("not a 24- or 32-bit uncompressed BMP")?;
+    let png = if palette {
+        encode_rgba_paletted(&rgba, width, height)
+    } else {
+        encode_rgba(&rgba, width, height)
+    }
+    .ok_or("those pixels could not be encoded")?;
+    std::fs::write(target, &png)?;
+    Ok(format!("{width}x{height}  {before} -> {} bytes", png.len()))
 }
 
 fn run_app() -> Result<(), Box<dyn Error>> {

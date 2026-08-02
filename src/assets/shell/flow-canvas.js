@@ -2052,7 +2052,15 @@ function flowExportPngBase64(svgText) {
       ink.fillStyle = flowExportBackground();
       ink.fillRect(0, 0, canvas.width, canvas.height);
       ink.drawImage(picture, 0, 0, canvas.width, canvas.height);
-      resolve((canvas.toDataURL('image/png').split(',')[1] || '').trim());
+      // The pixels go to the host, not a PNG. `toDataURL` writes 32-bit color
+      // with a per-row filter, and a diagram of flat fills is the one shape both
+      // choices cost on — the host's encoder palettes it instead. See src/png.rs.
+      const pixels = ink.getImageData(0, 0, canvas.width, canvas.height).data;
+      let text = '';
+      for (let at = 0; at < pixels.length; at += 8192) {
+        text += String.fromCharCode.apply(null, pixels.subarray(at, at + 8192));
+      }
+      resolve({ width: canvas.width, height: canvas.height, pixels: btoa(text) });
     };
     picture.onerror = () => reject(new Error('The drawing could not be turned into a picture.'));
     picture.src = 'data:image/svg+xml;base64,' + flowBase64(svgText);
@@ -2073,7 +2081,14 @@ async function exportFlowDiagram(kind) {
     }
     const drawing = await flowDrawingSvg();
     if (!drawing) return;
-    send({ command: 'exportDiagram', format: 'png', data: await flowExportPngBase64(drawing) });
+    const picture = await flowExportPngBase64(drawing);
+    send({
+      command: 'exportDiagram',
+      format: 'png',
+      data: picture.pixels,
+      width: picture.width,
+      height: picture.height,
+    });
   } catch (error) {
     leafToast((error && error.message) || 'That diagram could not be exported.', 'error');
   }

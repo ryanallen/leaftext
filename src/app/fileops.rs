@@ -303,6 +303,8 @@ pub(crate) fn export_diagram(
     document: Option<&Path>,
     format: &str,
     data: &str,
+    width: u32,
+    height: u32,
 ) {
     let (extension, label) = match format {
         "md" => ("md", "Markdown"),
@@ -311,7 +313,9 @@ pub(crate) fn export_diagram(
         _ => return,
     };
     let bytes = if extension == "png" {
-        match decode_base64(data) {
+        // The page sends pixels, not a PNG: ours palettes the drawing and writes
+        // it unfiltered, which the canvas cannot do. See src/png.rs.
+        match decode_base64(data).and_then(|rgba| encode_rgba(&rgba, width, height)) {
             Some(bytes) if !bytes.is_empty() => bytes,
             // A half-decoded picture is worse than none, so nothing is written.
             _ => {
