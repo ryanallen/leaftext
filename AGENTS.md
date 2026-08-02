@@ -64,6 +64,7 @@ In `.agents/skills/`, which `.claude/` and `.codex/` symlink to. Invoke by name.
 | `add-dependency` | a new crate. Reports what it drags in, then asks. |
 | `add-format` | teaching the app another file type. One arm in `format.rs`. |
 | `shell-fragment` | adding, splitting or reordering a front-end fragment. Order is load-bearing. |
+| `ticket` | scoping work instead of building it. Writes a phased plan with checkboxes into `../docs/features/` or `../docs/refactor/`. |
 | `git-release` | only on `/git-release`. Runs `sync-docs`, `code-comments` and `check`, then commits, tags and pushes. |
 
 ## Hooks
