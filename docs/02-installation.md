@@ -35,11 +35,11 @@ A release is those two files and nothing else. The [in-app updater](#updates) in
 
 ### Windows
 
-![The Leaftext MSI installer's single screen, showing the install folder with the Change button beside it and the Install button below](../imgs/install-windows-msi.png)
+![The Leaftext MSI installer’s single screen, titled Destination Folder: the install path in a text field with a Change button under it, and Install and Cancel at the foot](../imgs/install-windows-msi.png)
 
 **1. Download** the file ending in `.msi` from the [latest release](https://github.com/ryanallen/leaftext/releases/latest). It needs 64-bit Windows 10 or later.
 
-**2. Run the installer.** If a blue **Windows protected your PC** box appears, click **More info** → **Run anyway** — see [Windows warns before it runs](#windows-warns-before-it-runs).
+**2. Run the installer.** If a full-screen **Windows protected your PC** box appears, click **More info** → **Run anyway** — see [Windows warns before it runs](#windows-warns-before-it-runs).
 
 **3. Click Install.** The installer shows one screen: the install folder, with **Change...** to pick another. There is no elevation prompt and no confirmation screen — Leaftext installs for the current user, and the window closes once the install finishes.
 
@@ -84,9 +84,9 @@ That removes the "downloaded from the internet" tag macOS attaches to the file. 
 
 ### Windows warns before it runs
 
-![The blue Windows protected your PC dialog with the More info link expanded, showing the Run anyway button](../imgs/install-windows.png)
+![The Windows protected your PC dialog with More info already expanded: the MSI file name beside App, Unknown publisher beside Publisher, and Run anyway next to Don’t run at the foot](../imgs/install-windows.png)
 
-Windows may show a blue **Windows protected your PC** box the first time you run the installer, because the MSI is not signed with a paid certificate. Click **More info**, then **Run anyway**. Your browser may also make you keep the download — choose **Keep** if it asks.
+Windows may show a full-screen **Windows protected your PC** box the first time you run the installer, because the MSI is not signed with a paid certificate. Click **More info**, then **Run anyway**. Your browser may also make you keep the download — choose **Keep** if it asks.
 
 ## Where it goes
 

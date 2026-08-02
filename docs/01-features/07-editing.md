@@ -170,7 +170,7 @@ Everything is done on the canvas itself.
 - **Drag a box onto a line** to move it into that line: `A → B` becomes `A → this → B`, and the chain it came from closes up behind it. Drop it on another box to move it beside that one, inside a group's box to put it in that group, or outside one to take it out.
 - **Select a line** and both its ends become handles: drag either onto a different box to point it somewhere else.
 - **Right-click anything** for the same actions in words, plus duplicate, flip a line, take a box out of its chain, and everything to do with groups: put a box in a new one, move it to another, take it out, rename the group, or remove the group and keep the boxes.
-- **Delete** removes whatever is selected. `Ctrl+Z` / `Cmd+Z` and `Ctrl+Shift+Z` step back and forward inside the sheet — separate from the document's own undo, which only sees the finished diagram.
+- **Delete** removes whatever is selected. `Ctrl+Z` / `Cmd+Z` steps back inside the sheet, and `Ctrl+Shift+Z` or `Ctrl+Y` steps forward — separate from the document's own undo, which only sees the finished diagram.
 
 A line at the top of the pane says what the thing under your pointer is for, and what letting go of a drag would do.
 

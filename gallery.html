@@ -3026,7 +3026,8 @@ body.is-maximized #winMaximize .wc-restore {
 /* Every floating surface's shadow, said once: the same 2px dot lattice the two toolbars
    throw, in shadow ink, thinning out under an ellipse — a halftone, never a smooth blur.
    The second mask layer punches the host's own box back out, because a negative-z child
-   paints above its parent's background and the dots would otherwise fall on its face. */
+   paints above its parent's background and the dots would otherwise fall on its face.
+   Subtract, never xor: xor leaves the box holding `1 - ellipse` — the punch inside out. */
 .app-overflow-panel::before,
 .context-menu::before,
 .rename-box::before,
@@ -3055,7 +3056,7 @@ body.is-maximized #winMaximize .wc-restore {
   -webkit-mask-size: 100% 100%, calc(100% - 40px) calc(100% - 23px);
   -webkit-mask-position: 0 0, 20px 13px;
   -webkit-mask-repeat: no-repeat;
-  -webkit-mask-composite: xor;
+  -webkit-mask-composite: source-out;
   mask-image: radial-gradient(
       ellipse farthest-side at 50% 55%,
       var(--lt-mask-opaque) 30%,
@@ -3065,7 +3066,7 @@ body.is-maximized #winMaximize .wc-restore {
   mask-size: 100% 100%, calc(100% - 40px) calc(100% - 23px);
   mask-position: 0 0, 20px 13px;
   mask-repeat: no-repeat;
-  mask-composite: exclude;
+  mask-composite: subtract;
 }
 /* Spinner in the update button while it downloads. */
 /* Every spinner in the app: a ring with one lit edge, turning. The shape and the

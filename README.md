@@ -2,7 +2,7 @@
 
 **Your thoughts, secure and free.** Leaftext is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own.
 
-![Leaftext — a readable Markdown and XML document open in the app](imgs/leaftext.png)
+![The Leaftext window with a Markdown document open: the library pane at left, the rendered page in the middle with its outline collapsed under the title, and the minimap rail down the right edge](imgs/leaftext.png)
 
 <a href="https://github.com/ryanallen/leaftext/releases/latest"><img alt="Download" src="https://img.shields.io/badge/download-latest-0ea5e9?style=flat&labelColor=4b5563"></a>
 <a href="https://github.com/ryanallen/leaftext/releases/latest"><img alt="macOS" src="https://img.shields.io/badge/macOS-Universal-silver?style=flat&labelColor=4b5563"></a>
@@ -174,9 +174,9 @@ Write one `GLOSSARY.md` and every mention of a defined term, across every docume
 
 ### Settings you can read
 
-![The Settings dropdown open in the app bar, showing theme, appearance, minimap, pager and graph size, with the version and update status at its foot](imgs/settings.png)
+![The Settings dropdown open in the app bar, showing the theme row with the current family and appearance, graph size, the minimap and next/previous checkboxes, and the version at its foot](imgs/settings.png)
 
-Theme, appearance, minimap, pager, graph size — and at the foot, the version you're running and whether an update is waiting. It's all a plain JSON file on your machine, not an account. **[Settings →](docs/01-features/05-settings.md)**
+Theme, appearance, minimap, pager, graph size — and at the foot, the version you're running. When an update is waiting, a button to restart into it appears at the top of the panel. It's all a plain JSON file on your machine, not an account. **[Settings →](docs/01-features/05-settings.md)**
 
 ## Your thoughts stay yours
 
@@ -227,9 +227,9 @@ Every launch after that is an ordinary double-click. On macOS 12 and earlier it'
 
 ### Windows
 
-![The blue Windows protected your PC dialog with the More info link expanded, showing the Run anyway button](imgs/install-windows.png)
+![The Windows protected your PC dialog with More info already expanded: the MSI file name beside App, Unknown publisher beside Publisher, and Run anyway next to Don’t run at the foot](imgs/install-windows.png)
 
-Grab the 64-bit MSI and run it. If a blue **Windows protected your PC** box appears, click **More info** → **Run anyway** — the installer isn't signed with a paid certificate. It installs just for you, with no admin prompt. Here by default, though **Change...** puts it anywhere you like and updates keep it there:
+Grab the 64-bit MSI and run it. If a full-screen **Windows protected your PC** box appears, click **More info** → **Run anyway** — the installer isn't signed with a paid certificate. It installs just for you, with no admin prompt. Here by default, though **Change...** puts it anywhere you like and updates keep it there:
 
 ```text
 %LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe

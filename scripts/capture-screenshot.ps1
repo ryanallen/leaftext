@@ -36,6 +36,9 @@ param(
   [int]$Height = 799,
   [string]$ThemeFamily = 'fern',
   [string]$ThemeMode = 'light',
+  # How much of the link graph the graph view draws. A big vault at `xl` is a
+  # hairball with no readable name in it.
+  [ValidateSet('small', 'medium', 'large', 'xl')][string]$GraphScope = 'xl',
   [switch]$LibraryOpen,
   # Lift the padlocks. Off by default so the set matches the app's own default;
   # a picture of typing in the page or the source needs them.
@@ -108,7 +111,7 @@ $shot = [ordered]@{
   theme_family         = $ThemeFamily
   theme_mode           = $ThemeMode
   theme_random_used    = @()
-  graph_scope          = 'xl'
+  graph_scope          = $GraphScope
   library_closed       = (-not $LibraryOpen)
   library_width        = 240
   window_width         = $Width

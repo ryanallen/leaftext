@@ -102,7 +102,7 @@ flowchart LR
 
 ## Choose
 
-![The theme picker open as a bottom sheet: the appearance control across the top, then a grid of family cards, each wearing its own paper, ink, five-swatch strip and heading font, with Random at the end](../../imgs/theme-picker.png)
+![The theme picker open as a bottom sheet: the appearance control across the top, then a scrolling grid of family cards, each wearing its own paper, ink, five-swatch strip and heading font, with the current family ringed and ticked](../../imgs/theme-picker.png)
 
 Open **Settings**, then **Theme** to slide up the theme picker. It lists every family as a preview card — plus [Random](#random) at the end — with an Appearance control (System / Light / Dark / Daylight) at the top. Each card wears its own theme: the theme's paper and ink, a strip of five swatches (background, text, brand, and two code colors), and the theme's heading font, all following the current appearance. Changes apply immediately and are saved as `theme_family` and `theme_mode` in `settings.json` (see [Settings](05-settings.md#options)). Close the picker with its close button, by clicking outside it, with `Escape`, or by dragging the grab bar at its top downwards — the same [bottom sheet](../GLOSSARY.md#bottom-sheet) the glossary uses.
 

@@ -4,17 +4,19 @@
 
 Settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView.
 
-![The Settings dropdown open under the app bar: the theme row, the appearance control, the minimap, pager and graph size toggles, and at the foot the version number beside the update status line](../../imgs/settings.png)
+![The Settings dropdown open under the app bar: the theme row naming the current family and appearance, the graph size selector, the minimap and next/previous checkboxes, and the version number at its foot](../../imgs/settings.png)
 
 ## Options
 
 | Setting | Options | Default |
 | --- | --- | --- |
-| [Theme](#theme) | Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage, Random | Fern |
-| [Appearance](06-themes.md#appearance) | System, Light, Dark, Daylight | System |
+| [Theme](#theme) | Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage, Random | Random |
+| [Appearance](06-themes.md#appearance) | System, Light, Dark, Daylight | Daylight |
+| [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus |
 | [Minimap](#minimap) | On / Off | On |
 | [Pager](#pager) | On / Off | On |
-| [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus |
+
+The Theme row is a door, not a control: it names the family and appearance you are on, and opens the [theme picker](06-themes.md#choose), where both are chosen. Everything else in the table is a control in the panel itself.
 
 Four more preferences are saved here but toggled elsewhere, where they apply: the [Speed Reader](#speed-reader), [typing help](#typing-help), and [the two padlocks](#the-padlocks).
 

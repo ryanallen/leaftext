@@ -1140,9 +1140,15 @@ fn every_floating_surface_throws_the_dot_halftone() {
     );
     assert_contains(halftone, "--lt-grain-dot: var(--lt-grain-dot-strong);");
     // The second mask layer punches the surface's own box out, or the dots land on
-    // its face: a negative-layer child paints above its parent's background.
-    assert_contains(halftone, "mask-composite: exclude;");
-    assert_contains(halftone, "-webkit-mask-composite: xor;");
+    // its face: a negative-layer child paints above its parent's background. Subtract,
+    // not xor -- xor is the punch inside out, and a stale one would win by coming last.
+    assert_contains(halftone, "mask-composite: subtract;");
+    assert_contains(halftone, "-webkit-mask-composite: source-out;");
+    assert!(
+        !halftone.contains("mask-composite: exclude;")
+            && !halftone.contains("-webkit-mask-composite: xor;"),
+        "xor/exclude is the punch inside out"
+    );
     assert_contains(halftone, "z-index: var(--lt-z-below);");
 }
 
