@@ -505,7 +505,7 @@ body {
   color: var(--lt-muted-foreground);
   cursor: pointer;
 }
-.window-control svg{
+.window-control .lt-icon {
   width: 12px;
   height: 12px;
 }
@@ -519,7 +519,7 @@ body.is-maximized #winMaximize .wc-maximize {
   display: none;
 }
 body.is-maximized #winMaximize .wc-restore {
-  display: block;
+  display: inline-block;
 }
 /* The shared toolbar hover chip, so these match the open/code-view/settings
    icons beside them. Close keeps the red every desktop uses for it. */

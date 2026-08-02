@@ -839,7 +839,8 @@ pub fn app_shell_html() -> String {
 /// Selected-state check badge shown on the active theme card (Heroicons
 /// check-circle, stroked in the accent color via `currentColor`). Hidden until
 /// the card is `.is-active`.
-const THEME_ITEM_CHECK_SVG: &str = "<svg class=\"theme-item-check\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z\" /></svg>";
+const THEME_ITEM_CHECK_SVG: &str =
+    "<span class=\"lt-icon theme-item-check lt-icon-check-circle\"></span>";
 
 /// The tokens each card previews as a swatch strip: paper, ink, brand, then two
 /// code accents — the colors that make one theme look unlike another.

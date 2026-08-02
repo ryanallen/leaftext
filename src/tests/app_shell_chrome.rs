@@ -176,7 +176,7 @@ fn app_shell_renders_history_controls_and_intercepts_document_links() {
             r#"class="icon-button history-button" aria-label="Forward""#,
             r#"<span class="lt-icon lt-icon-back"></span>"#,
             r#"<span class="lt-icon lt-icon-forward"></span>"#,
-            r#"<path d="M18 6 6 18"/><path d="m6 6 12 12"/>"#,
+            r#"<span class="lt-icon lt-icon-tab-close"></span>"#,
             "backButton.addEventListener('click', () => sendNavigationCommand('goBack'))",
             "forwardButton.addEventListener('click', () => sendNavigationCommand('goForward'))",
             "homeButton.addEventListener('click', () => send({ command: 'goHome' }))",
@@ -307,7 +307,12 @@ fn app_shell_back_icon_uses_current_color_and_keeps_no_square_fallback() {
         rule_body(css, ".lt-icon {"),
         "background-color: currentColor;",
     );
-    assert_contains(&html, r#"stroke="currentColor""#);
+    // Nothing in the page is drawn any more — every icon is a class — so the scan
+    // below holds for whatever arrives next rather than for what is there.
+    assert!(
+        !app_shell_html().contains("<svg"),
+        "an icon is inlined into the page again; it belongs in design/icons.md"
+    );
     assert!(
         !html.contains(r##"stroke="#fff""##)
             && !html.contains(r##"stroke="#ffffff""##)

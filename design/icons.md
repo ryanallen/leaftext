@@ -58,4 +58,17 @@ the heavier drawing is its own mask.
 | link | link.svg | — | Link. |
 | undo | undo.svg | — | Undo the last edit, beside the view group. |
 | missing-image | missing-image.svg | — | A picture the reading view could not load. Every platform draws its own broken mark and they look nothing alike, so the app draws one. |
+| chevron-down | chevron-down.svg | — | The app bar's overflow toggle, and any "more below" mark. |
+| theme | theme.svg | — | The theme row in the settings menu. |
+| redo | redo.svg | — | Redo, beside undo in the flowchart editor. |
+| window-minimize | window-minimize.svg | — | The window's own minimize button. Drawn on a 12px grid at a hairline, because it sits in the title bar beside the platform's own chrome. |
+| window-maximize | window-maximize.svg | — | Maximize. Same grid. |
+| window-restore | window-restore.svg | — | Restore down, shown in place of maximize when the window is already maximized. |
+| window-close | window-close.svg | — | The window's close cross. |
+| check | check.svg | — | A chosen row in a menu, and the code block's "copied" mark. |
+| check-circle | check-circle.svg | — | The theme card's selected badge, where the tick needs a ring of its own to read on a colored card. |
+| tab-close | tab-close.svg | — | A tab's close cross. Its own drawing rather than `close`, because at that size a 1.5 stroke disappears. |
+| back-long | back-long.svg | — | The menu row that goes up a folder. A longer arrow than the app bar's Back, which is why it is not the same icon. |
+| trash | trash.svg | — | Delete, in the file menu. |
+| copy | copy.svg | — | Copy a code block. |
 | leaf | leaf.svg | — | The header logomark, and a Markdown file's badge in the pane. |

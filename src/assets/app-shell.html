@@ -28,7 +28,7 @@
   </div>
   <div class="tab-bar" id="tabBar" role="tablist" aria-label="Open documents"></div>
   <div class="app-trailing">
-    <button type="button" id="overflowToggle" class="icon-button overflow-toggle" aria-haspopup="true" aria-expanded="false" aria-label="More options" title="More options"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg></button>
+    <button type="button" id="overflowToggle" class="icon-button overflow-toggle" aria-haspopup="true" aria-expanded="false" aria-label="More options" title="More options"><span class="lt-icon lt-icon-chevron-down"></span></button>
     <div class="app-trailing-items" id="appTrailingItems">
     <div class="app-actions-items" id="appActionsItems">
     <details class="settings-menu" id="settingsMenu">
@@ -45,7 +45,7 @@
           <span class="settings-update-label" id="settingsUpdateLabel"></span>
         </button>
         <button type="button" class="setting-theme-open" id="themeSheetOpen" aria-haspopup="dialog">
-          <svg class="setting-theme-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/></svg>
+          <span class="lt-icon setting-theme-icon lt-icon-theme"></span>
           <span class="setting-label">Theme</span>
           <span class="setting-theme-current" id="themeCurrentLabel"></span>
           <span class="setting-theme-chevron" aria-hidden="true">›</span>
@@ -92,9 +92,9 @@
     <button type="button" id="newButton" class="icon-button new-button" aria-label="New document" title="New document"><span class="lt-icon lt-icon-new"></span></button>
     </div>
     <div class="window-controls" id="windowControls" hidden aria-hidden="true">
-      <button type="button" class="window-control" id="winMinimize" tabindex="-1" aria-label="Minimize" title="Minimize"><svg viewBox="0 0 12 12" aria-hidden="true"><line x1="2.5" y1="6.5" x2="9.5" y2="6.5" stroke="currentColor" stroke-width="1"/></svg></button>
-      <button type="button" class="window-control" id="winMaximize" tabindex="-1" aria-label="Maximize" title="Maximize"><svg class="wc-maximize" viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2.5" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1"/></svg><svg class="wc-restore" viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="4" width="5.5" height="5.5" rx="1" fill="none" stroke="currentColor" stroke-width="1"/><path d="M4.5 4V2.5H9.5V7.5H8" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button type="button" class="window-control window-control-close" id="winClose" tabindex="-1" aria-label="Close" title="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.1" fill="none" stroke-linecap="round"/></svg></button>
+      <button type="button" class="window-control" id="winMinimize" tabindex="-1" aria-label="Minimize" title="Minimize"><span class="lt-icon lt-icon-window-minimize"></span></button>
+      <button type="button" class="window-control" id="winMaximize" tabindex="-1" aria-label="Maximize" title="Maximize"><span class="lt-icon wc-maximize lt-icon-window-maximize"></span><span class="lt-icon wc-restore lt-icon-window-restore"></span></button>
+      <button type="button" class="window-control window-control-close" id="winClose" tabindex="-1" aria-label="Close" title="Close"><span class="lt-icon lt-icon-window-close"></span></button>
     </div>
     </div>
     <!-- Where actions land as the tab strip runs out of room, one at a time.
@@ -193,7 +193,7 @@
 <div id="glossaryBackdrop" class="lt-backdrop" hidden></div>
 <aside id="glossarySheet" class="leaf-sheet glossary-sheet" role="dialog" aria-modal="true" aria-label="Glossary" hidden>
   <div class="leaf-sheet-grip"></div>
-  <button type="button" id="glossarySheetClose" class="leaf-sheet-close" aria-label="Close glossary"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
+  <button type="button" id="glossarySheetClose" class="leaf-sheet-close" aria-label="Close glossary"><span class="lt-icon lt-icon-close"></span></button>
   <div id="glossarySheetBody" class="glossary-sheet-body document-body"></div>
   <div class="glossary-sheet-footer"><button type="button" id="glossaryFullLink" class="glossary-sheet-fulllink">Open the full glossary</button></div>
 </aside>
@@ -202,7 +202,7 @@
   <div class="leaf-sheet-grip"></div>
   <div class="theme-sheet-head">
     <span class="theme-sheet-title">Themes</span>
-    <button type="button" id="themeSheetClose" class="leaf-sheet-close" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
+    <button type="button" id="themeSheetClose" class="leaf-sheet-close" aria-label="Close"><span class="lt-icon lt-icon-close"></span></button>
   </div>
   <div class="theme-sheet-modes" id="themeSheetModes" role="group" aria-label="Appearance">
     <button type="button" class="theme-mode-btn" data-mode="system">System</button>
@@ -227,7 +227,7 @@
     <div class="flow-sheet-tools">
       <div class="flow-steps" role="group" aria-label="History">
         <button type="button" id="flowUndo" aria-label="Undo" title="Undo"><span class="lt-icon lt-icon-undo"></span></button>
-        <button type="button" id="flowRedo" aria-label="Redo" title="Redo"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3" /></svg></button>
+        <button type="button" id="flowRedo" aria-label="Redo" title="Redo"><span class="lt-icon lt-icon-redo"></span></button>
       </div>
       <label class="flow-sheet-direction">Flow <select id="flowDirection"></select></label>
       <!-- The same three the reading view puts on a drawn diagram, so looking at
@@ -267,7 +267,7 @@
        centered on the whole editor and not on the half left of the text. -->
   <aside class="leaf-sheet flow-picker" id="flowPicker" role="dialog" aria-label="Shapes" hidden>
     <div class="leaf-sheet-grip"></div>
-    <button type="button" id="flowPickerClose" class="leaf-sheet-close" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
+    <button type="button" id="flowPickerClose" class="leaf-sheet-close" aria-label="Close"><span class="lt-icon lt-icon-close"></span></button>
     <!-- The name stays put while the shapes scroll under it: it is the one field
          in here, and losing it off the top mid-list is how a box ends up unnamed. -->
     <div class="flow-picker-head" id="flowPickerHead"></div>
