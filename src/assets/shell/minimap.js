@@ -114,7 +114,7 @@ syncMinimapWidthToCodeView();
 // exist until the document is laid out — on a large file, long enough that an empty
 // rail beside a finished page looks broken rather than busy.
 function documentMinimapMarkup() {
-  return `<aside class="document-minimap is-loading" aria-label="Document minimap"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="document-minimap-spinner" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
+  return `<aside class="document-minimap is-loading" aria-label="Document minimap"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="lt-spinner document-minimap-spinner" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
 }
 function renderDocumentMinimap(model) {
   if (!window.leafMinimap.getEnabled()) {
@@ -227,7 +227,7 @@ function bindDocumentMinimap() {
     minimapPointerOffsetY = minimapPointerOffset(event);
     // Measure the document geometry ONCE for the whole drag (see minimapDragMetrics).
     minimapDragMetrics = measureDocumentMinimap(track);
-    track.setPointerCapture(event.pointerId);
+    leafHoldPointer(track, event.pointerId);
     if (Number.isFinite(minimapPointerOffsetY)) {
       dragMinimapViewportToPointer(event, minimapPointerOffsetY);
     } else {

@@ -33,10 +33,10 @@ use leaftext::{
     settings_file_path, settings_unreadable_script, source_payload_url, source_updated_script,
     sync_vault_repo, unlock_reading_script, update_progress_script, update_state_script,
     vaults_script, webview_user_data_dir, workspace_only_script, workspace_reload_script,
-    workspace_state_script, workspace_switch_script, write_source, CorpusDocument, DocumentFormat,
-    EditableDocument, FolderListing, GitTooling, GraphScope, OpenedDocument, RecentFiles,
-    ScrollAnchor, Settings, SettingsLoad, SourceText, UpdateDownload, VaultCorpus, VaultRepo,
-    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    workspace_state_script, workspace_switch_script, write_gallery_page, write_source,
+    CorpusDocument, DocumentFormat, EditableDocument, FolderListing, GitTooling, GraphScope,
+    OpenedDocument, RecentFiles, ScrollAnchor, Settings, SettingsLoad, SourceText, UpdateDownload,
+    VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,

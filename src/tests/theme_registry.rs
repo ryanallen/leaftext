@@ -42,7 +42,7 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
         ]
     );
 
-    let html = app_shell_html();
+    let html = app_shell_page();
     // Theme controls live in a bottom-sheet selector, not inline dropdowns.
     assert_contains(&html, r#"id="themeSheetOpen""#);
     assert_contains(&html, r#"id="themeSheetGrid""#);
@@ -169,7 +169,7 @@ fn web_font_mechanism_fetches_noto_by_default_and_swaps_on_theme_change() {
 
     // The bootstrap injects the map and swaps a single <link> as the family
     // changes (run on every apply — initial paint and switches alike).
-    let html = app_shell_html();
+    let html = app_shell_page();
     assert!(html.contains("const FAMILY_FONTS = {"));
     assert!(html.contains("fonts.googleapis.com/css2?family=Noto"));
     assert!(html.contains("const applyFamilyFont = (fam) => {"));

@@ -34,25 +34,25 @@ const BLOCK_TOOLS_WIDTH = 62;
 // blocks that edit as raw source and have no caret to take until clicked. None of
 // them writes a word the document then has to carry.
 const MARKDOWN_INSERTS = [
-  { id: 'text', label: 'Text', icon: `{{TEXT_ICON_SVG}}`, blank: 'text' },
-  { id: 'heading', label: 'Heading', icon: `{{HEADING_ICON_SVG}}`, blank: 'heading' },
-  { id: 'list', label: 'List', icon: `{{LIST_ICON_SVG}}`, blank: 'list' },
-  { id: 'quote', label: 'Quote', icon: `{{QUOTE_ICON_SVG}}`, blank: 'quote' },
-  { id: 'code', label: 'Code block', icon: `{{CODE_VIEW_ICON_SVG}}`, text: '```\n\n```' },
+  { id: 'text', label: 'Text', icon: `<span class="lt-icon lt-icon-text"></span>`, blank: 'text' },
+  { id: 'heading', label: 'Heading', icon: `<span class="lt-icon lt-icon-heading"></span>`, blank: 'heading' },
+  { id: 'list', label: 'List', icon: `<span class="lt-icon lt-icon-list"></span>`, blank: 'list' },
+  { id: 'quote', label: 'Quote', icon: `<span class="lt-icon lt-icon-quote"></span>`, blank: 'quote' },
+  { id: 'code', label: 'Code block', icon: `<span class="lt-icon lt-icon-code-view"></span>`, text: '```\n\n```' },
   {
     id: 'table',
     label: 'Table',
-    icon: `{{TABLE_ICON_SVG}}`,
+    icon: `<span class="lt-icon lt-icon-table"></span>`,
     text: '|  |  |\n| --- | --- |\n|  |  |',
     caret: 'start',
   },
   // No source of its own: an image is a file or an address, so the row asks
   // which before it writes anything. See openBlockImageBox.
-  { id: 'image', label: 'Image', icon: `{{IMAGE_ICON_SVG}}`, ask: 'image' },
+  { id: 'image', label: 'Image', icon: `<span class="lt-icon lt-icon-image"></span>`, ask: 'image' },
   // Nothing to write until a diagram has been drawn: the sheet opens, and Save
   // hands back one mermaid block. See openBlockFlowSheet.
-  { id: 'flow', label: 'Flowchart', icon: `{{WORKFLOW_ICON_SVG}}`, ask: 'flow' },
-  { id: 'divider', label: 'Divider', icon: `{{DIVIDER_ICON_SVG}}`, text: '---' },
+  { id: 'flow', label: 'Flowchart', icon: `<span class="lt-icon lt-icon-workflow"></span>`, ask: 'flow' },
+  { id: 'divider', label: 'Divider', icon: `<span class="lt-icon lt-icon-divider"></span>`, text: '---' },
 ];
 
 // XML has no schema we know, so the only element worth offering is another one
@@ -64,11 +64,11 @@ function xmlInserts(target) {
     options.push({
       id: 'element',
       label: '<' + tag + '> element',
-      icon: `{{CODE_VIEW_ICON_SVG}}`,
+      icon: `<span class="lt-icon lt-icon-code-view"></span>`,
       text: '<' + tag + '></' + tag + '>',
     });
   }
-  options.push({ id: 'comment', label: 'Comment', icon: `{{COMMENT_ICON_SVG}}`, text: '<!-- note -->' });
+  options.push({ id: 'comment', label: 'Comment', icon: `<span class="lt-icon lt-icon-comment"></span>`, text: '<!-- note -->' });
   return options;
 }
 
@@ -765,9 +765,7 @@ function beginBlockDrag(event) {
     moved: false,
   };
   event.preventDefault();
-  try {
-    event.currentTarget.setPointerCapture(event.pointerId);
-  } catch (_) {}
+  leafHoldPointer(event.currentTarget, event.pointerId);
 }
 
 function moveBlockDrag(event) {
@@ -857,8 +855,8 @@ function bindBlockControls() {
   blockGutter.className = 'block-gutter';
   blockGutter.hidden = true;
   blockGutter.innerHTML = `<div class="block-gutter-tools">
-      <button type="button" class="block-grip" title="Drag to reorder" aria-label="Drag to reorder this block">{{GRIP_ICON_SVG}}</button>
-      <button type="button" class="block-add" title="Insert a block" aria-label="Insert a block"><span class="block-add-open">{{NEW_ICON_SVG}}</span><span class="block-add-close">{{CLOSE_ICON_SVG}}</span></button>
+      <button type="button" class="block-grip" title="Drag to reorder" aria-label="Drag to reorder this block"><span class="lt-icon lt-icon-grip"></span></button>
+      <button type="button" class="block-add" title="Insert a block" aria-label="Insert a block"><span class="block-add-open"><span class="lt-icon lt-icon-new"></span></span><span class="block-add-close"><span class="lt-icon lt-icon-close"></span></span></button>
     </div><div class="block-insert-row" hidden></div>`;
   blockGutterGrip = blockGutter.querySelector('.block-grip');
   blockGutterAdd = blockGutter.querySelector('.block-add');

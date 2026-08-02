@@ -120,7 +120,7 @@ function awaitGlossaryEntry() {
   waiting.setAttribute('role', 'status');
   waiting.setAttribute('aria-label', 'Loading glossary…');
   const spinner = document.createElement('div');
-  spinner.className = 'glossary-sheet-spinner';
+  spinner.className = 'lt-spinner glossary-sheet-spinner';
   spinner.setAttribute('aria-hidden', 'true');
   waiting.appendChild(spinner);
   glossarySheetBody.innerHTML = '';

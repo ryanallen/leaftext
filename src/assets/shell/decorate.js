@@ -583,8 +583,8 @@ function addMermaidEditButtons(diagram) {
   if (diagram.querySelector('.mermaid-tools')) return;
   const tools = document.createElement('div');
   tools.className = 'mermaid-tools';
-  tools.appendChild(mermaidToolButton('source', 'Edit the Mermaid text of this diagram', `{{CODE_VIEW_ICON_SVG}}`));
-  tools.appendChild(mermaidToolButton('sheet', 'Open in the flowchart editor, to draw it', `{{WORKFLOW_ICON_SVG}}`));
+  tools.appendChild(mermaidToolButton('source', 'Edit the Mermaid text of this diagram', `<span class="lt-icon lt-icon-code-view"></span>`));
+  tools.appendChild(mermaidToolButton('sheet', 'Open in the flowchart editor, to draw it', `<span class="lt-icon lt-icon-workflow"></span>`));
   diagram.appendChild(tools);
 }
 
@@ -603,9 +603,9 @@ function mermaidToolButton(tool, label, icon) {
 // names the other way of doing the same thing, because the wheel and the drag
 // have nothing on screen to announce them.
 const MERMAID_ZOOM_BUTTONS = [
-  ['out', 'Zoom out — or Ctrl and the wheel', `{{ZOOM_OUT_ICON_SVG}}`],
-  ['fit', 'Whole diagram, back where it started — or double-click it', `{{FIT_ICON_SVG}}`],
-  ['in', 'Zoom in — or Ctrl and the wheel. Drag the diagram to move it', `{{ZOOM_IN_ICON_SVG}}`],
+  ['out', 'Zoom out — or Ctrl and the wheel', `<span class="lt-icon lt-icon-zoom-out"></span>`],
+  ['fit', 'Whole diagram, back where it started — or double-click it', `<span class="lt-icon lt-icon-fit"></span>`],
+  ['in', 'Zoom in — or Ctrl and the wheel. Drag the diagram to move it', `<span class="lt-icon lt-icon-zoom-in"></span>`],
 ];
 function addMermaidZoomControls(diagram) {
   if (diagram.querySelector('.mermaid-zoom')) return;
@@ -767,7 +767,7 @@ if (app) {
     if (document.activeElement && document.activeElement.isContentEditable) document.activeElement.blur();
     event.preventDefault();
     mermaidPan = { diagram, pointer: event.pointerId, x: event.clientX, y: event.clientY, from: mermaidView(diagram) };
-    diagram.setPointerCapture(event.pointerId);
+    leafHoldPointer(diagram, event.pointerId);
     diagram.classList.add('is-panning');
   });
   app.addEventListener('pointermove', (event) => {
@@ -1115,16 +1115,14 @@ window.leafRefreshImages = () => {
   stampLocalImages();
   scheduleMinimapPreviewUpdate();
 };
-// The one broken-image mark, handed to the image as its source rather than
-// fetched or masked — an image that loads draws the same everywhere. The ink is
-// painted in because an SVG loaded as an image cannot see `currentColor`.
+// The broken-image mark is an icon class like every other, painted over a
+// transparent pixel: the element has to stay an <img> so a re-fetch can put the
+// real picture back, and an <img> with no source draws the platform's own broken
+// glyph instead of ours. The mask takes its ink from the rule, so a theme change
+// repaints it with no work here.
 const MISSING_IMAGE_SIZE = 40;
-function missingImageSource() {
-  const style = window.getComputedStyle(document.documentElement);
-  const ink = themeTokenValue(style, '--lt-muted-foreground') || '#8b8b8b';
-  const svg = `{{MISSING_IMAGE_ICON_SVG}}`.replace(/currentColor/g, ink);
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
-}
+const TRANSPARENT_PIXEL =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 // Its own source is kept, so a re-fetch once the file appears can go back to it.
 // The alt moves to the tooltip: left on, the platform prints it beside our mark.
 function markMissingImage(img) {
@@ -1136,7 +1134,8 @@ function markMissingImage(img) {
   img.alt = '';
   img.width = MISSING_IMAGE_SIZE;
   img.height = MISSING_IMAGE_SIZE;
-  img.src = missingImageSource();
+  img.classList.add('lt-icon', 'lt-icon-missing-image');
+  img.src = TRANSPARENT_PIXEL;
 }
 // Point a marked image back at its own source, so the next stamp can try it again.
 function restoreMissingImage(img) {
@@ -1145,6 +1144,7 @@ function restoreMissingImage(img) {
   img.alt = img.dataset.imageMissingAlt || '';
   img.removeAttribute('width');
   img.removeAttribute('height');
+  img.classList.remove('lt-icon', 'lt-icon-missing-image');
   delete img.dataset.imageMissing;
   delete img.dataset.imageMissingAlt;
   delete img.dataset.imageMissingSrc;

@@ -308,7 +308,7 @@ fn app_css_is_served_over_the_asset_protocol_not_inlined() {
     // The reading-mode stylesheet is delivered as a linked stylesheet, so the
     // shell links it and the protocol serves the full CSS. Keeping it out of the
     // inlined shell is what keeps `NavigateToString` under WebView2's size cap.
-    let html = app_shell_html();
+    let html = app_shell_page();
     assert!(
         html.contains(r#"<link rel="stylesheet" href="#) && html.contains("app.css"),
         "shell must link app.css rather than inline a <style> block"
@@ -546,7 +546,7 @@ fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
 
 #[test]
 fn app_shell_hosts_the_reader_edge_fade() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     assert_contains(&html, "class=\"reader-edge-fade\"");
 }
@@ -689,7 +689,7 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
         "scrollbar visibility must not hang off :has()"
     );
     assert_contains(
-        &app_shell_html(),
+        &app_shell_page(),
         "app.classList.toggle('has-minimap', Boolean(html));",
     );
 
@@ -895,14 +895,14 @@ fn the_code_views_minimap_rail_shows_the_shells_grain() {
     // Monaco's own scrolled-content shadow spans the editor's whole top edge, the
     // map included; over the rail it read as a smudge on the chrome. The theme
     // turns it off, and widget shadows with it.
-    let html = app_shell_html();
+    let html = app_shell_page();
     assert!(html.contains("'scrollbar.shadow': '#00000000',"));
     assert!(html.contains("'widget.shadow': '#00000000',"));
 }
 
 #[test]
 fn the_map_takes_the_column_the_minimap_is_not_using() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // The minimap hides in graph view, but its track is a fixed width and stays
@@ -949,7 +949,7 @@ fn anything_that_hides_itself_is_allowed_to() {
     // so an element that sets one and relies on the other is simply always
     // visible. That is how the floating toolbar came to sit over the home
     // screen: the attribute was set, the rule ignored it, and nothing failed.
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     for element in html.split('<').skip(1) {

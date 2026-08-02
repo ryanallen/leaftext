@@ -1,3 +1,7 @@
+// Where the vendored runtimes are served from. Injected rather than written into
+// the fragments, because the asset scheme differs by platform and a fragment that
+// carries a placeholder cannot be served as a static file.
+window.__lt = Object.assign(window.__lt || {}, { assets: {{ASSET_URLS}} });
 (() => {
   // Themes are two axes: a family (github/nightshade/amaranth/…) and an appearance
   // mode. Light/dark pick a fixed variant, system follows the OS, and daylight

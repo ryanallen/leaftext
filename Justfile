@@ -38,6 +38,33 @@ check-themes:
 bundle-tokens:
     node scripts/bundle-tokens.mjs
 
+# Compile design/icons.md into src/assets/icons.css: one mask class per icon.
+bundle-icons:
+    node scripts/bundle-icons.mjs
+
+# Fail if icons.css has drifted from design/icons.md, if a row names a file that is
+# not there, or if an SVG under src/assets/ has no row.
+check-icons:
+    node scripts/bundle-icons.mjs --check
+
+# Draw every color, value, icon and component on one page, from design/. The settings
+# menu opens it in the browser.
+bundle-gallery:
+    node scripts/bundle-gallery.mjs
+
+# Write the published design-system page from design/, so its counts cannot be typed.
+bundle-design-docs:
+    node scripts/bundle-design-docs.mjs
+
+# Fail if that page has drifted from design/.
+check-design-docs:
+    node scripts/bundle-design-docs.mjs --check
+
+# Fail if the gallery has drifted from design/, or a component row has no sample to
+# draw it with.
+check-gallery:
+    node scripts/bundle-gallery.mjs --check
+
 # Fail if the generated token files have drifted from design/, if a theme file sets a
 # color design/colors.md does not list, or if a component row names a class family
 # nothing styles.
@@ -82,7 +109,7 @@ bundle-monaco:
 squeeze-png source target:
     cargo run --quiet -- --squeeze-png "{{ source }}" "{{ target }}"
 
-verify: format-check check test check-vendor check-themes check-tokens check-literals check-spelling check-shell check-identity check-hooks
+verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-literals check-spelling check-shell check-identity check-hooks
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

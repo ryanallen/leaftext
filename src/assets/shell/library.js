@@ -94,7 +94,7 @@ function applyPendingDividerWidth() {
 function endDividerDrag() {
   if (!dividerDrag) return;
   if (dividerDrag.frame) cancelAnimationFrame(dividerDrag.frame);
-  try { libraryDivider.releasePointerCapture(dividerDrag.pointerId); } catch (_) {}
+  leafReleasePointer(libraryDivider, dividerDrag.pointerId);
   dividerDrag = null;
   document.body.classList.remove('library-resizing');
 }
@@ -102,7 +102,7 @@ libraryDivider.addEventListener('pointerdown', (event) => {
   if (event.button !== 0 || libraryIsClosed()) return;
   event.preventDefault();
   dividerDrag = { pointerId: event.pointerId, frame: 0, pendingWidth: null };
-  try { libraryDivider.setPointerCapture(event.pointerId); } catch (_) {}
+  leafHoldPointer(libraryDivider, event.pointerId);
   document.body.classList.add('library-resizing');
 });
 document.addEventListener('pointermove', (event) => {
@@ -1108,12 +1108,10 @@ function showCrumbMenu(button, items) {
     firstFocusable = firstFocusable || item;
   }
   button.setAttribute('aria-expanded', 'true');
-  crumbMenu.hidden = false;
+  // Under the crumb it belongs to, by 4px, and inside the window like every other
+  // floating thing.
   const anchor = button.getBoundingClientRect();
-  const left = Math.max(8, Math.min(anchor.left, window.innerWidth - crumbMenu.offsetWidth - 8));
-  const top = Math.max(8, Math.min(anchor.bottom + 4, window.innerHeight - crumbMenu.offsetHeight - 8));
-  crumbMenu.style.left = left + 'px';
-  crumbMenu.style.top = top + 'px';
+  leafPlaceFloating(crumbMenu, anchor.left, anchor.bottom + 4);
   // Only claim focus when the menu is first opened. An in-place redraw -- a swap
   // to the settings panel, a git answer landing, a reveal -- leaves focus where
   // it is, so nothing yanks the cursor out of a field mid-word or drags it into
@@ -1129,9 +1127,7 @@ window.addEventListener('pointerdown', (event) => {
   if (!crumbMenu.contains(event.target)) hideCrumbMenu();
 });
 window.addEventListener('blur', hideCrumbMenu);
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') hideCrumbMenu();
-});
+leafOnEscape(hideCrumbMenu);
 // The band's width changes with a divider drag, a window resize, and the pane
 // opening — all of which change how much of the path fits. One rAF-throttled
 // refit covers every case.

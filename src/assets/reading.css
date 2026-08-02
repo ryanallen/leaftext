@@ -197,7 +197,7 @@ body {
   /* Library closed: no rail to align to, so the lead is just its controls. */
   width: auto;
 }
-.brand-button > svg {
+.brand-button > .lt-icon {
   width: 22px;
   height: 22px;
   display: block;
@@ -225,7 +225,7 @@ body {
   background: transparent;
   border-color: transparent;
 }
-.brand-button:hover > svg {
+.brand-button:hover > .lt-icon {
   color: var(--lt-foreground);
 }
 .tab-bar {
@@ -394,7 +394,7 @@ body {
   background: transparent;
   color: var(--lt-muted-foreground);
 }
-.tab-close svg {
+.tab-close svg{
   width: 12px;
   height: 12px;
   pointer-events: none;
@@ -505,7 +505,7 @@ body {
   color: var(--lt-muted-foreground);
   cursor: pointer;
 }
-.window-control svg {
+.window-control svg{
   width: 12px;
   height: 12px;
 }
@@ -660,7 +660,7 @@ body.is-maximized #winMaximize .wc-restore {
   border: var(--lt-stroke-2) solid color-mix(in srgb, var(--lt-success) 30%, transparent);
   border-top-color: var(--lt-success);
   box-shadow: none;
-  animation: leaf-reader-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
+  animation: lt-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
 }
 /* Green "update to vX" call-to-action pinned above the settings controls. Takes
    the primary-action fill; spans the panel. `position: relative` anchors the
@@ -694,15 +694,27 @@ body.is-maximized #winMaximize .wc-restore {
   position: relative;
 }
 /* Spinner in the update button while it downloads. */
+/* Every spinner in the app: a ring with one lit edge, turning. The shape and the
+   turn are here; a site keeps only its own size and colors, because those are what
+   differ — a 12px ring in a settings row, a 34px one on an empty reader. */
+.lt-spinner {
+  box-sizing: border-box;
+  border-radius: var(--lt-radius-full);
+  border-style: solid;
+  border-width: var(--lt-stroke-2);
+  animation: lt-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
+}
+@keyframes lt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .settings-spinner {
   width: 12px;
   height: 12px;
   min-width: 12px;
-  box-sizing: border-box;
-  border-radius: var(--lt-radius-full);
-  border: var(--lt-stroke-2) solid color-mix(in srgb, currentColor 28%, transparent);
+  border-color: color-mix(in srgb, currentColor 28%, transparent);
   border-top-color: currentColor;
-  animation: leaf-reader-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
 }
 .settings-spinner[hidden] {
   display: none;
@@ -805,28 +817,21 @@ button {
   border-radius: var(--lt-radius-lg);
   padding: 0;
 }
-.icon-button svg {
+.icon-button svg,
+.icon-button .lt-icon {
   width: 16px;
   height: 16px;
   pointer-events: none;
 }
-/* Rests muted like the other secondary toolbar icons, greens on hover. */
-.open-button {
-  border-color: transparent;
-  background: transparent;
-  color: var(--lt-muted-foreground);
-}
-.open-button:hover {
-  background: var(--lt-navigation-button-hover-background);
-  border-color: var(--lt-navigation-button-hover-background);
-  color: var(--lt-primary-foreground);
-}
-/* Its neighbor, and it has to read as one: same rest, same hover. */
+/* Open and New are the same button twice over: muted at rest, greening on hover
+   like the other secondary toolbar icons. Said once, so they cannot drift apart. */
+.open-button,
 .new-button {
   border-color: transparent;
   background: transparent;
   color: var(--lt-muted-foreground);
 }
+.open-button:hover,
 .new-button:hover {
   background: var(--lt-navigation-button-hover-background);
   border-color: var(--lt-navigation-button-hover-background);
@@ -1115,7 +1120,7 @@ body:has(.library-overlay) .tab-bar {
   border-color: var(--lt-navigation-button-hover-background);
   color: var(--lt-primary-foreground);
 }
-.library-open svg {
+.library-open .lt-icon {
   width: 16px;
   height: 16px;
 }
@@ -1368,7 +1373,7 @@ body.library-resizing {
   color: var(--lt-muted-foreground);
   cursor: pointer;
 }
-.library-vault-switch svg {
+.library-vault-switch .lt-icon {
   width: 15px;
   height: 15px;
 }
@@ -1422,7 +1427,7 @@ body.library-resizing {
   color: color-mix(in srgb, var(--lt-muted-foreground) 75%, transparent);
   cursor: pointer;
 }
-.crumb-menu-edit svg {
+.crumb-menu-edit .lt-icon {
   width: 14px;
   height: 14px;
 }
@@ -1537,7 +1542,7 @@ body.library-resizing {
 }
 /* The leaf mark before Markdown file names. Same inline glyph as the header
    logomark, so it tracks the theme's primary color instead of a baked-in one. */
-.library-file > svg {
+.library-file > .lt-icon {
   flex: none;
   width: 14px;
   height: 14px;
@@ -1794,7 +1799,7 @@ body:has(#readerToolbar:not([hidden])) {
     transition: none;
   }
 }
-.library-sync svg {
+.library-sync .lt-icon {
   width: 13px;
   height: 13px;
 }
@@ -1804,18 +1809,13 @@ body:has(#readerToolbar:not([hidden])) {
 /* Turning while it works, so a slow push looks like a slow push. An <svg> takes
    its transform origin from its own box, so this has to be said out loud or the
    glyph orbits the button's top-left corner instead of spinning. */
-.library-sync.is-busy svg {
+.library-sync.is-busy .lt-icon {
   transform-origin: 50% 50%;
-  animation: library-sync-spin var(--lt-duration-1100) var(--lt-ease-linear) infinite;
+  animation: lt-spin var(--lt-duration-1100) var(--lt-ease-linear) infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .library-sync.is-busy svg {
+  .library-sync.is-busy .lt-icon {
     animation-duration: var(--lt-duration-2400);
-  }
-}
-@keyframes library-sync-spin {
-  to {
-    transform: rotate(360deg);
   }
 }
 
@@ -1843,7 +1843,8 @@ body:has(#readerToolbar:not([hidden])) {
 }
 /* The check icon is borrowed from the selected-row tick, which pushes itself to
    the far edge; here it rides next to its label, centered as one group. */
-.crumb-menu-actions .crumb-menu-action svg {
+.crumb-menu-actions .crumb-menu-action svg,
+.crumb-menu-actions .crumb-menu-action .lt-icon {
   margin-left: 0;
 }
 .crumb-menu-actions .crumb-menu-action.is-primary {
@@ -1905,13 +1906,13 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-subtool[hidden] {
   display: none;
 }
-.reader-subtool svg {
+.reader-subtool .lt-icon {
   width: 16px;
   height: 16px;
   /* Off is thin ink — the closed padlock's weight — whatever the file says. */
   stroke-width: 1.5;
 }
-.reader-subtool[aria-pressed="true"] svg {
+.reader-subtool[aria-pressed="true"] .lt-icon {
   /* On is the heavy stroke, so weight carries the state on every toggle. */
   stroke-width: 2.75;
 }
@@ -1960,7 +1961,7 @@ body:has(#readerToolbar:not([hidden])) {
   color: var(--lt-muted-foreground);
   cursor: pointer;
 }
-.reader-tool svg {
+.reader-tool .lt-icon {
   width: 17px;
   height: 17px;
 }
@@ -1978,12 +1979,20 @@ body:has(#readerToolbar:not([hidden])) {
   color: var(--lt-markdown-background);
 }
 /* The active glyph is drawn a touch heavier than its resting outline, so the
-   selected view reads as bolder as well as brighter. Targets the strokes
-   directly -- a CSS rule overrides each path's own stroke-width attribute, which
-   inheritance from the svg would not. */
-.reader-tool.is-active svg path,
-.reader-tool.is-active svg line {
-  stroke-width: 2.25;
+   selected view reads as bolder as well as brighter. A mask has no strokes to
+   thicken, so it swaps to the bolder drawing, which `just bundle-icons` writes
+   from the same file at stroke-width 2.25. */
+.reader-tool.is-active .lt-icon-document {
+  -webkit-mask-image: var(--lt-icon-document-heavy);
+  mask-image: var(--lt-icon-document-heavy);
+}
+.reader-tool.is-active .lt-icon-code-view {
+  -webkit-mask-image: var(--lt-icon-code-view-heavy);
+  mask-image: var(--lt-icon-code-view-heavy);
+}
+.reader-tool.is-active .lt-icon-graph {
+  -webkit-mask-image: var(--lt-icon-graph-heavy);
+  mask-image: var(--lt-icon-graph-heavy);
 }
 .reader-tool-divider {
   width: 1px;
@@ -2236,15 +2245,9 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-loading-spinner {
   width: 34px;
   height: 34px;
-  border-radius: var(--lt-radius-full);
-  border: var(--lt-stroke-3) solid color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
+  border-width: var(--lt-stroke-3);
+  border-color: color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
   border-top-color: var(--lt-accent);
-  animation: leaf-reader-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
-}
-@keyframes leaf-reader-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .reader-loading-spinner {
@@ -2912,7 +2915,7 @@ body:has(#readerToolbar:not([hidden])) {
 .block-gutter button[hidden] {
   display: none;
 }
-.block-gutter svg {
+.block-gutter .lt-icon {
   display: block;
   width: 18px;
   height: 18px;
@@ -3162,17 +3165,17 @@ body.is-block-dragging .document-body [data-src-start] {
 .selection-format[hidden] {
   display: none;
 }
-.selection-format svg {
+.selection-format .lt-icon {
   display: block;
   width: 17px;
   height: 17px;
 }
 /* One H at two sizes, which is the whole message: bigger, or smaller. */
-.selection-format.is-heading-bigger svg {
+.selection-format.is-heading-bigger .lt-icon {
   width: 20px;
   height: 20px;
 }
-.selection-format.is-heading-smaller svg {
+.selection-format.is-heading-smaller .lt-icon {
   width: 13px;
   height: 13px;
 }
@@ -3358,7 +3361,7 @@ body.is-block-dragging .document-body [data-src-start] {
   border-radius: var(--lt-radius-full);
   border: var(--lt-stroke-2) solid color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
   border-top-color: var(--lt-accent);
-  animation: leaf-reader-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
+  animation: lt-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
   pointer-events: none;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3934,9 +3937,12 @@ body.is-block-dragging .document-body [data-src-start] {
   margin: 0 auto var(--type-spacing);
   max-width: 100%;
 }
-/* A picture that would not load. decorate.js swaps in our own mark, sized by its
-   own attributes, so this rule is decoration and not the drawing. */
+/* A picture that would not load. decorate.js leaves the <img> in place — a
+   re-fetch has to be able to put the real one back — and wears the mark as an icon
+   class over a transparent pixel. The ink is the rule's, not the icon's, so it is
+   quieter than body text and follows the theme without being repainted. */
 .document-body img[data-image-missing="true"] {
+  background-color: var(--lt-muted-foreground);
   opacity: var(--lt-opacity-75);
 }
 .document-body hr {
@@ -3983,10 +3989,8 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 16px;
   height: 16px;
   margin-left: calc(var(--lt-space-8) * -1);
-  border-radius: var(--lt-radius-full);
-  border: var(--lt-stroke-2) solid color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
+  border-color: color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
   border-top-color: var(--lt-accent);
-  animation: leaf-reader-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
   pointer-events: none;
 }
 .document-minimap:not(.is-loading) .document-minimap-spinner {
@@ -4117,7 +4121,7 @@ body.is-block-dragging .document-body [data-src-start] {
   border-color: var(--lt-navigation-button-hover-background);
   color: var(--lt-primary-foreground);
 }
-.primary-new svg {
+.primary-new .lt-icon {
   width: 16px;
   height: 16px;
 }
@@ -4200,9 +4204,6 @@ body.is-block-dragging .document-body [data-src-start] {
    A glossary link opens the term here, sliding up over the reading view; the
    document keeps its place underneath. The body reuses .document-body so the
    entry is styled like ordinary Markdown. See window.leafShowGlossary. */
-.glossary-backdrop[hidden] {
-  display: none;
-}
 /* ---- the bottom sheet, once ------------------------------------------------
    Three things slide up from the bottom edge: the glossary, the theme picker,
    and the flowchart editor's own. They differ in what they are anchored to and
@@ -4211,6 +4212,27 @@ body.is-block-dragging .document-body [data-src-start] {
    matching half in dom.js: --sheet-drag is how far the pointer has carried the
    sheet, and the transition is off for the length of the drag so it tracks the
    pointer exactly. */
+/* The scrim behind a sheet: one definition, three sheets. It dims the page and
+   takes the click that closes what is over it. */
+.lt-backdrop[hidden] {
+  display: none;
+}
+.lt-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--lt-tint-backdrop);
+  opacity: 0;
+  transition: opacity var(--lt-duration-200) var(--lt-ease);
+  z-index: var(--lt-z-40);
+}
+.lt-backdrop.open {
+  opacity: 1;
+}
+/* The flowchart editor's shape picker opens over the flow sheet rather than over
+   the page, so its scrim takes the layer above. */
+#flowBackdrop {
+  z-index: var(--lt-z-42);
+}
 .leaf-sheet {
   left: 0;
   right: 0;
@@ -4286,7 +4308,7 @@ body.is-block-dragging .document-body [data-src-start] {
   background: var(--lt-surface-muted);
   color: var(--lt-foreground);
 }
-.leaf-sheet-close svg {
+.leaf-sheet-close svg{
   width: 18px;
   height: 18px;
 }
@@ -4315,17 +4337,6 @@ body.is-block-dragging .document-body [data-src-start] {
   border-radius: var(--lt-radius-md);
   background-color: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
   min-height: 56px;
-}
-.glossary-backdrop {
-  position: fixed;
-  inset: 0;
-  background: var(--lt-tint-backdrop);
-  opacity: 0;
-  transition: opacity var(--lt-duration-200) var(--lt-ease);
-  z-index: var(--lt-z-40);
-}
-.glossary-backdrop.open {
-  opacity: 1;
 }
 .glossary-sheet {
   position: fixed;
@@ -4377,20 +4388,6 @@ body.is-block-dragging .document-body [data-src-start] {
   line-height: var(--lt-leading-1);
 }
 /* Theme selector bottom sheet — same slide-up pattern as the glossary sheet. */
-.theme-sheet-backdrop[hidden] {
-  display: none;
-}
-.theme-sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  background: var(--lt-tint-backdrop);
-  opacity: 0;
-  transition: opacity var(--lt-duration-200) var(--lt-ease);
-  z-index: var(--lt-z-40);
-}
-.theme-sheet-backdrop.open {
-  opacity: 1;
-}
 .theme-sheet {
   position: fixed;
   z-index: var(--lt-z-41);
@@ -4524,21 +4521,14 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 26px;
   height: 26px;
   margin: calc(var(--lt-space-13) * -1) 0 0 calc(var(--lt-space-13) * -1);
-  border-radius: 50%;
-  border: var(--lt-stroke-2) solid color-mix(in srgb, var(--lt-foreground) 22%, transparent);
+  border-color: color-mix(in srgb, var(--lt-foreground) 22%, transparent);
   border-top-color: var(--lt-foreground);
   background: color-mix(in srgb, var(--lt-surface-elevated) 78%, transparent);
   display: none;
   pointer-events: none;
-  animation: theme-item-spin var(--lt-duration-700) var(--lt-ease-linear) infinite;
 }
 .theme-item.is-loading .theme-item-spinner {
   display: block;
-}
-@keyframes theme-item-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 .theme-item:hover::after {
   box-shadow: var(--lt-shadow-hairline-strong);
@@ -4632,10 +4622,9 @@ body.is-block-dragging .document-body [data-src-start] {
 .glossary-sheet-spinner {
   width: 28px;
   height: 28px;
-  border-radius: var(--lt-radius-full);
-  border: var(--lt-stroke-3) solid color-mix(in srgb, var(--lt-foreground) 18%, transparent);
+  border-width: var(--lt-stroke-3);
+  border-color: color-mix(in srgb, var(--lt-foreground) 18%, transparent);
   border-top-color: var(--lt-accent);
-  animation: leaf-reader-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
 }
 @keyframes leaf-glossary-wait-in {
   to {
@@ -4678,20 +4667,8 @@ body.is-block-dragging .document-body [data-src-start] {
    Full screen, unlike the other two sheets: it is an editor, not something to
    glance at, and it has two panes to fit. No grab bar for the same reason — a
    sheet you can flick away is wrong over unsaved work. */
-.flow-sheet-backdrop[hidden],
 .flow-sheet[hidden] {
   display: none;
-}
-.flow-sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  background: var(--lt-tint-backdrop);
-  opacity: 0;
-  transition: opacity var(--lt-duration-200) var(--lt-ease);
-  z-index: var(--lt-z-42);
-}
-.flow-sheet-backdrop.open {
-  opacity: 1;
 }
 .flow-sheet {
   position: fixed;
@@ -4831,7 +4808,7 @@ body.is-block-dragging .document-body [data-src-start] {
   opacity: var(--lt-opacity-35);
   cursor: default;
 }
-.flow-steps svg {
+.flow-steps svg{
   width: 16px;
   height: 16px;
 }
@@ -4886,7 +4863,7 @@ body.is-block-dragging .document-body [data-src-start] {
   color: var(--lt-muted-foreground);
   cursor: pointer;
 }
-.flow-zoom svg {
+.flow-zoom .lt-icon {
   width: 16px;
   height: 16px;
 }
@@ -5347,8 +5324,8 @@ body.is-block-dragging .document-body [data-src-start] {
   background: var(--lt-surface-muted);
   color: var(--lt-foreground);
 }
-.mermaid-tool svg,
-.mermaid-zoom svg {
+.mermaid-tool .lt-icon,
+.mermaid-zoom .lt-icon {
   width: 16px;
   height: 16px;
 }

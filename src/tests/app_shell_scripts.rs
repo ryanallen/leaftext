@@ -233,7 +233,7 @@ fn the_host_and_the_page_agree_on_every_call() {
     }
 
     // Assignments only: a call inside the page is not a definition.
-    let html = app_shell_html();
+    let html = app_shell_page();
     let page_defines: std::collections::BTreeSet<String> = html
         .match_indices(" = ")
         .filter_map(|(index, _)| {

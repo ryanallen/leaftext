@@ -84,7 +84,7 @@ document.addEventListener('pointermove', (event) => {
     if (Math.abs(event.clientX - tabDrag.startX) < 4) return;
     tabDrag.moved = true;
     tabDrag.el.classList.add('tab-dragging');
-    try { tabDrag.el.setPointerCapture(tabDrag.pointerId); } catch (_) {}
+    leafHoldPointer(tabDrag.el, tabDrag.pointerId);
   }
   tabDrag.el.style.transform = 'translateX(' + (event.clientX - tabDrag.startX) + 'px)';
   tabDrag.to = tabDropIndex(event.clientX);
@@ -161,7 +161,7 @@ function makeSheetDraggable(sheet, grip, dismiss) {
       speed: 0,
     };
     sheet.classList.add('is-dragging');
-    try { grip.setPointerCapture(event.pointerId); } catch (_) {}
+    leafHoldPointer(grip, event.pointerId);
   });
   grip.addEventListener('pointermove', (event) => {
     if (!drag || event.pointerId !== drag.id) return;
@@ -335,5 +335,40 @@ window.leafSetWindowMaximized = (maximized) => {
     el.setAttribute('title', label);
   }
 };
+// Put a floating thing where it was asked for, but inside the window: a menu opened
+// near the right edge would otherwise hang off it, and one at the bottom would open
+// below the fold. Both menus place themselves this way, so the arithmetic is here.
+const LEAF_FLOAT_MARGIN = 8;
+function leafPlaceFloating(el, x, y) {
+  // Measured, so it has to be shown first — hidden elements have no size.
+  el.hidden = false;
+  const right = window.innerWidth - el.offsetWidth - LEAF_FLOAT_MARGIN;
+  const bottom = window.innerHeight - el.offsetHeight - LEAF_FLOAT_MARGIN;
+  el.style.left = Math.max(LEAF_FLOAT_MARGIN, Math.min(x, right)) + 'px';
+  el.style.top = Math.max(LEAF_FLOAT_MARGIN, Math.min(y, bottom)) + 'px';
+}
+// Hold the pointer so it keeps reporting after it leaves the element — every drag in
+// the app needs that, and it is the one line they all share. Wrapped because a
+// browser may refuse: the drag still works, it just stops tracking outside the box,
+// and an exception here would lose the whole gesture.
+function leafHoldPointer(el, pointerId) {
+  try {
+    el.setPointerCapture(pointerId);
+  } catch (_) {}
+}
+function leafReleasePointer(el, pointerId) {
+  try {
+    el.releasePointerCapture(pointerId);
+  } catch (_) {}
+}
+// Escape closes whatever is open. The caller says what that means for it, and a
+// caller whose thing is already shut does nothing — which is what lets four of these
+// live on one page. `target` is the caller's own, because a listener on window is
+// asked after one on document, and which closes first is sometimes the point.
+function leafOnEscape(close, target) {
+  (target || document).addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') close(event);
+  });
+}
 window.leafSetWindowMaximized(window.__leafMaximized);
 

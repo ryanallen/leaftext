@@ -168,10 +168,8 @@ if (themeBackdrop) {
 if (themeSheet) {
   makeSheetDraggable(themeSheet, themeSheet.querySelector('.leaf-sheet-grip'), closeThemeSheet);
 }
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && themeSheet && !themeSheet.hidden) {
-    closeThemeSheet();
-  }
+leafOnEscape(() => {
+  if (themeSheet && !themeSheet.hidden) closeThemeSheet();
 });
 themeSheetModes.querySelectorAll('.theme-mode-btn').forEach((btn) => {
   btn.addEventListener('click', () => {

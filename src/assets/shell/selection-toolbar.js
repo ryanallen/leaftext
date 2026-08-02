@@ -22,11 +22,11 @@ const SELECTION_TOOLBAR_LIFT = 12;
 // wrapped by hand: `code` holds text and nothing else, and a link needs a URL
 // before it can exist.
 const INLINE_FORMATS = [
-  { id: 'bold', label: 'Bold', icon: `{{BOLD_ICON_SVG}}`, command: 'bold', tag: 'strong' },
-  { id: 'italic', label: 'Italic', icon: `{{ITALIC_ICON_SVG}}`, command: 'italic', tag: 'em' },
-  { id: 'strike', label: 'Strikethrough', icon: `{{STRIKETHROUGH_ICON_SVG}}`, command: 'strikeThrough', tag: 'del' },
-  { id: 'code', label: 'Code', icon: `{{CODE_VIEW_ICON_SVG}}`, tag: 'code' },
-  { id: 'link', label: 'Link', icon: `{{LINK_ICON_SVG}}`, tag: 'a' },
+  { id: 'bold', label: 'Bold', icon: `<span class="lt-icon lt-icon-bold"></span>`, command: 'bold', tag: 'strong' },
+  { id: 'italic', label: 'Italic', icon: `<span class="lt-icon lt-icon-italic"></span>`, command: 'italic', tag: 'em' },
+  { id: 'strike', label: 'Strikethrough', icon: `<span class="lt-icon lt-icon-strikethrough"></span>`, command: 'strikeThrough', tag: 'del' },
+  { id: 'code', label: 'Code', icon: `<span class="lt-icon lt-icon-code-view"></span>`, tag: 'code' },
+  { id: 'link', label: 'Link', icon: `<span class="lt-icon lt-icon-link"></span>`, tag: 'a' },
 ];
 
 // What the whole block can become, in the order the bar shows them. Each is written
@@ -39,10 +39,10 @@ const INLINE_FORMATS = [
 // The H's are a bigger and a smaller, one level per press. Relative rather than fixed
 // levels so all six are reachable, including the `#` a document may hold many of.
 const BLOCK_FORMATS = [
-  { id: 'text', label: 'Text', icon: `{{TEXT_ICON_SVG}}` },
-  { id: 'bigger', label: 'Bigger heading', icon: `{{HEADING_ICON_SVG}}`, step: -1, cls: 'is-heading-bigger' },
-  { id: 'smaller', label: 'Smaller heading', icon: `{{HEADING_ICON_SVG}}`, step: 1, cls: 'is-heading-smaller' },
-  { id: 'quote', label: 'Quote', icon: `{{QUOTE_ICON_SVG}}`, quote: true },
+  { id: 'text', label: 'Text', icon: `<span class="lt-icon lt-icon-text"></span>` },
+  { id: 'bigger', label: 'Bigger heading', icon: `<span class="lt-icon lt-icon-heading"></span>`, step: -1, cls: 'is-heading-bigger' },
+  { id: 'smaller', label: 'Smaller heading', icon: `<span class="lt-icon lt-icon-heading"></span>`, step: 1, cls: 'is-heading-smaller' },
+  { id: 'quote', label: 'Quote', icon: `<span class="lt-icon lt-icon-quote"></span>`, quote: true },
 ];
 // Where a paragraph or a quote steps in when made a heading: the ordinary section
 // heading, with `#` one more press of the bigger H away.

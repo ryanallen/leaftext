@@ -140,7 +140,7 @@ fn the_whole_library_starts_at_the_drive_roots() {
 
 #[test]
 fn the_file_list_starts_with_a_way_back_out() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // First row of the list, above the folder's own contents.

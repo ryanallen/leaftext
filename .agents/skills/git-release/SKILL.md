@@ -46,7 +46,7 @@ Run [check](../check/SKILL.md): `/check`. It runs `/sync-tests` — so the chang
 
 1. This is the **last** pre-step, after `sync-docs` and `code-comments`, so `verify` runs over the tree that is about to be committed.
 2. If it is not green, **the release stops here.** Fix the cause, re-run `/check` from the top, and only then continue. A tag on untested code is the thing this pre-step exists to prevent.
-3. It reports what cannot be checked on this machine — macOS-gated code, WiX, the workflows. Carry that into the hand-back; do not treat it as a failure.
+3. If it flags part of the change as untested because this machine cannot build it — the Mac app, the installer, the GitHub workflows — carry that into the hand-back. It is not a failure, and it is only worth saying when the change is in one of them.
 
 ### 0. Commit any uncommitted changes
 

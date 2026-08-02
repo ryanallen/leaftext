@@ -1,99 +1,8 @@
 use crate::*;
 
-pub(crate) const BACK_ICON_SVG: &str = include_str!("assets/arrow-left.svg");
-pub(crate) const FORWARD_ICON_SVG: &str = include_str!("assets/arrow-right.svg");
-pub(crate) const SETTINGS_ICON_SVG: &str = include_str!("assets/adjustments-vertical.svg");
-pub(crate) const OPEN_LIBRARY_ICON_SVG: &str = include_str!("assets/panel.svg");
-pub(crate) const OPEN_ICON_SVG: &str = include_str!("assets/folder-open.svg");
-/// A blank page to start typing into, beside the folder that opens one you
-/// already have.
-pub(crate) const NEW_ICON_SVG: &str = include_str!("assets/plus.svg");
-pub(crate) const CODE_VIEW_ICON_SVG: &str = include_str!("assets/code-bracket.svg");
-pub(crate) const DOCUMENT_ICON_SVG: &str = include_str!("assets/document.svg");
-/// Sending a vault to GitHub and taking back what is there. The same round
-/// arrows the updater's language uses, because it is the same idea.
-pub(crate) const SYNC_ICON_SVG: &str = include_str!("assets/arrow-path.svg");
-
-/// Whether the reading view is a live editor, on the document in front of you.
-/// Both glyphs ship and the button shows the state it is in — a closed padlock
-/// on a document you cannot type into, an open one on a document you can.
-pub(crate) const LOCK_CLOSED_ICON_SVG: &str = include_str!("assets/lock-closed.svg");
-pub(crate) const LOCK_OPEN_ICON_SVG: &str = include_str!("assets/lock-open.svg");
-
-/// The speed reader, drawn as two A's: the first one bolded when it is on, both
-/// left thin when it is off. The glyph is what the page does to a word, which is
-/// a truer label for it than any word would be.
-pub(crate) const SPEED_READER_ON_ICON_SVG: &str = include_str!("assets/speed-reader-on.svg");
-pub(crate) const SPEED_READER_OFF_ICON_SVG: &str = include_str!("assets/speed-reader-off.svg");
-
-/// The code view's typing help, drawn as a wand: suggestions appear as if by
-/// magic, which is the honest picture for someone who has never met an editor
-/// that types back.
-pub(crate) const WAND_ICON_SVG: &str = include_str!("assets/wand.svg");
-
-/// A vault that reaches GitHub. A box says "a collection, here"; a cloud says
-/// "and somewhere else as well", which is what syncing buys.
-pub(crate) const CLOUD_ICON_SVG: &str = include_str!("assets/cloud.svg");
-
-/// A vault: a package rather than a folder, because a vault is not one — it is
-/// a whole collection the app treats as a unit, and it has to read as different
-/// from the plain directories in the pane below it.
-///
-/// Open for the one you are in — the switcher's button, and its row in the menu
-/// — and closed for the ones you are not. The state is in the glyph, so the tick
-/// beside it is confirmation rather than the only signal.
-pub(crate) const PACKAGE_OPEN_ICON_SVG: &str = include_str!("assets/package-open.svg");
-pub(crate) const PACKAGE_ICON_SVG: &str = include_str!("assets/package.svg");
-/// The one copy of the folder glyph, for the things that really are folders:
-/// the pane's folder rows and the crumb trail's elided ancestors.
-pub(crate) const FOLDER_ICON_SVG: &str = include_str!("assets/folder.svg");
-/// Linked nodes: the library pane's toggle between the file list and the graph.
-pub(crate) const GRAPH_ICON_SVG: &str = include_str!("assets/graph.svg");
-
-/// The reading view's block gutter: the handle you drag a block by, and the
-/// plus that opens the insert row. The plus reuses [`NEW_ICON_SVG`] — one plus
-/// glyph for every "add something" in the app — and closes back to the cross.
-pub(crate) const GRIP_ICON_SVG: &str = include_str!("assets/grip-vertical.svg");
-pub(crate) const CLOSE_ICON_SVG: &str = include_str!("assets/x-mark.svg");
-
-/// What the insert row offers. Each glyph names the block it writes, so the row
-/// reads without labels — which is the only way it fits in a page's margin.
-pub(crate) const TEXT_ICON_SVG: &str = include_str!("assets/text.svg");
-pub(crate) const HEADING_ICON_SVG: &str = include_str!("assets/heading.svg");
-pub(crate) const LIST_ICON_SVG: &str = include_str!("assets/list-bullet.svg");
-pub(crate) const QUOTE_ICON_SVG: &str = include_str!("assets/text-quote.svg");
-pub(crate) const TABLE_ICON_SVG: &str = include_str!("assets/table.svg");
-pub(crate) const IMAGE_ICON_SVG: &str = include_str!("assets/photo.svg");
-pub(crate) const DIVIDER_ICON_SVG: &str = include_str!("assets/minus.svg");
-pub(crate) const COMMENT_ICON_SVG: &str = include_str!("assets/message-square.svg");
-
-/// A flowchart, in the insert row and on a rendered diagram's corner button.
-/// One glyph for both, because both open the same sheet.
-pub(crate) const WORKFLOW_ICON_SVG: &str = include_str!("assets/workflow.svg");
-
-/// How a drawn diagram is looked at: a lens that takes more or less in, and the
-/// frame that puts the whole thing back the way the page drew it.
-pub(crate) const ZOOM_IN_ICON_SVG: &str = include_str!("assets/zoom-in.svg");
-pub(crate) const ZOOM_OUT_ICON_SVG: &str = include_str!("assets/zoom-out.svg");
-pub(crate) const FIT_ICON_SVG: &str = include_str!("assets/fit.svg");
-
-/// The selection toolbar's formats. Letterforms for the ones that have one, so
-/// the bar reads the way every other editor's does; the block buttons reuse the
-/// insert row's heading and quote glyphs, because they make the same two things.
-pub(crate) const BOLD_ICON_SVG: &str = include_str!("assets/bold.svg");
-pub(crate) const ITALIC_ICON_SVG: &str = include_str!("assets/italic.svg");
-pub(crate) const STRIKETHROUGH_ICON_SVG: &str = include_str!("assets/strikethrough.svg");
-pub(crate) const LINK_ICON_SVG: &str = include_str!("assets/link.svg");
-// The one copy of the leaf mark. Both the header logomark and the library's
-// per-file badge inline this same glyph, so it takes the theme color from
-// `currentColor` at each site instead of carrying a color of its own.
-pub(crate) const LEAF_ICON_SVG: &str = include_str!("assets/leaf.svg");
+/// The arrow back up to a footnote's reference. The renderer writes this one into
+/// the document itself, so it is markup rather than a class.
 pub(crate) const FOOTNOTE_BACKREF_ICON_SVG: &str = include_str!("assets/arrow-uturn-left.svg");
-
-/// A picture the reading view could not load — one glyph for both platforms,
-/// which each draw their own. Handed to the image as its source with the ink
-/// already painted in: an SVG loaded as an image cannot see `currentColor`.
-pub(crate) const MISSING_IMAGE_ICON_SVG: &str = include_str!("assets/missing-image.svg");
 
 // Bundled runtimes (mermaid, KaTeX, graph libs) compiled into the binary and
 // served over a custom protocol, so math/diagrams render offline. Loaded
@@ -248,10 +157,11 @@ pub(crate) fn bundled_asset_bytes(uri: &str) -> Option<(&'static str, &'static [
         // resources carry no such limit. `app_shell_size_stays_under_navigate_
         // to_string_budget` guards the inlined shell against regressing.
         "app.css" => Some(("text/css; charset=utf-8", reading_mode_css().as_bytes())),
-        // The flowchart editor, out of the shell string for the same reason.
-        "flow.js" => Some((
+        // The whole front-end, out of the shell string for the same reason: the
+        // script was 88% of it.
+        "app.js" => Some((
             "text/javascript; charset=utf-8",
-            app_shell_flow_script().as_bytes(),
+            app_shell_script().as_bytes(),
         )),
         "mermaid.min.js" => Some(("text/javascript; charset=utf-8", MERMAID_JS)),
         "pixi.min.js" => Some(("text/javascript; charset=utf-8", PIXI_JS)),

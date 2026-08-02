@@ -572,12 +572,15 @@ pub(crate) fn reading_mode_css() -> &'static str {
     // `var(--lt-*)` resolves against what came before it: the per-theme colors,
     // then the app-wide scales, then the rules that spend both.
     const TOKENS_CSS: &str = include_str!("assets/tokens.css");
+    const ICONS_CSS: &str = include_str!("assets/icons.css");
     const READING_CSS: &str = include_str!("assets/reading.css");
 
     READING_MODE_CSS.get_or_init(|| {
         let mut css = compiled_theme_css();
         css.push('\n');
         css.push_str(TOKENS_CSS);
+        css.push('\n');
+        css.push_str(ICONS_CSS);
         css.push('\n');
         css.push_str(READING_CSS);
         css

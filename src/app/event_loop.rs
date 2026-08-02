@@ -453,6 +453,14 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         eprintln!("Failed to open {url} with the OS: {error}");
                     }
                 }
+                IpcCommand::OpenGallery => match write_gallery_page() {
+                    Ok(path) => {
+                        if let Err(error) = open_with_os(&path.to_string_lossy()) {
+                            eprintln!("Failed to open the gallery with the OS: {error}");
+                        }
+                    }
+                    Err(error) => eprintln!("Failed to write the gallery page: {error}"),
+                },
                 IpcCommand::OpenGlossary { href } => {
                     let Some(current_path) = reader.workspace.active_path().map(Path::to_path_buf)
                     else {

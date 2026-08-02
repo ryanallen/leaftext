@@ -1189,11 +1189,7 @@ function beginFlowPan(event) {
     panY: flowPan.y,
     moved: false,
   };
-  try {
-    flowCanvas.setPointerCapture(event.pointerId);
-  } catch (error) {
-    /* the drag still works without capture */
-  }
+  leafHoldPointer(flowCanvas, event.pointerId);
 }
 
 if (flowCanvas) {
@@ -1213,13 +1209,7 @@ if (flowCanvas) {
     // Nothing here calls preventDefault: on a pointerdown it suppresses the
     // compatibility mouse events, dblclick included, so double-clicking a shape
     // to rename it does nothing. Text selection is held off in the stylesheet.
-    const grab = () => {
-      try {
-        flowCanvas.setPointerCapture(event.pointerId);
-      } catch (error) {
-        /* the drag still works without capture */
-      }
-    };
+    const grab = () => leafHoldPointer(flowCanvas, event.pointerId);
     closeFlowLabelBox(true);
     if (endpoint) {
       flowDrag = { kind: 'retarget', edge: endpoint.dataset.edge, end: endpoint.dataset.endpoint, moved: false };

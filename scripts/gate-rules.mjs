@@ -92,7 +92,7 @@ export function context(prompt, rule) {
   out.push('', hasReleaseLicense(prompt)
     ? '- `/git-release` is in this message: one git write is authorized, for this turn only.'
     : '- No `/git-release` in this message. Git writes are refused by scripts/gate-git.mjs. Do not offer or hint at one; a dirty tree is the correct end state.');
-  out.push('- Before handing work back: `just verify`. Then say what could not be checked here (macOS code, WiX).');
+  out.push('- Before handing work back: `just verify`. Say what changed in plain words — and name something as unproven only when this machine could not build the part you changed.');
   return out.join('\n');
 }
 

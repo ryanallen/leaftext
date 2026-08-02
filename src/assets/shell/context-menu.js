@@ -134,11 +134,7 @@ function buildContextMenu() {
 }
 
 function clampContextMenu(x, y) {
-  contextMenu.hidden = false;
-  const left = Math.max(8, Math.min(x, window.innerWidth - contextMenu.offsetWidth - 8));
-  const top = Math.max(8, Math.min(y, window.innerHeight - contextMenu.offsetHeight - 8));
-  contextMenu.style.left = left + 'px';
-  contextMenu.style.top = top + 'px';
+  leafPlaceFloating(contextMenu, x, y);
 }
 function showContextMenu(x, y, path, kind) {
   // An empty path is the library's own top — the drive roots, or a vault's folder
@@ -275,8 +271,5 @@ renameInput.addEventListener('keydown', (event) => {
 renameInput.addEventListener('blur', () => {
   commitRename();
 });
-window.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') {
-    hideContextMenu();
-  }
-});
+// On window, so the insert row and a rename field get Escape first.
+leafOnEscape(hideContextMenu, window);

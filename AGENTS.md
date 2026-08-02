@@ -12,6 +12,8 @@ Plain English, few words. No jargon or abbreviations. Lead with the answer, then
 
 **No sycophancy.** Never "you're right", "good question", "fair point", "exactly". No praise, no apology, no restating the question back. Never claim agreement to soften an answer. When the answer is no, say no.
 
+**Say it in words the owner uses.** Not the code's names for things, not the build's, not a phrase that needs the repo open to parse. If a thing has to be named, say what it does in the same breath. And never pad a reply with a caveat that is true every single time — it teaches the reader to skip everything you write.
+
 ---
 
 # 🛑 GIT: DO NOT TOUCH IT
@@ -36,9 +38,10 @@ Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document 
 - Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pipeline that orders the stages; siblings hold one stage each. A directory's **types** stay module-wide (`pub(super)`); functions open up only where something calls them.
 - **`format.rs` is the only table of readable formats and their extensions.** A new format is one arm there plus whatever the exhaustive matches then refuse to compile — never a second list.
 - **`markdown/rawhtml.rs` is a security boundary** — what raw HTML may keep, standing between hostile input and the web view.
-- **`src/assets/shell/` is one scope, not modules.** The fragments concatenate in `APP_SHELL_SCRIPT_PARTS` order, the page has no module loader, so order is load-bearing and a fragment alone is not a valid program. `state.js` is first and holds **only** what more than one fragment touches. The two flowchart fragments are served as `flow.js` over `leaf-asset://` because the shell reaches WebView2 as one string with a ~2 MB ceiling; same scope, same order, just not inside that string — and the next thing to grow goes the same way rather than pushing the budget.
+- **`src/assets/shell/` is one scope, not modules.** The fragments concatenate in `APP_SHELL_SCRIPT_PARTS` order and are **served as `app.js` over `leaf-asset://`**, behind the page's one script tag — the page reaches WebView2 as one string with a ~2 MB ceiling, and the script was 88% of it. There is no module loader, so order is load-bearing and a fragment alone is not a valid program: the flowchart pair leads (everything else calls into it), `state.js` follows and holds **only** what more than one fragment touches, and the last fragment ends with the bootstrap call. Nothing is substituted into the script, which is why it can be a file at all.
 - **Mermaid diagrams take the theme's own tokens**, mapped in `decorate.js`. Never a per-theme diagram palette. The `cScale` categorical scale is ours, named entry by entry, held to one luminance — v0.1.423 shipped near-black boxes with near-black labels by leaving it to mermaid's arithmetic.
-- **`design/` is the source of a token, `themes/` of a color's value.** `design/colors.md` lists the 82 names and compiles to the contract in `theme.rs`; `design/tokens.md` holds the other 162 values and compiles to `src/assets/tokens.css`; `design/components.md` is a row per component. `just bundle-tokens` generates, `just check-tokens` fails on drift and on a theme row nobody lists. `themes/` holds the values, compiled by `just bundle-themes`. Never edit a generated file. `theme.rs` emits a property for any row it finds, so a stale row would be dead CSS in every theme.
+- **`design/` is the source of a token, `themes/` of a color's value.** `design/colors.md` lists the 82 names and compiles to the contract in `theme.rs`; `design/tokens.md` holds the other 162 values and compiles to `src/assets/tokens.css`; `design/icons.md` lists the icons and compiles to `src/assets/icons.css`, one `.lt-icon-*` mask class each; `design/components.md` is a row per component. `just bundle-tokens`, `bundle-icons`, `bundle-gallery` and `bundle-design-docs` generate; their `check-` twins fail on drift, on a theme row nobody lists, on an SVG with no row, and on a component with no sample to draw it with. `themes/` holds the values, compiled by `just bundle-themes`. Never edit a generated file. `theme.rs` emits a property for any row it finds, so a stale row would be dead CSS in every theme.
+- **An icon reaches the page as a name, not a drawing** — `<span class="lt-icon lt-icon-back">` — so one used five times is in the app once. A mask reads only alpha, so the control's own `currentColor` paints it, and a control with a bolder active state swaps to a second mask (`--lt-icon-*-heavy`) rather than thickening a stroke a mask does not have. The one drawing still pasted into the page is the broken-image mark: it is an `<img>`'s `src`, where a mask cannot apply.
 - **No hand-written value in `reading.css`.** A color, spacing, text size, weight, stroke, line height, letter spacing, opacity, duration, easing, shadow or layer comes from a token; `just check-literals` fails on one and names the line. Widths, heights, positional offsets and a document's `em` sizing are not tokens — they are one component's geometry, or they follow the text.
 - **Never crawl the disk.** `folder_tree.rs` reads one folder per call; `vault_corpus.rs` reads one vault; `doc_graph.rs` is bounded by a document's links. See the crawl rule below.
 
@@ -48,10 +51,14 @@ In `.agents/skills/`, which `.claude/` and `.codex/` symlink to. Invoke by name.
 
 | skill | when |
 | --- | --- |
-| `check` | before handing work back. Runs `sync-tests`, then `just verify`, then says what could not be checked here. |
+| `check` | before handing work back. Runs `sync-tests`, then `just verify`, and names anything the change left untested. |
 | `sync-tests` | the change needs a test that would have caught it. `check` calls it. |
 | `sync-docs` | app behavior changed, or before a release. Edits `docs/`, never git. |
 | `code-comments` | the comment bar, in one place: why not what, one line if it fits, cut the drafting history. |
+| `design-tokens` | changing how the app looks. A value goes in `design/`, never into a rule. |
+| `add-dependency` | a new crate. Reports what it drags in, then asks. |
+| `add-format` | teaching the app another file type. One arm in `format.rs`. |
+| `shell-fragment` | adding, splitting or reordering a front-end fragment. Order is load-bearing. |
 | `git-release` | only on `/git-release`. Runs `sync-docs`, `code-comments` and `check`, then commits, tags and pushes. |
 
 ## Hooks
@@ -77,9 +84,9 @@ In `.claude/settings.json`, pointing at `scripts/`. Each runs by hand with `--ch
 
 ## Commands
 
-Needs `rustup`, `just`, `node`. `/check` is the gate before handing work back: `just verify` (fmt, check, test, vendor + theme + token drift, no hand-written values, US spelling, front-end boot, identity, the two hooks) with a test pass in front of it. `just check` / `test` / `format` / `check-shell` run individually.
+Needs `rustup`, `just`, `node`. `/check` is the gate before handing work back: `just verify` (fmt, check, test, vendor + theme + token + icon + gallery + docs drift, no hand-written values, US spelling, front-end boot, identity, the two hooks) with a test pass in front of it. `just check` / `test` / `format` / `check-shell` run individually.
 
-**Say what you couldn't verify** — `cfg(target_os = "macos")` code doesn't compile on Windows, and WiX doesn't run locally.
+Mac code and the installer cannot be built on this machine, and never have been. Don't report that as news every time — only say it if something you changed is in one of them.
 
 ## Release path
 

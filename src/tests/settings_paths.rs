@@ -341,7 +341,7 @@ fn an_unreadable_settings_file_reaches_the_page_as_a_growl() {
         "window.__leafSettingsUnreadable = false;"
     );
 
-    let html = app_shell_html();
+    let html = app_shell_page();
     assert_contains(&html, "if (window.__leafSettingsUnreadable) {");
     assert_contains(
         &html,
@@ -552,7 +552,7 @@ fn every_readable_format_is_a_pager_page_and_an_in_app_link() {
 #[test]
 fn updating_is_not_a_setting() {
     // Updating is what the app does, not an opt-in: no toggle, no string for one.
-    let html = app_shell_html();
+    let html = app_shell_page();
     assert!(!html.contains("autoUpdateEnabled"));
     assert!(!html.contains("settings.autoUpdate"));
     assert!(!html.contains("setAutoUpdateEnabled"));
@@ -573,7 +573,7 @@ fn the_updater_only_speaks_when_it_can_install() {
     // no installer for this platform is the app's own business — there is nothing
     // for the reader to do about any of it. Reporting it made the panel look like
     // it was asking for work it should be doing itself.
-    let html = app_shell_html();
+    let html = app_shell_page();
     for gone in [
         "Check for updates",
         "Up to date",
@@ -600,7 +600,7 @@ fn the_updater_only_speaks_when_it_can_install() {
 
 #[test]
 fn the_settings_panel_shows_the_running_version() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     assert!(html.contains(r#"<span class="settings-version-number" id="settingsVersion">"#));
     assert!(html.contains("<span>Version</span>"));
     // The number itself comes from the init script, not the markup.

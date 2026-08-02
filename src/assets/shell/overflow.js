@@ -70,20 +70,22 @@ document.addEventListener('click', (event) => {
     closeOverflowMenu();
   }
 });
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') closeOverflowMenu();
-});
+leafOnEscape(closeOverflowMenu);
 if (typeof ResizeObserver !== 'undefined') {
   new ResizeObserver(() => refitAppBar()).observe(appBar);
 }
 window.addEventListener('resize', refitAppBar);
-const MERMAID_SCRIPT_URL = '{{MERMAID_SCRIPT_URL}}';
-const KATEX_SCRIPT_URL = '{{KATEX_SCRIPT_URL}}';
-const PIXI_SCRIPT_URL = '{{PIXI_SCRIPT_URL}}';
-const PIXI_UNSAFE_EVAL_SCRIPT_URL = '{{PIXI_UNSAFE_EVAL_SCRIPT_URL}}';
-const D3_FORCE_SCRIPT_URL = '{{D3_FORCE_SCRIPT_URL}}';
-const MONACO_SCRIPT_URL = '{{MONACO_SCRIPT_URL}}';
-const MONACO_CSS_URL = '{{MONACO_CSS_URL}}';
+// Served over leaf-asset://, whose spelling is the host's to decide, so the URLs are
+// injected on window.__lt rather than substituted into this file.
+const {
+  mermaid: MERMAID_SCRIPT_URL,
+  katex: KATEX_SCRIPT_URL,
+  pixi: PIXI_SCRIPT_URL,
+  pixiUnsafeEval: PIXI_UNSAFE_EVAL_SCRIPT_URL,
+  d3Force: D3_FORCE_SCRIPT_URL,
+  monaco: MONACO_SCRIPT_URL,
+  monacoCss: MONACO_CSS_URL,
+} = window.__lt.assets;
 let mermaidLoadPromise = null;
 let katexLoadPromise = null;
 document.getElementById('openButton').addEventListener('click', () => send({ command: 'open' }));

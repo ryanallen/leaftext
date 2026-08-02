@@ -314,7 +314,7 @@ fn a_successful_install_records_no_failure() {
 fn the_applier_s_verdict_never_reaches_the_page() {
     // It goes to stderr and nowhere else. A reader can do nothing about a failed
     // install — the next check retries it — so the panel stays quiet.
-    assert!(!app_shell_html().contains("__leafUpdateApply"));
+    assert!(!app_shell_page().contains("__leafUpdateApply"));
 }
 
 #[test]
@@ -341,7 +341,7 @@ fn the_app_shell_reaches_the_release_api_and_nothing_else() {
     // downloaded natively, because the host GitHub redirects assets to sends no
     // CORS header and no policy here can make that fetch succeed. Granting the
     // asset hosts anyway would widen where the page may talk for no gain.
-    let html = app_shell_html();
+    let html = app_shell_page();
     let csp_line = html
         .lines()
         .find(|line| line.contains("Content-Security-Policy"))

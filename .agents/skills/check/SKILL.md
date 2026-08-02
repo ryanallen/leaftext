@@ -1,6 +1,6 @@
 ---
 name: check
-description: The gate before work is handed back or released. Runs /sync-tests so the change has a test, then `just verify` (fmt, cargo check, tests, vendor and theme drift, US spelling, front-end boot, identity, the hooks). A failure is fixed and re-run, never explained past. Ends by saying what could not be checked on this machine — macOS-gated code does not compile on Windows and WiX does not run locally. Never touches git. Use when the user says "check it", "verify", or before handing work back; /git-release calls it before it commits.
+description: The gate before work is handed back or released. Runs /sync-tests so the change has a test, then `just verify` (fmt, cargo check, tests, vendor and theme drift, US spelling, front-end boot, identity, the hooks). A failure is fixed and re-run, never explained past. Says what a check could not reach only when the work is in it — the Mac build, the installer and the GitHub workflows never run here, so that is not news. Never touches git. Use when the user says "check it", "verify", or before handing work back; /git-release calls it before it commits.
 argument-hint: ""
 user-invocable: true
 ---
@@ -42,20 +42,20 @@ Ten steps: `format-check`, `cargo check --all-targets`, `cargo test`,
   `just sync-vendor` fixes `check-vendor`. The rest are real problems.
 - Repeat until it is green.
 
-### 4. Say what could not be checked here
+### 4. Say what a check could not reach — only when it applies
 
-Every time, in the hand-back:
+Three things cannot run on this machine: the Mac build, the installer, and the
+GitHub workflows. That is permanent and the owner knows it, so **do not say it every
+time.** Mention it only when the work you just did is *in* one of them — then say
+which change is untested and what would prove it.
 
-- `cfg(target_os = "macos")` code does not compile on Windows, so nothing under it
-  was compiled or run.
-- WiX does not run locally — `wix/main.wxs` ships unproven. That is deliberate: a
-  broken installer costs a patch bump, which beats blocking every release.
-- The workflows under `.github/` only run on GitHub.
+A caveat that is true on every hand-back teaches the reader to skip the whole line.
 
 ### 5. Hand back
 
-Say what changed, that `just verify` is green, and what is unverifiable here. The
-tree stays dirty; that is the correct end state.
+Say what changed and that `just verify` is green, in plain words: what the app does
+differently, not which constant moved. The tree stays dirty; that is the correct end
+state.
 
 ## Reference
 

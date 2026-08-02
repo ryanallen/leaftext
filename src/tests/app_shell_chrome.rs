@@ -6,7 +6,7 @@ use super::*;
 fn app_shell_csp_allows_bundled_data_fonts() {
     // Bundled fonts are `data:` URLs, so the CSP must grant `font-src ... data:`
     // or WebView2 silently blocks every one. Guard against that regression.
-    let html = app_shell_html();
+    let html = app_shell_page();
     let csp_line = html
         .lines()
         .find(|line| line.contains("Content-Security-Policy"))
@@ -27,7 +27,7 @@ fn every_bottom_sheet_is_the_same_bottom_sheet() {
     // The glossary, the theme picker and the flowchart editor's shape picker all
     // slide up from the bottom, and all differ only in what they are anchored to
     // and filled with. A fourth that forgets the class gets no slide and no grip.
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     for sheet in ["glossarySheet", "themeSheet", "flowPicker"] {
@@ -63,45 +63,78 @@ fn every_bottom_sheet_is_the_same_bottom_sheet() {
     assert_contains(&css, ".leaf-sheet-close {");
     assert_contains(&css, ".leaf-sheet-grip {");
     assert_contains(&css, ".leaf-sheet.open {");
+    // And one scrim behind all three, rather than three identical ones. The
+    // flowchart picker opens over the flow sheet, so only its layer differs.
+    assert_eq!(html.matches("class=\"lt-backdrop\"").count(), 3);
+    assert_contains(&css, ".lt-backdrop {");
+    assert_contains(
+        rule_body(&css, "#flowBackdrop {"),
+        "z-index: var(--lt-z-42);",
+    );
+    for gone in [
+        ".glossary-backdrop",
+        ".theme-sheet-backdrop",
+        ".flow-sheet-backdrop",
+    ] {
+        assert!(
+            !css.contains(gone),
+            "a sheet has grown its own scrim again: {gone}"
+        );
+    }
+    // One spinner shape and one turn, however many places spin.
+    assert_contains(&css, ".lt-spinner {");
+    assert_contains(&css, "@keyframes lt-spin {");
+    for gone in ["leaf-reader-spin", "theme-item-spin", "library-sync-spin"] {
+        let keyframe = format!("@keyframes {gone}");
+        assert!(
+            !css.contains(&keyframe),
+            "a second spin keyframe is back: {gone}"
+        );
+    }
     // And the reader's scrollbar is one definition too, worn by class.
     assert_contains(&css, ".leaf-scroll::-webkit-scrollbar-thumb {");
     assert_contains(&html, "flow-picker-body leaf-scroll");
 }
 
 #[test]
-fn the_flowchart_editor_is_served_beside_the_shell_not_inside_it() {
-    // It is the largest pair of fragments the front-end has, and the shell goes
-    // to WebView2 as one string with a ceiling on it. So it is linked, and the
-    // link has to be there: a script tag pointing at nothing is a sheet that
-    // opens empty, and nothing else in the page would say why.
-    let html = app_shell_html();
-    let script = app_shell_flow_script();
+fn the_front_end_is_served_beside_the_shell_not_inside_it() {
+    // The page goes to WebView2 as one string with a ceiling on it, and the script
+    // was 88% of it. So it is linked, and the link has to be there: a tag pointing at
+    // nothing is a window that opens and does nothing, with nothing to say why.
+    let page = app_shell_html();
+    let script = app_shell_script();
 
-    assert_contains(&html, "<script src=\"");
-    assert_contains(&html, "flow.js\"></script>");
+    assert_contains(&page, "<script src=\"");
+    assert_contains(&page, "app.js\"></script>");
+    // One tag, and no inline script: the fragments are one shared scope, so a second
+    // tag would be a second scope.
+    assert_eq!(page.matches("<script src=").count(), 1);
     assert!(
-        !html.contains("function parseFlow("),
+        !page.contains(
+            "
+<script>
+"
+        ),
+        "the front-end is inlined into the shell again"
+    );
+    assert!(
+        !page.contains("function parseFlow("),
         "the flowchart grammar is inlined into the shell again"
     );
     assert_contains(script, "function parseFlow(");
     assert_contains(script, "function openFlowSheet(");
+    // The flowchart pair leads the script, where its own tag used to sit.
+    assert!(
+        script.find("function parseFlow(") < script.find("function leafToast("),
+        "the flowchart grammar must come before the fragments that call it"
+    );
     // Served, and served as script: a wrong content type is a silent no-op.
     let (content_type, body) =
-        bundled_asset_bytes("leaf-asset://local/flow.js").expect("flow.js is a bundled asset");
+        bundled_asset_bytes("leaf-asset://local/app.js").expect("app.js is a bundled asset");
     assert_eq!(content_type, "text/javascript; charset=utf-8");
     assert_eq!(body, script.as_bytes());
-    // It loads before the script that calls into it, or the first thing to open
-    // a diagram finds nothing there.
-    let linked = html
-        .find("flow.js\"></script>")
-        .expect("the flow script is linked");
-    let inline = html
-        .find("\n<script>\n")
-        .expect("the shell has its inline script");
-    assert!(
-        linked < inline,
-        "the flowchart editor loads after the script that uses it"
-    );
+    // Nothing answers to the old name.
+    assert!(bundled_asset_bytes("leaf-asset://local/flow.js").is_none());
 }
 
 #[test]
@@ -110,9 +143,9 @@ fn app_shell_stays_well_under_navigate_to_string_budget() {
     // rejects content past ~2 MB with E_INVALIDARG (0x80070057) — the string is
     // measured as UTF-16, so the real ceiling is ~1M ASCII chars. Inlining the
     // ~1.3 MB reading-mode stylesheet blew past it (regression: "Leaftext could
-    // not start"). All heavy CSS now loads via `app.css` over the asset
-    // protocol, so the shell is a small skeleton + inline bootstrap/app script.
-    // This test fails loudly if any large blob is inlined back into the shell.
+    // not start"). The stylesheet and the front-end script both load over the asset
+    // protocol now, so the page is a skeleton and the theme bootstrap. This test
+    // fails loudly if any large blob is inlined back into it.
     let html = app_shell_html();
     let utf16_bytes = html.encode_utf16().count() * 2;
     const BUDGET_BYTES: usize = 1_400_000; // ~2/3 of the ~2 MB NavigateToString cap.
@@ -132,7 +165,7 @@ fn app_shell_stays_well_under_navigate_to_string_budget() {
 
 #[test]
 fn app_shell_renders_history_controls_and_intercepts_document_links() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
             r#"<button type="button" id="backButton""#,
@@ -141,9 +174,8 @@ fn app_shell_renders_history_controls_and_intercepts_document_links() {
             r#"<div class="tab-bar" id="tabBar" role="tablist" aria-label="Open documents"></div>"#,
             r#"class="icon-button history-button" aria-label="Back""#,
             r#"class="icon-button history-button" aria-label="Forward""#,
-            r#"<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">"#,
-            r#"<path d="M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>"#,
-            r#"<path d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>"#,
+            r#"<span class="lt-icon lt-icon-back"></span>"#,
+            r#"<span class="lt-icon lt-icon-forward"></span>"#,
             r#"<path d="M18 6 6 18"/><path d="m6 6 12 12"/>"#,
             "backButton.addEventListener('click', () => sendNavigationCommand('goBack'))",
             "forwardButton.addEventListener('click', () => sendNavigationCommand('goForward'))",
@@ -200,35 +232,30 @@ fn app_shell_renders_history_controls_and_intercepts_document_links() {
 /// header when the theme changes.
 #[test]
 fn app_shell_inlines_one_leaf_mark_that_tracks_the_theme() {
-    let html = app_shell_html();
-    let leaf_path_prefix = r#"<path d="M59.7,60.1c-7.9-20.9"#;
+    let html = app_shell_page();
+    let css = reading_mode_css();
 
+    // The glyph is drawn once, as a mask class, and named twice: the header
+    // logomark and the library row template. The drawing itself is in the
+    // stylesheet, so neither site can carry a color of its own.
     assert_eq!(
-        html.matches(leaf_path_prefix).count(),
+        html.matches("lt-icon-leaf").count(),
         2,
-        "the leaf glyph should be inlined exactly twice: header logomark + library row template"
+        "the leaf mark should be named exactly twice: header logomark + library row template"
     );
-    for (index, _) in html.match_indices(leaf_path_prefix) {
-        let element_end = html[index..]
-            .find("/>")
-            .map(|offset| index + offset)
-            .expect("inlined leaf path closes");
-        assert!(
-            html[index..element_end].contains(r#"fill="currentColor""#),
-            "every inlined leaf mark fills with currentColor so it inherits the theme"
-        );
-        // The mark must carry no baked-in color of its own (e.g. GitHub's green);
-        // it inherits the theme. Scoped to the mark element, since theme swatch
-        // cards legitimately embed each palette's own hex values elsewhere.
-        assert!(
-            !html[index..element_end].contains('#'),
-            "the leaf mark must not ship a baked-in color; it inherits the theme"
-        );
-    }
+    assert_eq!(
+        css.matches(r#"<path d=\'M59.7,60.1c-7.9-20.9"#).count(),
+        0,
+        "the mask URI escapes its quotes, so the drawing is never a raw attribute"
+    );
+    assert_contains(css, ".lt-icon-leaf {");
+    // A mask is alpha only: the visible color is the control's own, painted on by
+    // the base class, which is what keeps the library leaves in step with the header.
+    let base = rule_body(css, ".lt-icon {");
+    assert_contains(base, "background-color: currentColor;");
 
     // Both sites point that inherited color at the theme's primary token.
-    let css = reading_mode_css();
-    for selector in [".brand-button > svg", ".library-file > svg"] {
+    for selector in [".brand-button > .lt-icon", ".library-file > .lt-icon"] {
         let rule_start = css
             .find(selector)
             .unwrap_or_else(|| panic!("{selector} is styled"));
@@ -265,13 +292,22 @@ fn app_shell_preserves_tokenized_svg_icon_colors() {
 
 #[test]
 fn app_shell_back_icon_uses_current_color_and_keeps_no_square_fallback() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
-    assert_contains(&html, r#"stroke="currentColor""#);
+    // The back arrow is a mask class now, so the page names it and the stylesheet
+    // holds the drawing. `currentColor` still governs, one level out: the base class
+    // paints the mask in the control's own color.
+    assert_contains(&html, r#"class="lt-icon lt-icon-back""#);
+    let css = reading_mode_css();
     assert_contains(
-        &html,
-        r#"<path d="M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18" fill="none" stroke="currentColor""#,
+        css,
+        "%3Cpath d='M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18' fill='none' stroke='%23000'",
     );
+    assert_contains(
+        rule_body(css, ".lt-icon {"),
+        "background-color: currentColor;",
+    );
+    assert_contains(&html, r#"stroke="currentColor""#);
     assert!(
         !html.contains(r##"stroke="#fff""##)
             && !html.contains(r##"stroke="#ffffff""##)
@@ -322,16 +358,27 @@ fn app_shell_styles_history_controls_with_neutral_icon_treatment() {
 fn app_shell_styles_open_button_like_other_secondary_toolbar_icons() {
     let css = reading_mode_css();
 
-    for expected in [
-        ".open-button {",
-        "border-color: transparent;",
-        "background: transparent;",
-        "color: var(--lt-muted-foreground);",
-        ".open-button:hover {",
-        "color: var(--lt-primary-foreground);",
-    ] {
-        assert_contains(css, expected);
-    }
+    // Open and New are the same button twice, so they share both rules rather than
+    // repeating them.
+    let rest = rule_body(
+        css,
+        ".open-button,
+.new-button {",
+    );
+    assert_contains(rest, "border-color: transparent;");
+    assert_contains(rest, "background: transparent;");
+    assert_contains(rest, "color: var(--lt-muted-foreground);");
+
+    let hover = rule_body(
+        css,
+        ".open-button:hover,
+.new-button:hover {",
+    );
+    assert_contains(
+        hover,
+        "background: var(--lt-navigation-button-hover-background);",
+    );
+    assert_contains(hover, "color: var(--lt-primary-foreground);");
 }
 
 #[test]
@@ -379,7 +426,7 @@ fn app_shell_header_keeps_one_chrome_shade_with_dividers() {
 
 #[test]
 fn app_shell_persists_minimap_enabled_setting() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
             "const minimapEnabledControl = document.getElementById('minimapEnabled');",
@@ -403,7 +450,7 @@ fn app_shell_persists_minimap_enabled_setting() {
 
 #[test]
 fn app_shell_persists_and_applies_speed_reader_setting() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // The setting persists and applies, but the reading toolbar's own control is
@@ -438,7 +485,7 @@ fn app_shell_persists_and_applies_speed_reader_setting() {
 
 #[test]
 fn app_shell_labels_minimap_setting_and_hides_decorative_marks_from_accessibility() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         r#"<label class="setting-control setting-control-inline" for="minimapEnabled">"#,
@@ -464,7 +511,7 @@ fn app_shell_labels_minimap_setting_and_hides_decorative_marks_from_accessibilit
 
 #[test]
 fn app_shell_reacts_to_minimap_and_theme_settings() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     let minimap_subscription_position = html
         .find("window.leafMinimap.subscribe((enabled) => {")
@@ -484,7 +531,7 @@ fn app_shell_reacts_to_minimap_and_theme_settings() {
 
 #[test]
 fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     assert_contains(&html, r#"<meta name="color-scheme" content="light dark">"#);
     // Injected from the registry, so it can't drift from the registered sources.
@@ -562,7 +609,7 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
 
 #[test]
 fn app_shell_groups_settings_menu_with_accessible_descriptions() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     assert_contains(
         &html,
@@ -572,10 +619,7 @@ fn app_shell_groups_settings_menu_with_accessible_descriptions() {
         &html,
         r#"<summary id="settingsSummary" class="icon-button" aria-label="Settings" title="Settings">"#,
     );
-    assert_contains(
-        &html,
-        r#"<path d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>"#,
-    );
+    assert_icon(&html, "settings");
     assert_contains(
         &html,
         r#"<div class="settings-panel" role="group" aria-labelledby="settingsSummary">"#,
@@ -608,7 +652,7 @@ fn app_shell_groups_settings_menu_with_accessible_descriptions() {
 
 #[test]
 fn app_shell_keeps_settings_menu_keyboard_and_pointer_polish() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         "settingsMenu.addEventListener('keydown', (event) => {",
@@ -643,7 +687,7 @@ fn app_shell_keeps_settings_menu_keyboard_and_pointer_polish() {
 
 #[test]
 fn app_shell_theme_bootstrap_resolves_manual_and_system_modes() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     assert_contains(&html, "if (mode === 'light') return 'light';");
     assert_contains(&html, "if (mode === 'dark') return 'dark';");
@@ -665,7 +709,7 @@ fn app_shell_theme_bootstrap_resolves_manual_and_system_modes() {
 
 #[test]
 fn app_shell_theme_bootstrap_seeds_from_host_injected_settings() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         "const VALID_MODES = new Set(['system', 'light', 'dark', 'daylight']);",
@@ -689,7 +733,7 @@ fn app_shell_theme_bootstrap_seeds_from_host_injected_settings() {
 
 #[test]
 fn app_shell_guards_shortcuts_while_a_character_is_being_composed() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // An input method (and the emoji picker, and accented letters) sends keydown
     // while a character is still being assembled. Acting on those keystrokes
@@ -702,7 +746,7 @@ fn app_shell_guards_shortcuts_while_a_character_is_being_composed() {
 
 #[test]
 fn app_shell_markup_carries_its_own_text_before_any_script_runs() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // Every label is in the markup or in the fragment that writes it, so the
     // first frame is never a shell of blank buttons waiting on script.
@@ -736,7 +780,7 @@ fn app_shell_markup_carries_its_own_text_before_any_script_runs() {
 fn app_shell_csp_allows_github_api_for_update_check() {
     // The update check fetches api.github.com; without a connect-src grant the
     // webview's default-src 'self' blocks it. Guard against that regression.
-    let html = app_shell_html();
+    let html = app_shell_page();
     let csp_line = html
         .lines()
         .find(|line| line.contains("Content-Security-Policy"))
@@ -766,7 +810,7 @@ fn the_code_view_payload_url_is_one_the_page_is_allowed_to_fetch() {
         assert_eq!(url, "leaf-source://local/payload/7");
     }
 
-    let html = app_shell_html();
+    let html = app_shell_page();
     let connect_src = html
         .lines()
         .find(|line| line.contains("Content-Security-Policy"))
@@ -852,7 +896,7 @@ fn an_unsaved_tab_does_not_resize_when_you_reach_for_it() {
 #[test]
 fn app_shell_fills_every_placeholder() {
     // Every `{{...}}` in the template must be filled, or it ships as braces.
-    let html = app_shell_html();
+    let html = app_shell_page();
     let mut rest = crate::APP_SHELL_HTML;
     while let Some(start) = rest.find("{{") {
         let after = &rest[start..];
@@ -870,7 +914,7 @@ fn app_shell_fills_every_placeholder() {
 fn the_app_bar_maximizes_from_the_second_press_not_from_a_dblclick() {
     // A drag hands the window to a Windows move loop that swallows every later
     // mouse event, so an app-bar dblclick listener is dead code.
-    let html = app_shell_html();
+    let html = app_shell_page();
     assert!(
         !html.contains("appBar.addEventListener('dblclick'"),
         "an app-bar dblclick can never fire once a drag starts; decide on mousedown"
@@ -911,4 +955,74 @@ fn document_extensions_ride_to_the_page_from_the_format_table() {
             "extension {extension} missing from {script}"
         );
     }
+}
+
+#[test]
+fn the_front_end_shares_its_repeated_plumbing() {
+    // Three things every part of the front-end needed and each used to write for
+    // itself. A second copy is how two menus end up clamping to different margins,
+    // or one drag losing the pointer where another keeps it.
+    let script = app_shell_script();
+
+    // Escape closes what is open: four callers, one listener each, no key checks of
+    // their own.
+    assert_contains(script, "function leafOnEscape(close, target) {");
+    assert_eq!(script.matches("leafOnEscape(").count(), 5);
+
+    // Holding the pointer through a drag, wrapped because a browser may refuse.
+    assert_contains(script, "function leafHoldPointer(el, pointerId) {");
+    assert_eq!(script.matches("leafHoldPointer(").count(), 9);
+    assert_eq!(
+        script.matches(".setPointerCapture(").count(),
+        1,
+        "capture is the helper's job; a fragment calling it directly loses the guard"
+    );
+
+    // Placing a floating thing inside the window.
+    assert_contains(script, "function leafPlaceFloating(el, x, y) {");
+    assert_eq!(script.matches("leafPlaceFloating(").count(), 3);
+    assert!(
+        !script.contains("window.innerWidth - contextMenu.offsetWidth"),
+        "a menu is clamping itself again"
+    );
+}
+
+#[test]
+fn the_gallery_draws_every_component_from_the_design_files() {
+    // The gallery is what makes a change to the interface something you can look at.
+    // It is generated, so the only way it goes stale is if it stops being generated —
+    // which `just check-gallery` catches. What this holds is the app's half: the page
+    // stands alone (a browser cannot fetch the app's own scheme), the settings menu
+    // asks for it, and the host writes it somewhere the browser can open.
+    let gallery = gallery_html();
+
+    // The stylesheet is inside it, not linked.
+    assert_contains(gallery, "<style>");
+    assert!(
+        !gallery.contains("{{APP_CSS_URL}}"),
+        "the stylesheet placeholder must be filled"
+    );
+    assert_contains(gallery, "--lt-background:");
+    // The three walls and the components.
+    for section in [
+        "<h2>Colors</h2>",
+        "<h2>Values</h2>",
+        "<h2>Icons</h2>",
+        "<h2>Components</h2>",
+    ] {
+        assert_contains(gallery, section);
+    }
+    // Every color in the contract has a swatch, and every icon a glyph.
+    for token in LEAF_SEMANTIC_TOKEN_CONTRACT {
+        assert!(
+            gallery.contains(&format!("var({token})")),
+            "the gallery should show {token}"
+        );
+    }
+    assert_contains(gallery, "lt-icon lt-icon-leaf");
+
+    // And the way in: a settings row that asks the host to open it.
+    let page = app_shell_page();
+    assert_contains(&page, r#"id="settingsGallery""#);
+    assert_contains(&page, "send({ command: 'openGallery' });");
 }

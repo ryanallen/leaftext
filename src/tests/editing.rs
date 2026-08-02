@@ -27,7 +27,7 @@ fn the_code_view_is_colored_by_the_active_themes_own_tokens() {
     // theme's tokens is what keeps the source view looking like the rest of the
     // app when the theme changes. Rules and UI colors both, since Monaco takes
     // them from different halves of a theme definition.
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         "rule('keyword', t('--lt-syntax-keyword'), 'bold')",
@@ -249,7 +249,7 @@ fn opened_markdown_document_carries_editing_maps() {
 
 #[test]
 fn the_reading_view_has_no_gutter_line_numbers() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // The gutter permalink numbers are gone: three elements per addressable block

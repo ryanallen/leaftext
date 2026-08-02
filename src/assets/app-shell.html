@@ -14,15 +14,15 @@
 <header id="appBar" class="app-bar">
   <div class="app-bar-lead">
     <button type="button" id="homeButton" class="brand-button" aria-label="Home" title="Home">
-      {{LEAF_ICON_SVG}}
+      <span class="lt-icon lt-icon-leaf"></span>
     </button>
-    <button type="button" id="libraryOpen" class="icon-button library-open" title="Toggle library" aria-label="Toggle library">{{OPEN_LIBRARY_ICON_SVG}}</button>
+    <button type="button" id="libraryOpen" class="icon-button library-open" title="Toggle library" aria-label="Toggle library"><span class="lt-icon lt-icon-open-library"></span></button>
     <nav class="history-actions" aria-label="Document history">
       <button type="button" id="backButton" class="icon-button history-button" aria-label="Back" title="Back" disabled>
-        {{BACK_ICON_SVG}}
+        <span class="lt-icon lt-icon-back"></span>
       </button>
       <button type="button" id="forwardButton" class="icon-button history-button" aria-label="Forward" title="Forward" disabled>
-        {{FORWARD_ICON_SVG}}
+        <span class="lt-icon lt-icon-forward"></span>
       </button>
     </nav>
   </div>
@@ -33,7 +33,7 @@
     <div class="app-actions-items" id="appActionsItems">
     <details class="settings-menu" id="settingsMenu">
       <summary id="settingsSummary" class="icon-button" aria-label="Settings" title="Settings">
-        {{SETTINGS_ICON_SVG}}
+        <span class="lt-icon lt-icon-settings"></span>
         <span class="settings-alert-dot" id="settingsAlertDot" aria-hidden="true" hidden></span>
       </summary>
       <div class="settings-panel" role="group" aria-labelledby="settingsSummary">
@@ -41,7 +41,7 @@
           <!-- Progress fill behind the label: the download's only honest signal
                that bytes are moving. Width is set from the percent. -->
           <span class="settings-update-fill" id="settingsUpdateFill" aria-hidden="true"></span>
-          <span class="settings-spinner" id="settingsUpdateSpinner" aria-hidden="true" hidden></span>
+          <span class="lt-spinner settings-spinner" id="settingsUpdateSpinner" aria-hidden="true" hidden></span>
           <span class="settings-update-label" id="settingsUpdateLabel"></span>
         </button>
         <button type="button" class="setting-theme-open" id="themeSheetOpen" aria-haspopup="dialog">
@@ -70,6 +70,12 @@
           <span class="setting-label">Show next/previous</span>
           <span class="setting-help" id="pagerEnabledHelp">Add Previous and Next links at the bottom of each document, ordered by the folder tree.</span>
         </label>
+        <button type="button" class="setting-theme-open" id="settingsGallery">
+          <span class="lt-icon lt-icon-wand"></span>
+          <span class="setting-label">Design gallery</span>
+          <span class="setting-theme-current">Opens in your browser</span>
+          <span class="setting-theme-chevron" aria-hidden="true">&rsaquo;</span>
+        </button>
         <!-- The version, and nothing about the updater: it checks and downloads on
              its own, and the only thing worth a word is the restart button above. -->
         <div class="settings-footer">
@@ -80,10 +86,10 @@
         </div>
       </div>
     </details>
-    <button type="button" id="openButton" class="icon-button open-button" aria-label="Open" title="Open Markdown file">{{OPEN_ICON_SVG}}</button>
+    <button type="button" id="openButton" class="icon-button open-button" aria-label="Open" title="Open Markdown file"><span class="lt-icon lt-icon-open"></span></button>
     <!-- Beside the folder: that one opens a document that exists, this one
          starts a document that doesn't. -->
-    <button type="button" id="newButton" class="icon-button new-button" aria-label="New document" title="New document">{{NEW_ICON_SVG}}</button>
+    <button type="button" id="newButton" class="icon-button new-button" aria-label="New document" title="New document"><span class="lt-icon lt-icon-new"></span></button>
     </div>
     <div class="window-controls" id="windowControls" hidden aria-hidden="true">
       <button type="button" class="window-control" id="winMinimize" tabindex="-1" aria-label="Minimize" title="Minimize"><svg viewBox="0 0 12 12" aria-hidden="true"><line x1="2.5" y1="6.5" x2="9.5" y2="6.5" stroke="currentColor" stroke-width="1"/></svg></button>
@@ -108,12 +114,12 @@
   <!-- Where you are: the folder path, one crumb per level, with the graph
        toggle on the right. Its own band above the search row, same treatment. -->
   <div class="library-crumbs" id="libraryCrumbs">
-    <button type="button" id="libraryVaultSwitch" class="library-vault-switch" aria-haspopup="menu" aria-expanded="false" title="Vaults" aria-label="Vaults">{{PACKAGE_OPEN_ICON_SVG}}<span class="library-crumb-caret" aria-hidden="true">▾</span></button>
+    <button type="button" id="libraryVaultSwitch" class="library-vault-switch" aria-haspopup="menu" aria-expanded="false" title="Vaults" aria-label="Vaults"><span class="lt-icon lt-icon-package-open"></span><span class="library-crumb-caret" aria-hidden="true">▾</span></button>
     <nav class="library-crumb-trail" id="libraryCrumbTrail" aria-label="Folder path"></nav>
     <!-- Present only when this vault has work that has not reached GitHub. A
          button that is always there says nothing; one that appears is the
          message. -->
-    <button type="button" id="librarySyncButton" class="library-sync" aria-label="Sync" hidden>{{SYNC_ICON_SVG}}<span class="library-sync-count"></span></button>
+    <button type="button" id="librarySyncButton" class="library-sync" aria-label="Sync" hidden><span class="lt-icon lt-icon-sync"></span><span class="library-sync-count"></span></button>
   </div>
   <div class="library-header">
     <div class="library-search-wrap">
@@ -161,16 +167,16 @@
          recess goes with it. Sunk and grained rather than same-level buttons,
          which would read as more views. -->
     <span id="readerViewTools" class="reader-view-tools" role="group" aria-label="Editing tools" hidden>
-      <button type="button" id="readerLockButton" class="reader-subtool" aria-pressed="false" aria-label="Unlock to edit" title="Unlock to edit"><span class="reader-swap-glyph reader-glyph-off">{{LOCK_CLOSED_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{LOCK_OPEN_ICON_SVG}}</span></button>
-      <button type="button" id="speedReaderButton" class="reader-subtool" aria-pressed="false" aria-label="Speed reader" title="Speed reader"><span class="reader-swap-glyph reader-glyph-off">{{SPEED_READER_OFF_ICON_SVG}}</span><span class="reader-swap-glyph reader-glyph-on">{{SPEED_READER_ON_ICON_SVG}}</span></button>
-      <button type="button" id="codeIntelButton" class="reader-subtool" aria-pressed="true" aria-label="Typing help" title="Typing help">{{WAND_ICON_SVG}}</button>
+      <button type="button" id="readerLockButton" class="reader-subtool" aria-pressed="false" aria-label="Unlock to edit" title="Unlock to edit"><span class="reader-swap-glyph reader-glyph-off"><span class="lt-icon lt-icon-lock-closed"></span></span><span class="reader-swap-glyph reader-glyph-on"><span class="lt-icon lt-icon-lock-open"></span></span></button>
+      <button type="button" id="speedReaderButton" class="reader-subtool" aria-pressed="false" aria-label="Speed reader" title="Speed reader"><span class="reader-swap-glyph reader-glyph-off"><span class="lt-icon lt-icon-speed-reader-off"></span></span><span class="reader-swap-glyph reader-glyph-on"><span class="lt-icon lt-icon-speed-reader-on"></span></span></button>
+      <button type="button" id="codeIntelButton" class="reader-subtool" aria-pressed="true" aria-label="Typing help" title="Typing help"><span class="lt-icon lt-icon-wand"></span></button>
     </span>
-    <button type="button" id="viewReadingButton" class="reader-tool" data-view="reading" aria-pressed="true" aria-label="Reading" title="Reading">{{DOCUMENT_ICON_SVG}}</button>
-    <button type="button" id="viewCodeButton" class="reader-tool" data-view="code" aria-pressed="false" aria-label="View source" title="View source">{{CODE_VIEW_ICON_SVG}}</button>
-    <button type="button" id="viewGraphButton" class="reader-tool" data-view="graph" aria-pressed="false" aria-label="Graph" title="Show how these documents link">{{GRAPH_ICON_SVG}}</button>
+    <button type="button" id="viewReadingButton" class="reader-tool" data-view="reading" aria-pressed="true" aria-label="Reading" title="Reading"><span class="lt-icon lt-icon-document"></span></button>
+    <button type="button" id="viewCodeButton" class="reader-tool" data-view="code" aria-pressed="false" aria-label="View source" title="View source"><span class="lt-icon lt-icon-code-view"></span></button>
+    <button type="button" id="viewGraphButton" class="reader-tool" data-view="graph" aria-pressed="false" aria-label="Graph" title="Show how these documents link"><span class="lt-icon lt-icon-graph"></span></button>
   </div>
   <span class="reader-tool-divider" aria-hidden="true"></span>
-  <button type="button" id="undoButton" class="reader-tool undo-button" aria-label="Undo" title="Undo last edit" hidden><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" /></svg></button>
+  <button type="button" id="undoButton" class="reader-tool undo-button" aria-label="Undo" title="Undo last edit" hidden><span class="lt-icon lt-icon-undo"></span></button>
   <button type="button" id="saveButton" class="reader-tool-save" aria-label="Save" title="Save" hidden>Save</button>
 </div>
 <div id="readerEdgeFade" class="reader-edge-fade" aria-hidden="true"></div>
@@ -181,17 +187,17 @@
      match. -->
 <div id="readerMinimap" class="reader-minimap" aria-hidden="true"></div>
 <div id="readerLoading" class="reader-loading" role="status" aria-live="polite" aria-label="Loading document…" hidden>
-  <div class="reader-loading-spinner" aria-hidden="true"></div>
+  <div class="lt-spinner reader-loading-spinner" aria-hidden="true"></div>
 </div>
 </div>
-<div id="glossaryBackdrop" class="glossary-backdrop" hidden></div>
+<div id="glossaryBackdrop" class="lt-backdrop" hidden></div>
 <aside id="glossarySheet" class="leaf-sheet glossary-sheet" role="dialog" aria-modal="true" aria-label="Glossary" hidden>
   <div class="leaf-sheet-grip"></div>
   <button type="button" id="glossarySheetClose" class="leaf-sheet-close" aria-label="Close glossary"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg></button>
   <div id="glossarySheetBody" class="glossary-sheet-body document-body"></div>
   <div class="glossary-sheet-footer"><button type="button" id="glossaryFullLink" class="glossary-sheet-fulllink">Open the full glossary</button></div>
 </aside>
-<div id="themeBackdrop" class="theme-sheet-backdrop" hidden></div>
+<div id="themeBackdrop" class="lt-backdrop" hidden></div>
 <aside id="themeSheet" class="leaf-sheet theme-sheet" role="dialog" aria-modal="true" aria-label="Themes" hidden>
   <div class="leaf-sheet-grip"></div>
   <div class="theme-sheet-head">
@@ -210,7 +216,7 @@
     <a href="#" id="themeSheetBrowse" class="theme-sheet-browse">Add your own theme on GitHub →</a>
   </div>
 </aside>
-<div id="flowBackdrop" class="flow-sheet-backdrop" hidden></div>
+<div id="flowBackdrop" class="lt-backdrop" hidden></div>
 <!-- The flowchart sheet: a canvas and a code pane, peers over one graph. Both
      panes are built by flow-canvas.js; only the frame is declared here. -->
 <aside id="flowSheet" class="flow-sheet" role="dialog" aria-modal="true" aria-label="Flowchart" hidden>
@@ -220,7 +226,7 @@
     <span class="flow-sheet-title" id="flowSheetTitle">Flowchart</span>
     <div class="flow-sheet-tools">
       <div class="flow-steps" role="group" aria-label="History">
-        <button type="button" id="flowUndo" aria-label="Undo" title="Undo"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" /></svg></button>
+        <button type="button" id="flowUndo" aria-label="Undo" title="Undo"><span class="lt-icon lt-icon-undo"></span></button>
         <button type="button" id="flowRedo" aria-label="Redo" title="Redo"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3" /></svg></button>
       </div>
       <label class="flow-sheet-direction">Flow <select id="flowDirection"></select></label>
@@ -228,9 +234,9 @@
            one is the same gesture wherever you are. Each tooltip names the other
            way of doing it: the wheel and the drag announce themselves nowhere. -->
       <div class="flow-zoom" role="group" aria-label="Zoom">
-        <button type="button" id="flowZoomOut" title="Zoom out — or Ctrl and the wheel" aria-label="Zoom out">{{ZOOM_OUT_ICON_SVG}}</button>
-        <button type="button" id="flowZoomFit" title="Whole diagram, back where it started" aria-label="Fit the diagram">{{FIT_ICON_SVG}}</button>
-        <button type="button" id="flowZoomIn" title="Zoom in — or Ctrl and the wheel. Drag empty space to move it" aria-label="Zoom in">{{ZOOM_IN_ICON_SVG}}</button>
+        <button type="button" id="flowZoomOut" title="Zoom out — or Ctrl and the wheel" aria-label="Zoom out"><span class="lt-icon lt-icon-zoom-out"></span></button>
+        <button type="button" id="flowZoomFit" title="Whole diagram, back where it started" aria-label="Fit the diagram"><span class="lt-icon lt-icon-fit"></span></button>
+        <button type="button" id="flowZoomIn" title="Zoom in — or Ctrl and the wheel. Drag empty space to move it" aria-label="Zoom in"><span class="lt-icon lt-icon-zoom-in"></span></button>
       </div>
     </div>
     <div class="flow-sheet-actions">
@@ -268,14 +274,10 @@
     <div class="flow-picker-body leaf-scroll" id="flowPickerBody"></div>
   </aside>
 </aside>
-<!-- The flowchart editor, over the asset protocol rather than inline: it is the
-     largest thing the shell carries and the page is handed to WebView2 as one
-     string with a ceiling on it. A plain script tag, so it shares the one scope
-     the rest of the front-end has, and it is first so everything it declares is
-     there before the script below runs. -->
-<script src="{{FLOW_SCRIPT_URL}}"></script>
-<script>
-{{APP_SCRIPT}}
-</script>
+<!-- The front-end, over the asset protocol rather than inline: the page is handed
+     to WebView2 as one string with a ceiling on it and this was 88% of it. A plain
+     script tag, not a module, because the fragments are written as one shared
+     scope. -->
+<script src="{{APP_SCRIPT_URL}}"></script>
 </body>
 </html>

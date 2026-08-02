@@ -168,9 +168,9 @@ let graphViewOpen = false;
 // Markdown files are badged with the app's own leaf mark. The host inlines the
 // same glyph the header uses, so the row tints it via stroke/fill currentColor
 // rather than shipping a fixed color.
-const LEAF_FILE_ICON = `{{LEAF_ICON_SVG}}`;
+const LEAF_FILE_ICON = `<span class="lt-icon lt-icon-leaf"></span>`;
 // Sending a vault to GitHub. Inlined the same way the rest are.
-const SYNC_ICON_SVG = `{{SYNC_ICON_SVG}}`;
+const SYNC_ICON_SVG = `<span class="lt-icon lt-icon-sync"></span>`;
 // What the host last said about each vault's repository, by id. Kept so
 // reopening the panel shows what it knew rather than blanking while git is
 // asked again.
@@ -179,11 +179,11 @@ const vaultGitByVault = new Map();
 // A vault's glyph, inlined from the same files the host stamps into the
 // switcher's button, so the button and its menu can never drift apart. Open is
 // the vault you are in; closed is one you are not.
-const CLOUD_ICON_SVG = `{{CLOUD_ICON_SVG}}`;
-const PACKAGE_OPEN_ICON_SVG = `{{PACKAGE_OPEN_ICON_SVG}}`;
-const PACKAGE_ICON_SVG = `{{PACKAGE_ICON_SVG}}`;
+const CLOUD_ICON_SVG = `<span class="lt-icon lt-icon-cloud"></span>`;
+const PACKAGE_OPEN_ICON_SVG = `<span class="lt-icon lt-icon-package-open"></span>`;
+const PACKAGE_ICON_SVG = `<span class="lt-icon lt-icon-package"></span>`;
 // And the plain folder, for the things that really are folders.
-const FOLDER_ICON_SVG = `{{FOLDER_ICON_SVG}}`;
+const FOLDER_ICON_SVG = `<span class="lt-icon lt-icon-folder"></span>`;
 // The tick on the switcher's active row, and the mark on New vault…. Inline like
 // the folder glyph so both take the row's color from currentColor, and so every
 // row carries one and the labels line up.
@@ -193,7 +193,7 @@ const MENU_PLUS_SVG = '<svg class="library-folder-icon" xmlns="http://www.w3.org
 // sliders the app's own Settings wears, because that panel is this vault's
 // settings. Visible on the row, not behind a right-click: a menu you have to
 // guess at is a menu nobody finds.
-const MENU_SETTINGS_SVG = `{{SETTINGS_ICON_SVG}}`;
+const MENU_SETTINGS_SVG = `<span class="lt-icon lt-icon-settings"></span>`;
 const MENU_TRASH_SVG = '<svg class="library-folder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>';
 const BACK_ARROW_SVG = '<svg class="library-folder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>';
 // Vaults. A vault is a folder the app treats as a library root; nothing is

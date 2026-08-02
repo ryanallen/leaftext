@@ -100,7 +100,12 @@ const APP_SHELL_HTML: &str = include_str!("assets/app-shell.html");
 /// one scope — the page has no module loader. Order is load-bearing: the last
 /// fragment ends with the bootstrap call that must run after everything else.
 const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
-    // First: the state more than one fragment touches, in scope before any of
+    // The flowchart sheet first: the grammar, then the sheet that asks it. Mermaid
+    // draws the canvas, so there is no layout of ours in between — and it led the
+    // page's script tags before the two became one file, so it leads here.
+    include_str!("assets/shell/flow-model.js"),
+    include_str!("assets/shell/flow-canvas.js"),
+    // Then the state more than one fragment touches, in scope before any of
     // them run. See the file for why it cannot live with its own subject.
     include_str!("assets/shell/state.js"),
     include_str!("assets/shell/dom.js"),
@@ -130,27 +135,15 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/shell/minimap.js"),
 ];
 
-/// The flowchart sheet: the grammar, then the sheet that asks it. Mermaid draws
-/// the canvas, so there is no layout of ours in between.
+/// The whole front-end, joined and served as `app.js` over the asset protocol.
 ///
-/// Served as `flow.js` over the asset protocol rather than inlined, because the
-/// shell goes to WebView2 as one string with a ceiling on it and these two are
-/// the largest pair in the front-end. Still one script tag and one scope — the
-/// page has no module loader — and it loads before the inline script, so
-/// everything it declares is there when that one runs.
-const APP_SHELL_FLOW_SCRIPT_PARTS: &[&str] = &[
-    include_str!("assets/shell/flow-model.js"),
-    include_str!("assets/shell/flow-canvas.js"),
-];
-
-fn app_shell_script() -> &'static str {
+/// The page goes to WebView2 as one string with a ~2 MB ceiling, and the script was
+/// 505,232 of its 576,693 characters. Served instead, the page is a skeleton — and
+/// because no fragment carries a placeholder any more, this is a join and nothing
+/// else: no substitution pass, and one file on the wire rather than two.
+pub(crate) fn app_shell_script() -> &'static str {
     static SCRIPT: OnceLock<String> = OnceLock::new();
     SCRIPT.get_or_init(|| APP_SHELL_SCRIPT_PARTS.concat())
-}
-
-pub(crate) fn app_shell_flow_script() -> &'static str {
-    static SCRIPT: OnceLock<String> = OnceLock::new();
-    SCRIPT.get_or_init(|| APP_SHELL_FLOW_SCRIPT_PARTS.concat())
 }
 pub const LOCAL_IMAGE_PROTOCOL: &str = "leaf-image";
 const LOCAL_IMAGE_HOST: &str = "local";
@@ -794,91 +787,53 @@ fn auto_link_glossary(body_html: String, doc_dir: &Path) -> String {
     link_terms_in_html(&body_html, &terms)
 }
 
-/// The shell's icon placeholders and the SVG each takes. A new icon is one row
-/// here; the placeholder test proves none is left unfilled.
-const APP_SHELL_ICONS: &[(&str, &str)] = &[
-    ("{{LEAF_ICON_SVG}}", LEAF_ICON_SVG),
-    ("{{BACK_ICON_SVG}}", BACK_ICON_SVG),
-    ("{{FORWARD_ICON_SVG}}", FORWARD_ICON_SVG),
-    ("{{SETTINGS_ICON_SVG}}", SETTINGS_ICON_SVG),
-    ("{{OPEN_LIBRARY_ICON_SVG}}", OPEN_LIBRARY_ICON_SVG),
-    ("{{OPEN_ICON_SVG}}", OPEN_ICON_SVG),
-    ("{{NEW_ICON_SVG}}", NEW_ICON_SVG),
-    ("{{CODE_VIEW_ICON_SVG}}", CODE_VIEW_ICON_SVG),
-    ("{{DOCUMENT_ICON_SVG}}", DOCUMENT_ICON_SVG),
-    ("{{SYNC_ICON_SVG}}", SYNC_ICON_SVG),
-    ("{{SPEED_READER_ON_ICON_SVG}}", SPEED_READER_ON_ICON_SVG),
-    ("{{SPEED_READER_OFF_ICON_SVG}}", SPEED_READER_OFF_ICON_SVG),
-    ("{{LOCK_CLOSED_ICON_SVG}}", LOCK_CLOSED_ICON_SVG),
-    ("{{LOCK_OPEN_ICON_SVG}}", LOCK_OPEN_ICON_SVG),
-    ("{{WAND_ICON_SVG}}", WAND_ICON_SVG),
-    ("{{CLOUD_ICON_SVG}}", CLOUD_ICON_SVG),
-    ("{{PACKAGE_OPEN_ICON_SVG}}", PACKAGE_OPEN_ICON_SVG),
-    ("{{PACKAGE_ICON_SVG}}", PACKAGE_ICON_SVG),
-    ("{{FOLDER_ICON_SVG}}", FOLDER_ICON_SVG),
-    ("{{GRAPH_ICON_SVG}}", GRAPH_ICON_SVG),
-    ("{{GRIP_ICON_SVG}}", GRIP_ICON_SVG),
-    ("{{CLOSE_ICON_SVG}}", CLOSE_ICON_SVG),
-    ("{{TEXT_ICON_SVG}}", TEXT_ICON_SVG),
-    ("{{HEADING_ICON_SVG}}", HEADING_ICON_SVG),
-    ("{{LIST_ICON_SVG}}", LIST_ICON_SVG),
-    ("{{QUOTE_ICON_SVG}}", QUOTE_ICON_SVG),
-    ("{{TABLE_ICON_SVG}}", TABLE_ICON_SVG),
-    ("{{IMAGE_ICON_SVG}}", IMAGE_ICON_SVG),
-    ("{{DIVIDER_ICON_SVG}}", DIVIDER_ICON_SVG),
-    ("{{COMMENT_ICON_SVG}}", COMMENT_ICON_SVG),
-    ("{{WORKFLOW_ICON_SVG}}", WORKFLOW_ICON_SVG),
-    ("{{ZOOM_IN_ICON_SVG}}", ZOOM_IN_ICON_SVG),
-    ("{{ZOOM_OUT_ICON_SVG}}", ZOOM_OUT_ICON_SVG),
-    ("{{FIT_ICON_SVG}}", FIT_ICON_SVG),
-    ("{{BOLD_ICON_SVG}}", BOLD_ICON_SVG),
-    ("{{ITALIC_ICON_SVG}}", ITALIC_ICON_SVG),
-    ("{{STRIKETHROUGH_ICON_SVG}}", STRIKETHROUGH_ICON_SVG),
-    ("{{LINK_ICON_SVG}}", LINK_ICON_SVG),
-    ("{{MISSING_IMAGE_ICON_SVG}}", MISSING_IMAGE_ICON_SVG),
-];
+/// The page, with the five things only the host knows filled in: the script, the
+/// theme bootstrap, the theme picker's cards, and two asset URLs whose scheme is
+/// the platform's to choose. No icon is substituted — every one is a class in
+/// `icons.css`, so the drawings are served with the stylesheet instead of pasted
+/// into this string.
+/// Every color, value, icon and component on one page, generated from `design/` by
+/// `just bundle-gallery` so it cannot fall behind what the app draws.
+///
+/// The stylesheet goes *inside* it rather than linked, because this page is opened in
+/// the browser: `leaf-asset://` is the app's own scheme and nothing outside the web
+/// view can fetch it. Inlined, the file stands alone — real fonts, real theme.
+pub fn gallery_html() -> &'static str {
+    static GALLERY: OnceLock<String> = OnceLock::new();
+    const GALLERY_HTML: &str = include_str!("assets/gallery.html");
+
+    GALLERY.get_or_init(|| {
+        GALLERY_HTML.replace(
+            "<link rel=\"stylesheet\" href=\"{{APP_CSS_URL}}\">",
+            &format!("<style>{}</style>", reading_mode_css()),
+        )
+    })
+}
+
+/// Write the gallery somewhere the browser can open it, and answer with the path.
+/// The app's own data folder, not a scratch file that disappears: reopening the same
+/// path replaces it, so this never piles up.
+pub fn write_gallery_page() -> io::Result<PathBuf> {
+    let path = app_data_dir()
+        .unwrap_or_else(std::env::temp_dir)
+        .join("leaftext-gallery.html");
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    fs::write(&path, gallery_html())?;
+    Ok(path)
+}
 
 pub fn app_shell_html() -> String {
-    let mut html = APP_SHELL_HTML
-        .replace("{{APP_SCRIPT}}", app_shell_script())
+    APP_SHELL_HTML
+        .replace("{{APP_SCRIPT_URL}}", &bundled_asset_url("app.js"))
         .replace("{{THEME_BOOTSTRAP_SCRIPT}}", &theme_bootstrap_script())
         .replace("{{APP_CSS_URL}}", &bundled_asset_url("app.css"))
-        .replace("{{FLOW_SCRIPT_URL}}", &bundled_asset_url("flow.js"))
         .replace("{{THEME_ITEMS}}", &theme_items_html())
-        .replace(
-            "{{MERMAID_SCRIPT_URL}}",
-            &bundled_asset_url("mermaid.min.js"),
-        )
-        .replace("{{PIXI_SCRIPT_URL}}", &bundled_asset_url("pixi.min.js"))
-        .replace(
-            "{{PIXI_UNSAFE_EVAL_SCRIPT_URL}}",
-            &bundled_asset_url("pixi-unsafe-eval.min.js"),
-        )
-        .replace(
-            "{{D3_FORCE_SCRIPT_URL}}",
-            &bundled_asset_url("d3-force.min.js"),
-        )
-        .replace(
-            "{{KATEX_SCRIPT_URL}}",
-            &bundled_asset_url("katex/katex.min.js"),
-        )
         .replace(
             "{{KATEX_CSS_URL}}",
             &bundled_asset_url("katex/katex.min.css"),
         )
-        .replace(
-            "{{MONACO_SCRIPT_URL}}",
-            &bundled_asset_url("monaco/monaco.js"),
-        )
-        .replace(
-            "{{MONACO_CSS_URL}}",
-            &bundled_asset_url("monaco/monaco.css"),
-        );
-    for (placeholder, svg) in APP_SHELL_ICONS {
-        let normalized = normalize_svg_icon_colors(svg);
-        html = html.replace(placeholder, normalized.trim());
-    }
-    html
 }
 
 /// Selected-state check badge shown on the active theme card (Heroicons
@@ -898,7 +853,8 @@ const THEME_SWATCH_TOKENS: &[&str] = &[
 
 /// Spinner shown over a card while the picker loads that theme's web font. The
 /// shell adds `.is-loading` on open and clears it once the font is ready.
-const THEME_ITEM_SPINNER: &str = "<span class=\"theme-item-spinner\" aria-hidden=\"true\"></span>";
+const THEME_ITEM_SPINNER: &str =
+    "<span class=\"lt-spinner theme-item-spinner\" aria-hidden=\"true\"></span>";
 
 /// The card wears the theme's own paper, ink and heading font, per appearance, so
 /// it reads as a swatch of the theme itself. `--card-font` is applied only once
@@ -988,6 +944,28 @@ fn theme_bootstrap_script() -> String {
     THEME_BOOTSTRAP_JS
         .replace("{{VALID_FAMILIES}}", &theme_family_ids_json())
         .replace("{{FAMILY_FONTS}}", &theme_web_font_hrefs_json())
+        .replace("{{ASSET_URLS}}", &vendored_asset_urls_json())
+}
+
+/// The vendored runtimes' URLs, as one JSON object for `window.__lt.assets`. Each
+/// is a `leaf-asset://` URL whose spelling depends on the platform, so the page
+/// cannot hold them as literals — and a fragment that held one could not be served
+/// as a file.
+fn vendored_asset_urls_json() -> String {
+    let entries = [
+        ("mermaid", "mermaid.min.js"),
+        ("katex", "katex/katex.min.js"),
+        ("pixi", "pixi.min.js"),
+        ("pixiUnsafeEval", "pixi-unsafe-eval.min.js"),
+        ("d3Force", "d3-force.min.js"),
+        ("monaco", "monaco/monaco.js"),
+        ("monacoCss", "monaco/monaco.css"),
+    ];
+    let pairs: Vec<String> = entries
+        .iter()
+        .map(|(key, asset)| format!("\"{key}\":\"{}\"", bundled_asset_url(asset)))
+        .collect();
+    format!("{{{}}}", pairs.join(","))
 }
 
 /// Reverse-DNS app id, and the two halves it is built from. macOS names the

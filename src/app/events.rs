@@ -147,6 +147,11 @@ pub(crate) enum IpcCommand {
     GoForward { scroll_anchor: ScrollAnchor },
     #[serde(rename = "setMinimapEnabled")]
     SetMinimapEnabled { enabled: bool },
+    /// Draw every component, color, value and icon on one page and open it in the
+    /// browser. Not a view in the app: it is for looking at the interface from
+    /// outside it, beside the app rather than inside.
+    #[serde(rename = "openGallery")]
+    OpenGallery,
     #[serde(rename = "setPagerEnabled")]
     SetPagerEnabled { enabled: bool },
     #[serde(rename = "setSpeedReaderEnabled")]

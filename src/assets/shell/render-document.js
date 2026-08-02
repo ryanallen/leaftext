@@ -1,7 +1,7 @@
 // The header's plus, for the home screen's New document button. A function, not
 // a const: theme.js runs renderState() as it loads, long before this fragment.
 function newIconSvg() {
-  return `{{NEW_ICON_SVG}}`;
+  return `<span class="lt-icon lt-icon-new"></span>`;
 }
 function renderState() {
   const state = currentState || { recent: [], tabs: [], active: null, document: null };

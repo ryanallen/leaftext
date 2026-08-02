@@ -30,11 +30,14 @@ function shellSource() {
     if (!list) throw new Error(`could not find ${constant} in src/lib.rs`);
     return [...list[1].matchAll(/include_str!\("assets\/(.*?)"\)/g)].map((m) => m[1]);
   };
-  // The flowchart editor is a script tag of its own, loaded before the inline
-  // one — so it is first here too, or this would boot them in an order the page
-  // never uses.
-  const names = partsNamed('APP_SHELL_FLOW_SCRIPT_PARTS').concat(partsNamed('APP_SHELL_SCRIPT_PARTS'));
+  // One list, served as one file behind the page's one script tag — so booting them
+  // joined in this order is exactly what the web view does.
+  const names = partsNamed('APP_SHELL_SCRIPT_PARTS');
   if (names.length < 10) throw new Error(`expected the whole fragment list, got ${names.length}`);
+  const page = readFileSync(join(root, 'src/assets/app-shell.html'), 'utf8');
+  const tags = (page.match(/<script/g) || []).length;
+  // The theme bootstrap is the other one, and it runs before this in its own scope.
+  if (tags !== 2) throw new Error(`the page should carry two script tags, found ${tags}`);
   return {
     names,
     source: names.map((name) => readFileSync(join(root, 'src/assets', name), 'utf8')).join(''),
@@ -238,6 +241,19 @@ function runShell(source) {
   sandbox.globalThis = sandbox;
   // The theme bootstrap normally runs first and publishes these; it lives in a
   // separate <script>, so stand them in.
+  // It publishes the vendored runtimes' URLs too, which the fragments destructure
+  // on load — so a missing entry here reads as a boot failure, not a stub.
+  sandbox.__lt = {
+    assets: {
+      mermaid: 'leaf-asset://mermaid.min.js',
+      katex: 'leaf-asset://katex/katex.min.js',
+      pixi: 'leaf-asset://pixi.min.js',
+      pixiUnsafeEval: 'leaf-asset://pixi-unsafe-eval.min.js',
+      d3Force: 'leaf-asset://d3-force.min.js',
+      monaco: 'leaf-asset://monaco/monaco.js',
+      monacoCss: 'leaf-asset://monaco/monaco.css',
+    },
+  };
   sandbox.leafTheme = {
     getMode: () => 'system',
     getFamily: () => 'fern',

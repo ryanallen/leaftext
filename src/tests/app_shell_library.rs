@@ -4,7 +4,7 @@ use super::*;
 
 #[test]
 fn a_narrow_window_opens_the_library_as_a_sliding_sheet() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         // Clearing the user-closed flag is not enough on a narrow window:
@@ -66,7 +66,7 @@ fn a_narrow_window_opens_the_library_as_a_sliding_sheet() {
 
 #[test]
 fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         // Folding is driven by the tab strip actually overflowing, not a width
@@ -163,7 +163,7 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
 
 #[test]
 fn app_shell_wires_library_pane_open_close_and_resize() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // Markup: the resize divider on the pane edge and the library toggle button,
@@ -175,9 +175,7 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
 
     // The toggle icon is the bundled asset, normalized to currentColor like the
     // other toolbar icons (no stray literal stroke color survives).
-    let open_icon = normalize_svg_icon_colors(OPEN_LIBRARY_ICON_SVG);
-    assert!(open_icon.contains("stroke=\"currentColor\""));
-    assert!(html.contains(open_icon.trim()));
+    assert_icon(&html, "open-library");
 
     // CSS: the collapsed-grid override and the divider hit target.
     assert!(css.contains(
@@ -210,7 +208,7 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
 
 #[test]
 fn app_shell_includes_library_pane_settings_and_wording() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // Layout: the shell driven by the CSS variable — rail, reader, the minimap's
@@ -273,7 +271,7 @@ fn app_shell_includes_library_pane_settings_and_wording() {
 
 #[test]
 fn changing_document_does_not_change_which_view_you_are_in() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // Opening a file from the pane while the map is up must not snap back to the
     // reading view: picking what to look at is not picking how. Only a gesture
@@ -308,7 +306,7 @@ fn changing_document_does_not_change_which_view_you_are_in() {
 
 #[test]
 fn the_map_waits_with_the_same_spinner_a_slow_document_does() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // A line of text in the corner reads as a result, not a wait. The overlay is
     // shared with the reader, so it tracks who raised it: a document rendering
@@ -325,7 +323,7 @@ fn the_map_waits_with_the_same_spinner_a_slow_document_does() {
 
 #[test]
 fn the_map_opens_framing_everything_and_then_leaves_the_view_alone() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // A view parked at 1:1 on an arbitrary center cannot answer the first thing
     // a map is asked: how much is there. Two documents sit lost in the middle of
@@ -350,7 +348,7 @@ fn the_map_opens_framing_everything_and_then_leaves_the_view_alone() {
 
 #[test]
 fn a_redraw_of_the_same_map_is_not_a_redraw() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // The host redraws the graph for any change to the vault's text, so the page
     // is handed the same picture over and over while someone reads it. Tearing
@@ -452,7 +450,7 @@ fn saving_the_document_you_are_reading_still_updates_the_sync_count() {
 
 #[test]
 fn one_growl_serves_every_thing_worth_saying_in_passing() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // One growl for both tones, rather than a second thing in the same corner
@@ -477,7 +475,7 @@ fn one_growl_serves_every_thing_worth_saying_in_passing() {
 
 #[test]
 fn a_vault_with_work_to_send_says_so_in_its_own_header() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // Two clicks down a settings panel is where a control goes to be forgotten.
@@ -491,7 +489,7 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
     assert!(css.contains(".library-sync[hidden] {"));
     // A count, not a dot: "3" is a reason to press it.
     assert!(html.contains("(repo.changed || 0) + (repo.ahead || 0)"));
-    assert!(css.contains(".library-sync.is-busy svg {"));
+    assert!(css.contains(".library-sync.is-busy .lt-icon {"));
 
     // The count is read off disk, on a path that never asks the network. The
     // panel's reading is the one that runs `gh auth status`; doing that on every
@@ -558,14 +556,12 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
 
 #[test]
 fn a_vault_that_reaches_github_wears_a_cloud() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // Where a box says "a collection, here", a cloud says "and somewhere else as
     // well" -- which is the whole of what syncing buys, and the one thing worth
     // knowing at a glance about a vault you are not currently in.
-    let cloud = normalize_svg_icon_colors(CLOUD_ICON_SVG);
-    assert!(cloud.contains("stroke=\"currentColor\""));
-    assert!(html.contains(cloud.trim()));
+    assert_icon(&html, "cloud");
     assert!(html.contains("const CLOUD_ICON_SVG = `"));
     assert!(html.contains("function vaultGlyph(current, id) {"));
     assert!(html.contains("  if (vaultSyncs(id)) return CLOUD_ICON_SVG;"));
@@ -594,7 +590,7 @@ fn a_vault_that_reaches_github_wears_a_cloud() {
 
 #[test]
 fn a_vault_can_be_put_on_github_from_its_own_settings() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // Opening the panel reads the folder; everything after that is a button.
@@ -645,7 +641,7 @@ fn a_vault_can_be_put_on_github_from_its_own_settings() {
 
 #[test]
 fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // Not a checkbox buried in Settings: the bar carries it, in a recess beside
@@ -722,10 +718,8 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
 
     // Both glyphs ship, and the pressed state picks which one shows — swapping
     // innerHTML would rebuild the icon under the pointer on every render.
-    for icon in [LOCK_CLOSED_ICON_SVG, LOCK_OPEN_ICON_SVG] {
-        let icon = normalize_svg_icon_colors(icon);
-        assert!(icon.contains("stroke=\"currentColor\""));
-        assert!(html.contains(icon.trim()));
+    for icon in ["lock-closed", "lock-open"] {
+        assert_icon(&html, icon);
     }
     assert!(css.contains(".reader-subtool .reader-glyph-on,"));
     assert!(css.contains(".reader-subtool[aria-pressed=\"true\"] .reader-glyph-off {"));
@@ -739,13 +733,8 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     // The speed reader stays one preference for the whole app -- a way of
     // reading, not a property of a document -- driven from the reading toolbar's
     // own control alone.
-    for icon in [SPEED_READER_ON_ICON_SVG, SPEED_READER_OFF_ICON_SVG] {
-        let icon = normalize_svg_icon_colors(icon);
-        assert!(
-            icon.contains("stroke=\"currentColor\""),
-            "the icon's stroke must be normalized to currentColor"
-        );
-        assert!(html.contains(icon.trim()));
+    for icon in ["speed-reader-on", "speed-reader-off"] {
+        assert_icon(&html, icon);
     }
     assert!(
         html.contains("send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });")
@@ -767,7 +756,7 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
 
 #[test]
 fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // On the page, in the reader's own cell — not in a 240px sidebar where its
@@ -828,12 +817,15 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     assert!(html.contains("function closeGraphView()"));
     assert!(html.contains("closeGraphView();"));
 
-    // PixiJS + d3-force still load lazily from the bundled-asset protocol.
-    assert!(html.contains("const PIXI_SCRIPT_URL = '"));
-    assert!(html.contains("const D3_FORCE_SCRIPT_URL = '"));
-    assert!(html.contains("leaf-asset") && html.contains("pixi.min.js"));
+    // PixiJS + d3-force still load lazily from the bundled-asset protocol, whose
+    // URLs are injected on window.__lt rather than written into the fragment.
+    assert!(html.contains("pixi: PIXI_SCRIPT_URL,"));
+    assert!(html.contains("d3Force: D3_FORCE_SCRIPT_URL,"));
+    assert!(html.contains("pixiUnsafeEval: PIXI_UNSAFE_EVAL_SCRIPT_URL,"));
+    assert!(html.contains("} = window.__lt.assets;"));
+    assert!(html.contains(r#""pixi":"#) && html.contains("pixi.min.js"));
+    assert!(html.contains("leaf-asset"));
     assert!(html.contains("window.d3.forceSimulation"));
-    assert!(html.contains("const PIXI_UNSAFE_EVAL_SCRIPT_URL = '"));
     assert!(!html.contains("script-src 'self' 'unsafe-inline' 'unsafe-eval'"));
 
     // Data still flows over the same command and callback, and a node still
@@ -856,7 +848,7 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
 
 #[test]
 fn the_graph_needs_a_document_and_never_a_vault() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // What the map is of is the open document, so that — and only that — is what
     // entering it requires. No vault appears in this test: a document outside every
@@ -886,7 +878,7 @@ fn the_graph_needs_a_document_and_never_a_vault() {
 
 #[test]
 fn a_web_address_is_a_node_drawn_as_a_ring_and_opened_in_the_browser() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // A ring rather than a disc, so it reads as "not one of your files" before you
@@ -941,7 +933,7 @@ fn a_web_address_is_a_node_drawn_as_a_ring_and_opened_in_the_browser() {
 
 #[test]
 fn library_follows_and_highlights_the_active_file() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // The active tab's path is what the library highlights as current.
@@ -972,7 +964,7 @@ fn library_follows_and_highlights_the_active_file() {
 
 #[test]
 fn library_breadcrumbs_sit_above_the_search_box() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // Its own band, above the search row, with the graph toggle at its right.
@@ -1022,29 +1014,29 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     assert!(css.contains("padding-top: var(--library-chrome-height);"));
     assert!(css.contains("top: calc(var(--library-app-bar) + var(--library-crumbs-height));"));
 
-    // The toggle carries the bundled graph mark, normalized to currentColor like
-    // every other toolbar icon.
-    let graph_icon = normalize_svg_icon_colors(GRAPH_ICON_SVG);
-    assert!(graph_icon.contains("stroke=\"currentColor\""));
-    assert!(html.contains(graph_icon.trim()));
+    assert_icon(&html, "graph");
+    // Active, it swaps to the bolder drawing rather than thickening a stroke a mask
+    // does not have.
+    assert!(reading_mode_css().contains("--lt-icon-graph-heavy:"));
 }
 
 #[test]
 fn a_vault_row_opens_its_settings_with_the_settings_glyph() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     // The same sliders the app's own Settings wears — that panel is this vault's
     // settings, so it should not be a second, private symbol for the same idea.
-    let icon = normalize_svg_icon_colors(SETTINGS_ICON_SVG);
-    assert!(html.contains(&format!("const MENU_SETTINGS_SVG = `{}`;", icon.trim())));
+    assert_icon(&html, "settings");
+    assert!(html
+        .contains("const MENU_SETTINGS_SVG = `<span class=\"lt-icon lt-icon-settings\"></span>`;"));
     assert!(html.contains("edit.innerHTML = MENU_SETTINGS_SVG;"));
-    // And the placeholder really was filled: a raw `{{...}}` inside the script
-    // would be a template literal the page shows as text.
-    assert!(!html.contains("{{SETTINGS_ICON_SVG}}"));
+    // No placeholder survives in the page: a raw `{{...}}` would be text on screen.
+    // The script's own `{{` is mermaid's hexagon, so the page is what is checked.
+    assert!(!app_shell_html().contains("_ICON_SVG}}"));
 }
 
 #[test]
 fn the_vault_switcher_is_its_own_button_beside_the_trail() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // Its own control, left of the breadcrumb — not the first crumb. A crumb is
@@ -1057,10 +1049,8 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     // host and inlined into the page, so the two cannot drift. A package, not a
     // folder: a vault is a whole collection, and it has to read as different
     // from the plain directories listed below it.
-    for icon in [PACKAGE_OPEN_ICON_SVG, PACKAGE_ICON_SVG] {
-        let icon = normalize_svg_icon_colors(icon);
-        assert!(icon.contains("stroke=\"currentColor\""));
-        assert!(html.contains(icon.trim()));
+    for icon in ["package-open", "package"] {
+        assert_icon(&html, icon);
     }
     assert!(html.contains("const PACKAGE_OPEN_ICON_SVG = `"));
     assert!(html.contains("const PACKAGE_ICON_SVG = `"));
@@ -1110,7 +1100,7 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
 
 #[test]
 fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // A visible button on the row, not a right-click: rename, re-point and
@@ -1169,7 +1159,7 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
 
 #[test]
 fn library_row_context_menu_offers_file_actions() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // The right-click menu is built from a list of file actions, ordered with
     // the destructive delete flagged and set apart.
@@ -1207,7 +1197,7 @@ fn leaving_the_map_for_a_document_shows_the_spinner() {
     // until the document is ready rather than flashing the file you were on. The
     // wait is a whole document being read, so with the spinner suppressed the map
     // just sits there looking frozen.
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // The gesture arms the exit before the request goes out.
     assert!(html.contains("        graphExitPending = true;"));
@@ -1229,7 +1219,7 @@ fn going_from_the_map_to_the_source_does_not_lay_out_the_reading_view_on_the_way
     // whole document — and going map -> source by dropping the map first means
     // laying out a document only to replace it a moment later, which shows up as
     // the reading view flashing under a spinner between the two views.
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // The map is held, exactly as a node click holds it.
     assert!(html.contains("if (graphViewOpen && view === 'code' && !codeViewActive) {"));

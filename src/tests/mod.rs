@@ -44,6 +44,33 @@ fn assert_contains(haystack: &str, needle: &str) {
     );
 }
 
+/// The page and the front-end script together. The script is served as `app.js`
+/// rather than inlined, so a test that asserts on both has to be handed both — one
+/// string, in load order, which is what the web view ends up with anyway.
+fn app_shell_page() -> String {
+    format!(
+        "{}
+{}",
+        app_shell_html(),
+        app_shell_script()
+    )
+}
+
+/// An icon reaches the page as a name, not a drawing: the element carries
+/// `lt-icon lt-icon-<name>` and the stylesheet holds the mask. Both halves are
+/// checked, because either alone draws nothing.
+fn assert_icon(html: &str, name: &str) {
+    assert!(
+        html.contains(&format!("lt-icon lt-icon-{name}")),
+        "expected the page to wear the {name} icon"
+    );
+    let css = reading_mode_css();
+    assert!(
+        css.contains(&format!(".lt-icon-{name} {{")),
+        "the stylesheet has no .lt-icon-{name} to draw"
+    );
+}
+
 /// One rule's declarations, from its selector to the first closing brace. The
 /// compiled stylesheet has no nested rules, so the first `}` is always the end.
 fn rule_body<'a>(css: &'a str, selector: &str) -> &'a str {

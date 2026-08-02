@@ -1,0 +1,132 @@
+#!/usr/bin/env node
+// The published design-system page, written from design/ so it cannot drift from what
+// the app draws. Every count and every name in it is read, not typed.
+//
+//   node scripts/bundle-design-docs.mjs           write the page
+//   node scripts/bundle-design-docs.mjs --check   fail on drift (`just verify`)
+//
+// It is a summary and a pointer, not a copy: the four files under design/ are the
+// source and are readable on their own, so repeating all 284 rows here would only be
+// a second place to go stale. What the page carries is the shape of the system, the
+// counts, and the commands.
+
+import { readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const check = process.argv.includes('--check');
+const target = 'docs/02-development/05-design-system.md';
+
+function rows(file) {
+  const out = [];
+  let group = '';
+  for (const line of readFileSync(join(root, 'design', file), 'utf8').split('\n')) {
+    if (line.startsWith('## ')) group = line.slice(3).trim();
+    if (!line.startsWith('|')) continue;
+    const cells = line.split('|').slice(1, -1).map((c) => c.trim());
+    if (!cells.length || cells.some((c) => /^-{3,}$/.test(c))) continue;
+    if (['Token', 'Component', 'Name'].includes(cells[0])) continue;
+    out.push({ group, cells });
+  }
+  return out;
+}
+
+const colors = rows('colors.md');
+const tokens = rows('tokens.md');
+const icons = rows('icons.md');
+const components = rows('components.md');
+const themes = readFileSync(join(root, 'src/assets/themes.md'), 'utf8')
+  .split('\n')
+  .filter((line) => line.startsWith('**Family ID:**')).length;
+
+const group = (list) => {
+  const counts = new Map();
+  for (const { group: g } of list) counts.set(g, (counts.get(g) || 0) + 1);
+  return counts;
+};
+
+const lines = [];
+lines.push('<!-- Generated from design/ by `just bundle-design-docs`. Do not edit. -->');
+lines.push('# Design system');
+lines.push('');
+lines.push(`> Every value in Leaftext's interface comes from a token. ${colors.length} of them are colors, which each theme sets for itself; ${tokens.length} are everything else, one value for the whole app. Nothing is written by hand, and a check fails the build when something is.`);
+lines.push('');
+lines.push('Four files under `design/` are the source. Each is plain Markdown, so Leaftext opens them.');
+lines.push('');
+lines.push('| File | Holds | Compiles to |');
+lines.push('| --- | --- | --- |');
+lines.push(`| \`design/colors.md\` | ${colors.length} color names and what each is for — no values, because a color's value belongs to a theme | the token contract in \`src/theme.rs\` |`);
+lines.push(`| \`design/tokens.md\` | ${tokens.length} values that do not change with the theme | \`src/assets/tokens.css\` |`);
+lines.push(`| \`design/icons.md\` | ${icons.length} icons | \`src/assets/icons.css\`, one mask class each |`);
+lines.push(`| \`design/components.md\` | ${components.length} components, and the markup each is drawn with | \`src/assets/gallery.html\` |`);
+lines.push('');
+lines.push('## Colors');
+lines.push('');
+lines.push(`Grouped by what they dress. Every one of the ${themes} theme families gives all ${colors.length} a value, in light and in dark, and the app refuses to start if one is missing.`);
+lines.push('');
+lines.push('| Group | Colors |');
+lines.push('| --- | --- |');
+for (const [name, count] of group(colors)) lines.push(`| ${name} | ${count} |`);
+lines.push('');
+lines.push('See [Theming](04-theming.md) for how a theme is written and how the compiler checks it.');
+lines.push('');
+lines.push('## Values');
+lines.push('');
+lines.push('One value each, whatever theme is on.');
+lines.push('');
+lines.push('| Group | Tokens |');
+lines.push('| --- | --- |');
+for (const [name, count] of group(tokens)) lines.push(`| ${name} | ${count} |`);
+lines.push('');
+lines.push('Widths, heights and positional offsets are **not** tokens: they are one component\'s geometry, used once, and a name for each would buy nothing. Nor is a document\'s `em` sizing, which follows the text on purpose.');
+lines.push('');
+lines.push('## Icons');
+lines.push('');
+lines.push(`${icons.length} icons, each a class drawn with \`mask-image\`. A mask reads only transparency, so the icon takes the color of whatever it sits in — and a drawing used in five places is in the app once. A control with a bolder active state swaps to a second mask rather than thickening a stroke a mask does not have.`);
+lines.push('');
+lines.push('## Components');
+lines.push('');
+lines.push(`${components.length} components. Each row names its class family, what builds it, and the markup the gallery draws it with — so a component that loses its styling, or gains a class nobody listed, fails the build.`);
+lines.push('');
+lines.push('| Component | Class family |');
+lines.push('| --- | --- |');
+for (const { cells } of components) lines.push(`| ${cells[0]} | \`.${cells[1]}\` |`);
+lines.push('');
+lines.push('## Looking at it');
+lines.push('');
+lines.push('**Settings → Design gallery** writes every color, value, icon and component onto one page and opens it in your browser, painted by the app\'s own stylesheet in the theme you are using.');
+lines.push('');
+lines.push('## Keeping it');
+lines.push('');
+lines.push('`just verify` runs all of these. Each fails with the file and the line.');
+lines.push('');
+lines.push('| Check | Fails when |');
+lines.push('| --- | --- |');
+lines.push('| `check-tokens` | a generated token file has drifted from `design/`, a theme sets a color nothing lists, or a component row names a class family nothing styles |');
+lines.push('| `check-icons` | `icons.css` has drifted, a row names a file that is not there, or an SVG has no row |');
+lines.push('| `check-gallery` | the gallery has drifted, or a component has no sample to draw it with |');
+lines.push('| `check-literals` | a color, spacing, text size, weight, stroke, line height, letter spacing, opacity, duration, easing, shadow or layer is written by hand in `reading.css` |');
+lines.push('| `check-themes` | the embedded theme bundle has drifted from `themes/` |');
+lines.push('');
+lines.push('To change a value: edit the file under `design/`, run `just bundle-tokens` (or `bundle-icons`, `bundle-gallery`), and never edit a generated file.');
+lines.push('');
+
+const page = lines.join('\n');
+
+let current = '';
+try {
+  current = readFileSync(join(root, target), 'utf8');
+} catch {
+  current = '';
+}
+if (current === page) {
+  console.log(`design docs: ${target} matches design/`);
+  process.exit(0);
+}
+if (check) {
+  console.error(`${target} has drifted from design/ — run \`just bundle-design-docs\``);
+  process.exit(1);
+}
+writeFileSync(join(root, target), page);
+console.log(`design docs: wrote ${target}`);

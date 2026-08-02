@@ -1,6 +1,6 @@
 ---
 name: sync-tests
-description: Make the tests match the code, the way sync-docs makes the docs match the app. Names the test that covers each change, writes the ones that are missing, and says plainly what cannot be tested here (macOS-gated code, WiX, CI workflows). With no argument it works the uncommitted diff; pass a path to audit a file or folder whether or not it changed, or a git ref to work everything since it. Runs `cargo test` and `just check-shell` and never touches git. Use when the user says "sync the tests", "what test covers this", "is this tested", or before a release.
+description: Make the tests match the code, the way sync-docs makes the docs match the app. Names the test that covers each change, writes the ones that are missing, and says what cannot be tested when the change is in something this machine cannot run (Mac-only code, the installer, the GitHub workflows). With no argument it works the uncommitted diff; pass a path to audit a file or folder whether or not it changed, or a git ref to work everything since it. Runs `cargo test` and `just check-shell` and never touches git. Use when the user says "sync the tests", "what test covers this", "is this tested", or before a release.
 argument-hint: "[path | since-ref]"
 user-invocable: true
 ---
@@ -98,15 +98,17 @@ node scripts/check-shell.mjs
 Both, every time — a Rust change can break the front-end check through
 `app_shell_html()`.
 
-### 5. Say what cannot be tested here
+### 5. Say what cannot be tested — about this change, not in general
 
-Never let this go unsaid:
+If the change you audited is in one of these, say so and say which part is unproven:
 
-- `cfg(target_os = "macos")` code does not compile on Windows, so its tests do not
-  run here.
-- WiX does not run locally: `wix/main.wxs` ships unproven.
-- The workflows under `.github/` only run on GitHub.
+- Mac-only code: it does not compile on Windows, so its tests do not run here.
+- The installer recipe under `wix/`: no local runner, so it ships unproven.
+- The GitHub workflows: they only run on GitHub.
 - Anything needing a real window, live selected text, or a held pointer.
+
+If the change is in none of them, say nothing about them. A list repeated on every
+hand-back is a list nobody reads.
 
 ### 6. Hand back
 

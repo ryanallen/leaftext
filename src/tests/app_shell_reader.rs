@@ -4,7 +4,7 @@ use super::*;
 
 #[test]
 fn app_shell_decorates_blockquote_hard_break_lines_for_hanging_indent() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     assert_contains(&html, "function decorateBlockquoteLines(root = app) {");
     assert_contains(
@@ -22,7 +22,7 @@ fn app_shell_decorates_blockquote_hard_break_lines_for_hanging_indent() {
 
 #[test]
 fn app_shell_builds_collapsed_heading_outline_under_the_title() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // The builder exists, is wired into the render pipeline, and the line count
     // skips the outline's own link-only entries rather than counting them.
@@ -62,7 +62,7 @@ fn app_shell_builds_collapsed_heading_outline_under_the_title() {
 
 #[test]
 fn app_shell_renders_interactive_document_minimap() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
             "renderDocumentMinimap(state.document.minimap)",
@@ -71,7 +71,7 @@ fn app_shell_renders_interactive_document_minimap() {
             "document-minimap-content",
             "document-minimap-viewport",
             "aria-label=\"Document minimap\"",
-            "aria-hidden=\"true\"><div class=\"document-minimap-content\" aria-hidden=\"true\"></div><div class=\"document-minimap-spinner\" aria-hidden=\"true\"></div><div class=\"document-minimap-viewport\" aria-hidden=\"true\"",
+            "aria-hidden=\"true\"><div class=\"document-minimap-content\" aria-hidden=\"true\"></div><div class=\"lt-spinner document-minimap-spinner\" aria-hidden=\"true\"></div><div class=\"document-minimap-viewport\" aria-hidden=\"true\"",
             "bindDocumentMinimap();",
             "function bindDocumentMinimap() {",
             // The rail says it is working until there is a thumbnail to show: the
@@ -97,7 +97,7 @@ fn app_shell_renders_interactive_document_minimap() {
 
 #[test]
 fn app_shell_builds_minimap_preview_from_document_clone() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     for expected in [
@@ -189,7 +189,7 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
 // agree, and has to clear the top edge fade that 16px of padding left it inside.
 #[test]
 fn app_shell_opens_both_views_at_the_same_content_top_gap() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     assert_contains(&css, "--reader-content-top-gap: 88px;");
@@ -214,7 +214,7 @@ fn app_shell_opens_both_views_at_the_same_content_top_gap() {
 
 #[test]
 fn app_shell_maps_minimap_geometry_proportionally() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // The box and click/drag mapping derive from the reader's real scroll range,
     // so they track the thumbnail at any length; on tall documents the thumbnail
@@ -248,7 +248,7 @@ fn app_shell_maps_minimap_geometry_proportionally() {
 
 #[test]
 fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         "mermaid.min.js",
@@ -302,12 +302,11 @@ fn a_diagram_bound_for_a_picture_puts_its_labels_in_text() {
     // as an image drops one outright — which came out as boxes with nothing
     // written in them. Stated on every call, not only the picture's: initialize
     // merges, so a config quiet about it leaves that answer behind for the page.
-    let html = app_shell_html();
+    let html = app_shell_page();
 
-    // The picture's own call is in the flowchart editor, which is served beside
-    // the shell rather than inside it.
+    // The picture's own call is in the flowchart editor, at the head of the script.
     assert_contains(
-        app_shell_flow_script(),
+        app_shell_script(),
         "mermaid.initialize(mermaidRuntimeConfig({ htmlLabels: false }));",
     );
     assert_contains(&html, "    htmlLabels,\n    flowchart: { htmlLabels },");
@@ -316,7 +315,7 @@ fn a_diagram_bound_for_a_picture_puts_its_labels_in_text() {
 
 #[test]
 fn app_shell_loads_bundled_katex_and_renders_math_after_document_insert() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         "katex/katex.min.js",
@@ -333,7 +332,7 @@ fn app_shell_loads_bundled_katex_and_renders_math_after_document_insert() {
 
 #[test]
 fn app_shell_throttles_minimap_scroll_sync() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         "let minimapViewportFrame = 0;",
@@ -355,7 +354,7 @@ fn app_shell_throttles_minimap_scroll_sync() {
 
 #[test]
 fn app_shell_clicks_minimap_to_scroll_document() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         "const scrollToMinimapSnapshotPoint = (event) => {",
@@ -374,7 +373,7 @@ fn app_shell_clicks_minimap_to_scroll_document() {
 
 #[test]
 fn app_shell_drags_minimap_to_scroll_document() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
             "let minimapPointerId = null;",
@@ -386,7 +385,7 @@ fn app_shell_drags_minimap_to_scroll_document() {
             "const viewportTopPerScrollPixel = metrics.previewScale - previewTravel / metrics.scrollable;",
             "placeMinimapViewport(minimap, metrics, boundedScrollTop);",
             "minimapPointerOffsetY = minimapPointerOffset(event);",
-            "track.setPointerCapture(event.pointerId);",
+            "leafHoldPointer(track, event.pointerId);",
             "track.addEventListener('pointermove', (event) => {",
             "if (event.pointerId !== minimapPointerId) {",
             "dragMinimapViewportToPointer(event, minimapPointerOffsetY);",
@@ -419,7 +418,7 @@ fn app_shell_drags_minimap_to_scroll_document() {
 
 #[test]
 fn app_shell_preserves_focus_and_updates_minimap_viewport_indicator() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         "const restoreFocus = () => {",
@@ -436,7 +435,7 @@ fn app_shell_preserves_focus_and_updates_minimap_viewport_indicator() {
 
 #[test]
 fn app_shell_sizes_minimap_viewport_from_scroll_fraction() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // The box height is the reader window at thumbnail scale, placed from the
     // slide plus scaled scroll top, so it tracks the visible region at any length.
@@ -462,7 +461,7 @@ fn app_shell_sizes_minimap_viewport_from_scroll_fraction() {
 
 #[test]
 fn app_shell_sizes_minimap_track_to_available_reader_height() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         "function minimapAvailableHeight(minimap) {",
@@ -494,7 +493,7 @@ fn app_shell_sizes_minimap_track_to_available_reader_height() {
 
 #[test]
 fn app_shell_rebinds_minimap_after_document_updates() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
             "const minimapHtml = renderDocumentMinimap(state.document.minimap);",
@@ -511,7 +510,7 @@ fn app_shell_rebinds_minimap_after_document_updates() {
 
 #[test]
 fn app_shell_reader_editor_round_trips_safe_inline_html() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         "const MARKDOWN_RAW_INLINE_TAGS = new Set(['abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span', 'div']);",
@@ -527,7 +526,7 @@ fn app_shell_reader_editor_round_trips_safe_inline_html() {
 
 #[test]
 fn app_shell_save_success_clears_reader_undo_state() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     assert_contains(&html, "window.leafSaved = (path, ok, error) => {");
     assert_contains(&html, "undoableByPath.delete(path);");
@@ -535,7 +534,7 @@ fn app_shell_save_success_clears_reader_undo_state() {
 
 #[test]
 fn app_shell_resets_new_documents_to_rendered_content_top() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         "let resetReaderScrollOnNextRender = false;",
@@ -560,7 +559,7 @@ fn app_shell_resets_new_documents_to_rendered_content_top() {
 
 #[test]
 fn app_shell_clamps_reader_scroll_to_rendered_content_range() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
             "function measureReaderScrollRange(documentContent, viewportHeight) {",
@@ -591,7 +590,7 @@ fn app_shell_clamps_reader_scroll_to_rendered_content_range() {
 
 #[test]
 fn app_shell_preserves_reader_anchor_across_layout_reflow() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
             "let readerLayoutFrame = 0;",
@@ -636,7 +635,7 @@ fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
     // must record the anchor itself. Without that, the anchor keeps the pre-drag
     // position and the next late reflow — most visibly the async bottom pager landing
     // seconds after the document — restores it and throws the reader back up the page.
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         "function recordReaderScrollPosition() {",
@@ -702,7 +701,7 @@ fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
 
 #[test]
 fn app_shell_disables_minimap_without_leaving_empty_layout_column() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
             "if (!window.leafMinimap.getEnabled()) {\n    return '';\n  }",
@@ -729,7 +728,7 @@ fn app_shell_disables_minimap_without_leaving_empty_layout_column() {
 
 #[test]
 fn app_shell_routes_fragment_links_through_reader_anchor_scrolling() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     assert_contains(&html, "window.leafScrollToFragment = (fragment) => {");
     assert_contains(
@@ -767,7 +766,7 @@ fn app_shell_routes_fragment_links_through_reader_anchor_scrolling() {
 
 #[test]
 fn app_shell_preserves_external_link_routing_for_native_opening() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     assert_contains(
             &html,
@@ -783,7 +782,7 @@ fn app_shell_preserves_external_link_routing_for_native_opening() {
 
 #[test]
 fn app_shell_routes_in_page_history_through_app_navigation() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     for expected in [
         "function sendNavigationCommand(command) {",
@@ -811,7 +810,7 @@ fn app_shell_routes_in_page_history_through_app_navigation() {
 
 #[test]
 fn code_blocks_get_a_copy_button() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // Decoration runs after each document render, over code blocks but not
@@ -833,7 +832,7 @@ fn code_blocks_get_a_copy_button() {
 
 #[test]
 fn select_all_in_the_reading_view_selects_only_the_page() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // A native Ctrl/Cmd+A selects the whole shell — library pane, toolbar and all —
     // so copying a page drags the chrome along. The shortcut selects just the
@@ -850,7 +849,7 @@ fn select_all_in_the_reading_view_selects_only_the_page() {
 fn app_shell_code_view_is_a_worker_free_monaco_with_its_own_minimap() {
     // The code view is Monaco: it renders only what's on screen, so typing never
     // re-lays-out the whole document. Guard the load-bearing choices behind that.
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // Entering the code view mounts a Monaco container and clears the reader's
     // own rail — Monaco draws its own minimap.
@@ -894,7 +893,7 @@ fn app_shell_code_view_is_a_worker_free_monaco_with_its_own_minimap() {
 // listing font names, or fits only the fonts that ship today, fails this test.
 #[test]
 fn app_shell_refits_the_code_view_wrap_to_whatever_font_is_actually_measured() {
-    let html = app_shell_html();
+    let html = app_shell_page();
 
     // Forcing the measurement again is the load-bearing half — Monaco does not
     // re-measure on its own — and the column cache has to go first, because the same
@@ -932,7 +931,7 @@ fn app_shell_refits_the_code_view_wrap_to_whatever_font_is_actually_measured() {
 // clearance is READ from the reading view's own numbers rather than typed again here.
 #[test]
 fn app_shell_holds_the_code_view_clear_of_the_edge_fades() {
-    let html = app_shell_html();
+    let html = app_shell_page();
     let css = reading_mode_css();
 
     // The option exists at all, and is Monaco's own padding — the scroll height grows,

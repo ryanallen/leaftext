@@ -2,29 +2,44 @@
 
 use super::*;
 
-/// The one broken-image mark reaches the page inlined and goes on as a `data:`
-/// source with the ink painted in. Miss any of the three — the glyph, the paint,
-/// the CSP grant — and it is the platform's own mark back, or an empty box.
+/// The broken-image mark is an icon class over a transparent pixel. Miss any of the
+/// four — the class, the pixel, the ink, the CSP grant — and it is the platform's own
+/// mark back, or an empty box.
 #[test]
 fn the_missing_image_glyph_is_inlined_painted_and_allowed() {
-    let html = app_shell_html();
+    let html = app_shell_page();
+    let css = reading_mode_css();
 
-    assert_contains(&html, "stroke=\"currentColor\"");
+    // The drawing is in the stylesheet, as a class, not in the page.
+    assert_contains(css, ".lt-icon-missing-image {");
+    assert_contains(css, "M6.3,22.1c-1.1,0-2-.9-2-2V4.1");
+    assert!(
+        !html.contains("M6.3,22.1c-1.1,0-2-.9-2-2V4.1"),
+        "the mark must not be pasted into the page as well"
+    );
     for expected in [
-        // The glyph itself, inlined where the page can reach it.
-        "M6.3,22.1c-1.1,0-2-.9-2-2V4.1",
-        "const svg = `<svg",
-        ".replace(/currentColor/g, ink)",
-        "data:image/svg+xml,${encodeURIComponent(svg)}",
+        // The element stays an <img> so a re-fetch can put the real picture back,
+        // and a source it can load keeps the platform's own broken glyph away.
+        "img.classList.add('lt-icon', 'lt-icon-missing-image');",
+        "img.src = TRANSPARENT_PIXEL;",
+        "data:image/gif;base64,",
         // Its own source is kept, so a re-fetch can find the file if it arrives.
         "img.dataset.imageMissingSrc = img.getAttribute('src')",
         "restoreMissingImage(img);",
+        "img.classList.remove('lt-icon', 'lt-icon-missing-image');",
     ] {
         assert_contains(&html, expected);
     }
+    // The ink is the rule's, so a theme change repaints it with no work in the page.
+    assert_contains(
+        rule_body(css, ".document-body img[data-image-missing=\"true\"] {"),
+        "background-color: var(--lt-muted-foreground);",
+    );
+    // No icon is substituted into the page at all now. Checked against the page
+    // itself: the script legitimately writes `{{` — it is mermaid's hexagon.
     assert!(
-        !html.contains("{{MISSING_IMAGE_ICON_SVG}}"),
-        "the glyph placeholder must be filled"
+        !app_shell_html().contains("_ICON_SVG}}"),
+        "the page must carry no icon placeholder"
     );
 
     let img_src = html
@@ -244,7 +259,7 @@ fn changed_image_files_refresh_without_a_document_re_render() {
     // text is unchanged, so a reload would hash-gate itself out anyway.
     assert_eq!(image_refresh_script(), "window.leafRefreshImages();");
 
-    let html = app_shell_html();
+    let html = app_shell_page();
     for expected in [
         "window.leafRefreshImages = () => {",
         "localImageEpoch += 1;",
