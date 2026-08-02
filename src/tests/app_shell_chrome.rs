@@ -993,41 +993,20 @@ fn the_front_end_shares_its_repeated_plumbing() {
 }
 
 #[test]
-fn the_gallery_draws_every_component_from_the_design_files() {
-    // The gallery is what makes a change to the interface something you can look at.
-    // It is generated, so the only way it goes stale is if it stops being generated —
-    // which `just check-gallery` catches. What this holds is the app's half: the page
-    // stands alone (a browser cannot fetch the app's own scheme), the settings menu
-    // asks for it, and the host writes it somewhere the browser can open.
-    let gallery = gallery_html();
+fn the_app_carries_no_gallery_of_its_own() {
+    // Looking at every color and component is a job for the page at leaftext.com,
+    // built by `just bundle-gallery` from the same `design/` files. It is a tool for
+    // building the app, so it has no business in a reader's settings menu — and the
+    // app would have had to write a file and hand it to a browser to show it.
+    let page = app_shell_page();
 
-    // The stylesheet is inside it, not linked.
-    assert_contains(gallery, "<style>");
-    assert!(
-        !gallery.contains("{{APP_CSS_URL}}"),
-        "the stylesheet placeholder must be filled"
-    );
-    assert_contains(gallery, "--lt-background:");
-    // The three walls and the components.
-    for section in [
-        "<h2>Colors</h2>",
-        "<h2>Values</h2>",
-        "<h2>Icons</h2>",
-        "<h2>Components</h2>",
-    ] {
-        assert_contains(gallery, section);
-    }
-    // Every color in the contract has a swatch, and every icon a glyph.
-    for token in LEAF_SEMANTIC_TOKEN_CONTRACT {
+    for gone in ["settingsGallery", "openGallery", "Design gallery"] {
         assert!(
-            gallery.contains(&format!("var({token})")),
-            "the gallery should show {token}"
+            !page.contains(gone),
+            "the gallery is back in the app: {gone}"
         );
     }
-    assert_contains(gallery, "lt-icon lt-icon-leaf");
-
-    // And the way in: a settings row that asks the host to open it.
-    let page = app_shell_page();
-    assert_contains(&page, r#"id="settingsGallery""#);
-    assert_contains(&page, "send({ command: 'openGallery' });");
+    // What the app does owe the gallery is its stylesheet, which only Rust can
+    // compile — that is what `--dump-css` is for.
+    assert_contains(reading_mode_css(), "--lt-background:");
 }

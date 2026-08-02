@@ -1,8 +1,8 @@
 # Theming
 
-> Leaftext enforces a semantic token contract of 82 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.md` compiled from per-family Markdown files — so adding a theme takes no Rust.
+> Leaftext enforces a semantic token contract of 81 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.md` compiled from per-family Markdown files — so adding a theme takes no Rust.
 
-Leaftext's theme system is built around a semantic token contract — 82 `--lt-*` CSS custom properties that every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
+Leaftext's theme system is built around a semantic token contract — 81 `--lt-*` CSS custom properties that every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
 
 **One name per color.** A token is spelled the same way in a theme file, in the compiled CSS, and in every rule that reads it. There is no alias layer over the contract: a rule reads `var(--lt-surface)` itself, never a second name for it.
 
@@ -14,7 +14,7 @@ Palettes are **data, not code**: every theme's values live in Markdown tables (`
 
 ### Core UI
 
-App surface and text colors, named by role: `--lt-background`, `--lt-foreground`, `--lt-surface`, `--lt-surface-elevated`, `--lt-surface-muted`, `--lt-surface-sunken`, `--lt-border`, `--lt-border-strong`, `--lt-muted-foreground`, and the semantic role tokens `--lt-primary`, `--lt-accent`, `--lt-danger`, `--lt-warning`, `--lt-success`, `--lt-done`, `--lt-link`, `--lt-link-hover`, `--lt-shadow`, plus `--lt-focus-ring` and the two focus-selection colors.
+App surface and text colors, named by role: `--lt-background`, `--lt-foreground`, `--lt-surface`, `--lt-surface-elevated`, `--lt-surface-muted`, `--lt-surface-sunken`, `--lt-border`, `--lt-border-strong`, `--lt-muted-foreground`, and the semantic role tokens `--lt-primary`, `--lt-accent`, `--lt-danger`, `--lt-warning`, `--lt-success`, `--lt-done`, `--lt-link`, `--lt-link-hover`, plus `--lt-focus-ring` and the two focus-selection colors.
 
 A role has a `-foreground` partner only where something prints on it: `primary`, `accent`, `danger` and `success` have one; `warning`, `done` and `link` do not.
 
@@ -42,13 +42,13 @@ The rail itself takes the chrome's own colors, and the thumbnail inside it is a 
 
 Button background, foreground, hover, and disabled states for the back/forward/open controls and the recent-files list.
 
-### Radius and shadow scales
+### Radius scale, and no shadow scale
 
-Corners and elevation are tokenized too, but as **global scales** in the stylesheet's own `:root` block rather than per-theme values: `--lt-radius-xs/sm/md/lg/xl/2xl/pill/full` for corners, and `--lt-shadow-popover`/`-sheet`/`-tooltip` for overlays (the per-theme resting shadow is the contract's `--lt-shadow`). Every surface pulls from these, so rounding and elevation swap in one place.
+Corners are tokenized as a **global scale** in the stylesheet's own `:root` block rather than per-theme values: `--lt-radius-xs/sm/md/lg/xl/2xl/pill/full`. Every surface pulls from it, so rounding swaps in one place. Elevation has no scale at all: nothing in the app casts a smooth blur. A floating surface throws the same dot lattice the grain is made of, thinning out under a mask — a halftone shadow, said once in the stylesheet and shared by every menu, panel, sheet and tooltip. What is left in `--lt-shadow-*` are strokes and one recess, not shadows.
 
 ### Surface grain
 
-Tinted surfaces are not painted as flat fills. A fine dot grid — a 2px lattice of near-transparent dots — is tiled over them, so a surface reads as a dithered cell rather than a wash of color. Like the radius and shadow scales, the grain lives in the compiled `:root` block rather than per-theme, as four alpha values, the first three darkening further for dark appearances:
+Tinted surfaces are not painted as flat fills. A fine dot grid — a 2px lattice of near-transparent dots — is tiled over them, so a surface reads as a dithered cell rather than a wash of color. Like the radius scale, the grain lives in the compiled `:root` block rather than per-theme, as four alpha values, the first three darkening further for dark appearances:
 
 | Token | Where it grains |
 |---|---|
@@ -164,7 +164,7 @@ Three tests re-derive contrast across **every** theme so an unreadable palette f
 
 Then, per family, it emits a font block (`--heading-font`/`--reading-font`/`--app-font`/`--code-font`) from that family's `fonts`.
 
-`reading_mode_css()` assembles the full style block: the compiled theme CSS above, then the stylesheet itself from `src/assets/reading.css` — its own `:root` block (the radius and shadow scales, the type scale, the layout metrics and the grain inks — everything that is one value for the whole app rather than per theme), then the application layout and document body CSS. The theme blocks have to come first so every `var(--lt-*)` in the stylesheet resolves. The stylesheet is an asset rather than a Rust literal so it stays editable as CSS. No Primer primitives and no font faces are embedded — fonts load separately from Google Fonts (see [Theme fonts](#theme-fonts)). The result is cached in a `OnceLock<String>` — computed once per process lifetime.
+`reading_mode_css()` assembles the full style block: the compiled theme CSS above, then the stylesheet itself from `src/assets/reading.css` — its own `:root` block (the radius scale, the type scale, the layout metrics and the grain inks — everything that is one value for the whole app rather than per theme), then the application layout and document body CSS. The theme blocks have to come first so every `var(--lt-*)` in the stylesheet resolves. The stylesheet is an asset rather than a Rust literal so it stays editable as CSS. No Primer primitives and no font faces are embedded — fonts load separately from Google Fonts (see [Theme fonts](#theme-fonts)). The result is cached in a `OnceLock<String>` — computed once per process lifetime.
 
 ## Theme fonts
 

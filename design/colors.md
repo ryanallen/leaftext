@@ -45,7 +45,6 @@ The window, its chrome, and the roles a control can take.
 | done | Finished and no longer active — a closed issue, a completed bar. |
 | link | A link at rest, in the interface as well as in a document. |
 | link-hover | The same link under the pointer. |
-| shadow | The resting card shadow. Per theme, because how much shadow a page can take depends on how dark it is. |
 | focus-ring | The ring around whatever has keyboard focus. |
 | focus-selection-background | Selected text's fill. |
 | focus-selection-foreground | Selected text itself. |

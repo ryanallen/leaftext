@@ -25,9 +25,29 @@ bundler. An edit there is lost on the next run, and `just verify` fails first.
 | anything else with a value — spacing, text size, weight, stroke, line height, letter spacing, opacity, duration, easing, shadow, layer, a fixed color | `design/tokens.md` | `just bundle-tokens` |
 | an icon | `design/icons.md`, plus the `.svg` in `src/assets/` | `just bundle-icons` |
 | a component | `design/components.md` — its class family, what builds it, and the markup the gallery draws it with | `just bundle-gallery` |
+| a class that is not a component — something the renderer writes into a document, or a state flag | the second or third table in `design/components.md` | nothing to generate; `just check-classes` stops failing |
 
 A color is **themed**: 11 families, light and dark, so `colors.md` holds names only.
 Everything else is one value for the whole app, so `tokens.md` holds the value.
+
+## A new part of the interface
+
+**Styling a new thing is not finished until it is listed.** `just check-classes` reads
+every class in `reading.css` and fails on one that `design/components.md` does not
+account for, naming the line. There are three honest answers:
+
+1. **It is a component.** A row in the first table: the class family, what builds it,
+   and a snippet of its real markup. That snippet is what the gallery draws it with, so
+   the component appears at leaftext.com/gallery.html by existing — nobody has to
+   remember to add it. If the component owns other prefixes (`app-bar` also owns
+   `app-trailing`), list them in **Also owns**.
+2. **The renderer writes it into a document** — a footnote, an alert, a syntax color.
+   A prefix in the second table. Those have no state to show and nothing to draw.
+3. **It is a state**, like `is-selected` or `open`. Anything starting `is-`, `has-` or
+   `no-` needs no row at all; anything else spelled differently goes in the third table.
+
+Renaming or deleting a class works the same way round: the check fails on a row whose
+family nothing styles any more, so the list cannot keep a component the app lost.
 
 ## Adding a token
 
@@ -62,9 +82,14 @@ one of these, the check is what to change — with the reason in its comment.
 
 ## Looking at it
 
-**Settings → Design gallery** draws every color, value, icon and component on one
-page, in the app's own stylesheet and the theme in use. A component that loses its
-styling shows up there before anyone reports it.
+`gallery.html` — the page at **leaftext.com/gallery.html** — draws every theme, color,
+value, icon and component on one page, in the app's own stylesheet, with a switcher for
+the family and for light or dark. A component that loses its styling shows up there
+before anyone reports it.
+
+`just bundle-gallery` builds it, and it needs a compile: the stylesheet comes out of
+the binary (`--dump-css`), because the theme compiler is Rust. It is a page in the
+repo, not a feature in the app — nothing about it ships to a reader.
 
 ## Reference
 

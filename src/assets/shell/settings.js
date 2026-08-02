@@ -57,13 +57,3 @@ pagerEnabledControl.addEventListener('change', () => {
   applyPagerEnabled();
   send({ command: 'setPagerEnabled', enabled: pagerEnabled });
 });
-
-// The design gallery, opened in the browser rather than in the app: it is a look at
-// the interface from outside it.
-const settingsGallery = document.getElementById('settingsGallery');
-if (settingsGallery) {
-  settingsGallery.addEventListener('click', () => {
-    settingsMenu.open = false;
-    send({ command: 'openGallery' });
-  });
-}

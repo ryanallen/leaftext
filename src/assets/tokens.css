@@ -9,10 +9,6 @@
   --lt-radius-2xl: 14px;
   --lt-radius-pill: 999px;
   --lt-radius-full: 50%;
-  /* Elevation */
-  --lt-shadow-popover: 0 6px 18px -6px color-mix(in srgb, black 55%, transparent), 0 0 0 1px color-mix(in srgb, var(--lt-muted-foreground) 20%, transparent);
-  --lt-shadow-sheet: 0 -10px 40px rgba(0, 0, 0, 0.5);
-  --lt-shadow-tooltip: 0 10px 24px rgba(0, 0, 0, 0.35);
   /* Document type */
   --type-base: max(0.875rem, calc(1rem + (100vw - 1280px) / 140));
   --type-measure-body: 75ch;
@@ -151,10 +147,9 @@
   --lt-z-50: 50;
   --lt-z-51: 51;
   --lt-z-60: 60;
-  /* Shadows added by the sweep */
+  /* Strokes, rings and one recess */
   --lt-shadow-raised: 0 1px 3px rgba(0, 0, 0, 0.18);
   --lt-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.35);
-  --lt-shadow-drop: 0 2px 6px -2px color-mix(in srgb, black 45%, transparent);
   --lt-shadow-hairline: inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 12%, transparent);
   --lt-shadow-hairline-strong: inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 26%, transparent);
   --lt-shadow-focus: 0 0 0 2px color-mix(in srgb, var(--lt-link) 30%, transparent);

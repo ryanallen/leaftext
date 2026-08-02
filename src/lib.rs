@@ -16,6 +16,7 @@ pub use markdown::{
     is_local_image_path, local_image_protocol_response, local_image_source_dir,
     markdown_image_insert_destination,
 };
+pub use theme::reading_mode_css;
 pub(crate) use theme::*;
 mod scripts;
 pub use scripts::*;
@@ -792,38 +793,6 @@ fn auto_link_glossary(body_html: String, doc_dir: &Path) -> String {
 /// the platform's to choose. No icon is substituted — every one is a class in
 /// `icons.css`, so the drawings are served with the stylesheet instead of pasted
 /// into this string.
-/// Every color, value, icon and component on one page, generated from `design/` by
-/// `just bundle-gallery` so it cannot fall behind what the app draws.
-///
-/// The stylesheet goes *inside* it rather than linked, because this page is opened in
-/// the browser: `leaf-asset://` is the app's own scheme and nothing outside the web
-/// view can fetch it. Inlined, the file stands alone — real fonts, real theme.
-pub fn gallery_html() -> &'static str {
-    static GALLERY: OnceLock<String> = OnceLock::new();
-    const GALLERY_HTML: &str = include_str!("assets/gallery.html");
-
-    GALLERY.get_or_init(|| {
-        GALLERY_HTML.replace(
-            "<link rel=\"stylesheet\" href=\"{{APP_CSS_URL}}\">",
-            &format!("<style>{}</style>", reading_mode_css()),
-        )
-    })
-}
-
-/// Write the gallery somewhere the browser can open it, and answer with the path.
-/// The app's own data folder, not a scratch file that disappears: reopening the same
-/// path replaces it, so this never piles up.
-pub fn write_gallery_page() -> io::Result<PathBuf> {
-    let path = app_data_dir()
-        .unwrap_or_else(std::env::temp_dir)
-        .join("leaftext-gallery.html");
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    fs::write(&path, gallery_html())?;
-    Ok(path)
-}
-
 pub fn app_shell_html() -> String {
     APP_SHELL_HTML
         .replace("{{APP_SCRIPT_URL}}", &bundled_asset_url("app.js"))

@@ -43,6 +43,7 @@ git diff --name-only HEAD~5..HEAD   # recent
 | `src/app/**.rs` (binary) | `src/app/tests.rs` |
 | `src/assets/shell/*.js` | `scripts/check-shell.mjs` |
 | `src/assets/reading.css`, `src/theme.rs`, `themes/` | `src/tests/reading_css.rs`, `src/tests/theme_registry.rs`, and `just check-themes` |
+| a new class, component, token or icon | no test to write — `just check-classes`, `check-tokens`, `check-icons` and `check-gallery` already refuse anything `design/` does not list. Run them and add the row |
 | a new `scripts/*.mjs` | its own `--check` mode, and a line in `just verify` |
 | `wix/`, `.github/workflows/` | **cannot be run here** — say so instead of pretending |
 

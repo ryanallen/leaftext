@@ -1,6 +1,6 @@
 ---
 name: check
-description: The gate before work is handed back or released. Runs /sync-tests so the change has a test, then `just verify` (fmt, cargo check, tests, vendor and theme drift, US spelling, front-end boot, identity, the hooks). A failure is fixed and re-run, never explained past. Says what a check could not reach only when the work is in it — the Mac build, the installer and the GitHub workflows never run here, so that is not news. Never touches git. Use when the user says "check it", "verify", or before handing work back; /git-release calls it before it commits.
+description: The gate before work is handed back or released. Runs /sync-tests so the change has a test, then `just verify` — sixteen steps: formatting, compile, tests, no hand-written value in the stylesheet, every class and token and icon and component listed in `design/`, the gallery and the published design page in step with it, US spelling, the front-end boots, no assistant identity in the repo, the two hooks, and that every check is in the suite. A failure is fixed and re-run, never explained past. Says what a check could not reach only when the work is in it — the Mac build, the installer and the GitHub workflows never run here, so that is not news. Never touches git. Use when the user says "check it", "verify", or before handing work back; /git-release calls it before it commits.
 argument-hint: ""
 user-invocable: true
 ---
@@ -28,9 +28,15 @@ with no test passes it and proves nothing.
 just verify
 ```
 
-Ten steps: `format-check`, `cargo check --all-targets`, `cargo test`,
-`check-vendor`, `check-themes`, `check-spelling`, `check-shell`, `check-identity`,
-`check-hooks`.
+Sixteen steps: `format-check`, `cargo check --all-targets`, `cargo test`,
+`check-vendor`, `check-themes`, `check-tokens`, `check-icons`, `check-gallery`,
+`check-design-docs`, `check-classes`, `check-literals`, `check-spelling`,
+`check-shell`, `check-identity`, `check-hooks`, `check-verify`.
+
+Six of those hold the design system together: a value, a class, a component, an
+icon or a token that `design/` does not list fails the build. When one fires, the
+fix is a row in `design/` and a bundler run — see `/design-tokens` — never a
+loosened check.
 
 ### 3. A failure is fixed, not narrated
 

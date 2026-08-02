@@ -142,7 +142,10 @@ for (const file of readdirSync(join(root, 'themes'))) {
 }
 
 const readingCss = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
-const components = tableRows(readFileSync(join(root, 'design/components.md'), 'utf8'));
+// Only the component table: the two tables after it account for what a rendered
+// document brings and what a state is called, neither being a class family of its own.
+const componentsMd = readFileSync(join(root, 'design/components.md'), 'utf8');
+const components = tableRows(componentsMd.slice(0, componentsMd.indexOf('## What a document brings')));
 for (const [component, family] of components) {
   if (!new RegExp('\\.' + family + '[\\s,:.{[-]').test(readingCss)) {
     problems.push(`design/components.md: nothing styles .${family} (${component})`);

@@ -163,6 +163,18 @@ const xmlEsc = (s) =>
 const docsMd = existsSync(join(ROOT, 'docs')) ? findMarkdown(join(ROOT, 'docs')) : [];
 const allMd = ['README.md', ...docsMd];
 
+// The gallery is a built page rather than a Markdown one, so it is named here: it is
+// the only page on the site that is neither the README nor a doc.
+const GALLERY = {
+  relPath: 'gallery.html',
+  title: 'Themes, drawn',
+  summary:
+    'Every theme Leaftext ships: all 82 colors, the type and spacing scales, every icon and every part of the interface, in light and dark.',
+  page: ORIGIN + '/gallery.html',
+  md: '',
+  lastmod: lastmod('gallery.html'),
+};
+
 const pages = allMd.map((relPath) => ({
   relPath,
   title: titleOf(relPath),
@@ -201,6 +213,8 @@ for (const p of pages) {
   urls.push({ loc: p.page, lastmod: p.lastmod });
   if (p.md !== p.page) urls.push({ loc: p.md, lastmod: p.lastmod });
 }
+// The gallery has no Markdown source to offer — it is built — so it appears once.
+urls.push({ loc: GALLERY.page, lastmod: GALLERY.lastmod });
 const seen = new Set();
 const sitemap =
   '<?xml version="1.0" encoding="UTF-8"?>\n' +

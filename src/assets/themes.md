@@ -41,7 +41,6 @@
 | done                                    | `#6d45e0`                         |
 | link                                    | `#086ddd`                         |
 | link-hover                              | `#6d45e0`                         |
-| shadow                                  | `0 16px 40px rgba(0, 0, 0, 0.12)` |
 | editor-inline-code-background           | `#f2f2f2`                         |
 | editor-inline-code-foreground           | `#222222`                         |
 | editor-code-background                  | `#f6f6f6`                         |
@@ -128,7 +127,6 @@
 | done                                    | `#a882ff`                        |
 | link                                    | `#4c9dff`                        |
 | link-hover                              | `#a882ff`                        |
-| shadow                                  | `0 18px 42px rgba(0, 0, 0, 0.5)` |
 | editor-inline-code-background           | `#2a2a2a`                        |
 | editor-inline-code-foreground           | `#dadada`                        |
 | editor-code-background                  | `#181818`                        |
@@ -230,7 +228,6 @@
 | done                                    | `#245f50`                          |
 | link                                    | `#8839ef`                          |
 | link-hover                              | `#7526d6`                          |
-| shadow                                  | `0 16px 40px rgba(60, 40, 20, 0.15)` |
 | editor-inline-code-background           | `#ece0d0`                          |
 | editor-inline-code-foreground           | `#3d2f26`                          |
 | editor-code-background                  | `#ece0d0`                          |
@@ -317,7 +314,6 @@
 | done                                    | `#8fd0bc`                        |
 | link                                    | `#cba6f7`                        |
 | link-hover                              | `#b4befe`                        |
-| shadow                                  | `0 18px 42px rgba(0, 0, 0, 0.55)` |
 | editor-inline-code-background           | `#33271f`                        |
 | editor-inline-code-foreground           | `#ece0d2`                        |
 | editor-code-background                  | `#1d1611`                        |
@@ -419,7 +415,6 @@
 | done                                    | `#0d74c8`                         |
 | link                                    | `#d81e28`                         |
 | link-hover                              | `#a5121b`                         |
-| shadow                                  | `0 16px 40px rgba(0, 0, 0, 0.12)` |
 | editor-inline-code-background           | `#f1f4f7`                         |
 | editor-inline-code-foreground           | `#15181c`                         |
 | editor-code-background                  | `#f2f5f8`                         |
@@ -506,7 +501,6 @@
 | done                                    | `#4fb3ff`                         |
 | link                                    | `#ff6b70`                         |
 | link-hover                              | `#ff9296`                         |
-| shadow                                  | `0 18px 42px rgba(0, 0, 0, 0.55)` |
 | editor-inline-code-background           | `#1c242e`                         |
 | editor-inline-code-foreground           | `#dfe6ee`                         |
 | editor-code-background                  | `#0a0e13`                         |
@@ -608,7 +602,6 @@
 | done                                    | `#6d45e0`                         |
 | link                                    | `#086ddd`                         |
 | link-hover                              | `#6d45e0`                         |
-| shadow                                  | `0 16px 40px rgba(0, 0, 0, 0.12)` |
 | editor-inline-code-background           | `#f2f2f2`                         |
 | editor-inline-code-foreground           | `#222222`                         |
 | editor-code-background                  | `#f6f6f6`                         |
@@ -719,7 +712,6 @@
 | done                                    | `#a882ff`                        |
 | link                                    | `#4c9dff`                        |
 | link-hover                              | `#a882ff`                        |
-| shadow                                  | `0 18px 42px rgba(0, 0, 0, 0.5)` |
 | editor-inline-code-background           | `#2a2a2a`                        |
 | editor-inline-code-foreground           | `#dadada`                        |
 | editor-code-background                  | `#181818`                        |
@@ -844,7 +836,6 @@
 | done                                    | `#197256`                          |
 | link                                    | `#b5461a`                          |
 | link-hover                              | `#98380f`                          |
-| shadow                                  | `0 16px 40px rgba(60, 36, 12, 0.14)` |
 | editor-inline-code-background           | `#f2e9db`                          |
 | editor-inline-code-foreground           | `#43382e`                          |
 | editor-code-background                  | `#f5ece0`                          |
@@ -931,7 +922,6 @@
 | done                                    | `#68bccc`                        |
 | link                                    | `#f2934e`                        |
 | link-hover                              | `#f7ad72`                        |
-| shadow                                  | `0 18px 42px rgba(0, 0, 0, 0.5)` |
 | editor-inline-code-background           | `#33374a`                        |
 | editor-inline-code-foreground           | `#c6ceef`                        |
 | editor-code-background                  | `#242734`                        |
@@ -1033,7 +1023,6 @@
 | done                                    | `#8250df`                                      |
 | link                                    | `#0969da`                                      |
 | link-hover                              | `#0969da`                                      |
-| shadow                                  | `0 1px 1px 0 #25292e1a, 0 3px 6px 0 #25292e1f` |
 | editor-inline-code-background           | `#f6f8fa`                                      |
 | editor-inline-code-foreground           | `#1f2328`                                      |
 | editor-code-background                  | `#f6f8fa`                                      |
@@ -1120,7 +1109,6 @@
 | done                                    | `#ab7df8`                                      |
 | link                                    | `#4493f8`                                      |
 | link-hover                              | `#4493f8`                                      |
-| shadow                                  | `0 1px 1px 0 #01040966, 0 3px 6px 0 #010409cc` |
 | editor-inline-code-background           | `#151b23`                                      |
 | editor-inline-code-foreground           | `#f0f6fc`                                      |
 | editor-code-background                  | `#151b23`                                      |
@@ -1236,7 +1224,6 @@
 | done                                    | `#8a6a00`                          |
 | link                                    | `#9a6800`                          |
 | link-hover                              | `#7d5400`                          |
-| shadow                                  | `0 16px 40px rgba(40, 32, 0, 0.12)` |
 | editor-inline-code-background           | `#f2ead8`                          |
 | editor-inline-code-foreground           | `#1c1a15`                          |
 | editor-code-background                  | `#f7f3e8`                          |
@@ -1323,7 +1310,6 @@
 | done                                    | `#f0c674`                        |
 | link                                    | `#ffc300`                        |
 | link-hover                              | `#ffd451`                        |
-| shadow                                  | `0 18px 42px rgba(0, 0, 0, 0.6)` |
 | editor-inline-code-background           | `#201e18`                        |
 | editor-inline-code-foreground           | `#eceae2`                        |
 | editor-code-background                  | `#0e0d0b`                        |
@@ -1425,7 +1411,6 @@
 | done                                    | `#086ddd`                         |
 | link                                    | `#086ddd`                         |
 | link-hover                              | `#0a58b0`                         |
-| shadow                                  | `0 16px 40px rgba(0, 0, 0, 0.12)` |
 | editor-inline-code-background           | `#f1f3f5`                         |
 | editor-inline-code-foreground           | `#222222`                         |
 | editor-code-background                  | `#f6f7f8`                         |
@@ -1512,7 +1497,6 @@
 | done                                    | `#4c9dff`                        |
 | link                                    | `#4c9dff`                        |
 | link-hover                              | `#79a9ec`                        |
-| shadow                                  | `0 18px 42px rgba(0, 0, 0, 0.5)` |
 | editor-inline-code-background           | `#2a2f37`                        |
 | editor-inline-code-foreground           | `#dadada`                        |
 | editor-code-background                  | `#171b20`                        |
@@ -1614,7 +1598,6 @@
 | done                                    | `#7b3fe4`                            |
 | link                                    | `#0c6f8c`                            |
 | link-hover                              | `#7b3fe4`                            |
-| shadow                                  | `0 18px 42px rgba(40, 30, 60, 0.18)` |
 | editor-inline-code-background           | `#efe9f7`                            |
 | editor-inline-code-foreground           | `#2b2340`                            |
 | editor-code-background                  | `#f1ecf9`                            |
@@ -1701,7 +1684,6 @@
 | done                                    | `#bd93f9`                   |
 | link                                    | `#8be9fd`                   |
 | link-hover                              | `#f1fa8c`                   |
-| shadow                                  | `0 18px 42px #00000066`     |
 | editor-inline-code-background           | `#1e2029`                   |
 | editor-inline-code-foreground           | `#f8f8f2`                   |
 | editor-code-background                  | `#1e2029`                   |
@@ -1803,7 +1785,6 @@
 | done                                    | `#0a7e8c`                         |
 | link                                    | `#0a63c9`                         |
 | link-hover                              | `#0a4fa0`                         |
-| shadow                                  | `0 16px 40px rgba(0, 0, 0, 0.12)` |
 | editor-inline-code-background           | `#f2f2f4`                         |
 | editor-inline-code-foreground           | `#1d1d1f`                         |
 | editor-code-background                  | `#f5f5f7`                         |
@@ -1890,7 +1871,6 @@
 | done                                    | `#64d2ff`                        |
 | link                                    | `#4a9eff`                        |
 | link-hover                              | `#6fb2ff`                        |
-| shadow                                  | `0 18px 42px rgba(0, 0, 0, 0.6)` |
 | editor-inline-code-background           | `#2c2c2e`                        |
 | editor-inline-code-foreground           | `#c9d0dc`                        |
 | editor-code-background                  | `#161618`                        |
@@ -1992,7 +1972,6 @@
 | done                                    | `#3f7aa8`                         |
 | link                                    | `#3f7aa8`                         |
 | link-hover                              | `#33648c`                         |
-| shadow                                  | `0 16px 40px rgba(0, 0, 0, 0.12)` |
 | editor-inline-code-background           | `#f2f2f2`                         |
 | editor-inline-code-foreground           | `#222222`                         |
 | editor-code-background                  | `#f6f6f6`                         |
@@ -2120,7 +2099,6 @@
 | done                                    | `#82a9c9`                        |
 | link                                    | `#82a9c9`                        |
 | link-hover                              | `#9bbdd8`                        |
-| shadow                                  | `0 18px 42px rgba(0, 0, 0, 0.5)` |
 | editor-inline-code-background           | `#2a2a2a`                        |
 | editor-inline-code-foreground           | `#dadada`                        |
 | editor-code-background                  | `#181818`                        |

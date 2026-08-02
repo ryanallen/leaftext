@@ -39,6 +39,17 @@ program, and where it sits in the list decides what it can see.
 4. A test in `check-shell.mjs` for whatever the fragment claims. `/sync-tests` names
    what is missing.
 
+## New interface needs a row
+
+A fragment that builds something new, with classes of its own, is not finished when it
+works. `just check-classes` fails on a class `design/components.md` does not account
+for. Add the row — the class family, this fragment as what builds it, and a snippet of
+its markup — and the thing appears in the gallery at leaftext.com/gallery.html without
+anyone remembering to put it there. See `/design-tokens`.
+
+Same for the values it paints with: no color, size, spacing or duration typed into
+`reading.css`. `just check-literals` names the line.
+
 ## Never put a placeholder in a fragment
 
 No `{{TOKEN}}`. The script is **served as a file**, so there is nothing to substitute

@@ -27,16 +27,16 @@ use leaftext::{
     lint_links, load_recent_files, load_settings, local_image_protocol_response,
     local_image_source_dir, markdown_image_insert_destination, navigation_state_script,
     note_preview, notice_toast_script, open_error_state_script, opened_document_from_source,
-    pager_loaded_script, read_folder_listing, read_folder_note, read_source,
+    pager_loaded_script, read_folder_listing, read_folder_note, read_source, reading_mode_css,
     render_markdown_document, repo_name_for_vault, rgba_from_bmp, save_recent_files,
     save_result_script, save_settings, scroll_anchor_script, search_results_script,
     settings_file_path, settings_unreadable_script, source_payload_url, source_updated_script,
     sync_vault_repo, unlock_reading_script, update_progress_script, update_state_script,
     vaults_script, webview_user_data_dir, workspace_only_script, workspace_reload_script,
-    workspace_state_script, workspace_switch_script, write_gallery_page, write_source,
-    CorpusDocument, DocumentFormat, EditableDocument, FolderListing, GitTooling, GraphScope,
-    OpenedDocument, RecentFiles, ScrollAnchor, Settings, SettingsLoad, SourceText, UpdateDownload,
-    VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    workspace_state_script, workspace_switch_script, write_source, CorpusDocument, DocumentFormat,
+    EditableDocument, FolderListing, GitTooling, GraphScope, OpenedDocument, RecentFiles,
+    ScrollAnchor, Settings, SettingsLoad, SourceText, UpdateDownload, VaultCorpus, VaultRepo,
+    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -99,6 +99,15 @@ fn main() {
                 std::process::exit(1);
             }
         }
+        return;
+    }
+
+    // Behind `just bundle-gallery`: the compiled stylesheet, so the gallery page in
+    // the repo is painted by the same CSS the app paints itself with. Only the app can
+    // produce it — the theme compiler is Rust — and a node script must not grow a
+    // second one. Opens no window.
+    if argv.len() >= 2 && argv[1] == "--dump-css" {
+        print!("{}", reading_mode_css());
         return;
     }
 

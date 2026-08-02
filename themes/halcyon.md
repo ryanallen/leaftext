@@ -38,7 +38,6 @@
 | done                                    | `#086ddd`                         |
 | link                                    | `#086ddd`                         |
 | link-hover                              | `#0a58b0`                         |
-| shadow                                  | `0 16px 40px rgba(0, 0, 0, 0.12)` |
 | editor-inline-code-background           | `#f1f3f5`                         |
 | editor-inline-code-foreground           | `#222222`                         |
 | editor-code-background                  | `#f6f7f8`                         |
@@ -125,7 +124,6 @@
 | done                                    | `#4c9dff`                        |
 | link                                    | `#4c9dff`                        |
 | link-hover                              | `#79a9ec`                        |
-| shadow                                  | `0 18px 42px rgba(0, 0, 0, 0.5)` |
 | editor-inline-code-background           | `#2a2f37`                        |
 | editor-inline-code-foreground           | `#dadada`                        |
 | editor-code-background                  | `#171b20`                        |

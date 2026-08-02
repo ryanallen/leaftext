@@ -153,12 +153,16 @@ One known rough edge: a **mindmap** can clip a long node label. Mermaid sizes th
 
 The theme picker links to the project on GitHub for making your own theme. A theme is pure data — a map of contract tokens to values plus a font block — authored as a file under `themes/` and compiled into the bundle, so it can be validated against the contract without injecting third-party CSS. See [Theming → Adding a theme](../02-development/04-theming.md#adding-a-theme) for the full recipe.
 
+## See them all
+
+[**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) draws every theme on one page — all 81 colors, every icon, and every part of the interface — with a switcher for the family and for light or dark. It is built from the same files the app is, by `just bundle-gallery`, so it cannot show you a theme the app does not have.
+
 ## CSS
 
 The compiled stylesheet is assembled in this order:
 
 1. Compiled `--lt-*` theme mappings (each family's palette, plus its font-family stacks)
-2. The stylesheet's own `:root` block — the radius and shadow scales, the type scale, the layout metrics: one value each, whatever theme is on
+2. The stylesheet's own `:root` block — the radius scale, the type scale, the layout metrics: one value each, whatever theme is on
 3. App CSS for layout and components
 
 Every palette is pure data, compiled from [`themes.md`](../02-development/04-theming.md#palettes-are-data-themesmd); the font *files* still load separately from Google Fonts per the active theme. The ordering keeps one stable semantic layer so the app can swap themes quickly.

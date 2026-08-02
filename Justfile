@@ -47,8 +47,9 @@ bundle-icons:
 check-icons:
     node scripts/bundle-icons.mjs --check
 
-# Draw every color, value, icon and component on one page, from design/. The settings
-# menu opens it in the browser.
+# Build gallery.html — every theme, color, value, icon and component on one page, at
+# leaftext.com/gallery.html. Needs a compile: the stylesheet comes from the binary,
+# because the theme compiler is Rust.
 bundle-gallery:
     node scripts/bundle-gallery.mjs
 
@@ -74,6 +75,17 @@ check-tokens:
 # Fail on British spelling in the repo's own writing (US English throughout).
 check-spelling:
     node scripts/check-spelling.mjs
+
+# Fail if a check the Justfile defines is not in `just verify` — a rule with no check
+# in the suite holds only while someone remembers it.
+check-verify:
+    node scripts/check-verify.mjs
+
+# Fail on a class in reading.css that design/components.md does not account for — as a
+# component with a sample the gallery draws, as something a rendered document brings, or
+# as a state. New parts of the interface join the design system or fail here.
+check-classes:
+    node scripts/check-classes.mjs
 
 # Fail on a hand-written value in reading.css — a color, spacing, size, weight,
 # stroke, line height, letter spacing, opacity, duration, shadow or layer. Every one
@@ -109,7 +121,7 @@ bundle-monaco:
 squeeze-png source target:
     cargo run --quiet -- --squeeze-png "{{ source }}" "{{ target }}"
 
-verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-literals check-spelling check-shell check-identity check-hooks
+verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-shell check-identity check-hooks
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

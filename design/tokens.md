@@ -29,17 +29,6 @@ the values the components already used.
 | lt-radius-pill | 999px | A fully rounded end, whatever the height. |
 | lt-radius-full | 50% | A circle. |
 
-## Elevation
-
-Shadows by role, so an overlay swaps in one place. The resting card shadow is per
-theme and stays in the color contract as `lt-shadow`.
-
-| Token | Value | What it is for |
-| --- | --- | --- |
-| lt-shadow-popover | `0 6px 18px -6px color-mix(in srgb, black 55%, transparent), 0 0 0 1px color-mix(in srgb, var(--lt-muted-foreground) 20%, transparent)` | A menu or popover: a soft drop plus a hairline, so it reads as lifted off whatever it covers. |
-| lt-shadow-sheet | `0 -10px 40px rgba(0, 0, 0, 0.5)` | A bottom sheet, thrown upward because the sheet rises from the bottom edge. |
-| lt-shadow-tooltip | `0 10px 24px rgba(0, 0, 0, 0.35)` | A tooltip or link preview. |
-
 ## Document type
 
 The reading view's own scale, and only its own — interface text does not use it. Every
@@ -245,16 +234,16 @@ order siblings inside one component and stay literal — they mean nothing outsi
 | lt-z-51 | 51 | A submenu or tooltip over it. |
 | lt-z-60 | 60 | A toast — the top of the app, always. |
 
-## Shadows added by the sweep
+## Strokes, rings and one recess
 
-The rest of the elevation set, so no rule writes a `box-shadow` by hand. Each takes a
-color from the contract or mixes one, so a shadow still belongs to its theme.
+Everything the app puts in a `box-shadow`. None of them is a cast shadow: a floating
+surface throws the dot halftone `reading.css` draws instead. Each takes a color from the
+contract or mixes one, so it still belongs to its theme.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
 | lt-shadow-raised | `0 1px 3px rgba(0, 0, 0, 0.18)` | A row or chip lifted a hair off its surface. |
 | lt-shadow-inset | `inset 0 1px 2px rgba(0, 0, 0, 0.35)` | A field that reads as pressed into the surface. |
-| lt-shadow-drop | `0 2px 6px -2px color-mix(in srgb, black 45%, transparent)` | A small floating element: a chip being dragged. |
 | lt-shadow-hairline | `inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 12%, transparent)` | An edge drawn inside the box, so it costs no layout. |
 | lt-shadow-hairline-strong | `inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 26%, transparent)` | The same edge, for a hovered or selected box. |
 | lt-shadow-focus | `0 0 0 2px color-mix(in srgb, var(--lt-link) 30%, transparent)` | The soft ring around a focused link or field. |

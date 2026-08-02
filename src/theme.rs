@@ -102,7 +102,6 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
     "--lt-done",
     "--lt-link",
     "--lt-link-hover",
-    "--lt-shadow",
     "--lt-focus-ring",
     "--lt-focus-selection-background",
     "--lt-focus-selection-foreground",
@@ -565,7 +564,7 @@ pub(crate) fn theme_web_font_hrefs_json() -> String {
     serde_json::to_string(&map).expect("theme web font map serializes")
 }
 
-pub(crate) fn reading_mode_css() -> &'static str {
+pub fn reading_mode_css() -> &'static str {
     static READING_MODE_CSS: OnceLock<String> = OnceLock::new();
 
     // Assets, not Rust literals, so they stay editable as CSS. Every

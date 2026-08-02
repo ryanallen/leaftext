@@ -29,7 +29,7 @@ const META = ['/clear', '/help', '/config', '/cost', '/compact', '/init', '/skil
 // stays about ten lines.
 const TRIGGERS = [
   [/reading\.css|theme\.rs|themes\//i,
-    'Colors: `themes/` is the source — edit there, then `just bundle-themes` and `just check-themes`. Never a per-theme diagram palette.'],
+    'A value belongs in `design/`: colors.md names a color, tokens.md holds every other value, icons.md the icons, components.md every class — then `just bundle-tokens`, `bundle-icons` or `bundle-gallery`. What a theme sets a color to is `themes/`, then `just bundle-themes`. Never edit a generated file, never a per-theme diagram palette.'],
   [/shell\/|fragment|app_shell|APP_SHELL/i,
     '`src/assets/shell/` is one shared scope in `APP_SHELL_SCRIPT_PARTS` order. `state.js` holds only what two fragments touch. `just check-shell`.'],
   [/Cargo\.toml|\bcrate\b|dependenc/i,

@@ -35,7 +35,9 @@ function rows(file) {
 const colors = rows('colors.md');
 const tokens = rows('tokens.md');
 const icons = rows('icons.md');
-const components = rows('components.md');
+// Only the first table: the document prefixes and states after it account for
+// classes, they are not components with markup to draw.
+const components = rows('components.md').filter(({ group }) => !group.startsWith('What a document') && !group.startsWith('State'));
 const themes = readFileSync(join(root, 'src/assets/themes.md'), 'utf8')
   .split('\n')
   .filter((line) => line.startsWith('**Family ID:**')).length;
@@ -95,7 +97,11 @@ for (const { cells } of components) lines.push(`| ${cells[0]} | \`.${cells[1]}\`
 lines.push('');
 lines.push('## Looking at it');
 lines.push('');
-lines.push('**Settings → Design gallery** writes every color, value, icon and component onto one page and opens it in your browser, painted by the app\'s own stylesheet in the theme you are using.');
+lines.push('[**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) draws all of it on one page — every theme, every color, every value, every icon, and every part of the interface — with a switcher for the family and for light or dark.');
+lines.push('');
+lines.push('`just bundle-gallery` builds it from the four files above plus the app\'s own compiled stylesheet, which it gets by running the binary with `--dump-css`. The theme compiler is Rust, and a second one written in JavaScript would drift from it inside a week.');
+lines.push('');
+lines.push('It is a page in the repo, not a feature in the app: looking at every component is a job for whoever is building Leaftext, so it has no place in a reader\'s settings menu.');
 lines.push('');
 lines.push('## Keeping it');
 lines.push('');
@@ -106,6 +112,9 @@ lines.push('| --- | --- |');
 lines.push('| `check-tokens` | a generated token file has drifted from `design/`, a theme sets a color nothing lists, or a component row names a class family nothing styles |');
 lines.push('| `check-icons` | `icons.css` has drifted, a row names a file that is not there, or an SVG has no row |');
 lines.push('| `check-gallery` | the gallery has drifted, or a component has no sample to draw it with |');
+lines.push('| `check-classes` | a class in `reading.css` is not accounted for — as a component, as something a rendered document brings, or as a state |');
+lines.push('| `check-design-docs` | this page has drifted from `design/` |');
+lines.push('| `check-verify` | one of these checks is not in `just verify` |');
 lines.push('| `check-literals` | a color, spacing, text size, weight, stroke, line height, letter spacing, opacity, duration, easing, shadow or layer is written by hand in `reading.css` |');
 lines.push('| `check-themes` | the embedded theme bundle has drifted from `themes/` |');
 lines.push('');

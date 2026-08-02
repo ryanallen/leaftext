@@ -51,6 +51,7 @@ stripped from the route, so that page is `#/01-features/03-library` in the SPA a
 | Library pane, vaults, the in-memory corpus, search, the graph, GitHub sync (`src/folder_tree.rs`, `src/vault_corpus.rs`, `src/doc_graph.rs`, `src/store/vaults.rs`, `src/git.rs`, `src/app/vaults.rs`, `src/app/vault_git.rs`) | `docs/01-features/03-library.md` |
 | Minimap model and behavior (`src/minimap.rs`, `src/assets/shell/minimap.js`) | `docs/01-features/04-minimap.md` |
 | Themes, theme sources, token contract (`LEAF_SEMANTIC_TOKEN_CONTRACT`, `reading_mode_css`, `themes/*.md`) | `docs/01-features/06-themes.md` and `docs/02-development/04-theming.md` |
+| Anything under `design/` — a color, a token, an icon, a component | **nothing to edit by hand.** `docs/02-development/05-design-system.md` is generated from those files by `just bundle-design-docs`, and `just verify` fails if it has drifted. Edit `design/`, run the bundler |
 | Settings struct, `settings.json`, persistence, the updater's user-facing behavior | `docs/01-features/05-settings.md` |
 | Reading-view editing, the block gutter, the format bar, the flowchart sheet, the code view, typing help (`src/editing.rs`, `src/code_intel.rs`, `src/assets/shell/reading-edits.js`, `block-controls.js`, `selection-toolbar.js`, `flow-*.js`, `code-view.js`) | `docs/01-features/07-editing.md` |
 | Which Monaco colorizers are bundled (`scripts/bundle-monaco.mjs`) | `docs/01-features/07-editing.md#code-view` — a format with no grammar opens as uncolored text, and the page says which |
@@ -91,6 +92,12 @@ A useful check: enumerate the source (e.g. the `IpcCommand` variants, the menu i
 - A single `# Title` H1, followed by a one-line `> tagline` blockquote, then the intro paragraph.
 - Plain, factual prose. No marketing fluff, no changelog entries ("now supports…"). State current behavior.
 - Keep version numbers and counts (e.g. "last 8 files", "4 parse workers", "2 MB limit", current `Cargo.toml` version) matching the code.
+
+**One page is generated and must not be hand-edited:**
+`docs/02-development/05-design-system.md`. Its every count is read out of `design/`, so
+an edit here is lost on the next run and `just check-design-docs` fails first. To
+change what it says, change `design/` (see `/design-tokens`) and run
+`just bundle-design-docs`.
 
 **Renderer constraints — the docs are rendered by `site/markdown.js`, which supports a GFM subset. Use only:**
 

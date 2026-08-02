@@ -1083,3 +1083,76 @@ fn anything_marked_hidden_is_actually_hidden() {
         );
     }
 }
+
+#[test]
+fn every_box_shadow_is_a_stroke_a_ring_or_a_recess() {
+    // Nothing in the app casts a smooth blur: a floating surface throws the dot
+    // halftone below instead. What is left in a `box-shadow` draws an edge, a focus
+    // ring, or the one recess in the reader's tool bar.
+    const DRAWN_WITH: &[&str] = &[
+        "var(--lt-shadow-raised)",
+        "var(--lt-shadow-inset)",
+        "var(--lt-shadow-hairline)",
+        "var(--lt-shadow-hairline-strong)",
+        "var(--lt-shadow-focus)",
+        "var(--lt-shadow-ring)",
+        "var(--lt-shadow-edge-strong)",
+        "var(--lt-shadow-edge-accent)",
+        "var(--lt-shadow-edge-link)",
+        "none",
+    ];
+    let css = reading_mode_css();
+    for (at, _) in css.match_indices("box-shadow:") {
+        let value = css[at + "box-shadow:".len()..]
+            .split(';')
+            .next()
+            .expect("a declaration should end")
+            .trim();
+        assert!(
+            DRAWN_WITH.contains(&value),
+            "box-shadow: {value} is a hand-written or blurred shadow; the app's shadow is \
+             the dot halftone, and the rest of this list is strokes"
+        );
+    }
+}
+
+#[test]
+fn every_floating_surface_throws_the_dot_halftone() {
+    let css = reading_mode_css();
+    // One rule for all of them, so a new panel cannot pick a different shadow.
+    for surface in [
+        ".app-overflow-panel::before,",
+        ".context-menu::before,",
+        ".rename-box::before,",
+        ".settings-panel::before,",
+        ".app-toast::before,",
+        ".flow-menu::before,",
+        ".link-hover-tip::before,",
+        ".block-drag-ghost::before,",
+        ".leaf-sheet::before {",
+    ] {
+        assert_contains(css, surface);
+    }
+    let halftone = rule_body(css, ".app-overflow-panel::before,");
+    assert_contains(
+        halftone,
+        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);",
+    );
+    assert_contains(halftone, "--lt-grain-dot: var(--lt-grain-dot-strong);");
+    // The second mask layer punches the surface's own box out, or the dots land on
+    // its face: a negative-layer child paints above its parent's background.
+    assert_contains(halftone, "mask-composite: exclude;");
+    assert_contains(halftone, "-webkit-mask-composite: xor;");
+    assert_contains(halftone, "z-index: var(--lt-z-below);");
+}
+
+#[test]
+fn the_sheet_scrim_dims_and_dots_the_page_behind_it() {
+    let scrim = rule_body(reading_mode_css(), ".lt-backdrop {");
+    assert_contains(scrim, "background-color: var(--lt-tint-backdrop);");
+    assert_contains(
+        scrim,
+        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);",
+    );
+    assert_contains(scrim, "background-attachment: fixed;");
+}
