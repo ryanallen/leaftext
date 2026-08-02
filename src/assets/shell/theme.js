@@ -207,7 +207,7 @@ function reportWindowChrome(theme) {
   }
   // Resolve the divider color (a var() chain) to concrete rgb via a probe.
   const probe = document.createElement('span');
-  probe.style.color = 'var(--app-border)';
+  probe.style.color = 'var(--lt-border)';
   shell.appendChild(probe);
   const borderParts = getComputedStyle(probe).color.match(/\d+(?:\.\d+)?/g);
   probe.remove();

@@ -5,7 +5,7 @@
 
 Every theme in Leaftext is plain data — one Markdown file per family, right here in this folder. Because they are Markdown, they render as the color tables below in Leaf itself and at [leaftext.com/themes](https://leaftext.com/themes).
 
-11 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full ~100-token contract inside its file.
+11 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full 82-token contract inside its file.
 
 Mermaid diagrams take these same tokens, so a family says nothing about diagrams and gets them anyway: boxes the muted surface, subgraphs the sunken one, arrows the muted foreground, and a Gantt chart the theme's own active / done / critical colors. Text printed inside one of those fills takes whichever of the theme's inks reads on it, measured rather than assumed. The twelve-color categorical scale a mindmap or pie chart cycles through is the family's own primary, its hue stepped around the wheel with every entry held to the same weight, so one ink reads on all twelve.
 
@@ -222,4 +222,4 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 
 ## Adding or editing a theme
 
-Copy an existing file (say `dracula.md`), rename it to `<your-id>.md`, and edit the `# Name` heading, the `**Family ID:**` line (it must match the filename), the `## Fonts` table, and the `## Light` / `## Dark` token tables. Optionally add a preview screenshot as a standalone `![Your Family](../imgs/themes/<your-id>.png)` line under the heading — it shows up in the file itself and in this gallery. Then run `just bundle-themes` to recompile the embedded bundle and regenerate this gallery, and `just verify` to run the contract and contrast checks. See [docs/02-development/04-theming.md](../docs/02-development/04-theming.md) for the full contract.
+Copy an existing file (say `fern.md`), rename it to `<your-id>.md`, and edit the `# Name` heading, the `**Family ID:**` line (it must match the filename), the `## Fonts` table, and the `## Light` / `## Dark` token tables. Optionally add a preview screenshot as a standalone `![Your Family](../imgs/themes/<your-id>.png)` line under the heading — it shows up in the file itself and in this gallery. Then run `just bundle-themes` to recompile the embedded bundle and regenerate this gallery, and `just verify` to run the contract and contrast checks. See [docs/02-development/04-theming.md](../docs/02-development/04-theming.md) for the full contract.

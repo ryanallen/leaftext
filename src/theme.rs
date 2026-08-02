@@ -80,88 +80,88 @@ pub(crate) struct ThemeFile {
 }
 
 pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
-    "--leaf-background",
-    "--leaf-foreground",
-    "--leaf-surface",
-    "--leaf-surface-elevated",
-    "--leaf-surface-muted",
-    "--leaf-surface-sunken",
-    "--leaf-border",
-    "--leaf-border-strong",
-    "--leaf-muted-foreground",
-    "--leaf-primary",
-    "--leaf-primary-foreground",
-    "--leaf-accent",
-    "--leaf-accent-foreground",
-    "--leaf-danger",
-    "--leaf-danger-foreground",
-    "--leaf-warning",
-    "--leaf-success",
-    "--leaf-success-foreground",
-    "--leaf-done",
-    "--leaf-link",
-    "--leaf-link-hover",
-    "--leaf-shadow",
-    "--leaf-editor-inline-code-background",
-    "--leaf-editor-inline-code-foreground",
-    "--leaf-editor-code-background",
-    "--leaf-editor-code-foreground",
-    "--leaf-editor-code-border",
-    "--leaf-editor-code-selection-background",
-    "--leaf-editor-code-selection-foreground",
-    "--leaf-markdown-background",
-    "--leaf-markdown-foreground",
-    "--leaf-markdown-heading",
-    "--leaf-markdown-heading-2",
-    "--leaf-markdown-heading-3",
-    "--leaf-markdown-heading-4",
-    "--leaf-markdown-heading-5",
-    "--leaf-markdown-heading-6",
-    "--leaf-markdown-rule",
-    "--leaf-markdown-link",
-    "--leaf-markdown-blockquote-border",
-    "--leaf-markdown-blockquote-foreground",
-    "--leaf-markdown-alert-note",
-    "--leaf-markdown-alert-tip",
-    "--leaf-markdown-alert-important",
-    "--leaf-markdown-alert-warning",
-    "--leaf-markdown-alert-caution",
-    "--leaf-markdown-badge-background",
-    "--leaf-markdown-badge-foreground",
-    "--leaf-markdown-table-border",
-    "--leaf-markdown-table-header-background",
-    "--leaf-markdown-thematic-break",
-    "--leaf-markdown-math-inline-background",
-    "--leaf-markdown-keyboard-background",
-    "--leaf-markdown-keyboard-border",
-    "--leaf-minimap-viewport-border",
-    "--leaf-minimap-viewport-background",
-    "--leaf-navigation-button-hover-background",
-    "--leaf-navigation-button-disabled-background",
-    "--leaf-navigation-button-disabled-foreground",
-    "--leaf-navigation-recent-border",
-    "--leaf-navigation-recent-item-foreground",
-    "--leaf-navigation-recent-item-hover-foreground",
-    "--leaf-focus-ring",
-    "--leaf-focus-selection-background",
-    "--leaf-focus-selection-foreground",
-    "--leaf-syntax-background",
-    "--leaf-syntax-foreground",
-    "--leaf-syntax-comment",
-    "--leaf-syntax-keyword",
-    "--leaf-syntax-string",
-    "--leaf-syntax-number",
-    "--leaf-syntax-function",
-    "--leaf-syntax-variable",
-    "--leaf-syntax-type",
-    "--leaf-syntax-operator",
-    "--leaf-syntax-punctuation",
-    "--leaf-syntax-inserted",
-    "--leaf-syntax-inserted-background",
-    "--leaf-syntax-deleted",
-    "--leaf-syntax-deleted-background",
-    "--leaf-syntax-changed",
-    "--leaf-syntax-changed-background",
+    "--lt-background",
+    "--lt-foreground",
+    "--lt-surface",
+    "--lt-surface-elevated",
+    "--lt-surface-muted",
+    "--lt-surface-sunken",
+    "--lt-border",
+    "--lt-border-strong",
+    "--lt-muted-foreground",
+    "--lt-primary",
+    "--lt-primary-foreground",
+    "--lt-accent",
+    "--lt-accent-foreground",
+    "--lt-danger",
+    "--lt-danger-foreground",
+    "--lt-warning",
+    "--lt-success",
+    "--lt-success-foreground",
+    "--lt-done",
+    "--lt-link",
+    "--lt-link-hover",
+    "--lt-shadow",
+    "--lt-editor-inline-code-background",
+    "--lt-editor-inline-code-foreground",
+    "--lt-editor-code-background",
+    "--lt-editor-code-foreground",
+    "--lt-editor-code-border",
+    "--lt-editor-code-selection-background",
+    "--lt-editor-code-selection-foreground",
+    "--lt-markdown-background",
+    "--lt-markdown-foreground",
+    "--lt-markdown-heading",
+    "--lt-markdown-heading-2",
+    "--lt-markdown-heading-3",
+    "--lt-markdown-heading-4",
+    "--lt-markdown-heading-5",
+    "--lt-markdown-heading-6",
+    "--lt-markdown-rule",
+    "--lt-markdown-link",
+    "--lt-markdown-blockquote-border",
+    "--lt-markdown-blockquote-foreground",
+    "--lt-markdown-alert-note",
+    "--lt-markdown-alert-tip",
+    "--lt-markdown-alert-important",
+    "--lt-markdown-alert-warning",
+    "--lt-markdown-alert-caution",
+    "--lt-markdown-badge-background",
+    "--lt-markdown-badge-foreground",
+    "--lt-markdown-table-border",
+    "--lt-markdown-table-header-background",
+    "--lt-markdown-thematic-break",
+    "--lt-markdown-math-inline-background",
+    "--lt-markdown-keyboard-background",
+    "--lt-markdown-keyboard-border",
+    "--lt-minimap-viewport-border",
+    "--lt-minimap-viewport-background",
+    "--lt-navigation-button-hover-background",
+    "--lt-navigation-button-disabled-background",
+    "--lt-navigation-button-disabled-foreground",
+    "--lt-navigation-recent-border",
+    "--lt-navigation-recent-item-foreground",
+    "--lt-navigation-recent-item-hover-foreground",
+    "--lt-focus-ring",
+    "--lt-focus-selection-background",
+    "--lt-focus-selection-foreground",
+    "--lt-syntax-background",
+    "--lt-syntax-foreground",
+    "--lt-syntax-comment",
+    "--lt-syntax-keyword",
+    "--lt-syntax-string",
+    "--lt-syntax-number",
+    "--lt-syntax-function",
+    "--lt-syntax-variable",
+    "--lt-syntax-type",
+    "--lt-syntax-operator",
+    "--lt-syntax-punctuation",
+    "--lt-syntax-inserted",
+    "--lt-syntax-inserted-background",
+    "--lt-syntax-deleted",
+    "--lt-syntax-deleted-background",
+    "--lt-syntax-changed",
+    "--lt-syntax-changed-background",
 ];
 
 /// Leak an owned string to `&'static str`. Called only for the theme table,
@@ -208,10 +208,10 @@ pub(crate) fn theme_sources() -> &'static [ThemeSource] {
     })
 }
 
-/// The `--leaf-` prefix stripped from token names in the Markdown theme files
+/// The `--lt-` prefix stripped from token names in the Markdown theme files
 /// (for readability) and re-added here so downstream code keeps seeing the full
 /// CSS custom-property names from [`LEAF_SEMANTIC_TOKEN_CONTRACT`].
-const TOKEN_PREFIX: &str = "--leaf-";
+const TOKEN_PREFIX: &str = "--lt-";
 
 /// Split a Markdown table row (`| a | b |`) into its trimmed cells, dropping the
 /// empty leading/trailing fields the surrounding pipes produce.
@@ -256,7 +256,7 @@ fn unwrap_value(cell: &str) -> String {
 /// Parse the bundled Markdown theme file (`themes/*.md` concatenated by
 /// `scripts/bundle-themes.mjs`) into one [`ThemeFile`] per light/dark source —
 /// see any `themes/*.md` for the shape. Token names are stored without the
-/// `--leaf-` prefix and get it back here; a malformed file fails loudly at the
+/// `--lt-` prefix and get it back here; a malformed file fails loudly at the
 /// startup contract check ([`assert_theme_sources_cover_contract`]).
 fn parse_theme_markdown(md: &str) -> Vec<ThemeFile> {
     /// One family's accumulated data before it is split into light/dark sources.
@@ -429,7 +429,7 @@ pub(crate) fn compiled_theme_css() -> String {
     for source in sources {
         css.push_str(source.selector);
         css.push_str(" {\n");
-        css.push_str("  --leaf-theme-source: ");
+        css.push_str("  --lt-theme-source: ");
         css.push_str(source.id);
         css.push_str(";\n");
         for token in LEAF_SEMANTIC_TOKEN_CONTRACT {
@@ -567,7 +567,7 @@ pub(crate) fn reading_mode_css() -> &'static str {
     static READING_MODE_CSS: OnceLock<String> = OnceLock::new();
 
     // An asset, not a Rust literal, so it stays editable as CSS. Its every
-    // `var(--leaf-*)` resolves against the compiled tokens, so those go first.
+    // `var(--lt-*)` resolves against the compiled tokens, so those go first.
     const READING_CSS: &str = include_str!("assets/reading.css");
 
     READING_MODE_CSS.get_or_init(|| {

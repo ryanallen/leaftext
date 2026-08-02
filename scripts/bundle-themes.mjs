@@ -81,7 +81,7 @@ function firstFamily(stack) {
 // Parse one family file into { displayName, id, preview, fonts, light, dark },
 // where light/dark are the *effective* token maps (base tokens overlaid by
 // overrides) and preview is the optional `{ alt, src }` of the header image.
-// Mirrors parse_theme_markdown() in src/theme.rs, minus the --leaf- prefix.
+// Mirrors parse_theme_markdown() in src/theme.rs, minus the --lt- prefix.
 function parseFamily(file, body) {
   const fam = {
     displayName: null,
@@ -201,7 +201,7 @@ function buildGallery(families) {
     `${families.length} families ship today, listed alphabetically (the order the theme ` +
       'picker uses). Each links to its full file; the screenshot is the same document split ' +
       'across the light and dark variants, and the table previews the key colors — every ' +
-      'family also defines the full ~100-token contract inside its file.',
+      'family also defines the full 82-token contract inside its file.',
   );
   lines.push('');
   lines.push(
@@ -245,7 +245,7 @@ function buildGallery(families) {
   lines.push('## Adding or editing a theme');
   lines.push('');
   lines.push(
-    'Copy an existing file (say `dracula.md`), rename it to `<your-id>.md`, and edit the ' +
+    'Copy an existing file (say `fern.md`), rename it to `<your-id>.md`, and edit the ' +
       '`# Name` heading, the `**Family ID:**` line (it must match the filename), the `## Fonts` ' +
       'table, and the `## Light` / `## Dark` token tables. Optionally add a preview screenshot ' +
       'as a standalone `![Your Family](../imgs/themes/<your-id>.png)` line under the heading — ' +

@@ -682,7 +682,7 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert!(!css.contains(".reader-subtool.is-active"));
     assert!(css.contains(".reader-subtool[aria-pressed=\"true\"],\n"));
     assert!(css.contains(
-        "  background: color-mix(in srgb, var(--app-background) 88%, var(--app-foreground));\n  box-shadow: inset 0 0 0 1px var(--app-border-strong);"
+        "  background: color-mix(in srgb, var(--lt-background) 88%, var(--lt-foreground));\n  box-shadow: inset 0 0 0 1px var(--lt-border-strong);"
     ));
 
     // Two padlocks, both locked until you say otherwise, each a saved setting
@@ -896,7 +896,7 @@ fn a_web_address_is_a_node_drawn_as_a_ring_and_opened_in_the_browser() {
     // With a dot at the middle for the edge to end behind: edges draw under the
     // nodes, so a bare ring lets the line run through the hollow and stop in mid-air.
     assert!(html.contains("gfx.circle(0, 0, Math.max(1.6, radius * 0.36)).fill(0xffffff);"));
-    assert!(css.contains("radial-gradient(circle at center, var(--app-border) 1.6px"));
+    assert!(css.contains("radial-gradient(circle at center, var(--lt-border) 1.6px"));
 
     // An edge points the way the link was written; a pair that links each other gets
     // one line with a head at both ends. Heads drop on a dense map and at a far
@@ -913,7 +913,7 @@ fn a_web_address_is_a_node_drawn_as_a_ring_and_opened_in_the_browser() {
         .contains("const clear = graphNodeRadius(at.degree) * (at.gfx ? at.gfx.scale.x : 1) + 1;"));
     // And its own resting tint, quieter than a document's, so the documents are
     // still what the eye lands on.
-    assert!(html.contains("external: cssVarColor('--app-border', 0x3a3f4b),"));
+    assert!(html.contains("external: cssVarColor('--lt-border', 0x3a3f4b),"));
     assert!(html.contains("let color = node.external ? colors.external : colors.node;"));
 
     // Clicking one opens the browser and leaves the map exactly as it is. Nothing

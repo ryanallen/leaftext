@@ -311,16 +311,16 @@ function parseCssColor(value, fallback) {
 // re-read on theme change so the canvas recolors with the rest of the app.
 function graphColors() {
   return {
-    node: cssVarColor('--app-muted-foreground', 0x8b95a5),
-    active: cssVarColor('--accent', 0x8a63d2),
-    hot: cssVarColor('--app-foreground', 0xe6e6e6),
-    edge: cssVarColor('--app-border', 0x3a3f4b),
+    node: cssVarColor('--lt-muted-foreground', 0x8b95a5),
+    active: cssVarColor('--lt-accent', 0x8a63d2),
+    hot: cssVarColor('--lt-foreground', 0xe6e6e6),
+    edge: cssVarColor('--lt-border', 0x3a3f4b),
     // Ambient labels for the documents you are not on: the muted-foreground token
     // (a dim gray), so they read as secondary next to the active/hover labels.
-    dim: cssVarColor('--app-muted-foreground', 0x8b95a5),
+    dim: cssVarColor('--lt-muted-foreground', 0x8b95a5),
     // A web address at rest. The border token — the quietest thing the theme has a
     // name for — because these are the edge of the map rather than its subject.
-    external: cssVarColor('--app-border', 0x3a3f4b),
+    external: cssVarColor('--lt-border', 0x3a3f4b),
   };
 }
 

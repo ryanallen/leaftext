@@ -889,11 +889,11 @@ const THEME_ITEM_CHECK_SVG: &str = "<svg class=\"theme-item-check\" xmlns=\"http
 /// The tokens each card previews as a swatch strip: paper, ink, brand, then two
 /// code accents — the colors that make one theme look unlike another.
 const THEME_SWATCH_TOKENS: &[&str] = &[
-    "--leaf-background",
-    "--leaf-foreground",
-    "--leaf-primary",
-    "--leaf-syntax-keyword",
-    "--leaf-syntax-string",
+    "--lt-background",
+    "--lt-foreground",
+    "--lt-primary",
+    "--lt-syntax-keyword",
+    "--lt-syntax-string",
 ];
 
 /// Spinner shown over a card while the picker loads that theme's web font. The
@@ -922,10 +922,10 @@ fn theme_card_style(family: &str) -> String {
     let font = font.replace('"', "&quot;");
     format!(
         "--card-bg-light:{};--card-bg-dark:{};--card-fg-light:{};--card-fg-dark:{};--card-font:{font}",
-        pick(Appearance::Light, "--leaf-background"),
-        pick(Appearance::Dark, "--leaf-background"),
-        pick(Appearance::Light, "--leaf-foreground"),
-        pick(Appearance::Dark, "--leaf-foreground"),
+        pick(Appearance::Light, "--lt-background"),
+        pick(Appearance::Dark, "--lt-background"),
+        pick(Appearance::Light, "--lt-foreground"),
+        pick(Appearance::Dark, "--lt-foreground"),
     )
 }
 

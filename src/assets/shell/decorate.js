@@ -28,110 +28,110 @@ function loadMermaid() {
 // to the ones reading.css defines.
 const MERMAID_COLOR_MAP = {
   // The page the diagram is drawn on, and the ink on it.
-  background: '--reading-background',
-  textColor: '--reading-ink',
-  titleColor: '--reading-heading',
-  lineColor: '--muted-foreground',
-  errorBkgColor: '--danger',
+  background: '--lt-markdown-background',
+  textColor: '--lt-markdown-foreground',
+  titleColor: '--lt-markdown-heading',
+  lineColor: '--lt-muted-foreground',
+  errorBkgColor: '--lt-danger',
 
   // Flowcharts. Boxes are surfaces, not brand color: forty brand-colored boxes is
   // a poster.
-  mainBkg: '--surface-muted',
-  nodeBorder: '--border-strong',
-  nodeTextColor: '--reading-ink',
-  clusterBkg: '--surface-sunken',
-  clusterBorder: '--border',
-  defaultLinkColor: '--muted-foreground',
-  edgeLabelBackground: '--reading-background',
-  labelBackgroundColor: '--reading-background',
-  noteBkgColor: '--surface-muted',
-  noteTextColor: '--reading-ink',
-  noteBorderColor: '--border-strong',
+  mainBkg: '--lt-surface-muted',
+  nodeBorder: '--lt-border-strong',
+  nodeTextColor: '--lt-markdown-foreground',
+  clusterBkg: '--lt-surface-sunken',
+  clusterBorder: '--lt-border',
+  defaultLinkColor: '--lt-muted-foreground',
+  edgeLabelBackground: '--lt-markdown-background',
+  labelBackgroundColor: '--lt-markdown-background',
+  noteBkgColor: '--lt-surface-muted',
+  noteTextColor: '--lt-markdown-foreground',
+  noteBorderColor: '--lt-border-strong',
 
   // Sequence.
-  actorBkg: '--surface-muted',
-  actorBorder: '--border-strong',
-  actorTextColor: '--reading-ink',
-  actorLineColor: '--border-strong',
-  signalColor: '--reading-ink',
-  signalTextColor: '--reading-ink',
-  labelBoxBkgColor: '--surface-muted',
-  labelBoxBorderColor: '--border-strong',
-  loopTextColor: '--reading-ink',
-  activationBkgColor: '--surface-sunken',
-  activationBorderColor: '--border-strong',
+  actorBkg: '--lt-surface-muted',
+  actorBorder: '--lt-border-strong',
+  actorTextColor: '--lt-markdown-foreground',
+  actorLineColor: '--lt-border-strong',
+  signalColor: '--lt-markdown-foreground',
+  signalTextColor: '--lt-markdown-foreground',
+  labelBoxBkgColor: '--lt-surface-muted',
+  labelBoxBorderColor: '--lt-border-strong',
+  loopTextColor: '--lt-markdown-foreground',
+  activationBkgColor: '--lt-surface-sunken',
+  activationBorderColor: '--lt-border-strong',
 
   // State and class.
-  labelColor: '--reading-ink',
-  altBackground: '--surface-sunken',
-  stateBkg: '--surface-muted',
-  stateLabelColor: '--reading-ink',
-  transitionColor: '--muted-foreground',
-  transitionLabelColor: '--reading-ink',
-  compositeBackground: '--surface-muted',
-  compositeBorder: '--border-strong',
-  compositeTitleBackground: '--surface-sunken',
-  specialStateColor: '--reading-ink',
-  classText: '--reading-ink',
+  labelColor: '--lt-markdown-foreground',
+  altBackground: '--lt-surface-sunken',
+  stateBkg: '--lt-surface-muted',
+  stateLabelColor: '--lt-markdown-foreground',
+  transitionColor: '--lt-muted-foreground',
+  transitionLabelColor: '--lt-markdown-foreground',
+  compositeBackground: '--lt-surface-muted',
+  compositeBorder: '--lt-border-strong',
+  compositeTitleBackground: '--lt-surface-sunken',
+  specialStateColor: '--lt-markdown-foreground',
+  classText: '--lt-markdown-foreground',
 
   // Entity relationship: the striped attribute rows.
-  attributeBackgroundColorOdd: '--surface-muted',
-  attributeBackgroundColorEven: '--surface-sunken',
+  attributeBackgroundColorOdd: '--lt-surface-muted',
+  attributeBackgroundColorEven: '--lt-surface-sunken',
 
   // Gantt. A bar means something here, so the states are the theme's states:
   // ordinary, active, done, critical, and today.
-  sectionBkgColor: '--surface-muted',
-  sectionBkgColor2: '--surface-sunken',
-  altSectionBkgColor: '--reading-background',
-  taskBkgColor: '--primary',
-  taskBorderColor: '--primary',
-  taskTextOutsideColor: '--reading-ink',
-  activeTaskBkgColor: '--accent',
-  activeTaskBorderColor: '--accent',
-  doneTaskBkgColor: '--success',
-  doneTaskBorderColor: '--success',
-  critBkgColor: '--danger',
-  critBorderColor: '--danger',
-  todayLineColor: '--danger',
-  gridColor: '--border',
+  sectionBkgColor: '--lt-surface-muted',
+  sectionBkgColor2: '--lt-surface-sunken',
+  altSectionBkgColor: '--lt-markdown-background',
+  taskBkgColor: '--lt-primary',
+  taskBorderColor: '--lt-primary',
+  taskTextOutsideColor: '--lt-markdown-foreground',
+  activeTaskBkgColor: '--lt-accent',
+  activeTaskBorderColor: '--lt-accent',
+  doneTaskBkgColor: '--lt-success',
+  doneTaskBorderColor: '--lt-success',
+  critBkgColor: '--lt-danger',
+  critBorderColor: '--lt-danger',
+  todayLineColor: '--lt-danger',
+  gridColor: '--lt-border',
 
   // Pie. The slices are the categorical scale below; these are the parts around
   // them.
-  pieTitleTextColor: '--reading-heading',
-  pieLegendTextColor: '--reading-ink',
-  pieStrokeColor: '--reading-background',
-  pieOuterStrokeColor: '--border-strong',
+  pieTitleTextColor: '--lt-markdown-heading',
+  pieLegendTextColor: '--lt-markdown-foreground',
+  pieStrokeColor: '--lt-markdown-background',
+  pieOuterStrokeColor: '--lt-border-strong',
 
   // Git graph: the branch colors are the categorical scale below, the labels ours.
-  commitLabelColor: '--reading-ink',
-  commitLabelBackground: '--surface-muted',
-  tagLabelColor: '--reading-ink',
-  tagLabelBackground: '--surface-muted',
-  tagLabelBorder: '--border-strong',
+  commitLabelColor: '--lt-markdown-foreground',
+  commitLabelBackground: '--lt-surface-muted',
+  tagLabelColor: '--lt-markdown-foreground',
+  tagLabelBackground: '--lt-surface-muted',
+  tagLabelBorder: '--lt-border-strong',
 
   // Quadrant.
-  quadrant1Fill: '--surface-muted',
-  quadrant2Fill: '--surface-sunken',
-  quadrant3Fill: '--surface-muted',
-  quadrant4Fill: '--surface-sunken',
-  quadrant1TextFill: '--reading-ink',
-  quadrant2TextFill: '--reading-ink',
-  quadrant3TextFill: '--reading-ink',
-  quadrant4TextFill: '--reading-ink',
-  quadrantPointFill: '--primary',
-  quadrantXAxisTextFill: '--muted-foreground',
-  quadrantYAxisTextFill: '--muted-foreground',
-  quadrantTitleFill: '--reading-heading',
-  quadrantInternalBorderStrokeFill: '--border',
-  quadrantExternalBorderStrokeFill: '--border-strong',
+  quadrant1Fill: '--lt-surface-muted',
+  quadrant2Fill: '--lt-surface-sunken',
+  quadrant3Fill: '--lt-surface-muted',
+  quadrant4Fill: '--lt-surface-sunken',
+  quadrant1TextFill: '--lt-markdown-foreground',
+  quadrant2TextFill: '--lt-markdown-foreground',
+  quadrant3TextFill: '--lt-markdown-foreground',
+  quadrant4TextFill: '--lt-markdown-foreground',
+  quadrantPointFill: '--lt-primary',
+  quadrantXAxisTextFill: '--lt-muted-foreground',
+  quadrantYAxisTextFill: '--lt-muted-foreground',
+  quadrantTitleFill: '--lt-markdown-heading',
+  quadrantInternalBorderStrokeFill: '--lt-border',
+  quadrantExternalBorderStrokeFill: '--lt-border-strong',
 
   // Requirements.
-  requirementBackground: '--surface-muted',
-  requirementBorderColor: '--border-strong',
-  requirementTextColor: '--reading-ink',
-  relationColor: '--muted-foreground',
-  relationLabelBackground: '--reading-background',
-  relationLabelColor: '--reading-ink',
+  requirementBackground: '--lt-surface-muted',
+  requirementBorderColor: '--lt-border-strong',
+  requirementTextColor: '--lt-markdown-foreground',
+  relationColor: '--lt-muted-foreground',
+  relationLabelBackground: '--lt-markdown-background',
+  relationLabelColor: '--lt-markdown-foreground',
 };
 
 // The twelve-color categorical scale (mindmap, timeline, kanban, journey, pie,
@@ -145,7 +145,7 @@ const MERMAID_COLOR_MAP = {
 // lightness are nowhere near one weight, and one weight is what lets one ink read
 // on all twelve. A mindmap needs that: its labels are HTML and take the page's
 // ink whatever `cScaleLabel` says.
-const MERMAID_SCALE_SEED = '--primary';
+const MERMAID_SCALE_SEED = '--lt-primary';
 const MERMAID_SCALE_STEPS = 12;
 const MERMAID_SCALE_HUE_STEP = 150;
 // Off the page but under the page's ink, and the mirror of that in light mode.
@@ -165,34 +165,34 @@ const MERMAID_SCALE_SHAPE = {
 // the point shipped white text on a pale gray panel. Gantt bars are set per state
 // below: four colors, one variable, no ink that reads on all of them.
 const MERMAID_INK_MAP = {
-  taskTextColor: ['--primary'],
-  taskTextLightColor: ['--primary'],
-  sequenceNumberColor: ['--muted-foreground'],
-  errorTextColor: ['--danger'],
-  quadrantPointTextFill: ['--surface-muted', '--surface-sunken'],
+  taskTextColor: ['--lt-primary'],
+  taskTextLightColor: ['--lt-primary'],
+  sequenceNumberColor: ['--lt-muted-foreground'],
+  errorTextColor: ['--lt-danger'],
+  quadrantPointTextFill: ['--lt-surface-muted', '--lt-surface-sunken'],
 };
 
 // Every ink a diagram may print in — all theme colors, so a diagram never prints
 // in one the theme does not contain.
 const MERMAID_INK_CANDIDATES = [
-  '--reading-ink',
-  '--reading-background',
-  '--primary-foreground',
-  '--accent-foreground',
-  '--success-foreground',
-  '--danger-foreground',
+  '--lt-markdown-foreground',
+  '--lt-markdown-background',
+  '--lt-primary-foreground',
+  '--lt-accent-foreground',
+  '--lt-success-foreground',
+  '--lt-danger-foreground',
 ];
 
 // A bar's state is its color, so each state's text class takes the ink measured
 // against its own bar. Mermaid appends `themeCSS` after its own stylesheet, which
 // is the only way to give one variable four values.
 const MERMAID_GANTT_STATE_INKS = [
-  ['taskText', '--primary'],
-  ['activeText', '--accent'],
-  ['doneText', '--success'],
-  ['critText', '--danger'],
-  ['activeCritText', '--danger'],
-  ['doneCritText', '--danger'],
+  ['taskText', '--lt-primary'],
+  ['activeText', '--lt-accent'],
+  ['doneText', '--lt-success'],
+  ['critText', '--lt-danger'],
+  ['activeCritText', '--lt-danger'],
+  ['doneCritText', '--lt-danger'],
 ];
 const MERMAID_GANTT_SECTIONS = 4;
 
@@ -200,21 +200,21 @@ const MERMAID_GANTT_SECTIONS = 4;
 // rest, so it needs its own pass. Its plot palette *is* ours to set: mermaid does
 // no arithmetic on it, unlike the categorical scale.
 const MERMAID_XYCHART_COLOR_MAP = {
-  backgroundColor: '--reading-background',
-  titleColor: '--reading-heading',
-  xAxisLabelColor: '--reading-ink',
-  xAxisTitleColor: '--reading-ink',
-  xAxisTickColor: '--border-strong',
-  xAxisLineColor: '--border-strong',
-  yAxisLabelColor: '--reading-ink',
-  yAxisTitleColor: '--reading-ink',
-  yAxisTickColor: '--border-strong',
-  yAxisLineColor: '--border-strong',
+  backgroundColor: '--lt-markdown-background',
+  titleColor: '--lt-markdown-heading',
+  xAxisLabelColor: '--lt-markdown-foreground',
+  xAxisTitleColor: '--lt-markdown-foreground',
+  xAxisTickColor: '--lt-border-strong',
+  xAxisLineColor: '--lt-border-strong',
+  yAxisLabelColor: '--lt-markdown-foreground',
+  yAxisTitleColor: '--lt-markdown-foreground',
+  yAxisTickColor: '--lt-border-strong',
+  yAxisLineColor: '--lt-border-strong',
 };
 
 // What a bar or a line is painted with, in order. Six because a chart with more
 // series than that is past the point where color is what tells them apart.
-const MERMAID_PLOT_TOKENS = ['--primary', '--accent', '--success', '--warning', '--danger', '--done'];
+const MERMAID_PLOT_TOKENS = ['--lt-primary', '--lt-accent', '--lt-success', '--lt-warning', '--lt-danger', '--lt-done'];
 
 function themeTokenValue(style, token) {
   return (style.getPropertyValue(token) || '').trim();
@@ -353,7 +353,7 @@ function mermaidCategoricalScale(style, darkMode) {
 const MERMAID_C4_RELATION_COLOR = '#444444';
 
 function mermaidC4RelationCss(style) {
-  const ink = themeTokenValue(style, '--muted-foreground');
+  const ink = themeTokenValue(style, '--lt-muted-foreground');
   if (!ink) return '';
   return [
     'text[fill="' + MERMAID_C4_RELATION_COLOR + '"] { fill: ' + ink + ' !important; }',
@@ -1121,7 +1121,7 @@ window.leafRefreshImages = () => {
 const MISSING_IMAGE_SIZE = 40;
 function missingImageSource() {
   const style = window.getComputedStyle(document.documentElement);
-  const ink = themeTokenValue(style, '--preview-muted-foreground') || '#8b8b8b';
+  const ink = themeTokenValue(style, '--lt-muted-foreground') || '#8b8b8b';
   const svg = `{{MISSING_IMAGE_ICON_SVG}}`.replace(/currentColor/g, ink);
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }

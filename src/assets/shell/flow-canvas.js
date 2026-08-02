@@ -1974,7 +1974,7 @@ let flowExportSeq = 0;
 // and a pale-ink theme on nothing is a file that looks blank.
 function flowExportBackground() {
   const style = window.getComputedStyle(document.documentElement);
-  return (style.getPropertyValue('--surface') || '').trim() || '#ffffff';
+  return (style.getPropertyValue('--lt-surface') || '').trim() || '#ffffff';
 }
 
 // Text as base64, through its own bytes: `btoa` takes one character per byte, so

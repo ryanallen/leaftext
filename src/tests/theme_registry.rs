@@ -191,44 +191,38 @@ fn theme_compiler_gates_readable_pairs_for_every_source() {
 
     for source in theme_sources() {
         for (foreground, background) in [
-            ("--leaf-foreground", "--leaf-background"),
-            ("--leaf-muted-foreground", "--leaf-background"),
-            ("--leaf-primary-foreground", "--leaf-primary"),
-            ("--leaf-markdown-foreground", "--leaf-markdown-background"),
-            ("--leaf-markdown-heading", "--leaf-markdown-background"),
-            ("--leaf-markdown-heading-2", "--leaf-markdown-background"),
-            ("--leaf-markdown-heading-3", "--leaf-markdown-background"),
-            ("--leaf-markdown-heading-4", "--leaf-markdown-background"),
-            ("--leaf-markdown-heading-5", "--leaf-markdown-background"),
-            ("--leaf-markdown-heading-6", "--leaf-markdown-background"),
+            ("--lt-foreground", "--lt-background"),
+            ("--lt-muted-foreground", "--lt-background"),
+            ("--lt-primary-foreground", "--lt-primary"),
+            ("--lt-markdown-foreground", "--lt-markdown-background"),
+            ("--lt-markdown-heading", "--lt-markdown-background"),
+            ("--lt-markdown-heading-2", "--lt-markdown-background"),
+            ("--lt-markdown-heading-3", "--lt-markdown-background"),
+            ("--lt-markdown-heading-4", "--lt-markdown-background"),
+            ("--lt-markdown-heading-5", "--lt-markdown-background"),
+            ("--lt-markdown-heading-6", "--lt-markdown-background"),
+            ("--lt-editor-code-foreground", "--lt-editor-code-background"),
             (
-                "--leaf-editor-code-foreground",
-                "--leaf-editor-code-background",
+                "--lt-editor-code-selection-foreground",
+                "--lt-editor-code-selection-background",
             ),
             (
-                "--leaf-editor-code-selection-foreground",
-                "--leaf-editor-code-selection-background",
+                "--lt-focus-selection-foreground",
+                "--lt-focus-selection-background",
             ),
-            (
-                "--leaf-focus-selection-foreground",
-                "--leaf-focus-selection-background",
-            ),
-            ("--leaf-syntax-foreground", "--leaf-syntax-background"),
-            ("--leaf-syntax-comment", "--leaf-syntax-background"),
-            ("--leaf-syntax-keyword", "--leaf-syntax-background"),
-            ("--leaf-syntax-string", "--leaf-syntax-background"),
-            ("--leaf-syntax-number", "--leaf-syntax-background"),
-            ("--leaf-syntax-function", "--leaf-syntax-background"),
-            ("--leaf-syntax-variable", "--leaf-syntax-background"),
-            ("--leaf-syntax-type", "--leaf-syntax-background"),
-            ("--leaf-syntax-operator", "--leaf-syntax-background"),
-            ("--leaf-syntax-punctuation", "--leaf-syntax-background"),
-            (
-                "--leaf-syntax-inserted",
-                "--leaf-syntax-inserted-background",
-            ),
-            ("--leaf-syntax-deleted", "--leaf-syntax-deleted-background"),
-            ("--leaf-syntax-changed", "--leaf-syntax-changed-background"),
+            ("--lt-syntax-foreground", "--lt-syntax-background"),
+            ("--lt-syntax-comment", "--lt-syntax-background"),
+            ("--lt-syntax-keyword", "--lt-syntax-background"),
+            ("--lt-syntax-string", "--lt-syntax-background"),
+            ("--lt-syntax-number", "--lt-syntax-background"),
+            ("--lt-syntax-function", "--lt-syntax-background"),
+            ("--lt-syntax-variable", "--lt-syntax-background"),
+            ("--lt-syntax-type", "--lt-syntax-background"),
+            ("--lt-syntax-operator", "--lt-syntax-background"),
+            ("--lt-syntax-punctuation", "--lt-syntax-background"),
+            ("--lt-syntax-inserted", "--lt-syntax-inserted-background"),
+            ("--lt-syntax-deleted", "--lt-syntax-deleted-background"),
+            ("--lt-syntax-changed", "--lt-syntax-changed-background"),
         ] {
             let ratio = contrast_ratio(
                 css_token_for_source(css, source, foreground),
@@ -259,50 +253,50 @@ fn theme_compiler_gates_diagram_colors_for_every_source() {
     let text_pairs = [
         (
             "diagram text",
-            "--leaf-markdown-foreground",
-            "--leaf-markdown-background",
+            "--lt-markdown-foreground",
+            "--lt-markdown-background",
             4.5,
         ),
         (
             "title",
-            "--leaf-markdown-heading",
-            "--leaf-markdown-background",
+            "--lt-markdown-heading",
+            "--lt-markdown-background",
             4.5,
         ),
         (
             "node label",
-            "--leaf-markdown-foreground",
-            "--leaf-surface-muted",
+            "--lt-markdown-foreground",
+            "--lt-surface-muted",
             4.5,
         ),
         (
             "subgraph label",
-            "--leaf-markdown-foreground",
-            "--leaf-surface-sunken",
+            "--lt-markdown-foreground",
+            "--lt-surface-sunken",
             4.5,
         ),
         (
             "quadrant axis label",
-            "--leaf-muted-foreground",
-            "--leaf-markdown-background",
+            "--lt-muted-foreground",
+            "--lt-markdown-background",
             4.5,
         ),
         (
             "arrows",
-            "--leaf-muted-foreground",
-            "--leaf-markdown-background",
+            "--lt-muted-foreground",
+            "--lt-markdown-background",
             3.0,
         ),
         (
             "node outline",
-            "--leaf-border-strong",
-            "--leaf-markdown-background",
+            "--lt-border-strong",
+            "--lt-markdown-background",
             1.2,
         ),
         (
             "subgraph outline",
-            "--leaf-border",
-            "--leaf-markdown-background",
+            "--lt-border",
+            "--lt-markdown-background",
             1.1,
         ),
     ];
@@ -310,26 +304,26 @@ fn theme_compiler_gates_diagram_colors_for_every_source() {
     // every fill in the group and the worst one decides, because one variable can
     // serve several fills — `readableInk` in decorate.js picks the same way.
     let inked_fills: [(&str, &[&str]); 7] = [
-        ("gantt bar", &["--leaf-primary"]),
-        ("gantt active bar", &["--leaf-accent"]),
-        ("gantt done bar", &["--leaf-success"]),
-        ("gantt critical bar", &["--leaf-danger"]),
-        ("sequence number", &["--leaf-muted-foreground"]),
-        ("error box", &["--leaf-danger"]),
+        ("gantt bar", &["--lt-primary"]),
+        ("gantt active bar", &["--lt-accent"]),
+        ("gantt done bar", &["--lt-success"]),
+        ("gantt critical bar", &["--lt-danger"]),
+        ("sequence number", &["--lt-muted-foreground"]),
+        ("error box", &["--lt-danger"]),
         (
             "quadrant point label",
-            &["--leaf-surface-muted", "--leaf-surface-sunken"],
+            &["--lt-surface-muted", "--lt-surface-sunken"],
         ),
     ];
     // Every ink a diagram may print in — the page's two, plus the inks the theme
     // picked for its colored surfaces. Mirrors MERMAID_INK_CANDIDATES.
     let inks = [
-        "--leaf-markdown-foreground",
-        "--leaf-markdown-background",
-        "--leaf-primary-foreground",
-        "--leaf-accent-foreground",
-        "--leaf-success-foreground",
-        "--leaf-danger-foreground",
+        "--lt-markdown-foreground",
+        "--lt-markdown-background",
+        "--lt-primary-foreground",
+        "--lt-accent-foreground",
+        "--lt-success-foreground",
+        "--lt-danger-foreground",
     ];
 
     for source in theme_sources() {
@@ -378,14 +372,14 @@ fn theme_compiler_gates_interactive_chrome_contrast() {
         for (foreground, background) in [
             // Filled action buttons and their hover state (the tab close X reuses
             // the action foreground on the action hover background).
-            ("--leaf-primary-foreground", "--leaf-primary"),
+            ("--lt-primary-foreground", "--lt-primary"),
             (
-                "--leaf-primary-foreground",
-                "--leaf-navigation-button-hover-background",
+                "--lt-primary-foreground",
+                "--lt-navigation-button-hover-background",
             ),
             (
-                "--leaf-markdown-badge-foreground",
-                "--leaf-markdown-badge-background",
+                "--lt-markdown-badge-foreground",
+                "--lt-markdown-badge-background",
             ),
         ] {
             let ratio = contrast_ratio(

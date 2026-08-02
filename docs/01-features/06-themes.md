@@ -2,7 +2,7 @@
 
 > Make it look like yours. Pick a **family** (the palette) and an **appearance** (light or dark), and everything moves together — text, code, callouts, minimap — because every theme fills the same semantic token contract, checked when the theme CSS is compiled at launch. Each family's font is fetched from Google Fonts the first time you choose it, rather than bundled.
 
-From the user side, themes are simple: open the theme picker, tap a family, pick an appearance, and the app updates immediately. Under the hood every family covers the full `--leaf-*` token set, and the active family's font is loaded from Google Fonts the moment you switch to it.
+From the user side, themes are simple: open the theme picker, tap a family, pick an appearance, and the app updates immediately. Under the hood every family covers the full `--lt-*` token set, and the active family's font is loaded from Google Fonts the moment you switch to it.
 
 ## Families
 
@@ -157,8 +157,8 @@ The theme picker links to the project on GitHub for making your own theme. A the
 
 The compiled stylesheet is assembled in this order:
 
-1. Compiled `--leaf-*` theme mappings (each family's palette, plus its font-family stacks)
-2. The `:root` alias layer — the radius/shadow scales and the short component names the UI consumes
+1. Compiled `--lt-*` theme mappings (each family's palette, plus its font-family stacks)
+2. The stylesheet's own `:root` block — the radius and shadow scales, the type scale, the layout metrics: one value each, whatever theme is on
 3. App CSS for layout and components
 
 Every palette is pure data, compiled from [`themes.md`](../02-development/04-theming.md#palettes-are-data-themesmd); the font *files* still load separately from Google Fonts per the active theme. The ordering keeps one stable semantic layer so the app can swap themes quickly.

@@ -1274,8 +1274,10 @@ if (booted) {
   // Diagrams are drawn in the theme's own colors, read off :root at render time.
   // A token that does not exist reads as an empty string, mermaid falls back to
   // its own palette, and the diagram quietly stops matching the page — so every
-  // name in the maps is held to the ones the stylesheet actually defines.
-  check('the mermaid theme map only names tokens the stylesheet defines', () => {
+  // name in the maps is held to one that really is defined. A color comes from the
+  // contract in theme.rs, which every theme fills; everything else from the
+  // stylesheet's own block.
+  check('the mermaid theme map only names tokens that exist', () => {
     // Read from the fragment rather than the booted page: a `const` in the shell
     // script is not a property of the context, and the map should not have to
     // become one to be checked.
@@ -1287,11 +1289,19 @@ if (booted) {
     if (!maps) throw new Error('could not find the mermaid theme maps in decorate.js');
     const used = [...new Set([...maps.matchAll(/'(--[a-z0-9-]+)'/g)].map((m) => m[1]))];
     if (used.length < 15) throw new Error(`expected the whole map, got ${used.length} tokens`);
+    const theme = readFileSync(join(root, 'src/theme.rs'), 'utf8');
+    const contract = theme.slice(
+      theme.indexOf('LEAF_SEMANTIC_TOKEN_CONTRACT'),
+      theme.indexOf('fn leak_str'),
+    );
     const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
-    const defined = new Set([...css.matchAll(/^\s{2}(--[a-z0-9-]+):/gm)].map((m) => m[1]));
-    if (defined.size < 50) throw new Error(`only found ${defined.size} tokens in reading.css`);
+    const defined = new Set([
+      ...[...contract.matchAll(/'?"(--lt-[a-z0-9-]+)"/g)].map((m) => m[1]),
+      ...[...css.matchAll(/^\s{2}(--[a-z0-9-]+):/gm)].map((m) => m[1]),
+    ]);
+    if (defined.size < 50) throw new Error(`only found ${defined.size} tokens`);
     const missing = used.filter((token) => !defined.has(token));
-    if (missing.length) throw new Error(`not defined in reading.css: ${missing.join(', ')}`);
+    if (missing.length) throw new Error(`no such token: ${missing.join(', ')}`);
   });
 
   // The diagram's labels are set in the theme's body font, which theme.rs emits

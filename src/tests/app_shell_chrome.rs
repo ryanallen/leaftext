@@ -237,7 +237,7 @@ fn app_shell_inlines_one_leaf_mark_that_tracks_the_theme() {
             .map(|offset| rule_start + offset)
             .expect("rule closes");
         assert!(
-            css[rule_start..rule_end].contains("color: var(--primary)"),
+            css[rule_start..rule_end].contains("color: var(--lt-primary)"),
             "{selector} should take the theme's primary color"
         );
     }
@@ -255,11 +255,11 @@ fn app_shell_normalizes_literal_svg_icon_colors_to_current_color() {
 
 #[test]
 fn app_shell_preserves_tokenized_svg_icon_colors() {
-    let icon = r##"<svg><path fill="var(--leaf-icon-base)" stroke='var(--leaf-icon-accent)'/><path fill="transparent" stroke="inherit"/></svg>"##;
+    let icon = r##"<svg><path fill="var(--lt-icon-base)" stroke='var(--lt-icon-accent)'/><path fill="transparent" stroke="inherit"/></svg>"##;
 
     assert_eq!(
         normalize_svg_icon_colors(icon),
-        r##"<svg><path fill="var(--leaf-icon-base)" stroke='var(--leaf-icon-accent)'/><path fill="transparent" stroke="inherit"/></svg>"##
+        r##"<svg><path fill="var(--lt-icon-base)" stroke='var(--lt-icon-accent)'/><path fill="transparent" stroke="inherit"/></svg>"##
     );
 }
 
@@ -307,11 +307,11 @@ fn app_shell_styles_history_controls_with_neutral_icon_treatment() {
     for expected in [
         ".history-button {",
         "border-color: transparent;",
-        "background: var(--settings-control-background);",
-        "color: var(--settings-control-foreground);",
+        "background: var(--lt-surface-elevated);",
+        "color: var(--lt-foreground);",
         ".history-button:hover:not(:disabled)",
         ".history-button:disabled,\n.history-button:disabled:hover",
-        "color: var(--app-muted-foreground);",
+        "color: var(--lt-muted-foreground);",
         "opacity: 0.46;",
     ] {
         assert_contains(css, expected);
@@ -326,9 +326,9 @@ fn app_shell_styles_open_button_like_other_secondary_toolbar_icons() {
         ".open-button {",
         "border-color: transparent;",
         "background: transparent;",
-        "color: var(--app-muted-foreground);",
+        "color: var(--lt-muted-foreground);",
         ".open-button:hover {",
-        "color: var(--app-action-foreground);",
+        "color: var(--lt-primary-foreground);",
     ] {
         assert_contains(css, expected);
     }
@@ -341,22 +341,22 @@ fn app_shell_header_keeps_one_chrome_shade_with_dividers() {
     for expected in [
         // One flat chrome shade under the dot grid. No translucent fill or backdrop
         // blur: either makes the bar's tone depend on what sits behind it.
-        "background-color: var(--chrome-surface);",
+        "background-color: var(--lt-surface);",
         // The circles are written here rather than pulled from a variable holding
         // the finished gradient: the ink has to resolve on the element that draws
         // it, or a surface setting its own would silently get this one's.
-        "background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);",
-        "--leaf-grain-dot: var(--app-bar-grain);",
+        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);",
+        "--lt-grain-dot: var(--app-bar-grain);",
         "background-size: 2px 2px;",
         // The grain tiles from the window, so every grained surface shares one
         // lattice and no seam between them reads as a hairline.
         "background-attachment: fixed;",
         // The bar keeps a hairline top divider in the outer border color.
-        "border-top: 1px solid var(--app-border);",
+        "border-top: 1px solid var(--lt-border);",
         // The bottom divider is drawn by ::after (not border-bottom) so the
         // active tab can paint over it and read as joined to the page below.
         ".app-bar::after {",
-        "background: var(--app-border);",
+        "background: var(--lt-border);",
     ] {
         assert_contains(css, expected);
     }
@@ -370,8 +370,8 @@ fn app_shell_header_keeps_one_chrome_shade_with_dividers() {
     // tone seam where it meets its neighbor.
     assert!(!css.contains("--library-surface"));
     for tinted in [
-        "color-mix(in srgb, var(--chrome-surface)",
-        "color-mix(in srgb, var(--app-surface) 98%, black)",
+        "color-mix(in srgb, var(--lt-surface)",
+        "color-mix(in srgb, var(--lt-surface) 98%, black)",
     ] {
         assert!(!css.contains(tinted), "chrome must not tint {tinted}");
     }
@@ -428,7 +428,7 @@ fn app_shell_persists_and_applies_speed_reader_setting() {
         "color: inherit;",
         "text-decoration: none;",
         r#":root[data-speed-reader="true"] .document-body a:hover,"#,
-        "color: var(--markdown-link-hover);",
+        "color: var(--lt-link-hover);",
         r#":root[data-speed-reader="true"] .document-body .speed-reader-anchor"#,
         "font-weight: 700;",
     ] {

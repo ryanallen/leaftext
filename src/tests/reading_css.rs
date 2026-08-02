@@ -6,85 +6,10 @@ use super::*;
 fn reading_mode_css_includes_light_dark_syntax_themes() {
     let css = reading_mode_css();
 
-    for token in [
-        "--background:",
-        "--foreground:",
-        "--surface:",
-        "--surface-elevated:",
-        "--surface-muted:",
-        "--surface-sunken:",
-        "--border:",
-        "--border-strong:",
-        "--muted-foreground:",
-        "--primary:",
-        "--primary-foreground:",
-        "--accent:",
-        "--accent-foreground:",
-        "--danger:",
-        "--danger-foreground:",
-        "--warning:",
-        "--success:",
-        "--success-foreground:",
-        "--done:",
-        "--link:",
-        "--link-hover:",
-        "--selection:",
-        "--focus-ring:",
-        "--shadow:",
-        "--app-background:",
-        "--app-foreground:",
-        "--app-border:",
-        "--app-surface:",
-        "--app-surface-elevated:",
-        "--app-muted-foreground:",
-        "--app-action-background:",
-        "--app-action-foreground:",
-        "--app-focus-ring:",
-        "--app-selection-background:",
-        "--settings-label-foreground:",
-        "--settings-control-background:",
-        "--settings-control-border:",
-        "--preview-background:",
-        "--preview-foreground:",
-        "--preview-heading:",
-        "--preview-border:",
-        "--markdown-inline-code-background:",
-        "--markdown-inline-code-foreground:",
-        "--markdown-alert-warning-border:",
-        "--markdown-table-cell-border:",
-        "--markdown-table-heading-background:",
-        "--markdown-thematic-break:",
-        "--minimap-viewport-border:",
-        "--minimap-viewport-background:",
-        "--code-block-background:",
-        "--code-block-foreground:",
-        "--code-block-border:",
-        "--code-block-selection-background:",
-        "--markdown-code-background:",
-        "--markdown-code-foreground:",
-        "--markdown-blockquote-border:",
-        "--markdown-blockquote-foreground:",
-        "--markdown-table-border:",
-        "--markdown-table-header-background:",
-        "--markdown-hr:",
-        "--markdown-link:",
-        "--markdown-link-hover:",
-        "--syntax-background:",
-        "--syntax-foreground:",
-        "--syntax-comment:",
-        "--syntax-keyword:",
-        "--syntax-string:",
-        "--syntax-number:",
-        "--syntax-function:",
-        "--syntax-variable:",
-        "--syntax-type:",
-        "--syntax-operator:",
-        "--syntax-punctuation:",
-        "--syntax-inserted:",
-        "--syntax-deleted:",
-        "--syntax-changed:",
-    ] {
-        assert_contains(css, token);
+    // There is one name per color: the contract token itself, emitted per family.
+    // No alias layer sits over it, so a rule and a theme spell a color the same way.
+    for token in LEAF_SEMANTIC_TOKEN_CONTRACT {
+        assert_contains(css, &format!("{token}:"));
     }
 
     // No fonts are bundled into the stylesheet: the app uses system fonts, and
@@ -100,28 +25,22 @@ fn reading_mode_css_includes_light_dark_syntax_themes() {
     assert!(!css.contains("var(--bgColor-default)"));
     assert!(!css.contains("var(--prettylights-syntax-comment)"));
     assert_contains(css, "/* Leaf semantic theme compiler output. */");
-    assert_contains(css, "--leaf-theme-source: github-light;");
-    assert_contains(css, "--leaf-theme-source: github-dark;");
-    assert_contains(css, "--leaf-theme-source: nightshade-light;");
-    assert_contains(css, "--leaf-theme-source: nightshade-dark;");
-    assert_contains(css, "--leaf-theme-source: amaranth-light;");
-    assert_contains(css, "--leaf-theme-source: amaranth-dark;");
+    assert_contains(css, "--lt-theme-source: github-light;");
+    assert_contains(css, "--lt-theme-source: github-dark;");
+    assert_contains(css, "--lt-theme-source: nightshade-light;");
+    assert_contains(css, "--lt-theme-source: nightshade-dark;");
+    assert_contains(css, "--lt-theme-source: amaranth-light;");
+    assert_contains(css, "--lt-theme-source: amaranth-dark;");
     assert_contains(
         css,
         r#":root[data-leaf-theme="nightshade"][data-leaf-appearance="dark"]"#,
     );
     // GitHub's tokens are concrete hex, like every other family's.
-    assert_contains(css, "--leaf-background: #ffffff;");
-    assert_contains(css, "--leaf-syntax-comment: #59636e;");
-    assert_contains(
-        css,
-        "--reading-background: var(--leaf-markdown-background);",
-    );
-    assert_contains(css, "--syntax-comment: var(--leaf-syntax-comment);");
-    assert_contains(css, "--leaf-syntax-inserted: #116329;");
-    assert_contains(css, "--syntax-inserted: var(--leaf-syntax-inserted);");
-    assert_contains(css, "--syntax-inserted-bg:");
-    assert_contains(css, "--syntax-deleted-bg:");
+    assert_contains(css, "--lt-background: #ffffff;");
+    assert_contains(css, "--lt-syntax-comment: #59636e;");
+    assert_contains(css, "--lt-syntax-inserted: #116329;");
+    assert_contains(css, "--lt-syntax-inserted-background:");
+    assert_contains(css, "--lt-syntax-deleted-background:");
     assert_contains(css, ".document-body input[type=\"checkbox\"]");
     assert_contains(css, ".document-body .math-display");
     assert_contains(css, ".document-body summary");
@@ -135,35 +54,35 @@ fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
     let css = reading_mode_css();
 
     for rule in [
-        "background: var(--app-background);",
-        "color: var(--app-foreground);",
-        "background-color: var(--chrome-surface);",
-        "color: var(--settings-label-foreground);",
-        "border: 1px solid var(--settings-control-border);",
-        "background: var(--settings-control-background);",
-        "outline: 3px solid var(--app-focus-ring);",
-        "background: var(--app-selection-background);",
-        "color: var(--app-selection-foreground);",
-        "background: var(--preview-background);",
-        "color: var(--preview-foreground);",
-        "color: var(--preview-heading);",
-        "background: var(--markdown-inline-code-background);",
-        "color: var(--markdown-inline-code-foreground);",
-        "border-left: 0.25em solid var(--markdown-blockquote-border);",
-        "color: var(--markdown-blockquote-foreground);",
-        "border-left-color: var(--markdown-alert-warning-border);",
-        "border: 1px solid var(--markdown-table-cell-border);",
-        "background: var(--markdown-table-heading-background);",
-        "background: var(--markdown-thematic-break);",
-        "background: var(--code-block-background);",
+        "background: var(--lt-background);",
+        "color: var(--lt-foreground);",
+        "background-color: var(--lt-surface);",
+        "color: var(--lt-muted-foreground);",
+        "border: 1px solid var(--lt-border);",
+        "background: var(--lt-surface-elevated);",
+        "outline: 3px solid var(--lt-focus-ring);",
+        "background: var(--lt-focus-selection-background);",
+        "color: var(--lt-focus-selection-foreground);",
+        "background: var(--lt-markdown-background);",
+        "color: var(--lt-markdown-foreground);",
+        "color: var(--lt-markdown-heading);",
+        "background: var(--lt-editor-inline-code-background);",
+        "color: var(--lt-editor-inline-code-foreground);",
+        "border-left: 0.25em solid var(--lt-markdown-blockquote-border);",
+        "color: var(--lt-markdown-blockquote-foreground);",
+        "border-left-color: var(--lt-markdown-alert-warning);",
+        "border: 1px solid var(--lt-markdown-table-border);",
+        "background: var(--lt-markdown-table-header-background);",
+        "background: var(--lt-markdown-thematic-break);",
+        "background: var(--lt-editor-code-background);",
         "background-clip: padding-box;",
         "clip-path: inset(0 round 6px);",
-        "color: var(--code-block-foreground);",
-        "background: var(--code-block-selection-background);",
-        "color: var(--code-block-selection-foreground);",
-        "background: var(--keyboard-background);",
-        "border-top: 1px solid var(--recent-border);",
-        "border: 1px solid var(--minimap-viewport-border);",
+        "color: var(--lt-editor-code-foreground);",
+        "background: var(--lt-editor-code-selection-background);",
+        "color: var(--lt-editor-code-selection-foreground);",
+        "background: var(--lt-markdown-keyboard-background);",
+        "border-top: 1px solid var(--lt-navigation-recent-border);",
+        "border: 1px solid var(--lt-minimap-viewport-border);",
     ] {
         assert_contains(css, rule);
     }
@@ -178,11 +97,14 @@ fn the_home_screens_new_document_button_stays_readable_on_hover() {
 
     let rest = rule_body(&css, ".primary-new {");
     assert_contains(rest, "background: transparent;");
-    assert_contains(rest, "color: var(--preview-foreground);");
+    assert_contains(rest, "color: var(--lt-markdown-foreground);");
 
     let hover = rule_body(&css, ".primary-new:hover {");
-    assert_contains(hover, "background: var(--app-action-hover-background);");
-    assert_contains(hover, "color: var(--app-action-foreground);");
+    assert_contains(
+        hover,
+        "background: var(--lt-navigation-button-hover-background);",
+    );
+    assert_contains(hover, "color: var(--lt-primary-foreground);");
 }
 
 #[test]
@@ -222,7 +144,7 @@ fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
         .expect("the frontmatter table opts out");
 
     // The row grain belongs to the untinted stripe, not the tinted one.
-    assert_contains(&css[odd..], "--leaf-grain-dot: var(--reader-row-grain);");
+    assert_contains(&css[odd..], "--lt-grain-dot: var(--reader-row-grain);");
     // Same 2px lattice on both, so the dots line up down the page across a stripe.
     assert_contains(&css[odd..], "background-size: 2px 2px;");
 
@@ -236,33 +158,40 @@ fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
 }
 
 #[test]
-fn reading_mode_css_maps_role_aliases_to_released_tokens() {
+fn reading_mode_css_keeps_one_name_per_color() {
+    // A property whose whole value is one var() over a contract token is a second
+    // name for that color. Four such layers over 112 tokens is what this replaced,
+    // so the rule is: every rule reads the contract name.
     let css = reading_mode_css();
 
-    for alias in [
-        "--app-background: var(--background);",
-        "--app-foreground: var(--foreground);",
-        "--app-border: var(--border);",
-        "--app-surface: var(--surface);",
-        "--app-surface-elevated: var(--surface-elevated);",
-        "--app-action-background: var(--primary);",
-        "--app-action-foreground: var(--primary-foreground);",
-        "--settings-control-background: var(--surface-elevated);",
-        "--settings-control-foreground: var(--foreground);",
-        "--preview-background: var(--reading-background);",
-        "--preview-foreground: var(--reading-ink);",
-        "--preview-heading: var(--reading-heading);",
-        "--markdown-inline-code-background: var(--markdown-code-background);",
-        "--markdown-inline-code-foreground: var(--markdown-code-foreground);",
-        "--markdown-table-cell-border: var(--markdown-table-border);",
-        "--markdown-table-heading-background: var(--markdown-table-header-background);",
-        "--code-block-background: var(--leaf-editor-code-background);",
-        "--code-block-foreground: var(--leaf-editor-code-foreground);",
-        "--code-block-selection-foreground: var(--leaf-editor-code-selection-foreground);",
-        "--minimap-viewport-border: var(--leaf-minimap-viewport-border);",
-        "--minimap-viewport-background: var(--leaf-minimap-viewport-background);",
-    ] {
-        assert_contains(css, alias);
+    let declarations: Vec<(&str, &str)> = css
+        .lines()
+        .map(str::trim)
+        .filter_map(|line| line.split_once(':'))
+        .filter(|(name, _)| name.starts_with("--"))
+        .map(|(name, value)| (name, value.trim().trim_end_matches(';')))
+        .collect();
+
+    for (name, value) in &declarations {
+        // A name declared twice takes its value from context — the code view swaps
+        // the tab fill and the edge fade — so it is not a second name for one color.
+        if declarations
+            .iter()
+            .filter(|(other, _)| other == name)
+            .count()
+            > 1
+        {
+            continue;
+        }
+        let inner = value
+            .strip_prefix("var(")
+            .and_then(|rest| rest.strip_suffix(')'))
+            .map(str::trim);
+        assert!(
+            !inner.is_some_and(|token| LEAF_SEMANTIC_TOKEN_CONTRACT.contains(&token)),
+            "{name} is a second name for {}",
+            inner.unwrap_or_default()
+        );
     }
 }
 
@@ -340,8 +269,8 @@ fn reading_mode_css_uses_web_reader_document_rhythm() {
             ".document-body ul,\n.document-body ol {\n  padding-left: 2em;\n}",
             ".document-body li + li {\n  margin-top: 0.25em;\n}",
             ".document-body li > ul,\n.document-body li > ol {\n  margin: 0.25em 0 0;\n}",
-            ".document-body input[type=\"checkbox\"] {\n  accent-color: var(--leaf-markdown-checkbox, #6e7681);\n  margin-right: 0.4em;\n}",
-            ".document-body blockquote {\n  border-left: 0.25em solid var(--markdown-blockquote-border);\n  color: var(--markdown-blockquote-foreground);\n  padding: 0 1em;\n}",
+            ".document-body input[type=\"checkbox\"] {\n  accent-color: var(--lt-markdown-checkbox, #6e7681);\n  margin-right: 0.4em;\n}",
+            ".document-body blockquote {\n  border-left: 0.25em solid var(--lt-markdown-blockquote-border);\n  color: var(--lt-markdown-blockquote-foreground);\n  padding: 0 1em;\n}",
             ".document-body blockquote:not(.markdown-alert) p {\n  padding-left: 1.25em;\n  text-indent: -1.25em;\n}",
             ".document-body blockquote:not(.markdown-alert) p.blockquote-lines {\n  padding-left: 0;\n  text-indent: 0;\n}",
             ".document-body blockquote:not(.markdown-alert) .blockquote-line {\n  display: block;\n  padding-left: 1.25em;\n  text-indent: -1.25em;\n}",
@@ -353,7 +282,7 @@ fn reading_mode_css_uses_web_reader_document_rhythm() {
             ".document-body table {",
             "overflow: auto;",
             "width: max-content;",
-            ".document-body th,\n.document-body td {\n  border: 1px solid var(--markdown-table-cell-border);\n  padding: 0.375em 0.8125em;\n}",
+            ".document-body th,\n.document-body td {\n  border: 1px solid var(--lt-markdown-table-border);\n  padding: 0.375em 0.8125em;\n}",
             ".document-body hr {\n  border: 0;\n  height: 1px;\n  margin: var(--type-spacing) 0;",
             "@media (max-width: 600px) {\n  :root {\n    --reader-content-pad: 16px;",
         ] {
@@ -396,7 +325,7 @@ fn app_css_is_served_over_the_asset_protocol_not_inlined() {
     // and app layout all resolve here.
     let body = std::str::from_utf8(&css.body).expect("app.css is utf-8");
     assert_eq!(body, reading_mode_css());
-    assert!(body.contains("--leaf-background"));
+    assert!(body.contains("--lt-background"));
     assert!(body.contains(".app-bar"));
 }
 
@@ -419,8 +348,8 @@ fn reading_surfaces_carry_the_chrome_dot_grain() {
         ".document-body pre,",
         ".document-body th,",
         ".document-body tr:nth-child(2n) td {",
-        "--leaf-grain-dot: var(--reader-surface-grain);",
-        "background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);",
+        "--lt-grain-dot: var(--reader-surface-grain);",
+        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);",
         "background-size: 2px 2px;",
         "background-attachment: fixed;",
     ] {
@@ -551,13 +480,13 @@ fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
     // The edge is the chrome's dot screen in the page's color, so it has to be the
     // same circle on the same lattice as the bar — and each rule has to write the
     // circles itself. A custom property holding the whole gradient resolves its ink
-    // where it is declared, so one at `:root` outranks every `--leaf-grain-dot`
+    // where it is declared, so one at `:root` outranks every `--lt-grain-dot`
     // below it: v0.1.439 screened the chrome's dark ink over a light page, 239-255
     // gray where the page is 255.
     let css = reading_mode_css();
-    let grain = "background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);";
+    let grain = "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);";
     assert!(
-        !css.contains("--leaf-grain-image:"),
+        !css.contains("--lt-grain-image:"),
         "the lattice must not go through a variable holding the whole gradient: the ink \
          inside it would resolve at the root and no override could reach it"
     );
@@ -571,14 +500,14 @@ fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
     // And the ink is the page's own color, which is the whole point: over a flat
     // page the screen cannot be seen, and over a tinted block at the edge it still
     // carries the lattice.
-    assert_contains(shared, "--leaf-grain-dot: var(--reader-edge-fade-surface);");
+    assert_contains(shared, "--lt-grain-dot: var(--reader-edge-fade-surface);");
     assert_contains(
         rule_body(css, ".reader-edge-fade {"),
-        "--reader-edge-fade-surface: var(--preview-background);",
+        "--reader-edge-fade-surface: var(--lt-markdown-background);",
     );
     assert_contains(
         rule_body(css, ".reader-shell {"),
-        "background: var(--preview-background);",
+        "background: var(--lt-markdown-background);",
     );
     // Depth is one number, shared with the wash under the screen.
     assert_contains(shared, "height: var(--reader-edge-fade-depth);");
@@ -780,7 +709,7 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
     );
     assert!(
         !css.contains(
-            ".reader-shell {\n  background: var(--preview-background);\n  scrollbar-width: none;"
+            ".reader-shell {\n  background: var(--lt-markdown-background);\n  scrollbar-width: none;"
         ),
         "scrollbar-width must not sit on the base rule, or the thin bar can never be styled"
     );
@@ -792,39 +721,39 @@ fn reading_mode_css_keeps_markdown_and_code_ready_for_theme_tokens() {
 
     for rule in [
         ".document-body code {",
-        "background: var(--markdown-inline-code-background);",
-        "color: var(--markdown-inline-code-foreground);",
+        "background: var(--lt-editor-inline-code-background);",
+        "color: var(--lt-editor-inline-code-foreground);",
         ".document-body pre {",
-        "background: var(--code-block-background);",
-        "color: var(--code-block-foreground);",
+        "background: var(--lt-editor-code-background);",
+        "color: var(--lt-editor-code-foreground);",
         ".document-body pre code {",
         "background: transparent;",
         "color: inherit;",
         ".document-body .syn-comment",
-        "color: var(--syntax-comment);",
+        "color: var(--lt-syntax-comment);",
         ".document-body .syn-keyword",
-        "color: var(--syntax-keyword);",
+        "color: var(--lt-syntax-keyword);",
         ".document-body .syn-string",
-        "color: var(--syntax-string);",
+        "color: var(--lt-syntax-string);",
         ".document-body .syn-numeric",
-        "color: var(--syntax-number);",
+        "color: var(--lt-syntax-number);",
         ".document-body .syn-function",
-        "color: var(--syntax-function);",
+        "color: var(--lt-syntax-function);",
         ".document-body .syn-type",
-        "color: var(--syntax-type);",
+        "color: var(--lt-syntax-type);",
         ".document-body .syn-variable",
-        "color: var(--syntax-variable);",
+        "color: var(--lt-syntax-variable);",
         ".document-body .syn-punctuation",
-        "color: var(--syntax-punctuation);",
+        "color: var(--lt-syntax-punctuation);",
         ".document-body .syn-inserted",
-        "background: var(--syntax-inserted-bg);",
-        "color: var(--syntax-inserted);",
+        "background: var(--lt-syntax-inserted-background);",
+        "color: var(--lt-syntax-inserted);",
         ".document-body .syn-deleted",
-        "background: var(--syntax-deleted-bg);",
-        "color: var(--syntax-deleted);",
+        "background: var(--lt-syntax-deleted-background);",
+        "color: var(--lt-syntax-deleted);",
         ".document-body .syn-changed",
-        "background: var(--syntax-changed-bg);",
-        "color: var(--syntax-changed);",
+        "background: var(--lt-syntax-changed-background);",
+        "color: var(--lt-syntax-changed);",
     ] {
         assert_contains(css, rule);
     }
@@ -836,30 +765,54 @@ fn reading_mode_css_keeps_code_surfaces_readable_in_light_and_dark() {
 
     for theme in [ResolvedTheme::Light, ResolvedTheme::Dark] {
         for foreground in [
-            "--syntax-foreground",
-            "--syntax-comment",
-            "--syntax-keyword",
-            "--syntax-string",
-            "--syntax-number",
-            "--syntax-function",
-            "--syntax-variable",
-            "--syntax-type",
-            "--syntax-operator",
-            "--syntax-punctuation",
-            "--markdown-code-foreground",
+            "--lt-syntax-foreground",
+            "--lt-syntax-comment",
+            "--lt-syntax-keyword",
+            "--lt-syntax-string",
+            "--lt-syntax-number",
+            "--lt-syntax-function",
+            "--lt-syntax-variable",
+            "--lt-syntax-type",
+            "--lt-syntax-operator",
+            "--lt-syntax-punctuation",
+            "--lt-editor-inline-code-foreground",
         ] {
-            let background = if foreground == "--markdown-code-foreground" {
-                "--markdown-code-background"
+            let background = if foreground == "--lt-editor-inline-code-foreground" {
+                "--lt-editor-inline-code-background"
             } else {
-                "--syntax-background"
+                "--lt-syntax-background"
             };
             assert_contrast_at_least(css, theme, foreground, background, 4.5);
         }
 
-        assert_contrast_at_least(css, theme, "--syntax-foreground", "--selection", 4.5);
-        assert_contrast_at_least(css, theme, "--syntax-inserted", "--syntax-inserted-bg", 4.5);
-        assert_contrast_at_least(css, theme, "--syntax-deleted", "--syntax-deleted-bg", 4.5);
-        assert_contrast_at_least(css, theme, "--syntax-changed", "--syntax-changed-bg", 4.5);
+        assert_contrast_at_least(
+            css,
+            theme,
+            "--lt-syntax-foreground",
+            "--lt-focus-selection-background",
+            4.5,
+        );
+        assert_contrast_at_least(
+            css,
+            theme,
+            "--lt-syntax-inserted",
+            "--lt-syntax-inserted-background",
+            4.5,
+        );
+        assert_contrast_at_least(
+            css,
+            theme,
+            "--lt-syntax-deleted",
+            "--lt-syntax-deleted-background",
+            4.5,
+        );
+        assert_contrast_at_least(
+            css,
+            theme,
+            "--lt-syntax-changed",
+            "--lt-syntax-changed-background",
+            4.5,
+        );
     }
 }
 
@@ -923,7 +876,7 @@ fn the_code_views_minimap_rail_shows_the_shells_grain() {
     // It is painted by ::before instead, which ends where the frame's border is drawn.
     let fill = rule_body(css, ".reader-shell.code-view-monaco-shell::before {");
     assert_contains(fill, &format!("inset: 0 {frame_edge} 0 0;"));
-    assert_contains(fill, "background: var(--syntax-background);");
+    assert_contains(fill, "background: var(--lt-syntax-background);");
     // Nor does either box of Monaco's that carries it: the editor's root, and the lines
     // layer, whose 16,777,216px square is bounded only by the guard around the editor.
     let editor = rule_body(css, ".code-view-monaco .monaco-editor,");

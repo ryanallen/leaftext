@@ -3,100 +3,6 @@
   /* App bar height, shared by the bar itself and everything that offsets content
      below the fixed bar (document padding, library pane, minimap). */
   --app-bar-height: 40px;
-  --background: var(--leaf-background);
-  --foreground: var(--leaf-foreground);
-  --surface: var(--leaf-surface);
-  --surface-elevated: var(--leaf-surface-elevated);
-  --surface-muted: var(--leaf-surface-muted);
-  --surface-sunken: var(--leaf-surface-sunken);
-  --border: var(--leaf-border);
-  --border-strong: var(--leaf-border-strong);
-  --muted-foreground: var(--leaf-muted-foreground);
-  --primary: var(--leaf-primary);
-  --primary-foreground: var(--leaf-primary-foreground);
-  --accent: var(--leaf-accent);
-  --accent-foreground: var(--leaf-accent-foreground);
-  --danger: var(--leaf-danger);
-  --danger-foreground: var(--leaf-danger-foreground);
-  --warning: var(--leaf-warning);
-  --success: var(--leaf-success);
-  --success-foreground: var(--leaf-success-foreground);
-  --done: var(--leaf-done);
-  --link: var(--leaf-link);
-  --link-hover: var(--leaf-link-hover);
-  --selection: var(--leaf-focus-selection-background);
-  --focus-ring: var(--leaf-focus-ring);
-  --shadow: var(--leaf-shadow);
-  --reading-background: var(--leaf-markdown-background);
-  --reading-ink: var(--leaf-markdown-foreground);
-  --reading-heading: var(--leaf-markdown-heading);
-  --reading-link: var(--leaf-markdown-link);
-  --reading-rule: var(--leaf-markdown-rule);
-  --markdown-code-background: var(--leaf-editor-inline-code-background);
-  --markdown-code-foreground: var(--leaf-editor-inline-code-foreground);
-  --markdown-blockquote-border: var(--leaf-markdown-blockquote-border);
-  --markdown-blockquote-foreground: var(--leaf-markdown-blockquote-foreground);
-  --markdown-table-border: var(--leaf-markdown-table-border);
-  --markdown-table-header-background: var(--leaf-markdown-table-header-background);
-  --markdown-hr: var(--leaf-markdown-thematic-break);
-  --markdown-link: var(--leaf-markdown-link);
-  --markdown-link-hover: var(--link-hover);
-  --syntax-background: var(--leaf-syntax-background);
-  --syntax-foreground: var(--leaf-syntax-foreground);
-  --syntax-comment: var(--leaf-syntax-comment);
-  --syntax-keyword: var(--leaf-syntax-keyword);
-  --syntax-string: var(--leaf-syntax-string);
-  --syntax-number: var(--leaf-syntax-number);
-  --syntax-function: var(--leaf-syntax-function);
-  --syntax-variable: var(--leaf-syntax-variable);
-  --syntax-type: var(--leaf-syntax-type);
-  --syntax-operator: var(--leaf-syntax-operator);
-  --syntax-punctuation: var(--leaf-syntax-punctuation);
-  --syntax-inserted: var(--leaf-syntax-inserted);
-  --syntax-deleted: var(--leaf-syntax-deleted);
-  --syntax-changed: var(--leaf-syntax-changed);
-  --syntax-inserted-bg: var(--leaf-syntax-inserted-background);
-  --syntax-deleted-bg: var(--leaf-syntax-deleted-background);
-  --syntax-changed-bg: var(--leaf-syntax-changed-background);
-  --app-background: var(--background);
-  --app-foreground: var(--foreground);
-  --app-border: var(--border);
-  --app-border-strong: var(--border-strong);
-  --app-surface: var(--surface);
-  --app-surface-elevated: var(--surface-elevated);
-  --app-surface-muted: var(--surface-muted);
-  /* One shade for every piece of app chrome — top bar, library pane, its two
-     bands, the search field. No per-surface tint or mix: any variant shows up as a
-     tone seam where two of them meet. */
-  --chrome-surface: var(--app-surface);
-  --app-muted-foreground: var(--muted-foreground);
-  --app-action-background: var(--primary);
-  --app-action-foreground: var(--primary-foreground);
-  --app-action-hover-background: var(--leaf-navigation-button-hover-background);
-  --app-action-disabled-background: var(--leaf-navigation-button-disabled-background);
-  --app-action-disabled-foreground: var(--leaf-navigation-button-disabled-foreground);
-  --app-error-border: var(--danger);
-  --app-error-foreground: var(--danger);
-  --app-focus-ring: var(--focus-ring);
-  --app-selection-background: var(--selection);
-  --app-selection-foreground: var(--leaf-focus-selection-foreground);
-  --settings-label-foreground: var(--muted-foreground);
-  --settings-control-background: var(--surface-elevated);
-  --settings-control-foreground: var(--foreground);
-  --settings-control-border: var(--border);
-  --preview-background: var(--reading-background);
-  --preview-foreground: var(--reading-ink);
-  --preview-heading: var(--reading-heading);
-  /* Per-level heading colors. h1 uses --preview-heading (the base); h2–h6 pull
-     their own token so a theme can tint deeper levels (or leave them equal). */
-  --preview-heading-2: var(--leaf-markdown-heading-2);
-  --preview-heading-3: var(--leaf-markdown-heading-3);
-  --preview-heading-4: var(--leaf-markdown-heading-4);
-  --preview-heading-5: var(--leaf-markdown-heading-5);
-  --preview-heading-6: var(--leaf-markdown-heading-6);
-  --preview-rule: var(--reading-rule);
-  --preview-border: var(--border);
-  --preview-muted-foreground: var(--muted-foreground);
   --reader-content-pad: 32px;
   /* Where a document's first line opens, from the reader shell's own top edge (so
      the app bar's height is inside it). Has to clear --reader-edge-fade-depth or the
@@ -130,32 +36,6 @@
   --type-h4-weight: 700;
   --type-h5-weight: 650;
   --type-h6-weight: 600;
-  --markdown-inline-code-background: var(--markdown-code-background);
-  --markdown-inline-code-foreground: var(--markdown-code-foreground);
-  --markdown-alert-note-border: var(--leaf-markdown-alert-note);
-  --markdown-alert-tip-border: var(--leaf-markdown-alert-tip);
-  --markdown-alert-important-border: var(--leaf-markdown-alert-important);
-  --markdown-alert-warning-border: var(--leaf-markdown-alert-warning);
-  --markdown-alert-caution-border: var(--leaf-markdown-alert-caution);
-  --markdown-badge-background: var(--leaf-markdown-badge-background);
-  --markdown-badge-foreground: var(--leaf-markdown-badge-foreground);
-  --markdown-table-cell-border: var(--markdown-table-border);
-  --markdown-table-heading-background: var(--markdown-table-header-background);
-  --markdown-thematic-break: var(--markdown-hr);
-  --math-inline-background: var(--leaf-markdown-math-inline-background);
-  --keyboard-background: var(--leaf-markdown-keyboard-background);
-  --keyboard-border: var(--leaf-markdown-keyboard-border);
-  --empty-heading: var(--reading-heading);
-  --recent-border: var(--leaf-navigation-recent-border);
-  --recent-item-foreground: var(--leaf-navigation-recent-item-foreground);
-  --recent-item-hover-foreground: var(--leaf-navigation-recent-item-hover-foreground);
-  --minimap-viewport-border: var(--leaf-minimap-viewport-border);
-  --minimap-viewport-background: var(--leaf-minimap-viewport-background);
-  --code-block-background: var(--leaf-editor-code-background);
-  --code-block-foreground: var(--leaf-editor-code-foreground);
-  --code-block-border: var(--leaf-editor-code-border);
-  --code-block-selection-background: var(--leaf-editor-code-selection-background);
-  --code-block-selection-foreground: var(--leaf-editor-code-selection-foreground);
   /* Cassette-style grain dot shared by the app bar and library surfaces: a faint
      dark speckle on the light surface, overridden heavier for dark themes. */
   --app-bar-grain: rgba(0, 0, 0, 0.1);
@@ -173,8 +53,8 @@
      hold the whole gradient in a custom property — its `var()` is substituted
      where the property is declared and descendants inherit the finished string, so
      one declared here silently paints every surface below in this ink whatever
-     `--leaf-grain-dot` they set. */
-  --leaf-grain-dot: var(--app-bar-grain);
+     `--lt-grain-dot` they set. */
+  --lt-grain-dot: var(--app-bar-grain);
   /* The untinted table rows — the ones carrying no fill, so the grain above has
      nothing to speckle. Dark themes only: on a light theme these are the near-white
      rows, where a dot dark enough to see reads as a gray screen-door mesh laid over
@@ -182,14 +62,14 @@
   --reader-row-grain: transparent;
   /* Corner radii — one scale every surface pulls from, so rounding swaps in a
      single place. Sizes map onto the values the components historically used. */
-  --leaf-radius-xs: 2px;
-  --leaf-radius-sm: 4px;
-  --leaf-radius-md: 6px;
-  --leaf-radius-lg: 8px;
-  --leaf-radius-xl: 10px;
-  --leaf-radius-2xl: 14px;
-  --leaf-radius-pill: 999px;
-  --leaf-radius-full: 50%;
+  --lt-radius-xs: 2px;
+  --lt-radius-sm: 4px;
+  --lt-radius-md: 6px;
+  --lt-radius-lg: 8px;
+  --lt-radius-xl: 10px;
+  --lt-radius-2xl: 14px;
+  --lt-radius-pill: 999px;
+  --lt-radius-full: 50%;
   /* How far the reading surface is held off the window frame. The chrome shows
      through the gap, so the page reads as a card floating on the bar's texture
      rather than something bleeding off the edge of the glass. */
@@ -223,12 +103,12 @@
      corner have to stop at the same place, and they sit outside the shell. */
   --reader-minimap-column: 0px;
   /* Elevation shadows by role, so overlays swap in one place. The resting card
-     shadow stays per-theme as --shadow (from --leaf-shadow); these cover the
-     overlays that would otherwise be baked inline at each site. */
-  --leaf-shadow-popover: 0 6px 18px -6px color-mix(in srgb, black 55%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--app-muted-foreground) 20%, transparent);
-  --leaf-shadow-sheet: 0 -10px 40px rgba(0, 0, 0, 0.5);
-  --leaf-shadow-tooltip: 0 10px 24px rgba(0, 0, 0, 0.35);
+     shadow is per-theme, so it stays in the contract as --lt-shadow; these cover
+     the overlays that would otherwise be baked inline at each site. */
+  --lt-shadow-popover: 0 6px 18px -6px color-mix(in srgb, black 55%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--lt-muted-foreground) 20%, transparent);
+  --lt-shadow-sheet: 0 -10px 40px rgba(0, 0, 0, 0.5);
+  --lt-shadow-tooltip: 0 10px 24px rgba(0, 0, 0, 0.35);
   --heading-font: "Noto Serif", Georgia, Cambria, "Times New Roman", serif;
   --app-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
@@ -241,16 +121,16 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background: var(--app-background);
-  color: var(--app-foreground);
+  background: var(--lt-background);
+  color: var(--lt-foreground);
   font-family: var(--reading-font);
 }
 body {
   overflow: hidden;
 }
 ::selection {
-  background: var(--app-selection-background);
-  color: var(--app-selection-foreground);
+  background: var(--lt-focus-selection-background);
+  color: var(--lt-focus-selection-foreground);
 }
 :root[data-theme="dark"] {
   /* Dark themes use a darker grain so the surface reads
@@ -264,6 +144,9 @@ body {
      families. Lifting instead moves every dark theme by a steady ~15. */
   --reader-row-grain: rgba(255, 255, 255, 0.07);
 }
+/* Every piece of app chrome — this bar, the library pane, its two bands, the
+   search field — takes `--lt-surface` itself. No per-surface tint or mix: any
+   variant shows up as a tone seam where two of them meet. */
 .app-bar {
   position: fixed;
   top: 0;
@@ -283,8 +166,8 @@ body {
   /* The chrome shade under a fine dithered dot grid, for a rough old-cassette
      texture. Flat and opaque, never translucent: a translucent bar takes its tone
      from whatever sits behind it, so it can never match the pane it meets. */
-  background-color: var(--chrome-surface);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
   /* Tile the grain from the window, not this element's box, so every grained
@@ -295,7 +178,7 @@ body {
      reader from the native title bar above it. The bottom divider is drawn by
      ::after (not border-bottom) so the active tab can paint over it and appear
      connected to the page below. */
-  border-top: 1px solid var(--app-border);
+  border-top: 1px solid var(--lt-border);
   font-family: var(--app-font);
 }
 .frameless .app-bar {
@@ -316,11 +199,11 @@ body {
      pixel of overlap with each arc's tangent, so a rounding difference between the
      boxes can't open a gap. On the right that also clears the rail's column (0
      wide when there is no rail), which is chrome the line must not cross. */
-  left: calc(var(--reader-gutter) + var(--leaf-radius-md) - 1px);
-  right: calc(var(--reader-gutter) + var(--reader-minimap-column) + var(--leaf-radius-md) - 1px);
+  left: calc(var(--reader-gutter) + var(--lt-radius-md) - 1px);
+  right: calc(var(--reader-gutter) + var(--reader-minimap-column) + var(--lt-radius-md) - 1px);
   bottom: 0;
   height: 1px;
-  background: var(--app-border);
+  background: var(--lt-border);
   z-index: 0;
 }
 .app-bar.has-rail::after {
@@ -329,7 +212,7 @@ body {
      line here would cut it in two. Push the divider's start past the rail so
      .reader-corner-tl, which sits on the rail's right edge, arcs down to the pane's
      vertical border from there. */
-  left: calc(var(--library-rail-width, 0px) + var(--leaf-radius-md) - 1px);
+  left: calc(var(--library-rail-width, 0px) + var(--lt-radius-md) - 1px);
 }
 .app-bar-lead {
   /* The header's left zone, sized to the library rail so the tab strip begins at
@@ -362,7 +245,7 @@ body {
   flex-shrink: 0;
   /* The logomark is an inline SVG filled with currentColor, so it takes the
      theme's primary color and recolors whenever the theme changes. */
-  color: var(--primary);
+  color: var(--lt-primary);
   transition: color 0.12s ease;
 }
 .brand-button {
@@ -372,7 +255,7 @@ body {
   flex-shrink: 0;
   padding: 3px;
   border: 1px solid transparent;
-  border-radius: var(--leaf-radius-lg);
+  border-radius: var(--lt-radius-lg);
   background: transparent;
   cursor: pointer;
 }
@@ -384,7 +267,7 @@ body {
   border-color: transparent;
 }
 .brand-button:hover > svg {
-  color: var(--app-foreground);
+  color: var(--lt-foreground);
 }
 .tab-bar {
   display: flex;
@@ -424,12 +307,12 @@ body {
   border-top: 1px solid transparent;
   border-left: 1px solid transparent;
   border-right: 1px solid transparent;
-  border-bottom: 1px solid var(--app-border);
-  border-radius: var(--leaf-radius-md) var(--leaf-radius-md) 0 0;
+  border-bottom: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
   /* An inactive tab reads as a darker cell by tiling the header's cassette grain
      at its heavier weight — denser ink, no outline needed. */
-  --leaf-grain-dot: var(--library-header-grain);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  --lt-grain-dot: var(--library-header-grain);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
   cursor: grab;
@@ -444,7 +327,7 @@ body {
   z-index: 2;
   opacity: 0.85;
   cursor: grabbing;
-  box-shadow: var(--shadow);
+  box-shadow: var(--lt-shadow);
   transition: none;
 }
 .tab-bar.tabs-settling .tab {
@@ -455,20 +338,20 @@ body {
      divider and the tab looks joined to the document below. The other three
      strokes are the selection cue — only the active tab frames itself. The fill is
      a variable because the flares below have to match it. */
-  --tab-fill: var(--app-background);
+  --tab-fill: var(--lt-background);
   /* Bigger than the top corners: these carry the fill out over the divider rather
      than just turning a stroke. Capped by the tab-bar's gap, which it grows into. */
-  --tab-flare: var(--leaf-radius-xl);
+  --tab-flare: var(--lt-radius-xl);
   background: var(--tab-fill);
-  border-top-color: var(--app-border);
-  border-left-color: var(--app-border);
-  border-right-color: var(--app-border);
+  border-top-color: var(--lt-border);
+  border-left-color: var(--lt-border);
+  border-right-color: var(--lt-border);
   border-bottom-color: transparent;
 }
 :root[data-code-view="true"] .tab-active {
   /* In code view the page below is the code surface, not the reading background;
      match it so the active tab still reads as joined to the document. */
-  --tab-fill: var(--code-block-background, var(--preview-background));
+  --tab-fill: var(--lt-editor-code-background, var(--lt-markdown-background));
 }
 /* Inverse corners where the active tab meets the reader divider: the fill flares out
    at each bottom corner and the frame arcs with it, so the tab joins the page on a
@@ -490,7 +373,7 @@ body {
      a gradient is rasterized per pixel, so a hard stop stairs a curve this size. */
   --tab-flare-arc:
     transparent 0 calc(var(--tab-flare) - 1.3px),
-    var(--app-border) calc(var(--tab-flare) - 0.7px) calc(var(--tab-flare) - 0.3px),
+    var(--lt-border) calc(var(--tab-flare) - 0.7px) calc(var(--tab-flare) - 0.3px),
     var(--tab-fill) calc(var(--tab-flare) + 0.3px);
 }
 .tab-active::before {
@@ -509,7 +392,7 @@ body {
   white-space: nowrap;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   font: 600 13px var(--app-font);
   padding: 5px 14px;
   text-align: left;
@@ -522,7 +405,7 @@ body {
 .tab-active .tab-label {
   /* Full-strength foreground so the active tab's name stays legible in every
      theme (a hardcoded white vanished on the light page-colored tab). */
-  color: var(--app-foreground);
+  color: var(--lt-foreground);
   max-width: none;
   -webkit-mask-image: none;
   mask-image: none;
@@ -533,7 +416,7 @@ body {
 }
 .tab:hover .tab-label {
   /* Text-only hover so the inactive grain and the active frame both stay put. */
-  color: var(--app-foreground);
+  color: var(--lt-foreground);
 }
 .tab-close {
   /* Tucked into the tab's top-right corner, out of the label's flow, close enough
@@ -548,9 +431,9 @@ body {
   min-width: 18px;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: var(--leaf-radius-sm);
+  border-radius: var(--lt-radius-sm);
   background: transparent;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .tab-close svg {
   width: 12px;
@@ -558,11 +441,11 @@ body {
   pointer-events: none;
 }
 .tab-close:hover {
-  background: var(--app-action-hover-background);
+  background: var(--lt-navigation-button-hover-background);
   border-color: transparent;
   /* The contrast color that pairs with the action background — white icons on a
      light accent (Fern green, Amaranth lavender) are unreadable. */
-  color: var(--app-action-foreground);
+  color: var(--lt-primary-foreground);
 }
 .history-actions {
   display: flex;
@@ -601,12 +484,12 @@ body {
   display: none;
   border-color: transparent;
   background: transparent;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .overflow-toggle:hover {
-  background: var(--app-action-hover-background);
-  border-color: var(--app-action-hover-background);
-  color: var(--app-action-foreground);
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
 }
 .app-trailing.has-overflow .overflow-toggle {
   display: inline-grid;
@@ -622,10 +505,10 @@ body {
   flex-direction: column;
   gap: 4px;
   padding: 6px;
-  border: 1px solid var(--app-border);
-  border-radius: var(--leaf-radius-lg);
-  background: var(--app-surface-elevated);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  box-shadow: var(--lt-shadow);
   z-index: 30;
 }
 .app-trailing.overflow-open .app-overflow-panel {
@@ -658,9 +541,9 @@ body {
   place-items: center;
   padding: 0;
   border-color: transparent;
-  border-radius: var(--leaf-radius-lg);
+  border-radius: var(--lt-radius-lg);
   background: transparent;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   cursor: pointer;
 }
 .window-control svg {
@@ -682,9 +565,9 @@ body.is-maximized #winMaximize .wc-restore {
 /* The shared toolbar hover chip, so these match the open/code-view/settings
    icons beside them. Close keeps the red every desktop uses for it. */
 .window-control:hover {
-  background: var(--app-action-hover-background);
-  border-color: var(--app-action-hover-background);
-  color: var(--app-action-foreground);
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
 }
 .window-control-close:hover {
   background: #e81123;
@@ -706,10 +589,10 @@ body.is-maximized #winMaximize .wc-restore {
   z-index: 50;
   min-width: 168px;
   padding: 4px;
-  border: 1px solid var(--app-border);
-  border-radius: var(--leaf-radius-lg);
-  background: var(--app-surface-elevated);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  box-shadow: var(--lt-shadow);
   font-family: var(--app-font);
 }
 .context-menu[hidden] {
@@ -720,40 +603,40 @@ body.is-maximized #winMaximize .wc-restore {
   width: 100%;
   padding: 7px 12px;
   border: 0;
-  border-radius: var(--leaf-radius-sm);
+  border-radius: var(--lt-radius-sm);
   background: transparent;
-  color: var(--settings-control-foreground);
+  color: var(--lt-foreground);
   font: 600 13px var(--app-font);
   text-align: left;
   cursor: pointer;
 }
 .context-menu-item:hover,
 .context-menu-item:focus-visible {
-  background: var(--app-surface-muted);
+  background: var(--lt-surface-muted);
   outline: none;
 }
 .context-menu-item.is-danger {
-  color: var(--danger);
+  color: var(--lt-danger);
 }
 .context-menu-item.is-danger:hover,
 .context-menu-item.is-danger:focus-visible {
-  background: var(--danger);
-  color: var(--danger-foreground);
+  background: var(--lt-danger);
+  color: var(--lt-danger-foreground);
 }
 .context-menu-separator {
   height: 1px;
   margin: 4px 6px;
-  background: var(--app-border);
+  background: var(--lt-border);
 }
 .rename-box {
   position: fixed;
   z-index: 51;
   width: 232px;
   padding: 4px;
-  border: 1px solid var(--app-border);
-  border-radius: var(--leaf-radius-lg);
-  background: var(--app-surface-elevated);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  box-shadow: var(--lt-shadow);
 }
 .rename-box[hidden] {
   display: none;
@@ -762,10 +645,10 @@ body.is-maximized #winMaximize .wc-restore {
   width: 100%;
   box-sizing: border-box;
   padding: 6px 8px;
-  border: 1px solid var(--accent);
-  border-radius: var(--leaf-radius-sm);
-  background: var(--app-surface);
-  color: var(--settings-control-foreground);
+  border: 1px solid var(--lt-accent);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
   font: 600 13px var(--app-font);
 }
 .rename-input:focus {
@@ -782,7 +665,7 @@ body.is-maximized #winMaximize .wc-restore {
   border: 1px solid transparent;
   /* No resting fill; icon dimmed at rest, greens on hover like the other icons. */
   background: transparent;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   cursor: pointer;
   font: 700 13px var(--app-font);
   list-style: none;
@@ -792,9 +675,9 @@ body.is-maximized #winMaximize .wc-restore {
   display: none;
 }
 .settings-menu summary:hover {
-  background: var(--app-action-hover-background);
+  background: var(--lt-navigation-button-hover-background);
   border-color: transparent;
-  color: var(--app-action-foreground);
+  color: var(--lt-primary-foreground);
 }
 /* Update dot over the settings button — the whole of what the updater says with
    the panel shut. The ring keeps it legible on the bar's textured/hover fill.
@@ -807,16 +690,16 @@ body.is-maximized #winMaximize .wc-restore {
   width: 8px;
   height: 8px;
   box-sizing: border-box;
-  border-radius: var(--leaf-radius-full);
-  background: var(--success);
-  box-shadow: 0 0 0 2px var(--app-surface);
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-success);
+  box-shadow: 0 0 0 2px var(--lt-surface);
 }
 .settings-alert-dot.is-downloading {
   width: 10px;
   height: 10px;
   background: transparent;
-  border: 2px solid color-mix(in srgb, var(--success) 30%, transparent);
-  border-top-color: var(--success);
+  border: 2px solid color-mix(in srgb, var(--lt-success) 30%, transparent);
+  border-top-color: var(--lt-success);
   box-shadow: none;
   animation: leaf-reader-spin 0.8s linear infinite;
 }
@@ -844,7 +727,7 @@ body.is-maximized #winMaximize .wc-restore {
   top: 0;
   bottom: 0;
   width: 0;
-  background: color-mix(in srgb, var(--app-action-foreground) 26%, transparent);
+  background: color-mix(in srgb, var(--lt-primary-foreground) 26%, transparent);
   transition: width 120ms linear;
   pointer-events: none;
 }
@@ -857,7 +740,7 @@ body.is-maximized #winMaximize .wc-restore {
   height: 12px;
   min-width: 12px;
   box-sizing: border-box;
-  border-radius: var(--leaf-radius-full);
+  border-radius: var(--lt-radius-full);
   border: 2px solid color-mix(in srgb, currentColor 28%, transparent);
   border-top-color: currentColor;
   animation: leaf-reader-spin 0.8s linear infinite;
@@ -881,7 +764,7 @@ body.is-maximized #winMaximize .wc-restore {
   gap: 4px;
   justify-content: flex-end;
   white-space: nowrap;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   font-size: 11px;
   letter-spacing: 0.02em;
   user-select: text;
@@ -897,24 +780,24 @@ body.is-maximized #winMaximize .wc-restore {
   display: grid;
   gap: 14px;
   width: min(290px, calc(100vw - 28px));
-  border: 1px solid var(--app-border);
-  border-radius: var(--leaf-radius-lg);
-  background: var(--app-surface-elevated);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  box-shadow: var(--lt-shadow);
   padding: 14px;
 }
 .setting-control {
   display: grid;
   gap: 6px;
-  color: var(--settings-label-foreground);
+  color: var(--lt-muted-foreground);
 }
 .setting-label {
-  color: var(--settings-control-foreground);
+  color: var(--lt-foreground);
   font-size: 13px;
   font-weight: 800;
 }
 .setting-help {
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -927,25 +810,25 @@ body.is-maximized #winMaximize .wc-restore {
   width: 16px;
   height: 16px;
   margin: 1px 0 0;
-  accent-color: var(--primary);
+  accent-color: var(--lt-primary);
 }
 .setting-control-inline .setting-help {
   grid-column: 2;
 }
 .setting-control select {
   width: 100%;
-  border: 1px solid var(--settings-control-border);
-  border-radius: var(--leaf-radius-md);
-  background: var(--settings-control-background);
-  color: var(--settings-control-foreground);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
   font: 600 13px var(--app-font);
   padding: 7px 28px 7px 9px;
 }
 button {
-  border: 1px solid var(--app-action-background);
-  border-radius: var(--leaf-radius-md);
-  background: var(--app-action-background);
-  color: var(--app-action-foreground);
+  border: 1px solid var(--lt-primary);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
   cursor: pointer;
   font: 600 14px var(--app-font);
   padding: 8px 14px;
@@ -960,7 +843,7 @@ button {
   width: 32px;
   height: 32px;
   min-width: 32px;
-  border-radius: var(--leaf-radius-lg);
+  border-radius: var(--lt-radius-lg);
   padding: 0;
 }
 .icon-button svg {
@@ -972,23 +855,23 @@ button {
 .open-button {
   border-color: transparent;
   background: transparent;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .open-button:hover {
-  background: var(--app-action-hover-background);
-  border-color: var(--app-action-hover-background);
-  color: var(--app-action-foreground);
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
 }
 /* Its neighbor, and it has to read as one: same rest, same hover. */
 .new-button {
   border-color: transparent;
   background: transparent;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .new-button:hover {
-  background: var(--app-action-hover-background);
-  border-color: var(--app-action-hover-background);
-  color: var(--app-action-foreground);
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
 }
 /* Unsaved-edits dot on a tab, sharing the close button's corner. In the row it
    is 13px of content that vanishes on the tab's own hover, so a modified tab
@@ -1003,8 +886,8 @@ button {
   height: 8px;
   /* The button underneath stays the click target. */
   pointer-events: none;
-  border-radius: var(--leaf-radius-full);
-  background: var(--accent);
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-accent);
 }
 .tab-modified .tab-dirty-dot {
   display: block;
@@ -1020,33 +903,33 @@ button {
   opacity: 0;
 }
 button:hover {
-  background: var(--app-action-hover-background);
-  border-color: var(--app-action-hover-background);
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
 }
 button:disabled {
-  border-color: var(--app-action-disabled-background);
-  background: var(--app-action-disabled-background);
-  color: var(--app-action-disabled-foreground);
+  border-color: var(--lt-navigation-button-disabled-background);
+  background: var(--lt-navigation-button-disabled-background);
+  color: var(--lt-navigation-button-disabled-foreground);
   cursor: default;
 }
 button:disabled:hover {
-  border-color: var(--app-action-disabled-background);
-  background: var(--app-action-disabled-background);
+  border-color: var(--lt-navigation-button-disabled-background);
+  background: var(--lt-navigation-button-disabled-background);
 }
 .history-button {
   border-color: transparent;
-  background: var(--settings-control-background);
-  color: var(--settings-control-foreground);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
 }
 .history-button:hover:not(:disabled) {
   border-color: transparent;
-  background: var(--settings-control-background);
+  background: var(--lt-surface-elevated);
 }
 .history-button:disabled,
 .history-button:disabled:hover {
   border-color: transparent;
-  background: var(--settings-control-background);
-  color: var(--app-muted-foreground);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
   opacity: 0.46;
 }
 button:focus-visible,
@@ -1054,7 +937,7 @@ select:focus-visible,
 input:focus-visible,
 a:focus-visible,
 summary:focus-visible {
-  outline: 3px solid var(--app-focus-ring);
+  outline: 3px solid var(--lt-focus-ring);
   outline-offset: 3px;
 }
 /* The minimap is chrome, not page: it gets its own column outside the card so
@@ -1080,8 +963,8 @@ body:has(.document-minimap) {
      bar and the rail. What shows here is the gutter the reader is held off the
      window frame by (see --reader-gutter), so the texture runs unbroken from the
      bar, down the rail, and around the page. */
-  background-color: var(--chrome-surface);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-attachment: fixed;
 }
@@ -1156,11 +1039,11 @@ body:has(.library-overlay) .tab-bar {
   /* The app bar's shade and grain, so the pane continues the bar rather than
      sitting under it. The tree rows on top are transparent, so the whole pane
      carries the texture. */
-  background-color: var(--chrome-surface);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-attachment: fixed;
-  color: var(--preview-foreground);
+  color: var(--lt-markdown-foreground);
   font-family: var(--app-font);
   font-size: 13px;
   /* No right-edge hairline: the reader's own left border, flush against this
@@ -1182,14 +1065,14 @@ body:has(.library-overlay) .tab-bar {
   /* Where the mask cuts the page back out: a half pixel inside the arc's inner
      edge, so the stroke (which the mask also covers, being a child) survives whole
      instead of having its inner edge nibbled off. */
-  --reader-corner-cut: calc(var(--leaf-radius-md) - 0.5px);
+  --reader-corner-cut: calc(var(--lt-radius-md) - 0.5px);
   position: absolute;
   /* Over the app bar (z-index 10), whose grain the top corners sit on. */
   z-index: 11;
-  width: calc(var(--leaf-radius-md) + 1px);
-  height: calc(var(--leaf-radius-md) + 1px);
-  background-color: var(--chrome-surface);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  width: calc(var(--lt-radius-md) + 1px);
+  height: calc(var(--lt-radius-md) + 1px);
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   /* The same window-anchored lattice as every other grained surface, so a corner
      stays in phase with the bar and pane around it. */
@@ -1200,7 +1083,7 @@ body:has(.library-overlay) .tab-bar {
   content: "";
   position: absolute;
   inset: 0;
-  border: 0 solid var(--app-border);
+  border: 0 solid var(--lt-border);
 }
 .reader-corner-tl {
   top: calc(var(--library-app-bar) - 1px);
@@ -1211,7 +1094,7 @@ body:has(.library-overlay) .tab-bar {
 .reader-corner-tl::after {
   border-top-width: 1px;
   border-left-width: 1px;
-  border-top-left-radius: calc(var(--leaf-radius-md) + 1px);
+  border-top-left-radius: calc(var(--lt-radius-md) + 1px);
 }
 /* In the app bar, so it tracks the bar's bottom edge whether or not the frameless
    window drops the bar's top border. Follows the card in when the rail takes a
@@ -1227,7 +1110,7 @@ body:has(.library-overlay) .tab-bar {
 .reader-corner-tr::after {
   border-top-width: 1px;
   border-right-width: 1px;
-  border-top-right-radius: calc(var(--leaf-radius-md) + 1px);
+  border-top-right-radius: calc(var(--lt-radius-md) + 1px);
 }
 .library-shell.library-closed .reader-corner-tl {
   /* No rail to sit against: follow the card out to its left gutter. */
@@ -1266,12 +1149,12 @@ body:has(.library-overlay) .tab-bar {
 .library-open {
   border-color: transparent;
   background: transparent;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .library-open:hover {
-  background: var(--app-action-hover-background);
-  border-color: var(--app-action-hover-background);
-  color: var(--app-action-foreground);
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
 }
 .library-open svg {
   width: 16px;
@@ -1306,8 +1189,8 @@ body.library-resizing {
   margin-top: var(--library-chrome-height);
 }
 .library-scroll::-webkit-scrollbar-thumb {
-  border-radius: var(--leaf-radius-md);
-  background: color-mix(in srgb, var(--app-muted-foreground) 35%, transparent);
+  border-radius: var(--lt-radius-md);
+  background: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
   /* Floor the grabber so a huge file list can't shrink it to a sliver. */
   min-height: 128px;
 }
@@ -1320,7 +1203,7 @@ body.library-resizing {
 .library-results-count {
   margin: 2px 6px 6px;
   font-size: 11px;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 /* A search hit: the file's title on top, the match snippet below it. */
 .library-hit {
@@ -1328,7 +1211,7 @@ body.library-resizing {
   width: 100%;
   text-align: left;
   border: 0;
-  border-radius: var(--leaf-radius-md);
+  border-radius: var(--lt-radius-md);
   padding: 6px 8px;
   margin: 0 0 2px;
   background: transparent;
@@ -1337,7 +1220,7 @@ body.library-resizing {
   cursor: pointer;
 }
 .library-hit:hover {
-  background: color-mix(in srgb, var(--app-muted-foreground) 14%, transparent);
+  background: color-mix(in srgb, var(--lt-muted-foreground) 14%, transparent);
 }
 .library-hit-title {
   display: block;
@@ -1355,12 +1238,12 @@ body.library-resizing {
   margin-top: 2px;
   font-size: 11px;
   line-height: 1.4;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .library-hit-mark {
-  background: color-mix(in srgb, var(--app-action-background, #2f81f7) 40%, transparent);
+  background: color-mix(in srgb, var(--lt-primary, #2f81f7) 40%, transparent);
   color: inherit;
-  border-radius: var(--leaf-radius-xs);
+  border-radius: var(--lt-radius-xs);
 }
 /* The search box fills the rest of the pinned header, beside the view chip; its
    min-width floors the controls so a narrow pane clips them (see .library-header)
@@ -1373,11 +1256,11 @@ body.library-resizing {
   height: 24px;
   box-sizing: border-box;
   padding: 0 8px;
-  border-radius: var(--leaf-radius-md);
-  border: 1px solid color-mix(in srgb, var(--app-muted-foreground) 25%, transparent);
+  border-radius: var(--lt-radius-md);
+  border: 1px solid color-mix(in srgb, var(--lt-muted-foreground) 25%, transparent);
   /* The chrome shade again, but flat: the border is what reads as the field, and
      an ungrained fill keeps dots out from behind the search text. */
-  background-color: var(--chrome-surface);
+  background-color: var(--lt-surface);
 }
 .library-search-wrap:focus-within {
   /* A neutral white focus border rather than the accent, which is a strong color
@@ -1386,7 +1269,7 @@ body.library-resizing {
 }
 :root[data-theme="light"] .library-search-wrap:focus-within {
   /* White vanishes on the light field, so key the focus off the ink instead. */
-  border-color: color-mix(in srgb, var(--app-foreground) 45%, transparent);
+  border-color: color-mix(in srgb, var(--lt-foreground) 45%, transparent);
 }
 .library-search {
   flex: 1 1 auto;
@@ -1428,8 +1311,8 @@ body.library-resizing {
   overflow: hidden;
   display: flex;
   align-items: center;
-  background-color: var(--chrome-surface);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -1463,9 +1346,9 @@ body.library-resizing {
   max-width: 55%;
   padding: 1px 4px;
   border: 0;
-  border-radius: var(--leaf-radius-sm);
+  border-radius: var(--lt-radius-sm);
   background: transparent;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   font-family: inherit;
   font-size: 11px;
   white-space: nowrap;
@@ -1474,8 +1357,8 @@ body.library-resizing {
   cursor: pointer;
 }
 .library-crumb:hover {
-  background: color-mix(in srgb, var(--app-muted-foreground) 16%, transparent);
-  color: var(--app-foreground);
+  background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
+  color: var(--lt-foreground);
 }
 /* The folder you are in: full ink, and it gets the leftover room — the ancestors
    above it give way first. */
@@ -1483,12 +1366,12 @@ body.library-resizing {
   flex: 0 1 auto;
   max-width: none;
   cursor: default;
-  color: var(--app-foreground);
+  color: var(--lt-foreground);
   font-weight: 600;
 }
 .library-crumb.is-current:hover {
   background: transparent;
-  color: var(--app-foreground);
+  color: var(--lt-foreground);
 }
 /* The "…" standing in for the folders that didn't fit. A real button: it opens a
    menu of what it swallowed (see .crumb-menu). */
@@ -1497,8 +1380,8 @@ body.library-resizing {
   cursor: pointer;
 }
 .library-crumb.is-elided[aria-expanded="true"] {
-  background: color-mix(in srgb, var(--app-muted-foreground) 16%, transparent);
-  color: var(--app-foreground);
+  background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
+  color: var(--lt-foreground);
 }
 /* While the trail measures how much of the path fits, nothing shrinks or clips —
    every crumb reports the width it actually wants. Held for one synchronous pass
@@ -1521,9 +1404,9 @@ body.library-resizing {
   height: 26px;
   padding: 0 7px;
   border: 0;
-  border-radius: var(--leaf-radius-sm);
+  border-radius: var(--lt-radius-sm);
   background: transparent;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   cursor: pointer;
 }
 .library-vault-switch svg {
@@ -1532,8 +1415,8 @@ body.library-resizing {
 }
 .library-vault-switch:hover,
 .library-vault-switch[aria-expanded="true"] {
-  background: color-mix(in srgb, var(--app-muted-foreground) 16%, transparent);
-  color: var(--app-foreground);
+  background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
+  color: var(--lt-foreground);
 }
 .library-crumb-caret {
   flex: none;
@@ -1550,7 +1433,7 @@ body.library-resizing {
   width: 13px;
   height: 13px;
   margin-left: auto;
-  color: var(--accent);
+  color: var(--lt-accent);
 }
 /* A vault's row: the row itself switches to it, and the button at its end opens
    everything else you can do to it. One visible button, so nothing about the
@@ -1573,11 +1456,11 @@ body.library-resizing {
   margin-right: 4px;
   padding: 0;
   border: 0;
-  border-radius: var(--leaf-radius-sm);
+  border-radius: var(--lt-radius-sm);
   background: transparent;
   /* Dimmer than the label until pointed at: it is the second thing on the row,
      not a rival to the name. */
-  color: color-mix(in srgb, var(--app-muted-foreground) 75%, transparent);
+  color: color-mix(in srgb, var(--lt-muted-foreground) 75%, transparent);
   cursor: pointer;
 }
 .crumb-menu-edit svg {
@@ -1585,11 +1468,11 @@ body.library-resizing {
   height: 14px;
 }
 .crumb-menu-row:hover .crumb-menu-edit {
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .crumb-menu-edit:hover {
-  background: color-mix(in srgb, var(--app-muted-foreground) 20%, transparent);
-  color: var(--app-foreground);
+  background: color-mix(in srgb, var(--lt-muted-foreground) 20%, transparent);
+  color: var(--lt-foreground);
 }
 /* Which vault the panel is about, so the rows below it are unambiguous. */
 .crumb-menu-heading {
@@ -1598,7 +1481,7 @@ body.library-resizing {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1610,16 +1493,16 @@ body.library-resizing {
   box-sizing: border-box;
   margin: 2px 6px 4px;
   padding: 4px 8px;
-  border-radius: var(--leaf-radius-md);
-  border: 1px solid color-mix(in srgb, var(--app-muted-foreground) 35%, transparent);
-  background: var(--chrome-surface);
+  border-radius: var(--lt-radius-md);
+  border: 1px solid color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  background: var(--lt-surface);
   color: inherit;
   font-family: inherit;
   font-size: 12px;
 }
 .crumb-menu-input:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--app-foreground) 45%, transparent);
+  border-color: color-mix(in srgb, var(--lt-foreground) 45%, transparent);
 }
 /* The elided folders, listed under the "…". Rows carry a folder icon, so they read
    as places rather than commands. */
@@ -1637,7 +1520,7 @@ body.library-resizing {
   flex: none;
   width: 15px;
   height: 15px;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .crumb-menu-label {
   overflow: hidden;
@@ -1646,21 +1529,21 @@ body.library-resizing {
 }
 .library-crumb-sep {
   flex: none;
-  color: color-mix(in srgb, var(--app-muted-foreground) 60%, transparent);
+  color: color-mix(in srgb, var(--lt-muted-foreground) 60%, transparent);
   font-size: 10px;
 }
 /* The way back out, first in the list. Quieter than the folders below it — it
    is not one of this folder's contents — and set apart by a hairline so the eye
    reads it as chrome rather than a row. */
 .library-nav-up {
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   margin-bottom: 6px;
   padding-bottom: 5px;
-  border-bottom: 1px solid color-mix(in srgb, var(--app-border) 60%, transparent);
-  border-radius: var(--leaf-radius-md) var(--leaf-radius-md) 0 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--lt-border) 60%, transparent);
+  border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
 }
 .library-nav-up:hover {
-  color: var(--app-foreground);
+  color: var(--lt-foreground);
 }
 .library-nav-up .library-folder-icon {
   width: 14px;
@@ -1677,7 +1560,7 @@ body.library-resizing {
   /* A hair of vertical space so adjacent row highlights don't touch. */
   margin-bottom: 2px;
   border: 0;
-  border-radius: var(--leaf-radius-md);
+  border-radius: var(--lt-radius-md);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -1685,13 +1568,13 @@ body.library-resizing {
 }
 .library-file:hover,
 .library-nav-folder:hover {
-  background: color-mix(in srgb, var(--app-muted-foreground) 12%, transparent);
+  background: color-mix(in srgb, var(--lt-muted-foreground) 12%, transparent);
 }
 /* The currently-open file: accent-tinted, outranking hover so it holds while
    pointing elsewhere. */
 .library-file.is-selected,
 .library-file.is-selected:hover {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--lt-accent) 22%, transparent);
 }
 /* The leaf mark before Markdown file names. Same inline glyph as the header
    logomark, so it tracks the theme's primary color instead of a baked-in one. */
@@ -1699,7 +1582,7 @@ body.library-resizing {
   flex: none;
   width: 14px;
   height: 14px;
-  color: var(--primary);
+  color: var(--lt-primary);
 }
 /* Folder glyph before folder names, dimmed to the muted tone so the name stays
    primary. The row is a flex box with its own gap, so it needs no margin. */
@@ -1707,7 +1590,7 @@ body.library-resizing {
   flex: none;
   width: 14px;
   height: 14px;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .library-file-label {
   /* Fill the row so the fade lands on empty space until the name overflows;
@@ -1726,7 +1609,7 @@ body.library-resizing {
 .library-nav-chevron {
   margin-left: auto;
   padding-left: 8px;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .library-project {
   display: flex;
@@ -1734,7 +1617,7 @@ body.library-resizing {
 }
 .library-empty {
   padding: 8px 12px;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   font-size: 12px;
 }
 /* The page: a card on the chrome, held off the window frame by --reader-gutter on
@@ -1758,11 +1641,11 @@ body.library-resizing {
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
-  background: var(--preview-background);
-  border-left: 1px solid var(--app-border);
-  border-right: 1px solid var(--app-border);
-  border-bottom: 1px solid var(--app-border);
-  border-radius: 0 0 var(--leaf-radius-md) var(--leaf-radius-md);
+  background: var(--lt-markdown-background);
+  border-left: 1px solid var(--lt-border);
+  border-right: 1px solid var(--lt-border);
+  border-bottom: 1px solid var(--lt-border);
+  border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);
   /* Clear the app bar the page tucks under. */
   padding-top: var(--app-bar-height);
 }
@@ -1799,7 +1682,7 @@ body.library-resizing {
   gap: 6px;
   margin: 0;
   font-size: 12px;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   pointer-events: none;
 }
 /* Laid out with flex, so the attribute that hides it needs saying explicitly. */
@@ -1814,15 +1697,15 @@ body.library-resizing {
   border-radius: 50%;
 }
 .graph-key-document {
-  background: var(--app-muted-foreground);
+  background: var(--lt-muted-foreground);
 }
 .graph-key-external {
   /* Set off from the label before it, so the two pairs read as two pairs. */
   margin-left: 8px;
   /* Ring plus a dot at the middle, matching the node — the dot is what an edge
      ends behind on the canvas. */
-  border: 1.5px solid var(--app-border);
-  background: radial-gradient(circle at center, var(--app-border) 1.6px, transparent 1.6px);
+  border: 1.5px solid var(--lt-border);
+  background: radial-gradient(circle at center, var(--lt-border) 1.6px, transparent 1.6px);
 }
 .reader-graph-status {
   position: absolute;
@@ -1833,7 +1716,7 @@ body.library-resizing {
   padding: 0 16px;
   text-align: center;
   font-size: 12px;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   pointer-events: none;
 }
 /* The floating bar: the views, then the edits, parked over the foot of the page.
@@ -1863,7 +1746,7 @@ body:has(#readerToolbar:not([hidden])) {
   /* Off the page's bottom edge by the same 8px the card is held off the frame. */
   margin-bottom: 8px;
   padding: 4px;
-  border-radius: var(--leaf-radius-lg);
+  border-radius: var(--lt-radius-lg);
   /* Transparent, not gone: the border keeps the box's size while ::after
      paints the visible face — see below. */
   border: 1px solid transparent;
@@ -1881,10 +1764,10 @@ body:has(#readerToolbar:not([hidden])) {
   position: absolute;
   z-index: -1;
   inset: -1px;
-  border-radius: var(--leaf-radius-lg);
-  border: 1px solid var(--app-border);
+  border-radius: var(--lt-radius-lg);
+  border: 1px solid var(--lt-border);
   /* Opaque: the page scrolls underneath it. */
-  background: var(--chrome-surface);
+  background: var(--lt-surface);
   pointer-events: none;
 }
 /* The bar's drop shadow: the same 2px dot lattice the page fade is screened
@@ -1899,8 +1782,8 @@ body:has(#readerToolbar:not([hidden])) {
   z-index: -1;
   inset: -14px -22px -9px;
   pointer-events: none;
-  --leaf-grain-dot: rgba(0, 0, 0, 0.55);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  --lt-grain-dot: rgba(0, 0, 0, 0.55);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -1929,14 +1812,14 @@ body:has(#readerToolbar:not([hidden])) {
   padding: 2px 6px 2px 4px;
   border: 0;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-  color: var(--accent);
+  background: color-mix(in srgb, var(--lt-accent) 16%, transparent);
+  color: var(--lt-accent);
   cursor: pointer;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 .library-sync:hover {
-  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  background: color-mix(in srgb, var(--lt-accent) 26%, transparent);
 }
 .library-sync[hidden] {
   display: none;
@@ -1984,7 +1867,7 @@ body:has(#readerToolbar:not([hidden])) {
   padding: 4px 10px 6px;
   font-size: 11px;
   line-height: 1.4;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   white-space: normal;
   word-break: break-word;
 }
@@ -2005,10 +1888,10 @@ body:has(#readerToolbar:not([hidden])) {
   margin-left: 0;
 }
 .crumb-menu-actions .crumb-menu-action.is-primary {
-  color: var(--accent);
+  color: var(--lt-accent);
 }
 .crumb-menu-note.is-danger {
-  color: var(--danger, #d1242f);
+  color: var(--lt-danger, #d1242f);
 }
 .crumb-menu-item:disabled {
   opacity: 0.5;
@@ -2027,13 +1910,13 @@ body:has(#readerToolbar:not([hidden])) {
   gap: 1px;
   margin: 0 2px 0 0;
   padding: 0 2px;
-  border-radius: var(--leaf-radius-md);
+  border-radius: var(--lt-radius-md);
   /* A well cut into the bar: a wash of shadow over its face, and more inside
      the top edge. Black at an alpha, never a mix toward the foreground — that
      lightens on a dark theme, which is a recess lit from inside. Not a shade
      mixed from the chrome token either, so the bar stays one color. */
   background-color: rgba(0, 0, 0, 0.16);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-attachment: fixed;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
@@ -2055,7 +1938,7 @@ body:has(#readerToolbar:not([hidden])) {
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   cursor: pointer;
 }
 /* The tools in the recess come and go with the view, and a display of our own
@@ -2074,8 +1957,8 @@ body:has(#readerToolbar:not([hidden])) {
   stroke-width: 2.75;
 }
 .reader-subtool:hover {
-  background: color-mix(in srgb, var(--app-foreground) 10%, transparent);
-  color: var(--app-foreground);
+  background: color-mix(in srgb, var(--lt-foreground) 10%, transparent);
+  color: var(--lt-foreground);
 }
 /* On is a lit chip in its own frame: the page color pushed away from the
    recess, so it lifts off the grain on a light theme and a dark one alike, and
@@ -2083,9 +1966,9 @@ body:has(#readerToolbar:not([hidden])) {
    the tone of the bar behind it and reads as nothing. */
 .reader-subtool[aria-pressed="true"],
 .reader-subtool[aria-pressed="true"]:hover {
-  color: var(--app-foreground);
-  background: color-mix(in srgb, var(--app-background) 88%, var(--app-foreground));
-  box-shadow: inset 0 0 0 1px var(--app-border-strong);
+  color: var(--lt-foreground);
+  background: color-mix(in srgb, var(--lt-background) 88%, var(--lt-foreground));
+  box-shadow: inset 0 0 0 1px var(--lt-border-strong);
 }
 /* One button, two glyphs, and the pressed state picks which. Swapping innerHTML
    instead would rebuild the icon under the pointer on every render. */
@@ -2113,9 +1996,9 @@ body:has(#readerToolbar:not([hidden])) {
   height: 30px;
   padding: 0;
   border: 0;
-  border-radius: var(--leaf-radius-md);
+  border-radius: var(--lt-radius-md);
   background: transparent;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   cursor: pointer;
 }
 .reader-tool svg {
@@ -2125,15 +2008,15 @@ body:has(#readerToolbar:not([hidden])) {
 /* No `:not(:disabled)` here: every tool in the bar is always enterable, and the
    bar itself is gone when there is no document. */
 .reader-tool:hover {
-  background: color-mix(in srgb, var(--app-muted-foreground) 16%, transparent);
-  color: var(--app-foreground);
+  background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
+  color: var(--lt-foreground);
 }
 /* The view you are in. The one piece of color in the bar, so the bar answers
    "where am I" at a glance — the same job the highlighted tool does in Figma. */
 .reader-tool.is-active,
 .reader-tool.is-active:hover {
-  background: var(--accent);
-  color: var(--preview-background);
+  background: var(--lt-accent);
+  color: var(--lt-markdown-background);
 }
 /* The active glyph is drawn a touch heavier than its resting outline, so the
    selected view reads as bolder as well as brighter. Targets the strokes
@@ -2147,7 +2030,7 @@ body:has(#readerToolbar:not([hidden])) {
   width: 1px;
   height: 18px;
   margin: 0 4px;
-  background: var(--app-border);
+  background: var(--lt-border);
 }
 /* Save keeps its word. It is the one thing in the bar that writes to disk, and
    an icon would make it guessable rather than certain. */
@@ -2155,9 +2038,9 @@ body:has(#readerToolbar:not([hidden])) {
   height: 30px;
   padding: 0 12px;
   border: 0;
-  border-radius: var(--leaf-radius-md);
-  background: var(--accent);
-  color: var(--preview-background);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-accent);
+  color: var(--lt-markdown-background);
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -2179,7 +2062,7 @@ body:has(#readerToolbar:not([hidden])) {
   display: none;
 }
 .reader-shell {
-  background: var(--preview-background);
+  background: var(--lt-markdown-background);
   /* Pin the reader to its grid cell. Auto-placed, it gets evicted into the 0px
      library column when the .reader-loading overlay (which claims column 2, row 1)
      is unhidden — the document then reflows at zero width and every scroll
@@ -2187,10 +2070,10 @@ body:has(#readerToolbar:not([hidden])) {
   grid-column: 2;
   grid-row: 1;
   box-sizing: border-box;
-  border-left: 1px solid var(--app-border);
-  border-right: 1px solid var(--app-border);
-  border-bottom: 1px solid var(--app-border);
-  border-radius: 0 0 var(--leaf-radius-md) var(--leaf-radius-md);
+  border-left: 1px solid var(--lt-border);
+  border-right: 1px solid var(--lt-border);
+  border-bottom: 1px solid var(--lt-border);
+  border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);
   overflow: auto;
   /* The reader pins its own scroll anchor across re-renders; the browser's
      native scroll anchoring fights that and causes transient jumps. */
@@ -2216,7 +2099,7 @@ body:has(#readerToolbar:not([hidden])) {
   /* The surface being dissolved to. The code view repaints the card in the
      editor's code color, so the dots have to follow it or the last lines break
      up into the wrong page. */
-  --reader-edge-fade-surface: var(--preview-background);
+  --reader-edge-fade-surface: var(--lt-markdown-background);
   /* How deep each edge reaches — one number for the dot screen and the wash
      under it, which have to end together. Given half the depth the wash stopped
      where the screen carried on, and the break in slope read as a bright edge at
@@ -2258,8 +2141,8 @@ body:has(#readerToolbar:not([hidden])) {
      on the cell can't get under it, and the thumb starts at the same edge the
      top band does, so the wash would bury it. */
   margin: 0 calc(var(--reader-scrollbar) + 1px) 1px 1px;
-  border-radius: 0 0 calc(var(--leaf-radius-md) - 1px)
-    calc(var(--leaf-radius-md) - 1px);
+  border-radius: 0 0 calc(var(--lt-radius-md) - 1px)
+    calc(var(--lt-radius-md) - 1px);
   overflow: hidden;
 }
 .library-shell.library-closed .reader-edge-fade {
@@ -2271,7 +2154,7 @@ body:has(#readerToolbar:not([hidden])) {
   display: none;
 }
 :root[data-code-view="true"] .reader-edge-fade {
-  --reader-edge-fade-surface: var(--code-block-background, var(--preview-background));
+  --reader-edge-fade-surface: var(--lt-editor-code-background, var(--lt-markdown-background));
   /* And it stops where the page does, a whole minimap short of the shell's edge: out
      that way is the rail, and a wash of the page's color across the top and bottom of
      it would put the page back under the map. The frame's own measure, plus its border. */
@@ -2297,8 +2180,8 @@ body:has(#readerToolbar:not([hidden])) {
   right: 0;
   height: var(--reader-edge-fade-depth);
   /* The chrome's own lattice, in the page's color rather than the bar's. */
-  --leaf-grain-dot: var(--reader-edge-fade-surface);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  --lt-grain-dot: var(--reader-edge-fade-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -2364,8 +2247,8 @@ body:has(#readerToolbar:not([hidden])) {
      corner, and the arc under the bar. */
   border: 4px solid transparent;
   background-clip: padding-box;
-  border-radius: var(--leaf-radius-md);
-  background-color: color-mix(in srgb, var(--app-muted-foreground) 35%, transparent);
+  border-radius: var(--lt-radius-md);
+  background-color: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
   /* Floor the grabber so a long document can't shrink it to a sliver. */
   min-height: 56px;
 }
@@ -2379,13 +2262,13 @@ body:has(#readerToolbar:not([hidden])) {
   /* Same rounding as the card it covers (the gutter tracks inset it already), so
      the wash doesn't spill past the page's corners. */
   box-sizing: border-box;
-  border-radius: 0 0 var(--leaf-radius-md) var(--leaf-radius-md);
+  border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   padding-top: var(--app-bar-height);
   pointer-events: none;
-  background: color-mix(in srgb, var(--preview-background) 62%, transparent);
+  background: color-mix(in srgb, var(--lt-markdown-background) 62%, transparent);
   z-index: 6;
 }
 .reader-loading[hidden] {
@@ -2394,9 +2277,9 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-loading-spinner {
   width: 34px;
   height: 34px;
-  border-radius: var(--leaf-radius-full);
-  border: 3px solid color-mix(in srgb, var(--preview-foreground) 22%, transparent);
-  border-top-color: var(--accent);
+  border-radius: var(--lt-radius-full);
+  border: 3px solid color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
+  border-top-color: var(--lt-accent);
   animation: leaf-reader-spin 0.8s linear infinite;
 }
 @keyframes leaf-reader-spin {
@@ -2435,11 +2318,11 @@ body:has(#readerToolbar:not([hidden])) {
   bottom: 18px;
   z-index: 20;
   max-width: min(520px, calc(100vw - 36px));
-  border: 1px solid var(--app-border);
-  border-radius: var(--leaf-radius-lg);
-  background: var(--app-surface-elevated);
-  box-shadow: var(--shadow);
-  color: var(--app-foreground);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  box-shadow: var(--lt-shadow);
+  color: var(--lt-foreground);
   font: 600 14px/1.45 var(--app-font);
   padding: 12px 14px;
   opacity: 0;
@@ -2451,8 +2334,8 @@ body:has(#readerToolbar:not([hidden])) {
   transform: none;
 }
 .app-toast.is-error {
-  border-color: var(--app-error-border);
-  color: var(--app-error-foreground);
+  border-color: var(--lt-danger);
+  color: var(--lt-danger);
 }
 @media (prefers-reduced-motion: reduce) {
   .app-toast {
@@ -2467,7 +2350,7 @@ body:has(#readerToolbar:not([hidden])) {
      the last thing on the page ends underneath it — which the Previous/Next
      pager makes obvious, being the last thing and a target. */
   padding-bottom: calc(var(--reader-content-pad) + var(--reader-toolbar-space, 0px));
-  color: var(--preview-foreground);
+  color: var(--lt-markdown-foreground);
   font-size: var(--type-body-size);
   line-height: var(--type-body-line);
   word-wrap: break-word;
@@ -2482,7 +2365,7 @@ body:has(#readerToolbar:not([hidden])) {
   gap: 16px;
   margin-top: var(--app-bar-height);
   padding-top: 24px;
-  border-top: 1px solid var(--reading-rule);
+  border-top: 1px solid var(--lt-markdown-rule);
 }
 :root[data-pager-enabled="false"] .docs-pager {
   display: none;
@@ -2492,22 +2375,22 @@ body:has(#readerToolbar:not([hidden])) {
   min-width: 0;
   text-decoration: none;
   padding: 12px 16px;
-  border: 1px solid var(--reading-rule);
-  border-radius: var(--leaf-radius-lg);
-  color: var(--preview-foreground);
+  border: 1px solid var(--lt-markdown-rule);
+  border-radius: var(--lt-radius-lg);
+  color: var(--lt-markdown-foreground);
 }
 .docs-pager-skeleton {
   flex: 1 1 0;
   min-width: 0;
   padding: 12px 16px;
-  border: 1px solid var(--reading-rule);
-  border-radius: var(--leaf-radius-lg);
+  border: 1px solid var(--lt-markdown-rule);
+  border-radius: var(--lt-radius-lg);
 }
 .docs-pager-label-skeleton,
 .docs-pager-title-skeleton {
   display: block;
-  border-radius: var(--leaf-radius-pill);
-  background: var(--reading-rule);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-markdown-rule);
   animation: pager-skeleton-pulse 1.25s ease-in-out infinite;
 }
 .docs-pager-label-skeleton {
@@ -2540,8 +2423,8 @@ body:has(#readerToolbar:not([hidden])) {
   }
 }
 .docs-pager a:hover {
-  border-color: var(--reading-link);
-  color: var(--reading-link);
+  border-color: var(--lt-markdown-link);
+  color: var(--lt-markdown-link);
   text-decoration: none;
 }
 .docs-pager .docs-pager-next {
@@ -2550,7 +2433,7 @@ body:has(#readerToolbar:not([hidden])) {
 .docs-pager-label {
   display: block;
   font-size: 0.74rem;
-  color: var(--muted-foreground);
+  color: var(--lt-muted-foreground);
   margin-bottom: 2px;
 }
 @media (max-width: 700px) {
@@ -2571,13 +2454,13 @@ body:has(#readerToolbar:not([hidden])) {
 .document-body h4,
 .document-body h5,
 .document-body h6 {
-  color: var(--preview-heading);
+  color: var(--lt-markdown-heading);
   font-family: var(--heading-font);
   letter-spacing: 0;
   margin: var(--type-spacing) 0 var(--type-spacing);
 }
 .document-body h1 {
-  border-bottom: 1px solid var(--preview-rule);
+  border-bottom: 1px solid var(--lt-markdown-rule);
   font-size: var(--type-h1-size);
   font-weight: var(--type-h1-weight);
   line-height: var(--type-h1-line);
@@ -2588,34 +2471,36 @@ body:has(#readerToolbar:not([hidden])) {
   font-weight: var(--type-display-weight);
   line-height: var(--type-display-line);
 }
+/* h1 takes the base heading color; h2–h6 each have their own token, so a theme can
+   tint the deeper levels or leave them equal. */
 .document-body h2 {
-  color: var(--preview-heading-2);
-  border-bottom: 1px solid var(--preview-rule);
+  color: var(--lt-markdown-heading-2);
+  border-bottom: 1px solid var(--lt-markdown-rule);
   font-size: var(--type-h2-size);
   font-weight: var(--type-h2-weight);
   line-height: var(--type-h2-line);
   padding-bottom: 0.3em;
 }
 .document-body h3 {
-  color: var(--preview-heading-3);
+  color: var(--lt-markdown-heading-3);
   font-size: var(--type-h3-size);
   font-weight: var(--type-h3-weight);
   line-height: var(--type-h3-line);
 }
 .document-body h4 {
-  color: var(--preview-heading-4);
+  color: var(--lt-markdown-heading-4);
   font-size: var(--type-h4-size);
   font-weight: var(--type-h4-weight);
   line-height: var(--type-h4-line);
 }
 .document-body h5 {
-  color: var(--preview-heading-5);
+  color: var(--lt-markdown-heading-5);
   font-size: var(--type-h5-size);
   font-weight: var(--type-h5-weight);
   line-height: var(--type-h4-line);
 }
 .document-body h6 {
-  color: var(--preview-heading-6);
+  color: var(--lt-markdown-heading-6);
   font-size: var(--type-h6-size);
   font-weight: var(--type-h6-weight);
   line-height: var(--type-caption-line);
@@ -2646,11 +2531,11 @@ body:has(#readerToolbar:not([hidden])) {
   text-align: justify;
 }
 .document-body a {
-  color: var(--markdown-link);
+  color: var(--lt-markdown-link);
   text-decoration: none;
 }
 .document-body a:hover {
-  color: var(--markdown-link-hover);
+  color: var(--lt-link-hover);
   text-decoration: underline;
 }
 /* Leaf custom Markdown buttons: a link wrapped in braces renders as a button
@@ -2660,42 +2545,42 @@ body:has(#readerToolbar:not([hidden])) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--app-action-background);
-  border-radius: var(--leaf-radius-md);
-  background: var(--app-action-background);
-  color: var(--app-action-foreground);
+  border: 1px solid var(--lt-primary);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
   font: 600 15px var(--app-font);
   padding: 11px 18px;
   text-decoration: none;
   cursor: pointer;
 }
 .document-body a.leaf-md-button:hover {
-  background: var(--app-action-hover-background);
-  border-color: var(--app-action-hover-background);
-  color: var(--app-action-foreground);
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
   text-decoration: none;
 }
 /* Outline, from `{{[Label](url)}}`: an outline at rest that fills on hover. */
 .document-body a.leaf-md-button--secondary {
   background: transparent;
-  border-color: var(--app-action-background);
-  color: var(--app-action-background);
+  border-color: var(--lt-primary);
+  color: var(--lt-primary);
 }
 .document-body a.leaf-md-button--secondary:hover {
-  background: var(--app-action-background);
-  border-color: var(--app-action-background);
-  color: var(--app-action-foreground);
+  background: var(--lt-primary);
+  border-color: var(--lt-primary);
+  color: var(--lt-primary-foreground);
 }
 /* Ghost, from `{[Label](url)}`: no fill or outline until hover, when it fills. */
 .document-body a.leaf-md-button--ghost {
   background: transparent;
   border-color: transparent;
-  color: var(--app-action-background);
+  color: var(--lt-primary);
 }
 .document-body a.leaf-md-button--ghost:hover {
-  background: var(--app-action-background);
-  border-color: var(--app-action-background);
-  color: var(--app-action-foreground);
+  background: var(--lt-primary);
+  border-color: var(--lt-primary);
+  color: var(--lt-primary-foreground);
 }
 .document-body strong {
   font-weight: 600;
@@ -2704,15 +2589,15 @@ body:has(#readerToolbar:not([hidden])) {
    title (see buildDocumentOutline). Closed by default. */
 .document-body .document-outline {
   margin: 1.5em 0;
-  border: 1px solid var(--preview-border);
-  border-radius: var(--leaf-radius-md);
-  background: var(--code-block-background);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-editor-code-background);
 }
 .document-body .document-outline-summary {
   cursor: pointer;
   padding: 0.5em 0.9em;
   font-weight: 600;
-  color: var(--preview-foreground);
+  color: var(--lt-markdown-foreground);
   list-style: none;
   user-select: none;
 }
@@ -2735,13 +2620,13 @@ body:has(#readerToolbar:not([hidden])) {
   transform: rotate(90deg);
 }
 .document-body .document-outline-summary:hover {
-  color: var(--markdown-link-hover);
+  color: var(--lt-link-hover);
 }
 /* The document's total line count, stamped in after the numbering pass. */
 .document-body .document-outline-count {
   margin-left: 0.45em;
   font-weight: 400;
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 /* Bulleted, not numbered: a deep outline runs a counter into the hundreds and
    the wide markers overflow the panel's left edge. */
@@ -2756,19 +2641,19 @@ body:has(#readerToolbar:not([hidden])) {
 }
 .document-body .document-outline li {
   margin: 0.15em 0;
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .document-body .document-outline-link {
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .document-body .document-outline-link:hover {
-  color: var(--markdown-link-hover);
+  color: var(--lt-link-hover);
 }
 /* Alternate-language title lines under a TEI main title. Muted and tight, and
    pulled up toward the h1, so the stack reads as one title block. */
 .document-body .tei-doc-subtitles {
   margin: calc(-0.5 * var(--type-spacing)) 0 var(--type-spacing);
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .document-body .tei-doc-subtitles .tei-doc-subtitle {
   margin: 0 0 0.3em;
@@ -2780,15 +2665,15 @@ body:has(#readerToolbar:not([hidden])) {
    collapsed <details> before the body — mirrors the outline toggle above. */
 .document-body .tei-front {
   margin: 1.5em 0;
-  border: 1px solid var(--preview-border);
-  border-radius: var(--leaf-radius-md);
-  background: var(--code-block-background);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-editor-code-background);
 }
 .document-body .tei-front-summary {
   cursor: pointer;
   padding: 0.5em 0.9em;
   font-weight: 600;
-  color: var(--preview-foreground);
+  color: var(--lt-markdown-foreground);
   list-style: none;
   user-select: none;
 }
@@ -2811,11 +2696,11 @@ body:has(#readerToolbar:not([hidden])) {
   transform: rotate(90deg);
 }
 .document-body .tei-front-summary:hover {
-  color: var(--markdown-link-hover);
+  color: var(--lt-link-hover);
 }
 .document-body .tei-front-body {
   padding: 0 1.4em 0.7em;
-  border-top: 1px solid var(--preview-border);
+  border-top: 1px solid var(--lt-border);
 }
 .document-body .tei-front-body > :first-child {
   margin-top: 0.7em;
@@ -2829,7 +2714,7 @@ body:has(#readerToolbar:not([hidden])) {
   margin: var(--type-spacing) 0;
 }
 .document-body .data-fields dt {
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
   font-family: var(--app-font);
   font-size: 0.9em;
   font-weight: 600;
@@ -2846,7 +2731,7 @@ body:has(#readerToolbar:not([hidden])) {
 }
 /* Attributes carried alongside a value, shown after it. */
 .document-body .data-value-attrs {
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
   font-size: 0.9em;
 }
 /* Repeated records (a sitemap's urls, a POM's dependencies, a JSON array of
@@ -2861,7 +2746,7 @@ body:has(#readerToolbar:not([hidden])) {
   vertical-align: top;
 }
 :root[data-speed-reader="true"] .document-body {
-  color: color-mix(in srgb, var(--preview-foreground) 80%, var(--reading-background));
+  color: color-mix(in srgb, var(--lt-markdown-foreground) 80%, var(--lt-markdown-background));
   font-weight: 400;
 }
 :root[data-speed-reader="true"] .document-body h1,
@@ -2878,7 +2763,7 @@ body:has(#readerToolbar:not([hidden])) {
 :root[data-speed-reader="true"] .document-body .markdown-alert-important::before,
 :root[data-speed-reader="true"] .document-body .markdown-alert-warning::before,
 :root[data-speed-reader="true"] .document-body .markdown-alert-caution::before {
-  color: color-mix(in srgb, var(--preview-foreground) 80%, var(--reading-background));
+  color: color-mix(in srgb, var(--lt-markdown-foreground) 80%, var(--lt-markdown-background));
   font-weight: 400;
 }
 :root[data-speed-reader="true"] .document-body em,
@@ -2900,11 +2785,11 @@ body:has(#readerToolbar:not([hidden])) {
 :root[data-speed-reader="true"] .document-body a:focus-visible,
 :root[data-speed-reader="true"] .document-body .github-ref:hover,
 :root[data-speed-reader="true"] .document-body .github-mention:hover {
-  color: var(--markdown-link-hover);
+  color: var(--lt-link-hover);
   text-decoration: underline;
 }
 :root[data-speed-reader="true"] .document-body .speed-reader-anchor {
-  color: var(--preview-foreground);
+  color: var(--lt-markdown-foreground);
   font-weight: 700;
 }
 /* Glossary term links: a quiet dotted underline in the surrounding text's
@@ -2924,10 +2809,10 @@ body:has(#readerToolbar:not([hidden])) {
 }
 .document-body .github-ref,
 .document-body .github-mention {
-  border: 1px solid var(--preview-border);
-  border-radius: var(--leaf-radius-pill);
-  background: var(--markdown-badge-background);
-  color: var(--markdown-badge-foreground);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-markdown-badge-background);
+  color: var(--lt-markdown-badge-foreground);
   font-family: var(--app-font);
   font-size: 0.82em;
   font-weight: 700;
@@ -2966,7 +2851,7 @@ body:has(#readerToolbar:not([hidden])) {
   list-style-type: lower-roman;
 }
 .document-body input[type="checkbox"] {
-  accent-color: var(--leaf-markdown-checkbox, #6e7681);
+  accent-color: var(--lt-markdown-checkbox, #6e7681);
   margin-right: 0.4em;
 }
 /* A task checkbox the reading view has made interactive (its `disabled`
@@ -2989,10 +2874,10 @@ body:has(#readerToolbar:not([hidden])) {
   outline: none;
 }
 .document-body .leaf-editing-source {
-  font-family: var(--leaf-code-font, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-family: var(--lt-code-font, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   white-space: pre-wrap;
-  background: var(--markdown-code-background, rgba(127, 127, 127, 0.12));
-  border-radius: var(--leaf-radius-sm);
+  background: var(--lt-editor-inline-code-background, rgba(127, 127, 127, 0.12));
+  border-radius: var(--lt-radius-sm);
 }
 /* The fresh empty paragraph Enter opens below a block: give it a line's height
    so the caret has somewhere to blink (Markdown has no empty block). */
@@ -3005,7 +2890,7 @@ body:has(#readerToolbar:not([hidden])) {
    leftover <br> would defeat. */
 .document-body .leaf-insert-block[data-blank="true"][data-placeholder]::before {
   content: attr(data-placeholder);
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
   pointer-events: none;
 }
 /* The block gutter's insert row lies across this line while it is open, and a
@@ -3052,8 +2937,8 @@ body:has(#readerToolbar:not([hidden])) {
   gap: 2px;
   /* Page-colored, so where the margin is too narrow to hold them the tools read
      over the start of a line instead of dissolving into it. */
-  background: var(--preview-background);
-  border-radius: var(--leaf-radius-pill);
+  background: var(--lt-markdown-background);
+  border-radius: var(--lt-radius-pill);
 }
 .block-gutter button {
   display: grid;
@@ -3062,7 +2947,7 @@ body:has(#readerToolbar:not([hidden])) {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
   cursor: pointer;
 }
 .block-gutter button[hidden] {
@@ -3087,16 +2972,16 @@ body:has(#readerToolbar:not([hidden])) {
 .block-gutter .block-insert-option {
   width: 32px;
   height: 32px;
-  border: 1px solid var(--reading-rule);
-  border-radius: var(--leaf-radius-full);
-  background: var(--preview-background);
+  border: 1px solid var(--lt-markdown-rule);
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-markdown-background);
   transition: color 0.12s ease, border-color 0.12s ease;
 }
 .block-gutter .block-grip:hover,
 .block-gutter .block-add:hover,
 .block-gutter .block-insert-option:hover {
-  color: var(--leaf-accent, var(--preview-foreground));
-  border-color: var(--leaf-accent, var(--preview-border));
+  color: var(--lt-accent, var(--lt-markdown-foreground));
+  border-color: var(--lt-accent, var(--lt-border));
 }
 .block-add-close {
   display: none;
@@ -3122,16 +3007,16 @@ body:has(#readerToolbar:not([hidden])) {
   flex: none;
   height: 30px;
   padding: 0 12px;
-  border: 1px solid var(--reading-rule);
-  border-radius: var(--leaf-radius-pill);
-  background: var(--preview-background);
-  color: var(--preview-foreground);
+  border: 1px solid var(--lt-markdown-rule);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-markdown-background);
+  color: var(--lt-markdown-foreground);
   font: 600 12px var(--app-font);
   cursor: pointer;
 }
 .block-insert-choose:hover {
-  border-color: var(--leaf-accent, var(--preview-border));
-  color: var(--leaf-accent, var(--preview-foreground));
+  border-color: var(--lt-accent, var(--lt-border));
+  color: var(--lt-accent, var(--lt-markdown-foreground));
 }
 .block-insert-url {
   flex: 1 1 auto;
@@ -3139,14 +3024,14 @@ body:has(#readerToolbar:not([hidden])) {
   max-width: 320px;
   height: 30px;
   padding: 0 10px;
-  border: 1px solid var(--reading-rule);
-  border-radius: var(--leaf-radius-sm);
-  background: var(--preview-background);
-  color: var(--preview-foreground);
+  border: 1px solid var(--lt-markdown-rule);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-markdown-background);
+  color: var(--lt-markdown-foreground);
   font: 13px var(--app-font);
 }
 .block-insert-url:focus {
-  border-color: var(--leaf-accent, var(--preview-border));
+  border-color: var(--lt-accent, var(--lt-border));
   outline: none;
 }
 /* The options fan out to the right of the cross, over the (nearly always empty)
@@ -3157,8 +3042,8 @@ body:has(#readerToolbar:not([hidden])) {
   align-items: center;
   gap: 8px;
   padding-left: 10px;
-  border-left: 1px solid var(--reading-rule);
-  background: var(--preview-background);
+  border-left: 1px solid var(--lt-markdown-rule);
+  background: var(--lt-markdown-background);
 }
 .block-insert-row[hidden] {
   display: none;
@@ -3176,9 +3061,9 @@ body:has(#readerToolbar:not([hidden])) {
   z-index: 5;
   padding: 2px 10px;
   margin-left: -10px;
-  border-radius: var(--leaf-radius-lg);
-  background: var(--preview-background);
-  box-shadow: var(--shadow);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-markdown-background);
+  box-shadow: var(--lt-shadow);
   opacity: 0.92;
   pointer-events: none;
 }
@@ -3221,7 +3106,7 @@ body.is-block-dragging .document-body [data-src-start] {
      background, so the only way the dot shadow (::before) gets behind an opaque
      face is for the face to be a later negative-z child itself. */
   border: 1px solid transparent;
-  border-radius: var(--leaf-radius-lg);
+  border-radius: var(--lt-radius-lg);
   background: transparent;
   /* Only the contact line stays smooth; the soft spread is the dot screen. */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
@@ -3238,8 +3123,8 @@ body.is-block-dragging .document-body [data-src-start] {
   z-index: -1;
   inset: -13px -20px -10px;
   pointer-events: none;
-  --leaf-grain-dot: rgba(0, 0, 0, 0.55);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  --lt-grain-dot: rgba(0, 0, 0, 0.55);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -3253,9 +3138,9 @@ body.is-block-dragging .document-body [data-src-start] {
   position: absolute;
   z-index: -1;
   inset: -1px;
-  border: 1px solid var(--app-border);
-  border-radius: var(--leaf-radius-lg);
-  background: var(--app-surface-elevated);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
   pointer-events: none;
 }
 /* The point, drawn as a rotated corner of the bar so it takes the same border
@@ -3268,9 +3153,9 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 8px;
   height: 8px;
   margin-left: -4px;
-  border-right: 1px solid var(--app-border);
-  border-bottom: 1px solid var(--app-border);
-  background: var(--app-surface-elevated);
+  border-right: 1px solid var(--lt-border);
+  border-bottom: 1px solid var(--lt-border);
+  background: var(--lt-surface-elevated);
   transform: rotate(45deg);
   pointer-events: none;
 }
@@ -3292,14 +3177,14 @@ body.is-block-dragging .document-body [data-src-start] {
 .selection-link-input {
   width: 240px;
   padding: 6px 8px;
-  border: 1px solid var(--app-border);
-  border-radius: var(--leaf-radius-sm);
-  background: var(--app-surface);
-  color: var(--app-foreground);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
   font: 13px var(--app-font);
 }
 .selection-link-input:focus {
-  border-color: var(--leaf-accent, var(--app-border));
+  border-color: var(--lt-accent, var(--lt-border));
   outline: none;
 }
 .selection-format {
@@ -3310,9 +3195,9 @@ body.is-block-dragging .document-body [data-src-start] {
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: var(--leaf-radius-sm);
+  border-radius: var(--lt-radius-sm);
   background: none;
-  color: var(--app-foreground);
+  color: var(--lt-foreground);
   cursor: pointer;
 }
 .selection-format[hidden] {
@@ -3333,7 +3218,7 @@ body.is-block-dragging .document-body [data-src-start] {
   height: 13px;
 }
 .selection-format:hover:not(:disabled) {
-  background: var(--app-surface-muted);
+  background: var(--lt-surface-muted);
 }
 /* The kind the block already is: grayed, not pressable. Overrides the app-wide
    disabled fill — in a floating bar a filled box reads as pressed, not unavailable. */
@@ -3341,26 +3226,26 @@ body.is-block-dragging .document-body [data-src-start] {
 .selection-format:disabled:hover {
   border: 0;
   background: none;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   cursor: default;
 }
 /* Lit for a format the highlighted words already carry — the bar says what they
    are as much as what they could be. */
 .selection-format.is-active {
-  color: var(--leaf-accent, var(--app-foreground));
+  color: var(--lt-accent, var(--lt-foreground));
 }
 .selection-format-divider {
   width: 1px;
   height: 18px;
   margin: 0 5px;
-  background: var(--app-border);
+  background: var(--lt-border);
 }
 .selection-toolbar:not(.has-block-formats) .selection-format-divider {
   display: none;
 }
 .document-body blockquote {
-  border-left: 0.25em solid var(--markdown-blockquote-border);
-  color: var(--markdown-blockquote-foreground);
+  border-left: 0.25em solid var(--lt-markdown-blockquote-border);
+  color: var(--lt-markdown-blockquote-foreground);
   padding: 0 1em;
 }
 .document-body blockquote:not(.markdown-alert) p {
@@ -3404,55 +3289,55 @@ body.is-block-dragging .document-body [data-src-start] {
   margin-bottom: 0.15em;
 }
 .document-body .markdown-alert-note {
-  border-left-color: var(--markdown-alert-note-border);
+  border-left-color: var(--lt-markdown-alert-note);
 }
 .document-body .markdown-alert-note::before {
-  color: var(--markdown-alert-note-border);
+  color: var(--lt-markdown-alert-note);
   content: "Note";
 }
 .document-body .markdown-alert-tip {
-  border-left-color: var(--markdown-alert-tip-border);
+  border-left-color: var(--lt-markdown-alert-tip);
 }
 .document-body .markdown-alert-tip::before {
-  color: var(--markdown-alert-tip-border);
+  color: var(--lt-markdown-alert-tip);
   content: "Tip";
 }
 .document-body .markdown-alert-important {
-  border-left-color: var(--markdown-alert-important-border);
+  border-left-color: var(--lt-markdown-alert-important);
 }
 .document-body .markdown-alert-important::before {
-  color: var(--markdown-alert-important-border);
+  color: var(--lt-markdown-alert-important);
   content: "Important";
 }
 .document-body .markdown-alert-warning {
-  border-left-color: var(--markdown-alert-warning-border);
+  border-left-color: var(--lt-markdown-alert-warning);
 }
 .document-body .markdown-alert-warning::before {
-  color: var(--markdown-alert-warning-border);
+  color: var(--lt-markdown-alert-warning);
   content: "Warning";
 }
 .document-body .markdown-alert-caution {
-  border-left-color: var(--markdown-alert-caution-border);
+  border-left-color: var(--lt-markdown-alert-caution);
 }
 .document-body .markdown-alert-caution::before {
-  color: var(--markdown-alert-caution-border);
+  color: var(--lt-markdown-alert-caution);
   content: "Caution";
 }
 .document-body code {
-  background: var(--markdown-inline-code-background);
-  border-radius: var(--leaf-radius-md);
-  color: var(--markdown-inline-code-foreground);
+  background: var(--lt-editor-inline-code-background);
+  border-radius: var(--lt-radius-md);
+  color: var(--lt-editor-inline-code-foreground);
   font-family: var(--code-font);
   font-size: 0.875em;
   padding: 0.2em 0.4em;
 }
 .document-body pre {
   position: relative;
-  background: var(--code-block-background);
+  background: var(--lt-editor-code-background);
   background-clip: padding-box;
-  border-radius: var(--leaf-radius-md);
+  border-radius: var(--lt-radius-md);
   clip-path: inset(0 round 6px);
-  color: var(--code-block-foreground);
+  color: var(--lt-editor-code-foreground);
   line-height: 1.45;
   overflow: auto;
   padding: 1em;
@@ -3479,8 +3364,8 @@ body.is-block-dragging .document-body [data-src-start] {
   overflow-x: auto;
 }
 .document-body pre ::selection {
-  background: var(--code-block-selection-background);
-  color: var(--code-block-selection-foreground);
+  background: var(--lt-editor-code-selection-background);
+  color: var(--lt-editor-code-selection-foreground);
 }
 .document-body pre.highlight,
 .document-body pre.mermaid {
@@ -3511,9 +3396,9 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 18px;
   height: 18px;
   margin: -9px 0 0 -9px;
-  border-radius: var(--leaf-radius-full);
-  border: 2px solid color-mix(in srgb, var(--preview-foreground) 22%, transparent);
-  border-top-color: var(--accent);
+  border-radius: var(--lt-radius-full);
+  border: 2px solid color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
+  border-top-color: var(--lt-accent);
   animation: leaf-reader-spin 0.8s linear infinite;
   pointer-events: none;
 }
@@ -3528,7 +3413,7 @@ body.is-block-dragging .document-body [data-src-start] {
   position: absolute;
   top: 8px;
   right: 12px;
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
   font: 700 11px var(--app-font);
   letter-spacing: 0;
   text-transform: uppercase;
@@ -3550,9 +3435,9 @@ body.is-block-dragging .document-body [data-src-start] {
   height: 28px;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: var(--leaf-radius-md);
-  background: color-mix(in srgb, var(--code-block-background) 65%, transparent);
-  color: var(--preview-muted-foreground);
+  border-radius: var(--lt-radius-md);
+  background: color-mix(in srgb, var(--lt-editor-code-background) 65%, transparent);
+  color: var(--lt-muted-foreground);
   cursor: pointer;
   opacity: 0.5;
   transition: opacity 0.12s ease, color 0.12s ease, background 0.12s ease,
@@ -3563,13 +3448,13 @@ body.is-block-dragging .document-body [data-src-start] {
   opacity: 1;
 }
 .document-body pre > .code-copy:hover {
-  background: var(--code-block-background);
-  border-color: var(--code-block-border);
-  color: var(--preview-foreground);
+  background: var(--lt-editor-code-background);
+  border-color: var(--lt-editor-code-border);
+  color: var(--lt-markdown-foreground);
 }
 .document-body pre > .code-copy.is-copied {
   opacity: 1;
-  color: var(--success, currentColor);
+  color: var(--lt-success, currentColor);
 }
 .code-copy-mark {
   width: 16px;
@@ -3591,14 +3476,14 @@ body.is-block-dragging .document-body [data-src-start] {
      the shared rule further down loses to this selector — same token and the
      same 2px window-anchored lattice, so it is one texture with every other
      reading surface. */
-  background-color: var(--code-block-background);
-  --leaf-grain-dot: var(--reader-surface-grain);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  background-color: var(--lt-editor-code-background);
+  --lt-grain-dot: var(--reader-surface-grain);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
   border: 0;
-  color: var(--preview-foreground);
+  color: var(--lt-markdown-foreground);
   padding: 0.75em;
   text-align: center;
   /* A window onto the drawing: zooming moves the picture inside rather than the
@@ -3642,8 +3527,8 @@ body.is-block-dragging .document-body [data-src-start] {
    .leaf-editing-source — so without this the mermaid sits centered in a diagram's
    cell rather than reading as the source it now is. */
 .document-body pre.mermaid[data-processed="true"][data-editing-source="true"] {
-  background: var(--code-block-background);
-  color: var(--code-block-foreground);
+  background: var(--lt-editor-code-background);
+  color: var(--lt-editor-code-foreground);
   padding: 1em;
   text-align: left;
 }
@@ -3651,73 +3536,73 @@ body.is-block-dragging .document-body [data-src-start] {
   content: attr(data-language);
 }
 .document-body .syn-comment {
-  color: var(--syntax-comment);
+  color: var(--lt-syntax-comment);
   font-style: italic;
 }
 .document-body .syn-keyword,
 .document-body .syn-storage,
 .document-body .syn-control {
-  color: var(--syntax-keyword);
+  color: var(--lt-syntax-keyword);
   font-weight: 700;
 }
 .document-body .syn-operator {
-  color: var(--syntax-operator);
+  color: var(--lt-syntax-operator);
   font-weight: 700;
 }
 .document-body .syn-string {
-  color: var(--syntax-string);
+  color: var(--lt-syntax-string);
 }
 .document-body .syn-constant,
 .document-body .syn-numeric,
 .document-body .syn-boolean,
 .document-body .syn-character,
 .document-body .syn-language {
-  color: var(--syntax-number);
+  color: var(--lt-syntax-number);
 }
 .document-body .syn-entity,
 .document-body .syn-tag,
 .document-body .syn-attribute,
 .document-body .syn-heading {
-  color: var(--syntax-function);
+  color: var(--lt-syntax-function);
 }
 .document-body .syn-function,
 .document-body .syn-method {
-  color: var(--syntax-function);
+  color: var(--lt-syntax-function);
 }
 .document-body .syn-type,
 .document-body .syn-class,
 .document-body .syn-support {
-  color: var(--syntax-type);
+  color: var(--lt-syntax-type);
 }
 .document-body .syn-variable,
 .document-body .syn-parameter,
 .document-body .syn-property {
-  color: var(--syntax-variable);
+  color: var(--lt-syntax-variable);
 }
 .document-body .syn-punctuation {
-  color: var(--syntax-punctuation);
+  color: var(--lt-syntax-punctuation);
 }
 .document-body .syn-invalid,
 .document-body .syn-illegal {
-  color: var(--syntax-deleted);
+  color: var(--lt-syntax-deleted);
   text-decoration: underline;
 }
 .document-body .syn-inserted {
-  background: var(--syntax-inserted-bg);
-  color: var(--syntax-inserted);
+  background: var(--lt-syntax-inserted-background);
+  color: var(--lt-syntax-inserted);
   text-decoration: underline;
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.18em;
 }
 .document-body .syn-deleted {
-  background: var(--syntax-deleted-bg);
-  color: var(--syntax-deleted);
+  background: var(--lt-syntax-deleted-background);
+  color: var(--lt-syntax-deleted);
   text-decoration: line-through;
   text-decoration-thickness: 0.08em;
 }
 .document-body .syn-changed {
-  background: var(--syntax-changed-bg);
-  color: var(--syntax-changed);
+  background: var(--lt-syntax-changed-background);
+  color: var(--lt-syntax-changed);
   font-style: italic;
 }
 /* ---- Code view (raw source editing) -------------------------------------
@@ -3752,12 +3637,12 @@ body.is-block-dragging .document-body [data-src-start] {
   content: "";
   position: absolute;
   inset: 0 calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff)) 0 0;
-  background: var(--syntax-background);
+  background: var(--lt-syntax-background);
   /* The two corners the card rounds itself, so the fill can't poke outside ::after's
      curve. The top two are the arc elements' business — each paints chrome over its
      corner and masks the page's disc back out, hiding the square corner under it. */
-  border-bottom-left-radius: var(--leaf-radius-md);
-  border-bottom-right-radius: var(--leaf-radius-md);
+  border-bottom-left-radius: var(--lt-radius-md);
+  border-bottom-right-radius: var(--lt-radius-md);
   pointer-events: none;
 }
 /* The page frame for the text area: left, right and bottom edges, with both
@@ -3775,14 +3660,14 @@ body.is-block-dragging .document-body [data-src-start] {
   content: "";
   position: absolute;
   left: 0;
-  top: calc(var(--app-bar-height) + var(--leaf-radius-md));
+  top: calc(var(--app-bar-height) + var(--lt-radius-md));
   bottom: 0;
   right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
-  border-left: 1px solid var(--app-border);
-  border-right: 1px solid var(--app-border);
-  border-bottom: 1px solid var(--app-border);
-  border-bottom-left-radius: var(--leaf-radius-md);
-  border-bottom-right-radius: var(--leaf-radius-md);
+  border-left: 1px solid var(--lt-border);
+  border-right: 1px solid var(--lt-border);
+  border-bottom: 1px solid var(--lt-border);
+  border-bottom-left-radius: var(--lt-radius-md);
+  border-bottom-right-radius: var(--lt-radius-md);
   /* Above the reader-edge-fade wash (z-index 4). The fade dissolves the top and
      bottom ~36px of the card to the page color; in the reading view it is inset
      inside the card's borders, but this frame's right border and bottom corners
@@ -3800,7 +3685,7 @@ body.is-block-dragging .document-body [data-src-start] {
 :root[data-code-view="true"] .app-bar::after {
   right: calc(
     var(--reader-gutter) + var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) +
-      var(--leaf-radius-md) - 1px
+      var(--lt-radius-md) - 1px
   );
 }
 /* The top-right corner of the faked page: the same convex arc reader-corner-tr
@@ -3849,9 +3734,9 @@ body.is-block-dragging .document-body [data-src-start] {
    styled to echo the reader rail's viewport box: our minimap-viewport colors,
    a border, and rounded corners. Nothing else about the minimap is touched. */
 .code-view-monaco .monaco-editor .minimap-slider {
-  background: var(--leaf-minimap-viewport-background) !important;
-  border: 1px solid var(--leaf-minimap-viewport-border);
-  border-radius: var(--leaf-radius-sm);
+  background: var(--lt-minimap-viewport-background) !important;
+  border: 1px solid var(--lt-minimap-viewport-border);
+  border-radius: var(--lt-radius-sm);
   box-sizing: border-box;
   /* Hold the box a pixel clear of the rail's outer edge, or its right stroke is
      a coin toss. Monaco sizes the box to the full width of the rail, and the rail
@@ -3899,7 +3784,7 @@ body.is-block-dragging .document-body [data-src-start] {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: var(--syntax-background);
+  background: var(--lt-syntax-background);
   box-shadow: 0 2px 6px -2px color-mix(in srgb, black 45%, transparent);
 }
 /* And the dissolve for what slides under them — the chrome's dot screen in the
@@ -3913,8 +3798,8 @@ body.is-block-dragging .document-body [data-src-start] {
   left: 0;
   right: 0;
   height: 18px;
-  --leaf-grain-dot: var(--syntax-background);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  --lt-grain-dot: var(--lt-syntax-background);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -3930,7 +3815,7 @@ body.is-block-dragging .document-body [data-src-start] {
   cursor: pointer;
 }
 .code-sticky-row:hover {
-  background: var(--app-action-hover-background);
+  background: var(--lt-navigation-button-hover-background);
 }
 /* Both columns are Monaco's, read back and restated: the gutter is right-aligned
    in the width Monaco sized it to, nudged off the frame's border by the same
@@ -3939,7 +3824,7 @@ body.is-block-dragging .document-body [data-src-start] {
   position: absolute;
   top: 0;
   text-align: right;
-  color: var(--leaf-syntax-comment);
+  color: var(--lt-syntax-comment);
   transform: translateX(var(--cv-line-number-pad));
 }
 .code-sticky-text {
@@ -3953,8 +3838,8 @@ body.is-block-dragging .document-body [data-src-start] {
   font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
 }
 .document-body .math-inline {
-  background: var(--math-inline-background);
-  border-radius: var(--leaf-radius-sm);
+  background: var(--lt-markdown-math-inline-background);
+  border-radius: var(--lt-radius-sm);
   padding: 0.08em 0.24em;
 }
 .document-body .math-display {
@@ -3967,8 +3852,8 @@ body.is-block-dragging .document-body [data-src-start] {
   font-family: var(--app-font);
 }
 .document-body .footnote-definition {
-  border-top: 1px solid var(--preview-rule);
-  color: var(--preview-muted-foreground);
+  border-top: 1px solid var(--lt-markdown-rule);
+  color: var(--lt-muted-foreground);
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-line);
   margin-top: 32px;
@@ -4001,12 +3886,12 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .document-body th,
 .document-body td {
-  border: 1px solid var(--markdown-table-cell-border);
+  border: 1px solid var(--lt-markdown-table-border);
   padding: 0.375em 0.8125em;
 }
 .document-body th {
-  background: var(--markdown-table-heading-background);
-  color: var(--preview-heading);
+  background: var(--lt-markdown-table-header-background);
+  color: var(--lt-markdown-heading);
   font-weight: 600;
 }
 .document-body tr:nth-child(2n) td {
@@ -4024,8 +3909,8 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-body pre,
 .document-body th,
 .document-body tr:nth-child(2n) td {
-  --leaf-grain-dot: var(--reader-surface-grain);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  --lt-grain-dot: var(--reader-surface-grain);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -4036,17 +3921,17 @@ body.is-block-dragging .document-body [data-src-start] {
    themes zero the token rather than drop the rule, keeping one selector to reason
    about against the frontmatter opt-out below. */
 .document-body tr:nth-child(2n + 1) td {
-  --leaf-grain-dot: var(--reader-row-grain);
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  --lt-grain-dot: var(--reader-row-grain);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
 }
 .document-body kbd {
-  border: 1px solid var(--keyboard-border);
+  border: 1px solid var(--lt-markdown-keyboard-border);
   border-bottom-width: 2px;
-  border-radius: var(--leaf-radius-sm);
-  background: var(--keyboard-background);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-markdown-keyboard-background);
   font-family: var(--code-font);
   font-size: 0.8em;
   padding: 0.08em 0.32em;
@@ -4082,7 +3967,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-body .frontmatter th {
   font-weight: 600;
   white-space: nowrap;
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .document-body img {
   display: block;
@@ -4099,12 +3984,12 @@ body.is-block-dragging .document-body [data-src-start] {
   border: 0;
   height: 1px;
   margin: var(--type-spacing) 0;
-  background: var(--markdown-thematic-break);
+  background: var(--lt-markdown-thematic-break);
 }
 .document-body figcaption,
 .document-body .caption,
 .document-body .metadata {
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
   font-family: var(--app-font);
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-line);
@@ -4139,9 +4024,9 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 16px;
   height: 16px;
   margin-left: -8px;
-  border-radius: var(--leaf-radius-full);
-  border: 2px solid color-mix(in srgb, var(--preview-foreground) 22%, transparent);
-  border-top-color: var(--accent);
+  border-radius: var(--lt-radius-full);
+  border: 2px solid color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
+  border-top-color: var(--lt-accent);
   animation: leaf-reader-spin 0.8s linear infinite;
   pointer-events: none;
 }
@@ -4199,10 +4084,10 @@ body.is-block-dragging .document-body [data-src-start] {
   z-index: 1;
   height: var(--minimap-viewport-height);
   min-height: 22px;
-  border: 1px solid var(--minimap-viewport-border);
+  border: 1px solid var(--lt-minimap-viewport-border);
   /* All four corners at the page card's rounding. */
-  border-radius: var(--leaf-radius-md);
-  background: var(--minimap-viewport-background);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-minimap-viewport-background);
   pointer-events: none;
 }
 .empty-state {
@@ -4212,13 +4097,13 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .empty-state .kicker,
 .recent h2 {
-  color: var(--primary);
+  color: var(--lt-primary);
   font: 700 13px var(--app-font);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 .empty-state h1 {
-  color: var(--empty-heading);
+  color: var(--lt-markdown-heading);
   font: 700 clamp(2.6rem, 7vw, 5.2rem) / 1.04 var(--heading-font);
   letter-spacing: -0.01em;
   margin: 0 0 10px;
@@ -4226,19 +4111,19 @@ body.is-block-dragging .document-body [data-src-start] {
 /* The second half of the brand lockup — quieter than the headline, but still
    set in the heading face so the two lines read as one statement. */
 .empty-subtitle {
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
   font: 500 clamp(1.15rem, 2.4vw, 1.6rem) / 1.25 var(--heading-font);
   letter-spacing: -0.005em;
   margin: 0 0 20px;
 }
 .empty-description {
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
   font: 500 16px/1.6 var(--app-font);
   margin: 0 0 26px;
   max-width: 54ch;
 }
 .empty-help {
-  color: var(--preview-muted-foreground);
+  color: var(--lt-muted-foreground);
   font: 500 15px/1.6 var(--app-font);
   margin: 18px 0 0;
 }
@@ -4261,24 +4146,24 @@ body.is-block-dragging .document-body [data-src-start] {
   gap: 7px;
   font-size: 15px;
   padding: 11px 16px;
-  border-color: var(--app-border);
+  border-color: var(--lt-border);
   background: transparent;
-  color: var(--preview-foreground);
+  color: var(--lt-markdown-foreground);
 }
 /* Must set the background too: a color alone leaves the generic `button:hover`
    fill underneath, which is one purple on another. This pair the theme
    compiler gates for contrast. */
 .primary-new:hover {
-  background: var(--app-action-hover-background);
-  border-color: var(--app-action-hover-background);
-  color: var(--app-action-foreground);
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
 }
 .primary-new svg {
   width: 16px;
   height: 16px;
 }
 .recent {
-  border-top: 1px solid var(--recent-border);
+  border-top: 1px solid var(--lt-navigation-recent-border);
   margin-top: 54px;
   padding-top: 24px;
 }
@@ -4294,13 +4179,13 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 100%;
   border-color: transparent;
   background: transparent;
-  color: var(--recent-item-foreground);
+  color: var(--lt-navigation-recent-item-foreground);
   overflow-wrap: anywhere;
   padding: 10px 0;
   text-align: left;
 }
 .recent button:hover {
-  color: var(--recent-item-hover-foreground);
+  color: var(--lt-navigation-recent-item-hover-foreground);
 }
 @media (max-width: 900px) {
   :root {
@@ -4374,9 +4259,9 @@ body.is-block-dragging .document-body [data-src-start] {
   display: flex;
   flex-direction: column;
   max-height: 78vh;
-  border-top-left-radius: var(--leaf-radius-2xl);
-  border-top-right-radius: var(--leaf-radius-2xl);
-  box-shadow: var(--leaf-shadow-sheet);
+  border-top-left-radius: var(--lt-radius-2xl);
+  border-top-right-radius: var(--lt-radius-2xl);
+  box-shadow: var(--lt-shadow-sheet);
   transform: translateY(100%);
   transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -4385,7 +4270,7 @@ body.is-block-dragging .document-body [data-src-start] {
    The color under it is each sheet's own; only the lattice is shared, and it is
    anchored to the window so every grained surface keeps one phase. */
 .leaf-sheet {
-  background-image: radial-gradient(circle, var(--leaf-grain-dot) 0 0.6px, transparent 0.7px);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
   background-size: 2px 2px;
   background-repeat: repeat;
   background-attachment: fixed;
@@ -4418,8 +4303,8 @@ body.is-block-dragging .document-body [data-src-start] {
   content: '';
   width: 40px;
   height: 4px;
-  border-radius: var(--leaf-radius-pill);
-  background: var(--border-strong);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-border-strong);
 }
 .leaf-sheet.is-dragging .leaf-sheet-grip {
   cursor: grabbing;
@@ -4433,14 +4318,14 @@ body.is-block-dragging .document-body [data-src-start] {
   height: 32px;
   padding: 0;
   border: 0;
-  border-radius: var(--leaf-radius-lg);
+  border-radius: var(--lt-radius-lg);
   background: none;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   cursor: pointer;
 }
 .leaf-sheet-close:hover {
-  background: var(--surface-muted);
-  color: var(--foreground);
+  background: var(--lt-surface-muted);
+  color: var(--lt-foreground);
 }
 .leaf-sheet-close svg {
   width: 18px;
@@ -4468,8 +4353,8 @@ body.is-block-dragging .document-body [data-src-start] {
      inset a webkit thumb. */
   border: 4px solid transparent;
   background-clip: padding-box;
-  border-radius: var(--leaf-radius-md);
-  background-color: color-mix(in srgb, var(--app-muted-foreground) 35%, transparent);
+  border-radius: var(--lt-radius-md);
+  background-color: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
   min-height: 56px;
 }
 .glossary-backdrop {
@@ -4486,8 +4371,8 @@ body.is-block-dragging .document-body [data-src-start] {
 .glossary-sheet {
   position: fixed;
   z-index: 41;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--lt-background);
+  color: var(--lt-foreground);
 }
 /* Settings row that opens the theme selector: label on the left, the current
    "Family · Appearance" summary and a chevron on the right. */
@@ -4498,17 +4383,17 @@ body.is-block-dragging .document-body [data-src-start] {
   gap: 8px;
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid var(--settings-control-border);
-  border-radius: var(--leaf-radius-md);
-  background: var(--settings-control-background);
-  color: var(--settings-control-foreground);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
   cursor: pointer;
   font: inherit;
   text-align: left;
 }
 .setting-theme-open:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-muted);
+  border-color: var(--lt-border-strong);
+  background: var(--lt-surface-muted);
 }
 .setting-theme-icon {
   width: 16px;
@@ -4523,12 +4408,12 @@ body.is-block-dragging .document-body [data-src-start] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   font-size: 12px;
   text-align: right;
 }
 .setting-theme-chevron {
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   font-size: 18px;
   line-height: 1;
 }
@@ -4552,8 +4437,8 @@ body.is-block-dragging .document-body [data-src-start] {
   z-index: 41;
   gap: 14px;
   padding: 0 20px 24px;
-  background: var(--surface-elevated);
-  color: var(--foreground);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
   font-family: var(--app-font);
 }
 .theme-sheet-head {
@@ -4564,7 +4449,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .theme-sheet-title {
   font-size: 15px;
   font-weight: 800;
-  color: var(--foreground);
+  color: var(--lt-foreground);
 }
 .theme-sheet-modes {
   display: grid;
@@ -4573,27 +4458,27 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .theme-mode-btn {
   padding: 8px 6px;
-  border: 1px solid var(--settings-control-border);
-  border-radius: var(--leaf-radius-lg);
-  background: var(--settings-control-background);
-  color: var(--settings-control-foreground);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
   font: 600 12px var(--app-font);
   cursor: pointer;
 }
 .theme-mode-btn:hover {
-  background: var(--surface-muted);
-  border-color: var(--border-strong);
+  background: var(--lt-surface-muted);
+  border-color: var(--lt-border-strong);
 }
 .theme-mode-btn.is-active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-foreground);
+  background: var(--lt-primary);
+  border-color: var(--lt-primary);
+  color: var(--lt-primary-foreground);
 }
 .theme-sheet-divider {
   height: 1px;
   margin: 0;
   border: 0;
-  background: var(--border);
+  background: var(--lt-border);
 }
 .theme-sheet-grid {
   list-style: none;
@@ -4620,12 +4505,12 @@ body.is-block-dragging .document-body [data-src-start] {
   min-height: 54px;
   padding: 0;
   border: 0;
-  border-radius: var(--leaf-radius-xl);
+  border-radius: var(--lt-radius-xl);
   /* The card wears the theme's own paper and ink (Random falls back to a neutral
      tile), so it reads as a sample of the theme. A faint stroke in the SHEET's
      ink keeps a paper-white card from vanishing on a light sheet. */
-  background: var(--card-bg-light, color-mix(in srgb, var(--foreground) 5%, var(--surface-elevated)));
-  color: var(--card-fg-light, var(--settings-control-foreground));
+  background: var(--card-bg-light, color-mix(in srgb, var(--lt-foreground) 5%, var(--lt-surface-elevated)));
+  color: var(--card-fg-light, var(--lt-foreground));
   font: 700 13.5px var(--app-font);
   text-align: left;
   cursor: pointer;
@@ -4638,13 +4523,13 @@ body.is-block-dragging .document-body [data-src-start] {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 12%, transparent);
   pointer-events: none;
   transition: box-shadow 0.12s ease;
 }
 :root[data-leaf-appearance='dark'] .theme-item {
-  background: var(--card-bg-dark, color-mix(in srgb, var(--foreground) 5%, var(--surface-elevated)));
-  color: var(--card-fg-dark, var(--settings-control-foreground));
+  background: var(--card-bg-dark, color-mix(in srgb, var(--lt-foreground) 5%, var(--lt-surface-elevated)));
+  color: var(--card-fg-dark, var(--lt-foreground));
 }
 /* The palette preview: a full-bleed block of edge-to-edge bars across the top,
    the card's rounded corners clipping it (card sets overflow: hidden). */
@@ -4681,9 +4566,9 @@ body.is-block-dragging .document-body [data-src-start] {
   height: 26px;
   margin: -13px 0 0 -13px;
   border-radius: 50%;
-  border: 2px solid color-mix(in srgb, var(--foreground) 22%, transparent);
-  border-top-color: var(--foreground);
-  background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
+  border: 2px solid color-mix(in srgb, var(--lt-foreground) 22%, transparent);
+  border-top-color: var(--lt-foreground);
+  background: color-mix(in srgb, var(--lt-surface-elevated) 78%, transparent);
   display: none;
   pointer-events: none;
   animation: theme-item-spin 0.7s linear infinite;
@@ -4697,10 +4582,10 @@ body.is-block-dragging .document-body [data-src-start] {
   }
 }
 .theme-item:hover::after {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 26%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 26%, transparent);
 }
 .theme-item.is-active::after {
-  box-shadow: inset 0 0 0 2px var(--accent);
+  box-shadow: inset 0 0 0 2px var(--lt-accent);
 }
 /* Selected badge: the check-circle, tinted with the theme accent, pinned to the
    name band. Hidden until the card is active. */
@@ -4711,7 +4596,7 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 16px;
   height: 16px;
   display: none;
-  color: var(--accent);
+  color: var(--lt-accent);
   pointer-events: none;
 }
 .theme-item.is-active .theme-item-check {
@@ -4722,14 +4607,14 @@ body.is-block-dragging .document-body [data-src-start] {
   justify-content: center;
 }
 .theme-sheet-browse {
-  color: var(--link);
+  color: var(--lt-link);
   font-size: 12px;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
 }
 .theme-sheet-browse:hover {
-  color: var(--link-hover);
+  color: var(--lt-link-hover);
   text-decoration: underline;
 }
 .link-hover-tip {
@@ -4737,11 +4622,11 @@ body.is-block-dragging .document-body [data-src-start] {
   z-index: 60;
   max-width: min(34rem, calc(100vw - 24px));
   padding: 8px 10px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--leaf-radius-xl);
-  background: color-mix(in srgb, var(--background) 92%, black);
-  color: var(--foreground);
-  box-shadow: var(--leaf-shadow-tooltip);
+  border: 1px solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-xl);
+  background: color-mix(in srgb, var(--lt-background) 92%, black);
+  color: var(--lt-foreground);
+  box-shadow: var(--lt-shadow-tooltip);
   pointer-events: none;
 }
 .link-hover-tip-kind {
@@ -4751,7 +4636,7 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .link-hover-tip-detail {
   margin-top: 3px;
-  color: var(--muted-foreground);
+  color: var(--lt-muted-foreground);
   font-family: var(--font-mono);
   font-size: 0.76rem;
   line-height: 1.3;
@@ -4759,7 +4644,7 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .link-hover-tip-lines {
   margin-top: 4px;
-  color: var(--foreground);
+  color: var(--lt-foreground);
   font-weight: 600;
   font-size: 0.74rem;
   line-height: 1.2;
@@ -4788,9 +4673,9 @@ body.is-block-dragging .document-body [data-src-start] {
 .glossary-sheet-spinner {
   width: 28px;
   height: 28px;
-  border-radius: var(--leaf-radius-full);
-  border: 3px solid color-mix(in srgb, var(--foreground) 18%, transparent);
-  border-top-color: var(--accent);
+  border-radius: var(--lt-radius-full);
+  border: 3px solid color-mix(in srgb, var(--lt-foreground) 18%, transparent);
+  border-top-color: var(--lt-accent);
   animation: leaf-reader-spin 0.8s linear infinite;
 }
 @keyframes leaf-glossary-wait-in {
@@ -4807,12 +4692,12 @@ body.is-block-dragging .document-body [data-src-start] {
    or one that wouldn't read. */
 .glossary-sheet-message {
   margin: 24px 0;
-  color: var(--muted-foreground);
+  color: var(--lt-muted-foreground);
 }
 .glossary-sheet-footer {
   flex: none;
   padding: 12px 28px 20px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--lt-border);
 }
 .glossary-sheet-fulllink {
   padding: 0;
@@ -4820,14 +4705,14 @@ body.is-block-dragging .document-body [data-src-start] {
   background: none;
   font: inherit;
   font-size: 0.85rem;
-  color: var(--link);
+  color: var(--lt-link);
   cursor: pointer;
 }
 .glossary-sheet-fulllink:hover {
   /* Reset the global button:hover green fill so this reads as a plain link. */
   background: none;
   border-color: transparent;
-  color: var(--link-hover);
+  color: var(--lt-link-hover);
   text-decoration: underline;
 }
 /* ---- The flowchart sheet ------------------------------------------------
@@ -4855,14 +4740,14 @@ body.is-block-dragging .document-body [data-src-start] {
   z-index: 43;
   display: flex;
   flex-direction: column;
-  background: var(--surface-elevated);
-  color: var(--foreground);
-  border: 1px solid var(--border);
-  border-radius: var(--leaf-radius-xl);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-xl);
   /* The panes fill the sheet corner to corner, so without this the two bottom
      corners are squared off by whatever is drawn in them. */
   overflow: hidden;
-  box-shadow: var(--leaf-shadow-sheet);
+  box-shadow: var(--lt-shadow-sheet);
   font-family: var(--app-font);
   transform: translateY(12px);
   opacity: 0;
@@ -4879,7 +4764,7 @@ body.is-block-dragging .document-body [data-src-start] {
   justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--lt-border);
   /* The sheet covers the app bar, so this strip is what the window is dragged
      by while it is open — and a drag must not sweep a selection across the
      title on the way. */
@@ -4898,31 +4783,31 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-sheet-cancel,
 .flow-sheet-save {
   padding: 7px 14px;
-  border: 1px solid var(--settings-control-border);
-  border-radius: var(--leaf-radius-md);
-  background: var(--settings-control-background);
-  color: var(--foreground);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
 }
 .flow-sheet-save {
   border-color: transparent;
-  background: var(--app-action-background);
-  color: var(--app-action-foreground);
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
   font-weight: 700;
 }
 .flow-sheet-export:hover,
 .flow-sheet-cancel:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-muted);
+  border-color: var(--lt-border-strong);
+  background: var(--lt-surface-muted);
 }
 .flow-sheet-export:disabled {
   opacity: 0.45;
   cursor: default;
 }
 .flow-sheet-save:hover {
-  background: var(--app-action-hover-background);
+  background: var(--lt-navigation-button-hover-background);
 }
 .flow-sheet-panes {
   flex: 1;
@@ -4934,7 +4819,7 @@ body.is-block-dragging .document-body [data-src-start] {
 /* The bar between the picture and the text. Thin ink, a wide grab area. */
 .flow-split {
   position: relative;
-  background: var(--border);
+  background: var(--lt-border);
   cursor: col-resize;
 }
 .flow-split::after {
@@ -4944,7 +4829,7 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .flow-split:hover,
 .flow-split:focus-visible {
-  background: var(--link);
+  background: var(--lt-link);
   outline: none;
 }
 .flow-pane {
@@ -4974,14 +4859,14 @@ body.is-block-dragging .document-body [data-src-start] {
   height: 28px;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: var(--leaf-radius-md);
+  border-radius: var(--lt-radius-md);
   background: transparent;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   cursor: pointer;
 }
 .flow-steps button:hover:not(:disabled) {
-  background: var(--surface-muted);
-  color: var(--foreground);
+  background: var(--lt-surface-muted);
+  color: var(--lt-foreground);
 }
 .flow-steps button:disabled {
   opacity: 0.35;
@@ -5000,7 +4885,7 @@ body.is-block-dragging .document-body [data-src-start] {
   max-width: none;
 }
 .flow-chip-line {
-  stroke: var(--foreground);
+  stroke: var(--lt-foreground);
   stroke-width: 1.6;
   fill: none;
 }
@@ -5017,12 +4902,12 @@ body.is-block-dragging .document-body [data-src-start] {
   opacity: 0.4;
 }
 .flow-end-mark {
-  fill: var(--foreground);
+  fill: var(--lt-foreground);
   stroke: none;
 }
 .flow-end-mark.is-open {
   fill: none;
-  stroke: var(--foreground);
+  stroke: var(--lt-foreground);
   stroke-width: 1.6;
 }
 .flow-zoom {
@@ -5036,10 +4921,10 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid var(--settings-control-border);
+  border: 1px solid var(--lt-border);
   border-radius: 0;
-  background: var(--settings-control-background);
-  color: var(--app-muted-foreground);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
   cursor: pointer;
 }
 .flow-zoom svg {
@@ -5047,32 +4932,32 @@ body.is-block-dragging .document-body [data-src-start] {
   height: 16px;
 }
 .flow-zoom button:first-child {
-  border-radius: var(--leaf-radius-md) 0 0 var(--leaf-radius-md);
+  border-radius: var(--lt-radius-md) 0 0 var(--lt-radius-md);
 }
 .flow-zoom button:last-child {
-  border-radius: 0 var(--leaf-radius-md) var(--leaf-radius-md) 0;
+  border-radius: 0 var(--lt-radius-md) var(--lt-radius-md) 0;
 }
 .flow-zoom button + button {
   border-left: 0;
 }
 .flow-zoom button:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-muted);
-  color: var(--foreground);
+  border-color: var(--lt-border-strong);
+  background: var(--lt-surface-muted);
+  color: var(--lt-foreground);
 }
 .flow-sheet-direction {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   font-size: 12px;
 }
 .flow-sheet-direction select {
   padding: 5px 8px;
-  border: 1px solid var(--settings-control-border);
-  border-radius: var(--leaf-radius-md);
-  background: var(--settings-control-background);
-  color: var(--foreground);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
   font: inherit;
   font-size: 12px;
 }
@@ -5084,7 +4969,7 @@ body.is-block-dragging .document-body [data-src-start] {
   margin: 0;
   padding: 6px 14px 8px;
   min-height: 1.4em;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   font-size: 11.5px;
 }
 /* The drawing surface. It scrolls rather than shrinks: a big diagram in a small
@@ -5095,7 +4980,7 @@ body.is-block-dragging .document-body [data-src-start] {
   display: flex;
   overflow: auto;
   padding: 12px;
-  background: var(--surface);
+  background: var(--lt-surface);
   outline: none;
   /* Stops a drag sweeping a selection across the diagram. A preventDefault on
      the pointerdown would too, but it also eats dblclick. */
@@ -5103,7 +4988,7 @@ body.is-block-dragging .document-body [data-src-start] {
   -webkit-user-select: none;
 }
 .flow-canvas.is-disabled {
-  background: var(--surface-muted);
+  background: var(--lt-surface-muted);
 }
 .flow-canvas.is-connecting {
   cursor: crosshair;
@@ -5160,13 +5045,13 @@ body.is-block-dragging .document-body [data-src-start] {
   cursor: grab;
 }
 .flow-node-tools:hover .flow-ring {
-  border-color: var(--border-strong);
+  border-color: var(--lt-border-strong);
 }
 .flow-node-tools.is-selected .flow-ring {
-  border-color: var(--link);
+  border-color: var(--lt-link);
 }
 .flow-node-tools.is-drop .flow-ring {
-  border-color: var(--link);
+  border-color: var(--lt-link);
   border-style: dashed;
 }
 /* The box travels with the pointer and stops answering it, or it would be the
@@ -5186,10 +5071,10 @@ body.is-block-dragging .document-body [data-src-start] {
   height: 20px;
   margin: -10px 0 0 -10px;
   padding: 0;
-  border: 2px solid var(--surface);
-  border-radius: var(--leaf-radius-full);
-  background: var(--link);
-  color: var(--surface);
+  border: 2px solid var(--lt-surface);
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-link);
+  color: var(--lt-surface);
   font: 700 14px/1 var(--app-font);
   opacity: 0;
   pointer-events: auto;
@@ -5218,7 +5103,7 @@ body.is-block-dragging .document-body [data-src-start] {
   opacity: 1;
 }
 .flow-bud:hover {
-  background: var(--link-hover);
+  background: var(--lt-link-hover);
 }
 /* A selected line's two ends: grab either to point it somewhere else. */
 .flow-edge-end {
@@ -5227,9 +5112,9 @@ body.is-block-dragging .document-body [data-src-start] {
   height: 12px;
   margin: -6px 0 0 -6px;
   padding: 0;
-  border: 2px solid var(--surface);
-  border-radius: var(--leaf-radius-full);
-  background: var(--link);
+  border: 2px solid var(--lt-surface);
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-link);
   cursor: crosshair;
 }
 /* The line that follows the pointer while a connection is drawn or moved. */
@@ -5242,18 +5127,18 @@ body.is-block-dragging .document-body [data-src-start] {
   pointer-events: none;
 }
 .flow-rubber {
-  stroke: var(--link);
+  stroke: var(--lt-link);
   stroke-width: 2;
   stroke-dasharray: 5 4;
 }
 /* Mermaid's own line, when it is the one selected or the one a box would drop
    into. Its drawing, our state. */
 .flow-stage path[data-id].is-selected {
-  stroke: var(--link) !important;
+  stroke: var(--lt-link) !important;
   stroke-width: 2.5px !important;
 }
 .flow-stage path[data-id].is-drop {
-  stroke: var(--link) !important;
+  stroke: var(--lt-link) !important;
   stroke-width: 4px !important;
   stroke-dasharray: 6 4 !important;
 }
@@ -5261,7 +5146,7 @@ body.is-block-dragging .document-body [data-src-start] {
    outline as a rect inside the group, so the mark goes on that rather than on
    the group itself — which has no stroke of its own to change. */
 .flow-stage g.cluster.is-drop rect {
-  stroke: var(--link) !important;
+  stroke: var(--lt-link) !important;
   stroke-width: 2px !important;
   stroke-dasharray: 6 4 !important;
 }
@@ -5275,17 +5160,17 @@ body.is-block-dragging .document-body [data-src-start] {
   /* The app-chrome pair, the same one .context-menu is built from: the reading
      surfaces this used are two shades that a dark theme draws almost alike, so
      the hover was there and invisible. */
-  border: 1px solid var(--app-border);
-  border-radius: var(--leaf-radius-lg);
-  background: var(--app-surface-elevated);
-  box-shadow: var(--leaf-shadow-tooltip);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  box-shadow: var(--lt-shadow-tooltip);
   font-size: 12.5px;
 }
 .flow-menu-heading {
   grid-column: 1 / -1;
   margin: 6px 0 2px;
   padding: 0 9px;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -5301,9 +5186,9 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 100%;
   padding: 6px 9px;
   border: 0;
-  border-radius: var(--leaf-radius-md);
+  border-radius: var(--lt-radius-md);
   background: transparent;
-  color: var(--settings-control-foreground);
+  color: var(--lt-foreground);
   font: inherit;
   text-align: left;
   white-space: nowrap;
@@ -5311,7 +5196,7 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .flow-menu-item:hover,
 .flow-menu-item:focus-visible {
-  background: var(--app-surface-muted);
+  background: var(--lt-surface-muted);
   outline: none;
 }
 .flow-menu-item .flow-chip {
@@ -5324,10 +5209,10 @@ body.is-block-dragging .document-body [data-src-start] {
   position: absolute;
   z-index: 5;
   padding: 0 6px;
-  border: 2px solid var(--link);
-  border-radius: var(--leaf-radius-sm);
-  background: var(--surface-elevated);
-  color: var(--foreground);
+  border: 2px solid var(--lt-link);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
   font-family: var(--app-font);
   text-align: center;
   outline: none;
@@ -5339,15 +5224,15 @@ body.is-block-dragging .document-body [data-src-start] {
   flex: none;
   margin: 0;
   padding: 10px 14px;
-  border-top: 1px solid var(--border);
-  color: var(--app-muted-foreground);
+  border-top: 1px solid var(--lt-border);
+  color: var(--lt-muted-foreground);
   font-size: 12px;
 }
 /* A document marks a failed diagram and moves on; an editor has to say what is
    wrong, so mermaid's own message is printed here. */
 .flow-notice.is-error {
-  border-top-color: var(--app-error-border);
-  color: var(--app-error-foreground);
+  border-top-color: var(--lt-danger);
+  color: var(--lt-danger);
   font-family: var(--code-font);
   white-space: pre-wrap;
 }
@@ -5360,9 +5245,9 @@ body.is-block-dragging .document-body [data-src-start] {
   position: absolute;
   z-index: 5;
   max-height: 62%;
-  background: var(--app-surface-elevated);
-  color: var(--foreground);
-  border-top: 1px solid var(--border);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  border-top: 1px solid var(--lt-border);
 }
 /* The one field in the sheet, in a row of its own that does not scroll. */
 .flow-picker-head {
@@ -5389,10 +5274,10 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-field {
   min-width: 0;
   padding: 6px 9px;
-  border: 1px solid var(--settings-control-border);
-  border-radius: var(--leaf-radius-md);
-  background: var(--settings-control-background);
-  color: var(--foreground);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
   font: inherit;
   font-size: 13px;
 }
@@ -5402,20 +5287,20 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-field:focus,
 .flow-field:focus-visible {
   outline: none;
-  border-color: var(--link);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--link) 30%, transparent);
+  border-color: var(--lt-link);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--lt-link) 30%, transparent);
 }
 /* The one already chosen. An outline rather than a fill: the row carries a
    drawing of the shape, and a fill behind it fights the drawing. */
 .flow-menu-item.is-current {
-  box-shadow: inset 0 0 0 1px var(--link);
+  box-shadow: inset 0 0 0 1px var(--lt-link);
 }
 .flow-delete {
   padding: 6px 10px;
-  border: 1px solid var(--settings-control-border);
-  border-radius: var(--leaf-radius-md);
-  background: var(--settings-control-background);
-  color: var(--danger);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-danger);
   font: inherit;
   font-size: 12px;
   cursor: pointer;
@@ -5426,7 +5311,7 @@ body.is-block-dragging .document-body [data-src-start] {
   flex: none;
   margin: 0;
   padding: 8px 14px 6px;
-  color: var(--app-muted-foreground);
+  color: var(--lt-muted-foreground);
   font-size: 11.5px;
 }
 .flow-code {
@@ -5434,9 +5319,9 @@ body.is-block-dragging .document-body [data-src-start] {
   min-height: 0;
   padding: 12px 14px;
   border: 0;
-  border-bottom: 1px solid var(--border);
-  background: var(--syntax-background);
-  color: var(--syntax-foreground);
+  border-bottom: 1px solid var(--lt-border);
+  background: var(--lt-syntax-background);
+  color: var(--lt-syntax-foreground);
   font-family: var(--code-font);
   font-size: 12.5px;
   line-height: 1.55;
@@ -5487,10 +5372,10 @@ body.is-block-dragging .document-body [data-src-start] {
   place-items: center;
   height: 28px;
   padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--leaf-radius-md);
-  background: var(--surface-elevated);
-  color: var(--app-muted-foreground);
+  border: 1px solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
   cursor: pointer;
 }
 .mermaid-tool,
@@ -5499,9 +5384,9 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .mermaid-tool:hover,
 .mermaid-zoom button:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-muted);
-  color: var(--foreground);
+  border-color: var(--lt-border-strong);
+  background: var(--lt-surface-muted);
+  color: var(--lt-foreground);
 }
 .mermaid-tool svg,
 .mermaid-zoom svg {
@@ -5514,10 +5399,10 @@ body.is-block-dragging .document-body [data-src-start] {
   border-radius: 0;
 }
 .mermaid-zoom button:first-child {
-  border-radius: var(--leaf-radius-md) 0 0 var(--leaf-radius-md);
+  border-radius: var(--lt-radius-md) 0 0 var(--lt-radius-md);
 }
 .mermaid-zoom button:last-child {
-  border-radius: 0 var(--leaf-radius-md) var(--leaf-radius-md) 0;
+  border-radius: 0 var(--lt-radius-md) var(--lt-radius-md) 0;
 }
 .mermaid-zoom button + button {
   border-left: 0;

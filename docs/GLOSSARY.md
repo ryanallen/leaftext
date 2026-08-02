@@ -507,7 +507,7 @@ the [appearance](GLOSSARY.md#appearance) control at the top and
 
 ## Token contract
 
-The set of `--leaf-*` color and type names every [theme family](GLOSSARY.md#theme-family)
+The set of `--lt-*` color and type names every [theme family](GLOSSARY.md#theme-family)
 must fill. It is checked when the theme CSS is compiled at launch, so a theme missing
 one fails loudly instead of rendering with broken fallback colors.
 

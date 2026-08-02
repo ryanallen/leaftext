@@ -466,7 +466,7 @@ function leafThemeToken(name) {
 function defineLeafMonacoTheme(monaco) {
   const dark = currentAppearance() === 'dark';
   const t = leafThemeToken;
-  const fg = t('--leaf-syntax-foreground') || (dark ? 'd4d4d4' : '2b2b2b');
+  const fg = t('--lt-syntax-foreground') || (dark ? 'd4d4d4' : '2b2b2b');
   const rule = (token, color, fontStyle) =>
     color ? { token, foreground: color, ...(fontStyle ? { fontStyle } : {}) } : null;
   // Monaco's own Markdown grammar: headings and list markers are `keyword`, bold
@@ -475,33 +475,33 @@ function defineLeafMonacoTheme(monaco) {
   // HTML `tag`/`attribute`. The plain names also cover XML/YAML.
   const rules = [
     rule('', fg),
-    rule('keyword', t('--leaf-syntax-keyword'), 'bold'),
+    rule('keyword', t('--lt-syntax-keyword'), 'bold'),
     rule('strong', fg, 'bold'),
     rule('emphasis', fg, 'italic'),
-    rule('variable', t('--leaf-syntax-string')),
-    rule('variable.source', t('--leaf-syntax-string')),
-    rule('string', t('--leaf-syntax-string')),
-    rule('string.link', t('--leaf-markdown-link')),
-    rule('comment', t('--leaf-syntax-comment'), 'italic'),
-    rule('meta.separator', t('--leaf-syntax-punctuation')),
-    rule('tag', t('--leaf-syntax-function')),
-    rule('attribute.name', t('--leaf-syntax-function')),
-    rule('attribute.value', t('--leaf-syntax-string')),
-    rule('number', t('--leaf-syntax-number')),
-    rule('type', t('--leaf-syntax-type')),
-    rule('key', t('--leaf-syntax-function')),
-    rule('delimiter', t('--leaf-syntax-punctuation')),
+    rule('variable', t('--lt-syntax-string')),
+    rule('variable.source', t('--lt-syntax-string')),
+    rule('string', t('--lt-syntax-string')),
+    rule('string.link', t('--lt-markdown-link')),
+    rule('comment', t('--lt-syntax-comment'), 'italic'),
+    rule('meta.separator', t('--lt-syntax-punctuation')),
+    rule('tag', t('--lt-syntax-function')),
+    rule('attribute.name', t('--lt-syntax-function')),
+    rule('attribute.value', t('--lt-syntax-string')),
+    rule('number', t('--lt-syntax-number')),
+    rule('type', t('--lt-syntax-type')),
+    rule('key', t('--lt-syntax-function')),
+    rule('delimiter', t('--lt-syntax-punctuation')),
   ].filter(Boolean);
   const hash = (name) => {
     const v = t(name);
     return v ? '#' + v : null;
   };
   const colors = {
-    'editor.background': hash('--leaf-syntax-background'),
+    'editor.background': hash('--lt-syntax-background'),
     'editor.foreground': '#' + fg,
-    'editorLineNumber.foreground': hash('--leaf-syntax-comment'),
+    'editorLineNumber.foreground': hash('--lt-syntax-comment'),
     'editorLineNumber.activeForeground': '#' + fg,
-    'editor.selectionBackground': hash('--leaf-editor-code-selection-background'),
+    'editor.selectionBackground': hash('--lt-editor-code-selection-background'),
     'editorCursor.foreground': '#' + fg,
     // Nothing behind the map's glyphs: the rail is chrome and the shell's grain has to
     // show between the lines (reading.css takes the fill off the editor's boxes for the

@@ -35,7 +35,7 @@
 ## Themes
 - Page: https://leaftext.com/docs/#/features/themes
 - Markdown: https://leaftext.com/docs/01-features/06-themes.md
-- Summary: From the user side, themes are simple: open the theme picker, tap a family, pick an appearance, and the app updates immediately. Under the hood every family covers the full --leaf- token set, and t...
+- Summary: From the user side, themes are simple: open the theme picker, tap a family, pick an appearance, and the app updates immediately. Under the hood every family covers the full --lt- token set, and the...
 
 ## Editing
 - Page: https://leaftext.com/docs/#/features/editing
@@ -65,7 +65,7 @@
 ## Theming
 - Page: https://leaftext.com/docs/#/development/theming
 - Markdown: https://leaftext.com/docs/02-development/04-theming.md
-- Summary: Leaftext's theme system is built around a semantic token contract — a set of approximately 100 --leaf- CSS custom properties that every theme must define. The contract is not enforced by the Rust c...
+- Summary: Leaftext's theme system is built around a semantic token contract — 82 --lt- CSS custom properties that every theme must define. The contract is not enforced by the Rust compiler; it is checked at ...
 
 ## Installation
 - Page: https://leaftext.com/docs/#/installation

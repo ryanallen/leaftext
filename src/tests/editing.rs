@@ -30,10 +30,10 @@ fn the_code_view_is_colored_by_the_active_themes_own_tokens() {
     let html = app_shell_html();
 
     for expected in [
-        "rule('keyword', t('--leaf-syntax-keyword'), 'bold')",
-        "rule('comment', t('--leaf-syntax-comment'), 'italic')",
-        "'editor.background': hash('--leaf-syntax-background')",
-        "'editor.selectionBackground': hash('--leaf-editor-code-selection-background')",
+        "rule('keyword', t('--lt-syntax-keyword'), 'bold')",
+        "rule('comment', t('--lt-syntax-comment'), 'italic')",
+        "'editor.background': hash('--lt-syntax-background')",
+        "'editor.selectionBackground': hash('--lt-editor-code-selection-background')",
         // A theme or light/dark flip re-skins the open editor in place.
         "window.LeafMonaco.editor.setTheme(defineLeafMonacoTheme(window.LeafMonaco));",
     ] {

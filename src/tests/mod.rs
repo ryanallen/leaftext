@@ -101,7 +101,7 @@ fn tiny_png_bytes() -> &'static [u8] {
 fn css_token(css: &str, theme: ResolvedTheme, name: &str) -> Rgb {
     let leaf_alias_block = css_block(css, ":root {");
     let mut blocks = vec![leaf_alias_block];
-    // The `:root` aliases point at `--leaf-*` tokens defined in the github family
+    // The `:root` aliases point at `--lt-*` tokens defined in the github family
     // block, which hold concrete hex. Load it so the var() chain resolves for the
     // default theme.
     let family_block = match theme {
@@ -115,7 +115,7 @@ fn css_token(css: &str, theme: ResolvedTheme, name: &str) -> Rgb {
 
     parse_hex_color(&value)
         .or_else(|| {
-            let background = css_token_value(&blocks, "--leaf-background");
+            let background = css_token_value(&blocks, "--lt-background");
             parse_hex_color(&background)
                 .and_then(|background| parse_hex_color_with_alpha(&value, background))
         })
@@ -128,7 +128,7 @@ fn css_token_for_source(css: &str, source: &ThemeSource, name: &str) -> Rgb {
 
     parse_hex_color(&value)
         .or_else(|| {
-            let background = css_token_value(&blocks, "--leaf-background");
+            let background = css_token_value(&blocks, "--lt-background");
             parse_hex_color(&background)
                 .and_then(|background| parse_hex_color_with_alpha(&value, background))
         })

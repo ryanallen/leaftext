@@ -1,8 +1,10 @@
 # Theming
 
-> Leaftext enforces a semantic token contract of ~100 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.md` compiled from per-family Markdown files — so adding a theme takes no Rust.
+> Leaftext enforces a semantic token contract of 82 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.md` compiled from per-family Markdown files — so adding a theme takes no Rust.
 
-Leaftext's theme system is built around a semantic token contract — a set of approximately 100 `--leaf-*` CSS custom properties that every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
+Leaftext's theme system is built around a semantic token contract — 82 `--lt-*` CSS custom properties that every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
+
+**One name per color.** A token is spelled the same way in a theme file, in the compiled CSS, and in every rule that reads it. There is no alias layer over the contract: a rule reads `var(--lt-surface)` itself, never a second name for it.
 
 Palettes are **data, not code**: every theme's values live in Markdown tables (`src/assets/themes.md`), parsed once at startup — not in Rust `const` tables.
 
@@ -12,25 +14,29 @@ Palettes are **data, not code**: every theme's values live in Markdown tables (`
 
 ### Core UI
 
-App surface and text colors, named by role (the `app-` prefix was dropped): `--leaf-background`, `--leaf-foreground`, `--leaf-surface`, `--leaf-surface-raised`, `--leaf-surface-elevated`, `--leaf-surface-muted`, `--leaf-surface-sunken`, `--leaf-surface-inset`, `--leaf-surface-card`, `--leaf-border`, `--leaf-border-strong`, `--leaf-muted-foreground`, and the semantic role tokens `--leaf-primary`, `--leaf-secondary`, `--leaf-accent`, `--leaf-danger`, `--leaf-warning`, `--leaf-success`, `--leaf-done`, `--leaf-link`, `--leaf-shadow`, and their `-foreground` partners plus focus/selection states.
+App surface and text colors, named by role: `--lt-background`, `--lt-foreground`, `--lt-surface`, `--lt-surface-elevated`, `--lt-surface-muted`, `--lt-surface-sunken`, `--lt-border`, `--lt-border-strong`, `--lt-muted-foreground`, and the semantic role tokens `--lt-primary`, `--lt-accent`, `--lt-danger`, `--lt-warning`, `--lt-success`, `--lt-done`, `--lt-link`, `--lt-link-hover`, `--lt-shadow`, plus `--lt-focus-ring` and the two focus-selection colors.
+
+A role has a `-foreground` partner only where something prints on it: `primary`, `accent`, `danger` and `success` have one; `warning`, `done` and `link` do not.
 
 ### Editor and Markdown elements
 
-Tokens for inline code background/foreground, code block background/foreground/border, blockquote border and foreground, headings (`--leaf-markdown-heading` for `h1`/the base, plus `--leaf-markdown-heading-2` through `-6` so deeper levels can be tinted — set them equal to the base to keep one heading color), muted foreground, links, tables, thematic breaks, math inline background, and keyboard key styling.
+Tokens for inline code background/foreground, code block background/foreground/border and its selection pair, blockquote border and foreground, headings (`--lt-markdown-heading` for `h1`/the base, plus `--lt-markdown-heading-2` through `-6` so deeper levels can be tinted — set them equal to the base to keep one heading color), the document's own background and foreground, links, the rule, badges, tables, thematic breaks, math inline background, and keyboard key styling.
 
 ### Alert callout colors
 
-Per-severity accent colors for GitHub-style alert callouts: `--leaf-markdown-alert-note`, `--leaf-markdown-alert-tip`, `--leaf-markdown-alert-important`, `--leaf-markdown-alert-warning`, `--leaf-markdown-alert-caution`, and `--leaf-markdown-alert-done`.
+Per-severity accent colors for GitHub-style alert callouts: `--lt-markdown-alert-note`, `--lt-markdown-alert-tip`, `--lt-markdown-alert-important`, `--lt-markdown-alert-warning`, and `--lt-markdown-alert-caution`.
 
 ### Syntax highlighting tokens
 
-One token per syntactic role: `--leaf-syntax-background`, `--leaf-syntax-foreground`, `--leaf-syntax-comment`, `--leaf-syntax-keyword`, `--leaf-syntax-string`, `--leaf-syntax-number`, `--leaf-syntax-function`, `--leaf-syntax-variable`, `--leaf-syntax-type`, `--leaf-syntax-operator`, `--leaf-syntax-punctuation`, and per-channel inserted/deleted/changed diff tokens.
+One token per syntactic role: `--lt-syntax-background`, `--lt-syntax-foreground`, `--lt-syntax-comment`, `--lt-syntax-keyword`, `--lt-syntax-string`, `--lt-syntax-number`, `--lt-syntax-function`, `--lt-syntax-variable`, `--lt-syntax-type`, `--lt-syntax-operator`, `--lt-syntax-punctuation`, and per-channel inserted/deleted/changed diff tokens.
 
 Two things spend those tokens. Fenced code blocks in the reading view spend them through the `.syn-` selectors in `assets/reading.css`, which are mirrored by `SYNTAX_STYLE_RULES` in `markdown/code.rs` — a test fails if the two drift. The [code view](../01-features/07-editing.md#code-view) spends the same tokens through a Monaco theme built from them at runtime (`defineLeafMonacoTheme`), rebuilt on every theme and light/dark change, so one palette dresses both. The highlighter gives a run of text **one** element carrying only the classes some listed rule needs, rather than a nested element per scope naming every scope atom, so a class missing from the table is a rule that never gets an element to match. Adding a `.syn-` rule means adding its class set there too. This is also why no `.syn-` selector may put a syntax class to the left of a descendant combinator: with one element per run there is no ancestor syntax element to match, and where an enclosing construct's rule is the more specific one it now wins on specificity rather than losing on depth.
 
 ### Minimap colors
 
-`--leaf-minimap-background`, `--leaf-minimap-border`, `--leaf-minimap-viewport-border`, `--leaf-minimap-viewport-background`, `--leaf-minimap-heading`, `--leaf-minimap-paragraph`, `--leaf-minimap-blank`, `--leaf-minimap-list`, `--leaf-minimap-blockquote`, `--leaf-minimap-code`.
+`--lt-minimap-viewport-border` and `--lt-minimap-viewport-background`, the two that draw the viewport box over the rail.
+
+The rail itself takes the chrome's own colors, and the thumbnail inside it is a real-text clone of the page rather than a drawn line model — so there are no per-line-kind minimap colors to set.
 
 ### Navigation chrome
 
@@ -38,7 +44,7 @@ Button background, foreground, hover, and disabled states for the back/forward/o
 
 ### Radius and shadow scales
 
-Corners and elevation are tokenized too, but as **global scales** in the compiled `:root` block rather than per-theme values: `--leaf-radius-xs/sm/md/lg/xl/2xl/pill/full` for corners, and `--leaf-shadow-sm`/`-popover`/`-sheet`/`-tooltip` for overlays (the per-theme resting shadow is `--leaf-shadow`). Every surface pulls from these, so rounding and elevation swap in one place.
+Corners and elevation are tokenized too, but as **global scales** in the stylesheet's own `:root` block rather than per-theme values: `--lt-radius-xs/sm/md/lg/xl/2xl/pill/full` for corners, and `--lt-shadow-popover`/`-sheet`/`-tooltip` for overlays (the per-theme resting shadow is the contract's `--lt-shadow`). Every surface pulls from these, so rounding and elevation swap in one place.
 
 ### Surface grain
 
@@ -59,7 +65,7 @@ On a dark appearance both table stripes are grained, so a table reads as a singl
 
 Light appearances zero it. There those rows are the near-white ones, where a dot dark enough to see reads as a gray screen-door mesh laid across the whole table. The token is zeroed rather than the rule dropped, so there is still one selector to reason about against the frontmatter opt-out below.
 
-Only the ink is a token. Each rule that grains a surface writes the circles out in its own `background-image`, rather than pulling a finished gradient from a shared one. A custom property holding a gradient has its own `var()` substituted where that property is declared, and descendants inherit the finished string — so a lattice image declared once in `:root` ignores every `--leaf-grain-dot` set further down, and every token in the table above is inert. That is not a style choice; a shared image variable silently paints all four of them in the first one's ink.
+Only the ink is a token. Each rule that grains a surface writes the circles out in its own `background-image`, rather than pulling a finished gradient from a shared one. A custom property holding a gradient has its own `var()` substituted where that property is declared, and descendants inherit the finished string — so a lattice image declared once in `:root` ignores every `--lt-grain-dot` set further down, and every token in the table above is inert. That is not a style choice; a shared image variable silently paints all four of them in the first one's ink.
 
 The reading and code views borrow the lattice for a different job. The page slides under the app bar at the top and stops at the card's hairline at the bottom, and a line of text cut mid-stroke at either edge reads as a fault, so each edge carries a band that dissolves the last 36px back to the page. Same circle, same lattice, but drawn in the page's own color instead of a grain token and laid over a wash of that color — both at full strength across the cut and gone by the far side. The band stops short of the scrollbar's gutter: the browser draws that inside the scroller, where an overlay on the card cannot sit beneath it. In the code view it stops at the page's right border instead, because past that border is the [minimap](../01-features/04-minimap.md#the-code-views-minimap) rail — chrome, not page, and a wash of the page's color across the top and bottom of it would put the page back under the map.
 
@@ -101,7 +107,7 @@ Themes are organized as **families**, each pairing a light and a dark **source**
 
 Every source activates through the Leaf-owned attributes the theme bootstrap stamps on `:root`: `data-leaf-theme="<family>"` and `data-leaf-appearance="<light|dark>"`. So a source's selector is `:root[data-leaf-theme="github"][data-leaf-appearance="light"]`, and so on.
 
-**Every theme is a self-contained literal palette** — each source maps every `--leaf-*` token to a hex (or `rgba()`) value. There is no Primer dependency and no separate theme "kind": GitHub was flattened to plain hex like the rest, so all themes share one uniform shape. The Fern and Sage families reuse Amaranth's literal token maps and re-tint them through their `overrides` maps, so they inherit Amaranth's full coverage and only restate the tokens they change (`theme_source_token_value()` checks `overrides` before `tokens`). `theme_families()` derives the ordered picker list from the loaded sources, so registering a family's light/dark pair adds it to the picker automatically.
+**Every theme is a self-contained literal palette** — each source maps every `--lt-*` token to a hex (or `rgba()`) value. There is no Primer dependency and no separate theme "kind": GitHub was flattened to plain hex like the rest, so all themes share one uniform shape. The Fern and Sage families reuse Amaranth's literal token maps and re-tint them through their `overrides` maps, so they inherit Amaranth's full coverage and only restate the tokens they change (`theme_source_token_value()` checks `overrides` before `tokens`). `theme_families()` derives the ordered picker list from the loaded sources, so registering a family's light/dark pair adds it to the picker automatically.
 
 ## Palettes are data (`themes.md`)
 
@@ -113,7 +119,7 @@ The editable source of truth is the **`themes/` folder at the repo root**. Being
 - `**Family ID:** \`<family>\`` — the family id used in `data-leaf-theme` and in the `<family>.md` filename (the bundler checks they match).
 - An optional preview image — a standalone `![Display Name](../imgs/themes/<family>.png)` line in the header, above the `**Family ID:**` line. The Rust parser ignores it (only headings and tables carry data), while the bundler lifts it into the family's gallery entry and fails the run if the path does not resolve. Shipping families point at `imgs/themes/<family>.png`, one screenshot of the reference document split across the light and dark variants.
 - `## Fonts` — a `Role | Stack` table with `Heading`, `Body`, `Code`, and `Google` rows.
-- `## Light` and `## Dark` — a `Token | Value` table covering every contract property, each optionally followed by a `### Overrides` table for per-source token nudges. **Token names drop the `--leaf-` prefix** (re-added at parse time) and values are wrapped in backticks (`` `#282a36` ``).
+- `## Light` and `## Dark` — a `Token | Value` table covering every contract property, each optionally followed by a `### Overrides` table for per-source token nudges. **Token names drop the `--lt-` prefix** (re-added at parse time) and values are wrapped in backticks (`` `#282a36` ``).
 
 There is no manifest — the bundler globs `themes/*.md`. `scripts/bundle-themes.mjs` produces two outputs: it concatenates the family files into `src/assets/themes.md` (the embedded bundle) and regenerates [`themes/README.md`](https://github.com/ryanallen/leaftext/blob/main/themes/README.md) (the gallery above), both ordered **by display name** so the picker and gallery stay alphabetical no matter what order they're added. `just bundle-themes` rebuilds them; `just check-themes` (part of `just verify`) fails if either has drifted from the folder — the same drift-guard pattern used for the vendored site assets.
 
@@ -131,7 +137,7 @@ There is no manifest — the bundler globs `themes/*.md`. `scripts/bundle-themes
 Because `reading_mode_css()` is cached in a `OnceLock<String>` and called on the first paint, a missing token causes a `panic!` with a message like:
 
 ```text
-theme source fern-light missing required token --leaf-syntax-changed-background
+theme source fern-light missing required token --lt-syntax-changed-background
 ```
 
 This surfaces as a test-time or launch-time failure (any run that compiles the theme CSS), never silently producing a broken theme.
@@ -150,15 +156,15 @@ Three tests re-derive contrast across **every** theme so an unreadable palette f
 
 ```css
 :root[data-leaf-theme="github"][data-leaf-appearance="light"] {
-  --leaf-theme-source: github-light;
-  --leaf-background: #ffffff;
+  --lt-theme-source: github-light;
+  --lt-background: #ffffff;
   /* ... all contract tokens ... */
 }
 ```
 
 Then, per family, it emits a font block (`--heading-font`/`--reading-font`/`--app-font`/`--code-font`) from that family's `fonts`.
 
-`reading_mode_css()` assembles the full style block: the compiled theme CSS above, then the stylesheet itself from `src/assets/reading.css` — the `:root` alias layer (radius/shadow scales and short component names), then the application layout and document body CSS. The token blocks have to come first so every `var(--leaf-*)` in the stylesheet resolves. The stylesheet is an asset rather than a Rust literal so it stays editable as CSS. No Primer primitives and no font faces are embedded — fonts load separately from Google Fonts (see [Theme fonts](#theme-fonts)). The result is cached in a `OnceLock<String>` — computed once per process lifetime.
+`reading_mode_css()` assembles the full style block: the compiled theme CSS above, then the stylesheet itself from `src/assets/reading.css` — its own `:root` block (the radius and shadow scales, the type scale, the layout metrics and the grain inks — everything that is one value for the whole app rather than per theme), then the application layout and document body CSS. The theme blocks have to come first so every `var(--lt-*)` in the stylesheet resolves. The stylesheet is an asset rather than a Rust literal so it stays editable as CSS. No Primer primitives and no font faces are embedded — fonts load separately from Google Fonts (see [Theme fonts](#theme-fonts)). The result is cached in a `OnceLock<String>` — computed once per process lifetime.
 
 ## Theme fonts
 
@@ -217,7 +223,7 @@ Create `themes/myfamily.md`. Copy an existing family file (e.g. `themes/amaranth
 - the `# My Family` heading and the `**Family ID:** \`myfamily\`` line (it must match the filename);
 - optionally a preview screenshot — a standalone `![My Family](../imgs/themes/myfamily.png)` line between the heading and the `**Family ID:**` line. `bundle-themes` picks up the first such image in the header, copies it into the gallery entry in `themes/README.md`, and fails if the path does not resolve (relative to `themes/`);
 - the `## Fonts` table (set the `Google` row to a Google Fonts `css2` URL, or leave it blank for system fonts);
-- the `## Light` and `## Dark` `Token | Value` tables — every property in `LEAF_SEMANTIC_TOKEN_CONTRACT` (minus the `--leaf-` prefix), with an optional `### Overrides` table for tokens you nudge off the base.
+- the `## Light` and `## Dark` `Token | Value` tables — every property in `LEAF_SEMANTIC_TOKEN_CONTRACT` (minus the `--lt-` prefix), with an optional `### Overrides` table for tokens you nudge off the base.
 
 **2. Bundle and verify**
 
@@ -233,7 +239,7 @@ The folder is globbed, so there is no manifest to update. `assert_theme_sources_
 The theme picker builds its buttons from `theme_families()` (`theme_items_html()` in `src/lib.rs` emits one `.theme-item` per family), and the bootstrap's family list is injected from the registry — so a registered family appears in the picker automatically, with no HTML edit.
 
 > [!WARNING]
-> The startup token check uses exact string matching against the names in `LEAF_SEMANTIC_TOKEN_CONTRACT`. Spell every token name exactly — a single typo (e.g. `--leaf-sytax-keyword`) will not match and the assertion will fail at startup with a "missing required token" message.
+> The startup token check uses exact string matching against the names in `LEAF_SEMANTIC_TOKEN_CONTRACT`. Spell every token name exactly — a single typo (e.g. `--lt-sytax-keyword`) will not match and the assertion will fail at startup with a "missing required token" message.
 
 ## The Random family preference
 
