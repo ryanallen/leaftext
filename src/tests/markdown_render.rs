@@ -322,9 +322,12 @@ Already linked [https://example.net](https://example.net) stays one link.
     let rendered = render_markdown_document(markdown, "README.md");
 
     assert_contains(&rendered.html, "<table>");
-    assert_contains(&rendered.html, "<th>Left</th>");
-    assert_contains(&rendered.html, "<th>Center</th>");
-    assert_contains(&rendered.html, "<th>Right</th>");
+    // A column's alignment reaches the page as `align`: `style` never survives the
+    // sanitizer, so an inline one would center nothing.
+    assert_contains(&rendered.html, "<th align=\"left\">Left</th>");
+    assert_contains(&rendered.html, "<th align=\"center\">Center</th>");
+    assert_contains(&rendered.html, "<th align=\"right\">Right</th>");
+    assert_contains(&rendered.html, "<td align=\"center\">b</td>");
     assert!(!rendered.html.contains("style="));
     assert_contains(&rendered.html, "<del>struck</del>");
     assert_contains(&rendered.html, r#"<input disabled="" type="checkbox">"#);

@@ -178,6 +178,12 @@ GFM tables with a header row and a body:
 | Task lists    | `- [ ] item`   | ✅        |
 | Autolinks     | bare URLs      | ✅        |
 
+A colon in the divider row sets a column's alignment — `:---` left, `:---:` center, `---:` right:
+
+| Left | Center | Right |
+| :--- | :----: | ----: |
+| a    | b      | c     |
+
 A table cell whose entire content is a task-list marker — `[ ]` or `[x]` — renders as a checkbox, so a table can carry a status column:
 
 | Step            | Done  |

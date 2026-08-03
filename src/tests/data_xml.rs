@@ -476,6 +476,17 @@ fn a_malformed_unicode_escape_is_reported_not_guessed() {
 }
 
 #[test]
+fn a_backslash_before_a_multi_byte_character_is_an_error_not_a_crash() {
+    // The reader steps over a whole character after a backslash. Stepping one
+    // byte landed inside the emoji, and reporting the line from there sliced the
+    // source off a character boundary — opening the file took the window down.
+    let (_title, html, blocks) = render_json_document("[\"\\🌀\"]", None);
+
+    assert_contains(&html, "unknown string escape");
+    assert!(blocks.is_empty(), "{blocks:?}");
+}
+
+#[test]
 fn yaml_collections_carry_no_source_range_at_all() {
     // A block's range is spliced verbatim by the source editor, and nothing can
     // prove where a YAML collection ends — its closing marker points at whatever
@@ -555,6 +566,49 @@ jobs:
 }
 
 #[test]
+fn an_alias_holds_the_anchors_value_but_not_its_place_in_the_file() {
+    // `*x` is a reference; the text it stands for is up where `&x` is. Stamping
+    // both blocks with 6..11 meant editing `b` overwrote `a`'s value and left
+    // `*x` on the page untouched.
+    let yaml = "a: &x hello\nb: *x\n";
+
+    let (_title, html, blocks) = render_yaml_document(yaml, None);
+
+    // Both fields show the value; only the anchor's carries offsets.
+    assert_eq!(html.matches(">hello</dd>").count(), 2, "{html}");
+    assert_eq!(html.matches("data-src-start").count(), 1, "{html}");
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert_eq!(&yaml[blocks[0].start..blocks[0].end], "hello");
+    assert_eq!(blocks[0].start, yaml.find("hello").expect("the anchor"));
+}
+
+#[test]
+fn an_alias_to_a_mapping_claims_nothing_the_anchor_already_holds() {
+    // A collection carries no range at its top but every scalar inside it does,
+    // so dropping only the alias's own range would leave the copied scalars
+    // pointing at the anchor's lines.
+    let yaml = "base: &base\n  shell: bash\n  timeout: 10\ncopy: *base\n";
+
+    let (_title, _html, blocks) = render_yaml_document(yaml, None);
+
+    let mut ranges: Vec<_> = blocks
+        .iter()
+        .map(|block| (block.start, block.end))
+        .collect();
+    let claimed = ranges.len();
+    ranges.sort_unstable();
+    ranges.dedup();
+    assert_eq!(ranges.len(), claimed, "{blocks:?}");
+    // The anchor itself keeps its ranges — the strip is for the copy only.
+    assert!(
+        blocks
+            .iter()
+            .any(|block| &yaml[block.start..block.end] == "bash"),
+        "{blocks:?}"
+    );
+}
+
+#[test]
 fn yaml_anchors_only_the_scalars_whose_range_it_can_prove() {
     let yaml = "plain: bash\nquoted: \"bash\"\nblock: |\n  two\n  lines\n";
 
@@ -570,6 +624,18 @@ fn yaml_anchors_only_the_scalars_whose_range_it_can_prove() {
         blocks[0].start,
         yaml.find("bash").expect("the plain scalar")
     );
+}
+
+#[test]
+fn a_key_with_no_value_carries_no_range_to_splice_into() {
+    // The gap after `empty:` is a range of width nothing. Editing there would write
+    // `empty:x` — one scalar, not a key and a value — so the field stays read-only.
+    let yaml = "empty:\nfull: bash\n";
+
+    let (_title, _html, blocks) = render_yaml_document(yaml, None);
+
+    assert_eq!(blocks.len(), 1, "{blocks:?}");
+    assert_eq!(&yaml[blocks[0].start..blocks[0].end], "bash");
 }
 
 #[test]

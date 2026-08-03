@@ -48,6 +48,22 @@ impl DataNode {
         Self::new(DataValue::Scalar(String::new()), None)
     }
 
+    /// Drop every range in this node and everything under it. A YAML alias is a
+    /// copy of the anchored value, and the anchor's text is where the anchor is —
+    /// keeping the ranges gives two blocks one slice, so editing the alias
+    /// rewrites the anchor's line. Recursive because a collection is `None` at
+    /// its top while every scalar inside it still holds a real range.
+    fn strip_spans(&mut self) {
+        self.span = None;
+        match &mut self.value {
+            DataValue::Scalar(_) => {}
+            DataValue::Sequence(items) => items.iter_mut().for_each(DataNode::strip_spans),
+            DataValue::Mapping(pairs) => {
+                pairs.iter_mut().for_each(|(_, value)| value.strip_spans());
+            }
+        }
+    }
+
     fn as_scalar(&self) -> Option<&str> {
         match &self.value {
             DataValue::Scalar(text) => Some(text),
@@ -278,20 +294,22 @@ impl<'a> JsonReader<'a> {
     }
 
     fn escape(&mut self, out: &mut String) -> Result<(), DataError> {
-        let Some(byte) = self.peek() else {
+        // Step over a whole character: `\🌀` is not an escape, and advancing one
+        // byte would leave the position inside the emoji.
+        let Some(escaped) = self.rest().chars().next() else {
             return Err(self.error("the document ended inside an escape"));
         };
-        self.position += 1;
-        let character = match byte {
-            b'"' => '"',
-            b'\\' => '\\',
-            b'/' => '/',
-            b'b' => '\u{8}',
-            b'f' => '\u{c}',
-            b'n' => '\n',
-            b'r' => '\r',
-            b't' => '\t',
-            b'u' => return self.unicode_escape(out),
+        self.position += escaped.len_utf8();
+        let character = match escaped {
+            '"' => '"',
+            '\\' => '\\',
+            '/' => '/',
+            'b' => '\u{8}',
+            'f' => '\u{c}',
+            'n' => '\n',
+            'r' => '\r',
+            't' => '\t',
+            'u' => return self.unicode_escape(out),
             _ => return Err(self.error("unknown string escape")),
         };
         out.push(character);
@@ -387,8 +405,14 @@ impl<'a> JsonReader<'a> {
 
 /// The 1-based line number `offset` falls on, for a parse error's message.
 fn line_of(source: &str, offset: usize) -> usize {
-    let end = offset.min(source.len());
-    source[..end].bytes().filter(|byte| *byte == b'\n').count() + 1
+    // Counting bytes rather than slicing: an offset that is past the end, or in
+    // the middle of a character, must still produce a line number.
+    source
+        .bytes()
+        .take(offset)
+        .filter(|byte| *byte == b'\n')
+        .count()
+        + 1
 }
 
 // ---------------------------------------------------------------------------
@@ -593,11 +617,12 @@ impl MarkedEventReceiver for YamlBuilder<'_> {
                 });
             }
             YamlEvent::Alias(id) => {
-                let node = self
+                let mut node = self
                     .anchors
                     .get(&id)
                     .cloned()
                     .unwrap_or_else(DataNode::empty);
+                node.strip_spans();
                 self.place(node);
             }
             YamlEvent::SequenceStart(anchor, _) => {
@@ -668,7 +693,10 @@ fn plain_scalar_span(
     }
     let slice = source.get(start..bound.min(source.len()))?;
     let trimmed = slice.trim_end();
-    (trimmed == text).then(|| start..start + trimmed.len())
+    // A range of width nothing is not a range. `key:` with no value has no text to
+    // show or replace, and splicing `x` into the gap writes `key:x` — one scalar,
+    // not a key and a value.
+    (trimmed == text && !trimmed.is_empty()).then(|| start..start + trimmed.len())
 }
 
 // ---------------------------------------------------------------------------

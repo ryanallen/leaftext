@@ -80,3 +80,5 @@ and editor runtimes do.
 - `src/lib.rs` — `APP_SHELL_SCRIPT_PARTS`, the order.
 - `scripts/check-shell.mjs` — the boot check and the edit-offset arithmetic.
 - `docs/02-development/01-architecture.md` — what each fragment is for.
+
+<!-- keycode: LEAF-16D8 -->

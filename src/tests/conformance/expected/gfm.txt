@@ -1,0 +1,74 @@
+# GFM examples we render differently, after the normalizer has taken out every
+# difference we chose on purpose. One per line: <property> <case> <reason>.
+#
+# GFM's specification restates all of CommonMark, so most of what is here is the
+# same four reasons as `commonmark.txt` under different example numbers. The
+# extension chapters at the end are GFM's own.
+#
+# A case that starts failing and is not listed here fails the run. A case listed
+# here that starts passing fails it too, with "delete this line".
+
+# An image destination that is not a file we can serve loses its `src`. All of
+# these are filesystem-root paths like `/url`.
+meaning example-580 a root-absolute image destination is dropped
+meaning example-582 a root-absolute image destination is dropped
+meaning example-583 a root-absolute image destination is dropped
+meaning example-587 a root-absolute image destination is dropped
+meaning example-589 a root-absolute image destination is dropped
+meaning example-590 a root-absolute image destination is dropped
+meaning example-591 a root-absolute image destination is dropped
+meaning example-592 a root-absolute image destination is dropped
+meaning example-593 a root-absolute image destination is dropped
+meaning example-594 a root-absolute image destination is dropped
+meaning example-595 a root-absolute image destination is dropped
+meaning example-596 a root-absolute image destination is dropped
+meaning example-597 a root-absolute image destination is dropped
+meaning example-599 a root-absolute image destination is dropped
+
+# The sanitizer keeps a fixed list of URL schemes. The four extension cases are
+# GFM's bare autolinks — `www.x.com` and `mailto:` written without brackets.
+meaning example-604 an unvetted URL scheme keeps no href
+meaning example-606 an unvetted URL scheme keeps no href
+meaning example-607 an unvetted URL scheme keeps no href
+meaning example-609 an unvetted URL scheme keeps no href
+meaning example-610 an unvetted URL scheme keeps no href
+meaning example-614 an unvetted URL scheme keeps no href
+meaning example-616 an unvetted URL scheme keeps no href
+meaning example-619 an unvetted URL scheme keeps no href
+meaning example-620 an unvetted URL scheme keeps no href
+meaning example-625 a bare autolink is not linked the way GFM links it
+meaning example-626 a bare autolink is not linked the way GFM links it
+meaning example-628 a bare autolink is not linked the way GFM links it
+meaning example-631 a bare autolink is not linked the way GFM links it
+
+# A leading `--- … ---` block is frontmatter in this app.
+meaning example-66 a leading --- block is read as frontmatter
+meaning example-68 a leading --- block is read as frontmatter
+
+# A code fence's info string becomes a language name for the highlighter.
+meaning example-114 a fence's language name keeps only what can name a language
+meaning example-320 a fence's language name keeps only what can name a language
+meaning example-330 a fence's language name keeps only what can name a language
+
+# Nested emphasis: `__foo __bar__ baz__` comes out as strong inside strong where
+# GFM flattens it to one. This is the parser we use disagreeing with the one
+# GitHub uses, not something chosen here — the text reads the same either way, and
+# only the tags nest differently.
+meaning example-398 strong nests where GFM flattens it
+meaning example-426 strong nests where GFM flattens it
+meaning example-434 strong nests where GFM flattens it
+meaning example-435 strong nests where GFM flattens it
+meaning example-436 strong nests where GFM flattens it
+meaning example-473 strong nests where GFM flattens it
+meaning example-474 strong nests where GFM flattens it
+meaning example-475 strong nests where GFM flattens it
+meaning example-477 strong nests where GFM flattens it
+
+# A table with no body rows still gets an empty one. Nothing shows either way.
+meaning example-205 an empty table body is still written
+
+# A task list's checkbox is followed by a newline where GFM writes a space, and
+# `checked` is written after `type` rather than before. Neither changes what a
+# reader sees.
+meaning example-279 a checkbox is followed by a newline, and its attributes are ordered differently
+meaning example-280 a checkbox is followed by a newline, and its attributes are ordered differently

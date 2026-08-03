@@ -91,8 +91,3 @@
 - Page: https://leaftext.com/docs/
 - Markdown: https://leaftext.com/docs/README.md
 - Summary: Leaftext is a free desktop app for reading and writing your own documents. Open a local Markdown, XML, JSON, YAML, or email (.eml) file, get a clean rendered view, write straight into the page, and...
-
-## Taking the settings menu apart
-- Page: https://leaftext.com/docs/#/refactor/settings
-- Markdown: https://leaftext.com/docs/refactor/settings.md
-- Summary: The gear in the app bar holds five unrelated things. Four of them belong somewhere better and one of them is the updater, which is not a setting at all. This is the plan to empty the menu and delet...

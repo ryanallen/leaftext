@@ -310,6 +310,7 @@ What the *reading view* offers differs by format, because a block can only be ed
 | JSON | Edit their exact source in place |
 | YAML plain values | Edit their exact source in place |
 | YAML lists, tables, quoted strings, block scalars | Read-only; edited in the code view |
+| YAML aliases (`*name`) and keys with no value | Read-only; edited in the code view |
 | Email | Read-only; the body is transfer-coded in the file, so no rendered block can prove a source range — edited in the code view |
 
 ### Editing data files
@@ -321,6 +322,7 @@ That only works where the byte range is certain, so Leaftext offers it only wher
 - **JSON** — everywhere. The reader knows precisely where each value begins and ends, so every value is click-to-edit.
 - **YAML plain values** — where proven. A plain scalar's source text is checked character-for-character against the value it parsed to; when they match, the range is exact and the value is editable.
 - **Everything else in YAML** — read-only in the reading view. A quoted string or a block scalar (`|`, `>`) carries quotes or an indicator that its value does not, and nothing can prove where a YAML list or mapping *ends* — its closing position points at whatever token came next. Rather than splice an edit over a guessed range and corrupt the file, Leaftext offers no inline editor and leaves these to the code view.
+- **An alias, and a key with nothing after it** — read-only for the same reason. `b: *x` shows the value written up at `&x`, so the only text an edit could replace is on the anchor's line, not the alias's. And a key with no value has no text at all: typing into the gap after `key:` would write `key:x`, which is one scalar rather than a key and a value.
 - **No [block gutter](#the-block-gutter) in either.** A data range covers a value, not the key naming it, so dragging one would leave its key behind and inserting between two would land outside the syntax that gives them meaning.
 
 > [!NOTE]

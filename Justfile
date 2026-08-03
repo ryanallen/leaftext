@@ -105,6 +105,7 @@ check-hooks:
     node scripts/gate-rules.mjs --check
     node scripts/gate-git.mjs --check
     node scripts/gate-voice.mjs --check
+    node scripts/gate-keycode.mjs --check
 
 # Run the WebView front-end against a fake page: that it parses, that it boots
 # (the fragments are one script, so their order is load-bearing), and that the
@@ -137,6 +138,13 @@ mcp:
 # reads two files.
 check-mcp:
     node scripts/check-mcp.mjs
+
+# Download the published conformance suites into target/conformance. On demand, not
+# in `verify`: the corpora are 15 MB and fetching them needs the network. Without
+# them every conformance test prints one line and returns.
+conformance *flags:
+    node scripts/fetch-conformance.mjs {{ flags }}
+    cargo test conformance -- --nocapture
 
 # Which pictures the docs ask for, and which are not there. Not in `verify`: the
 # backlog would make it red before anybody touched it. `/sync-docs` runs it.

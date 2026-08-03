@@ -1,0 +1,755 @@
+# W3C XML conformance entries we knowingly fail. One per line:
+# <property> <case> <reason>. The case is its catalog's folder and the entry's own
+# id, because an id is only unique inside one catalog.
+#
+# This list is long on purpose. **We are a non-validating reader**: `parse_xml`
+# allows a doctype through, reads only the internal subset, and never fetches
+# anything. Most of what follows is that one decision, met 638 times.
+#
+# Set aside before this list is reached: entries that are not UTF-8 (the app
+# decodes before any reader sees a file) and entries written for XML 1.1. The run
+# prints how many.
+#
+# A case that starts failing and is not listed here fails the run. A case listed
+# here that starts passing fails it too, with "delete this line".
+
+# Documents the suite calls not well formed that we read anyway, because the only
+# thing wrong with them is in the DTD or in an entity. We do not check DTDs and we
+# never fetch anything (`xml.rs`), so there is nothing here to notice. This is the
+# non-validating decision, stated.
+verdict 1.0/rmt-ns10-012 a DTD or entity rule: we never check one
+verdict 1.0/rmt-ns10-043 a DTD or entity rule: we never check one
+verdict 1.0/rmt-ns10-044 a DTD or entity rule: we never check one
+verdict errata-3e/rmt-e3e-12 a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P09-ibm09n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P17-ibm17n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P17-ibm17n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P17-ibm17n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P23-ibm23n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P24-ibm24n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P26-ibm26n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P29-ibm29n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P29-ibm29n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P29-ibm29n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P30-ibm30n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P31-ibm31n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P32-ibm32n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P32-ibm32n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P32-ibm32n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P32-ibm32n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P41-ibm41n13.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P41-ibm41n14.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P45-ibm45n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P45-ibm45n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P45-ibm45n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P45-ibm45n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P45-ibm45n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P45-ibm45n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P46-ibm46n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P46-ibm46n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P46-ibm46n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P46-ibm46n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P46-ibm46n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P47-ibm47n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P47-ibm47n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P47-ibm47n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P47-ibm47n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P47-ibm47n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P47-ibm47n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P48-ibm48n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P48-ibm48n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P48-ibm48n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P48-ibm48n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P48-ibm48n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P48-ibm48n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P48-ibm48n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P49-ibm49n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P49-ibm49n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P49-ibm49n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P49-ibm49n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P49-ibm49n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P49-ibm49n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P50-ibm50n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P50-ibm50n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P50-ibm50n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P50-ibm50n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P50-ibm50n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P50-ibm50n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P50-ibm50n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P51-ibm51n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P51-ibm51n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P51-ibm51n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P51-ibm51n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P51-ibm51n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P51-ibm51n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P51-ibm51n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P52-ibm52n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P52-ibm52n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P52-ibm52n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P52-ibm52n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P53-ibm53n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P53-ibm53n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P53-ibm53n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P53-ibm53n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P53-ibm53n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P53-ibm53n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P53-ibm53n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P53-ibm53n08.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P54-ibm54n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P54-ibm54n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P55-ibm55n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P55-ibm55n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P55-ibm55n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P56-ibm56n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P56-ibm56n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P56-ibm56n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P56-ibm56n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P56-ibm56n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P56-ibm56n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P56-ibm56n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P57-ibm57n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P58-ibm58n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P58-ibm58n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P58-ibm58n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P58-ibm58n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P58-ibm58n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P58-ibm58n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P58-ibm58n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P58-ibm58n08.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P59-ibm59n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P59-ibm59n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P59-ibm59n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P59-ibm59n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P59-ibm59n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P59-ibm59n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P60-ibm60n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P60-ibm60n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P60-ibm60n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P60-ibm60n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P60-ibm60n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P60-ibm60n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P60-ibm60n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P60-ibm60n08.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P61-ibm61n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P62-ibm62n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P62-ibm62n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P62-ibm62n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P62-ibm62n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P62-ibm62n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P62-ibm62n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P62-ibm62n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P62-ibm62n08.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P63-ibm63n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P63-ibm63n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P63-ibm63n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P63-ibm63n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P63-ibm63n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P63-ibm63n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P63-ibm63n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P64-ibm64n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P64-ibm64n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P64-ibm64n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P65-ibm65n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P65-ibm65n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P66-ibm66n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P66-ibm66n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P66-ibm66n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P66-ibm66n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P66-ibm66n09.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P66-ibm66n11.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P68-ibm68n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P69-ibm69n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P69-ibm69n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P76-ibm76n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P81-ibm81n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P81-ibm81n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P81-ibm81n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P81-ibm81n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P81-ibm81n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P81-ibm81n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P81-ibm81n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P81-ibm81n08.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P81-ibm81n09.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P82-ibm82n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P82-ibm82n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P82-ibm82n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P82-ibm82n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P82-ibm82n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P82-ibm82n08.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P83-ibm83n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P83-ibm83n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P83-ibm83n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P83-ibm83n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P83-ibm83n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n08.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n09.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n10.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n100.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n101.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n102.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n103.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n104.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n105.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n106.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n107.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n108.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n109.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n11.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n110.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n111.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n112.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n113.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n114.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n115.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n116.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n117.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n118.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n119.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n12.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n120.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n121.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n122.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n123.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n124.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n125.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n126.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n127.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n128.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n129.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n13.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n130.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n131.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n132.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n133.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n134.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n135.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n136.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n137.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n138.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n139.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n14.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n140.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n141.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n142.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n143.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n144.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n145.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n146.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n147.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n148.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n149.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n15.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n150.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n151.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n152.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n153.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n154.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n155.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n156.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n157.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n158.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n159.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n16.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n160.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n161.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n162.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n163.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n164.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n165.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n166.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n167.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n168.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n169.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n17.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n170.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n171.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n172.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n173.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n174.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n175.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n176.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n177.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n178.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n179.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n18.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n180.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n181.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n182.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n183.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n184.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n185.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n186.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n187.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n188.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n189.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n19.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n190.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n191.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n192.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n193.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n194.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n195.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n196.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n197.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n198.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n20.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n21.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n22.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n23.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n24.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n25.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n26.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n27.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n28.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n29.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n30.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n31.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n32.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n33.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n34.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n35.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n36.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n37.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n38.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n39.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n40.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n41.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n42.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n43.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n44.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n45.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n46.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n47.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n48.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n49.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n50.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n51.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n52.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n53.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n54.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n55.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n56.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n57.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n58.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n59.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n60.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n61.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n62.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n63.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n64.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n65.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n66.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n67.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n68.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n69.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n70.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n71.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n72.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n73.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n74.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n75.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n76.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n77.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n78.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n79.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n80.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n81.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n82.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n83.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n84.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n85.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n86.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n87.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n88.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n89.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n90.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n91.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n92.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n93.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n94.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n95.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n96.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n97.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n98.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P85-ibm85n99.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P86-ibm86n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P86-ibm86n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P86-ibm86n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P86-ibm86n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n07.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n08.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n09.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n10.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n11.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n12.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n13.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n14.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n15.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n16.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n17.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n18.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n19.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n20.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n21.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n22.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n23.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n24.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n25.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n26.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n27.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n28.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n29.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n30.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n31.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n32.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n33.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n34.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n35.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n36.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n37.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n38.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n39.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n40.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n41.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n42.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n43.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n44.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n45.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n46.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n47.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n48.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n49.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n50.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n51.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n52.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n53.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n54.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n55.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n56.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n57.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n58.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n59.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n60.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n61.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n62.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n63.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n64.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n66.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n67.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n68.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n69.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n70.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n71.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n72.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n73.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n74.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n75.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n76.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n77.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n78.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n79.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n80.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n81.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n82.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n83.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n84.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P87-ibm87n85.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n06.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n08.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n09.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n10.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n11.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n12.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n13.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n14.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n15.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P88-ibm88n16.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P89-ibm89n01.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P89-ibm89n02.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P89-ibm89n03.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P89-ibm89n04.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-P89-ibm89n05.xml a DTD or entity rule: we never check one
+verdict ibm/ibm-not-wf-p28a-ibm28an01.xml a DTD or entity rule: we never check one
+verdict oasis/o-p09fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p09fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p09fail3 a DTD or entity rule: we never check one
+verdict oasis/o-p11fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p11fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p12fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p12fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p12fail3 a DTD or entity rule: we never check one
+verdict oasis/o-p12fail5 a DTD or entity rule: we never check one
+verdict oasis/o-p12fail6 a DTD or entity rule: we never check one
+verdict oasis/o-p12fail7 a DTD or entity rule: we never check one
+verdict oasis/o-p30fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p31fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p45fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p45fail3 a DTD or entity rule: we never check one
+verdict oasis/o-p45fail4 a DTD or entity rule: we never check one
+verdict oasis/o-p46fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p46fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p46fail3 a DTD or entity rule: we never check one
+verdict oasis/o-p46fail4 a DTD or entity rule: we never check one
+verdict oasis/o-p46fail5 a DTD or entity rule: we never check one
+verdict oasis/o-p46fail6 a DTD or entity rule: we never check one
+verdict oasis/o-p47fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p47fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p47fail3 a DTD or entity rule: we never check one
+verdict oasis/o-p47fail4 a DTD or entity rule: we never check one
+verdict oasis/o-p48fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p48fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p51fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p51fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p51fail3 a DTD or entity rule: we never check one
+verdict oasis/o-p51fail4 a DTD or entity rule: we never check one
+verdict oasis/o-p51fail5 a DTD or entity rule: we never check one
+verdict oasis/o-p51fail6 a DTD or entity rule: we never check one
+verdict oasis/o-p51fail7 a DTD or entity rule: we never check one
+verdict oasis/o-p52fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p52fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p53fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p53fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p53fail3 a DTD or entity rule: we never check one
+verdict oasis/o-p53fail4 a DTD or entity rule: we never check one
+verdict oasis/o-p53fail5 a DTD or entity rule: we never check one
+verdict oasis/o-p54fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p55fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p56fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p56fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p56fail3 a DTD or entity rule: we never check one
+verdict oasis/o-p56fail4 a DTD or entity rule: we never check one
+verdict oasis/o-p56fail5 a DTD or entity rule: we never check one
+verdict oasis/o-p57fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p58fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p58fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p58fail3 a DTD or entity rule: we never check one
+verdict oasis/o-p58fail4 a DTD or entity rule: we never check one
+verdict oasis/o-p58fail5 a DTD or entity rule: we never check one
+verdict oasis/o-p58fail6 a DTD or entity rule: we never check one
+verdict oasis/o-p58fail7 a DTD or entity rule: we never check one
+verdict oasis/o-p58fail8 a DTD or entity rule: we never check one
+verdict oasis/o-p59fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p59fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p59fail3 a DTD or entity rule: we never check one
+verdict oasis/o-p60fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p60fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p60fail3 a DTD or entity rule: we never check one
+verdict oasis/o-p60fail4 a DTD or entity rule: we never check one
+verdict oasis/o-p60fail5 a DTD or entity rule: we never check one
+verdict oasis/o-p61fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p62fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p62fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p63fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p63fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p64fail1 a DTD or entity rule: we never check one
+verdict oasis/o-p64fail2 a DTD or entity rule: we never check one
+verdict oasis/o-p76fail1 a DTD or entity rule: we never check one
+verdict sun/attlist01 a DTD or entity rule: we never check one
+verdict sun/attlist02 a DTD or entity rule: we never check one
+verdict sun/attlist03 a DTD or entity rule: we never check one
+verdict sun/attlist04 a DTD or entity rule: we never check one
+verdict sun/attlist05 a DTD or entity rule: we never check one
+verdict sun/attlist06 a DTD or entity rule: we never check one
+verdict sun/attlist07 a DTD or entity rule: we never check one
+verdict sun/attlist08 a DTD or entity rule: we never check one
+verdict sun/attlist09 a DTD or entity rule: we never check one
+verdict sun/cond01 a DTD or entity rule: we never check one
+verdict sun/cond02 a DTD or entity rule: we never check one
+verdict sun/content01 a DTD or entity rule: we never check one
+verdict sun/content02 a DTD or entity rule: we never check one
+verdict sun/content03 a DTD or entity rule: we never check one
+verdict sun/dtd07 a DTD or entity rule: we never check one
+verdict sun/nwf-dtd00 a DTD or entity rule: we never check one
+verdict sun/nwf-dtd01 a DTD or entity rule: we never check one
+verdict sun/pi a DTD or entity rule: we never check one
+verdict sun/pubid01 a DTD or entity rule: we never check one
+verdict sun/pubid02 a DTD or entity rule: we never check one
+verdict sun/pubid03 a DTD or entity rule: we never check one
+verdict sun/pubid04 a DTD or entity rule: we never check one
+verdict sun/sgml04 a DTD or entity rule: we never check one
+verdict sun/sgml05 a DTD or entity rule: we never check one
+verdict sun/sgml06 a DTD or entity rule: we never check one
+verdict sun/sgml07 a DTD or entity rule: we never check one
+verdict sun/sgml08 a DTD or entity rule: we never check one
+verdict sun/sgml09 a DTD or entity rule: we never check one
+verdict sun/sgml10 a DTD or entity rule: we never check one
+verdict sun/sgml11 a DTD or entity rule: we never check one
+verdict sun/sgml12 a DTD or entity rule: we never check one
+verdict sun/sgml13 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-not-sa-001 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-not-sa-003 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-not-sa-004 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-not-sa-006 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-not-sa-007 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-not-sa-008 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-not-sa-009 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-058 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-059 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-060 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-064 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-065 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-066 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-067 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-068 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-069 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-078 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-079 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-080 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-082 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-084 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-085 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-086 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-087 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-092 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-103 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-113 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-114 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-115 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-116 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-117 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-119 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-120 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-122 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-123 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-124 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-125 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-126 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-127 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-128 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-129 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-130 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-131 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-132 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-133 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-134 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-135 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-136 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-137 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-138 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-139 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-145 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-146 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-158 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-159 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-160 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-161 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-162 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-175 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-180 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-182 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-183 a DTD or entity rule: we never check one
+verdict xmltest/not-wf-sa-184 a DTD or entity rule: we never check one
+
+# Also not well formed, and with no DTD involved — so these are real strictness
+# gaps. Every one is a fault in the XML declaration, a processing instruction, or
+# the shape of a name: `encoding=" utf-8"` with a leading space, `<?XML?>` in the
+# wrong case, `<:foo/>` starting with a colon. The document still shows. Refusing
+# to open a file over a space in the encoding name would serve the reader worse.
+verdict 1.0/rmt-ns10-015 a declaration, processing instruction or name fault that does not stop the document showing
+verdict 1.0/rmt-ns10-023 a declaration, processing instruction or name fault that does not stop the document showing
+verdict 1.0/rmt-ns10-032 a declaration, processing instruction or name fault that does not stop the document showing
+verdict 1.0/rmt-ns10-042 a declaration, processing instruction or name fault that does not stop the document showing
+verdict errata-2e/rmt-e2e-61 a declaration, processing instruction or name fault that does not stop the document showing
+verdict misc/hst-lhs-007 a declaration, processing instruction or name fault that does not stop the document showing
+verdict oasis/o-p16fail1 a declaration, processing instruction or name fault that does not stop the document showing
+verdict oasis/o-p16fail3 a declaration, processing instruction or name fault that does not stop the document showing
+verdict oasis/o-p23fail1 a declaration, processing instruction or name fault that does not stop the document showing
+verdict oasis/o-p26fail1 a declaration, processing instruction or name fault that does not stop the document showing
+verdict oasis/o-p26fail2 a declaration, processing instruction or name fault that does not stop the document showing
+verdict oasis/o-p32fail5 a declaration, processing instruction or name fault that does not stop the document showing
+verdict oasis/o-p66fail6 a declaration, processing instruction or name fault that does not stop the document showing
+verdict sun/encoding01 a declaration, processing instruction or name fault that does not stop the document showing
+verdict sun/encoding02 a declaration, processing instruction or name fault that does not stop the document showing
+verdict sun/encoding03 a declaration, processing instruction or name fault that does not stop the document showing
+verdict sun/encoding04 a declaration, processing instruction or name fault that does not stop the document showing
+verdict sun/encoding05 a declaration, processing instruction or name fault that does not stop the document showing
+verdict sun/encoding06 a declaration, processing instruction or name fault that does not stop the document showing
+verdict xml-1.1/rmt-014 a declaration, processing instruction or name fault that does not stop the document showing
+verdict xml-1.1/rmt-016 a declaration, processing instruction or name fault that does not stop the document showing
+verdict xml-1.1/rmt-019 a declaration, processing instruction or name fault that does not stop the document showing
+verdict xmltest/not-wf-sa-100 a declaration, processing instruction or name fault that does not stop the document showing
+verdict xmltest/not-wf-sa-101 a declaration, processing instruction or name fault that does not stop the document showing
+verdict xmltest/not-wf-sa-102 a declaration, processing instruction or name fault that does not stop the document showing
+verdict xmltest/not-wf-sa-154 a declaration, processing instruction or name fault that does not stop the document showing
+verdict xmltest/not-wf-sa-155 a declaration, processing instruction or name fault that does not stop the document showing
+verdict xmltest/not-wf-sa-156 a declaration, processing instruction or name fault that does not stop the document showing
+verdict xmltest/not-wf-sa-157 a declaration, processing instruction or name fault that does not stop the document showing
+
+# Well-formed documents we will not read. Every one needs its DTD acted on — an
+# entity expanded, or an external one fetched — or uses a name shape the reader
+# refuses. Same decision as above, seen from the other side.
+verdict 1.0/ht-ns10-047 needs an entity expanded or fetched, and we never fetch
+verdict errata-2e/rmt-e2e-18 needs an entity expanded or fetched, and we never fetch
+verdict errata-2e/rmt-e2e-19 needs an entity expanded or fetched, and we never fetch
+verdict errata-2e/rmt-e2e-60 needs an entity expanded or fetched, and we never fetch
+verdict errata-4e/x-ibm-1-0.5-valid-P05-ibm05v01.xml needs an entity expanded or fetched, and we never fetch
+verdict ibm/ibm-valid-P09-ibm09v03.xml needs an entity expanded or fetched, and we never fetch
+verdict ibm/ibm-valid-P09-ibm09v05.xml needs an entity expanded or fetched, and we never fetch
+verdict ibm/ibm-valid-P28-ibm28v02.xml needs an entity expanded or fetched, and we never fetch
+verdict ibm/ibm-valid-P29-ibm29v02.xml needs an entity expanded or fetched, and we never fetch
+verdict ibm/ibm-valid-P32-ibm32v02.xml needs an entity expanded or fetched, and we never fetch
+verdict ibm/ibm-valid-P68-ibm68v02.xml needs an entity expanded or fetched, and we never fetch
+verdict ibm/ibm-valid-P69-ibm69v01.xml needs an entity expanded or fetched, and we never fetch
+verdict ibm/ibm-valid-P69-ibm69v02.xml needs an entity expanded or fetched, and we never fetch
+verdict ibm/ibm-valid-P70-ibm70v01.xml needs an entity expanded or fetched, and we never fetch
+verdict ibm/ibm-valid-P78-ibm78v01.xml needs an entity expanded or fetched, and we never fetch
+verdict ibm/ibm-valid-P79-ibm79v01.xml needs an entity expanded or fetched, and we never fetch
+verdict oasis/o-p28pass3 needs an entity expanded or fetched, and we never fetch
+verdict oasis/o-p69pass1 needs an entity expanded or fetched, and we never fetch
+verdict sun/ext01 needs an entity expanded or fetched, and we never fetch
+verdict sun/ext02 needs an entity expanded or fetched, and we never fetch
+verdict sun/not-sa03 needs an entity expanded or fetched, and we never fetch
+verdict sun/v-pe00 needs an entity expanded or fetched, and we never fetch
+verdict sun/v-pe02 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-ext-sa-001 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-ext-sa-002 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-ext-sa-003 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-ext-sa-004 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-ext-sa-005 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-ext-sa-006 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-ext-sa-007 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-ext-sa-008 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-ext-sa-009 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-ext-sa-011 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-ext-sa-012 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-ext-sa-013 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-ext-sa-014 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-not-sa-011 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-not-sa-012 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-not-sa-026 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-not-sa-031 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-sa-012 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-sa-024 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-sa-070 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-sa-085 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-sa-087 needs an entity expanded or fetched, and we never fetch
+verdict xmltest/valid-sa-097 needs an entity expanded or fetched, and we never fetch
+
+verdict errata-3e/rmt-e3e-13 needs an entity expanded or fetched, and we never fetch
+verdict errata-4e/invalid-bo-1 needs an entity expanded or fetched, and we never fetch
+verdict errata-4e/invalid-bo-2 needs an entity expanded or fetched, and we never fetch
+verdict errata-4e/invalid-bo-3 needs an entity expanded or fetched, and we never fetch
+verdict errata-4e/invalid-bo-4 needs an entity expanded or fetched, and we never fetch
+verdict errata-4e/invalid-bo-5 needs an entity expanded or fetched, and we never fetch
+verdict errata-4e/invalid-bo-6 needs an entity expanded or fetched, and we never fetch
+verdict errata-4e/invalid-sa-140 needs an entity expanded or fetched, and we never fetch
+verdict errata-4e/invalid-sa-141 needs an entity expanded or fetched, and we never fetch
+verdict ibm/ibm-invalid-P76-ibm76i01.xml needs an entity expanded or fetched, and we never fetch
+verdict oasis/o-p04pass1 needs an entity expanded or fetched, and we never fetch
+verdict oasis/o-p05pass1 needs an entity expanded or fetched, and we never fetch

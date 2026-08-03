@@ -14,6 +14,8 @@ Plain English, few words. No jargon or abbreviations. Lead with the answer, then
 
 **Say it in words the owner uses.** Not the code's names for things, not the build's, not a phrase that needs the repo open to parse. If a thing has to be named, say what it does in the same breath. And never pad a reply with a caveat that is true every single time — it teaches the reader to skip everything you write.
 
+**US spellings, never British.** In a reply, in a comment, in a ticket, in a commit message — "favorite", "color", "canceled". `just check-spelling` fails on one and names the line; it reads this repo and the tickets in `../docs/features` and `../docs/refactor`.
+
 **Never invent a reason.** A cost, a limit, a risk — say it only if it is real and it actually applies here. Dressing an option up as expensive to steer the answer is lying, even when every word is separately true. Check the constraint against this repo before you spend it: the ~2MB ceiling is on the inline page script, so a vendored file does not pay it. If you don't know the cost, say you don't know.
 
 **When told you got it wrong, skip the response and do the work.** Don't own it, don't explain it, don't say what you meant, don't list the parts you got right. No sentence about the mistake at all — it was already said, repeating it back wastes the reply. Start at whatever comes after.
@@ -70,11 +72,12 @@ In `.agents/skills/`, which `.claude/` and `.codex/` symlink to. Invoke by name.
 
 ## Hooks
 
-In `.claude/settings.json`, pointing at `scripts/`. Each runs by hand with `--check`, and `just verify` runs all three.
+In `.claude/settings.json`, pointing at `scripts/`. Each runs by hand with `--check`, and `just verify` runs all four.
 
 - `gate-rules.mjs` on `UserPromptSubmit` — prints Rule 1 out of this file before every message, plus a line for whatever the message touches, and records the license in `.tmp/git-license`. Granted only when the message **starts** with `/git-release`: matching it anywhere let a message that merely quoted the string release v0.1.442. It also keeps the last 20 raw payloads in `.tmp/prompt-payloads.jsonl`, untracked — the license turns on what the host puts in `prompt`, and a turn where that went wrong is otherwise unreconstructable.
 - `gate-git.mjs` on the shell tools — refuses a git write when that file does not say the license was given this turn.
-- `gate-voice.mjs` on `Stop` — refuses to end the turn on a reply over Rule 1's 500-character ceiling, or one opening with praise or an apology. Only the countable half of Rule 1; the rest stays a reminder. Printing the rule every turn was not enough on its own, which is why this exists.
+- `gate-voice.mjs` on `Stop` — refuses to end the turn on a reply over Rule 1's 500-character ceiling, or one opening with praise or an apology, or one that has not reported this turn's keycodes. Only the countable half of Rule 1; the rest stays a reminder. Printing the rule every turn was not enough on its own, which is why this exists. It measures each block of the reply on its own, and **waits for the last one to reach the transcript** — reading the transcript the instant the turn ends caught only the short lines said between tool calls, which is how a 952-character sign-off went out unrefused.
+- `gate-keycode.mjs` — proof the rules were read rather than remembered. This file and every `SKILL.md` ends with a keycode in an HTML comment. Each message owes this file's, plus the keycode of any skill it names with a slash, reported with `node scripts/gate-keycode.mjs <file> <code>`; the Stop hook holds the turn until all of them are in. The record is one file in the OS temp folder, cleared at the start of every message, so it never grows and never reaches a context window. A wrong code is refused, and `just verify` fails on a keyed file with no code or two files sharing one.
 
 ## Rules each paid for in version numbers
 
@@ -112,3 +115,5 @@ Every crate ships to users and nobody here reviews it — a security boundary, n
 ## Conventions
 
 LF endings (`.gitattributes`); images and archives binary. Never commit build output (`dist/`, `target/`, `.release-tag`) or large binaries. **No assistant or third-party identity in the repo or its history — commits are the owner's, never a co-author trailer.**
+
+<!-- keycode: LEAF-9D2F -->

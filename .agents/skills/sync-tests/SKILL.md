@@ -122,3 +122,5 @@ covered by an existing one, and what is left untestable here.
 - `scripts/check-shell.mjs` — the front-end's boot and edit-offset checks.
 - `/check` — runs this, then `just verify`.
 - `/git-release` — the only thing that touches git.
+
+<!-- keycode: LEAF-D3A6 -->

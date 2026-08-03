@@ -68,11 +68,26 @@ pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
     let events = sanitize_raw_markdown_html(events);
     let events = register_markdown_extensions(events, source.source_path);
     let body = render_markdown_events_to_html(events);
+    let body = table_alignment_as_attribute(&body);
     let body = resolve_rendered_html_image_urls(&body, source.source_path);
     let body = format!("{frontmatter_html}{body}");
     // The size goes on last, after the sanitizer: the numbers are ours, and `img`
     // keeps the attribute list it was given.
     stamp_image_intrinsic_sizes(&sanitize_rendered_html(&body), source.source_path)
+}
+
+/// A table column's alignment, moved from an inline `style` onto `align`, which
+/// `td` and `th` are allowed to keep. `style` is never allowed through the
+/// sanitizer — it is an injection surface — so before this, `:-:` centered nothing.
+fn table_alignment_as_attribute(html: &str) -> String {
+    let mut out = html.to_string();
+    for side in ["left", "center", "right"] {
+        out = out.replace(
+            &format!(" style=\"text-align: {side}\""),
+            &format!(" align=\"{side}\""),
+        );
+    }
+    out
 }
 
 /// Split a leading `--- ... ---` frontmatter block off the front, returning its

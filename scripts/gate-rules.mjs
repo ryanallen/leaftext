@@ -15,6 +15,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { open, requiredFor } from './gate-keycode.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LICENSE = join(root, '.tmp', 'git-license');
@@ -92,6 +93,7 @@ export function context(prompt, rule) {
   if (rule) out.push(rule);
   const hints = reminders(prompt);
   if (hints.length) out.push('', ...hints.map((h) => `- ${h}`));
+  out.push('', `- Read these before you finish, and report each one's keycode with \`node scripts/gate-keycode.mjs <file> <code>\`: ${requiredFor(prompt).join(', ')}. The keycode is an HTML comment at the end of the file. The turn cannot end until every one is in.`);
   out.push('', hasReleaseLicense(prompt)
     ? '- `/git-release` is in this message: one git write is authorized, for this turn only.'
     : '- No `/git-release` in this message. Git writes are refused by scripts/gate-git.mjs. Do not offer or hint at one; a dirty tree is the correct end state.');
@@ -171,6 +173,14 @@ if (process.argv.includes('--check')) {
   const prompt = promptOf(raw);
   writeLicense(hasReleaseLicense(prompt), prompt);
   if (prompt && !isMeta(prompt)) {
+    // A new turn owes its keycodes again. Clearing first is what keeps the record
+    // one message long instead of a growing file.
+    try {
+      open(requiredFor(prompt));
+    } catch {
+      // A record that cannot be written owes nothing, which is the safe way round:
+      // a broken hook must never stop a turn.
+    }
     let rule = '';
     try {
       rule = rule1(readFileSync(join(root, 'AGENTS.md'), 'utf8'));

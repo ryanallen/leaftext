@@ -232,3 +232,5 @@ Leave the changes uncommitted. Tell the user what pages changed. If they want it
 - `scripts/capture-screenshot.ps1` + `just squeeze-png` — how a picture gets taken. See [Building](../../../docs/02-development/02-building.md#documentation-screenshots).
 - `scripts/seo-gen.mjs` — regenerates the SEO/AIO/LLM discovery files (`robots.txt`, `sitemap.xml`, `sitemap-md.txt`, `llms.txt`, `llms-full.txt`) from `README.md` + `docs/`.
 - `/git-release` — the separate skill that commits and pushes (site-only changes don't bump the version).
+
+<!-- keycode: LEAF-8F50 -->

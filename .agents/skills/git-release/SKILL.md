@@ -209,3 +209,5 @@ Cause: the release was started on a tree that does not pass. Solution: it is not
 - `Cargo.toml`: source of truth for the app version (app releases only)
 - `Cargo.lock`: must match `Cargo.toml` for CI builds
 - GitHub Pages deploys from `main` (branch builder); `.nojekyll` keeps it serving files raw
+
+<!-- keycode: LEAF-4409 -->

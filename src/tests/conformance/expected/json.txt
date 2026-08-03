@@ -1,0 +1,31 @@
+# JSONTestSuite failures we accept. One per line: <property> <case> <reason>.
+#
+# Keyed by property as well as case: a file excused for a verdict must not also
+# excuse a panic or a wrong byte range found in it later, and these files are the
+# likeliest place for one — we already know the input is strange.
+#
+# A case that starts failing and is not listed here fails the run. A case listed
+# here that starts passing fails it too, with "delete this line".
+
+# Comments and a trailing comma. Written down since the reader was built
+# (data.rs): `tsconfig.json` and editor settings carry both, and refusing to show
+# one of those files is the worse answer.
+verdict n_object_trailing_comma.json a trailing comma: tsconfig and editor settings have them
+verdict n_array_extra_comma.json a trailing comma in an array, same reason
+verdict n_array_number_and_comma.json a trailing comma in an array, same reason
+verdict n_object_trailing_comment.json a comment: the same files carry those too
+verdict n_object_trailing_comment_slash_open.json an unterminated comment, read to the end of the file
+verdict n_structure_object_with_comment.json a comment inside an object, same reason
+
+# Decided at phase 3 of the conformance ticket, having been nobody's decision
+# until then. Both groups fall out of how the reader is written, and both stay:
+# the job is to show a file, not to certify it. A number is kept and displayed as
+# the source wrote it, so a leading zero is text we pass through rather than
+# arithmetic we get wrong. And refusing a whole document over one raw tab inside a
+# string shows the reader nothing at all — the character is displayed as written.
+verdict n_number_-01.json a leading zero: numbers are shown as written, not converted
+verdict n_number_with_leading_zero.json a leading zero, same reason
+verdict n_number_neg_int_starting_with_zero.json a leading zero, same reason
+verdict n_string_unescaped_tab.json a raw tab in a string: shown as written
+verdict n_string_unescaped_newline.json a raw newline in a string: shown as written
+verdict n_string_unescaped_ctrl_char.json a raw control character in a string: shown as written

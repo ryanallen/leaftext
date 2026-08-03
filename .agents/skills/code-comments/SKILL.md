@@ -144,3 +144,5 @@ verify` catches it, but grep the comment text in `src/tests/` first.
 - `AGENTS.md` — Rule 1, and *Rules each paid for in version numbers*.
 - `/check` — the tests-and-verify gate. This pass is about prose, that one about
   proof.
+
+<!-- keycode: LEAF-A17C -->

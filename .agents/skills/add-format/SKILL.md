@@ -50,3 +50,5 @@ Getting these the wrong way round makes every file openable, or none.
 - `src/format.rs` — the table.
 - `src/xml.rs`, `src/data.rs`, `src/eml.rs`, `src/tei.rs` — what a renderer looks like.
 - `/sync-tests`, `/sync-docs`.
+
+<!-- keycode: LEAF-C08A -->

@@ -1,0 +1,15 @@
+# yaml-test-suite failures we accept. One per line: <property> <case> <reason>.
+#
+# Keyed by property as well as case, so excusing one check on a file never quietly
+# excuses another on the same file.
+#
+# A case that starts failing and is not listed here fails the run. A case listed
+# here that starts passing fails it too, with "delete this line".
+
+# The suite's `in.json` gives the number a value; we keep the text the file wrote.
+# A scalar in this app holds display text and no type, on purpose — the job is to
+# show a file — so `0xFFEEBB` stays hex and `450.00` keeps its cents. Normalizing
+# these away would mean deciding numeric equality, which is the one thing neither
+# reader does.
+meaning C4HZ hex kept as written where the suite converts it to decimal
+meaning UGM3 trailing zeros kept where the suite drops them

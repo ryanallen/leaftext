@@ -1,0 +1,57 @@
+# CommonMark examples we render differently, after the normalizer has taken out
+# every difference we chose on purpose. One per line: <property> <case> <reason>.
+#
+# Two whole classes are set aside before this list is reached, both in
+# markdown.rs: the Raw HTML and HTML blocks chapters, and any example whose input
+# carries a raw HTML tag. What survives the sanitizer is `rawhtml.rs`'s decision,
+# not CommonMark's, and it is a security boundary rather than a conformance
+# question.
+#
+# A case that starts failing and is not listed here fails the run. A case listed
+# here that starts passing fails it too, with "delete this line".
+
+# An image destination that is not a file we can serve loses its `src`
+# altogether, so the picture does not render. Every one of these is a
+# filesystem-root path like `/url`, direct or through a reference. This is the one
+# thing the Markdown run turned up that may be worth changing rather than
+# recording — see the ticket.
+meaning example-572 a root-absolute image destination is dropped
+meaning example-574 a root-absolute image destination is dropped
+meaning example-575 a root-absolute image destination is dropped
+meaning example-579 a root-absolute image destination is dropped
+meaning example-581 a root-absolute image destination is dropped
+meaning example-582 a root-absolute image destination is dropped
+meaning example-583 a root-absolute image destination is dropped
+meaning example-584 a root-absolute image destination is dropped
+meaning example-585 a root-absolute image destination is dropped
+meaning example-586 a root-absolute image destination is dropped
+meaning example-587 a root-absolute image destination is dropped
+meaning example-588 a root-absolute image destination is dropped
+meaning example-589 a root-absolute image destination is dropped
+meaning example-591 a root-absolute image destination is dropped
+
+# The sanitizer keeps a fixed list of URL schemes, so `<irc://host>` and
+# `<made-up-scheme://x>` render as text with no link. A document must not be able
+# to hand the web view a scheme nobody vetted.
+meaning example-596 an unvetted URL scheme keeps no href
+meaning example-598 an unvetted URL scheme keeps no href
+meaning example-599 an unvetted URL scheme keeps no href
+meaning example-601 an unvetted URL scheme keeps no href
+meaning example-602 an unvetted URL scheme keeps no href
+meaning example-606 an unvetted URL scheme keeps no href
+meaning example-608 an unvetted URL scheme keeps no href
+meaning example-611 an unvetted URL scheme keeps no href
+meaning example-612 an unvetted URL scheme keeps no href
+
+# A leading `--- … ---` block is frontmatter in this app, rendered as a metadata
+# table rather than a thematic break and a heading. Documented, and the reason
+# `split_leading_frontmatter` exists.
+meaning example-96 a leading --- block is read as frontmatter
+meaning example-98 a leading --- block is read as frontmatter
+
+# A code fence's info string becomes a language name for the highlighter, so it
+# keeps only what can name a language: `foo\+bar` loses the escape, `f&ouml;&ouml;`
+# loses the entity, and `;` names nothing at all.
+meaning example-24 a fence's language name keeps only what can name a language
+meaning example-34 a fence's language name keeps only what can name a language
+meaning example-144 a fence's language name keeps only what can name a language

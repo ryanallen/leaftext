@@ -63,3 +63,5 @@ sanitizer), `rusqlite`, `syntect`, `wry`/`tao`. These are not up for review.
 - `src/platform.rs` — the native code that exists instead of crates.
 - `docs/02-development/01-architecture.md` — the crate table, with one line on why
   each is there.
+
+<!-- keycode: LEAF-3B71 -->

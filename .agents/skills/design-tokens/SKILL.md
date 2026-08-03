@@ -98,3 +98,5 @@ repo, not a feature in the app — nothing about it ships to a reader.
 - `docs/02-development/04-theming.md` — how a theme is written and checked.
 - `docs/02-development/05-design-system.md` — the published page, generated from the
   same four files.
+
+<!-- keycode: LEAF-72FD -->
