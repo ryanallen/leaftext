@@ -261,11 +261,32 @@ fn app_shell_includes_library_pane_settings_and_wording() {
         "title=\"Resize library\"",
         "placeholder=\"Search files...\"",
         ">No matches.</p>",
-        "} results</p>`",
+        // A cut list says what it was cut to — files, since one file can hold
+        // three rows — rather than printing a count that reads like a whole one.
+        "results in the first ${formatCount(files)} files`",
+        "} results`",
         "Searching…",
         "'Search failed.'",
     ] {
         assert!(html.contains(wording), "missing wording: {wording}");
+    }
+}
+
+#[test]
+fn a_search_row_lands_on_the_match_not_the_heading_above_it() {
+    let html = app_shell_page();
+
+    // The row carries the line the match is on, and the jump uses it: a hit near
+    // the foot of a long section used to open at the top of that section.
+    for expected in [
+        r#"data-line="${escapeAttr(String(line))}""#,
+        "pendingSearchJump = anchor || line ? { path, anchor, line } : null;",
+        "scrollReadingToSrcOffset(byteOffsetAtLineIndex(currentDocumentSource, jump.line - 1));",
+        // The heading is still there for a document whose source the page does not
+        // hold — only Markdown carries the block ranges the offset needs.
+        "if (!landed && jump.anchor && activeDocumentPath() === jump.path) {",
+    ] {
+        assert_contains(&html, expected);
     }
 }
 

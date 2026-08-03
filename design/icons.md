@@ -75,7 +75,8 @@ so the heavier drawing is its own mask.
 | link | link.svg | regular | — | Link. |
 | undo | undo.svg | regular | — | Undo the last edit, beside the view group. |
 | missing-image | missing-image.svg | regular | — | A picture the reading view could not load. Every platform draws its own broken mark and they look nothing alike, so the app draws one. |
-| chevron-down | chevron-down.svg | regular | — | The app bar's overflow toggle, and any "more below" mark. |
+| chevron-down | chevron-down.svg | regular | — | The app bar's overflow toggle, and any "more below" mark. Also the find bar's next and previous, the one drawing turned over by CSS for previous. |
+| replace | replace.svg | regular | — | The find bar's replace toggle: the row of Replace / All / Select all folds out under it. |
 | theme | theme.svg | regular | — | The app bar's palette button, which opens the theme sheet. |
 | redo | redo.svg | regular | — | Redo, beside undo in the flowchart editor. |
 | window-minimize | window-minimize.svg | hairline | — | The window's own minimize button. Drawn on a 12px grid at a hairline, because it sits in the title bar beside the platform's own chrome. |

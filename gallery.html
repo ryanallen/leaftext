@@ -2280,6 +2280,10 @@
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m19.5 8.25-7.5 7.5-7.5-7.5' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m19.5 8.25-7.5 7.5-7.5-7.5' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
 }
+.lt-icon-replace {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 4a1 1 0 0 1 1-1'/%3E%3Cpath d='M15 10a1 1 0 0 1-1-1'/%3E%3Cpath d='M21 4a1 1 0 0 0-1-1'/%3E%3Cpath d='M21 9a1 1 0 0 1-1 1'/%3E%3Cpath d='m3 7 3 3 3-3'/%3E%3Cpath d='M6 10V5a2 2 0 0 1 2-2h2'/%3E%3Crect x='3' y='14' width='7' height='7' rx='1'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 4a1 1 0 0 1 1-1'/%3E%3Cpath d='M15 10a1 1 0 0 1-1-1'/%3E%3Cpath d='M21 4a1 1 0 0 0-1-1'/%3E%3Cpath d='M21 9a1 1 0 0 1-1 1'/%3E%3Cpath d='m3 7 3 3 3-3'/%3E%3Cpath d='M6 10V5a2 2 0 0 1 2-2h2'/%3E%3Crect x='3' y='14' width='7' height='7' rx='1'/%3E%3C/svg%3E");
+}
 .lt-icon-theme {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Ccircle cx='13.5' cy='6.5' r='.5' fill='%23000'/%3E%3Ccircle cx='17.5' cy='10.5' r='.5' fill='%23000'/%3E%3Ccircle cx='6.5' cy='12.5' r='.5' fill='%23000'/%3E%3Ccircle cx='8.5' cy='7.5' r='.5' fill='%23000'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Ccircle cx='13.5' cy='6.5' r='.5' fill='%23000'/%3E%3Ccircle cx='17.5' cy='10.5' r='.5' fill='%23000'/%3E%3Ccircle cx='6.5' cy='12.5' r='.5' fill='%23000'/%3E%3Ccircle cx='8.5' cy='7.5' r='.5' fill='%23000'/%3E%3C/svg%3E");
@@ -7670,6 +7674,159 @@ body.is-block-dragging .document-body [data-src-start] {
     width: 85%;
   }
 }
+/* ---- Find in this document -------------------------------------------------
+   One bar over both views (find-bar.js), in the reader's own grid cell so it
+   holds its place while the document scrolls under it. Top right, where every
+   find bar is, and off the card's edges by the same 8px the card is held off the
+   frame. */
+.find-bar[hidden] {
+  display: none;
+}
+.find-bar {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  justify-self: end;
+  z-index: 7;
+  /* Anchor for the face drawn behind it. */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  /* Clear of the app bar the reader's own padding sits under. */
+  margin-top: calc(var(--app-bar-height) + var(--lt-space-4));
+  margin-right: var(--lt-space-8);
+  padding: var(--lt-space-3);
+  /* Transparent, not gone: the border holds the box's size while ::after paints
+     the visible face — the same arrangement the reader's toolbar uses. */
+  border: var(--lt-stroke-1) solid transparent;
+  border-radius: var(--lt-radius-lg);
+  background: transparent;
+  box-shadow: var(--lt-shadow-raised);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  color: var(--lt-foreground);
+}
+/* The face — fill and hairline. inset -1px re-covers the border box the
+   element's transparent border holds in layout. */
+.find-bar::after {
+  content: '';
+  position: absolute;
+  z-index: var(--lt-z-below);
+  inset: -1px;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  pointer-events: none;
+}
+.find-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+}
+.find-row[hidden] {
+  display: none;
+}
+/* The field and its counter share one sunken well, so the count reads as part of
+   what you typed rather than as another control. */
+.find-field {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  width: 196px;
+  padding: 0 var(--lt-space-3);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface-sunken);
+}
+.find-field:focus-within {
+  border-color: var(--lt-focus-ring);
+}
+.find-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--lt-space-16);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+}
+.find-input:focus {
+  outline: none;
+}
+/* "3 of 41", or why there is nothing: quieter than the query it describes. */
+.find-count {
+  flex: 0 0 auto;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-10-5);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.find-flags {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-1);
+}
+/* The three how-to-match toggles are their own glyphs — Aa, ab|, .* — because
+   that is what every editor draws for them, and a picture of "regular
+   expression" does not exist. */
+.find-flag,
+.find-step,
+.find-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--lt-space-16);
+  min-width: var(--lt-space-16);
+  padding: 0 var(--lt-space-2);
+  border: var(--lt-stroke-1) solid transparent;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: var(--lt-text-11);
+  cursor: pointer;
+}
+.find-action {
+  padding: 0 var(--lt-space-3);
+  border-color: var(--lt-border);
+}
+.find-flag:hover,
+.find-step:hover,
+.find-action:hover:not(:disabled) {
+  background: var(--lt-surface-muted);
+}
+.find-flag[aria-pressed='true'],
+.find-step[aria-pressed='true'] {
+  border-color: var(--lt-border-strong);
+  background: var(--lt-surface-sunken);
+}
+.find-action:disabled {
+  color: var(--lt-muted-foreground);
+  cursor: default;
+}
+/* Next and previous are the same chevron, one of them turned over: two drawings
+   of one arrow would be two files to keep in step. */
+.find-step-back {
+  transform: rotate(180deg);
+}
+/* Every match, washed in the accent — the color a matched search hit already
+   takes in the library pane. The one you are on is the primary, so stepping
+   through is a moving mark rather than a wall of identical washes. Both are drawn
+   with the CSS Custom Highlight API in the reading view (no DOM mutation, no
+   reflow) and as Monaco decorations in the source view, which is why each name
+   appears twice. */
+::highlight(leaf-find-match),
+.leaf-find-match {
+  background-color: color-mix(in srgb, var(--lt-accent) 45%, transparent);
+}
+::highlight(leaf-find-current),
+.leaf-find-current {
+  background-color: color-mix(in srgb, var(--lt-primary) 45%, transparent);
+}
 </style>
 <style>
   html, body { overflow: visible; height: auto; }
@@ -7715,7 +7872,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 81 colors, the 158 values that do not change with the theme, all 54 icons, and all 45 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 81 colors, the 158 values that do not change with the theme, all 55 icons, and all 46 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -7736,8 +7893,8 @@ body.is-block-dragging .document-body [data-src-start] {
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>81</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>158</b></button>
-<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>54</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>45</b></button>
+<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>55</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>46</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -8032,7 +8189,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </div>
 </section>
 <section class="panel" id="icons" role="tabpanel" hidden>
-<p class="lead">54 icons. Each takes the color of whatever it sits in, which is why they follow the theme.</p><div class="wall">
+<p class="lead">55 icons. Each takes the color of whatever it sits in, which is why they follow the theme.</p><div class="wall">
 <div class="glyph"><span class="lt-icon lt-icon-back"></span><code>back</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-forward"></span><code>forward</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-settings"></span><code>settings</code></div>
@@ -8074,6 +8231,7 @@ body.is-block-dragging .document-body [data-src-start] {
 <div class="glyph"><span class="lt-icon lt-icon-undo"></span><code>undo</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-missing-image"></span><code>missing-image</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-chevron-down"></span><code>chevron-down</code></div>
+<div class="glyph"><span class="lt-icon lt-icon-replace"></span><code>replace</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-theme"></span><code>theme</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-redo"></span><code>redo</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-window-minimize"></span><code>window-minimize</code></div>
@@ -8090,7 +8248,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">45 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">46 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App bar</h3><code class="built">.app-bar</code><span class="built">app-shell.html, with overflow.js folding it and code-view.js measuring it</span></header>
 <div class="stage"><div class="app-bar" style="position:static"><span class="app-bar-lead"><button type="button" class="brand-button"><span class="lt-icon lt-icon-leaf"></span></button></span></div></div>
@@ -8186,6 +8344,10 @@ body.is-block-dragging .document-body [data-src-start] {
 <section class="part">
 <header><h3>Selection toolbar</h3><code class="built">.selection</code><span class="built">selection-toolbar.js</span></header>
 <div class="stage"><div class="selection-toolbar" style="position:static"><div class="selection-format-row"><button type="button" class="selection-format"><span class="lt-icon lt-icon-bold"></span></button><button type="button" class="selection-format"><span class="lt-icon lt-icon-italic"></span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Find bar</h3><code class="built">.find</code><span class="built">app-shell.html, driven by find-bar.js</span></header>
+<div class="stage"><div class="find-bar" style="position:static"><div class="find-row"><span class="find-field"><input class="find-input" type="text" placeholder="Find" value="dharma"><span class="find-count">3 of 41</span></span><span class="find-flags"><button type="button" class="find-flag" aria-pressed="true">Aa</button><button type="button" class="find-flag">ab&#124;</button><button type="button" class="find-flag">.*</button></span><button type="button" class="find-step"><span class="lt-icon lt-icon-chevron-down find-step-back"></span></button><button type="button" class="find-step"><span class="lt-icon lt-icon-chevron-down"></span></button><button type="button" class="find-step" aria-pressed="true"><span class="lt-icon lt-icon-replace"></span></button><button type="button" class="find-step"><span class="lt-icon lt-icon-close"></span></button></div><div class="find-row"><span class="find-field"><input class="find-input" type="text" placeholder="Replace with"></span><button type="button" class="find-action">Replace</button><button type="button" class="find-action">All</button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Code view</h3><code class="built">.code</code><span class="built">code-view.js</span></header>

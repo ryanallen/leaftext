@@ -98,6 +98,8 @@ Click a heading in the [outline](01-features/02-navigation.md#outline), or click
 | [Italic](01-features/07-editing.md#the-format-bar) the highlighted words | `Ctrl+I` | `Cmd+I` |
 | [Link](01-features/07-editing.md#the-format-bar) the highlighted words | `Ctrl+K` | `Cmd+K` |
 | Select the page | `Ctrl+A` | `Cmd+A` |
+| [Find](01-features/02-navigation.md#find-in-this-document) in this document | `Ctrl+F` | `Cmd+F` |
+| [Find and replace](01-features/02-navigation.md#find-in-this-document) | `Ctrl+H` | `Cmd+H` |
 
 Mouse side buttons also trigger Back and Forward on Windows.
 

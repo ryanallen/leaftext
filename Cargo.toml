@@ -22,6 +22,10 @@ blake3 = "1"
 # builds on it — so this is a line, not a new crate.
 flate2 = "1"
 html-escape = "0.2.13"
+# The byte skip in vault search's case-insensitive scan. Already in the tree —
+# linkify, pulldown-cmark and serde_json all build on it — so this is a line, not
+# a new crate.
+memchr = "2"
 linkify = "0.11.0"
 notify-debouncer-mini = "0.4"
 pulldown-cmark = { version = "0.13.4", default-features = false, features = [

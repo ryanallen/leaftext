@@ -23,6 +23,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Interactive checkboxes](#inline-editing-the-reading-view) | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | [Undo](#undo) | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits |
 | [The padlock](#the-padlock) | Two padlocks, one for the reading view and one for the source, each remembered. Both start locked, except in a [new document](#new-document) — and checkboxes toggle either way |
+| [Replacing text](02-navigation.md#find-in-this-document) | The find bar's Replace and All write through the same padlock as typing does — in the reading view as one splice of the source, so one Undo puts it all back |
 | [Code view](#code-view) | Toggle the rendered page to the raw source and back |
 | [Your place is kept](#code-view) | Toggling between the two views holds your position, and toggling back and forth returns you to the exact spot |
 | [Highlighting](#code-view) | The source is colored in the active [theme](06-themes.md)'s syntax colors — Markdown, XML, YAML and JSON; a raw [email](01-rendering.md#email-eml) shows as uncolored text |

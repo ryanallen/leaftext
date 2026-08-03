@@ -48,6 +48,8 @@ flowchart LR
 | Save (with [unsaved edits](07-editing.md#save)) | `Ctrl+S` | `Cmd+S` |
 | [Undo](07-editing.md#undo) the last reading-view edit | `Ctrl+Z` | `Cmd+Z` |
 | Select the page (reading view) | `Ctrl+A` | `Cmd+A` |
+| [Find](#find-in-this-document) in this document | `Ctrl+F` | `Cmd+F` |
+| [Find and replace](#find-in-this-document) | `Ctrl+H` | `Cmd+H` |
 | [Bold](07-editing.md#the-format-bar) the highlighted words | `Ctrl+B` | `Cmd+B` |
 | [Italic](07-editing.md#the-format-bar) the highlighted words | `Ctrl+I` | `Cmd+I` |
 | [Link](07-editing.md#the-format-bar) the highlighted words | `Ctrl+K` | `Cmd+K` |
@@ -151,6 +153,19 @@ Opening a document hands it to the Rust side to parse and render before the view
 - A safety timeout lowers it even if a response never comes, so it can never get stuck on screen.
 
 ## Moving within a document
+
+### Find in this document
+
+`Ctrl+F` opens one find bar at the top right of the page, over whichever view is on screen — the rendered document or the [source](07-editing.md#code-view). `Ctrl+H` opens it with the replace row already down.
+
+- The field opens with whatever you had highlighted, and the counter beside it reads **3 of 41** as you type. Past 999 matches it says `999+`.
+- `Enter` steps to the next match, `Shift+Enter` to the previous, and `Escape` closes the bar and hands the keyboard back to the document.
+- Every match is washed in the theme's accent color; the one you are on takes the primary, so stepping through is a mark that moves rather than a page of identical stripes.
+- Four toggles: **Aa** match case (`Alt+C`), **ab|** whole word (`Alt+W`), **.\*** regular expression (`Alt+R`), and find inside the text you had highlighted (`Alt+L`). A half-typed expression reads `Bad expression` rather than `No results`.
+
+Replacing needs the [padlock](07-editing.md#the-padlock) lifted for the view you are in, and the padlocks are separate: unlocking the page you read is not consent to rewrite the file by hand. **Replace** rewrites the match you are on, **All** rewrites every one, and either way it is a single edit — one `Ctrl+Z` puts the whole thing back. **Select all** puts a cursor on every match in the source view, so the next thing you type happens in all of them at once; the rendered view has no cursors, so the button is off there.
+
+In the rendered view a replace is written to the file's source, not to the page. That means the odd match cannot be replaced from there: `**dh**arma` reads as one word on screen and is three pieces in the file, so Leaftext says so and leaves it for the source view rather than guessing. Replacing in the rendered view is Markdown only; open the source view for the other formats.
 
 ### Outline
 

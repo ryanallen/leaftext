@@ -133,6 +133,9 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/shell/reading-edits.js"),
     include_str!("assets/shell/block-controls.js"),
     include_str!("assets/shell/selection-toolbar.js"),
+    // Find, after both views' own code: it drives Monaco through code-view.js's
+    // editor and splices through reading-edits.js's edit path.
+    include_str!("assets/shell/find-bar.js"),
     include_str!("assets/shell/render-document.js"),
     include_str!("assets/shell/glossary.js"),
     include_str!("assets/shell/decorate.js"),

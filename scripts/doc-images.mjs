@@ -26,10 +26,18 @@ function markdownFiles(dir) {
   return out;
 }
 
+// A picture named inside code — a fenced block or a `span` — is the shape of a
+// line someone writes, not a file this repo has. The theming page shows an author
+// how to add a preview image that way, and counting those as missing hides the real
+// number behind noise nobody can clear.
+function withoutCode(text) {
+  return text.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
+}
+
 const pages = ['README.md', ...markdownFiles('docs')];
 const references = [];
 for (const page of pages) {
-  const text = readFileSync(join(root, page), 'utf8');
+  const text = withoutCode(readFileSync(join(root, page), 'utf8'));
   // Markdown images, plus the `<img src>` a raw-HTML block can carry.
   const found = [
     ...text.matchAll(/!\[[^\]]*\]\(\s*([^)\s]+)/g),

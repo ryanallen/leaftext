@@ -1,4 +1,4 @@
-use crate::store::{DocumentGraph, SearchHit, Vault};
+use crate::store::{DocumentGraph, SearchResults, Vault};
 use crate::*;
 
 /// `f(<state>);` — the state written out as a JavaScript value.
@@ -70,11 +70,14 @@ pub fn graph_script(graph: &DocumentGraph) -> String {
 }
 
 /// Ranked search results. The query is echoed so the page can drop an answer to
-/// a query the field has already moved on from.
-pub fn search_results_script(query: &str, hits: &[SearchHit]) -> String {
+/// a query the field has already moved on from. `truncated` is the list being cut
+/// at the hit cap — a different fact from the graph's, which is the vault walk
+/// hitting its document cap.
+pub fn search_results_script(query: &str, results: &SearchResults) -> String {
     let payload = serde_json::json!({
         "query": query,
-        "hits": hits,
+        "hits": results.hits,
+        "truncated": results.truncated,
         "error": serde_json::Value::Null,
     });
     format!("window.leafSetSearchResults({payload});")

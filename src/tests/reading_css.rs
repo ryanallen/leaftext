@@ -399,6 +399,34 @@ fn reading_mode_css_offsets_document_by_measured_scroll_origin() {
 }
 
 #[test]
+fn find_matches_are_painted_without_touching_the_document() {
+    let css = reading_mode_css();
+
+    // Both names twice over: the reading view paints them through the CSS Custom
+    // Highlight API (no DOM mutation, no reflow) and the source view as Monaco
+    // decorations, which are ordinary classes.
+    for expected in [
+        "::highlight(leaf-find-match),\n.leaf-find-match {",
+        "::highlight(leaf-find-current),\n.leaf-find-current {",
+        // The match wash is the accent a search hit already takes in the pane; the
+        // one you are on is the primary, so stepping is a moving mark.
+        "background-color: color-mix(in srgb, var(--lt-accent) 45%, transparent);",
+        "background-color: color-mix(in srgb, var(--lt-primary) 45%, transparent);",
+    ] {
+        assert_contains(css, expected);
+    }
+
+    // The bar holds its place while the document scrolls under it.
+    let bar_start = css
+        .find(".find-bar {")
+        .expect("reading-mode CSS should define .find-bar");
+    let bar_rule =
+        &css[bar_start..bar_start + css[bar_start..].find('}').expect(".find-bar closes")];
+    assert_contains(bar_rule, "grid-column: 2;");
+    assert_contains(bar_rule, "grid-row: 1;");
+}
+
+#[test]
 fn reading_mode_css_pins_reader_to_its_grid_cell() {
     // The reader must be explicitly placed in the library-shell grid. Auto-placed,
     // unhiding the .reader-loading overlay (explicitly at column 2, row 1) evicts

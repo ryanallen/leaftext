@@ -27,8 +27,107 @@ fn labels(graph: &crate::store::DocumentGraph) -> Vec<String> {
     names
 }
 
-fn titles(hits: &[crate::store::SearchHit]) -> Vec<String> {
-    hits.iter().map(|hit| hit.title.clone()).collect()
+fn titles(results: &crate::store::SearchResults) -> Vec<String> {
+    results.hits.iter().map(|hit| hit.title.clone()).collect()
+}
+
+/// A vault the size of the cap, built in memory: the read is not what is being
+/// timed, the scan is.
+fn synthetic_corpus(count: usize) -> VaultCorpus {
+    const FILLER: &str = "The path is long and the notes are many. Sitting still is a practice of attention and of patience, and the page says so again. ";
+    let documents = (0..count)
+        .map(|index| {
+            let mut text = format!("# Note {index}\n\n");
+            while text.len() < 8 * 1024 {
+                text.push_str(FILLER);
+                // Most of the vault must not match, or the timing measures
+                // ranking rather than scanning.
+                if index % 7 == 0 {
+                    text.push_str("A talk on dharma.\n\n## Practice\n\n");
+                }
+            }
+            CorpusDocument {
+                path: format!("/vault/note-{index}.md"),
+                label: format!("note-{index}"),
+                text,
+            }
+        })
+        .collect();
+    VaultCorpus {
+        root: PathBuf::from("/vault"),
+        documents,
+        truncated: false,
+    }
+}
+
+/// Phase 0 of `../docs/refactor/search.md`: what one keystroke costs. Ignored
+/// because it is a measurement and machines differ — run it with
+/// `cargo test --release -- --ignored --nocapture search_over_a_full_vault`.
+///
+/// Run it **twice and take the second**: the run straight after a build reads more
+/// than twice the time for the same code, and no amount of warm-up inside the test
+/// changes that.
+#[test]
+#[ignore]
+fn search_over_a_full_vault_is_timed_not_guessed() {
+    let corpus = synthetic_corpus(3_000);
+    let bytes: usize = corpus.documents.iter().map(|d| d.text.len()).sum();
+    println!(
+        "corpus: {} documents, {:.1} MB",
+        corpus.documents.len(),
+        bytes as f64 / (1024.0 * 1024.0)
+    );
+
+    // The best of three, not one run: this machine's spread between runs of the
+    // same code is wider than any of the changes being measured, and the first pass
+    // pays for faulting 24 MB in. The fastest pass is the one where nothing else
+    // got in the way.
+    let best = |query: &str, within: Option<&[String]>| {
+        (0..3)
+            .map(|_| {
+                let started = std::time::Instant::now();
+                let results = corpus
+                    .search_until(query, within, &|| false)
+                    .expect("nothing overtook it");
+                (started.elapsed(), results)
+            })
+            .min_by_key(|(elapsed, _)| *elapsed)
+            .expect("three passes")
+    };
+
+    // Typing a word, one keystroke at a time, is the real load — timed twice: as
+    // six searches of the whole vault, and the way the app does it, each keystroke
+    // scanning only what the one before it matched.
+    let word = "dharma";
+    let mut whole = std::time::Duration::ZERO;
+    let mut narrowed = std::time::Duration::ZERO;
+    let mut matched: Option<Vec<String>> = None;
+    for length in 1..=word.len() {
+        let query = &word[..length];
+        let (full, results) = best(query, None);
+        let (short, _) = best(query, matched.as_deref());
+        whole += full;
+        narrowed += short;
+        println!(
+            "  {:>8} -> {:>3} hits, {:>7.1} ms over the vault, {:>7.1} ms narrowed",
+            query,
+            results.hits.len(),
+            full.as_secs_f64() * 1000.0,
+            short.as_secs_f64() * 1000.0
+        );
+        matched = Some(results.matched);
+    }
+    println!(
+        "typing \"{word}\": {:.1} ms over the vault, {:.1} ms narrowed",
+        whole.as_secs_f64() * 1000.0,
+        narrowed.as_secs_f64() * 1000.0
+    );
+
+    // The non-ASCII query takes its own path, so it is timed on its own.
+    println!(
+        "non-ASCII query: {:.1} ms",
+        best("é", None).0.as_secs_f64() * 1000.0
+    );
 }
 
 #[test]
@@ -104,13 +203,17 @@ fn the_same_read_answers_search() {
     let corpus = VaultCorpus::read(&root);
 
     let hits = corpus.search("dharma");
-    // A named file outranks a body match.
-    assert_eq!(titles(&hits), vec!["dharma", "opening"]);
-    assert!(hits[0].score > hits[1].score);
+    // A named file outranks a body match, and a file with the word twice gets a
+    // row for each place it is, not one row standing for both.
+    assert_eq!(titles(&hits), vec!["dharma", "opening", "opening"]);
+    assert!(hits.hits[0].score > hits.hits[1].score);
+    assert!(!hits.truncated);
+    let places: Vec<u32> = hits.hits.iter().map(|hit| hit.start_line).collect();
+    assert_eq!(places, vec![1, 3, 7]);
 
     // The body hit points at the line it matched and the heading above it, so
     // clicking the result lands in the right section.
-    let opening = &hits[1];
+    let opening = &hits.hits[1];
     assert_eq!(opening.anchor.as_deref(), Some("opening"));
     assert_eq!(opening.start_line, 3);
     // The snippet marks the match with the control characters the page turns
@@ -120,9 +223,13 @@ fn the_same_read_answers_search() {
     assert!(!opening.snippet.contains('\n'));
 
     // Every term has to land somewhere, in the name or the text.
-    assert_eq!(titles(&corpus.search("dharma practice")), vec!["opening"]);
-    assert!(corpus.search("dharma carpentry").is_empty());
-    assert!(corpus.search("   ").is_empty());
+    // Both terms land in one document, and each place they land is a row.
+    assert_eq!(
+        titles(&corpus.search("dharma practice")),
+        vec!["opening", "opening", "opening"]
+    );
+    assert!(corpus.search("dharma carpentry").hits.is_empty());
+    assert!(corpus.search("   ").hits.is_empty());
     // Case does not matter on either side.
     assert_eq!(titles(&corpus.search("DHARMA")), titles(&hits));
 
@@ -130,12 +237,171 @@ fn the_same_read_answers_search() {
     // document's first.
     let deep = corpus
         .search("daily")
+        .hits
         .into_iter()
         .next()
         .expect("a hit for the second section");
     assert_eq!(deep.anchor.as_deref(), Some("practice"));
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn a_snippet_is_cut_from_the_real_text_not_a_lowercased_copy() {
+    let dir = corpus_dir("folding");
+    let root = dir.join("vault");
+    // İ is two bytes and lowercases to three, so every offset taken from a
+    // lowercased copy is wrong from here down — a snippet showing the wrong
+    // window, a wrong line, and a panic when the shift lands mid-character.
+    write(
+        &root.join("notes.md"),
+        "# Notes\n\nİstanbul İstanbul İstanbul.\n\nThe dharma talk was on Tuesday.\n",
+    );
+    // ẞ goes the other way: three bytes down to two.
+    write(
+        &root.join("other.md"),
+        "# Other\n\nSTRAẞE STRAẞE STRAẞE\n\nAnother dharma line.\n",
+    );
+
+    let corpus = VaultCorpus::read(&root);
+    for hit in &corpus.search("dharma").hits {
+        assert!(
+            hit.snippet.contains("dharma"),
+            "snippet cut around the wrong offset: {}",
+            hit.snippet
+        );
+        assert_eq!(hit.start_line, 5);
+    }
+
+    // Case still does not matter, on either path: an ASCII query over text that
+    // is not ASCII, and a query that is not ASCII itself.
+    assert_eq!(titles(&corpus.search("TUESDAY")), vec!["notes"]);
+    assert_eq!(
+        titles(&corpus.search("straße")),
+        vec!["other", "other", "other"]
+    );
+    let folded = corpus.search("İSTANBUL");
+    assert_eq!(titles(&folded), vec!["notes", "notes", "notes"]);
+    // Three appearances, three rows, each pointing at its own one.
+    let offsets: Vec<&str> = folded.hits.iter().map(|hit| hit.snippet.as_str()).collect();
+    assert_eq!(offsets.len(), 3);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn a_capped_result_set_says_it_was_capped() {
+    let corpus = synthetic_corpus(60);
+    // Every document carries the term, so the list is cut and has to say so. The
+    // cap is on files, not rows: fifty files, up to three rows each.
+    let broad = corpus.search("note");
+    assert!(broad.truncated);
+    let files: std::collections::BTreeSet<&str> =
+        broad.hits.iter().map(|hit| hit.abs_path.as_str()).collect();
+    assert_eq!(files.len(), 50);
+    assert!(broad.hits.len() <= 150);
+
+    // Exactly at the cap is not cut, and nor is anything under it.
+    let exact = synthetic_corpus(50).search("note");
+    assert!(!exact.truncated);
+    assert!(!synthetic_corpus(3).search("note").truncated);
+}
+
+#[test]
+fn a_longer_query_scans_only_what_the_shorter_one_matched() {
+    let dir = corpus_dir("narrowing");
+    let root = dir.join("vault");
+    write(&root.join("one.md"), "# One\n\nA talk on dharma.\n");
+    write(
+        &root.join("two.md"),
+        "# Two\n\nCarpentry, and dharma too.\n",
+    );
+    write(&root.join("three.md"), "# Three\n\nNothing of the sort.\n");
+    let mut corpus = VaultCorpus::read(&root);
+
+    let wide = corpus.search("dhar");
+    let mut matched = wide.matched.clone();
+    matched.sort();
+    assert_eq!(matched.len(), 2);
+
+    // The same answer, off two documents instead of three.
+    let narrowed = corpus
+        .search_until("dharma", Some(&wide.matched), &|| false)
+        .expect("nothing overtook it");
+    assert_eq!(titles(&narrowed), titles(&corpus.search("dharma")));
+
+    // A document outside the set cannot be found, however well it matches — which
+    // is why the caller may only narrow while the vault's text has not moved. The
+    // app bumps a generation on every patch, and that is what refuses the narrowing.
+    write(&root.join("four.md"), "# Four\n\nMore dharma still.\n");
+    assert!(corpus.refresh(&root.join("four.md")));
+    let stale = corpus
+        .search_until("dharma", Some(&wide.matched), &|| false)
+        .expect("nothing overtook it");
+    assert!(!titles(&stale).contains(&"four".to_string()));
+    // Scanned whole, the new document is there.
+    assert!(titles(&corpus.search("dharma")).contains(&"four".to_string()));
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn ranking_puts_the_file_you_named_first_and_a_long_file_in_its_place() {
+    let dir = corpus_dir("ranking");
+    let root = dir.join("vault");
+    // The name tiers, in order: the whole name, the start of it, the start of a
+    // word inside it, and buried in one.
+    write(&root.join("dharma.md"), "# One\n\nnothing\n");
+    write(&root.join("dharma-talks.md"), "# Two\n\nnothing\n");
+    write(&root.join("early dharma.md"), "# Three\n\nnothing\n");
+    write(&root.join("saddharmapundarika.md"), "# Four\n\nnothing\n");
+    let corpus = VaultCorpus::read(&root);
+    assert_eq!(
+        titles(&corpus.search("dharma")),
+        vec![
+            "dharma",
+            "dharma-talks",
+            "early dharma",
+            "saddharmapundarika"
+        ]
+    );
+
+    // A folder counts, and counts for less than the file's own name.
+    let by_folder = corpus_dir("ranking-folder");
+    let root = by_folder.join("vault");
+    write(
+        &root.join("dharma").join("monday.md"),
+        "# Monday\n\nnothing\n",
+    );
+    write(
+        &root.join("notes").join("dharma.md"),
+        "# Notes\n\nnothing\n",
+    );
+    let corpus = VaultCorpus::read(&root);
+    assert_eq!(titles(&corpus.search("dharma")), vec!["dharma", "monday"]);
+
+    // A one-page note beats a long file that only mentions the word more often,
+    // and a match in a heading beats the same word in a paragraph.
+    let by_size = corpus_dir("ranking-size");
+    let root = by_size.join("vault");
+    write(&root.join("short.md"), "# Short\n\nA talk on dharma.\n");
+    write(
+        &root.join("long.md"),
+        &format!(
+            "# Long\n\n{}\n",
+            "Filler about dharma and more filler. ".repeat(600)
+        ),
+    );
+    write(&root.join("headed.md"), "# On dharma\n\nNothing else.\n");
+    let corpus = VaultCorpus::read(&root);
+    assert_eq!(
+        titles(&corpus.search("dharma")),
+        vec!["headed", "short", "long", "long", "long"]
+    );
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+    fs::remove_dir_all(&by_folder).expect("test directory is removed");
+    fs::remove_dir_all(&by_size).expect("test directory is removed");
 }
 
 #[test]
@@ -154,7 +420,7 @@ fn the_watcher_patches_one_file_rather_than_re_reading_the_vault() {
     write(&root.join("b.md"), "# B\n\nRewritten wording.\n");
     assert!(corpus.refresh(&root.join("b.md")));
     assert_eq!(corpus.documents.len(), 2);
-    assert!(corpus.search("original").is_empty());
+    assert!(corpus.search("original").hits.is_empty());
     assert_eq!(titles(&corpus.search("rewritten")), vec!["b"]);
 
     // Added: a file that was not there at read time joins.
@@ -170,7 +436,7 @@ fn the_watcher_patches_one_file_rather_than_re_reading_the_vault() {
         vec!["a", "c"]
     );
     assert!(corpus.graph(&GraphRequest::default()).edges.is_empty());
-    assert!(corpus.search("rewritten").is_empty());
+    assert!(corpus.search("rewritten").hits.is_empty());
 
     // Something outside the vault is not the vault's business.
     write(&dir.join("outside.md"), "# Outside\n");

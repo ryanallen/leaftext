@@ -31,11 +31,16 @@ pub(crate) struct VaultState {
     /// the thread that answers the window, so each goes to a worker holding a
     /// cheap clone of this.
     pub(crate) corpus: Option<Arc<VaultCorpus>>,
+    /// Bumped whenever that text changes — read, patched by the watcher, or
+    /// dropped on a vault switch. It is what tells a kept answer it is still true.
+    pub(crate) corpus_generation: u64,
     /// A read is in flight, so a second request waits rather than starting one.
     pub(crate) corpus_loading: bool,
     /// What asked for the corpus while it was being read.
     pub(crate) pending_graph: Option<GraphRequest>,
     pub(crate) pending_search: Option<String>,
+    /// The search thread and its query counter — see `vault_search.rs`.
+    pub(crate) search: VaultSearch,
     /// The last graph asked for, so an edit on disk can redraw it.
     pub(crate) last_graph: Option<PendingGraph>,
     /// Whether the page is showing the graph. Transient, and the page owns it —
@@ -69,9 +74,11 @@ impl VaultState {
             root,
             folder: String::new(),
             corpus: None,
+            corpus_generation: 0,
             corpus_loading: false,
             pending_graph: None,
             pending_search: None,
+            search: VaultSearch::default(),
             last_graph: None,
             graph_open: false,
         }
@@ -81,9 +88,12 @@ impl VaultState {
     /// root moves: what was read is about somewhere else now.
     pub(crate) fn drop_corpus(&mut self) {
         self.corpus = None;
+        self.corpus_generation += 1;
         self.pending_graph = None;
         self.pending_search = None;
         self.last_graph = None;
+        // A scan of the vault we just left is work nobody is waiting on.
+        self.search.cancel();
     }
 
     pub(crate) fn vaults(&self) -> Vec<Vault> {
@@ -378,22 +388,6 @@ pub(crate) fn request_link_graph(
     }
 }
 
-/// Search the vault's text. Same wait-for-the-read shape as the graph, the same
-/// one read behind both, and the same worker.
-pub(crate) fn request_vault_search(
-    state: &mut VaultState,
-    proxy: &EventLoopProxy<UserEvent>,
-    query: String,
-) {
-    match state.corpus.clone() {
-        Some(corpus) => run_search_off_thread(state, proxy, corpus, query),
-        None => {
-            state.pending_search = Some(query);
-            read_corpus(state, proxy);
-        }
-    }
-}
-
 fn build_vault_graph_off_thread(
     proxy: &EventLoopProxy<UserEvent>,
     root: PathBuf,
@@ -423,19 +417,6 @@ fn build_document_graph_off_thread(
     });
 }
 
-fn run_search_off_thread(
-    state: &VaultState,
-    proxy: &EventLoopProxy<UserEvent>,
-    corpus: Arc<VaultCorpus>,
-    query: String,
-) {
-    let scope = state.root.clone();
-    off_loop(proxy, move || {
-        let hits = corpus.search(&query);
-        UserEvent::SearchReady { scope, query, hits }
-    });
-}
-
 /// Paint a finished graph, unless what it is a map of moved while it was building
 /// — the vault switched, or the reader went to another document that a different
 /// source answers for. Switching documents *inside* one vault is not that: both
@@ -451,25 +432,6 @@ pub(crate) fn deliver_graph(
         return;
     }
     run_page_script(webview, &graph_script(&graph), "Failed to draw the graph");
-}
-
-/// Same for a finished search. The page also drops answers to queries the field
-/// has moved on from, so a slow one is harmless twice over.
-pub(crate) fn deliver_search(
-    state: &VaultState,
-    webview: Option<&WebView>,
-    scope: Option<PathBuf>,
-    query: &str,
-    hits: Vec<SearchHit>,
-) {
-    if scope != state.root {
-        return;
-    }
-    run_page_script(
-        webview,
-        &search_results_script(query, &hits),
-        "Failed to show search results",
-    );
 }
 
 /// Start the one read, unless it is already running. The code view's typing
@@ -502,11 +464,14 @@ pub(crate) fn deliver_corpus(
     }
     let corpus = Arc::new(corpus);
     state.corpus = Some(Arc::clone(&corpus));
+    state.corpus_generation += 1;
     if let Some(request) = state.pending_graph.take() {
         build_vault_graph_off_thread(proxy, corpus.root.clone(), Arc::clone(&corpus), request);
     }
     if let Some(query) = state.pending_search.take() {
-        run_search_off_thread(state, proxy, corpus, query);
+        // The parked query is the first one over this text, so there is nothing to
+        // narrow to.
+        run_search(state, proxy, corpus, query, None);
     }
 }
 
@@ -570,7 +535,12 @@ fn patch_vault_corpus(state: &mut VaultState, changed: &Path) -> bool {
     }
     // Cheap unless a worker is mid-build against this exact corpus, in which
     // case it clones rather than mutate out from under it.
-    Arc::make_mut(corpus).refresh(changed)
+    let moved = Arc::make_mut(corpus).refresh(changed);
+    if moved {
+        // A kept search answer describes text that has just changed.
+        state.corpus_generation += 1;
+    }
+    moved
 }
 
 fn empty_graph() -> DocumentGraph {

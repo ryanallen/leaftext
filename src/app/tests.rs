@@ -288,6 +288,105 @@ fn an_external_file_in_the_shown_folder_refreshes_the_pane_for_every_format() {
 }
 
 #[test]
+fn an_answer_to_a_query_the_field_moved_past_never_reaches_the_page() {
+    let mut state = VaultState::load(None);
+
+    // Each keystroke claims a number, and only the newest one is wanted.
+    let first = state.search.generation.claim();
+    let second = state.search.generation.claim();
+    assert!(!state.search.generation.is_current(first));
+    assert!(state.search.generation.is_current(second));
+
+    // A running scan reads the same number between documents, so it stops
+    // instead of finishing an answer nobody will read.
+    let corpus = VaultCorpus {
+        root: PathBuf::from("/vault"),
+        documents: vec![CorpusDocument {
+            path: "/vault/note.md".to_string(),
+            label: "note".to_string(),
+            text: "A talk on dharma.".to_string(),
+        }],
+        truncated: false,
+    };
+    let generation = state.search.generation.clone();
+    assert!(corpus
+        .search_until("dharma", None, &|| !generation.is_current(second))
+        .is_some());
+    assert!(corpus
+        .search_until("dharma", None, &|| !generation.is_current(first))
+        .is_none());
+
+    // Switching vaults abandons the scan with nothing taking its place, so the
+    // answer about the vault we left is dropped too.
+    state.drop_corpus();
+    assert!(!state.search.generation.is_current(second));
+}
+
+#[test]
+fn the_same_query_over_unchanged_text_is_answered_from_the_last_one() {
+    let mut state = VaultState::load(None);
+    let answer = SearchResults {
+        hits: vec![leaftext::store::SearchHit {
+            abs_path: "/vault/note.md".to_string(),
+            title: "note".to_string(),
+            start_line: 3,
+            end_line: 3,
+            anchor: None,
+            snippet: "a talk on dharma".to_string(),
+            score: 1.0,
+        }],
+        truncated: false,
+        matched: vec!["/vault/note.md".to_string()],
+    };
+    let corpus = state.corpus_generation;
+    state.search.remember("dharma", corpus, answer);
+
+    // The pane re-runs its search on every folder move, and the same query over
+    // the same text has the same answer.
+    assert!(state.search.remembered("dharma", corpus).is_some());
+    // Another query is another question.
+    assert!(state.search.remembered("dharmas", corpus).is_none());
+    // Text that has moved on since is not what the kept answer describes: the
+    // watcher patching the vault and a vault switch both count.
+    assert!(state.search.remembered("dharma", corpus + 1).is_none());
+    state.drop_corpus();
+    assert!(state
+        .search
+        .remembered("dharma", state.corpus_generation)
+        .is_none());
+}
+
+#[test]
+fn one_more_letter_scans_what_the_last_letter_matched() {
+    let mut state = VaultState::load(None);
+    let answer = SearchResults {
+        hits: Vec::new(),
+        truncated: false,
+        matched: vec!["/vault/one.md".to_string(), "/vault/two.md".to_string()],
+    };
+    let corpus = state.corpus_generation;
+    state.search.remember("dhar", corpus, answer);
+
+    // Typing on the end can only shrink the set, so the next keystroke reads those
+    // two documents rather than the vault.
+    let within = state
+        .search
+        .narrowing("dharma", corpus)
+        .expect("a longer query narrows to the shorter one's matches");
+    assert_eq!(within.len(), 2);
+
+    // Everything else is a different question: the same query (already answered
+    // from the kept results), a letter deleted, a different word, another case.
+    assert!(state.search.narrowing("dhar", corpus).is_none());
+    assert!(state.search.narrowing("dha", corpus).is_none());
+    assert!(state.search.narrowing("sutra", corpus).is_none());
+    assert!(state.search.narrowing("Dharma", corpus).is_none());
+    // And text that moved under it is not narrowed at all — a file saved
+    // mid-typing would otherwise be invisible until the query changed.
+    assert!(state.search.narrowing("dharma", corpus + 1).is_none());
+}
+
+#[test]
 fn the_vaults_text_is_patched_for_every_format_the_watcher_reports() {
     let dir = std::env::temp_dir().join(format!(
         "leaf-corpus-patch-{}",

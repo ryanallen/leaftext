@@ -10,16 +10,19 @@ function searchHitHtml(hit) {
   const path = (hit && hit.absPath) || '';
   const title = (hit && hit.title) || path;
   const anchor = (hit && hit.anchor) || '';
-  return `<button type="button" class="library-hit" data-open-path="${escapeAttr(path)}" data-anchor="${escapeAttr(anchor)}" title="${escapeAttr(path)}"><span class="library-hit-title">${escapeText(stripDocumentExt(title) || title)}</span><span class="library-hit-snippet">${highlightSnippet(hit && hit.snippet)}</span></button>`;
+  // The line carries the row to the match itself; the anchor is the fallback.
+  const line = (hit && hit.startLine) || 0;
+  return `<button type="button" class="library-hit" data-open-path="${escapeAttr(path)}" data-anchor="${escapeAttr(anchor)}" data-line="${escapeAttr(String(line))}" title="${escapeAttr(path)}"><span class="library-hit-title">${escapeText(stripDocumentExt(title) || title)}</span><span class="library-hit-snippet">${highlightSnippet(hit && hit.snippet)}</span></button>`;
 }
 function bindSearchHits() {
   librarySearchResults.querySelectorAll('[data-open-path]').forEach((button) => {
     button.addEventListener('click', () => {
       const path = button.dataset.openPath;
       const anchor = button.dataset.anchor || '';
-      // Open (or focus) the file, then scroll to the matching heading once it
-      // renders. Files with no heading above the match open at the top.
-      pendingSearchJump = anchor ? { path, anchor } : null;
+      const line = Number(button.dataset.line) || 0;
+      // Open (or focus) the file, then scroll to the match once it renders — to
+      // the line it is on, or the heading above it if the line cannot be placed.
+      pendingSearchJump = anchor || line ? { path, anchor, line } : null;
       // A hit is a place in the text, so it is worth leaving the map for; the
       // anchor it carries has nothing to scroll to on a canvas.
       graphExitPending = true;
@@ -52,7 +55,14 @@ function renderLibrarySearch() {
     librarySearchResults.innerHTML = `<p class="library-empty">No matches.</p>`;
     return;
   }
-  const countLine = `<p class="library-results-count">${escapeText(formatCount(hits.length))} results</p>`;
+  // A row is a match and one file can hold three, so a cut list says what it was
+  // cut to in files, counted off the rows rather than kept as a second copy of the
+  // host's cap.
+  const files = new Set(hits.map((hit) => (hit && hit.absPath) || '')).size;
+  const count = librarySearchTruncated
+    ? `${formatCount(hits.length)} results in the first ${formatCount(files)} files`
+    : `${formatCount(hits.length)} results`;
+  const countLine = `<p class="library-results-count">${escapeText(count)}</p>`;
   librarySearchResults.innerHTML = countLine + hits.map(searchHitHtml).join('');
   bindSearchHits();
 }
@@ -108,9 +118,11 @@ window.leafSetSearchResults = (payload) => {
   if (data.error) {
     librarySearchError = data.error;
     librarySearchHits = null;
+    librarySearchTruncated = false;
   } else {
     librarySearchError = null;
     librarySearchHits = Array.isArray(data.hits) ? data.hits : [];
+    librarySearchTruncated = !!data.truncated;
   }
   renderLibrarySearch();
 };

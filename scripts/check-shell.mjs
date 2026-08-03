@@ -476,6 +476,103 @@ if (booted) {
     }
   });
 
+  // Find drives two engines from one field, and both of them can write to a file.
+  // The pattern is what decides which text is a match; the block rewrite is what
+  // turns a match on the page into bytes spliced into the buffer.
+  check('the find bar builds the pattern its toggles promise', () => {
+    const { findPattern, toggleFindFlag } = booted;
+    const field = booted.document.getElementById('findInput');
+    const matches = (query, text) => {
+      field.value = query;
+      const pattern = findPattern(true);
+      return !!pattern && pattern.test(text);
+    };
+
+    // A plain query is literal text: a period finds a period.
+    if (!matches('a.b', 'a.b')) throw new Error('a plain query does not find itself');
+    if (!matches('a.b', 'a.b')) throw new Error('a plain query is being read as an expression');
+    // And case does not matter until it is asked to.
+    if (!matches('dharma', 'DHARMA')) throw new Error('find is case-sensitive by default');
+    toggleFindFlag('matchCase');
+    if (matches('dharma', 'DHARMA')) throw new Error('match case did not take');
+    toggleFindFlag('matchCase');
+
+    toggleFindFlag('wholeWord');
+    if (matches('dharma', 'dharmakaya')) throw new Error('whole word matched inside a longer word');
+    if (!matches('dharma', 'the dharma talk')) throw new Error('whole word lost a real word');
+    toggleFindFlag('wholeWord');
+
+    toggleFindFlag('regex');
+    if (!matches('dhar+ma', 'dharrrma')) throw new Error('the expression toggle did not take');
+    // A half-typed expression is said to be bad, not answered with silence.
+    field.value = '(unclosed';
+    if (findPattern(true) !== null) throw new Error('an unparseable expression was accepted');
+    if (booted.findCountText() !== 'Bad expression') throw new Error('a bad expression is not named');
+    toggleFindFlag('regex');
+    field.value = '';
+  });
+
+  check('a replace in the reading view rewrites the block, or refuses it whole', () => {
+    const { findRewriteBlock, toggleFindFlag } = booted;
+    const field = booted.document.getElementById('findInput');
+    const source = '# Notes\n\nThe dharma talk, and the dharma book.\n';
+    booted.window.leafBlocksResynced({ source });
+    // The paragraph's own byte range, as the reading view stamps it on the block.
+    const start = source.indexOf('The');
+    const end = source.length - 1;
+    field.value = 'dharma';
+
+    // Both occurrences the page found in this block.
+    const both = findRewriteBlock({ start, end, ranks: [0, 1], total: 2 }, 'sutra');
+    if (both !== 'The sutra talk, and the sutra book.') throw new Error(`replace all rewrote: ${both}`);
+    // Only the one the cursor is on.
+    const second = findRewriteBlock({ start, end, ranks: [1], total: 2 }, 'sutra');
+    if (second !== 'The dharma talk, and the sutra book.') throw new Error(`one replace rewrote: ${second}`);
+    // The page shows a match the block's source does not hold in one piece —
+    // formatting split it — so nothing is spliced rather than the wrong thing.
+    if (findRewriteBlock({ start, end, ranks: [0], total: 3 }, 'sutra') !== null) {
+      throw new Error('a match split by formatting was replaced anyway');
+    }
+    toggleFindFlag('regex');
+    field.value = '(unclosed';
+    if (findRewriteBlock({ start, end, ranks: [0], total: 1 }, 'sutra') !== null) {
+      throw new Error('a bad expression was allowed to rewrite a block');
+    }
+    toggleFindFlag('regex');
+    field.value = '';
+  });
+
+  check('a locked view finds and refuses to replace', () => {
+    const { replaceInReading, replaceInSource } = booted;
+    const posted = [];
+    const growls = [];
+    booted.ipc = { postMessage: (message) => posted.push(message) };
+    booted.leafToast = (message) => growls.push(message);
+
+    // Both padlocks are down on a fresh page: the refusal is a growl saying so,
+    // and nothing is written.
+    replaceInReading(false);
+    replaceInSource(true);
+    if (growls.length !== 2) throw new Error(`a locked view said: ${JSON.stringify(growls)}`);
+    if (!growls.every((growl) => growl.includes('padlock'))) {
+      throw new Error(`a refusal did not name the padlock: ${JSON.stringify(growls)}`);
+    }
+    if (posted.some((message) => message.includes('editBlock'))) {
+      throw new Error(`a locked view wrote: ${posted.join(', ')}`);
+    }
+
+    // Unlocked, the same calls fall through to "there is nothing to replace" and
+    // say nothing — which is what proves the padlock is what refused above.
+    growls.length = 0;
+    booted.setReadingUnlocked(true);
+    booted.setCodeUnlocked(true);
+    replaceInReading(false);
+    replaceInSource(true);
+    if (growls.length) throw new Error(`an unlocked view still refused: ${JSON.stringify(growls)}`);
+    booted.setReadingUnlocked(false);
+    booted.setCodeUnlocked(false);
+  });
+
   // JSON has no bundled colorizer, so its grammar is ours. Monarch compiles a
   // grammar only when a file is first opened, so a bad rule is otherwise a wrongly
   // colored code view on somebody's machine and nothing before it. Monaco cannot

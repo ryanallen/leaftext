@@ -241,6 +241,8 @@ let librarySearchTimer = 0;
 let librarySearchHits = null;
 let librarySearchError = null;
 let librarySearchLoading = false;
+// Whether the host cut the list at its cap, so the count can say so.
+let librarySearchTruncated = false;
 // Above this many paths the scope is dropped and the query goes out unscoped
 // (see librarySearchScopePaths).
 const SEARCH_SCOPE_CAP = 1500;

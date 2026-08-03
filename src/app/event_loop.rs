@@ -214,8 +214,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     graph,
                 );
             }
-            Event::UserEvent(UserEvent::SearchReady { scope, query, hits }) => {
-                deliver_search(&vault_state, reader.page(), scope, &query, hits);
+            Event::UserEvent(UserEvent::SearchReady {
+                scope,
+                query,
+                results,
+            }) => {
+                deliver_search(&mut vault_state, reader.page(), scope, &query, results);
             }
             Event::UserEvent(UserEvent::PagerLoaded { path, html }) => {
                 let is_active_document = reader

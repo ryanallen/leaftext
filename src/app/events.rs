@@ -56,7 +56,7 @@ pub(crate) enum UserEvent {
     SearchReady {
         scope: Option<PathBuf>,
         query: String,
-        hits: Vec<SearchHit>,
+        results: SearchResults,
     },
     /// The background pager scan completed for a document path.
     PagerLoaded { path: PathBuf, html: String },

@@ -525,6 +525,76 @@ fn app_shell_reader_editor_round_trips_safe_inline_html() {
 }
 
 #[test]
+fn one_find_bar_serves_both_views_and_replaces_through_the_source() {
+    let html = app_shell_page();
+
+    // The bar, its field and counter, the three how-to-match toggles and the
+    // scope one, both steps, and the replace row.
+    for expected in [
+        r#"<div id="findBar" class="find-bar" role="search" aria-label="Find in this document" hidden>"#,
+        r#"<input id="findInput" class="find-input" type="text""#,
+        r#"<span id="findCount" class="find-count" aria-live="polite">"#,
+        r#"title="Match case (Alt+C)">Aa</button>"#,
+        r#"title="Whole word (Alt+W)">ab|</button>"#,
+        r#"title="Regular expression (Alt+R)">.*</button>"#,
+        r#"title="Find in selection (Alt+L)""#,
+        r#"title="Previous match (Shift+Enter)""#,
+        r#"title="Next match (Enter)""#,
+        r#"<div class="find-row find-replace-row" id="findReplaceRow" hidden>"#,
+        r#"<button type="button" id="findSelectAll" class="find-action""#,
+    ] {
+        assert_contains(&html, expected);
+    }
+
+    // One keyboard path, and it reaches both views: Ctrl+F opens, Ctrl+H opens on
+    // the replace row, Escape closes, Enter steps.
+    for expected in [
+        "(key === 'f' || key === 'h')",
+        "openFindBar({ replacing: key === 'h' });",
+        "closeFindBar();",
+        "else findStep(event.shiftKey ? -1 : 1);",
+        "return codeViewActive && !!monacoEditor;",
+    ] {
+        assert_contains(&html, expected);
+    }
+
+    // The source view uses the editor's own searching, and nothing was added to
+    // the vendored bundle for it.
+    for expected in [
+        "const found = model.findMatches(",
+        "monacoEditor.createDecorationsCollection(decorations);",
+        "monacoEditor.executeEdits('leaf-find', edits);",
+        "monacoEditor.setSelections(",
+    ] {
+        assert_contains(&html, expected);
+    }
+
+    // The reading view draws with the highlight API rather than wrapping matches
+    // in tags, which the editor would serialize back into the file.
+    assert_contains(&html, "CSS.highlights.set(FIND_HIGHLIGHT_ALL, all);");
+
+    // And a replace there is one splice over the whole document, so one undo puts
+    // every replacement back. One send, and its range is the whole buffer.
+    assert_contains(
+        &html,
+        "sendEditCommand({ command: 'editBlock', start: 0, end: total, text: next });",
+    );
+    let reading_replace = html
+        .split("function replaceInReading(all) {")
+        .nth(1)
+        .expect("the reading view's replace is in the script");
+    let body = reading_replace
+        .split("\nfunction ")
+        .next()
+        .expect("the function has an end");
+    assert_eq!(
+        body.matches("sendEditCommand(").count(),
+        1,
+        "replace all in the reading view must write one splice, not one per match"
+    );
+}
+
+#[test]
 fn app_shell_save_success_clears_reader_undo_state() {
     let html = app_shell_page();
 

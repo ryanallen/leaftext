@@ -11,7 +11,7 @@
 use crate::read_source;
 use crate::store::{
     document_links, normalize_name_key, path_to_string, url_host_label, DocumentGraph, GraphEdge,
-    GraphNode, GraphRequest, SearchHit,
+    GraphNode, GraphRequest, SearchHit, SearchResults,
 };
 use crate::unique_heading_slug;
 
@@ -43,6 +43,39 @@ const MAX_DEPTH: usize = 24;
 
 /// Cap on returned hits: past this, a query is one to narrow rather than scroll.
 const SEARCH_LIMIT: usize = 50;
+
+/// How many appearances of one term are worth counting. Past this the score is
+/// the same either way, so the walk stops rather than counting a whole document.
+const SCORE_COUNT_CAP: usize = 20;
+
+/// What a name match is worth, by how much of the name the term is. A file called
+/// exactly the term is the answer; the same letters buried inside a longer word
+/// are a hint. Names are a few dozen bytes, so telling these apart is free.
+const NAME_SCORE_EXACT: f64 = 400.0;
+const NAME_SCORE_PREFIX: f64 = 300.0;
+const NAME_SCORE_WORD: f64 = 200.0;
+const NAME_SCORE_ANYWHERE: f64 = 100.0;
+
+/// A folder name counts, but weakly: everything under `notes/` matches "notes",
+/// so it says less about a document than the document's own name does.
+const FOLDER_SCORE: f64 = 25.0;
+
+/// A match inside a heading is what a section is about, so it outranks the same
+/// word in a paragraph. Only the finalists are checked, on the walk that already
+/// finds their heading.
+const HEADING_SCORE: f64 = 50.0;
+
+/// Body frequency is counted per this many bytes rather than per document: on raw
+/// count a 2 MB file beats a one-page note by being long, which crowds the top of
+/// the list with whatever is longest.
+const FREQUENCY_WINDOW: f64 = 10_240.0;
+
+/// The most one term's frequency can be worth, however small the file.
+const FREQUENCY_CAP: f64 = 20.0;
+
+/// How many matches in one document get a row of their own. One row per file hides
+/// where else the word is; a row per match buries every other file.
+const ROWS_PER_DOCUMENT: usize = 3;
 
 /// How many web addresses one document may put on the map. A link roll or a
 /// bibliography is a real document, and without a cap it would bury the notes
@@ -158,93 +191,348 @@ impl VaultCorpus {
     /// name or its text; hits are ranked name-first, then by how often the terms
     /// appear. Scanning a few megabytes of RAM beats a round trip to SQLite, and
     /// it can never be out of step with the disk.
-    pub fn search(&self, query: &str) -> Vec<SearchHit> {
-        let terms = search_terms(query);
-        if terms.is_empty() {
-            return Vec::new();
-        }
-
-        let mut hits: Vec<SearchHit> = Vec::new();
-        for document in &self.documents {
-            let Some(hit) = self.match_document(document, &terms) else {
-                continue;
-            };
-            hits.push(hit);
-        }
-        // Best first, then alphabetical so equal scores hold a stable order.
-        hits.sort_by(|a, b| {
-            b.score
-                .partial_cmp(&a.score)
-                .unwrap_or(std::cmp::Ordering::Equal)
-                .then_with(|| a.title.to_lowercase().cmp(&b.title.to_lowercase()))
-        });
-        hits.truncate(SEARCH_LIMIT);
-        hits
+    ///
+    /// Ranked before anything is drawn: a snippet, its line and its heading cost
+    /// a walk of the document, and a broad query has hundreds of matches to show
+    /// fifty of.
+    pub fn search(&self, query: &str) -> SearchResults {
+        self.search_until(query, None, &|| false)
+            .unwrap_or_default()
     }
 
-    fn match_document(&self, document: &CorpusDocument, terms: &[String]) -> Option<SearchHit> {
-        let name = document.label.to_lowercase();
-        let body = document.text.to_lowercase();
-        // Every term has to land somewhere, or this is not the document.
-        if !terms
-            .iter()
-            .all(|term| name.contains(term) || body.contains(term))
-        {
-            return None;
+    /// The same search, with two things the caller can hand it.
+    ///
+    /// `overtaken` is checked between documents: the field has moved on, so
+    /// finishing is work for an answer nobody will read. One atomic load against a
+    /// document's scan.
+    ///
+    /// `within` narrows the scan to the paths that matched a shorter query. Every
+    /// term is required and a longer query's terms contain the shorter one's, so
+    /// extending a query can only ever shrink the set — anything outside it cannot
+    /// match. The caller owns the "shorter query, same text" part of that promise.
+    pub fn search_until(
+        &self,
+        query: &str,
+        within: Option<&[String]>,
+        overtaken: &dyn Fn() -> bool,
+    ) -> Option<SearchResults> {
+        let terms = search_terms(query);
+        if terms.is_empty() {
+            return Some(SearchResults::default());
         }
+        // A set that holds the whole vault narrows nothing, and building it to
+        // discover that costs more than the scan saves — a one-letter query matches
+        // every document, so this is the common first keystroke.
+        let narrowed: Option<HashSet<&str>> = within
+            .filter(|paths| paths.len() < self.documents.len())
+            .map(|paths| paths.iter().map(String::as_str).collect());
 
-        let mut score = 0.0f64;
-        for term in terms {
-            if name.contains(term) {
-                // A named file is a strong hit: a name match outranks a body one.
-                score += 100.0;
+        let mut ranked: Vec<Candidate> = Vec::new();
+        let mut matched: Vec<String> = Vec::new();
+        for document in &self.documents {
+            if let Some(paths) = &narrowed {
+                if !paths.contains(document.path.as_str()) {
+                    continue;
+                }
             }
-            score += body.matches(term.as_str()).count().min(20) as f64;
+            if overtaken() {
+                return None;
+            }
+            if let Some(candidate) = score_document(document, &terms) {
+                matched.push(document.path.clone());
+                ranked.push(candidate);
+            }
         }
+        ranked.sort_by(|a, b| by_score(a.score, &a.document.label, b.score, &b.document.label));
+        let truncated = ranked.len() > SEARCH_LIMIT;
+        ranked.truncate(SEARCH_LIMIT);
 
-        // Where to show and where to jump: the first term's first appearance in
-        // the body, and the heading above it.
-        let found = terms
-            .iter()
-            .filter_map(|term| body.find(term.as_str()).map(|at| (at, term.len())))
-            .min_by_key(|(at, _)| *at);
-        let (line, anchor, snippet) = match found {
-            Some((at, length)) => {
-                let line = line_number_at(&document.text, at);
-                (
-                    line,
-                    heading_anchor_above(&document.text, at),
-                    snippet_around(&document.text, at, length),
-                )
-            }
-            // Only the file name matched, so its first lines are the preview.
-            None => (
-                1,
-                None,
-                document.text.lines().next().unwrap_or("").to_string(),
-            ),
-        };
-
-        Some(SearchHit {
-            abs_path: document.path.clone(),
-            title: document.label.clone(),
-            start_line: line,
-            end_line: line,
-            anchor,
-            snippet,
-            score,
+        // Only now is anything drawn, and only now can a heading match be seen —
+        // both are on the same walk of a finalist's text, which is why the ranking
+        // is finished off here rather than above.
+        let mut files: Vec<Vec<SearchHit>> = ranked.into_iter().map(Candidate::into_rows).collect();
+        files.sort_by(|a, b| by_score(a[0].score, &a[0].title, b[0].score, &b[0].title));
+        Some(SearchResults {
+            hits: files.into_iter().flatten().collect(),
+            truncated,
+            matched,
         })
     }
 }
 
+/// Best first, then alphabetical so equal scores hold a stable order.
+fn by_score(a: f64, a_title: &str, b: f64, b_title: &str) -> std::cmp::Ordering {
+    b.partial_cmp(&a)
+        .unwrap_or(std::cmp::Ordering::Equal)
+        .then_with(|| a_title.to_lowercase().cmp(&b_title.to_lowercase()))
+}
+
+/// A document that matched, before anything is drawn for it.
+struct Candidate<'a> {
+    document: &'a CorpusDocument,
+    score: f64,
+    /// The first few term appearances in the body, earliest first: each one's
+    /// offset, and its length *there* — case folding can make a match a different
+    /// size than its term.
+    spots: Vec<(usize, usize)>,
+}
+
+impl Candidate<'_> {
+    /// The rows the page shows, one per match, up to [`ROWS_PER_DOCUMENT`]. This is
+    /// the expensive half of a hit, so it runs for the fifty that survived ranking
+    /// rather than for every match in the vault.
+    fn into_rows(self) -> Vec<SearchHit> {
+        let text = &self.document.text;
+        // One walk for all three rows. Both the line a match is on and the heading
+        // above it are counted from the top of the document — the heading because
+        // its slug has to be unique the way the renderer makes it unique — so a walk
+        // each would read the document from the top six times.
+        let places = places_above(text, &self.spots);
+        let mut rows: Vec<SearchHit> = self
+            .spots
+            .iter()
+            .zip(places)
+            .map(|((at, length), (line, anchor))| SearchHit {
+                abs_path: self.document.path.clone(),
+                title: self.document.label.clone(),
+                start_line: line,
+                end_line: line,
+                anchor,
+                snippet: snippet_around(text, *at, *length),
+                score: self.score,
+            })
+            .collect();
+        if rows.is_empty() {
+            // Only the file name matched, so its first lines are the preview.
+            rows.push(SearchHit {
+                abs_path: self.document.path.clone(),
+                title: self.document.label.clone(),
+                start_line: 1,
+                end_line: 1,
+                anchor: None,
+                snippet: text.lines().next().unwrap_or("").to_string(),
+                score: self.score,
+            });
+        }
+        // A heading match lifts the whole document, so its rows stay together.
+        let heading = self.spots.iter().any(|(at, _)| on_heading_line(text, *at));
+        if heading {
+            for row in &mut rows {
+                row.score += HEADING_SCORE;
+            }
+        }
+        rows
+    }
+}
+
+/// Score one document, or refuse it on the first term it does not carry.
+fn score_document<'a>(document: &'a CorpusDocument, terms: &[Term]) -> Option<Candidate<'a>> {
+    let name = document.label.to_lowercase();
+    let folder = folder_of(&document.path);
+    let mut score = 0.0f64;
+    let mut spots: Vec<(usize, usize)> = Vec::new();
+    for term in terms {
+        let named = name_score(&name, &term.text);
+        let scan = scan_term(&document.text, term);
+        let foldered = find_case_insensitive(folder, term, 0).is_some();
+        // Every term has to land somewhere, or this is not the document — and
+        // there is no reason to read it for the rest of them.
+        if named == 0.0 && scan.count == 0 && !foldered {
+            return None;
+        }
+        score += named;
+        if foldered {
+            score += FOLDER_SCORE;
+        }
+        // Per 10 KB, not per document: see FREQUENCY_WINDOW.
+        let density = scan.count as f64 * FREQUENCY_WINDOW / document.text.len().max(1) as f64;
+        score += density.min(FREQUENCY_CAP);
+        spots.extend(scan.spots);
+    }
+    spots.sort_unstable();
+    spots.dedup_by_key(|(at, _)| *at);
+    spots.truncate(ROWS_PER_DOCUMENT);
+    Some(Candidate {
+        document,
+        score,
+        spots,
+    })
+}
+
+/// The folders a document sits in: its path without the file name. Borrowed, not
+/// lowercased — the scan matches either case, and this runs once per document per
+/// keystroke.
+fn folder_of(path: &str) -> &str {
+    &path[..path.rfind(['/', '\\']).unwrap_or(0)]
+}
+
+/// What a name match is worth: the whole name, its start, the start of a word in
+/// it, or somewhere inside one.
+fn name_score(name: &str, term: &str) -> f64 {
+    let Some(at) = name.find(term) else {
+        return 0.0;
+    };
+    if name.len() == term.len() {
+        NAME_SCORE_EXACT
+    } else if at == 0 {
+        NAME_SCORE_PREFIX
+    } else if name[..at]
+        .chars()
+        .next_back()
+        .map_or(true, |ch| !ch.is_alphanumeric())
+    {
+        NAME_SCORE_WORD
+    } else {
+        NAME_SCORE_ANYWHERE
+    }
+}
+
+/// Whether an offset sits on an ATX heading line.
+fn on_heading_line(text: &str, at: usize) -> bool {
+    let start = text[..at].rfind('\n').map_or(0, |newline| newline + 1);
+    text[start..].trim_start().starts_with('#')
+}
+
+/// One term of the query. Lowercased once, with the path it takes and the byte it
+/// skips to decided here rather than per document.
+struct Term {
+    text: String,
+    ascii: bool,
+    pivot: usize,
+}
+
+/// Letters of English prose, rarest first. Skipping to a term's rarest byte finds
+/// far fewer false starts than skipping to its first: 'm' in "dharma" turns up
+/// half as often as 'd' does, and every false start costs a comparison.
+const LETTERS_BY_RARITY: &[u8] = b"zqxjkvbpygfwmucldrhsnioate";
+
+fn rarest_byte(term: &[u8]) -> usize {
+    let rank = |byte: u8| {
+        LETTERS_BY_RARITY
+            .iter()
+            .position(|candidate| *candidate == byte)
+            // Anything that is not a letter is rarer than every letter.
+            .unwrap_or(0)
+    };
+    (0..term.len())
+        .min_by_key(|index| rank(term[*index]))
+        .unwrap_or(0)
+}
+
 /// Split user input into terms: whitespace-separated and lowercased. There is no
 /// query language here — every term is literal text.
-fn search_terms(query: &str) -> Vec<String> {
+fn search_terms(query: &str) -> Vec<Term> {
     query
         .split_whitespace()
         .map(|term| term.trim().to_lowercase())
         .filter(|term| !term.is_empty())
+        .map(|text| Term {
+            ascii: text.is_ascii(),
+            pivot: rarest_byte(text.as_bytes()),
+            text,
+        })
         .collect()
+}
+
+/// What one walk of a document answers about one term: how often it appears, and
+/// where its first few are. Both questions in one pass, and the count stops at
+/// [`SCORE_COUNT_CAP`] because the score cannot go higher.
+struct TermScan {
+    count: usize,
+    /// Enough for a row each, no more — see [`ROWS_PER_DOCUMENT`].
+    spots: Vec<(usize, usize)>,
+}
+
+/// Offsets here are into the text as it sits on disk, never into a lowercased
+/// copy of it: lowercasing can change a string's length, and offsets borrowed
+/// across that shift showed the wrong window of text and could land
+/// mid-character.
+fn scan_term(text: &str, term: &Term) -> TermScan {
+    let mut scan = TermScan {
+        count: 0,
+        spots: Vec::new(),
+    };
+    let mut from = 0usize;
+    while let Some((at, length)) = find_case_insensitive(text, term, from) {
+        if scan.spots.len() < ROWS_PER_DOCUMENT {
+            scan.spots.push((at, length));
+        }
+        scan.count += 1;
+        if scan.count >= SCORE_COUNT_CAP {
+            break;
+        }
+        // Non-overlapping, the way `str::matches` counts.
+        from = at + length.max(1);
+    }
+    scan
+}
+
+fn find_case_insensitive(text: &str, term: &Term, from: usize) -> Option<(usize, usize)> {
+    if term.ascii {
+        find_ascii(text, term, from)
+    } else {
+        find_folded(text, &term.text, from)
+    }
+}
+
+/// An all-ASCII term — nearly every query — against text of any kind: skip to a
+/// byte that could be the term's rarest, in either case, then confirm the window
+/// around it. No allocation, and an ASCII byte in UTF-8 is never part of a longer
+/// character, so the offset is always a character boundary.
+fn find_ascii(text: &str, term: &Term, from: usize) -> Option<(usize, usize)> {
+    let needle = term.text.as_bytes();
+    let bytes = text.as_bytes();
+    let lower = *needle.get(term.pivot)?;
+    let upper = lower.to_ascii_uppercase();
+    let mut at = from + term.pivot;
+    while at + (needle.len() - term.pivot) <= bytes.len() {
+        let last_pivot = bytes.len() - (needle.len() - term.pivot) + 1;
+        let found = at + memchr::memchr2(lower, upper, &bytes[at..last_pivot])?;
+        let start = found - term.pivot;
+        if bytes[start..start + needle.len()].eq_ignore_ascii_case(needle) {
+            return Some((start, needle.len()));
+        }
+        at = found + 1;
+    }
+    None
+}
+
+/// A term carrying a non-ASCII character, so `É` still finds `é`. Folds the text
+/// a character at a time as it walks it, which is slower per byte than the ASCII
+/// path and is the rare query.
+fn find_folded(text: &str, term: &str, from: usize) -> Option<(usize, usize)> {
+    let head = term.chars().next()?;
+    for (offset, ch) in text[from..].char_indices() {
+        if ch.to_lowercase().next() != Some(head) {
+            continue;
+        }
+        if let Some(length) = folded_match_len(&text[from + offset..], term) {
+            return Some((from + offset, length));
+        }
+    }
+    None
+}
+
+/// How much of `text` a folded `term` covers at its start, if it covers any. Not
+/// the term's own length: `İ` folds to two characters, so the span in the text can
+/// be a different number of bytes than the term is.
+fn folded_match_len(text: &str, term: &str) -> Option<usize> {
+    let mut wanted = term.chars().peekable();
+    let mut consumed = 0usize;
+    for ch in text.chars() {
+        if wanted.peek().is_none() {
+            break;
+        }
+        for folded in ch.to_lowercase() {
+            // A character that folds into more than the term still wants ends
+            // past the match, so this is not one.
+            if wanted.next() != Some(folded) {
+                return None;
+            }
+        }
+        consumed += ch.len_utf8();
+    }
+    wanted.next().is_none().then_some(consumed)
 }
 
 fn collect_documents(dir: &Path, depth: usize, out: &mut Vec<PathBuf>) {
@@ -302,32 +590,47 @@ pub(crate) fn read_document(path: &Path) -> Option<CorpusDocument> {
     })
 }
 
-/// The 1-based line a byte offset falls on.
-fn line_number_at(text: &str, at: usize) -> u32 {
-    (text[..at].matches('\n').count() + 1) as u32
-}
-
-/// The slug of the nearest ATX heading above `at`, so a hit can jump to its
-/// section. Slugs are counted from the top of the document with the same
-/// uniquing the renderer uses, or a second "## Notes" would land on the first.
-fn heading_anchor_above(text: &str, at: usize) -> Option<String> {
+/// Where each match is: the 1-based line it sits on, and the slug of the nearest
+/// ATX heading above it so a hit can jump to its section. Slugs are counted from
+/// the top of the document with the same uniquing the renderer uses, or a second
+/// "## Notes" would land on the first — so both answers come off one walk, for
+/// every offset at once. `spots` must be in ascending order, as ranking leaves them.
+fn places_above(text: &str, spots: &[(usize, usize)]) -> Vec<(u32, Option<String>)> {
     let mut seen = HashSet::new();
-    let mut anchor = None;
+    let mut places: Vec<(u32, Option<String>)> = Vec::with_capacity(spots.len());
+    let mut anchor: Option<String> = None;
     let mut offset = 0usize;
-    for line in text.split_inclusive('\n') {
-        if offset > at {
+    let mut line = 1u32;
+    let mut wanted = spots.iter();
+    let mut next = wanted.next();
+    for text_line in text.split_inclusive('\n') {
+        let ends_at = offset + text_line.len();
+        // Every match on this line is answered before moving past it.
+        while let Some((at, _)) = next {
+            if *at >= ends_at {
+                break;
+            }
+            places.push((line, anchor.clone()));
+            next = wanted.next();
+        }
+        if next.is_none() {
             break;
         }
-        let trimmed = line.trim_start();
+        let trimmed = text_line.trim_start();
         if let Some(rest) = trimmed.strip_prefix('#') {
             let title = rest.trim_start_matches('#').trim();
             if !title.is_empty() {
                 anchor = Some(unique_heading_slug(title, &mut seen));
             }
         }
-        offset += line.len();
+        offset = ends_at;
+        line += 1;
     }
-    anchor
+    // Anything past the last line takes the last line and heading seen.
+    while places.len() < spots.len() {
+        places.push((line, anchor.clone()));
+    }
+    places
 }
 
 /// A window of text around a match, with the match marked. Cut on character

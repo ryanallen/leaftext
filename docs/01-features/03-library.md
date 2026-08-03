@@ -123,12 +123,19 @@ Search covers the active vault. With no vault the field is hidden rather than le
 
 | Search type | Behavior |
 | --- | --- |
-| Name matches | Ranked first |
-| Content matches | Ranked by how often the terms appear, with snippets |
-| Multiple terms | Every term must appear, in the name or the body |
-| Result limit | Top 50 |
+| Name matches | Ranked first, and by how much of the name you typed: the whole name, then the start of it, then the start of a word in it, then buried inside one |
+| Folder names | Counted, and weakly — everything under `notes/` matches "notes" |
+| Content matches | Ranked by how often the terms appear **for the document's size**, so a long file cannot out-count a one-page note by being long |
+| A match in a heading | Outranks the same word in a paragraph |
+| Multiple terms | Every term must appear, in the name, the folder or the body |
+| Rows per file | Up to three, one per place the word is |
+| Result limit | The best 50 files. Past that the count says so — "84 results in the first 50 files" |
 
-Opening a content result jumps to the nearest heading above the match.
+Opening a result lands on the line the match is on. Documents whose source the pane cannot place a line in — anything but Markdown — fall back to the nearest heading above the match.
+
+Asking the same thing twice costs nothing: the last answer is kept and handed straight back while the query and the vault's text are both unchanged, which is what happens when you walk the folder tree with a search still in the box. Typing one more letter costs almost nothing either — only the files that matched the shorter word can match the longer one, so those are the only ones read again. Anything else, including a letter deleted or a file saved while you type, reads the vault afresh.
+
+To search **inside** the document you are reading rather than across the vault, see [Find in this document](02-navigation.md#find-in-this-document).
 
 The text search reads is the same copy the [graph](#graph) reads: one pass over the vault, held in memory, patched a file at a time by the [watcher](#live-updates) and dropped when you switch vaults or quit. There is no index on disk, so nothing can go stale relative to your files.
 

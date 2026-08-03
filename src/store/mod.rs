@@ -114,6 +114,19 @@ pub struct SearchHit {
     pub score: f64,
 }
 
+/// One query's answer. `truncated` is set when there were more matches than the
+/// cap, so the page can say the list was cut instead of printing a count that
+/// reads the same as a query matching exactly that many.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct SearchResults {
+    pub hits: Vec<SearchHit>,
+    pub truncated: bool,
+    /// Every path that matched, not just the fifty shown. Never sent to the page —
+    /// it is what lets the next keystroke scan these documents instead of the vault,
+    /// because a longer query can only ever match fewer of them.
+    pub matched: Vec<String>,
+}
+
 // ---------------------------------------------------------------------------
 // Errors / small helpers
 // ---------------------------------------------------------------------------

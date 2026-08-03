@@ -29,6 +29,7 @@ Free, on macOS and Windows.
 | See what it looks like | [Read your files](#read-your-files) |
 | Write in the page, not in an editor | [Write where you read](#write-where-you-read) |
 | Search your notes and see how they link | [Keep a library](#keep-a-library) |
+| Find a word in the document you are reading | [Search everything you've written](#search-everything-youve-written) |
 | Keep your place across long documents | [Move around](#move-around) |
 | Change the look | [Make it yours](#make-it-yours) |
 | Know what leaves your machine | [Your thoughts stay yours](#your-thoughts-stay-yours) |
@@ -124,7 +125,9 @@ A side pane that browses one folder at a time, with a breadcrumb that always say
 
 ![Search results in the library pane: a filename match at the top, then content matches each with a snippet showing the search terms in context](imgs/search.png)
 
-Name matches first, then content matches ranked by how often the terms appear, each with a snippet. There's no index on disk — the text is read once and held in memory, so nothing can go stale against your files, and nothing is uploaded to search it. **[Search →](docs/01-features/03-library.md#search)**
+Name matches first — the whole name beats the start of it, which beats a word inside it — then content matches ranked for the document's size, so a long file cannot win by being long. Up to three rows per file, one per place the word is, and clicking one lands on that line. There's no index on disk: the text is read once and held in memory, so nothing can go stale against your files, and nothing is uploaded to search it. **[Search →](docs/01-features/03-library.md#search)**
+
+`Ctrl+F` searches inside the document you are reading instead — one bar over the page or its source, with match case, whole word, expressions, and replace behind the padlock. **[Find in this document →](docs/01-features/02-navigation.md#find-in-this-document)**
 
 ### See how your ideas connect
 
