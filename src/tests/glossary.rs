@@ -4,9 +4,7 @@ use super::*;
 
 #[test]
 fn links_terms_with_diacritics_without_panicking() {
-    // Regression: slicing the original with lowercased-copy offsets panics on
-    // the diacritics these documents are full of. Terms are (term, slug),
-    // longest-first.
+    // Regression: slicing the original with lowercased-copy offsets panics on the diacritics these documents are full of. Terms are (term, slug), longest-first.
     let terms = vec![
         ("King of Aṅga".to_string(), "king-of-aṅga".to_string()),
         ("Mahāpadma".to_string(), "mahāpadma".to_string()),
@@ -113,8 +111,7 @@ fn does_not_auto_link_terms_inside_the_glossary_file_itself() {
 fn app_shell_raises_a_spinner_when_a_glossary_link_is_followed() {
     let html = app_shell_page();
 
-    // The wait starts in the page, before the host is told: the host renders on
-    // its own thread and can't send a spinner until that work is already done.
+    // The wait starts in the page, before the host is told: the host renders on its own thread and can't send a spinner until that work is already done.
     assert_contains(
         &html,
         "    awaitGlossaryEntry();\n    send({ command: 'openGlossary', href: rawHref });",
@@ -127,14 +124,12 @@ fn app_shell_raises_a_spinner_when_a_glossary_link_is_followed() {
         &html,
         "spinner.className = 'lt-spinner glossary-sheet-spinner';",
     );
-    // Neither an answer that never comes nor one the user stopped waiting for
-    // may leave the sheet spinning.
+    // Neither an answer that never comes nor one the user stopped waiting for may leave the sheet spinning.
     assert_contains(&html, "glossarySheetMessage(GLOSSARY_FAILED);");
     assert_contains(&html, "if (!glossaryWaiting) return;");
     assert_contains(&html, "window.leafGlossaryFailed = (reason) => {");
 
-    // The spinner is delayed past the sheet's slide-up, so the common cached
-    // lookup never flashes one.
+    // The spinner is delayed past the sheet's slide-up, so the common cached lookup never flashes one.
     let css = reading_mode_css();
     assert_contains(
         &css,

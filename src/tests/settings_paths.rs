@@ -195,8 +195,7 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
     assert_eq!(loaded.settings, settings);
     // Read back cleanly, so there is nothing to tell the page about.
     assert!(!loaded.unreadable);
-    // A missing file restores defaults, not the all-false zero value — and is an
-    // ordinary first launch, not something to report.
+    // A missing file restores defaults, not the all-false zero value — and is an ordinary first launch, not something to report.
     let missing = load_settings(&missing_path);
     assert_eq!(missing.settings, Settings::default());
     assert!(!missing.unreadable);
@@ -204,8 +203,7 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
     fs::write(&settings_path, "{not json").expect("corrupt settings fixture is written");
     let corrupt = load_settings(&settings_path);
     assert_eq!(corrupt.settings, Settings::default());
-    // A file that is there and does not parse is the one case worth a growl:
-    // the app is about to look factory-fresh with the file's contents ignored.
+    // A file that is there and does not parse is the one case worth a growl: the app is about to look factory-fresh with the file's contents ignored.
     assert!(corrupt.unreadable);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
@@ -220,11 +218,7 @@ fn a_byte_order_mark_from_a_windows_editor_does_not_reset_the_config() {
     let dir = std::env::temp_dir().join(format!("leaf-settings-bom-{unique}"));
     fs::create_dir_all(&dir).expect("test directory is created");
 
-    // PowerShell's Out-File/Set-Content and Notepad all write a UTF-8 byte order
-    // mark by default, so a hand-edited config on Windows arrives with three
-    // bytes in front of the opening brace. serde_json refuses them, and every
-    // reader here defaults on a parse failure — which silently threw the file
-    // away. Both config files must look past the mark.
+    // PowerShell's Out-File/Set-Content and Notepad all write a UTF-8 byte order mark by default, so a hand-edited config on Windows arrives with three bytes in front of the opening brace. serde_json refuses them, and every reader here defaults on a parse failure — which silently threw the file away. Both config files must look past the mark.
     let settings_path = dir.join("settings.json");
     fs::write(
         &settings_path,
@@ -260,8 +254,7 @@ fn settings_load_migrates_legacy_dracula_mode_to_the_nightshade_family() {
     let settings_path = dir.join("settings.json");
     fs::create_dir_all(&dir).expect("test directory is created");
 
-    // Pre-family installs stored Dracula as a theme mode; it becomes the dark
-    // half of the Nightshade family (the renamed Dracula palette) on load.
+    // Pre-family installs stored Dracula as a theme mode; it becomes the dark half of the Nightshade family (the renamed Dracula palette) on load.
     fs::write(&settings_path, r#"{"theme_mode": "dracula"}"#)
         .expect("legacy settings fixture is written");
     let loaded = load_settings(&settings_path).settings;
@@ -281,10 +274,7 @@ fn settings_load_tolerates_partial_json_via_serde_default() {
     let settings_path = dir.join("settings.json");
     fs::create_dir_all(&dir).expect("test directory is created");
 
-    // Only one field present: the rest must fall back to their defaults. Unknown
-    // keys — `indexing_enabled` from the old disk crawler, and the two toggles
-    // that stopped being choices — are ignored rather than failing the load, so
-    // an installed copy needs no migration to lose them.
+    // Only one field present: the rest must fall back to their defaults. Unknown keys — `indexing_enabled` from the old disk crawler, and the two toggles that stopped being choices — are ignored rather than failing the load, so an installed copy needs no migration to lose them.
     fs::write(
         &settings_path,
         r#"{"library_width": 312, "indexing_enabled": true, "minimap_enabled": false, "pager_enabled": false}"#,
@@ -308,10 +298,7 @@ fn a_settings_file_from_before_the_pane_had_one_view_still_loads() {
     let dir = std::env::temp_dir().join(format!("leaf-settings-library-view-{unique}"));
     fs::create_dir_all(&dir).expect("test directory is created");
 
-    // `library_view` was the pane's mode when the graph lived in the sidebar.
-    // The graph is a page now and the key is gone, but every installed copy
-    // still has it — and an unknown key must be ignored, not fail the whole
-    // deserialize and reset every other setting with it.
+    // `library_view` was the pane's mode when the graph lived in the sidebar. The graph is a page now and the key is gone, but every installed copy still has it — and an unknown key must be ignored, not fail the whole deserialize and reset every other setting with it.
     for legacy in ["tree", "flat", "project", "graph"] {
         let settings_path = dir.join(format!("{legacy}.json"));
         fs::write(
@@ -328,9 +315,7 @@ fn a_settings_file_from_before_the_pane_had_one_view_still_loads() {
 
 #[test]
 fn an_unreadable_settings_file_reaches_the_page_as_a_growl() {
-    // The whole point of the flag: coming up on defaults is invisible, so the
-    // page has to say it. Host side, it is always emitted so the flag is never
-    // undefined; page side, the boot growls only when it is true.
+    // The whole point of the flag: coming up on defaults is invisible, so the page has to say it. Host side, it is always emitted so the flag is never undefined; page side, the boot growls only when it is true.
     assert_eq!(
         settings_unreadable_script(true),
         "window.__leafSettingsUnreadable = true;"
@@ -373,13 +358,7 @@ fn app_data_dir_is_the_local_data_root_not_the_webview_cache() {
     assert!(!path.ends_with("webview2"));
 }
 
-/// These paths are where every installed copy already keeps its settings, recent
-/// files, and vault registry, so they are a compatibility contract, not a
-/// preference. They were captured from the `directories` crate's
-/// `ProjectDirs::from("com", "ryanallen", "leaftext")` before that dependency
-/// was replaced with the plain environment lookups in `project_config_dir` and
-/// `project_data_local_dir`. Changing either shape silently orphans user data:
-/// the app would start up looking clean, with the old settings still on disk.
+/// These paths are where every installed copy already keeps its settings, recent files, and vault registry, so they are a compatibility contract, not a preference. They were captured from the `directories` crate's `ProjectDirs::from("com", "ryanallen", "leaftext")` before that dependency was replaced with the plain environment lookups in `project_config_dir` and `project_data_local_dir`. Changing either shape silently orphans user data: the app would start up looking clean, with the old settings still on disk.
 #[test]
 fn project_dirs_match_the_documented_layout() {
     let config = project_config_dir().expect("config directory is available");
@@ -402,8 +381,7 @@ fn project_dirs_match_the_documented_layout() {
         let support = home
             .join("Library/Application Support")
             .join("com.ryanallen.leaftext");
-        // macOS draws no roaming/local distinction, so both roots are the one
-        // Application Support folder.
+        // macOS draws no roaming/local distinction, so both roots are the one Application Support folder.
         assert_eq!(config, support);
         assert_eq!(data, support);
     }
@@ -430,16 +408,14 @@ fn document_format_follows_extension() {
             "{name}"
         );
     }
-    // Unknown / missing extensions route through the Markdown renderer, matching
-    // how the loader treats everything it does not recognize.
+    // Unknown / missing extensions route through the Markdown renderer, matching how the loader treats everything it does not recognize.
     assert_eq!(
         DocumentFormat::from_path(Path::new("README")),
         DocumentFormat::Markdown
     );
 }
 
-/// `for_path` is the "can we open this at all?" question, so unlike `from_path`
-/// it must not quietly answer Markdown for a format the app cannot read.
+/// `for_path` is the "can we open this at all?" question, so unlike `from_path` it must not quietly answer Markdown for a format the app cannot read.
 #[test]
 fn unreadable_extensions_have_no_format() {
     for name in [
@@ -458,9 +434,7 @@ fn unreadable_extensions_have_no_format() {
     }
 }
 
-/// Every extension the table lists must round-trip back to its own format, and
-/// the flat list the file dialog offers must be exactly those extensions. This is
-/// the test that keeps a new format from being half-added.
+/// Every extension the table lists must round-trip back to its own format, and the flat list the file dialog offers must be exactly those extensions. This is the test that keeps a new format from being half-added.
 #[test]
 fn every_listed_extension_maps_back_to_its_format() {
     let mut listed = Vec::new();
@@ -496,11 +470,7 @@ fn every_listed_extension_maps_back_to_its_format() {
     assert_eq!(all_document_extensions(), listed);
 }
 
-/// The installers are the two places the extension list lives outside
-/// `format.rs`, and neither can read it at install time: the MSI claims each
-/// extension in the registry, the macOS bundle claims them in its Info.plist.
-/// This is what keeps a format the app opens from shipping without its
-/// double-click — .json, .yaml, .yml, .eml, .mht and .mhtml all did.
+/// The installers are the two places the extension list lives outside `format.rs`, and neither can read it at install time: the MSI claims each extension in the registry, the macOS bundle claims them in its Info.plist. This is what keeps a format the app opens from shipping without its double-click — .json, .yaml, .yml, .eml, .mht and .mhtml all did.
 #[test]
 fn installer_claims_every_readable_extension() {
     let wxs = include_str!("../../wix/main.wxs");
@@ -525,9 +495,7 @@ fn installer_claims_every_readable_extension() {
     }
 }
 
-/// The pager, the file dialog, drag-and-drop, link following and the library pane
-/// all ask `format.rs` rather than carrying a list. Anything the app can open must
-/// page too.
+/// The pager, the file dialog, drag-and-drop, link following and the library pane all ask `format.rs` rather than carrying a list. Anything the app can open must page too.
 #[test]
 fn every_readable_format_is_a_pager_page_and_an_in_app_link() {
     for extension in all_document_extensions() {
@@ -540,8 +508,7 @@ fn every_readable_format_is_a_pager_page_and_an_in_app_link() {
             ".{extension} uppercase should page too"
         );
     }
-    // `.markdown` and `.mdown` open like any other page, so they must also page
-    // and lose their extension in the label.
+    // `.markdown` and `.mdown` open like any other page, so they must also page and lose their extension in the label.
     assert!(is_pager_page_extension("markdown"));
     assert!(is_pager_page_extension("mdown"));
     assert_eq!(pager_label("getting-started.markdown"), "Getting Started");
@@ -568,10 +535,7 @@ fn updating_is_not_a_setting() {
 
 #[test]
 fn the_updater_only_speaks_when_it_can_install() {
-    // A check that found nothing, could not reach GitHub, or found a release with
-    // no installer for this platform is the app's own business — there is nothing
-    // for the reader to do about any of it. Reporting it made the panel look like
-    // it was asking for work it should be doing itself.
+    // A check that found nothing, could not reach GitHub, or found a release with no installer for this platform is the app's own business — there is nothing for the reader to do about any of it. Reporting it made the panel look like it was asking for work it should be doing itself.
     let html = app_shell_page();
     for gone in [
         "Check for updates",
@@ -587,8 +551,7 @@ fn the_updater_only_speaks_when_it_can_install() {
         assert!(!html.contains(gone), "the updater still says {gone:?}");
     }
 
-    // What is left: the download's spinner and progress fill, and the dot the
-    // bell raises with its panel shut.
+    // What is left: the download's spinner and progress fill, and the dot the bell raises with its panel shut.
     assert!(html.contains(r#"id="updateButtonSpinner""#));
     assert!(html.contains(r#"id="updateButtonFill""#));
     let css = reading_mode_css();
@@ -599,10 +562,7 @@ fn the_updater_only_speaks_when_it_can_install() {
 
 #[test]
 fn the_update_bell_is_out_of_the_bar_until_there_is_news() {
-    // Not a control that sits there saying nothing: the bell is in the app bar
-    // only while an installer is downloading or waiting, so its presence is the
-    // message. An action appearing mid-session changes what fits beside the tabs,
-    // which is why un-hiding it refits the bar.
+    // Not a control that sits there saying nothing: the bell is in the app bar only while an installer is downloading or waiting, so its presence is the message. An action appearing mid-session changes what fits beside the tabs, which is why un-hiding it refits the bar.
     let html = app_shell_page();
     assert!(html.contains(r#"<details class="update-menu" id="updateMenu" hidden>"#));
     for expected in [
@@ -613,8 +573,7 @@ fn the_update_bell_is_out_of_the_bar_until_there_is_news() {
     ] {
         assert_contains(&html, expected);
     }
-    // Escape and the outside click go through the shared helper, not a second
-    // hand-rolled pair.
+    // Escape and the outside click go through the shared helper, not a second hand-rolled pair.
     assert_contains(
         &html,
         "if (updateMenu.open && !updateMenu.contains(event.target)) updateMenu.open = false;",
@@ -642,9 +601,7 @@ fn the_update_bell_is_out_of_the_bar_until_there_is_news() {
 #[test]
 fn the_home_screen_shows_the_running_version() {
     let html = app_shell_page();
-    // In the template string, not read out of the DOM once at load: the home
-    // screen is rebuilt on every render, so a cached element would go stale after
-    // the first showing.
+    // In the template string, not read out of the DOM once at load: the home screen is rebuilt on every render, so a cached element would go stale after the first showing.
     assert!(html.contains(
         r#"<p class="empty-version">${LEAF_VERSION ? `v${escapeText(LEAF_VERSION)}` : ''}</p>"#
     ));

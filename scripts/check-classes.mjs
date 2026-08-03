@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Every class the stylesheet paints has to be accounted for, so a new part of the
-// interface joins the design system instead of growing beside it.
+// Every class the stylesheet paints has to be accounted for, so a new part of the interface joins the design system instead of growing beside it.
 //
 //   node scripts/check-classes.mjs   report every unaccounted class (`just verify`)
 //
@@ -15,8 +14,7 @@
 //   a state name          `is-selected`, `open`, `frameless`: a flag on something that
 //                         is already listed, not a thing of its own.
 //
-// Anything else fails here, with the class and a line. That is the point: the answer
-// to "where does this new panel go" cannot be "nowhere".
+// Anything else fails here, with the class and a line. That is the point: the answer to "where does this new panel go" cannot be "nowhere".
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -26,8 +24,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const relative = 'src/assets/reading.css';
 const css = readFileSync(join(root, relative), 'utf8');
 
-// A comment mentioning `block-controls.js` is not a class. Blank the comments, keeping
-// each line's length so the line numbers still point at the right place.
+// A comment mentioning `block-controls.js` is not a class. Blank the comments, keeping each line's length so the line numbers still point at the right place.
 let inComment = false;
 const code = css.split('\n').map((line, index) => {
   let text = line;

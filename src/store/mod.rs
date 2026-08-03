@@ -1,10 +1,6 @@
 //! The vault store, and the parsers that go with it.
 //!
-//! There is no index here and no crawl. The library pane reads one
-//! folder off the disk at a time; the graph and search read the active vault's
-//! text into memory once and share it. What is left is a small SQLite database
-//! holding which folders are vaults and which one is open, plus two parsers —
-//! frontmatter and document links — that only ever needed text, never a table.
+//! There is no index here and no crawl. The library pane reads one folder off the disk at a time; the graph and search read the active vault's text into memory once and share it. What is left is a small SQLite database holding which folders are vaults and which one is open, plus two parsers — frontmatter and document links — that only ever needed text, never a table.
 
 mod db;
 mod frontmatter;
@@ -26,17 +22,14 @@ use serde::Serialize;
 
 use crate::DocumentFormat;
 
-/// Latest applied schema migration. 1–4 were the crawl's: files, headings,
-/// chunks, full-text search, frontmatter and links, all of them a manifest of
-/// the whole computer. They are gone, and 5 — the vaults — is the whole schema.
+/// Latest applied schema migration. 1–4 were the crawl's: files, headings, chunks, full-text search, frontmatter and links, all of them a manifest of the whole computer. They are gone, and 5 — the vaults — is the whole schema.
 pub(super) const SCHEMA_VERSION: i64 = 5;
 
 // ---------------------------------------------------------------------------
 // Public data shapes
 // ---------------------------------------------------------------------------
 
-/// A node in the library tree: a folder or a document. All strings are
-/// file-derived and untrusted; the frontend escapes them before the DOM.
+/// A node in the library tree: a folder or a document. All strings are file-derived and untrusted; the frontend escapes them before the DOM.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FileTreeNode {
@@ -54,17 +47,13 @@ pub enum NodeKind {
     File,
 }
 
-/// The link graph: one node per document *and per web address linked to*, one
-/// undirected edge per resolved link. `path` is the node identity the frontend
-/// opens by — a file path, or the URL itself for an external node. All strings are
-/// file-derived and untrusted; the frontend escapes them.
+/// The link graph: one node per document *and per web address linked to*, one undirected edge per resolved link. `path` is the node identity the frontend opens by — a file path, or the URL itself for an external node. All strings are file-derived and untrusted; the frontend escapes them.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentGraph {
     pub nodes: Vec<GraphNode>,
     pub edges: Vec<GraphEdge>,
-    /// Whether documents were left out: the vault ran past the corpus cap, or
-    /// the requested size capped it.
+    /// Whether documents were left out: the vault ran past the corpus cap, or the requested size capped it.
     pub truncated: bool,
 }
 
@@ -73,20 +62,14 @@ pub struct DocumentGraph {
 pub struct GraphNode {
     pub path: String,
     pub label: String,
-    /// The other names the document answers to. The node is still labeled with
-    /// the file's name — a node labeled with an alias is one you cannot find by
-    /// the name on disk — so these show when you hover it.
+    /// The other names the document answers to. The node is still labeled with the file's name — a node labeled with an alias is one you cannot find by the name on disk — so these show when you hover it.
     pub aliases: Vec<String>,
     pub degree: u32,
-    /// A web address rather than one of your documents. Drawn hollow, labeled by
-    /// domain, and opened in the browser instead of in a tab — so the map can show
-    /// what a document points *out* at without pretending it is a file you have.
+    /// A web address rather than one of your documents. Drawn hollow, labeled by domain, and opened in the browser instead of in a tab — so the map can show what a document points *out* at without pretending it is a file you have.
     pub external: bool,
 }
 
-/// One line on the map, pointing from the document that wrote the link to the thing
-/// it linked. `mutual` when each end links the other: one line with a head at both
-/// ends, rather than two lying on top of each other.
+/// One line on the map, pointing from the document that wrote the link to the thing it linked. `mutual` when each end links the other: one line with a head at both ends, rather than two lying on top of each other.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GraphEdge {
@@ -95,24 +78,20 @@ pub struct GraphEdge {
     pub mutual: bool,
 }
 
-/// What slice of the link graph to draw. `focus` keeps only the seed documents
-/// and their direct neighbors (the "Focus" scope); otherwise `limit` caps to the
-/// densest N documents (`None` = all).
+/// What slice of the link graph to draw. `focus` keeps only the seed documents and their direct neighbors (the "Focus" scope); otherwise `limit` caps to the densest N documents (`None` = all).
 #[derive(Debug, Clone, Default)]
 pub struct GraphRequest {
     pub focus: Option<Vec<String>>,
     pub limit: Option<usize>,
 }
 
-/// One search result. Every string is file-derived and untrusted; the frontend
-/// escapes it before the DOM.
+/// One search result. Every string is file-derived and untrusted; the frontend escapes it before the DOM.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchHit {
     pub abs_path: String,
     pub title: String,
-    /// The other name this document answered to, when that is what matched. The
-    /// row still shows the file's name; this says why it is in the list.
+    /// The other name this document answered to, when that is what matched. The row still shows the file's name; this says why it is in the list.
     pub alias: Option<String>,
     pub start_line: u32,
     pub end_line: u32,
@@ -121,16 +100,12 @@ pub struct SearchHit {
     pub score: f64,
 }
 
-/// One query's answer. `truncated` is set when there were more matches than the
-/// cap, so the page can say the list was cut instead of printing a count that
-/// reads the same as a query matching exactly that many.
+/// One query's answer. `truncated` is set when there were more matches than the cap, so the page can say the list was cut instead of printing a count that reads the same as a query matching exactly that many.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct SearchResults {
     pub hits: Vec<SearchHit>,
     pub truncated: bool,
-    /// Every path that matched, not just the fifty shown. Never sent to the page —
-    /// it is what lets the next keystroke scan these documents instead of the vault,
-    /// because a longer query can only ever match fewer of them.
+    /// Every path that matched, not just the fifty shown. Never sent to the page — it is what lets the next keystroke scan these documents instead of the vault, because a longer query can only ever match fewer of them.
     pub matched: Vec<String>,
 }
 
@@ -151,8 +126,7 @@ pub(super) fn now_secs() -> i64 {
         .unwrap_or(0)
 }
 
-/// The database path inside the app data directory. Still called the manifest
-/// for the installs that already have one; it holds only vaults now.
+/// The database path inside the app data directory. Still called the manifest for the installs that already have one; it holds only vaults now.
 pub fn manifest_path(data_dir: &Path) -> PathBuf {
     data_dir.join("manifest.db")
 }
@@ -161,9 +135,7 @@ pub(super) fn path_to_string(path: &Path) -> String {
     path.to_string_lossy().to_string()
 }
 
-/// The IO-time path. On Windows the `\\?\` extended-length prefix keeps
-/// `read_dir`/`metadata`/`read` working on paths over 260 chars. IO-only:
-/// stored and user-facing paths use the normal form.
+/// The IO-time path. On Windows the `\\?\` extended-length prefix keeps `read_dir`/`metadata`/`read` working on paths over 260 chars. IO-only: stored and user-facing paths use the normal form.
 #[cfg(windows)]
 pub(super) fn io_path(path: &Path) -> PathBuf {
     let text = path.as_os_str().to_string_lossy();
@@ -184,9 +156,7 @@ pub(super) fn io_path(path: &Path) -> PathBuf {
     path.to_path_buf()
 }
 
-/// OS directories skipped directly under a drive root, where the name is known
-/// to be system-owned. A folder named `Library` deep in user content is left
-/// alone.
+/// OS directories skipped directly under a drive root, where the name is known to be system-owned. A folder named `Library` deep in user content is left alone.
 const SYSTEM_DIRS: &[&str] = &[
     "Library",
     "AppData",
@@ -204,9 +174,7 @@ pub(super) fn is_system_dir(name: &str) -> bool {
     SYSTEM_DIRS.contains(&name)
 }
 
-/// Whether a directory is a reparse point (symlink or, on Windows, a junction).
-/// Following these causes loops and access errors, so they are not descended.
-/// A directory we cannot stat is treated as a reparse point (do not descend).
+/// Whether a directory is a reparse point (symlink or, on Windows, a junction). Following these causes loops and access errors, so they are not descended. A directory we cannot stat is treated as a reparse point (do not descend).
 pub(super) fn is_dir_reparse(path: &Path) -> bool {
     match std::fs::symlink_metadata(io_path(path)) {
         Ok(meta) => {

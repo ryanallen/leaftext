@@ -11,8 +11,7 @@ fn fixture_source_path(relative_path: &str) -> PathBuf {
 
 #[test]
 fn a_staged_update_installs_itself_at_launch_but_only_once() {
-    // The whole point of the updater: a version downloaded last session is
-    // installed on the next launch, with nothing for the user to click.
+    // The whole point of the updater: a version downloaded last session is installed on the next launch, with nothing for the user to click.
     let mut settings = Settings {
         update_staged_version: "0.1.400".to_string(),
         update_auto_applied: String::new(),
@@ -20,9 +19,7 @@ fn a_staged_update_installs_itself_at_launch_but_only_once() {
     };
     assert!(should_auto_apply(&settings, true));
 
-    // Recorded before the installer runs, so an installer that fails silently
-    // is attempted once and then left to the button — not retried on every
-    // launch, which would be a boot loop.
+    // Recorded before the installer runs, so an installer that fails silently is attempted once and then left to the button — not retried on every launch, which would be a boot loop.
     settings.update_auto_applied = "0.1.400".to_string();
     assert!(!should_auto_apply(&settings, true));
 
@@ -38,15 +35,13 @@ fn a_staged_update_installs_itself_at_launch_but_only_once() {
 
 #[test]
 fn a_landed_update_clears_the_one_attempt_guard() {
-    // Once the staged record is gone the install worked, so the next download
-    // must not inherit a guard that blocks its automatic attempt.
+    // Once the staged record is gone the install worked, so the next download must not inherit a guard that blocks its automatic attempt.
     let mut settings = Settings {
         update_staged_version: String::new(),
         update_auto_applied: "0.1.400".to_string(),
         ..Settings::default()
     };
-    // reconcile_staged_update needs the data dir; assert the narrow rule it
-    // enforces rather than reaching into the filesystem.
+    // reconcile_staged_update needs the data dir; assert the narrow rule it enforces rather than reaching into the filesystem.
     if settings.update_staged_version.is_empty() && !settings.update_auto_applied.is_empty() {
         settings.update_auto_applied.clear();
     }
@@ -94,8 +89,7 @@ fn rename_file_rejects_path_traversal_and_empty_names() {
     let original = dir.join("keep.md");
     std::fs::write(&original, "# Keep\n").expect("write");
 
-    // Empty, dot entries, and any path separator are refused so a rename can
-    // never move the file or escape its folder.
+    // Empty, dot entries, and any path separator are refused so a rename can never move the file or escape its folder.
     for bad in [
         "",
         "   ",
@@ -140,9 +134,7 @@ fn startup_failure_message_identifies_webview_access_denied() {
 
 #[test]
 fn content_hash_distinguishes_changed_documents() {
-    // Same contents hash equal (so the live-reload path skips a no-op
-    // re-render); a single-character edit changes the hash (so a real save
-    // is not mistaken for a duplicate event).
+    // Same contents hash equal (so the live-reload path skips a no-op re-render); a single-character edit changes the hash (so a real save is not mistaken for a duplicate event).
     assert_eq!(
         content_hash("# Title\n\nBody"),
         content_hash("# Title\n\nBody")
@@ -164,8 +156,7 @@ fn watch_dir_for_uses_the_documents_parent_directory() {
     let expected = fs::canonicalize(&dir).unwrap_or(dir.clone());
     assert_eq!(watched, expected);
 
-    // A bare filename has no usable parent, so nothing is watched (we never
-    // fall back to watching a huge ancestor directory).
+    // A bare filename has no usable parent, so nothing is watched (we never fall back to watching a huge ancestor directory).
     assert_eq!(watch_dir_for(Path::new("loose.md")), None);
 
     fs::remove_file(&document).expect("fixture document is removed");
@@ -182,8 +173,7 @@ fn desired_watches_cover_the_project_folder_and_the_open_document() {
 
     let canon = |path: &Path| fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
 
-    // A document inside the project folder is already covered by the recursive
-    // watch, so the project folder is the only directory watched.
+    // A document inside the project folder is already covered by the recursive watch, so the project folder is the only directory watched.
     let inside_doc = project.join("notes.md");
     let watches = desired_watches(Some(&inside_doc), Some(&project), RecursiveMode::Recursive);
     assert_eq!(watches.len(), 1);
@@ -243,8 +233,7 @@ fn watcher_events_translate_back_to_plain_paths() {
 
 #[test]
 fn the_watcher_translates_at_its_own_boundary() {
-    // Every consumer of a change event compares plain paths, so the translation
-    // has to happen where the event is born — not in one consumer at a time.
+    // Every consumer of a change event compares plain paths, so the translation has to happen where the event is born — not in one consumer at a time.
     let source = include_str!("watch.rs");
     assert!(
         source.contains("UserEvent::FileChanged(plain_event_path(event.path))"),
@@ -270,8 +259,7 @@ fn an_external_file_in_the_shown_folder_refreshes_the_pane_for_every_format() {
         .to_string_lossy()
         .to_string();
 
-    // The watcher reports in canonical form; translated, every readable format
-    // must land — .eml arriving from a mail client the same as a saved .md.
+    // The watcher reports in canonical form; translated, every readable format must land — .eml arriving from a mail client the same as a saved .md.
     for extension in all_document_extensions() {
         let changed = plain_event_path(canonical.join(format!("new.{extension}")));
         assert!(
@@ -297,8 +285,7 @@ fn an_answer_to_a_query_the_field_moved_past_never_reaches_the_page() {
     assert!(!state.search.generation.is_current(first));
     assert!(state.search.generation.is_current(second));
 
-    // A running scan reads the same number between documents, so it stops
-    // instead of finishing an answer nobody will read.
+    // A running scan reads the same number between documents, so it stops instead of finishing an answer nobody will read.
     let corpus = VaultCorpus {
         root: PathBuf::from("/vault"),
         documents: vec![CorpusDocument {
@@ -317,8 +304,7 @@ fn an_answer_to_a_query_the_field_moved_past_never_reaches_the_page() {
         .search_until("dharma", None, &|| !generation.is_current(first))
         .is_none());
 
-    // Switching vaults abandons the scan with nothing taking its place, so the
-    // answer about the vault we left is dropped too.
+    // Switching vaults abandons the scan with nothing taking its place, so the answer about the vault we left is dropped too.
     state.drop_corpus();
     assert!(!state.search.generation.is_current(second));
 }
@@ -343,13 +329,11 @@ fn the_same_query_over_unchanged_text_is_answered_from_the_last_one() {
     let corpus = state.corpus_generation;
     state.search.remember("dharma", corpus, answer);
 
-    // The pane re-runs its search on every folder move, and the same query over
-    // the same text has the same answer.
+    // The pane re-runs its search on every folder move, and the same query over the same text has the same answer.
     assert!(state.search.remembered("dharma", corpus).is_some());
     // Another query is another question.
     assert!(state.search.remembered("dharmas", corpus).is_none());
-    // Text that has moved on since is not what the kept answer describes: the
-    // watcher patching the vault and a vault switch both count.
+    // Text that has moved on since is not what the kept answer describes: the watcher patching the vault and a vault switch both count.
     assert!(state.search.remembered("dharma", corpus + 1).is_none());
     state.drop_corpus();
     assert!(state
@@ -369,22 +353,19 @@ fn one_more_letter_scans_what_the_last_letter_matched() {
     let corpus = state.corpus_generation;
     state.search.remember("dhar", corpus, answer);
 
-    // Typing on the end can only shrink the set, so the next keystroke reads those
-    // two documents rather than the vault.
+    // Typing on the end can only shrink the set, so the next keystroke reads those two documents rather than the vault.
     let within = state
         .search
         .narrowing("dharma", corpus)
         .expect("a longer query narrows to the shorter one's matches");
     assert_eq!(within.len(), 2);
 
-    // Everything else is a different question: the same query (already answered
-    // from the kept results), a letter deleted, a different word, another case.
+    // Everything else is a different question: the same query (already answered from the kept results), a letter deleted, a different word, another case.
     assert!(state.search.narrowing("dhar", corpus).is_none());
     assert!(state.search.narrowing("dha", corpus).is_none());
     assert!(state.search.narrowing("sutra", corpus).is_none());
     assert!(state.search.narrowing("Dharma", corpus).is_none());
-    // And text that moved under it is not narrowed at all — a file saved
-    // mid-typing would otherwise be invisible until the query changed.
+    // And text that moved under it is not narrowed at all — a file saved mid-typing would otherwise be invisible until the query changed.
     assert!(state.search.narrowing("dharma", corpus + 1).is_none());
 }
 
@@ -470,9 +451,7 @@ fn classifies_link_targets_for_native_opening() {
 
 #[test]
 fn only_a_link_with_a_file_behind_it_resolves_to_a_path() {
-    // What Reveal file and Copy path act on, and the same test that decides whether
-    // a modified click has anywhere to open. A link to a file the app does not read
-    // is not one of them.
+    // What Reveal file and Copy path act on, and the same test that decides whether a modified click has anywhere to open. A link to a file the app does not read is not one of them.
     let current = fixture_source_path("guide/chapter/README.md");
 
     assert_eq!(
@@ -615,8 +594,7 @@ fn forget_current_drops_failed_entry_and_falls_back_to_previous() {
     history.record(PathBuf::from("good.md"));
     history.record(PathBuf::from("missing.md"));
 
-    // The failed entry is removed entirely, not left in forward history, so
-    // the user can't step forward back onto it.
+    // The failed entry is removed entirely, not left in forward history, so the user can't step forward back onto it.
     assert!(history.forget_current());
     assert_eq!(history.current(), Some(&PathBuf::from("good.md")));
     assert_eq!(history.entries, vec![PathBuf::from("good.md")]);
@@ -634,8 +612,7 @@ fn forget_current_reports_empty_when_tab_had_only_the_failed_document() {
     assert!(history.entries.is_empty());
 }
 
-/// Build a distinct anchor for scroll-history tests; the block ordinal keeps
-/// the entries identifiable.
+/// Build a distinct anchor for scroll-history tests; the block ordinal keeps the entries identifiable.
 fn test_anchor(block: u32) -> ScrollAnchor {
     ScrollAnchor {
         section: None,
@@ -692,9 +669,7 @@ fn edit_buffer_belongs_to_one_document_and_reseeds_after_navigation() {
     assert!(tab.has_edit_for(&first));
     assert!(!tab.needs_edit_seed(&first));
 
-    // The buffer is NOT the second document's: rendering b.md must not use
-    // it (the stale-buffer bug that made link navigation re-render the old
-    // page), and editing b.md must re-seed from b's contents.
+    // The buffer is NOT the second document's: rendering b.md must not use it (the stale-buffer bug that made link navigation re-render the old page), and editing b.md must re-seed from b's contents.
     assert!(!tab.has_edit_for(&second));
     assert!(tab.needs_edit_seed(&second));
     let edit = tab.edit_buffer(&second, SourceText::utf8("# B\n".to_string()));
@@ -748,13 +723,9 @@ fn move_tab_reorders_and_keeps_active_document_selected() {
 
 #[test]
 fn a_browsed_folder_is_watched_one_level_deep_not_recursively() {
-    // Browsing into `C:\` in the library used to hand the watcher a recursive
-    // subscription to the whole drive. Every change on the machine then arrived
-    // as an event, and the pane rebuilt against each one — the window stopped
-    // answering, and switching vaults never got processed.
+    // Browsing into `C:\` in the library used to hand the watcher a recursive subscription to the whole drive. Every change on the machine then arrived as an event, and the pane rebuilt against each one — the window stopped answering, and switching vaults never got processed.
     //
-    // A vault is the user's own choice of folder and stays recursive; a folder
-    // the pane merely browsed to gets one level, which is all the pane shows.
+    // A vault is the user's own choice of folder and stays recursive; a folder the pane merely browsed to gets one level, which is all the pane shows.
     let dir = std::env::temp_dir().join(format!(
         "leaf-watch-mode-{}",
         std::time::SystemTime::now()
@@ -788,8 +759,7 @@ fn a_document_opened_while_reading_source_opens_in_source() {
         "the first tab starts in the reading view"
     );
 
-    // The view is where the reader is working, not a property of the file they
-    // picked, so opening one from the pane must not throw them back to the page.
+    // The view is where the reader is working, not a property of the file they picked, so opening one from the pane must not throw them back to the page.
     workspace.tabs[0].code_view = true;
     workspace.open_path(PathBuf::from("/notes/second.md"));
     assert_eq!(workspace.active, Some(1));
@@ -837,9 +807,7 @@ fn a_link_opened_as_a_new_page_lands_behind_the_one_being_read() {
 
 #[test]
 fn the_new_page_flag_arrives_only_under_the_name_the_page_sends() {
-    // Nothing on this enum rejects an unknown field, so a name the two sides
-    // spelled differently would deserialize to false and the gesture would do
-    // nothing, silently. That is what this pins.
+    // Nothing on this enum rejects an unknown field, so a name the two sides spelled differently would deserialize to false and the gesture would do nothing, silently. That is what this pins.
     let held = r#"{"command":"openLink","href":"./next.md","scroll_anchor":{"section":null,"block":0,"offsetY":0},"newPage":true}"#;
     match serde_json::from_str::<IpcCommand>(held) {
         Ok(IpcCommand::OpenLink { new_page, href, .. }) => {
@@ -860,8 +828,7 @@ fn the_new_page_flag_arrives_only_under_the_name_the_page_sends() {
 
 #[test]
 fn the_link_menus_two_host_items_arrive_under_the_names_the_page_sends() {
-    // Reveal file and Copy path on a link are the only two items that cannot be done
-    // in the page. They are new command names on both sides, so this pins the pair.
+    // Reveal file and Copy path on a link are the only two items that cannot be done in the page. They are new command names on both sides, so this pins the pair.
     match serde_json::from_str::<IpcCommand>(r#"{"command":"revealLink","href":"./b.md"}"#) {
         Ok(IpcCommand::RevealLink { href }) => assert_eq!(href, "./b.md"),
         other => panic!("Reveal file on a link did not arrive: {other:?}"),
@@ -904,8 +871,7 @@ fn a_staged_source_payload_is_served_with_the_headers_the_fetch_needs() {
 
 #[test]
 fn the_code_view_script_carries_a_url_and_not_the_source() {
-    // The whole point: the megabytes stay behind the URL. A regression here is
-    // silent — it still works, just slowly.
+    // The whole point: the megabytes stay behind the URL. A regression here is silent — it still works, just slowly.
     let payload = code_view_payload("huge text", "markdown", "Markdown", false, None);
     let script = code_view_fetch_script(&stage_source_payload(payload));
 
@@ -922,9 +888,7 @@ fn the_code_view_script_carries_a_url_and_not_the_source() {
 
 #[test]
 fn a_watch_event_for_unchanged_content_is_not_a_reload() {
-    // With the code view open, re-sending rebuilds the entire colored source — so a
-    // spurious event for an untouched file reads as the view redrawing itself with
-    // new colors a moment after it appeared.
+    // With the code view open, re-sending rebuilds the entire colored source — so a spurious event for an untouched file reads as the view redrawing itself with new colors a moment after it appeared.
     let contents = "# Title
 
 body
@@ -954,8 +918,7 @@ changed
         "with no buffer there is nothing to compare, so let the reload happen"
     );
 
-    // A dirty buffer must never claim to match the disk, or an outside change
-    // arriving over unsaved edits would be dropped.
+    // A dirty buffer must never claim to match the disk, or an outside change arriving over unsaved edits would be dropped.
     edit.replace_range(2, 7, "Other");
     assert!(edit.is_dirty());
     assert!(!buffer_already_shows(Some(&edit), &contents));
@@ -1123,9 +1086,7 @@ fn a_tab_starts_with_nothing_cached_and_keeps_what_it_renders() {
 
 #[test]
 fn an_exported_picture_is_decoded_exactly_or_not_at_all() {
-    // A PNG reaches the host as base64 because IPC carries a string. The bytes
-    // are then written straight to a file, so a decoder that is off by one pads
-    // out a picture nobody can open — and a wrong byte is invisible until then.
+    // A PNG reaches the host as base64 because IPC carries a string. The bytes are then written straight to a file, so a decoder that is off by one pads out a picture nobody can open — and a wrong byte is invisible until then.
     let round_trip = |bytes: &[u8], encoded: &str| {
         assert_eq!(
             decode_base64(encoded).as_deref(),
@@ -1152,15 +1113,13 @@ fn an_exported_picture_is_decoded_exactly_or_not_at_all() {
     // A data URL split across lines is still the same picture.
     round_trip(b"foobar", "Zm9v\nYmFy\r\n");
 
-    // Anything that is not base64 is refused whole rather than half-decoded:
-    // a truncated picture written to disk looks like a file and is not one.
+    // Anything that is not base64 is refused whole rather than half-decoded: a truncated picture written to disk looks like a file and is not one.
     assert_eq!(decode_base64("data:image/png;base64,Zm9v"), None);
     assert_eq!(decode_base64("Zm9v*"), None);
     assert_eq!(decode_base64("Zm9-v"), None);
 }
 
-/// An address only this test uses, so a running copy of the app is never the
-/// thing answering — a named pipe on Windows, a socket file elsewhere.
+/// An address only this test uses, so a running copy of the app is never the thing answering — a named pipe on Windows, a socket file elsewhere.
 fn test_pipe_address(name: &str) -> String {
     #[cfg(windows)]
     {
@@ -1183,8 +1142,7 @@ fn test_pipe_address(name: &str) -> String {
 
 #[test]
 fn the_pipe_answers_and_refuses_out_loud() {
-    // The transport itself: a real listener, a real client, and a round trip
-    // through both. Everything above it is the same code the app serves with.
+    // The transport itself: a real listener, a real client, and a round trip through both. Everything above it is the same code the app serves with.
     let address = test_pipe_address("round-trip");
     pipe::listen(address.clone(), |request| {
         pipe::answer(request, |ask| match ask {
@@ -1203,9 +1161,7 @@ fn the_pipe_answers_and_refuses_out_loud() {
     let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
     assert_eq!(reply["answer"]["tabs"].as_array().map(Vec::len), Some(0));
 
-    // An ask nobody wrote is refused with a message rather than dropped. The
-    // page's IPC drops what it cannot parse because a page typo is our own bug;
-    // here it is somebody waiting for an answer that would never come.
+    // An ask nobody wrote is refused with a message rather than dropped. The page's IPC drops what it cannot parse because a page typo is our own bug; here it is somebody waiting for an answer that would never come.
     let reply = pipe::ask(&address, r#"{"ask":"sudo"}"#).expect("the pipe answered");
     let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
     assert_eq!(reply["ok"], false);
@@ -1227,9 +1183,7 @@ fn the_pipe_answers_and_refuses_out_loud() {
 
 #[test]
 fn a_window_that_cannot_run_it_says_so_rather_than_timing_out() {
-    // Two different failures, told apart: nothing to run the script in is an
-    // answer the app has, and it should not cost the asker two seconds of
-    // waiting to find out.
+    // Two different failures, told apart: nothing to run the script in is an answer the app has, and it should not cost the asker two seconds of waiting to find out.
     let reply = pipe::answer(r#"{"ask":"eval","script":"1+1"}"#, |_| {
         Some(Err("there is no window to run it in".to_string()))
     });
@@ -1240,13 +1194,7 @@ fn a_window_that_cannot_run_it_says_so_rather_than_timing_out() {
 
 #[test]
 fn a_blocked_event_loop_answers_no_reply_rather_than_hanging() {
-    // The failure this whole shape exists to avoid: an app too busy to answer
-    // must not take the asker down with it. Asserted against the reply channel
-    // directly, with no window in play, so a bug here fails a test instead of
-    // hanging the suite.
-    // The sender stays alive and is never filled, which is what a hung window
-    // looks like from here — a dropped one would end the wait for the wrong
-    // reason. The app waits two seconds; the kind of ending is what matters.
+    // The failure this whole shape exists to avoid: an app too busy to answer must not take the asker down with it. Asserted against the reply channel directly, with no window in play, so a bug here fails a test instead of hanging the suite. The sender stays alive and is never filled, which is what a hung window looks like from here — a dropped one would end the wait for the wrong reason. The app waits two seconds; the kind of ending is what matters.
     let (_reply, answers) = std::sync::mpsc::sync_channel::<Result<serde_json::Value, String>>(1);
     assert_eq!(
         answers.recv_timeout(std::time::Duration::from_millis(250)),
@@ -1267,12 +1215,7 @@ fn a_blocked_event_loop_answers_no_reply_rather_than_hanging() {
 #[cfg(windows)]
 #[test]
 fn an_asker_is_told_the_pipe_ended_not_that_it_was_taken_away() {
-    // The bug that made every question fail while the tests stayed green:
-    // `DisconnectNamedPipe` hands the asker "the pipe is being closed" (232)
-    // *after* a perfectly good reply, and node reports that as a failure.
-    // Closing the handle instead gives "the pipe ended" (109), which every
-    // client reads as the end of the answer. The round trip alone missed it
-    // because it stops reading once it has the reply.
+    // The bug that made every question fail while the tests stayed green: `DisconnectNamedPipe` hands the asker "the pipe is being closed" (232) *after* a perfectly good reply, and node reports that as a failure. Closing the handle instead gives "the pipe ended" (109), which every client reads as the end of the answer. The round trip alone missed it because it stops reading once it has the reply.
     const ERROR_BROKEN_PIPE: u32 = 109;
     let address = test_pipe_address("ending");
     pipe::listen(address.clone(), |request| {
@@ -1290,10 +1233,7 @@ fn an_asker_is_told_the_pipe_ended_not_that_it_was_taken_away() {
 
 #[test]
 fn the_page_reports_an_error_in_words_the_host_understands() {
-    // The page's own errors travel as JSON over the same IPC as everything else,
-    // and the host drops what it cannot parse. So a field renamed on one side is
-    // silent: errors simply stop arriving. This is the exact message journal.js
-    // builds — see the matching check in scripts/check-shell.mjs.
+    // The page's own errors travel as JSON over the same IPC as everything else, and the host drops what it cannot parse. So a field renamed on one side is silent: errors simply stop arriving. This is the exact message journal.js builds — see the matching check in scripts/check-shell.mjs.
     let sent = r#"{"command":"logError","message":"Error: boom\n at app.js:1","count":4}"#;
     match serde_json::from_str::<IpcCommand>(sent) {
         Ok(IpcCommand::LogError { message, count }) => {
@@ -1306,9 +1246,7 @@ fn the_page_reports_an_error_in_words_the_host_understands() {
 
 #[test]
 fn the_journal_hands_back_the_last_lines_asked_for() {
-    // `log` with a line count is how a report quotes the end of a long session.
-    // Off by one here and the last line — the one that says what just went
-    // wrong — is the one left out.
+    // `log` with a line count is how a report quotes the end of a long session. Off by one here and the last line — the one that says what just went wrong — is the one left out.
     let written = "one\ntwo\nthree\nfour\n";
     assert_eq!(
         journal::tail(written, Some(2)),
@@ -1330,8 +1268,7 @@ fn the_journal_hands_back_the_last_lines_asked_for() {
 
 #[test]
 fn a_window_that_never_answers_is_reported_not_waited_on() {
-    // Asking a hung app what it is doing is the point of the pipe, so the one
-    // thing it must never do is hang with it.
+    // Asking a hung app what it is doing is the point of the pipe, so the one thing it must never do is hang with it.
     let reply = pipe::answer(r#"{"ask":"state"}"#, |_| None);
     let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
     assert_eq!(reply["ok"], false);
@@ -1341,16 +1278,14 @@ fn a_window_that_never_answers_is_reported_not_waited_on() {
         .contains("did not answer in time"));
 }
 
-/// A folder of its own per journal test: these write real files and one of them
-/// runs in a second process, so they must not land on each other.
+/// A folder of its own per journal test: these write real files and one of them runs in a second process, so they must not land on each other.
 fn journal_dir(name: &str) -> PathBuf {
     std::env::temp_dir().join("leaf-journal").join(name)
 }
 
 #[test]
 fn the_journal_rolls_to_exactly_two_files() {
-    // The cap is the whole promise: a log nobody empties has to stop growing on
-    // its own, and one previous copy is what survives a restart-after-a-crash.
+    // The cap is the whole promise: a log nobody empties has to stop growing on its own, and one previous copy is what survives a restart-after-a-crash.
     let dir = journal_dir("roll");
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir).expect("a temp folder");
@@ -1388,24 +1323,19 @@ fn the_journal_rolls_to_exactly_two_files() {
 
 #[test]
 fn a_data_folder_that_cannot_be_written_does_not_stop_the_app() {
-    // Instrumentation never takes the app down. A file sitting where the data
-    // folder should be is the portable version of "you cannot write here".
+    // Instrumentation never takes the app down. A file sitting where the data folder should be is the portable version of "you cannot write here".
     let dir = journal_dir("blocked");
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(dir.parent().expect("a parent")).expect("a temp folder");
     fs::write(&dir, "not a folder").expect("a file in the way");
 
-    // Returns rather than panicking, and leaves stderr where it was — nothing is
-    // redirected in this process, so the rest of the suite still prints normally.
+    // Returns rather than panicking, and leaves stderr where it was — nothing is redirected in this process, so the rest of the suite still prints normally.
     journal::start_in(&dir);
 }
 
 #[test]
 fn a_panic_reaches_the_journal() {
-    // A crash is the one thing that cannot be reproduced by asking. This runs in
-    // a second process for two reasons: a panic here would be caught by the test
-    // harness instead of the hook, and the redirect is process-wide — done in
-    // this process it would swallow every other test's output.
+    // A crash is the one thing that cannot be reproduced by asking. This runs in a second process for two reasons: a panic here would be caught by the test harness instead of the hook, and the redirect is process-wide — done in this process it would swallow every other test's output.
     const CHILD: &str = "LEAFTEXT_JOURNAL_PANIC_CHILD";
     let dir = journal_dir("panic");
 
@@ -1416,8 +1346,7 @@ fn a_panic_reaches_the_journal() {
 
     let _ = fs::remove_dir_all(&dir);
     let child = Command::new(std::env::current_exe().expect("this test binary"))
-        // --nocapture matters: with the harness capturing output, `eprintln!` is
-        // diverted before it ever reaches the handle the journal swapped.
+        // --nocapture matters: with the harness capturing output, `eprintln!` is diverted before it ever reaches the handle the journal swapped.
         .args(["a_panic_reaches_the_journal", "--nocapture"])
         .env(CHILD, "1")
         .output()

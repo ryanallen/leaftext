@@ -1,24 +1,13 @@
-// Rebuild the vendored Monaco bundle at
-// src/assets/vendor/monaco/{monaco.js,monaco.css}.
+// Rebuild the vendored Monaco bundle at src/assets/vendor/monaco/{monaco.js,monaco.css}.
 //
-// Monaco (the VS Code editor) powers the raw-source code view. Unlike the other
-// vendored libraries it is NOT distributed as one drop-in file, so we bundle it
-// here: the core editor (which includes the minimap and line wrapping), the
-// Markdown / XML / YAML colorizers, and the two UI contributions typing help
-// stands on — the suggestion popup and the hover card. Still no language
-// services and no web workers: the popup's *answers* come from the host over
-// IPC (code-intel.js), so colorizing, the minimap and the popup all run on the
-// main thread. esbuild inlines the icon font, so the output is just monaco.js +
-// monaco.css.
+// Monaco (the VS Code editor) powers the raw-source code view. Unlike the other vendored libraries it is NOT distributed as one drop-in file, so we bundle it here: the core editor (which includes the minimap and line wrapping), the Markdown / XML / YAML colorizers, and the two UI contributions typing help stands on — the suggestion popup and the hover card. Still no language services and no web workers: the popup's *answers* come from the host over IPC (code-intel.js), so colorizing, the minimap and the popup all run on the main thread. esbuild inlines the icon font, so the output is just monaco.js + monaco.css.
 //
-// This is a manual regeneration step, like the other vendored assets — it is not
-// part of `just verify`. It needs monaco-editor and esbuild:
+// This is a manual regeneration step, like the other vendored assets — it is not part of `just verify`. It needs monaco-editor and esbuild:
 //
 //   cd app && npm i --no-save monaco-editor@0.52.2 esbuild@0.24.0
 //   node scripts/bundle-monaco.mjs
 //
-// If the editor's feature set or version changes, edit ENTRY / the version above
-// and re-run, then commit the regenerated monaco.js + monaco.css.
+// If the editor's feature set or version changes, edit ENTRY / the version above and re-run, then commit the regenerated monaco.js + monaco.css.
 
 import * as esbuild from 'esbuild';
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs';

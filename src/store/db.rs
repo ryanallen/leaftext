@@ -1,20 +1,12 @@
 //! Opening the database and migrating its schema.
 //!
-//! Migrations 1–4 built a manifest of every Markdown file on the computer:
-//! `files`, `headings`, `chunks`, the FTS5 mirror, `frontmatter`, `links`, and
-//! the scan bookkeeping around them. Nothing reads any of it — the pane, the
-//! graph and search all read the disk — so migration 6 drops the lot. What is
-//! left is the vault registry.
+//! Migrations 1–4 built a manifest of every Markdown file on the computer: `files`, `headings`, `chunks`, the FTS5 mirror, `frontmatter`, `links`, and the scan bookkeeping around them. Nothing reads any of it — the pane, the graph and search all read the disk — so migration 6 drops the lot. What is left is the vault registry.
 
 use super::*;
 
-/// Migration 5: vaults. A vault is a folder the app treats as a library root,
-/// and it is recorded here — nothing is written into the folder itself, so
-/// adding one leaves the user's files untouched. `root_path` is unique: adding
-/// the same folder twice is the same vault, not a second one.
+/// Migration 5: vaults. A vault is a folder the app treats as a library root, and it is recorded here — nothing is written into the folder itself, so adding one leaves the user's files untouched. `root_path` is unique: adding the same folder twice is the same vault, not a second one.
 ///
-/// `app_state` is the app's own scratch row store; `active_vault` lives there
-/// (absent, empty, or `0` all mean the whole library).
+/// `app_state` is the app's own scratch row store; `active_vault` lives there (absent, empty, or `0` all mean the whole library).
 const MIGRATION_5_SQL: &str = r#"
 CREATE TABLE vaults (
     id        INTEGER PRIMARY KEY,
@@ -29,9 +21,7 @@ CREATE TABLE app_state (
 );
 "#;
 
-/// Migration 6: drop the crawl. `IF EXISTS` throughout because a database
-/// created after this point never had these tables, and one created before has
-/// all of them. The FTS5 mirror goes before `chunks`, which owns it.
+/// Migration 6: drop the crawl. `IF EXISTS` throughout because a database created after this point never had these tables, and one created before has all of them. The FTS5 mirror goes before `chunks`, which owns it.
 const MIGRATION_6_SQL: &str = r#"
 DROP TRIGGER IF EXISTS chunks_ai;
 DROP TRIGGER IF EXISTS chunks_ad;
@@ -94,9 +84,7 @@ fn run_migrations(conn: &mut Connection) -> DbResult<()> {
         )
         .map_err(to_err)?;
 
-    // 1–4 are never applied again. A database that has them gets them dropped
-    // by 6; a fresh one is simply recorded as past them, so the numbering stays
-    // honest and nothing tries to build a crawl that no longer exists.
+    // 1–4 are never applied again. A database that has them gets them dropped by 6; a fresh one is simply recorded as past them, so the numbering stays honest and nothing tries to build a crawl that no longer exists.
     if current < 5 {
         let tx = conn.transaction().map_err(to_err)?;
         tx.execute_batch(MIGRATION_5_SQL).map_err(to_err)?;
@@ -119,8 +107,7 @@ fn run_migrations(conn: &mut Connection) -> DbResult<()> {
         )
         .map_err(to_err)?;
         tx.commit().map_err(to_err)?;
-        // The crawl's tables were most of the file. Hand the space back rather
-        // than leave a 200 MB database holding a few rows.
+        // The crawl's tables were most of the file. Hand the space back rather than leave a 200 MB database holding a few rows.
         conn.execute_batch("VACUUM;").map_err(to_err)?;
     }
 
@@ -128,8 +115,7 @@ fn run_migrations(conn: &mut Connection) -> DbResult<()> {
     Ok(())
 }
 
-/// Accessible drive roots: existing drives on Windows, else `/`. The top of the
-/// library pane when no vault is active.
+/// Accessible drive roots: existing drives on Windows, else `/`. The top of the library pane when no vault is active.
 pub fn detect_roots() -> Vec<PathBuf> {
     #[cfg(windows)]
     {

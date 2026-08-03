@@ -1,5 +1,4 @@
-//! The code view's typing help: headings, note lists, previews, and the
-//! broken-link check.
+//! The code view's typing help: headings, note lists, previews, and the broken-link check.
 
 use super::*;
 
@@ -56,8 +55,7 @@ fn headings_carry_the_renderer_s_own_anchors() {
         .iter()
         .map(|h| (h.text.as_str(), h.slug.as_str()))
         .collect();
-    // The second "Notes" gets the renderer's uniquing suffix, and punctuation
-    // drops out of the slug exactly as the reading view drops it.
+    // The second "Notes" gets the renderer's uniquing suffix, and punctuation drops out of the slug exactly as the reading view drops it.
     assert_eq!(
         pairs,
         vec![
@@ -102,8 +100,7 @@ fn the_popup_offers_an_alias_as_its_own_row_naming_the_file_it_opens() {
         &["Mozart"],
     )];
     let items = corpus_note_items(&documents, root);
-    // Sorted by name, so the alias comes first — and its detail is the file, not
-    // the folder, because the alias alone does not say what will open.
+    // Sorted by name, so the alias comes first — and its detail is the file, not the folder, because the alias alone does not say what will open.
     assert_eq!(items[0].label, "Mozart");
     assert_eq!(items[0].detail, "Wolfgang Amadeus Mozart");
     assert_eq!(items[1].label, "Wolfgang Amadeus Mozart");
@@ -191,8 +188,7 @@ fn a_folder_answers_aliases_too_from_the_top_of_each_file() {
     )
     .expect("note written");
     fs::write(dir.join("plain.md"), "# Plain\n\nNo field block at all.\n").expect("written");
-    // A field block with no closing fence inside the head is not a block, so the
-    // note has no aliases and nothing about it fails.
+    // A field block with no closing fence inside the head is not a block, so the note has no aliases and nothing about it fails.
     let long: String = (0..600).map(|n| format!("filler-{n}: x\n")).collect();
     fs::write(
         dir.join("huge.md"),
@@ -229,8 +225,7 @@ fn a_folder_answers_aliases_too_from_the_top_of_each_file() {
 #[test]
 fn a_folder_stops_at_the_cap_and_survives_a_file_cut_mid_character() {
     let dir = intel_dir("folder-cap");
-    // 600 files, of which the 500 the listing sorts first are opened. `zzz.md`
-    // sorts last, so its alias is past the cap.
+    // 600 files, of which the 500 the listing sorts first are opened. `zzz.md` sorts last, so its alias is past the cap.
     for index in 0..600 {
         fs::write(dir.join(format!("note-{index:03}.md")), "# Note\n").expect("written");
     }
@@ -244,8 +239,7 @@ fn a_folder_stops_at_the_cap_and_survives_a_file_cut_mid_character() {
 
     fs::remove_dir_all(&dir).ok();
 
-    // A wide file whose head read lands inside a character: the split bytes come
-    // off rather than decoding as something the file does not say.
+    // A wide file whose head read lands inside a character: the split bytes come off rather than decoding as something the file does not say.
     let dir = intel_dir("folder-wide");
     let text = format!("---\naliases: [Wide]\n---\n\n# {}\n", "😀".repeat(400));
     let wide = crate::encode_source(
@@ -305,8 +299,7 @@ fn lint_marks_missing_paths_and_unknown_notes_and_nothing_else() {
 fn lint_columns_count_utf16_units_the_way_the_editor_does() {
     let dir = intel_dir("utf16");
     let source = dir.join("doc.md");
-    // Emoji ahead of the link: 4 bytes, 2 UTF-16 units, 1 char. Monaco counts
-    // UTF-16 units, so the column must land after 2, not 4 or 1.
+    // Emoji ahead of the link: 4 bytes, 2 UTF-16 units, 1 char. Monaco counts UTF-16 units, so the column must land after 2, not 4 or 1.
     let text = "😀 [gone](missing.md)\n";
     fs::write(&source, text).expect("source written");
 
@@ -332,8 +325,7 @@ fn lint_says_when_two_notes_answer_to_one_name() {
     let text = "Go to [[Shared]], and to [[Only Mine]].\n";
     fs::write(&source, text).expect("source written");
 
-    // "Shared" is one note's file name and another's alias, so a link to it opens
-    // the file and the other note is left out of a link its author expected.
+    // "Shared" is one note's file name and another's alias, so a link to it opens the file and the other note is left out of a link its author expected.
     let names = note_names(&[
         ("Shared", &[]),
         ("First", &["Shared"]),

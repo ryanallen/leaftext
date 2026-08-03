@@ -45,9 +45,7 @@ fn assert_contains(haystack: &str, needle: &str) {
     );
 }
 
-/// The page and the front-end script together. The script is served as `app.js`
-/// rather than inlined, so a test that asserts on both has to be handed both — one
-/// string, in load order, which is what the web view ends up with anyway.
+/// The page and the front-end script together. The script is served as `app.js` rather than inlined, so a test that asserts on both has to be handed both — one string, in load order, which is what the web view ends up with anyway.
 fn app_shell_page() -> String {
     format!(
         "{}
@@ -57,9 +55,7 @@ fn app_shell_page() -> String {
     )
 }
 
-/// An icon reaches the page as a name, not a drawing: the element carries
-/// `lt-icon lt-icon-<name>` and the stylesheet holds the mask. Both halves are
-/// checked, because either alone draws nothing.
+/// An icon reaches the page as a name, not a drawing: the element carries `lt-icon lt-icon-<name>` and the stylesheet holds the mask. Both halves are checked, because either alone draws nothing.
 fn assert_icon(html: &str, name: &str) {
     assert!(
         html.contains(&format!("lt-icon lt-icon-{name}")),
@@ -72,8 +68,7 @@ fn assert_icon(html: &str, name: &str) {
     );
 }
 
-/// One rule's declarations, from its selector to the first closing brace. The
-/// compiled stylesheet has no nested rules, so the first `}` is always the end.
+/// One rule's declarations, from its selector to the first closing brace. The compiled stylesheet has no nested rules, so the first `}` is always the end.
 fn rule_body<'a>(css: &'a str, selector: &str) -> &'a str {
     let start = css
         .find(selector)
@@ -129,9 +124,7 @@ fn tiny_png_bytes() -> &'static [u8] {
 fn css_token(css: &str, theme: ResolvedTheme, name: &str) -> Rgb {
     let leaf_alias_block = css_block(css, ":root {");
     let mut blocks = vec![leaf_alias_block];
-    // The `:root` aliases point at `--lt-*` tokens defined in the github family
-    // block, which hold concrete hex. Load it so the var() chain resolves for the
-    // default theme.
+    // The `:root` aliases point at `--lt-*` tokens defined in the github family block, which hold concrete hex. Load it so the var() chain resolves for the default theme.
     let family_block = match theme {
         ResolvedTheme::Light => {
             r#":root[data-leaf-theme="github"][data-leaf-appearance="light"] {"#

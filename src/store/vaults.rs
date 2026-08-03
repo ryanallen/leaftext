@@ -1,16 +1,12 @@
 //! Vaults: folders the app treats as library roots.
 //!
-//! A vault is a row in this table and nothing else. Nothing is written into the
-//! folder — no marker, no dotfile — so adding one leaves the user's files
-//! exactly as they were, and removing one leaves nothing behind.
+//! A vault is a row in this table and nothing else. Nothing is written into the folder — no marker, no dotfile — so adding one leaves the user's files exactly as they were, and removing one leaves nothing behind.
 //!
-//! A vault scopes the library pane. It never scopes what a tab may open: a file
-//! from anywhere still opens and renders normally.
+//! A vault scopes the library pane. It never scopes what a tab may open: a file from anywhere still opens and renders normally.
 
 use super::*;
 
-/// One registered vault. `id` is the row id and the only identity anything keys
-/// on — never the name, which the user may repeat.
+/// One registered vault. `id` is the row id and the only identity anything keys on — never the name, which the user may repeat.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Vault {
@@ -22,8 +18,7 @@ pub struct Vault {
 /// The `app_state` key holding the active vault's id.
 const ACTIVE_VAULT_KEY: &str = "active_vault";
 
-/// Every vault, oldest first, so the switcher's order is the order they were
-/// added rather than something that reshuffles as folders are renamed.
+/// Every vault, oldest first, so the switcher's order is the order they were added rather than something that reshuffles as folders are renamed.
 pub fn list_vaults(conn: &Connection) -> DbResult<Vec<Vault>> {
     let mut stmt = conn
         .prepare("SELECT id, name, root_path FROM vaults ORDER BY added_at, id")
@@ -44,8 +39,7 @@ pub fn list_vaults(conn: &Connection) -> DbResult<Vec<Vault>> {
     Ok(vaults)
 }
 
-/// Register `root` as a vault and return it. A folder that is already a vault is
-/// returned as it stands — picking it again opens it rather than doubling it.
+/// Register `root` as a vault and return it. A folder that is already a vault is returned as it stands — picking it again opens it rather than doubling it.
 pub fn add_vault(conn: &Connection, root: &Path, name: &str) -> DbResult<Vault> {
     let root_path = path_to_string(root);
     conn.execute(
@@ -67,8 +61,7 @@ pub fn add_vault(conn: &Connection, root: &Path, name: &str) -> DbResult<Vault> 
     .map_err(to_err)
 }
 
-/// Relabel a vault. The name is only a label — the folder is untouched, and two
-/// vaults may end up reading alike, which is why nothing keys on it.
+/// Relabel a vault. The name is only a label — the folder is untouched, and two vaults may end up reading alike, which is why nothing keys on it.
 pub fn rename_vault(conn: &Connection, id: i64, name: &str) -> DbResult<()> {
     let name = name.trim();
     if name.is_empty() {
@@ -82,9 +75,7 @@ pub fn rename_vault(conn: &Connection, id: i64, name: &str) -> DbResult<()> {
     Ok(())
 }
 
-/// Point an existing vault at a different folder — the fix for picking the wrong
-/// one. Fails if another vault already holds that folder, since `root_path` is
-/// unique and two rows for one folder are two names for the same place.
+/// Point an existing vault at a different folder — the fix for picking the wrong one. Fails if another vault already holds that folder, since `root_path` is unique and two rows for one folder are two names for the same place.
 pub fn set_vault_root(conn: &Connection, id: i64, root: &Path) -> DbResult<()> {
     let root_path = path_to_string(root);
     let taken: i64 = conn
@@ -105,17 +96,14 @@ pub fn set_vault_root(conn: &Connection, id: i64, root: &Path) -> DbResult<()> {
     Ok(())
 }
 
-/// Forget a vault. The row goes; the folder and every file in it stay exactly as
-/// they are, because nothing was ever written into it.
+/// Forget a vault. The row goes; the folder and every file in it stay exactly as they are, because nothing was ever written into it.
 pub fn remove_vault(conn: &Connection, id: i64) -> DbResult<()> {
     conn.execute("DELETE FROM vaults WHERE id = ?1", params![id])
         .map_err(to_err)?;
     Ok(())
 }
 
-/// The vault whose folder holds `path`, or `None` when no vault does. The
-/// innermost wins: a vault nested inside another owns the files under it, which
-/// is the same rule the pane uses when both are on the list.
+/// The vault whose folder holds `path`, or `None` when no vault does. The innermost wins: a vault nested inside another owns the files under it, which is the same rule the pane uses when both are on the list.
 pub fn vault_containing(conn: &Connection, path: &Path) -> Option<Vault> {
     let path = path_to_string(path);
     list_vaults(conn)
@@ -125,16 +113,12 @@ pub fn vault_containing(conn: &Connection, path: &Path) -> Option<Vault> {
         .max_by_key(|vault| vault.root_path.len())
 }
 
-/// Whether a vault rooted at `root` holds `path`. The same rule
-/// [`vault_containing`] matches on, so "which vault owns this file" and "does this
-/// vault own this file" can never disagree — and so `C:\Notes` still owns
-/// `c:\notes\today.md`, which a plain `starts_with` would deny.
+/// Whether a vault rooted at `root` holds `path`. The same rule [`vault_containing`] matches on, so "which vault owns this file" and "does this vault own this file" can never disagree — and so `C:\Notes` still owns `c:\notes\today.md`, which a plain `starts_with` would deny.
 pub fn vault_holds(root: &Path, path: &Path) -> bool {
     holds(&path_to_string(root), &path_to_string(path))
 }
 
-/// Whether `root` is `path` or an ancestor of it. Compared case-insensitively on
-/// Windows, where the same file is reachable under either spelling.
+/// Whether `root` is `path` or an ancestor of it. Compared case-insensitively on Windows, where the same file is reachable under either spelling.
 fn holds(root: &str, path: &str) -> bool {
     let separator = std::path::MAIN_SEPARATOR;
     let root = root.trim_end_matches(separator);
@@ -146,8 +130,7 @@ fn holds(root: &str, path: &str) -> bool {
     } else {
         rest == root
     };
-    // `C:\notes` must not claim `C:\notes-old`: what follows has to be the
-    // separator, or nothing at all.
+    // `C:\notes` must not claim `C:\notes-old`: what follows has to be the separator, or nothing at all.
     matches
         && path[root.len()..]
             .chars()
@@ -155,8 +138,7 @@ fn holds(root: &str, path: &str) -> bool {
             .is_none_or(|c| c == separator)
 }
 
-/// The vault with this id, or `None` — including for `0`, which is the whole
-/// library rather than a vault.
+/// The vault with this id, or `None` — including for `0`, which is the whole library rather than a vault.
 pub fn find_vault(conn: &Connection, id: i64) -> DbResult<Option<Vault>> {
     if id == 0 {
         return Ok(None);
@@ -179,9 +161,7 @@ pub fn find_vault(conn: &Connection, id: i64) -> DbResult<Option<Vault>> {
     })
 }
 
-/// The active vault's id, or `0` for the whole library. Anything unreadable or
-/// unparseable reads as `0`: the pane falls back to what it has always shown
-/// rather than to nothing.
+/// The active vault's id, or `0` for the whole library. Anything unreadable or unparseable reads as `0`: the pane falls back to what it has always shown rather than to nothing.
 pub fn active_vault_id(conn: &Connection) -> i64 {
     conn.query_row(
         "SELECT value FROM app_state WHERE key = ?1",
@@ -204,8 +184,7 @@ pub fn set_active_vault_id(conn: &Connection, id: i64) -> DbResult<()> {
     Ok(())
 }
 
-/// The name a newly added vault gets: its folder's name, falling back to the
-/// whole path for a drive root like `C:\`.
+/// The name a newly added vault gets: its folder's name, falling back to the whole path for a drive root like `C:\`.
 pub fn default_vault_name(root: &Path) -> String {
     let from_name = root
         .file_name()

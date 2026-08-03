@@ -78,8 +78,7 @@ use wry::{
 use app::*;
 
 fn main() {
-    // A detached copy of this binary, spawned by the app to install a staged
-    // update after the app exits. It opens no window and touches no settings.
+    // A detached copy of this binary, spawned by the app to install a staged update after the app exits. It opens no window and touches no settings.
     if let Some(request) = platform::parse_apply_request(env::args()) {
         if let Err(error) = platform::run_update_apply(&request) {
             eprintln!("Update failed: {error}");
@@ -87,12 +86,10 @@ fn main() {
         return;
     }
 
-    // Behind `just squeeze-png`: documentation images go out through the same
-    // encoder the diagram export uses, never a second one. Opens no window.
+    // Behind `just squeeze-png`: documentation images go out through the same encoder the diagram export uses, never a second one. Opens no window.
     let argv: Vec<String> = env::args().collect();
     if argv.len() >= 4 && argv[1] == "--squeeze-png" {
-        // Cuts to 256 colors first — half the file on a screenshot, and the one
-        // step that moves a pixel, so no export asks for it.
+        // Cuts to 256 colors first — half the file on a screenshot, and the one step that moves a pixel, so no export asks for it.
         let palette = argv.iter().any(|arg| arg == "--palette");
         match squeeze_png(&argv[2], &argv[3], palette) {
             Ok(report) => println!("{report}"),
@@ -104,10 +101,7 @@ fn main() {
         return;
     }
 
-    // Behind `just bundle-gallery`: the compiled stylesheet, so the gallery page in
-    // the repo is painted by the same CSS the app paints itself with. Only the app can
-    // produce it — the theme compiler is Rust — and a node script must not grow a
-    // second one. Opens no window.
+    // Behind `just bundle-gallery`: the compiled stylesheet, so the gallery page in the repo is painted by the same CSS the app paints itself with. Only the app can produce it — the theme compiler is Rust — and a node script must not grow a second one. Opens no window.
     if argv.len() >= 2 && argv[1] == "--dump-css" {
         print!("{}", reading_mode_css());
         return;
@@ -120,10 +114,7 @@ fn main() {
     }
 }
 
-/// Decode the bundled leaf logo into a window icon. Used on non-Windows platforms;
-/// on Windows the taskbar rides the executable's embedded icon and the caption is
-/// left icon-free, so no window icon is set there. Compiled out entirely there,
-/// which is what keeps the PNG decoder off the Windows dependency tree.
+/// Decode the bundled leaf logo into a window icon. Used on non-Windows platforms; on Windows the taskbar rides the executable's embedded icon and the caption is left icon-free, so no window icon is set there. Compiled out entirely there, which is what keeps the PNG decoder off the Windows dependency tree.
 #[cfg(not(windows))]
 fn load_window_icon() -> Option<Icon> {
     const ICON_PNG: &[u8] = include_bytes!("assets/leaf-256.png");
@@ -138,10 +129,7 @@ fn load_window_icon() -> Option<Icon> {
     Icon::from_rgba(buffer, info.width, info.height).ok()
 }
 
-/// Paint the native Windows title bar to the page background and the window
-/// border to the theme's divider color, all reported by the webview on theme
-/// change. Caption/border/text colors need Windows 11 (build 22000+); older
-/// builds ignore the error, so it's a no-op there (dark mode still applies).
+/// Paint the native Windows title bar to the page background and the window border to the theme's divider color, all reported by the webview on theme change. Caption/border/text colors need Windows 11 (build 22000+); older builds ignore the error, so it's a no-op there (dark mode still applies).
 #[cfg(windows)]
 #[allow(clippy::too_many_arguments)]
 fn apply_window_chrome(
@@ -178,21 +166,16 @@ fn apply_window_chrome(
         return;
     }
 
-    // Paint the caption the exact page color so the title bar reads as part of
-    // the background in every theme; the window's border color (below) still
-    // traces its outer edge, and the reader's own app bar carries a divider.
-    // COLORREF packs as 0x00BBGGRR.
+    // Paint the caption the exact page color so the title bar reads as part of the background in every theme; the window's border color (below) still traces its outer edge, and the reader's own app bar carries a divider. COLORREF packs as 0x00BBGGRR.
     let caption = u32::from(r) | (u32::from(g) << 8) | (u32::from(b) << 16);
-    // Choose caption text by background luminance so the title stays legible
-    // whatever the theme paints behind it.
+    // Choose caption text by background luminance so the title stays legible whatever the theme paints behind it.
     let luminance = 0.299 * f32::from(r) + 0.587 * f32::from(g) + 0.114 * f32::from(b);
     let text: u32 = if luminance < 140.0 {
         0x00ff_ffff
     } else {
         0x0020_2020
     };
-    // The window border takes the theme's divider color; the caption stays the
-    // page color.
+    // The window border takes the theme's divider color; the caption stays the page color.
     let border = (border_r as u32) | ((border_g as u32) << 8) | ((border_b as u32) << 16);
     let dark_flag: i32 = i32::from(dark);
 
@@ -219,8 +202,7 @@ fn apply_window_chrome(
     }
 }
 
-/// Other platforms keep their native chrome; the system already follows the OS
-/// light/dark preference there.
+/// Other platforms keep their native chrome; the system already follows the OS light/dark preference there.
 #[cfg(not(windows))]
 #[allow(clippy::too_many_arguments)]
 fn apply_window_chrome(
@@ -235,9 +217,7 @@ fn apply_window_chrome(
 ) {
 }
 
-/// A BMP in, the smallest PNG we can write out. BMP because the screenshot tool
-/// can save one without an encoder of its own, which keeps this the only encoder
-/// in the project.
+/// A BMP in, the smallest PNG we can write out. BMP because the screenshot tool can save one without an encoder of its own, which keeps this the only encoder in the project.
 fn squeeze_png(source: &str, target: &str, palette: bool) -> Result<String, Box<dyn Error>> {
     let bmp = std::fs::read(source)?;
     let before = bmp.len();
@@ -254,25 +234,19 @@ fn squeeze_png(source: &str, target: &str, palette: bool) -> Result<String, Box<
 }
 
 fn run_app() -> Result<(), Box<dyn Error>> {
-    // First, so everything below has somewhere to print. Not in the tool modes
-    // above (`--squeeze-png`, `--dump-css`): those are run from a terminal that
-    // is already watching stderr.
+    // First, so everything below has somewhere to print. Not in the tool modes above (`--squeeze-png`, `--dump-css`): those are run from a terminal that is already watching stderr.
     journal::start();
 
-    // A file passed on the command line. Used to hand off to a running instance,
-    // or to open on boot if we're the first instance.
+    // A file passed on the command line. Used to hand off to a running instance, or to open on boot if we're the first instance.
     let arg_path = env::args_os().nth(1).map(PathBuf::from);
 
-    // Claim the single-instance slot. If another instance is running, the path
-    // was forwarded to it — exit without building UI. Held for the process
-    // lifetime (a bare `_` would drop it immediately, freeing the slot).
+    // Claim the single-instance slot. If another instance is running, the path was forwarded to it — exit without building UI. Held for the process lifetime (a bare `_` would drop it immediately, freeing the slot).
     let _instance_guard = match single_instance::acquire(arg_path.as_deref()) {
         single_instance::Acquire::Primary(guard) => guard,
         single_instance::Acquire::Forwarded => return Ok(()),
     };
 
-    // Load settings before building the window so it reopens at the size and
-    // maximized state the user left it. The rest ride to the webview below.
+    // Load settings before building the window so it reopens at the size and maximized state the user left it. The rest ride to the webview below.
     let settings_path = settings_file_path();
     let SettingsLoad {
         mut settings,
@@ -282,28 +256,19 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .map(load_settings)
         .unwrap_or_default();
 
-    // Before the page can ask about updates, settle what happened to the last
-    // one: clear a record the running version already satisfies, and sweep away
-    // installers (and the helper copy) that are no longer needed.
-    // Nothing here removes a copy left by an older per-machine build: both
-    // attempts at that (v0.1.363, v0.1.364) ended with the wrong copy running.
-    // The release notes ask people to uninstall the old version instead.
+    // Before the page can ask about updates, settle what happened to the last one: clear a record the running version already satisfies, and sweep away installers (and the helper copy) that are no longer needed. Nothing here removes a copy left by an older per-machine build: both attempts at that (v0.1.363, v0.1.364) ended with the wrong copy running. The release notes ask people to uninstall the old version instead.
     let settings_dirty = reconcile_staged_update(&mut settings);
 
     if settings_dirty {
         persist_settings(&settings, settings_path.as_ref());
     }
 
-    // An update downloaded last session installs itself now, before any window
-    // exists — Windows cannot replace a running executable, so this is the only
-    // click-free moment. Quit and reopen, and the app that comes up is the new one.
+    // An update downloaded last session installs itself now, before any window exists — Windows cannot replace a running executable, so this is the only click-free moment. Quit and reopen, and the app that comes up is the new one.
     if auto_apply_staged_update(&mut settings, settings_path.as_ref()) {
         return Ok(());
     }
 
-    // What the detached applier had to say about the last install, if it ran. Read
-    // once and deleted, and only printed: the page says nothing about updates it
-    // cannot install, and a failed one retries on its own.
+    // What the detached applier had to say about the last install, if it ran. Read once and deleted, and only printed: the page says nothing about updates it cannot install, and a failed one retries on its own.
     if let Some(data_dir) = app_data_dir() {
         if let Some(outcome) = leaftext::take_apply_outcome(&data_dir).filter(|outcome| !outcome.ok)
         {
@@ -325,10 +290,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         ))
         .with_min_inner_size(LogicalSize::new(380.0, 480.0))
         .with_maximized(settings.window_maximized);
-    // On Windows we drop the native title bar (removing just its icon falls back
-    // to a placeholder) for a custom one: the app bar is the drag region and
-    // carries our own window controls (wired via IPC). undecorated_shadow keeps the
-    // shadow and edge resize; the taskbar leaf rides the exe icon. Others: native.
+    // On Windows we drop the native title bar (removing just its icon falls back to a placeholder) for a custom one: the app bar is the drag region and carries our own window controls (wired via IPC). undecorated_shadow keeps the shadow and edge resize; the taskbar leaf rides the exe icon. Others: native.
     #[cfg(windows)]
     {
         use tao::platform::windows::WindowBuilderExtWindows;
@@ -344,8 +306,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
 
     let proxy = event_loop.create_proxy();
 
-    // Later launches forward their request here over the single-instance pipe:
-    // open the file they carried, or just focus when they carried none.
+    // Later launches forward their request here over the single-instance pipe: open the file they carried, or just focus when they carried none.
     single_instance::serve({
         let proxy = proxy.clone();
         move |maybe_path| {
@@ -356,8 +317,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         }
     });
 
-    // Answers questions about this running app on a local channel. Nothing it
-    // does can change the app; see src/pipe.rs.
+    // Answers questions about this running app on a local channel. Nothing it does can change the app; see src/pipe.rs.
     pipe::serve(proxy.clone());
 
     let handler = ipc_handler(proxy.clone());
@@ -368,19 +328,14 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         eprintln!("Using WebView2 user data folder: {}", path.display());
     }
 
-    // The persisted toggles and recent files are handed to the webview as
-    // initialization scripts (run before any page script), so theme and library
-    // render from saved state on the first paint. Loaded here to ride in on the
-    // same scripts rather than being injected post-build, which raced the load.
+    // The persisted toggles and recent files are handed to the webview as initialization scripts (run before any page script), so theme and library render from saved state on the first paint. Loaded here to ride in on the same scripts rather than being injected post-build, which raced the load.
     let config_path = config_file_path();
     let recent = config_path
         .as_ref()
         .map(load_recent_files)
         .unwrap_or_default();
 
-    // The vault registry, so the leftmost crumb reads the active vault's name on
-    // the first paint. Opening the manifest here is also what applies its
-    // migrations, before anything else reads it.
+    // The vault registry, so the leftmost crumb reads the active vault's name on the first paint. Opening the manifest here is also what applies its migrations, before anything else reads it.
     let data_dir = app_data_dir();
     let vault_state = VaultState::load(data_dir.as_deref());
 
@@ -396,11 +351,9 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .with_initialization_script(initial_document_exts_script())
         .with_initialization_script(initial_version_script())
         .with_initialization_script(initial_update_script())
-        // Whether the OS window is frameless (Windows), so the frontend shows its
-        // own title-bar chrome — drag region + minimize/maximize/close buttons.
+        // Whether the OS window is frameless (Windows), so the frontend shows its own title-bar chrome — drag region + minimize/maximize/close buttons.
         .with_initialization_script(format!("window.__leafFrameless = {};", cfg!(windows)))
-        // Initial maximized state, so the maximize button shows the restore-down
-        // icon from the first paint when the window opens maximized.
+        // Initial maximized state, so the maximize button shows the restore-down icon from the first paint when the window opens maximized.
         .with_initialization_script(format!(
             "window.__leafMaximized = {};",
             settings.window_maximized
@@ -428,11 +381,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             }
         });
 
-    // Trim WebView2's footprint for a single-window offline reader. This replaces
-    // wry's default arg string, so its defaults (msWebOOUI/msPdfOOUI/SmartScreen
-    // off, autoplay policy) are folded back in. Site isolation is off (Leaf has
-    // no cross-origin content), GPU stays on for smooth scroll, and the renderer
-    // is un-backgrounded so it stays responsive when occluded.
+    // Trim WebView2's footprint for a single-window offline reader. This replaces wry's default arg string, so its defaults (msWebOOUI/msPdfOOUI/SmartScreen off, autoplay policy) are folded back in. Site isolation is off (Leaf has no cross-origin content), GPU stays on for smooth scroll, and the renderer is un-backgrounded so it stays responsive when occluded.
     #[cfg(windows)]
     let builder = {
         use wry::WebViewBuilderExtWindows;
@@ -449,32 +398,25 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         ))
     };
 
-    // Windows and macOS both host the web view in the window directly, so this
-    // builds against the window itself rather than a container widget.
+    // Windows and macOS both host the web view in the window directly, so this builds against the window itself rather than a container widget.
     let webview = builder.build(&window)?;
 
     let workspace = Workspace::default();
 
     update_active_navigation(Some(&webview), &workspace);
 
-    // A command-line file waits here until the webview reports its first page
-    // load; rendering it before the page's JS hooks exist would silently land on
-    // the home screen. WebviewReady flushes it once the page is ready.
+    // A command-line file waits here until the webview reports its first page load; rendering it before the page's JS hooks exist would silently land on the home screen. WebviewReady flushes it once the page is ready.
     let pending_open_path = arg_path;
 
     let webview = Some(webview);
     let _web_context = web_context;
     let file_watch = FileWatch::new(proxy.clone());
 
-    // Size to restore next launch: the inner size the last time it was *not*
-    // maximized, in logical px, so a maximized-at-close window still returns to
-    // its windowed dimensions.
+    // Size to restore next launch: the inner size the last time it was *not* maximized, in logical px, so a maximized-at-close window still returns to its windowed dimensions.
     let last_windowed_size =
         LogicalSize::new(settings.window_width as f64, settings.window_height as f64);
 
-    // Last maximized state pushed to the webview, so the custom title bar's
-    // maximize/restore icon tracks maximize changes from any source (the button,
-    // a double-click, snap, or Win+Up), not just the button.
+    // Last maximized state pushed to the webview, so the custom title bar's maximize/restore icon tracks maximize changes from any source (the button, a double-click, snap, or Win+Up), not just the button.
     let last_maximized = settings.window_maximized;
 
     let ctx = AppCtx {
@@ -541,8 +483,7 @@ fn local_image_protocol_handler(
     }
 }
 
-// Serves the binary's bundled mermaid/KaTeX assets so diagrams and math render
-// offline — no CDN.
+// Serves the binary's bundled mermaid/KaTeX assets so diagrams and math render offline — no CDN.
 fn bundled_asset_protocol_handler(
 ) -> impl Fn(wry::WebViewId, Request<Vec<u8>>) -> Response<Cow<'static, [u8]>> {
     move |_webview_id, request| {
@@ -579,8 +520,7 @@ fn show_startup_error(message: &str) {
         .show();
 }
 
-/// The Open dialog: one filter per format plus a combined one, both derived from
-/// the format table so the picker can't offer or omit a format the renderer has.
+/// The Open dialog: one filter per format plus a combined one, both derived from the format table so the picker can't offer or omit a format the renderer has.
 fn pick_document_file() -> Option<PathBuf> {
     let mut dialog = FileDialog::new()
         .set_title("Open Document")
@@ -591,10 +531,7 @@ fn pick_document_file() -> Option<PathBuf> {
     dialog.add_filter("All files", &["*"]).pick_file()
 }
 
-/// Where a document that has never had a file goes. The same filters as Open,
-/// off the same table, with the name it has been wearing as the suggestion — so
-/// the first save of a new document is a Save As and nothing is written until
-/// someone has said where.
+/// Where a document that has never had a file goes. The same filters as Open, off the same table, with the name it has been wearing as the suggestion — so the first save of a new document is a Save As and nothing is written until someone has said where.
 fn pick_save_path(current: &Path) -> Option<PathBuf> {
     let mut dialog = FileDialog::new().set_title("Save Document As");
     if let Some(name) = current.file_name().and_then(|name| name.to_str()) {
@@ -606,9 +543,7 @@ fn pick_save_path(current: &Path) -> Option<PathBuf> {
     dialog.add_filter("All files", &["*"]).save_file()
 }
 
-/// Where an exported flowchart goes. One filter, for the format the sheet was
-/// asked for: an export is one file of one kind, so offering the others would
-/// only be a way to name it wrong.
+/// Where an exported flowchart goes. One filter, for the format the sheet was asked for: an export is one file of one kind, so offering the others would only be a way to name it wrong.
 fn pick_export_path(name: &str, label: &str, extension: &str) -> Option<PathBuf> {
     FileDialog::new()
         .set_title("Export Diagram")
@@ -617,8 +552,7 @@ fn pick_export_path(name: &str, label: &str, extension: &str) -> Option<PathBuf>
         .save_file()
 }
 
-/// The Insert image dialog. Filtered to what a web view can draw, since a
-/// document can only show what the page can.
+/// The Insert image dialog. Filtered to what a web view can draw, since a document can only show what the page can.
 fn pick_image_file() -> Option<PathBuf> {
     FileDialog::new()
         .set_title("Choose an image")
@@ -632,20 +566,16 @@ fn pick_image_file() -> Option<PathBuf> {
         .pick_file()
 }
 
-/// The New vault dialog: a folder, since a vault is a folder. Nothing is written
-/// into it — the app records the choice itself.
+/// The New vault dialog: a folder, since a vault is a folder. Nothing is written into it — the app records the choice itself.
 fn pick_vault_folder() -> Option<PathBuf> {
     FileDialog::new()
         .set_title("Choose a vault folder")
         .pick_folder()
 }
 
-/// Open each dropped document as a tab. Returns `true` to block the webview's
-/// default drop behavior (a useless "copy" cursor).
+/// Open each dropped document as a tab. Returns `true` to block the webview's default drop behavior (a useless "copy" cursor).
 ///
-/// Always reports the drag as handled, which is also what keeps the web view from
-/// doing anything of its own with one — including its own drag and drop. Anything
-/// in the page built on HTML drag events would need this to answer per drag instead.
+/// Always reports the drag as handled, which is also what keeps the web view from doing anything of its own with one — including its own drag and drop. Anything in the page built on HTML drag events would need this to answer per drag instead.
 fn drag_drop_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(DragDropEvent) -> bool {
     move |event| {
         if let DragDropEvent::Drop { paths, .. } = event {
@@ -659,5 +589,4 @@ fn drag_drop_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(DragDropEvent)
     }
 }
 
-// The binary's tests live under app/, beside the code they cover. Both crate roots
-// share src/, so a bare `mod tests;` here would find the library's test tree.
+// The binary's tests live under app/, beside the code they cover. Both crate roots share src/, so a bare `mod tests;` here would find the library's test tree.

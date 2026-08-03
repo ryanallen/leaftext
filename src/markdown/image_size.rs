@@ -1,23 +1,16 @@
 //! An image's own pixel size, read out of its header and stamped onto the tag.
 //!
-//! Without it every picture lands at nothing and grows when it decodes, reflowing
-//! the document and moving the words under the reader's eyes. Only the ratio is
-//! needed: `width`/`height` against the stylesheet's `height: auto` holds the box.
+//! Without it every picture lands at nothing and grows when it decodes, reflowing the document and moving the words under the reader's eyes. Only the ratio is needed: `width`/`height` against the stylesheet's `height: auto` holds the box.
 
 use super::*;
 
-/// How much of a file we read looking for its size. Every format but JPEG answers
-/// in the first few dozen bytes; JPEG hides its frame header behind whatever EXIF
-/// block comes first, and 64 KiB clears the thumbnails those carry.
+/// How much of a file we read looking for its size. Every format but JPEG answers in the first few dozen bytes; JPEG hides its frame header behind whatever EXIF block comes first, and 64 KiB clears the thumbnails those carry.
 const IMAGE_HEADER_READ_LIMIT: u64 = 64 * 1024;
 
-/// Give up rather than write a number the page would have to scroll around: a
-/// size this big is a corrupt header read as one, not a picture.
+/// Give up rather than write a number the page would have to scroll around: a size this big is a corrupt header read as one, not a picture.
 const IMAGE_MAX_PIXEL_SIZE: u32 = 100_000;
 
-/// Add `width` and `height` to every local image. After the sanitizer on purpose:
-/// the numbers are ours, so `img` keeps the attribute allowlist it was given —
-/// which is what strips a document's own sizing before we get here.
+/// Add `width` and `height` to every local image. After the sanitizer on purpose: the numbers are ours, so `img` keeps the attribute allowlist it was given — which is what strips a document's own sizing before we get here.
 pub(crate) fn stamp_image_intrinsic_sizes(html: &str, source_path: &Path) -> String {
     let Some(source_dir) = local_image_source_dir(source_path) else {
         return html.to_string();
@@ -72,8 +65,7 @@ fn stamp_img_tag(
     )
 }
 
-/// The image's size in pixels, or `None` for a file we can't read, a format we
-/// don't know, or a header that doesn't make sense.
+/// The image's size in pixels, or `None` for a file we can't read, a format we don't know, or a header that doesn't make sense.
 pub(crate) fn image_pixel_size(path: &Path) -> Option<(u32, u32)> {
     let header = read_image_header(path)?;
     let size = png_pixel_size(&header)
@@ -130,8 +122,7 @@ fn gif_pixel_size(header: &[u8]) -> Option<(u32, u32)> {
     Some((little_endian_u16(header, 6)?, little_endian_u16(header, 8)?))
 }
 
-/// BMP writes its height upside down when the rows are stored bottom-up, which is
-/// the usual way, so the sign is a row order and not a size.
+/// BMP writes its height upside down when the rows are stored bottom-up, which is the usual way, so the sign is a row order and not a size.
 fn bmp_pixel_size(header: &[u8]) -> Option<(u32, u32)> {
     if !header.starts_with(b"BM") {
         return None;
@@ -141,9 +132,7 @@ fn bmp_pixel_size(header: &[u8]) -> Option<(u32, u32)> {
     Some((width.unsigned_abs(), height.unsigned_abs()))
 }
 
-/// WebP is three formats behind one signature, each keeping the size somewhere
-/// else: lossy in the VP8 frame header, lossless packed into bit fields, and
-/// extended in a canvas block that stores each side one short.
+/// WebP is three formats behind one signature, each keeping the size somewhere else: lossy in the VP8 frame header, lossless packed into bit fields, and extended in a canvas block that stores each side one short.
 fn webp_pixel_size(header: &[u8]) -> Option<(u32, u32)> {
     if !header.starts_with(b"RIFF") || header.get(8..12)? != b"WEBP" {
         return None;
@@ -176,8 +165,7 @@ fn webp_pixel_size(header: &[u8]) -> Option<(u32, u32)> {
     }
 }
 
-/// Walk the JPEG segment chain to the start-of-frame, which is the only marker
-/// carrying the size. Everything before it is metadata of some length we skip.
+/// Walk the JPEG segment chain to the start-of-frame, which is the only marker carrying the size. Everything before it is metadata of some length we skip.
 fn jpeg_pixel_size(header: &[u8]) -> Option<(u32, u32)> {
     if !header.starts_with(b"\xff\xd8") {
         return None;
@@ -211,11 +199,9 @@ fn jpeg_pixel_size(header: &[u8]) -> Option<(u32, u32)> {
     }
 }
 
-/// An SVG states a size in its own attributes, or implies one with the box it
-/// draws in. Either gives the ratio, which is all the page needs.
+/// An SVG states a size in its own attributes, or implies one with the box it draws in. Either gives the ratio, which is all the page needs.
 fn svg_pixel_size(header: &[u8]) -> Option<(u32, u32)> {
-    // Lossy: an SVG can carry any text at all, and a stray byte in a comment must
-    // not cost the size that sits in the tag.
+    // Lossy: an SVG can carry any text at all, and a stray byte in a comment must not cost the size that sits in the tag.
     let text = String::from_utf8_lossy(header);
     let start = text.find("<svg")?;
     let tag = &text[start..find_html_tag_end(&text, start)?];

@@ -1,9 +1,6 @@
 //! The library pane's files, read straight off the disk.
 //!
-//! The pane shows one folder at a time, so it reads one folder at a time. No
-//! index, no crawl, nothing to go stale — listing a directory is the whole job,
-//! and it costs the same whether the folder sits in a vault or at the top of a
-//! drive. Nothing is walked that nobody opened.
+//! The pane shows one folder at a time, so it reads one folder at a time. No index, no crawl, nothing to go stale — listing a directory is the whole job, and it costs the same whether the folder sits in a vault or at the top of a drive. Nothing is walked that nobody opened.
 //!
 //! The top level is the vault's own folder, or — with no vault — the drive roots.
 
@@ -16,9 +13,7 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-/// Directories never listed: build output and vendored code. Anything hidden (a
-/// leading dot) is skipped too. None of it is what someone opened the pane to
-/// read.
+/// Directories never listed: build output and vendored code. Anything hidden (a leading dot) is skipped too. None of it is what someone opened the pane to read.
 const SKIPPED_DIRS: &[&str] = &[
     "node_modules",
     "target",
@@ -29,8 +24,7 @@ const SKIPPED_DIRS: &[&str] = &[
     "__pycache__",
 ];
 
-/// One step of the trail between the root and the folder on screen. The root
-/// itself is not here — that is the switcher's crumb.
+/// One step of the trail between the root and the folder on screen. The root itself is not here — that is the switcher's crumb.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FolderCrumb {
@@ -38,8 +32,7 @@ pub struct FolderCrumb {
     pub path: String,
 }
 
-/// What the pane needs to draw itself: where it is, how it got there, and what
-/// is in front of it.
+/// What the pane needs to draw itself: where it is, how it got there, and what is in front of it.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FolderListing {
@@ -49,11 +42,9 @@ pub struct FolderListing {
     pub entries: Vec<FileTreeNode>,
 }
 
-/// List one folder. `root` is the active vault's folder, or `None` for the whole
-/// library; `path` is the folder being opened, or empty for the top level.
+/// List one folder. `root` is the active vault's folder, or `None` for the whole library; `path` is the folder being opened, or empty for the top level.
 ///
-/// A `path` that has gone missing, or that sits outside the active vault (the
-/// vault changed under it), falls back to the top rather than to an empty pane.
+/// A `path` that has gone missing, or that sits outside the active vault (the vault changed under it), falls back to the top rather than to an empty pane.
 pub fn read_folder_listing(root: Option<&Path>, path: &str) -> FolderListing {
     match resolve_folder(root, path) {
         Some(dir) => FolderListing {
@@ -61,8 +52,7 @@ pub fn read_folder_listing(root: Option<&Path>, path: &str) -> FolderListing {
             chain: chain_to(root, &dir),
             entries: read_entries(&dir),
         },
-        // No vault and no folder: the drive roots, which is the top of the
-        // library and the one listing that is not a directory read.
+        // No vault and no folder: the drive roots, which is the top of the library and the one listing that is not a directory read.
         None => FolderListing {
             path: String::new(),
             chain: Vec::new(),
@@ -132,14 +122,12 @@ fn drive_root_entries() -> Vec<FileTreeNode> {
         .collect()
 }
 
-/// One directory's immediate children: the folders you can open, and the
-/// documents you can read. Nothing below them is touched — that is the point.
+/// One directory's immediate children: the folders you can open, and the documents you can read. Nothing below them is touched — that is the point.
 fn read_entries(dir: &Path) -> Vec<FileTreeNode> {
     let Ok(entries) = fs::read_dir(dir) else {
         return Vec::new();
     };
-    // A drive root carries the OS's own furniture. Skipped only directly under a
-    // root, where the name is known to be system-owned.
+    // A drive root carries the OS's own furniture. Skipped only directly under a root, where the name is known to be system-owned.
     let at_drive_root = dir.parent().is_none();
 
     let mut folders: Vec<FileTreeNode> = Vec::new();

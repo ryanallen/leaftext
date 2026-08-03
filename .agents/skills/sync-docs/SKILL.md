@@ -81,7 +81,7 @@ A useful check: enumerate the source (e.g. the `IpcCommand` variants, the menu i
 
 **Deepen existing page-level links too.** A link that already points at a page top is wrong when the link text or its sentence names a *specific* topic that has its own section on that page — upgrade it to `page#section`. For example, "Data paths → See [Settings](features/settings.md)" should be `features/settings.md#paths`; "the [library](library.md) pane stays current" (about live updates) should be `library.md#live-updates`. Page-level links remain correct where they genuinely point at the whole page: "Next" lists, overview tables, and a deliberate "relative link" demo.
 
-- **A paragraph is one line.** Never hard-wrap. The renderer reflows, GitHub reflows, every editor reflows — a wrap only costs, on every edit after it. `just check-wrapping` fails on one and names the file; `--fix` joins them. A break doing real work keeps two trailing spaces, or the file carries `<!-- keep-wrapping -->`. **This applies to every Markdown file the sweep in step 7 reaches, not only the page being edited** — a wrapped file is fixed where it is found.
+- **A paragraph is one line.** Never hard-wrap. The renderer reflows, GitHub reflows, every editor reflows — a wrap only costs, on every edit after it. `just check-wrapping` fails on one and names the file; `--fix` joins them, in Markdown and in `.rs`/`.js` comments alike. A break doing real work keeps two trailing spaces, or the file carries `<!-- keep-wrapping -->`. **This applies to every file the sweep in step 7 reaches, not only the page being edited** — a wrapped file is fixed where it is found.
 - A single `# Title` H1, followed by a one-line `> tagline` blockquote, then the intro paragraph.
 - Plain, factual prose. No marketing fluff, no changelog entries ("now supports…"). State current behavior.
 - Keep version numbers and counts (e.g. "last 8 files", "4 parse workers", "2 MB limit", current `Cargo.toml` version) matching the code.
@@ -165,7 +165,7 @@ What each role means in practice:
 | **the guide** (`AGENTS.md`, and `README.md`) | A standing rule changed, or the repo grew a file the guide's tables do not reach. Never a log of what shipped |
 | **a license notice** (`src/assets/*-MIT.md`) | Only when what is vendored changes |
 | **installer text** (`wix/`) | Only when the install flow changes |
-| **any of them, always** | A hard-wrapped paragraph. `just check-wrapping --fix` joins them across both trees, whatever else the sweep found |
+| **any of them, always** | A hard-wrapped paragraph, and the same in a comment in the code. `just check-wrapping --fix` joins them across both trees, whatever else the sweep found |
 | **plan** (`../docs/features/`, `../docs/refactor/`, `../docs/fixes/`) | **The one this step exists for.** A plan for something that now ships is the most misleading writing in either tree: move the file to `../docs/done/`, and move its row in [`../docs/README.md`](../../../../docs/README.md) under Shipped saying what shipped. A plan half-built gets the built part struck through, not deleted |
 | **the running order** (`../docs/plans/`) | Each file is dated and ranks the live tickets on that date. When one ships, the newest ranking's rows about it are wrong. **Do not rewrite a dated ranking** — the date is the point. Note it in the index row, or write a new dated one |
 | **the ticket index** (`../docs/README.md`) | Its "What the folders mean" paragraph names every folder next door, and its "Needs a second look" table holds every ticket whose own status disagrees with the folder it sits in. A new folder or a settled status lands here |
@@ -196,7 +196,7 @@ Page list, titles, summaries, and `<lastmod>` dates are all derived from the cur
 
 ### 9. Verify
 
-- `just check-wrapping` — no paragraph broken across lines, anywhere in either tree.
+- `just check-wrapping` — no paragraph or comment broken across lines, anywhere in either tree.
 - Grep the changed files for leftovers: no `<Tabs`, `<Card`, `<Step`, `<Note`, `<Tip`, `<Warning`, `<Accordion`, or `theme={null}`.
 - `node scripts/doc-images.mjs` — every picture a touched page asks for is there, and any that are not are named in the hand-back with the reason.
 - Re-run `node scripts/seo-gen.mjs` and confirm it leaves the discovery files unchanged (a dirty tree here means step 8 was skipped or a doc changed after it ran).

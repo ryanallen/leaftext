@@ -1,13 +1,7 @@
 #!/usr/bin/env node
-// The commits are the owner's. No assistant or third-party identity in the repo or
-// its history — AGENTS.md, Conventions. Reading that rule was the only thing
-// holding it; this fails the build instead.
+// The commits are the owner's. No assistant or third-party identity in the repo or its history — AGENTS.md, Conventions. Reading that rule was the only thing holding it; this fails the build instead.
 //
-// Three things are checked: every commit's author and committer, every commit
-// message, and every tracked text file. What fails is an *attribution* — a
-// `Co-authored-by:` trailer, a "Generated with" credit, an assistant as the author
-// — not a mention. Naming the rule is allowed, which is why AGENTS.md and the
-// skills can state it and this file can list the patterns.
+// Three things are checked: every commit's author and committer, every commit message, and every tracked text file. What fails is an *attribution* — a `Co-authored-by:` trailer, a "Generated with" credit, an assistant as the author — not a mention. Naming the rule is allowed, which is why AGENTS.md and the skills can state it and this file can list the patterns.
 //
 //   node scripts/check-identity.mjs   report every hit and exit non-zero (`just verify`)
 

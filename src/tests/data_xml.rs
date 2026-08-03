@@ -31,8 +31,7 @@ fn tei_lg_and_bare_l_render_as_verse_blockquotes() {
             &html,
             "<blockquote class=\"tei-verse\">\n<p>Bare line one,<br>\nBare line two.</p>\n</blockquote>",
         );
-    // A following non-<l> block ends the verse run and renders normally. (Match
-    // the closing text, since paragraphs carry inline source-range attributes.)
+    // A following non-<l> block ends the verse run and renders normally. (Match the closing text, since paragraphs carry inline source-range attributes.)
     assert_contains(&html, ">A prose paragraph.</p>");
     // No leftover plain verse paragraph markup.
     assert!(!html.contains("<p class=\"tei-verse\">"));
@@ -40,8 +39,7 @@ fn tei_lg_and_bare_l_render_as_verse_blockquotes() {
 
 #[test]
 fn tei_title_prefers_english_and_stacks_sanskrit_and_long_titles() {
-    // A title matrix listing Tibetan first, to prove selection is by type +
-    // xml:lang, not document order. Uses the odd lang casing seen in the wild.
+    // A title matrix listing Tibetan first, to prove selection is by type + xml:lang, not document order. Uses the odd lang casing seen in the wild.
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
   <teiHeader><fileDesc><titleStmt>
@@ -62,8 +60,7 @@ fn tei_title_prefers_english_and_stacks_sanskrit_and_long_titles() {
     assert_eq!(title.as_deref(), Some("The Chapter on Going Forth"));
     assert_contains(&html, ">The Chapter on Going Forth</h1>");
 
-    // Under the h1: Sanskrit main title, English long title, Sanskrit long
-    // title, in that order, with Sanskrit in italics.
+    // Under the h1: Sanskrit main title, English long title, Sanskrit long title, in that order, with Sanskrit in italics.
     assert_contains(&html, "<div class=\"tei-doc-subtitles\">");
     assert_contains(
         &html,
@@ -119,8 +116,7 @@ fn tei_front_matter_renders_collapsed_before_the_body() {
 
     let (_title, html) = render_xml_body(xml);
 
-    // The front becomes a collapsed <details> (no `open` attribute) labeled
-    // with its section headings, and it holds the summary/acknowledgment text.
+    // The front becomes a collapsed <details> (no `open` attribute) labeled with its section headings, and it holds the summary/acknowledgment text.
     assert_contains(
             &html,
             "<details class=\"tei-front\">\n<summary class=\"tei-front-summary\">Summary, Acknowledgments</summary>",
@@ -138,8 +134,7 @@ fn tei_front_matter_renders_collapsed_before_the_body() {
 
 #[test]
 fn tei_headings_shrink_with_nesting_never_invert() {
-    // A `chapter` nested in a `section`: a type→level table would render the
-    // nested chapter larger, so heading level must follow nesting depth.
+    // A `chapter` nested in a `section`: a type→level table would render the nested chapter larger, so heading level must follow nesting depth.
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
   <text><body>
@@ -159,8 +154,7 @@ fn tei_headings_shrink_with_nesting_never_invert() {
 
     let (_title, html) = render_xml_body(xml);
 
-    // Transparent `translation` adds no depth: h2, h3, h4, strictly shrinking.
-    // Match on id + text, since headings carry inline source-range attributes.
+    // Transparent `translation` adds no depth: h2, h3, h4, strictly shrinking. Match on id + text, since headings carry inline source-range attributes.
     assert_contains(&html, r#"id="outer-section">Outer Section</h2>"#);
     assert_contains(&html, r#"id="inner-chapter">Inner Chapter</h3>"#);
     assert_contains(&html, r#"id="deeper-section">Deeper Section</h4>"#);
@@ -186,8 +180,7 @@ fn sitemap_records_render_as_a_table_of_links() {
 
     let (title, html) = render_xml_body(xml);
 
-    // A sitemap names no title of its own; the file name heads it (see
-    // `opened_document_from_xml`), so the renderer reports none.
+    // A sitemap names no title of its own; the file name heads it (see `opened_document_from_xml`), so the renderer reports none.
     assert!(title.is_none(), "{title:?}");
     // Repeated flat records become one table, with spelled-out column headings.
     assert_contains(&html, "<table class=\"data-table\"");
@@ -216,15 +209,13 @@ fn feed_renders_its_title_fields_and_entries() {
 
     let (title, html) = render_xml_body(xml);
 
-    // The channel title titles the document, and isn't repeated as a field or
-    // as a heading for the wrapper it came from.
+    // The channel title titles the document, and isn't repeated as a field or as a heading for the wrapper it came from.
     assert_eq!(title.as_deref(), Some("Leaf Notes"));
     assert_contains(&html, ">Leaf Notes</h1>");
     assert_eq!(html.matches("Leaf Notes").count(), 1, "{html}");
     assert!(!html.contains(">Channel</h2>"), "{html}");
 
-    // Leaf children become one label/value list, camelCase names read as words,
-    // and a lone URL value links.
+    // Leaf children become one label/value list, camelCase names read as words, and a lone URL value links.
     assert_contains(&html, "<dl class=\"data-fields\">");
     assert_contains(&html, "<dt>Last built</dt>");
     assert_contains(
@@ -247,17 +238,14 @@ fn atom_link_attributes_stand_in_for_missing_text() {
 
     let (_title, html) = render_xml_body(xml);
 
-    // An empty element with one attribute shows that attribute as its value,
-    // unlabeled — the element's own label already names it. (Match around the
-    // inline source-range attributes.)
+    // An empty element with one attribute shows that attribute as its value, unlabeled — the element's own label already names it. (Match around the inline source-range attributes.)
     assert_contains(&html, "<dt>Link</dt><dd data-block-id=");
     assert_contains(
         &html,
         "<a href=\"http://example.org/\">http://example.org/</a></dd>",
     );
     assert!(!html.contains("Link: <a"), "{html}");
-    // A section named by a `<name>` child is qualified by its tag, so a person's
-    // name doesn't read as a section title on its own.
+    // A section named by a `<name>` child is qualified by its tag, so a person's name doesn't read as a section title on its own.
     assert_contains(&html, ">Author: Ada</h2>");
 }
 
@@ -345,14 +333,12 @@ fn tei_documents_keep_going_to_the_tei_renderer() {
 fn json_reads_its_shape_into_a_title_fields_a_list_and_a_table() {
     let (title, html, _blocks) = render_json_document(PACKAGE_JSON, Some("Package"));
 
-    // A title-ish root key titles the document, and is then left out of the body
-    // so the same string isn't said twice.
+    // A title-ish root key titles the document, and is then left out of the body so the same string isn't said twice.
     assert_eq!(title.as_deref(), Some("leaftext"));
     assert_contains(&html, ">leaftext</h1>");
     assert!(!html.contains("<dt>Name</dt>"), "{html}");
 
-    // Consecutive scalar keys collapse into one labeled list, camelCase and
-    // shorthand names read as words, and `null` says nothing at all.
+    // Consecutive scalar keys collapse into one labeled list, camelCase and shorthand names read as words, and `null` says nothing at all.
     assert_contains(&html, "<dl class=\"data-fields\">");
     assert_contains(&html, "<dt>Version</dt>");
     assert!(!html.contains("Description"), "{html}");
@@ -362,8 +348,7 @@ fn json_reads_its_shape_into_a_title_fields_a_list_and_a_table() {
     assert_contains(&html, "<dt>Link</dt>");
     assert_contains(&html, "<a href=\"https://github.com/x/y\">");
 
-    // Scalar arrays list; repeated uniform records become one table, with the
-    // union of their keys as columns.
+    // Scalar arrays list; repeated uniform records become one table, with the union of their keys as columns.
     assert_contains(&html, "<ul class=\"data-list\"");
     assert_contains(&html, "<li>markdown</li>");
     assert_contains(&html, "<table class=\"data-table\"");
@@ -376,8 +361,7 @@ fn json_blocks_anchor_to_the_exact_source_they_came_from() {
     let (_title, _html, blocks) = render_json_document(PACKAGE_JSON, None);
 
     assert!(!blocks.is_empty());
-    // Every recorded range must slice out the value it was stamped on — the
-    // reader knows precisely where each JSON value starts and stops.
+    // Every recorded range must slice out the value it was stamped on — the reader knows precisely where each JSON value starts and stops.
     let fields: Vec<&str> = blocks
         .iter()
         .filter(|block| block.kind == "data_field")
@@ -399,11 +383,7 @@ fn json_blocks_anchor_to_the_exact_source_they_came_from() {
 
 #[test]
 fn a_grouped_block_gets_a_range_only_when_every_member_has_one() {
-    // A range narrower than the block it is stamped on is the dangerous case: the
-    // source editor would show one item, splice the edit over that item alone, and
-    // leave the reader thinking they had edited the whole list. A YAML flow
-    // sequence proves `macos` but not `windows,` (the comma trails it), so the
-    // list must carry no range at all.
+    // A range narrower than the block it is stamped on is the dangerous case: the source editor would show one item, splice the edit over that item alone, and leave the reader thinking they had edited the whole list. A YAML flow sequence proves `macos` but not `windows,` (the comma trails it), so the list must carry no range at all.
     let yaml = "os: [windows, macos]\n";
     let (_title, html, blocks) = render_yaml_document(yaml, None);
     assert_contains(&html, "<li>windows</li>");
@@ -423,9 +403,7 @@ fn a_grouped_block_gets_a_range_only_when_every_member_has_one() {
 
 #[test]
 fn a_list_that_skipped_a_silent_item_carries_no_range() {
-    // Same rule as the grouped-block case, from the other direction: `null` says
-    // nothing so it is not listed, which leaves the range reaching across source
-    // the block never showed. It gets none.
+    // Same rule as the grouped-block case, from the other direction: `null` says nothing so it is not listed, which leaves the range reaching across source the block never showed. It gets none.
     let json = r#"{"os": ["windows", null, "macos"]}"#;
     let (_title, html, blocks) = render_json_document(json, None);
 
@@ -440,9 +418,7 @@ fn a_list_that_skipped_a_silent_item_carries_no_range() {
 
 #[test]
 fn json_source_ranges_survive_multi_byte_text_above_them() {
-    // The reader copies whole characters and advances by their UTF-8 width, so a
-    // value below non-ASCII text still anchors where it really sits. í is two
-    // bytes and € is three, so a character count would land short of the value.
+    // The reader copies whole characters and advances by their UTF-8 width, so a value below non-ASCII text still anchors where it really sits. í is two bytes and € is three, so a character count would land short of the value.
     let json = "{\"título\": \"documento €\", \"shell\": \"bash\"}";
 
     let (_title, _html, blocks) = render_json_document(json, None);
@@ -461,25 +437,21 @@ fn json_string_escapes_decode_and_hostile_text_stays_inert() {
 
     assert_contains(&html, "say \"hi\"");
     assert_contains(&html, "🌿");
-    // This body is never sanitized downstream — the renderer escapes as it
-    // writes, so markup in a value has to come out inert.
+    // This body is never sanitized downstream — the renderer escapes as it writes, so markup in a value has to come out inert.
     assert_contains(&html, "&lt;script&gt;");
     assert!(!html.contains("<script>"), "{html}");
 }
 
 #[test]
 fn a_malformed_unicode_escape_is_reported_not_guessed() {
-    // `from_str_radix` accepts a leading sign, so this must be rejected on its
-    // own rather than read as 0x12f.
+    // `from_str_radix` accepts a leading sign, so this must be rejected on its own rather than read as 0x12f.
     let (_title, html, _blocks) = render_json_document(r#"{"a": "\u+12f"}"#, None);
     assert_contains(&html, "four hex digits");
 }
 
 #[test]
 fn a_backslash_before_a_multi_byte_character_is_an_error_not_a_crash() {
-    // The reader steps over a whole character after a backslash. Stepping one
-    // byte landed inside the emoji, and reporting the line from there sliced the
-    // source off a character boundary — opening the file took the window down.
+    // The reader steps over a whole character after a backslash. Stepping one byte landed inside the emoji, and reporting the line from there sliced the source off a character boundary — opening the file took the window down.
     let (_title, html, blocks) = render_json_document("[\"\\🌀\"]", None);
 
     assert_contains(&html, "unknown string escape");
@@ -488,10 +460,7 @@ fn a_backslash_before_a_multi_byte_character_is_an_error_not_a_crash() {
 
 #[test]
 fn yaml_collections_carry_no_source_range_at_all() {
-    // A block's range is spliced verbatim by the source editor, and nothing can
-    // prove where a YAML collection ends — its closing marker points at whatever
-    // token came next. So tables and lists built from YAML carry no range and stay
-    // read-only, while the plain scalars inside the same file keep theirs.
+    // A block's range is spliced verbatim by the source editor, and nothing can prove where a YAML collection ends — its closing marker points at whatever token came next. So tables and lists built from YAML carry no range and stay read-only, while the plain scalars inside the same file keep theirs.
     let yaml = "steps:\n  - name: Checkout\n    uses: actions/checkout@v4\n  - name: Build\n    uses: actions/build@v1\n";
 
     let (_title, html, blocks) = render_yaml_document(yaml, None);
@@ -513,8 +482,7 @@ fn yaml_collections_carry_no_source_range_at_all() {
 
 #[test]
 fn json_reads_files_that_carry_comments_and_trailing_commas() {
-    // `.json` files people actually open — tsconfig, editor settings — have both.
-    // Refusing to render them is the worse answer.
+    // `.json` files people actually open — tsconfig, editor settings — have both. Refusing to render them is the worse answer.
     let jsonc = r#"{
   // the compiler options
   "compilerOptions": {
@@ -555,8 +523,7 @@ jobs:
 
     let (_title, html, _blocks) = render_yaml_document(yaml, Some("Workflow"));
 
-    // `<<: *defaults` means "those pairs, here" — so the merged keys show up
-    // under Build, and no field is literally named `<<`.
+    // `<<: *defaults` means "those pairs, here" — so the merged keys show up under Build, and no field is literally named `<<`.
     assert_contains(&html, ">Build</h3>");
     assert!(!html.contains("&lt;&lt;"), "{html}");
     let build = &html[html.find(">Build</h3>").expect("a build section")..];
@@ -567,9 +534,7 @@ jobs:
 
 #[test]
 fn an_alias_holds_the_anchors_value_but_not_its_place_in_the_file() {
-    // `*x` is a reference; the text it stands for is up where `&x` is. Stamping
-    // both blocks with 6..11 meant editing `b` overwrote `a`'s value and left
-    // `*x` on the page untouched.
+    // `*x` is a reference; the text it stands for is up where `&x` is. Stamping both blocks with 6..11 meant editing `b` overwrote `a`'s value and left `*x` on the page untouched.
     let yaml = "a: &x hello\nb: *x\n";
 
     let (_title, html, blocks) = render_yaml_document(yaml, None);
@@ -584,9 +549,7 @@ fn an_alias_holds_the_anchors_value_but_not_its_place_in_the_file() {
 
 #[test]
 fn an_alias_to_a_mapping_claims_nothing_the_anchor_already_holds() {
-    // A collection carries no range at its top but every scalar inside it does,
-    // so dropping only the alias's own range would leave the copied scalars
-    // pointing at the anchor's lines.
+    // A collection carries no range at its top but every scalar inside it does, so dropping only the alias's own range would leave the copied scalars pointing at the anchor's lines.
     let yaml = "base: &base\n  shell: bash\n  timeout: 10\ncopy: *base\n";
 
     let (_title, _html, blocks) = render_yaml_document(yaml, None);
@@ -614,10 +577,7 @@ fn yaml_anchors_only_the_scalars_whose_range_it_can_prove() {
 
     let (_title, _html, blocks) = render_yaml_document(yaml, None);
 
-    // A plain scalar's source is character-for-character its value, so it gets a
-    // range. A quoted or block scalar's source carries quotes or a `|` that the
-    // value does not, so it gets none — an approximate range is worse than one
-    // that is simply absent.
+    // A plain scalar's source is character-for-character its value, so it gets a range. A quoted or block scalar's source carries quotes or a `|` that the value does not, so it gets none — an approximate range is worse than one that is simply absent.
     assert_eq!(blocks.len(), 1, "{blocks:?}");
     assert_eq!(&yaml[blocks[0].start..blocks[0].end], "bash");
     assert_eq!(
@@ -628,8 +588,7 @@ fn yaml_anchors_only_the_scalars_whose_range_it_can_prove() {
 
 #[test]
 fn a_key_with_no_value_carries_no_range_to_splice_into() {
-    // The gap after `empty:` is a range of width nothing. Editing there would write
-    // `empty:x` — one scalar, not a key and a value — so the field stays read-only.
+    // The gap after `empty:` is a range of width nothing. Editing there would write `empty:x` — one scalar, not a key and a value — so the field stays read-only.
     let yaml = "empty:\nfull: bash\n";
 
     let (_title, _html, blocks) = render_yaml_document(yaml, None);
@@ -640,9 +599,7 @@ fn a_key_with_no_value_carries_no_range_to_splice_into() {
 
 #[test]
 fn yaml_source_ranges_are_byte_offsets_not_character_counts() {
-    // The YAML scanner's markers count *characters*; every block range in the app
-    // is a byte offset. Without the conversion, any file with non-ASCII text
-    // above a value would anchor that value short of where it really sits.
+    // The YAML scanner's markers count *characters*; every block range in the app is a byte offset. Without the conversion, any file with non-ASCII text above a value would anchor that value short of where it really sits.
     let yaml = "título: documento €\nshell: bash\n";
 
     let (_title, _html, blocks) = render_yaml_document(yaml, None);
@@ -662,8 +619,7 @@ fn yaml_stream_of_several_documents_reads_as_a_list_of_them() {
 
     let (_title, html, _blocks) = render_yaml_document(yaml, Some("Manifests"));
 
-    // Two flat records of the same shape are a table, whether they arrived as one
-    // sequence or as two documents.
+    // Two flat records of the same shape are a table, whether they arrived as one sequence or as two documents.
     assert_contains(&html, "<table class=\"data-table\"");
     assert_contains(&html, "<th>Kind</th>");
     assert_contains(&html, "<tr><td>Service</td><td>web</td></tr>");
@@ -683,18 +639,13 @@ fn malformed_yaml_reports_a_parse_error() {
 
 #[test]
 fn deeply_nested_data_is_refused_rather_than_overflowing_the_stack() {
-    // A reader that recurses on a hostile file is a crash, not a rendering
-    // problem, so both refuse depth far past anything a real document reaches.
-    // The JSON reader is ours and reports its own limit; YAML is refused by the
-    // parser's built-in recursion limit first, which is a good part of why a
-    // maintained and fuzzed crate was worth one dependency.
+    // A reader that recurses on a hostile file is a crash, not a rendering problem, so both refuse depth far past anything a real document reaches. The JSON reader is ours and reports its own limit; YAML is refused by the parser's built-in recursion limit first, which is a good part of why a maintained and fuzzed crate was worth one dependency.
     let json = format!("{}1{}", "[".repeat(400), "]".repeat(400));
     let (title, html, blocks) = render_json_document(&json, None);
     assert_contains(&html, "nested too deeply");
     assert!(title.is_none() && blocks.is_empty());
 
-    // Flow style, because indented dashes are one flat sequence holding a
-    // multi-line scalar rather than a nest.
+    // Flow style, because indented dashes are one flat sequence holding a multi-line scalar rather than a nest.
     let yaml = format!("{}a{}", "[".repeat(400), "]".repeat(400));
     let (title, html, blocks) = render_yaml_document(&yaml, None);
     assert_contains(&html, "<strong>YAML parse error.</strong>");

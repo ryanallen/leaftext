@@ -2,29 +2,22 @@
 
 use super::*;
 
-/// Leaf custom Markdown: a link wrapped in braces renders as a button — an
-/// `<a class="leaf-md-button …">` styled like the app's action buttons. The more
-/// braces, the more prominent the button:
+/// Leaf custom Markdown: a link wrapped in braces renders as a button — an `<a class="leaf-md-button …">` styled like the app's action buttons. The more braces, the more prominent the button:
 ///
 /// - `{[Label](url)}` → ghost (no fill or outline until hover)
 /// - `{{[Label](url)}}` → outline (fills on hover)
 /// - `{{{[Label](url)}}}` → filled
 ///
-/// Braces only: brackets would be read as link syntax, leaving the wrapper behind
-/// as literal text beside a plain link.
+/// Braces only: brackets would be read as link syntax, leaving the wrapper behind as literal text beside a plain link.
 ///
-/// Links can't nest in CommonMark, so the braces stay literal: they arrive as the
-/// tail of the Text before the link and the head of the Text after it. We strip
-/// the matched run from each side and wrap the label in the button anchor. Working
-/// on Link events is what keeps the syntax literal inside code.
+/// Links can't nest in CommonMark, so the braces stay literal: they arrive as the tail of the Text before the link and the head of the Text after it. We strip the matched run from each side and wrap the label in the button anchor. Working on Link events is what keeps the syntax literal inside code.
 pub(crate) fn button_links(events: Vec<Event<'static>>) -> Vec<Event<'static>> {
     let mut out: Vec<Event<'static>> = Vec::with_capacity(events.len());
     let mut index = 0;
     while index < events.len() {
         if let Event::Start(Tag::Link { dest_url, .. }) = &events[index] {
             if let Some(end) = link_end_index(&events, index) {
-                // Braces merge with adjacent prose, so each side is a run at one
-                // Text boundary.
+                // Braces merge with adjacent prose, so each side is a run at one Text boundary.
                 let open = out_trailing_run(&out, '{');
                 let close = event_leading_run(events.get(end + 1), '}');
 
@@ -88,8 +81,7 @@ fn out_trailing_run(out: &[Event<'static>], ch: char) -> usize {
         .unwrap_or(0)
 }
 
-/// Drop the last `count` (single-byte wrapper) characters from the final `Text`
-/// event in `out`, removing the event entirely if that empties it.
+/// Drop the last `count` (single-byte wrapper) characters from the final `Text` event in `out`, removing the event entirely if that empties it.
 fn strip_out_trailing_chars(out: &mut Vec<Event<'static>>, count: usize) {
     if let Some(Event::Text(text)) = out.last() {
         let trimmed = &text.as_ref()[..text.len() - count];
@@ -104,8 +96,7 @@ fn strip_out_trailing_chars(out: &mut Vec<Event<'static>>, count: usize) {
     }
 }
 
-/// Index of the `End(Link)` that closes the `Start(Link)` at `start`. Links can't
-/// nest, so it's the first link end after the start.
+/// Index of the `End(Link)` that closes the `Start(Link)` at `start`. Links can't nest, so it's the first link end after the start.
 fn link_end_index(events: &[Event<'static>], start: usize) -> Option<usize> {
     events[start + 1..]
         .iter()
@@ -254,14 +245,9 @@ pub(crate) fn starts_with_url_scheme(text: &str) -> bool {
     text.starts_with("http://") || text.starts_with("https://")
 }
 
-/// The web addresses in a run of plain text, found by the same finder that turns
-/// them into links when the document is rendered.
+/// The web addresses in a run of plain text, found by the same finder that turns them into links when the document is rendered.
 ///
-/// One definition, deliberately: the [graph](crate::store::document_links) counts a
-/// bare URL as a link because the reader can click it, and the only way that stays
-/// true is for both to ask the same question. Without it, a document of nothing but
-/// bare links draws an empty map — the renderer linkifies them here, and a bare
-/// `Parser` never sees them at all.
+/// One definition, deliberately: the [graph](crate::store::document_links) counts a bare URL as a link because the reader can click it, and the only way that stays true is for both to ask the same question. Without it, a document of nothing but bare links draws an empty map — the renderer linkifies them here, and a bare `Parser` never sees them at all.
 ///
 /// Email addresses are found and dropped: `mailto:` is not somewhere a map goes.
 pub(crate) fn plain_text_urls(text: &str) -> Vec<String> {

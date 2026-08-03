@@ -1,8 +1,6 @@
-//! The application's guts. main.rs builds the window, the web view and the
-//! protocol handlers, then hands control to the event loop here.
+//! The application's guts. main.rs builds the window, the web view and the protocol handlers, then hands control to the event loop here.
 
-// Everything main.rs imports, so the submodules below inherit it via
-// `use super::*` instead of each repeating the list.
+// Everything main.rs imports, so the submodules below inherit it via `use super::*` instead of each repeating the list.
 use crate::*;
 
 mod code_intel;

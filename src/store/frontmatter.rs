@@ -3,21 +3,16 @@
 use super::normalize_name_key;
 use std::collections::HashSet;
 
-/// How many aliases one document may claim. A vault is bounded by construction
-/// but a list inside one file is not, and every alias becomes a key in an
-/// in-memory index.
+/// How many aliases one document may claim. A vault is bounded by construction but a list inside one file is not, and every alias becomes a key in an in-memory index.
 pub const MAX_ALIASES: usize = 32;
 
-/// The leading frontmatter block's inner text (between the `---` fences), with
-/// the fences and any leading byte order mark removed. A file read from disk has
-/// already had its mark taken off; this covers text from anywhere else.
+/// The leading frontmatter block's inner text (between the `---` fences), with the fences and any leading byte order mark removed. A file read from disk has already had its mark taken off; this covers text from anywhere else.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FrontmatterBlock {
     pub body: String,
 }
 
-/// One normalized frontmatter field. `key` is lowercase; a list value expands to
-/// one field per item. Untrusted; the frontend escapes before the DOM.
+/// One normalized frontmatter field. `key` is lowercase; a list value expands to one field per item. Untrusted; the frontend escapes before the DOM.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FrontmatterField {
     pub key: String,
@@ -30,8 +25,7 @@ pub struct ParsedFrontmatter {
     pub fields: Vec<FrontmatterField>,
 }
 
-/// A frontmatter block that could not be interpreted as a key/value mapping at
-/// all. Recorded for diagnostics; it never fails the file.
+/// A frontmatter block that could not be interpreted as a key/value mapping at all. Recorded for diagnostics; it never fails the file.
 #[derive(Debug, Clone, PartialEq)]
 pub enum MetadataError {
     Unparseable,
@@ -47,9 +41,7 @@ impl std::fmt::Display for MetadataError {
     }
 }
 
-/// Extract the leading frontmatter block, if any. Detected only when `---` is
-/// the first line (after an optional BOM) and a later `---` closes it; a `---`
-/// deeper in the document is body content.
+/// Extract the leading frontmatter block, if any. Detected only when `---` is the first line (after an optional BOM) and a later `---` closes it; a `---` deeper in the document is body content.
 pub fn extract_frontmatter(text: &str) -> Option<FrontmatterBlock> {
     let text = text.strip_prefix('\u{feff}').unwrap_or(text);
     let mut lines = text.lines();
@@ -82,8 +74,7 @@ fn strip_quotes(value: &str) -> &str {
     }
 }
 
-/// Parse the inline-array form `[a, b, c]`, returning the cleaned, non-empty
-/// items. The caller has already confirmed the brackets.
+/// Parse the inline-array form `[a, b, c]`, returning the cleaned, non-empty items. The caller has already confirmed the brackets.
 fn parse_inline_array(inner: &str) -> Vec<String> {
     inner
         .split(',')
@@ -92,14 +83,11 @@ fn parse_inline_array(inner: &str) -> Vec<String> {
         .collect()
 }
 
-/// Parse a frontmatter block into normalized key/value fields. Unrecognized
-/// lines are skipped. Returns `Err` only when the block has content but nothing
-/// parsed as a mapping — the document still renders either way.
+/// Parse a frontmatter block into normalized key/value fields. Unrecognized lines are skipped. Returns `Err` only when the block has content but nothing parsed as a mapping — the document still renders either way.
 pub fn parse_frontmatter(block: &FrontmatterBlock) -> Result<ParsedFrontmatter, MetadataError> {
     let mut fields: Vec<FrontmatterField> = Vec::new();
     let mut bad_lines = 0usize;
-    // The key of the most recent `key:` line with an empty value, which a run of
-    // `- item` lines attaches to (block-list form).
+    // The key of the most recent `key:` line with an empty value, which a run of `- item` lines attaches to (block-list form).
     let mut list_key: Option<String> = None;
 
     for raw in block.body.lines() {
@@ -172,9 +160,7 @@ pub fn parse_frontmatter(block: &FrontmatterBlock) -> Result<ParsedFrontmatter, 
     Ok(ParsedFrontmatter { fields })
 }
 
-/// A document's frontmatter fields, empty when it has none or the block does not
-/// parse. One extract-and-parse, so something wanting two keys out of the block
-/// does not read it twice.
+/// A document's frontmatter fields, empty when it has none or the block does not parse. One extract-and-parse, so something wanting two keys out of the block does not read it twice.
 pub fn document_fields(text: &str) -> Vec<FrontmatterField> {
     extract_frontmatter(text)
         .and_then(|block| parse_frontmatter(&block).ok())
@@ -182,11 +168,9 @@ pub fn document_fields(text: &str) -> Vec<FrontmatterField> {
         .unwrap_or_default()
 }
 
-/// The other names a document answers to: its `aliases`, as written, in file
-/// order. Deduped by the key names are matched on, and capped at [`MAX_ALIASES`].
+/// The other names a document answers to: its `aliases`, as written, in file order. Deduped by the key names are matched on, and capped at [`MAX_ALIASES`].
 ///
-/// An alias equal to the document's own name is dropped — it is already the
-/// label, and keeping it would offer the same note to the popup twice.
+/// An alias equal to the document's own name is dropped — it is already the label, and keeping it would offer the same note to the popup twice.
 pub fn aliases_from(fields: &[FrontmatterField], label: &str) -> Vec<String> {
     let mut claimed: HashSet<String> = [normalize_name_key(label)].into();
     let mut names = Vec::new();
@@ -203,13 +187,9 @@ pub fn aliases_from(fields: &[FrontmatterField], label: &str) -> Vec<String> {
     names
 }
 
-/// The byte range of the line declaring `key` in the leading block, for something
-/// that has to point at one field in the source.
+/// The byte range of the line declaring `key` in the leading block, for something that has to point at one field in the source.
 ///
-/// A scan, because the parser records no positions. When it does
-/// (`../docs/refactor/properties.md` phase 1 puts the range of every key and value
-/// on the field itself), this takes them from there instead — there should be one
-/// locator, and this is deliberately the smallest thing that answers one question.
+/// A scan, because the parser records no positions. When it does (`../docs/refactor/properties.md` phase 1 puts the range of every key and value on the field itself), this takes them from there instead — there should be one locator, and this is deliberately the smallest thing that answers one question.
 pub fn frontmatter_key_span(text: &str, key: &str) -> Option<(usize, usize)> {
     let mark = text.len() - text.strip_prefix('\u{feff}').unwrap_or(text).len();
     let mut at = mark;
@@ -234,8 +214,7 @@ pub fn frontmatter_key_span(text: &str, key: &str) -> Option<(usize, usize)> {
     None
 }
 
-/// How many aliases a document claims before the cap, so something can say how
-/// many were left out. Counts what [`aliases_from`] would count, uncapped.
+/// How many aliases a document claims before the cap, so something can say how many were left out. Counts what [`aliases_from`] would count, uncapped.
 pub fn alias_count(fields: &[FrontmatterField], label: &str) -> usize {
     let mut claimed: HashSet<String> = [normalize_name_key(label)].into();
     fields

@@ -45,9 +45,7 @@ fn a_folder_lists_only_itself_with_no_index_and_no_walk_below_it() {
     write(&root.join(".git").join("COMMIT_EDITMSG.md"), "# Internal\n");
 
     let top = read_folder_listing(Some(&root), "");
-    // The vault's folder is the top: its own children, folders first, then
-    // documents, each alphabetical. Nothing from inside `notes` is here —
-    // nothing under it has been read.
+    // The vault's folder is the top: its own children, folders first, then documents, each alphabetical. Nothing from inside `notes` is here — nothing under it has been read.
     assert_eq!(
         names(&top),
         vec!["notes", "alpha.md", "beta.md", "data.json"]
@@ -73,8 +71,7 @@ fn a_folder_lists_only_itself_with_no_index_and_no_walk_below_it() {
     assert_eq!(chain, vec!["notes", "under"]);
     assert_eq!(names(&under), vec!["deeper.md"]);
 
-    // An empty folder is still a folder — it just has nothing in it. Lazily,
-    // there is no way to know that without opening it, and no reason to care.
+    // An empty folder is still a folder — it just has nothing in it. Lazily, there is no way to know that without opening it, and no reason to care.
     fs::create_dir_all(root.join("empty")).expect("folder created");
     let listing = read_folder_listing(Some(&root), &root.join("empty").to_string_lossy());
     assert!(listing.entries.is_empty());
@@ -94,8 +91,7 @@ fn a_folder_outside_the_vault_or_gone_falls_back_to_the_top() {
     assert_eq!(escaped.path, root.to_string_lossy());
     assert_eq!(names(&escaped), vec!["inside.md"]);
 
-    // A folder that has since been deleted lands at the top, not on an empty
-    // pane with no way out.
+    // A folder that has since been deleted lands at the top, not on an empty pane with no way out.
     let gone = read_folder_listing(Some(&root), &root.join("not-here").to_string_lossy());
     assert_eq!(gone.path, root.to_string_lossy());
 
@@ -104,8 +100,7 @@ fn a_folder_outside_the_vault_or_gone_falls_back_to_the_top() {
 
 #[test]
 fn the_whole_library_starts_at_the_drive_roots() {
-    // No vault: the top level is the drives — the one listing that reads no
-    // directory at all.
+    // No vault: the top level is the drives — the one listing that reads no directory at all.
     let listing = read_folder_listing(None, "");
     assert!(listing.path.is_empty());
     assert!(listing.chain.is_empty());
@@ -118,8 +113,7 @@ fn the_whole_library_starts_at_the_drive_roots() {
         .iter()
         .all(|entry| entry.kind == NodeKind::Folder));
 
-    // Opening a real folder under a drive gives a trail that starts at the
-    // drive itself.
+    // Opening a real folder under a drive gives a trail that starts at the drive itself.
     let dir = tree_dir("drive");
     write(&dir.join("note.md"), "# Note\n");
     let listing = read_folder_listing(None, &dir.to_string_lossy());
@@ -149,9 +143,7 @@ fn the_file_list_starts_with_a_way_back_out() {
     assert!(html.contains(r#"class="library-nav-folder library-nav-up""#));
     assert!(css.contains(".library-nav-up {"));
 
-    // It goes to the folder above, or to the root from one level in. There is
-    // nothing above the top, so no row there — leaving a vault is the
-    // switcher's job.
+    // It goes to the folder above, or to the root from one level in. There is nothing above the top, so no row there — leaving a vault is the switcher's job.
     assert!(html.contains("function libraryParentCrumb()"));
     assert!(html.contains("if (!libraryChain.length) return null;"));
     assert!(html.contains(
@@ -162,8 +154,7 @@ fn the_file_list_starts_with_a_way_back_out() {
     assert!(html.contains(
         "button.addEventListener('click', () => setLibraryFolder(button.dataset.navInto));"
     ));
-    // An empty folder is exactly where the way out matters, so the rows still
-    // render alongside the empty notice.
+    // An empty folder is exactly where the way out matters, so the rows still render alongside the empty notice.
     assert!(html.contains("libraryTree.innerHTML = renderProject(libraryEntries)\n      + `<p class=\"library-empty\">"));
 
     assert!(html.contains("const label = `Back to ${parent.name}`;"));

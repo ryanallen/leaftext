@@ -1,19 +1,11 @@
 //! Email: `.eml` (and `.mht`, the same MIME envelope) rendered for reading.
 //!
-//! mail-parser undoes the wire format — multipart trees, base64 and
-//! quoted-printable, encoded-word headers, per-part charsets. What lands on the
-//! page still crosses the same ammonia boundary as Markdown's raw HTML; the one
-//! extra grant is the `cid:` scheme, kept only so the pass after sanitizing can
-//! swap each reference for a `data:` image built from the message's own parts.
-//! Nothing here reaches the network.
+//! mail-parser undoes the wire format — multipart trees, base64 and quoted-printable, encoded-word headers, per-part charsets. What lands on the page still crosses the same ammonia boundary as Markdown's raw HTML; the one extra grant is the `cid:` scheme, kept only so the pass after sanitizing can swap each reference for a `data:` image built from the message's own parts. Nothing here reaches the network.
 
 use crate::*;
 use mail_parser::{Address, Message, MessageParser, MimeHeaders, PartType};
 
-/// Render a MIME message to `(title, html, blocks)`: subject heading, header
-/// fields, the body (HTML preferred, plain text otherwise), then attachments.
-/// Bodies are transfer-encoded in the source, so no block maps to a provable
-/// range and inline editing stays off; the code view edits the raw message.
+/// Render a MIME message to `(title, html, blocks)`: subject heading, header fields, the body (HTML preferred, plain text otherwise), then attachments. Bodies are transfer-encoded in the source, so no block maps to a provable range and inline editing stays off; the code view edits the raw message.
 pub(crate) fn render_eml_document(
     source: &str,
     fallback_title: Option<&str>,
@@ -45,8 +37,7 @@ pub(crate) fn render_eml_document(
     // Inline images referenced by the HTML body don't repeat as attachments.
     let mut embedded_ids = HashSet::new();
 
-    // A text-only message still lists its part under `html_body` (mail-parser
-    // converts on demand), so ask the part what it really is.
+    // A text-only message still lists its part under `html_body` (mail-parser converts on demand), so ask the part what it really is.
     let wrote_html = message
         .html_part(0)
         .is_some_and(|part| matches!(part.body, PartType::Html(_)));
@@ -68,8 +59,7 @@ pub(crate) fn render_eml_document(
     (title, out, Vec::new())
 }
 
-/// The header card: who wrote, who received, when. Fields the message lacks
-/// leave no row.
+/// The header card: who wrote, who received, when. Fields the message lacks leave no row.
 fn header_fields_html(message: &Message) -> String {
     let mut rows = String::new();
     let mut push = |label: &str, value: String| {
@@ -130,8 +120,7 @@ fn address_html(address: &Address) -> String {
     rendered.join(", ")
 }
 
-/// The Markdown raw-HTML policy plus the `cid:` scheme, which survives only long
-/// enough for [`embed_cid_images`] to resolve it.
+/// The Markdown raw-HTML policy plus the `cid:` scheme, which survives only long enough for [`embed_cid_images`] to resolve it.
 fn sanitize_email_html(html: &str) -> String {
     let mut sanitizer = Builder::new();
     configure_rendered_html_sanitizer(&mut sanitizer);
@@ -144,10 +133,7 @@ fn sanitize_email_html(html: &str) -> String {
     sanitizer.clean(html).to_string()
 }
 
-/// Swap every `<img src="cid:…">` whose id names a message part for a `data:`
-/// image built from that part. Ids that match nothing stay `cid:`, which the
-/// page's CSP refuses to load — a blank image, never a fetch. Runs on sanitized
-/// HTML, so tag boundaries are trustworthy.
+/// Swap every `<img src="cid:…">` whose id names a message part for a `data:` image built from that part. Ids that match nothing stay `cid:`, which the page's CSP refuses to load — a blank image, never a fetch. Runs on sanitized HTML, so tag boundaries are trustworthy.
 fn embed_cid_images(html: &str, message: &Message, embedded_ids: &mut HashSet<String>) -> String {
     let mut out = String::with_capacity(html.len());
     let mut offset = 0usize;
@@ -171,8 +157,7 @@ fn embed_cid_images(html: &str, message: &Message, embedded_ids: &mut HashSet<St
     out
 }
 
-/// One tag: rewritten when it is an `<img>` with a resolvable `cid:` source,
-/// returned as written otherwise.
+/// One tag: rewritten when it is an `<img>` with a resolvable `cid:` source, returned as written otherwise.
 fn resolve_cid_img_tag(tag: &str, message: &Message, embedded_ids: &mut HashSet<String>) -> String {
     if html_tag_name(tag).as_deref() != Some("img") {
         return tag.to_string();
@@ -203,9 +188,7 @@ fn resolve_cid_img_tag(tag: &str, message: &Message, embedded_ids: &mut HashSet<
     resolved
 }
 
-/// The `data:` URL for the image part `content_id` names, or `None` when no
-/// part matches or the part isn't an image. The URL is built entirely here —
-/// base64 alphabet and a checked MIME type — so it is safe inside an attribute.
+/// The `data:` URL for the image part `content_id` names, or `None` when no part matches or the part isn't an image. The URL is built entirely here — base64 alphabet and a checked MIME type — so it is safe inside an attribute.
 fn cid_data_url(message: &Message, content_id: &str) -> Option<String> {
     let part = message.parts.iter().find(|part| {
         part.content_id()
@@ -218,8 +201,7 @@ fn cid_data_url(message: &Message, content_id: &str) -> Option<String> {
     ))
 }
 
-/// `image/<subtype>` when the content type is an image with a plain subtype;
-/// `None` for anything else, so only images ever embed.
+/// `image/<subtype>` when the content type is an image with a plain subtype; `None` for anything else, so only images ever embed.
 fn image_mime_type(content_type: &mail_parser::ContentType) -> Option<String> {
     if !content_type.ctype().eq_ignore_ascii_case("image") {
         return None;
@@ -232,8 +214,7 @@ fn image_mime_type(content_type: &mail_parser::ContentType) -> Option<String> {
     plain.then(|| format!("image/{subtype}"))
 }
 
-/// A plain-text body as paragraphs: blank lines split, single newlines break,
-/// bare URLs link — the same courtesy the reading view pays Markdown text.
+/// A plain-text body as paragraphs: blank lines split, single newlines break, bare URLs link — the same courtesy the reading view pays Markdown text.
 fn plain_text_body_html(text: &str) -> String {
     let text = text.replace("\r\n", "\n");
     let mut out = String::new();
@@ -270,8 +251,7 @@ fn linkify_plain_line(line: &str) -> String {
     out
 }
 
-/// The attachment list: name, type and size for every part that isn't a body
-/// and didn't already appear inline in the HTML.
+/// The attachment list: name, type and size for every part that isn't a body and didn't already appear inline in the HTML.
 fn attachments_html(message: &Message, embedded_ids: &HashSet<String>) -> String {
     let mut items = String::new();
     for part in message.attachments() {
@@ -323,8 +303,7 @@ fn human_size(bytes: usize) -> String {
     }
 }
 
-/// Standard base64, padded. Small enough that a dependency would cost more than
-/// it saves.
+/// Standard base64, padded. Small enough that a dependency would cost more than it saves.
 fn base64_encode(bytes: &[u8]) -> String {
     const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);

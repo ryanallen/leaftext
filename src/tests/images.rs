@@ -2,9 +2,7 @@
 
 use super::*;
 
-/// The broken-image mark is an icon class over a transparent pixel. Miss any of the
-/// four — the class, the pixel, the ink, the CSP grant — and it is the platform's own
-/// mark back, or an empty box.
+/// The broken-image mark is an icon class over a transparent pixel. Miss any of the four — the class, the pixel, the ink, the CSP grant — and it is the platform's own mark back, or an empty box.
 #[test]
 fn the_missing_image_glyph_is_inlined_painted_and_allowed() {
     let html = app_shell_page();
@@ -18,8 +16,7 @@ fn the_missing_image_glyph_is_inlined_painted_and_allowed() {
         "the mark must not be pasted into the page as well"
     );
     for expected in [
-        // The element stays an <img> so a re-fetch can put the real picture back,
-        // and a source it can load keeps the platform's own broken glyph away.
+        // The element stays an <img> so a re-fetch can put the real picture back, and a source it can load keeps the platform's own broken glyph away.
         "img.classList.add('lt-icon', 'lt-icon-missing-image');",
         "img.src = TRANSPARENT_PIXEL;",
         "data:image/gif;base64,",
@@ -35,8 +32,7 @@ fn the_missing_image_glyph_is_inlined_painted_and_allowed() {
         rule_body(css, ".document-body img[data-image-missing=\"true\"] {"),
         "background-color: var(--lt-muted-foreground);",
     );
-    // No icon is substituted into the page at all now. Checked against the page
-    // itself: the script legitimately writes `{{` — it is mermaid's hexagon.
+    // No icon is substituted into the page at all now. Checked against the page itself: the script legitimately writes `{{` — it is mermaid's hexagon.
     assert!(
         !app_shell_html().contains("_ICON_SVG}}"),
         "the page must carry no icon placeholder"
@@ -57,9 +53,7 @@ fn the_missing_image_glyph_is_inlined_painted_and_allowed() {
     );
 }
 
-/// Every format the reading view can be handed, each stating 5 by 9 in its own
-/// way, so the page can reserve the space before the picture decodes. A file we
-/// can't read the size out of is left alone rather than guessed at.
+/// Every format the reading view can be handed, each stating 5 by 9 in its own way, so the page can reserve the space before the picture decodes. A file we can't read the size out of is left alone rather than guessed at.
 #[test]
 fn reads_the_pixel_size_out_of_each_image_header() {
     let unique = SystemTime::now()
@@ -247,16 +241,14 @@ fn keeps_explicit_image_title_over_alt_text() {
 
 #[test]
 fn changed_image_files_refresh_without_a_document_re_render() {
-    // Only real image files take the refresh path; a changed .md is a document
-    // reload, and a stray file is neither.
+    // Only real image files take the refresh path; a changed .md is a document reload, and a stray file is neither.
     assert!(is_local_image_path(Path::new("imgs/themes/sage.png")));
     assert!(is_local_image_path(Path::new("/tmp/Diagram.SVG")));
     assert!(!is_local_image_path(Path::new("themes/sage.md")));
     assert!(!is_local_image_path(Path::new("notes.txt")));
     assert!(!is_local_image_path(Path::new("imgs/themes")));
 
-    // The host asks the page to re-fetch, rather than re-rendering: the document
-    // text is unchanged, so a reload would hash-gate itself out anyway.
+    // The host asks the page to re-fetch, rather than re-rendering: the document text is unchanged, so a reload would hash-gate itself out anyway.
     assert_eq!(image_refresh_script(), "window.leafRefreshImages();");
 
     let html = app_shell_page();
@@ -265,21 +257,18 @@ fn changed_image_files_refresh_without_a_document_re_render() {
         "localImageEpoch += 1;",
         "const stamped = `${base}?leaf-epoch=${localImageEpoch}`;",
         "if (img.getAttribute('src') !== stamped) img.setAttribute('src', stamped);",
-        // Every render stamps a fresh epoch, so reopening a document after an
-        // image was replaced on disk cannot show the cached copy.
+        // Every render stamps a fresh epoch, so reopening a document after an image was replaced on disk cannot show the cached copy.
         "    stampLocalImages();\n    decorateBlockquoteLines();",
     ] {
         assert_contains(&html, expected);
     }
-    // Only images served by the host's protocol are touched; remote and data URLs
-    // keep the src the document gave them.
+    // Only images served by the host's protocol are touched; remote and data URLs keep the src the document gave them.
     assert_contains(
         &html,
         "const LOCAL_IMAGE_SRC_PREFIXES = ['leaf-image://', 'http://leaf-image.', 'https://leaf-image.'];",
     );
 
-    // The cache-busting query is inert on the way back in: the protocol handler
-    // resolves the path from the URL's segments and ignores the query.
+    // The cache-busting query is inert on the way back in: the protocol handler resolves the path from the URL's segments and ignores the query.
     let source_dir = fixture_source_path("images");
     let path = local_image_protocol_path(
         &format!("{}?leaf-epoch=7", local_img("diagram.png")),

@@ -1,17 +1,10 @@
 // markdown.js
 // ---------------------------------------------------------------------------
-// A small Markdown -> HTML renderer, tuned to render this README the way
-// GitHub does. It covers GitHub-Flavored Markdown: headings, paragraphs,
-// blockquotes, lists (nested), tables, fenced/inline code, task lists,
-// images, links (inline + reference style), footnotes, emphasis, line breaks,
-// and raw HTML pass-through.
+// A small Markdown -> HTML renderer, tuned to render this README the way GitHub does. It covers GitHub-Flavored Markdown: headings, paragraphs, blockquotes, lists (nested), tables, fenced/inline code, task lists, images, links (inline + reference style), footnotes, emphasis, line breaks, and raw HTML pass-through.
 //
-// It is deliberately written to be readable and editable by hand, not to be
-// the fastest or most complete parser in the world. If you want to change how
-// something renders, find its section below and edit it.
+// It is deliberately written to be readable and editable by hand, not to be the fastest or most complete parser in the world. If you want to change how something renders, find its section below and edit it.
 //
-// The public function is renderMarkdown(text). Everything else is a helper.
-// Heading ids come from slugger.js so in-page #anchor links work.
+// The public function is renderMarkdown(text). Everything else is a helper. Heading ids come from slugger.js so in-page #anchor links work.
 // ---------------------------------------------------------------------------
 
 import { slugify } from './slugger.js';
@@ -35,10 +28,7 @@ function isBlank(s) {
   return /^\s*$/.test(s);
 }
 
-// Turn HTML entities like &amp; &mdash; into real characters. Used only when
-// building a heading slug, so the slug matches the visible text. Uses the
-// browser when available; falls back to a small table so this file can also be
-// unit-tested in Node.
+// Turn HTML entities like &amp; &mdash; into real characters. Used only when building a heading slug, so the slug matches the visible text. Uses the browser when available; falls back to a small table so this file can also be unit-tested in Node.
 let _decoder;
 function decodeEntities(s) {
   s = String(s);
@@ -60,16 +50,10 @@ function decodeEntities(s) {
     .replace(/&ndash;/g, '–');
 }
 
-// Pull the plain text out of a heading line so we can build its slug. Removes
-// images/links (keeping their text), raw HTML tags, and emphasis/code markers,
-// then decodes entities and collapses whitespace. This matches what GitHub
-// slugs: the visible text of the heading.
+// Pull the plain text out of a heading line so we can build its slug. Removes images/links (keeping their text), raw HTML tags, and emphasis/code markers, then decodes entities and collapses whitespace. This matches what GitHub slugs: the visible text of the heading.
 function stripToText(s) {
   let t = String(s);
-  // Remove images and links, innermost first, looping until none remain. The
-  // [^\[\]]* (no brackets inside) makes each pass match the innermost link, so
-  // nested links like [WRONG [VIEW](#view)](#wrong-view) collapse correctly to
-  // "WRONG VIEW" -> the heading text GitHub uses for the slug.
+  // Remove images and links, innermost first, looping until none remain. The [^\[\]]* (no brackets inside) makes each pass match the innermost link, so nested links like [WRONG [VIEW](#view)](#wrong-view) collapse correctly to "WRONG VIEW" -> the heading text GitHub uses for the slug.
   let prev;
   do {
     prev = t;
@@ -82,15 +66,13 @@ function stripToText(s) {
   return decodeEntities(t).replace(/\s+/g, ' ').trim();
 }
 
-// Split one row of a pipe table into trimmed cell strings. Handles optional
-// leading/trailing pipes and escaped \| inside a cell.
+// Split one row of a pipe table into trimmed cell strings. Handles optional leading/trailing pipes and escaped \| inside a cell.
 function splitRow(line) {
   const s = line.trim().replace(/^\|/, '').replace(/\|$/, '');
   return s.split(/(?<!\\)\|/).map((c) => c.replace(/\\\|/g, '|').trim());
 }
 
-// If a line is a table's delimiter row (the |---|:--:| line) return an array
-// of column alignments; otherwise return null.
+// If a line is a table's delimiter row (the |---|:--:| line) return an array of column alignments; otherwise return null.
 function parseDelimiter(line) {
   if (!line.includes('|') && !line.includes('-')) return null;
   const cells = splitRow(line);
@@ -110,11 +92,7 @@ function alignAttr(a) {
   return a ? ` align="${a}"` : '';
 }
 
-// The block-level HTML tags that start a raw-HTML block (per CommonMark). A
-// line beginning with one of these is passed through verbatim until a blank
-// line. Inline tags (a, sup, sub, i, b, span, br, img, ...) are NOT here, so
-// lines that start with them go through the normal paragraph path where the
-// markdown inside them still renders.
+// The block-level HTML tags that start a raw-HTML block (per CommonMark). A line beginning with one of these is passed through verbatim until a blank line. Inline tags (a, sup, sub, i, b, span, br, img, ...) are NOT here, so lines that start with them go through the normal paragraph path where the markdown inside them still renders.
 const HTML_BLOCK_TAGS = new RegExp(
   '^ {0,3}<(?:' +
     '/?(?:address|article|aside|base|basefont|blockquote|body|caption|center|' +
@@ -138,10 +116,7 @@ function isBlockStart(line) {
   );
 }
 
-// A marker we hide raw HTML and code spans behind while running the markdown
-// regexes, so those regexes cannot damage their insides (for example an
-// underscore inside a URL must not turn into italics). The token uses
-// characters that never appear together in normal text or markdown.
+// A marker we hide raw HTML and code spans behind while running the markdown regexes, so those regexes cannot damage their insides (for example an underscore inside a URL must not turn into italics). The token uses characters that never appear together in normal text or markdown.
 const SENTINEL = String.fromCharCode(0xf8ff);
 const STASH_RE = new RegExp(SENTINEL + '(\\d+)' + SENTINEL, 'g');
 
@@ -157,9 +132,7 @@ const EMOJI = {
 };
 
 // ---- Frontmatter ----------------------------------------------------------
-// A leading `--- … ---` block renders as a compact metadata table at the top of
-// the document, matching the desktop app. The parser is a small, documented YAML
-// subset (the same rules the app's own reader follows).
+// A leading `--- … ---` block renders as a compact metadata table at the top of the document, matching the desktop app. The parser is a small, documented YAML subset (the same rules the app's own reader follows).
 
 // Drop one surrounding pair of matching quotes.
 function stripQuotes(s) {
@@ -177,9 +150,7 @@ function parseInlineArray(inner) {
     .map((x) => stripQuotes(x.trim()).trim())
     .filter((x) => x !== '');
 }
-// Return {inner, rest} when `text` opens with a `---` line and a later `---`
-// closes it (after an optional BOM); otherwise null. Only the leading block
-// counts — a `---` later in the document is a horizontal rule.
+// Return {inner, rest} when `text` opens with a `---` line and a later `---` closes it (after an optional BOM); otherwise null. Only the leading block counts — a `---` later in the document is a horizontal rule.
 function splitLeadingFrontmatter(text) {
   const afterBom = text.replace(/^﻿/, '');
   const firstNl = afterBom.indexOf('\n');
@@ -196,9 +167,7 @@ function splitLeadingFrontmatter(text) {
   }
   return null;
 }
-// Parse the block into {key, value} rows: `key: value` scalars, `key: [a, b]`
-// inline arrays (one row per item), and `key:` followed by `- item` block lists
-// (one row per item). Keys are lowercased; `#` lines and blanks are ignored.
+// Parse the block into {key, value} rows: `key: value` scalars, `key: [a, b]` inline arrays (one row per item), and `key:` followed by `- item` block lists (one row per item). Keys are lowercased; `#` lines and blanks are ignored.
 function parseFrontmatter(inner) {
   const fields = [];
   let listKey = null;
@@ -318,22 +287,18 @@ export function renderMarkdown(src) {
   }
 
   // --- Inline renderer -----------------------------------------------------
-  // Turns the text inside one block (a paragraph, heading, list item, table
-  // cell, ...) into HTML.
+  // Turns the text inside one block (a paragraph, heading, list item, table cell, ...) into HTML.
   function renderInline(input) {
     if (input == null) return '';
     let s = String(input);
     const stash = [];
     const keep = (html) => SENTINEL + (stash.push(html) - 1) + SENTINEL;
 
-    // Code spans `like this` FIRST: their contents are escaped and stashed, so
-    // the later autolink/raw-HTML passes can't turn text like `<details>` into a
-    // real element. (CommonMark gives code spans this priority.)
+    // Code spans `like this` FIRST: their contents are escaped and stashed, so the later autolink/raw-HTML passes can't turn text like `<details>` into a real element. (CommonMark gives code spans this priority.)
     s = s.replace(/(`+)([\s\S]*?[^`]|[^`])\1(?!`)/g, (_, _ticks, code) =>
       keep('<code>' + esc(code.replace(/^ | $/g, '')) + '</code>')
     );
-    // Inline math $…$ — stash the raw TeX (escaped) so nothing mangles it; KaTeX
-    // renders it in reader.js. Requires non-space just inside the delimiters.
+    // Inline math $…$ — stash the raw TeX (escaped) so nothing mangles it; KaTeX renders it in reader.js. Requires non-space just inside the delimiters.
     s = s.replace(/\$(?=\S)([^\n$]+?)(?<=\S)\$/g, (_, tex) =>
       keep('<span class="math math-inline">' + esc(tex) + '</span>')
     );
@@ -400,8 +365,7 @@ export function renderMarkdown(src) {
       const d = linkRefs[txt.toLowerCase()];
       return d ? keep(`<a href="${escAttr(d.url)}">${inlineLite(txt)}</a>`) : m;
     });
-    // GitHub refs, emoji, and bare autolinks on the remaining plain text. Each
-    // result is stashed so the emphasis pass can't touch it.
+    // GitHub refs, emoji, and bare autolinks on the remaining plain text. Each result is stashed so the emphasis pass can't touch it.
     s = s.replace(/(^|[^"'(<\w])(https?:\/\/[^\s<>)]+[^\s<>).,;:])/g, (_m, pre, url) =>
       pre + keep(`<a href="${escAttr(url)}">${esc(url)}</a>`)
     );
@@ -429,8 +393,7 @@ export function renderMarkdown(src) {
       /(^|[^\w`/])@([A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\/[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)?)/g,
       (_m, pre, who) => pre + keep(`<span class="github-mention">@${who}</span>`)
     );
-    // Emphasis. Strong before em; underscore emphasis only at word edges so
-    // snake_case_words are left alone.
+    // Emphasis. Strong before em; underscore emphasis only at word edges so snake_case_words are left alone.
     s = s.replace(/\*\*([^\s](?:[\s\S]*?[^\s])?)\*\*/g, '<strong>$1</strong>');
     s = s.replace(/(^|[^\w])__([^\s](?:[\s\S]*?[^\s])?)__(?=[^\w]|$)/g, '$1<strong>$2</strong>');
     s = s.replace(/\*([^\s*](?:[\s\S]*?[^\s*])?)\*/g, '<em>$1</em>');
@@ -457,8 +420,7 @@ export function renderMarkdown(src) {
   }
 
   // --- Block renderer ------------------------------------------------------
-  // Walks the lines and emits block-level HTML. Called recursively for the
-  // contents of blockquotes and list items.
+  // Walks the lines and emits block-level HTML. Called recursively for the contents of blockquotes and list items.
   function blocks(lns) {
     const out = [];
     let i = 0;
@@ -485,15 +447,11 @@ export function renderMarkdown(src) {
           i++;
         }
         if (i < n) i++; // skip closing fence
-        // Mermaid fences become a <pre class="mermaid"> that reader.js turns into
-        // a diagram with the mermaid runtime; everything else is a code block.
+        // Mermaid fences become a <pre class="mermaid"> that reader.js turns into a diagram with the mermaid runtime; everything else is a code block.
         if (lang && lang.toLowerCase() === 'mermaid') {
           out.push('<pre class="mermaid">' + esc(code.join('\n')) + '</pre>');
         } else if (lang) {
-          // Languaged blocks mirror the desktop app: a "highlight" <pre> carrying
-          // the language in data-language (shown as a label, upgraded to the
-          // language's display name once highlight.js loads in reader.js) and a
-          // language-<lang> class that highlight.js reads to colorize the code.
+          // Languaged blocks mirror the desktop app: a "highlight" <pre> carrying the language in data-language (shown as a label, upgraded to the language's display name once highlight.js loads in reader.js) and a language-<lang> class that highlight.js reads to colorize the code.
           out.push(
             `<pre class="highlight" data-language="${escAttr(lang)}"><code class="language-${escAttr(lang)}">` +
               esc(code.join('\n')) +
@@ -554,8 +512,7 @@ export function renderMarkdown(src) {
           buf.push(lns[i].replace(/^ {0,3}> ?/, ''));
           i++;
         }
-        // GitHub-style alert: a blockquote whose first line is [!TYPE]. Drop that
-        // marker line and tag the blockquote so CSS can style it (title + color).
+        // GitHub-style alert: a blockquote whose first line is [!TYPE]. Drop that marker line and tag the blockquote so CSS can style it (title + color).
         const alert = buf.length
           ? buf[0].trim().match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/i)
           : null;
@@ -651,8 +608,7 @@ export function renderMarkdown(src) {
     return renderInline(content);
   }
 
-  // Consume a list starting at line i whose items are indented `startIndent`
-  // spaces. Returns [html, nextLineIndex]. Calls itself for nested lists.
+  // Consume a list starting at line i whose items are indented `startIndent` spaces. Returns [html, nextLineIndex]. Calls itself for nested lists.
   function consumeList(lns, i, startIndent) {
     const n = lns.length;
     const ordered = /^\d/.test(lns[i].slice(startIndent));
@@ -660,8 +616,7 @@ export function renderMarkdown(src) {
 
     while (i < n) {
       if (isBlank(lns[i])) {
-        // A blank line continues the list only if the next non-blank line is a
-        // sibling item at the same indent.
+        // A blank line continues the list only if the next non-blank line is a sibling item at the same indent.
         let j = i + 1;
         while (j < n && isBlank(lns[j])) j++;
         if (
@@ -743,17 +698,9 @@ export function renderMarkdown(src) {
   return frontmatterHtml + html;
 }
 
-// Extract one section's raw Markdown from a document by its heading slug: the
-// matching heading line plus every line down to the next heading of the same or
-// higher level. Returns null when no heading has that slug.
+// Extract one section's raw Markdown from a document by its heading slug: the matching heading line plus every line down to the next heading of the same or higher level. Returns null when no heading has that slug.
 //
-// Slugs are derived exactly as renderMarkdown() derives heading ids — same
-// leading-frontmatter strip, same fenced-code-block skipping, and the same
-// stripToText + slugify with a shared occurrence counter — so a caller can
-// render just this slice and get the same id and content it would have had in
-// the full document. That lets the glossary sheet render a single entry instead
-// of laying out the whole (potentially huge) glossary, which is what makes the
-// term sheet open on memory-limited mobile browsers.
+// Slugs are derived exactly as renderMarkdown() derives heading ids — same leading-frontmatter strip, same fenced-code-block skipping, and the same stripToText + slugify with a shared occurrence counter — so a caller can render just this slice and get the same id and content it would have had in the full document. That lets the glossary sheet render a single entry instead of laying out the whole (potentially huge) glossary, which is what makes the term sheet open on memory-limited mobile browsers.
 export function extractSectionMarkdown(src, slug) {
   let text = String(src).replace(/\r\n?/g, '\n');
   const frontmatter = splitLeadingFrontmatter(text);

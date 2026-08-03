@@ -1,10 +1,8 @@
 // slugger.js
 // ---------------------------------------------------------------------------
-// Turns a heading's plain text into the SAME id ("slug") that GitHub uses, so
-// in-page links like [text](#some-heading) land on the right heading.
+// Turns a heading's plain text into the SAME id ("slug") that GitHub uses, so in-page links like [text](#some-heading) land on the right heading.
 //
-// This README has thousands of these in-page links. If our slugs do not match
-// GitHub's exactly, those links break. So this file copies GitHub's rule:
+// This README has thousands of these in-page links. If our slugs do not match GitHub's exactly, those links break. So this file copies GitHub's rule:
 //
 //   1. lowercase the text
 //   2. drop every character that is not a letter, number, mark, underscore,
@@ -15,9 +13,7 @@
 //   4. if the same slug appears again later, add -1, -2, ... so every id is
 //      unique (GitHub does this too).
 //
-// Pulling the plain text OUT of a heading (removing HTML tags and markdown
-// such as **bold** or [links](...)) happens in markdown.js before it calls
-// here. This file only deals with already-plain text.
+// Pulling the plain text OUT of a heading (removing HTML tags and markdown such as **bold** or [links](...)) happens in markdown.js before it calls here. This file only deals with already-plain text.
 // ---------------------------------------------------------------------------
 
 // Characters we KEEP. Everything not in this set is removed in step 2:
@@ -46,9 +42,7 @@ export function slugify(text, seen) {
     .replace(DROP_CHARS, '')
     .replace(/ /g, '-');
 
-  // Step 4: make it unique. This mirrors GitHub's "github-slugger" exactly:
-  // the first time we see a slug we use it as-is; each later repeat gets the
-  // next number appended.
+  // Step 4: make it unique. This mirrors GitHub's "github-slugger" exactly: the first time we see a slug we use it as-is; each later repeat gets the next number appended.
   let result = base;
   while (Object.prototype.hasOwnProperty.call(seen, result)) {
     seen[base] = (seen[base] || 0) + 1;

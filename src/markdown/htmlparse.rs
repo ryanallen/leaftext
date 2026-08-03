@@ -1,7 +1,6 @@
 //! Scanning HTML tags and attributes. No policy here, only parsing.
 //!
-//! Depends on nothing else in the crate: it is string scanning over borrowed
-//! input, which is why there is no `use super::*` below.
+//! Depends on nothing else in the crate: it is string scanning over borrowed input, which is why there is no `use super::*` below.
 
 pub(crate) fn html_tag_name(tag: &str) -> Option<String> {
     let mut index = 1usize;
@@ -28,9 +27,7 @@ pub(crate) fn is_html_self_closing_tag(tag: &str) -> bool {
     tag[..tag.len().saturating_sub(1)].trim_end().ends_with('/')
 }
 
-/// Whether `tag` carries `attribute_name`, with or without a value. Tokenizes
-/// like [`find_html_attribute`] so a substring inside another attribute's value
-/// (e.g. `title="open sesame"`) doesn't false-positive.
+/// Whether `tag` carries `attribute_name`, with or without a value. Tokenizes like [`find_html_attribute`] so a substring inside another attribute's value (e.g. `title="open sesame"`) doesn't false-positive.
 pub(crate) fn html_has_boolean_attribute(tag: &str, attribute_name: &str) -> bool {
     let mut index = tag.find(char::is_whitespace).unwrap_or(tag.len());
 

@@ -1,25 +1,16 @@
-//! Answering the code view's typing help: completions, hover and the
-//! broken-link check, each computed on a worker from what the loop holds.
+//! Answering the code view's typing help: completions, hover and the broken-link check, each computed on a worker from what the loop holds.
 //!
-//! The shape is one round trip: the page asks with a token, the answer comes
-//! back as [`UserEvent::CodeIntelReady`] carrying the script that delivers it.
-//! What the answers are drawn from is [`IntelSource`]: the vault's corpus when
-//! the vault holds the open document, the document's own folder otherwise —
-//! the same boundary the graph draws, so typing help can never read more of
-//! the disk than the map would.
+//! The shape is one round trip: the page asks with a token, the answer comes back as [`UserEvent::CodeIntelReady`] carrying the script that delivers it. What the answers are drawn from is [`IntelSource`]: the vault's corpus when the vault holds the open document, the document's own folder otherwise — the same boundary the graph draws, so typing help can never read more of the disk than the map would.
 
 use super::*;
 
-/// Where note names come from for one ask. Cloned cheaply into the worker:
-/// the corpus is behind an `Arc`, the folder is just a path it reads itself.
+/// Where note names come from for one ask. Cloned cheaply into the worker: the corpus is behind an `Arc`, the folder is just a path it reads itself.
 pub(crate) enum IntelSource {
     Corpus(Arc<VaultCorpus>),
     Folder(PathBuf),
 }
 
-/// The source for the active document's asks. Kicks off the one corpus read
-/// when the vault holds the document but its text is not in memory yet — that
-/// ask is answered from the folder, the next from the corpus.
+/// The source for the active document's asks. Kicks off the one corpus read when the vault holds the document but its text is not in memory yet — that ask is answered from the folder, the next from the corpus.
 fn intel_source(
     state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
@@ -39,8 +30,7 @@ fn intel_source(
         .map(|folder| IntelSource::Folder(folder.to_path_buf()))
 }
 
-/// The note a `[[name]]` points at, read through the source. IO on the folder
-/// arm, so callers run this on the worker.
+/// The note a `[[name]]` points at, read through the source. IO on the folder arm, so callers run this on the worker.
 fn intel_note(source: &Option<IntelSource>, name: &str) -> Option<CorpusDocument> {
     match source {
         Some(IntelSource::Corpus(corpus)) => find_note(name, &corpus.documents).cloned(),
@@ -69,8 +59,7 @@ pub(crate) fn code_complete_notes(
     });
 }
 
-/// The headings `[[note#` (a named note) or `](#` (`note` absent — the active
-/// buffer itself) can offer.
+/// The headings `[[note#` (a named note) or `](#` (`note` absent — the active buffer itself) can offer.
 pub(crate) fn code_complete_headings(
     state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
@@ -83,8 +72,7 @@ pub(crate) fn code_complete_headings(
         Some(_) => intel_source(state, proxy, document.as_deref()),
         None => None,
     };
-    // The buffer, not the disk: the anchors on offer must be the anchors the
-    // text on screen has.
+    // The buffer, not the disk: the anchors on offer must be the anchors the text on screen has.
     let active = workspace
         .active_edit()
         .map(|edit| (edit.text().to_string(), edit.path.clone()));

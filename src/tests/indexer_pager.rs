@@ -44,8 +44,7 @@ fn pager_includes_tei_xml_documents() {
     fs::create_dir_all(&book).expect("tree is created");
     fs::write(root.join("README.md"), "# Root\n").expect("root README written");
     fs::write(book.join("README.md"), "# Book\n").expect("book README written");
-    // Two XML chapters plus a Markdown one, to prove XML both appears in the
-    // order and pages to its neighbors.
+    // Two XML chapters plus a Markdown one, to prove XML both appears in the order and pages to its neighbors.
     let ch1 = book.join("001-going-forth.xml");
     let ch2 = book.join("002-ordination.xml");
     let notes = book.join("003-notes.md");
@@ -79,8 +78,7 @@ fn pager_includes_json_and_yaml_documents() {
     let root = std::env::temp_dir().join(format!("leaf-pager-data-{unique}"));
     fs::create_dir_all(&root).expect("tree is created");
     fs::write(root.join("README.md"), "# Root\n").expect("root README written");
-    // Every renderable format is a page, so Prev/Next walks the whole folder
-    // rather than stepping over the data files in it.
+    // Every renderable format is a page, so Prev/Next walks the whole folder rather than stepping over the data files in it.
     let notes = root.join("001-notes.md");
     let manifest = root.join("002-manifest.json");
     let workflow = root.join("003-workflow.yaml");
@@ -114,8 +112,7 @@ fn pager_orders_by_folder_tree_like_the_web_viewer() {
     }
     fs::write(root.join("GLOSSARY.md"), "# Glossary\n").expect("glossary written");
 
-    // Standing on the section README, prev is its parent book and next is its
-    // child chapter — the same neighbors the web pager shows.
+    // Standing on the section README, prev is its parent book and next is its child chapter — the same neighbors the web pager shows.
     let html = pager_html(&section.join("README.md"));
     fs::remove_dir_all(&root).expect("tree removed");
 

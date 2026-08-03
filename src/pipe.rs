@@ -1,12 +1,8 @@
 //! The ask pipe: a local channel the running app answers questions on.
 //!
-//! Reading the journal tells you what the app did. This tells you what it is
-//! doing — so a bug can be looked into while it is happening rather than
-//! reconstructed afterwards.
+//! Reading the journal tells you what the app did. This tells you what it is doing — so a bug can be looked into while it is happening rather than reconstructed afterwards.
 //!
-//! One ask in, one reply out, both JSON, then the connection closes. A named
-//! pipe on Windows and a Unix socket elsewhere; neither needs a crate, and
-//! neither is reachable from outside this account.
+//! One ask in, one reply out, both JSON, then the connection closes. A named pipe on Windows and a Unix socket elsewhere; neither needs a crate, and neither is reachable from outside this account.
 
 use crate::app::UserEvent;
 use crate::journal;
@@ -16,12 +12,10 @@ use std::sync::mpsc;
 use std::time::Duration;
 use tao::event_loop::EventLoopProxy;
 
-/// How long the pipe waits on the window thread before answering that it did
-/// not reply. A hung app is a fair question to ask, so this has to end.
+/// How long the pipe waits on the window thread before answering that it did not reply. A hung app is a fair question to ask, so this has to end.
 const REPLY_TIMEOUT: Duration = Duration::from_secs(2);
 
-/// What can be asked. One enum, written the way `IpcCommand` is: one variant,
-/// one arm, and never a second list of the things it accepts.
+/// What can be asked. One enum, written the way `IpcCommand` is: one variant, one arm, and never a second list of the things it accepts.
 #[derive(Debug, Deserialize)]
 #[serde(tag = "ask")]
 pub(crate) enum Ask {
@@ -36,11 +30,7 @@ pub(crate) enum Ask {
     State,
     /// Run a line of JavaScript in the page and hand back what it came to.
     ///
-    /// This is arbitrary code inside the app, reachable by anything running as
-    /// this user — the same bar as the single-instance pipe, which accepts only
-    /// a file path where this accepts anything. It is also the whole reason the
-    /// pipe beats reading the journal: without it you have a log reader, with it
-    /// a live app can be inspected on both platforms.
+    /// This is arbitrary code inside the app, reachable by anything running as this user — the same bar as the single-instance pipe, which accepts only a file path where this accepts anything. It is also the whole reason the pipe beats reading the journal: without it you have a log reader, with it a live app can be inspected on both platforms.
     #[serde(rename = "eval")]
     Eval { script: String },
     /// The running build.
@@ -52,19 +42,14 @@ fn answered(value: Value) -> String {
     json!({ "ok": true, "answer": value }).to_string()
 }
 
-/// An ask that is not in the enum comes back saying so. Deliberately unlike the
-/// page's IPC, which drops what it cannot parse: a page typo is a bug in our own
-/// code, while a typo here is a person or a tool waiting for an answer.
+/// An ask that is not in the enum comes back saying so. Deliberately unlike the page's IPC, which drops what it cannot parse: a page typo is a bug in our own code, while a typo here is a person or a tool waiting for an answer.
 fn refused(reason: impl std::fmt::Display) -> String {
     json!({ "ok": false, "error": reason.to_string() }).to_string()
 }
 
-/// One ask in, one reply out. The transport sits above this and the app below
-/// it, so the vocabulary can be tested without either.
+/// One ask in, one reply out. The transport sits above this and the app below it, so the vocabulary can be tested without either.
 ///
-/// `from_window` is asked only for what the window alone knows. The journal and
-/// the version are answered right here, because a hung app is exactly when they
-/// are wanted and going through the window would lose them.
+/// `from_window` is asked only for what the window alone knows. The journal and the version are answered right here, because a hung app is exactly when they are wanted and going through the window would lose them.
 pub(crate) fn answer<F>(request: &str, from_window: F) -> String
 where
     F: FnOnce(Ask) -> Option<Result<Value, String>>,
@@ -94,8 +79,7 @@ where
 
 /// Put the ask to the event loop and wait for the reply it fills in.
 ///
-/// This is [`crate::app::off_loop`] run backwards: that takes work off the window
-/// thread and posts the answer back as an event, this takes an answer off it.
+/// This is [`crate::app::off_loop`] run backwards: that takes work off the window thread and posts the answer back as an event, this takes an answer off it.
 fn from_window(proxy: &EventLoopProxy<UserEvent>, ask: Ask) -> Option<Result<Value, String>> {
     let (reply, answers) = mpsc::sync_channel(1);
     let event = match ask {
@@ -108,8 +92,7 @@ fn from_window(proxy: &EventLoopProxy<UserEvent>, ask: Ask) -> Option<Result<Val
     answers.recv_timeout(REPLY_TIMEOUT).ok()
 }
 
-/// Start answering. Silent on failure: the app opens whether or not anything can
-/// ask it questions.
+/// Start answering. Silent on failure: the app opens whether or not anything can ask it questions.
 pub(crate) fn serve(proxy: EventLoopProxy<UserEvent>) {
     let Some(address) = address() else { return };
     listen(address, move |request| {
@@ -119,16 +102,14 @@ pub(crate) fn serve(proxy: EventLoopProxy<UserEvent>) {
 
 #[cfg(windows)]
 pub(crate) fn address() -> Option<String> {
-    // Per user, so two logged-in accounts do not share one pipe — the same
-    // scoping the single-instance pipe uses.
+    // Per user, so two logged-in accounts do not share one pipe — the same scoping the single-instance pipe uses.
     let user = std::env::var("USERNAME").unwrap_or_default();
     Some(format!(r"\\.\pipe\leaftext-journal-{user}"))
 }
 
 #[cfg(unix)]
 pub(crate) fn address() -> Option<String> {
-    // In the app's own data folder, which is already inside the user's home, so
-    // the folder's permissions are the socket's.
+    // In the app's own data folder, which is already inside the user's home, so the folder's permissions are the socket's.
     Some(
         leaftext::app_data_dir()?
             .join("journal.sock")
@@ -148,9 +129,7 @@ mod transport {
     };
     use windows_sys::Win32::System::Pipes::{ConnectNamedPipe, CreateNamedPipeW, WaitNamedPipeW};
 
-    // Raw rather than imported, so the exact windows-sys module path for each is
-    // not a thing this file depends on — the same choice single_instance.rs made.
-    // DUPLEX, not INBOUND: this pipe answers, and that one only ever listens.
+    // Raw rather than imported, so the exact windows-sys module path for each is not a thing this file depends on — the same choice single_instance.rs made. DUPLEX, not INBOUND: this pipe answers, and that one only ever listens.
     const PIPE_ACCESS_DUPLEX: u32 = 0x0000_0003;
     const PIPE_TYPE_MESSAGE: u32 = 0x0000_0004;
     const PIPE_READMODE_MESSAGE: u32 = 0x0000_0002;
@@ -241,23 +220,18 @@ mod transport {
                     if connected {
                         let request = read_message(pipe);
                         write_message(pipe, &reply(&request));
-                        // Wait for the asker to take the reply: closing throws
-                        // away whatever is still in the pipe.
+                        // Wait for the asker to take the reply: closing throws away whatever is still in the pipe.
                         unsafe { FlushFileBuffers(pipe) };
                     }
 
-                    // Closed, not disconnected: a disconnect tells the asker the
-                    // pipe was taken away, which node reports as a failure after
-                    // a perfectly good reply. Each turn makes its own pipe, so
-                    // there is nothing to disconnect for.
+                    // Closed, not disconnected: a disconnect tells the asker the pipe was taken away, which node reports as a failure after a perfectly good reply. Each turn makes its own pipe, so there is nothing to disconnect for.
                     unsafe { CloseHandle(pipe) };
                 }
             })
             .ok();
     }
 
-    /// The other end. The app answers rather than asks, so only the tests call
-    /// this — but it belongs beside the half it talks to.
+    /// The other end. The app answers rather than asks, so only the tests call this — but it belongs beside the half it talks to.
     #[allow(dead_code)]
     pub(crate) fn ask(address: &str, request: &str) -> Option<String> {
         let name = wide(address);
@@ -288,14 +262,11 @@ mod transport {
         None
     }
 
-    /// Ask, read the reply, then read once more and report what ending the
-    /// server gave. Only a test wants this: what an asker is told *after* a good
-    /// reply is the whole of the bug that made every question fail.
+    /// Ask, read the reply, then read once more and report what ending the server gave. Only a test wants this: what an asker is told *after* a good reply is the whole of the bug that made every question fail.
     #[cfg(test)]
     pub(crate) fn ask_then_ending(address: &str, request: &str) -> Option<(String, u32)> {
         let name = wide(address);
-        // The same wait `ask` does: the listener's thread may not have made the
-        // pipe yet, and a test that raced it would fail for the wrong reason.
+        // The same wait `ask` does: the listener's thread may not have made the pipe yet, and a test that raced it would fail for the wrong reason.
         let mut handle = 0 as HANDLE;
         for _ in 0..25 {
             handle = unsafe {
@@ -346,8 +317,7 @@ mod transport {
     where
         F: Fn(&str) -> String + Send + 'static,
     {
-        // A socket file left by a crash would refuse the bind, and it names
-        // nothing but this app's own pipe.
+        // A socket file left by a crash would refuse the bind, and it names nothing but this app's own pipe.
         let _ = std::fs::remove_file(&address);
         let Ok(listener) = UnixListener::bind(&address) else {
             return;
@@ -367,8 +337,7 @@ mod transport {
             .ok();
     }
 
-    /// The other end. The app answers rather than asks, so only the tests call
-    /// this — but it belongs beside the half it talks to.
+    /// The other end. The app answers rather than asks, so only the tests call this — but it belongs beside the half it talks to.
     #[allow(dead_code)]
     pub(crate) fn ask(address: &str, request: &str) -> Option<String> {
         let mut stream = UnixStream::connect(address).ok()?;
@@ -382,8 +351,7 @@ mod transport {
 
 #[cfg(all(test, windows))]
 pub(crate) use transport::ask_then_ending;
-/// The transport, whichever one this platform has. Both halves take an address
-/// and a function from one ask to one reply, so everything above them is shared.
+/// The transport, whichever one this platform has. Both halves take an address and a function from one ask to one reply, so everything above them is shared.
 // `ask` is the client half: the tests call it, the app does not.
 #[allow(unused_imports)]
 pub(crate) use transport::{ask, listen};

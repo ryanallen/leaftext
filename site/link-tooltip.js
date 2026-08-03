@@ -1,9 +1,6 @@
 // link-tooltip.js
 // ---------------------------------------------------------------------------
-// Desktop-only hover tooltip for links. It explains what kind of link you are
-// about to follow, shows the authored href, and — for links that point at
-// another document — how many lines that document is (fetched once and cached).
-// Mobile/touch gets no change.
+// Desktop-only hover tooltip for links. It explains what kind of link you are about to follow, shows the authored href, and — for links that point at another document — how many lines that document is (fetched once and cached). Mobile/touch gets no change.
 // ---------------------------------------------------------------------------
 
 function decodePart(raw) {
@@ -14,10 +11,7 @@ function decodePart(raw) {
   }
 }
 
-// What to print as the tooltip's detail line. The authored href may be
-// percent-encoded (a heading slug with diacritics becomes `#%C5%9B...`), which
-// is unreadable, so decode it for display and fall back to the raw href if it
-// is not valid percent-encoding.
+// What to print as the tooltip's detail line. The authored href may be percent-encoded (a heading slug with diacritics becomes `#%C5%9B...`), which is unreadable, so decode it for display and fall back to the raw href if it is not valid percent-encoding.
 function detailText(rawHref) {
   return decodePart(rawHref);
 }
@@ -43,9 +37,7 @@ function samePageFragment(href) {
   return '';
 }
 
-// True when the href points at a document file we can fetch and count (Markdown
-// or TEI XML), rather than an external site, a mail link, or an in-page jump.
-// The glossary is excluded — it opens as a single entry, not a whole page.
+// True when the href points at a document file we can fetch and count (Markdown or TEI XML), rather than an external site, a mail link, or an in-page jump. The glossary is excluded — it opens as a single entry, not a whole page.
 function isDocumentLink(rawHref) {
   if (!rawHref) return false;
   if (/^[a-z][a-z0-9+.-]*:/i.test(rawHref) && !/^[a-z]:[\\/]/i.test(rawHref)) return false; // scheme (http:, mailto:, glossary:)
@@ -98,9 +90,7 @@ function describeLink(link) {
   return { kind: 'Link', detail: rawHref, countable };
 }
 
-// The linked file's source length, phrased for the tooltip. A file that ends in
-// a trailing newline is not counted as an extra empty line, so this matches what
-// an editor's line count shows.
+// The linked file's source length, phrased for the tooltip. A file that ends in a trailing newline is not counted as an extra empty line, so this matches what an editor's line count shows.
 function countLines(text) {
   if (!text) return 0;
   return text.replace(/\r\n?/g, '\n').replace(/\n$/, '').split('\n').length;
@@ -110,11 +100,7 @@ function linesLabel(n) {
   return `${n.toLocaleString()} ${n === 1 ? 'line' : 'lines'}`;
 }
 
-// Turn a link into the URL of the document it points at, so we can fetch it and
-// count its lines. The default resolves the href relative to the current page,
-// which is right for a plain document site. A hash-routed docs viewer passes its
-// own resolver (a relative `.md` link there maps to a route, not a URL under the
-// current path), so this default is only a fallback.
+// Turn a link into the URL of the document it points at, so we can fetch it and count its lines. The default resolves the href relative to the current page, which is right for a plain document site. A hash-routed docs viewer passes its own resolver (a relative `.md` link there maps to a route, not a URL under the current path), so this default is only a fallback.
 function defaultResolveDocUrl(link) {
   const rawHref = (link.getAttribute('href') || '').trim();
   if (!isDocumentLink(rawHref)) return null;
@@ -148,8 +134,7 @@ export function installLinkTooltip(root = document, options = {}) {
   const detailEl = tip.querySelector('.link-hover-tip-detail');
   const linesEl = tip.querySelector('.link-hover-tip-lines');
   let activeLink = null;
-  // Resolved-URL -> line count (or 'error'). Counting a document fetches it once;
-  // hovering the same target again reads the cache.
+  // Resolved-URL -> line count (or 'error'). Counting a document fetches it once; hovering the same target again reads the cache.
   const lineCache = new Map();
 
   function hide() {
@@ -167,8 +152,7 @@ export function installLinkTooltip(root = document, options = {}) {
     }
   }
 
-  // Fetch (once) and count the linked document, then show its line count — but
-  // only if the pointer is still on the same link when the fetch resolves.
+  // Fetch (once) and count the linked document, then show its line count — but only if the pointer is still on the same link when the fetch resolves.
   async function fillLineCount(link) {
     const url = resolveDocUrl(link);
     if (!url) return;

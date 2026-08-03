@@ -1,13 +1,9 @@
 #!/usr/bin/env node
-// A check nobody runs is not a check. Every `check-*` target in the Justfile has to be
-// in `just verify`, so writing one is enough to have it enforced — and dropping one
-// from the list fails here rather than going quiet.
+// A check nobody runs is not a check. Every `check-*` target in the Justfile has to be in `just verify`, so writing one is enough to have it enforced — and dropping one from the list fails here rather than going quiet.
 //
 //   node scripts/check-verify.mjs   report anything missing (`just verify`)
 //
-// It also holds the other direction: a name in `verify` that is not a real target
-// would make the whole suite fail with just's own error, which says nothing useful
-// about which rule stopped being checked.
+// It also holds the other direction: a name in `verify` that is not a real target would make the whole suite fail with just's own error, which says nothing useful about which rule stopped being checked.
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

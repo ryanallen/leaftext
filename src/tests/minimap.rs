@@ -131,8 +131,7 @@ fn minimap_model_keeps_fenced_code_lines_together() {
 
 #[test]
 fn html_minimap_model_charts_tei_blocks() {
-    // A TEI document renders straight to HTML; the model must come from the
-    // rendered blocks, not stay empty — an empty model leaves the rail blank.
+    // A TEI document renders straight to HTML; the model must come from the rendered blocks, not stay empty — an empty model leaves the rail blank.
     let xml = "<TEI><teiHeader><fileDesc><titleStmt><title>A Sutra</title>\
             </titleStmt></fileDesc></teiHeader><text><body>\
             <p>A short opening line.</p>\
@@ -293,9 +292,7 @@ fn minimap_model_covers_released_categories_without_source_payloads() {
             "the model should chart a {expected:?} span"
         );
     }
-    // The model holds shape, never text. Checked against the spans serialized on
-    // their own: `DocumentMinimap` does not carry them in the document payload, but
-    // they are still the only place source text could leak to.
+    // The model holds shape, never text. Checked against the spans serialized on their own: `DocumentMinimap` does not carry them in the document payload, but they are still the only place source text could leak to.
     let held = serde_json::to_string(&model.spans).expect("minimap spans serialize");
     for forbidden in [
         "Heading",
@@ -367,9 +364,7 @@ fn opened_document_carries_minimap_model_for_webview_state() {
         .spans
         .iter()
         .any(|span| span.category == MinimapLineCategory::CodeFence));
-    // The page is told how long the document is and nothing else: it draws the rail
-    // from a scaled clone of the real rendering, so the spans would be 5.5 MB of
-    // payload (on a 4 MB glossary) that nothing reads. See `DocumentMinimap`.
+    // The page is told how long the document is and nothing else: it draws the rail from a scaled clone of the real rendering, so the spans would be 5.5 MB of payload (on a 4 MB glossary) that nothing reads. See `DocumentMinimap`.
     assert_contains(&script, r#""minimap":{"line_count":7}"#);
     for absent in [r#""spans""#, r#""category""#, r#""start_line""#] {
         assert!(

@@ -1,27 +1,18 @@
 use crate::*;
 
-/// The arrow back up to a footnote's reference. The renderer writes this one into
-/// the document itself, so it is markup rather than a class.
+/// The arrow back up to a footnote's reference. The renderer writes this one into the document itself, so it is markup rather than a class.
 pub(crate) const FOOTNOTE_BACKREF_ICON_SVG: &str = include_str!("assets/arrow-uturn-left.svg");
 
-// Bundled runtimes (mermaid, KaTeX, graph libs) compiled into the binary and
-// served over a custom protocol, so math/diagrams render offline. Loaded
-// lazily by the page only when a document needs them.
+// Bundled runtimes (mermaid, KaTeX, graph libs) compiled into the binary and served over a custom protocol, so math/diagrams render offline. Loaded lazily by the page only when a document needs them.
 pub const LOCAL_ASSET_PROTOCOL: &str = "leaf-asset";
 pub(crate) const MERMAID_JS: &[u8] = include_bytes!("assets/vendor/mermaid.min.js");
 // PixiJS (WebGL) + d3-force power the library graph view.
 pub(crate) const PIXI_JS: &[u8] = include_bytes!("assets/vendor/pixi.min.js");
-// Pixi compiles shaders with `new Function`, which the CSP forbids (no
-// 'unsafe-eval'). This official companion swaps those paths for eval-free
-// polyfills so the graph renders without loosening the CSP.
+// Pixi compiles shaders with `new Function`, which the CSP forbids (no 'unsafe-eval'). This official companion swaps those paths for eval-free polyfills so the graph renders without loosening the CSP.
 pub(crate) const PIXI_UNSAFE_EVAL_JS: &[u8] =
     include_bytes!("assets/vendor/pixi-unsafe-eval.min.js");
 pub(crate) const D3_FORCE_JS: &[u8] = include_bytes!("assets/vendor/d3-force.min.js");
-// Monaco (the VS Code editor) powers the raw-source code view: line wrapping,
-// huge files, and a built-in colored minimap. Vendored as one self-contained
-// bundle — core editor plus the Markdown/XML/YAML colorizers, no language
-// services or web workers — built by `scripts/bundle-monaco.mjs`. The icon font
-// is inlined, so `monaco.js` + `monaco.css` is the whole of it.
+// Monaco (the VS Code editor) powers the raw-source code view: line wrapping, huge files, and a built-in colored minimap. Vendored as one self-contained bundle — core editor plus the Markdown/XML/YAML colorizers, no language services or web workers — built by `scripts/bundle-monaco.mjs`. The icon font is inlined, so `monaco.js` + `monaco.css` is the whole of it.
 pub(crate) const MONACO_JS: &[u8] = include_bytes!("assets/vendor/monaco/monaco.js");
 pub(crate) const MONACO_CSS: &[u8] = include_bytes!("assets/vendor/monaco/monaco.css");
 pub(crate) const KATEX_JS: &[u8] = include_bytes!("assets/vendor/katex/katex.min.js");
@@ -111,8 +102,7 @@ pub(crate) const KATEX_FONTS: &[(&str, &[u8])] = &[
 
 /// Webview URL for a staged code-view payload.
 ///
-/// Windows and Android cannot route a custom scheme, so wry intercepts it as
-/// `http://<scheme>.<host>/…`; a raw `leaf-source://` URL there fails to load.
+/// Windows and Android cannot route a custom scheme, so wry intercepts it as `http://<scheme>.<host>/…`; a raw `leaf-source://` URL there fails to load.
 pub fn source_payload_url(protocol: &str, id: u64) -> String {
     let protocol_url = format!("{protocol}://{LOCAL_IMAGE_HOST}/payload/{id}");
     #[cfg(any(target_os = "windows", target_os = "android"))]
@@ -148,17 +138,9 @@ pub(crate) fn bundled_asset_bytes(uri: &str) -> Option<(&'static str, &'static [
     let url = Url::parse(uri).ok()?;
     let path = url.path().trim_start_matches('/');
     match path {
-        // The whole reading-mode stylesheet (font faces, the compiled theme
-        // tokens, and app layout) is served here as a linked stylesheet
-        // rather than inlined into the shell HTML. WebView2 loads the shell via
-        // `NavigateToString`, which rejects strings past ~2 MB (UTF-16) with
-        // E_INVALIDARG; keeping this ~1.3 MB of CSS out of that string is what
-        // stops the shell from tripping the cap as themes/fonts grow. Linked
-        // resources carry no such limit. `app_shell_size_stays_under_navigate_
-        // to_string_budget` guards the inlined shell against regressing.
+        // The whole reading-mode stylesheet (font faces, the compiled theme tokens, and app layout) is served here as a linked stylesheet rather than inlined into the shell HTML. WebView2 loads the shell via `NavigateToString`, which rejects strings past ~2 MB (UTF-16) with E_INVALIDARG; keeping this ~1.3 MB of CSS out of that string is what stops the shell from tripping the cap as themes/fonts grow. Linked resources carry no such limit. `app_shell_size_stays_under_navigate_ to_string_budget` guards the inlined shell against regressing.
         "app.css" => Some(("text/css; charset=utf-8", reading_mode_css().as_bytes())),
-        // The whole front-end, out of the shell string for the same reason: the
-        // script was 88% of it.
+        // The whole front-end, out of the shell string for the same reason: the script was 88% of it.
         "app.js" => Some((
             "text/javascript; charset=utf-8",
             app_shell_script().as_bytes(),

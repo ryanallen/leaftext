@@ -1,23 +1,12 @@
 // docs.js
 // ---------------------------------------------------------------------------
-// The /docs reader. Like site/reader.js (fetch a Markdown file, render it,
-// build the minimap) but it serves a whole set of pages chosen by the #/route
-// in the URL and draws a navigation sidebar down the left.
+// The /docs reader. Like site/reader.js (fetch a Markdown file, render it, build the minimap) but it serves a whole set of pages chosen by the #/route in the URL and draws a navigation sidebar down the left.
 //
-// Nothing about the page list lives here. The sidebar, the mobile dropdown, and
-// the prev/next pager are all built from the REAL docs/ file tree at runtime
-// (see ../site/docs-nav.js): every folder is a group, every .md file is a page.
-// Drop a file under docs/ and it appears; remove it and it's gone. No manifest,
-// no list to maintain.
+// Nothing about the page list lives here. The sidebar, the mobile dropdown, and the prev/next pager are all built from the REAL docs/ file tree at runtime (see ../site/docs-nav.js): every folder is a group, every .md file is a page. Drop a file under docs/ and it appears; remove it and it's gone. No manifest, no list to maintain.
 //
-// Routing is hash-based so this is a static site that works on GitHub Pages with
-// no server. A route is a doc's path under docs/ without the .md (e.g.
-// "features/themes"); the empty route is the index, which renders docs/README.md
-// (or shows nothing if there is no README). The raw .md files stay viewable on
-// GitHub, and in-page links between them are intercepted and turned into routes.
+// Routing is hash-based so this is a static site that works on GitHub Pages with no server. A route is a doc's path under docs/ without the .md (e.g. "features/themes"); the empty route is the index, which renders docs/README.md (or shows nothing if there is no README). The raw .md files stay viewable on GitHub, and in-page links between them are intercepted and turned into routes.
 //
-// The renderer (markdown.js) and minimap (minimap.js) are reused verbatim from
-// the root site one level up.
+// The renderer (markdown.js) and minimap (minimap.js) are reused verbatim from the root site one level up.
 // ---------------------------------------------------------------------------
 
 import { renderMarkdown } from '../site/markdown.js';
@@ -31,9 +20,7 @@ import { installLinkTooltip } from '../site/link-tooltip.js';
 import { installSettings } from '../site/settings.js';
 import { applySpeedReaderIfEnabled } from '../site/speed-reader.js';
 
-// Site identity is DERIVED at runtime, never hardcoded, so this one file is
-// shared verbatim across sites (leaftext, emptyguru, …) through the site/
-// junction — nothing here says "Leaftext", so nothing drifts:
+// Site identity is DERIVED at runtime, never hardcoded, so this one file is shared verbatim across sites (leaftext, emptyguru, …) through the site/ junction — nothing here says "Leaftext", so nothing drifts:
 //   • Brand + subtitle come from the page <title> ("Brand — Subtitle").
 //   • The "← back" link is the site root, always one level above /docs.
 //   • The repo (only needed for the GitHub tree fallback on Pages) is read from
@@ -48,11 +35,7 @@ const SITE_HREF = new URL('../', location.href).href; // site root, one up from 
 let REPO = null;
 let FOOTER_LINKS = [{ href: SITE_HREF, label: '← ' + location.hostname }];
 
-// Parse the first github.com/<owner>/<repo> out of the site's root README (one
-// level up from /docs). Sub-paths like /releases are fine — only owner/repo are
-// kept. Returns null if there is no README or no GitHub link, in which case the
-// local-directory autoindex still builds the nav (dev) and only the Pages
-// fallback is unavailable.
+// Parse the first github.com/<owner>/<repo> out of the site's root README (one level up from /docs). Sub-paths like /releases are fine — only owner/repo are kept. Returns null if there is no README or no GitHub link, in which case the local-directory autoindex still builds the nav (dev) and only the Pages fallback is unavailable.
 async function deriveRepo() {
   try {
     const res = await fetch('../README.md', { cache: 'no-cache' });
@@ -69,13 +52,10 @@ async function deriveRepo() {
 let NAV = [];
 let PAGES = []; // flat list of every page, in sidebar order (for the pager)
 let HAS_INDEX = false; // is there a docs/README.md to use as the landing page?
-// Clean route -> real file path (with ".md"), for the pages whose on-disk name
-// carries a numeric ordering prefix. Built from the live tree in boot().
+// Clean route -> real file path (with ".md"), for the pages whose on-disk name carries a numeric ordering prefix. Built from the live tree in boot().
 let ROUTE_TO_PATH = new Map();
 
-// The file to fetch for a route. Prefers the nav's real path (which honors any
-// ordering prefix on disk); falls back to "<route>.md" so a hand-typed or
-// not-yet-in-nav route (and the GLOSSARY, fetched by literal path) still loads.
+// The file to fetch for a route. Prefers the nav's real path (which honors any ordering prefix on disk); falls back to "<route>.md" so a hand-typed or not-yet-in-nav route (and the GLOSSARY, fetched by literal path) still loads.
 function fileForRoute(route) {
   if (route === '') return 'README.md';
   return ROUTE_TO_PATH.get(route) || route + '.md';
@@ -89,17 +69,10 @@ function collectRoutePaths(nodes, map) {
   return map;
 }
 
-// The route of the page whose content is currently on screen, set only when a
-// render SUCCEEDS. In-page relative links resolve against this, not the URL hash
-// (currentRoute()): if a fetch 404s the hash changes but the old content stays
-// visible, and resolving its relative links against the broken hash would keep
-// prepending the failed path (the "URL keeps getting longer" bug). Resolving
-// against the displayed route keeps a bad link from compounding.
+// The route of the page whose content is currently on screen, set only when a render SUCCEEDS. In-page relative links resolve against this, not the URL hash (currentRoute()): if a fetch 404s the hash changes but the old content stays visible, and resolving its relative links against the broken hash would keep prepending the failed path (the "URL keeps getting longer" bug). Resolving against the displayed route keeps a bad link from compounding.
 let displayedRoute = '';
 
-// The glossary bottom sheet. The glossary lives at docs/GLOSSARY.md, so it is
-// fetched relative to this page; links pointing at it (e.g. ../GLOSSARY.md#karma)
-// open the entry in a sheet instead of routing. Created once in boot().
+// The glossary bottom sheet. The glossary lives at docs/GLOSSARY.md, so it is fetched relative to this page; links pointing at it (e.g. ../GLOSSARY.md#karma) open the entry in a sheet instead of routing. Created once in boot().
 let glossary = null;
 
 const sidebarEl = document.getElementById('sidebar');
@@ -107,10 +80,7 @@ const mobileNavEl = document.getElementById('mobileNav');
 const contentEl = document.getElementById('content');
 const statusEl = document.getElementById('status');
 const pagerEl = document.getElementById('pager');
-// The tooltip's line count needs the URL of the file a link points at. Here a
-// relative `.md` link resolves to a route against the page on screen, and the
-// file behind that route is `<route>.md` under this /docs base — not a URL under
-// the current `#/route` hash — so give the counter a resolver that knows that.
+// The tooltip's line count needs the URL of the file a link points at. Here a relative `.md` link resolves to a route against the page on screen, and the file behind that route is `<route>.md` under this /docs base — not a URL under the current `#/route` hash — so give the counter a resolver that knows that.
 installLinkTooltip(document, {
   resolveDocUrl: (link) => {
     const href = (link.getAttribute('href') || '').trim();
@@ -126,8 +96,7 @@ installLinkTooltip(document, {
   },
 });
 
-// Mermaid and KaTeX are vendored under ../site/vendor/ — loaded lazily (once)
-// only when a page actually contains a diagram or math.
+// Mermaid and KaTeX are vendored under ../site/vendor/ — loaded lazily (once) only when a page actually contains a diagram or math.
 const MERMAID_SRC = '../site/vendor/mermaid.min.js';
 const KATEX_SRC = '../site/vendor/katex/katex.min.js';
 const HLJS_SRC = '../site/vendor/highlight.min.js';
@@ -185,8 +154,7 @@ async function renderMath() {
 
 // ---- nav helpers --------------------------------------------------------
 
-// Every page in sidebar order, regardless of nesting depth. A folder heading
-// that links to its README is itself a page (and comes before its children).
+// Every page in sidebar order, regardless of nesting depth. A folder heading that links to its README is itself a page (and comes before its children).
 function collectPages(nodes) {
   const pages = [];
   for (const node of nodes) {
@@ -198,9 +166,7 @@ function collectPages(nodes) {
 
 // ---- routing ------------------------------------------------------------
 
-// Parse the URL hash into a route and an optional section anchor. "#/<route>"
-// with an optional "#<anchor>" suffix. The empty route ("#/" or no hash) is the
-// index. An unknown route also falls back to the index.
+// Parse the URL hash into a route and an optional section anchor. "#/<route>" with an optional "#<anchor>" suffix. The empty route ("#/" or no hash) is the index. An unknown route also falls back to the index.
 function parseHash() {
   const hash = location.hash || '';
   if (!hash.startsWith('#/')) return { route: '', anchor: '' };
@@ -208,10 +174,7 @@ function parseHash() {
   const at = rest.indexOf('#');
   const rawRoute = at >= 0 ? rest.slice(0, at) : rest;
   const rawAnchor = at >= 0 ? rest.slice(at + 1) : '';
-  // A route is whatever path the hash names; it is fetched as "<route>.md" and a
-  // missing file surfaces as an error in render(). Routing is deliberately NOT
-  // gated on the nav-derived route set: the sidebar can be stale or fail to load
-  // (cached, rate-limited) without breaking the ability to open a real doc.
+  // A route is whatever path the hash names; it is fetched as "<route>.md" and a missing file surfaces as an error in render(). Routing is deliberately NOT gated on the nav-derived route set: the sidebar can be stale or fail to load (cached, rate-limited) without breaking the ability to open a real doc.
   const route = decodeURIComponent(rawRoute).replace(/\/+$/, '');
   let anchor = rawAnchor;
   try {
@@ -226,16 +189,11 @@ function currentRoute() {
   return parseHash().route;
 }
 
-// Resolve a relative ".md" link inside a page against the page it appears on,
-// returning the route and any section anchor (route is null if it escapes the
-// set).
+// Resolve a relative ".md" link inside a page against the page it appears on, returning the route and any section anchor (route is null if it escapes the set).
 function routeAndAnchorFromHref(href, fromRoute) {
   const dir = fromRoute.includes('/') ? fromRoute.slice(0, fromRoute.lastIndexOf('/') + 1) : '';
   const resolved = new URL(href, 'https://docs.local/' + dir);
-  // Links point at the real files on disk, which may carry a numeric ordering
-  // prefix ("01-features/02-navigation.md"). Strip the prefix from every segment
-  // so the in-app route — and the URL — stays clean ("features/navigation");
-  // fileForRoute() maps it back to the real file to fetch.
+  // Links point at the real files on disk, which may carry a numeric ordering prefix ("01-features/02-navigation.md"). Strip the prefix from every segment so the in-app route — and the URL — stays clean ("features/navigation"); fileForRoute() maps it back to the real file to fetch.
   const route = resolved.pathname
     .replace(/^\/+/, '')
     .replace(/\.md$/i, '')
@@ -243,9 +201,7 @@ function routeAndAnchorFromHref(href, fromRoute) {
     .map((seg) => seg.replace(/^\d+[-_]+/, ''))
     .join('/');
   const anchor = resolved.hash ? resolved.hash.slice(1) : '';
-  // Any internal ".md" link becomes an in-app route. We do not check it against
-  // the nav set — that set can be stale/incomplete; an actually-missing target
-  // is reported by render() when the fetch fails.
+  // Any internal ".md" link becomes an in-app route. We do not check it against the nav set — that set can be stale/incomplete; an actually-missing target is reported by render() when the fetch fails.
   return { route, anchor };
 }
 
@@ -270,8 +226,7 @@ function navigate(route, anchor) {
 
 // ---- sidebar ------------------------------------------------------------
 
-// Recursively render nav nodes. Each depth level adds 14px of left padding so
-// nested groups indent without needing a fixed CSS hierarchy.
+// Recursively render nav nodes. Each depth level adds 14px of left padding so nested groups indent without needing a fixed CSS hierarchy.
 function renderNavNodes(nodes, depth) {
   return nodes
     .map((node) => {
@@ -282,8 +237,7 @@ function renderNavNodes(nodes, depth) {
           `href="#/${node.route}" style="padding-left:${pad}px">${node.label}</a>`
         );
       }
-      // A folder heading links to its README when it has one, otherwise it is a
-      // plain (non-clickable) title.
+      // A folder heading links to its README when it has one, otherwise it is a plain (non-clickable) title.
       const title = node.route
         ? `<a class="docs-nav-group-title docs-nav-group-link" data-route="${node.route}" ` +
           `href="#/${node.route}" style="padding-left:${pad}px">${node.group}</a>`
@@ -298,14 +252,12 @@ function renderNavNodes(nodes, depth) {
     .join('');
 }
 
-// For the mobile <select>: top-level groups become <optgroup>; deeper groups
-// become a disabled placeholder so the hierarchy stays legible.
+// For the mobile <select>: top-level groups become <optgroup>; deeper groups become a disabled placeholder so the hierarchy stays legible.
 function renderMobileOptions(nodes, topLevel) {
   return nodes
     .map((node) => {
       if (node.group === undefined) return `<option value="${node.route}">${node.label}</option>`;
-      // A folder heading that links to its README contributes a selectable
-      // option for that README alongside the heading itself.
+      // A folder heading that links to its README contributes a selectable option for that README alongside the heading itself.
       const self = node.route ? `<option value="${node.route}">${node.group}</option>` : '';
       if (topLevel) {
         return (
@@ -365,8 +317,7 @@ function buildPager(route) {
 }
 
 // ---- in-page link handling ----------------------------------------------
-// Clicks inside the rendered doc: a relative ".md" link becomes a route change;
-// an "#anchor" link scrolls in place; everything else behaves normally.
+// Clicks inside the rendered doc: a relative ".md" link becomes a route change; an "#anchor" link scrolls in place; everything else behaves normally.
 contentEl.addEventListener('click', (event) => {
   // A glossary link opens the term in a bottom sheet rather than routing away.
   if (glossary && glossary.handleClick(event)) return;
@@ -404,9 +355,7 @@ contentEl.addEventListener('click', (event) => {
 // ---- per-page head metadata ---------------------------------------------
 // The reader is a single page that swaps content by route, so the metadata in
 // <head> has to be updated by hand on every navigation. We keep canonical, the
-// Markdown alternate, the description, and the JSON-LD in sync with the page on
-// screen. Origin is read from location (never hardcoded) so this stays shared
-// across sites through the site/ junction.
+// Markdown alternate, the description, and the JSON-LD in sync with the page on screen. Origin is read from location (never hardcoded) so this stays shared across sites through the site/ junction.
 
 // Create-or-update a single <link>/<meta> element matched by `selector`.
 function upsertHead(selector, tag, attrs) {
@@ -419,8 +368,7 @@ function upsertHead(selector, tag, attrs) {
   return el;
 }
 
-// Build a BreadcrumbList from the route's path, labeling each level from the
-// nav (PAGES) when known, otherwise from the readable folder name.
+// Build a BreadcrumbList from the route's path, labeling each level from the nav (PAGES) when known, otherwise from the readable folder name.
 function breadcrumbItems(route, heading) {
   const home = new URL('./', location.href).href;
   const items = [{ name: BRAND, item: home }];
@@ -515,10 +463,7 @@ async function render(route, anchor) {
     const markdown = await res.text();
 
     contentEl.innerHTML = renderMarkdown(markdown);
-    // An in-page outline (table of contents) from this page's headings, tucked
-    // just under the title — distinct from the left nav sidebar, which lists
-    // pages, not the sections within a page. Built before the anchor pass so its
-    // link-only entries stay out of the block-numbering scheme.
+    // An in-page outline (table of contents) from this page's headings, tucked just under the title — distinct from the left nav sidebar, which lists pages, not the sections within a page. Built before the anchor pass so its link-only entries stay out of the block-numbering scheme.
     buildOutline(contentEl, { label: 'Outline' });
     statusEl.hidden = true;
     displayedRoute = route;
@@ -545,11 +490,9 @@ async function render(route, anchor) {
 
     scrollToAnchor(anchor);
 
-    // Every word the glossary defines becomes a link to its entry, after paint so
-    // the page is readable first. A hand-written GLOSSARY.md#slug link is inside an
+    // Every word the glossary defines becomes a link to its entry, after paint so the page is readable first. A hand-written GLOSSARY.md#slug link is inside an
     // <a> already, which this skips, so the two never fight. Not on the glossary
-    // itself: ours is a page here, unlike a glossary at the site root, so every
-    // heading would link to the entry it already is.
+    // itself: ours is a page here, unlike a glossary at the site root, so every heading would link to the entry it already is.
     if (!/^GLOSSARY$/i.test(route)) {
       installAutoGlossary({
         contentEl,
@@ -572,8 +515,7 @@ async function render(route, anchor) {
 let lastRoute = null;
 
 (async function boot() {
-  // Derive the repo from the README before building the nav, and add the GitHub
-  // footer link once it is known.
+  // Derive the repo from the README before building the nav, and add the GitHub footer link once it is known.
   REPO = await deriveRepo();
   if (REPO) {
     FOOTER_LINKS = FOOTER_LINKS.concat([
@@ -593,8 +535,7 @@ let lastRoute = null;
   PAGES = collectPages(NAV);
   ROUTE_TO_PATH = collectRoutePaths(NAV, new Map());
 
-  // A non-glossary link followed from inside the sheet (or "Open the full
-  // glossary") routes through the docs router; an external link opens normally.
+  // A non-glossary link followed from inside the sheet (or "Open the full glossary") routes through the docs router; an external link opens normally.
   glossary = installGlossary({
     glossaryUrl: 'GLOSSARY.md',
     renderMarkdown,
@@ -603,8 +544,7 @@ let lastRoute = null;
         window.open(href, '_blank', 'noopener');
         return;
       }
-      // Links inside the sheet are authored relative to the glossary file
-      // (docs/GLOSSARY.md), so resolve them from the glossary's own route.
+      // Links inside the sheet are authored relative to the glossary file (docs/GLOSSARY.md), so resolve them from the glossary's own route.
       const { route, anchor } = routeAndAnchorFromHref(href, 'GLOSSARY');
       navigate(route, anchor);
     },
@@ -612,8 +552,7 @@ let lastRoute = null;
 
   buildSidebar();
 
-  // Settings menu (theme + show/hide minimap + show/hide the nav sidebar). The
-  // docs reader has a sidebar, so it offers the "Show library" toggle.
+  // Settings menu (theme + show/hide minimap + show/hide the nav sidebar). The docs reader has a sidebar, so it offers the "Show library" toggle.
   installSettings({ hasLibrary: true });
 
   window.addEventListener('hashchange', () => {

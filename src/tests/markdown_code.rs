@@ -199,8 +199,7 @@ fn supports_foundation_fenced_code_language_aliases() {
             ),
         );
         if display == "Text" {
-            // Plain text has no construct to color, so nothing it carries is in a
-            // styled rule and the run needs no element at all.
+            // Plain text has no construct to color, so nothing it carries is in a styled rule and the run needs no element at all.
             assert!(
                 !rendered.html.contains("syn-"),
                 "plain text should carry no syntax span: {}",
@@ -382,9 +381,7 @@ fn handles_large_and_multiple_highlighted_code_blocks() {
     assert_contains(&rendered.html, r#"data-language="nonsense""#);
 }
 
-/// The stylesheet's `.syn-` rules, as the sorted class set each needs on a single
-/// element. Parsed out of `reading.css` so the table in `code.rs` is checked
-/// against the thing it mirrors rather than against a copy of itself.
+/// The stylesheet's `.syn-` rules, as the sorted class set each needs on a single element. Parsed out of `reading.css` so the table in `code.rs` is checked against the thing it mirrors rather than against a copy of itself.
 fn syntax_rules_in_stylesheet() -> Vec<Vec<String>> {
     let css = reading_mode_css();
     let mut stripped = String::with_capacity(css.len());
@@ -413,9 +410,7 @@ fn syntax_rules_in_stylesheet() -> Vec<Vec<String>> {
             if !selector.contains(".syn-") {
                 continue;
             }
-            // Only the rightmost compound matters: no `syn-` class sits left of a
-            // descendant combinator here, which is what lets one flat span per run
-            // stand in for syntect's nested ones.
+            // Only the rightmost compound matters: no `syn-` class sits left of a descendant combinator here, which is what lets one flat span per run stand in for syntect's nested ones.
             let compound = selector
                 .split_whitespace()
                 .filter(|part| part.contains(".syn-"))
@@ -456,8 +451,7 @@ fn the_syntax_rules_match_the_stylesheet() {
         .collect();
     actual.sort();
 
-    // The highlighter drops every class no listed rule needs, so a rule present in
-    // the stylesheet but missing here never gets an element to match.
+    // The highlighter drops every class no listed rule needs, so a rule present in the stylesheet but missing here never gets an element to match.
     assert_eq!(
         actual, expected,
         "the syntax rule table and reading.css have drifted"
@@ -466,8 +460,7 @@ fn the_syntax_rules_match_the_stylesheet() {
 
 #[test]
 fn a_run_no_rule_styles_gets_no_element() {
-    // Markdown wraps paragraphs in a `meta.paragraph` scope that styles nothing on
-    // its own, so prose must arrive as bare text — the bulk of a large source.
+    // Markdown wraps paragraphs in a `meta.paragraph` scope that styles nothing on its own, so prose must arrive as bare text — the bulk of a large source.
     let rendered = render_markdown_document(
         "```markdown\nplain prose with no markup at all\n```",
         "README.md",
@@ -483,8 +476,7 @@ fn a_run_no_rule_styles_gets_no_element() {
 
 #[test]
 fn adjacent_tokens_that_style_the_same_share_one_element() {
-    // A comment's words are one run, not one element per word. (Its `//` opener
-    // carries punctuation as well, so that much is its own element.)
+    // A comment's words are one run, not one element per word. (Its `//` opener carries punctuation as well, so that much is its own element.)
     let rendered = render_markdown_document("```rust\n// one two three\n```", "README.md");
 
     assert_contains(
@@ -495,8 +487,7 @@ fn adjacent_tokens_that_style_the_same_share_one_element() {
 
 #[test]
 fn a_syntax_span_never_straddles_a_line_break() {
-    // A span left open across a line break has to be reopened on the next line to
-    // stay balanced, so anything reading this markup a line at a time can.
+    // A span left open across a line break has to be reopened on the next line to stay balanced, so anything reading this markup a line at a time can.
     let rendered = render_markdown_document(
         "```markdown\n## First heading\n\n## Second heading\n```",
         "README.md",

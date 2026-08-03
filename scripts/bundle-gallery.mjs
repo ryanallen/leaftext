@@ -1,13 +1,10 @@
 #!/usr/bin/env node
-// The theme gallery: every color, value, icon and component the app has, on one page
-// at leaftext.com/gallery.html, with a switcher so any of the 11 themes can be looked
-// at in light or dark.
+// The theme gallery: every color, value, icon and component the app has, on one page at leaftext.com/gallery.html, with a switcher so any of the 11 themes can be looked at in light or dark.
 //
 //   node scripts/bundle-gallery.mjs           write gallery.html
 //   node scripts/bundle-gallery.mjs --check   fail on drift (`just verify`)
 //
-// It stands alone: one file, its stylesheet inside it, nothing fetched. So it works
-// from the site, from a checkout, and from a file on disk.
+// It stands alone: one file, its stylesheet inside it, nothing fetched. So it works from the site, from a checkout, and from a file on disk.
 //
 // Two sources, both compiled rather than typed:
 //
@@ -15,8 +12,7 @@
 //   cargo --dump-css the stylesheet, because the theme compiler is Rust and a second
 //                    one written in node would drift from it the first week
 //
-// A component row with no sample markup fails the build rather than drawing an empty
-// box, and a sample that does not use its own class fails too.
+// A component row with no sample markup fails the build rather than drawing an empty box, and a sample that does not use its own class fails too.
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -44,11 +40,9 @@ function tables(file) {
 
 const colors = tables('colors.md');
 const tokens = tables('tokens.md');
-// The rows that name a drawing: icons.md also carries the Stroke table, which is
-// values, not icons.
+// The rows that name a drawing: icons.md also carries the Stroke table, which is values, not icons.
 const icons = tables('icons.md').filter(({ cells }) => /\.svg$/.test(cells[1] || ''));
-// Only the first table: the document prefixes and states after it account for
-// classes, they are not components with markup to draw.
+// Only the first table: the document prefixes and states after it account for classes, they are not components with markup to draw.
 const components = tables('components.md').filter(({ group }) => !group.startsWith('What a document') && !group.startsWith('State'));
 
 const problems = [];
@@ -66,8 +60,7 @@ if (problems.length) {
   process.exit(1);
 }
 
-// The families, read out of the theme bundle so the switcher cannot list one that
-// does not exist or miss one that does.
+// The families, read out of the theme bundle so the switcher cannot list one that does not exist or miss one that does.
 const bundle = readFileSync(join(root, 'src/assets/themes.md'), 'utf8');
 const families = [];
 for (const block of bundle.split('\n# ').slice(1)) {
@@ -96,9 +89,7 @@ function byGroup(rows) {
   return groups;
 }
 
-// A number is not a value you can see. Anything whose meaning is visual gets drawn
-// with itself: a corner rounded by it, a bar that wide, text at that size. Keyed off
-// the token's own name, so a new one is drawn without anybody adding it here.
+// A number is not a value you can see. Anything whose meaning is visual gets drawn with itself: a corner rounded by it, a bar that wide, text at that size. Keyed off the token's own name, so a new one is drawn without anybody adding it here.
 function drawn(name) {
   const v = `var(--${name})`;
   if (/^lt-radius-/.test(name)) return `<i class="demo tile" style="border-radius:${v}"></i>`;
@@ -128,9 +119,7 @@ out.push('<style>');
 out.push(css.trimEnd());
 out.push('</style>');
 out.push('<style>');
-// The app never scrolls its own body — the reader does the scrolling — so its
-// stylesheet pins `body { overflow: hidden }`. This is an ordinary page and has to
-// undo that, or everything below the fold is unreachable.
+// The app never scrolls its own body — the reader does the scrolling — so its stylesheet pins `body { overflow: hidden }`. This is an ordinary page and has to undo that, or everything below the fold is unreachable.
 out.push('  html, body { overflow: visible; height: auto; }');
 out.push('  body { margin: 0; padding: 0 24px 48px; background: var(--lt-background); color: var(--lt-foreground); font-family: var(--app-font); }');
 out.push('  header.top { position: sticky; top: 0; z-index: 2; padding: 16px 0 12px; background: var(--lt-background); border-bottom: var(--lt-stroke-1) solid var(--lt-border); }');
@@ -140,8 +129,7 @@ out.push('  .tabs { display: flex; flex-wrap: wrap; gap: 2px; margin: 14px 0 -13
 out.push('  .tabs button { font: inherit; font-size: var(--lt-text-13); font-weight: var(--lt-weight-600); padding: var(--lt-space-8) var(--lt-space-14); border: var(--lt-stroke-1) solid transparent; border-bottom: 0; border-radius: var(--lt-radius-lg) var(--lt-radius-lg) 0 0; background: transparent; color: var(--lt-muted-foreground); cursor: pointer; }');
 out.push('  .tabs button b { font-weight: var(--lt-weight-400); opacity: var(--lt-opacity-60); margin-left: var(--lt-space-4); }');
 out.push('  .tabs button:hover { color: var(--lt-foreground); background: var(--lt-surface-muted); }');
-// The open tab joins the page below it: same fill, and the strip's own line broken
-// under it by a matching border.
+// The open tab joins the page below it: same fill, and the strip's own line broken under it by a matching border.
 out.push('  .tabs button[aria-selected="true"] { color: var(--lt-foreground); background: var(--lt-background); border-color: var(--lt-border); box-shadow: 0 var(--lt-stroke-1) 0 0 var(--lt-background); }');
 out.push('  .panel h2 { margin-top: 20px; }');
 out.push('  h3 { font-size: 12px; margin: 20px 0 6px; color: var(--lt-muted-foreground); font-weight: var(--lt-weight-600); }');
@@ -151,8 +139,7 @@ out.push('  .pick button { font: inherit; font-size: var(--lt-text-12); padding:
 out.push('  .pick button[aria-pressed="true"] { background: var(--lt-primary); border-color: var(--lt-primary); color: var(--lt-primary-foreground); }');
 out.push('  .wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 10px 12px; align-items: start; }');
 out.push('  .wall.wide { grid-template-columns: repeat(auto-fill, minmax(224px, 1fr)); }');
-// The stroke matters: a color the same as the page has no edge of its own, and without
-// one the swatch reads as a missing swatch.
+// The stroke matters: a color the same as the page has no edge of its own, and without one the swatch reads as a missing swatch.
 out.push('  .swatch i { display: block; height: 40px; border-radius: var(--lt-radius-md); border: var(--lt-stroke-1) solid var(--lt-border-strong); }');
 out.push('  .swatch code, .value code { font-family: var(--code-font); font-size: var(--lt-text-10); color: var(--lt-muted-foreground); overflow-wrap: anywhere; }');
 out.push('  .value code { display: block; }');
@@ -167,21 +154,14 @@ out.push('  .stage a.jump { display: inline-flex; align-items: center; gap: var(
 out.push('  .glyph { width: 84px; text-align: center; }');
 out.push('  .glyph .lt-icon { width: 24px; height: 24px; }');
 out.push('  .glyph code { display: block; }');
-// `isolation` is the one that matters: the parts that sit over the app carry a high
-// layer, and without a layer of its own here the card's contents paint over the
-// header the page scrolls under.
+// `isolation` is the one that matters: the parts that sit over the app carry a high layer, and without a layer of its own here the card's contents paint over the header the page scrolls under.
 out.push('  .part { border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-lg); padding: 12px; margin: 0 0 12px; isolation: isolate; }');
 out.push('  .part > header { display: flex; gap: 8px; align-items: baseline; margin-bottom: 10px; flex-wrap: wrap; }');
 out.push('  .part h3 { margin: 0; }');
 out.push('  .part .built { color: var(--lt-muted-foreground); font-size: var(--lt-text-10); }');
 // Padding keeps a sample's own border, and the shadow it throws, off the clip.
 out.push('  .stage { position: relative; overflow: hidden; min-height: 40px; padding: 18px 22px; }');
-// A part that fixes, floats or slides itself would sit over the page rather than in
-// its own box, so each sample's outermost element is pinned back into the flow — the
-// slide-up sheets included. What is inside it keeps its own positioning, which is what
-// the minimap's viewport needs.
-// max-width is not forced: a sample says how wide it should be drawn, and the stage
-// clips anything wider anyway.
+// A part that fixes, floats or slides itself would sit over the page rather than in its own box, so each sample's outermost element is pinned back into the flow — the slide-up sheets included. What is inside it keeps its own positioning, which is what the minimap's viewport needs. max-width is not forced: a sample says how wide it should be drawn, and the stage clips anything wider anyway.
 out.push('  .stage > * { position: relative !important; inset: auto !important; margin: 0 !important; max-width: 100%; max-height: 260px !important; }');
 // Not the spinner: its transform is the spin, and this would hold it still.
 out.push('  .stage > *:not(.lt-spinner) { transform: none !important; }');
@@ -262,8 +242,7 @@ for (const { cells } of components) {
 
 out.push('</section>');
 
-// The switcher writes the same two attributes the app's own bootstrap writes, which
-// is the whole mechanism: every color is defined under a selector reading them.
+// The switcher writes the same two attributes the app's own bootstrap writes, which is the whole mechanism: every color is defined under a selector reading them.
 out.push('<script>');
 out.push('  const root = document.documentElement;');
 out.push('  const wire = (id, attr) => {');

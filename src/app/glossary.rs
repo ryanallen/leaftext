@@ -2,8 +2,7 @@
 
 use super::*;
 
-/// For a `glossary:slug` href, return the slug (leading `#` stripped). It names
-/// a term with no file path; the file is found separately by walking up folders.
+/// For a `glossary:slug` href, return the slug (leading `#` stripped). It names a term with no file path; the file is found separately by walking up folders.
 pub(crate) fn glossary_scheme_slug(href: &str) -> Option<String> {
     let href = href.trim();
     let rest = href
@@ -12,9 +11,7 @@ pub(crate) fn glossary_scheme_slug(href: &str) -> Option<String> {
     Some(percent_decode_path(rest.trim_start_matches('#')))
 }
 
-/// Find the nearest `GLOSSARY.md` by walking up from `current_path`, so a
-/// `glossary:` link binds to the open document's project. A lowercase
-/// `glossary.md` is also accepted for case-sensitive trees.
+/// Find the nearest `GLOSSARY.md` by walking up from `current_path`, so a `glossary:` link binds to the open document's project. A lowercase `glossary.md` is also accepted for case-sensitive trees.
 pub(crate) fn nearest_glossary_file(current_path: &Path) -> Option<PathBuf> {
     let mut dir = current_path.parent();
     while let Some(folder) = dir {
@@ -29,8 +26,7 @@ pub(crate) fn nearest_glossary_file(current_path: &Path) -> Option<PathBuf> {
     None
 }
 
-/// Tell the page a lookup failed. The sheet went up on a spinner when the link
-/// was followed, so every path out of `show_glossary_entry` has to say something.
+/// Tell the page a lookup failed. The sheet went up on a spinner when the link was followed, so every path out of `show_glossary_entry` has to say something.
 fn report_glossary_failure(webview: &WebView, reason: &str) {
     run_page_script(
         Some(webview),
@@ -39,9 +35,7 @@ fn report_glossary_failure(webview: &WebView, reason: &str) {
     );
 }
 
-/// Read the glossary file for `href` (nearest `GLOSSARY.md` for a `glossary:`
-/// link, or a real `…/GLOSSARY.md#slug` path) and show the term in the bottom
-/// sheet. Failures are logged, and told to the page so its spinner stops.
+/// Read the glossary file for `href` (nearest `GLOSSARY.md` for a `glossary:` link, or a real `…/GLOSSARY.md#slug` path) and show the term in the bottom sheet. Failures are logged, and told to the page so its spinner stops.
 pub(crate) fn show_glossary_entry(webview: Option<&WebView>, href: &str, current_path: &Path) {
     let Some(webview) = webview else {
         return;
@@ -61,8 +55,7 @@ pub(crate) fn show_glossary_entry(webview: Option<&WebView>, href: &str, current
             fragment_from_href(href).unwrap_or_default(),
         )
     };
-    // Glossary terms are browsed from the same (often large) file, so reuse the
-    // last render when the file is unchanged; the mtime check reloads after edits.
+    // Glossary terms are browsed from the same (often large) file, so reuse the last render when the file is unchanged; the mtime check reloads after edits.
     let modified = fs::metadata(&path).and_then(|meta| meta.modified()).ok();
     let cached = GLOSSARY_RENDER_CACHE.with(|cache| {
         cache
@@ -78,8 +71,7 @@ pub(crate) fn show_glossary_entry(webview: Option<&WebView>, href: &str, current
                 Ok(source) => source.text,
                 Err(error) => {
                     eprintln!("Failed to read glossary {}: {error}", path.display());
-                    // A path the user linked to that isn't there reads the same
-                    // as no glossary at all, which is the more useful message.
+                    // A path the user linked to that isn't there reads the same as no glossary at all, which is the more useful message.
                     let reason = if path.exists() { "failed" } else { "missing" };
                     report_glossary_failure(webview, reason);
                     return;
@@ -103,8 +95,7 @@ pub(crate) fn show_glossary_entry(webview: Option<&WebView>, href: &str, current
     );
 }
 
-// The last rendered glossary, reused across lookups of the same unchanged file.
-// Keyed by path + mtime; a newer mtime forces a fresh render.
+// The last rendered glossary, reused across lookups of the same unchanged file. Keyed by path + mtime; a newer mtime forces a fresh render.
 pub(crate) struct GlossaryRender {
     pub(crate) path: PathBuf,
     pub(crate) modified: Option<std::time::SystemTime>,

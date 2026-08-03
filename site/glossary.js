@@ -1,26 +1,15 @@
 // glossary.js
 // ---------------------------------------------------------------------------
-// Shared bottom-sheet glossary behavior for the web reading views (the root
-// README reader in reader.js and the /docs site in docs.js).
+// Shared bottom-sheet glossary behavior for the web reading views (the root README reader in reader.js and the /docs site in docs.js).
 //
-// A "glossary link" is any in-page link whose target file is the glossary
-// (its basename is GLOSSARY_FILE) and that carries a "#anchor" — for example
-// `[karma](../../GLOSSARY.md#karma)`. Clicking one slides the matching entry up
-// in a sheet over the reading view instead of navigating away, so the doc
-// underneath keeps its scroll position. Links inside the sheet that point at
-// other glossary terms swap the entry in place; any other link dismisses the
-// sheet first and hands the navigation back to the host.
+// A "glossary link" is any in-page link whose target file is the glossary (its basename is GLOSSARY_FILE) and that carries a "#anchor" — for example `[karma](../../GLOSSARY.md#karma)`. Clicking one slides the matching entry up in a sheet over the reading view instead of navigating away, so the doc underneath keeps its scroll position. Links inside the sheet that point at other glossary terms swap the entry in place; any other link dismisses the sheet first and hands the navigation back to the host.
 //
-// The host owns its own click handling, so this module does NOT register a
-// document-wide listener. It returns `handleClick(event)`: call it first in the
-// host's content click handler and bail out when it returns true.
+// The host owns its own click handling, so this module does NOT register a document-wide listener. It returns `handleClick(event)`: call it first in the host's content click handler and bail out when it returns true.
 // ---------------------------------------------------------------------------
 
 import { extractSectionMarkdown } from './markdown.js';
 
-// The on-disk convention is GLOSSARY.md (like README.md). This is the
-// comparison key only; the basename is lowercased before comparing, so a
-// link to GLOSSARY.md or a legacy glossary.md both match.
+// The on-disk convention is GLOSSARY.md (like README.md). This is the comparison key only; the basename is lowercased before comparing, so a link to GLOSSARY.md or a legacy glossary.md both match.
 const GLOSSARY_FILE = 'glossary.md';
 
 function decodeAnchor(raw) {
@@ -47,13 +36,11 @@ function basename(path) {
 // The glossary anchor a link points to, or '' when it is not a glossary link.
 function glossaryAnchor(href) {
   if (!href) return '';
-  // Preferred form: a fake `glossary:slug` URL with no file path, so it works at
-  // any folder depth. The sheet always loads from the configured glossaryUrl.
+  // Preferred form: a fake `glossary:slug` URL with no file path, so it works at any folder depth. The sheet always loads from the configured glossaryUrl.
   const scheme = /^glossary:(.*)$/i.exec(href);
   if (scheme) return decodeAnchor(scheme[1].replace(/^#/, ''));
   if (/^[a-z]+:\/\//i.test(href) || href.startsWith('mailto:')) return '';
-  // Real form: a `…/GLOSSARY.md#slug` relative link (what /check expands the
-  // shorthand into; also a working link in plain Markdown viewers).
+  // Real form: a `…/GLOSSARY.md#slug` relative link (what /check expands the shorthand into; also a working link in plain Markdown viewers).
   const [path, anchor] = splitHref(href);
   if (!anchor) return '';
   if (basename(path) !== GLOSSARY_FILE) return '';
@@ -72,12 +59,7 @@ export function installGlossary({ glossaryUrl, renderMarkdown, onNavigate }) {
   let bodyEl = null;
   let lastFocus = null;
 
-  // Fetch the glossary Markdown once and cache the raw text. We deliberately do
-  // NOT render the whole glossary here: a large glossary is many megabytes of
-  // HTML and DOM nodes, and laying all of it out just to show one term is what
-  // made the sheet hang on memory-limited mobile browsers (a big glossary on an
-  // iPhone would never finish loading). open() renders only the one entry it
-  // needs, sliced straight out of the raw text (see extractSectionMarkdown).
+  // Fetch the glossary Markdown once and cache the raw text. We deliberately do NOT render the whole glossary here: a large glossary is many megabytes of HTML and DOM nodes, and laying all of it out just to show one term is what made the sheet hang on memory-limited mobile browsers (a big glossary on an iPhone would never finish loading). open() renders only the one entry it needs, sliced straight out of the raw text (see extractSectionMarkdown).
   function loadGlossaryText() {
     if (!loadPromise) {
       loadPromise = (async () => {
@@ -132,9 +114,7 @@ export function installGlossary({ glossaryUrl, renderMarkdown, onNavigate }) {
     document.body.appendChild(sheet);
   }
 
-  // Clicks inside the sheet: another glossary term (or a bare "#anchor", which
-  // can only mean another entry within this glossary) swaps the entry in place;
-  // anything else leaves the glossary and is handed to the host.
+  // Clicks inside the sheet: another glossary term (or a bare "#anchor", which can only mean another entry within this glossary) swaps the entry in place; anything else leaves the glossary and is handed to the host.
   function onSheetClick(event) {
     const link = event.target.closest('a');
     if (!link) return;
@@ -190,8 +170,7 @@ export function installGlossary({ glossaryUrl, renderMarkdown, onNavigate }) {
         '<p class="glossary-sheet-status">Could not load the glossary (' + err.message + ').</p>';
       return;
     }
-    // Slice out just this entry's Markdown and render only that, so the sheet
-    // opens instantly and cheaply regardless of how large the glossary is.
+    // Slice out just this entry's Markdown and render only that, so the sheet opens instantly and cheaply regardless of how large the glossary is.
     const entryMarkdown = extractSectionMarkdown(text, anchor);
     if (entryMarkdown != null) {
       bodyEl.innerHTML = renderMarkdown(entryMarkdown);
@@ -203,8 +182,7 @@ export function installGlossary({ glossaryUrl, renderMarkdown, onNavigate }) {
   }
 
   return {
-    // Call first in the host's content click handler. Returns true when the
-    // click was a glossary link (and was handled), false otherwise.
+    // Call first in the host's content click handler. Returns true when the click was a glossary link (and was handled), false otherwise.
     handleClick(event) {
       if (
         event.defaultPrevented ||
@@ -232,12 +210,9 @@ export function installGlossary({ glossaryUrl, renderMarkdown, onNavigate }) {
 // ---------------------------------------------------------------------------
 // Dynamic auto-glossary linking
 //
-// After the document content is rendered, call this to asynchronously fetch
-// the glossary (GLOSSARY.md or GLOSSARY.xml / glossary.xml) and wrap every
-// occurrence of each glossary term in the content with a `glossary:slug` link.
+// After the document content is rendered, call this to asynchronously fetch the glossary (GLOSSARY.md or GLOSSARY.xml / glossary.xml) and wrap every occurrence of each glossary term in the content with a `glossary:slug` link.
 //
-// Terms from ## (h2) headings are used. Matching is whole-word, case-insensitive.
-// Text inside existing <a>, <code>, and <pre> elements is skipped.
+// Terms from ## (h2) headings are used. Matching is whole-word, case-insensitive. Text inside existing <a>, <code>, and <pre> elements is skipped.
 //
 // Usage:
 //   installAutoGlossary({ contentEl, renderMarkdown, renderTEI, glossaryUrl })

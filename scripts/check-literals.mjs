@@ -1,13 +1,9 @@
 #!/usr/bin/env node
-// Every value in the interface comes from a token. This fails on a hand-written one
-// in src/assets/reading.css, naming the line — so the next value is a deliberate row
-// in design/tokens.md rather than a number typed into a rule.
+// Every value in the interface comes from a token. This fails on a hand-written one in src/assets/reading.css, naming the line — so the next value is a deliberate row in design/tokens.md rather than a number typed into a rule.
 //
 //   node scripts/check-literals.mjs   report every hit and exit non-zero (`just verify`)
 //
-// What is checked is the *categories* phase 6 tokenized: color, spacing, interface
-// text size, weight, stroke, line height, letter spacing, opacity, duration, easing,
-// shadow and z-index. Three things are deliberately not:
+// What is checked is the *categories* phase 6 tokenized: color, spacing, interface text size, weight, stroke, line height, letter spacing, opacity, duration, easing, shadow and z-index. Three things are deliberately not:
 //
 //   - Widths, heights and positional offsets. They are one component's geometry, not
 //     a scale — 56 distinct values, each used once. A token per one-off buys a name
@@ -66,8 +62,7 @@ const RULES = [
     (value, prop) => !/radius/.test(prop) && /\d\s*px/.test(value),
   ],
   [
-    // A drawn line rather than a box's edge: the flowchart picker's own vectors, and
-    // the marks laid over mermaid's. Unitless counts — in SVG that is a user unit.
+    // A drawn line rather than a box's edge: the flowchart picker's own vectors, and the marks laid over mermaid's. Unitless counts — in SVG that is a user unit.
     'a stroke width',
     /\bstroke-width\s*:\s*([^;]+);/g,
     (value) => /(?<![\w.-])\d*\.?\d+(?:px)?(?![\w.-])/.test(value),

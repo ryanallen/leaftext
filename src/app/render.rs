@@ -2,8 +2,7 @@
 
 use super::*;
 
-/// Run `script` in the page, logging a failure under `what`. A `None` webview
-/// (teardown) is not an error.
+/// Run `script` in the page, logging a failure under `what`. A `None` webview (teardown) is not an error.
 pub(crate) fn run_page_script(webview: Option<&WebView>, script: &str, what: &str) {
     if let Some(webview) = webview {
         if let Err(error) = webview.evaluate_script(script) {
@@ -12,9 +11,7 @@ pub(crate) fn run_page_script(webview: Option<&WebView>, script: &str, what: &st
     }
 }
 
-/// What it takes to put a document on screen: the window to title, the page to
-/// write to, the tabs to draw, the recents to record, and where images resolve
-/// from. One bundle because they always travel together.
+/// What it takes to put a document on screen: the window to title, the page to write to, the tabs to draw, the recents to record, and where images resolve from. One bundle because they always travel together.
 pub(crate) struct Reader {
     pub(crate) window: tao::window::Window,
     pub(crate) webview: Option<WebView>,
@@ -46,15 +43,13 @@ impl Reader {
         }
     }
 
-    /// Put `path` in Recent and save the list. The render below records only
-    /// documents it read off the disk, so one saved out of a buffer needs this.
+    /// Put `path` in Recent and save the list. The render below records only documents it read off the disk, so one saved out of a buffer needs this.
     pub(crate) fn record_recent(&mut self, path: PathBuf) {
         self.recent.record(path);
         self.save_recent();
     }
 
-    /// Redraw the tab strip and leave the document on screen alone — what a page
-    /// opened behind the reader needs, and nothing more.
+    /// Redraw the tab strip and leave the document on screen alone — what a page opened behind the reader needs, and nothing more.
     pub(crate) fn refresh_tab_strip(&self) {
         let tabs = self.workspace.tab_summaries();
         run_page_script(
@@ -64,9 +59,7 @@ impl Reader {
         );
     }
 
-    /// The document for `path`: the tab's cached render when the file still
-    /// hashes the same, a fresh render (cached on the tab) when not. The read is
-    /// cheap; the render is what the cache saves.
+    /// The document for `path`: the tab's cached render when the file still hashes the same, a fresh render (cached on the tab) when not. The read is cheap; the render is what the cache saves.
     fn document_for(&mut self, index: usize, path: &Path) -> io::Result<OpenedDocument> {
         let source = read_source(path)?;
         let hash = content_hash(&source.text);
@@ -90,13 +83,9 @@ impl Reader {
         Ok(document)
     }
 
-    /// Render the active tab's document (or the home screen) into the webview and
-    /// refresh the tab bar, window title, image source dir, and navigation buttons.
+    /// Render the active tab's document (or the home screen) into the webview and refresh the tab bar, window title, image source dir, and navigation buttons.
     pub(crate) fn render(&mut self, scroll: ScrollIntent) {
-        // Pop the spinner for navigations (open, back/forward, tab switch), where
-        // the load below can be slow; the state script clears it. In-place
-        // re-renders (Preserve: edits, reorders) and the home screen skip it, so a
-        // checkbox click doesn't flash an overlay.
+        // Pop the spinner for navigations (open, back/forward, tab switch), where the load below can be slow; the state script clears it. In-place re-renders (Preserve: edits, reorders) and the home screen skip it, so a checkbox click doesn't flash an overlay.
         if self.workspace.active.is_some() && !matches!(scroll, ScrollIntent::Preserve) {
             begin_reader_loading(self.page());
         }
@@ -111,10 +100,7 @@ impl Reader {
                     self.workspace.active = None;
                     return self.render(scroll);
                 };
-                // A tab left in code view must stay in code view when it is
-                // re-rendered (switching tabs away and back, reordering tabs). The
-                // reading-view render below would silently drop out of the source
-                // editor, so restore the code view from the tab's buffer instead.
+                // A tab left in code view must stay in code view when it is re-rendered (switching tabs away and back, reordering tabs). The reading-view render below would silently drop out of the source editor, so restore the code view from the tab's buffer instead.
                 if self
                     .workspace
                     .tabs
@@ -125,9 +111,7 @@ impl Reader {
                     {
                         self.window.set_title(&format!("{title} - Leaftext"));
                     }
-                    // Restoring a tab (switching back) lands at its saved code-view
-                    // position; a reorder preserves the page's current scroll (None,
-                    // handled page-side), and a reset starts at the top.
+                    // Restoring a tab (switching back) lands at its saved code-view position; a reorder preserves the page's current scroll (None, handled page-side), and a reset starts at the top.
                     let scroll_fraction = match &scroll {
                         ScrollIntent::Restore(_) => self
                             .workspace
@@ -137,9 +121,7 @@ impl Reader {
                         ScrollIntent::Preserve => None,
                         ScrollIntent::Reset => Some(0.0),
                     };
-                    // The code view's own payload carries no tabs, so the strip and
-                    // the active index have to go over separately. A file opened
-                    // straight into source is a tab the page has never heard of.
+                    // The code view's own payload carries no tabs, so the strip and the active index have to go over separately. A file opened straight into source is a tab the page has never heard of.
                     let tabs = self.workspace.tab_summaries();
                     run_page_script(
                         self.page(),
@@ -150,9 +132,7 @@ impl Reader {
                     return;
                 }
 
-                // Prefer this document's edit buffer so unsaved edits show — but only
-                // when the buffer is for THIS document, or a leftover buffer would
-                // shadow a page opened by a link click.
+                // Prefer this document's edit buffer so unsaved edits show — but only when the buffer is for THIS document, or a leftover buffer would shadow a page opened by a link click.
                 let has_edit = self
                     .workspace
                     .tabs
@@ -184,8 +164,7 @@ impl Reader {
                                 self.save_recent();
                             }
 
-                            // Don't strand the user on a tab that can't render: fall
-                            // back to the previous document, or close the tab.
+                            // Don't strand the user on a tab that can't render: fall back to the previous document, or close the tab.
                             let recovered = self
                                 .workspace
                                 .tabs
@@ -267,8 +246,7 @@ pub(crate) fn update_navigation(
     );
 }
 
-/// Refresh the back/forward buttons from the active tab's histories, or disable
-/// them when the home screen is showing.
+/// Refresh the back/forward buttons from the active tab's histories, or disable them when the home screen is showing.
 pub(crate) fn update_active_navigation(webview: Option<&WebView>, workspace: &Workspace) {
     match workspace.active.and_then(|index| workspace.tabs.get(index)) {
         Some(tab) => update_navigation(webview, &tab.history, &tab.scroll_history),
@@ -280,9 +258,7 @@ pub(crate) fn update_active_navigation(webview: Option<&WebView>, workspace: &Wo
     }
 }
 
-/// Pop the reader loading spinner before a view renders on this thread. The
-/// state script the render sends back clears it; a page-side safety timeout
-/// covers anything that slips through.
+/// Pop the reader loading spinner before a view renders on this thread. The state script the render sends back clears it; a page-side safety timeout covers anything that slips through.
 pub(crate) fn begin_reader_loading(webview: Option<&WebView>) {
     run_page_script(
         webview,

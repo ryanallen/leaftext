@@ -3,8 +3,7 @@ use std::sync::OnceLock;
 
 use serde::{Deserialize, Serialize};
 
-/// The light or dark half of a theme family. A family (GitHub, Nightshade, Sage)
-/// pairs one of each; the appearance is chosen by the Appearance setting.
+/// The light or dark half of a theme family. A family (GitHub, Nightshade, Sage) pairs one of each; the appearance is chosen by the Appearance setting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub(crate) enum Appearance {
@@ -25,24 +24,18 @@ impl Appearance {
 pub(crate) struct ThemeSource {
     /// Stable id for this exact palette, e.g. `github-light`.
     pub(crate) id: &'static str,
-    /// Family id shared by a light/dark pair, e.g. `github`. This is what the
-    /// Theme picker selects; the Appearance picker chooses which half shows.
+    /// Family id shared by a light/dark pair, e.g. `github`. This is what the Theme picker selects; the Appearance picker chooses which half shows.
     pub(crate) family: &'static str,
     /// Family display name shown in the picker, e.g. `GitHub`.
     pub(crate) family_name: &'static str,
     /// Whether this source is the family's light or dark variant.
     pub(crate) appearance: Appearance,
-    /// The CSS selector that activates this source. Every source keys off the
-    /// Leaf-owned `data-leaf-theme` (family) and `data-leaf-appearance` attrs the
-    /// bootstrap stamps on `:root`.
+    /// The CSS selector that activates this source. Every source keys off the Leaf-owned `data-leaf-theme` (family) and `data-leaf-appearance` attrs the bootstrap stamps on `:root`.
     pub(crate) selector: &'static str,
     pub(crate) tokens: &'static [(&'static str, &'static str)],
-    /// Per-source token replacements layered over `tokens` (and winning over
-    /// them), to nudge one palette without forking the shared token map.
+    /// Per-source token replacements layered over `tokens` (and winning over them), to nudge one palette without forking the shared token map.
     pub(crate) overrides: &'static [(&'static str, &'static str)],
-    /// The theme's fonts. `heading`/`body`/`code` are CSS font-family stacks;
-    /// `font_google` is a Google Fonts stylesheet URL fetched on activation, or
-    /// empty for families that render in the OS's own fonts (e.g. GitHub).
+    /// The theme's fonts. `heading`/`body`/`code` are CSS font-family stacks; `font_google` is a Google Fonts stylesheet URL fetched on activation, or empty for families that render in the OS's own fonts (e.g. GitHub).
     pub(crate) font_heading: &'static str,
     pub(crate) font_body: &'static str,
     pub(crate) font_code: &'static str,
@@ -58,15 +51,11 @@ pub(crate) struct ThemeFonts {
     pub(crate) body: String,
     /// Font-family stack for code.
     pub(crate) code: String,
-    /// Google Fonts stylesheet URL to fetch on activation; empty = system fonts,
-    /// fetch nothing. For now custom fonts must be pointed at Google Fonts.
+    /// Google Fonts stylesheet URL to fetch on activation; empty = system fonts, fetch nothing. For now custom fonts must be pointed at Google Fonts.
     pub(crate) google: String,
 }
 
-/// The on-disk / bundled form of a [`ThemeSource`]: the same data with owned
-/// strings, so palettes live as data (`src/assets/themes.md`) instead of Rust
-/// consts. Parsed once at startup and leaked to `&'static` by [`theme_sources`],
-/// which keeps every downstream consumer working against `&'static` fields.
+/// The on-disk / bundled form of a [`ThemeSource`]: the same data with owned strings, so palettes live as data (`src/assets/themes.md`) instead of Rust consts. Parsed once at startup and leaked to `&'static` by [`theme_sources`], which keeps every downstream consumer working against `&'static` fields.
 #[derive(Debug, Clone)]
 pub(crate) struct ThemeFile {
     pub(crate) id: String,
@@ -165,8 +154,7 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
 ];
 // END GENERATED
 
-/// Leak an owned string to `&'static str`. Called only for the theme table,
-/// which is parsed once and lives for the whole process, so the leak is bounded.
+/// Leak an owned string to `&'static str`. Called only for the theme table, which is parsed once and lives for the whole process, so the leak is bounded.
 fn leak_str(value: String) -> &'static str {
     Box::leak(value.into_boxed_str())
 }
@@ -196,11 +184,7 @@ fn theme_source_from_file(file: ThemeFile) -> ThemeSource {
     }
 }
 
-/// The registered theme sources (each family's light/dark pair). Parsed once
-/// from the bundled `src/assets/themes.md` and leaked to `&'static` so every
-/// consumer keeps working against `&'static` fields. Palettes are data: to add
-/// or edit a theme, edit the per-family Markdown files under `themes/` and
-/// run `just bundle-themes` — this function only loads the compiled bundle.
+/// The registered theme sources (each family's light/dark pair). Parsed once from the bundled `src/assets/themes.md` and leaked to `&'static` so every consumer keeps working against `&'static` fields. Palettes are data: to add or edit a theme, edit the per-family Markdown files under `themes/` and run `just bundle-themes` — this function only loads the compiled bundle.
 pub(crate) fn theme_sources() -> &'static [ThemeSource] {
     static SOURCES: OnceLock<Vec<ThemeSource>> = OnceLock::new();
     SOURCES.get_or_init(|| {
@@ -209,13 +193,10 @@ pub(crate) fn theme_sources() -> &'static [ThemeSource] {
     })
 }
 
-/// The `--lt-` prefix stripped from token names in the Markdown theme files
-/// (for readability) and re-added here so downstream code keeps seeing the full
-/// CSS custom-property names from [`LEAF_SEMANTIC_TOKEN_CONTRACT`].
+/// The `--lt-` prefix stripped from token names in the Markdown theme files (for readability) and re-added here so downstream code keeps seeing the full CSS custom-property names from [`LEAF_SEMANTIC_TOKEN_CONTRACT`].
 const TOKEN_PREFIX: &str = "--lt-";
 
-/// Split a Markdown table row (`| a | b |`) into its trimmed cells, dropping the
-/// empty leading/trailing fields the surrounding pipes produce.
+/// Split a Markdown table row (`| a | b |`) into its trimmed cells, dropping the empty leading/trailing fields the surrounding pipes produce.
 fn table_row_cells(line: &str) -> Vec<&str> {
     let mut cells: Vec<&str> = line.split('|').map(str::trim).collect();
     if cells.first().is_some_and(|c| c.is_empty()) {
@@ -227,8 +208,7 @@ fn table_row_cells(line: &str) -> Vec<&str> {
     cells
 }
 
-/// True for a table's separator row (`| --- | :---: |`): every non-empty cell is
-/// only dashes with optional alignment colons.
+/// True for a table's separator row (`| --- | :---: |`): every non-empty cell is only dashes with optional alignment colons.
 fn is_table_separator(cells: &[&str]) -> bool {
     let mut saw_dash = false;
     for cell in cells {
@@ -243,8 +223,7 @@ fn is_table_separator(cells: &[&str]) -> bool {
     saw_dash
 }
 
-/// Unwrap a value cell's inline-code backticks (``` `#fff` ``` → `#fff`); an
-/// empty cell (an unset Google URL) stays empty.
+/// Unwrap a value cell's inline-code backticks (``` `#fff` ``` → `#fff`); an empty cell (an unset Google URL) stays empty.
 fn unwrap_value(cell: &str) -> String {
     let trimmed = cell.trim();
     trimmed
@@ -254,11 +233,7 @@ fn unwrap_value(cell: &str) -> String {
         .to_string()
 }
 
-/// Parse the bundled Markdown theme file (`themes/*.md` concatenated by
-/// `scripts/bundle-themes.mjs`) into one [`ThemeFile`] per light/dark source —
-/// see any `themes/*.md` for the shape. Token names are stored without the
-/// `--lt-` prefix and get it back here; a malformed file fails loudly at the
-/// startup contract check ([`assert_theme_sources_cover_contract`]).
+/// Parse the bundled Markdown theme file (`themes/*.md` concatenated by `scripts/bundle-themes.mjs`) into one [`ThemeFile`] per light/dark source — see any `themes/*.md` for the shape. Token names are stored without the `--lt-` prefix and get it back here; a malformed file fails loudly at the startup contract check ([`assert_theme_sources_cover_contract`]).
 fn parse_theme_markdown(md: &str) -> Vec<ThemeFile> {
     /// One family's accumulated data before it is split into light/dark sources.
     #[derive(Default)]
@@ -407,9 +382,7 @@ fn parse_theme_markdown(md: &str) -> Vec<ThemeFile> {
     files
 }
 
-/// The theme families for the picker, in display order: `(family id, name)`,
-/// each appearing once. Derived from [`theme_sources`], so registering a new
-/// family's light/dark pair adds it here automatically.
+/// The theme families for the picker, in display order: `(family id, name)`, each appearing once. Derived from [`theme_sources`], so registering a new family's light/dark pair adds it here automatically.
 #[allow(dead_code)]
 pub(crate) fn theme_families() -> Vec<(&'static str, &'static str)> {
     let mut families: Vec<(&'static str, &'static str)> = Vec::new();
@@ -444,8 +417,7 @@ pub(crate) fn compiled_theme_css() -> String {
         }
         css.push_str("}\n");
     }
-    // Per-family font blocks, keyed on the family (not the light/dark source, since
-    // a family's fonts are shared).
+    // Per-family font blocks, keyed on the family (not the light/dark source, since a family's fonts are shared).
     let mut seen_families: Vec<&str> = Vec::new();
     for source in sources {
         if seen_families.contains(&source.family) {
@@ -482,8 +454,7 @@ pub(crate) fn assert_theme_sources_cover_contract(sources: &[ThemeSource]) {
             "theme source {} must have a family name",
             source.id
         );
-        // Every source activates through the Leaf-owned family + appearance
-        // attributes, so its selector must name both.
+        // Every source activates through the Leaf-owned family + appearance attributes, so its selector must name both.
         assert!(
             source.selector.contains(source.family)
                 && source.selector.contains(source.appearance.as_str()),
@@ -507,8 +478,7 @@ pub(crate) fn assert_theme_sources_cover_contract(sources: &[ThemeSource]) {
         }
     }
 
-    // The picker needs at least two families, and every family must offer both a
-    // light and a dark variant so the Appearance control always has both to pick.
+    // The picker needs at least two families, and every family must offer both a light and a dark variant so the Appearance control always has both to pick.
     let mut families: Vec<&str> = Vec::new();
     for source in sources {
         if !families.contains(&source.family) {
@@ -541,18 +511,13 @@ pub(crate) fn theme_source_token_value(source: &ThemeSource, token: &str) -> Opt
         .find_map(|(name, value)| (*name == token).then_some(*value))
 }
 
-/// The registered theme family ids as a JSON array (registration order),
-/// injected into the bootstrap so its `VALID_FAMILIES` set derives from the
-/// registry rather than a hand-kept literal that can drift.
+/// The registered theme family ids as a JSON array (registration order), injected into the bootstrap so its `VALID_FAMILIES` set derives from the registry rather than a hand-kept literal that can drift.
 pub(crate) fn theme_family_ids_json() -> String {
     let ids: Vec<&str> = theme_families().iter().map(|(id, _)| *id).collect();
     serde_json::to_string(&ids).expect("theme family ids serialize")
 }
 
-/// Family → Google Fonts stylesheet URL for the bootstrap's on-activation font
-/// loader, taken from each theme's declared `google` URL. Families that fetch
-/// nothing (empty URL) are omitted, so the loader drops the link and the family
-/// falls to its system stack.
+/// Family → Google Fonts stylesheet URL for the bootstrap's on-activation font loader, taken from each theme's declared `google` URL. Families that fetch nothing (empty URL) are omitted, so the loader drops the link and the family falls to its system stack.
 pub(crate) fn theme_web_font_hrefs_json() -> String {
     let mut map = serde_json::Map::new();
     for source in theme_sources() {
@@ -567,9 +532,7 @@ pub(crate) fn theme_web_font_hrefs_json() -> String {
 pub fn reading_mode_css() -> &'static str {
     static READING_MODE_CSS: OnceLock<String> = OnceLock::new();
 
-    // Assets, not Rust literals, so they stay editable as CSS. Every
-    // `var(--lt-*)` resolves against what came before it: the per-theme colors,
-    // then the app-wide scales, then the rules that spend both.
+    // Assets, not Rust literals, so they stay editable as CSS. Every `var(--lt-*)` resolves against what came before it: the per-theme colors, then the app-wide scales, then the rules that spend both.
     const TOKENS_CSS: &str = include_str!("assets/tokens.css");
     const ICONS_CSS: &str = include_str!("assets/icons.css");
     const READING_CSS: &str = include_str!("assets/reading.css");

@@ -1,26 +1,17 @@
 //! JSON and YAML: their readers, and the reading renderer the two share.
 //!
-//! Both formats are ordered trees of mappings, sequences and scalars, so both
-//! parse into one [`DataNode`] tree and render through [`crate::xml`]'s shape
-//! rules and label helpers — a sitemap and the JSON beside it read alike.
+//! Both formats are ordered trees of mappings, sequences and scalars, so both parse into one [`DataNode`] tree and render through [`crate::xml`]'s shape rules and label helpers — a sitemap and the JSON beside it read alike.
 //!
-//! **A block's range is a promise.** Outside Markdown, the reading view turns a
-//! block carrying `data-src-*` into a *source* editor: it shows the raw slice
-//! those offsets cut and splices what is typed back over exactly that range. An
-//! end offset off by a byte corrupts the file, so a range is stamped only where
-//! it is proved — every JSON node, and YAML plain scalars verified against the
-//! source ([`plain_scalar_span`]). Everything else is edited in the code view.
+//! **A block's range is a promise.** Outside Markdown, the reading view turns a block carrying `data-src-*` into a *source* editor: it shows the raw slice those offsets cut and splices what is typed back over exactly that range. An end offset off by a byte corrupts the file, so a range is stamped only where it is proved — every JSON node, and YAML plain scalars verified against the source ([`plain_scalar_span`]). Everything else is edited in the code view.
 //!
-//! `BlockSpan::editable` stays false regardless; it gates the Markdown WYSIWYG
-//! path, which the `data_*` block kinds also keep these blocks out of.
+//! `BlockSpan::editable` stays false regardless; it gates the Markdown WYSIWYG path, which the `data_*` block kinds also keep these blocks out of.
 
 use crate::*;
 use std::ops::Range;
 use yaml_rust2::parser::{Event as YamlEvent, MarkedEventReceiver, Parser as YamlEventParser};
 use yaml_rust2::scanner::{Marker, TScalarStyle};
 
-/// Nesting past this is refused: both readers recurse, so a pathologically deep
-/// file would be a stack overflow rather than a rendering problem.
+/// Nesting past this is refused: both readers recurse, so a pathologically deep file would be a stack overflow rather than a rendering problem.
 const MAX_PARSE_DEPTH: usize = 128;
 
 // ---------------------------------------------------------------------------
@@ -31,9 +22,7 @@ const MAX_PARSE_DEPTH: usize = 128;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct DataNode {
     pub(crate) value: DataValue,
-    /// The node's byte range in the source, where the reader can vouch for it
-    /// exactly. `None` is normal and always safe: the block simply renders
-    /// without `data-src-*`.
+    /// The node's byte range in the source, where the reader can vouch for it exactly. `None` is normal and always safe: the block simply renders without `data-src-*`.
     pub(crate) span: Option<Range<usize>>,
 }
 
@@ -42,17 +31,12 @@ impl DataNode {
         Self { value, span }
     }
 
-    /// A node standing in for something that could not be resolved (a YAML alias
-    /// with no anchor). Renders as nothing, like an empty XML element.
+    /// A node standing in for something that could not be resolved (a YAML alias with no anchor). Renders as nothing, like an empty XML element.
     fn empty() -> Self {
         Self::new(DataValue::Scalar(String::new()), None)
     }
 
-    /// Drop every range in this node and everything under it. A YAML alias is a
-    /// copy of the anchored value, and the anchor's text is where the anchor is —
-    /// keeping the ranges gives two blocks one slice, so editing the alias
-    /// rewrites the anchor's line. Recursive because a collection is `None` at
-    /// its top while every scalar inside it still holds a real range.
+    /// Drop every range in this node and everything under it. A YAML alias is a copy of the anchored value, and the anchor's text is where the anchor is — keeping the ranges gives two blocks one slice, so editing the alias rewrites the anchor's line. Recursive because a collection is `None` at its top while every scalar inside it still holds a real range.
     fn strip_spans(&mut self) {
         self.span = None;
         match &mut self.value {
@@ -72,12 +56,10 @@ impl DataNode {
     }
 }
 
-/// A node's contents. Mappings keep source order and may repeat a key, because
-/// the point is to show the file as written rather than to model it.
+/// A node's contents. Mappings keep source order and may repeat a key, because the point is to show the file as written rather than to model it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum DataValue {
-    /// A single value, decoded for display: a JSON string with its escapes
-    /// resolved, a number as written, `null` as the empty string.
+    /// A single value, decoded for display: a JSON string with its escapes resolved, a number as written, `null` as the empty string.
     Scalar(String),
     Sequence(Vec<DataNode>),
     Mapping(Vec<(String, DataNode)>),
@@ -87,15 +69,12 @@ pub(crate) enum DataValue {
 #[derive(Debug, Clone)]
 pub(crate) struct DataError {
     message: String,
-    /// 1-based line the problem was found on, when the reader knows it. YAML
-    /// leaves this `None` — the scanner's own message already names line and
-    /// column.
+    /// 1-based line the problem was found on, when the reader knows it. YAML leaves this `None` — the scanner's own message already names line and column.
     line: Option<usize>,
 }
 
 impl DataError {
-    /// The error as a reading-view message, naming the position when known —
-    /// a malformed data file is usually a typo worth locating.
+    /// The error as a reading-view message, naming the position when known — a malformed data file is usually a typo worth locating.
     fn to_html(&self, format: &str) -> String {
         let mut text = self.message.clone();
         if let Some(line) = self.line {
@@ -114,8 +93,7 @@ impl DataError {
 
 /// Parse JSON into the shared tree, every node carrying an exact byte range.
 ///
-/// Lenient about comments and a trailing comma, because the job is to show a file
-/// rather than certify it — `tsconfig.json` and editor settings carry both.
+/// Lenient about comments and a trailing comma, because the job is to show a file rather than certify it — `tsconfig.json` and editor settings carry both.
 pub(crate) fn parse_json(source: &str) -> Result<DataNode, DataError> {
     let mut reader = JsonReader {
         source,
@@ -153,10 +131,7 @@ impl<'a> JsonReader<'a> {
         &self.source[self.position..]
     }
 
-    /// Skip whitespace, comments, and a leading byte order mark. Stepped over rather
-    /// than stripped: every range this reader produces is an offset into the string it
-    /// was handed, and removing three bytes would shift all of them. [`read_source`]
-    /// already takes the mark off a file, but JSON also arrives from the code view.
+    /// Skip whitespace, comments, and a leading byte order mark. Stepped over rather than stripped: every range this reader produces is an offset into the string it was handed, and removing three bytes would shift all of them. [`read_source`] already takes the mark off a file, but JSON also arrives from the code view.
     fn skip_trivia(&mut self) {
         loop {
             while matches!(self.peek(), Some(b' ' | b'\t' | b'\r' | b'\n')) {
@@ -294,8 +269,7 @@ impl<'a> JsonReader<'a> {
     }
 
     fn escape(&mut self, out: &mut String) -> Result<(), DataError> {
-        // Step over a whole character: `\🌀` is not an escape, and advancing one
-        // byte would leave the position inside the emoji.
+        // Step over a whole character: `\🌀` is not an escape, and advancing one byte would leave the position inside the emoji.
         let Some(escaped) = self.rest().chars().next() else {
             return Err(self.error("the document ended inside an escape"));
         };
@@ -316,8 +290,7 @@ impl<'a> JsonReader<'a> {
         Ok(())
     }
 
-    /// Decode `\uXXXX`, pairing a leading surrogate with the one that follows so
-    /// characters outside the basic plane survive.
+    /// Decode `\uXXXX`, pairing a leading surrogate with the one that follows so characters outside the basic plane survive.
     fn unicode_escape(&mut self, out: &mut String) -> Result<(), DataError> {
         let first = self.hex4()?;
         let code = if (0xD800..0xDC00).contains(&first) && self.rest().starts_with("\\u") {
@@ -334,8 +307,7 @@ impl<'a> JsonReader<'a> {
         } else {
             first
         };
-        // A lone surrogate is not a character. Show the replacement rather than
-        // refuse the file — the rest of it is still worth reading.
+        // A lone surrogate is not a character. Show the replacement rather than refuse the file — the rest of it is still worth reading.
         out.push(char::from_u32(code).unwrap_or('\u{fffd}'));
         Ok(())
     }
@@ -345,8 +317,7 @@ impl<'a> JsonReader<'a> {
         let Some(digits) = self.source.get(self.position..end) else {
             return Err(self.error("truncated '\\u' escape"));
         };
-        // `from_str_radix` would accept a leading sign, so `\u+12f` would slip
-        // through as 0x12f. Four hex digits means four hex digits.
+        // `from_str_radix` would accept a leading sign, so `\u+12f` would slip through as 0x12f. Four hex digits means four hex digits.
         if !digits.chars().all(|digit| digit.is_ascii_hexdigit()) {
             return Err(self.error("'\\u' escape is not four hex digits"));
         }
@@ -357,8 +328,7 @@ impl<'a> JsonReader<'a> {
         Ok(code)
     }
 
-    /// A number, kept as the source wrote it. Nothing here converts to `f64`, so
-    /// a long literal displays with every digit it was given.
+    /// A number, kept as the source wrote it. Nothing here converts to `f64`, so a long literal displays with every digit it was given.
     fn number(&mut self) -> Result<String, DataError> {
         let start = self.position;
         if self.peek() == Some(b'-') {
@@ -405,8 +375,7 @@ impl<'a> JsonReader<'a> {
 
 /// The 1-based line number `offset` falls on, for a parse error's message.
 fn line_of(source: &str, offset: usize) -> usize {
-    // Counting bytes rather than slicing: an offset that is past the end, or in
-    // the middle of a character, must still produce a line number.
+    // Counting bytes rather than slicing: an offset that is past the end, or in the middle of a character, must still produce a line number.
     source
         .bytes()
         .take(offset)
@@ -419,24 +388,19 @@ fn line_of(source: &str, offset: usize) -> usize {
 // YAML
 // ---------------------------------------------------------------------------
 
-/// Parse YAML into the shared tree, driving the parser's event stream so the
-/// tree keeps source order and byte ranges. A stream holding several documents
-/// becomes a sequence of them.
+/// Parse YAML into the shared tree, driving the parser's event stream so the tree keeps source order and byte ranges. A stream holding several documents becomes a sequence of them.
 pub(crate) fn parse_yaml(source: &str) -> Result<DataNode, DataError> {
     let mut builder = YamlBuilder::new(source);
     let mut parser = YamlEventParser::new_from_str(source);
     parser.load(&mut builder, true).map_err(|error| DataError {
         message: error.to_string(),
-        // The scanner's message already names the line and column, and its
-        // own index counts characters rather than bytes.
+        // The scanner's message already names the line and column, and its own index counts characters rather than bytes.
         line: None,
     })?;
     builder.finish()
 }
 
-/// Marker indices from the YAML scanner count *characters*; every block range in
-/// the app is a byte offset. Events arrive in source order, so one forward-only
-/// cursor converts them without building a table over the whole file.
+/// Marker indices from the YAML scanner count *characters*; every block range in the app is a byte offset. Events arrive in source order, so one forward-only cursor converts them without building a table over the whole file.
 struct CharCursor<'a> {
     source: &'a str,
     characters: usize,
@@ -453,8 +417,7 @@ impl<'a> CharCursor<'a> {
     }
 
     fn byte_of(&mut self, character_index: usize) -> usize {
-        // Ordered input never rewinds, but a restart costs one scan and keeps
-        // this correct if the parser ever hands back an earlier marker.
+        // Ordered input never rewinds, but a restart costs one scan and keeps this correct if the parser ever hands back an earlier marker.
         if character_index < self.characters {
             self.characters = 0;
             self.bytes = 0;
@@ -470,8 +433,7 @@ impl<'a> CharCursor<'a> {
     }
 }
 
-/// A scalar held back one event, so the marker of whatever follows can bound its
-/// source text (see [`plain_scalar_span`]).
+/// A scalar held back one event, so the marker of whatever follows can bound its source text (see [`plain_scalar_span`]).
 struct PendingScalar {
     text: String,
     style: TScalarStyle,
@@ -536,8 +498,7 @@ impl<'a> YamlBuilder<'a> {
         })
     }
 
-    /// Turn the held-back scalar into a node, now that `bound` — where the next
-    /// event began — limits how far its text can reach.
+    /// Turn the held-back scalar into a node, now that `bound` — where the next event began — limits how far its text can reach.
     fn flush(&mut self, bound: usize) {
         let Some(pending) = self.pending.take() else {
             return;
@@ -593,9 +554,7 @@ impl<'a> YamlBuilder<'a> {
             } => (DataValue::Mapping(pairs), anchor, start),
         };
         let _ = (start, bound);
-        // No range for a collection: nothing here can prove where one *ends* — the
-        // closing marker points at whatever token followed it — and a guessed end
-        // is a file the source editor splices an edit into the wrong part of.
+        // No range for a collection: nothing here can prove where one *ends* — the closing marker points at whatever token followed it — and a guessed end is a file the source editor splices an edit into the wrong part of.
         let node = DataNode::new(value, None);
         self.remember(anchor, &node);
         self.place(node);
@@ -654,9 +613,7 @@ impl MarkedEventReceiver for YamlBuilder<'_> {
     }
 }
 
-/// YAML's merge key (`<<: *defaults`) means "those pairs, here", so splice them
-/// in rather than showing a field named `<<`. Pairs already written win, which is
-/// what merging means.
+/// YAML's merge key (`<<: *defaults`) means "those pairs, here", so splice them in rather than showing a field named `<<`. Pairs already written win, which is what merging means.
 fn merge_into(pairs: &mut Vec<(String, DataNode)>, node: DataNode) {
     match node.value {
         DataValue::Mapping(inherited) => {
@@ -676,11 +633,7 @@ fn merge_into(pairs: &mut Vec<(String, DataNode)>, node: DataNode) {
     }
 }
 
-/// The source range of a plain scalar, when it can be *proved*: the text lies in
-/// `start..bound` followed by whitespace or structure, so the slice is trimmed and
-/// checked against the value the parser reported. Quoted, block, and folded
-/// multi-line scalars carry characters their value does not, so none match and
-/// each correctly gets `None` — an approximate range is worse than none.
+/// The source range of a plain scalar, when it can be *proved*: the text lies in `start..bound` followed by whitespace or structure, so the slice is trimmed and checked against the value the parser reported. Quoted, block, and folded multi-line scalars carry characters their value does not, so none match and each correctly gets `None` — an approximate range is worse than none.
 fn plain_scalar_span(
     source: &str,
     start: usize,
@@ -693,9 +646,7 @@ fn plain_scalar_span(
     }
     let slice = source.get(start..bound.min(source.len()))?;
     let trimmed = slice.trim_end();
-    // A range of width nothing is not a range. `key:` with no value has no text to
-    // show or replace, and splicing `x` into the gap writes `key:x` — one scalar,
-    // not a key and a value.
+    // A range of width nothing is not a range. `key:` with no value has no text to show or replace, and splicing `x` into the gap writes `key:x` — one scalar, not a key and a value.
     (trimmed == text && !trimmed.is_empty()).then(|| start..start + trimmed.len())
 }
 
@@ -703,8 +654,7 @@ fn plain_scalar_span(
 // Entry points
 // ---------------------------------------------------------------------------
 
-/// Render a JSON string to `(title, html, blocks)`. `fallback_title` (normally
-/// the file name) heads the page when the document names no title of its own.
+/// Render a JSON string to `(title, html, blocks)`. `fallback_title` (normally the file name) heads the page when the document names no title of its own.
 pub(crate) fn render_json_document(
     source: &str,
     fallback_title: Option<&str>,
@@ -715,8 +665,7 @@ pub(crate) fn render_json_document(
     }
 }
 
-/// Render a YAML string to `(title, html, blocks)`, as
-/// [`render_json_document`] does for JSON.
+/// Render a YAML string to `(title, html, blocks)`, as [`render_json_document`] does for JSON.
 pub(crate) fn render_yaml_document(
     source: &str,
     fallback_title: Option<&str>,
@@ -727,8 +676,7 @@ pub(crate) fn render_yaml_document(
     }
 }
 
-/// The block source map for a JSON string, matching what
-/// [`render_json_document`] stamps inline.
+/// The block source map for a JSON string, matching what [`render_json_document`] stamps inline.
 pub(crate) fn json_block_source_map(source: &str) -> Vec<BlockSpan> {
     render_json_document(source, None).2
 }
@@ -763,9 +711,7 @@ impl DataCtx {
         self.out.push_str(markup);
     }
 
-    /// Record a block and return the `data-*` attributes for its opening tag.
-    /// A node with no proven range still gets an id and a kind, just no
-    /// `data-src-*` — and so no entry in the map, which indexes source ranges.
+    /// Record a block and return the `data-*` attributes for its opening tag. A node with no proven range still gets an id and a kind, just no `data-src-*` — and so no entry in the map, which indexes source ranges.
     fn block_attrs(&mut self, kind: &'static str, span: Option<Range<usize>>) -> String {
         let id = self.next_block_id;
         self.next_block_id += 1;
@@ -795,9 +741,7 @@ impl DataCtx {
     }
 
     fn heading(&mut self, level: usize, text: &str, span: Option<Range<usize>>) {
-        // A YAML mapping may be keyed by a collection rather than a name, which
-        // leaves nothing to head the section with. An empty heading is worse than
-        // none, so the section's contents just follow what came before.
+        // A YAML mapping may be keyed by a collection rather than a name, which leaves nothing to head the section with. An empty heading is worse than none, so the section's contents just follow what came before.
         if text.trim().is_empty() {
             return;
         }
@@ -818,8 +762,7 @@ fn render_data_document(
 ) -> (Option<String>, String, Vec<BlockSpan>) {
     let mut ctx = DataCtx::new();
 
-    // A title-ish key at the root titles the document, and is then left out of
-    // the body so it isn't said twice.
+    // A title-ish key at the root titles the document, and is then left out of the body so it isn't said twice.
     let title_key = title_key_of(root);
     let title = title_key
         .as_deref()
@@ -878,8 +821,7 @@ fn render_node(node: &DataNode, ctx: &mut DataCtx, depth: usize) {
     }
 }
 
-/// Render a mapping: consecutive scalar keys collapse into one field list, and
-/// anything holding more structure becomes a section.
+/// Render a mapping: consecutive scalar keys collapse into one field list, and anything holding more structure becomes a section.
 fn render_mapping(pairs: &[(String, DataNode)], ctx: &mut DataCtx, depth: usize) {
     let mut index = 0;
     while index < pairs.len() {
@@ -893,8 +835,7 @@ fn render_mapping(pairs: &[(String, DataNode)], ctx: &mut DataCtx, depth: usize)
             continue;
         }
         let (key, value) = &pairs[index];
-        // Past the depth limit, stop sectioning and say what is left as prose,
-        // as the XML renderer does.
+        // Past the depth limit, stop sectioning and say what is left as prose, as the XML renderer does.
         if depth >= MAX_DEPTH {
             render_prose(&flatten_text(value), value.span.clone(), ctx);
         } else {
@@ -905,9 +846,7 @@ fn render_mapping(pairs: &[(String, DataNode)], ctx: &mut DataCtx, depth: usize)
     }
 }
 
-/// Render a sequence: uniform records become a table, all-scalar items become a
-/// list, and anything else renders in turn, each named by its own title key when
-/// it has one.
+/// Render a sequence: uniform records become a table, all-scalar items become a list, and anything else renders in turn, each named by its own title key when it has one.
 fn render_sequence(items: &[DataNode], ctx: &mut DataCtx, depth: usize) {
     if let Some(columns) = table_columns(items) {
         render_table(items, &columns, ctx);
@@ -922,8 +861,7 @@ fn render_sequence(items: &[DataNode], ctx: &mut DataCtx, depth: usize) {
             render_prose(&flatten_text(item), item.span.clone(), ctx);
             continue;
         }
-        // Only a record that names itself gets a heading; there is nothing
-        // truthful to call the others, and an invented "Item 3" is noise.
+        // Only a record that names itself gets a heading; there is nothing truthful to call the others, and an invented "Item 3" is noise.
         if let Some(label) = record_label(item) {
             ctx.heading((2 + depth).min(6), &label, None);
         }
@@ -944,8 +882,7 @@ fn record_label(node: &DataNode) -> Option<String> {
         .and_then(plain_document_title)
 }
 
-/// Render scalar-valued keys as one label/value list, skipping the ones that say
-/// nothing (a `null`, an empty string) as the XML renderer skips empty elements.
+/// Render scalar-valued keys as one label/value list, skipping the ones that say nothing (a `null`, an empty string) as the XML renderer skips empty elements.
 fn render_fields(pairs: &[(String, DataNode)], ctx: &mut DataCtx) {
     let mut rows = String::new();
     for (key, node) in pairs {
@@ -984,9 +921,7 @@ fn render_list(items: &[DataNode], ctx: &mut DataCtx) {
     if values.is_empty() {
         return;
     }
-    // The range has to cover what the block actually shows. If an item was left
-    // out for saying nothing — a `null` sitting between two values — the range
-    // would reach across source the list never rendered, so it gets none.
+    // The range has to cover what the block actually shows. If an item was left out for saying nothing — a `null` sitting between two values — the range would reach across source the list never rendered, so it gets none.
     let span = (values.len() == items.len())
         .then(|| enclosing_span(items))
         .flatten();
@@ -999,9 +934,7 @@ fn render_list(items: &[DataNode], ctx: &mut DataCtx) {
     ctx.push(&html);
 }
 
-/// Whether `items` is a run of repeated records worth rendering as a table, and
-/// if so its columns. A record qualifies when it is a flat mapping of short
-/// scalars — the same test the XML renderer applies to repeated elements.
+/// Whether `items` is a run of repeated records worth rendering as a table, and if so its columns. A record qualifies when it is a flat mapping of short scalars — the same test the XML renderer applies to repeated elements.
 fn table_columns(items: &[DataNode]) -> Option<Vec<(String, String)>> {
     if items.len() < 2 {
         return None;
@@ -1059,11 +992,7 @@ fn render_table(items: &[DataNode], columns: &[(String, String)], ctx: &mut Data
     ctx.push(&html);
 }
 
-/// One range covering every node in `items`, and `None` unless *all* of them have
-/// one. All-or-nothing is the point: skipping the rangeless items would cover only
-/// part of the block, so the source editor would show one item and splice the edit
-/// over that alone while the reader believed they had edited the list. A YAML flow
-/// sequence hits it exactly — `[windows, macos]` proves `macos` but not `windows,`.
+/// One range covering every node in `items`, and `None` unless *all* of them have one. All-or-nothing is the point: skipping the rangeless items would cover only part of the block, so the source editor would show one item and splice the edit over that alone while the reader believed they had edited the list. A YAML flow sequence hits it exactly — `[windows, macos]` proves `macos` but not `windows,`.
 fn enclosing_span(items: &[DataNode]) -> Option<Range<usize>> {
     let mut ranges = Vec::with_capacity(items.len());
     for item in items {
@@ -1074,8 +1003,7 @@ fn enclosing_span(items: &[DataNode]) -> Option<Range<usize>> {
     Some(start..end)
 }
 
-/// Every scalar under a node, joined — what a subtree says once it is too deep
-/// to keep sectioning.
+/// Every scalar under a node, joined — what a subtree says once it is too deep to keep sectioning.
 fn flatten_text(node: &DataNode) -> String {
     let mut parts: Vec<String> = Vec::new();
     collect_text(node, &mut parts);

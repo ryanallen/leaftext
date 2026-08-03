@@ -2,10 +2,7 @@
 import { applySpeedReaderIfEnabled } from './speed-reader.js';
 
 // ---------------------------------------------------------------------------
-// The web settings menu: a gear button pinned to the top-right of the page,
-// just to the left of the minimap rail (never a full-width header above it).
-// Opening it reveals a small panel — the same idea as the desktop app's
-// settings menu, ported to the static site.
+// The web settings menu: a gear button pinned to the top-right of the page, just to the left of the minimap rail (never a full-width header above it). Opening it reveals a small panel — the same idea as the desktop app's settings menu, ported to the static site.
 //
 // It controls five things:
 //   - Theme: System / Light / Dark / Dracula (mirrors the desktop app).
@@ -16,9 +13,7 @@ import { applySpeedReaderIfEnabled } from './speed-reader.js';
 //   - Show library: hide the docs navigation sidebar (only offered on pages
 //     that have one — the /docs reader, not the single-README site).
 //
-// Choices persist in localStorage and apply to <html> via data- attributes that
-// styles.css keys off of (data-theme / data-speed-reader / data-minimap /
-// data-line-numbers / data-library). The same keys are read by a tiny inline script in each page's
+// Choices persist in localStorage and apply to <html> via data- attributes that styles.css keys off of (data-theme / data-speed-reader / data-minimap / data-line-numbers / data-library). The same keys are read by a tiny inline script in each page's
 // <head> so the right theme paints on first load with no flash. This module just
 // adds the UI and keeps the stored choice and the live page in sync.
 // ---------------------------------------------------------------------------
@@ -29,8 +24,7 @@ const STORE_MINIMAP = 'leaf.minimap'; // '1' (show) | '0' (hide)
 const STORE_LINE_NUMBERS = 'leaf.lineNumbers'; // '1' (show) | '0' (hide)
 const STORE_LIBRARY = 'leaf.library'; // '1' (show) | '0' (hide)
 
-// The adjustments-vertical icon, same glyph the desktop app uses for Settings.
-// Inlined so the menu needs no extra fetch; it inherits the button's color.
+// The adjustments-vertical icon, same glyph the desktop app uses for Settings. Inlined so the menu needs no extra fetch; it inherits the button's color.
 const GEAR_SVG =
   '<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
   '<path d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5" ' +
@@ -55,8 +49,7 @@ function writeStore(key, value) {
   }
 }
 
-// 'system' resolves to the device preference; the three explicit modes pass
-// through. Keep this in lockstep with the inline <head> bootstrap in each page.
+// 'system' resolves to the device preference; the three explicit modes pass through. Keep this in lockstep with the inline <head> bootstrap in each page.
 function resolveTheme(mode) {
   if (mode === 'light' || mode === 'dark' || mode === 'dracula') return mode;
   return darkQuery && darkQuery.matches ? 'dark' : 'light';
@@ -95,8 +88,7 @@ function checkbox(id, label, help, checked) {
 }
 
 export function installSettings({ hasLibrary = false } = {}) {
-  // Idempotent: the docs reader is a single-page app and may call this more than
-  // once across re-renders, but the menu should exist exactly once.
+  // Idempotent: the docs reader is a single-page app and may call this more than once across re-renders, but the menu should exist exactly once.
   if (document.getElementById('siteSettings')) return;
 
   const themeMode = readStore(STORE_THEME, 'system');
@@ -105,9 +97,7 @@ export function installSettings({ hasLibrary = false } = {}) {
   const lineNumbersOn = readStore(STORE_LINE_NUMBERS, '0') !== '0';
   const libraryOn = readStore(STORE_LIBRARY, '1') !== '0';
 
-  // Make sure the live page matches the stored choices (the head bootstrap
-  // already did this on first paint; this also covers storage written in
-  // another tab and the very first visit with no stored values).
+  // Make sure the live page matches the stored choices (the head bootstrap already did this on first paint; this also covers storage written in another tab and the very first visit with no stored values).
   applyTheme(themeMode);
   applySpeedReader(speedReaderOn);
   applyMinimap(minimapOn);
@@ -206,8 +196,7 @@ export function installSettings({ hasLibrary = false } = {}) {
     else if (darkQuery.addListener) darkQuery.addListener(onChange);
   }
 
-  // Close the menu when clicking outside it or pressing Escape — a <details>
-  // otherwise stays open until its own summary is clicked again.
+  // Close the menu when clicking outside it or pressing Escape — a <details> otherwise stays open until its own summary is clicked again.
   document.addEventListener('click', (event) => {
     if (details.open && !details.contains(event.target)) details.open = false;
   });

@@ -4,10 +4,7 @@ use super::*;
 
 #[test]
 fn data_blocks_never_take_the_markdown_wysiwyg_path() {
-    // `editable` drives the Markdown path, which edits a block as rendered text
-    // and would write `hi` where `"hi"` belongs. Data blocks are edited as source
-    // instead, so the flag stays false and the kinds stay out of Markdown's
-    // vocabulary (`paragraph`/`heading`), which that path switches on.
+    // `editable` drives the Markdown path, which edits a block as rendered text and would write `hi` where `"hi"` belongs. Data blocks are edited as source instead, so the flag stays false and the kinds stay out of Markdown's vocabulary (`paragraph`/`heading`), which that path switches on.
     let yaml = "name: Release\nshell: bash\n";
     for blocks in [
         render_json_document(PACKAGE_JSON, None).2,
@@ -23,10 +20,7 @@ fn data_blocks_never_take_the_markdown_wysiwyg_path() {
 
 #[test]
 fn the_code_view_is_colored_by_the_active_themes_own_tokens() {
-    // The editor brings its own default palette; handing it one built from the
-    // theme's tokens is what keeps the source view looking like the rest of the
-    // app when the theme changes. Rules and UI colors both, since Monaco takes
-    // them from different halves of a theme definition.
+    // The editor brings its own default palette; handing it one built from the theme's tokens is what keeps the source view looking like the rest of the app when the theme changes. Rules and UI colors both, since Monaco takes them from different halves of a theme definition.
     let html = app_shell_page();
 
     for expected in [
@@ -81,8 +75,7 @@ fn toggle_task_is_a_noop_for_xml_documents() {
 
 #[test]
 fn checkbox_edits_flip_the_marker_but_record_no_undo() {
-    // The auto-saving checkbox path flips the same byte as toggle_task, but leaves
-    // nothing on the undo stack — a checkbox toggle is deliberately not undoable.
+    // The auto-saving checkbox path flips the same byte as toggle_task, but leaves nothing on the undo stack — a checkbox toggle is deliberately not undoable.
     let markdown = "- [ ] one\n- [ ] two\n";
     let mut edit = EditableDocument::new(
         PathBuf::from("todo.md"),
@@ -131,12 +124,10 @@ fn moving_a_block_rotates_the_text_and_leaves_the_separators_alone() {
         PathBuf::from("doc.md"),
         SourceText::utf8(markdown.to_string()),
     );
-    // The three blocks, as the reading view stamps them: heading, then two
-    // paragraphs. The blank lines between them are not in any range.
+    // The three blocks, as the reading view stamps them: heading, then two paragraphs. The blank lines between them are not in any range.
     let ranges = [(0, 7), (9, 15), (17, 24)];
 
-    // Drag the last paragraph to the top: the texts rotate, the `\n\n` gaps and
-    // the trailing newline stay exactly where they were.
+    // Drag the last paragraph to the top: the texts rotate, the `\n\n` gaps and the trailing newline stay exactly where they were.
     assert!(edit.move_blocks(&ranges, 2, 0));
     assert_eq!(edit.text(), "Second.\n\n# Title\n\nFirst.\n");
     assert!(edit.can_undo());
@@ -158,8 +149,7 @@ fn moving_a_block_refuses_a_range_list_it_cannot_trust() {
     assert!(!edit.move_blocks(&good, 0, 0));
     assert!(!edit.move_blocks(&good, 0, 9));
     assert!(!edit.move_blocks(&[(0, 7)], 0, 0));
-    // Overlapping, out of order, and past the end of the buffer: a drifted map
-    // must not get to shred the file.
+    // Overlapping, out of order, and past the end of the buffer: a drifted map must not get to shred the file.
     assert!(!edit.move_blocks(&[(0, 9), (5, 14)], 1, 0));
     assert!(!edit.move_blocks(&[(9, 14), (0, 7)], 1, 0));
     assert!(!edit.move_blocks(&[(0, 7), (9, 99)], 1, 0));
@@ -169,8 +159,7 @@ fn moving_a_block_refuses_a_range_list_it_cannot_trust() {
 
 #[test]
 fn moving_a_field_in_a_structured_file_keeps_its_commas_in_place() {
-    // JSON separators live between the ranges, so rotating the values through
-    // their own slots is the one move that can't invalidate the syntax.
+    // JSON separators live between the ranges, so rotating the values through their own slots is the one move that can't invalidate the syntax.
     let json = "{\n  \"a\": 1,\n  \"b\": 2\n}\n";
     let mut edit = EditableDocument::new(
         PathBuf::from("doc.json"),
@@ -236,8 +225,7 @@ fn opened_markdown_document_carries_editing_maps() {
     let markdown = "# Title\n\nBody with a [ ] not a task.\n\n- [ ] real task\n";
     let document = opened_document_from_markdown(markdown, "todo.md");
     assert_eq!(document.format, DocumentFormat::Markdown);
-    // The raw source travels too, so blocks that don't round-trip WYSIWYG (lists,
-    // tables, code) can be edited as their exact Markdown source.
+    // The raw source travels too, so blocks that don't round-trip WYSIWYG (lists, tables, code) can be edited as their exact Markdown source.
     assert_eq!(document.source, markdown);
     assert_eq!(document.tasks, task_marker_offsets(markdown));
     assert_eq!(document.tasks.len(), 1);
@@ -252,9 +240,7 @@ fn the_reading_view_has_no_gutter_line_numbers() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // The gutter permalink numbers are gone: three elements per addressable block
-    // (150,000 on a large glossary, tripling it) to show one number on hover, behind
-    // a setting that was off by default.
+    // The gutter permalink numbers are gone: three elements per addressable block (150,000 on a large glossary, tripling it) to show one number on hover, behind a setting that was off by default.
     for absent in [
         "decorateAnchorLinks",
         "ensureAnchorLinkTargets",
@@ -279,8 +265,7 @@ fn the_reading_view_has_no_gutter_line_numbers() {
         );
     }
 
-    // What the numbers were nice for survives: the outline still reports how long
-    // the document is. Counted rather than stamped onto every block.
+    // What the numbers were nice for survives: the outline still reports how long the document is. Counted rather than stamped onto every block.
     assert!(html.contains("function documentLineCount(body)"));
     assert!(html.contains("const DOCUMENT_LINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]'"));
     assert!(html
@@ -299,9 +284,7 @@ fn block_source_map_covers_top_level_blocks_in_order() {
     let kinds: Vec<&str> = spans.iter().map(|span| span.kind).collect();
     assert_eq!(kinds, ["heading", "paragraph", "list", "code_block"]);
 
-    // Ids are assigned in document order, and every range slices back to the
-    // exact source that produced the block — the property later in-viewer
-    // editing depends on.
+    // Ids are assigned in document order, and every range slices back to the exact source that produced the block — the property later in-viewer editing depends on.
     for (index, span) in spans.iter().enumerate() {
         assert_eq!(span.id, index);
         assert!(span.start < span.end);
@@ -315,9 +298,7 @@ fn block_source_map_covers_top_level_blocks_in_order() {
 
 #[test]
 fn block_source_map_maps_rules_and_ignores_nested_blocks() {
-    // A thematic break is a top-level block even though it has no Start/End
-    // pair; list items and inline emphasis are nested, so they fold into their
-    // enclosing block rather than getting their own top-level spans.
+    // A thematic break is a top-level block even though it has no Start/End pair; list items and inline emphasis are nested, so they fold into their enclosing block rather than getting their own top-level spans.
     let markdown = "Para *one*.\n\n---\n\n> quote\n";
     let kinds: Vec<&str> = block_source_map(markdown)
         .iter()
@@ -328,11 +309,7 @@ fn block_source_map_maps_rules_and_ignores_nested_blocks() {
 
 #[test]
 fn block_source_map_treats_html_wrapper_open_and_close_as_separate_blocks() {
-    // A `<div align="center">` wrapper (as the README uses) opens and closes with
-    // its own raw-HTML blocks, and the blocks between get their own spans. The
-    // reading-view editor relies on this: it descends into the rendered wrapper to
-    // reach those inner blocks, and recognizes the closing `</div>` block (which
-    // renders to no element) by its `</` source so it can step over it.
+    // A `<div align="center">` wrapper (as the README uses) opens and closes with its own raw-HTML blocks, and the blocks between get their own spans. The reading-view editor relies on this: it descends into the rendered wrapper to reach those inner blocks, and recognizes the closing `</div>` block (which renders to no element) by its `</` source so it can step over it.
     let markdown = "<div align=\"center\">\n\n# Title\n\nInside the box.\n\n</div>\n\nAfter.\n";
     let spans = block_source_map(markdown);
     let kinds: Vec<&str> = spans.iter().map(|span| span.kind).collect();
@@ -347,15 +324,13 @@ fn block_source_map_treats_html_wrapper_open_and_close_as_separate_blocks() {
         ]
     );
 
-    // The opening wrapper slices back to just the `<div ...>` tag, and the closing
-    // wrapper to `</div>` — the two ends the editor tells apart by their source.
+    // The opening wrapper slices back to just the `<div ...>` tag, and the closing wrapper to `</div>` — the two ends the editor tells apart by their source.
     assert!(markdown[spans[0].start..spans[0].end].starts_with("<div"));
     assert!(markdown[spans[3].start..spans[3].end]
         .trim_start()
         .starts_with("</div"));
 
-    // The inner heading and paragraph are ordinary editable blocks, unaffected by
-    // living inside the wrapper.
+    // The inner heading and paragraph are ordinary editable blocks, unaffected by living inside the wrapper.
     assert!(spans[1].editable);
     assert!(markdown[spans[1].start..spans[1].end].starts_with("# Title"));
     assert!(markdown[spans[2].start..spans[2].end].starts_with("Inside the box."));
@@ -409,10 +384,7 @@ fn editable_document_adopts_external_change_when_clean() {
 
 #[test]
 fn a_code_view_splice_lands_on_the_same_bytes_the_page_meant() {
-    // The page sends UTF-16 offsets (JS string indices) and the host converts them
-    // against its own copy. Byte offsets diverge from those the moment there is a
-    // diacritic or an emoji, and a splice landing one byte off corrupts the file.
-    // The offsets here are exactly what sourceSpliceSince computes on the page.
+    // The page sends UTF-16 offsets (JS string indices) and the host converts them against its own copy. Byte offsets diverge from those the moment there is a diacritic or an emoji, and a splice landing one byte off corrupts the file. The offsets here are exactly what sourceSpliceSince computes on the page.
     fn splice_of(before: &str, after: &str) -> (usize, usize, String) {
         let b: Vec<u16> = before.encode_utf16().collect();
         let a: Vec<u16> = after.encode_utf16().collect();
@@ -459,8 +431,7 @@ fn a_code_view_splice_lands_on_the_same_bytes_the_page_meant() {
         assert_eq!(edit.utf16_len(), after.encode_utf16().count());
     }
 
-    // Typing in the code view is covered by the textarea's own undo, so a splice
-    // records none of its own.
+    // Typing in the code view is covered by the textarea's own undo, so a splice records none of its own.
     let mut edit =
         EditableDocument::new(PathBuf::from("x.md"), SourceText::utf8("abc".to_string()));
     edit.splice_utf16_without_undo(1, 1, "X");

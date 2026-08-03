@@ -1,14 +1,8 @@
-//! Git, as much of it as a reader needs: is this vault a repo, what has changed
-//! in it, and push that somewhere.
+//! Git, as much of it as a reader needs: is this vault a repo, what has changed in it, and push that somewhere.
 //!
-//! Shells out to the machine's own git, the way `platform.rs` shells out to
-//! `msiexec`. The user's git already knows who they are and how to log in to
-//! GitHub; a library would ship a second copy of both and be wrong about each.
-//! Nothing about the author, the host, or the credentials is written down here.
+//! Shells out to the machine's own git, the way `platform.rs` shells out to `msiexec`. The user's git already knows who they are and how to log in to GitHub; a library would ship a second copy of both and be wrong about each. Nothing about the author, the host, or the credentials is written down here.
 //!
-//! Creating the repository is the one thing git cannot do — it is an API call
-//! and needs a token — so `gh` does it where it is installed and the browser
-//! where it is not. Either way the token stays where the user already keeps it.
+//! Creating the repository is the one thing git cannot do — it is an API call and needs a token — so `gh` does it where it is installed and the browser where it is not. Either way the token stays where the user already keeps it.
 
 use std::ffi::OsStr;
 use std::fmt;
@@ -18,21 +12,13 @@ use std::process::{Command, Output, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
-/// How long any one git (or gh) call may run before it is killed. Git normally
-/// answers in well under a second; the only things that take longer are a large
-/// fetch and a credential helper popping a window the app cannot see. The second
-/// one would otherwise hang the sync forever -- the "spinning that never stops".
-/// Generous enough for a real fetch, short enough that a wedged prompt gives up.
+/// How long any one git (or gh) call may run before it is killed. Git normally answers in well under a second; the only things that take longer are a large fetch and a credential helper popping a window the app cannot see. The second one would otherwise hang the sync forever -- the "spinning that never stops". Generous enough for a real fetch, short enough that a wedged prompt gives up.
 const TOOL_TIMEOUT: Duration = Duration::from_secs(90);
 
-/// How deep below a vault to look for repositories that would end up inside a
-/// new one. Three is enough for `leaftext/app`, and for a nested clone one level
-/// further down; past that the scan costs more than the warning is worth.
+/// How deep below a vault to look for repositories that would end up inside a new one. Three is enough for `leaftext/app`, and for a nested clone one level further down; past that the scan costs more than the warning is worth.
 const NESTED_SCAN_DEPTH: usize = 3;
 
-/// Directories never worth descending into while looking for nested repos.
-/// Deliberately short: this is a bounded scan of a folder the user pointed at,
-/// never a crawl of the device.
+/// Directories never worth descending into while looking for nested repos. Deliberately short: this is a bounded scan of a folder the user pointed at, never a crawl of the device.
 const SCAN_SKIPS: &[&str] = &[
     "node_modules",
     "target",
@@ -71,21 +57,16 @@ impl GitError {
     }
 }
 
-/// What this machine can do, decided by what is installed rather than by what
-/// the app would prefer. Pushing needs git and a credential helper; creating a
-/// repository needs `gh`, or a browser.
+/// What this machine can do, decided by what is installed rather than by what the app would prefer. Pushing needs git and a credential helper; creating a repository needs `gh`, or a browser.
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitTooling {
     pub git: bool,
-    /// `gh` is installed *and* logged in. Installed-but-signed-out is no more
-    /// use than absent, and telling them apart would only add a third message.
+    /// `gh` is installed *and* logged in. Installed-but-signed-out is no more use than absent, and telling them apart would only add a third message.
     pub gh: bool,
-    /// Whether git has been told how to authenticate to GitHub. Absent, a push
-    /// either prompts in a terminal the app does not have, or fails.
+    /// Whether git has been told how to authenticate to GitHub. Absent, a push either prompts in a terminal the app does not have, or fails.
     pub credential_helper: bool,
-    /// `user.name` and `user.email`. Without them git refuses to commit, and the
-    /// message it gives is three paragraphs long.
+    /// `user.name` and `user.email`. Without them git refuses to commit, and the message it gives is three paragraphs long.
     pub identity: bool,
 }
 
@@ -93,27 +74,20 @@ pub struct GitTooling {
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VaultRepo {
-    /// A repository whose top level *is* this folder. A vault sitting inside
-    /// someone else's repository is not one — see `outer`.
+    /// A repository whose top level *is* this folder. A vault sitting inside someone else's repository is not one — see `outer`.
     pub at_root: bool,
-    /// The repository this vault sits inside, when it is not its own. Worth
-    /// naming: creating a repo here is legal and common, but it should not be a
-    /// surprise afterwards.
+    /// The repository this vault sits inside, when it is not its own. Worth naming: creating a repo here is legal and common, but it should not be a surprise afterwards.
     pub outer: Option<String>,
-    /// Repositories below this folder, as paths relative to it. These are what a
-    /// new repository at the root would swallow.
+    /// Repositories below this folder, as paths relative to it. These are what a new repository at the root would swallow.
     pub nested: Vec<String>,
     /// `owner/name` where the remote is recognizable, else the raw URL.
     pub remote: Option<String>,
-    /// The address exactly as git holds it, for showing before a change and for
-    /// putting back if the change was a mistake. The label above is for reading;
-    /// this is the thing you would paste.
+    /// The address exactly as git holds it, for showing before a change and for putting back if the change was a mistake. The label above is for reading; this is the thing you would paste.
     pub remote_url: Option<String>,
     pub branch: Option<String>,
     /// Files added, changed or deleted since the last commit.
     pub changed: usize,
-    /// Whether the branch is tracking anything. Without it the counts below are
-    /// meaningless and the first push has to set it.
+    /// Whether the branch is tracking anything. Without it the counts below are meaningless and the first push has to set it.
     pub tracking: bool,
     pub ahead: usize,
     pub behind: usize,
@@ -132,8 +106,7 @@ pub struct SyncReport {
 // Running the tools
 // ---------------------------------------------------------------------------
 
-/// Spawn a tool and collect what it said. Windows gets `CREATE_NO_WINDOW`, or a
-/// console flashes over the reader on every status check.
+/// Spawn a tool and collect what it said. Windows gets `CREATE_NO_WINDOW`, or a console flashes over the reader on every status check.
 fn output<I, S>(program: &str, dir: Option<&Path>, args: I) -> std::io::Result<Output>
 where
     I: IntoIterator<Item = S>,
@@ -147,11 +120,7 @@ where
     command.stdin(Stdio::null());
     command.stdout(Stdio::piped());
     command.stderr(Stdio::piped());
-    // A prompt would block forever behind a window that cannot show it. Tell git
-    // to fail instead, and the panel can say what is missing. `GCM_INTERACTIVE`
-    // and `GIT_ASKPASS` shut the same door on the credential helper, which is a
-    // *separate* program with its own window and does not read the first flag --
-    // the one that left a sync spinning behind a dialog nobody could find.
+    // A prompt would block forever behind a window that cannot show it. Tell git to fail instead, and the panel can say what is missing. `GCM_INTERACTIVE` and `GIT_ASKPASS` shut the same door on the credential helper, which is a *separate* program with its own window and does not read the first flag -- the one that left a sync spinning behind a dialog nobody could find.
     command.env("GIT_TERMINAL_PROMPT", "0");
     command.env("GCM_INTERACTIVE", "never");
     command.env("GIT_ASKPASS", "echo");
@@ -165,9 +134,7 @@ where
 
 /// Spawn a command and wait at most `limit` for it, killing it if it overruns.
 ///
-/// The pipes are drained on their own threads so a chatty command (a fetch's
-/// progress) can never fill a pipe buffer and deadlock against a parent that is
-/// only watching the clock. A kill closes the pipes, so those threads then end.
+/// The pipes are drained on their own threads so a chatty command (a fetch's progress) can never fill a pipe buffer and deadlock against a parent that is only watching the clock. A kill closes the pipes, so those threads then end.
 fn run_with_timeout(mut command: Command, limit: Duration) -> std::io::Result<Output> {
     let mut child = command.spawn()?;
     let mut stdout_pipe = child.stdout.take();
@@ -213,9 +180,7 @@ fn run_with_timeout(mut command: Command, limit: Duration) -> std::io::Result<Ou
 
 /// Run git in `dir` and return its stdout. `Err` carries stderr.
 ///
-/// Trailing whitespace only: a plain `trim()` ate the leading blank that is
-/// `status --porcelain`'s first status column, and a commit went out saying
-/// "Update EADME.md". Nothing else git prints has meaningful leading space.
+/// Trailing whitespace only: a plain `trim()` ate the leading blank that is `status --porcelain`'s first status column, and a commit went out saying "Update EADME.md". Nothing else git prints has meaningful leading space.
 fn git(dir: &Path, args: &[&str]) -> Result<String, GitError> {
     let operation = format!("git {}", args.first().copied().unwrap_or_default());
     match output("git", Some(dir), args) {
@@ -251,8 +216,7 @@ pub fn git_tooling() -> GitTooling {
     let here = Path::new(".");
     GitTooling {
         git: true,
-        // Installed is not enough: `gh repo create` on a signed-out gh fails with
-        // an auth error after the user has already committed to the button.
+        // Installed is not enough: `gh repo create` on a signed-out gh fails with an auth error after the user has already committed to the button.
         gh: output("gh", None, ["auth", "status"]).is_ok_and(|out| out.status.success()),
         credential_helper: !configured(here, "credential.helper").is_empty(),
         identity: !configured(here, "user.name").is_empty()
@@ -260,8 +224,7 @@ pub fn git_tooling() -> GitTooling {
     }
 }
 
-/// A git config value, or empty when it is unset. Reads whatever the machine
-/// says at this moment — nothing is cached and nothing is assumed.
+/// A git config value, or empty when it is unset. Reads whatever the machine says at this moment — nothing is cached and nothing is assumed.
 fn configured(dir: &Path, key: &str) -> String {
     git(dir, &["config", "--get", key]).unwrap_or_default()
 }
@@ -274,8 +237,7 @@ pub fn inspect_vault_repo(root: &Path) -> VaultRepo {
     let mut repo = VaultRepo::default();
     match git(root, &["rev-parse", "--show-toplevel"]) {
         Ok(top) if same_folder(&top, root) => repo.at_root = true,
-        // A top level above us: this vault lives inside someone else's repo. That
-        // is `work/leaftext`, and it is not the vault's own repository.
+        // A top level above us: this vault lives inside someone else's repo. That is `work/leaftext`, and it is not the vault's own repository.
         Ok(top) => repo.outer = Some(top),
         Err(_) => {}
     }
@@ -308,9 +270,7 @@ pub fn inspect_vault_repo(root: &Path) -> VaultRepo {
     repo
 }
 
-/// Repositories below `root`, relative to it, deepest-first order not promised.
-/// Stops descending as soon as it finds one: a repo inside a repo inside a vault
-/// is that repo's business.
+/// Repositories below `root`, relative to it, deepest-first order not promised. Stops descending as soon as it finds one: a repo inside a repo inside a vault is that repo's business.
 fn nested_repos(root: &Path) -> Vec<String> {
     let mut found = Vec::new();
     scan_nested(root, root, 0, &mut found);
@@ -348,11 +308,9 @@ fn scan_nested(root: &Path, dir: &Path, depth: usize, found: &mut Vec<String>) {
 // Making a vault into a repository
 // ---------------------------------------------------------------------------
 
-/// Turn `root` into a repository with one commit in it. Does not talk to GitHub:
-/// that is the caller's next step, by whichever route the machine allows.
+/// Turn `root` into a repository with one commit in it. Does not talk to GitHub: that is the caller's next step, by whichever route the machine allows.
 pub fn init_vault_repo(root: &Path, nested: &[String]) -> Result<(), GitError> {
-    // `-b` rather than letting the machine's `init.defaultBranch` decide, so the
-    // branch the app then pushes is the branch it created.
+    // `-b` rather than letting the machine's `init.defaultBranch` decide, so the branch the app then pushes is the branch it created.
     git(root, &["init", "-b", "main"])?;
     if !nested.is_empty() {
         write_gitignore(root, nested)?;
@@ -362,9 +320,7 @@ pub fn init_vault_repo(root: &Path, nested: &[String]) -> Result<(), GitError> {
     Ok(())
 }
 
-/// Append the nested repositories to `.gitignore`, keeping whatever is already
-/// there. Each one has its own remote and its own history; tracking it from out
-/// here would record a pointer nobody can follow.
+/// Append the nested repositories to `.gitignore`, keeping whatever is already there. Each one has its own remote and its own history; tracking it from out here would record a pointer nobody can follow.
 fn write_gitignore(root: &Path, nested: &[String]) -> Result<(), GitError> {
     let path = root.join(".gitignore");
     let existing = std::fs::read_to_string(&path).unwrap_or_default();
@@ -381,9 +337,7 @@ fn write_gitignore(root: &Path, nested: &[String]) -> Result<(), GitError> {
         .map_err(|error| GitError::new("write .gitignore", error.to_string()))
 }
 
-/// Create the repository on GitHub through `gh` and push to it. Private, always:
-/// a vault is notes, and publishing them should be a deliberate act on the site
-/// rather than a side effect of a button in a reader.
+/// Create the repository on GitHub through `gh` and push to it. Private, always: a vault is notes, and publishing them should be a deliberate act on the site rather than a side effect of a button in a reader.
 pub fn create_repo_on_github(root: &Path, name: &str) -> Result<(), GitError> {
     let result = output(
         "gh",
@@ -410,19 +364,12 @@ pub fn create_repo_on_github(root: &Path, name: &str) -> Result<(), GitError> {
     ))
 }
 
-/// Whether this exact folder is a git repository's own top level -- not a folder
-/// sitting inside one. Every write below refuses unless this holds, so a command
-/// run in a vault can never reach up and rewrite the repository it happens to
-/// live inside. That is the failure that pointed a vault's "change repo" at the
-/// wrong place and left the parent repo staring at unrelated histories.
+/// Whether this exact folder is a git repository's own top level -- not a folder sitting inside one. Every write below refuses unless this holds, so a command run in a vault can never reach up and rewrite the repository it happens to live inside. That is the failure that pointed a vault's "change repo" at the wrong place and left the parent repo staring at unrelated histories.
 fn is_repo_root(root: &Path) -> bool {
     matches!(git(root, &["rev-parse", "--show-toplevel"]), Ok(top) if same_folder(&top, root))
 }
 
-/// Point an already-initialized repository at a URL the user gave. Only sets the
-/// address -- it does **not** push. Sending the vault's contents somewhere is a
-/// separate, deliberate Sync, so merely naming a repository can never overwrite
-/// what is already in it or tangle two unrelated histories together.
+/// Point an already-initialized repository at a URL the user gave. Only sets the address -- it does **not** push. Sending the vault's contents somewhere is a separate, deliberate Sync, so merely naming a repository can never overwrite what is already in it or tangle two unrelated histories together.
 pub fn link_vault_remote(root: &Path, url: &str) -> Result<(), GitError> {
     let url = url.trim();
     if url.is_empty() {
@@ -434,8 +381,7 @@ pub fn link_vault_remote(root: &Path, url: &str) -> Result<(), GitError> {
             "this folder is not its own repository",
         ));
     }
-    // Replace rather than add: pointing an existing origin somewhere else is the
-    // likelier intent, and `remote add` on a taken name just errors.
+    // Replace rather than add: pointing an existing origin somewhere else is the likelier intent, and `remote add` on a taken name just errors.
     if git_ok(root, &["remote", "get-url", "origin"]) {
         git(root, &["remote", "set-url", "origin", url])?;
     } else {
@@ -450,15 +396,12 @@ pub fn link_vault_remote(root: &Path, url: &str) -> Result<(), GitError> {
 
 /// Commit whatever changed, take what is on the remote, then send it all back.
 ///
-/// A rebase that hits a conflict is undone before returning. There is no merge
-/// view in a reader, and leaving someone mid-rebase in a folder they opened to
-/// read is worse than telling them to go and sort it out in git.
+/// A rebase that hits a conflict is undone before returning. There is no merge view in a reader, and leaving someone mid-rebase in a folder they opened to read is worse than telling them to go and sort it out in git.
 pub fn sync_vault_repo(root: &Path) -> Result<SyncReport, GitError> {
     let mut report = SyncReport::default();
 
     if !is_repo_root(root) {
-        // Committing here would sweep up the enclosing repository's changes, not
-        // the vault's. Refuse rather than commit the wrong things.
+        // Committing here would sweep up the enclosing repository's changes, not the vault's. Refuse rather than commit the wrong things.
         return Err(GitError::new(
             "sync",
             "this folder is not its own repository",
@@ -487,8 +430,7 @@ pub fn sync_vault_repo(root: &Path) -> Result<SyncReport, GitError> {
     Ok(report)
 }
 
-/// Push, setting the upstream when the branch has none — which is every branch
-/// the app itself created.
+/// Push, setting the upstream when the branch has none — which is every branch the app itself created.
 fn push(root: &Path) -> Result<(), GitError> {
     if git_ok(root, &["rev-parse", "--abbrev-ref", "@{upstream}"]) {
         return git(root, &["push"]).map(|_| ());
@@ -504,8 +446,7 @@ fn push(root: &Path) -> Result<(), GitError> {
 // Reading what the tools print
 // ---------------------------------------------------------------------------
 
-/// `rev-list --left-right --count @{upstream}...HEAD` prints "behind<TAB>ahead".
-/// Left is the upstream side, so left is what we are missing.
+/// `rev-list --left-right --count @{upstream}...HEAD` prints "behind<TAB>ahead". Left is the upstream side, so left is what we are missing.
 pub(crate) fn parse_ahead_behind(counts: &str) -> (usize, usize) {
     let mut parts = counts.split_whitespace();
     let behind = parts.next().and_then(|n| n.parse().ok()).unwrap_or(0);
@@ -521,9 +462,7 @@ pub(crate) fn count_changes(status: &str) -> usize {
         .count()
 }
 
-/// A commit message describing the change rather than the tool that made it.
-/// One file is named; several are counted. The app's name is deliberately absent
-/// — it is the user's history, and they did the writing.
+/// A commit message describing the change rather than the tool that made it. One file is named; several are counted. The app's name is deliberately absent — it is the user's history, and they did the writing.
 pub(crate) fn commit_message(status: &str) -> String {
     let paths: Vec<&str> = status
         .lines()
@@ -536,11 +475,9 @@ pub(crate) fn commit_message(status: &str) -> String {
     }
 }
 
-/// The path out of a porcelain line: two status columns, a space, then the path.
-/// A rename prints `old -> new`; the new name is the one worth reporting.
+/// The path out of a porcelain line: two status columns, a space, then the path. A rename prints `old -> new`; the new name is the one worth reporting.
 ///
-/// Cut at two and trim, which lands on the path whether or not the leading
-/// status blank survived. A fixed three drops the first letter silently.
+/// Cut at two and trim, which lands on the path whether or not the leading status blank survived. A fixed three drops the first letter silently.
 fn porcelain_path(line: &str) -> Option<&str> {
     let rest = line.get(2..)?.trim();
     if rest.is_empty() {
@@ -553,8 +490,7 @@ fn porcelain_path(line: &str) -> Option<&str> {
     .map(|path| path.trim_matches('"'))
 }
 
-/// `owner/name` out of a remote URL, in any of the forms git accepts. Anything
-/// unrecognized is shown as it is rather than guessed at.
+/// `owner/name` out of a remote URL, in any of the forms git accepts. Anything unrecognized is shown as it is rather than guessed at.
 pub(crate) fn remote_label(url: &str) -> String {
     let trimmed = url.trim().trim_end_matches('/');
     let without_git = trimmed.strip_suffix(".git").unwrap_or(trimmed);
@@ -575,8 +511,7 @@ pub(crate) fn remote_label(url: &str) -> String {
     without_git.to_string()
 }
 
-/// A vault's name as a repository name: what GitHub will accept, and what the
-/// user will recognize afterwards.
+/// A vault's name as a repository name: what GitHub will accept, and what the user will recognize afterwards.
 pub fn repo_name_for_vault(vault_name: &str) -> String {
     let mut out = String::with_capacity(vault_name.len());
     let mut last_dash = true;
@@ -597,9 +532,7 @@ pub fn repo_name_for_vault(vault_name: &str) -> String {
     }
 }
 
-/// The lines to add to a `.gitignore` for nested repositories, skipping any the
-/// file already names. Carries the reason with it: the next person to read the
-/// file should not have to work out why a folder is missing.
+/// The lines to add to a `.gitignore` for nested repositories, skipping any the file already names. Carries the reason with it: the next person to read the file should not have to work out why a folder is missing.
 pub(crate) fn gitignore_addition(existing: &str, nested: &[String]) -> String {
     let already: Vec<&str> = existing
         .lines()
@@ -623,11 +556,7 @@ pub(crate) fn gitignore_addition(existing: &str, nested: &[String]) -> String {
     out
 }
 
-/// The first line worth showing out of a tool's complaint. git narrates a push
-/// to stderr -- the destination URL, the remote's progress -- before it says
-/// what went wrong, and those lines read like success ("To github.com/..."). So
-/// skip the narration and the terminal-only advice, and land on the sentence
-/// that actually names the problem.
+/// The first line worth showing out of a tool's complaint. git narrates a push to stderr -- the destination URL, the remote's progress -- before it says what went wrong, and those lines read like success ("To github.com/..."). So skip the narration and the terminal-only advice, and land on the sentence that actually names the problem.
 fn first_useful_line(detail: &str) -> String {
     let is_noise = |line: &str| {
         line.is_empty()
@@ -646,9 +575,7 @@ fn first_useful_line(detail: &str) -> String {
         .to_string()
 }
 
-/// Whether git's answer names the same folder we asked about. git prints forward
-/// slashes on Windows and may resolve a link, so compare canonically and fall
-/// back to a textual match.
+/// Whether git's answer names the same folder we asked about. git prints forward slashes on Windows and may resolve a link, so compare canonically and fall back to a textual match.
 fn same_folder(reported: &str, root: &Path) -> bool {
     let reported = PathBuf::from(reported);
     match (

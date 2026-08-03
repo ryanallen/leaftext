@@ -1,13 +1,10 @@
 #!/usr/bin/env node
-// Every Markdown file here and in the plan folder next door has a role — something
-// `/sync-docs` knows how to keep true. A file matching none is one nobody looks at
-// again, which is how a whole folder of plans went unswept.
+// Every Markdown file here and in the plan folder next door has a role — something `/sync-docs` knows how to keep true. A file matching none is one nobody looks at again, which is how a whole folder of plans went unswept.
 //
 //   node scripts/check-docs.mjs            fail on a file with no role
 //   node scripts/check-docs.mjs --list     every file and its role
 //
-// Roles are folder patterns, so a new page needs no edit here and a new folder does:
-// a new kind of document is a decision about who keeps it true.
+// Roles are folder patterns, so a new page needs no edit here and a new folder does: a new kind of document is a decision about who keeps it true.
 
 import { readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
@@ -16,8 +13,7 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const plans = join(root, '..', 'docs');
 
-// Each row: where the files are, and what keeps them true. Order matters — the
-// first match wins, so a specific folder goes above the folder holding it.
+// Each row: where the files are, and what keeps them true. Order matters — the first match wins, so a specific folder goes above the folder holding it.
 const ROLES = [
   ['docs/01-features', 'published: what a reader sees'],
   ['docs/02-development', 'published: how it is built'],

@@ -30,8 +30,7 @@ pub(crate) fn resolve_absolute_markdown_image_urls(
         .collect()
 }
 
-/// Copy an image's alt text into its `title` attribute when no explicit title
-/// is set, so hovering the image shows the alt text as a native tooltip.
+/// Copy an image's alt text into its `title` attribute when no explicit title is set, so hovering the image shows the alt text as a native tooltip.
 pub(crate) fn fill_image_titles_from_alt(events: Vec<Event<'static>>) -> Vec<Event<'static>> {
     let mut transformed: Vec<Event<'static>> = Vec::with_capacity(events.len());
 
@@ -58,8 +57,7 @@ pub(crate) fn fill_image_titles_from_alt(events: Vec<Event<'static>>) -> Vec<Eve
     transformed
 }
 
-/// Gather the plain text inside an image (its alt text) up to the closing image
-/// tag. `events` starts just after the image's start tag.
+/// Gather the plain text inside an image (its alt text) up to the closing image tag. `events` starts just after the image's start tag.
 pub(crate) fn collect_image_alt_text(events: &[Event<'static>]) -> String {
     let mut alt = String::new();
 
@@ -178,12 +176,7 @@ pub(crate) fn resolve_image_destination(destination: &str, source_path: &Path) -
     local_image_protocol_url_for_relative_destination(destination, &source_dir)
 }
 
-/// What to write into a document for an image the user just picked off their
-/// disk: relative to the document's own folder when it sits under it, so the pair
-/// still resolve after both are moved or shared, and absolute otherwise (which
-/// the resolver above already reads). A destination holding a space or a bracket
-/// is wrapped in `<>`, the CommonMark form for one — without it a picture in
-/// `My Photos` would end at the space.
+/// What to write into a document for an image the user just picked off their disk: relative to the document's own folder when it sits under it, so the pair still resolve after both are moved or shared, and absolute otherwise (which the resolver above already reads). A destination holding a space or a bracket is wrapped in `<>`, the CommonMark form for one — without it a picture in `My Photos` would end at the space.
 pub fn markdown_image_insert_destination(image: &Path, source_path: &Path) -> String {
     let relative = local_image_source_dir(source_path).and_then(|dir| {
         normalize_path_lexically(image)
@@ -207,8 +200,7 @@ pub fn markdown_image_insert_destination(image: &Path, source_path: &Path) -> St
     }
 }
 
-/// Parse a destination as a URL, except when the "scheme" is a lone letter — that
-/// is a Windows drive (`C:\imgs\pic.png`), which is a path, not a URL.
+/// Parse a destination as a URL, except when the "scheme" is a lone letter — that is a Windows drive (`C:\imgs\pic.png`), which is a path, not a URL.
 pub(crate) fn parse_image_destination_url(destination: &str) -> Option<Url> {
     let url = Url::parse(destination).ok()?;
     (url.scheme().len() > 1).then_some(url)

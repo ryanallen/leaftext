@@ -1,8 +1,6 @@
 //! Single-instance guard with file hand-off.
 //!
-//! The first instance owns a named mutex and listens on a named pipe. A later
-//! launch detects the mutex, forwards its file path over the pipe (the primary
-//! opens it as a new tab), and exits before building any UI.
+//! The first instance owns a named mutex and listens on a named pipe. A later launch detects the mutex, forwards its file path over the pipe (the primary opens it as a new tab), and exits before building any UI.
 //!
 //! Windows-only; elsewhere every launch is the primary.
 
@@ -12,8 +10,7 @@ use std::path::PathBuf;
 pub enum Acquire {
     /// This process owns the instance; keep the guard alive for its lifetime.
     Primary(InstanceGuard),
-    /// Another instance is already running; the file (if any) was handed off to
-    /// it and this process should exit without opening a window.
+    /// Another instance is already running; the file (if any) was handed off to it and this process should exit without opening a window.
     Forwarded,
 }
 
@@ -30,8 +27,7 @@ mod platform {
     };
     use windows_sys::Win32::System::Threading::CreateMutexW;
 
-    // Win32 constants used raw so we don't depend on their exact module path
-    // across windows-sys versions.
+    // Win32 constants used raw so we don't depend on their exact module path across windows-sys versions.
     const PIPE_ACCESS_INBOUND: u32 = 0x0000_0001;
     const PIPE_TYPE_MESSAGE: u32 = 0x0000_0004;
     const PIPE_READMODE_MESSAGE: u32 = 0x0000_0002;
@@ -43,14 +39,12 @@ mod platform {
     const ERROR_PIPE_BUSY: u32 = 231;
     const ERROR_PIPE_CONNECTED: u32 = 535;
 
-    /// Owns the process-lifetime mutex handle; releasing it (on exit) frees the
-    /// single-instance slot for the next launch.
+    /// Owns the process-lifetime mutex handle; releasing it (on exit) frees the single-instance slot for the next launch.
     pub struct InstanceGuard {
         mutex: HANDLE,
     }
 
-    // The handle is only ever closed on drop from the thread that created it; it
-    // is not shared. Marking it Send lets the guard sit in the app state struct.
+    // The handle is only ever closed on drop from the thread that created it; it is not shared. Marking it Send lets the guard sit in the app state struct.
     unsafe impl Send for InstanceGuard {}
 
     impl Drop for InstanceGuard {
@@ -82,9 +76,7 @@ mod platform {
         format!(r"\\.\pipe\leaftext-single-instance-{}", user_suffix())
     }
 
-    /// Send one message to the running instance: a UTF-8 path, or empty to ask it
-    /// only to focus. Retries briefly to cover the window where the primary holds
-    /// the mutex but has not yet created the pipe, or the pipe is momentarily busy.
+    /// Send one message to the running instance: a UTF-8 path, or empty to ask it only to focus. Retries briefly to cover the window where the primary holds the mutex but has not yet created the pipe, or the pipe is momentarily busy.
     fn forward(message: &str) -> bool {
         let name = wide(&pipe_name());
         for _ in 0..25 {
@@ -128,8 +120,7 @@ mod platform {
         let mutex = unsafe { CreateMutexW(ptr::null(), 0, name.as_ptr()) };
         let already_running = unsafe { GetLastError() } == ERROR_ALREADY_EXISTS;
 
-        // If the mutex could not be created at all, fail open: behave as the
-        // primary so a launch is never silently swallowed.
+        // If the mutex could not be created at all, fail open: behave as the primary so a launch is never silently swallowed.
         if mutex.is_null() {
             return Acquire::Primary(InstanceGuard { mutex });
         }
@@ -146,8 +137,7 @@ mod platform {
         Acquire::Primary(InstanceGuard { mutex })
     }
 
-    /// Spawn the pipe server. `on_message` is called for each later launch:
-    /// `Some(path)` to open a file, `None` to just bring the window forward.
+    /// Spawn the pipe server. `on_message` is called for each later launch: `Some(path)` to open a file, `None` to just bring the window forward.
     pub fn serve<F>(on_message: F)
     where
         F: Fn(Option<PathBuf>) + Send + 'static,

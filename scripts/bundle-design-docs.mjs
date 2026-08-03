@@ -1,14 +1,10 @@
 #!/usr/bin/env node
-// The published design-system page, written from design/ so it cannot drift from what
-// the app draws. Every count and every name in it is read, not typed.
+// The published design-system page, written from design/ so it cannot drift from what the app draws. Every count and every name in it is read, not typed.
 //
 //   node scripts/bundle-design-docs.mjs           write the page
 //   node scripts/bundle-design-docs.mjs --check   fail on drift (`just verify`)
 //
-// It is a summary and a pointer, not a copy: the four files under design/ are the
-// source and are readable on their own, so repeating all 284 rows here would only be
-// a second place to go stale. What the page carries is the shape of the system, the
-// counts, and the commands.
+// It is a summary and a pointer, not a copy: the four files under design/ are the source and are readable on their own, so repeating all 284 rows here would only be a second place to go stale. What the page carries is the shape of the system, the counts, and the commands.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -36,8 +32,7 @@ const colors = rows('colors.md');
 const tokens = rows('tokens.md');
 // The rows that name a drawing, not the Stroke table's weights.
 const icons = rows('icons.md').filter(({ cells }) => /\.svg$/.test(cells[1] || ''));
-// Only the first table: the document prefixes and states after it account for
-// classes, they are not components with markup to draw.
+// Only the first table: the document prefixes and states after it account for classes, they are not components with markup to draw.
 const components = rows('components.md').filter(({ group }) => !group.startsWith('What a document') && !group.startsWith('State'));
 const themes = readFileSync(join(root, 'src/assets/themes.md'), 'utf8')
   .split('\n')

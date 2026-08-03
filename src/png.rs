@@ -1,7 +1,6 @@
 //! PNG out, as small as we can make it losslessly.
 //!
-//! Two choices, both against what a canvas or a library would do, and both for
-//! the same reason: a diagram and a page of text are flat fill, not gradient.
+//! Two choices, both against what a canvas or a library would do, and both for the same reason: a diagram and a page of text are flat fill, not gradient.
 //!
 //! - **Every row unfiltered.** Filters turn a gradient into small numbers, and
 //!   the per-row heuristic every encoder uses picks them by smallest sum of
@@ -23,9 +22,7 @@ const MAX_PALETTE: usize = 256;
 
 /// Encode `rgba` (4 bytes per pixel, row-major, no padding) as a PNG.
 ///
-/// Alpha is dropped when every pixel is opaque, which is every export the sheet
-/// makes — it paints its own background first, because a PNG dropped into
-/// something with a page color of its own has no transparency to fall back on.
+/// Alpha is dropped when every pixel is opaque, which is every export the sheet makes — it paints its own background first, because a PNG dropped into something with a page color of its own has no transparency to fall back on.
 pub fn encode_rgba(rgba: &[u8], width: u32, height: u32) -> Option<Vec<u8>> {
     let pixels = (width as usize).checked_mul(height as usize)?;
     if width == 0 || height == 0 || rgba.len() < pixels.checked_mul(4)? {
@@ -33,8 +30,7 @@ pub fn encode_rgba(rgba: &[u8], width: u32, height: u32) -> Option<Vec<u8>> {
     }
     let opaque = rgba.chunks_exact(4).all(|pixel| pixel[3] == 255);
 
-    // One entry per distinct color, in first-seen order so the palette is stable
-    // for the same drawing.
+    // One entry per distinct color, in first-seen order so the palette is stable for the same drawing.
     let mut lookup: HashMap<[u8; 4], u8> = HashMap::new();
     let mut palette: Vec<[u8; 4]> = Vec::new();
     let mut indexed: Vec<u8> = Vec::with_capacity(pixels);
@@ -56,8 +52,7 @@ pub fn encode_rgba(rgba: &[u8], width: u32, height: u32) -> Option<Vec<u8>> {
         }
     }
 
-    // Opaque as well as small enough: a palette carrying transparency needs a tRNS
-    // chunk beside it, and nothing exports with real alpha.
+    // Opaque as well as small enough: a palette carrying transparency needs a tRNS chunk beside it, and nothing exports with real alpha.
     if !too_many && opaque {
         return Some(write_png(
             width,
@@ -84,20 +79,14 @@ pub fn encode_rgba(rgba: &[u8], width: u32, height: u32) -> Option<Vec<u8>> {
     ))
 }
 
-/// The same encoder, but the image is cut down to 256 colors first so it can take
-/// the palette path. For a screenshot — text on flat fill — that is where the real
-/// saving is: measured on a 1522×1212 page, 213 KB truecolor against 94 KB
-/// paletted. It moves pixels, so it is never what an export uses; documentation
-/// images ask for it because a page that loads is worth more than a color nobody
-/// can see is wrong.
+/// The same encoder, but the image is cut down to 256 colors first so it can take the palette path. For a screenshot — text on flat fill — that is where the real saving is: measured on a 1522×1212 page, 213 KB truecolor against 94 KB paletted. It moves pixels, so it is never what an export uses; documentation images ask for it because a page that loads is worth more than a color nobody can see is wrong.
 pub fn encode_rgba_paletted(rgba: &[u8], width: u32, height: u32) -> Option<Vec<u8>> {
     let pixels = (width as usize).checked_mul(height as usize)?;
     if width == 0 || height == 0 || rgba.len() < pixels.checked_mul(4)? {
         return None;
     }
     if rgba.chunks_exact(4).any(|pixel| pixel[3] != 255) {
-        // Transparency would need a tRNS chunk to survive the palette, and no
-        // screenshot has any: better to write the honest truecolor file.
+        // Transparency would need a tRNS chunk to survive the palette, and no screenshot has any: better to write the honest truecolor file.
         return encode_rgba(rgba, width, height);
     }
 
@@ -110,11 +99,7 @@ pub fn encode_rgba_paletted(rgba: &[u8], width: u32, height: u32) -> Option<Vec<
         return encode_rgba(rgba, width, height);
     }
 
-    // Median cut. Split the box that spans the most on one axis, at the median
-    // along that axis, until there are 256 of them. Each box then answers with
-    // the mean of the colors inside it, weighted by how many pixels they cover —
-    // an average, so an antialiased edge lands between its neighbors rather than
-    // snapping to whichever corner of the box was picked.
+    // Median cut. Split the box that spans the most on one axis, at the median along that axis, until there are 256 of them. Each box then answers with the mean of the colors inside it, weighted by how many pixels they cover — an average, so an antialiased edge lands between its neighbors rather than snapping to whichever corner of the box was picked.
     let mut boxes: Vec<Vec<([u8; 3], u32)>> = vec![counts.into_iter().collect()];
     while boxes.len() < MAX_PALETTE {
         let Some((at, axis)) = boxes
@@ -182,8 +167,7 @@ enum ColorType<'a> {
     Indexed(&'a [[u8; 4]]),
 }
 
-/// Every scanline prefixed with filter byte 0. See the module note for why none
-/// of the other four is tried.
+/// Every scanline prefixed with filter byte 0. See the module note for why none of the other four is tried.
 fn unfiltered(raw: &[u8], stride: usize, height: usize) -> Vec<u8> {
     let mut out = Vec::with_capacity(height * (stride + 1));
     for row in 0..height {
@@ -248,10 +232,7 @@ fn crc32(bytes: &[u8]) -> u32 {
     !crc
 }
 
-/// A 24- or 32-bit uncompressed BMP, as RGBA. The screenshot tool writes BMP
-/// because Windows can save one without an encoder of its own, and this is how
-/// those pixels reach [`encode_rgba`] — so the documentation images and the
-/// flowchart export go out through exactly the same encoder.
+/// A 24- or 32-bit uncompressed BMP, as RGBA. The screenshot tool writes BMP because Windows can save one without an encoder of its own, and this is how those pixels reach [`encode_rgba`] — so the documentation images and the flowchart export go out through exactly the same encoder.
 pub fn rgba_from_bmp(bmp: &[u8]) -> Option<(Vec<u8>, u32, u32)> {
     if bmp.len() < 54 || &bmp[..2] != b"BM" {
         return None;

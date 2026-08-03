@@ -1,7 +1,6 @@
 //! Markdown rendering: parse, apply the GitHub extras, highlight, sanitize.
 //!
-//! The stages live in the sibling files; this one holds the pipeline that runs
-//! them in order.
+//! The stages live in the sibling files; this one holds the pipeline that runs them in order.
 
 mod code;
 mod events;
@@ -28,8 +27,7 @@ pub(crate) use images::*;
 pub(crate) use paths::*;
 pub(crate) use rawhtml::*;
 
-// The crate's public surface. A pub(crate) glob cannot carry these out of the
-// crate, and lib.rs re-exports them, so name them explicitly.
+// The crate's public surface. A pub(crate) glob cannot carry these out of the crate, and lib.rs re-exports them, so name them explicitly.
 pub use image_protocol::{
     is_local_image_path, local_image_protocol_response, local_image_source_dir,
 };
@@ -57,8 +55,7 @@ impl MarkdownParserConfig {
 }
 
 pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
-    // A leading `--- ... ---` block renders as a metadata table, not raw
-    // Markdown (which would become a stray heading/thematic break).
+    // A leading `--- ... ---` block renders as a metadata table, not raw Markdown (which would become a stray heading/thematic break).
     let (frontmatter_html, body_markdown) = match split_leading_frontmatter(source.markdown) {
         Some((inner, rest)) => (render_frontmatter_table(&inner), rest),
         None => (String::new(), source.markdown),
@@ -71,14 +68,11 @@ pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
     let body = table_alignment_as_attribute(&body);
     let body = resolve_rendered_html_image_urls(&body, source.source_path);
     let body = format!("{frontmatter_html}{body}");
-    // The size goes on last, after the sanitizer: the numbers are ours, and `img`
-    // keeps the attribute list it was given.
+    // The size goes on last, after the sanitizer: the numbers are ours, and `img` keeps the attribute list it was given.
     stamp_image_intrinsic_sizes(&sanitize_rendered_html(&body), source.source_path)
 }
 
-/// A table column's alignment, moved from an inline `style` onto `align`, which
-/// `td` and `th` are allowed to keep. `style` is never allowed through the
-/// sanitizer — it is an injection surface — so before this, `:-:` centered nothing.
+/// A table column's alignment, moved from an inline `style` onto `align`, which `td` and `th` are allowed to keep. `style` is never allowed through the sanitizer — it is an injection surface — so before this, `:-:` centered nothing.
 fn table_alignment_as_attribute(html: &str) -> String {
     let mut out = html.to_string();
     for side in ["left", "center", "right"] {
@@ -90,14 +84,9 @@ fn table_alignment_as_attribute(html: &str) -> String {
     out
 }
 
-/// Split a leading `--- ... ---` frontmatter block off the front, returning its
-/// inner text and the Markdown that follows. Detected only when `---` is the
-/// first line and a later `---` closes it — the same rule
-/// [`extract_frontmatter`](crate::store::extract_frontmatter) reads by.
+/// Split a leading `--- ... ---` frontmatter block off the front, returning its inner text and the Markdown that follows. Detected only when `---` is the first line and a later `---` closes it — the same rule [`extract_frontmatter`](crate::store::extract_frontmatter) reads by.
 ///
-/// A leading mark should never arrive — [`read_source`] takes it off precisely so it
-/// can't stop a fence being first on the line — but Markdown also reaches here from
-/// the code view's buffer and from tests, so one is still stepped over.
+/// A leading mark should never arrive — [`read_source`] takes it off precisely so it can't stop a fence being first on the line — but Markdown also reaches here from the code view's buffer and from tests, so one is still stepped over.
 pub(crate) fn split_leading_frontmatter(markdown: &str) -> Option<(String, &str)> {
     let after_bom = markdown.strip_prefix('\u{feff}').unwrap_or(markdown);
     let first_end = after_bom
@@ -133,8 +122,7 @@ pub(crate) fn split_leading_frontmatter(markdown: &str) -> Option<(String, &str)
     None
 }
 
-/// Render a parsed frontmatter block as a `key`/`value` metadata table, or an
-/// empty string when nothing parses. Cells are untrusted, so they're escaped.
+/// Render a parsed frontmatter block as a `key`/`value` metadata table, or an empty string when nothing parses. Cells are untrusted, so they're escaped.
 pub(crate) fn render_frontmatter_table(inner: &str) -> String {
     let block = crate::store::FrontmatterBlock {
         body: inner.to_string(),

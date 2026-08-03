@@ -20,14 +20,12 @@ import { open, requiredFor } from './gate-keycode.mjs';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LICENSE = join(root, '.tmp', 'git-license');
 
-// Messages that are host commands rather than work. They get no context, but they
-// still revoke the git license — otherwise a `/clear` after a release keeps it.
+// Messages that are host commands rather than work. They get no context, but they still revoke the git license — otherwise a `/clear` after a release keeps it.
 const META = ['/clear', '/help', '/config', '/cost', '/compact', '/init', '/skills',
   '/agents', '/permissions', '/status', '/release-notes', '/upgrade', '/mcp',
   '/login', '/logout', '/exit', '/quit'];
 
-// One line each, for whatever the message touches. Three at most, so the output
-// stays about ten lines.
+// One line each, for whatever the message touches. Three at most, so the output stays about ten lines.
 const TRIGGERS = [
   [/reading\.css|theme\.rs|themes\//i,
     'A value belongs in `design/`: colors.md names a color, tokens.md holds every other value, icons.md the icons, components.md every class — then `just bundle-tokens`, `bundle-icons` or `bundle-gallery`. What a theme sets a color to is `themes/`, then `just bundle-themes`. Never edit a generated file, never a per-theme diagram palette.'],
@@ -63,10 +61,7 @@ export function isMeta(prompt) {
   return META.some((m) => first === m || first.startsWith(m + ':'));
 }
 
-// `/git-release` typed as this message's command, and nothing else, authorizes a
-// git write. Anchored to the start because that is where a slash command is: a
-// match anywhere let a message that merely *quoted* the string grant one, and
-// pasting a transcript back is exactly how that happened.
+// `/git-release` typed as this message's command, and nothing else, authorizes a git write. Anchored to the start because that is where a slash command is: a match anywhere let a message that merely *quoted* the string grant one, and pasting a transcript back is exactly how that happened.
 export function hasReleaseLicense(prompt) {
   return /^\/git-release\b/i.test(prompt.trim());
 }
@@ -120,8 +115,7 @@ function selfTest() {
     ['/git-release', true],
     ['/git-release 0.1.441', true],
     ['  /git-release  ', true],
-    // v0.1.442: the release ran off a message that only quoted the transcript.
-    // A mention is not an instruction, wherever in the message it sits.
+    // v0.1.442: the release ran off a message that only quoted the transcript. A mention is not an instruction, wherever in the message it sits.
     ['ship it with /git-release please', false],
     ['i ran /git-release and you refused, why', false],
     ['> /git-release\n\n● Running the pre-steps', false],
@@ -159,9 +153,7 @@ if (process.argv.includes('--check')) {
   selfTest();
 } else {
   const raw = readStdin();
-  // What the host actually sends, kept for the last few turns. A slash command
-  // may reach here expanded, or not at all, and the license turns on which —
-  // guessing at that is what cost v0.1.442 a refused release. Untracked.
+  // What the host actually sends, kept for the last few turns. A slash command may reach here expanded, or not at all, and the license turns on which — guessing at that is what cost v0.1.442 a refused release. Untracked.
   try {
     const log = join(root, '.tmp', 'prompt-payloads.jsonl');
     mkdirSync(dirname(log), { recursive: true });
@@ -173,13 +165,11 @@ if (process.argv.includes('--check')) {
   const prompt = promptOf(raw);
   writeLicense(hasReleaseLicense(prompt), prompt);
   if (prompt && !isMeta(prompt)) {
-    // A new turn owes its keycodes again. Clearing first is what keeps the record
-    // one message long instead of a growing file.
+    // A new turn owes its keycodes again. Clearing first is what keeps the record one message long instead of a growing file.
     try {
       open(requiredFor(prompt));
     } catch {
-      // A record that cannot be written owes nothing, which is the safe way round:
-      // a broken hook must never stop a turn.
+      // A record that cannot be written owes nothing, which is the safe way round: a broken hook must never stop a turn.
     }
     let rule = '';
     try {

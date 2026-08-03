@@ -1,12 +1,9 @@
 #!/usr/bin/env node
-// The MCP wrapper is a second copy of two things the app decides: what can be
-// asked, and where to ask it. This is what keeps the copy honest.
+// The MCP wrapper is a second copy of two things the app decides: what can be asked, and where to ask it. This is what keeps the copy honest.
 //
 //   node scripts/check-mcp.mjs   (`just verify`)
 //
-// The wrapper itself cannot be in the suite — it needs a running app — but this
-// reads two files and nothing else, so a renamed pipe or an ask with no tool
-// fails here rather than the next time somebody tries to use it.
+// The wrapper itself cannot be in the suite — it needs a running app — but this reads two files and nothing else, so a renamed pipe or an ask with no tool fails here rather than the next time somebody tries to use it.
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

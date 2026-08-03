@@ -7,8 +7,7 @@ fn a_narrow_window_opens_the_library_as_a_sliding_sheet() {
     let html = app_shell_page();
 
     for expected in [
-        // Clearing the user-closed flag is not enough on a narrow window:
-        // libraryTooNarrow() still forces the pane shut, so the sheet is what opens.
+        // Clearing the user-closed flag is not enough on a narrow window: libraryTooNarrow() still forces the pane shut, so the sheet is what opens.
         "if (libraryTooNarrow()) {\n    librarySheetOpen = !librarySheetOpen;",
         // View state, not a preference — a window opened wide has no sheet.
         "let librarySheetOpen = false;",
@@ -26,8 +25,7 @@ fn a_narrow_window_opens_the_library_as_a_sliding_sheet() {
         .nth(1)
         .and_then(|rest| rest.split('}').next())
         .expect("stylesheet defines the narrow-window sheet");
-    // Out of flow so the grid still gives the page the whole window, parked off
-    // the left edge, and animated in rather than appearing.
+    // Out of flow so the grid still gives the page the whole window, parked off the left edge, and animated in rather than appearing.
     for expected in [
         "position: absolute;",
         "width: 100%;",
@@ -47,17 +45,14 @@ fn a_narrow_window_opens_the_library_as_a_sliding_sheet() {
     );
     assert_contains(css, "@media (prefers-reduced-motion: reduce)");
 
-    // The sheet is "closed" only to the grid, so the rule that hides the path
-    // and search box on a snapped-shut pane has to be undone — it opened onto a
-    // blank band otherwise.
+    // The sheet is "closed" only to the grid, so the rule that hides the path and search box on a snapped-shut pane has to be undone — it opened onto a blank band otherwise.
     assert_contains(
         css,
         ".library-shell.library-narrow .library-header,\n.library-shell.library-narrow .library-crumbs {\n  display: flex;\n}",
     );
     // The page's furniture goes away with the page it belongs to.
     assert_contains(css, "body:has(.library-overlay) .app-bar::after");
-    // Tabs by visibility, not display: the fold measures the strip, and a
-    // collapsed one reads as "everything fits" and unfolds the whole bar.
+    // Tabs by visibility, not display: the fold measures the strip, and a collapsed one reads as "everything fits" and unfolds the whole bar.
     assert_contains(
         css,
         "body:has(.library-overlay) .tab-bar {\n  visibility: hidden;\n}",
@@ -69,33 +64,24 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
     let html = app_shell_page();
 
     for expected in [
-        // Folding is driven by the tab strip actually overflowing, not a width
-        // budget: a budget reserves a sliver for the tabs and lets a title be
-        // sliced in half long before anything folds.
+        // Folding is driven by the tab strip actually overflowing, not a width budget: a budget reserves a sliver for the tabs and lets a title be sliced in half long before anything folds.
         "if (tabBar.scrollWidth <= tabBar.clientWidth + 1) break;",
         "overflowPanel.prepend(el);",
-        // Rightmost first, and everything is unfolded before re-measuring so a
-        // widening window puts the buttons back where they came from.
+        // Rightmost first, and everything is unfolded before re-measuring so a widening window puts the buttons back where they came from.
         "for (let index = overflowCandidates.length - 1; index >= 0; index -= 1) {",
         r#"<div class="app-overflow-panel" id="appOverflowPanel"></div>"#,
-        // The window controls and the lead's history buttons fold too, but only
-        // after every action has — which is what their place at the head of the
-        // list buys.
+        // The window controls and the lead's history buttons fold too, but only after every action has — which is what their place at the head of the list buys.
         "{ el: document.getElementById('windowControls'), home: appTrailingItems },",
         "{ el: document.getElementById('backButton'), home: historyActions, inLead: true },",
-        // Folding out of the lead frees nothing while an open library pins it to
-        // the rail's width, so those are skipped rather than hidden for nothing.
+        // Folding out of the lead frees nothing while an open library pins it to the rail's width, so those are skipped rather than hidden for nothing.
         "if (inLead && leadIsPinned) continue;",
-        // Restoring rebuilds each container's original order, so a button that
-        // folded comes back in its own slot beside siblings that never left.
+        // Restoring rebuilds each container's original order, so a button that folded comes back in its own slot beside siblings that never left.
         "for (const child of children) home.appendChild(child);",
     ] {
         assert_contains(&html, expected);
     }
 
-    // Two never fold. The brand is the way home, and the library button is the
-    // only way to reach the library at all on a narrow window — behind a chevron
-    // it would be unreachable exactly where the sheet matters most.
+    // Two never fold. The brand is the way home, and the library button is the only way to reach the library at all on a narrow window — behind a chevron it would be unreachable exactly where the sheet matters most.
     for never_folds in ["homeButton", "libraryOpen"] {
         assert!(
             !html.contains(&format!("{{ el: {never_folds},")),
@@ -106,18 +92,14 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
     let css = reading_mode_css();
     assert_contains(css, ".app-trailing.has-overflow .overflow-toggle {");
     assert_contains(css, ".app-trailing.overflow-open .app-overflow-panel {");
-    // Stacked inside the panel: it is only as wide as the chevron's corner allows,
-    // and an inline three-across row overflows it, clipping maximize and close off
-    // the end.
+    // Stacked inside the panel: it is only as wide as the chevron's corner allows, and an inline three-across row overflows it, clipping maximize and close off the end.
     let folded_controls = css
         .split(".app-overflow-panel .window-controls {")
         .nth(1)
         .and_then(|rest| rest.split('}').next())
         .expect("stylesheet folds the window controls");
     assert_contains(folded_controls, "flex-direction: column;");
-    // The tab strip's two shoulders have to match: the lead's right inset and
-    // the trailing group's left one are what keep a tab from crowding the
-    // actions while the first tab sits well clear of the history buttons.
+    // The tab strip's two shoulders have to match: the lead's right inset and the trailing group's left one are what keep a tab from crowding the actions while the first tab sits well clear of the history buttons.
     let lead_inset = css
         .split(".app-bar-lead {")
         .nth(1)
@@ -135,8 +117,7 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
         "the tab strip's shoulders must stay symmetric"
     );
 
-    // The panel drops under the chevron, which is the trailing group's left
-    // edge — anchoring it right puts it out at the window corner instead.
+    // The panel drops under the chevron, which is the trailing group's left edge — anchoring it right puts it out at the window corner instead.
     let panel = css
         .split(".app-overflow-panel {")
         .nth(1)
@@ -151,8 +132,7 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
         !css.contains(".app-trailing.collapsed"),
         "the trailing group no longer folds as one block"
     );
-    // The narrow bar must not add its own inset: the lead already carries the
-    // 12px that lines the logo up with the library header below it.
+    // The narrow bar must not add its own inset: the lead already carries the 12px that lines the logo up with the library header below it.
     assert!(
         !css.contains(
             "  .app-bar {\n    gap: var(--lt-space-8);\n    padding: 0 var(--lt-space-12);\n  }"
@@ -166,15 +146,13 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // Markup: the resize divider on the pane edge and the library toggle button,
-    // which lives in the app bar's lead (an .icon-button), left of Back.
+    // Markup: the resize divider on the pane edge and the library toggle button, which lives in the app bar's lead (an .icon-button), left of Back.
     assert!(
         html.contains(r#"<div id="libraryDivider" class="library-divider" title="Resize library""#)
     );
     assert!(html.contains(r#"<button type="button" id="libraryOpen" class="icon-button library-open" title="Toggle library""#));
 
-    // The toggle icon is the bundled asset, normalized to currentColor like the
-    // other toolbar icons (no stray literal stroke color survives).
+    // The toggle icon is the bundled asset, normalized to currentColor like the other toolbar icons (no stray literal stroke color survives).
     assert_icon(&html, "open-library");
 
     // CSS: the collapsed-grid override and the divider hit target.
@@ -211,9 +189,7 @@ fn app_shell_includes_library_pane_settings_and_wording() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // Layout: the shell driven by the CSS variable — rail, reader, the minimap's
-    // own column (0 until a document has one), and the gutter track that holds
-    // the reader off the window frame.
+    // Layout: the shell driven by the CSS variable — rail, reader, the minimap's own column (0 until a document has one), and the gutter track that holds the reader off the window frame.
     assert!(html.contains(r#"<div id="libraryShell" class="library-shell">"#));
     assert!(css.contains(
         "grid-template-columns: var(--library-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);"
@@ -232,9 +208,7 @@ fn app_shell_includes_library_pane_settings_and_wording() {
     assert!(html.contains(r#"${LEAF_FILE_ICON}<span class="library-file-label">"#));
     assert!(html.contains(r#"<span class="library-nav-chevron" aria-hidden="true">›</span>"#));
 
-    // Library callbacks, the host-injected settings global it seeds from, and
-    // the boot-time render + folder load. The pane is filled by
-    // leafSetLibraryFolder, and nothing reports scan state.
+    // Library callbacks, the host-injected settings global it seeds from, and the boot-time render + folder load. The pane is filled by leafSetLibraryFolder, and nothing reports scan state.
     assert!(html.contains("window.leafSetLibraryFolder ="));
     assert!(!html.contains("window.leafSetLibraryState ="));
     assert!(!html.contains("window.leafSetScanProgress ="));
@@ -261,8 +235,7 @@ fn app_shell_includes_library_pane_settings_and_wording() {
         "title=\"Resize library\"",
         "placeholder=\"Search files...\"",
         ">No matches.</p>",
-        // A cut list says what it was cut to — files, since one file can hold
-        // three rows — rather than printing a count that reads like a whole one.
+        // A cut list says what it was cut to — files, since one file can hold three rows — rather than printing a count that reads like a whole one.
         "results in the first ${formatCount(files)} files`",
         "} results`",
         "Searching…",
@@ -276,14 +249,12 @@ fn app_shell_includes_library_pane_settings_and_wording() {
 fn a_search_row_lands_on_the_match_not_the_heading_above_it() {
     let html = app_shell_page();
 
-    // The row carries the line the match is on, and the jump uses it: a hit near
-    // the foot of a long section used to open at the top of that section.
+    // The row carries the line the match is on, and the jump uses it: a hit near the foot of a long section used to open at the top of that section.
     for expected in [
         r#"data-line="${escapeAttr(String(line))}""#,
         "pendingSearchJump = anchor || line ? { path, anchor, line } : null;",
         "scrollReadingToSrcOffset(byteOffsetAtLineIndex(currentDocumentSource, jump.line - 1));",
-        // The heading is still there for a document whose source the page does not
-        // hold — only Markdown carries the block ranges the offset needs.
+        // The heading is still there for a document whose source the page does not hold — only Markdown carries the block ranges the offset needs.
         "if (!landed && jump.anchor && activeDocumentPath() === jump.path) {",
     ] {
         assert_contains(&html, expected);
@@ -294,12 +265,7 @@ fn a_search_row_lands_on_the_match_not_the_heading_above_it() {
 fn changing_document_does_not_change_which_view_you_are_in() {
     let html = app_shell_page();
 
-    // Opening a file from the pane while the map is up must not snap back to the
-    // reading view: picking what to look at is not picking how. Only a gesture
-    // that *means* "leave the map" closes it: a node click, a search hit (whose
-    // anchor has nothing to scroll to on a canvas), and pressing the source
-    // button. Each holds the map until its destination is ready rather than
-    // dropping it and laying out the reading view in between.
+    // Opening a file from the pane while the map is up must not snap back to the reading view: picking what to look at is not picking how. Only a gesture that *means* "leave the map" closes it: a node click, a search hit (whose anchor has nothing to scroll to on a canvas), and pressing the source button. Each holds the map until its destination is ready rather than dropping it and laying out the reading view in between.
     assert!(html.contains("let graphExitPending = false;"));
     let exits = html.matches("graphExitPending = true;").count();
     assert_eq!(
@@ -307,9 +273,7 @@ fn changing_document_does_not_change_which_view_you_are_in() {
         "expected the node click, the search hit and the source button to leave the map, found {exits}"
     );
     assert!(html.contains("if (graphExitPending) {"));
-    // And nothing else may reach for the door, bar the one state where there is
-    // nothing left to map: the home screen. Leaving a vault is not such a state —
-    // the open document answers for the map instead of the map closing.
+    // And nothing else may reach for the door, bar the one state where there is nothing left to map: the home screen. Leaving a vault is not such a state — the open document answers for the map instead of the map closing.
     let closes = html.matches("closeGraphView();").count();
     assert_eq!(
         closes, 3,
@@ -320,8 +284,7 @@ fn changing_document_does_not_change_which_view_you_are_in() {
     // No document, no views."
     ));
 
-    // The same rule for source: a document opened while reading source opens in
-    // source, decided host-side so the reading view never flashes on the way.
+    // The same rule for source: a document opened while reading source opens in source, decided host-side so the reading view never flashes on the way.
     assert!(html.contains("window.leafSetWorkspace = (state) => {"));
 }
 
@@ -329,11 +292,7 @@ fn changing_document_does_not_change_which_view_you_are_in() {
 fn the_map_waits_with_the_same_spinner_a_slow_document_does() {
     let html = app_shell_page();
 
-    // A line of text in the corner reads as a result, not a wait. The overlay is
-    // shared with the reader, so it tracks who raised it: a document rendering
-    // behind a map that is *staying* must not throw a spinner over it, and must
-    // not take down the one the map is waiting on. Leaving the map is the
-    // exception — see `leaving_the_map_for_a_document_shows_the_spinner`.
+    // A line of text in the corner reads as a result, not a wait. The overlay is shared with the reader, so it tracks who raised it: a document rendering behind a map that is *staying* must not throw a spinner over it, and must not take down the one the map is waiting on. Leaving the map is the exception — see `leaving_the_map_for_a_document_shows_the_spinner`.
     assert!(html.contains("beginReaderLoading('graph');"));
     assert!(html.contains("if (graphViewOpen && !graphExitPending && !forGraph) return;"));
     assert!(html.contains("if (readerLoadingOwner === 'graph' && owner !== 'graph') return;"));
@@ -346,20 +305,16 @@ fn the_map_waits_with_the_same_spinner_a_slow_document_does() {
 fn the_map_opens_framing_everything_and_then_leaves_the_view_alone() {
     let html = app_shell_page();
 
-    // A view parked at 1:1 on an arbitrary center cannot answer the first thing
-    // a map is asked: how much is there. Two documents sit lost in the middle of
-    // an empty field. So it fits, clamped to the zoom limits the wheel obeys.
+    // A view parked at 1:1 on an arbitrary center cannot answer the first thing a map is asked: how much is there. Two documents sit lost in the middle of an empty field. So it fits, clamped to the zoom limits the wheel obeys.
     assert!(html.contains("function fitGraphToView(scene, follow)"));
     assert!(html.contains("autoFit: carried ? carried.autoFit : true,"));
-    // While it settles the camera follows only what leaves the frame. A force
-    // layout breathes, and refitting on every tick puts that pumping on screen.
+    // While it settles the camera follows only what leaves the frame. A force layout breathes, and refitting on every tick puts that pumping on screen.
     assert!(html.contains("if (scene.autoFit) fitGraphToView(scene, true);"));
     assert!(
         html.contains("if (follow && graphBoundsInView(scene, minX, minY, maxX, maxY)) return;")
     );
     assert!(html.contains("Math.min(availableX / spanX, availableY / spanY)"));
-    // Four gestures take the view, and it is not given back: pan, wheel, drag,
-    // and a flight to one node.
+    // Four gestures take the view, and it is not given back: pan, wheel, drag, and a flight to one node.
     let releases = html.matches("scene.autoFit = false;").count();
     assert_eq!(
         releases, 4,
@@ -371,26 +326,19 @@ fn the_map_opens_framing_everything_and_then_leaves_the_view_alone() {
 fn a_redraw_of_the_same_map_is_not_a_redraw() {
     let html = app_shell_page();
 
-    // The host redraws the graph for any change to the vault's text, so the page
-    // is handed the same picture over and over while someone reads it. Tearing
-    // the scene down for one of those is a WebGL context thrown away, a layout
-    // restarted, and a camera reset -- the map visibly bouncing for a change that
-    // was not one. So a payload is identified by what it draws and compared.
+    // The host redraws the graph for any change to the vault's text, so the page is handed the same picture over and over while someone reads it. Tearing the scene down for one of those is a WebGL context thrown away, a layout restarted, and a camera reset -- the map visibly bouncing for a change that was not one. So a payload is identified by what it draws and compared.
     assert!(html.contains("function graphSignature(data)"));
     assert!(html
         .contains("if (graphScene && graphScene.signature === graphSignature(graphData)) return;"));
     assert!(html.contains("signature: graphSignature(data),"));
 
-    // A real change still rebuilds, but inherits the layout: every node keeps its
-    // place, the simulation starts warm rather than laying the vault out again,
-    // and a framing the reader chose survives.
+    // A real change still rebuilds, but inherits the layout: every node keeps its place, the simulation starts warm rather than laying the vault out again, and a framing the reader chose survives.
     assert!(html.contains("function carryGraphLayout(scene)"));
     assert!(html.contains("const carried = graphScene ? carryGraphLayout(graphScene) : null;"));
     assert!(html.contains("if (seat) { node.x = seat.x; node.y = seat.y; }"));
     assert!(html.contains("if (carried && carried.positions.size) sim.alpha(GRAPH_WARM_ALPHA);"));
 
-    // And a burst of writes -- a sync, a checkout, several saves -- builds once,
-    // at the end, instead of once per delivery.
+    // And a burst of writes -- a sync, a checkout, several saves -- builds once, at the end, instead of once per delivery.
     assert!(html.contains("const GRAPH_REBUILD_COALESCE_MS = "));
     assert!(html.contains("if (graphRebuildTimer) clearTimeout(graphRebuildTimer);"));
     // Except the first, which is what the reader is actually waiting for.
@@ -401,9 +349,7 @@ fn a_redraw_of_the_same_map_is_not_a_redraw() {
 fn only_a_document_that_moved_redraws_the_map() {
     let source = include_str!("../app/vaults.rs");
 
-    // A vault is a folder someone works in: the watcher reports `.git` writing an
-    // index, a saved image, a temp file coming and going. None of them can change
-    // the corpus, so none of them may reach the page as a fresh graph.
+    // A vault is a folder someone works in: the watcher reports `.git` writing an index, a saved image, a temp file coming and going. None of them can change the corpus, so none of them may reach the page as a fresh graph.
     let patch = source
         .find("fn patch_vault_corpus(")
         .expect("the watcher patches the corpus a file at a time");
@@ -419,8 +365,7 @@ fn only_a_document_that_moved_redraws_the_map() {
         "the cheap check has to come before the clone make_mut may pay for"
     );
 
-    // And the answer it gives gates the redraw: the vault's text is a cache, so
-    // "nothing moved" means the map on screen cannot have changed.
+    // And the answer it gives gates the redraw: the vault's text is a cache, so "nothing moved" means the map on screen cannot have changed.
     let refresh = source
         .find("pub(crate) fn refresh_corpus_path(")
         .expect("the watcher hands the changed path here");
@@ -433,9 +378,7 @@ fn only_a_document_that_moved_redraws_the_map() {
         body.contains("state.corpus.clone().filter(|_| corpus_moved)"),
         "a refresh that changed nothing must not reach the vault graph rebuild"
     );
-    // A document's own map has no cache to compare against, so it cannot answer
-    // that question — but it still refuses to redraw for a path that is not a
-    // document at all, which is most of what the watcher reports.
+    // A document's own map has no cache to compare against, so it cannot answer that question — but it still refuses to redraw for a path that is not a document at all, which is most of what the watcher reports.
     assert!(
         body.contains("if !crate::is_supported_document_path(changed) {"),
         "a document map must not rebuild for a path that is not a document"
@@ -446,10 +389,7 @@ fn only_a_document_that_moved_redraws_the_map() {
 fn saving_the_document_you_are_reading_still_updates_the_sync_count() {
     let source = include_str!("../app/event_loop.rs");
 
-    // A change to the open document takes the live-reload branch; a change to
-    // anything else takes the other one. A status refresh in only the second
-    // leaves the commonest edit there is -- saving the file you are looking at --
-    // with the header's count stale until something else happens to move.
+    // A change to the open document takes the live-reload branch; a change to anything else takes the other one. A status refresh in only the second leaves the commonest edit there is -- saving the file you are looking at -- with the header's count stale until something else happens to move.
     let refresh = source
         .find("refresh_vault_status(&vault_state, &proxy, vault_state.active);")
         .expect("the watcher refreshes the vault's status");
@@ -461,11 +401,7 @@ fn saving_the_document_you_are_reading_still_updates_the_sync_count() {
         "the status refresh must run before the branch, or it only fires for          files you are not editing"
     );
 
-    // And nothing between the event and the refresh. A containment check here
-    // discards every event: the watcher reports paths under what it watched, and
-    // that is canonicalised — a `\?\` verbatim prefix on Windows, which does not
-    // share a component with the plain `C:\…` the vault registry holds. One
-    // `git status` off the loop is cheaper than being wrong.
+    // And nothing between the event and the refresh. A containment check here discards every event: the watcher reports paths under what it watched, and that is canonicalised — a `\?\` verbatim prefix on Windows, which does not share a component with the plain `C:\…` the vault registry holds. One `git status` off the loop is cheaper than being wrong.
     assert!(!source.contains("changed.starts_with(root)"));
 }
 
@@ -474,8 +410,7 @@ fn one_growl_serves_every_thing_worth_saying_in_passing() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // One growl for both tones, rather than a second thing in the same corner
-    // doing the same job.
+    // One growl for both tones, rather than a second thing in the same corner doing the same job.
     assert!(html.contains("function leafToast(message, tone) {"));
     assert!(html.contains("window.leafShowError = (message) => leafToast(message, 'error');"));
     assert!(!html.contains("error.className = 'app-error';"));
@@ -484,12 +419,10 @@ fn one_growl_serves_every_thing_worth_saying_in_passing() {
 
     // One slot, replaced. A stack is a thing that then needs managing.
     assert!(html.contains("document.querySelector('.app-toast')"));
-    // A failure holds longer than a success: one is read at a glance and never
-    // again, the other has to be finished and acted on.
+    // A failure holds longer than a success: one is read at a glance and never again, the other has to be finished and acted on.
     assert!(html.contains("const TOAST_MS = 5000;"));
     assert!(html.contains("const TOAST_ERROR_MS = 8000;"));
-    // It rises into place; something that simply appears in a corner has been
-    // half-missed by the time the eye arrives.
+    // It rises into place; something that simply appears in a corner has been half-missed by the time the eye arrives.
     assert!(css.contains(".app-toast.is-shown {"));
     assert!(css.contains("@media (prefers-reduced-motion: reduce) {"));
 }
@@ -499,9 +432,7 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // Two clicks down a settings panel is where a control goes to be forgotten.
-    // This one lives at the end of the vault's crumb row, and only exists while
-    // there is something to press it for.
+    // Two clicks down a settings panel is where a control goes to be forgotten. This one lives at the end of the vault's crumb row, and only exists while there is something to press it for.
     assert!(html.contains(r#"id="librarySyncButton" class="library-sync""#));
     assert!(html.contains("function renderVaultSyncButton()"));
     assert!(html.contains("if (!activeVaultId || (!waiting && !spinning)) {"));
@@ -512,17 +443,11 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
     assert!(html.contains("(repo.changed || 0) + (repo.ahead || 0)"));
     assert!(css.contains(".library-sync.is-busy .lt-icon {"));
 
-    // The count is read off disk, on a path that never asks the network. The
-    // panel's reading is the one that runs `gh auth status`; doing that on every
-    // save would put a token check behind Ctrl+S.
+    // The count is read off disk, on a path that never asks the network. The panel's reading is the one that runs `gh auth status`; doing that on every save would put a token check behind Ctrl+S.
     assert!(html.contains("send({ command: 'getVaultStatus', id: activeVaultId });"));
     assert!(html.contains("window.leafSetVaultStatus = (id, repo) => {"));
 
-    // There are two ways the page learns which vault is active and they share no
-    // path: a switch mid-session comes through `leafSetVaults`, but a cold launch
-    // never calls that -- the list is already on the window as `__leafVaults` and
-    // read straight out of it. Asking from only one of them is a button that
-    // works all session and is missing every time the app starts.
+    // There are two ways the page learns which vault is active and they share no path: a switch mid-session comes through `leafSetVaults`, but a cold launch never calls that -- the list is already on the window as `__leafVaults` and read straight out of it. Asking from only one of them is a button that works all session and is missing every time the app starts.
     assert!(html.contains("function requestActiveVaultStatus() {"));
     assert_eq!(
         html.matches("requestActiveVaultStatus();").count(),
@@ -537,31 +462,24 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
         "the bootstrap has to ask too, or a cold launch never does"
     );
 
-    // A push that finishes in a tenth of a second still has to look like work,
-    // and whatever happened has to reach you whether or not the panel is open --
-    // a sync started from here must not fail silently with the panel shut.
+    // A push that finishes in a tenth of a second still has to look like work, and whatever happened has to reach you whether or not the panel is open -- a sync started from here must not fail silently with the panel shut.
     assert!(html.contains("const SYNC_MIN_SPIN_MS = 700;"));
     assert!(html.contains("syncSpinUntil = performance.now() + SYNC_MIN_SPIN_MS;"));
     assert!(html.contains("librarySyncButton.classList.toggle('is-busy', spinning);"));
 
-    // Once it turns it does not stop until the answer is in. Anything else
-    // redrawing the button mid-push -- a watcher tick is enough -- ends the turn,
-    // and a spinner that pauses reads as a failure at the one moment it must not.
-    // Only a finished job releases it.
+    // Once it turns it does not stop until the answer is in. Anything else redrawing the button mid-push -- a watcher tick is enough -- ends the turn, and a spinner that pauses reads as a failure at the one moment it must not. Only a finished job releases it.
     assert!(html.contains("let syncInFlight = false;"));
     assert!(html.contains("    syncInFlight = true;"));
     assert!(
         html.contains("const spinning = syncInFlight || Boolean(state && state.busy) || held > 0;")
     );
     assert!(html.contains("  if (!state.busy) syncInFlight = false;"));
-    // A watcher tick carries the folder's state and nothing about the job, so it
-    // must not claim the job is over.
+    // A watcher tick carries the folder's state and nothing about the job, so it must not claim the job is over.
     assert!(!html.contains("{ repo, busy: false }"));
     // And it leaves still turning, rather than blinking out mid-thought.
     assert!(html.contains("librarySyncButton.classList.add('is-leaving');"));
     assert!(css.contains(".library-sync.is-leaving {"));
-    // An <svg> takes its transform origin from its own box, so a spin that does
-    // not say so orbits the corner instead of turning.
+    // An <svg> takes its transform origin from its own box, so a spin that does not say so orbits the corner instead of turning.
     assert!(css.contains("  transform-origin: 50% 50%;"));
     assert!(html.contains("leafToast(syncOutcomeText(state), state.error ? 'error' : 'ok');"));
     // Reading the folder carries no message, so opening the panel is silent.
@@ -579,39 +497,29 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
 fn a_vault_that_reaches_github_wears_a_cloud() {
     let html = app_shell_page();
 
-    // Where a box says "a collection, here", a cloud says "and somewhere else as
-    // well" -- which is the whole of what syncing buys, and the one thing worth
-    // knowing at a glance about a vault you are not currently in.
+    // Where a box says "a collection, here", a cloud says "and somewhere else as well" -- which is the whole of what syncing buys, and the one thing worth knowing at a glance about a vault you are not currently in.
     assert_icon(&html, "cloud");
     assert!(html.contains("const CLOUD_ICON_SVG = `"));
     assert!(html.contains("function vaultGlyph(current, id) {"));
     assert!(html.contains("  if (vaultSyncs(id)) return CLOUD_ICON_SVG;"));
 
-    // A repository with no remote is a pile of commits on one disk, which is not
-    // what a cloud promises.
+    // A repository with no remote is a pile of commits on one disk, which is not what a cloud promises.
     assert!(html.contains("return Boolean(repo && repo.atRoot && repo.remote);"));
 
-    // One cloud, not an open and a closed one: open/closed says which vault you
-    // are standing in, and a cloud is about where the thing lives. The tick still
-    // marks the current row.
+    // One cloud, not an open and a closed one: open/closed says which vault you are standing in, and a cloud is about where the thing lives. The tick still marks the current row.
     assert_eq!(html.matches("CLOUD_ICON_SVG;").count(), 1);
     assert!(html.contains("return current ? PACKAGE_OPEN_ICON_SVG : PACKAGE_ICON_SVG;"));
 
-    // The menu is where vaults are compared, so every one of them is asked about
-    // -- not only the one in use. Cached, so it costs once per vault.
+    // The menu is where vaults are compared, so every one of them is asked about -- not only the one in use. Cached, so it costs once per vault.
     assert!(html.contains("function requestKnownVaultStatuses() {"));
     assert!(html.contains(
         "if (!vaultGitByVault.has(vault.id)) send({ command: 'getVaultStatus', id: vault.id });"
     ));
 
-    // And the switcher button wears the mark of the vault it stands for; only
-    // the glyph is replaced, the caret beside it is ours.
+    // And the switcher button wears the mark of the vault it stands for; only the glyph is replaced, the caret beside it is ours.
     assert!(html.contains("setVaultGlyph(libraryVaultSwitch, vaultGlyph(true, activeVaultId));"));
 
-    // An icon is a name on a masked span, never a drawing. Both swaps went
-    // looking for an `svg`, found nothing, and left every vault wearing a box
-    // however far its repository reached -- so both go through one helper now,
-    // and that helper looks for the span.
+    // An icon is a name on a masked span, never a drawing. Both swaps went looking for an `svg`, found nothing, and left every vault wearing a box however far its repository reached -- so both go through one helper now, and that helper looks for the span.
     assert!(html.contains("const glyph = host && host.querySelector('.lt-icon');"));
     assert_eq!(html.matches("setVaultGlyph(").count(), 3);
 }
@@ -620,11 +528,7 @@ fn a_vault_that_reaches_github_wears_a_cloud() {
 fn rebuilding_the_breadcrumb_leaves_the_vault_switcher_open() {
     let html = app_shell_page();
 
-    // Opening the switcher asks every vault about its repository. On a vault that
-    // is one, git touches the folder, the watcher reports it, and the library
-    // re-renders -- so a crumb rebuild that closed any open menu closed the one
-    // that had just asked the question, and the switcher could not be opened at
-    // all beside a GitHub vault. Only a menu hanging off the trail dies with it.
+    // Opening the switcher asks every vault about its repository. On a vault that is one, git touches the folder, the watcher reports it, and the library re-renders -- so a crumb rebuild that closed any open menu closed the one that had just asked the question, and the switcher could not be opened at all beside a GitHub vault. Only a menu hanging off the trail dies with it.
     assert!(html.contains(
         "if (crumbMenuOwner && libraryCrumbTrail.contains(crumbMenuOwner)) hideCrumbMenu();"
     ));
@@ -648,21 +552,18 @@ fn a_vault_can_be_put_on_github_from_its_own_settings() {
     // Git is the one hard requirement, and it is named rather than assumed.
     assert!(html.contains("if (!state.tooling.git) {"));
     assert!(html.contains("https://git-scm.com/downloads"));
-    // Without gh the browser does the authenticated half and hands back a URL,
-    // so nothing here ever holds a token.
+    // Without gh the browser does the authenticated half and hands back a URL, so nothing here ever holds a token.
     assert!(html.contains("if (state.tooling.gh) {"));
     assert!(html.contains("https://github.com/new?name="));
     assert!(html.contains("visibility=private"));
     assert!(!html.contains("ghp_"));
     assert!(!html.contains("Authorization"));
 
-    // The two things git needs that only bite at commit or push time, which is
-    // too late to be told about them.
+    // The two things git needs that only bite at commit or push time, which is too late to be told about them.
     assert!(html.contains("if (!state.tooling.identity) {"));
     assert!(html.contains("if (!state.tooling.credentialHelper) {"));
 
-    // A repo one folder down is reported, not silently swallowed, and a vault
-    // inside someone else's repo is told that is what it is.
+    // A repo one folder down is reported, not silently swallowed, and a vault inside someone else's repo is told that is what it is.
     assert!(html.contains("Already repositories, and left alone:"));
     assert!(html.contains("A repository here is separate from it."));
 
@@ -689,18 +590,12 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // Not a checkbox buried in Settings: the bar carries it, in a recess beside
-    // the view buttons, so the answer to "can I type here" is where the typing
-    // is. Nothing of the old Settings switch is left.
+    // Not a checkbox buried in Settings: the bar carries it, in a recess beside the view buttons, so the answer to "can I type here" is where the typing is. Nothing of the old Settings switch is left.
     assert!(!html.contains("readerEditingEnabled"));
     assert!(!html.contains("settings.readerEditing"));
     assert!(!html.contains("setReaderEditingEnabled"));
 
-    // One recess, whose contents follow the view you are in. The padlock stands
-    // in both editable views because it is one switch for both; the speed reader
-    // belongs to the reading view and the wand to the source view. The map's one
-    // setting is how big a graph to draw, so the recess stands there too — with
-    // the dropdown in it and none of the three buttons.
+    // One recess, whose contents follow the view you are in. The padlock stands in both editable views because it is one switch for both; the speed reader belongs to the reading view and the wand to the source view. The map's one setting is how big a graph to draw, so the recess stands there too — with the dropdown in it and none of the three buttons.
     assert!(html.contains(r#"id="readerViewTools" class="reader-view-tools""#));
     assert!(html.contains(r#"<label class="reader-subselect" id="graphScopeTool" hidden>"#));
     assert!(html.contains(r#"id="readerLockButton" class="reader-subtool""#));
@@ -710,8 +605,7 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert!(html.contains("const onGraph = current === 'graph';"));
     assert!(html.contains("readerViewTools.hidden = !editable && !onGraph;"));
     assert!(html.contains("graphScopeTool.hidden = !onGraph;"));
-    // Four named sizes, read rather than clicked through, and the help sentence
-    // the panel spelled out is the dropdown's tooltip now.
+    // Four named sizes, read rather than clicked through, and the help sentence the panel spelled out is the dropdown's tooltip now.
     assert!(html.contains(r#"<option value="small">Focus</option>"#));
     assert!(html.contains(r#"<option value="xl">Everything</option>"#));
     assert!(html.contains(r#"title="How many documents the graph view draws. Smaller is faster.""#));
@@ -726,13 +620,9 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert!(css.contains(".reader-view-tools {"));
     assert!(css.contains("  box-shadow: var(--lt-shadow-inset);"));
     assert!(css.contains(".reader-view-tools[hidden] {"));
-    // Both the recess and the buttons in it set a display of their own, which
-    // beats the browser's rule for [hidden] unless it is restated.
+    // Both the recess and the buttons in it set a display of their own, which beats the browser's rule for [hidden] unless it is restated.
     assert!(css.contains(".reader-subtool[hidden] {"));
-    // Never blue: the blue chip is how the bar says which view you are in, and a
-    // setting inside a view must not wear the same badge. It is lit instead --
-    // a fill pushed off the page color, in a hairline frame, so which tools are
-    // on is answered without reading the glyphs.
+    // Never blue: the blue chip is how the bar says which view you are in, and a setting inside a view must not wear the same badge. It is lit instead -- a fill pushed off the page color, in a hairline frame, so which tools are on is answered without reading the glyphs.
     assert!(!html.contains("readerLockButton.classList.toggle('is-active'"));
     assert!(!css.contains(".reader-subtool.is-active"));
     assert!(css.contains(".reader-subtool[aria-pressed=\"true\"],\n"));
@@ -740,9 +630,7 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
         "  background: color-mix(in srgb, var(--lt-background) 88%, var(--lt-foreground));\n  box-shadow: var(--lt-shadow-edge-strong);"
     ));
 
-    // Two padlocks, both locked until you say otherwise, each a saved setting
-    // rather than an answer you give again on every file you open. Unlocking the
-    // page you read must not also hand over the file's own text.
+    // Two padlocks, both locked until you say otherwise, each a saved setting rather than an answer you give again on every file you open. Unlocking the page you read must not also hand over the file's own text.
     assert!(html.contains("let readingUnlocked = LEAF_SETTINGS.readingUnlocked === true;"));
     assert!(html.contains("let codeUnlocked = LEAF_SETTINGS.codeUnlocked === true;"));
     assert!(html.contains("  return readingUnlocked;"));
@@ -752,14 +640,10 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     // One button, holding whichever one the view you are in belongs to.
     assert!(html.contains("    if (codeViewActive) setCodeUnlocked(!codeUnlocked);\n    else setReadingUnlocked(!readingUnlocked);"));
     assert!(html.contains("onCodeView ? codeUnlocked : readingUnlocked,"));
-    // Flipping the page's commits whatever block was mid-edit rather than
-    // dropping it; the source's is an option, because rebuilding the editor
-    // would throw away the undo stack and the place in the file.
+    // Flipping the page's commits whatever block was mid-edit rather than dropping it; the source's is an option, because rebuilding the editor would throw away the undo stack and the place in the file.
     assert!(html.contains("function setReadingUnlocked(unlocked)"));
     assert!(html.contains("  commitActiveEditingBlock();\n  readingUnlocked = next;"));
-    // And the page stays where the reader left it. The same words are on screen
-    // either way, so the rebuild that binds the blocks must not double as a jump
-    // to the top — renderState() alone replaces the body and the scroll with it.
+    // And the page stays where the reader left it. The same words are on screen either way, so the rebuild that binds the blocks must not double as a jump to the top — renderState() alone replaces the body and the scroll with it.
     assert!(html.contains(
         "  send({ command: 'setReadingUnlocked', enabled: readingUnlocked });\n  renderStateKeepingPlace();"
     ));
@@ -773,23 +657,19 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
         "leafToast('The source is locked. Click the padlock in the toolbar to edit it.');"
     ));
 
-    // Both glyphs ship, and the pressed state picks which one shows — swapping
-    // innerHTML would rebuild the icon under the pointer on every render.
+    // Both glyphs ship, and the pressed state picks which one shows — swapping innerHTML would rebuild the icon under the pointer on every render.
     for icon in ["lock-closed", "lock-open"] {
         assert_icon(&html, icon);
     }
     assert!(css.contains(".reader-subtool .reader-glyph-on,"));
     assert!(css.contains(".reader-subtool[aria-pressed=\"true\"] .reader-glyph-off {"));
     assert!(css.contains(".reader-subtool[aria-pressed=\"true\"] .reader-glyph-on {"));
-    // The glyph shown is the state you are in, not the one a click would take you
-    // to, so pressed (unlocked, or the speed reader running) shows the on glyph.
+    // The glyph shown is the state you are in, not the one a click would take you to, so pressed (unlocked, or the speed reader running) shows the on glyph.
     assert!(html.contains("      viewLockTooltip(onCodeView)\n"));
     assert!(html.contains("setSubtoolState(speedReaderButton, speedReaderEnabled,"));
     assert!(html.contains("button.setAttribute('aria-pressed', String(on));"));
 
-    // The speed reader stays one preference for the whole app -- a way of
-    // reading, not a property of a document -- driven from the reading toolbar's
-    // own control alone.
+    // The speed reader stays one preference for the whole app -- a way of reading, not a property of a document -- driven from the reading toolbar's own control alone.
     for icon in ["speed-reader-on", "speed-reader-off"] {
         assert_icon(&html, icon);
     }
@@ -797,8 +677,7 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
         html.contains("send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });")
     );
 
-    // The tooltip names which padlock this is, or one button standing for two
-    // switches would say the same thing whichever one it is holding.
+    // The tooltip names which padlock this is, or one button standing for two switches would say the same thing whichever one it is holding.
     for wording in [
         "'The page is unlocked. Click to lock it for reading.'",
         "'The page is locked. Click to unlock and edit it here.'",
@@ -816,9 +695,7 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // On the page, in the reader's own cell — not in a 240px sidebar where its
-    // labels cannot be read and clicking a node answers somewhere you are not
-    // looking.
+    // On the page, in the reader's own cell — not in a 240px sidebar where its labels cannot be read and clicking a node answers somewhere you are not looking.
     assert!(html.contains(r#"<div id="readerGraph" class="reader-graph""#));
     assert!(html.contains(r#"id="readerGraphCanvas""#));
     assert!(css.contains(".reader-graph {"));
@@ -827,9 +704,7 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     assert!(!html.contains("libraryGraph"));
     assert!(!css.contains(".library-graph"));
 
-    // Toggled from the floating bar under the page, alongside reading and the
-    // source: three ways of showing the same thing, so they are one group and
-    // exactly one of them is pressed.
+    // Toggled from the floating bar under the page, alongside reading and the source: three ways of showing the same thing, so they are one group and exactly one of them is pressed.
     assert!(html.contains(r#"<div id="readerToolbar" class="reader-toolbar" role="toolbar""#));
     assert!(html.contains(r#"id="viewReadingButton" class="reader-tool" data-view="reading""#));
     assert!(html.contains(r#"id="viewCodeButton" class="reader-tool" data-view="code""#));
@@ -841,8 +716,7 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
         "const current = graphViewOpen ? 'graph' : codeViewActive ? 'code' : 'reading';"
     ));
     assert!(css.contains(".reader-tool.is-active,"));
-    // It floats over the page rather than scrolling with it: placed by the grid
-    // in the reader's own cell, not parented to the scroller.
+    // It floats over the page rather than scrolling with it: placed by the grid in the reader's own cell, not parented to the scroller.
     assert!(css.contains(".reader-toolbar {"));
     assert!(css.contains("  align-self: end;"));
     // Save and undo sit in the same bar; none of the four is up in the app bar.
@@ -851,21 +725,17 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     assert!(!html.contains("graphViewButton"));
     assert!(!html.contains("codeViewButton"));
     assert!(!html.contains(r#"class="save-button""#));
-    // With the bar up, all three are enterable — there is no dead key, and no
-    // grayed-out state for one to sit in. The map is of the open document, and the
-    // bar is only up when there is one.
+    // With the bar up, all three are enterable — there is no dead key, and no grayed-out state for one to sit in. The map is of the open document, and the bar is only up when there is one.
     assert!(!html.contains("button.disabled = unavailable;"));
     assert!(!css.contains(".reader-tool:disabled {"));
     assert!(!html.contains("VIEW_UNAVAILABLE_REASON"));
     assert!(!html.contains("titleEnterable"));
     assert!(!html.contains("Pick a vault"));
-    // No document, no bar. Three views of one thing needs the thing; on the home
-    // screen a toggle would be navigation, which the pane beside it already does.
+    // No document, no bar. Three views of one thing needs the thing; on the home screen a toggle would be navigation, which the pane beside it already does.
     assert!(html.contains("readerToolbar.hidden = !hasDocument;"));
     assert!(html.contains("  if (!hasDocument) return;"));
 
-    // One flag for the window, not a mode each tab remembers, and the host is
-    // told so a file changing on disk knows whether a map is on screen.
+    // One flag for the window, not a mode each tab remembers, and the host is told so a file changing on disk knows whether a map is on screen.
     assert!(html.contains("let graphViewOpen = false;"));
     assert!(html.contains("send({ command: 'setGraphView', open: graphViewOpen });"));
     assert!(!html.contains("LIBRARY_VIEWS"));
@@ -874,8 +744,7 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     assert!(html.contains("function closeGraphView()"));
     assert!(html.contains("closeGraphView();"));
 
-    // PixiJS + d3-force still load lazily from the bundled-asset protocol, whose
-    // URLs are injected on window.__lt rather than written into the fragment.
+    // PixiJS + d3-force still load lazily from the bundled-asset protocol, whose URLs are injected on window.__lt rather than written into the fragment.
     assert!(html.contains("pixi: PIXI_SCRIPT_URL,"));
     assert!(html.contains("d3Force: D3_FORCE_SCRIPT_URL,"));
     assert!(html.contains("pixiUnsafeEval: PIXI_UNSAFE_EVAL_SCRIPT_URL,"));
@@ -885,8 +754,7 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
     assert!(html.contains("window.d3.forceSimulation"));
     assert!(!html.contains("script-src 'self' 'unsafe-inline' 'unsafe-eval'"));
 
-    // Data still flows over the same command and callback, and a node still
-    // opens its document.
+    // Data still flows over the same command and callback, and a node still opens its document.
     assert!(html.contains("send({ command: 'getGraph', scope: graphScope, seeds });"));
     assert!(html.contains("window.leafSetGraph ="));
     assert!(html.contains("send({ command: 'openRecent', path: node.path });"));
@@ -907,27 +775,18 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
 fn the_graph_needs_a_document_and_never_a_vault() {
     let html = app_shell_page();
 
-    // What the map is of is the open document, so that — and only that — is what
-    // entering it requires. No vault appears in this test: a document outside every
-    // vault still links to things, and those links are written in the document
-    // itself.
+    // What the map is of is the open document, so that — and only that — is what entering it requires. No vault appears in this test: a document outside every vault still links to things, and those links are written in the document itself.
     assert!(html.contains("const next = Boolean(open) && Boolean(activeDocumentPath());"));
     assert!(!html.contains("graphHasBoundedRoot"));
 
-    // And nothing refuses on the way in: showGraph asks, and the host always
-    // answers, vault or no vault.
+    // And nothing refuses on the way in: showGraph asks, and the host always answers, vault or no vault.
     assert!(html.contains("function showGraph() {\n  graphActivePath = activeDocumentPath();\n  if (!graphRequested) {"));
 
-    // Leaving a vault re-reads the map rather than closing it: closing here is what
-    // throws the reader out of the graph on opening a file from outside their vault.
+    // Leaving a vault re-reads the map rather than closing it: closing here is what throws the reader out of the graph on opening a file from outside their vault.
     assert!(html.contains("refreshGraphForScope();"));
     assert!(!html.contains("if (!graphHasBoundedRoot()) closeGraphView();"));
 
-    // And going to another document refetches at every size when the map is of a
-    // document rather than a vault: the picture itself changed, so moving the
-    // highlight inside the old one would leave the reader on a map that need not
-    // even contain the file they are on. A vault's map is the same picture for all
-    // of its documents, so that case still refetches only for Focus.
+    // And going to another document refetches at every size when the map is of a document rather than a vault: the picture itself changed, so moving the highlight inside the old one would leave the reader on a map that need not even contain the file they are on. A vault's map is the same picture for all of its documents, so that case still refetches only for Focus.
     assert!(html.contains(
         "const seedChanged =\n    (graphScope === 'small' || !activeVaultId) &&\n    graphScope + '|' + graphSeeds().join('\\n') !== graphSeedKey;"
     ));
@@ -938,38 +797,30 @@ fn a_web_address_is_a_node_drawn_as_a_ring_and_opened_in_the_browser() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // A ring rather than a disc, so it reads as "not one of your files" before you
-    // have read the domain under it.
+    // A ring rather than a disc, so it reads as "not one of your files" before you have read the domain under it.
     assert!(html.contains("if (node.external) {"));
     assert!(html.contains(
         "gfx.circle(0, 0, radius).stroke({ width: 1.5, color: 0xffffff, alignment: 0.5 });"
     ));
-    // With a dot at the middle for the edge to end behind: edges draw under the
-    // nodes, so a bare ring lets the line run through the hollow and stop in mid-air.
+    // With a dot at the middle for the edge to end behind: edges draw under the nodes, so a bare ring lets the line run through the hollow and stop in mid-air.
     assert!(html.contains("gfx.circle(0, 0, Math.max(1.6, radius * 0.36)).fill(0xffffff);"));
     assert!(css.contains("radial-gradient(circle at center, var(--lt-border) 1.6px"));
 
-    // An edge points the way the link was written; a pair that links each other gets
-    // one line with a head at both ends. Heads drop on a dense map and at a far
-    // zoom, where they are ink per frame and nothing else.
+    // An edge points the way the link was written; a pair that links each other gets one line with a head at both ends. Heads drop on a dense map and at a far zoom, where they are ink per frame and nothing else.
     assert!(html.contains("drawGraphArrow(scene, t, s, color, alpha);"));
     assert!(html.contains("if (link.mutual) drawGraphArrow(scene, s, t, color, alpha);"));
     assert!(html.contains("mutual: !!e.mutual }));"));
     assert!(html.contains(
         "scene.nodes.length <= GRAPH_ARROW_MAX_NODES && scene.world.scale.x >= GRAPH_ARROW_MIN_ZOOM;"
     ));
-    // Backed off by the target's radius *and* its scale, or the head hides under the
-    // active node — the one node whose incoming links you most want to read.
+    // Backed off by the target's radius *and* its scale, or the head hides under the active node — the one node whose incoming links you most want to read.
     assert!(html
         .contains("const clear = graphNodeRadius(at.degree) * (at.gfx ? at.gfx.scale.x : 1) + 1;"));
-    // And its own resting tint, quieter than a document's, so the documents are
-    // still what the eye lands on.
+    // And its own resting tint, quieter than a document's, so the documents are still what the eye lands on.
     assert!(html.contains("external: cssVarColor('--lt-border', 0x3a3f4b),"));
     assert!(html.contains("let color = node.external ? colors.external : colors.node;"));
 
-    // Clicking one opens the browser and leaves the map exactly as it is. Nothing
-    // replaced the page, so exiting the view would throw away the picture the
-    // reader is working through.
+    // Clicking one opens the browser and leaves the map exactly as it is. Nothing replaced the page, so exiting the view would throw away the picture the reader is working through.
     assert!(html.contains("send({ command: 'openExternal', url: node.path });"));
     assert!(html.contains("if (!moved && node.external) {"));
     // A document still leaves the map, and still holds it until the document lands.
@@ -977,8 +828,7 @@ fn a_web_address_is_a_node_drawn_as_a_ring_and_opened_in_the_browser() {
         "graphExitPending = true;\n        send({ command: 'openRecent', path: node.path });"
     ));
 
-    // The key shows up only when there are two kinds of node to tell apart, and
-    // vanishes with the scene.
+    // The key shows up only when there are two kinds of node to tell apart, and vanishes with the scene.
     assert!(html.contains(r#"<p id="readerGraphLegend" class="reader-graph-legend" hidden>"#));
     assert!(html.contains("setGraphLegend(data.nodes.some((node) => node.external));"));
     assert!(html.contains("function teardownGraphScene() {\n  setGraphLegend(false);"));
@@ -999,22 +849,17 @@ fn library_follows_and_highlights_the_active_file() {
     assert!(html.contains(r#"class="library-file${selected}""#));
     assert!(css.contains(".library-file.is-selected,"));
 
-    // Reveal is the host's call: only it knows the vaults, so going to a file
-    // switches to the vault that owns it and opens the folder holding it.
+    // Reveal is the host's call: only it knows the vaults, so going to a file switches to the vault that owns it and opens the folder holding it.
     assert!(html.contains("send({ command: 'revealInLibrary', path: librarySelectedPath });"));
     assert!(html.contains("function revealSelectedInLibrary()"));
     assert!(html.contains("function scrollSelectedLibraryRowIntoView()"));
 
-    // Going to a file (open, switch, click a tab) follows it. Clicking a tab
-    // always flies the graph to that node; opening/switching only does so when
-    // the doc changed. Clicking the tab you are already on forces a graph
-    // rebuild (resync) so a stale scene in memory can't leave the view stuck.
+    // Going to a file (open, switch, click a tab) follows it. Clicking a tab always flies the graph to that node; opening/switching only does so when the doc changed. Clicking the tab you are already on forces a graph rebuild (resync) so a stale scene in memory can't leave the view stuck.
     assert!(html.contains("followFileInLibrary(openedPath,"));
     assert!(html.contains("followFileInLibrary(switchedPath,"));
     assert!(html.contains("followFileInLibrary(tab ? tab.path || null : null, true, wasActive);"));
     assert!(html.contains("const wasActive = index === (currentState && currentState.active);"));
-    // Both views follow the document — the graph's scope is the vault, so a
-    // file from another one moves it too.
+    // Both views follow the document — the graph's scope is the vault, so a file from another one moves it too.
     assert!(html.contains("if (libraryRevealPending) revealSelectedInLibrary();"));
     assert!(!html.contains("if (libraryRevealPending && libraryView !== 'graph'"));
 }
@@ -1031,63 +876,52 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     // The trail arrives with the listing; the page never derives it.
     assert!(html.contains("libraryChain = Array.isArray(next.chain) ? next.chain : [];"));
 
-    // Every crumb but the last walks back out to that folder; the last is where
-    // you are. A deep path elides its middle rather than overflowing the pane.
+    // Every crumb but the last walks back out to that folder; the last is where you are. A deep path elides its middle rather than overflowing the pane.
     assert!(html.contains("setLibraryFolder(crumb.dataset.crumbPath)"));
     assert!(html.contains(r#"class="library-crumb is-current" aria-current="true""#));
-    // How much of the path shows is measured against the band, so widening the
-    // pane reveals more crumbs; a resize refits.
+    // How much of the path shows is measured against the band, so widening the pane reveals more crumbs; a resize refits.
     assert!(html.contains("function fitLibraryCrumbs()"));
     assert!(html.contains("libraryCrumbTrail.classList.add('is-measuring')"));
-    // Every width change asks for the refit outright — a ResizeObserver alone
-    // delivers its first observation in the web view and nothing after, so a
-    // divider drag never re-fits the trail.
+    // Every width change asks for the refit outright — a ResizeObserver alone delivers its first observation in the web view and nothing after, so a divider drag never re-fits the trail.
     assert!(html.contains("document.documentElement.style.setProperty('--library-rail-width', libraryWidth + 'px');\n    // The breadcrumb shows as much of the path as fits, so it refits mid-drag.\n    scheduleCrumbFit();"));
     assert!(html.contains("refitAppBar();\n  // Opening, closing, or re-clamping the pane changes the breadcrumb's room too.\n  scheduleCrumbFit();"));
     assert!(html.contains("window.addEventListener('resize', scheduleCrumbFit);"));
     assert!(html.contains("new ResizeObserver(scheduleCrumbFit)"));
     assert!(css.contains(".library-crumb-trail.is-measuring .library-crumb {"));
-    // What didn't fit hides behind a "…" button that opens a menu of those
-    // folders; picking one enters it.
+    // What didn't fit hides behind a "…" button that opens a menu of those folders; picking one enters it.
     assert!(html.contains("data-crumb-more=\"1\""));
     assert!(html.contains("function showCrumbMenu(button, items)"));
     assert!(html.contains("run: () => setLibraryFolder(segment.path),"));
     assert!(css.contains(".crumb-menu {"));
-    // A fit that would draw the same crumbs at the same width leaves the DOM alone,
-    // or a watcher tick would rebuild the trail under an open "…" menu.
+    // A fit that would draw the same crumbs at the same width leaves the DOM alone, or a watcher tick would rebuild the trail under an open "…" menu.
     assert!(html.contains("function crumbFitKey(segments)"));
     assert!(html.contains("if (key === libraryCrumbFitKey) return;"));
     // Entering a folder is the same move as a crumb, so both go through one path.
     assert!(html.contains(
         "button.addEventListener('click', () => setLibraryFolder(button.dataset.navInto));"
     ));
-    // A folder that has gone missing falls back to the top level. The host
-    // decides that as it reads, so the page never holds a path it cannot show.
+    // A folder that has gone missing falls back to the top level. The host decides that as it reads, so the page never holds a path it cannot show.
 
-    // The two bands share one treatment (the pane's own surface and grain) and
-    // the list starts below both.
+    // The two bands share one treatment (the pane's own surface and grain) and the list starts below both.
     assert!(css.contains(".library-crumbs,\n.library-header {"));
     assert!(css.contains("--library-crumbs-height: 28px;"));
     assert!(css.contains("padding-top: var(--library-chrome-height);"));
     assert!(css.contains("top: calc(var(--library-app-bar) + var(--library-crumbs-height));"));
 
     assert_icon(&html, "graph");
-    // Active, it swaps to the bolder drawing rather than thickening a stroke a mask
-    // does not have.
+    // Active, it swaps to the bolder drawing rather than thickening a stroke a mask does not have.
     assert!(reading_mode_css().contains("--lt-icon-graph-heavy:"));
 }
 
 #[test]
 fn a_vault_row_opens_its_settings_with_the_settings_glyph() {
     let html = app_shell_page();
-    // The same sliders the app's own Settings wears — that panel is this vault's
-    // settings, so it should not be a second, private symbol for the same idea.
+    // The same sliders the app's own Settings wears — that panel is this vault's settings, so it should not be a second, private symbol for the same idea.
     assert_icon(&html, "settings");
     assert!(html
         .contains("const MENU_SETTINGS_SVG = `<span class=\"lt-icon lt-icon-settings\"></span>`;"));
     assert!(html.contains("edit.innerHTML = MENU_SETTINGS_SVG;"));
-    // No placeholder survives in the page: a raw `{{...}}` would be text on screen.
-    // The script's own `{{` is mermaid's hexagon, so the page is what is checked.
+    // No placeholder survives in the page: a raw `{{...}}` would be text on screen. The script's own `{{` is mermaid's hexagon, so the page is what is checked.
     assert!(!app_shell_html().contains("_ICON_SVG}}"));
 }
 
@@ -1096,24 +930,18 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // Its own control, left of the breadcrumb — not the first crumb. A crumb is
-    // a place, and clicking a place has to go there.
+    // Its own control, left of the breadcrumb — not the first crumb. A crumb is a place, and clicking a place has to go there.
     assert!(html
         .contains(r#"<button type="button" id="libraryVaultSwitch" class="library-vault-switch""#));
     assert!(html.contains("toggleCrumbMenu(libraryVaultSwitch, vaultMenuItems());"));
     assert!(css.contains(".library-vault-switch {"));
-    // It wears the same glyph its menu rows do — one file, stamped in by the
-    // host and inlined into the page, so the two cannot drift. A package, not a
-    // folder: a vault is a whole collection, and it has to read as different
-    // from the plain directories listed below it.
+    // It wears the same glyph its menu rows do — one file, stamped in by the host and inlined into the page, so the two cannot drift. A package, not a folder: a vault is a whole collection, and it has to read as different from the plain directories listed below it.
     for icon in ["package-open", "package"] {
         assert_icon(&html, icon);
     }
     assert!(html.contains("const PACKAGE_OPEN_ICON_SVG = `"));
     assert!(html.contains("const PACKAGE_ICON_SVG = `"));
-    // Open is the vault you are in, closed the ones you are not, so the row says
-    // which it is without leaning on the tick alone — until a vault reaches
-    // GitHub, at which point where it lives is the more useful thing to show.
+    // Open is the vault you are in, closed the ones you are not, so the row says which it is without leaning on the tick alone — until a vault reaches GitHub, at which point where it lives is the more useful thing to show.
     assert!(html.contains("const rootIcon = (on, id) => vaultGlyph(on, id);"));
     assert!(html.contains("icon: rootIcon(vault.id === activeVaultId, vault.id),"));
     // The pane still lists directories as directories.
@@ -1123,8 +951,7 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     assert!(html.contains("function renderLibraryVaultSwitch()"));
     assert!(html.contains("const label = `Switch vault (in ${libraryRootLabel()})`;"));
 
-    // The leftmost crumb is a place: it goes to the root, and nothing in the trail
-    // opens a menu.
+    // The leftmost crumb is a place: it goes to the root, and nothing in the trail opens a menu.
     assert!(html.contains("[{ path: '', name: libraryRootLabel() }]"));
     assert!(!html.contains("data-crumb-switcher"));
     assert!(!html.contains("library-crumb-switcher"));
@@ -1160,23 +987,18 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // A visible button on the row, not a right-click: rename, re-point and
-    // remove all live behind it.
+    // A visible button on the row, not a right-click: rename, re-point and remove all live behind it.
     assert!(html.contains("showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));"));
-    // Opening the panel asks about the folder's repository straight away, so the
-    // answer is there by the time anyone has read down to it.
+    // Opening the panel asks about the folder's repository straight away, so the answer is there by the time anyone has read down to it.
     assert!(html.contains("send({ command: 'getVaultGit', id: vault.id });"));
     assert!(html.contains(r#"edit.className = 'crumb-menu-edit';"#));
     assert!(css.contains(".crumb-menu-edit {"));
-    // Pressing it opens that vault's panel rather than switching to the vault --
-    // on the press, so a redraw mid-click cannot swallow it.
+    // Pressing it opens that vault's panel rather than switching to the vault -- on the press, so a redraw mid-click cannot swallow it.
     assert!(html.contains("edit.addEventListener('pointerdown', (event) => {"));
     assert!(html.contains("entry.edit();"));
     // Nothing hangs off a contextmenu handler in the switcher.
     assert!(!html.contains("crumbMenu.addEventListener('contextmenu'"));
-    // Only the crumb-trail buttons toggle the menu shut on a second click. A
-    // click inside it that swaps the rows must not close it — that is the bug
-    // where a row's own button looks like it did nothing.
+    // Only the crumb-trail buttons toggle the menu shut on a second click. A click inside it that swaps the rows must not close it — that is the bug where a row's own button looks like it did nothing.
     assert!(html.contains("function toggleCrumbMenu(button, items)"));
     assert!(html.contains("toggleCrumbMenu(libraryVaultSwitch, vaultMenuItems());"));
     assert!(html.contains("toggleCrumbMenu(more, folderMenuItems(hidden));"));
@@ -1218,8 +1040,7 @@ fn each_vault_row_carries_one_button_for_everything_you_can_do_to_it() {
 fn library_row_context_menu_offers_file_actions() {
     let html = app_shell_page();
 
-    // The right-click menu is built from a list of file actions, ordered with
-    // the destructive delete flagged and set apart.
+    // The right-click menu is built from a list of file actions, ordered with the destructive delete flagged and set apart.
     assert!(html.contains("const CONTEXT_MENU_ITEMS = ["));
     for action in [
         "'open'",
@@ -1250,10 +1071,7 @@ fn library_row_context_menu_offers_file_actions() {
 
 #[test]
 fn leaving_the_map_for_a_document_shows_the_spinner() {
-    // Clicking a node navigates out of the map, and the map deliberately holds
-    // until the document is ready rather than flashing the file you were on. The
-    // wait is a whole document being read, so with the spinner suppressed the map
-    // just sits there looking frozen.
+    // Clicking a node navigates out of the map, and the map deliberately holds until the document is ready rather than flashing the file you were on. The wait is a whole document being read, so with the spinner suppressed the map just sits there looking frozen.
     let html = app_shell_page();
 
     // The gesture arms the exit before the request goes out.
@@ -1264,24 +1082,19 @@ fn leaving_the_map_for_a_document_shows_the_spinner() {
     // So the spinner is only withheld while the map is staying up.
     assert!(html.contains("if (graphViewOpen && !graphExitPending && !forGraph) return;"));
 
-    // And the map stepping aside must not pull down the spinner the document
-    // raised, or the wait comes back as a blink mid-handover.
+    // And the map stepping aside must not pull down the spinner the document raised, or the wait comes back as a blink mid-handover.
     assert!(html.contains("clearReaderLoading('graph');"));
     assert!(html.contains("if (owner === 'graph' && readerLoadingOwner !== 'graph') return;"));
 }
 
 #[test]
 fn going_from_the_map_to_the_source_does_not_lay_out_the_reading_view_on_the_way() {
-    // The map covers the reading view with `hidden`, so revealing it lays out the
-    // whole document — and going map -> source by dropping the map first means
-    // laying out a document only to replace it a moment later, which shows up as
-    // the reading view flashing under a spinner between the two views.
+    // The map covers the reading view with `hidden`, so revealing it lays out the whole document — and going map -> source by dropping the map first means laying out a document only to replace it a moment later, which shows up as the reading view flashing under a spinner between the two views.
     let html = app_shell_page();
 
     // The map is held, exactly as a node click holds it.
     assert!(html.contains("if (graphViewOpen && view === 'code' && !codeViewActive) {"));
-    // ...and dropped by the source render itself, in the same breath as the swap,
-    // so the reading view underneath is replaced rather than revealed.
+    // ...and dropped by the source render itself, in the same breath as the swap, so the reading view underneath is replaced rather than revealed.
     let render = html
         .split("window.leafShowCodeView = (state) => {")
         .nth(1)

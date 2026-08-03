@@ -1,12 +1,17 @@
 #!/usr/bin/env node
-// Markdown holds one paragraph on one line. Nothing that reads these files wants
-// them wrapped — the app's renderer reflows, so does GitHub, so does every editor
+// A paragraph is one line — in Markdown, and in a comment in the code. Nothing that
+// reads either of them wants it wrapped — the app's renderer reflows, so does GitHub, so does every editor
 // — and a hard wrap costs on every edit after it: a word added in the middle
 // re-flows the rest by hand, and the diff of a one-word change is a whole
 // paragraph. So the newline inside a paragraph is noise, and this takes it out.
 //
 //   node scripts/check-wrapping.mjs           fail, naming every file and line
 //   node scripts/check-wrapping.mjs --fix     join them
+//
+// Markdown in this repo and the plan tree next door; comments in this repo's `.rs`,
+// `.js` and `.mjs`. A comment joins only where two lines are both flush prose: a
+// body with an indent of its own is a command, a table or a list, where the shape
+// is the content.
 //
 // What is left alone, because the break is doing something:
 //
@@ -42,7 +47,8 @@ function optedOut(text) {
   return /<!--\s*keep-wrapping\s*-->/i.test(text);
 }
 
-function markdown(dir, base) {
+/// Every file under `dir` whose name ends in one of `suffixes`.
+function walk(dir, suffixes) {
   const out = [];
   let entries;
   try {
@@ -53,8 +59,8 @@ function markdown(dir, base) {
   for (const entry of entries) {
     if (SKIP_DIRS.has(entry.name) || entry.name.startsWith('.git')) continue;
     const full = join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...markdown(full, base));
-    else if (entry.name.endsWith('.md')) out.push(full);
+    if (entry.isDirectory()) out.push(...walk(full, suffixes));
+    else if (suffixes.some((suffix) => entry.name.endsWith(suffix))) out.push(full);
   }
   return out;
 }
@@ -168,6 +174,64 @@ export function unwrap(text) {
   return { text: out.join('\n'), joined };
 }
 
+/// A comment on a line of its own: its indent, its marker, and the prose after it.
+/// A comment sitting after code on the same line is not one — that text is about
+/// the line it is on.
+function commentAt(line) {
+  const found = line.match(/^(\s*)(\/\/\/|\/\/!|\/\/)( ?)(.*)$/);
+  if (!found) return null;
+  return { indent: found[1], marker: found[2], body: found[4] };
+}
+
+/// A run of dashes or stars is a rule somebody drew, not a sentence.
+const RULE = /^[-=*_+~]{3,}/;
+
+/// Join a comment's wrapped prose, in `.rs` and `.js` alike.
+///
+/// Narrower than the Markdown side on purpose: only two flush lines join. A body
+/// with any indent of its own is a shell command, a table, a list continuation or
+/// an example — the shape is the content there, and joining it would destroy it.
+export function unwrapComments(text) {
+  const lines = text.split('\n');
+  const out = [];
+  const joined = [];
+  let fence = false;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const here = commentAt(line);
+    if (here && FENCE.test(here.body.trim())) {
+      fence = !fence;
+      out.push(line);
+      continue;
+    }
+    const previousLine = out[out.length - 1];
+    const previous = previousLine === undefined ? null : commentAt(previousLine);
+    if (
+      !fence &&
+      here &&
+      previous &&
+      here.marker === previous.marker &&
+      here.indent === previous.indent &&
+      here.body !== '' &&
+      previous.body !== '' &&
+      !/^\s/.test(here.body) &&
+      !/^\s/.test(previous.body) &&
+      !RULE.test(here.body) &&
+      !RULE.test(previous.body) &&
+      !opens(here.body) &&
+      absorbs(previousLine, previous.body)
+    ) {
+      out[out.length - 1] = `${previousLine} ${here.body}`;
+      joined.push(index + 1);
+      continue;
+    }
+    out.push(line);
+  }
+
+  return { text: out.join('\n'), joined };
+}
+
 /// What the joining has to get right, each case as the text going in and the text
 /// coming out. This runs before the sweep, because a wrong transform rewrites 150
 /// files and the only thing that would notice is somebody reading one.
@@ -189,15 +253,40 @@ const CASES = [
   ['a thematic break separates', 'one\n\n---\n\ntwo\nthree\n', 'one\n\n---\n\ntwo three\n'],
 ];
 
+/// The same, for the comment side.
+const COMMENT_CASES = [
+  ['a wrapped comment', '// one two\n// three four\n', '// one two three four\n'],
+  ['a doc comment too', '/// one two\n/// three four\n', '/// one two three four\n'],
+  ['a module comment too', '//! one\n//! two\n', '//! one two\n'],
+  ['markers never mix', '/// one\n// two\n', '/// one\n// two\n'],
+  ['a bare marker breaks the paragraph', '// one\n//\n// two\n', '// one\n//\n// two\n'],
+  ['an indented body is an example', '//   node scripts/x.mjs   what it does\n//   node scripts/x.mjs --fix\n', '//   node scripts/x.mjs   what it does\n//   node scripts/x.mjs --fix\n'],
+  ['prose never eats an example', '// Two ways to run it:\n//   node scripts/x.mjs\n', '// Two ways to run it:\n//   node scripts/x.mjs\n'],
+  ['a rule line stays a rule', '// ---- headings ----\n// one\n', '// ---- headings ----\n// one\n'],
+  ['a list inside a comment keeps its items', '// * one\n// * two\n', '// * one\n// * two\n'],
+  ['a fence inside a doc comment is code', '/// ```\n/// one\n/// two\n/// ```\n', '/// ```\n/// one\n/// two\n/// ```\n'],
+  ['a comment after code is left alone', 'let x = 1; // one\nlet y = 2; // two\n', 'let x = 1; // one\nlet y = 2; // two\n'],
+  ['code between comments breaks the run', '// one\nfn a() {}\n// two\n', '// one\nfn a() {}\n// two\n'],
+  ['indentation has to match', '// one\n    // two\n', '// one\n    // two\n'],
+];
+
 function selfTest() {
   const fails = [];
   for (const [name, input, want] of CASES) {
     const got = unwrap(input).text;
-    if (got !== want) fails.push(`${name}: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
+    if (got !== want) fails.push(`markdown, ${name}: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
+  }
+  for (const [name, input, want] of COMMENT_CASES) {
+    const got = unwrapComments(input).text;
+    if (got !== want) fails.push(`comments, ${name}: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
   }
   // Joining is idempotent, or `--fix` would keep finding work in a file it just wrote.
-  const twice = unwrap(unwrap('one\ntwo\nthree\n').text);
-  if (twice.joined.length) fails.push('a joined file still reports wrapped lines');
+  if (unwrap(unwrap('one\ntwo\nthree\n').text).joined.length) {
+    fails.push('a joined paragraph still reports wrapped lines');
+  }
+  if (unwrapComments(unwrapComments('// one\n// two\n// three\n').text).joined.length) {
+    fails.push('a joined comment still reports wrapped lines');
+  }
   return fails;
 }
 
@@ -212,15 +301,23 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   }
 
   const fix = process.argv.includes('--fix');
-  const files = [...markdown(root, root), ...markdown(plans, plans)]
-    .map((full) => ({ full, shown: relative(root, full).split(sep).join('/') }))
-    .filter(({ shown }) => !SKIP_PATHS.some((test) => test.test(shown)));
+  const listed = (dir, suffixes, join_) =>
+    walk(dir, suffixes)
+      .map((full) => ({ full, shown: relative(root, full).split(sep).join('/'), join: join_ }))
+      .filter(({ shown }) => !SKIP_PATHS.some((test) => test.test(shown)));
+
+  // Markdown in both trees, and the comments in the code of this one.
+  const files = [
+    ...listed(root, ['.md'], unwrap),
+    ...listed(plans, ['.md'], unwrap),
+    ...listed(root, ['.rs', '.js', '.mjs'], unwrapComments),
+  ];
 
   let wrapped = 0;
   let touched = 0;
   const offenders = [];
 
-  for (const { full, shown } of files) {
+  for (const { full, shown, join: joiner } of files) {
     let text;
     try {
       text = readFileSync(full, 'utf8');
@@ -228,7 +325,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
       continue;
     }
     if (isGenerated(text) || optedOut(text)) continue;
-    const result = unwrap(text);
+    const result = joiner(text);
     if (!result.joined.length) continue;
     wrapped += result.joined.length;
     touched += 1;
@@ -254,5 +351,5 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     process.exit(1);
   }
 
-  console.log(`wrapping: ${files.length} Markdown files, every paragraph on one line`);
+  console.log(`wrapping: ${files.length} files, every paragraph and comment on one line`);
 }

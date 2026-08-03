@@ -1,41 +1,28 @@
-//! The editing model: the source-backed document buffer and the Markdown block
-//! source map in-viewer editing stands on. Rust owns the editable text; the
-//! webview is the interaction shell.
+//! The editing model: the source-backed document buffer and the Markdown block source map in-viewer editing stands on. Rust owns the editable text; the webview is the interaction shell.
 
 use crate::*;
 
 /// Reading-view undo entries kept per document; each is a full buffer snapshot.
 const UNDO_STACK_CAP: usize = 200;
 
-/// A document open for editing: Rust's authoritative copy of the source text.
-/// `text` is the live buffer; `saved` is the last-written text, so dirty is
-/// just `text != saved`. `version` increments on save so the file watcher can
-/// tell our own saves from external edits.
+/// A document open for editing: Rust's authoritative copy of the source text. `text` is the live buffer; `saved` is the last-written text, so dirty is just `text != saved`. `version` increments on save so the file watcher can tell our own saves from external edits.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EditableDocument {
     pub path: PathBuf,
     pub format: DocumentFormat,
-    /// How the file was spelled when it was read — encoding, and whether it had a
-    /// byte order mark — spent again on every save so writing a document never
-    /// changes how it sits on disk.
+    /// How the file was spelled when it was read — encoding, and whether it had a byte order mark — spent again on every save so writing a document never changes how it sits on disk.
     pub spelling: SourceSpelling,
-    /// True until this document has a file. It wears a name regardless, to be a
-    /// tab; this is what stops a save from writing to that name.
+    /// True until this document has a file. It wears a name regardless, to be a tab; this is what stops a save from writing to that name.
     pub untitled: bool,
     text: String,
     saved: String,
     version: u64,
-    /// Buffer snapshots taken before each reading-view edit, newest last. The
-    /// browser's native undo can't cross the re-render an edit triggers, so
-    /// inline-edit undo lives here. Code-view typing is not snapshotted — the
-    /// editor's own undo covers it.
+    /// Buffer snapshots taken before each reading-view edit, newest last. The browser's native undo can't cross the re-render an edit triggers, so inline-edit undo lives here. Code-view typing is not snapshotted — the editor's own undo covers it.
     undo_stack: Vec<String>,
 }
 
 impl EditableDocument {
-    /// Start an editing session for `path` seeded with `contents`, which is
-    /// both the live buffer and the saved baseline (so it opens clean). The spelling
-    /// travels with the contents: it is a fact about the file, and the save spends it.
+    /// Start an editing session for `path` seeded with `contents`, which is both the live buffer and the saved baseline (so it opens clean). The spelling travels with the contents: it is a fact about the file, and the save spends it.
     pub fn new(path: PathBuf, contents: SourceText) -> Self {
         let format = DocumentFormat::from_path(&path);
         let SourceText { text, spelling } = contents;
@@ -51,8 +38,7 @@ impl EditableDocument {
         }
     }
 
-    /// An empty document with no file behind it. `path` is the name it wears
-    /// until the first save asks where it goes.
+    /// An empty document with no file behind it. `path` is the name it wears until the first save asks where it goes.
     pub fn untitled(path: PathBuf) -> Self {
         Self {
             untitled: true,
@@ -60,16 +46,14 @@ impl EditableDocument {
         }
     }
 
-    /// Give a never-saved document its file. The format follows the name, since
-    /// whoever chose where it goes also chose what it is.
+    /// Give a never-saved document its file. The format follows the name, since whoever chose where it goes also chose what it is.
     pub fn adopt_path(&mut self, path: PathBuf) {
         self.format = DocumentFormat::from_path(&path);
         self.path = path;
         self.untitled = false;
     }
 
-    /// Record `before` as an undo point if the buffer actually changed, keeping
-    /// the stack bounded.
+    /// Record `before` as an undo point if the buffer actually changed, keeping the stack bounded.
     fn push_undo(&mut self, before: String) {
         if before == self.text {
             return;
@@ -80,9 +64,7 @@ impl EditableDocument {
         }
     }
 
-    /// Revert the most recent reading-view edit; returns whether anything was
-    /// undone. A successful save clears the stack, so undo only covers edits
-    /// made since the last saved baseline.
+    /// Revert the most recent reading-view edit; returns whether anything was undone. A successful save clears the stack, so undo only covers edits made since the last saved baseline.
     pub fn undo(&mut self) -> bool {
         match self.undo_stack.pop() {
             Some(previous) => {
@@ -103,8 +85,7 @@ impl EditableDocument {
         &self.text
     }
 
-    /// Replace the whole buffer — the code view's resync path, when a splice left
-    /// the two copies disagreeing. Returns whether the dirty state changed.
+    /// Replace the whole buffer — the code view's resync path, when a splice left the two copies disagreeing. Returns whether the dirty state changed.
     pub fn set_text(&mut self, text: String) -> bool {
         let was_dirty = self.is_dirty();
         self.text = text;
@@ -120,18 +101,14 @@ impl EditableDocument {
         self.version
     }
 
-    /// Record that the current buffer was written to disk: the buffer becomes
-    /// the saved baseline (so dirty clears), reader-edit undo history resets,
-    /// and the version advances.
+    /// Record that the current buffer was written to disk: the buffer becomes the saved baseline (so dirty clears), reader-edit undo history resets, and the version advances.
     pub fn mark_saved(&mut self) {
         self.saved = self.text.clone();
         self.undo_stack.clear();
         self.version += 1;
     }
 
-    /// Adopt `contents` as a fresh baseline without a save — used when
-    /// live-reload accepts an external change into a clean buffer. The spelling comes
-    /// along, since an outside edit may have re-spelled the file.
+    /// Adopt `contents` as a fresh baseline without a save — used when live-reload accepts an external change into a clean buffer. The spelling comes along, since an outside edit may have re-spelled the file.
     pub fn adopt_external(&mut self, contents: SourceText) {
         let SourceText { text, spelling } = contents;
         self.spelling = spelling;
@@ -139,17 +116,12 @@ impl EditableDocument {
         self.text = text;
     }
 
-    /// Splice `replacement` into the buffer over byte range `[start, end)` —
-    /// the core of source-anchored in-viewer editing. The range is clamped to
-    /// the buffer and snapped outward to char boundaries so a bad offset can't
-    /// panic or corrupt UTF-8; start past end is an insertion at `start`.
-    /// Returns whether the dirty state changed.
+    /// Splice `replacement` into the buffer over byte range `[start, end)` — the core of source-anchored in-viewer editing. The range is clamped to the buffer and snapped outward to char boundaries so a bad offset can't panic or corrupt UTF-8; start past end is an insertion at `start`. Returns whether the dirty state changed.
     pub fn replace_range(&mut self, start: usize, end: usize, replacement: &str) -> bool {
         self.splice(start, end, replacement, true)
     }
 
-    /// Like `replace_range` but records no undo snapshot — for the auto-saving
-    /// checkbox path, which is deliberately not undoable.
+    /// Like `replace_range` but records no undo snapshot — for the auto-saving checkbox path, which is deliberately not undoable.
     pub fn replace_range_without_undo(
         &mut self,
         start: usize,
@@ -161,15 +133,9 @@ impl EditableDocument {
 
     /// Reorder sibling blocks by moving the text of slot `from` to slot `to`.
     ///
-    /// `ranges` are the source ranges of one run of siblings, in document order.
-    /// The texts rotate through the slots; whatever sits *between* the slots —
-    /// blank lines in Markdown, indentation and commas in a structured file —
-    /// never moves. That is what makes one routine safe for every format: the
-    /// separators are the part a naive cut-and-paste gets wrong.
+    /// `ranges` are the source ranges of one run of siblings, in document order. The texts rotate through the slots; whatever sits *between* the slots — blank lines in Markdown, indentation and commas in a structured file — never moves. That is what makes one routine safe for every format: the separators are the part a naive cut-and-paste gets wrong.
     ///
-    /// Refuses (returns `false`, buffer untouched) unless the ranges are sorted,
-    /// non-overlapping, inside the buffer and on char boundaries — a drifted map
-    /// must not be allowed to shred a file.
+    /// Refuses (returns `false`, buffer untouched) unless the ranges are sorted, non-overlapping, inside the buffer and on char boundaries — a drifted map must not be allowed to shred a file.
     pub fn move_blocks(&mut self, ranges: &[(usize, usize)], from: usize, to: usize) -> bool {
         let count = ranges.len();
         if count < 2 || from >= count || to >= count || from == to {
@@ -185,8 +151,7 @@ impl EditableDocument {
             }
             previous_end = end;
         }
-        // Which source slot each destination slot takes its text from: remove the
-        // dragged one, put it back at `to` — the same arithmetic as moving a tab.
+        // Which source slot each destination slot takes its text from: remove the dragged one, put it back at `to` — the same arithmetic as moving a tab.
         let mut order: Vec<usize> = (0..count).collect();
         let moved = order.remove(from);
         order.insert(to, moved);
@@ -225,13 +190,9 @@ impl EditableDocument {
         was_dirty != self.is_dirty()
     }
 
-    /// Splice over a range given in UTF-16 code units — what a JavaScript string
-    /// index counts — recording no undo, like the code-view typing it serves.
+    /// Splice over a range given in UTF-16 code units — what a JavaScript string index counts — recording no undo, like the code-view typing it serves.
     ///
-    /// The page sends the edit rather than the buffer (4 MB of IPC per typing pause
-    /// otherwise), and its offsets are UTF-16. Byte offsets diverge from those the
-    /// moment the text has a diacritic or an emoji in it, so the conversion happens
-    /// here, against the buffer being spliced.
+    /// The page sends the edit rather than the buffer (4 MB of IPC per typing pause otherwise), and its offsets are UTF-16. Byte offsets diverge from those the moment the text has a diacritic or an emoji in it, so the conversion happens here, against the buffer being spliced.
     pub fn splice_utf16_without_undo(
         &mut self,
         start: usize,
@@ -259,22 +220,17 @@ impl EditableDocument {
         (start_byte.unwrap_or(self.text.len()), self.text.len())
     }
 
-    /// The buffer's length in UTF-16 code units, so the page can prove the two
-    /// copies still agree after a splice.
+    /// The buffer's length in UTF-16 code units, so the page can prove the two copies still agree after a splice.
     pub fn utf16_len(&self) -> usize {
         self.text.chars().map(char::len_utf16).sum()
     }
 
-    /// Toggle the `index`-th task-list marker by flipping the state byte
-    /// between its brackets (`[ ]` ⇄ `[x]`). The offset is recomputed from the
-    /// live buffer, and one ASCII byte replaces another so no offsets shift.
-    /// Returns whether dirty changed; out-of-range is a no-op. Markdown only.
+    /// Toggle the `index`-th task-list marker by flipping the state byte between its brackets (`[ ]` ⇄ `[x]`). The offset is recomputed from the live buffer, and one ASCII byte replaces another so no offsets shift. Returns whether dirty changed; out-of-range is a no-op. Markdown only.
     pub fn toggle_task(&mut self, index: usize) -> bool {
         self.flip_task(index, true)
     }
 
-    /// Like `toggle_task` but records no undo snapshot — for the auto-saving
-    /// checkbox path, which is deliberately not undoable.
+    /// Like `toggle_task` but records no undo snapshot — for the auto-saving checkbox path, which is deliberately not undoable.
     pub fn toggle_task_without_undo(&mut self, index: usize) -> bool {
         self.flip_task(index, false)
     }
@@ -299,25 +255,19 @@ impl EditableDocument {
         )
     }
 
-    /// The block source map for the live buffer: Markdown via pulldown-cmark
-    /// offsets, XML via roxmltree node ranges, JSON and YAML via their readers.
-    /// The reading view attaches these to rendered blocks so an edit knows which
-    /// source range to splice. JSON and YAML blocks are mapped but never
-    /// editable — see `data.rs` for why.
+    /// The block source map for the live buffer: Markdown via pulldown-cmark offsets, XML via roxmltree node ranges, JSON and YAML via their readers. The reading view attaches these to rendered blocks so an edit knows which source range to splice. JSON and YAML blocks are mapped but never editable — see `data.rs` for why.
     pub fn block_source_map(&self) -> Vec<BlockSpan> {
         match self.format {
             DocumentFormat::Markdown => block_source_map(&self.text),
             DocumentFormat::Xml => xml_block_source_map(&self.text),
             DocumentFormat::Json => json_block_source_map(&self.text),
             DocumentFormat::Yaml => yaml_block_source_map(&self.text),
-            // Bodies are transfer-encoded, so no rendered block can prove a
-            // source range; the code view edits the raw message.
+            // Bodies are transfer-encoded, so no rendered block can prove a source range; the code view edits the raw message.
             DocumentFormat::Eml => Vec::new(),
         }
     }
 
-    /// The task-marker offsets for the live buffer (Markdown only; the data
-    /// formats have no task lists).
+    /// The task-marker offsets for the live buffer (Markdown only; the data formats have no task lists).
     pub fn task_offsets(&self) -> Vec<usize> {
         match self.format {
             DocumentFormat::Markdown => task_marker_offsets(&self.text),
@@ -329,18 +279,14 @@ impl EditableDocument {
     }
 }
 
-/// One top-level block, tying a stable id and kind to its exact source byte
-/// range. Produced from pulldown-cmark's `into_offset_iter()`, so Markdown
-/// only; TEI/XML has no equivalent offset map here.
+/// One top-level block, tying a stable id and kind to its exact source byte range. Produced from pulldown-cmark's `into_offset_iter()`, so Markdown only; TEI/XML has no equivalent offset map here.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct BlockSpan {
     pub id: usize,
     pub kind: &'static str,
     pub start: usize,
     pub end: usize,
-    /// Whether the reading view may turn this block into a live editor. A
-    /// non-editable mapped block still carries its range (so it re-renders when
-    /// a neighbor's edit shifts offsets) but is edited via the code view.
+    /// Whether the reading view may turn this block into a live editor. A non-editable mapped block still carries its range (so it re-renders when a neighbor's edit shifts offsets) but is edited via the code view.
     pub editable: bool,
 }
 
@@ -356,16 +302,12 @@ impl BlockSpan {
     }
 }
 
-/// Whether a block of this kind can be edited inline in the reading view. Only
-/// kinds with a tested DOM→source round-trip qualify; everything else is edited
-/// through the code view.
+/// Whether a block of this kind can be edited inline in the reading view. Only kinds with a tested DOM→source round-trip qualify; everything else is edited through the code view.
 pub fn kind_is_editable(kind: &str) -> bool {
     matches!(kind, "paragraph" | "heading")
 }
 
-/// Map every top-level block of `markdown` to its source byte range. Nested
-/// blocks (list items, table cells, inline spans) fold into their enclosing
-/// top-level block's range.
+/// Map every top-level block of `markdown` to its source byte range. Nested blocks (list items, table cells, inline spans) fold into their enclosing top-level block's range.
 pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
     let parser = Parser::new_ext(markdown, markdown_options()).into_offset_iter();
     let mut spans = Vec::new();
@@ -385,8 +327,7 @@ pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
                 depth += 1;
             }
             Event::End(_) => depth = depth.saturating_sub(1),
-            // Rules and raw HTML blocks are leaf events (no Start/End pair) but
-            // still top-level blocks.
+            // Rules and raw HTML blocks are leaf events (no Start/End pair) but still top-level blocks.
             Event::Rule if depth == 0 => {
                 let end = trim_block_end(markdown, range.start, range.end);
                 spans.push(BlockSpan::new(next_id, "rule", range.start, end));
@@ -404,9 +345,7 @@ pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
     spans
 }
 
-/// Trim a block's trailing whitespace/newlines, which pulldown-cmark folds into
-/// the range but are really separators between blocks. Excluding them keeps the
-/// surrounding blank lines intact when an edit replaces the range.
+/// Trim a block's trailing whitespace/newlines, which pulldown-cmark folds into the range but are really separators between blocks. Excluding them keeps the surrounding blank lines intact when an edit replaces the range.
 fn trim_block_end(source: &str, start: usize, end: usize) -> usize {
     let bytes = source.as_bytes();
     let mut end = end.min(source.len());
@@ -416,10 +355,7 @@ fn trim_block_end(source: &str, start: usize, end: usize) -> usize {
     end
 }
 
-/// Byte offset of the state char (` `/`x`/`X` between the brackets) of every
-/// list task marker, in document order. The Nth offset is the Nth rendered
-/// checkbox, so the frontend addresses one by position. Only genuine list
-/// markers map — a `[ ]` in a table cell is plain text, not a `TaskListMarker`.
+/// Byte offset of the state char (` `/`x`/`X` between the brackets) of every list task marker, in document order. The Nth offset is the Nth rendered checkbox, so the frontend addresses one by position. Only genuine list markers map — a `[ ]` in a table cell is plain text, not a `TaskListMarker`.
 pub fn task_marker_offsets(markdown: &str) -> Vec<usize> {
     let parser = Parser::new_ext(markdown, markdown_options()).into_offset_iter();
     let mut offsets = Vec::new();
@@ -433,9 +369,7 @@ pub fn task_marker_offsets(markdown: &str) -> Vec<usize> {
     offsets
 }
 
-/// Locate the state character inside a `[ ]` / `[x]` task marker whose source
-/// spans `[start, end)`. Returns the byte offset of the character between the
-/// brackets, or `None` if the slice does not hold a well-formed `[?]` marker.
+/// Locate the state character inside a `[ ]` / `[x]` task marker whose source spans `[start, end)`. Returns the byte offset of the character between the brackets, or `None` if the slice does not hold a well-formed `[?]` marker.
 fn task_marker_state_offset(markdown: &str, start: usize, end: usize) -> Option<usize> {
     let slice = markdown.get(start..end)?;
     let open = slice.find('[')?;
@@ -449,9 +383,7 @@ fn task_marker_state_offset(markdown: &str, start: usize, end: usize) -> Option<
     }
 }
 
-/// The block kind name for a top-level container tag, or `None` for tags that
-/// only ever appear nested inside another block (list items, table parts,
-/// inline emphasis, links, images).
+/// The block kind name for a top-level container tag, or `None` for tags that only ever appear nested inside another block (list items, table parts, inline emphasis, links, images).
 fn block_kind(tag: &Tag<'_>) -> Option<&'static str> {
     match tag {
         Tag::Paragraph => Some("paragraph"),

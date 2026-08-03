@@ -1,25 +1,12 @@
-//! Staged updates: take delivery of a new installer, verify it, and keep it on
-//! disk until the user asks to restart into it.
+//! Staged updates: take delivery of a new installer, verify it, and keep it on disk until the user asks to restart into it.
 //!
-//! The page finds the release; `platform::download_to` fetches it. That split is
-//! forced: GitHub serves release assets from a host that sends no
-//! `Access-Control-Allow-Origin`, so a `fetch` for one fails in any web view
-//! before a byte arrives. Both platforms ship an HTTP client using the OS
-//! certificate store, so the native path costs no dependency.
+//! The page finds the release; `platform::download_to` fetches it. That split is forced: GitHub serves release assets from a host that sends no `Access-Control-Allow-Origin`, so a `fetch` for one fails in any web view before a byte arrives. Both platforms ship an HTTP client using the OS certificate store, so the native path costs no dependency.
 //!
-//! Rust writing the file also matters on macOS: what a browser engine downloads
-//! carries `com.apple.quarantine`, which Gatekeeper refuses to launch unless the
-//! bundle is notarized. A file this process writes carries no such attribute.
+//! Rust writing the file also matters on macOS: what a browser engine downloads carries `com.apple.quarantine`, which Gatekeeper refuses to launch unless the bundle is notarized. A file this process writes carries no such attribute.
 //!
-//! A release publishes one file per platform and no checksum beside it: a digest
-//! served from the same host proves nothing the advertised byte count and TLS do
-//! not, and it put three unexplainable files on every release page. The digest of
-//! what landed is still recorded, so the applier can re-hash the installer before
-//! running it — that catches the file changing while it waits in a user-writable
-//! folder, which is a threat this side can actually see.
+//! A release publishes one file per platform and no checksum beside it: a digest served from the same host proves nothing the advertised byte count and TLS do not, and it put three unexplainable files on every release page. The digest of what landed is still recorded, so the applier can re-hash the installer before running it — that catches the file changing while it waits in a user-writable folder, which is a threat this side can actually see.
 //!
-//! Nothing here installs on its own. Until the artifacts are code signed no amount
-//! of hashing makes them trustworthy, so every install is a button the user pressed.
+//! Nothing here installs on its own. Until the artifacts are code signed no amount of hashing makes them trustworthy, so every install is a button the user pressed.
 
 use std::fs::{self, File};
 use std::io::{self, Write};
@@ -28,13 +15,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
-/// Check at most this often. Asking GitHub on every launch is a lot of spend
-/// against an unauthenticated 60-requests-per-hour limit, for an answer that
-/// changes at most daily.
+/// Check at most this often. Asking GitHub on every launch is a lot of spend against an unauthenticated 60-requests-per-hour limit, for an answer that changes at most daily.
 pub const UPDATE_CHECK_INTERVAL_SECS: u64 = 6 * 60 * 60;
 
-/// Refuse a download larger than this. The installers run about 6 MB; the cap
-/// exists so a wrong or hostile URL cannot fill the user's disk.
+/// Refuse a download larger than this. The installers run about 6 MB; the cap exists so a wrong or hostile URL cannot fill the user's disk.
 pub const MAX_UPDATE_BYTES: u64 = 128 * 1024 * 1024;
 
 /// Seconds since the Unix epoch, or 0 if the clock is before it.
@@ -45,15 +29,12 @@ pub fn now_unix() -> u64 {
         .unwrap_or(0)
 }
 
-/// Whether enough time has passed since `last_checked` to ask GitHub again.
-/// A clock that moved backwards (or a corrupt settings value in the future)
-/// reads as due rather than blocking checks forever.
+/// Whether enough time has passed since `last_checked` to ask GitHub again. A clock that moved backwards (or a corrupt settings value in the future) reads as due rather than blocking checks forever.
 pub fn update_check_is_due(last_checked: u64, now: u64) -> bool {
     now < last_checked || now.saturating_sub(last_checked) >= UPDATE_CHECK_INTERVAL_SECS
 }
 
-/// Compare dotted numeric versions, ignoring a leading `v`. Mirrors the
-/// frontend's comparison so both halves agree on what "newer" means.
+/// Compare dotted numeric versions, ignoring a leading `v`. Mirrors the frontend's comparison so both halves agree on what "newer" means.
 pub fn is_newer_version(candidate: &str, current: &str) -> bool {
     let parse = |value: &str| -> Vec<u64> {
         value
@@ -77,9 +58,7 @@ pub fn is_newer_version(candidate: &str, current: &str) -> bool {
 
 /// Whether an installer may be fetched from this URL.
 ///
-/// Untrusted input aimed at a native HTTP client: the URL comes off the network
-/// by way of the page, and no content policy stands behind it here. HTTPS only,
-/// and only hosts GitHub serves releases from.
+/// Untrusted input aimed at a native HTTP client: the URL comes off the network by way of the page, and no content policy stands behind it here. HTTPS only, and only hosts GitHub serves releases from.
 pub fn update_url_is_allowed(url: &str) -> bool {
     let Ok(parsed) = url::Url::parse(url) else {
         return false;
@@ -87,9 +66,7 @@ pub fn update_url_is_allowed(url: &str) -> bool {
     if parsed.scheme() != "https" {
         return false;
     }
-    // The asset URL starts on github.com and redirects to storage under
-    // githubusercontent.com; the leading dot is what stops a lookalike host
-    // ending in "githubusercontent.com" from matching.
+    // The asset URL starts on github.com and redirects to storage under githubusercontent.com; the leading dot is what stops a lookalike host ending in "githubusercontent.com" from matching.
     parsed.host_str().is_some_and(|host| {
         host == "github.com"
             || host == "githubusercontent.com"
@@ -97,9 +74,7 @@ pub fn update_url_is_allowed(url: &str) -> bool {
     })
 }
 
-/// The release asset this build can install, as a file-name suffix: the same file
-/// a person downloads by hand. Nothing is published for the updater alone, which
-/// is what makes `install` in `platform.rs` mount a disk image on macOS.
+/// The release asset this build can install, as a file-name suffix: the same file a person downloads by hand. Nothing is published for the updater alone, which is what makes `install` in `platform.rs` mount a disk image on macOS.
 pub fn platform_asset_suffix() -> &'static str {
     #[cfg(windows)]
     {
@@ -116,15 +91,12 @@ pub fn updates_dir(data_dir: &Path) -> PathBuf {
     data_dir.join("updates")
 }
 
-/// One directory per version, so a partial download of 0.1.362 can never be
-/// confused for a finished one of 0.1.361.
+/// One directory per version, so a partial download of 0.1.362 can never be confused for a finished one of 0.1.361.
 pub fn staging_dir(data_dir: &Path, version: &str) -> PathBuf {
     updates_dir(data_dir).join(sanitize_version(version))
 }
 
-/// Version strings reach us from a network response and are used as a path
-/// segment, so strip anything that is not plainly a version character. Without
-/// this a `tag_name` of `../..` would escape the staging area.
+/// Version strings reach us from a network response and are used as a path segment, so strip anything that is not plainly a version character. Without this a `tag_name` of `../..` would escape the staging area.
 fn sanitize_version(version: &str) -> String {
     version
         .trim()
@@ -134,8 +106,7 @@ fn sanitize_version(version: &str) -> String {
         .collect()
 }
 
-/// Asset names are used as file names for the same reason; keep them to a
-/// single, ordinary path component.
+/// Asset names are used as file names for the same reason; keep them to a single, ordinary path component.
 fn sanitize_asset_name(asset: &str) -> Option<String> {
     let name = asset.trim();
     if name.is_empty()
@@ -155,17 +126,14 @@ fn sanitize_asset_name(asset: &str) -> Option<String> {
     Some(name.to_string())
 }
 
-/// A verified installer waiting on disk. Written beside the installer as
-/// `manifest.json` so a later launch can find and trust it without repeating
-/// the download.
+/// A verified installer waiting on disk. Written beside the installer as `manifest.json` so a later launch can find and trust it without repeating the download.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StagedUpdate {
     /// Version this installs, without a leading `v`.
     pub version: String,
     /// Installer file name, inside the same directory as the manifest.
     pub asset: String,
-    /// Hex blake3 digest of the installer as it was written, for the applier to
-    /// re-check before running it.
+    /// Hex blake3 digest of the installer as it was written, for the applier to re-check before running it.
     pub blake3: String,
     /// Size in bytes, as written.
     pub size: u64,
@@ -180,9 +148,7 @@ impl StagedUpdate {
     }
 }
 
-/// Read back a staged update, returning `None` unless the manifest parses *and*
-/// the installer it names is still on disk at the recorded size. A half-deleted
-/// staging directory reads as nothing staged.
+/// Read back a staged update, returning `None` unless the manifest parses *and* the installer it names is still on disk at the recorded size. A half-deleted staging directory reads as nothing staged.
 pub fn read_staged(data_dir: &Path, version: &str) -> Option<StagedUpdate> {
     let directory = staging_dir(data_dir, version);
     let manifest = fs::read_to_string(directory.join("manifest.json")).ok()?;
@@ -192,11 +158,9 @@ pub fn read_staged(data_dir: &Path, version: &str) -> Option<StagedUpdate> {
     (metadata.len() == staged.size).then_some(staged)
 }
 
-/// Delete every staged version except `keep`. A user who skips five releases
-/// should not be carrying five installers around.
+/// Delete every staged version except `keep`. A user who skips five releases should not be carrying five installers around.
 ///
-/// Directories only: the applier's outcome record sits beside them and has to
-/// survive until the next launch reads it.
+/// Directories only: the applier's outcome record sits beside them and has to survive until the next launch reads it.
 pub fn prune_staged(data_dir: &Path, keep: Option<&str>) {
     let keep = keep.map(sanitize_version);
     let Ok(entries) = fs::read_dir(updates_dir(data_dir)) else {
@@ -215,12 +179,9 @@ pub fn prune_staged(data_dir: &Path, keep: Option<&str>) {
     }
 }
 
-/// How the last install attempt went, written by the detached applier and read
-/// once by the next launch.
+/// How the last install attempt went, written by the detached applier and read once by the next launch.
 ///
-/// The applier is windowless and detached: its stderr goes nowhere, and the app
-/// that could have shown a message has already exited. Without this file, a failed
-/// install looks exactly like one that never happened.
+/// The applier is windowless and detached: its stderr goes nowhere, and the app that could have shown a message has already exited. Without this file, a failed install looks exactly like one that never happened.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ApplyOutcome {
     /// Version the applier was installing.
@@ -234,14 +195,12 @@ pub struct ApplyOutcome {
     pub finished_at: u64,
 }
 
-/// Where the applier leaves its verdict: beside the staging folders, not inside
-/// one, since the folder it was installing from is the first thing pruned.
+/// Where the applier leaves its verdict: beside the staging folders, not inside one, since the folder it was installing from is the first thing pruned.
 fn apply_outcome_path(updates_dir: &Path) -> PathBuf {
     updates_dir.join("last-apply.json")
 }
 
-/// Record how an install attempt ended. `staging_dir` is the folder the applier
-/// was handed; the record goes in its parent, which is the updates root.
+/// Record how an install attempt ended. `staging_dir` is the folder the applier was handed; the record goes in its parent, which is the updates root.
 pub fn record_apply_outcome(staging_dir: &Path, version: &str, error: Option<&str>) {
     let root = staging_dir.parent().unwrap_or(staging_dir);
     let outcome = ApplyOutcome {
@@ -256,8 +215,7 @@ pub fn record_apply_outcome(staging_dir: &Path, version: &str, error: Option<&st
     }
 }
 
-/// Read and delete the applier's verdict. Deleted on read: it describes one
-/// attempt, and reporting it twice would be a lie the second time.
+/// Read and delete the applier's verdict. Deleted on read: it describes one attempt, and reporting it twice would be a lie the second time.
 pub fn take_apply_outcome(data_dir: &Path) -> Option<ApplyOutcome> {
     let path = apply_outcome_path(&updates_dir(data_dir));
     let json = fs::read_to_string(&path).ok();
@@ -265,8 +223,7 @@ pub fn take_apply_outcome(data_dir: &Path) -> Option<ApplyOutcome> {
     serde_json::from_str(&json?).ok()
 }
 
-/// An in-progress download: bytes land in a `.part` file and are hashed as they
-/// arrive, so the finished file is never the one that was being written to.
+/// An in-progress download: bytes land in a `.part` file and are hashed as they arrive, so the finished file is never the one that was being written to.
 pub struct UpdateDownload {
     version: String,
     asset: String,
@@ -280,9 +237,7 @@ pub struct UpdateDownload {
 }
 
 impl UpdateDownload {
-    /// Open a staging directory for `version` and start a fresh `.part` file.
-    /// Any earlier attempt at the same version is discarded first, so a torn
-    /// download never contributes bytes to the next one.
+    /// Open a staging directory for `version` and start a fresh `.part` file. Any earlier attempt at the same version is discarded first, so a torn download never contributes bytes to the next one.
     pub fn begin(
         data_dir: &Path,
         version: &str,
@@ -344,12 +299,9 @@ impl UpdateDownload {
         &self.version
     }
 
-    /// Publish: the `.part` file is only renamed into place once the full length
-    /// arrived, so anything that finds the final name is a whole download. The
-    /// digest of what landed goes in the manifest for the applier to re-check.
+    /// Publish: the `.part` file is only renamed into place once the full length arrived, so anything that finds the final name is a whole download. The digest of what landed goes in the manifest for the applier to re-check.
     pub fn finish(self) -> Result<StagedUpdate, String> {
-        // Take the struct apart so the file handle can be closed before the
-        // rename — Windows will not rename a file that is still open.
+        // Take the struct apart so the file handle can be closed before the rename — Windows will not rename a file that is still open.
         let Self {
             version,
             asset,
@@ -397,8 +349,7 @@ impl UpdateDownload {
     }
 }
 
-/// Hash a file that is already on disk, to re-check a staged installer before
-/// handing it to the installer program.
+/// Hash a file that is already on disk, to re-check a staged installer before handing it to the installer program.
 pub fn hash_file(path: &Path) -> io::Result<String> {
     let mut hasher = blake3::Hasher::new();
     let mut file = File::open(path)?;

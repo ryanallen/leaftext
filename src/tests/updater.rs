@@ -36,15 +36,13 @@ fn update_checks_are_throttled_but_never_wedged() {
     assert!(!update_check_is_due(now - 60, now));
     assert!(!update_check_is_due(now, now));
     assert!(update_check_is_due(now - UPDATE_CHECK_INTERVAL_SECS, now));
-    // A clock that jumped backwards, or a settings value from the future, must
-    // read as due rather than blocking every future check forever.
+    // A clock that jumped backwards, or a settings value from the future, must read as due rather than blocking every future check forever.
     assert!(update_check_is_due(now + 10_000, now));
 }
 
 #[test]
 fn only_github_https_urls_may_be_downloaded() {
-    // What a real release hands us: the asset URL, and the storage host it
-    // redirects to.
+    // What a real release hands us: the asset URL, and the storage host it redirects to.
     assert!(update_url_is_allowed(
         "https://github.com/ryanallen/leaftext/releases/download/v0.1.373/leaftext-v0.1.373-windows-x86_64.msi"
     ));
@@ -55,9 +53,7 @@ fn only_github_https_urls_may_be_downloaded() {
         "https://objects.githubusercontent.com/anything"
     ));
 
-    // The URL reaches Rust from a network response by way of the page, and is
-    // handed to a native client with no same-origin rule behind it. Plain HTTP
-    // would hand the installer to anyone on the path.
+    // The URL reaches Rust from a network response by way of the page, and is handed to a native client with no same-origin rule behind it. Plain HTTP would hand the installer to anyone on the path.
     assert!(!update_url_is_allowed(
         "http://github.com/ryanallen/leaftext/releases/download/v1/x.msi"
     ));
@@ -117,10 +113,7 @@ fn a_verified_download_is_staged_and_readable_afterwards() {
 
 #[test]
 fn a_staged_installer_altered_on_disk_is_caught_before_it_runs() {
-    // Releases publish no checksum, so nothing compares the download against a
-    // published digest. What the manifest digest is for is this: the installer
-    // sits in a user-writable folder until the user clicks, and the applier
-    // re-hashes it before handing it to the installer program.
+    // Releases publish no checksum, so nothing compares the download against a published digest. What the manifest digest is for is this: the installer sits in a user-writable folder until the user clicks, and the applier re-hashes it before handing it to the installer program.
     let data_dir = update_test_dir("altered");
     let payload = b"the installer that was downloaded".to_vec();
 
@@ -188,8 +181,7 @@ fn a_download_may_not_grow_past_its_advertised_size() {
 fn release_metadata_cannot_escape_the_staging_folder() {
     let data_dir = update_test_dir("traversal");
 
-    // A hostile or broken tag_name becomes a directory name, so separators and
-    // dot segments must not survive into it.
+    // A hostile or broken tag_name becomes a directory name, so separators and dot segments must not survive into it.
     let staging = staging_dir(&data_dir, "../../evil");
     assert!(
         staging.starts_with(updates_dir(&data_dir)),
@@ -197,8 +189,7 @@ fn release_metadata_cannot_escape_the_staging_folder() {
         staging.display()
     );
 
-    // Asset names become file names in that folder, and are rejected outright
-    // rather than rewritten: a name we had to launder is a bad sign by itself.
+    // Asset names become file names in that folder, and are rejected outright rather than rewritten: a name we had to launder is a bad sign by itself.
     for hostile in [
         "../outside.msi",
         "..\\outside.msi",
@@ -225,10 +216,7 @@ fn an_absurd_download_size_is_refused() {
 
 #[test]
 fn a_release_publishes_one_installable_file_per_platform() {
-    // The release page is two downloads and nothing else: no checksum files, no
-    // archive published only for the updater. What the updater fetches is exactly
-    // what a person downloads by hand, which is why nobody has to be told what an
-    // extra file is for.
+    // The release page is two downloads and nothing else: no checksum files, no archive published only for the updater. What the updater fetches is exactly what a person downloads by hand, which is why nobody has to be told what an extra file is for.
     let suffix = platform_asset_suffix();
     #[cfg(windows)]
     assert_eq!(suffix, "-windows-x86_64.msi");
@@ -255,8 +243,7 @@ fn pruning_keeps_only_the_pending_version() {
         .collect();
     assert_eq!(left, vec!["0.1.362".to_string()]);
 
-    // Nothing pending clears the lot, which is what runs after an update lands
-    // and takes the leftover helper copy with it.
+    // Nothing pending clears the lot, which is what runs after an update lands and takes the leftover helper copy with it.
     prune_staged(&data_dir, None);
     assert_eq!(
         fs::read_dir(updates_dir(&data_dir))
@@ -280,8 +267,7 @@ fn the_applier_verdict_survives_pruning_and_is_read_once() {
         Some("the installer failed with code 1603"),
     );
 
-    // The record lives beside the staging folders, and the launch that reports it
-    // prunes them first — so pruning must leave it alone or the failure is lost.
+    // The record lives beside the staging folders, and the launch that reports it prunes them first — so pruning must leave it alone or the failure is lost.
     prune_staged(&data_dir, None);
 
     let outcome = take_apply_outcome(&data_dir).expect("the verdict survives pruning");
@@ -289,8 +275,7 @@ fn the_applier_verdict_survives_pruning_and_is_read_once() {
     assert_eq!(outcome.version, "0.1.400");
     assert!(outcome.message.contains("1603"));
 
-    // Read once: reporting the same failed install on every launch afterwards
-    // would be a lie from the second time on.
+    // Read once: reporting the same failed install on every launch afterwards would be a lie from the second time on.
     assert!(take_apply_outcome(&data_dir).is_none());
 
     let _ = fs::remove_dir_all(&data_dir);
@@ -312,8 +297,7 @@ fn a_successful_install_records_no_failure() {
 
 #[test]
 fn the_applier_s_verdict_never_reaches_the_page() {
-    // It goes to stderr and nowhere else. A reader can do nothing about a failed
-    // install — the next check retries it — so the panel stays quiet.
+    // It goes to stderr and nowhere else. A reader can do nothing about a failed install — the next check retries it — so the panel stays quiet.
     assert!(!app_shell_page().contains("__leafUpdateApply"));
 }
 
@@ -327,8 +311,7 @@ fn a_staged_record_without_its_installer_reads_as_nothing_staged() {
     download.write_chunk(&payload).expect("chunk accepted");
     let staged = download.finish().expect("download verifies");
 
-    // Someone clearing out AppData must not leave the button offering a restart
-    // that cannot happen.
+    // Someone clearing out AppData must not leave the button offering a restart that cannot happen.
     fs::remove_file(staged.installer_path(&data_dir)).expect("remove installer");
     assert!(read_staged(&data_dir, "0.1.362").is_none());
 
@@ -337,10 +320,7 @@ fn a_staged_record_without_its_installer_reads_as_nothing_staged() {
 
 #[test]
 fn the_app_shell_reaches_the_release_api_and_nothing_else() {
-    // The page fetches release metadata and nothing more: the installer is
-    // downloaded natively, because the host GitHub redirects assets to sends no
-    // CORS header and no policy here can make that fetch succeed. Granting the
-    // asset hosts anyway would widen where the page may talk for no gain.
+    // The page fetches release metadata and nothing more: the installer is downloaded natively, because the host GitHub redirects assets to sends no CORS header and no policy here can make that fetch succeed. Granting the asset hosts anyway would widen where the page may talk for no gain.
     let html = app_shell_page();
     let csp_line = html
         .lines()
@@ -378,6 +358,5 @@ fn the_page_is_told_which_installer_this_build_takes() {
     assert!(script.starts_with("window.__leafUpdateAsset = "));
     assert!(script.contains(platform_asset_suffix()));
 
-    // The suffix has to match what the release workflow actually publishes; see
-    // `a_release_publishes_one_installable_file_per_platform`.
+    // The suffix has to match what the release workflow actually publishes; see `a_release_publishes_one_installable_file_per_platform`.
 }

@@ -1,19 +1,12 @@
 #!/usr/bin/env node
-// The published conformance suites for the formats this app reads, downloaded
-// into target/conformance/ where the tests look for them.
+// The published conformance suites for the formats this app reads, downloaded into target/conformance/ where the tests look for them.
 //
 //   just conformance          fetch anything missing or out of date
 //   just conformance --force  fetch it all again
 //
-// Fetched, not vendored: 15 MB of third-party corpora under several licenses, in
-// a repository that also serves a website. `just verify` never runs this and
-// stays offline — every conformance test prints one line and returns when the
-// corpus is not there.
+// Fetched, not vendored: 15 MB of third-party corpora under several licenses, in a repository that also serves a website. `just verify` never runs this and stays offline — every conformance test prints one line and returns when the corpus is not there.
 //
-// SOURCES below is the one answer to "which version of each suite do we test
-// against". Nothing polls upstream; a pin moves only when somebody edits it, and
-// the run after the edit names every case the new version added or changed,
-// because an unlisted failure fails the run.
+// SOURCES below is the one answer to "which version of each suite do we test against". Nothing polls upstream; a pin moves only when somebody edits it, and the run after the edit names every case the new version added or changed, because an unlisted failure fails the run.
 
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -46,8 +39,7 @@ const SOURCES = [
     kind: 'clone',
     repo: 'https://github.com/nst/JSONTestSuite',
     commit: '1ef36fa01286573e846ac449e8683f8833c5b26a',
-    // A full clone is 215 MB, almost all of it compiled parsers for other
-    // languages. The tests are 826 KB of it.
+    // A full clone is 215 MB, almost all of it compiled parsers for other languages. The tests are 826 KB of it.
     sparse: ['/test_parsing/'],
   },
   {
@@ -81,8 +73,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const corpus = join(root, 'target', 'conformance');
 const force = process.argv.includes('--force');
 
-/// What the source is pinned to. The stamp beside a suite holds the pin it was
-/// fetched at, so moving a pin refetches and leaving it alone costs nothing.
+/// What the source is pinned to. The stamp beside a suite holds the pin it was fetched at, so moving a pin refetches and leaving it alone costs nothing.
 function pinOf(source) {
   return source.commit ?? source.sha256;
 }
@@ -115,14 +106,12 @@ async function fetchSource(source) {
   } else if (source.kind === 'zip') {
     const archive = join(corpus, `${source.id}.zip`);
     writeFileSync(archive, await download(source.url, source.sha256));
-    // bsdtar reads zip, and ships with both Windows and macOS — no unpacker to
-    // install and no dependency to add.
+    // bsdtar reads zip, and ships with both Windows and macOS — no unpacker to install and no dependency to add.
     const result = spawnSync('tar', ['-xf', archive, '-C', into], { stdio: 'inherit' });
     if (result.status !== 0) throw new Error(`unpacking ${archive} failed`);
     rmSync(archive, { force: true });
   } else {
-    // Fetch the pinned commit alone, with only the paths we read: no history, and
-    // no blob downloaded for a file outside the sparse list.
+    // Fetch the pinned commit alone, with only the paths we read: no history, and no blob downloaded for a file outside the sparse list.
     git(['init', '--quiet', into]);
     git(['remote', 'add', 'origin', source.repo], into);
     if (source.sparse) {

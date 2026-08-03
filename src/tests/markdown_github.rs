@@ -107,8 +107,7 @@ fn renders_footnotes_with_backlinks() {
 
 #[test]
 fn footnote_definitions_collect_at_the_end_in_reference_order() {
-    // Definitions sit mid-document with a section after them, and the notes
-    // are referenced in the opposite order to how they are defined.
+    // Definitions sit mid-document with a section after them, and the notes are referenced in the opposite order to how they are defined.
     let markdown = "First reference.[^second]\n\nSecond reference.[^first]\n\n\
              [^first]: Defined first.\n[^second]: Defined second.\n\n## Later\n\nTrailing prose.";
 
@@ -125,8 +124,7 @@ fn footnote_definitions_collect_at_the_end_in_reference_order() {
         .find(r#"<div class="footnote-definition" id="first">"#)
         .expect("first footnote definition rendered");
 
-    // Both definitions are hoisted below the later section, not left where
-    // they were written in the source.
+    // Both definitions are hoisted below the later section, not left where they were written in the source.
     assert!(
         trailing < second_def && trailing < first_def,
         "footnote definitions should collect after the rest of the document"
@@ -237,8 +235,7 @@ xychart-beta
 
     let rendered = render_markdown_document(markdown, "README.md");
 
-    // Front matter reaches mermaid, which is what reads it. Cutting it here made
-    // the page and the flowchart sheet draw one block two ways.
+    // Front matter reaches mermaid, which is what reads it. Cutting it here made the page and the flowchart sheet draw one block two ways.
     assert_contains(
         &rendered.html,
         r#"<pre class="mermaid" data-language="mermaid">---"#,
@@ -303,8 +300,7 @@ fn renders_leaf_button_link_custom_markdown() {
     assert_contains(&rendered.html, ">Outline</a>");
     assert_contains(&rendered.html, ">Ghost</a>");
     assert_contains(&rendered.html, r#"href="https://example.com""#);
-    // The literal braces are consumed, not left around the anchor, and the
-    // surrounding prose survives.
+    // The literal braces are consumed, not left around the anchor, and the surrounding prose survives.
     assert!(!rendered.html.contains("go {"));
     assert!(!rendered.html.contains("see {"));
     assert!(!rendered.html.contains("try {"));
@@ -322,8 +318,7 @@ fn renders_leaf_button_link_custom_markdown() {
         &rendered.html,
         r#"<a href="https://example.com" rel="noopener noreferrer">link</a>"#,
     );
-    // Brackets are link syntax, never a button wrapper, so `[[…]()]` renders as
-    // what it literally is.
+    // Brackets are link syntax, never a button wrapper, so `[[…]()]` renders as what it literally is.
     assert_contains(&rendered.html, ">Bracketed</a>]");
     assert!(!rendered.html.contains(">Bracketed</a></a>"));
     // An unbalanced wrapper is prose, and keeps both of its braces.
@@ -332,8 +327,7 @@ fn renders_leaf_button_link_custom_markdown() {
     // The same syntax inside inline code is left untouched (no Link event there).
     assert_contains(&rendered.html, "<code>{[x](y)}</code>");
 
-    // Buttons sitting side by side share one Text event between them, so each
-    // one's trailing braces are the next one's opening run.
+    // Buttons sitting side by side share one Text event between them, so each one's trailing braces are the next one's opening run.
     let row = render_markdown_document(
         "{[G](https://example.com)} {{[O](https://example.com)}} {{{[F](https://example.com)}}}\n",
         &source_path,

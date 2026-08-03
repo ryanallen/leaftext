@@ -1,34 +1,22 @@
 // minimap.js
 // ---------------------------------------------------------------------------
-// A document minimap for the README reader: a scaled-down picture of the whole
-// rendered document pinned to the right edge, with a rectangle showing the part
-// you are currently looking at. Click or drag the rail to jump anywhere. It
-// replaces the page scrollbar (styles.css hides that).
+// A document minimap for the README reader: a scaled-down picture of the whole rendered document pinned to the right edge, with a rectangle showing the part you are currently looking at. Click or drag the rail to jump anywhere. It replaces the page scrollbar (styles.css hides that).
 //
-// This is the same idea as the minimap in the Leaftext desktop app: instead of
-// drawing an abstract bar, we clone the actual rendered document and shrink it
-// with a CSS transform, so what you see in the rail is a real (tiny) thumbnail
-// of the page. The only difference here is that the page scrolls the window,
-// not an inner pane, so all the math is against window.scrollY / innerHeight.
+// This is the same idea as the minimap in the Leaftext desktop app: instead of drawing an abstract bar, we clone the actual rendered document and shrink it with a CSS transform, so what you see in the rail is a real (tiny) thumbnail of the page. The only difference here is that the page scrolls the window, not an inner pane, so all the math is against window.scrollY / innerHeight.
 //
-// Public entry point: initMinimap(source) where `source` is the .markdown-body
-// element. Call it once after the README has been rendered into the page.
+// Public entry point: initMinimap(source) where `source` is the .markdown-body element. Call it once after the README has been rendered into the page.
 // ---------------------------------------------------------------------------
 
-// Below this viewport width the rail is hidden (see styles.css) and we skip all
-// work. Keep this in sync with the @media rule in styles.css.
+// Below this viewport width the rail is hidden (see styles.css) and we skip all work. Keep this in sync with the @media rule in styles.css.
 const HIDE_BELOW = 720;
 
-// Minimum on-screen height of the viewport rectangle, so it stays grabbable
-// even on very long documents. Mirrors the desktop app's 22px floor.
+// Minimum on-screen height of the viewport rectangle, so it stays grabbable even on very long documents. Mirrors the desktop app's 22px floor.
 const MIN_VIEWPORT_HEIGHT = 22;
 
 export function initMinimap(source) {
   if (!source) return;
 
-  // Build the rail: a sticky aside holding a track, a (scaled) content clone,
-  // and the viewport rectangle. aria-hidden throughout — it is a pointer
-  // convenience that duplicates the scrollbar, not new content for a reader.
+  // Build the rail: a sticky aside holding a track, a (scaled) content clone, and the viewport rectangle. aria-hidden throughout — it is a pointer convenience that duplicates the scrollbar, not new content for a reader.
   const minimap = document.createElement('aside');
   minimap.className = 'document-minimap';
   minimap.setAttribute('aria-hidden', 'true');
@@ -52,8 +40,7 @@ export function initMinimap(source) {
   const scrollEl = document.scrollingElement || document.documentElement;
 
   // ---- measurements -------------------------------------------------------
-  // Everything the renderers below need, gathered in one place so a single
-  // layout read drives both the preview scale and the viewport rectangle.
+  // Everything the renderers below need, gathered in one place so a single layout read drives both the preview scale and the viewport rectangle.
   function measure() {
     const rect = source.getBoundingClientRect();
     const sourceWidth = Math.max(1, Math.ceil(rect.width));
@@ -63,17 +50,12 @@ export function initMinimap(source) {
     const scrollable = Math.max(0, scrollHeight - viewportHeight);
     const rawScroll = window.scrollY || scrollEl.scrollTop || 0;
     const scrollTop = Math.min(scrollable, Math.max(0, rawScroll));
-    // Where the document's content actually begins, INCLUDING the blank space the
-    // page leaves above it. The thumbnail starts here too, so it's a faithful
-    // picture of the top — the box's "0" (document top) lines up with the rail.
+    // Where the document's content actually begins, INCLUDING the blank space the page leaves above it. The thumbnail starts here too, so it's a faithful picture of the top — the box's "0" (document top) lines up with the rail.
     const sourceTop = Math.max(0, Math.round(rect.top + rawScroll));
     // Fit the thumbnail to the rail's width (real proportions, never stretched).
     const previewScale = contentWidth / sourceWidth;
     const scaledDocHeight = Math.max(1, scrollHeight * previewScale);
-    // Size the rail to the thumbnail, capped at the viewport — the key fix. A
-    // short document gets a short rail (no dead space below it, so the box can't
-    // be stranded near the top); a long one fills the screen and the thumbnail
-    // scrolls inside it the way a code-editor minimap does.
+    // Size the rail to the thumbnail, capped at the viewport — the key fix. A short document gets a short rail (no dead space below it, so the box can't be stranded near the top); a long one fills the screen and the thumbnail scrolls inside it the way a code-editor minimap does.
     const trackHeight = Math.max(1, Math.min(viewportHeight, scaledDocHeight));
     return {
       sourceWidth, contentWidth, trackHeight, scrollHeight, viewportHeight,
@@ -82,9 +64,7 @@ export function initMinimap(source) {
   }
 
   // ---- the thumbnail ------------------------------------------------------
-  // Clone the live document, strip ids/links (so nothing is focusable or
-  // duplicated for assistive tech), and shrink it to the rail width with a
-  // transform. Rebuilt whenever the document reflows (images decoding, resize).
+  // Clone the live document, strip ids/links (so nothing is focusable or duplicated for assistive tech), and shrink it to the rail width with a transform. Rebuilt whenever the document reflows (images decoding, resize).
   function buildPreview() {
     previewFrame = 0;
     if (isHidden()) return;
@@ -96,8 +76,7 @@ export function initMinimap(source) {
     preview.classList.add('document-minimap-preview');
     preview.setAttribute('aria-hidden', 'true');
     preview.style.width = `${m.sourceWidth}px`;
-    // Scale to the rail width, then nudge down by the document's top gap so the
-    // thumbnail sits where the real content sits.
+    // Scale to the rail width, then nudge down by the document's top gap so the thumbnail sits where the real content sits.
     preview.style.transform = `translateY(${m.sourceTop * m.previewScale}px) scale(${m.previewScale})`;
     content.style.height = `${m.scaledDocHeight}px`;
     track.style.height = `${m.trackHeight}px`;
@@ -106,9 +85,7 @@ export function initMinimap(source) {
   }
 
   // ---- the viewport rectangle --------------------------------------------
-  // Place the rectangle (and slide the thumbnail) to reflect the current
-  // scroll position. When the thumbnail is taller than the rail it scrolls
-  // inside the rail, the way a code-editor minimap does on long files.
+  // Place the rectangle (and slide the thumbnail) to reflect the current scroll position. When the thumbnail is taller than the rail it scrolls inside the rail, the way a code-editor minimap does on long files.
   function updateViewport() {
     viewportFrame = 0;
     if (isHidden()) return;
@@ -156,9 +133,7 @@ export function initMinimap(source) {
     scrollWindowTo(clickedDocumentY - m.viewportHeight / 2);
   }
 
-  // Dragging the viewport rectangle keeps the grab point under the cursor and
-  // converts the rectangle's new position back into a window scroll offset.
-  // This is the inverse of updateViewport()'s placement math.
+  // Dragging the viewport rectangle keeps the grab point under the cursor and converts the rectangle's new position back into a window scroll offset. This is the inverse of updateViewport()'s placement math.
   function dragToPointer(event, offsetY) {
     const m = measure();
     const trackRect = track.getBoundingClientRect();
@@ -177,8 +152,7 @@ export function initMinimap(source) {
     scrollWindowTo(targetScroll);
   }
 
-  // Returns the grab offset if the press landed on the viewport rectangle, else
-  // null to signal a click-jump.
+  // Returns the grab offset if the press landed on the viewport rectangle, else null to signal a click-jump.
   function pressOffset(event) {
     const rect = viewport.getBoundingClientRect();
     if (event.clientY < rect.top || event.clientY > rect.bottom) return null;
@@ -219,23 +193,19 @@ export function initMinimap(source) {
   };
   window.addEventListener('scroll', scheduleViewport, { passive: true });
   window.addEventListener('resize', refresh);
-  // visualViewport catches resizes a plain window 'resize' can miss: pinch-zoom,
-  // the mobile URL bar showing/hiding, and some DPI/zoom changes.
+  // visualViewport catches resizes a plain window 'resize' can miss: pinch-zoom, the mobile URL bar showing/hiding, and some DPI/zoom changes.
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', refresh);
   }
 
-  // Rebuild when the document OR the rail itself changes size. Two distinct
-  // triggers, and we need both:
+  // Rebuild when the document OR the rail itself changes size. Two distinct triggers, and we need both:
   //   - `source` resizes when the document reflows (images decoding, fonts
   //     loading, Mermaid rendering, or the reading column getting narrower).
   //   - `track` resizes when the rail's width changes at the responsive
   //     breakpoints. Crucially, when the reading column is already at its
   //     max-width, widening the viewport leaves `source` unchanged — so without
   //     observing the rail the thumbnail scale would never be recomputed.
-  // This mirrors the desktop app, which observes the body and the track. The
-  // rAF guards coalesce the burst, and the track height converges to a stable
-  // value, so observing the track we also resize cannot loop.
+  // This mirrors the desktop app, which observes the body and the track. The rAF guards coalesce the burst, and the track height converges to a stable value, so observing the track we also resize cannot loop.
   if (window.ResizeObserver) {
     const observer = new ResizeObserver(refresh);
     observer.observe(source);

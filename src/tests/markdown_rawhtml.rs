@@ -4,8 +4,7 @@ use super::*;
 
 #[test]
 fn raw_html_anchor_ids_survive_so_in_page_links_resolve() {
-    // Raw-HTML anchor targets carry an explicit `id=`; the sanitizers must keep
-    // it so `[..](#id)` links still scroll.
+    // Raw-HTML anchor targets carry an explicit `id=`; the sanitizers must keep it so `[..](#id)` links still scroll.
     let rendered = render_markdown_document(
         r#"[Foreword](#forewordhhdl) [Plate](#guru-rinpoche-il) [Notice](#copyright) [Spearman](#black-spearman)
 
@@ -71,8 +70,7 @@ fn strips_disallowed_raw_html_tags_and_attributes() {
 
     let rendered = render_markdown_document(markdown, "README.md");
 
-    // `<details>`/`<summary>` are allowed and boolean `open` is kept (normalized
-    // to `open=""`), but the dangerous attributes go.
+    // `<details>`/`<summary>` are allowed and boolean `open` is kept (normalized to `open=""`), but the dangerous attributes go.
     assert_contains(&rendered.html, r#"<details open="">"#);
     assert_contains(&rendered.html, "<summary>Deploy notes</summary>");
     assert!(!rendered.html.contains("onclick"));
@@ -245,9 +243,7 @@ fn strips_unsafe_raw_html_behavior_and_urls() {
 
 #[test]
 fn data_leaf_attribute_prefixes_survive_sanitizing() {
-    // The editing model stamps blocks with source-range / identity markers; the
-    // sanitizer must let the `data-leaf-*` / `data-src-*` prefixes through so
-    // later in-viewer editing can find a block's source.
+    // The editing model stamps blocks with source-range / identity markers; the sanitizer must let the `data-leaf-*` / `data-src-*` prefixes through so later in-viewer editing can find a block's source.
     let cleaned = sanitize_rendered_html(
         r#"<p data-leaf-edit-id="3" data-src-start="10" data-src-end="20">Body</p>"#,
     );

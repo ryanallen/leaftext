@@ -1,12 +1,8 @@
 // docs-nav.js
 // ---------------------------------------------------------------------------
-// Build the docs navigation from the REAL file/folder tree at runtime. Nothing
-// about the page list is written by hand: every folder becomes a group, every
-// .md file becomes a page, ordering is alphabetical, labels come from the file
-// names. Add or remove a file and the nav follows — no manifest, no build step.
+// Build the docs navigation from the REAL file/folder tree at runtime. Nothing about the page list is written by hand: every folder becomes a group, every .md file becomes a page, ordering is alphabetical, labels come from the file names. Add or remove a file and the nav follows — no manifest, no build step.
 //
-// Static hosting (GitHub Pages) cannot list a directory at runtime, so the tree
-// is discovered two ways, in order:
+// Static hosting (GitHub Pages) cannot list a directory at runtime, so the tree is discovered two ways, in order:
 //
 //   1. Directory autoindex — ask the server for the docs folder and parse the
 //      HTML file listing it returns (python -m http.server, nginx autoindex,
@@ -21,25 +17,16 @@
 // Both strategies converge on the same shape:
 //   { hasIndex: boolean, nav: NavNode[] }
 //   NavNode = { route, label, path } | { group, items: NavNode[] }
-// where `route` is the clean path under the docs folder without ".md" (how
-// "#/<route>" addresses it) and `path` is the real file to fetch. They match
-// unless a file/folder carries a numeric ordering prefix (see stripOrder).
+// where `route` is the clean path under the docs folder without ".md" (how "#/<route>" addresses it) and `path` is the real file to fetch. They match unless a file/folder carries a numeric ordering prefix (see stripOrder).
 // ---------------------------------------------------------------------------
 
 // ---- ordering prefix -------------------------------------------------------
-// A leading numeric prefix ("01-", "02_") orders files and folders in the
-// sidebar without ever showing to the reader: it is stripped from the label AND
-// from the route (so URLs and cross-page links stay clean), while the real,
-// prefixed name is kept as the fetch `path`. Zero-pad so "10" sorts after "02".
-// Word prefixes like "book-1-" are intentionally NOT stripped — those exist for
-// sites that want the number visible in the title.
+// A leading numeric prefix ("01-", "02_") orders files and folders in the sidebar without ever showing to the reader: it is stripped from the label AND from the route (so URLs and cross-page links stay clean), while the real, prefixed name is kept as the fetch `path`. Zero-pad so "10" sorts after "02". Word prefixes like "book-1-" are intentionally NOT stripped — those exist for sites that want the number visible in the title.
 const ORDER_PREFIX = /^\d+[-_]+/;
 const stripOrder = (name) => name.replace(ORDER_PREFIX, '');
 
 // ---- labels: mechanical, never hand-set ------------------------------------
-// A name like "markdown-rendering" or "get_started" becomes "Markdown
-// Rendering" / "Get Started". Pure transformation of the on-disk name, with any
-// ordering prefix dropped first so it never reaches the label.
+// A name like "markdown-rendering" or "get_started" becomes "Markdown Rendering" / "Get Started". Pure transformation of the on-disk name, with any ordering prefix dropped first so it never reaches the label.
 function label(name) {
   return stripOrder(name.replace(/\.md$/i, ''))
     .replace(/[-_]+/g, ' ')
@@ -48,28 +35,17 @@ function label(name) {
 }
 
 const isReadme = (name) => name.toLowerCase() === 'readme.md';
-// GLOSSARY.md is a bottom-sheet target reached by `GLOSSARY.md#term` links, not a
-// standalone page. Like README, it is never listed as an ordinary nav page (left
-// in, it sorts alphabetically to the very top and leads the sidebar ahead of the
-// Introduction). The bottom sheet fetches it by path directly, independent of nav.
+// GLOSSARY.md is a bottom-sheet target reached by `GLOSSARY.md#term` links, not a standalone page. Like README, it is never listed as an ordinary nav page (left in, it sorts alphabetically to the very top and leads the sidebar ahead of the Introduction). The bottom sheet fetches it by path directly, independent of nav.
 const isGlossary = (name) => name.toLowerCase() === 'glossary.md';
 const isPageFile = (name) => !isReadme(name) && !isGlossary(name);
 const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
 
 // ---- shared builder --------------------------------------------------------
-// Turn a flat list of paths relative to the docs folder (e.g.
-// ["installation.md", "features/themes.md"]) into the nested nav tree.
+// Turn a flat list of paths relative to the docs folder (e.g. ["installation.md", "features/themes.md"]) into the nested nav tree.
 //
-// A folder's README.md is that folder's index: the folder heading links to it,
-// so a folder that contains only a README still shows up as a clickable page.
-// The root README is the site landing page and is tracked separately as
-// `hasIndex` (it has no folder heading to attach to). README files are never
-// listed as ordinary pages.
+// A folder's README.md is that folder's index: the folder heading links to it, so a folder that contains only a README still shows up as a clickable page. The root README is the site landing page and is tracked separately as `hasIndex` (it has no folder heading to attach to). README files are never listed as ordinary pages.
 //
-// `route` is the CLEAN path (ordering prefixes stripped from every segment) used
-// for "#/<route>" addressing and cross-page links; `path` is the REAL file path
-// (prefixes intact, ".md" included) used to fetch it. They differ only when a
-// file or folder carries an ordering prefix.
+// `route` is the CLEAN path (ordering prefixes stripped from every segment) used for "#/<route>" addressing and cross-page links; `path` is the REAL file path (prefixes intact, ".md" included) used to fetch it. They differ only when a file or folder carries an ordering prefix.
 //
 // NavNode shapes produced here:
 //   { route, label, path }               a page (a non-README .md file)
@@ -92,8 +68,7 @@ function buildNav(relPaths) {
 
   const hasIndex = root.files.some(isReadme);
 
-  // `rawRel` accumulates the real (prefixed) folder path for fetching; `cleanRel`
-  // accumulates the prefix-stripped path used for routes and links.
+  // `rawRel` accumulates the real (prefixed) folder path for fetching; `cleanRel` accumulates the prefix-stripped path used for routes and links.
   const toNodes = (node, rawRel, cleanRel) => {
     const out = [];
     node.files
@@ -112,9 +87,7 @@ function buildNav(relPaths) {
       const child = node.dirs.get(d);
       const items = toNodes(child, childRaw, childClean);
       const readme = child.files.find(isReadme);
-      // A folder with a README becomes a clickable heading (its index); a folder
-      // with no README is a plain heading. A folder with neither a README nor any
-      // descendant pages is dropped (nothing to point at).
+      // A folder with a README becomes a clickable heading (its index); a folder with no README is a plain heading. A folder with neither a README nor any descendant pages is dropped (nothing to point at).
       if (readme)
         out.push({
           group: label(d),
@@ -131,9 +104,7 @@ function buildNav(relPaths) {
 }
 
 // ---- strategy 1: directory autoindex --------------------------------------
-// Recursively fetch directory listings and collect every .md path. Throws if
-// the server does not hand back a parseable listing (e.g. it returns the docs
-// app shell, as GitHub Pages does), so the caller can fall back.
+// Recursively fetch directory listings and collect every .md path. Throws if the server does not hand back a parseable listing (e.g. it returns the docs app shell, as GitHub Pages does), so the caller can fall back.
 async function fromAutoindex() {
   const paths = [];
 
@@ -143,8 +114,7 @@ async function fromAutoindex() {
     if (!res.ok) throw new Error('no listing at ' + url);
     const html = await res.text();
 
-    // GitHub Pages answers a directory request with the folder's index.html
-    // (our reader shell), not a file listing. Detect that and bail.
+    // GitHub Pages answers a directory request with the folder's index.html (our reader shell), not a file listing. Detect that and bail.
     if (/id=["']content["']|src=["'][^"']*docs\.js/i.test(html)) {
       throw new Error('directory listing unavailable (served app shell)');
     }
@@ -171,8 +141,7 @@ async function fromAutoindex() {
 }
 
 // ---- strategy 2: GitHub tree API ------------------------------------------
-// One call returns the repo's whole tree; keep the .md files under the docs
-// base and strip the base prefix so the paths line up with the live routes.
+// One call returns the repo's whole tree; keep the .md files under the docs base and strip the base prefix so the paths line up with the live routes.
 async function fromGitHub(repo) {
   const { owner, repo: name, branch = 'main', base = 'docs' } = repo || {};
   if (!owner || !name) throw new Error('no repo configured for GitHub fallback');
@@ -194,12 +163,7 @@ async function fromGitHub(repo) {
 }
 
 // ---- public entry ----------------------------------------------------------
-// Resolve the nav, preferring a live directory listing, falling back to the
-// GitHub tree. The result is NOT cached: boot() runs loadDocsNav once per full
-// page load (in-app navigation is hash-based and never re-boots), so there is
-// no per-session network saving worth the risk. A persisted copy only ever
-// caused stale sidebars — a docs tree edited after a visit would keep showing
-// the old shape until the tab was closed. Always rebuild from the real tree.
+// Resolve the nav, preferring a live directory listing, falling back to the GitHub tree. The result is NOT cached: boot() runs loadDocsNav once per full page load (in-app navigation is hash-based and never re-boots), so there is no per-session network saving worth the risk. A persisted copy only ever caused stale sidebars — a docs tree edited after a visit would keep showing the old shape until the tab was closed. Always rebuild from the real tree.
 export async function loadDocsNav(repo) {
   try {
     return await fromAutoindex();

@@ -3,12 +3,7 @@
 //
 //   node scripts/shot-add-vault.mjs <manifest.db> <folder> [<folder> …]
 //
-// Only capture-screenshot.ps1 calls this, and only against the throwaway
-// profile it made — the library's search box and vault switcher do not exist
-// until there is a vault, so a picture of either needs one seeded. The app
-// builds the database and its migrations itself on first launch; this writes
-// one row per folder into the table that is already there (src/store/vaults.rs)
-// rather than guessing at a schema that would then be the second copy of it.
+// Only capture-screenshot.ps1 calls this, and only against the throwaway profile it made — the library's search box and vault switcher do not exist until there is a vault, so a picture of either needs one seeded. The app builds the database and its migrations itself on first launch; this writes one row per folder into the table that is already there (src/store/vaults.rs) rather than guessing at a schema that would then be the second copy of it.
 
 import { existsSync } from 'node:fs';
 import { basename, resolve } from 'node:path';

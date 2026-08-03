@@ -202,8 +202,7 @@ pub(crate) fn empty_local_image_response(status: u16) -> LocalImageResponse {
     }
 }
 
-/// True when `path` names a file the reading view displays as an image, so live
-/// reload refreshes the images in place instead of re-rendering.
+/// True when `path` names a file the reading view displays as an image, so live reload refreshes the images in place instead of re-rendering.
 pub fn is_local_image_path(path: &Path) -> bool {
     local_image_mime_type(path).starts_with("image/")
 }

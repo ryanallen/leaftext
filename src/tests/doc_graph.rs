@@ -27,8 +27,7 @@ fn labels(graph: &DocumentGraph) -> Vec<String> {
     names
 }
 
-/// Whether two nodes are joined, named by their labels — a document's file stem or
-/// a web address's domain, which is what the map itself shows.
+/// Whether two nodes are joined, named by their labels — a document's file stem or a web address's domain, which is what the map itself shows.
 fn linked(graph: &DocumentGraph, a: &str, b: &str) -> bool {
     let label_of = |path: &str| {
         graph
@@ -47,8 +46,7 @@ fn linked(graph: &DocumentGraph, a: &str, b: &str) -> bool {
 #[test]
 fn a_document_in_no_vault_still_has_a_map_of_what_it_links_to() {
     let dir = graph_dir("loose");
-    // No vault anywhere near this: just a folder with documents in it, which still
-    // has to draw a map.
+    // No vault anywhere near this: just a folder with documents in it, which still has to draw a map.
     let seed = dir.join("opening.md");
     write(
         &seed,
@@ -56,8 +54,7 @@ fn a_document_in_no_vault_still_has_a_map_of_what_it_links_to() {
     );
     write(&dir.join("refuge.md"), "# Refuge\n");
     write(&dir.join("vows.md"), "# Vows\n");
-    // A sibling that links *to* the seed. Nothing in the seed's own text says so,
-    // which is exactly why the folder is read.
+    // A sibling that links *to* the seed. Nothing in the seed's own text says so, which is exactly why the folder is read.
     write(
         &dir.join("commentary.md"),
         "# Commentary\n\nOn [the opening](./opening.md).\n",
@@ -68,8 +65,7 @@ fn a_document_in_no_vault_still_has_a_map_of_what_it_links_to() {
         labels(&graph),
         vec!["commentary", "opening", "refuge", "vows"]
     );
-    // The relative link, the wiki name, and the backlink — three edges. The link
-    // that resolves nowhere draws none.
+    // The relative link, the wiki name, and the backlink — three edges. The link that resolves nowhere draws none.
     assert!(linked(&graph, "opening", "refuge"));
     assert!(linked(&graph, "opening", "vows"));
     assert!(linked(&graph, "opening", "commentary"));
@@ -90,14 +86,11 @@ fn a_link_out_of_the_folder_is_followed_but_the_tree_below_is_not() {
         "# Away\n\nAnd on to [further](./further.md).\n",
     );
     write(&dir.join("elsewhere").join("further.md"), "# Further\n");
-    // Below the seed's own folder. One level is the rule, so this is not read —
-    // descending is how a bounded read becomes a crawl.
+    // Below the seed's own folder. One level is the rule, so this is not read — descending is how a bounded read becomes a crawl.
     write(&here.join("below").join("deep.md"), "# Deep\n");
 
     let graph = document_graph(&seed, &GraphRequest::default());
-    // The document it points at is there. `further` is not: only the seed's own
-    // links are followed, or every link would pull in the next one's links too.
-    // Neither is `deep`, which sits below the folder rather than in it.
+    // The document it points at is there. `further` is not: only the seed's own links are followed, or every link would pull in the next one's links too. Neither is `deep`, which sits below the folder rather than in it.
     assert_eq!(labels(&graph), vec!["away", "opening"]);
     assert!(linked(&graph, "opening", "away"));
 
@@ -114,8 +107,7 @@ fn a_loose_document_resolves_an_alias_because_the_graph_is_built_once() {
         "---\naliases: [Mozart]\n---\n\n# Mozart\n",
     );
 
-    // Nothing in `doc_graph.rs` knows what an alias is; it shares `build_graph`
-    // with the vault, so the name index it gets is the same one.
+    // Nothing in `doc_graph.rs` knows what an alias is; it shares `build_graph` with the vault, so the name index it gets is the same one.
     let graph = document_graph(&seed, &GraphRequest::default());
     assert!(linked(&graph, "listening", "Wolfgang Amadeus Mozart"));
 
@@ -128,8 +120,7 @@ fn focus_narrows_a_document_map_the_same_way_it_narrows_a_vault() {
     let seed = dir.join("opening.md");
     write(&seed, "# Opening\n\nSee [refuge](./refuge.md).\n");
     write(&dir.join("refuge.md"), "# Refuge\n");
-    // Two siblings that link to each other and not to the seed: in the picture at
-    // full size, out of it under Focus.
+    // Two siblings that link to each other and not to the seed: in the picture at full size, out of it under Focus.
     write(&dir.join("aside.md"), "# Aside\n\n[other](./other.md)\n");
     write(&dir.join("other.md"), "# Other\n");
 
@@ -155,9 +146,7 @@ fn focus_narrows_a_document_map_the_same_way_it_narrows_a_vault() {
 fn bare_web_addresses_are_nodes_because_the_reader_can_click_them() {
     let dir = graph_dir("urls");
     let seed = dir.join("guide.md");
-    // The shape that drew an empty map: a document whose only links out are bare
-    // URLs. They are not links in the source — the renderer linkifies them in the
-    // plain text — so the graph has to look for them the same way.
+    // The shape that drew an empty map: a document whose only links out are bare URLs. They are not links in the source — the renderer linkifies them in the plain text — so the graph has to look for them the same way.
     write(
         &seed,
         "# Guide\n\nSources used:\n\n- Reddit: https://www.reddit.com/r/x/comments/1/y/\n\
@@ -183,8 +172,7 @@ fn bare_web_addresses_are_nodes_because_the_reader_can_click_them() {
     assert!(linked(&graph, "guide", "reddit.com"));
     assert!(linked(&graph, "guide", "steamcommunity.com"));
 
-    // The whole URL is the node's identity, so a click has somewhere to go — and a
-    // trailing slash is not a different page.
+    // The whole URL is the node's identity, so a click has somewhere to go — and a trailing slash is not a different page.
     let reddit = graph
         .nodes
         .iter()
@@ -205,8 +193,7 @@ fn bare_web_addresses_are_nodes_because_the_reader_can_click_them() {
 fn two_documents_citing_one_page_share_its_node() {
     let dir = graph_dir("shared");
     let seed = dir.join("first.md");
-    // Same article, three spellings: a trailing slash, a fragment, and a
-    // capitalized host. One node, cited twice — which is the reason to draw it.
+    // Same article, three spellings: a trailing slash, a fragment, and a capitalized host. One node, cited twice — which is the reason to draw it.
     write(&seed, "# First\n\nSee https://example.org/Article/\n");
     write(
         &dir.join("second.md"),
@@ -217,8 +204,7 @@ fn two_documents_citing_one_page_share_its_node() {
     assert_eq!(labels(&graph), vec!["example.org", "first", "second"]);
     assert!(linked(&graph, "first", "example.org"));
     assert!(linked(&graph, "second", "example.org"));
-    // The path's case is left alone — only the scheme and host are folded, because
-    // only those are case-insensitive.
+    // The path's case is left alone — only the scheme and host are folded, because only those are case-insensitive.
     let page = graph
         .nodes
         .iter()
@@ -279,9 +265,7 @@ fn an_edge_keeps_the_direction_it_was_written_in() {
             "commentary -> opening",
             // A page cannot link back, so an address is always the target.
             "opening -> example.org",
-            // Both ways: one line, marked so the page puts a head on each end. Its
-            // orientation is sorted rather than arbitrary, so two reads of an
-            // unchanged folder produce the same list.
+            // Both ways: one line, marked so the page puts a head on each end. Its orientation is sorted rather than arbitrary, so two reads of an unchanged folder produce the same list.
             "opening <-> refuge",
         ]
     );

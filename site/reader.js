@@ -1,11 +1,8 @@
 // reader.js
 // ---------------------------------------------------------------------------
-// The glue: fetch ./README.md (the file sitting next to this page), turn it
-// into HTML with our renderer, put it on the page, set the browser tab title,
-// build the document minimap, and jump to any #anchor that is in the URL.
+// The glue: fetch ./README.md (the file sitting next to this page), turn it into HTML with our renderer, put it on the page, set the browser tab title, build the document minimap, and jump to any #anchor that is in the URL.
 //
-// This file is intentionally short. The interesting work is in markdown.js
-// (rendering), minimap.js (the side-rail overview), and styles.css (the look).
+// This file is intentionally short. The interesting work is in markdown.js (rendering), minimap.js (the side-rail overview), and styles.css (the look).
 // ---------------------------------------------------------------------------
 
 import { renderMarkdown } from './markdown.js';
@@ -23,19 +20,12 @@ import { applySpeedReaderIfEnabled } from './speed-reader.js';
 const content = document.getElementById('content');
 const statusEl = document.getElementById('status');
 
-// The settings menu (theme + show/hide minimap) pinned to the top-right. The
-// single-README site has no navigation sidebar, so no "Show library" toggle.
+// The settings menu (theme + show/hide minimap) pinned to the top-right. The single-README site has no navigation sidebar, so no "Show library" toggle.
 installSettings({ hasLibrary: false });
 
-// Glossary links (e.g. GLOSSARY.md#karma) open the term in a bottom sheet over
-// the README rather than navigating. The file is docs/GLOSSARY.md — there is no
-// copy at the site root, so a bare 'GLOSSARY.md' here is a 404 in the sheet.
+// Glossary links (e.g. GLOSSARY.md#karma) open the term in a bottom sheet over the README rather than navigating. The file is docs/GLOSSARY.md — there is no copy at the site root, so a bare 'GLOSSARY.md' here is a 404 in the sheet.
 //
-// This single-README page has no router, so it cannot render the whole glossary
-// itself. "Open the full glossary" (and any plain link to the glossary file)
-// goes to the docs viewer's GLOSSARY route — `docs/#/GLOSSARY` — which renders
-// the file with full chrome; the default fetches the raw .md, which the browser
-// shows as unrendered Markdown.
+// This single-README page has no router, so it cannot render the whole glossary itself. "Open the full glossary" (and any plain link to the glossary file) goes to the docs viewer's GLOSSARY route — `docs/#/GLOSSARY` — which renders the file with full chrome; the default fetches the raw .md, which the browser shows as unrendered Markdown.
 const glossary = installGlossary({
   glossaryUrl: 'docs/GLOSSARY.md',
   renderMarkdown,
@@ -55,9 +45,7 @@ content.addEventListener('click', (event) => {
   glossary.handleClick(event);
 });
 
-// Mermaid and KaTeX are vendored under site/vendor/ — no external CDN. Each is a
-// single self-contained UMD file, loaded lazily (via a <script> tag) only when
-// the document actually contains a diagram or math, and only once.
+// Mermaid and KaTeX are vendored under site/vendor/ — no external CDN. Each is a single self-contained UMD file, loaded lazily (via a <script> tag) only when the document actually contains a diagram or math, and only once.
 const MERMAID_SRC = 'site/vendor/mermaid.min.js';
 const KATEX_SRC = 'site/vendor/katex/katex.min.js';
 const HLJS_SRC = 'site/vendor/highlight.min.js';
@@ -84,8 +72,7 @@ async function renderMermaidDiagrams() {
   if (!nodes.length) return;
   try {
     if (!window.mermaid) await loadScript(MERMAID_SRC);
-    // Use our bundled Noto Sans for diagram labels (arrows/shapes are SVG, not
-    // fonts, so they're unaffected).
+    // Use our bundled Noto Sans for diagram labels (arrows/shapes are SVG, not fonts, so they're unaffected).
     window.mermaid.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
@@ -100,8 +87,7 @@ async function renderMermaidDiagrams() {
   }
 }
 
-// The raw TeX lives in each .math element's text (stashed by markdown.js); we
-// render it in place. (KaTeX's CSS is linked in index.html.)
+// The raw TeX lives in each .math element's text (stashed by markdown.js); we render it in place. (KaTeX's CSS is linked in index.html.)
 async function renderMath() {
   const nodes = Array.from(content.querySelectorAll('.math'));
   if (!nodes.length) return;
@@ -126,9 +112,7 @@ function showStatus(message) {
   }
 }
 
-// Jump to the heading/element named in the URL (e.g. .../#features). We do this
-// ourselves because the content is added after the page loads, so the browser's
-// own jump may have happened too early.
+// Jump to the heading/element named in the URL (e.g. .../#features). We do this ourselves because the content is added after the page loads, so the browser's own jump may have happened too early.
 function scrollToHash() {
   if (!location.hash) return;
   const raw = location.hash.slice(1);
@@ -168,9 +152,7 @@ async function main() {
 
     content.innerHTML = isXML ? renderTEI(text) : renderMarkdown(text);
     decorateBlockquoteLines(content);
-    // A collapsed outline (table of contents) built from the document's
-    // headings, tucked just under the title. Built before the anchor pass so its
-    // link-only entries stay out of the block-numbering scheme.
+    // A collapsed outline (table of contents) built from the document's headings, tucked just under the title. Built before the anchor pass so its link-only entries stay out of the block-numbering scheme.
     buildOutline(content, { label: 'Outline' });
     if (statusEl) statusEl.hidden = true;
 
@@ -181,8 +163,7 @@ async function main() {
       if (title) document.title = title.slice(0, 80);
     }
 
-    // Render Mermaid diagrams and math (async; the minimap's resize observer
-    // picks up height changes), build the minimap, then jump to any #anchor.
+    // Render Mermaid diagrams and math (async; the minimap's resize observer picks up height changes), build the minimap, then jump to any #anchor.
     if (!isXML) {
       renderMermaidDiagrams();
       renderMath();
@@ -190,16 +171,13 @@ async function main() {
       decorateCodeBlocks(content);
     }
     decorateAnchorLinks(content);
-    // Clear any stale processed flag before anchoring the freshly rendered
-    // document (the settings boot may have run against this element while it was
-    // still empty), the same as the docs viewer does on every render.
+    // Clear any stale processed flag before anchoring the freshly rendered document (the settings boot may have run against this element while it was still empty), the same as the docs viewer does on every render.
     delete content.dataset.speedReaderProcessed;
     applySpeedReaderIfEnabled(content);
     initMinimap(content);
     scrollToHash();
 
-    // Auto-link glossary terms after the page is displayed. The glossary is a
-    // published doc page, so it is under docs/, not beside this one.
+    // Auto-link glossary terms after the page is displayed. The glossary is a published doc page, so it is under docs/, not beside this one.
     installAutoGlossary({
       contentEl: content,
       renderMarkdown,
@@ -216,10 +194,6 @@ async function main() {
   }
 }
 
-// Note: we deliberately do NOT re-scroll on every `hashchange`. The browser
-// already scrolls to the anchor when you click an in-page link, and on
-// back/forward it restores your previous scroll position. A hashchange handler
-// would override that restoration and snap you back to the heading instead of
-// where you had scrolled to.
+// Note: we deliberately do NOT re-scroll on every `hashchange`. The browser already scrolls to the anchor when you click an in-page link, and on back/forward it restores your previous scroll position. A hashchange handler would override that restoration and snap you back to the heading instead of where you had scrolled to.
 
 main();

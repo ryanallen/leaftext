@@ -1,14 +1,11 @@
 #!/usr/bin/env node
-// Which pictures the documentation asks for, and which of them are not there.
-// A page that names a screenshot nobody ever took renders a broken frame at
-// leaftext.com, and nothing else in the repo notices.
+// Which pictures the documentation asks for, and which of them are not there. A page that names a screenshot nobody ever took renders a broken frame at leaftext.com, and nothing else in the repo notices.
 //
 //   node scripts/doc-images.mjs           list every reference, missing ones last
 //   node scripts/doc-images.mjs --missing just the missing ones, one per line
 //   node scripts/doc-images.mjs --check   exit 1 if any are missing
 //
-// Not in `just verify`: the tree has a backlog of these, and a check that is red
-// before anybody touches it stops being read. `/sync-docs` runs it instead.
+// Not in `just verify`: the tree has a backlog of these, and a check that is red before anybody touches it stops being read. `/sync-docs` runs it instead.
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, posix, relative, resolve } from 'node:path';
@@ -26,10 +23,7 @@ function markdownFiles(dir) {
   return out;
 }
 
-// A picture named inside code — a fenced block or a `span` — is the shape of a
-// line someone writes, not a file this repo has. The theming page shows an author
-// how to add a preview image that way, and counting those as missing hides the real
-// number behind noise nobody can clear.
+// A picture named inside code — a fenced block or a `span` — is the shape of a line someone writes, not a file this repo has. The theming page shows an author how to add a preview image that way, and counting those as missing hides the real number behind noise nobody can clear.
 function withoutCode(text) {
   return text.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
 }

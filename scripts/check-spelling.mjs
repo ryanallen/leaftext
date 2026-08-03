@@ -1,18 +1,10 @@
-// Keep the repo's own writing in US spelling — "color", never "colour". The word
-// list below is the British form of pairs that actually turn up in software prose;
-// each maps to the spelling this repo uses.
+// Keep the repo's own writing in US spelling — "color", never "colour". The word list below is the British form of pairs that actually turn up in software prose; each maps to the spelling this repo uses.
 //
 //   node scripts/check-spelling.mjs   report every hit and exit non-zero (`just verify`)
 //
-// Only files this repo authors are scanned, plus the live tickets in `../docs`
-// (outside this git repo, which is how a British spelling first got into one).
-// Vendored bundles (Monaco, KaTeX, Mermaid, PixiJS, Noto) are third-party text
-// and are skipped wholesale, as are build output, the font CSS (megabytes of
-// base64), and Cargo.lock.
+// Only files this repo authors are scanned, plus the live tickets in `../docs` (outside this git repo, which is how a British spelling first got into one). Vendored bundles (Monaco, KaTeX, Mermaid, PixiJS, Noto) are third-party text and are skipped wholesale, as are build output, the font CSS (megabytes of base64), and Cargo.lock.
 //
-// EXEMPT holds the handful of identifiers that are British by specification and
-// cannot be respelled: an ARIA attribute name and a Windows Installer directory
-// id. They are matched as whole tokens so a real prose hit beside one still fails.
+// EXEMPT holds the handful of identifiers that are British by specification and cannot be respelled: an ARIA attribute name and a Windows Installer directory id. They are matched as whole tokens so a real prose hit beside one still fails.
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
@@ -143,10 +135,7 @@ const pattern = new RegExp(
   'gi'
 );
 
-// The tickets live in `../docs`, beside the app and outside this git repo, so the
-// walk above never reached them — which is how a British spelling got into one.
-// Only the live plans plus the index: `done/` and `canceled/` are history, not
-// writing to fix, but the index describes them in words written now.
+// The tickets live in `../docs`, beside the app and outside this git repo, so the walk above never reached them — which is how a British spelling got into one. Only the live plans plus the index: `done/` and `canceled/` are history, not writing to fix, but the index describes them in words written now.
 const TICKET_PATHS = ['../docs/README.md', '../docs/features', '../docs/refactor'];
 function ticketFiles() {
   const out = [];

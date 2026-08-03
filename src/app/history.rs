@@ -63,9 +63,7 @@ impl DocumentHistory {
         self.index = Some(self.entries.len() - 1);
     }
 
-    /// Rename the current entry in place — the untitled document that has just
-    /// been given a file. Not a navigation: Back must not gain a step to a name
-    /// nothing was ever at.
+    /// Rename the current entry in place — the untitled document that has just been given a file. Not a navigation: Back must not gain a step to a name nothing was ever at.
     pub(crate) fn replace_current(&mut self, path: PathBuf) {
         if let Some(entry) = self.index.and_then(|index| self.entries.get_mut(index)) {
             *entry = path;
@@ -90,9 +88,7 @@ impl DocumentHistory {
         }
     }
 
-    /// Remove the current entry (e.g. it failed to open) and fall back to the
-    /// previous document. Returns whether an entry remains to show; `false`
-    /// means the history is now empty and the tab should be closed.
+    /// Remove the current entry (e.g. it failed to open) and fall back to the previous document. Returns whether an entry remains to show; `false` means the history is now empty and the tab should be closed.
     pub(crate) fn forget_current(&mut self) -> bool {
         let Some(index) = self.index else {
             return false;

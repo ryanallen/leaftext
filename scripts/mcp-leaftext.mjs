@@ -1,26 +1,18 @@
 #!/usr/bin/env node
-// An MCP server wrapping the running app's ask pipe, so an AI can ask a live
-// Leaftext questions instead of reading what it wrote earlier.
+// An MCP server wrapping the running app's ask pipe, so an AI can ask a live Leaftext questions instead of reading what it wrote earlier.
 //
 //   node scripts/mcp-leaftext.mjs          speak MCP on stdin/stdout
 //   node scripts/mcp-leaftext.mjs --ask '{"ask":"state"}'   one question, for a person
 //
-// It is a wrapper and nothing else: every answer comes from `src/pipe.rs`, and
-// adding an ask there is what adds a tool here. **Never a shipped artifact** —
-// one MSI and one DMG is the rule, and every extra file in a release is one
-// somebody has to ask about. Build it on demand; it is not in either release
-// workflow, and `just verify` cannot run it because it needs the app running.
+// It is a wrapper and nothing else: every answer comes from `src/pipe.rs`, and adding an ask there is what adds a tool here. **Never a shipped artifact** — one MSI and one DMG is the rule, and every extra file in a release is one somebody has to ask about. Build it on demand; it is not in either release workflow, and `just verify` cannot run it because it needs the app running.
 //
-// No dependency, not even the MCP SDK: the stdio transport is newline-delimited
-// JSON-RPC, which is the hundred lines below.
+// No dependency, not even the MCP SDK: the stdio transport is newline-delimited JSON-RPC, which is the hundred lines below.
 
 import net from 'node:net';
 import process from 'node:process';
 import readline from 'node:readline';
 
-// The address the app listens on. Written in src/pipe.rs — `address()` — and the
-// folder it sits in comes from `project_data_local_dir()` in src/lib.rs.
-// scripts/check-mcp.mjs fails if the pipe's name here and there drift apart.
+// The address the app listens on. Written in src/pipe.rs — `address()` — and the folder it sits in comes from `project_data_local_dir()` in src/lib.rs. scripts/check-mcp.mjs fails if the pipe's name here and there drift apart.
 const PIPE_NAME = 'leaftext-journal-';
 
 function address() {
@@ -39,10 +31,7 @@ function askApp(request) {
     socket.setTimeout(10_000);
     socket.on('connect', () => {
       const text = JSON.stringify(request);
-      // A Windows named pipe has no half-close: ending the socket closes the
-      // whole handle, and the reply lands on a pipe with nobody at this end.
-      // The server there reads one message and does not wait for EOF. A Unix
-      // socket does wait for it, so there the write has to be the last thing.
+      // A Windows named pipe has no half-close: ending the socket closes the whole handle, and the reply lands on a pipe with nobody at this end. The server there reads one message and does not wait for EOF. A Unix socket does wait for it, so there the write has to be the last thing.
       if (process.platform === 'win32') socket.write(text);
       else socket.end(text);
     });
@@ -64,8 +53,7 @@ function askApp(request) {
   });
 }
 
-// One entry per ask in `Ask` (src/pipe.rs). A new variant there is a new row here
-// and nothing else.
+// One entry per ask in `Ask` (src/pipe.rs). A new variant there is a new row here and nothing else.
 const TOOLS = [
   {
     name: 'leaftext_log',

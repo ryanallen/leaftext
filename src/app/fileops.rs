@@ -22,17 +22,13 @@ pub(crate) fn open_with_os(target: &str) -> io::Result<()> {
     }
 }
 
-/// Open the OS file manager with `path` selected: Explorer on Windows, Finder
-/// on macOS.
+/// Open the OS file manager with `path` selected: Explorer on Windows, Finder on macOS.
 pub(crate) fn reveal_in_file_manager(path: &Path) -> io::Result<()> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
 
-        // `explorer /select,<path>` highlights the file. Spawn rather than wait
-        // (Explorer returns non-zero even on success). Explorer needs `/select,`
-        // outside the quotes with only the path quoted, so build the arg verbatim
-        // with `raw_arg`; the std escaper would quote the whole token and break it.
+        // `explorer /select,<path>` highlights the file. Spawn rather than wait (Explorer returns non-zero even on success). Explorer needs `/select,` outside the quotes with only the path quoted, so build the arg verbatim with `raw_arg`; the std escaper would quote the whole token and break it.
         Command::new("explorer")
             .raw_arg(format!("/select,\"{}\"", path.display()))
             .spawn()?;
@@ -53,14 +49,11 @@ pub(crate) fn reveal_in_file_manager(path: &Path) -> io::Result<()> {
     }
 }
 
-/// Put the file on the system clipboard for pasting into the OS file manager.
-/// `cut` requests move semantics.
+/// Put the file on the system clipboard for pasting into the OS file manager. `cut` requests move semantics.
 pub(crate) fn copy_file_to_clipboard(path: &Path, cut: bool) -> io::Result<()> {
     #[cfg(target_os = "windows")]
     {
-        // "Preferred DropEffect" 2 = move (cut), 5 = copy, read by the shell on
-        // paste. SetDataObject(_, $true) flushes so it survives PowerShell
-        // exiting; clipboard needs STA. Path/effect via env to avoid quoting.
+        // "Preferred DropEffect" 2 = move (cut), 5 = copy, read by the shell on paste. SetDataObject(_, $true) flushes so it survives PowerShell exiting; clipboard needs STA. Path/effect via env to avoid quoting.
         const SCRIPT: &str = "Add-Type -AssemblyName System.Windows.Forms;\
             $files = New-Object System.Collections.Specialized.StringCollection;\
             [void]$files.Add($env:LEAF_CLIP_PATH);\
@@ -84,8 +77,7 @@ pub(crate) fn copy_file_to_clipboard(path: &Path, cut: bool) -> io::Result<()> {
 
     #[cfg(target_os = "macos")]
     {
-        // macOS has no clipboard "cut"; both put the file on the pasteboard (the
-        // move is the user's Cmd+Opt+V on paste).
+        // macOS has no clipboard "cut"; both put the file on the pasteboard (the move is the user's Cmd+Opt+V on paste).
         let _ = cut;
         let escaped = path
             .to_string_lossy()
@@ -111,9 +103,7 @@ pub(crate) fn copy_path_to_clipboard(path: &Path) -> io::Result<()> {
     platform::set_clipboard_text(&path.display().to_string())
 }
 
-/// Rename a file in place. The new name must be a bare file name: empty names,
-/// path separators, and the dot entries are rejected so the action can never move
-/// the file or escape its folder. Returns the new path.
+/// Rename a file in place. The new name must be a bare file name: empty names, path separators, and the dot entries are rejected so the action can never move the file or escape its folder. Returns the new path.
 pub(crate) fn rename_file(path: &Path, new_name: &str) -> io::Result<PathBuf> {
     let trimmed = new_name.trim();
     if trimmed.is_empty()
@@ -144,13 +134,9 @@ pub(crate) fn rename_file(path: &Path, new_name: &str) -> io::Result<PathBuf> {
     Ok(target)
 }
 
-/// Move or copy `source` into `folder`, keeping its name — the library pane's paste.
-/// A cut pastes as a move, a copy as a copy.
+/// Move or copy `source` into `folder`, keeping its name — the library pane's paste. A cut pastes as a move, a copy as a copy.
 ///
-/// Refuses rather than guesses, in every case where guessing would lose something:
-/// a name already taken in the destination is not overwritten, and a folder cannot
-/// be put inside itself. A move within one volume is a rename; across volumes only
-/// files can go, by copying and then removing the original.
+/// Refuses rather than guesses, in every case where guessing would lose something: a name already taken in the destination is not overwritten, and a folder cannot be put inside itself. A move within one volume is a rename; across volumes only files can go, by copying and then removing the original.
 pub(crate) fn transfer_into_folder(
     source: &Path,
     folder: &Path,
@@ -176,13 +162,11 @@ pub(crate) fn transfer_into_folder(
     })?;
     let target = folder.join(name);
 
-    // Already where it is being sent: a paste into the folder the file is in.
-    // Nothing to do, and nothing wrong.
+    // Already where it is being sent: a paste into the folder the file is in. Nothing to do, and nothing wrong.
     if same_path(&target, source) {
         return Ok(target);
     }
-    // A folder cannot contain itself. Without this, `rename` either errors
-    // obscurely or, worse, succeeds partway.
+    // A folder cannot contain itself. Without this, `rename` either errors obscurely or, worse, succeeds partway.
     if source.is_dir() && canonical(folder).starts_with(canonical(source)) {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
@@ -213,15 +197,12 @@ pub(crate) fn transfer_into_folder(
 
     match fs::rename(source, &target) {
         Ok(()) => Ok(target),
-        // Different volume: rename can't span one. A file can still go by copy
-        // then remove; a folder is left to the file manager rather than half-copied
-        // by us.
+        // Different volume: rename can't span one. A file can still go by copy then remove; a folder is left to the file manager rather than half-copied by us.
         Err(error) if source.is_file() => {
             fs::copy(source, &target).map_err(|_| error)?;
             match fs::remove_file(source) {
                 Ok(()) => Ok(target),
-                // The copy landed, so the file is where it was asked to be; the
-                // original outliving it is worth saying, not worth undoing.
+                // The copy landed, so the file is where it was asked to be; the original outliving it is worth saying, not worth undoing.
                 Err(remove_error) => {
                     eprintln!(
                         "Moved {} but could not remove the original: {remove_error}",
@@ -248,13 +229,11 @@ pub(crate) fn delete_to_trash(path: &Path) -> Result<(), String> {
     platform::move_to_trash(path)
 }
 
-/// Open the OS file-properties view: the Properties dialog on Windows, Finder's
-/// Get Info on macOS.
+/// Open the OS file-properties view: the Properties dialog on Windows, Finder's Get Info on macOS.
 pub(crate) fn show_properties(path: &Path) -> io::Result<()> {
     #[cfg(target_os = "windows")]
     {
-        // The shell Properties verb is modal to the caller, so the helper must
-        // linger for the dialog; best-effort. Path via env var.
+        // The shell Properties verb is modal to the caller, so the helper must linger for the dialog; best-effort. Path via env var.
         const SCRIPT: &str = "$p = $env:LEAF_TARGET;\
             $shell = New-Object -ComObject Shell.Application;\
             $folder = $shell.Namespace((Split-Path $p));\
@@ -294,8 +273,7 @@ pub(crate) fn show_properties(path: &Path) -> io::Result<()> {
     }
 }
 
-/// Write the flowchart sheet's diagram out as its own file. The page made the
-/// bytes; this asks where they go, puts them there, and says how it went.
+/// Write the flowchart sheet's diagram out as its own file. The page made the bytes; this asks where they go, puts them there, and says how it went.
 ///
 /// Nothing about the open document changes. An export is a file beside it.
 pub(crate) fn export_diagram(
@@ -313,8 +291,7 @@ pub(crate) fn export_diagram(
         _ => return,
     };
     let bytes = if extension == "png" {
-        // The page sends pixels, not a PNG: ours palettes the drawing and writes
-        // it unfiltered, which the canvas cannot do. See src/png.rs.
+        // The page sends pixels, not a PNG: ours palettes the drawing and writes it unfiltered, which the canvas cannot do. See src/png.rs.
         match decode_base64(data).and_then(|rgba| encode_rgba(&rgba, width, height)) {
             Some(bytes) if !bytes.is_empty() => bytes,
             // A half-decoded picture is worse than none, so nothing is written.
@@ -351,9 +328,7 @@ pub(crate) fn export_diagram(
     }
 }
 
-/// Base64, undone. A PNG reaches the host as text because IPC carries a string,
-/// and this is the one place that turns it back into bytes. Whitespace is
-/// skipped and padding ends it; anything else is a refusal rather than a guess.
+/// Base64, undone. A PNG reaches the host as text because IPC carries a string, and this is the one place that turns it back into bytes. Whitespace is skipped and padding ends it; anything else is a refusal rather than a guess.
 pub(super) fn decode_base64(text: &str) -> Option<Vec<u8>> {
     let mut bytes = Vec::with_capacity(text.len() / 4 * 3);
     let mut carried: u32 = 0;
@@ -381,10 +356,7 @@ pub(super) fn decode_base64(text: &str) -> Option<Vec<u8>> {
 
 /// Ask the library pane to re-read the folder it is showing.
 ///
-/// Called after this app changes what is in a folder. The folder watcher notices
-/// too, but only for the one folder it watches and only after its debounce — so
-/// without this, doing something in the pane leaves the pane showing what was true
-/// before you did it.
+/// Called after this app changes what is in a folder. The folder watcher notices too, but only for the one folder it watches and only after its debounce — so without this, doing something in the pane leaves the pane showing what was true before you did it.
 pub(crate) fn refresh_library_folder(webview: Option<&WebView>) {
     run_page_script(
         webview,
@@ -393,8 +365,7 @@ pub(crate) fn refresh_library_folder(webview: Option<&WebView>) {
     );
 }
 
-/// Tell the person what went wrong, where they are looking. These are the failures
-/// they set in motion and are waiting on, and the terminal is not where they are.
+/// Tell the person what went wrong, where they are looking. These are the failures they set in motion and are waiting on, and the terminal is not where they are.
 pub(crate) fn report_file_action_failure(webview: Option<&WebView>, message: &str) {
     run_page_script(
         webview,

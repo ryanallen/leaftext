@@ -1,25 +1,14 @@
 #!/usr/bin/env node
-// design/icons.md is the list of icons; this compiles it into src/assets/icons.css,
-// one `.lt-icon-<name>` mask class each. The page then wears an icon by name —
-// `<span class="lt-icon lt-icon-back"></span>` — so a drawing used five times is in
-// the app once. The code-view icon was pasted in five places, the heading icon three.
+// design/icons.md is the list of icons; this compiles it into src/assets/icons.css, one `.lt-icon-<name>` mask class each. The page then wears an icon by name — `<span class="lt-icon lt-icon-back"></span>` — so a drawing used five times is in the app once. The code-view icon was pasted in five places, the heading icon three.
 //
 //   node scripts/bundle-icons.mjs           write src/assets/icons.css
 //   node scripts/bundle-icons.mjs --check   fail on drift (`just verify`)
 //
-// A mask reads only alpha, so the copy in the URI is painted flat black and the
-// visible color comes from `background-color: currentColor` on the base class. That
-// is what made the move possible at all: `normalize_svg_icon_colors` had already
-// turned every fill and stroke into `currentColor`, so no icon carried a color.
+// A mask reads only alpha, so the copy in the URI is painted flat black and the visible color comes from `background-color: currentColor` on the base class. That is what made the move possible at all: `normalize_svg_icon_colors` had already turned every fill and stroke into `currentColor`, so no icon carried a color.
 //
-// A row marked `heavy` gets a second mask drawn at the heavy weight, published as
-// `--lt-icon-<name>-heavy` so a rule can swap to it — the active view is drawn bolder
-// as well as brighter, and a mask has no strokes to thicken. `missing-image.svg` and
-// the footnote arrow are not listed: the renderer hands those out as markup.
+// A row marked `heavy` gets a second mask drawn at the heavy weight, published as `--lt-icon-<name>-heavy` so a rule can swap to it — the active view is drawn bolder as well as brighter, and a mask has no strokes to thicken. `missing-image.svg` and the footnote arrow are not listed: the renderer hands those out as markup.
 //
-// The row's Stroke cell is the line weight, and it is stamped over whatever the file
-// draws at. A drawing arrives carrying its tool's number; left alone those drift, and
-// this set had reached seven weights before the column existed.
+// The row's Stroke cell is the line weight, and it is stamped over whatever the file draws at. A drawing arrives carrying its tool's number; left alone those drift, and this set had reached seven weights before the column existed.
 
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -29,8 +18,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const check = process.argv.includes('--check');
 const target = 'src/assets/icons.css';
 
-// The named line weights, read out of the Stroke table so the values live in
-// design/ like every other one. `—` is a drawing with no strokes at all.
+// The named line weights, read out of the Stroke table so the values live in design/ like every other one. `—` is a drawing with no strokes at all.
 const md = readFileSync(join(root, 'design/icons.md'), 'utf8');
 const WEIGHTS = new Map([['—', null]]);
 for (const [, name, value] of md.matchAll(/^\| (regular|heavy|hairline) \| ([0-9.]+) \|/gm)) {
@@ -58,16 +46,14 @@ const present = new Set(readdirSync(join(root, 'src/assets')).filter((f) => f.en
 for (const { file } of rows) {
   if (!present.has(file)) problems.push(`design/icons.md names ${file}, which is not in src/assets/`);
 }
-// The footnote arrow is the renderer's own markup, written into the document, so it
-// has no row and no class.
+// The footnote arrow is the renderer's own markup, written into the document, so it has no row and no class.
 const HANDED_OUT_AS_MARKUP = new Set(['arrow-uturn-left.svg']);
 for (const file of present) {
   if (HANDED_OUT_AS_MARKUP.has(file)) continue;
   if (!rows.some((row) => row.file === file)) problems.push(`src/assets/${file} has no row in design/icons.md`);
 }
 
-// A data: URI inside a CSS url(""): the characters a URL cannot carry raw, and
-// double quotes swapped for single so the value survives its own quoting.
+// A data: URI inside a CSS url(""): the characters a URL cannot carry raw, and double quotes swapped for single so the value survives its own quoting.
 function encode(svg) {
   return svg
     .replace(/currentColor/g, '#000')
@@ -100,8 +86,7 @@ const lines = [
   '  mask-size: contain;',
   '}',
 ];
-// Every stroke in a drawing, set to one weight. The row decides; the number a file
-// happens to carry is only a note, and the check below holds the two together.
+// Every stroke in a drawing, set to one weight. The row decides; the number a file happens to carry is only a note, and the check below holds the two together.
 const STROKE_WIDTH = /stroke-width=(['"])[\d.]+\1/g;
 const atWeight = (svg, value) => svg.replace(STROKE_WIDTH, `stroke-width="${value}"`);
 let drawn = 0;
@@ -118,8 +103,7 @@ for (const { name, file, stroke, heavy: wantsHeavy } of rows) {
     );
     continue;
   }
-  // What you open has to be what ships, so a file drawn at another weight is named
-  // rather than quietly restamped.
+  // What you open has to be what ships, so a file drawn at another weight is named rather than quietly restamped.
   const off = drawnAt.find((match) => !match.includes(`"${wanted}"`));
   if (off) {
     problems.push(`src/assets/${file} draws ${off}, but design/icons.md gives ${name} the ${stroke} stroke (${wanted})`);
@@ -133,8 +117,7 @@ for (const { name, file, stroke, heavy: wantsHeavy } of rows) {
   heavy.push(`  --lt-icon-${name}-heavy: url("data:image/svg+xml,${encode(bolder)}");`);
 }
 if (heavy.length) {
-  // Properties rather than classes: the rule that swaps to one belongs to the
-  // component that has an active state, not to the icon.
+  // Properties rather than classes: the rule that swaps to one belongs to the component that has an active state, not to the icon.
   lines.push('/* The bolder drawing an active control swaps to. */', ':root {', ...heavy, '}');
 }
 const css = lines.join('\n') + '\n';

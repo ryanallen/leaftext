@@ -5,10 +5,7 @@ pub(crate) const MINIMAP_LONG_LINE_CHAR_THRESHOLD: usize = 80;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocumentMinimap {
     pub line_count: usize,
-    /// The line-by-line shape of the document. Not sent to the page, which draws the
-    /// rail from a scaled clone of the real rendering and reads only `line_count`.
-    /// These were 5.5 MB of an 18.9 MB payload on a 4 MB glossary, parsed every open
-    /// for nothing.
+    /// The line-by-line shape of the document. Not sent to the page, which draws the rail from a scaled clone of the real rendering and reads only `line_count`. These were 5.5 MB of an 18.9 MB payload on a 4 MB glossary, parsed every open for nothing.
     #[serde(default, skip_serializing)]
     pub spans: Vec<MinimapSpan>,
 }
@@ -69,12 +66,7 @@ pub fn build_minimap_model(markdown: &str) -> DocumentMinimap {
     }
 }
 
-/// Build a minimap model from rendered block HTML, for TEI/XML documents that
-/// have no Markdown source to line-scan. Each top-level block becomes synthetic
-/// rows: headings as full bars, paragraphs/blockquotes sized to text length,
-/// lists by item count, code by line count. These row counts only shape the
-/// cosmetic thumbnail; the viewport box comes from the reader's real scroll
-/// range (see `measureDocumentMinimap` in the shell).
+/// Build a minimap model from rendered block HTML, for TEI/XML documents that have no Markdown source to line-scan. Each top-level block becomes synthetic rows: headings as full bars, paragraphs/blockquotes sized to text length, lists by item count, code by line count. These row counts only shape the cosmetic thumbnail; the viewport box comes from the reader's real scroll range (see `measureDocumentMinimap` in the shell).
 pub fn build_minimap_model_from_html(html: &str) -> DocumentMinimap {
     let mut spans: Vec<MinimapSpan> = Vec::new();
     let mut next_line: usize = 0;
@@ -85,15 +77,12 @@ pub fn build_minimap_model_from_html(html: &str) -> DocumentMinimap {
     }
 }
 
-/// Rows a run of body text occupies in the thumbnail, at the same characters-per-
-/// line budget the Markdown model treats as a "long" line.
+/// Rows a run of body text occupies in the thumbnail, at the same characters-per- line budget the Markdown model treats as a "long" line.
 pub(crate) fn minimap_rows_for_text(chars: usize) -> usize {
     chars.div_ceil(MINIMAP_LONG_LINE_CHAR_THRESHOLD).max(1)
 }
 
-/// Visible-character count of an HTML fragment: tags stripped, whitespace runs
-/// collapsed to one. Used only to size thumbnail rows, so an approximate count
-/// (entities counted as their raw characters) is fine.
+/// Visible-character count of an HTML fragment: tags stripped, whitespace runs collapsed to one. Used only to size thumbnail rows, so an approximate count (entities counted as their raw characters) is fine.
 pub(crate) fn minimap_html_text_len(html: &str) -> usize {
     let mut count = 0;
     let mut in_tag = false;
@@ -122,9 +111,7 @@ pub(crate) fn minimap_html_text_len(html: &str) -> usize {
     count
 }
 
-/// True when the character right after a matched `<tag` / `</tag` prefix is not a
-/// letter or digit, i.e. the prefix is the whole tag name (`<p>` matches `<p`, but
-/// `<pre>` does not).
+/// True when the character right after a matched `<tag` / `</tag` prefix is not a letter or digit, i.e. the prefix is the whole tag name (`<p>` matches `<p`, but `<pre>` does not).
 pub(crate) fn minimap_tag_boundary(html: &str, index: usize) -> bool {
     html[index..]
         .chars()
@@ -132,8 +119,7 @@ pub(crate) fn minimap_tag_boundary(html: &str, index: usize) -> bool {
         .map_or(true, |character| !character.is_ascii_alphanumeric())
 }
 
-/// Count opening `<name …>` tags in `html` (whole-name matches only). The renderer
-/// emits lowercase tags, so a lowercase scan suffices.
+/// Count opening `<name …>` tags in `html` (whole-name matches only). The renderer emits lowercase tags, so a lowercase scan suffices.
 pub(crate) fn minimap_count_open_tags(html: &str, name: &str) -> usize {
     let pattern = format!("<{name}");
     let mut count = 0;
@@ -148,9 +134,7 @@ pub(crate) fn minimap_count_open_tags(html: &str, name: &str) -> usize {
     count
 }
 
-/// Find the `</name>` that closes the `<name>` whose content starts at `open_end`,
-/// accounting for nested same-name tags. Returns `(inner_start, inner_end,
-/// after_close)`.
+/// Find the `</name>` that closes the `<name>` whose content starts at `open_end`, accounting for nested same-name tags. Returns `(inner_start, inner_end, after_close)`.
 pub(crate) fn minimap_matching_close(
     html: &str,
     open_end: usize,
@@ -190,10 +174,7 @@ pub(crate) fn minimap_matching_close(
     None
 }
 
-/// Walk the top-level blocks of an HTML fragment, pushing one span per block (with
-/// a one-row gap between blocks so they read as separate bars). Container blocks
-/// (`section`, `div`, `article`) and unrecognized wrappers recurse so nested
-/// content — e.g. footnote definitions — is still charted.
+/// Walk the top-level blocks of an HTML fragment, pushing one span per block (with a one-row gap between blocks so they read as separate bars). Container blocks (`section`, `div`, `article`) and unrecognized wrappers recurse so nested content — e.g. footnote definitions — is still charted.
 pub(crate) fn collect_html_minimap_blocks(
     html: &str,
     spans: &mut Vec<MinimapSpan>,

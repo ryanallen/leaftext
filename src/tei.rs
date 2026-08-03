@@ -4,10 +4,7 @@ use crate::*;
 // TEI XML renderer
 // ---------------------------------------------------------------------------
 
-/// Heading level for a div, from nesting depth (h2 at top, one smaller per
-/// level, floored at h6). Depth-based rather than type-based because 84000 TEI
-/// nests div types in varying orders, so a type→level table would invert sizes.
-/// `type="translation"` is a transparent wrapper: no heading, depth unchanged.
+/// Heading level for a div, from nesting depth (h2 at top, one smaller per level, floored at h6). Depth-based rather than type-based because 84000 TEI nests div types in varying orders, so a type→level table would invert sizes. `type="translation"` is a transparent wrapper: no heading, depth unchanged.
 pub(crate) fn tei_div_heading_level(div_type: &str, depth: usize) -> Option<u8> {
     if div_type.eq_ignore_ascii_case("translation") {
         return None;
@@ -30,9 +27,7 @@ pub(crate) struct TeiCtx {
     footnotes: Vec<String>,
     fn_count: usize,
     seen: HashMap<String, usize>,
-    /// Source-anchored editing map: one entry per editable block in document
-    /// order, tying it to its roxmltree node's byte range. The range is stamped
-    /// inline as the element is emitted, so nesting depth doesn't matter.
+    /// Source-anchored editing map: one entry per editable block in document order, tying it to its roxmltree node's byte range. The range is stamped inline as the element is emitted, so nesting depth doesn't matter.
     pub(crate) blocks: Vec<BlockSpan>,
     next_block_id: usize,
 }
@@ -49,8 +44,7 @@ impl TeiCtx {
         }
     }
 
-    /// Record a `kind` block for `node` and return the `data-*` attribute string
-    /// to stamp on its opening tag. Ranges come from roxmltree's `Node::range()`.
+    /// Record a `kind` block for `node` and return the `data-*` attribute string to stamp on its opening tag. Ranges come from roxmltree's `Node::range()`.
     fn block_attrs(&mut self, kind: &'static str, node: roxmltree::Node) -> String {
         let range = node.range();
         let id = self.next_block_id;
@@ -100,8 +94,7 @@ pub(crate) fn tei_render_inline<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut Tei
                     let n = ctx.fn_count;
                     let fn_html = tei_render_inline(child, ctx);
                     ctx.footnotes.push(fn_html);
-                    // `fnref{n}` split out to avoid the Rust 2021 `ref{n}` lexer
-                    // issue; markup matches the markdown renderer's footnotes.
+                    // `fnref{n}` split out to avoid the Rust 2021 `ref{n}` lexer issue; markup matches the markdown renderer's footnotes.
                     let refid = format!("fnref{n}");
                     out.push_str(&format!(
                         "<sup class=\"footnote-reference\" id=\"{refid}\">\
@@ -109,9 +102,7 @@ pub(crate) fn tei_render_inline<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut Tei
                     ));
                 }
                 "ptr" => {
-                    // 84000 puts the cross-reference label inside <ptr>. Keep the
-                    // text; link it only for external URLs (internal #ids don't
-                    // map to our heading slugs).
+                    // 84000 puts the cross-reference label inside <ptr>. Keep the text; link it only for external URLs (internal #ids don't map to our heading slugs).
                     let label = tei_render_inline(child, ctx);
                     if !label.is_empty() {
                         match child.attribute("target") {
@@ -138,8 +129,7 @@ pub(crate) fn tei_render_inline<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut Tei
     out
 }
 
-/// Wrap verse lines in a blockquote so they render like a Markdown `>` quote
-/// (left bar + hanging indent), with each `<l>` line on its own row.
+/// Wrap verse lines in a blockquote so they render like a Markdown `>` quote (left bar + hanging indent), with each `<l>` line on its own row.
 pub(crate) fn tei_verse_blockquote(lines: &[String]) -> String {
     format!(
         "<blockquote class=\"tei-verse\">\n<p>{}</p>\n</blockquote>\n",
@@ -147,9 +137,7 @@ pub(crate) fn tei_verse_blockquote(lines: &[String]) -> String {
     )
 }
 
-/// Render a run of block-level sibling elements, coalescing consecutive `<l>`
-/// lines (verse lines not wrapped in an `<lg>`) into a single quote block so
-/// they still render like a Markdown `>` quote when the `<lg>` group is absent.
+/// Render a run of block-level sibling elements, coalescing consecutive `<l>` lines (verse lines not wrapped in an `<lg>`) into a single quote block so they still render like a Markdown `>` quote when the `<lg>` group is absent.
 pub(crate) fn tei_render_block_sequence<'a>(
     siblings: &[roxmltree::Node<'a, 'a>],
     ctx: &mut TeiCtx,
@@ -191,8 +179,7 @@ pub(crate) fn tei_render_div<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx
         .children()
         .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("head"));
     if let Some(head) = head_node {
-        // Collect all descendant text so inline children (e.g. a nested
-        // `<title>`) render, not just the leading text node.
+        // Collect all descendant text so inline children (e.g. a nested `<title>`) render, not just the leading text node.
         let text = head
             .descendants()
             .filter(|c| c.is_text())
@@ -252,12 +239,9 @@ pub(crate) fn tei_render_node<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut TeiCt
     }
 }
 
-/// Render `text > front` as a collapsed `<details>` so front matter is out of
-/// the way by default and the reader lands on the translation. Uses the same
-/// block machinery as the body. Mirrors `renderFront` in site/tei-xml.js.
+/// Render `text > front` as a collapsed `<details>` so front matter is out of the way by default and the reader lands on the translation. Uses the same block machinery as the body. Mirrors `renderFront` in site/tei-xml.js.
 pub(crate) fn render_tei_front<'a>(front: roxmltree::Node<'a, 'a>, ctx: &mut TeiCtx) {
-    // Render into `ctx.out`, then split that tail off to wrap it; slug and
-    // footnote side effects stay recorded on ctx.
+    // Render into `ctx.out`, then split that tail off to wrap it; slug and footnote side effects stay recorded on ctx.
     let start = ctx.out.len();
     let children: Vec<_> = front.children().filter(|c| c.is_element()).collect();
     tei_render_block_sequence(&children, ctx, 0);
@@ -301,16 +285,12 @@ pub(crate) fn render_tei_front<'a>(front: roxmltree::Node<'a, 'a>, ctx: &mut Tei
     ctx.push("</div>\n</details>\n");
 }
 
-/// Render a parsed TEI document into reading HTML and the block source map in a
-/// single traversal, returning the title and the fully populated context
-/// (`ctx.out` is the HTML, `ctx.blocks` the source map).
+/// Render a parsed TEI document into reading HTML and the block source map in a single traversal, returning the title and the fully populated context (`ctx.out` is the HTML, `ctx.blocks` the source map).
 pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<String>, TeiCtx) {
     let mut ctx = TeiCtx::new();
     let root = doc.root_element();
 
-    // Collect every `titleStmt > title` in document order. 84000 headers carry
-    // a matrix of titles (type × language), so we pick by type/lang below
-    // rather than taking whichever the file lists first.
+    // Collect every `titleStmt > title` in document order. 84000 headers carry a matrix of titles (type × language), so we pick by type/lang below rather than taking whichever the file lists first.
     let titles: Vec<(String, String, String)> = root
         .descendants()
         .filter(|n| {
@@ -348,9 +328,7 @@ pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<
             .map(|(_, _, text)| text.clone())
     };
 
-    // The document title is the English main title. Fall back to the English
-    // long title, then to the first title in any language except Tibetan
-    // (which also covers plain untyped `<title>` elements).
+    // The document title is the English main title. Fall back to the English long title, then to the first title in any language except Tibetan (which also covers plain untyped `<title>` elements).
     let title = pick("maintitle", "en")
         .or_else(|| pick("longtitle", "en"))
         .or_else(|| {
@@ -360,10 +338,7 @@ pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<
                 .map(|(_, _, text)| text.clone())
         });
 
-    // Alternate-language title lines rendered under the main title, in this
-    // order: Sanskrit main title, English long title, Sanskrit long title.
-    // Tibetan titles are never shown. Sanskrit is set in italics; duplicates
-    // of the main title or of an earlier line are dropped.
+    // Alternate-language title lines rendered under the main title, in this order: Sanskrit main title, English long title, Sanskrit long title. Tibetan titles are never shown. Sanskrit is set in italics; duplicates of the main title or of an earlier line are dropped.
     let mut subtitles: Vec<(String, bool)> = Vec::new();
     for (text, italic) in [
         (pick("maintitle", "sa-ltn"), true),
@@ -414,9 +389,7 @@ pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<
         ctx.push("</div>\n");
     }
 
-    // Front matter (summary, acknowledgments, introduction) lives in
-    // `text > front`, a sibling of `body`. Render it collapsed by default, after
-    // the title and before the body.
+    // Front matter (summary, acknowledgments, introduction) lives in `text > front`, a sibling of `body`. Render it collapsed by default, after the title and before the body.
     if let Some(front) = root.descendants().find(|n| {
         n.is_element()
             && n.tag_name().name().eq_ignore_ascii_case("front")
@@ -430,11 +403,9 @@ pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<
     let body_children: Vec<_> = body.children().filter(|c| c.is_element()).collect();
     tei_render_block_sequence(&body_children, &mut ctx, 0);
 
-    // Append footnotes — built as a separate string to avoid borrowing
-    // `ctx.footnotes` while mutating `ctx.out`.
+    // Append footnotes — built as a separate string to avoid borrowing `ctx.footnotes` while mutating `ctx.out`.
     if !ctx.footnotes.is_empty() {
-        // `footnote-definition` blocks (not an `<ol>`, which would inherit the
-        // upper-roman list style), matching the markdown renderer.
+        // `footnote-definition` blocks (not an `<ol>`, which would inherit the upper-roman list style), matching the markdown renderer.
         let icon = footnote_backref_icon_svg();
         let mut fn_section = String::from("<section class=\"footnotes\">\n");
         for (i, fn_html) in ctx.footnotes.iter().enumerate() {

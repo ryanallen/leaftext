@@ -1,8 +1,6 @@
 // tei-xml.js
 // ---------------------------------------------------------------------------
-// Converts a TEI XML string (84000 format) to HTML for the leaf reader.
-// The output matches the structure markdown.js produces, so existing CSS and
-// anchors.js work unchanged.
+// Converts a TEI XML string (84000 format) to HTML for the leaf reader. The output matches the structure markdown.js produces, so existing CSS and anchors.js work unchanged.
 //
 // Key TEI→HTML rules:
 //   div[@type="translation"]          — container; no heading, no added depth
@@ -39,10 +37,7 @@ export function renderTEI(xmlString) {
     return '<p><strong>XML parse error.</strong></p>';
   }
 
-  // Collect every `titleStmt > title` in document order. 84000 headers carry a
-  // title matrix — `type` mainTitle/longTitle/otherTitle crossed with
-  // `xml:lang` en / Sa-Ltn / bo / Bo-Ltn (lang casing varies) — so taking the
-  // first title showed whichever language the file happened to list first.
+  // Collect every `titleStmt > title` in document order. 84000 headers carry a title matrix — `type` mainTitle/longTitle/otherTitle crossed with `xml:lang` en / Sa-Ltn / bo / Bo-Ltn (lang casing varies) — so taking the first title showed whichever language the file happened to list first.
   const titles = [];
   xmlDoc.querySelectorAll('titleStmt > title').forEach((el) => {
     const text = (el.textContent || '').trim();
@@ -62,9 +57,7 @@ export function renderTEI(xmlString) {
     return hit ? hit.text : '';
   };
 
-  // The document title is the English main title. Fall back to the English
-  // long title, then to the first title in any language except Tibetan (which
-  // also covers plain untyped <title> elements), then to any teiHeader title.
+  // The document title is the English main title. Fall back to the English long title, then to the first title in any language except Tibetan (which also covers plain untyped <title> elements), then to any teiHeader title.
   const nonTibetan = titles.find((t) => t.lang !== 'bo' && t.lang !== 'bo-ltn');
   const headerTitleEl = xmlDoc.querySelector('teiHeader title');
   const title =
@@ -73,10 +66,7 @@ export function renderTEI(xmlString) {
     (nonTibetan ? nonTibetan.text : '') ||
     (headerTitleEl ? headerTitleEl.textContent.trim() : '');
 
-  // Alternate-language title lines rendered under the main title, in this
-  // order: Sanskrit main title, English long title, Sanskrit long title.
-  // Tibetan titles are never shown. Sanskrit is set in italics; duplicates of
-  // the main title or of an earlier line are dropped.
+  // Alternate-language title lines rendered under the main title, in this order: Sanskrit main title, English long title, Sanskrit long title. Tibetan titles are never shown. Sanskrit is set in italics; duplicates of the main title or of an earlier line are dropped.
   const subtitles = [];
   [
     { text: pick('maintitle', 'sa-ltn'), italic: true },
@@ -113,18 +103,13 @@ export function renderTEI(xmlString) {
     parts.push('</div>\n');
   }
 
-  // Front matter (summary, acknowledgments, introduction) lives in
-  // `text > front`, a sibling of `body`. Render it collapsed by default so the
-  // reader lands on the translation itself; the reader can open it to read the
-  // summary/introduction.
+  // Front matter (summary, acknowledgments, introduction) lives in `text > front`, a sibling of `body`. Render it collapsed by default so the reader lands on the translation itself; the reader can open it to read the summary/introduction.
   const front = xmlDoc.querySelector('text > front');
   if (front) renderFront(front, parts, ctx);
 
   renderBlockSequence([...body.children], parts, 0, ctx);
 
-  // Footnotes section — match markdown.js exactly so the same CSS applies:
-  // `.footnotes > ol` is forced back to Arabic numerals (overriding the
-  // upper-roman default), and the back-reference uses the shared SVG icon.
+  // Footnotes section — match markdown.js exactly so the same CSS applies: `.footnotes > ol` is forced back to Arabic numerals (overriding the upper-roman default), and the back-reference uses the shared SVG icon.
   if (ctx.footnotes.length > 0) {
     parts.push('<section class="footnotes" aria-label="Footnotes">\n<hr>\n<ol>\n');
     ctx.footnotes.forEach((fnHtml, i) => {
@@ -198,19 +183,14 @@ function verseBlockquote(lines) {
   return `<blockquote class="tei-verse">\n<p>${lines.join('<br>\n')}</p>\n</blockquote>\n`;
 }
 
-// Render `text > front` as a collapsed <details> so summary/acknowledgments/
-// introduction are available but out of the way by default. The inner content
-// uses the same block machinery as the body (headings, paragraphs, verse), so
-// its own CSS and anchors work unchanged; outline.js skips anything inside
-// `.tei-front` so these collapsed headings don't clutter the outline.
+// Render `text > front` as a collapsed <details> so summary/acknowledgments/ introduction are available but out of the way by default. The inner content uses the same block machinery as the body (headings, paragraphs, verse), so its own CSS and anchors work unchanged; outline.js skips anything inside `.tei-front` so these collapsed headings don't clutter the outline.
 function renderFront(front, out, ctx) {
   const inner = [];
   renderBlockSequence([...front.children], inner, 0, ctx);
   const html = inner.join('').trim();
   if (!html) return;
 
-  // Label the toggle with the section names it holds (e.g. "Summary,
-  // Acknowledgments, Introduction"), falling back to a generic term.
+  // Label the toggle with the section names it holds (e.g. "Summary, Acknowledgments, Introduction"), falling back to a generic term.
   const heads = [...front.children]
     .filter((c) => localName(c) === 'div')
     .map((d) => [...d.children].find((c) => localName(c) === 'head'))
@@ -235,9 +215,7 @@ function renderDiv(node, out, divDepth, ctx) {
     return;
   }
 
-  // Heading level follows nesting depth alone. 84000 TEI nests these types in
-  // varying orders (a `section` may hold a `chapter` and vice versa), so a fixed
-  // type→level table would render a nested heading larger than the one above it.
+  // Heading level follows nesting depth alone. 84000 TEI nests these types in varying orders (a `section` may hold a `chapter` and vice versa), so a fixed type→level table would render a nested heading larger than the one above it.
   const level = Math.min(2 + divDepth, 6);
 
   // Emit the <head> child as a heading
@@ -283,9 +261,7 @@ function renderInline(node, ctx) {
           `<sup class="footnote-ref" id="fnref-${n}"><a href="#fn-${n}">${n}</a></sup>`
         );
       } else if (tag === 'ptr') {
-        // 84000 TEI puts the visible cross-reference label INSIDE <ptr>
-        // (e.g. <ptr target="...">Going forth</ptr>). Keep the label; link it
-        // only for external URLs (internal #ids don't map to heading slugs).
+        // 84000 TEI puts the visible cross-reference label INSIDE <ptr> (e.g. <ptr target="...">Going forth</ptr>). Keep the label; link it only for external URLs (internal #ids don't map to heading slugs).
         const label = renderInline(child, ctx);
         if (label) {
           const target = child.getAttribute('target') || '';

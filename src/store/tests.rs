@@ -1,5 +1,4 @@
-//! What is left of the store: the vault registry, the schema, and the two
-//! parsers the renderer and the corpus share.
+//! What is left of the store: the vault registry, the schema, and the two parsers the renderer and the corpus share.
 
 use super::*;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -38,8 +37,7 @@ fn a_fresh_database_holds_the_vaults_and_nothing_of_the_crawl() {
     for table in ["vaults", "app_state", "schema_migrations"] {
         assert!(table_exists(&conn, table), "missing table {table}");
     }
-    // The crawl's manifest of the whole computer is not built any more, so it is
-    // never created in the first place.
+    // The crawl's manifest of the whole computer is not built any more, so it is never created in the first place.
     for gone in [
         "files",
         "headings",
@@ -67,8 +65,7 @@ fn a_fresh_database_holds_the_vaults_and_nothing_of_the_crawl() {
 #[test]
 fn an_existing_index_has_the_crawl_dropped_out_of_it() {
     let dir = unique_dir("migrate");
-    // Stand in for an installed copy: a database carrying the crawl's tables and
-    // recorded as being at migration 4.
+    // Stand in for an installed copy: a database carrying the crawl's tables and recorded as being at migration 4.
     {
         let conn = Connection::open(manifest_path(&dir)).expect("db created");
         conn.execute_batch(
@@ -140,8 +137,7 @@ fn a_vault_is_a_row_and_writes_nothing_into_the_folder() {
     assert_eq!(vault.root_path, path_to_string(&root));
     assert!(vault.id > 0);
 
-    // The whole point: adding a vault leaves the user's folder alone. No marker,
-    // no dotfile, nothing.
+    // The whole point: adding a vault leaves the user's folder alone. No marker, no dotfile, nothing.
     let after: Vec<String> = std::fs::read_dir(&root)
         .expect("folder read")
         .flatten()
@@ -167,8 +163,7 @@ fn the_active_vault_survives_a_reopen_and_falls_back_to_the_whole_library() {
     std::fs::create_dir_all(&two).expect("folder created");
     let conn = open_db(&dir).expect("db opens");
 
-    // Nothing chosen yet is the whole library, which is a real answer, not an
-    // error state.
+    // Nothing chosen yet is the whole library, which is a real answer, not an error state.
     assert_eq!(active_vault_id(&conn), 0);
     assert!(find_vault(&conn, 0).expect("lookup").is_none());
 
@@ -286,8 +281,7 @@ fn frontmatter_parses_scalars_arrays_and_block_lists() {
 fn aliases_read_both_list_forms_a_bare_string_and_nothing_at_all() {
     let names = |text: &str, label: &str| aliases_from(&document_fields(text), label);
 
-    // Both list forms, and the scalar form real vaults also contain — the parser
-    // already yields one field per item either way, so there is one reader.
+    // Both list forms, and the scalar form real vaults also contain — the parser already yields one field per item either way, so there is one reader.
     assert_eq!(
         names(
             "---\naliases:\n  - Mozart\n  - W. A. Mozart\n---\n",

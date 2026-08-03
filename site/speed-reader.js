@@ -42,9 +42,7 @@ function isEligibleWord(word) {
   return true;
 }
 
-// An all-uppercase word (HTML, GFM, JSON) is an acronym read as a single unit,
-// so it gets bolded whole rather than split into a lead prefix and a dim tail \u2014
-// a half-bold "HT\u200bML" reads as broken.
+// An all-uppercase word (HTML, GFM, JSON) is an acronym read as a single unit, so it gets bolded whole rather than split into a lead prefix and a dim tail \u2014 a half-bold "HT\u200bML" reads as broken.
 function isAcronym(word) {
   return /^\p{Lu}+$/u.test(word);
 }
@@ -91,12 +89,7 @@ function isWordChar(char) {
   return Boolean(char && /[\p{L}\p{N}]/u.test(char));
 }
 
-// A token is part of a code-like run — and so should not get a lead anchor —
-// only when a digit is fused to it (page2, COVID19) or a joiner punctuation
-// glues it to another word character on the joiner's far side (file.md, a@b,
-// x=y, v1.2). A joiner against whitespace, the end of the text, or sentence
-// punctuation (a trailing period, comma, colon, …) is ordinary prose, so words
-// ending a sentence still get anchored.
+// A token is part of a code-like run — and so should not get a lead anchor — only when a digit is fused to it (page2, COVID19) or a joiner punctuation glues it to another word character on the joiner's far side (file.md, a@b, x=y, v1.2). A joiner against whitespace, the end of the text, or sentence punctuation (a trailing period, comma, colon, …) is ordinary prose, so words ending a sentence still get anchored.
 const SPEED_READER_JOINER = /[:/\\._@#?=&%+~]/;
 function touchesCodeRun(text, start, end) {
   const before = text[start - 1];
@@ -147,11 +140,7 @@ export function applySpeedReader(root) {
   });
   const nodes = [];
   for (let node = walker.nextNode(); node; node = walker.nextNode()) nodes.push(node);
-  // Do not mark empty/unrendered content as processed. The settings boot applies
-  // speed reader to every .markdown-body, which can run against a still-empty
-  // content element before the document is rendered. Marking it processed here
-  // would block the real anchoring pass once the content arrives, leaving dimmed
-  // prose with no bold lead anchors.
+  // Do not mark empty/unrendered content as processed. The settings boot applies speed reader to every .markdown-body, which can run against a still-empty content element before the document is rendered. Marking it processed here would block the real anchoring pass once the content arrives, leaving dimmed prose with no bold lead anchors.
   if (nodes.length === 0) return;
   for (const node of nodes) {
     const fragment = anchoredFragment(node.nodeValue || '');

@@ -2,34 +2,23 @@
 
 use super::*;
 
-/// One outgoing link. Exactly one hint is set: `target_abs` (a resolved absolute
-/// path), `target_name` (a `[[wiki]]` note name), or `target_url` (a web address).
-/// The first two are matched to a document at graph-build time, so dangling links
-/// persist without rewriting; a URL needs no matching — it is its own node.
+/// One outgoing link. Exactly one hint is set: `target_abs` (a resolved absolute path), `target_name` (a `[[wiki]]` note name), or `target_url` (a web address). The first two are matched to a document at graph-build time, so dangling links persist without rewriting; a URL needs no matching — it is its own node.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DocLink {
     pub target_abs: Option<String>,
     pub target_name: Option<String>,
-    /// An `http`/`https` address, in [`normalize_url`] form so that two documents
-    /// citing one page point at one node.
+    /// An `http`/`https` address, in [`normalize_url`] form so that two documents citing one page point at one node.
     pub target_url: Option<String>,
     pub raw: String,
-    /// Byte range of the link in the source, where the scan knows it — the whole
-    /// `[text](url)` or `[[name]]`, or an attribute's value. The code view's
-    /// broken-link underline draws over exactly this range; `None` draws nothing.
+    /// Byte range of the link in the source, where the scan knows it — the whole `[text](url)` or `[[name]]`, or an attribute's value. The code view's broken-link underline draws over exactly this range; `None` draws nothing.
     pub span: Option<(usize, usize)>,
 }
 
-/// Extract a document's outgoing links, dispatching on file type. Markdown gets
-/// Markdown links, `<a href>`, and `[[wiki]]`; XML gets `target=`/`href=` attrs.
-/// Deduplicated by resolved target so a repeated link draws one edge.
+/// Extract a document's outgoing links, dispatching on file type. Markdown gets Markdown links, `<a href>`, and `[[wiki]]`; XML gets `target=`/`href=` attrs. Deduplicated by resolved target so a repeated link draws one edge.
 pub(crate) fn document_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
     let mut links = match DocumentFormat::from_path(source_abs) {
         DocumentFormat::Xml => xml_links(content, source_abs),
-        // A data file's strings are values, not prose. Scanning them as Markdown
-        // invents links that were never written, so the graph leaves them out.
-        // Mail bodies are transfer-encoded — the scan would read base64, not
-        // links — so messages stay out too.
+        // A data file's strings are values, not prose. Scanning them as Markdown invents links that were never written, so the graph leaves them out. Mail bodies are transfer-encoded — the scan would read base64, not links — so messages stay out too.
         DocumentFormat::Json | DocumentFormat::Yaml | DocumentFormat::Eml => Vec::new(),
         DocumentFormat::Markdown => markdown_links(content, source_abs),
     };
@@ -48,18 +37,13 @@ fn dedup_links(links: &mut Vec<DocLink>) {
     });
 }
 
-/// Markdown link destinations come from the parser; `<a href>` and `[[wiki]]`
-/// aren't link tags, so they're scanned from the source separately.
+/// Markdown link destinations come from the parser; `<a href>` and `[[wiki]]` aren't link tags, so they're scanned from the source separately.
 ///
-/// Bare URLs are neither. They are not links in the source at all — the renderer
-/// finds them in the plain text and makes them links there — so the graph walks the
-/// text the same way and asks the same finder, because a link the reader can click
-/// is a link.
+/// Bare URLs are neither. They are not links in the source at all — the renderer finds them in the plain text and makes them links there — so the graph walks the text the same way and asks the same finder, because a link the reader can click is a link.
 fn markdown_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
     use pulldown_cmark::{Event, Parser, Tag, TagEnd};
     let mut out = Vec::new();
-    // Text inside a link is that link's label, not somewhere to look for another
-    // one — the same reason the renderer's linkifier tracks this.
+    // Text inside a link is that link's label, not somewhere to look for another one — the same reason the renderer's linkifier tracks this.
     let mut link_depth = 0usize;
     for (event, range) in Parser::new(content).into_offset_iter() {
         match event {
@@ -72,8 +56,7 @@ fn markdown_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
                     Some((range.start, range.end)),
                 );
             }
-            // An image is not a link to a document, so its destination is not a
-            // target — but its alt text is still inside it.
+            // An image is not a link to a document, so its destination is not a target — but its alt text is still inside it.
             Event::Start(Tag::Image { .. }) => link_depth += 1,
             Event::End(TagEnd::Link) | Event::End(TagEnd::Image) => {
                 link_depth = link_depth.saturating_sub(1);
@@ -91,8 +74,7 @@ fn markdown_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
     out
 }
 
-/// TEI cross-references live in `target=` (`<ref>`, `<ptr>`) and `href=` (`<a>`)
-/// attributes.
+/// TEI cross-references live in `target=` (`<ref>`, `<ptr>`) and `href=` (`<a>`) attributes.
 fn xml_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
     let mut out = Vec::new();
     collect_attr_targets(content, "target", source_abs, &mut out);
@@ -100,11 +82,9 @@ fn xml_links(content: &str, source_abs: &Path) -> Vec<DocLink> {
     out
 }
 
-/// Push one link destination: a web address as itself, anything else resolved as a
-/// path relative to the document.
+/// Push one link destination: a web address as itself, anything else resolved as a path relative to the document.
 ///
-/// Empty and anchor-only (`#section`) destinations are neither — the second points
-/// inside the document it is written in, and a document is one node.
+/// Empty and anchor-only (`#section`) destinations are neither — the second points inside the document it is written in, and a document is one node.
 fn push_target(out: &mut Vec<DocLink>, raw: &str, source_abs: &Path, span: Option<(usize, usize)>) {
     let trimmed = raw.trim();
     if trimmed.is_empty() || trimmed.starts_with('#') {
@@ -114,8 +94,7 @@ fn push_target(out: &mut Vec<DocLink>, raw: &str, source_abs: &Path, span: Optio
         push_url(out, trimmed.to_string(), span);
         return;
     }
-    // Some other scheme — `mailto:`, `file:`, `leaf-image:`, anything custom.
-    // Not an address a map can go to, and not a path either.
+    // Some other scheme — `mailto:`, `file:`, `leaf-image:`, anything custom. Not an address a map can go to, and not a path either.
     if has_url_scheme(trimmed) {
         return;
     }
@@ -140,9 +119,7 @@ fn push_url(out: &mut Vec<DocLink>, url: String, span: Option<(usize, usize)>) {
     });
 }
 
-/// The form two references to one page agree on: no `#fragment`, no trailing slash,
-/// and the scheme and host lowercased — those are case-insensitive, the path is not.
-/// So three notes citing one article share one node instead of drawing three.
+/// The form two references to one page agree on: no `#fragment`, no trailing slash, and the scheme and host lowercased — those are case-insensitive, the path is not. So three notes citing one article share one node instead of drawing three.
 pub fn normalize_url(url: &str) -> String {
     let trimmed = url.split('#').next().unwrap_or(url);
     let trimmed = trimmed.strip_suffix('/').unwrap_or(trimmed);
@@ -152,9 +129,7 @@ pub fn normalize_url(url: &str) -> String {
     }
 }
 
-/// What a web address is called under its node: the host, without `www.`. The whole
-/// URL stays the node's identity and its tooltip — a domain is what fits on screen,
-/// and what tells you at a glance that this one is not your document.
+/// What a web address is called under its node: the host, without `www.`. The whole URL stays the node's identity and its tooltip — a domain is what fits on screen, and what tells you at a glance that this one is not your document.
 pub fn url_host_label(url: &str) -> String {
     let Some((authority, _)) = split_url_authority(url) else {
         return url.to_string();
@@ -174,8 +149,7 @@ pub fn url_host_label(url: &str) -> String {
     }
 }
 
-/// Split an `http`/`https` URL into a lowercased `scheme://host` and everything
-/// after it. `None` for anything not shaped like one.
+/// Split an `http`/`https` URL into a lowercased `scheme://host` and everything after it. `None` for anything not shaped like one.
 fn split_url_authority(url: &str) -> Option<(String, &str)> {
     let (scheme, rest) = url.split_once("://")?;
     let end = rest.find(['/', '?']).unwrap_or(rest.len());
@@ -186,17 +160,14 @@ fn split_url_authority(url: &str) -> Option<(String, &str)> {
     ))
 }
 
-/// Scan for `<... attr="value" ...>` and push each value as a path target. A
-/// lexical scan, not a full parse: enough for the anchor/ref/ptr elements used.
+/// Scan for `<... attr="value" ...>` and push each value as a path target. A lexical scan, not a full parse: enough for the anchor/ref/ptr elements used.
 fn collect_attr_targets(content: &str, attr: &str, source_abs: &Path, out: &mut Vec<DocLink>) {
     let needle = format!("{attr}=");
     let bytes = content.as_bytes();
     let mut search_from = 0;
     while let Some(rel) = content[search_from..].find(&needle) {
         let eq = search_from + rel + needle.len();
-        // The char before the attribute name must be a tag delimiter (space, '<',
-        // '/', or a quote) so `data-href=` / `xtarget=` do not match `href=` /
-        // `target=`.
+        // The char before the attribute name must be a tag delimiter (space, '<', '/', or a quote) so `data-href=` / `xtarget=` do not match `href=` / `target=`.
         let start = search_from + rel;
         let boundary_ok = start == 0
             || matches!(
@@ -225,8 +196,7 @@ fn collect_attr_targets(content: &str, attr: &str, source_abs: &Path, out: &mut 
     }
 }
 
-/// Scan for `[[Note]]`, `[[Note|alias]]`, and `[[Note#heading]]` wiki links and
-/// push the note name (before any `|` or `#`) as a name target.
+/// Scan for `[[Note]]`, `[[Note|alias]]`, and `[[Note#heading]]` wiki links and push the note name (before any `|` or `#`) as a name target.
 fn collect_wiki_links(content: &str, out: &mut Vec<DocLink>) {
     let mut search_from = 0;
     while let Some(rel) = content[search_from..].find("[[") {
@@ -253,8 +223,7 @@ fn collect_wiki_links(content: &str, out: &mut Vec<DocLink>) {
     }
 }
 
-/// True when `target` begins with a URL scheme (not a local document). Requires
-/// 2+ scheme chars so a Windows drive path (`C:\...`) reads as a path, not a URL.
+/// True when `target` begins with a URL scheme (not a local document). Requires 2+ scheme chars so a Windows drive path (`C:\...`) reads as a path, not a URL.
 pub(super) fn has_url_scheme(target: &str) -> bool {
     let bytes = target.as_bytes();
     for (i, &c) in bytes.iter().enumerate() {
@@ -270,8 +239,7 @@ pub(super) fn has_url_scheme(target: &str) -> bool {
     false
 }
 
-/// Resolve a relative link target to an absolute path string, stripping
-/// `#fragment`/`?query` and percent-decoding. `None` for path-less targets.
+/// Resolve a relative link target to an absolute path string, stripping `#fragment`/`?query` and percent-decoding. `None` for path-less targets.
 fn resolve_path_target(raw: &str, source_abs: &Path) -> Option<String> {
     let without_fragment = raw.split(['#', '?']).next().unwrap_or("").trim();
     if without_fragment.is_empty() {
@@ -282,8 +250,7 @@ fn resolve_path_target(raw: &str, source_abs: &Path) -> Option<String> {
     Some(normalize_join(base, &decoded))
 }
 
-/// Lexically join `rel` onto `base`, resolving `.`/`..` without touching the
-/// filesystem (the target may not exist yet). Absolute `rel` replaces `base`.
+/// Lexically join `rel` onto `base`, resolving `.`/`..` without touching the filesystem (the target may not exist yet). Absolute `rel` replaces `base`.
 fn normalize_join(base: &Path, rel: &str) -> String {
     use std::path::Component;
     let rel_path = Path::new(rel);
@@ -306,8 +273,7 @@ fn normalize_join(base: &Path, rel: &str) -> String {
     path_to_string(&result)
 }
 
-/// Decode `%XX` escapes in a link target (e.g. `My%20Note.md` -> `My Note.md`),
-/// leaving anything that is not a valid escape untouched.
+/// Decode `%XX` escapes in a link target (e.g. `My%20Note.md` -> `My Note.md`), leaving anything that is not a valid escape untouched.
 fn percent_decode(value: &str) -> String {
     let bytes = value.as_bytes();
     let mut out = Vec::with_capacity(bytes.len());
@@ -328,8 +294,7 @@ fn percent_decode(value: &str) -> String {
     String::from_utf8_lossy(&out).into_owned()
 }
 
-/// Normalize a note name (wiki link text, or a file's own name) to the key both
-/// sides match on: trimmed and lowercased.
+/// Normalize a note name (wiki link text, or a file's own name) to the key both sides match on: trimmed and lowercased.
 pub(crate) fn normalize_name_key(name: &str) -> String {
     name.trim().to_lowercase()
 }

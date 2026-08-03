@@ -24,30 +24,25 @@ fn app_shell_decorates_blockquote_hard_break_lines_for_hanging_indent() {
 fn app_shell_builds_collapsed_heading_outline_under_the_title() {
     let html = app_shell_page();
 
-    // The builder exists, is wired into the render pipeline, and the line count
-    // skips the outline's own link-only entries rather than counting them.
+    // The builder exists, is wired into the render pipeline, and the line count skips the outline's own link-only entries rather than counting them.
     assert_contains(&html, "function buildDocumentOutline() {");
     assert_contains(&html, "buildDocumentOutline();");
     assert_contains(&html, "if (target.closest('.document-outline')) return;");
     // A title plus at least one section, inserted just under the title.
     assert_contains(&html, "if (headings.length < 2) return;");
     assert_contains(&html, "title.insertAdjacentElement('afterend', details);");
-    // Collapsed <details> with an "Outline" summary, entries nested
-    // as a bulleted list (numbers overflow the panel on deep documents) that
-    // links each heading by its slug id.
+    // Collapsed <details> with an "Outline" summary, entries nested as a bulleted list (numbers overflow the panel on deep documents) that links each heading by its slug id.
     assert_contains(&html, "details.className = 'document-outline';");
     assert_contains(&html, "summaryLabel.textContent = 'Outline';");
     assert_contains(&html, "const rootList = document.createElement('ul');");
     assert!(!html.contains("const rootList = document.createElement('ol');"));
     assert_contains(&html, "link.className = 'document-outline-link';");
     assert_contains(&html, "link.href = '#' + encodeURIComponent(h.id);");
-    // The summary carries how long the document is — counted, not stamped onto
-    // every block on the way to the total.
+    // The summary carries how long the document is — counted, not stamped onto every block on the way to the total.
     assert_contains(&html, "summaryCount.className = 'document-outline-count';");
     assert_contains(&html, "function documentLineCount(body) {");
     assert_contains(&html, "`(${formatCount(documentLineCount(body))} lines)`");
-    // The (potentially ~25k-entry) list is built lazily, only when the reader
-    // first expands the outline — not at every document render.
+    // The (potentially ~25k-entry) list is built lazily, only when the reader first expands the outline — not at every document render.
     assert_contains(&html, "function populateDocumentOutline(details, rest) {");
     assert_contains(&html, "details.addEventListener('toggle', () => {");
     assert_contains(
@@ -74,17 +69,14 @@ fn app_shell_renders_interactive_document_minimap() {
             "aria-hidden=\"true\"><div class=\"document-minimap-content\" aria-hidden=\"true\"></div><div class=\"lt-spinner document-minimap-spinner\" aria-hidden=\"true\"></div><div class=\"document-minimap-viewport\" aria-hidden=\"true\"",
             "bindDocumentMinimap();",
             "function bindDocumentMinimap() {",
-            // The rail says it is working until there is a thumbnail to show: the
-            // clone can't exist before the document has been laid out, and on a
-            // large file an empty rail beside a finished page looks broken.
+            // The rail says it is working until there is a thumbnail to show: the clone can't exist before the document has been laid out, and on a large file an empty rail beside a finished page looks broken.
             "class=\"document-minimap is-loading\"",
             "minimap.classList.remove('is-loading');",
         ] {
             assert_contains(&html, expected);
         }
 
-    // The minimap is a real-text thumbnail: a shrunken clone of the rendered
-    // document, not an abstract canvas painting.
+    // The minimap is a real-text thumbnail: a shrunken clone of the rendered document, not an abstract canvas painting.
     assert!(
         html.contains("preview = source.cloneNode(true);"),
         "minimap must clone the document into a scaled preview"
@@ -107,8 +99,7 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "let readerLayoutFrame = 0;",
         "let readerScrollAnchor = null;",
         "function bindDocumentMinimapPreview(track) {",
-        // Content changes bump the version so the clone is rebuilt; geometry-only
-        // triggers (resize) skip the rebuild unless a width changed.
+        // Content changes bump the version so the clone is rebuilt; geometry-only triggers (resize) skip the rebuild unless a width changed.
         "minimapBodyObserver = new MutationObserver(invalidateMinimapPreview);",
         "minimapResizeObserver = new ResizeObserver(() => {",
         "minimapResizeObserver.observe(track);",
@@ -120,8 +111,7 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "function scheduleMinimapPreviewUpdate() {",
         "minimapPreviewFrame = window.requestAnimationFrame(() => {",
         "function updateDocumentMinimapPreview() {",
-        // The clone is skipped when nothing shaping the thumbnail changed, so a
-        // height-only resize doesn't rebuild the whole document.
+        // The clone is skipped when nothing shaping the thumbnail changed, so a height-only resize doesn't rebuild the whole document.
         "minimapBuiltVersion === minimapContentVersion &&",
         "minimapBuiltSourceWidth === metrics.sourceWidth &&",
         "minimapBuiltPreviewWidth === previewWidth",
@@ -130,12 +120,7 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "preview.style.transform = `translateY(${metrics.sourceTop * previewScale}px) scale(${previewScale})`;",
         "content.replaceChildren(preview);",
         "updateMinimapViewport();",
-        // A document taller than the rail is cloned as the slice the rail can
-        // actually show, not whole: a full clone put a second copy of every element
-        // on the page, which cost ~890ms a frame to slide on a 4MB glossary. The
-        // window is still a clone of the real rendering, so the rail keeps real
-        // text — and on any document the rail can show in full it IS the whole
-        // document, which is why nothing here is gated on a size threshold.
+        // A document taller than the rail is cloned as the slice the rail can actually show, not whole: a full clone put a second copy of every element on the page, which cost ~890ms a frame to slide on a 4MB glossary. The window is still a clone of the real rendering, so the rail keeps real text — and on any document the rail can show in full it IS the whole document, which is why nothing here is gated on a size threshold.
         "function minimapWindowCoversView(metrics, scrollTop) {",
         "function minimapVisibleDocumentRange(metrics, scrollTop) {",
         "function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {",
@@ -144,30 +129,23 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "function minimapWindowRows(source) {",
         "function buildWindowedMinimapClone(source, first, last) {",
         "into.appendChild(rows[i].cloneNode(true));",
-        // Scrolling reads no geometry at all — cached metrics, arithmetic, and CSS
-        // variable writes. Re-measuring per wheel click forced a fresh layout of the
-        // whole document, which is what made one click take ~2 seconds.
+        // Scrolling reads no geometry at all — cached metrics, arithmetic, and CSS variable writes. Re-measuring per wheel click forced a fresh layout of the whole document, which is what made one click take ~2 seconds.
         "function minimapMetricsForScroll(track) {",
         "function invalidateMinimapMetrics() {",
         "function updateMinimapViewportFromScroll() {",
-        // Glossary terms are tagged before their hrefs are stripped so the clone can
-        // re-blend them (the href-based body blend can't match once href is gone).
+        // Glossary terms are tagged before their hrefs are stripped so the clone can re-blend them (the href-based body blend can't match once href is gone).
         "link.classList.add('glossary-term');",
     ] {
         assert_contains(&html, expected);
     }
 
-    // The clone keeps glossary terms blended into body text like the page, instead
-    // of showing them on the generic accent link color.
+    // The clone keeps glossary terms blended into body text like the page, instead of showing them on the generic accent link color.
     assert_contains(
         &css,
         ".document-minimap-preview a.glossary-term {\n  color: inherit;\n}",
     );
 
-    // The thumbnail is a real-text clone, never an abstract canvas: no drawing
-    // surface of its own, no palette, no line-model rows. Named markers rather
-    // than "no 2D context anywhere" — the diagram export rasterizes one. Checked
-    // across the shell and the linked stylesheet, since the styles are not inlined.
+    // The thumbnail is a real-text clone, never an abstract canvas: no drawing surface of its own, no palette, no line-model rows. Named markers rather than "no 2D context anywhere" — the diagram export rasterizes one. Checked across the shell and the linked stylesheet, since the styles are not inlined.
     for forbidden in [
         "document-minimap-canvas",
         "minimapCanvas",
@@ -184,9 +162,7 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
     }
 }
 
-// Both views open the first line at the same height by different means — scroll
-// origin in one, padding in the other — so the number lives in two files and has to
-// agree, and has to clear the top edge fade that 16px of padding left it inside.
+// Both views open the first line at the same height by different means — scroll origin in one, padding in the other — so the number lives in two files and has to agree, and has to clear the top edge fade that 16px of padding left it inside.
 #[test]
 fn app_shell_opens_both_views_at_the_same_content_top_gap() {
     let html = app_shell_page();
@@ -195,16 +171,13 @@ fn app_shell_opens_both_views_at_the_same_content_top_gap() {
     assert_contains(&css, "--reader-content-top-gap: 88px;");
     assert_contains(&html, "const READER_CONTENT_TOP_GAP = 88;");
 
-    // The code view has no scroll origin of its own: the editor is handed the gap
-    // the shell's app-bar padding doesn't already cover, as padding inside its own
-    // scroll height, so no line can sit in the fade at either end.
+    // The code view has no scroll origin of its own: the editor is handed the gap the shell's app-bar padding doesn't already cover, as padding inside its own scroll height, so no line can sit in the fade at either end.
     assert_contains(
         &html,
         "top: Math.max(0, READER_CONTENT_TOP_GAP - barHeight),",
     );
 
-    // 88px from the shell's top edge is 48px of clear air below the 40px bar, which
-    // has to be more than the fade's reach or the first line opens dissolved.
+    // 88px from the shell's top edge is 48px of clear air below the 40px bar, which has to be more than the fade's reach or the first line opens dissolved.
     let fade = css_block(&css, ".reader-edge-fade {");
     assert!(
         fade.contains("--reader-edge-fade-depth: 36px;"),
@@ -216,9 +189,7 @@ fn app_shell_opens_both_views_at_the_same_content_top_gap() {
 fn app_shell_maps_minimap_geometry_proportionally() {
     let html = app_shell_page();
 
-    // The box and click/drag mapping derive from the reader's real scroll range,
-    // so they track the thumbnail at any length; on tall documents the thumbnail
-    // slides in the rail.
+    // The box and click/drag mapping derive from the reader's real scroll range, so they track the thumbnail at any length; on tall documents the thumbnail slides in the rail.
     for expected in [
             "const previewScale = contentWidth / sourceWidth;",
             "const previewTop = -scrollRatio * Math.max(0, scaledDocumentHeight - metrics.trackHeight);",
@@ -238,8 +209,7 @@ fn app_shell_maps_minimap_geometry_proportionally() {
         !html.contains("function minimapViewportGeometry(metrics) {"),
         "the clone minimap replaces the canvas geometry helper"
     );
-    // The reader renders in full, so the box reads the exact scroll position rather
-    // than a table of block offsets.
+    // The reader renders in full, so the box reads the exact scroll position rather than a table of block offsets.
     assert!(
         !html.contains("minimapCloneOffsets") && !html.contains("minimapReaderTrueScrolled"),
         "the full-render minimap drops the clone-offset scroll estimate"
@@ -261,21 +231,17 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
         "securityLevel: 'strict'",
         "await mermaid.run({ nodes: batch });",
         "diagram.dataset.mermaidRender = 'failed';",
-        // Nearest the reader first, a few at a time: a page of sixty diagrams
-        // must not freeze the window while they are drawn.
+        // Nearest the reader first, a few at a time: a page of sixty diagrams must not freeze the window while they are drawn.
         "diagrams.sort((a, b) => mermaidReaderDistance(a) - mermaidReaderDistance(b));",
         "const MERMAID_BATCH_SIZE = 3;",
-        // The structural colors of a diagram are the page's tokens. Mermaid's own
-        // light/dark palette stays underneath, never `base`, which recomputes the
-        // categorical scale out of our reach — see decorate.js.
+        // The structural colors of a diagram are the page's tokens. Mermaid's own light/dark palette stays underneath, never `base`, which recomputes the categorical scale out of our reach — see decorate.js.
         "theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default',",
         "function mermaidThemeVariables() {",
         "const MERMAID_COLOR_MAP = {",
         // The ink for text inside a fill is measured against that fill, not assumed.
         "function inkOn(style, fills) {",
         "const MERMAID_INK_CANDIDATES = [",
-        // Every categorical entry is named, and they all weigh the same, so one
-        // ink reads on all twelve.
+        // Every categorical entry is named, and they all weigh the same, so one ink reads on all twelve.
         "function mermaidCategoricalScale(style, darkMode) {",
         "function colorAtLuminance(hue, saturation, luminance) {",
         "variables['cScaleLabel' + index] = inkOn(style, [color]);",
@@ -298,10 +264,7 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
 
 #[test]
 fn a_diagram_bound_for_a_picture_puts_its_labels_in_text() {
-    // A mermaid label is a `<foreignObject>` holding a `<div>`, and an SVG loaded
-    // as an image drops one outright — which came out as boxes with nothing
-    // written in them. Stated on every call, not only the picture's: initialize
-    // merges, so a config quiet about it leaves that answer behind for the page.
+    // A mermaid label is a `<foreignObject>` holding a `<div>`, and an SVG loaded as an image drops one outright — which came out as boxes with nothing written in them. Stated on every call, not only the picture's: initialize merges, so a config quiet about it leaves that answer behind for the page.
     let html = app_shell_page();
 
     // The picture's own call is in the flowchart editor, at the head of the script.
@@ -397,9 +360,7 @@ fn app_shell_drags_minimap_to_scroll_document() {
             assert_contains(&html, expected);
         }
 
-    // A grab inside the box preserves the offset (drag); a bare click centers
-    // the reader on the pointer (snapshot). The drag handler is defined before
-    // the snapshot handler in bindDocumentMinimap.
+    // A grab inside the box preserves the offset (drag); a bare click centers the reader on the pointer (snapshot). The drag handler is defined before the snapshot handler in bindDocumentMinimap.
     let drag_position = html
         .find("const dragMinimapViewportToPointer = (event, pointerOffsetY) => {")
         .expect("minimap drag handler exists");
@@ -437,8 +398,7 @@ fn app_shell_preserves_focus_and_updates_minimap_viewport_indicator() {
 fn app_shell_sizes_minimap_viewport_from_scroll_fraction() {
     let html = app_shell_page();
 
-    // The box height is the reader window at thumbnail scale, placed from the
-    // slide plus scaled scroll top, so it tracks the visible region at any length.
+    // The box height is the reader window at thumbnail scale, placed from the slide plus scaled scroll top, so it tracks the visible region at any length.
     let box_height_position = html
         .find("const boundedViewportHeight = Math.min(metrics.trackHeight, viewportHeight);")
         .expect("viewport box height is the reader window at the thumbnail scale");
@@ -481,8 +441,7 @@ fn app_shell_sizes_minimap_track_to_available_reader_height() {
         assert_contains(&html, expected);
     }
 
-    // The track caps its height at the scaled document height, so a short document
-    // gets a short rail with no dead space below it.
+    // The track caps its height at the scaled document height, so a short document gets a short rail with no dead space below it.
     assert!(
         html.contains(
             "const trackHeight = Math.max(1, Math.min(availableHeight, scaledDocumentHeight));"
@@ -528,8 +487,7 @@ fn app_shell_reader_editor_round_trips_safe_inline_html() {
 fn one_find_bar_serves_both_views_and_replaces_through_the_source() {
     let html = app_shell_page();
 
-    // The bar, its field and counter, the three how-to-match toggles and the
-    // scope one, both steps, and the replace row.
+    // The bar, its field and counter, the three how-to-match toggles and the scope one, both steps, and the replace row.
     for expected in [
         r#"<div id="findBar" class="find-bar" role="search" aria-label="Find in this document" hidden>"#,
         r#"<input id="findInput" class="find-input" type="text""#,
@@ -546,8 +504,7 @@ fn one_find_bar_serves_both_views_and_replaces_through_the_source() {
         assert_contains(&html, expected);
     }
 
-    // One keyboard path, and it reaches both views: Ctrl+F opens, Ctrl+H opens on
-    // the replace row, Escape closes, Enter steps.
+    // One keyboard path, and it reaches both views: Ctrl+F opens, Ctrl+H opens on the replace row, Escape closes, Enter steps.
     for expected in [
         "(key === 'f' || key === 'h')",
         "openFindBar({ replacing: key === 'h' });",
@@ -558,8 +515,7 @@ fn one_find_bar_serves_both_views_and_replaces_through_the_source() {
         assert_contains(&html, expected);
     }
 
-    // The source view uses the editor's own searching, and nothing was added to
-    // the vendored bundle for it.
+    // The source view uses the editor's own searching, and nothing was added to the vendored bundle for it.
     for expected in [
         "const found = model.findMatches(",
         "monacoEditor.createDecorationsCollection(decorations);",
@@ -569,12 +525,10 @@ fn one_find_bar_serves_both_views_and_replaces_through_the_source() {
         assert_contains(&html, expected);
     }
 
-    // The reading view draws with the highlight API rather than wrapping matches
-    // in tags, which the editor would serialize back into the file.
+    // The reading view draws with the highlight API rather than wrapping matches in tags, which the editor would serialize back into the file.
     assert_contains(&html, "CSS.highlights.set(FIND_HIGHLIGHT_ALL, all);");
 
-    // And a replace there is one splice over the whole document, so one undo puts
-    // every replacement back. One send, and its range is the whole buffer.
+    // And a replace there is one splice over the whole document, so one undo puts every replacement back. One send, and its range is the whole buffer.
     assert_contains(
         &html,
         "sendEditCommand({ command: 'editBlock', start: 0, end: total, text: next });",
@@ -668,13 +622,9 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
             "let readerReflowObserver = null;",
             "const READER_ANCHOR_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, table, details, figure, hr';",
             "function captureReaderScrollAnchor() {",
-            // Capture and restore share one cached block list so a serialized
-            // {section, block} anchor always resolves back to the element it named.
+            // Capture and restore share one cached block list so a serialized {section, block} anchor always resolves back to the element it named.
             "readerAnchorBlocks = Array.from(source.querySelectorAll(READER_ANCHOR_SELECTOR)).filter(",
-            // And never what is inside a drawing. A mermaid label is a `<p>` in a
-            // `<foreignObject>`, so a page of diagrams grows hundreds of them the
-            // moment they land — each taking a slot in this list, above the
-            // reader, walking the restore back toward the top a batch at a time.
+            // And never what is inside a drawing. A mermaid label is a `<p>` in a `<foreignObject>`, so a page of diagrams grows hundreds of them the moment they land — each taking a slot in this list, above the reader, walking the restore back toward the top a batch at a time.
             "(block) => !block.closest('svg'),",
             "const blocks = readerAnchorBlockList(source);",
             "return { section, block: targetIndex - (sectionIndex < 0 ? 0 : sectionIndex), offsetY };",
@@ -687,9 +637,7 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
             "readerScrollAnchor = captureReaderScrollAnchor();",
             "window.addEventListener('resize', () => {",
             "scheduleReaderLayoutUpdate();",
-            // The reflow observer re-pins the anchor as images decode and grow,
-            // and drops the stale anchor-block cache so the re-pin resolves
-            // against the current DOM rather than detached, zero-rect entries.
+            // The reflow observer re-pins the anchor as images decode and grow, and drops the stale anchor-block cache so the re-pin resolves against the current DOM rather than detached, zero-rect entries.
             "function observeReaderReflow() {",
             "readerReflowObserver = new ResizeObserver(() => {",
             "readerAnchorBlocks = null;",
@@ -701,10 +649,7 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
 
 #[test]
 fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
-    // The scroll listener is deliberately inert during a minimap drag, so the minimap
-    // must record the anchor itself. Without that, the anchor keeps the pre-drag
-    // position and the next late reflow — most visibly the async bottom pager landing
-    // seconds after the document — restores it and throws the reader back up the page.
+    // The scroll listener is deliberately inert during a minimap drag, so the minimap must record the anchor itself. Without that, the anchor keeps the pre-drag position and the next late reflow — most visibly the async bottom pager landing seconds after the document — restores it and throws the reader back up the page.
     let html = app_shell_page();
 
     for expected in [
@@ -712,8 +657,7 @@ fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
         "clampReaderScrollPosition();\n  readerScrollAnchor = captureReaderScrollAnchor();",
         // Rail click (pointerdown, so already flagged as dragging).
         "app.scrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));\n    recordReaderScrollPosition();",
-        // Drag release: drop the queued pass built on the pre-drag anchor first,
-        // then record where the drag landed.
+        // Drag release: drop the queued pass built on the pre-drag anchor first, then record where the drag landed.
         "cancelReaderLayoutUpdate();\n      recordReaderScrollPosition();",
         "function cancelReaderLayoutUpdate() {",
         "window.cancelAnimationFrame(readerLayoutFrame);",
@@ -721,10 +665,7 @@ fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
         assert_contains(&html, expected);
     }
 
-    // Mid-gesture, the queued pass must not re-pin at all: its anchor predates the
-    // drag, so restoring it would fight the pointer and undo the jump. A wheel
-    // scroll is guarded for the same reason — the anchor is deliberately only
-    // refreshed once the scroll settles, so it is stale by design until then.
+    // Mid-gesture, the queued pass must not re-pin at all: its anchor predates the drag, so restoring it would fight the pointer and undo the jump. A wheel scroll is guarded for the same reason — the anchor is deliberately only refreshed once the scroll settles, so it is stale by design until then.
     let update_start = html
         .find("function scheduleReaderLayoutUpdate(")
         .expect("app shell should schedule reader layout updates");
@@ -740,19 +681,13 @@ fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
         "the gesture bail must come before the anchor re-pin, or a drag gets yanked back to where it started"
     );
 
-    // The anchor is read in the frame, never captured at the call. A diagram pass
-    // holds the thread for hundreds of milliseconds, so a pass queued during it
-    // runs after the scroll that happened meanwhile has settled. An anchor taken
-    // at the call is then the reader's place *before* that scroll, and restoring
-    // it drags them back — to the top, if that is where they started reading.
+    // The anchor is read in the frame, never captured at the call. A diagram pass holds the thread for hundreds of milliseconds, so a pass queued during it runs after the scroll that happened meanwhile has settled. An anchor taken at the call is then the reader's place *before* that scroll, and restoring it drags them back — to the top, if that is where they started reading.
     assert!(
         !html.contains("function scheduleReaderLayoutUpdate(anchor"),
         "scheduleReaderLayoutUpdate must not take an anchor at call time — a pass queued during a diagram batch would restore the reader's place from before the scroll that happened while the thread was busy"
     );
 
-    // The clamp and the anchor capture both force a layout, which on a large
-    // document is ~400ms — too expensive to run per frame, and nothing reads either
-    // mid-gesture. They settle after the wheel stops instead.
+    // The clamp and the anchor capture both force a layout, which on a large document is ~400ms — too expensive to run per frame, and nothing reads either mid-gesture. They settle after the wheel stops instead.
     for expected in [
         "function settleReaderScroll() {",
         "readerScrollSettleTimer = window.setTimeout(settleReaderScroll, READER_SCROLL_SETTLE_MS);",
@@ -779,9 +714,7 @@ fn app_shell_disables_minimap_without_leaving_empty_layout_column() {
             "const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';",
             // Rendered hidden, then revealed already decorated: see renderState.
             "app.innerHTML = `<div class=\"${layoutClass}\" style=\"display:none\">${state.document.html}</div>`;",
-            // The rail is placed beside the page, not inside it. Empty markup
-            // means no rail element at all, which is what collapses the shell
-            // column — a hidden one would still satisfy :has().
+            // The rail is placed beside the page, not inside it. Empty markup means no rail element at all, which is what collapses the shell column — a hidden one would still satisfy :has().
             "setMinimapMarkup(minimapHtml);",
             "if (readerMinimap) readerMinimap.innerHTML = html || '';",
             r#"<div id="readerMinimap" class="reader-minimap" aria-hidden="true"></div>"#,
@@ -854,8 +787,7 @@ fn app_shell_preserves_external_link_routing_for_native_opening() {
 fn app_shell_opens_a_held_or_middle_click_as_a_page_of_its_own() {
     let html = app_shell_page();
 
-    // A bail on a held key returns before the preventDefault below it, which leaves
-    // the click to the web view's own link handling.
+    // A bail on a held key returns before the preventDefault below it, which leaves the click to the web view's own link handling.
     assert!(
         !html.contains("event.button !== 0 || event.altKey || event.ctrlKey"),
         "a modified click on a document link must be canceled, not handed to the web view"
@@ -866,8 +798,7 @@ fn app_shell_opens_a_held_or_middle_click_as_a_page_of_its_own() {
         "return isMacPlatform ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;",
         "sendDocumentLink(link, newPageModifierHeld(event));",
         "send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor(), newPage });",
-        // The middle button raises `auxclick` and never `click`; the web view's own
-        // scroll puck opens on the mousedown before it, so both are answered.
+        // The middle button raises `auxclick` and never `click`; the web view's own scroll puck opens on the mousedown before it, so both are answered.
         "app.addEventListener('auxclick', (event) => {",
         "app.addEventListener('mousedown', (event) => {",
         "const link = event.button === 1 ? documentLinkFor(event.target) : null;",
@@ -878,8 +809,7 @@ fn app_shell_opens_a_held_or_middle_click_as_a_page_of_its_own() {
         assert_contains(&html, expected);
     }
 
-    // One platform test for the whole front-end, shared out of state.js — the menu
-    // reads it for Ctrl-click and the link handler for which key opens a page.
+    // One platform test for the whole front-end, shared out of state.js — the menu reads it for Ctrl-click and the link handler for which key opens a page.
     assert_eq!(
         html.matches("const isMacPlatform =").count(),
         1,
@@ -900,8 +830,7 @@ fn app_shell_gives_a_document_link_its_own_right_click_menu() {
         "{ action: 'revealLink', label: 'Reveal file', pageOnly: true },",
         "{ action: 'copyLinkPath', label: 'Copy path', pageOnly: true },",
         "showContextMenu(event.clientX, event.clientY, href, 'link', documentLink);",
-        // An external link and an in-page jump have no page here to open, so the
-        // items that would need one are left out rather than shown dead.
+        // An external link and an in-page jump have no page here to open, so the items that would need one are left out rather than shown dead.
         "!entry.pageOnly || isAnotherPageHref(contextMenuPath)",
         "if (linkHoverKind(contextMenuPath) !== 'External site') return entry;",
         "return { action: entry.action, label: 'Open in browser' };",
@@ -914,8 +843,7 @@ fn app_shell_gives_a_document_link_its_own_right_click_menu() {
         assert_contains(&html, expected);
     }
 
-    // The link branch answers ahead of the pane's rows, which know nothing about a
-    // link and would otherwise take the right-click first.
+    // The link branch answers ahead of the pane's rows, which know nothing about a link and would otherwise take the right-click first.
     let link_branch = html
         .find("const documentLink = documentLinkFor(event.target);")
         .expect("the contextmenu handler tests for a document link");
@@ -961,8 +889,7 @@ fn code_blocks_get_a_copy_button() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // Decoration runs after each document render, over code blocks but not
-    // Mermaid diagrams, and copies the <code> text.
+    // Decoration runs after each document render, over code blocks but not Mermaid diagrams, and copies the <code> text.
     assert!(html.contains("decorateCodeBlocks();"));
     assert!(html.contains(".document-body pre:not(.mermaid)"));
     assert!(html.contains("function copyCodeBlock(button, text)"));
@@ -982,10 +909,7 @@ fn code_blocks_get_a_copy_button() {
 fn select_all_in_the_reading_view_selects_only_the_page() {
     let html = app_shell_page();
 
-    // A native Ctrl/Cmd+A selects the whole shell — library pane, toolbar and all —
-    // so copying a page drags the chrome along. The shortcut selects just the
-    // rendered document, and stands aside for editable fields and the code view,
-    // whose native select-all is scoped already.
+    // A native Ctrl/Cmd+A selects the whole shell — library pane, toolbar and all — so copying a page drags the chrome along. The shortcut selects just the rendered document, and stands aside for editable fields and the code view, whose native select-all is scoped already.
     assert!(html.contains("event.key.toLowerCase() === 'a'"));
     assert!(html.contains("if (codeViewActive || isEditableMouseTarget(event.target))"));
     assert!(html.contains("range.selectNodeContents(body)"));
@@ -995,57 +919,38 @@ fn select_all_in_the_reading_view_selects_only_the_page() {
 
 #[test]
 fn app_shell_code_view_is_a_worker_free_monaco_with_its_own_minimap() {
-    // The code view is Monaco: it renders only what's on screen, so typing never
-    // re-lays-out the whole document. Guard the load-bearing choices behind that.
+    // The code view is Monaco: it renders only what's on screen, so typing never re-lays-out the whole document. Guard the load-bearing choices behind that.
     let html = app_shell_page();
 
-    // Entering the code view mounts a Monaco container and clears the reader's
-    // own rail — Monaco draws its own minimap.
+    // Entering the code view mounts a Monaco container and clears the reader's own rail — Monaco draws its own minimap.
     assert!(html.contains(r#"app.innerHTML = '<div class="code-view-monaco"></div>';"#));
     assert!(html.contains("setMinimapMarkup('');"));
 
-    // Wrapping stays on and the minimap is Monaco's own. The wrap is 'bounded'
-    // (not 'on') so applyCodeViewWrapColumn can hold the text short of the minimap
-    // — 'on' wraps flush under the minimap's drop-shadow.
+    // Wrapping stays on and the minimap is Monaco's own. The wrap is 'bounded' (not 'on') so applyCodeViewWrapColumn can hold the text short of the minimap — 'on' wraps flush under the minimap's drop-shadow.
     assert!(html.contains("wordWrap: 'bounded',"));
     assert!(html.contains("monacoEditor.onDidLayoutChange(() => {"));
     // A relayout re-derives the wrap column and re-checks the viewport box.
     assert!(html.contains("    clampMinimapSliderToRail();\n  });"));
     assert!(html.contains("minimap: { enabled: true"));
 
-    // Edits relay to the host as source splices (scheduleSourceUpdate), not a
-    // whole-buffer resend per keystroke.
+    // Edits relay to the host as source splices (scheduleSourceUpdate), not a whole-buffer resend per keystroke.
     assert!(html.contains("monacoEditor.onDidChangeModelContent(() => {"));
     assert!(html.contains("scheduleSourceUpdate();"));
 
-    // The bundle loads lazily, and Monaco is handed an inert worker stub so it
-    // never spawns a worker or evaluates worker code on the main thread — the
-    // app's security policy (no 'unsafe-eval', no blob: workers) stays untouched.
+    // The bundle loads lazily, and Monaco is handed an inert worker stub so it never spawns a worker or evaluates worker code on the main thread — the app's security policy (no 'unsafe-eval', no blob: workers) stays untouched.
     assert!(html.contains("function loadMonacoOnce()"));
     assert!(html.contains("self.MonacoEnvironment = {"));
     assert!(html.contains("getWorker() {"));
 }
 
-// The code view's wrap is a column count, so it is only a width once a character has
-// been measured — and every theme brings its own code font. Monaco measures a font
-// when it is told to use it, which for a web font is before the face has arrived, so
-// it measures the fallback; a font landing changes no geometry, so the layout event
-// the column rides never fires to correct it. Uncorrected, the wrap reads as a
-// property of the theme: text running under the minimap on some, stopping short on
-// others, depending only on whether that font is loaded already and how wide the
-// fallback is.
+// The code view's wrap is a column count, so it is only a width once a character has been measured — and every theme brings its own code font. Monaco measures a font when it is told to use it, which for a web font is before the face has arrived, so it measures the fallback; a font landing changes no geometry, so the layout event the column rides never fires to correct it. Uncorrected, the wrap reads as a property of the theme: text running under the minimap on some, stopping short on others, depending only on whether that font is loaded already and how wide the fallback is.
 //
-// The re-fit is pinned here because it has to keep working for fonts nobody has picked
-// yet: it is driven by the web view saying "faces finished loading", which names no
-// font and covers every source, so a new theme needs no code. Anything that starts
-// listing font names, or fits only the fonts that ship today, fails this test.
+// The re-fit is pinned here because it has to keep working for fonts nobody has picked yet: it is driven by the web view saying "faces finished loading", which names no font and covers every source, so a new theme needs no code. Anything that starts listing font names, or fits only the fonts that ship today, fails this test.
 #[test]
 fn app_shell_refits_the_code_view_wrap_to_whatever_font_is_actually_measured() {
     let html = app_shell_page();
 
-    // Forcing the measurement again is the load-bearing half — Monaco does not
-    // re-measure on its own — and the column cache has to go first, because the same
-    // count against a different font reads as "nothing changed".
+    // Forcing the measurement again is the load-bearing half — Monaco does not re-measure on its own — and the column cache has to go first, because the same count against a different font reads as "nothing changed".
     let refit = html
         .split("function refitCodeViewToFont()")
         .nth(1)
@@ -1055,9 +960,7 @@ fn app_shell_refits_the_code_view_wrap_to_whatever_font_is_actually_measured() {
     assert_contains(refit, "codeViewWrapColumn = 0;");
     assert_contains(refit, "applyCodeViewWrapColumn();");
 
-    // Both things that change the measurement re-fit: the theme's own font swap, and
-    // any face finishing its load afterwards. The listener is generic on purpose —
-    // `loadingdone` fires for every font from every source and names none.
+    // Both things that change the measurement re-fit: the theme's own font swap, and any face finishing its load afterwards. The listener is generic on purpose — `loadingdone` fires for every font from every source and names none.
     assert_contains(&html, "if (codeFont) monacoEditor.updateOptions({ fontFamily: codeFont });\n  // A theme brings its own code font, so the wrap has to be re-fitted to it.\n  refitCodeViewToFont();");
     assert_contains(
         &html,
@@ -1070,20 +973,13 @@ fn app_shell_refits_the_code_view_wrap_to_whatever_font_is_actually_measured() {
     );
 }
 
-// The edge fades dissolve the top and bottom of the page so a line sliced by the app
-// bar's edge or the card's stroke doesn't read as a rendering fault. Scrolled to
-// either end there is no slice to hide — and Monaco puts line 1 and the last line
-// flush against those same two edges, so the wash falls on text instead and the
-// first line comes up half erased. The editor therefore has to hold its
-// content clear of both edges the way the reading view's page does, which is why the
-// clearance is READ from the reading view's own numbers rather than typed again here.
+// The edge fades dissolve the top and bottom of the page so a line sliced by the app bar's edge or the card's stroke doesn't read as a rendering fault. Scrolled to either end there is no slice to hide — and Monaco puts line 1 and the last line flush against those same two edges, so the wash falls on text instead and the first line comes up half erased. The editor therefore has to hold its content clear of both edges the way the reading view's page does, which is why the clearance is READ from the reading view's own numbers rather than typed again here.
 #[test]
 fn app_shell_holds_the_code_view_clear_of_the_edge_fades() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // The option exists at all, and is Monaco's own padding — the scroll height grows,
-    // so the ends of the document can be scrolled out of the wash.
+    // The option exists at all, and is Monaco's own padding — the scroll height grows, so the ends of the document can be scrolled out of the wash.
     assert_contains(&html, "padding: monacoEditorPadding(),");
 
     let padding = html
@@ -1092,14 +988,11 @@ fn app_shell_holds_the_code_view_clear_of_the_edge_fades() {
         .expect("the shell must size the code view's padding");
     let padding = &padding[..padding.find("\n}\n").expect("padding body should close")];
 
-    // Top: the gap the reading view opens for its first block, less the bar the
-    // editor's box already starts below.
+    // Top: the gap the reading view opens for its first block, less the bar the editor's box already starts below.
     assert_contains(padding, "READER_CONTENT_TOP_GAP - barHeight");
     assert_contains(padding, "root.getPropertyValue('--app-bar-height')");
 
-    // Bottom: what .document-body leaves — the content pad plus the floating toolbar's
-    // room. That one is declared on <body>, not the root, so it must be read from the
-    // body or it comes back 0 and the last line sits under the bar.
+    // Bottom: what .document-body leaves — the content pad plus the floating toolbar's room. That one is declared on <body>, not the root, so it must be read from the body or it comes back 0 and the last line sits under the bar.
     assert_contains(padding, "contentPad + toolbarSpace");
     assert_contains(padding, "root.getPropertyValue('--reader-content-pad')");
     assert_contains(
@@ -1108,8 +1001,7 @@ fn app_shell_holds_the_code_view_clear_of_the_edge_fades() {
     );
     assert_contains(&css, "body:has(#readerToolbar:not([hidden])) {");
 
-    // And the clearance actually covers the fade, whatever the three numbers become:
-    // the top gap left over after the app bar has to be at least as deep as the wash.
+    // And the clearance actually covers the fade, whatever the three numbers become: the top gap left over after the app bar has to be at least as deep as the wash.
     let px = |name: &str| -> f64 {
         let value = css
             .split(&format!("{name}: "))

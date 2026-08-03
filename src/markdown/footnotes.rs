@@ -2,10 +2,7 @@
 
 use super::*;
 
-/// Move every footnote definition to the end of the document in reference order
-/// (unreferenced ones trailing in source order), mirroring GitHub. Emitting them
-/// in reference order also lines up pulldown-cmark's printed labels with the
-/// superscript numbers, since its HTML writer labels by emission order.
+/// Move every footnote definition to the end of the document in reference order (unreferenced ones trailing in source order), mirroring GitHub. Emitting them in reference order also lines up pulldown-cmark's printed labels with the superscript numbers, since its HTML writer labels by emission order.
 pub(crate) fn relocate_footnote_definitions(
     events: Vec<Event<'static>>,
     ranges: Vec<(String, usize, usize)>,

@@ -1,9 +1,6 @@
 // render-docs-check.mjs
 // ---------------------------------------------------------------------------
-// A headless smoke test for the docs: render every Markdown file under docs/
-// with the same renderer the site uses (site/markdown.js) and fail loudly if
-// any of them throws or produces empty output. Catches broken Markdown before
-// it ships to leaftext.com/docs without needing a browser.
+// A headless smoke test for the docs: render every Markdown file under docs/ with the same renderer the site uses (site/markdown.js) and fail loudly if any of them throws or produces empty output. Catches broken Markdown before it ships to leaftext.com/docs without needing a browser.
 //
 // Run from the repo root:  node docs/render-docs-check.mjs
 // ---------------------------------------------------------------------------
@@ -37,9 +34,7 @@ for (const file of files) {
     const html = renderMarkdown(md);
     if (!html || !html.trim()) throw new Error('rendered to empty output');
 
-    // Catch MDX/Mintlify leftovers the leaftext renderer cannot handle. Match
-    // only real component tags (preceded by line-start or whitespace) so Rust
-    // generics in backticks like `Vec<Tab>` or `Option<Steps>` are not flagged.
+    // Catch MDX/Mintlify leftovers the leaftext renderer cannot handle. Match only real component tags (preceded by line-start or whitespace) so Rust generics in backticks like `Vec<Tab>` or `Option<Steps>` are not flagged.
     const leftovers = md.match(
       /(?:^|\s)<\/?(?:Tabs?|Steps?|CardGroup|Card|AccordionGroup|Accordion|Note|Tip|Warning)\b|theme=\{null\}/gm
     );

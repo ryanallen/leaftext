@@ -11,6 +11,8 @@ A comment explains why the code is the way it is, not how it got that way. Git a
 
 The bar, from AGENTS.md Rule 1: **one short line, only where the code can't say it.**
 
+And **one line means one line** — never wrap a comment across two. `just check-wrapping` joins them and fails on one left behind. A comment body with an indent of its own is left alone, because there the shape is the content: a command, a table, a list. So a comment that is too long is *shortened*, never wrapped — the length is the thing to fix.
+
 This is a quality pass, not a git operation — never commit, tag, or push, and never change what the code does.
 
 **Nothing here is a bulk edit.** A pattern match finds candidates; it never decides. Every verdict is reached by reading the comment *and the code under it*.
@@ -68,7 +70,7 @@ The third row is the common one and it is a judgment call every time. The test i
 
 ### shorten — house style
 
-A comment that survives but rambles: match the density next door, one line if it fits, drop incidental specifics unless load-bearing, cut hedging. **Length alone is never a reason to cut.** No assistant voice — no "I changed", no "as requested", no note about what a session did.
+A comment that survives but rambles: match the density next door, one line if it fits, drop incidental specifics unless load-bearing, cut hedging. This is the verdict a long one earns — wrapping it across lines is not a fix, it is the same comment costing a re-flow on every edit. **Length alone is never a reason to cut.** No assistant voice — no "I changed", no "as requested", no note about what a session did.
 
 ## Every rewrite has to be checked
 

@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 // seo-gen.mjs
 // ---------------------------------------------------------------------------
-// Generate the static discovery files for the leaftext.com site from the real
-// docs/ tree. Deterministic: same repo state in, byte-identical files out, so
-// re-running never churns git. No network, no manifest to maintain.
+// Generate the static discovery files for the leaftext.com site from the real docs/ tree. Deterministic: same repo state in, byte-identical files out, so re-running never churns git. No network, no manifest to maintain.
 //
 // Produces, at the repo root (the deployed site root):
 //   robots.txt       allow the major search + AI crawlers, point at the sitemap
@@ -32,8 +30,7 @@ const OG_IMAGE = existsSync(join(ROOT, 'imgs/leaftext.png')) ? ORIGIN + '/imgs/l
 
 // ---- helpers --------------------------------------------------------------
 
-// Every .md under a folder, recursively, returned as repo-relative POSIX paths
-// in sorted order so output is stable across machines.
+// Every .md under a folder, recursively, returned as repo-relative POSIX paths in sorted order so output is stable across machines.
 function findMarkdown(dir) {
   const out = [];
   for (const name of readdirSync(dir).sort()) {
@@ -49,9 +46,7 @@ function rel(full) {
   return relative(ROOT, full).split('\\').join('/');
 }
 
-// A leading numeric ordering prefix ("01-", "02_") sorts files in the docs
-// sidebar but is invisible to the reader — strip it from routes and titles here
-// too, so canonical URLs match the SPA's clean routes. Mirrors site/docs-nav.js.
+// A leading numeric ordering prefix ("01-", "02_") sorts files in the docs sidebar but is invisible to the reader — strip it from routes and titles here too, so canonical URLs match the SPA's clean routes. Mirrors site/docs-nav.js.
 const stripOrder = (seg) => seg.replace(/^\d+[-_]+/, '');
 
 // A readable title built from a file's path, used when the file has no heading.
@@ -71,9 +66,7 @@ function titleFromPath(relPath) {
   return skt ? `${main} (${titleCase(skt)})` : main || relPath;
 }
 
-// Pull a human title out of a Markdown file's first heading. Strips a leading
-// frontmatter block, then the first `# ...` line, then removes links/images/raw
-// HTML/emphasis so the label reads as plain text. Falls back to the path.
+// Pull a human title out of a Markdown file's first heading. Strips a leading frontmatter block, then the first `# ...` line, then removes links/images/raw HTML/emphasis so the label reads as plain text. Falls back to the path.
 function titleOf(relPath) {
   let text = readFileSync(join(ROOT, relPath), 'utf8').replace(/\r\n?/g, '\n');
   if (text.startsWith('---\n')) {
@@ -110,8 +103,7 @@ function summaryOf(relPath) {
     const line = block.trim();
     if (!line || line.startsWith('#') || line.startsWith('<') || line.startsWith('|') || line.startsWith('>'))
       continue;
-    // A block that is nothing but images is a screenshot, not a description.
-    // Alt text describes a picture; it never summarizes the page.
+    // A block that is nothing but images is a screenshot, not a description. Alt text describes a picture; it never summarizes the page.
     if (!line.replace(/!\[[^\[\]]*\]\([^)]*\)/g, '').trim()) continue;
     const plain = line
       .replace(/!\[([^\[\]]*)\]\([^)]*\)/g, '$1')
@@ -126,16 +118,13 @@ function summaryOf(relPath) {
   return '';
 }
 
-// The docs SPA route for a file: its path under docs/ without the .md. The root
-// README is the site landing; docs/README.md (if any) is the docs index.
+// The docs SPA route for a file: its path under docs/ without the .md. The root README is the site landing; docs/README.md (if any) is the docs index.
 function pageUrl(relPath) {
   if (relPath === 'README.md') return ORIGIN + '/';
   if (relPath.startsWith('docs/')) {
     const rawRoute = relPath.slice('docs/'.length).replace(/\.md$/i, '');
     if (rawRoute === 'README') return ORIGIN + '/docs/';
-    // Strip the ordering prefix from every path segment so the canonical URL is
-    // the clean route the SPA actually uses (e.g. "features/rendering", not
-    // "01-features/01-rendering").
+    // Strip the ordering prefix from every path segment so the canonical URL is the clean route the SPA actually uses (e.g. "features/rendering", not "01-features/01-rendering").
     const route = rawRoute.split('/').map(stripOrder).join('/');
     return ORIGIN + '/docs/#/' + route;
   }
@@ -163,8 +152,7 @@ const xmlEsc = (s) =>
 const docsMd = existsSync(join(ROOT, 'docs')) ? findMarkdown(join(ROOT, 'docs')) : [];
 const allMd = ['README.md', ...docsMd];
 
-// The gallery is a built page rather than a Markdown one, so it is named here: it is
-// the only page on the site that is neither the README nor a doc.
+// The gallery is a built page rather than a Markdown one, so it is named here: it is the only page on the site that is neither the README nor a doc.
 const GALLERY = {
   relPath: 'gallery.html',
   title: 'Themes, drawn',
@@ -205,8 +193,7 @@ const robots =
 writeFileSync(join(ROOT, 'robots.txt'), robots);
 
 // ---- sitemap.xml ----------------------------------------------------------
-// Both the human page URL and the raw .md source for each doc. The .md URLs are
-// the JS-free representation crawlers and AI fetchers can read directly.
+// Both the human page URL and the raw .md source for each doc. The .md URLs are the JS-free representation crawlers and AI fetchers can read directly.
 
 const urls = [];
 for (const p of pages) {

@@ -1,13 +1,9 @@
 #!/usr/bin/env node
-// The published pages fetch files by path, and a wrong path is a 404 nobody sees
-// until the page is live — the front page's glossary sheet asked the site root for
-// a file that has only ever lived in docs/.
+// The published pages fetch files by path, and a wrong path is a 404 nobody sees until the page is live — the front page's glossary sheet asked the site root for a file that has only ever lived in docs/.
 //
 //   node scripts/check-site.mjs   fail on a fetched path with no file
 //
-// Each entry page's own folder is the base, read off the <script> tag it loads,
-// so the page saying where the file is and the file being there cannot drift.
-// Only literal paths can be checked; a path built at runtime is skipped.
+// Each entry page's own folder is the base, read off the <script> tag it loads, so the page saying where the file is and the file being there cannot drift. Only literal paths can be checked; a path built at runtime is skipped.
 
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, posix } from 'node:path';
@@ -18,8 +14,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 // The pages a browser opens, and the module each one boots.
 const PAGES = ['index.html', 'docs/index.html'];
 
-// Paths the page is written to do without. Each is tried and its failure handled,
-// so a missing file is the normal case rather than a broken page.
+// Paths the page is written to do without. Each is tried and its failure handled, so a missing file is the normal case rather than a broken page.
 const OPTIONAL = new Set([
   'README.xml', // the front page reads a TEI README if one is served instead
 ]);
@@ -38,8 +33,7 @@ function entryScript(page) {
   return posix.join(posix.dirname(page.split('\\').join('/')), tag[1]);
 }
 
-// The scripts one page's module pulls in, so a path written in a shared helper is
-// still checked against the page that supplies it. One level is all we need.
+// The scripts one page's module pulls in, so a path written in a shared helper is still checked against the page that supplies it. One level is all we need.
 function localImports(script) {
   const source = readFileSync(join(root, script), 'utf8');
   const base = posix.dirname(script);

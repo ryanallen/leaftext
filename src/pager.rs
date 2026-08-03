@@ -1,7 +1,6 @@
 use crate::*;
 
-/// One page in the Previous/Next reading order: the file to open and the label
-/// shown on the pager button.
+/// One page in the Previous/Next reading order: the file to open and the label shown on the pager button.
 pub(crate) struct PagerEntry {
     path: PathBuf,
     label: String,
@@ -23,11 +22,7 @@ pub(crate) fn pager_loading_html() -> &'static str {
     r#"<nav class="docs-pager docs-pager-loading" aria-label="Document navigation" aria-busy="true"><span class="docs-pager-skeleton"><span class="docs-pager-label-skeleton"></span><span class="docs-pager-title-skeleton"></span></span><span class="docs-pager-skeleton docs-pager-next"><span class="docs-pager-label-skeleton"></span><span class="docs-pager-title-skeleton"></span></span></nav>"#
 }
 
-/// Build the Previous/Next pager for `current`. Ordering is a depth-first walk
-/// of the doc tree: at each folder, non-README files first (sorted by name),
-/// then each subfolder (its README as the landing page), then that folder's
-/// pages. The root is the highest ancestor still covered by a chain of READMEs.
-/// Empty string when the file has no neighbors.
+/// Build the Previous/Next pager for `current`. Ordering is a depth-first walk of the doc tree: at each folder, non-README files first (sorted by name), then each subfolder (its README as the landing page), then that folder's pages. The root is the highest ancestor still covered by a chain of READMEs. Empty string when the file has no neighbors.
 pub(crate) fn pager_html(current: &Path) -> String {
     let root = pager_doc_root(current);
     let entries = collect_pager_entries(&root);
@@ -37,8 +32,7 @@ pub(crate) fn pager_html(current: &Path) -> String {
     };
     let position = entries.iter().position(|entry| same(&entry.path, current));
 
-    // The root README is the landing page, not a sequential entry; opening it
-    // sits before the first page (index -1, prev: none, next: first page).
+    // The root README is the landing page, not a sequential entry; opening it sits before the first page (index -1, prev: none, next: first page).
     let index: isize = match position {
         Some(found) => found as isize,
         None => match readme_in(&root) {
@@ -92,8 +86,7 @@ pub(crate) fn readme_in(dir: &Path) -> Option<PathBuf> {
     })
 }
 
-/// Climb from the current file's folder to the highest ancestor whose parent is
-/// no longer part of the README-covered documentation tree.
+/// Climb from the current file's folder to the highest ancestor whose parent is no longer part of the README-covered documentation tree.
 pub(crate) fn pager_doc_root(current: &Path) -> PathBuf {
     let mut root = current.parent().unwrap_or(current).to_path_buf();
     while let Some(parent) = root.parent() {
@@ -106,9 +99,7 @@ pub(crate) fn pager_doc_root(current: &Path) -> PathBuf {
     root
 }
 
-/// Depth-first collection of pager entries under `dir` (see [`pager_html`]).
-/// `README.md` (folder index, added by the parent) and `GLOSSARY.md` (opened in
-/// the glossary sheet, never a sequential page) are excluded as standalone pages.
+/// Depth-first collection of pager entries under `dir` (see [`pager_html`]). `README.md` (folder index, added by the parent) and `GLOSSARY.md` (opened in the glossary sheet, never a sequential page) are excluded as standalone pages.
 pub(crate) fn collect_pager_entries(dir: &Path) -> Vec<PagerEntry> {
     let mut entries = Vec::new();
     collect_pager_entries_into(dir, &mut entries);
@@ -124,8 +115,7 @@ pub(crate) fn collect_pager_entries_into(dir: &Path, into: &mut Vec<PagerEntry>)
         if path.is_dir() {
             subdirs.push(path);
         } else if path.file_name().and_then(|n| n.to_str()).is_some() {
-            // Every format the app renders is a page; README (landing page) and
-            // GLOSSARY (the sheet) are excluded by stem.
+            // Every format the app renders is a page; README (landing page) and GLOSSARY (the sheet) are excluded by stem.
             let is_doc = path
                 .extension()
                 .and_then(|e| e.to_str())
@@ -183,17 +173,12 @@ pub(crate) fn by_pager_name(a: &PathBuf, b: &PathBuf) -> std::cmp::Ordering {
     an.cmp(&bn)
 }
 
-/// Extensions the pager walks as sequential pages: every format the reading view
-/// renders, so Prev/Next covers a folder rather than part of it. Asks the format
-/// table rather than restating it — a page the app can open but the pager can't
-/// see is invisible to Prev/Next and keeps its extension in the label.
+/// Extensions the pager walks as sequential pages: every format the reading view renders, so Prev/Next covers a folder rather than part of it. Asks the format table rather than restating it — a page the app can open but the pager can't see is invisible to Prev/Next and keeps its extension in the label.
 pub(crate) fn is_pager_page_extension(extension: &str) -> bool {
     DocumentFormat::from_extension(extension).is_some()
 }
 
-/// Turn an on-disk name into a display label (matches the web `label()`): drop a
-/// trailing page extension, collapse `-`/`_` runs to spaces, title-case each
-/// word. e.g. `book-1-words--kangyur` -> `Book 1 Words Kangyur`.
+/// Turn an on-disk name into a display label (matches the web `label()`): drop a trailing page extension, collapse `-`/`_` runs to spaces, title-case each word. e.g. `book-1-words--kangyur` -> `Book 1 Words Kangyur`.
 pub(crate) fn pager_label(raw: &str) -> String {
     let base = raw
         .rsplit_once('.')

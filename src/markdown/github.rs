@@ -11,8 +11,7 @@ pub(crate) fn github_markdown_extras(
     let mut code_block: Option<CodeBlockCapture> = None;
     let mut footnotes = FootnoteTracker::default();
     let mut current_footnote: Option<String> = None;
-    // Where each definition's events landed in `transformed`, so they can be
-    // hoisted to the end (as GitHub does) once every reference is numbered.
+    // Where each definition's events landed in `transformed`, so they can be hoisted to the end (as GitHub does) once every reference is numbered.
     let mut footnote_ranges: Vec<(String, usize, usize)> = Vec::new();
     let mut footnote_start = 0usize;
 
@@ -59,8 +58,7 @@ pub(crate) fn github_markdown_extras(
             Event::End(TagEnd::FootnoteDefinition) => {
                 if let Some(name) = current_footnote.take() {
                     let backlink = Event::Html(cowstr(&render_footnote_backlink(&name)));
-                    // Insert inside the last paragraph so the icon sits inline at
-                    // the sentence end, not as a separate block below it.
+                    // Insert inside the last paragraph so the icon sits inline at the sentence end, not as a separate block below it.
                     let last_para_end = (footnote_start..transformed.len())
                         .rev()
                         .find(|&i| matches!(transformed[i], Event::End(TagEnd::Paragraph)));

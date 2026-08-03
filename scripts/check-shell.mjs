@@ -1,10 +1,6 @@
-// Run the WebView front-end: does it parse, does it boot, and is the code
-// view's edit arithmetic right (it decides what gets written to a file).
+// Run the WebView front-end: does it parse, does it boot, and is the code view's edit arithmetic right (it decides what gets written to a file).
 //
-// Nothing else runs this script before a user does, and a fragment that throws
-// as it loads opens a blank window. Order is load-bearing, so both the fragment
-// list and the fake page's elements are read from the app itself —
-// APP_SHELL_SCRIPT_PARTS in lib.rs and the ids and classes in app-shell.html.
+// Nothing else runs this script before a user does, and a fragment that throws as it loads opens a blank window. Order is load-bearing, so both the fragment list and the fake page's elements are read from the app itself — APP_SHELL_SCRIPT_PARTS in lib.rs and the ids and classes in app-shell.html.
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -30,8 +26,7 @@ function shellSource() {
     if (!list) throw new Error(`could not find ${constant} in src/lib.rs`);
     return [...list[1].matchAll(/include_str!\("assets\/(.*?)"\)/g)].map((m) => m[1]);
   };
-  // One list, served as one file behind the page's one script tag — so booting them
-  // joined in this order is exactly what the web view does.
+  // One list, served as one file behind the page's one script tag — so booting them joined in this order is exactly what the web view does.
   const names = partsNamed('APP_SHELL_SCRIPT_PARTS');
   if (names.length < 10) throw new Error(`expected the whole fragment list, got ${names.length}`);
   const page = readFileSync(join(root, 'src/assets/app-shell.html'), 'utf8');
@@ -107,8 +102,7 @@ function fakeElement(id = '') {
     closest: () => null,
     matches: () => false,
     contains: () => false,
-    // The page writes its own markup into these and then reaches back into it,
-    // so a query finds something — as it would once that markup is really there.
+    // The page writes its own markup into these and then reaches back into it, so a query finds something — as it would once that markup is really there.
     querySelector: (selector) => fakeElement(String(selector)),
     // Nothing has been rendered yet at boot, so a list of them is empty.
     querySelectorAll: () => [],
@@ -128,8 +122,7 @@ function fakeElement(id = '') {
 function fakePage() {
   const byId = new Map(elementIds().map((id) => [id, fakeElement(id)]));
   const classes = elementClasses();
-  // Only what the page really declares gets an answer. A selector for a class
-  // or id the markup does not have returns null, the way it would in the app.
+  // Only what the page really declares gets an answer. A selector for a class or id the markup does not have returns null, the way it would in the app.
   const find = (selector) => {
     const one = String(selector).trim();
     if (one.startsWith('#')) return byId.get(one.slice(1)) || null;
@@ -142,8 +135,7 @@ function fakePage() {
     documentElement: fakeElement('documentElement'),
     body: fakeElement('body'),
     head: fakeElement('head'),
-    // Unknown ids answer null, exactly as the real page does — so code that
-    // guards on a missing element is exercised, not papered over.
+    // Unknown ids answer null, exactly as the real page does — so code that guards on a missing element is exercised, not papered over.
     getElementById: (id) => byId.get(id) || null,
     querySelector: find,
     // Nothing is loaded at boot, so a list query is legitimately empty.
@@ -210,8 +202,7 @@ function runShell(source) {
       unobserve() {}
       disconnect() {}
     },
-    // Real implementations, not stubs: the web view has these and so does Node,
-    // and the offset arithmetic below depends on them being genuine.
+    // Real implementations, not stubs: the web view has these and so does Node, and the offset arithmetic below depends on them being genuine.
     TextEncoder,
     TextDecoder,
     URL,
@@ -239,10 +230,7 @@ function runShell(source) {
   sandbox.window = sandbox;
   sandbox.self = sandbox;
   sandbox.globalThis = sandbox;
-  // The theme bootstrap normally runs first and publishes these; it lives in a
-  // separate <script>, so stand them in.
-  // It publishes the vendored runtimes' URLs too, which the fragments destructure
-  // on load — so a missing entry here reads as a boot failure, not a stub.
+  // The theme bootstrap normally runs first and publishes these; it lives in a separate <script>, so stand them in. It publishes the vendored runtimes' URLs too, which the fragments destructure on load — so a missing entry here reads as a boot failure, not a stub.
   sandbox.__lt = {
     assets: {
       mermaid: 'leaf-asset://mermaid.min.js',
@@ -284,9 +272,7 @@ check('the page boots', () => {
 
 // ---- 3. the arithmetic that can damage a file -------------------------------
 
-// The code view does not send the buffer, it sends what changed — and the host
-// splices that straight into the text it will write to disk. These are the
-// functions that work it out.
+// The code view does not send the buffer, it sends what changed — and the host splices that straight into the text it will write to disk. These are the functions that work it out.
 if (booted) {
   const { sourceSpliceSince, lineIndexAtByteOffset, byteOffsetAtLineIndex, rangesAfterCommit, fencedCodeInnerSpan } =
     booted;
@@ -320,8 +306,7 @@ if (booted) {
     is(blockFormatChanges(quote, 'blockquote', 0), false, 'quote on a quote');
     is(blockFormatChanges(quote, 'paragraph', 0), true, 'quote on a paragraph');
 
-    // The marker each press writes. Null means write nothing at all — a freshly typed
-    // line commits through this, so a bad marker there writes the words twice.
+    // The marker each press writes. Null means write nothing at all — a freshly typed line commits through this, so a bad marker there writes the words twice.
     const { blockFormatMarker } = booted;
     is(blockFormatMarker(bigger, 6), '##### ', 'h6 bigger marker');
     is(blockFormatMarker(bigger, 2), '# ', 'h2 bigger marker');
@@ -333,8 +318,7 @@ if (booted) {
   });
 
   check('a fenced code block offers its inside and never its fences', () => {
-    // The reader edits the inside only, so the fences cannot be typed away. The
-    // span is spliced verbatim: a wrong end writes code over a fence.
+    // The reader edits the inside only, so the fences cannot be typed away. The span is spliced verbatim: a wrong end writes code over a fence.
     const inside = (src) => {
       const span = fencedCodeInnerSpan(src);
       return span ? src.slice(span.from, span.to) : null;
@@ -366,11 +350,7 @@ if (booted) {
     keeps('```\n```', null); // no line inside to edit
   });
 
-  // A table is written back by re-serializing the whole thing, and the dashes
-  // line under the header is what carries each column's alignment. Deleting
-  // across two cells can take a whole cell out, and a changed column count is
-  // when that line is rebuilt instead of copied — a wrong rebuild un-centers a
-  // column with nothing on screen to show for it.
+  // A table is written back by re-serializing the whole thing, and the dashes line under the header is what carries each column's alignment. Deleting across two cells can take a whole cell out, and a changed column count is when that line is rebuilt instead of copied — a wrong rebuild un-centers a column with nothing on screen to show for it.
   check('a rebuilt dashes line keeps each column aligned', () => {
     const { tableDelimiterCells, tableDelimiterRow } = booted;
     const column = (align) => ({ getAttribute: (name) => (name === 'align' ? align : null) });
@@ -392,9 +372,7 @@ if (booted) {
   });
 
   check('a save before a block move shifts the ranges it moved', () => {
-    // Dragging a block after typing in one sends two edits: the save, then the
-    // move against the buffer the save wrote. Ranges that drift here reorder the
-    // wrong text, so the host refuses a list that is not sorted and disjoint.
+    // Dragging a block after typing in one sends two edits: the save, then the move against the buffer the save wrote. Ranges that drift here reorder the wrong text, so the host refuses a list that is not sorted and disjoint.
     const ranges = [
       [0, 10],
       [12, 20],
@@ -430,8 +408,7 @@ if (booted) {
       [16, 24],
     ]);
     sorted(shrunk);
-    // A block edited outside the run counts too: one below it leaves the run
-    // alone, one above it slides the whole run.
+    // A block edited outside the run counts too: one below it leaves the run alone, one above it slides the whole run.
     same(rangesAfterCommit(ranges, { start: 40, end: 44, delta: 9 }), ranges);
     const pushed = rangesAfterCommit([[12, 20]], { start: 0, end: 10, delta: 3 });
     same(pushed, [[15, 23]]);
@@ -476,9 +453,7 @@ if (booted) {
     }
   });
 
-  // Find drives two engines from one field, and both of them can write to a file.
-  // The pattern is what decides which text is a match; the block rewrite is what
-  // turns a match on the page into bytes spliced into the buffer.
+  // Find drives two engines from one field, and both of them can write to a file. The pattern is what decides which text is a match; the block rewrite is what turns a match on the page into bytes spliced into the buffer.
   check('the find bar builds the pattern its toggles promise', () => {
     const { findPattern, toggleFindFlag } = booted;
     const field = booted.document.getElementById('findInput');
@@ -528,8 +503,7 @@ if (booted) {
     // Only the one the cursor is on.
     const second = findRewriteBlock({ start, end, ranks: [1], total: 2 }, 'sutra');
     if (second !== 'The dharma talk, and the sutra book.') throw new Error(`one replace rewrote: ${second}`);
-    // The page shows a match the block's source does not hold in one piece —
-    // formatting split it — so nothing is spliced rather than the wrong thing.
+    // The page shows a match the block's source does not hold in one piece — formatting split it — so nothing is spliced rather than the wrong thing.
     if (findRewriteBlock({ start, end, ranks: [0], total: 3 }, 'sutra') !== null) {
       throw new Error('a match split by formatting was replaced anyway');
     }
@@ -549,8 +523,7 @@ if (booted) {
     booted.ipc = { postMessage: (message) => posted.push(message) };
     booted.leafToast = (message) => growls.push(message);
 
-    // Both padlocks are down on a fresh page: the refusal is a growl saying so,
-    // and nothing is written.
+    // Both padlocks are down on a fresh page: the refusal is a growl saying so, and nothing is written.
     replaceInReading(false);
     replaceInSource(true);
     if (growls.length !== 2) throw new Error(`a locked view said: ${JSON.stringify(growls)}`);
@@ -561,8 +534,7 @@ if (booted) {
       throw new Error(`a locked view wrote: ${posted.join(', ')}`);
     }
 
-    // Unlocked, the same calls fall through to "there is nothing to replace" and
-    // say nothing — which is what proves the padlock is what refused above.
+    // Unlocked, the same calls fall through to "there is nothing to replace" and say nothing — which is what proves the padlock is what refused above.
     growls.length = 0;
     booted.setReadingUnlocked(true);
     booted.setCodeUnlocked(true);
@@ -573,12 +545,7 @@ if (booted) {
     booted.setCodeUnlocked(false);
   });
 
-  // JSON has no bundled colorizer, so its grammar is ours. Monarch compiles a
-  // grammar only when a file is first opened, so a bad rule is otherwise a wrongly
-  // colored code view on somebody's machine and nothing before it. Monaco cannot
-  // load here — no DOM, and it is installed only to regenerate the bundle — so the
-  // real rules are driven the way Monarch drives them: one line at a time, first
-  // rule that matches at the position wins, the state stack carried across lines.
+  // JSON has no bundled colorizer, so its grammar is ours. Monarch compiles a grammar only when a file is first opened, so a bad rule is otherwise a wrongly colored code view on somebody's machine and nothing before it. Monaco cannot load here — no DOM, and it is installed only to regenerate the bundle — so the real rules are driven the way Monarch drives them: one line at a time, first rule that matches at the position wins, the state stack carried across lines.
   check('the JSON grammar colors a JSON file, comments and all', () => {
     const { jsonMonarchLanguage, monacoLanguageFor } = booted;
     if (monacoLanguageFor({ language: 'json' }) !== 'json') throw new Error('a .json payload is not sent to the grammar');
@@ -615,8 +582,7 @@ if (booted) {
       if (!found) throw new Error(`${JSON.stringify(want[0])} is not a token of ${JSON.stringify(text)}`);
       if (found[1] !== want[1]) throw new Error(`${JSON.stringify(want[0])} is ${found[1]}, wanted ${want[1]}`);
     };
-    // A key is `type` and a value is `string`, the way the bundled YAML grammar
-    // spells them — the same pair of colors in both formats, in one code view.
+    // A key is `type` and a value is `string`, the way the bundled YAML grammar spells them — the same pair of colors in both formats, in one code view.
     colorOf('{ "name": "leaf" }', ['"name"', 'type']);
     colorOf('{ "name": "leaf" }', ['"leaf"', 'string']);
     colorOf('{ "name" : "leaf" }', ['"name"', 'type']); // space before the colon
@@ -626,12 +592,10 @@ if (booted) {
     colorOf('{ "n": -12.5e-3 }', ['-12.5e-3', 'number']);
     colorOf('{ "n": 0 }', ['0', 'number']);
     colorOf('[1, 2]', [',', 'delimiter']);
-    // Neither is JSON, and both are in real .json files — the ones whose reading
-    // view refuses to parse, which is why their author is in the code view.
+    // Neither is JSON, and both are in real .json files — the ones whose reading view refuses to parse, which is why their author is in the code view.
     colorOf('{ "a": 1 } // trailing note', ['// trailing note', 'comment']);
     colorOf('/* head */ { "a": 1 }', ['/*', 'comment']);
-    // A block comment holds its color to the end, over a line break and a `*`
-    // that closes nothing.
+    // A block comment holds its color to the end, over a line break and a `*` that closes nothing.
     const block = tokenize('/*\n * still a comment\n */\n{ "a": 1 }');
     for (const [text, token] of block.slice(0, block.findIndex((pair) => pair[0] === '*/') + 1)) {
       if (token !== 'comment') throw new Error(`${JSON.stringify(text)} inside a block comment is ${token}`);
@@ -640,9 +604,7 @@ if (booted) {
     // An unclosed quote takes the rest of its line and no more.
     colorOf('{ "a": "oops\n{ "b": 1 }', ['"oops', 'string']);
     colorOf('{ "a": "oops\n{ "b": 1 }', ['"b"', 'type']);
-    // Every color the grammar asks for has to be one the theme paints, or the text
-    // silently falls back to the foreground. `type`/`key`/`number`/`delimiter` are
-    // in defineLeafMonacoTheme for exactly these formats.
+    // Every color the grammar asks for has to be one the theme paints, or the text silently falls back to the foreground. `type`/`key`/`number`/`delimiter` are in defineLeafMonacoTheme for exactly these formats.
     const painted = ['string', 'number', 'keyword', 'comment', 'type', 'key', 'delimiter'];
     for (const state of Object.values(grammar.tokenizer)) {
       for (const [, token] of state) {
@@ -652,8 +614,7 @@ if (booted) {
   });
 
   check('byte offsets and line numbers agree in both directions', () => {
-    // The reader's place is a byte offset on the Rust side and a line number in
-    // the editor; multi-byte characters are where the two disagree.
+    // The reader's place is a byte offset on the Rust side and a line number in the editor; multi-byte characters are where the two disagree.
     const text = 'ascii\ncafé and ünicode\n😀 wide\nlast';
     for (let line = 0; line < 4; line += 1) {
       const bytes = byteOffsetAtLineIndex(text, line);
@@ -663,8 +624,7 @@ if (booted) {
       }
     }
     if (byteOffsetAtLineIndex(text, 0) !== 0) throw new Error('line 0 is not byte 0');
-    // "café" is five characters but six bytes, so the second line's start must
-    // account for the accent.
+    // "café" is five characters but six bytes, so the second line's start must account for the accent.
     if (byteOffsetAtLineIndex(text, 1) !== 'ascii\n'.length) {
       throw new Error('the second line does not start after the first');
     }
@@ -673,11 +633,7 @@ if (booted) {
     }
   });
 
-  // The flowchart sheet reads and writes mermaid, and Save splices what it wrote
-  // straight into the document. Everything dangerous is parseFlow refusing
-  // correctly, so both halves of that are held here: what we write must come
-  // back unchanged, and what we cannot model must come back null — never a
-  // partial graph the canvas could then save over.
+  // The flowchart sheet reads and writes mermaid, and Save splices what it wrote straight into the document. Everything dangerous is parseFlow refusing correctly, so both halves of that are held here: what we write must come back unchanged, and what we cannot model must come back null — never a partial graph the canvas could then save over.
   check('a flowchart we wrote survives the round trip', () => {
     const { parseFlow, renderFlow } = booted;
     const same = (text) => {
@@ -694,8 +650,7 @@ if (booted) {
     same('flowchart TD\n    A("Go")\n    B["Stop"]\n    A -->|"yes"| B');
     same('flowchart TD\n    A["a"]\n    B["b"]\n    A --- B'); // the open line
     same('flowchart BT\n    A["a"]\n    B["b"]\n    C["c"]\n    A --> B\n    B --> C');
-    // Every shape in the catalog, written and read back as itself. The pairs
-    // that share an opener (`[/…/]` against `[/…\\]`) are what this is for.
+    // Every shape in the catalog, written and read back as itself. The pairs that share an opener (`[/…/]` against `[/…\\]`) are what this is for.
     same(
       'flowchart TD\n' +
         [
@@ -752,15 +707,13 @@ if (booted) {
     same('flowchart TD\n    A["café 😀"]'); // multi-byte, where the offsets matter
     same('flowchart TD\n    A["one<br/>two"]'); // a line break in a label
     same('flowchart TD\n    A["a"]\n    A --> A'); // a node pointing at itself
-    // Front matter, directives and comments are kept exactly, because the canvas
-    // models none of them and a save must not be where they go missing.
+    // Front matter, directives and comments are kept exactly, because the canvas models none of them and a save must not be where they go missing.
     same('---\ntitle: Plan\n---\nflowchart TD\n    A["a"]');
     same('%%{init: {"flowchart": {"curve": "linear"}}}%%\nflowchart TD\n    A["a"]');
     same('flowchart TD\n    %% a note\n    accTitle: The plan\n    A["a"]');
     // Hyphens in a box name, against the arrow that starts one character later.
     same('flowchart LR\n    read-file["Read"]\n    write-file["Write"]\n    read-file --> write-file');
-    // The thirty-three shapes that have no brackets are written the typed way,
-    // and that is the only way they are ever written.
+    // The thirty-three shapes that have no brackets are written the typed way, and that is the only way they are ever written.
     same('flowchart TD\n    A@{ shape: cloud, label: "Somewhere else" }');
     same(
       'flowchart LR\n' +
@@ -776,9 +729,7 @@ if (booted) {
     );
   });
 
-  // The canvas has no gesture that draws a box around boxes, so the menu is the
-  // whole of it: make a group, join one, leave one, take one away. Each has to
-  // leave a diagram that still says something.
+  // The canvas has no gesture that draws a box around boxes, so the menu is the whole of it: make a group, join one, leave one, take one away. Each has to leave a diagram that still says something.
   check('the canvas can make and unmake a group', () => {
     const { parseFlow, renderFlow, flowGroupNodes, flowUngroup, flowMoveNodeToGroup, flowFindGroup } = booted;
     const one = (text) => {
@@ -801,8 +752,7 @@ if (booted) {
     flowMoveNodeToGroup(graph, 'C', null);
     if (graph.nodes.find((node) => node.id === 'C').group !== null) throw new Error('C did not leave');
 
-    // A group inside a group: taking the outer one away leaves the inner one
-    // where the outer one was, rather than orphaning it.
+    // A group inside a group: taking the outer one away leaves the inner one where the outer one was, rather than orphaning it.
     const inner = flowGroupNodes(graph, ['A'], 'Inner');
     if (inner.parent !== 'g1') throw new Error(`the inner group's parent is ${inner.parent}`);
     flowUngroup(graph, 'g1');
@@ -811,8 +761,7 @@ if (booted) {
     if (graph.nodes.find((node) => node.id === 'B').group !== null) throw new Error('B kept a group that is gone');
     if (!renderFlow(graph).includes('A["a"]')) throw new Error('a box went with the group');
 
-    // Boxes from two different groups cannot be gathered into one: there would
-    // be no answer to which group the new one goes in.
+    // Boxes from two different groups cannot be gathered into one: there would be no answer to which group the new one goes in.
     const split = one('flowchart TD\n  subgraph one\n    A[a]\n  end\n  subgraph two\n    B[b]\n  end');
     if (flowGroupNodes(split, ['A', 'B'], 'Both')) throw new Error('boxes from two groups should not group');
 
@@ -822,10 +771,7 @@ if (booted) {
     if (aimed.edges.some((edge) => edge.to === 'g')) throw new Error('an arrow still points at the group');
   });
 
-  // A connector can be stretched, and mermaid reads the extra length as a rank
-  // hint — so the length is part of what the diagram means, and losing it on a
-  // save would redraw the whole layout. The invisible link is the one line style
-  // that takes no ends at all.
+  // A connector can be stretched, and mermaid reads the extra length as a rank hint — so the length is part of what the diagram means, and losing it on a save would redraw the whole layout. The invisible link is the one line style that takes no ends at all.
   check('a connector keeps its length, and the invisible one takes no ends', () => {
     const { parseFlow, renderFlow } = booted;
     const one = (text) => {
@@ -869,8 +815,7 @@ if (booted) {
     }
   });
 
-  // A line can be given a name, and the one thing that uses the name is an
-  // animation. Both ride on the edge, so deleting the line takes them with it.
+  // A line can be given a name, and the one thing that uses the name is an animation. Both ride on the edge, so deleting the line takes them with it.
   check('a named line keeps its name and its animation', () => {
     const { parseFlow, renderFlow, flowDeleteEdge } = booted;
     const one = (text) => {
@@ -901,9 +846,7 @@ if (booted) {
     if (renderFlow(doomed).includes('e1')) throw new Error('the animation outlived its line');
   });
 
-  // Mermaid's markdown label — backticks inside the quotes — is the label's own
-  // text as far as the model is concerned. It is kept whole rather than refused,
-  // because a bold word in a box is not a reason to turn the canvas off.
+  // Mermaid's markdown label — backticks inside the quotes — is the label's own text as far as the model is concerned. It is kept whole rather than refused, because a bold word in a box is not a reason to turn the canvas off.
   check('a markdown label survives the round trip', () => {
     const { parseFlow, renderFlow } = booted;
     const same = (text) => {
@@ -913,8 +856,7 @@ if (booted) {
       if (back !== text) throw new Error(`${JSON.stringify(text)} -> ${JSON.stringify(back)}`);
     };
     same('flowchart TD\n    A["`**bold** and *italic*`"]');
-    // Mermaid wraps a markdown label where the break is, so the break is part
-    // of the label and the statement is not over until the quote closes.
+    // Mermaid wraps a markdown label where the break is, so the break is part of the label and the statement is not over until the quote closes.
     same('flowchart TD\n    A["`A longer label that\nwraps where you put the break`"]');
     const broken = parseFlow('flowchart TD\n  A["`one\ntwo`"] --> B[after]');
     if (!broken) throw new Error('a label across two lines was refused');
@@ -923,14 +865,11 @@ if (booted) {
     // A quote that never closes at all is still refused, and says so.
     if (parseFlow('flowchart TD\n    A["never closed')) throw new Error('an unclosed label should be refused');
     same('flowchart LR\n    A["`a **bold** step`"]\n    B["plain"]\n    A --> B');
-    // A bare backtick is still refused: mermaid needs the quotes for markdown,
-    // and a label we cannot quote back is one we cannot write.
+    // A bare backtick is still refused: mermaid needs the quotes for markdown, and a label we cannot quote back is one we cannot write.
     if (parseFlow('flowchart TD\n    A[`bold`]')) throw new Error('a bare backtick label should be refused');
   });
 
-  // The picker shows the shapes under headings, and it is built from the
-  // families — so a shape whose family is misspelled is a shape nobody can ever
-  // choose, and it would go missing quietly.
+  // The picker shows the shapes under headings, and it is built from the families — so a shape whose family is misspelled is a shape nobody can ever choose, and it would go missing quietly.
   check('every shape sits under exactly one heading', () => {
     const { flowShapeCatalog, flowShapeFamilies } = booted;
     const all = flowShapeCatalog();
@@ -950,9 +889,7 @@ if (booted) {
     if (new Set(seen).size !== seen.length) throw new Error('a shape is under two headings');
   });
 
-  // A subgraph is a box around boxes, and which one a box is in rides on the
-  // box — so dragging a box among its neighbors cannot take it out of its group,
-  // and deleting one cannot leave the group holding a name that is gone.
+  // A subgraph is a box around boxes, and which one a box is in rides on the box — so dragging a box among its neighbors cannot take it out of its group, and deleting one cannot leave the group holding a name that is gone.
   check('subgraphs keep their boxes, their nesting and their direction', () => {
     const { parseFlow, renderFlow, flowDeleteNode, flowMoveNode, flowAddNode } = booted;
     const one = (text) => {
@@ -991,8 +928,7 @@ if (booted) {
     if (deep.groups.find((group) => group.id === 'inner').parent !== 'outer') {
       throw new Error('the nesting was lost');
     }
-    // An arrow may name the group itself, and §19 points at one declared later.
-    // That name is a group, not a box invented for it.
+    // An arrow may name the group itself, and §19 points at one declared later. That name is a group, not a box invented for it.
     const grouped = one('flowchart LR\n  A[Input] --> group\n  subgraph group [The middle]\n    B --> C\n  end\n  group --> D[Output]');
     if (grouped.nodes.some((node) => node.id === 'group')) throw new Error('the group was also read as a box');
     if (!grouped.edges.some((edge) => edge.to === 'group')) throw new Error('the arrow into the group went missing');
@@ -1002,8 +938,7 @@ if (booted) {
     const adopted = one('flowchart TD\n  A --> B\n  subgraph g [G]\n    B[Spelled out here]\n  end');
     if (adopted.nodes.find((node) => node.id === 'B').group !== 'g') throw new Error('the box did not join its group');
 
-    // What the canvas does to a grouped diagram: reordering keeps membership,
-    // deleting takes the box out and leaves the group standing.
+    // What the canvas does to a grouped diagram: reordering keeps membership, deleting takes the box out and leaves the group standing.
     const edited = one('flowchart TD\n  subgraph g [G]\n    A[a]\n    B[b]\n  end\n  C[c]');
     flowMoveNode(edited, 'A', null);
     if (edited.nodes.find((node) => node.id === 'A').group !== 'g') throw new Error('a reorder moved a box out of its group');
@@ -1020,9 +955,7 @@ if (booted) {
     stable('flowchart TD\n  classDef zone fill:#eee\n  subgraph g [G]\n    A[a]\n  end\n  class g zone\n  style g stroke:#333');
   });
 
-  // Color is the one part of a diagram the canvas has no way to set, and every
-  // way of writing it names something the reader can then delete. So it rides on
-  // the box and the line it paints, and is written back off them.
+  // Color is the one part of a diagram the canvas has no way to set, and every way of writing it names something the reader can then delete. So it rides on the box and the line it paints, and is written back off them.
   check('classes and styles ride on what they paint', () => {
     const { parseFlow, renderFlow, flowDeleteNode, flowFlipEdge } = booted;
     const one = (text) => {
@@ -1036,8 +969,7 @@ if (booted) {
       return back;
     };
 
-    // `:::` on the box and a `class` line say the same thing, and both come back
-    // as the line — the typed form cannot carry `:::`, so there is one spelling.
+    // `:::` on the box and a `class` line say the same thing, and both come back as the line — the typed form cannot carry `:::`, so there is one spelling.
     const painted = stable(
       'flowchart LR\n' +
         '  classDef warn fill:#ffe4e6\n' +
@@ -1058,8 +990,7 @@ if (booted) {
     }
     stable('flowchart LR\n  A --> B\n  linkStyle default stroke:#888');
 
-    // Deleting a box takes its color with it, rather than leaving a rule that
-    // paints a box mermaid would then have to invent.
+    // Deleting a box takes its color with it, rather than leaving a rule that paints a box mermaid would then have to invent.
     const doomed = one('flowchart LR\n  A[a] --> B[b]\n  style B fill:#f00\n  class B warn\n  classDef warn color:#fff');
     flowDeleteNode(doomed, 'B');
     const after = renderFlow(doomed);
@@ -1072,9 +1003,7 @@ if (booted) {
     if (!renderFlow(flipped).includes('linkStyle 1 stroke:#f00')) throw new Error('the line lost its color');
   });
 
-  // Typed boxes — `A@{ shape: cyl }` — are the only way to reach the shapes the
-  // brackets never covered, and mermaid takes several names for each one. We
-  // read them all and write the short one, so a file gains no second spelling.
+  // Typed boxes — `A@{ shape: cyl }` — are the only way to reach the shapes the brackets never covered, and mermaid takes several names for each one. We read them all and write the short one, so a file gains no second spelling.
   check('a typed box is read, and written the shortest way', () => {
     const { parseFlow, renderFlow, flowShapeCatalog } = booted;
     const one = (text) => {
@@ -1102,8 +1031,7 @@ if (booted) {
     if (renderFlow(one('flowchart TD\n  A@{ shape: cylinder, label: "Cache" }')) !== 'flowchart TD\n    A[("Cache")]') {
       throw new Error('a typed cylinder was not written back in brackets');
     }
-    // The typed form may follow a box already declared, and changes its shape
-    // without touching the label it already had — section 14 of the guide.
+    // The typed form may follow a box already declared, and changes its shape without touching the label it already had — section 14 of the guide.
     const attached = one('flowchart LR\n  A[Plain] --> B[Becomes a cylinder]\n  B@{ shape: cyl }');
     const b = attached.nodes.find((node) => node.id === 'B');
     if (b.shape !== 'cyl' || b.text !== 'Becomes a cylinder') {
@@ -1119,8 +1047,7 @@ if (booted) {
     const refused = (text, why) => {
       const graph = parseFlow(text);
       if (graph) throw new Error(`${why}: parsed ${JSON.stringify(text)} instead of refusing`);
-      // Refusing silently is the bug the notice was written to fix: every one of
-      // these has to come back with something the reader can act on.
+      // Refusing silently is the bug the notice was written to fix: every one of these has to come back with something the reader can act on.
       if (!flowRefusal(text)) throw new Error(`${why}: refused ${JSON.stringify(text)} without saying why`);
     };
 
@@ -1132,8 +1059,7 @@ if (booted) {
     refused('flowchart TD\n    A[/x]', 'an opener with the wrong closer');
     refused('flowchart TD\n    A[[x]', 'a subroutine missing half its closer');
     refused('flowchart TD\n    A((x)', 'a circle missing half its closer');
-    // Edges past phase 2.
-    // Everything that changes what the diagram means.
+    // Edges past phase 2. Everything that changes what the diagram means.
     refused('flowchart TD\n    A["a"]\n    end', 'an end with no subgraph');
     refused('flowchart TD\n    subgraph one\n    A["a"]', 'a subgraph that never ends');
     refused('flowchart TD\n    A["a"]\n    direction LR', 'a direction outside a subgraph');
@@ -1149,10 +1075,7 @@ if (booted) {
     refused('---\ntitle: Plan\nflowchart TD\n    A', 'unterminated front matter');
   });
 
-  // A refusal the reader can do something about: which line, and what on it.
-  // The line number is what makes it worth saying at all, so it is counted from
-  // the top of the block the way the code pane numbers it — front matter and
-  // comments included.
+  // A refusal the reader can do something about: which line, and what on it. The line number is what makes it worth saying at all, so it is counted from the top of the block the way the code pane numbers it — front matter and comments included.
   check('a refusal names the line and the feature', () => {
     const { parseFlow, flowRefusal } = booted;
     const says = (text, ...parts) => {
@@ -1183,11 +1106,7 @@ if (booted) {
     if (flowRefusal(fine)) throw new Error(`a diagram that parses gave ${JSON.stringify(flowRefusal(fine))}`);
   });
 
-  // Deleting the last box leaves a diagram that is legal to be halfway through
-  // and illegal to write down — mermaid cannot draw an empty flowchart. That is
-  // the reason the canvas never re-reads its own output: round-tripping through
-  // the text here would hand back null and leave the canvas with no graph at
-  // all, leaving the canvas with nothing to add to.
+  // Deleting the last box leaves a diagram that is legal to be halfway through and illegal to write down — mermaid cannot draw an empty flowchart. That is the reason the canvas never re-reads its own output: round-tripping through the text here would hand back null and leave the canvas with no graph at all, leaving the canvas with nothing to add to.
   check('an emptied diagram is still a graph the canvas can add to', () => {
     const { parseFlow, renderFlow, flowDeleteNode, flowAddNode, flowMoveNode } = booted;
     const graph = parseFlow('flowchart TD\n    n1(["Start"])');
@@ -1201,15 +1120,12 @@ if (booted) {
     const back = renderFlow(graph);
     if (back !== 'flowchart TD\n    n1["Next"]') throw new Error(`came back as ${JSON.stringify(back)}`);
 
-    // The sheet's undo is a copied graph, and it copies with JSON. So the graph
-    // has to be plain data all the way down — put a function or a Map on it and
-    // stepping back would quietly hand back something that isn't the same graph.
+    // The sheet's undo is a copied graph, and it copies with JSON. So the graph has to be plain data all the way down — put a function or a Map on it and stepping back would quietly hand back something that isn't the same graph.
     const rich = parseFlow('---\ntitle: Plan\n---\nflowchart LR\n    %% note\n    A["a"]\n    B{"b"}\n    A -.->|"maybe"| B');
     const copied = JSON.parse(JSON.stringify(rich));
     if (renderFlow(copied) !== renderFlow(rich)) throw new Error('a copied graph is not the same graph');
 
-    // Dragging a box among its neighbors is a reorder of the declarations, and
-    // that order is what the layout reads. It has to go the way the pointer did.
+    // Dragging a box among its neighbors is a reorder of the declarations, and that order is what the layout reads. It has to go the way the pointer did.
     const three = parseFlow('flowchart TD\n    A["a"]\n    B["b"]\n    C["c"]');
     const order = () => three.nodes.map((node) => node.id).join('');
     flowMoveNode(three, 'A', null); // dropped past the end
@@ -1218,9 +1134,7 @@ if (booted) {
     if (order() !== 'ABC') throw new Error(`moving A before B gave ${order()}`);
   });
 
-  // The gestures that rewire a chain rather than just add to it. Each one has to
-  // leave a diagram that still says something, because the reader is dragging a
-  // box around, not editing a graph on purpose.
+  // The gestures that rewire a chain rather than just add to it. Each one has to leave a diagram that still says something, because the reader is dragging a box around, not editing a graph on purpose.
   check('rewiring a chain leaves it connected', () => {
     const { parseFlow, renderFlow, flowSpliceIntoEdge, flowExtractNode, flowFlipEdge, flowDuplicateNode } = booted;
     const chain = () =>
@@ -1232,8 +1146,7 @@ if (booted) {
     flowSpliceIntoEdge(into, 'X', into.edges[0].id);
     if (edges(into) !== 'A>X X>B B>C') throw new Error(`splice gave ${edges(into)}`);
 
-    // A box taken out of the middle closes the gap behind it, or the chain it
-    // was in silently comes apart.
+    // A box taken out of the middle closes the gap behind it, or the chain it was in silently comes apart.
     const out = chain();
     flowExtractNode(out, 'B');
     if (edges(out) !== 'A>C') throw new Error(`extract gave ${edges(out)}`);
@@ -1264,16 +1177,10 @@ if (booted) {
     }
   });
 
-  // A box's four + handles all mean the same thing — the next step, that way —
-  // and the chart turns when that way is across the flow. The reading depends
-  // entirely on the direction, and getting it backwards would put "the next
-  // step" above the one it follows: wrong in a way that still looks like a
-  // diagram, so nothing on screen would give it away.
+  // A box's four + handles all mean the same thing — the next step, that way — and the chart turns when that way is across the flow. The reading depends entirely on the direction, and getting it backwards would put "the next step" above the one it follows: wrong in a way that still looks like a diagram, so nothing on screen would give it away.
   check('every + handle means the next step, that way', () => {
     const { flowBudIntent } = booted;
-    // Where each handle sits is the stylesheet's business now — a handle is
-    // placed on its own side of the box mermaid drew. What each one *means* is
-    // this file's, and that is what the direction decides.
+    // Where each handle sits is the stylesheet's business now — a handle is placed on its own side of the box mermaid drew. What each one *means* is this file's, and that is what the direction decides.
     const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
     for (const side of ['up', 'down', 'left', 'right']) {
       if (!css.includes('.flow-bud.is-' + side)) throw new Error(`no rule places the ${side} handle`);
@@ -1312,8 +1219,7 @@ if (booted) {
     // One box, no direction settled: all four sides, and taking one settles it.
     const lone = parseFlow('flowchart TD\n    A["a"]');
     same(flowBudSidesFor(lone), ['up', 'down', 'left', 'right'], 'a chart of one box');
-    // Two boxes: only the pair along the flow, so nothing can spin the diagram
-    // round under the pointer. Turning it is the Flow picker's job from here.
+    // Two boxes: only the pair along the flow, so nothing can spin the diagram round under the pointer. Turning it is the Flow picker's job from here.
     const pair = parseFlow('flowchart TD\n    A["a"]\n    B["b"]\n    A --> B');
     same(flowBudSidesFor(pair), ['down', 'up'], 'a top-down chart');
     same(flowBudSidesFor(parseFlow('flowchart LR\n    A["a"]\n    B["b"]')), ['right', 'left'], 'left to right');
@@ -1349,8 +1255,7 @@ if (booted) {
       if (renderFlow(parseFlow(back)) !== back) throw new Error(`${JSON.stringify(back)} is not stable`);
     };
 
-    // The older keyword, no direction, bare ids, an unquoted label, a chain, and
-    // the between-the-dashes label form — all normalized on the way out.
+    // The older keyword, no direction, bare ids, an unquoted label, a chain, and the between-the-dashes label form — all normalized on the way out.
     becomes('graph\n  A --> B', 'flowchart TD\n    A["A"]\n    B["B"]\n    A --> B');
     becomes('flowchart LR\n  A[Do it] --> B', 'flowchart LR\n    A["Do it"]\n    B["B"]\n    A --> B');
     becomes(
@@ -1361,8 +1266,7 @@ if (booted) {
       'flowchart TD\n  A -- yes --> B',
       'flowchart TD\n    A["A"]\n    B["B"]\n    A -->|"yes"| B',
     );
-    // The dotted and thick spellings of the same thing, which mermaid writes
-    // with different dashes around the label.
+    // The dotted and thick spellings of the same thing, which mermaid writes with different dashes around the label.
     becomes(
       'flowchart TD\n  A -. maybe .-> B',
       'flowchart TD\n    A["A"]\n    B["B"]\n    A -.->|"maybe"| B',
@@ -1375,8 +1279,7 @@ if (booted) {
       'flowchart TD\n  A -. no .- B',
       'flowchart TD\n    A["A"]\n    B["B"]\n    A -.-|"no"| B',
     );
-    // The `&` shorthand is read as the edges it means — every pairing of the
-    // group before the arrow with the group after it.
+    // The `&` shorthand is read as the edges it means — every pairing of the group before the arrow with the group after it.
     becomes(
       'flowchart LR\n  A & B --> C & D',
       'flowchart LR\n' +
@@ -1386,11 +1289,7 @@ if (booted) {
     );
   });
 
-  // Double-clicking a shape renames it, and that only works because nothing in
-  // the canvas's pointerdown calls preventDefault: on a pointerdown it suppresses
-  // the compatibility mouse events, and dblclick is one of them. The failure is
-  // silent — every drag still works, the double-click just does nothing — so it
-  // is held here rather than left to be found by hand.
+  // Double-clicking a shape renames it, and that only works because nothing in the canvas's pointerdown calls preventDefault: on a pointerdown it suppresses the compatibility mouse events, and dblclick is one of them. The failure is silent — every drag still works, the double-click just does nothing — so it is held here rather than left to be found by hand.
   check('the canvas keeps the double-click that renames a box', () => {
     const fragment = readFileSync(join(root, 'src/assets/shell/flow-canvas.js'), 'utf8');
     const opened = fragment.indexOf("flowCanvas.addEventListener('pointerdown'");
@@ -1403,23 +1302,16 @@ if (booted) {
     if (!/flowCanvas\.addEventListener\('dblclick'/.test(fragment)) {
       throw new Error('the canvas has no dblclick handler to keep');
     }
-    // The stylesheet is what holds text selection off instead, or dragging a
-    // box sweeps a selection across the diagram.
+    // The stylesheet is what holds text selection off instead, or dragging a box sweeps a selection across the diagram.
     const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
     const rule = css.slice(css.indexOf('.flow-canvas {'), css.indexOf('.flow-canvas.is-disabled'));
     if (!/user-select:\s*none/.test(rule)) throw new Error('.flow-canvas does not turn text selection off');
   });
 
-  // The ring around a selected box stands 8px off the shape and follows its
-  // corners — nested corners in reverse, so the outer radius is the inner plus
-  // the gap. Mermaid builds its shapes with rough.js, so there is no `rx` to
-  // read and the inner radius is measured: walk in along the corner's diagonal
-  // until the fill starts. Turning that distance back into a radius is the part
-  // that is easy to get wrong and invisible when it is.
+  // The ring around a selected box stands 8px off the shape and follows its corners — nested corners in reverse, so the outer radius is the inner plus the gap. Mermaid builds its shapes with rough.js, so there is no `rx` to read and the inner radius is measured: walk in along the corner's diagonal until the fill starts. Turning that distance back into a radius is the part that is easy to get wrong and invisible when it is.
   check('a corner radius is recovered from how far in the fill starts', () => {
     const { flowCornerRadiusFrom } = booted;
-    // A circular corner of radius r has its center at (r, r), so along the
-    // diagonal the fill begins at t = r(1 − 1/√2). Feed that t back in.
+    // A circular corner of radius r has its center at (r, r), so along the diagonal the fill begins at t = r(1 − 1/√2). Feed that t back in.
     const insetFor = (radius) => radius * (1 - Math.SQRT1_2);
     for (const radius of [0, 5, 20, 28, 30, 64]) {
       const got = flowCornerRadiusFrom(insetFor(radius));
@@ -1427,22 +1319,18 @@ if (booted) {
         throw new Error(`a corner of ${radius} came back as ${got.toFixed(2)}`);
       }
     }
-    // The wrong constant — the Euclidean gap r(√2 − 1) — is out by exactly √2,
-    // which reads as "the ring did nothing" rather than as a broken number.
+    // The wrong constant — the Euclidean gap r(√2 − 1) — is out by exactly √2, which reads as "the ring did nothing" rather than as a broken number.
     const wrong = insetFor(28) / (Math.SQRT2 - 1);
     if (Math.abs(wrong - 28) < 0.001) throw new Error('the two constants are indistinguishable');
 
-    // And a pill: its inner radius is half its height, so the ring around it —
-    // half its height plus the gap — is exactly half the ring's own height.
+    // And a pill: its inner radius is half its height, so the ring around it — half its height plus the gap — is exactly half the ring's own height.
     const gap = 8;
     const height = 56;
     const ring = flowCornerRadiusFrom(insetFor(height / 2)) + gap;
     if (Math.abs(ring - (height + gap * 2) / 2) > 0.001) throw new Error('a pill does not stay a pill');
   });
 
-  // The sheet has one picture in it and mermaid draws it. Two would mean one of
-  // them is a lie, and it would be ours — so nothing in the flowchart code may
-  // draw a shape, and there is no second pane to draw it into.
+  // The sheet has one picture in it and mermaid draws it. Two would mean one of them is a lie, and it would be ours — so nothing in the flowchart code may draw a shape, and there is no second pane to draw it into.
   check('mermaid is the only thing that draws a flowchart', () => {
     const model = readFileSync(join(root, 'src/assets/shell/flow-model.js'), 'utf8');
     const canvas = readFileSync(join(root, 'src/assets/shell/flow-canvas.js'), 'utf8');
@@ -1455,10 +1343,7 @@ if (booted) {
     // One drawing surface: no preview pane beside it.
     if (page.includes('flowPreview')) throw new Error('the second picture is back in the page');
     if (!canvas.includes("mermaid.render('leafFlowDraw'")) throw new Error('the canvas no longer renders with mermaid');
-    // The handles are laid over mermaid's drawing, keyed off what it tags.
-    // Mermaid writes a box's id on `id` as `flowchart-<id>-<n>`, not on
-    // `data-id` — reading the wrong attribute finds nothing and leaves the canvas
-    // with no handles at all, silently. Both spellings are read.
+    // The handles are laid over mermaid's drawing, keyed off what it tags. Mermaid writes a box's id on `id` as `flowchart-<id>-<n>`, not on `data-id` — reading the wrong attribute finds nothing and leaves the canvas with no handles at all, silently. Both spellings are read.
     if (!canvas.includes("svg.querySelectorAll('g.node, g[data-id]')")) {
       throw new Error('nothing reads mermaid’s boxes');
     }
@@ -1466,9 +1351,7 @@ if (booted) {
     if (!canvas.includes('flowEdgeDomId')) throw new Error('nothing maps mermaid’s lines back to ours');
   });
 
-  // Nothing here borrows jsoncanvas.org's field names: mermaid cannot draw a
-  // `.canvas` file, so there is nothing to be compatible with. A node has a
-  // shape; an edge runs from one box to another.
+  // Nothing here borrows jsoncanvas.org's field names: mermaid cannot draw a `.canvas` file, so there is nothing to be compatible with. A node has a shape; an edge runs from one box to another.
   check('the graph says what it means and borrows nothing', () => {
     const { parseFlow } = booted;
     const graph = parseFlow('flowchart TD\n    A["a"]\n    B["b"]\n    A -.->|"maybe"| B');
@@ -1487,16 +1370,9 @@ if (booted) {
     }
   });
 
-  // Diagrams are drawn in the theme's own colors, read off :root at render time.
-  // A token that does not exist reads as an empty string, mermaid falls back to
-  // its own palette, and the diagram quietly stops matching the page — so every
-  // name in the maps is held to one that really is defined. A color comes from the
-  // contract in theme.rs, which every theme fills; everything else from the
-  // stylesheet's own block.
+  // Diagrams are drawn in the theme's own colors, read off :root at render time. A token that does not exist reads as an empty string, mermaid falls back to its own palette, and the diagram quietly stops matching the page — so every name in the maps is held to one that really is defined. A color comes from the contract in theme.rs, which every theme fills; everything else from the stylesheet's own block.
   check('the mermaid theme map only names tokens that exist', () => {
-    // Read from the fragment rather than the booted page: a `const` in the shell
-    // script is not a property of the context, and the map should not have to
-    // become one to be checked.
+    // Read from the fragment rather than the booted page: a `const` in the shell script is not a property of the context, and the map should not have to become one to be checked.
     const fragment = readFileSync(join(root, 'src/assets/shell/decorate.js'), 'utf8');
     const maps = fragment.slice(
       fragment.indexOf('const MERMAID_COLOR_MAP'),
@@ -1522,8 +1398,7 @@ if (booted) {
     if (missing.length) throw new Error(`no such token: ${missing.join(', ')}`);
   });
 
-  // The diagram's labels are set in the theme's body font, which theme.rs emits
-  // per family rather than reading.css.
+  // The diagram's labels are set in the theme's body font, which theme.rs emits per family rather than reading.css.
   check('the theme compiler emits the font the diagrams ask for', () => {
     const theme = readFileSync(join(root, 'src/theme.rs'), 'utf8');
     if (!theme.includes('--reading-font')) {
@@ -1531,11 +1406,7 @@ if (booted) {
     }
   });
 
-  // An icon is a name on a masked span, never a drawing (see the icon rule in
-  // AGENTS.md). Code that swaps one and looks for an `svg` finds nothing and
-  // fails in silence: a vault on GitHub kept its box for a release because of
-  // exactly this. The flow canvas is the exception — the thing it reaches for
-  // there really is mermaid's rendered SVG, not an icon.
+  // An icon is a name on a masked span, never a drawing (see the icon rule in AGENTS.md). Code that swaps one and looks for an `svg` finds nothing and fails in silence: a vault on GitHub kept its box for a release because of exactly this. The flow canvas is the exception — the thing it reaches for there really is mermaid's rendered SVG, not an icon.
   check('nothing looks for an svg where the page draws a masked span', () => {
     const offenders = [];
     for (const name of names) {
@@ -1546,9 +1417,7 @@ if (booted) {
     if (offenders.length) throw new Error(`looks for an svg: ${offenders.join(', ')}`);
   });
 
-  // Mermaid sizes a box from its own measurement of the label, so measuring in
-  // the fallback face and painting in the theme's takes the last letter off
-  // every box in the diagram. v0.1.441 shipped that.
+  // Mermaid sizes a box from its own measurement of the label, so measuring in the fallback face and painting in the theme's takes the last letter off every box in the diagram. v0.1.441 shipped that.
   check('diagrams are measured only once the fonts have landed', () => {
     const decorate = readFileSync(join(root, 'src/assets/shell/decorate.js'), 'utf8');
     const draw = decorate.slice(decorate.indexOf('function drawMermaidBatches'));
@@ -1561,10 +1430,7 @@ if (booted) {
 
 // ---- 4. the page reports its own errors -------------------------------------
 
-// journal.js leads the list so that a fragment throwing as it loads is reported
-// instead of vanishing. That claim is about load order, so it is checked by
-// loading things in order — journal.js, then a fragment that throws — rather
-// than by reading the list and trusting it.
+// journal.js leads the list so that a fragment throwing as it loads is reported instead of vanishing. That claim is about load order, so it is checked by loading things in order — journal.js, then a fragment that throws — rather than by reading the list and trusting it.
 
 /** journal.js alone, plus whatever tail the test wants, against a recording ipc. */
 function runJournal(tail = '') {
@@ -1597,9 +1463,7 @@ check('journal.js leads the list, so a later fragment can throw into it', () => 
     throw new Error(`journal.js must be first in APP_SHELL_SCRIPT_PARTS, found ${first}`);
   }
 
-  // A fragment appended after it throws as it loads. Node has no window.onerror
-  // dispatch, so the throw comes back here — what matters is that the handler was
-  // already installed when it happened, and that it turns the throw into a report.
+  // A fragment appended after it throws as it loads. Node has no window.onerror dispatch, so the throw comes back here — what matters is that the handler was already installed when it happened, and that it turns the throw into a report.
   const { sandbox, sent, threw } = runJournal('\nthrow new Error("a fragment broke");\n');
   if (!threw) throw new Error('the appended fragment was supposed to throw');
   if (typeof sandbox.onerror !== 'function') {
@@ -1619,13 +1483,11 @@ check('journal.js leads the list, so a later fragment can throw into it', () => 
 });
 
 check('a repeated error is counted, not repeated', () => {
-  // Two of the eight console.error calls in the shell sit inside per-diagram
-  // loops. Sending every one would fill the log file in seconds.
+  // Two of the eight console.error calls in the shell sit inside per-diagram loops. Sending every one would fill the log file in seconds.
   const { sandbox, sent, errors } = runJournal();
   for (let i = 0; i < 100; i += 1) sandbox.console.error('the same thing went wrong');
 
-  // Every call still reaches the real console — the web view's own log is not
-  // quietened, only the file.
+  // Every call still reaches the real console — the web view's own log is not quietened, only the file.
   if (errors.length !== 100) throw new Error(`the console lost calls: ${errors.length} of 100`);
   // 1, 2, 4, 8, 16, 32, 64 — seven, and the last one says how far it got.
   if (sent.length !== 7) throw new Error(`expected 7 messages for 100 errors, got ${sent.length}`);

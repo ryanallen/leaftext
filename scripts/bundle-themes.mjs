@@ -7,23 +7,15 @@
 //      folder (a light-vs-dark palette table per theme), so the folder landing
 //      page always matches what's actually there.
 //
-// themes/ is the human source of truth — one Markdown file per theme family,
-// also served at leaftext.com/themes and (being Markdown) readable in Leaf
-// itself. Each file names the family (# H1), states its family id, and lists its
-// Light/Dark token tables; see themes/README.md or any existing file for the shape.
+// themes/ is the human source of truth — one Markdown file per theme family, also served at leaftext.com/themes and (being Markdown) readable in Leaf itself. Each file names the family (# H1), states its family id, and lists its Light/Dark token tables; see themes/README.md or any existing file for the shape.
 //
-// A family file may also open with a preview image — a standalone
-// `![alt](../imgs/themes/<id>.png)` line above the `**Family ID:**` line. It is
-// optional; when present the file must point at an image that exists, and the
-// gallery reuses it (README.md sits in themes/, so the same relative path works).
+// A family file may also open with a preview image — a standalone `![alt](../imgs/themes/<id>.png)` line above the `**Family ID:**` line. It is optional; when present the file must point at an image that exists, and the gallery reuses it (README.md sits in themes/, so the same relative path works).
 //
 //   node scripts/bundle-themes.mjs          regenerate both outputs
 //   node scripts/bundle-themes.mjs --check  fail if either output has drifted
 //                                           (used by `just verify`)
 //
-// To add a theme: drop themes/<id>.md (its `# Name`, `**Family ID:** <id>`, and
-// Light/Dark tables) and run `just bundle-themes`. No manifest to maintain — the
-// folder is globbed, and README.md is regenerated to include it.
+// To add a theme: drop themes/<id>.md (its `# Name`, `**Family ID:** <id>`, and Light/Dark tables) and run `just bundle-themes`. No manifest to maintain — the folder is globbed, and README.md is regenerated to include it.
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -35,8 +27,7 @@ const bundlePath = join(root, 'src', 'assets', 'themes.md');
 const readmePath = join(themesDir, 'README.md');
 const check = process.argv.includes('--check');
 
-// The roles shown in the README gallery, keyed by the (prefix-stripped) token
-// name. A small, representative slice — the full palette lives in each file.
+// The roles shown in the README gallery, keyed by the (prefix-stripped) token name. A small, representative slice — the full palette lives in each file.
 const GALLERY_ROLES = [
   ['background', 'Background'],
   ['foreground', 'Foreground'],
@@ -78,10 +69,7 @@ function firstFamily(stack) {
   return first.replace(/^["']|["']$/g, '');
 }
 
-// Parse one family file into { displayName, id, preview, fonts, light, dark },
-// where light/dark are the *effective* token maps (base tokens overlaid by
-// overrides) and preview is the optional `{ alt, src }` of the header image.
-// Mirrors parse_theme_markdown() in src/theme.rs, minus the --lt- prefix.
+// Parse one family file into { displayName, id, preview, fonts, light, dark }, where light/dark are the *effective* token maps (base tokens overlaid by overrides) and preview is the optional `{ alt, src }` of the header image. Mirrors parse_theme_markdown() in src/theme.rs, minus the --lt- prefix.
 function parseFamily(file, body) {
   const fam = {
     displayName: null,
@@ -109,8 +97,7 @@ function parseFamily(file, body) {
       fam.id = idMatch[1];
       continue;
     }
-    // The optional preview image: a standalone image line in the header, above
-    // the first `##` section. Later images (inside a section) are left alone.
+    // The optional preview image: a standalone image line in the header, above the first `##` section. Later images (inside a section) are left alone.
     const previewMatch = line.match(/^!\[([^\]]*)\]\((\S+?)(?:\s+"([^"]*)")?\)$/);
     if (previewMatch && section === 'none' && !fam.preview) {
       fam.preview = { alt: previewMatch[1].trim(), src: previewMatch[2] };
@@ -167,8 +154,7 @@ function parseFamily(file, body) {
       `themes/${file}: family id \`${fam.id}\` does not match the filename \`${expected}\``,
     );
   }
-  // A preview is optional, but a broken one is not: catch a typo'd path here
-  // rather than shipping a missing image to GitHub, the site, and the app.
+  // A preview is optional, but a broken one is not: catch a typo'd path here rather than shipping a missing image to GitHub, the site, and the app.
   if (fam.preview && !/^[a-z][a-z0-9+.-]*:/i.test(fam.preview.src)) {
     if (!existsSync(join(themesDir, fam.preview.src))) {
       throw new Error(
@@ -227,8 +213,7 @@ function buildGallery(families) {
     );
     lines.push('');
     if (fam.preview) {
-      // README.md lives in themes/ alongside the family files, so the preview
-      // path carries over verbatim.
+      // README.md lives in themes/ alongside the family files, so the preview path carries over verbatim.
       lines.push(`![${fam.preview.alt}](${fam.preview.src})`);
       lines.push('');
     }

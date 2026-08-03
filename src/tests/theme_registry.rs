@@ -23,8 +23,7 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
         assert_contains(css, source.selector);
     }
 
-    // The picker's families come from the registered sources, sorted by display
-    // name (the theme bundle emits them alphabetically).
+    // The picker's families come from the registered sources, sorted by display name (the theme bundle emits them alphabetically).
     assert_eq!(
         theme_families(),
         vec![
@@ -49,10 +48,7 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
     assert!(!html.contains(r#"id="themeMode""#));
     assert!(!html.contains(r#"id="themeFamily""#));
     assert_contains(&html, "const THEME_MODE_NAMES = { system: 'System', light: 'Light', dark: 'Dark', daylight: 'Daylight' };");
-    // Every registered family is a pickable card in the selector sheet (name in a
-    // span, with the selected-state check badge). The card carries an inline style
-    // that paints it in the theme's own paper/ink, so attributes sit between the
-    // family id and the name span.
+    // Every registered family is a pickable card in the selector sheet (name in a span, with the selected-state check badge). The card carries an inline style that paints it in the theme's own paper/ink, so attributes sit between the family id and the name span.
     for (family, name) in theme_families() {
         assert_contains(
             &html,
@@ -63,9 +59,7 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
             &format!(r#"<span class="theme-item-name">{name}</span>"#),
         );
     }
-    // Plus the special "Random" preference: its name is a span of its own inside
-    // the button, so the check SVG beside it is never part of the label. It is not
-    // a real family, so it never appears in theme_families()/the font map/the CSS.
+    // Plus the special "Random" preference: its name is a span of its own inside the button, so the check SVG beside it is never part of the label. It is not a real family, so it never appears in theme_families()/the font map/the CSS.
     assert_contains(
         &html,
         r#"<button type="button" class="theme-item theme-item-random" data-family="random""#,
@@ -78,10 +72,7 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
 
 #[test]
 fn theme_preview_images_are_prose_the_parser_ignores() {
-    // Every family file opens with a preview screenshot (`![…](../imgs/themes/…)`),
-    // carried into the bundle verbatim by scripts/bundle-themes.mjs. The parser
-    // reads only headings and tables, so those lines must be inert: they are not
-    // families, not tokens, and not part of any display name.
+    // Every family file opens with a preview screenshot (`![…](../imgs/themes/…)`), carried into the bundle verbatim by scripts/bundle-themes.mjs. The parser reads only headings and tables, so those lines must be inert: they are not families, not tokens, and not part of any display name.
     let bundle = include_str!("../assets/themes.md");
     let preview_lines: Vec<&str> = bundle
         .lines()
@@ -125,8 +116,7 @@ fn theme_preview_images_are_prose_the_parser_ignores() {
 #[test]
 fn github_family_uses_github_markdown_fonts_not_noto() {
     let css = reading_mode_css();
-    // The GitHub family swaps the document fonts for GitHub's own markdown stack:
-    // system sans (no serif) for body and headings, system mono for code.
+    // The GitHub family swaps the document fonts for GitHub's own markdown stack: system sans (no serif) for body and headings, system mono for code.
     let block = css
         .split(":root[data-leaf-theme=\"github\"] {")
         .nth(1)
@@ -149,9 +139,7 @@ fn web_font_mechanism_fetches_noto_by_default_and_swaps_on_theme_change() {
         "fonts must be fetched from Google Fonts, not bundled into the stylesheet"
     );
 
-    // The family -> Google Fonts URL map gives each non-system family its own web
-    // font (Fern keeps Noto; others pick their own vibe). GitHub is omitted, so its
-    // loader drops the font link and falls back to the OS stack.
+    // The family -> Google Fonts URL map gives each non-system family its own web font (Fern keeps Noto; others pick their own vibe). GitHub is omitted, so its loader drops the font link and falls back to the OS stack.
     let map: serde_json::Value =
         serde_json::from_str(&theme_web_font_hrefs_json()).expect("font map is valid JSON");
     let map = map.as_object().expect("font map is an object");
@@ -167,8 +155,7 @@ fn web_font_mechanism_fetches_noto_by_default_and_swaps_on_theme_change() {
     assert!(!map.contains_key("github"));
     assert!(map.contains_key("fern"));
 
-    // The bootstrap injects the map and swaps a single <link> as the family
-    // changes (run on every apply — initial paint and switches alike).
+    // The bootstrap injects the map and swaps a single <link> as the family changes (run on every apply — initial paint and switches alike).
     let html = app_shell_page();
     assert!(html.contains("const FAMILY_FONTS = {"));
     assert!(html.contains("fonts.googleapis.com/css2?family=Noto"));
@@ -239,16 +226,9 @@ fn theme_compiler_gates_readable_pairs_for_every_source() {
 
 #[test]
 fn theme_compiler_gates_diagram_colors_for_every_source() {
-    // Every pair a mermaid diagram puts together out of our tokens
-    // (MERMAID_COLOR_MAP and MERMAID_INK_MAP in decorate.js). A diagram is exactly
-    // as readable as these, and the mistake this catches is not a bad color — it is
-    // ink measured against the wrong background. A quadrant point's label is drawn
-    // on the quadrant, not on the point, and measuring it against the point shipped
-    // white text on a pale gray panel in v0.1.423.
+    // Every pair a mermaid diagram puts together out of our tokens (MERMAID_COLOR_MAP and MERMAID_INK_MAP in decorate.js). A diagram is exactly as readable as these, and the mistake this catches is not a bad color — it is ink measured against the wrong background. A quadrant point's label is drawn on the quadrant, not on the point, and measuring it against the point shipped white text on a pale gray panel in v0.1.423.
     //
-    // Text is gated at 4.5:1 (WCAG AA), a line or a border at 3:1 (WCAG 1.4.11) —
-    // except a node's outline against its own fill, which is a hairline both themes
-    // draw deliberately faint and which also stands against the page.
+    // Text is gated at 4.5:1 (WCAG AA), a line or a border at 3:1 (WCAG 1.4.11) — except a node's outline against its own fill, which is a hairline both themes draw deliberately faint and which also stands against the page.
     let css = reading_mode_css();
     let text_pairs = [
         (
@@ -300,9 +280,7 @@ fn theme_compiler_gates_diagram_colors_for_every_source() {
             1.1,
         ),
     ];
-    // A fill we chose, and the text printed inside it. The ink is measured against
-    // every fill in the group and the worst one decides, because one variable can
-    // serve several fills — `readableInk` in decorate.js picks the same way.
+    // A fill we chose, and the text printed inside it. The ink is measured against every fill in the group and the worst one decides, because one variable can serve several fills — `readableInk` in decorate.js picks the same way.
     let inked_fills: [(&str, &[&str]); 7] = [
         ("gantt bar", &["--lt-primary"]),
         ("gantt active bar", &["--lt-accent"]),
@@ -315,8 +293,7 @@ fn theme_compiler_gates_diagram_colors_for_every_source() {
             &["--lt-surface-muted", "--lt-surface-sunken"],
         ),
     ];
-    // Every ink a diagram may print in — the page's two, plus the inks the theme
-    // picked for its colored surfaces. Mirrors MERMAID_INK_CANDIDATES.
+    // Every ink a diagram may print in — the page's two, plus the inks the theme picked for its colored surfaces. Mirrors MERMAID_INK_CANDIDATES.
     let inks = [
         "--lt-markdown-foreground",
         "--lt-markdown-background",
@@ -363,15 +340,12 @@ fn theme_compiler_gates_diagram_colors_for_every_source() {
 
 #[test]
 fn theme_compiler_gates_interactive_chrome_contrast() {
-    // Icons/controls on filled backgrounds, incl. hover. WCAG 1.4.11 gates non-text
-    // contrast at 3:1 (text is 4.5:1). The tab-close hover regressed here once (white
-    // icon on a light accent), so gate every theme's chrome to catch that class.
+    // Icons/controls on filled backgrounds, incl. hover. WCAG 1.4.11 gates non-text contrast at 3:1 (text is 4.5:1). The tab-close hover regressed here once (white icon on a light accent), so gate every theme's chrome to catch that class.
     let css = reading_mode_css();
 
     for source in theme_sources() {
         for (foreground, background) in [
-            // Filled action buttons and their hover state (the tab close X reuses
-            // the action foreground on the action hover background).
+            // Filled action buttons and their hover state (the tab close X reuses the action foreground on the action hover background).
             ("--lt-primary-foreground", "--lt-primary"),
             (
                 "--lt-primary-foreground",

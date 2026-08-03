@@ -2,11 +2,9 @@
 
 use super::*;
 
-/// A Gmail-shaped message: related wrapping alternative, base64 HTML body,
-/// an inline image by content id, and a real attachment.
+/// A Gmail-shaped message: related wrapping alternative, base64 HTML body, an inline image by content id, and a real attachment.
 fn multipart_fixture() -> String {
-    // The HTML body, base64-coded the way mail on the wire arrives. It carries
-    // a script the sanitizer must eat and a cid image the renderer must embed.
+    // The HTML body, base64-coded the way mail on the wire arrives. It carries a script the sanitizer must eat and a cid image the renderer must embed.
     let html =
         "<p>Hi there <script>alert(1)</script><img src=\"cid:logo@example\" alt=\"Logo\"></p>";
     let html_b64 = eml_base64(html.as_bytes());

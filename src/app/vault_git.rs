@@ -1,14 +1,10 @@
 //! A vault's standing with GitHub, and the four things the panel can ask for.
 //!
-//! Every one of them runs on its own thread. `git status` on a large vault is
-//! disk-bound and a push is network-bound; either on the event loop is the app
-//! stopping dead, which is the mistake the graph already taught this codebase
-//! once.
+//! Every one of them runs on its own thread. `git status` on a large vault is disk-bound and a push is network-bound; either on the event loop is the app stopping dead, which is the mistake the graph already taught this codebase once.
 
 use super::*;
 
-/// What the panel draws. Sent whole on every change rather than patched, so the
-/// page never has to work out which half of it is stale.
+/// What the panel draws. Sent whole on every change rather than patched, so the page never has to work out which half of it is stale.
 #[derive(Debug, Clone, serde::Serialize)]
 pub(crate) struct VaultGitState {
     pub(crate) id: i64,
@@ -16,8 +12,7 @@ pub(crate) struct VaultGitState {
     pub(crate) suggested: String,
     pub(crate) tooling: GitTooling,
     pub(crate) repo: VaultRepo,
-    /// Something is running. The panel disables its buttons rather than letting
-    /// a second push start behind the first.
+    /// Something is running. The panel disables its buttons rather than letting a second push start behind the first.
     pub(crate) busy: bool,
     /// What just happened, in one line, or what went wrong.
     pub(crate) message: Option<String>,
@@ -45,8 +40,7 @@ fn vault_root(state: &VaultState, id: i64) -> Option<(String, PathBuf)> {
     Some((vault.name, PathBuf::from(vault.root_path)))
 }
 
-/// Tell the panel a job has started, before starting it. Without this the first
-/// feedback is the result, and a push over a slow line looks like a dead button.
+/// Tell the panel a job has started, before starting it. Without this the first feedback is the result, and a push over a slow line looks like a dead button.
 fn mark_busy(webview: Option<&WebView>, id: i64) {
     run_page_script(
         webview,
@@ -55,8 +49,7 @@ fn mark_busy(webview: Option<&WebView>, id: i64) {
     );
 }
 
-/// Run `job` off the event loop and post whatever it decides back as the panel's
-/// next whole state. The job gets the vault's folder and its name.
+/// Run `job` off the event loop and post whatever it decides back as the panel's next whole state. The job gets the vault's folder and its name.
 fn off_thread<F>(
     state: &VaultState,
     proxy: &EventLoopProxy<UserEvent>,
@@ -72,9 +65,7 @@ fn off_thread<F>(
     mark_busy(webview, id);
     off_loop(proxy, move || {
         let (message, error) = job(&root, &name);
-        // Whatever happened, the panel is redrawn from a fresh reading of the
-        // folder — the outcome message says what was attempted, the state says
-        // where that left things.
+        // Whatever happened, the panel is redrawn from a fresh reading of the folder — the outcome message says what was attempted, the state says where that left things.
         let mut next = VaultGitState::idle(
             id,
             repo_name_for_vault(&name),
@@ -91,13 +82,9 @@ fn off_thread<F>(
 
 /// Read only the folder's own state, for the button in the vault's header.
 ///
-/// Deliberately not [`request_vault_git`]: that one also asks what is installed,
-/// and `gh auth status` goes to the network to validate its token. Fine once,
-/// when someone opens the panel; not fine every time a file is saved.
+/// Deliberately not [`request_vault_git`]: that one also asks what is installed, and `gh auth status` goes to the network to validate its token. Fine once, when someone opens the panel; not fine every time a file is saved.
 ///
-/// Nothing here fetches either, so `behind` is as stale as the last sync. What
-/// the button is for is work of yours that has not left the machine, and git
-/// knows that without asking anyone.
+/// Nothing here fetches either, so `behind` is as stale as the last sync. What the button is for is work of yours that has not left the machine, and git knows that without asking anyone.
 pub(crate) fn refresh_vault_status(state: &VaultState, proxy: &EventLoopProxy<UserEvent>, id: i64) {
     let Some((_name, root)) = vault_root(state, id) else {
         return;
@@ -130,10 +117,7 @@ pub(crate) fn request_vault_git(
     off_thread(state, proxy, webview, id, |_root, _name| (None, false));
 }
 
-/// Make the folder a repository and put it on GitHub. `gh` when it is there;
-/// otherwise the local half is still done, and the panel offers the browser for
-/// the rest — a folder with one commit in it and no remote is a useful place to
-/// be, not a failure.
+/// Make the folder a repository and put it on GitHub. `gh` when it is there; otherwise the local half is still done, and the panel offers the browser for the rest — a folder with one commit in it and no remote is a useful place to be, not a failure.
 pub(crate) fn create_vault_repo(
     state: &VaultState,
     proxy: &EventLoopProxy<UserEvent>,
@@ -157,8 +141,7 @@ pub(crate) fn create_vault_repo(
     });
 }
 
-/// Point the vault at a repository the user made in the browser. Initializes
-/// first when the folder is not a repository yet, so one paste is the whole job.
+/// Point the vault at a repository the user made in the browser. Initializes first when the folder is not a repository yet, so one paste is the whole job.
 pub(crate) fn link_vault_repo(
     state: &VaultState,
     proxy: &EventLoopProxy<UserEvent>,

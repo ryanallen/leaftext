@@ -1,14 +1,9 @@
-// Keep the static site's vendored assets identical to the ones compiled into the
-// app binary. `src/assets` is the source of truth: those files are embedded via
-// `include_bytes!` in src/lib.rs. The site (and the /docs SPA) serve their own
-// static copies under site/, so the two must not drift — a mismatch would make
-// the website render math, diagrams, or fonts differently from the desktop app.
+// Keep the static site's vendored assets identical to the ones compiled into the app binary. `src/assets` is the source of truth: those files are embedded via `include_bytes!` in src/lib.rs. The site (and the /docs SPA) serve their own static copies under site/, so the two must not drift — a mismatch would make the website render math, diagrams, or fonts differently from the desktop app.
 //
 //   node scripts/sync-vendor.mjs          copy src/assets -> site
 //   node scripts/sync-vendor.mjs --check  fail if they differ (used by `just verify`)
 //
-// site/vendor/highlight.min.js and site/styles.css have no src/assets counterpart
-// (web-only) and are deliberately left alone.
+// site/vendor/highlight.min.js and site/styles.css have no src/assets counterpart (web-only) and are deliberately left alone.
 
 import { cpSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
@@ -40,8 +35,7 @@ function filesUnder(dir) {
   return out;
 }
 
-// Expand a (src, dest) pair into concrete file pairs, whether it names a file or
-// a directory, so --check can compare each file's bytes.
+// Expand a (src, dest) pair into concrete file pairs, whether it names a file or a directory, so --check can compare each file's bytes.
 function expand(srcRel, destRel) {
   const srcAbs = join(root, 'src/assets', srcRel);
   if (statSync(srcAbs).isDirectory()) {

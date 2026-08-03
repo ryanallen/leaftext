@@ -1,20 +1,15 @@
 #!/usr/bin/env node
 // Proof that the rules were read, not remembered.
 //
-// Every file the flow requires carries a keycode in an HTML comment, at the end,
-// where you only reach it by reading through. Before a turn can end, each keycode
-// this turn required has to be reported:
+// Every file the flow requires carries a keycode in an HTML comment, at the end, where you only reach it by reading through. Before a turn can end, each keycode this turn required has to be reported:
 //
 //   node scripts/gate-keycode.mjs AGENTS.md LEAF-4C1D   report one
 //   node scripts/gate-keycode.mjs --required            what this turn owes
 //   node scripts/gate-keycode.mjs --check               self-test (`just verify`)
 //
-// A wrong or missing code is refused by the Stop hook, which is the only thing
-// here that can actually stop a turn. gate-rules.mjs sets the demand at the start
-// of each message and clears the record; gate-voice.mjs holds the turn to it.
+// A wrong or missing code is refused by the Stop hook, which is the only thing here that can actually stop a turn. gate-rules.mjs sets the demand at the start of each message and clears the record; gate-voice.mjs holds the turn to it.
 //
-// The record lives in the OS temp folder and is deleted every message, so it never
-// grows and never reaches a context window.
+// The record lives in the OS temp folder and is deleted every message, so it never grows and never reaches a context window.
 
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -23,15 +18,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-/// Deleted and rewritten on every message. Temp on purpose: a record kept in the
-/// repo would be read back into a context window turn after turn.
+/// Deleted and rewritten on every message. Temp on purpose: a record kept in the repo would be read back into a context window turn after turn.
 export const RECORD = join(tmpdir(), 'leaftext-keycode.json');
 
 /// The rule file, required on every message that is not a host command.
 export const ALWAYS = 'AGENTS.md';
 
-/// Every file that carries a keycode. A skill is required when the message names
-/// it with a slash, which is how a skill gets invoked.
+/// Every file that carries a keycode. A skill is required when the message names it with a slash, which is how a skill gets invoked.
 export function keyedFiles() {
   const skills = [
     'add-dependency', 'add-format', 'build', 'check', 'code-comments',
@@ -55,8 +48,7 @@ function codeOf(file) {
   }
 }
 
-/// What a message has to have read: the rule file always, plus any skill it calls
-/// for by name. A host command (`/clear`) requires nothing.
+/// What a message has to have read: the rule file always, plus any skill it calls for by name. A host command (`/clear`) requires nothing.
 export function requiredFor(prompt) {
   const required = [ALWAYS];
   for (const file of keyedFiles()) {
@@ -122,8 +114,7 @@ function report(file, code) {
 function selfTest() {
   const fails = [];
 
-  // Every keyed file really carries one, and no two share a code — a duplicate
-  // would let one file's code stand in for another's.
+  // Every keyed file really carries one, and no two share a code — a duplicate would let one file's code stand in for another's.
   const seen = new Map();
   for (const file of keyedFiles()) {
     const code = codeOf(file);
@@ -138,8 +129,7 @@ function selfTest() {
   if (codeIn('<!-- keycode: LEAF-0001 -->') !== 'LEAF-0001') fails.push('codeIn: missed a code');
   if (codeIn('no code here') !== null) fails.push('codeIn: invented a code');
 
-  // The whole cycle, because the part that would hurt is a turn that owes nothing
-  // by accident.
+  // The whole cycle, because the part that would hurt is a turn that owes nothing by accident.
   const kept = existsSync(RECORD) ? readFileSync(RECORD, 'utf8') : null;
   try {
     open([ALWAYS]);
@@ -166,8 +156,7 @@ function selfTest() {
   console.log(`gate-keycode: ok (${keyedFiles().length} keyed files, all distinct)`);
 }
 
-// Only act when run directly: gate-rules.mjs and gate-voice.mjs import this for
-// its functions, and an import must not run a self-test or a report.
+// Only act when run directly: gate-rules.mjs and gate-voice.mjs import this for its functions, and an import must not run a self-test or a report.
 const invoked = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
 const args = invoked === import.meta.url ? process.argv.slice(2) : [];
 if (args.includes('--check')) {

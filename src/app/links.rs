@@ -51,18 +51,13 @@ pub(crate) fn is_external_link(href: &str) -> bool {
             .is_some_and(|scheme| scheme.eq_ignore_ascii_case("tel:"))
 }
 
-/// True when a local link points at a file the app renders, so it opens in the
-/// reading view rather than being handed to the OS. Every format, not just
-/// Markdown — otherwise a link to the `.json` beside a note leaves the app.
+/// True when a local link points at a file the app renders, so it opens in the reading view rather than being handed to the OS. Every format, not just Markdown — otherwise a link to the `.json` beside a note leaves the app.
 pub(crate) fn is_document_link(href: &str) -> bool {
     let path = local_path_from_href(href).unwrap_or_else(|| PathBuf::from(href));
     is_supported_document_path(&path)
 }
 
-/// The file a link points at, resolved against the document it sits in. `None`
-/// unless it is a local file this app reads: an external link has no path here, and
-/// an in-page jump is the document itself. Only the host can do this — the page
-/// never learns where the open document sits.
+/// The file a link points at, resolved against the document it sits in. `None` unless it is a local file this app reads: an external link has no path here, and an in-page jump is the document itself. Only the host can do this — the page never learns where the open document sits.
 pub(crate) fn linked_document_path(href: &str, current_path: &Path) -> Option<PathBuf> {
     match classify_link_target(href) {
         LinkTarget::LocalDocument(target) => Some(path_from_local_link(&target, current_path)),

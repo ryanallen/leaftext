@@ -6,21 +6,17 @@ use super::*;
 fn reading_mode_css_includes_light_dark_syntax_themes() {
     let css = reading_mode_css();
 
-    // There is one name per color: the contract token itself, emitted per family.
-    // No alias layer sits over it, so a rule and a theme spell a color the same way.
+    // There is one name per color: the contract token itself, emitted per family. No alias layer sits over it, so a rule and a theme spell a color the same way.
     for token in LEAF_SEMANTIC_TOKEN_CONTRACT {
         assert_contains(css, &format!("{token}:"));
     }
 
-    // No fonts are bundled into the stylesheet: the app uses system fonts, and
-    // web-font themes fetch from Google Fonts on activation.
+    // No fonts are bundled into the stylesheet: the app uses system fonts, and web-font themes fetch from Google Fonts on activation.
     assert!(
         !css.contains("@font-face") && !css.contains("data:font/woff2"),
         "reading-mode CSS must not embed bundled font faces"
     );
-    // Every theme, github included, is a self-contained literal palette, so the
-    // compiled CSS carries no Primer primitive blocks and no `var(--bgColor-*)`
-    // indirection.
+    // Every theme, github included, is a self-contained literal palette, so the compiled CSS carries no Primer primitive blocks and no `var(--bgColor-*)` indirection.
     assert!(!css.contains("--base-color-neutral-0"));
     assert!(!css.contains("var(--bgColor-default)"));
     assert!(!css.contains("var(--prettylights-syntax-comment)"));
@@ -90,9 +86,7 @@ fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
 
 #[test]
 fn the_home_screens_new_document_button_stays_readable_on_hover() {
-    // With a color and no background of its own, the generic `button:hover` fill
-    // stays underneath and hover is one purple on another. Both states name a pair
-    // the theme compiler gates, so no theme can repeat it.
+    // With a color and no background of its own, the generic `button:hover` fill stays underneath and hover is one purple on another. Both states name a pair the theme compiler gates, so no theme can repeat it.
     let css = reading_mode_css();
 
     let rest = rule_body(&css, ".primary-new {");
@@ -111,16 +105,13 @@ fn the_home_screens_new_document_button_stays_readable_on_hover() {
 fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
     let css = reading_mode_css();
 
-    // Dark themes grain both stripes; light themes leave the untinted rows plain,
-    // because there a dot dark enough to see reads as a gray mesh over the table.
+    // Dark themes grain both stripes; light themes leave the untinted rows plain, because there a dot dark enough to see reads as a gray mesh over the table.
     assert_contains(css, "--reader-surface-grain: var(--app-bar-grain);");
     assert_contains(css, "--reader-row-grain: transparent;");
-    // Lighter, not darker — the untinted row is the darkest surface in the app, so
-    // darkening it has nowhere to go and lands unevenly across theme families.
+    // Lighter, not darker — the untinted row is the darkest surface in the app, so darkening it has nowhere to go and lands unevenly across theme families.
     assert_contains(css, "--reader-row-grain: var(--lt-grain-lift);");
 
-    // The zeroed value must be the light default and the lift the dark override,
-    // not the reverse — that swap is exactly what this pins.
+    // The zeroed value must be the light default and the lift the dark override, not the reverse — that swap is exactly what this pins.
     let light = css
         .find("--reader-row-grain: transparent;")
         .expect("light themes zero the row grain");
@@ -148,8 +139,7 @@ fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
     // Same 2px lattice on both, so the dots line up down the page across a stripe.
     assert_contains(&css[odd..], "background-size: 2px 2px;");
 
-    // Source order is load-bearing: the row rules and the frontmatter opt-out tie
-    // on specificity, so the opt-out wins only by coming last.
+    // Source order is load-bearing: the row rules and the frontmatter opt-out tie on specificity, so the opt-out wins only by coming last.
     assert!(even < odd, "even-row grain should precede odd-row grain");
     assert!(
         odd < frontmatter,
@@ -159,9 +149,7 @@ fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
 
 #[test]
 fn reading_mode_css_keeps_one_name_per_color() {
-    // A property whose whole value is one var() over a contract token is a second
-    // name for that color. Four such layers over 112 tokens is what this replaced,
-    // so the rule is: every rule reads the contract name.
+    // A property whose whole value is one var() over a contract token is a second name for that color. Four such layers over 112 tokens is what this replaced, so the rule is: every rule reads the contract name.
     let css = reading_mode_css();
 
     let declarations: Vec<(&str, &str)> = css
@@ -173,8 +161,7 @@ fn reading_mode_css_keeps_one_name_per_color() {
         .collect();
 
     for (name, value) in &declarations {
-        // A name declared twice takes its value from context — the code view swaps
-        // the tab fill and the edge fade — so it is not a second name for one color.
+        // A name declared twice takes its value from context — the code view swaps the tab fill and the edge fade — so it is not a second name for one color.
         if declarations
             .iter()
             .filter(|(other, _)| other == name)
@@ -305,9 +292,7 @@ fn reading_mode_css_uses_web_reader_document_rhythm() {
 
 #[test]
 fn app_css_is_served_over_the_asset_protocol_not_inlined() {
-    // The reading-mode stylesheet is delivered as a linked stylesheet, so the
-    // shell links it and the protocol serves the full CSS. Keeping it out of the
-    // inlined shell is what keeps `NavigateToString` under WebView2's size cap.
+    // The reading-mode stylesheet is delivered as a linked stylesheet, so the shell links it and the protocol serves the full CSS. Keeping it out of the inlined shell is what keeps `NavigateToString` under WebView2's size cap.
     let html = app_shell_page();
     assert!(
         html.contains(r#"<link rel="stylesheet" href="#) && html.contains("app.css"),
@@ -321,8 +306,7 @@ fn app_css_is_served_over_the_asset_protocol_not_inlined() {
     let css = bundled_asset_response("http://leaf-asset.local/app.css");
     assert_eq!(css.status, 200);
     assert_eq!(css.content_type, "text/css; charset=utf-8");
-    // The route serves the whole compiled stylesheet: fonts, semantic tokens,
-    // and app layout all resolve here.
+    // The route serves the whole compiled stylesheet: fonts, semantic tokens, and app layout all resolve here.
     let body = std::str::from_utf8(&css.body).expect("app.css is utf-8");
     assert_eq!(body, reading_mode_css());
     assert!(body.contains("--lt-background"));
@@ -333,8 +317,7 @@ fn app_css_is_served_over_the_asset_protocol_not_inlined() {
 fn reading_surfaces_carry_the_chrome_dot_grain() {
     let css = reading_mode_css();
 
-    // The chrome's own value, not one of its own: a lighter screen made the
-    // reading panels a second texture, brighter than the pane beside them.
+    // The chrome's own value, not one of its own: a lighter screen made the reading panels a second texture, brighter than the pane beside them.
     assert_contains(css, "--reader-surface-grain: var(--app-bar-grain);");
     assert!(
         !css.contains("--reader-surface-grain: rgba"),
@@ -356,11 +339,7 @@ fn reading_surfaces_carry_the_chrome_dot_grain() {
         assert_contains(css, expected);
     }
 
-    // The grain rule has to follow the fills it grains: at equal specificity a
-    // `background:` shorthand declared later blanks the image again. Found by its
-    // own selector list, not by the first mention of the token — a surface that
-    // outranks this rule restates the grain for itself, and the first mention is
-    // one of those.
+    // The grain rule has to follow the fills it grains: at equal specificity a `background:` shorthand declared later blanks the image again. Found by its own selector list, not by the first mention of the token — a surface that outranks this rule restates the grain for itself, and the first mention is one of those.
     let shared = css
         .find(".document-body tr:nth-child(2n) td {")
         .expect("the shared grain rule");
@@ -402,14 +381,11 @@ fn reading_mode_css_offsets_document_by_measured_scroll_origin() {
 fn find_matches_are_painted_without_touching_the_document() {
     let css = reading_mode_css();
 
-    // Both names twice over: the reading view paints them through the CSS Custom
-    // Highlight API (no DOM mutation, no reflow) and the source view as Monaco
-    // decorations, which are ordinary classes.
+    // Both names twice over: the reading view paints them through the CSS Custom Highlight API (no DOM mutation, no reflow) and the source view as Monaco decorations, which are ordinary classes.
     for expected in [
         "::highlight(leaf-find-match),\n.leaf-find-match {",
         "::highlight(leaf-find-current),\n.leaf-find-current {",
-        // The match wash is the accent a search hit already takes in the pane; the
-        // one you are on is the primary, so stepping is a moving mark.
+        // The match wash is the accent a search hit already takes in the pane; the one you are on is the primary, so stepping is a moving mark.
         "background-color: color-mix(in srgb, var(--lt-accent) 45%, transparent);",
         "background-color: color-mix(in srgb, var(--lt-primary) 45%, transparent);",
     ] {
@@ -428,11 +404,7 @@ fn find_matches_are_painted_without_touching_the_document() {
 
 #[test]
 fn reading_mode_css_pins_reader_to_its_grid_cell() {
-    // The reader must be explicitly placed in the library-shell grid. Auto-placed,
-    // unhiding the .reader-loading overlay (explicitly at column 2, row 1) evicts
-    // the reader into an implicit row in the 0px library column, reflowing the
-    // whole document at zero width and turning every in-flight scroll computation
-    // into garbage — the "page jumps all over the place" bug.
+    // The reader must be explicitly placed in the library-shell grid. Auto-placed, unhiding the .reader-loading overlay (explicitly at column 2, row 1) evicts the reader into an implicit row in the 0px library column, reflowing the whole document at zero width and turning every in-flight scroll computation into garbage — the "page jumps all over the place" bug.
     let css = reading_mode_css();
     let shell_rule_start = css
         .find(".reader-shell {")
@@ -449,10 +421,7 @@ fn reading_mode_css_pins_reader_to_its_grid_cell() {
 
 #[test]
 fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
-    // The wash has to be a sibling in the reader's grid cell, hung off the app
-    // bar's height at the top. Inside the scroller it would be positioned
-    // against the scrolled content and slide away with the document; drawn from
-    // the cell's top it would sit behind the opaque bar and never show.
+    // The wash has to be a sibling in the reader's grid cell, hung off the app bar's height at the top. Inside the scroller it would be positioned against the scrolled content and slide away with the document; drawn from the cell's top it would sit behind the opaque bar and never show.
     let css = reading_mode_css();
     let rule_start = css
         .find(".reader-edge-fade {")
@@ -466,14 +435,10 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
     assert_contains(rule, "grid-column: 2;");
     assert_contains(rule, "grid-row: 1;");
     assert_contains(rule, "pointer-events: none;");
-    // The wash behind the dot screen: one band per edge, opaque at each cut and
-    // gone by the far side. It sits here rather than on the bands because those
-    // are masked, and the mask would ramp it a second time.
+    // The wash behind the dot screen: one band per edge, opaque at each cut and gone by the far side. It sits here rather than on the bands because those are masked, and the mask would ramp it a second time.
     assert_contains(rule, "--reader-edge-fade-depth: 36px;");
     assert_contains(rule, "--reader-edge-fade-hold: 2px;");
-    // The scrollbar belongs to the scroller, which paints it inside a box this
-    // overlay sits on top of — there is no z-index that puts it back on top, so
-    // the bands hold off its gutter instead. It closes with the minimap rail.
+    // The scrollbar belongs to the scroller, which paints it inside a box this overlay sits on top of — there is no z-index that puts it back on top, so the bands hold off its gutter instead. It closes with the minimap rail.
     assert_contains(
         rule,
         "margin: 0 calc(var(--reader-scrollbar) + var(--lt-space-1)) var(--lt-space-1) var(--lt-space-1);",
@@ -481,14 +446,11 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
     assert_contains(css, "  --reader-scrollbar: 14px;");
     let railed = rule_body(css, "body:has(.document-minimap) {");
     assert_contains(railed, "--reader-scrollbar: 0px;");
-    // Same width the scrollbar itself is set to, which stays a literal there:
-    // Chromium won't re-resolve a scrollbar pseudo-element on a :has() flip.
+    // Same width the scrollbar itself is set to, which stays a literal there: Chromium won't re-resolve a scrollbar pseudo-element on a :has() flip.
     let bar = rule_body(css, ".reader-shell:not(.has-minimap)::-webkit-scrollbar {");
     assert_contains(bar, "width: 14px;");
     assert_eq!(rule.matches("linear-gradient(").count(), 2);
-    // The wash spans the same depth as the screen over it, not its own. Given a
-    // shorter one its ramp ends where the screen's carries on, and the break in
-    // slope reads as a bright line at the halfway mark.
+    // The wash spans the same depth as the screen over it, not its own. Given a shorter one its ramp ends where the screen's carries on, and the break in slope reads as a bright line at the halfway mark.
     assert_contains(rule, "background-size: 100% var(--reader-edge-fade-depth);");
     assert_contains(
         rule,
@@ -505,12 +467,7 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
 
 #[test]
 fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
-    // The edge is the chrome's dot screen in the page's color, so it has to be the
-    // same circle on the same lattice as the bar — and each rule has to write the
-    // circles itself. A custom property holding the whole gradient resolves its ink
-    // where it is declared, so one at `:root` outranks every `--lt-grain-dot`
-    // below it: v0.1.439 screened the chrome's dark ink over a light page, 239-255
-    // gray where the page is 255.
+    // The edge is the chrome's dot screen in the page's color, so it has to be the same circle on the same lattice as the bar — and each rule has to write the circles itself. A custom property holding the whole gradient resolves its ink where it is declared, so one at `:root` outranks every `--lt-grain-dot` below it: v0.1.439 screened the chrome's dark ink over a light page, 239-255 gray where the page is 255.
     let css = reading_mode_css();
     let grain = "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);";
     assert!(
@@ -525,9 +482,7 @@ fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
     let shared = rule_body(css, ".reader-edge-fade::before,");
     assert_contains(shared, grain);
     assert_contains(shared, "background-size: 2px 2px;");
-    // And the ink is the page's own color, which is the whole point: over a flat
-    // page the screen cannot be seen, and over a tinted block at the edge it still
-    // carries the lattice.
+    // And the ink is the page's own color, which is the whole point: over a flat page the screen cannot be seen, and over a tinted block at the edge it still carries the lattice.
     assert_contains(shared, "--lt-grain-dot: var(--reader-edge-fade-surface);");
     assert_contains(
         rule_body(css, ".reader-edge-fade {"),
@@ -541,19 +496,10 @@ fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
     assert_contains(shared, "height: var(--reader-edge-fade-depth);");
     // One window-anchored lattice across every grained surface.
     assert_contains(shared, "background-attachment: fixed;");
-    // One even screen. A second dot layer is a size ramp, which reads as stacked
-    // bands.
-    // One even screen. A second dot layer is a size ramp, which reads as stacked
-    // bands.
+    // One even screen. A second dot layer is a size ramp, which reads as stacked bands. One even screen. A second dot layer is a size ramp, which reads as stacked bands.
     assert_eq!(shared.matches("radial-gradient(").count(), 1);
 
-    // Opposite directions, and both taking their hold from the same variable the
-    // wash does: the two fades cover one span, and any daylight between their
-    // profiles comes back as a bright line where the slopes part. A transform
-    // would flip the box but also make it the containing block for its own fixed
-    // background, knocking it off the shared lattice.
-    // Anchored past the shared rule, whose own selector list ends in the same
-    // `.reader-edge-fade::after {` the bottom band's rule opens with.
+    // Opposite directions, and both taking their hold from the same variable the wash does: the two fades cover one span, and any daylight between their profiles comes back as a bright line where the slopes part. A transform would flip the box but also make it the containing block for its own fixed background, knocking it off the shared lattice. Anchored past the shared rule, whose own selector list ends in the same `.reader-edge-fade::after {` the bottom band's rule opens with.
     let standalone = &css[css
         .find(".reader-edge-fade::before {")
         .expect("the top band should have its own rule")..];
@@ -608,10 +554,7 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
             "user-select: none;",
             "@media (max-width: 900px)",
             "--minimap-preview-width: 46px;",
-            // The rail is chrome, not page: its own shell column, a lead-in
-            // holding the card's right border off it, the window gutter beyond
-            // it, and no bleed or sticky, because it does not live in the
-            // scroller it tracks.
+            // The rail is chrome, not page: its own shell column, a lead-in holding the card's right border off it, the window gutter beyond it, and no bleed or sticky, because it does not live in the scroller it tracks.
             ".reader-minimap {",
             "grid-column: 3;",
             "padding-left: var(--reader-minimap-gap);",
@@ -670,38 +613,29 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
             css.contains(".document-minimap-content {\n  position: absolute;\n  top: 0;\n  transform: translateY(var(--minimap-preview-top, 0px));\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
             "the minimap thumbnail lane fills the rail inside the exact 8px padding on both edges"
         );
-    // The slide is a transform, not `top`: the lane moves every frame, and as a
-    // layout property `top` makes the browser re-lay-out the page to move it —
-    // 128ms worst frame on a 4MB glossary against 44ms, the no-rail floor.
+    // The slide is a transform, not `top`: the lane moves every frame, and as a layout property `top` makes the browser re-lay-out the page to move it — 128ms worst frame on a 4MB glossary against 44ms, the no-rail floor.
     assert!(
         css.contains("  will-change: transform;"),
         "the thumbnail lane must be promoted for its transform, not for `top`"
     );
-    // The reader renders the whole document up front, so it must NOT use
-    // content-visibility, which flashes blocks blank and jumps the minimap box.
+    // The reader renders the whole document up front, so it must NOT use content-visibility, which flashes blocks blank and jumps the minimap box.
     assert!(
         !css.contains("content-visibility: auto"),
         "the reader must render in full (no content-visibility) so scrolling matches the web"
     );
-    // Same invariant from the other side: the rail is chrome, so its column is
-    // exactly the rail plus the lead-in, and no dead strip can open up between the
-    // page's right border and the rail, or past it.
+    // Same invariant from the other side: the rail is chrome, so its column is exactly the rail plus the lead-in, and no dead strip can open up between the page's right border and the rail, or past it.
     assert_contains(
         css,
         "--reader-minimap-column: calc(var(--minimap-width) + var(--reader-minimap-gap));",
     );
     assert_contains(css, "width: var(--minimap-width);");
 
-    // The rail is the only thing showing position while it is there, so the
-    // native bar is hidden — and has to come back when it isn't. The two branches
-    // must stay apart: `scrollbar-width` anywhere on the element would kill the
-    // ::-webkit-scrollbar rules the visible branch is built from.
+    // The rail is the only thing showing position while it is there, so the native bar is hidden — and has to come back when it isn't. The two branches must stay apart: `scrollbar-width` anywhere on the element would kill the ::-webkit-scrollbar rules the visible branch is built from.
     assert_contains(
         css,
         ".reader-shell.has-minimap {\n  scrollbar-width: none;\n}",
     );
-    // The thumb is inset by a transparent border with the fill clipped inside it;
-    // a bare width would put it flush against the card's border and corners.
+    // The thumb is inset by a transparent border with the fill clipped inside it; a bare width would put it flush against the card's border and corners.
     assert_contains(
         css,
         ".reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb",
@@ -710,8 +644,7 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
         css,
         "border: var(--lt-stroke-4) solid transparent;\n  background-clip: padding-box;",
     );
-    // Keyed off the renderer's class, never :has() — scrollbar styles do not
-    // re-resolve when a :has() match flips, so the bar outlives the rail.
+    // Keyed off the renderer's class, never :has() — scrollbar styles do not re-resolve when a :has() match flips, so the bar outlives the rail.
     assert!(
         !css.contains(":has(.document-minimap) .reader-shell::-webkit-scrollbar"),
         "scrollbar visibility must not hang off :has()"
@@ -721,9 +654,7 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
         "app.classList.toggle('has-minimap', Boolean(html));",
     );
 
-    // The corner overlay paints chrome over the card's square corner and masks
-    // the arc back out. The mask must be unconditional: on a rule only some
-    // states match, the rest render a plain block in the corner.
+    // The corner overlay paints chrome over the card's square corner and masks the arc back out. The mask must be unconditional: on a rule only some states match, the rest render a plain block in the corner.
     let corner = css
         .split(".reader-corner-tr {")
         .nth(1)
@@ -851,9 +782,7 @@ fn reading_mode_css_keeps_code_surfaces_readable_in_light_and_dark() {
 fn the_page_ends_above_the_floating_bar() {
     let css = reading_mode_css();
 
-    // The bar floats over the foot of the page, so the page has to stop short of
-    // it — otherwise the last thing on the page sits underneath, which the
-    // Previous/Next pager makes obvious by being both last and a target.
+    // The bar floats over the foot of the page, so the page has to stop short of it — otherwise the last thing on the page sits underneath, which the Previous/Next pager makes obvious by being both last and a target.
     assert_contains(
         css,
         "  padding-bottom: calc(var(--reader-content-pad) + var(--reader-toolbar-space, 0px));",
@@ -864,16 +793,11 @@ fn the_page_ends_above_the_floating_bar() {
         css,
         "body:has(#readerToolbar:not([hidden])) {\n  --reader-toolbar-space: 52px;\n}",
     );
-    // The pager's own top margin still clears the app bar; this is added below
-    // it, not instead of it.
+    // The pager's own top margin still clears the app bar; this is added below it, not instead of it.
     assert_contains(css, "margin-top: var(--app-bar-height);");
 }
 
-// Monaco sizes the line-number gutter to fit the widest number and right-aligns the
-// numbers in it, so at five digits — its minimum width — the number's left edge lands
-// exactly on the page frame's border and the two touch. The stand-off has to be a
-// transform: the gutter's width is something Monaco measures and re-lays-out from, so
-// anything that changes the box feeds back into its own layout.
+// Monaco sizes the line-number gutter to fit the widest number and right-aligns the numbers in it, so at five digits — its minimum width — the number's left edge lands exactly on the page frame's border and the two touch. The stand-off has to be a transform: the gutter's width is something Monaco measures and re-lays-out from, so anything that changes the box feeds back into its own layout.
 #[test]
 fn the_code_views_line_numbers_stand_off_the_page_frame() {
     let css = reading_mode_css();
@@ -891,11 +815,7 @@ fn the_code_views_line_numbers_stand_off_the_page_frame() {
     );
 }
 
-// The minimap rail is chrome, not page: the shell's grain runs behind it. Monaco's
-// minimap canvas paints only the pixels its glyphs land in — it fills no background of
-// its own — so anything opaque behind the rail is something of ours, and a page fill
-// crossing into it is what makes the rail read as page-colored. Every layer carrying
-// that color has to stop at the page frame's right border.
+// The minimap rail is chrome, not page: the shell's grain runs behind it. Monaco's minimap canvas paints only the pixels its glyphs land in — it fills no background of its own — so anything opaque behind the rail is something of ours, and a page fill crossing into it is what makes the rail read as page-colored. Every layer carrying that color has to stop at the page frame's right border.
 #[test]
 fn the_code_views_minimap_rail_shows_the_shells_grain() {
     let css = reading_mode_css();
@@ -908,21 +828,17 @@ fn the_code_views_minimap_rail_shows_the_shells_grain() {
     let fill = rule_body(css, ".reader-shell.code-view-monaco-shell::before {");
     assert_contains(fill, &format!("inset: 0 {frame_edge} 0 0;"));
     assert_contains(fill, "background: var(--lt-syntax-background);");
-    // Nor does either box of Monaco's that carries it: the editor's root, and the lines
-    // layer, whose 16,777,216px square is bounded only by the guard around the editor.
+    // Nor does either box of Monaco's that carries it: the editor's root, and the lines layer, whose 16,777,216px square is bounded only by the guard around the editor.
     let editor = rule_body(css, ".code-view-monaco .monaco-editor,");
     assert_contains(editor, ".monaco-editor .monaco-editor-background {");
     assert_contains(editor, "background-color: transparent;");
-    // And neither does the edge wash, which would otherwise put the page's color back
-    // under the top and bottom of the map.
+    // And neither does the edge wash, which would otherwise put the page's color back under the top and bottom of the map.
     let fade = rule_body(css, ":root[data-code-view=\"true\"] .reader-edge-fade {");
     assert_contains(
         fade,
         "margin-right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff) + var(--lt-space-1));",
     );
-    // Monaco's own scrolled-content shadow spans the editor's whole top edge, the
-    // map included; over the rail it read as a smudge on the chrome. The theme
-    // turns it off, and widget shadows with it.
+    // Monaco's own scrolled-content shadow spans the editor's whole top edge, the map included; over the rail it read as a smudge on the chrome. The theme turns it off, and widget shadows with it.
     let html = app_shell_page();
     assert!(html.contains("'scrollbar.shadow': '#00000000',"));
     assert!(html.contains("'widget.shadow': '#00000000',"));
@@ -933,32 +849,22 @@ fn the_map_takes_the_column_the_minimap_is_not_using() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // The minimap hides in graph view, but its track is a fixed width and stays
-    // reserved — leaving an empty strip down the right of the canvas that reads
-    // as a rendering fault. Column 4 is the gutter and stays: the map is held
-    // off the window frame the way the page is.
+    // The minimap hides in graph view, but its track is a fixed width and stays reserved — leaving an empty strip down the right of the canvas that reads as a rendering fault. Column 4 is the gutter and stays: the map is held off the window frame the way the page is.
     assert!(css.contains("grid-column: 2 / 4;"));
     assert!(html.contains(
         "document.documentElement.dataset.graphView = graphViewOpen ? 'true' : 'false';"
     ));
     assert!(css.contains(":root[data-graph-view=\"true\"] .reader-toolbar,"));
-    // The floating bar has to be measured against the same width or it centers
-    // on the page's middle and sits visibly left of the map's.
+    // The floating bar has to be measured against the same width or it centers on the page's middle and sits visibly left of the map's.
     assert!(css.contains(":root[data-graph-view=\"true\"] .reader-loading {"));
     assert!(css.contains(":root[data-graph-view=\"true\"] .reader-edge-fade {"));
 
-    // And the chrome that draws the top of the card has to reach the map's right
-    // edge, not the page's. Both the bar's divider and the top-right arc are
-    // positioned off the minimap column, so the column closes in this view rather
-    // than each of them learning about the map: the stroke used to stop a rail's
-    // width short and the arc turned down in mid-air over the top of the canvas.
+    // And the chrome that draws the top of the card has to reach the map's right edge, not the page's. Both the bar's divider and the top-right arc are positioned off the minimap column, so the column closes in this view rather than each of them learning about the map: the stroke used to stop a rail's width short and the arc turned down in mid-air over the top of the canvas.
     assert_contains(
         css,
         ":root[data-graph-view=\"true\"] > body {\n  --reader-minimap-column: 0px;\n}",
     );
-    // Set on `body`, where the rule that opens the column sets it. A custom
-    // property on an element beats one inherited from :root, however specific the
-    // :root selector is — the override would simply never apply.
+    // Set on `body`, where the rule that opens the column sets it. A custom property on an element beats one inherited from :root, however specific the :root selector is — the override would simply never apply.
     let opens = css
         .find("body:has(.document-minimap) {")
         .expect("stylesheet opens the minimap column on body");
@@ -973,10 +879,7 @@ fn the_map_takes_the_column_the_minimap_is_not_using() {
 
 #[test]
 fn anything_that_hides_itself_is_allowed_to() {
-    // `display` on a class outranks the user agent's `[hidden] { display: none }`,
-    // so an element that sets one and relies on the other is simply always
-    // visible. That is how the floating toolbar came to sit over the home
-    // screen: the attribute was set, the rule ignored it, and nothing failed.
+    // `display` on a class outranks the user agent's `[hidden] { display: none }`, so an element that sets one and relies on the other is simply always visible. That is how the floating toolbar came to sit over the home screen: the attribute was set, the rule ignored it, and nothing failed.
     let html = app_shell_page();
     let css = reading_mode_css();
 
@@ -984,8 +887,7 @@ fn anything_that_hides_itself_is_allowed_to() {
         let Some(tag) = element.split('>').next() else {
             continue;
         };
-        // Only elements that start hidden — the ones a stale `display` would
-        // strand on screen.
+        // Only elements that start hidden — the ones a stale `display` would strand on screen.
         if !(tag.ends_with(" hidden") || tag.contains(" hidden ")) {
             continue;
         }
@@ -1019,11 +921,7 @@ fn anything_that_hides_itself_is_allowed_to() {
 
 #[test]
 fn a_diagrams_own_drawing_is_moved_and_its_button_icons_are_not() {
-    // A drawn diagram is a block holding two things that are both SVG: its own
-    // drawing, and the icons inside the corner buttons. Every rule that sizes or
-    // moves the drawing has to say `> svg`, because the descendant form takes the
-    // icons too — they fly to the pan offset and the buttons are left empty,
-    // which is what shipped the first time this was written.
+    // A drawn diagram is a block holding two things that are both SVG: its own drawing, and the icons inside the corner buttons. Every rule that sizes or moves the drawing has to say `> svg`, because the descendant form takes the icons too — they fly to the pan offset and the buttons are left empty, which is what shipped the first time this was written.
     let css = reading_mode_css();
     let block = ".document-body pre.mermaid[data-processed=\"true\"]";
 
@@ -1049,10 +947,7 @@ fn a_diagrams_own_drawing_is_moved_and_its_button_icons_are_not() {
 
 #[test]
 fn the_flowchart_canvas_is_dragged_by_the_stage_not_by_its_scrollbars() {
-    // A diagram smaller than the pane has nothing to scroll, so scroll-panning
-    // did nothing for exactly the diagrams most likely to be hidden under the
-    // picker. The stage is moved instead, and the handles ride along because the
-    // overlay is inside it.
+    // A diagram smaller than the pane has nothing to scroll, so scroll-panning did nothing for exactly the diagrams most likely to be hidden under the picker. The stage is moved instead, and the handles ride along because the overlay is inside it.
     let css = reading_mode_css();
 
     assert_contains(
@@ -1073,21 +968,14 @@ fn the_flowchart_canvas_is_dragged_by_the_stage_not_by_its_scrollbars() {
 
 #[test]
 fn anything_marked_hidden_is_actually_hidden() {
-    // A rule that matches `[hidden]` and then sets a `display` of its own beats
-    // the browser's own `[hidden] { display: none }` and leaves the thing on the
-    // page — laid out, invisible, and still taking clicks. That is how a stray
-    // comment between two selectors put the glossary backdrop across the bottom
-    // fifth of the home screen and ate every link under it.
+    // A rule that matches `[hidden]` and then sets a `display` of its own beats the browser's own `[hidden] { display: none }` and leaves the thing on the page — laid out, invisible, and still taking clicks. That is how a stray comment between two selectors put the glossary backdrop across the bottom fifth of the home screen and ate every link under it.
     let css = reading_mode_css();
 
     for rule in css.split('}') {
         let Some((selector, body)) = rule.split_once('{') else {
             continue;
         };
-        // Only the selector itself, never a comment sitting above it.
-        // Comments are cut out of the selector rather than cut off before it: a
-        // comment *between* two selectors is exactly how this went wrong, and
-        // reading only what follows it would hide the half that matters.
+        // Only the selector itself, never a comment sitting above it. Comments are cut out of the selector rather than cut off before it: a comment *between* two selectors is exactly how this went wrong, and reading only what follows it would hide the half that matters.
         let mut selector = selector.to_string();
         while let Some(opens) = selector.find("/*") {
             let Some(shuts) = selector[opens..].find("*/") else {
@@ -1114,9 +1002,7 @@ fn anything_marked_hidden_is_actually_hidden() {
 
 #[test]
 fn every_box_shadow_is_a_stroke_a_ring_or_a_recess() {
-    // Nothing in the app casts a smooth blur: a floating surface throws the dot
-    // halftone below instead. What is left in a `box-shadow` draws an edge, a focus
-    // ring, or the one recess in the reader's tool bar.
+    // Nothing in the app casts a smooth blur: a floating surface throws the dot halftone below instead. What is left in a `box-shadow` draws an edge, a focus ring, or the one recess in the reader's tool bar.
     const DRAWN_WITH: &[&str] = &[
         "var(--lt-shadow-raised)",
         "var(--lt-shadow-inset)",
@@ -1167,9 +1053,7 @@ fn every_floating_surface_throws_the_dot_halftone() {
         "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);",
     );
     assert_contains(halftone, "--lt-grain-dot: var(--lt-grain-dot-strong);");
-    // The second mask layer punches the surface's own box out, or the dots land on
-    // its face: a negative-layer child paints above its parent's background. Subtract,
-    // not xor -- xor is the punch inside out, and a stale one would win by coming last.
+    // The second mask layer punches the surface's own box out, or the dots land on its face: a negative-layer child paints above its parent's background. Subtract, not xor -- xor is the punch inside out, and a stale one would win by coming last.
     assert_contains(halftone, "mask-composite: subtract;");
     assert_contains(halftone, "-webkit-mask-composite: source-out;");
     assert!(

@@ -42,8 +42,7 @@ fn workspace_reload_script_preserves_scroll_via_reload_entry_point() {
     let tabs = [("Guide".to_string(), "guide.md".to_string())];
     let script = workspace_reload_script(&[PathBuf::from("guide.md")], &tabs, Some(0), None);
 
-    // The reload path must call leafReloadDocument (which keeps the reader's
-    // scroll position), never leafSetState (which jumps back to the top).
+    // The reload path must call leafReloadDocument (which keeps the reader's scroll position), never leafSetState (which jumps back to the top).
     assert!(script.starts_with("window.leafReloadDocument({"));
     assert!(!script.contains("leafSetState"));
     assert_contains(&script, r#""active":0"#);
@@ -66,15 +65,13 @@ fn workspace_switch_script_restores_target_tab_anchor_without_reset() {
         Some(&anchor),
     );
 
-    // Switching must render through leafSwitchTab (renders, then restores the
-    // saved anchor) rather than leafSetState (which snaps back to the top).
+    // Switching must render through leafSwitchTab (renders, then restores the saved anchor) rather than leafSetState (which snaps back to the top).
     assert!(script.starts_with("window.leafSwitchTab({"));
     assert!(!script.contains("leafSetState"));
     assert_contains(&script, r#""active":0"#);
     assert!(script.ends_with(r#", {"section":"intro","block":2,"offsetY":12.5});"#));
 
-    // No saved anchor (first visit to a tab) passes null, which starts the
-    // reader at the top of the content.
+    // No saved anchor (first visit to a tab) passes null, which starts the reader at the top of the content.
     assert!(workspace_switch_script(&[], &[], None, None, None).ends_with(", null);"));
 }
 
@@ -134,9 +131,7 @@ fn initial_settings_script_defines_camelcase_global() {
         update_staged_version: "0.1.400".to_string(),
         update_auto_applied: String::new(),
     });
-    // Window geometry is host-only (applied to the native window, not the
-    // webview), so it must not leak into the injected settings global. The
-    // update fields do cross: the page owns the check throttle and the button.
+    // Window geometry is host-only (applied to the native window, not the webview), so it must not leak into the injected settings global. The update fields do cross: the page owns the check throttle and the button.
     assert_eq!(
         script,
         r#"window.__leafSettings = {"codeIntelEnabled":false,"codeUnlocked":false,"graphScope":"large","libraryClosed":true,"libraryProjectPath":"docs","libraryWidth":312,"readingUnlocked":true,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[],"updateLastChecked":1780000000,"updateStagedVersion":"0.1.400"};"#
@@ -145,8 +140,7 @@ fn initial_settings_script_defines_camelcase_global() {
 
 #[test]
 fn initial_version_script_exposes_the_package_version() {
-    // The frontend's update check reads window.__leafVersion to compare against
-    // the latest GitHub release, so it must carry the built package version.
+    // The frontend's update check reads window.__leafVersion to compare against the latest GitHub release, so it must carry the built package version.
     let script = initial_version_script();
     assert_eq!(
         script,
@@ -164,9 +158,7 @@ fn glossary_failed_script_gives_the_page_a_reason_to_show() {
 
 #[test]
 fn a_taken_code_view_edit_reports_only_the_dirty_state() {
-    // The editor owns what is on screen, so the acknowledgment says nothing about
-    // the text: no colored markup, and no copy of the buffer coming back down the
-    // channel the edit just went out on.
+    // The editor owns what is on screen, so the acknowledgment says nothing about the text: no colored markup, and no copy of the buffer coming back down the channel the edit just went out on.
     let taken = source_updated_script(true);
     assert_contains(&taken, r#""dirty":true"#);
     assert!(taken.starts_with("window.leafSourceUpdated("));
@@ -175,14 +167,10 @@ fn a_taken_code_view_edit_reports_only_the_dirty_state() {
     assert_contains(&source_updated_script(false), r#""dirty":false"#);
 }
 
-/// The two sides are joined by a name in a string, so a rename on one side is
-/// a silent no-op at runtime. Every name the host emits must exist in the page,
-/// and every one the page defines must be reached.
+/// The two sides are joined by a name in a string, so a rename on one side is a silent no-op at runtime. Every name the host emits must exist in the page, and every one the page defines must be reached.
 #[test]
 fn the_host_and_the_page_agree_on_every_call() {
-    /// Names the page owns. `leafShowCodeView` it calls itself after fetching
-    /// the payload; the other two are state one fragment publishes for the
-    /// rest, each with a `subscribe` — the shape new shared state should copy.
+    /// Names the page owns. `leafShowCodeView` it calls itself after fetching the payload; the other two are state one fragment publishes for the rest, each with a `subscribe` — the shape new shared state should copy.
     const PAGE_ONLY: &[&str] = &[
         "window.leafShowCodeView",
         "window.leafMinimap",

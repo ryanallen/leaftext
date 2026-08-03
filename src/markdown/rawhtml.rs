@@ -145,8 +145,7 @@ pub(crate) fn sanitize_raw_markdown_html_tag(tag: &str) -> String {
         sanitized.push('"');
     }
 
-    // Boolean attributes (e.g. `<details open>`) carry no value; emit them bare
-    // when present so a collapsible block keeps its expanded state.
+    // Boolean attributes (e.g. `<details open>`) carry no value; emit them bare when present so a collapsible block keeps its expanded state.
     for attribute_name in allowed_raw_markdown_html_boolean_attributes(&tag_name) {
         if html_has_boolean_attribute(tag, attribute_name) {
             sanitized.push(' ');
@@ -289,8 +288,7 @@ pub(crate) fn sanitize_rendered_html(html: &str) -> String {
     sanitizer.clean(html).to_string()
 }
 
-/// The URL schemes rendered HTML may keep. One list, shared with the email
-/// renderer, which adds only `cid:` on top of it.
+/// The URL schemes rendered HTML may keep. One list, shared with the email renderer, which adds only `cid:` on top of it.
 pub(crate) const RENDERED_HTML_URL_SCHEMES: [&str; 5] =
     ["http", "https", "mailto", "glossary", LOCAL_IMAGE_PROTOCOL];
 
@@ -331,7 +329,6 @@ pub(crate) fn configure_rendered_html_sanitizer(sanitizer: &mut Builder<'_>) {
         .add_tag_attributes("input", &["checked", "disabled", "type"])
         .add_tag_attributes("td", &["align", "colspan"])
         .add_tag_attributes("th", &["align", "colspan"])
-        // Editing-model block markers (`data-leaf-*`, `data-src-*`): no script,
-        // never a URL context, so allowed on every tag.
+        // Editing-model block markers (`data-leaf-*`, `data-src-*`): no script, never a URL context, so allowed on every tag.
         .add_generic_attribute_prefixes(&["data-leaf-", "data-src-"]);
 }

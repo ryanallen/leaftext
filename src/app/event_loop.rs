@@ -1,12 +1,10 @@
-//! The event loop: one arm for each thing the window, the page, the watcher or
-//! the workers can report.
+//! The event loop: one arm for each thing the window, the page, the watcher or the workers can report.
 
 use super::*;
 
 use tao::event_loop::EventLoop;
 
-/// Everything the loop owns between events, assembled by `run_app` at startup.
-/// It exists so the loop takes one argument instead of ten.
+/// Everything the loop owns between events, assembled by `run_app` at startup. It exists so the loop takes one argument instead of ten.
 pub(crate) struct AppCtx {
     /// The window, the page, and what is on screen in them.
     pub(crate) reader: Reader,
@@ -20,8 +18,7 @@ pub(crate) struct AppCtx {
     pub(crate) last_maximized: bool,
 }
 
-/// Apply a page command that records a setting; the one caller persists when
-/// this returns true. A new persisted toggle is its command plus an arm here.
+/// Apply a page command that records a setting; the one caller persists when this returns true. A new persisted toggle is its command plus an arm here.
 fn apply_setting_command(settings: &mut Settings, command: IpcCommand) -> bool {
     match command {
         IpcCommand::SetSpeedReaderEnabled { enabled } => settings.speed_reader_enabled = enabled,
@@ -48,9 +45,7 @@ fn apply_setting_command(settings: &mut Settings, command: IpcCommand) -> bool {
     true
 }
 
-/// The one way out: remember the geometry, save it, drop the page, stop the
-/// loop. The close button, the page's own close, and applying an update all end
-/// here — the update helper waits for this process to exit before installing.
+/// The one way out: remember the geometry, save it, drop the page, stop the loop. The close button, the page's own close, and applying an update all end here — the update helper waits for this process to exit before installing.
 fn shut_down(
     reader: &mut Reader,
     settings: &mut Settings,
@@ -68,8 +63,7 @@ fn shut_down(
 
 /// Runs until the window closes, which ends the process — hence the `!`.
 pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> ! {
-    // Unpacked straight back into locals: the arms mutate most of these and read
-    // them constantly, and `ctx.` at every use would bury the event handling.
+    // Unpacked straight back into locals: the arms mutate most of these and read them constantly, and `ctx.` at every use would bury the event handling.
     let AppCtx {
         mut reader,
         mut settings,
@@ -90,8 +84,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 event: WindowEvent::Resized(size),
                 ..
             } => {
-                // Remember the size only while windowed; convert the physical
-                // event size to the logical size the next launch expects.
+                // Remember the size only while windowed; convert the physical event size to the logical size the next launch expects.
                 if !reader.window.is_maximized()
                     && !reader.window.is_minimized()
                     && size.width > 0
@@ -99,8 +92,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 {
                     last_windowed_size = size.to_logical(reader.window.scale_factor());
                 }
-                // Keep the custom title bar's maximize/restore icon in sync with
-                // the real window state whenever it changes.
+                // Keep the custom title bar's maximize/restore icon in sync with the real window state whenever it changes.
                 let maximized = reader.window.is_maximized();
                 if maximized != last_maximized {
                     last_maximized = maximized;
@@ -121,9 +113,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 last_windowed_size,
                 control_flow,
             ),
-            // macOS delivers a double-clicked document as an Apple Event, not an
-            // argument, so file associations there are inert without this. Before
-            // the page is up the path waits with the command-line one.
+            // macOS delivers a double-clicked document as an Apple Event, not an argument, so file associations there are inert without this. Before the page is up the path waits with the command-line one.
             Event::Opened { urls } => {
                 for path in urls.iter().filter_map(|url| url.to_file_path().ok()) {
                     if reader.webview.is_some() && pending_open_path.is_none() {
@@ -150,40 +140,27 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 reader.window.set_focus();
             }
             Event::UserEvent(UserEvent::FileChanged(changed)) => {
-                // The active document live-reloads; a sibling change instead
-                // refreshes the pane and the corpus so both stay in sync without
-                // a full rescan.
+                // The active document live-reloads; a sibling change instead refreshes the pane and the corpus so both stay in sync without a full rescan.
                 let is_active_document = reader
                     .workspace
                     .active_path()
                     .is_some_and(|current| paths_refer_to_same_document(&changed, current));
-                // Above the split, or it misses the commonest change of all —
-                // saving the document you are reading takes the other branch.
-                // Unfiltered on purpose: a containment check here compares the
-                // watcher's canonicalised path against the registry's plain one
-                // and so discards every event. One `git status`, off the loop, on
-                // an already-debounced event, is cheaper than being wrong.
+                // Above the split, or it misses the commonest change of all — saving the document you are reading takes the other branch. Unfiltered on purpose: a containment check here compares the watcher's canonicalised path against the registry's plain one and so discards every event. One `git status`, off the loop, on an already-debounced event, is cheaper than being wrong.
                 if vault_state.active != 0 {
                     refresh_vault_status(&vault_state, &proxy, vault_state.active);
                 }
                 if is_active_document {
                     reload_active_document(&mut reader, &mut file_watch);
                 } else {
-                    // The pane lists one folder off the disk, so a file added,
-                    // renamed or removed in that folder changes what it shows.
+                    // The pane lists one folder off the disk, so a file added, renamed or removed in that folder changes what it shows.
                     if change_affects_pane(&vault_state, &changed) {
                         let folder = vault_state.folder.clone();
                         request_folder(&vault_state, &proxy, folder);
                     }
-                    // And the vault's text is a cache of the disk, so it is
-                    // patched a file at a time rather than re-read. The graph is
-                    // only redrawn when the graph is the view on screen —
-                    // rebuilding it for a pane nobody is looking at is what makes
-                    // a burst of saves lock the window.
+                    // And the vault's text is a cache of the disk, so it is patched a file at a time rather than re-read. The graph is only redrawn when the graph is the view on screen — rebuilding it for a pane nobody is looking at is what makes a burst of saves lock the window.
                     let graph_showing = vault_state.graph_open;
                     refresh_corpus_path(&mut vault_state, &proxy, &changed, graph_showing);
-                    // An image, not a document: the text is unchanged, so the
-                    // reload above would hash-gate itself out.
+                    // An image, not a document: the text is unchanged, so the reload above would hash-gate itself out.
                     if is_local_image_path(&changed) {
                         run_page_script(
                             reader.page(),
@@ -251,8 +228,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::UpdateDownloadStaged { version }) => {
                 settings.update_staged_version = version.clone();
                 persist_settings(&settings, settings_path.as_ref());
-                // Now that a newer one is ready, older staged installers are
-                // just disk usage.
+                // Now that a newer one is ready, older staged installers are just disk usage.
                 if let Some(data_dir) = app_data_dir() {
                     leaftext::prune_staged(&data_dir, Some(&version));
                 }
@@ -263,14 +239,11 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 report_update_state(reader.page(), "failed", &version, Some(&message));
             }
             Event::UserEvent(UserEvent::PipeState { reply }) => {
-                // try_send, not send: the asker may already have given up and
-                // gone, and the window thread must not block on a dead channel.
+                // try_send, not send: the asker may already have given up and gone, and the window thread must not block on a dead channel.
                 let _ = reply.try_send(Ok(pipe_state(&reader, &vault_state)));
             }
             Event::UserEvent(UserEvent::PipeEval { script, reply }) => {
-                // The one script the app runs for an answer rather than an effect.
-                // It arrives later and on whatever thread the web view calls back
-                // on, so the reply channel travels into the callback.
+                // The one script the app runs for an answer rather than an effect. It arrives later and on whatever thread the web view calls back on, so the reply channel travels into the callback.
                 match reader.page() {
                     Some(page) => {
                         let failed = reply.clone();
@@ -298,8 +271,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 IpcCommand::NewDocument => {
                     reader.workspace.open_untitled();
-                    // Before the render, so the first paint already carries the
-                    // editors - there is nothing to click before typing.
+                    // Before the render, so the first paint already carries the editors - there is nothing to click before typing.
                     run_page_script(
                         reader.page(),
                         &unlock_reading_script(),
@@ -379,16 +351,14 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     scroll_anchor,
                     code_scroll,
                 } => {
-                    // Clicking the active tab is a no-op; re-rendering would jump the
-                    // reader.
+                    // Clicking the active tab is a no-op; re-rendering would jump the reader.
                     if reader.workspace.active == Some(index) {
                         return;
                     }
                     if let Some(active) = reader.workspace.active {
                         if let Some(tab) = reader.workspace.tabs.get_mut(active) {
                             tab.saved_scroll_anchor = Some(scroll_anchor);
-                            // Remember where the source editor was left; `None` for a
-                            // reading-view tab, which leaves nothing to restore.
+                            // Remember where the source editor was left; `None` for a reading-view tab, which leaves nothing to restore.
                             tab.saved_code_scroll = code_scroll;
                         }
                     }
@@ -404,8 +374,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 IpcCommand::MoveTab { from, to } => {
                     if reader.workspace.move_tab(from, to) {
-                        // Only the tab order changed; keep the reader in place
-                        // rather than snapping the active document back to the top.
+                        // Only the tab order changed; keep the reader in place rather than snapping the active document back to the top.
                         reader.render(ScrollIntent::Preserve);
                     }
                 }
@@ -426,8 +395,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     else {
                         return;
                     };
-                    // A bare `glossary:` link ("open the full glossary"): resolve to
-                    // the nearest GLOSSARY.md and open it as a tab.
+                    // A bare `glossary:` link ("open the full glossary"): resolve to the nearest GLOSSARY.md and open it as a tab.
                     if glossary_scheme_slug(&href).is_some() {
                         match nearest_glossary_file(&current_path) {
                             Some(path) if !paths_refer_to_same_document(&path, &current_path) => {
@@ -469,9 +437,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                                 }
                                 return;
                             }
-                            // Behind the page being read, so the reader keeps their
-                            // place: the strip gains an entry and the document on
-                            // screen is not rendered again.
+                            // Behind the page being read, so the reader keeps their place: the strip gains an entry and the document on screen is not rendered again.
                             if new_page {
                                 reader.workspace.open_path_behind(path);
                                 reader.refresh_tab_strip();
@@ -529,8 +495,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::CountLines { href, token } => {
-                    // Count the linked document's lines for the hover tooltip. Only
-                    // in-app document links resolve to a file; else -1 ("unknown").
+                    // Count the linked document's lines for the hover tooltip. Only in-app document links resolve to a file; else -1 ("unknown").
                     let lines = reader
                         .workspace
                         .active_path()
@@ -591,8 +556,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::EnterCodeView => {
-                    // A fresh toggle carries its own position: the page stashed the
-                    // reading view's scroll fraction before asking to enter.
+                    // A fresh toggle carries its own position: the page stashed the reading view's scroll fraction before asking to enter.
                     enter_code_view(reader.webview.as_ref(), &mut reader.workspace, None);
                 }
                 IpcCommand::ExitCodeView => {
@@ -650,8 +614,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                                 &mut reader.workspace,
                                 &mut file_watch,
                             );
-                            // The tab, the title and the image folder still say
-                            // Untitled. A plain save changes none of them.
+                            // The tab, the title and the image folder still say Untitled. A plain save changes none of them.
                             if matches!(ready, SaveReady::Named) {
                                 reader.render(ScrollIntent::Preserve);
                             }
@@ -672,17 +635,13 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     text,
                     autosave,
                 } => {
-                    // Splice into the source buffer, then re-render from it, keeping
-                    // the reader's place. Source stays authoritative for MD and XML.
-                    // A checkbox toggle (autosave) splices without an undo step and
-                    // writes to disk right away.
+                    // Splice into the source buffer, then re-render from it, keeping the reader's place. Source stays authoritative for MD and XML. A checkbox toggle (autosave) splices without an undo step and writes to disk right away.
                     if apply_block_edit(&mut reader.workspace, start, end, &text, !autosave) {
                         if autosave {
                             autosave_active_buffer(&mut reader.workspace, &mut file_watch);
                         }
                         reader.render(ScrollIntent::Preserve);
-                        // Host decides the Save/Undo buttons from the real dirty and
-                        // undo state, not the frontend's guess.
+                        // Host decides the Save/Undo buttons from the real dirty and undo state, not the frontend's guess.
                         resync_editing_state(reader.page(), &reader.workspace);
                     }
                 }
@@ -693,9 +652,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::PickImage { token } => {
-                    // The dialog blocks this thread, like Open's does. What comes
-                    // back is a destination for the document to hold, not a file
-                    // to copy: the picture stays where the user keeps it.
+                    // The dialog blocks this thread, like Open's does. What comes back is a destination for the document to hold, not a file to copy: the picture stays where the user keeps it.
                     if let Some(image) = pick_image_file() {
                         let source = reader
                             .workspace
@@ -720,9 +677,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     width,
                     height,
                 } => {
-                    // The dialog blocks this thread, like Open's does. The active
-                    // document only names the file it suggests; nothing about it
-                    // is read or written.
+                    // The dialog blocks this thread, like Open's does. The active document only names the file it suggests; nothing about it is read or written.
                     let document = reader.workspace.active_path().map(Path::to_path_buf);
                     export_diagram(
                         reader.page(),
@@ -734,8 +689,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     );
                 }
                 IpcCommand::UndoEdit => {
-                    // Pop the buffer back one edit, re-render, and resync so undoing
-                    // the only edit also clears the Save button.
+                    // Pop the buffer back one edit, re-render, and resync so undoing the only edit also clears the Save button.
                     let undone = reader
                         .workspace
                         .active_edit_mut()
@@ -822,11 +776,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 IpcCommand::SetActiveVault { id } => {
                     set_active_vault(id, &mut vault_state, &proxy, reader.page());
-                    // A different vault has a different repository, and its button
-                    // should be right before anyone looks at it.
+                    // A different vault has a different repository, and its button should be right before anyone looks at it.
                     refresh_vault_status(&vault_state, &proxy, id);
-                    // Back to the whole library: its top is the drive roots, which
-                    // `request_folder` returns without reading anything.
+                    // Back to the whole library: its top is the drive roots, which `request_folder` returns without reading anything.
                     if vault_state.root.is_none() {
                         vault_state.folder.clear();
                         request_folder(&vault_state, &proxy, String::new());
@@ -842,8 +794,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 IpcCommand::RemoveVault { id } => {
                     remove_vault_row(id, &mut vault_state, reader.page());
-                    // Removing the vault on screen lands back at the top of the
-                    // whole library.
+                    // Removing the vault on screen lands back at the top of the whole library.
                     vault_state.folder.clear();
                     request_folder(&vault_state, &proxy, String::new());
                 }
@@ -854,8 +805,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     reveal_in_library(&path, &mut vault_state, &proxy, reader.page());
                 }
                 IpcCommand::GetGraph { scope, seeds } => {
-                    // Focus keeps the seed neighborhood; the rest cap the densest
-                    // documents, up to XL (no cap).
+                    // Focus keeps the seed neighborhood; the rest cap the densest documents, up to XL (no cap).
                     let request = match GraphScope::from_client(&scope).unwrap_or_default() {
                         GraphScope::Small => GraphRequest {
                             focus: Some(seeds),
@@ -874,10 +824,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                             limit: None,
                         },
                     };
-                    // Off the vault's own text when the vault holds the document on
-                    // screen — read once and shared with search — and off that
-                    // document itself otherwise, so a file in no vault still has a
-                    // map of what it links to.
+                    // Off the vault's own text when the vault holds the document on screen — read once and shared with search — and off that document itself otherwise, so a file in no vault still has a map of what it links to.
                     let document = reader.workspace.active_path().map(Path::to_path_buf);
                     request_link_graph(
                         &mut vault_state,
@@ -888,8 +835,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     );
                 }
                 IpcCommand::Search { query, scope } => {
-                    // Search reads the active vault's text. Without a vault there is
-                    // nothing bounded to read, so the page says so and never asks.
+                    // Search reads the active vault's text. Without a vault there is nothing bounded to read, so the page says so and never asks.
                     let _ = scope;
                     request_vault_search(&mut vault_state, &proxy, query);
                 }
@@ -927,8 +873,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         Some((data_dir, staged)) => {
                             let directory = leaftext::staging_dir(&data_dir, &staged.version);
                             match platform::spawn_update_helper(&directory) {
-                                // The helper waits for this process to exit before
-                                // installing, so leave the same way the button does.
+                                // The helper waits for this process to exit before installing, so leave the same way the button does.
                                 Ok(()) => shut_down(
                                     &mut reader,
                                     &mut settings,
@@ -968,14 +913,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             _ => {}
         }
 
-        // Keep the watcher on the active document and on the pane's root, so
-        // both live-update. A no-op unless one changed since last sync.
+        // Keep the watcher on the active document and on the pane's root, so both live-update. A no-op unless one changed since last sync.
         let active_path = reader.workspace.active_path();
-        // A vault is watched whole and recursively — the user picked that
-        // folder, and its corpus has to stay live while they edit anywhere
-        // inside it. A folder the pane merely browsed to is watched one level
-        // deep, because that is all the pane shows: browsing to `C:\` must not
-        // subscribe to every change on the drive.
+        // A vault is watched whole and recursively — the user picked that folder, and its corpus has to stay live while they edit anywhere inside it. A folder the pane merely browsed to is watched one level deep, because that is all the pane shows: browsing to `C:\` must not subscribe to every change on the drive.
         let vault_root = vault_state.root.clone();
         let (project_dir, mode) = match vault_root.as_deref() {
             Some(root) => (Some(root), RecursiveMode::Recursive),

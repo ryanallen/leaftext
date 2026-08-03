@@ -46,7 +46,7 @@ Phases ship alone. Build them in the ticket's order and finish each one before s
 - **A box that changed shape is struck through with the reason**, not silently rewritten: `- [x] ~~what it said~~ — cut, because …`. Two things earn this: the plan asked for something the code already does for free, and the plan's box had no obvious done. Both go in the record section too.
 - **A box that moves to a later phase says so where it was**, and appears in the phase that got it. A box that quietly vanishes reads as built.
 - **Nothing open-ended is left behind.** If building turns up a real question the ticket never answered, ask it — one round, the question tool, with a recommendation — and write the answer into the ticket as a decision with its reason before carrying on.
-- **Every line written into the ticket is one line.** Never hard-wrap a box or a paragraph; `just check-wrapping` fails on one.
+- **Every line written is one line.** Never hard-wrap — not a box, not a paragraph, and not a comment in the code. A comment too long for one line is *shortened*, never wrapped: see [code-comments](../code-comments/SKILL.md), which holds that bar. `just check-wrapping` fails on one and `--fix` joins it.
 - **Every phase ends with [check](../check/SKILL.md)**, and with the bundler line when it touched `design/`. A failing check is fixed, not explained past.
 
 ## 3. Notes worth writing down

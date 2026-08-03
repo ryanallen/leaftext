@@ -1,14 +1,8 @@
-//! Native clipboard, Recycle Bin/Trash, HTTPS download, and the stderr redirect
-//! behind the journal.
+//! Native clipboard, Recycle Bin/Trash, HTTPS download, and the stderr redirect behind the journal.
 //!
-//! Each is one system call or one bundled tool on each platform, so they talk to
-//! the OS directly rather than through a cross-platform crate. That keeps whole
-//! dependency subtrees (and their transitive supply chain) out of the build for
-//! what amounts to a few dozen lines of platform code.
+//! Each is one system call or one bundled tool on each platform, so they talk to the OS directly rather than through a cross-platform crate. That keeps whole dependency subtrees (and their transitive supply chain) out of the build for what amounts to a few dozen lines of platform code.
 //!
-//! Windows goes through Win32 (`windows-sys` is already a dependency for the
-//! single-instance guard); macOS shells out, matching how the file-manager
-//! reveal, file-copy, and Get Info actions in `main.rs` already work.
+//! Windows goes through Win32 (`windows-sys` is already a dependency for the single-instance guard); macOS shells out, matching how the file-manager reveal, file-copy, and Get Info actions in `main.rs` already work.
 
 #[cfg(unix)]
 use std::ffi::c_int;
@@ -23,12 +17,9 @@ pub use windows_impl::{download_to, move_to_trash, set_clipboard_text};
 #[cfg(target_os = "macos")]
 pub use macos_impl::{download_to, move_to_trash, set_clipboard_text};
 
-/// Point this process's stderr at an already-open file. The Windows build has no
-/// console, so without this everything the app prints is thrown away.
+/// Point this process's stderr at an already-open file. The Windows build has no console, so without this everything the app prints is thrown away.
 ///
-/// Takes the file by value on purpose: on Windows the handle *becomes* stderr, so
-/// closing it would leave the process printing into a dead handle. Returns whether
-/// the swap took.
+/// Takes the file by value on purpose: on Windows the handle *becomes* stderr, so closing it would leave the process printing into a dead handle. Returns whether the swap took.
 #[cfg(windows)]
 pub fn redirect_stderr(file: File) -> bool {
     use std::os::windows::io::IntoRawHandle;
@@ -41,10 +32,7 @@ pub fn redirect_stderr(file: File) -> bool {
 
 /// The same, on any Unix.
 ///
-/// `dup2` is declared here rather than pulling in `libc` for one symbol — the
-/// alternative is a whole crate that buys nothing else in this build. Gated on
-/// any Unix, not the Mac by name: the call is identical on Linux, so a Linux
-/// build would need no edit here.
+/// `dup2` is declared here rather than pulling in `libc` for one symbol — the alternative is a whole crate that buys nothing else in this build. Gated on any Unix, not the Mac by name: the call is identical on Linux, so a Linux build would need no edit here.
 #[cfg(unix)]
 pub fn redirect_stderr(file: File) -> bool {
     use std::os::unix::io::AsRawFd;
@@ -58,12 +46,10 @@ pub fn redirect_stderr(file: File) -> bool {
     unsafe { dup2(file.as_raw_fd(), STDERR) != -1 }
 }
 
-/// How much of a download to hold before handing it on. Large enough that a
-/// 6 MB installer is a hundred or so calls, small enough that progress moves.
+/// How much of a download to hold before handing it on. Large enough that a 6 MB installer is a hundred or so calls, small enough that progress moves.
 const DOWNLOAD_CHUNK_BYTES: usize = 64 * 1024;
 
-/// Flag that puts the binary into update-applier mode instead of opening a
-/// window. Not a user-facing option: the app passes it to a copy of itself.
+/// Flag that puts the binary into update-applier mode instead of opening a window. Not a user-facing option: the app passes it to a copy of itself.
 pub const APPLY_UPDATE_FLAG: &str = "--apply-update";
 
 /// What the applier was asked to do, parsed from the command line.
@@ -76,8 +62,7 @@ pub struct ApplyRequest {
     pub wait_pid: Option<u32>,
 }
 
-/// Recognize `--apply-update <dir> --relaunch <exe> [--wait-pid <pid>]`.
-/// Returns `None` for a normal launch.
+/// Recognize `--apply-update <dir> --relaunch <exe> [--wait-pid <pid>]`. Returns `None` for a normal launch.
 pub fn parse_apply_request<I: Iterator<Item = String>>(args: I) -> Option<ApplyRequest> {
     let mut args = args.peekable();
     let mut staging_dir = None;
@@ -100,9 +85,7 @@ pub fn parse_apply_request<I: Iterator<Item = String>>(args: I) -> Option<ApplyR
 
 /// Launch a detached copy of this binary to do the install.
 ///
-/// It has to be a *copy*: the installer replaces the running executable, and
-/// Windows will not overwrite a file that is running. The staging folder is
-/// somewhere the installer does not touch, and is pruned after the update lands.
+/// It has to be a *copy*: the installer replaces the running executable, and Windows will not overwrite a file that is running. The staging folder is somewhere the installer does not touch, and is pruned after the update lands.
 pub fn spawn_update_helper(staging_dir: &Path) -> io::Result<()> {
     let current = std::env::current_exe()?;
     let helper_name = if cfg!(windows) {
@@ -111,8 +94,7 @@ pub fn spawn_update_helper(staging_dir: &Path) -> io::Result<()> {
         "leaftext-apply"
     };
     let helper = staging_dir.join(helper_name);
-    // A helper left behind by an earlier attempt may still be running; a failed
-    // copy onto it is not fatal as long as some copy is there to run.
+    // A helper left behind by an earlier attempt may still be running; a failed copy onto it is not fatal as long as some copy is there to run.
     if std::fs::copy(&current, &helper).is_err() && !helper.exists() {
         return Err(io::Error::new(
             io::ErrorKind::Other,
@@ -129,8 +111,7 @@ pub fn spawn_update_helper(staging_dir: &Path) -> io::Result<()> {
         .arg("--wait-pid")
         .arg(std::process::id().to_string());
 
-    // DETACHED_PROCESS | CREATE_NO_WINDOW: the child must outlive this process
-    // and must not flash a console while it runs msiexec.
+    // DETACHED_PROCESS | CREATE_NO_WINDOW: the child must outlive this process and must not flash a console while it runs msiexec.
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -145,16 +126,11 @@ fn failed(operation: &str, detail: impl std::fmt::Display) -> io::Error {
     io::Error::new(io::ErrorKind::Other, format!("{operation}: {detail}"))
 }
 
-/// Install a staged update, then start the new build. Runs in the detached
-/// helper copy, never in the app the user was using.
+/// Install a staged update, then start the new build. Runs in the detached helper copy, never in the app the user was using.
 ///
-/// The installer is re-hashed first: it was verified when downloaded, but has
-/// sat in a user-writable folder since, and this is the last moment before the
-/// bytes are executed. Every failure path relaunches what was already
-/// installed — a failed update must never cost the user a working app.
+/// The installer is re-hashed first: it was verified when downloaded, but has sat in a user-writable folder since, and this is the last moment before the bytes are executed. Every failure path relaunches what was already installed — a failed update must never cost the user a working app.
 ///
-/// The outcome is recorded before the relaunch, since this process has no way to
-/// report one itself. See `ApplyOutcome`.
+/// The outcome is recorded before the relaunch, since this process has no way to report one itself. See `ApplyOutcome`.
 pub fn run_update_apply(request: &ApplyRequest) -> Result<(), String> {
     let outcome = apply(request);
     leaftext::record_apply_outcome(
@@ -162,14 +138,12 @@ pub fn run_update_apply(request: &ApplyRequest) -> Result<(), String> {
         &applying_version(request),
         outcome.as_ref().err().map(String::as_str),
     );
-    // Either way: on success the new build, on failure the old one. Last, so the
-    // app coming up cannot race the verdict it is about to read.
+    // Either way: on success the new build, on failure the old one. Last, so the app coming up cannot race the verdict it is about to read.
     let _ = relaunch(&request.relaunch);
     outcome
 }
 
-/// The version named by the staging folder. Read off the path, not the manifest,
-/// so an unreadable manifest is still attributed to a version.
+/// The version named by the staging folder. Read off the path, not the manifest, so an unreadable manifest is still attributed to a version.
 fn applying_version(request: &ApplyRequest) -> String {
     request
         .staging_dir
@@ -178,8 +152,7 @@ fn applying_version(request: &ApplyRequest) -> String {
         .unwrap_or_default()
 }
 
-/// The install itself. Relaunching is the caller's job, so every path out of here
-/// relaunches exactly once.
+/// The install itself. Relaunching is the caller's job, so every path out of here relaunches exactly once.
 fn apply(request: &ApplyRequest) -> Result<(), String> {
     let manifest = std::fs::read_to_string(request.staging_dir.join("manifest.json"))
         .map_err(|error| format!("no staged update to apply: {error}"))?;
@@ -198,9 +171,7 @@ fn apply(request: &ApplyRequest) -> Result<(), String> {
     install(&installer, &request.relaunch)
 }
 
-/// Give the app that spawned us time to close its files and release the
-/// executable. On Windows that wait is the difference between an install that
-/// works and one that fails on a locked file.
+/// Give the app that spawned us time to close its files and release the executable. On Windows that wait is the difference between an install that works and one that fails on a locked file.
 fn wait_for_exit(pid: Option<u32>) {
     #[cfg(windows)]
     if let Some(pid) = pid {
@@ -218,16 +189,14 @@ fn wait_for_exit(pid: Option<u32>) {
     }
     #[cfg(not(windows))]
     let _ = pid;
-    // A short settle even after the handle signals: the process object goes away
-    // before the last file handles always do.
+    // A short settle even after the handle signals: the process object goes away before the last file handles always do.
     std::thread::sleep(std::time::Duration::from_millis(1500));
 }
 
 fn relaunch(executable: &Path) -> io::Result<()> {
     #[cfg(target_os = "macos")]
     {
-        // Start the bundle rather than the inner binary, so it comes up as a
-        // proper app with its Dock entry and activation policy.
+        // Start the bundle rather than the inner binary, so it comes up as a proper app with its Dock entry and activation policy.
         if let Some(bundle) = bundle_root(executable) {
             return Command::new("open").arg(bundle).spawn().map(|_| ());
         }
@@ -235,8 +204,7 @@ fn relaunch(executable: &Path) -> io::Result<()> {
     Command::new(executable).spawn().map(|_| ())
 }
 
-/// The single `.app` bundle at the root of a mounted image. Anything else there
-/// (the `/Applications` symlink the DMG carries for drag-installing) is skipped.
+/// The single `.app` bundle at the root of a mounted image. Anything else there (the `/Applications` symlink the DMG carries for drag-installing) is skipped.
 #[cfg(target_os = "macos")]
 fn mounted_bundle(mount: &Path) -> Result<PathBuf, String> {
     std::fs::read_dir(mount)
@@ -256,13 +224,9 @@ fn bundle_root(executable: &Path) -> Option<PathBuf> {
         .map(Path::to_path_buf)
 }
 
-/// Windows: hand the MSI to the installer service. `wix/main.wxs` declares a
-/// `MajorUpgrade`, so this replaces the existing install rather than sitting
-/// beside it.
+/// Windows: hand the MSI to the installer service. `wix/main.wxs` declares a `MajorUpgrade`, so this replaces the existing install rather than sitting beside it.
 ///
-/// No elevation, and none needed: the package installs per-user, which is the
-/// entire reason for that scope. `/qn` on a per-machine package would fail with
-/// 1925 instead of prompting, because quiet mode suppresses the UAC dialog too.
+/// No elevation, and none needed: the package installs per-user, which is the entire reason for that scope. `/qn` on a per-machine package would fail with 1925 instead of prompting, because quiet mode suppresses the UAC dialog too.
 #[cfg(windows)]
 fn install(installer: &Path, _relaunch: &Path) -> Result<(), String> {
     use std::os::windows::process::CommandExt;
@@ -276,8 +240,7 @@ fn install(installer: &Path, _relaunch: &Path) -> Result<(), String> {
         .status()
         .map_err(|error| format!("could not start the installer: {error}"))?;
     match status.code() {
-        // 3010 is "installed, a reboot would be needed" — for a single
-        // executable it never actually is.
+        // 3010 is "installed, a reboot would be needed" — for a single executable it never actually is.
         Some(0) | Some(3010) => Ok(()),
         Some(code) => Err(format!("the installer failed with code {code}")),
         None => Err("the installer was interrupted".to_string()),
@@ -286,9 +249,7 @@ fn install(installer: &Path, _relaunch: &Path) -> Result<(), String> {
 
 /// macOS: mount the disk image, copy the bundle out, and swap it into place.
 ///
-/// The old bundle is moved aside before the new one is moved in, and only
-/// deleted once the new one is in place, so a failure at any step leaves a
-/// working app on disk under one name or the other.
+/// The old bundle is moved aside before the new one is moved in, and only deleted once the new one is in place, so a failure at any step leaves a working app on disk under one name or the other.
 #[cfg(target_os = "macos")]
 fn install(installer: &Path, relaunch: &Path) -> Result<(), String> {
     let bundle = bundle_root(relaunch)
@@ -297,9 +258,7 @@ fn install(installer: &Path, relaunch: &Path) -> Result<(), String> {
         .parent()
         .ok_or("the app bundle has no containing folder")?;
 
-    // /Applications is group-writable by admin on a default install, so an
-    // admin user needs no prompt. A standard user cannot write there, and
-    // should have been told to update by hand long before reaching this point.
+    // /Applications is group-writable by admin on a default install, so an admin user needs no prompt. A standard user cannot write there, and should have been told to update by hand long before reaching this point.
     let probe = parent.join(".leaftext-write-probe");
     std::fs::write(&probe, b"")
         .map_err(|error| format!("{} is not writable: {error}", parent.display()))?;
@@ -310,9 +269,7 @@ fn install(installer: &Path, relaunch: &Path) -> Result<(), String> {
     std::fs::create_dir_all(&unpacked)
         .map_err(|error| format!("could not create the unpack folder: {error}"))?;
 
-    // macOS publishes one file, the disk image a person double-clicks, so the
-    // bundle is copied out of that. Read-only and -nobrowse: nothing should appear
-    // in Finder mid-install.
+    // macOS publishes one file, the disk image a person double-clicks, so the bundle is copied out of that. Read-only and -nobrowse: nothing should appear in Finder mid-install.
     let mount = installer.with_extension("mount");
     let _ = Command::new("hdiutil")
         .args(["detach", "-force"])
@@ -334,14 +291,12 @@ fn install(installer: &Path, relaunch: &Path) -> Result<(), String> {
         return Err(format!("mounting the update failed with {status}"));
     }
 
-    // Everything from here to the detach has to release the mount, so the copy's
-    // outcome is held rather than returned.
+    // Everything from here to the detach has to release the mount, so the copy's outcome is held rather than returned.
     let copied = mounted_bundle(&mount).and_then(|source| {
         let name = source
             .file_name()
             .ok_or_else(|| "the bundle on the image has no name".to_string())?;
-        // ditto, not a directory copy: it preserves the resource forks and
-        // extended attributes the bundle's signature depends on.
+        // ditto, not a directory copy: it preserves the resource forks and extended attributes the bundle's signature depends on.
         let destination = unpacked.join(name);
         let status = Command::new("ditto")
             .arg(&source)
@@ -383,8 +338,7 @@ mod windows_impl {
     use std::ptr;
     use url::Url;
 
-    // GlobalFree is declared in Foundation rather than Memory alongside its
-    // siblings, which is a windows-sys quirk, not a mistake here.
+    // GlobalFree is declared in Foundation rather than Memory alongside its siblings, which is a windows-sys quirk, not a mistake here.
     use windows_sys::Win32::Foundation::GlobalFree;
     use windows_sys::Win32::Networking::WinHttp::{
         WinHttpCloseHandle, WinHttpConnect, WinHttpOpen, WinHttpOpenRequest, WinHttpQueryHeaders,
@@ -405,8 +359,7 @@ mod windows_impl {
         value.encode_utf16().chain(std::iter::once(0)).collect()
     }
 
-    /// Closes a WinHTTP handle on the way out. The three handles nest — session,
-    /// connection, request — and every error path has to unwind all of them.
+    /// Closes a WinHTTP handle on the way out. The three handles nest — session, connection, request — and every error path has to unwind all of them.
     struct WinHttpHandle(*mut c_void);
 
     impl Drop for WinHttpHandle {
@@ -425,9 +378,7 @@ mod windows_impl {
 
     /// Stream an HTTPS GET to `sink`, one chunk at a time.
     ///
-    /// WinHTTP ships with Windows and uses the system certificate store, so this
-    /// links no TLS stack in. It follows the redirect a release asset always
-    /// makes, and its default policy refuses an HTTPS-to-HTTP downgrade on the way.
+    /// WinHTTP ships with Windows and uses the system certificate store, so this links no TLS stack in. It follows the redirect a release asset always makes, and its default policy refuses an HTTPS-to-HTTP downgrade on the way.
     pub fn download_to(
         url: &str,
         sink: &mut dyn FnMut(&[u8]) -> Result<(), String>,
@@ -461,9 +412,7 @@ mod windows_impl {
             "could not start an HTTPS session",
         )?;
 
-        // Finite, so a stalled server cannot pin the download thread forever. The
-        // receive timeout covers the wait for the next chunk, not the whole
-        // transfer, so a slow connection is not cut off part way through.
+        // Finite, so a stalled server cannot pin the download thread forever. The receive timeout covers the wait for the next chunk, not the whole transfer, so a slow connection is not cut off part way through.
         unsafe { WinHttpSetTimeouts(session.0, 15_000, 15_000, 30_000, 60_000) };
 
         let host_wide = wide(host);
@@ -550,9 +499,7 @@ mod windows_impl {
         }
     }
 
-    /// Clipboard format id for UTF-16 text, and the file-operation constants.
-    /// Spelled out rather than imported so a windows-sys bump that reshuffles
-    /// module paths can't break the build over a constant.
+    /// Clipboard format id for UTF-16 text, and the file-operation constants. Spelled out rather than imported so a windows-sys bump that reshuffles module paths can't break the build over a constant.
     const CF_UNICODETEXT: u32 = 13;
     const FO_DELETE: u32 = 3;
     /// Recycle rather than erase — this is what makes the delete reversible.
@@ -563,9 +510,7 @@ mod windows_impl {
 
     /// Put UTF-16 text on the clipboard.
     ///
-    /// The clipboard takes ownership of the moveable global block on a successful
-    /// `SetClipboardData`, so the block is only freed on the paths that fail
-    /// before handing it over — freeing it after would corrupt the clipboard.
+    /// The clipboard takes ownership of the moveable global block on a successful `SetClipboardData`, so the block is only freed on the paths that fail before handing it over — freeing it after would corrupt the clipboard.
     pub fn set_clipboard_text(text: &str) -> io::Result<()> {
         let utf16: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
         let bytes = std::mem::size_of_val(utf16.as_slice());
@@ -612,15 +557,12 @@ mod windows_impl {
 
     /// Send a file to the Recycle Bin.
     ///
-    /// `SHFileOperationW` wants an absolute path in a *double* null-terminated
-    /// buffer (the field is a list, empty-string terminated), and it reports
-    /// failure through its return value rather than the last-error channel.
+    /// `SHFileOperationW` wants an absolute path in a *double* null-terminated buffer (the field is a list, empty-string terminated), and it reports failure through its return value rather than the last-error channel.
     pub fn move_to_trash(path: &Path) -> Result<(), String> {
         let absolute = path
             .canonicalize()
             .map_err(|error| format!("resolve path: {error}"))?;
-        // canonicalize hands back a \\?\ extended path, which SHFileOperationW
-        // does not accept; the shell wants the plain drive-letter form.
+        // canonicalize hands back a \\?\ extended path, which SHFileOperationW does not accept; the shell wants the plain drive-letter form.
         let display = absolute.to_string_lossy();
         let plain = display.strip_prefix(r"\\?\").unwrap_or(&display);
 
@@ -656,12 +598,7 @@ mod macos_impl {
     use std::io::{Read, Write};
     use std::process::{Command, Stdio};
 
-    /// Stream an HTTPS GET to `sink`, one chunk at a time, through the `curl` that
-    /// ships with macOS: it trusts the system keychain, so this links no TLS stack
-    /// in. `--proto`/`--proto-redir` hold the transfer to HTTPS across the redirect
-    /// a release asset always makes. The bytes come back over a pipe rather than
-    /// being written by curl, because a file the app writes carries no
-    /// `com.apple.quarantine`.
+    /// Stream an HTTPS GET to `sink`, one chunk at a time, through the `curl` that ships with macOS: it trusts the system keychain, so this links no TLS stack in. `--proto`/`--proto-redir` hold the transfer to HTTPS across the redirect a release asset always makes. The bytes come back over a pipe rather than being written by curl, because a file the app writes carries no `com.apple.quarantine`.
     pub fn download_to(
         url: &str,
         sink: &mut dyn FnMut(&[u8]) -> Result<(), String>,
@@ -680,8 +617,7 @@ mod macos_impl {
                 "10",
                 "--connect-timeout",
                 "15",
-                // Give up on a connection delivering less than a byte a second
-                // for a minute, rather than hanging on a dead socket.
+                // Give up on a connection delivering less than a byte a second for a minute, rather than hanging on a dead socket.
                 "--speed-limit",
                 "1",
                 "--speed-time",
@@ -710,14 +646,11 @@ mod macos_impl {
                 Err(error) => break Err(format!("could not read the download: {error}")),
             }
         };
-        // Close the pipe before waiting. A sink that gave up leaves curl writing
-        // into a reader that is gone; it has to be allowed to die on that rather
-        // than block this thread forever.
+        // Close the pipe before waiting. A sink that gave up leaves curl writing into a reader that is gone; it has to be allowed to die on that rather than block this thread forever.
         drop(stdout);
         let finished = child.wait_with_output();
 
-        // A sink or pipe failure is the more specific answer, so it wins over
-        // whatever exit code curl reported on its way out.
+        // A sink or pipe failure is the more specific answer, so it wins over whatever exit code curl reported on its way out.
         streamed?;
 
         let finished =
@@ -749,10 +682,7 @@ mod macos_impl {
 
     /// Move a file to the Trash.
     ///
-    /// Finder is asked first because a Finder delete records the Put Back
-    /// location, which a plain move cannot. If that fails — Finder not running,
-    /// or the automation permission declined — fall back to moving the file into
-    /// `~/.Trash` ourselves, which still gets it out of the user's way.
+    /// Finder is asked first because a Finder delete records the Put Back location, which a plain move cannot. If that fails — Finder not running, or the automation permission declined — fall back to moving the file into `~/.Trash` ourselves, which still gets it out of the user's way.
     pub fn move_to_trash(path: &Path) -> Result<(), String> {
         let escaped = path
             .to_string_lossy()
@@ -770,8 +700,7 @@ mod macos_impl {
         move_into_trash_folder(path)
     }
 
-    /// Fallback: rename into `~/.Trash`, uniquifying the name on collision so an
-    /// existing trashed file of the same name is never clobbered.
+    /// Fallback: rename into `~/.Trash`, uniquifying the name on collision so an existing trashed file of the same name is never clobbered.
     fn move_into_trash_folder(path: &Path) -> Result<(), String> {
         let home = std::env::var_os("HOME").ok_or("HOME is not set")?;
         let trash = Path::new(&home).join(".Trash");

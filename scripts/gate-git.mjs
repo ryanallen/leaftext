@@ -1,12 +1,7 @@
 #!/usr/bin/env node
-// PreToolUse hook on the shell tools. Refuses a git write unless the message being
-// answered said `/git-release`. This is the one rule reading cannot hold, so a
-// script holds it: scripts/gate-rules.mjs writes .tmp/git-license on every turn,
-// because a PreToolUse hook never sees the prompt.
+// PreToolUse hook on the shell tools. Refuses a git write unless the message being answered said `/git-release`. This is the one rule reading cannot hold, so a script holds it: scripts/gate-rules.mjs writes .tmp/git-license on every turn, because a PreToolUse hook never sees the prompt.
 //
-// Refused: commit, push, tag (writing one), reset, rebase, revert, cherry-pick,
-// merge, am, clean, filter-branch, a deleted or moved branch, anything with
-// --force, and the release scripts that do those. Reading is always fine.
+// Refused: commit, push, tag (writing one), reset, rebase, revert, cherry-pick, merge, am, clean, filter-branch, a deleted or moved branch, anything with --force, and the release scripts that do those. Reading is always fine.
 //
 //   node scripts/gate-git.mjs           the hook payload on stdin
 //   node scripts/gate-git.mjs --check   self-test (`just verify`)

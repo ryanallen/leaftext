@@ -81,11 +81,12 @@ check-spelling:
 check-docs:
     node scripts/check-docs.mjs
 
-# Fail on a Markdown paragraph broken across lines. Everything that reads these files
-# reflows, so the newline inside a paragraph only costs: it re-flows by hand on every
-# edit after it, and a one-word change diffs as the whole paragraph. `--fix` joins them.
-# The joining is self-tested before either mode reads a file — it rewrites 150 files,
-# and a wrong transform is caught by nobody until somebody reads one.
+# Fail on a paragraph broken across lines — in Markdown, and in a comment in the code.
+# Everything that reads them reflows, so the newline inside a paragraph only costs: it
+# re-flows by hand on every edit after it, and a one-word change diffs as the whole
+# paragraph. `--fix` joins them. The joining is self-tested before either mode reads a
+# file: it rewrites hundreds, and a wrong transform is caught by nobody until somebody
+# reads one.
 check-wrapping:
     node scripts/check-wrapping.mjs
 

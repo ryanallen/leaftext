@@ -1,11 +1,9 @@
-//! The PNG encoder. It writes the file a person keeps, so the bytes have to be a
-//! real PNG and the pixels have to survive.
+//! The PNG encoder. It writes the file a person keeps, so the bytes have to be a real PNG and the pixels have to survive.
 
 use super::*;
 use std::io::Read;
 
-/// Inflate an IDAT and walk the scanlines back out. Filter 0 only, which is all
-/// the encoder writes — a test that accepted any filter would stop proving that.
+/// Inflate an IDAT and walk the scanlines back out. Filter 0 only, which is all the encoder writes — a test that accepted any filter would stop proving that.
 fn scanlines(png: &[u8], stride: usize, height: usize) -> Vec<u8> {
     let mut at = 8;
     let mut idat = Vec::new();
@@ -61,9 +59,7 @@ fn chunk_kinds(png: &[u8]) -> Vec<String> {
     kinds
 }
 
-/// A flowchart is flat fill and few colors, so it goes out as a palette — one
-/// byte a pixel instead of three, and exact, because the palette holds the colors
-/// the drawing already had.
+/// A flowchart is flat fill and few colors, so it goes out as a palette — one byte a pixel instead of three, and exact, because the palette holds the colors the drawing already had.
 #[test]
 fn few_colors_go_out_as_an_exact_palette() {
     let width = 8;
@@ -97,8 +93,7 @@ fn few_colors_go_out_as_an_exact_palette() {
     assert_eq!(pixels, expected, "the palette resolves back to the drawing");
 }
 
-/// Past 256 colors there is no palette to be had, so it goes out as truecolor —
-/// still unfiltered, still exactly the pixels handed over.
+/// Past 256 colors there is no palette to be had, so it goes out as truecolor — still unfiltered, still exactly the pixels handed over.
 #[test]
 fn many_colors_go_out_as_truecolor_and_keep_every_pixel() {
     let width = 40;
@@ -148,8 +143,7 @@ fn a_bad_size_is_refused() {
     );
 }
 
-/// The screenshot tool writes a BMP because Windows can save one without an
-/// encoder; this is the only reason that path exists, so it has to round-trip.
+/// The screenshot tool writes a BMP because Windows can save one without an encoder; this is the only reason that path exists, so it has to round-trip.
 #[test]
 fn a_bottom_up_bmp_comes_back_the_right_way_up() {
     // 2x2, 24-bit, rows bottom-up, each padded to 4 bytes. Blue first.
