@@ -4,6 +4,13 @@
 //
 // Only shared state belongs here. What one fragment reads goes in that fragment.
 
+// ---- the platform (context-menu.js, glossary.js) ---------------------------
+
+// Which gesture belongs to which key: Ctrl+click is the right-click on a Mac, so
+// the open-in-a-new-page modifier there is Cmd. Read by the menu and by the
+// document-link handler that picks the modifier.
+const isMacPlatform = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
+
 // ---- the reader's render (render-state.js) ---------------------------------
 
 // Above this many characters of view HTML, building the DOM (innerHTML plus

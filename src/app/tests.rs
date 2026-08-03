@@ -467,6 +467,31 @@ fn classifies_link_targets_for_native_opening() {
 }
 
 #[test]
+fn only_a_link_with_a_file_behind_it_resolves_to_a_path() {
+    // What Reveal file and Copy path act on, and the same test that decides whether
+    // a modified click has anywhere to open. A link to a file the app does not read
+    // is not one of them.
+    let current = fixture_source_path("guide/chapter/README.md");
+
+    assert_eq!(
+        linked_document_path("./other.md#top", &current),
+        Some(fixture_source_path("guide/chapter/other.md"))
+    );
+    for href in [
+        "https://example.com/page.md",
+        "mailto:someone@example.com",
+        "#section",
+        "./assets/Release%20Notes.pdf",
+    ] {
+        assert_eq!(
+            linked_document_path(href, &current),
+            None,
+            "{href} has no file in this app to point at"
+        );
+    }
+}
+
+#[test]
 fn resolves_local_markdown_links_against_current_document() {
     let current = fixture_source_path("guide/chapter/README.md");
 
@@ -777,6 +802,72 @@ fn a_document_opened_while_reading_source_opens_in_source() {
     workspace.tabs[0].code_view = true;
     workspace.set_active(0);
     assert!(workspace.tabs[0].code_view);
+}
+
+#[test]
+fn a_link_opened_as_a_new_page_lands_behind_the_one_being_read() {
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("/notes/first.md"));
+
+    workspace.open_path_behind(PathBuf::from("/notes/linked.md"));
+    assert_eq!(workspace.tabs.len(), 2, "the strip gained the linked page");
+    assert_eq!(
+        workspace.active,
+        Some(0),
+        "the reader stays on the page they were reading"
+    );
+    assert_eq!(
+        workspace.tabs[1].history.current(),
+        Some(&PathBuf::from("/notes/linked.md"))
+    );
+
+    // One page per document, and no jumping to it either: the gesture said not now.
+    workspace.open_path_behind(PathBuf::from("/notes/linked.md"));
+    workspace.open_path_behind(PathBuf::from("/notes/first.md"));
+    assert_eq!(workspace.tabs.len(), 2);
+    assert_eq!(workspace.active, Some(0));
+
+    // Same inheritance as a plain open: opened out of source, it opens in source.
+    workspace.tabs[0].code_view = true;
+    workspace.open_path_behind(PathBuf::from("/notes/third.md"));
+    assert!(workspace.tabs[2].code_view);
+}
+
+#[test]
+fn the_new_page_flag_arrives_only_under_the_name_the_page_sends() {
+    // Nothing on this enum rejects an unknown field, so a name the two sides
+    // spelled differently would deserialize to false and the gesture would do
+    // nothing, silently. That is what this pins.
+    let held = r#"{"command":"openLink","href":"./next.md","scroll_anchor":{"section":null,"block":0,"offsetY":0},"newPage":true}"#;
+    match serde_json::from_str::<IpcCommand>(held) {
+        Ok(IpcCommand::OpenLink { new_page, href, .. }) => {
+            assert!(new_page, "a Ctrl-held click asks for a page of its own");
+            assert_eq!(href, "./next.md");
+        }
+        other => panic!("the held click did not arrive: {other:?}"),
+    }
+
+    let plain = r#"{"command":"openLink","href":"./next.md","scroll_anchor":{"section":null,"block":0,"offsetY":0}}"#;
+    match serde_json::from_str::<IpcCommand>(plain) {
+        Ok(IpcCommand::OpenLink { new_page, .. }) => {
+            assert!(!new_page, "a plain click follows the link in place")
+        }
+        other => panic!("the plain click did not arrive: {other:?}"),
+    }
+}
+
+#[test]
+fn the_link_menus_two_host_items_arrive_under_the_names_the_page_sends() {
+    // Reveal file and Copy path on a link are the only two items that cannot be done
+    // in the page. They are new command names on both sides, so this pins the pair.
+    match serde_json::from_str::<IpcCommand>(r#"{"command":"revealLink","href":"./b.md"}"#) {
+        Ok(IpcCommand::RevealLink { href }) => assert_eq!(href, "./b.md"),
+        other => panic!("Reveal file on a link did not arrive: {other:?}"),
+    }
+    match serde_json::from_str::<IpcCommand>(r#"{"command":"copyLinkPath","href":"./b.md"}"#) {
+        Ok(IpcCommand::CopyLinkPath { href }) => assert_eq!(href, "./b.md"),
+        other => panic!("Copy path on a link did not arrive: {other:?}"),
+    }
 }
 
 #[test]

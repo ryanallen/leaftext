@@ -88,6 +88,8 @@ Right-click a file row for a context menu of file actions:
 | Properties | Opens the OS file-properties view |
 | Delete | Moves the file to the Recycle Bin / Trash |
 
+A link inside a document you are reading has [its own menu](02-navigation.md#opening-a-link-in-a-new-page), which shares Reveal file and Copy path with this one.
+
 Delete is reversible — the file goes to the Recycle Bin or Trash, not gone for good. Reveal and Properties map to each OS:
 
 - Windows: Explorer; the file Properties dialog.

@@ -416,6 +416,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 IpcCommand::OpenLink {
                     href,
                     scroll_anchor,
+                    new_page,
                 } => {
                     let Some(active) = reader.workspace.active else {
                         return;
@@ -468,6 +469,14 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                                 }
                                 return;
                             }
+                            // Behind the page being read, so the reader keeps their
+                            // place: the strip gains an entry and the document on
+                            // screen is not rendered again.
+                            if new_page {
+                                reader.workspace.open_path_behind(path);
+                                reader.refresh_tab_strip();
+                                return;
+                            }
                             reader.workspace.tabs[active].scroll_history.clear();
                             reader.workspace.tabs[active].history.record(path);
                             reader.render(ScrollIntent::Reset);
@@ -489,22 +498,45 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     };
                     show_glossary_entry(reader.page(), &href, &current_path);
                 }
+                IpcCommand::RevealLink { href } => {
+                    let Some(path) = reader
+                        .workspace
+                        .active_path()
+                        .and_then(|current| linked_document_path(&href, current))
+                    else {
+                        return;
+                    };
+                    if let Err(error) = reveal_in_file_manager(&path) {
+                        eprintln!(
+                            "Failed to reveal {} in the file manager: {error}",
+                            path.display()
+                        );
+                    }
+                }
+                IpcCommand::CopyLinkPath { href } => {
+                    let Some(path) = reader
+                        .workspace
+                        .active_path()
+                        .and_then(|current| linked_document_path(&href, current))
+                    else {
+                        return;
+                    };
+                    if let Err(error) = copy_path_to_clipboard(&path) {
+                        eprintln!(
+                            "Failed to copy the path {} to the clipboard: {error}",
+                            path.display()
+                        );
+                    }
+                }
                 IpcCommand::CountLines { href, token } => {
                     // Count the linked document's lines for the hover tooltip. Only
                     // in-app document links resolve to a file; else -1 ("unknown").
                     let lines = reader
                         .workspace
                         .active_path()
-                        .map(Path::to_path_buf)
-                        .and_then(|current_path| match classify_link_target(&href) {
-                            LinkTarget::LocalDocument(target) => {
-                                let path = path_from_local_link(&target, &current_path);
-                                read_source(&path)
-                                    .ok()
-                                    .map(|source| source.text.lines().count() as i64)
-                            }
-                            _ => None,
-                        })
+                        .and_then(|current| linked_document_path(&href, current))
+                        .and_then(|path| read_source(&path).ok())
+                        .map(|source| source.text.lines().count() as i64)
                         .unwrap_or(-1);
                     run_page_script(
                         reader.page(),

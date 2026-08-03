@@ -18,6 +18,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Loading spinner](#loading) | A spinner appears over the reader while a slow document or view renders |
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is and where it points |
+| [Open a link in a new page](#opening-a-link-in-a-new-page) | Ctrl-click, middle-click or right-click a link to open it behind what you are reading |
 | [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order |
 | [Single window](#tabs) | A second launch opens the file as a tab in the running window instead of a new copy |
 | [Code view](07-editing.md) | Toggle any document to its raw, editable source |
@@ -53,6 +54,7 @@ flowchart LR
 | [Bold](07-editing.md#the-format-bar) the highlighted words | `Ctrl+B` | `Cmd+B` |
 | [Italic](07-editing.md#the-format-bar) the highlighted words | `Ctrl+I` | `Cmd+I` |
 | [Link](07-editing.md#the-format-bar) the highlighted words | `Ctrl+K` | `Cmd+K` |
+| [Open a link in a new page](#opening-a-link-in-a-new-page) | `Ctrl`+click | `Cmd`+click |
 
 Tab cycling is `Ctrl`-based on every platform, including macOS. Mouse side buttons also trigger Back and Forward.
 
@@ -208,11 +210,30 @@ Hovering a link shows a small tooltip that names what kind of link it is and sho
 | External site | An `http://` or `https://` link |
 | Email link | A `mailto:` link |
 | App link | Any other URL scheme |
-| Site path | A root-relative `/path` link |
+| Local path | A root-relative `/path` link |
 
 This is a desktop affordance: it appears only with a mouse (a fine pointer that can hover), and is left off on touch screens. The tooltip follows the cursor, flips to stay on screen near the edges, and hides on scroll or when the window loses focus.
 
 The hint also tells you where a click will land. A link to a document Leaftext reads opens in the reading view, in the current tab, with a history entry — that covers every format it renders, not Markdown alone, so a link from a note to the `.json` beside it stays inside the app. A link to any other local file (an image, a PDF, a spreadsheet) is handed to your operating system to open in whatever owns that type.
+
+### Opening a link in a new page
+
+A plain click follows a link in the [tab](#tabs) you are reading, so coming back means a trip through [Back](#history). Hold `Ctrl` (`Cmd` on macOS) as you click, or click with the middle button, and the linked document opens as a new tab behind the one you are in: you keep your place, and the document waits in the tab strip until you go to it. `Shift` and `Alt` are not part of the gesture.
+
+This works on a link to any document Leaftext reads — the `Another page` hint above. An outside site has no page here to open, so the gesture follows it the way a plain click does, into your browser; an in-page jump has nowhere to go and simply jumps. A document that is already open in another tab does not get a second one, and you are not moved to it — you asked to stay where you are.
+
+Right-click a link for the same thing by name, plus copying it:
+
+| Item | What it does |
+| --- | --- |
+| Open | Follows the link, as a plain click does. On an outside link it reads **Open in browser** |
+| Open in new page | Opens it as a tab behind this one |
+| Copy link | Copies the link exactly as it is written in the document |
+| Copy link text | Copies the words the link is written on |
+| Reveal file | Shows the file it points at in Explorer or Finder |
+| Copy path | Copies the full path of the file it points at |
+
+The last four items are the same actions the [library pane's menu](03-library.md#file-actions) offers on a file. **Open in new page**, **Reveal file** and **Copy path** need a document in this app to act on, so they are left out on an outside link and on an in-page jump rather than shown dead — and on a link to a local file Leaftext does not read, such as a PDF, where the only certain answer is the operating system's. While you are [editing a block](07-editing.md#editing-in-the-page), a right-click keeps the text menu it has there.
 
 ## Glossary
 

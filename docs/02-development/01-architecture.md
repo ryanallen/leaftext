@@ -155,7 +155,7 @@ Key `IpcCommand` variants include:
 | `switchTab`            | Tab click                             |
 | `moveTab`              | Tab drag-and-drop reorder             |
 | `goBack` / `goForward` | History buttons or keyboard shortcuts |
-| `openLink`             | In-document link click                |
+| `openLink`             | In-document link click. `newPage` — set by a Ctrl/Cmd-held or middle click, or the link menu's **Open in new page** — appends the document as a tab behind the one being read instead of following it in place |
 | `openGlossary`         | Glossary link click (opens the term in a bottom sheet) |
 | `openExternal`         | Open a web address in the system browser (unattached to any document): a node on the [graph](../01-features/03-library.md#graph), the theme sheet's GitHub link, the library's git-download prompt |
 | `countLines`           | Link hover: read the linked document and report its line count for the tooltip |
@@ -202,6 +202,8 @@ Key `IpcCommand` variants include:
 | `exportDiagram`        | The flowchart sheet's [Export](../01-features/07-editing.md#export): Markdown arrives as text, a picture as base64 pixels with its width and height, and the host encodes it (`src/png.rs`) and asks where the file goes |
 | `search`               | Library search box query, over the active vault's text |
 | `logError`             | Anything the page threw: `window.onerror`, a rejected promise, or a `console.error`, on its way to the log file. Carries how many times that same text has been seen, because `journal.js` collapses a repeat rather than sending every one |
+| `revealLink`           | [Link context menu](../01-features/02-navigation.md#opening-a-link-in-a-new-page): resolve the href against the open document, then reveal that file |
+| `copyLinkPath`         | Link context menu: the same resolution, then the path to the clipboard. The page cannot do either itself — only the host knows where the open document sits |
 | `revealFile`           | File row context menu: reveal in file manager |
 | `copyFile`             | File row context menu: cut/copy the file to the clipboard |
 | `copyPath`             | File row context menu: copy the file path as text |

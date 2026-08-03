@@ -1183,6 +1183,17 @@ function copyCodeBlock(button, text) {
     ok();
   }
 }
+// The same clipboard pair with nothing to flash — for a right-click item, where the
+// menu has already closed and there is no button left to label. A hoisted
+// declaration on purpose: context-menu.js loads earlier and calls it at event time.
+function copyPlainText(text) {
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {}, () => { legacyCopy(text); });
+  } else {
+    legacyCopy(text);
+  }
+}
 function legacyCopy(text) {
   const area = document.createElement('textarea');
   area.value = text;

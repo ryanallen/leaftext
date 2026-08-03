@@ -287,6 +287,16 @@ document, external site, email — and shows the address it was written with. On
 to another document it also shows how many lines that document is. Mouse only. See
 [Navigation](01-features/02-navigation.md#link-hints).
 
+## Link menu
+
+The right-click menu on a link in a document you are reading: Open, Open in new
+page, Copy link, Copy link text, Reveal file, Copy path. The three that need a
+document in this app to act on are left out on an outside link and on an in-page
+jump. Ctrl-click (Cmd on macOS) or a middle click is the same as **Open in new
+page** — the linked document opens as a [tab](GLOSSARY.md#tab) behind the one you
+are reading, so you keep your place. See
+[Navigation](01-features/02-navigation.md#opening-a-link-in-a-new-page).
+
 ## Live reload
 
 Leaftext noticing a file changed on disk and re-rendering it without losing your

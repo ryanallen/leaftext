@@ -112,15 +112,33 @@ impl Workspace {
     /// Open `path` as a tab. If a tab is already showing that document, just
     /// activate it; otherwise append a new tab seeded with that document.
     pub(crate) fn open_path(&mut self, path: PathBuf) {
-        if let Some(index) = self.tabs.iter().position(|tab| {
-            tab.history
-                .current()
-                .is_some_and(|current| paths_refer_to_same_document(current, &path))
-        }) {
+        if let Some(index) = self.tab_showing(&path) {
             self.active = Some(index);
             return;
         }
+        self.active = Some(self.push_tab(path));
+    }
 
+    /// Open `path` as a tab behind the one being read: same one-tab-per-document
+    /// rule, but `active` never moves. A document already open is left where it
+    /// is rather than brought forward — the gesture asked not to be moved.
+    pub(crate) fn open_path_behind(&mut self, path: PathBuf) {
+        if self.tab_showing(&path).is_none() {
+            self.push_tab(path);
+        }
+    }
+
+    /// The tab already showing `path`, if one is.
+    fn tab_showing(&self, path: &Path) -> Option<usize> {
+        self.tabs.iter().position(|tab| {
+            tab.history
+                .current()
+                .is_some_and(|current| paths_refer_to_same_document(current, path))
+        })
+    }
+
+    /// Append a tab seeded with `path` and return its index, leaving `active` alone.
+    fn push_tab(&mut self, path: PathBuf) -> usize {
         // Reading source and opening another file opens that file in source
         // too. The view is where the reader is working, not a property of the
         // document they picked, so picking one should not throw them out of it.
@@ -135,7 +153,7 @@ impl Workspace {
         };
         tab.history.record(path);
         self.tabs.push(tab);
-        self.active = Some(self.tabs.len() - 1);
+        self.tabs.len() - 1
     }
 
     /// Open an empty document in a new tab and return the name it wears. The

@@ -824,12 +824,12 @@ fn app_shell_routes_fragment_links_through_reader_anchor_scrolling() {
     );
     assert_contains(
             &html,
-            "send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor() });",
+            "send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor(), newPage });",
         );
     assert!(
             html.contains("if (fragmentHref) {")
                 && html.contains("send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });")
-                && html.contains("send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor() });"),
+                && html.contains("send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor(), newPage });"),
             "fragment-only links must be sent through app navigation before non-fragment links are routed"
         );
 }
@@ -840,13 +840,91 @@ fn app_shell_preserves_external_link_routing_for_native_opening() {
 
     assert_contains(
             &html,
-            "send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor() });",
+            "send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor(), newPage });",
         );
     assert!(
         !html.contains(
             "send({ command: 'openLink', href: rawHref, scroll_anchor: currentScrollAnchor() });"
         ),
         "external and local non-fragment links need the resolved href for native routing"
+    );
+}
+
+#[test]
+fn app_shell_opens_a_held_or_middle_click_as_a_page_of_its_own() {
+    let html = app_shell_page();
+
+    // A bail on a held key returns before the preventDefault below it, which leaves
+    // the click to the web view's own link handling.
+    assert!(
+        !html.contains("event.button !== 0 || event.altKey || event.ctrlKey"),
+        "a modified click on a document link must be canceled, not handed to the web view"
+    );
+
+    for expected in [
+        "function newPageModifierHeld(event) {",
+        "return isMacPlatform ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;",
+        "sendDocumentLink(link, newPageModifierHeld(event));",
+        "send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor(), newPage });",
+        // The middle button raises `auxclick` and never `click`; the web view's own
+        // scroll puck opens on the mousedown before it, so both are answered.
+        "app.addEventListener('auxclick', (event) => {",
+        "app.addEventListener('mousedown', (event) => {",
+        "const link = event.button === 1 ? documentLinkFor(event.target) : null;",
+        "sendDocumentLink(link, true);",
+        // A middle click only acts where there is a page to open.
+        "if (!link || !isAnotherPageHref(link.getAttribute('href'))) {",
+    ] {
+        assert_contains(&html, expected);
+    }
+
+    // One platform test for the whole front-end, shared out of state.js — the menu
+    // reads it for Ctrl-click and the link handler for which key opens a page.
+    assert_eq!(
+        html.matches("const isMacPlatform =").count(),
+        1,
+        "isMacPlatform belongs to state.js once, not to each fragment reading it"
+    );
+}
+
+#[test]
+fn app_shell_gives_a_document_link_its_own_right_click_menu() {
+    let html = app_shell_page();
+
+    for expected in [
+        "const LINK_MENU_ITEMS = [",
+        "{ action: 'openLink', label: 'Open' },",
+        "{ action: 'openLinkInNewPage', label: 'Open in new page', pageOnly: true },",
+        "{ action: 'copyLink', label: 'Copy link' },",
+        "{ action: 'copyLinkText', label: 'Copy link text' },",
+        "{ action: 'revealLink', label: 'Reveal file', pageOnly: true },",
+        "{ action: 'copyLinkPath', label: 'Copy path', pageOnly: true },",
+        "showContextMenu(event.clientX, event.clientY, href, 'link', documentLink);",
+        // An external link and an in-page jump have no page here to open, so the
+        // items that would need one are left out rather than shown dead.
+        "!entry.pageOnly || isAnotherPageHref(contextMenuPath)",
+        "if (linkHoverKind(contextMenuPath) !== 'External site') return entry;",
+        "return { action: entry.action, label: 'Open in browser' };",
+        // The two copies are the page's own; only a real path has to go to the host.
+        "function copyPlainText(text) {",
+        "case 'copyLink': copyPlainText(path); break;",
+        "send({ command: 'revealLink', href: path })",
+        "send({ command: 'copyLinkPath', href: path })",
+    ] {
+        assert_contains(&html, expected);
+    }
+
+    // The link branch answers ahead of the pane's rows, which know nothing about a
+    // link and would otherwise take the right-click first.
+    let link_branch = html
+        .find("const documentLink = documentLinkFor(event.target);")
+        .expect("the contextmenu handler tests for a document link");
+    let row_branch = html
+        .find("const row = event.target.closest('[data-reveal-path]');")
+        .expect("the contextmenu handler tests for a pane row");
+    assert!(
+        link_branch < row_branch,
+        "a link in the document must be matched before the library pane's rows"
     );
 }
 

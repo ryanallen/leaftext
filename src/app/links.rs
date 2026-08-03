@@ -59,6 +59,17 @@ pub(crate) fn is_document_link(href: &str) -> bool {
     is_supported_document_path(&path)
 }
 
+/// The file a link points at, resolved against the document it sits in. `None`
+/// unless it is a local file this app reads: an external link has no path here, and
+/// an in-page jump is the document itself. Only the host can do this — the page
+/// never learns where the open document sits.
+pub(crate) fn linked_document_path(href: &str, current_path: &Path) -> Option<PathBuf> {
+    match classify_link_target(href) {
+        LinkTarget::LocalDocument(target) => Some(path_from_local_link(&target, current_path)),
+        _ => None,
+    }
+}
+
 pub(crate) fn path_from_local_link(href: &str, current_path: &Path) -> PathBuf {
     let path =
         local_path_from_href(href).unwrap_or_else(|| PathBuf::from(strip_query_and_fragment(href)));

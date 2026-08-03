@@ -53,6 +53,17 @@ impl Reader {
         self.save_recent();
     }
 
+    /// Redraw the tab strip and leave the document on screen alone — what a page
+    /// opened behind the reader needs, and nothing more.
+    pub(crate) fn refresh_tab_strip(&self) {
+        let tabs = self.workspace.tab_summaries();
+        run_page_script(
+            self.page(),
+            &workspace_only_script(&self.recent.files, &tabs, self.workspace.active),
+            "Failed to refresh the tab strip",
+        );
+    }
+
     /// The document for `path`: the tab's cached render when the file still
     /// hashes the same, a fresh render (cached on the tab) when not. The read is
     /// cheap; the render is what the cache saves.

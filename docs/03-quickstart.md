@@ -79,6 +79,10 @@ flowchart LR
 
 Press `Ctrl+O` / `Cmd+O` again. Leaftext opens the next file in a new tab instead of replacing the current one. Each tab keeps its own history and its own place in the document.
 
+### A link, without leaving the page
+
+Hold `Ctrl` (`Cmd` on macOS) and click a link to another document, or click it with the middle button, and it opens as a tab behind the one you are reading — you keep your place, and it waits for you in the tab strip. Right-click a link for [the same by name](01-features/02-navigation.md#opening-a-link-in-a-new-page), plus copying it or finding the file it points at.
+
 ### Jump
 
 Click a heading in the [outline](01-features/02-navigation.md#outline), or click a spot in the [minimap](01-features/04-minimap.md). That jump is added to scroll history, so Back takes you to the previous reading position.
@@ -98,6 +102,7 @@ Click a heading in the [outline](01-features/02-navigation.md#outline), or click
 | [Italic](01-features/07-editing.md#the-format-bar) the highlighted words | `Ctrl+I` | `Cmd+I` |
 | [Link](01-features/07-editing.md#the-format-bar) the highlighted words | `Ctrl+K` | `Cmd+K` |
 | Select the page | `Ctrl+A` | `Cmd+A` |
+| [Open a link in a new page](01-features/02-navigation.md#opening-a-link-in-a-new-page) | `Ctrl`+click | `Cmd`+click |
 | [Find](01-features/02-navigation.md#find-in-this-document) in this document | `Ctrl+F` | `Cmd+F` |
 | [Find and replace](01-features/02-navigation.md#find-in-this-document) | `Ctrl+H` | `Cmd+H` |
 

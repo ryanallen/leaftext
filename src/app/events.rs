@@ -172,6 +172,12 @@ pub(crate) enum IpcCommand {
     OpenLink {
         href: String,
         scroll_anchor: ScrollAnchor,
+        /// Ctrl-held (Cmd on a Mac) or middle click: the document opens as a page
+        /// behind this one. The name is spelled out rather than left to match —
+        /// nothing here rejects an unknown field, so a name that disagreed would
+        /// default to false and the gesture would do nothing, silently.
+        #[serde(rename = "newPage", default)]
+        new_page: bool,
     },
     /// Open a URL in the system browser, unattached to any document (the update
     /// button). Unlike `OpenLink`, it doesn't require an active tab.
@@ -181,6 +187,14 @@ pub(crate) enum IpcCommand {
     /// tab. `href` is the glossary file plus `#anchor`, relative to the doc.
     #[serde(rename = "openGlossary")]
     OpenGlossary { href: String },
+    /// The right-click menu on a document link. An href only means something
+    /// against the document it sits in, and the page never learns where that is —
+    /// so both of these resolve here and then do what the library pane's own items
+    /// do. Neither answers for a link with no file behind it.
+    #[serde(rename = "revealLink")]
+    RevealLink { href: String },
+    #[serde(rename = "copyLinkPath")]
+    CopyLinkPath { href: String },
     /// A hover tooltip wants a linked document's line count. `href` resolves
     /// against the active doc; `token` correlates the answer with the hover.
     #[serde(rename = "countLines")]

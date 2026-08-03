@@ -117,7 +117,7 @@ fn app_shell_raises_a_spinner_when_a_glossary_link_is_followed() {
     // its own thread and can't send a spinner until that work is already done.
     assert_contains(
         &html,
-        "      awaitGlossaryEntry();\n      send({ command: 'openGlossary', href: rawHref });",
+        "    awaitGlossaryEntry();\n    send({ command: 'openGlossary', href: rawHref });",
     );
     assert_contains(
         &html,

@@ -147,7 +147,7 @@ A vault can be a git repository that pushes to GitHub. Leaftext never holds a to
 
 ![Tabs and Back/Forward history in the app bar](imgs/navigation.png)
 
-It moves like a browser: [tabs](docs/01-features/02-navigation.md#tabs), Back and Forward through your [history](docs/01-features/02-navigation.md#history), and an [outline](docs/01-features/02-navigation.md#outline) at the top of every document. Change a file in another app and Leaftext [picks it up](docs/01-features/02-navigation.md#reload) without losing your spot. **[Navigation →](docs/01-features/02-navigation.md)**
+It moves like a browser: [tabs](docs/01-features/02-navigation.md#tabs), Back and Forward through your [history](docs/01-features/02-navigation.md#history), an [outline](docs/01-features/02-navigation.md#outline) at the top of every document, and Ctrl-click on a link to [open it behind](docs/01-features/02-navigation.md#opening-a-link-in-a-new-page) the page you are reading. Change a file in another app and Leaftext [picks it up](docs/01-features/02-navigation.md#reload) without losing your spot. **[Navigation →](docs/01-features/02-navigation.md)**
 
 ### Take in the whole page at once
 
@@ -261,7 +261,7 @@ New here? The **[Quickstart](docs/03-quickstart.md)** gets you reading in a coup
 | [Quickstart](docs/03-quickstart.md) | Open a file, read it, move around, come back to it |
 | [Installation](docs/02-installation.md) | Both platforms, the first-launch warnings, file associations, updates |
 | [Rendering](docs/01-features/01-rendering.md) | Every syntax and format it reads, with live examples |
-| [Navigation](docs/01-features/02-navigation.md) | Tabs, history, outline, pager, glossary, link hints, live reload |
+| [Navigation](docs/01-features/02-navigation.md) | Tabs, history, outline, pager, glossary, link hints and the link menu, live reload |
 | [Library](docs/01-features/03-library.md) | Vaults, the file tree, search, the graph, GitHub sync, file actions |
 | [Minimap](docs/01-features/04-minimap.md) | The side rail, in both the reading view and the code view |
 | [Settings](docs/01-features/05-settings.md) | Every preference, its default, and where it is stored |

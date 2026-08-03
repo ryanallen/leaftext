@@ -1,17 +1,20 @@
-// Right-click menu for the library pane and the tab bar, acting on whatever the
-// pointer is over: a file, a folder, or the folder you are browsing when it is over
-// none of them. Groups: open, clipboard, rename, locate, and destructive delete
-// last.
+// Right-click menu for the library pane, the tab bar, and a link in the document,
+// acting on whatever the pointer is over: a file, a folder, a link, or the folder
+// you are browsing when it is over none of them. Groups: open, clipboard, rename,
+// locate, and destructive delete last.
 const contextMenu = document.createElement('div');
 contextMenu.className = 'context-menu';
 contextMenu.hidden = true;
 contextMenu.setAttribute('role', 'menu');
 document.body.appendChild(contextMenu);
 let contextMenuPath = null;
-// What was right-clicked: 'file', 'folder', or 'here' (the pane's empty space,
-// standing for the folder being browsed). It picks which list of items to show.
+// What was right-clicked: 'file', 'folder', 'here' (the pane's empty space,
+// standing for the folder being browsed), or 'link' (a link in the document, whose
+// href sits in contextMenuPath). It picks which list of items to show.
 let contextMenuTargetKind = 'file';
-const isMacPlatform = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
+// The link element itself when the menu is a link's, so Open runs the same path a
+// plain click on it does rather than a second reading of the href.
+let contextMenuLink = null;
 const CONTEXT_MENU_ITEMS = [
   { action: 'open', label: 'Open' },
   'separator',
@@ -39,20 +42,43 @@ const FOLDER_MENU_ITEMS = [
   { action: 'reveal', label: 'Reveal folder' },
   { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties' },
 ];
+// A link in the document being read. The two Open items and the copies are all the
+// page can do on its own; `pageOnly` items need somewhere in the app to go, so they
+// drop off an external link and an in-page jump.
+const LINK_MENU_ITEMS = [
+  { action: 'openLink', label: 'Open' },
+  { action: 'openLinkInNewPage', label: 'Open in new page', pageOnly: true },
+  'separator',
+  { action: 'copyLink', label: 'Copy link' },
+  { action: 'copyLinkText', label: 'Copy link text' },
+  'separator',
+  // The host resolves the href into a real path for these two; the page cannot.
+  { action: 'revealLink', label: 'Reveal file', pageOnly: true },
+  { action: 'copyLinkPath', label: 'Copy path', pageOnly: true },
+];
 function hideContextMenu() {
   if (contextMenu.hidden) {
     return;
   }
   contextMenu.hidden = true;
   contextMenuPath = null;
+  contextMenuLink = null;
 }
 // What Cut or Copy last put down, so Paste has something to act on. The page holds
 // it because the page is where it was chosen; it is not the system clipboard, so
 // pasting here moves what you cut *here*, and a file copied in Explorer is not it.
 let libraryTransfer = null;
-function runContextAction(action, path) {
+function runContextAction(action, path, link) {
   switch (action) {
     case 'open': send({ command: 'openRecent', path }); break;
+    case 'openLink': if (link) sendDocumentLink(link, false); break;
+    case 'openLinkInNewPage': if (link) sendDocumentLink(link, true); break;
+    // The href as it is written, not the resolved one — Copy path is the item for
+    // the file on disk.
+    case 'copyLink': copyPlainText(path); break;
+    case 'copyLinkText': if (link) copyPlainText((link.textContent || '').trim()); break;
+    case 'revealLink': send({ command: 'revealLink', href: path }); break;
+    case 'copyLinkPath': send({ command: 'copyLinkPath', href: path }); break;
     case 'openFolder': setLibraryFolder(path); break;
     case 'cut':
       libraryTransfer = { path, cut: true };
@@ -82,6 +108,13 @@ function runContextAction(action, path) {
 // nothing are left out rather than shown dead: Paste with nothing cut, or Open
 // folder over the folder you are already in.
 function contextMenuEntries() {
+  if (contextMenuTargetKind === 'link') {
+    return tidySeparators(
+      LINK_MENU_ITEMS.filter(
+        (entry) => entry === 'separator' || !entry.pageOnly || isAnotherPageHref(contextMenuPath)
+      ).map(labelForLinkEntry)
+    );
+  }
   const entries =
     contextMenuTargetKind === 'file' ? CONTEXT_MENU_ITEMS : FOLDER_MENU_ITEMS;
   return tidySeparators(
@@ -92,6 +125,13 @@ function contextMenuEntries() {
       return true;
     })
   );
+}
+// Open says where it is sending you when that is out of the app, so the one item
+// that leaves says so before you pick it.
+function labelForLinkEntry(entry) {
+  if (entry === 'separator' || entry.action !== 'openLink') return entry;
+  if (linkHoverKind(contextMenuPath) !== 'External site') return entry;
+  return { action: entry.action, label: 'Open in browser' };
 }
 // A separator divides two groups, so one with nothing above it divides nothing —
 // which is the rule dropping an item can break. Removing an item can leave a line
@@ -126,8 +166,9 @@ function buildContextMenu() {
     item.textContent = entry.label;
     item.addEventListener('click', () => {
       const path = contextMenuPath;
+      const link = contextMenuLink;
       hideContextMenu();
-      if (path) runContextAction(entry.action, path);
+      if (path) runContextAction(entry.action, path, link);
     });
     contextMenu.appendChild(item);
   }
@@ -136,7 +177,7 @@ function buildContextMenu() {
 function clampContextMenu(x, y) {
   leafPlaceFloating(contextMenu, x, y);
 }
-function showContextMenu(x, y, path, kind) {
+function showContextMenu(x, y, path, kind, link) {
   // An empty path is the library's own top — the drive roots, or a vault's folder
   // seen from outside it — which is not a folder anything can be pasted into. A
   // folder row inside it still is, and still has its menu.
@@ -145,6 +186,7 @@ function showContextMenu(x, y, path, kind) {
   }
   contextMenuPath = path;
   contextMenuTargetKind = kind || 'file';
+  contextMenuLink = link || null;
   // Nothing to offer — an empty pane with nothing cut — so no empty box either.
   if (!contextMenuEntries().some((entry) => entry !== 'separator')) {
     return;
@@ -157,6 +199,16 @@ function showContextMenu(x, y, path, kind) {
   }
 }
 document.addEventListener('contextmenu', (event) => {
+  // A link in the document comes first: it is the innermost thing under the pointer
+  // and none of the pane branches below know what to do with it. Not while the block
+  // is being edited, where the menu you want is the one with Paste in it.
+  const documentLink = documentLinkFor(event.target);
+  if (documentLink && !event.target.closest('[contenteditable="true"]')) {
+    event.preventDefault();
+    const href = (documentLink.getAttribute('href') || '').trim();
+    showContextMenu(event.clientX, event.clientY, href, 'link', documentLink);
+    return;
+  }
   // Closest wins, so a folder row inside the pane beats the pane itself, and the
   // pane only answers where no row did — which is exactly the empty space below
   // the last row.

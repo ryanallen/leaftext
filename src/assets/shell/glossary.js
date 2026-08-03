@@ -334,40 +334,81 @@ window.leafShowGlossary = (html, anchor) => {
 // link separately costs a major slice of open time on large documents. Delegation
 // also handles links added later (the async pager) with no rebinding.
 let documentLinksBound = false;
+// A link the app itself follows: one inside the document being read. The minimap's
+// clone keeps the class but has its hrefs stripped and takes no pointer events.
+function documentLinkFor(target) {
+  const link = target && target.closest ? target.closest('a[href]') : null;
+  return link && app.contains(link) && link.closest('.document-body') ? link : null;
+}
+// Hold this and the link opens as a page behind the one you are reading: Cmd on a
+// Mac, where Ctrl is already the right-click, and Ctrl everywhere else.
+function newPageModifierHeld(event) {
+  return isMacPlatform ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
+}
+// Whether a link has a page in this app to open at all. The hover tip's own test,
+// so what the tip promised and what the gesture does cannot disagree.
+function isAnotherPageHref(rawHref) {
+  return linkHoverKind(rawHref) === 'Another page';
+}
+// What a link is, in the words the hover tip uses. Read by the right-click menu to
+// name Open after where it sends you.
+function linkHoverKind(rawHref) {
+  const info = linkHoverInfo((rawHref || '').trim());
+  return info ? info.kind : '';
+}
 function bindDocumentLinks() {
   if (documentLinksBound) {
     return;
   }
   documentLinksBound = true;
   app.addEventListener('click', (event) => {
-    const link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
-    if (!link || !app.contains(link) || !link.closest('.document-body')) {
-      return;
-    }
-    if (event.defaultPrevented || event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
-      return;
-    }
-    const rawHref = link.getAttribute('href') || '';
-    if (!rawHref) {
-      return;
-    }
-    const glossaryTerm = glossaryAnchorFromHref(rawHref);
-    if (glossaryTerm) {
-      event.preventDefault();
-      // For a `glossary:` link keep the bare scheme as the base, so term jumps
-      // and "open full glossary" let the host re-resolve the nearest file.
-      glossaryHrefBase = /^glossary:/i.test(rawHref) ? 'glossary:' : rawHref.split('#')[0];
-      awaitGlossaryEntry();
-      send({ command: 'openGlossary', href: rawHref });
-      return;
-    }
-    const fragmentHref = sameDocumentFragmentHref(rawHref);
-    if (fragmentHref) {
-      event.preventDefault();
-      send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });
+    const link = documentLinkFor(event.target);
+    if (!link || event.defaultPrevented || event.button !== 0) {
       return;
     }
     event.preventDefault();
-    send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor() });
+    sendDocumentLink(link, newPageModifierHeld(event));
   });
+  // The middle button raises `auxclick` and never `click`, so this is the only
+  // place it can be seen. Only a link with a page to open answers it.
+  app.addEventListener('auxclick', (event) => {
+    const link = event.button === 1 ? documentLinkFor(event.target) : null;
+    if (!link || !isAnotherPageHref(link.getAttribute('href'))) {
+      return;
+    }
+    event.preventDefault();
+    sendDocumentLink(link, true);
+  });
+  // The web view's own scroll-anywhere puck opens on mousedown, which is before
+  // the auxclick above — canceling there alone would be too late to stop it.
+  app.addEventListener('mousedown', (event) => {
+    const link = event.button === 1 ? documentLinkFor(event.target) : null;
+    if (link && isAnotherPageHref(link.getAttribute('href'))) {
+      event.preventDefault();
+    }
+  });
+}
+// Hand a document link to the host — from a click, or from the right-click menu's
+// own Open. Every click that reaches here is canceled first: a click left
+// uncanceled is the web view's to follow, and the web view is not the app.
+function sendDocumentLink(link, newPage) {
+  const rawHref = link.getAttribute('href') || '';
+  if (!rawHref) {
+    return;
+  }
+  const glossaryTerm = glossaryAnchorFromHref(rawHref);
+  if (glossaryTerm) {
+    // For a `glossary:` link keep the bare scheme as the base, so term jumps
+    // and "open full glossary" let the host re-resolve the nearest file.
+    glossaryHrefBase = /^glossary:/i.test(rawHref) ? 'glossary:' : rawHref.split('#')[0];
+    awaitGlossaryEntry();
+    send({ command: 'openGlossary', href: rawHref });
+    return;
+  }
+  const fragmentHref = sameDocumentFragmentHref(rawHref);
+  if (fragmentHref) {
+    send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });
+    return;
+  }
+  send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor(), newPage });
 }
