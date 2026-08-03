@@ -38,6 +38,7 @@ const PLAN_ROLES = [
   ['done', 'shipped, kept for the reasoning'],
   ['canceled', 'decided against, kept for the reasoning'],
   ['tests', 'a document to open in the app, not a plan'],
+  ['learn', "writing from elsewhere, kept to read — not about this app, so nothing here can go stale"],
   ['.', 'the ticket index'],
 ];
 

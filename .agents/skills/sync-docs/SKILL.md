@@ -240,6 +240,7 @@ What each role means in practice:
 | **the running order** (`../docs/plans/`) | Each file is dated and ranks the live tickets on that date. When one ships, the newest ranking's rows about it are wrong. **Do not rewrite a dated ranking** — the date is the point. Note it in the index row, or write a new dated one |
 | **the ticket index** (`../docs/README.md`) | Its "What the folders mean" paragraph names every folder next door, and its "Needs a second look" table holds every ticket whose own status disagrees with the folder it sits in. A new folder or a settled status lands here |
 | **shipped / canceled / a test document** | Kept for the reasoning. Left alone unless it is now factually wrong about the app |
+| **reading from elsewhere** (`../docs/learn/`) | Somebody else's writing, copied in to read. It is not about this app, so nothing this session did can make it untrue. Never edited here — a correction belongs upstream, and rewriting it loses what was actually said |
 
 **A file with no role fails `just check-docs` and names itself.** That is the
 backstop: add a new kind of document and the suite stops until this table says who

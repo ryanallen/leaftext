@@ -31,7 +31,7 @@ A release is those two files and nothing else. The [in-app updater](#updates) in
 
 **4. Eject the disk image** — click the ⏏ beside its name in the Finder sidebar. You can delete the `.dmg` afterwards.
 
-**5. Open Leaftext** from Applications or Launchpad. **The first launch will be refused** — that is expected, and clearing it takes about four clicks. See [Mac blocks the first launch](#mac-blocks-the-first-launch).
+**5. Open Leaftext** from Applications or Launchpad. **The first launch will be refused** — that is expected, and clearing it takes five short steps. See [Mac blocks the first launch](#mac-blocks-the-first-launch).
 
 ### Windows
 
@@ -62,7 +62,14 @@ Let it through once and it opens normally forever after. Either route works.
 1. Double-click **Leaftext** in Applications. macOS refuses. Click **Done** (or **Cancel**).
 2. Open **System Settings** → **Privacy & Security**.
 3. Scroll to the **Security** section near the bottom. A line names Leaftext as blocked, with an **Open Anyway** button. Click it.
-4. Confirm with Touch ID or your password, then click **Open** in the last box.
+
+![The macOS confirmation box titled Open “Leaftext”?, saying Apple is not able to verify it is free from malware, with a blue Open Anyway button above a Done button](../imgs/install-mac-open-confirm.png)
+
+4. A box asks **Open "Leaftext"?** and repeats the warning. Click **Open Anyway**.
+
+![The macOS Privacy & Security authorization box asking for an administrator username and password to allow the app to open, with the username filled in, an empty Password field, and OK beside a Passwords... button](../imgs/install-mac-password.png)
+
+5. Enter an administrator name and password — or use Touch ID if your Mac offers it — and click **OK**.
 
 Leaftext opens, and every launch after this one is a normal double-click.
 
