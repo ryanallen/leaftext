@@ -48,6 +48,9 @@ flowchart LR
 | Save (with [unsaved edits](07-editing.md#save)) | `Ctrl+S` | `Cmd+S` |
 | [Undo](07-editing.md#undo) the last reading-view edit | `Ctrl+Z` | `Cmd+Z` |
 | Select the page (reading view) | `Ctrl+A` | `Cmd+A` |
+| [Bold](07-editing.md#the-format-bar) the highlighted words | `Ctrl+B` | `Cmd+B` |
+| [Italic](07-editing.md#the-format-bar) the highlighted words | `Ctrl+I` | `Cmd+I` |
+| [Link](07-editing.md#the-format-bar) the highlighted words | `Ctrl+K` | `Cmd+K` |
 
 Tab cycling is `Ctrl`-based on every platform, including macOS. Mouse side buttons also trigger Back and Forward.
 
@@ -57,9 +60,11 @@ Two bars. The one at the top is about the app; the one floating at the foot of t
 
 ### The app bar
 
-![The Leaftext app bar across the top of the window: the leaf mark, the library button, Back and Forward, the tab strip, then Open, plus and Settings at the right](../../imgs/navigation.png)
+![The Leaftext app bar across the top of the window: the leaf mark, the library button, Back and Forward, the tab strip, then the theme palette, Open and plus at the right](../../imgs/navigation.png)
 
-The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back and Forward, then the tab strip, and at the right Open, **+** ([new document](07-editing.md#new-document)) and Settings. Those three are about the app rather than the document, which is why they are up here and not on the floating toolbar.
+The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back and Forward, then the tab strip, and at the right the palette that opens the [theme picker](06-themes.md#choose), Open, and **+** ([new document](07-editing.md#new-document)). Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
+
+**There is no Settings button.** Every control stands where it applies — see [Settings](05-settings.md). The one thing that comes and goes is the [update](05-settings.md#updates) bell, which is in the bar only while there is something to download or install.
 
 On Windows the app bar doubles as the title bar — see [Themes → Windows](06-themes.md#windows).
 

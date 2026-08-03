@@ -47,13 +47,13 @@ Before submitting a contribution, run the full suite:
 just verify
 ```
 
-This runs formatting, type checking, the tests, the drift checks over everything that is generated, the design-system rules, the spelling check, the front-end check, and the two repo guards, in sequence. All steps must pass. The `verify` recipe is defined in the project `Justfile` as:
+This runs formatting, type checking, the tests, the drift checks over everything that is generated, the design-system rules, the spelling check, the front-end check, the docs-coverage check, and the repo guards, in sequence. All steps must pass. The `verify` recipe is defined in the project `Justfile` as:
 
 ```text
-verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-shell check-identity check-hooks
+verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-shell check-identity check-hooks check-mcp
 ```
 
-The design-system steps are the ones worth knowing about. `check-tokens`, `check-icons`, `check-gallery` and `check-design-docs` fail when a generated file has drifted from the four files in `design/` it is built from — the stylesheet's fixed values, the icon classes, the page at [leaftext.com/gallery.html](https://leaftext.com/gallery.html), and [Design system](05-design-system.md). `check-classes` fails on a class in `reading.css` that `design/components.md` does not account for, so new interface joins the design system rather than growing beside it. `check-literals` fails on a color, size, spacing or duration typed into `reading.css` instead of coming from a value. `check-verify` fails when a check exists but this recipe does not run it. `check-identity` fails on an assistant credited anywhere in the repo or its history, and `check-hooks` self-tests the three hooks.
+The design-system steps are the ones worth knowing about. `check-tokens`, `check-icons`, `check-gallery` and `check-design-docs` fail when a generated file has drifted from the four files in `design/` it is built from — the stylesheet's fixed values, the icon classes, the page at [leaftext.com/gallery.html](https://leaftext.com/gallery.html), and [Design system](05-design-system.md). `check-classes` fails on a class in `reading.css` that `design/components.md` does not account for, so new interface joins the design system rather than growing beside it. `check-literals` fails on a color, size, spacing or duration typed into `reading.css` instead of coming from a value. `check-verify` fails when a check exists but this recipe does not run it. `check-docs` fails on a Markdown file — in this repo or the plan folder beside it — that no role covers, so a new kind of document has to say who keeps it true rather than quietly going stale. `check-identity` fails on an assistant credited anywhere in the repo or its history, and `check-hooks` self-tests the four hooks.
 
 A passing `just verify` is the baseline requirement before handing any work back.
 
@@ -63,7 +63,7 @@ Theme palettes work the same way: `src/assets/themes.md` (embedded in the binary
 
 Spelling comes next: this repo writes US English, so `check-spelling` fails on the British form of any word in `scripts/check-spelling.mjs`'s list — the `-our` spelling of "color", for one. It reads only files the repo authors: vendored bundles, build output, and generated files are skipped, and the two identifiers that are British by specification (`aria-labelledby`, WiX's `ProgramMenuFolder`) are exempt.
 
-The last step is `check-shell`, which runs the WebView front-end rather than reading it. The script fragments in `src/assets/shell/` are concatenated the way the binary concatenates them and executed against a stand-in page built from the ids and classes the real markup declares, so nothing has to be listed twice. It fails if the script does not parse, if it throws as it loads — which is what a declaration moved below its first use does, and the reason fragment order is load-bearing — or if the code view's edit arithmetic is wrong. That last one matters most: the editor sends the host only the part of the text that changed, and the host splices it into what it writes to disk, so each case is checked by rebuilding the new text from the splice.
+`check-shell` runs the WebView front-end rather than reading it. The script fragments in `src/assets/shell/` are concatenated the way the binary concatenates them and executed against a stand-in page built from the ids and classes the real markup declares, so nothing has to be listed twice. It fails if the script does not parse, if it throws as it loads — which is what a declaration moved below its first use does, and the reason fragment order is load-bearing — or if the code view's edit arithmetic is wrong. That last one matters most: the editor sends the host only the part of the text that changed, and the host splices it into what it writes to disk, so each case is checked by rebuilding the new text from the splice.
 
 ## Individual tasks
 
@@ -85,9 +85,10 @@ Each step in the verification pipeline can also be run on its own:
 | Values written by hand | `just check-literals` | Fail on a color, size, spacing or duration typed into `reading.css` |
 | Suite check  | `just check-verify`         | Fail when a check exists that `verify` does not run |
 | Spelling     | `just check-spelling`       | Fail on British spelling in the repo's own writing |
+| Docs coverage | `just check-docs`          | Fail on a Markdown file that nothing keeps true. `node scripts/check-docs.mjs --list` prints every one and its role |
 | Front end    | `just check-shell`          | Run the page's script against a stand-in page: it parses, it boots, and its edit offsets are right |
 | Identity     | `just check-identity`       | Fail on an assistant credited in the repo or its history |
-| Hooks        | `just check-hooks`          | Self-test the three hooks |
+| Hooks        | `just check-hooks`          | Self-test the four hooks |
 | Ask pipe     | `just check-mcp`            | Fail when the MCP wrapper and `src/pipe.rs` disagree about what can be asked, or where |
 | Full verify  | `just verify`               | All steps above in sequence                    |
 

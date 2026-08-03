@@ -76,6 +76,11 @@ check-tokens:
 check-spelling:
     node scripts/check-spelling.mjs
 
+# Fail on a Markdown file in this repo or the plan tree next door that no role covers —
+# a document nothing keeps true. `--list` prints every file and its role.
+check-docs:
+    node scripts/check-docs.mjs
+
 # Fail if a check the Justfile defines is not in `just verify` — a rule with no check
 # in the suite holds only while someone remembers it.
 check-verify:
@@ -98,9 +103,10 @@ check-literals:
 check-identity:
     node scripts/check-identity.mjs
 
-# Self-test the three hooks in .claude/settings.json: that Rule 1 is still findable
-# in AGENTS.md and written once, that a git write is refused without a license, and
-# that a reply over Rule 1's ceiling, or opening with praise, is refused.
+# Self-test the four hooks in .claude/settings.json: that Rule 1 is still findable
+# in AGENTS.md and written once, that a git write is refused without a license, that
+# a reply over Rule 1's ceiling, or opening with praise, is refused, and that every
+# keyed file has a keycode of its own.
 check-hooks:
     node scripts/gate-rules.mjs --check
     node scripts/gate-git.mjs --check
@@ -151,7 +157,7 @@ conformance *flags:
 doc-images:
     node scripts/doc-images.mjs
 
-verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-shell check-identity check-hooks check-mcp
+verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-shell check-identity check-hooks check-mcp
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

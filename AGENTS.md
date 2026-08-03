@@ -40,7 +40,7 @@ Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document 
 
 ## Layout
 
-**`docs/02-development/01-architecture.md` is the file map** — every module, in more detail than belongs here. The rules that map carries, which no reading of the code will tell you:
+**[`docs/02-development/01-architecture.md`](docs/02-development/01-architecture.md) is the file map** — every module, in more detail than belongs here. The rules that map carries, which no reading of the code will tell you:
 
 - **Both crate roots share `src/`** — `lib.rs` (library) and `main.rs` (binary) — so a bare `mod tests;` in `main.rs` resolves to the library's `src/tests/`. That is why the binary's modules live under `src/app/`.
 - Where a subject is a directory, `mod.rs` holds the shared vocabulary and the pipeline that orders the stages; siblings hold one stage each. A directory's **types** stay module-wide (`pub(super)`); functions open up only where something calls them.
@@ -48,7 +48,7 @@ Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document 
 - **`markdown/rawhtml.rs` is a security boundary** — what raw HTML may keep, standing between hostile input and the web view.
 - **`src/assets/shell/` is one scope, not modules.** The fragments concatenate in `APP_SHELL_SCRIPT_PARTS` order and are **served as `app.js` over `leaf-asset://`**, behind the page's one script tag — the page reaches WebView2 as one string with a ~2 MB ceiling, and the script was 88% of it. There is no module loader, so order is load-bearing and a fragment alone is not a valid program: `journal.js` leads (its error handlers are the only thing that sees a later fragment throw as it loads, and it must reach `window.ipc` directly — `send` in `dom.js` is a `const` in its dead zone until then), the flowchart pair follows (everything else calls into it), `state.js` after that and holding **only** what more than one fragment touches, and the last fragment ends with the bootstrap call. Nothing is substituted into the script, which is why it can be a file at all.
 - **Mermaid diagrams take the theme's own tokens**, mapped in `decorate.js`. Never a per-theme diagram palette. The `cScale` categorical scale is ours, named entry by entry, held to one luminance — v0.1.423 shipped near-black boxes with near-black labels by leaving it to mermaid's arithmetic.
-- **`design/` is the source of a token, `themes/` of a color's value.** `design/colors.md` lists the 82 names and compiles to the contract in `theme.rs`; `design/tokens.md` holds the other 162 values and compiles to `src/assets/tokens.css`; `design/icons.md` lists the icons and compiles to `src/assets/icons.css`, one `.lt-icon-*` mask class each; `design/components.md` is a row per component, with the markup it is drawn with. `gallery.html` — every theme, color, icon and component on one page, at leaftext.com — is built from all four; it is a page in the repo, not a feature in the app. `just bundle-tokens`, `bundle-icons`, `bundle-gallery` and `bundle-design-docs` generate; their `check-` twins fail on drift, on a theme row nobody lists, on an SVG with no row, and on a component with no sample to draw it with. `themes/` holds the values, compiled by `just bundle-themes`. Never edit a generated file. `theme.rs` emits a property for any row it finds, so a stale row would be dead CSS in every theme.
+- **`design/` is the source of a token, `themes/` of a color's value.** [`design/colors.md`](design/colors.md) lists the 82 names and compiles to the contract in `theme.rs`; [`design/tokens.md`](design/tokens.md) holds the other 162 values and compiles to `src/assets/tokens.css`; [`design/icons.md`](design/icons.md) lists the icons and compiles to `src/assets/icons.css`, one `.lt-icon-*` mask class each; [`design/components.md`](design/components.md) is a row per component, with the markup it is drawn with. `gallery.html` — every theme, color, icon and component on one page, at leaftext.com — is built from all four; it is a page in the repo, not a feature in the app. `just bundle-tokens`, `bundle-icons`, `bundle-gallery` and `bundle-design-docs` generate; their `check-` twins fail on drift, on a theme row nobody lists, on an SVG with no row, and on a component with no sample to draw it with. [`themes/`](themes/README.md) holds the values — one file per family, all eleven linked from that folder's own page — compiled by `just bundle-themes`. Never edit a generated file. `theme.rs` emits a property for any row it finds, so a stale row would be dead CSS in every theme.
 - **An icon reaches the page as a name, not a drawing** — `<span class="lt-icon lt-icon-back">` — so one used five times is in the app once. A mask reads only alpha, so the control's own `currentColor` paints it, and a control with a bolder active state swaps to a second mask (`--lt-icon-*-heavy`) rather than thickening a stroke a mask does not have — the same reason a `stroke-width` in `reading.css` aimed at an `.lt-icon` does nothing. Even the broken-image mark is a mask: it stays an `<img>` so a later fetch can go back to its own source, with `src` on a transparent pixel purely to stop the platform drawing its glyph over ours. **The line weight is `design/icons.md`'s, not the drawing's** — a `Stroke` cell per row, one of three named weights, stamped over whatever the file was saved at; `just check-icons` names a file that disagrees. Seven weights had drifted in before that column existed.
 - **Every class in `reading.css` is accounted for in `design/components.md`** — as a component (with the markup the gallery draws it with), as something a rendered document brings, or as a state. `just check-classes` fails on one that is not, so new interface joins the design system rather than growing beside it, and a component that appears there appears in the gallery by existing.
 - **No hand-written value in `reading.css`.** A color, spacing, text size, weight, stroke, line height, letter spacing, opacity, duration, easing, shadow or layer comes from a token; `just check-literals` fails on one and names the line. Widths, heights, positional offsets and a document's `em` sizing are not tokens — they are one component's geometry, or they follow the text.
@@ -56,25 +56,25 @@ Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document 
 
 ## Skills
 
-In `.agents/skills/`, which `.claude/` and `.codex/` symlink to. Invoke by name.
+In [`.agents/skills/`](.agents/skills/), which `.claude/` and `.codex/` symlink to. Invoke by name; each row links the file that defines it.
 
 | skill | when |
 | --- | --- |
-| `check` | before handing work back. Runs `sync-tests`, then `just verify`, and names anything the change left untested. |
-| `sync-tests` | the change needs a test that would have caught it. `check` calls it. |
-| `sync-docs` | app behavior changed, or before a release. Edits `docs/`, never git. |
-| `code-comments` | the comment bar, in one place: why not what, one line if it fits, cut the drafting history. |
-| `design-tokens` | changing how the app looks. A value goes in `design/`, never into a rule. |
-| `add-dependency` | a new crate. Reports what it drags in, then asks. |
-| `add-format` | teaching the app another file type. One arm in `format.rs`. |
-| `shell-fragment` | adding, splitting or reordering a front-end fragment. Order is load-bearing. |
-| `ticket` | scoping work instead of building it. Writes a phased plan with checkboxes into `../docs/features/` or `../docs/refactor/`, and keeps `../docs/README.md` — the one line per ticket that says what shipped, what is planned and what was turned down. Read that index before planning anything; it is the only thing standing between a new plan and one this tree already answered. |
-| `refine` | reviewing a ticket before anyone builds it. Opens every line it cites, holds the plan against the rules here, fixes it, and records what was wrong. |
-| `git-release` | only on `/git-release`. Runs `sync-docs`, `code-comments` and `check`, then commits, tags and pushes. |
+| [`check`](.agents/skills/check/SKILL.md) | before handing work back. Runs `sync-tests`, then `just verify`, and names anything the change left untested. |
+| [`sync-tests`](.agents/skills/sync-tests/SKILL.md) | the change needs a test that would have caught it. `check` calls it. |
+| [`sync-docs`](.agents/skills/sync-docs/SKILL.md) | app behavior changed, or before a release. Edits `docs/` and the ticket index next door, never git. |
+| [`code-comments`](.agents/skills/code-comments/SKILL.md) | the comment bar, in one place: why not what, one line if it fits, cut the drafting history. |
+| [`design-tokens`](.agents/skills/design-tokens/SKILL.md) | changing how the app looks. A value goes in `design/`, never into a rule. |
+| [`add-dependency`](.agents/skills/add-dependency/SKILL.md) | a new crate. Reports what it drags in, then asks. |
+| [`add-format`](.agents/skills/add-format/SKILL.md) | teaching the app another file type. One arm in `format.rs`. |
+| [`shell-fragment`](.agents/skills/shell-fragment/SKILL.md) | adding, splitting or reordering a front-end fragment. Order is load-bearing. |
+| [`ticket`](.agents/skills/ticket/SKILL.md) | scoping work instead of building it. Writes a phased plan with checkboxes into `../docs/features/` or `../docs/refactor/`, and keeps `../docs/README.md` — the one line per ticket that says what shipped, what is planned and what was turned down. Read that index before planning anything; it is the only thing standing between a new plan and one this tree already answered. |
+| [`refine`](.agents/skills/refine/SKILL.md) | reviewing a ticket before anyone builds it. Opens every line it cites, holds the plan against the rules here, fixes it, and records what was wrong. |
+| [`git-release`](.agents/skills/git-release/SKILL.md) | only on `/git-release`. Runs `sync-docs`, `code-comments` and `check`, then commits, tags and pushes. |
 
 ## Hooks
 
-In `.claude/settings.json`, pointing at `scripts/`. Each runs by hand with `--check`, and `just verify` runs all four.
+In [`.agents/settings.json`](.agents/settings.json) — `.claude/settings.json` is the same file through the symlink — pointing at `scripts/`. Each runs by hand with `--check`, and `just verify` runs all four.
 
 - `gate-rules.mjs` on `UserPromptSubmit` — prints Rule 1 out of this file before every message, plus a line for whatever the message touches, and records the license in `.tmp/git-license`. Granted only when the message **starts** with `/git-release`: matching it anywhere let a message that merely quoted the string release v0.1.442. It also keeps the last 20 raw payloads in `.tmp/prompt-payloads.jsonl`, untracked — the license turns on what the host puts in `prompt`, and a turn where that went wrong is otherwise unreconstructable.
 - `gate-git.mjs` on the shell tools — refuses a git write when that file does not say the license was given this turn.
@@ -97,7 +97,7 @@ In `.claude/settings.json`, pointing at `scripts/`. Each runs by hand with `--ch
 
 ## Commands
 
-Needs `rustup`, `just`, `node`. `/check` is the gate before handing work back: `just verify` (fmt, check, test, vendor + theme + token + icon + gallery + docs drift, no hand-written values, US spelling, front-end boot, identity, the two hooks) with a test pass in front of it. `just check` / `test` / `format` / `check-shell` run individually.
+Needs `rustup`, `just`, `node`. `/check` is the gate before handing work back: `just verify` (fmt, check, test, vendor + theme + token + icon + gallery + docs drift, no hand-written values, US spelling, every Markdown file has something keeping it true, front-end boot, identity, the two hooks) with a test pass in front of it. `just check` / `test` / `format` / `check-shell` run individually.
 
 Mac code and the installer cannot be built on this machine, and never have been. **Never say so.** Not as a caveat, not as a footnote, not "it ships unproven", not when the change is in one of them — that is exactly when it is most obvious and least worth a line. GitHub builds both on a tagged release and a break shows up there. It is true every single time, so saying it is the padding Rule 1 refuses. The one exception is a direct question about it.
 
