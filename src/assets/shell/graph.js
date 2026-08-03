@@ -530,6 +530,9 @@ async function buildGraphScene() {
     const node = {
       path: n.path,
       label: n.label || n.path,
+      // The other names the note answers to. The node keeps the file's name, so
+      // these show on hover rather than on the map.
+      aliases: Array.isArray(n.aliases) ? n.aliases : [],
       degree: n.degree || 0,
       // A web address rather than one of your documents: drawn as a ring, opened in
       // the browser. See graphColors().external and the pointerup handler.
@@ -607,8 +610,11 @@ async function buildGraphScene() {
     gfx.on('pointerover', () => {
       scene.hoverNode = node;
       // The same native tooltip the library rows, hits, and tabs use: the full
-      // document path on the canvas element under the cursor.
-      scene.app.canvas.title = node.path;
+      // document path on the canvas element under the cursor, and the other names
+      // it answers to, which the map itself never labels a node with.
+      scene.app.canvas.title = node.aliases.length
+        ? node.path + '\nAlso: ' + node.aliases.join(', ')
+        : node.path;
       applyGraphStyles();
     });
     gfx.on('pointerout', () => {

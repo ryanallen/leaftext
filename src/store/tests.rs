@@ -283,6 +283,48 @@ fn frontmatter_parses_scalars_arrays_and_block_lists() {
 }
 
 #[test]
+fn aliases_read_both_list_forms_a_bare_string_and_nothing_at_all() {
+    let names = |text: &str, label: &str| aliases_from(&document_fields(text), label);
+
+    // Both list forms, and the scalar form real vaults also contain — the parser
+    // already yields one field per item either way, so there is one reader.
+    assert_eq!(
+        names(
+            "---\naliases:\n  - Mozart\n  - W. A. Mozart\n---\n",
+            "Wolfgang"
+        ),
+        vec!["Mozart", "W. A. Mozart"]
+    );
+    assert_eq!(
+        names(
+            "---\naliases: [Mozart, \"W. A. Mozart\"]\n---\n",
+            "Wolfgang"
+        ),
+        vec!["Mozart", "W. A. Mozart"]
+    );
+    assert_eq!(
+        names("---\naliases: Mozart\n---\n", "Wolfgang"),
+        vec!["Mozart"]
+    );
+
+    // No block, no field, an empty item, and a claim on the note's own name.
+    assert!(names("# Just a heading\n", "Wolfgang").is_empty());
+    assert!(names("---\ntitle: Hi\n---\n", "Wolfgang").is_empty());
+    assert!(names("---\naliases: [Wolfgang, wolfgang]\n---\n", "Wolfgang").is_empty());
+    // Said twice in different case is one name, because that is how names match.
+    assert_eq!(
+        names("---\naliases: [Mozart, MOZART]\n---\n", "W"),
+        vec!["Mozart"]
+    );
+
+    // Thirty-three claimed, thirty-two kept, and the count says how many there were.
+    let many: String = (0..33).map(|n| format!("  - name-{n}\n")).collect();
+    let text = format!("---\naliases:\n{many}---\n");
+    assert_eq!(names(&text, "Many").len(), MAX_ALIASES);
+    assert_eq!(alias_count(&document_fields(&text), "Many"), 33);
+}
+
+#[test]
 fn document_links_finds_markdown_html_and_wiki_targets() {
     let source = PathBuf::from(if cfg!(windows) {
         r"C:\vault\notes\a.md"

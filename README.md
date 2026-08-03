@@ -111,7 +111,7 @@ Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's a
 
 ![The code view with a completion popup open after typing two square brackets, listing note names from the vault, and a wavy underline beneath a broken link further down](imgs/typing-help.png)
 
-Type `[[` and your notes are listed. Type `#` for a heading. Hover a wikilink for a preview, and a link that answers to nothing gets a wavy underline. It knows only what you pointed it at. **[Typing help →](docs/01-features/07-editing.md#typing-help)**
+Type `[[` and your notes are listed, by file name and by any [other name](docs/01-features/03-library.md#other-names) they answer to. Type `#` for a heading. Hover a wikilink for a preview, and a link that answers to nothing gets a wavy underline. It knows only what you pointed it at. **[Typing help →](docs/01-features/07-editing.md#typing-help)**
 
 ## Keep a library
 

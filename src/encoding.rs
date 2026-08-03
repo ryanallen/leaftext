@@ -85,6 +85,60 @@ pub fn read_source(path: impl AsRef<Path>) -> io::Result<SourceText> {
     })
 }
 
+/// Read at most `limit` bytes of a document and decode those. For a caller that
+/// wants only what is at the top of a file — the frontmatter block — across a
+/// folder of them, where reading each one whole is the cost.
+///
+/// The cut lands wherever the limit falls, so bytes belonging to a character the
+/// cut split are dropped rather than decoded as something else.
+pub fn read_source_head(path: impl AsRef<Path>, limit: usize) -> io::Result<SourceText> {
+    use std::io::Read;
+    let path = path.as_ref();
+    let mut bytes = Vec::new();
+    fs::File::open(path)?
+        .take(limit as u64)
+        .read_to_end(&mut bytes)?;
+    bytes.truncate(whole_characters(&bytes));
+    decode_source(&bytes).map_err(|message| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("{} ({})", message, path.display()),
+        )
+    })
+}
+
+/// How much of a part-read buffer is whole characters, by the encoding its mark
+/// declares. A split code unit, or a surrogate whose other half is past the cut,
+/// is not an error in the file — so it comes off rather than failing the read.
+fn whole_characters(bytes: &[u8]) -> usize {
+    match marked_encoding(bytes) {
+        Some(SourceEncoding::Utf32Le | SourceEncoding::Utf32Be) => bytes.len() - bytes.len() % 4,
+        Some(encoding) => {
+            let mut len = bytes.len() - bytes.len() % 2;
+            let leading = |pair: &[u8]| {
+                let pair = [pair[0], pair[1]];
+                let unit = if encoding == SourceEncoding::Utf16Be {
+                    u16::from_be_bytes(pair)
+                } else {
+                    u16::from_le_bytes(pair)
+                };
+                (0xD800..0xDC00).contains(&unit)
+            };
+            if len >= 2 && leading(&bytes[len - 2..len]) {
+                len -= 2;
+            }
+            len
+        }
+        // `error_len` tells a cut tail (`None`) from a byte no UTF-8 file could
+        // hold, which is a legacy code page and decodes whole further down.
+        None => match std::str::from_utf8(bytes) {
+            Ok(_) => bytes.len(),
+            Err(error) if error.error_len().is_none() => error.valid_up_to(),
+            Err(_) => bytes.len(),
+        },
+    }
+}
+
 /// Decode file bytes. Split from [`read_source`] so the decision table is
 /// testable without touching the disk.
 pub fn decode_source(bytes: &[u8]) -> Result<SourceText, String> {

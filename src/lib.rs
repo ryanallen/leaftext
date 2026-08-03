@@ -60,8 +60,8 @@ pub use editing::{
 };
 mod encoding;
 pub use encoding::{
-    decode_source, encode_source, read_source, write_source, SourceEncoding, SourceSpelling,
-    SourceText,
+    decode_source, encode_source, read_source, read_source_head, write_source, SourceEncoding,
+    SourceSpelling, SourceText,
 };
 mod png;
 pub use png::{encode_rgba, encode_rgba_paletted, rgba_from_bmp};

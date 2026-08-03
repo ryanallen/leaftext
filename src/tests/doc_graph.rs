@@ -105,6 +105,24 @@ fn a_link_out_of_the_folder_is_followed_but_the_tree_below_is_not() {
 }
 
 #[test]
+fn a_loose_document_resolves_an_alias_because_the_graph_is_built_once() {
+    let dir = graph_dir("alias");
+    let seed = dir.join("listening.md");
+    write(&seed, "# Listening\n\nStarted with [[Mozart]].\n");
+    write(
+        &dir.join("Wolfgang Amadeus Mozart.md"),
+        "---\naliases: [Mozart]\n---\n\n# Mozart\n",
+    );
+
+    // Nothing in `doc_graph.rs` knows what an alias is; it shares `build_graph`
+    // with the vault, so the name index it gets is the same one.
+    let graph = document_graph(&seed, &GraphRequest::default());
+    assert!(linked(&graph, "listening", "Wolfgang Amadeus Mozart"));
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
 fn focus_narrows_a_document_map_the_same_way_it_narrows_a_vault() {
     let dir = graph_dir("focus");
     let seed = dir.join("opening.md");

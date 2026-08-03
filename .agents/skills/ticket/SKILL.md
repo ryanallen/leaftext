@@ -143,6 +143,10 @@ Drop the bundler line when the work is nowhere near `design/`.
 
 ## Working a ticket later
 
+That is [build](../build/SKILL.md)'s job — it takes the finished ticket and does
+everything below, plus the index row, the running order in `../docs/plans/`, and
+any published page the work made untrue. What it holds itself to:
+
 Tick the box — `- [x]` — as each piece lands, in the same edit as the code. A box
 that will not be done is struck through with the reason beside it.
 
@@ -159,6 +163,8 @@ still describing a plan is how `../docs/README.md` starts lying about the app.
 
 ## Reference
 
+- `/refine` — checks a written ticket against the code before anyone builds it.
+- `/build` — builds one, and moves it to `done/` when the last box is ticked.
 - `../docs/README.md` — every ticket, one line each. Read first, updated last.
 - `../docs/features/highlight-annotate.md` — measured table, phases, a phase 0.
 - `../docs/refactor/inline-link.md` — short, and shows the shipped note.

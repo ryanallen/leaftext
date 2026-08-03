@@ -73,6 +73,10 @@ pub struct DocumentGraph {
 pub struct GraphNode {
     pub path: String,
     pub label: String,
+    /// The other names the document answers to. The node is still labeled with
+    /// the file's name — a node labeled with an alias is one you cannot find by
+    /// the name on disk — so these show when you hover it.
+    pub aliases: Vec<String>,
     pub degree: u32,
     /// A web address rather than one of your documents. Drawn hollow, labeled by
     /// domain, and opened in the browser instead of in a tab — so the map can show
@@ -107,6 +111,9 @@ pub struct GraphRequest {
 pub struct SearchHit {
     pub abs_path: String,
     pub title: String,
+    /// The other name this document answered to, when that is what matched. The
+    /// row still shows the file's name; this says why it is in the list.
+    pub alias: Option<String>,
     pub start_line: u32,
     pub end_line: u32,
     pub anchor: Option<String>,

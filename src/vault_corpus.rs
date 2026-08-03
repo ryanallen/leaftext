@@ -100,6 +100,10 @@ pub struct CorpusDocument {
     pub path: String,
     /// The file name without its extension: what the pane and the graph show.
     pub label: String,
+    /// The other names it answers to, from its `aliases` field, as written. A
+    /// wiki link, search and the popup match these as well as the label; the
+    /// label is still the only name anything is *labeled* with.
+    pub aliases: Vec<String>,
     pub text: String,
 }
 
@@ -275,6 +279,9 @@ struct Candidate<'a> {
     /// offset, and its length *there* — case folding can make a match a different
     /// size than its term.
     spots: Vec<(usize, usize)>,
+    /// The alias a term matched, when one beat the file name. What the row shows
+    /// so a hit on a name that is not the file's own name is explained.
+    alias: Option<String>,
 }
 
 impl Candidate<'_> {
@@ -295,6 +302,7 @@ impl Candidate<'_> {
             .map(|((at, length), (line, anchor))| SearchHit {
                 abs_path: self.document.path.clone(),
                 title: self.document.label.clone(),
+                alias: self.alias.clone(),
                 start_line: line,
                 end_line: line,
                 anchor,
@@ -307,6 +315,7 @@ impl Candidate<'_> {
             rows.push(SearchHit {
                 abs_path: self.document.path.clone(),
                 title: self.document.label.clone(),
+                alias: self.alias.clone(),
                 start_line: 1,
                 end_line: 1,
                 anchor: None,
@@ -328,11 +337,24 @@ impl Candidate<'_> {
 /// Score one document, or refuse it on the first term it does not carry.
 fn score_document<'a>(document: &'a CorpusDocument, terms: &[Term]) -> Option<Candidate<'a>> {
     let name = document.label.to_lowercase();
+    let aliases: Vec<String> = document
+        .aliases
+        .iter()
+        .map(|alias| alias.to_lowercase())
+        .collect();
     let folder = folder_of(&document.path);
     let mut score = 0.0f64;
     let mut spots: Vec<(usize, usize)> = Vec::new();
+    // The best any one term managed against an alias, so a row found by one can
+    // say which name it was rather than looking like a mystery.
+    let mut best_alias: Option<(f64, usize)> = None;
     for term in terms {
-        let named = name_score(&name, &term.text);
+        let (named, alias) = best_name_score(&name, &aliases, &term.text);
+        if let Some(index) = alias {
+            if best_alias.is_none_or(|(best, _)| named > best) {
+                best_alias = Some((named, index));
+            }
+        }
         let scan = scan_term(&document.text, term);
         let foldered = find_case_insensitive(folder, term, 0).is_some();
         // Every term has to land somewhere, or this is not the document — and
@@ -356,7 +378,24 @@ fn score_document<'a>(document: &'a CorpusDocument, terms: &[Term]) -> Option<Ca
         document,
         score,
         spots,
+        alias: best_alias.map(|(_, index)| document.aliases[index].clone()),
     })
+}
+
+/// The best a term scores against any name the document answers to, and which
+/// alias that was when an alias beat the file name.
+///
+/// An alias is a name, so it scores like one — the whole scale, not a discount.
+/// Scoring it lower would sort a note below worse matches for using the field.
+fn best_name_score(name: &str, aliases: &[String], term: &str) -> (f64, Option<usize>) {
+    let mut best = (name_score(name, term), None);
+    for (index, alias) in aliases.iter().enumerate() {
+        let score = name_score(alias, term);
+        if score > best.0 {
+            best = (score, Some(index));
+        }
+    }
+    best
 }
 
 /// The folders a document sits in: its path without the file name. Borrowed, not
@@ -580,11 +619,13 @@ pub(crate) fn read_document(path: &Path) -> Option<CorpusDocument> {
         }
         text.truncate(cut);
     }
+    let label = path
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().to_string())
+        .unwrap_or_else(|| path_to_string(path));
     Some(CorpusDocument {
-        label: path
-            .file_stem()
-            .map(|stem| stem.to_string_lossy().to_string())
-            .unwrap_or_else(|| path_to_string(path)),
+        aliases: crate::store::aliases_from(&crate::store::document_fields(&text), &label),
+        label,
         path: path_to_string(path),
         text,
     })
@@ -694,6 +735,15 @@ pub(crate) fn build_graph(documents: &[CorpusDocument]) -> DocumentGraph {
             .entry(normalize_name_key(&document.label))
             .or_insert(index);
     }
+    // Aliases go in only after every file name is in, so a name somebody typed on
+    // disk always beats a name somebody preferred.
+    for (index, document) in documents.iter().enumerate() {
+        for alias in &document.aliases {
+            name_to_index
+                .entry(normalize_name_key(alias))
+                .or_insert(index);
+        }
+    }
 
     // Documents take the first indices, so a node index is a document index until
     // the end of the list. Web addresses are appended as they are met.
@@ -702,6 +752,7 @@ pub(crate) fn build_graph(documents: &[CorpusDocument]) -> DocumentGraph {
         .map(|document| GraphNode {
             path: document.path.clone(),
             label: document.label.clone(),
+            aliases: document.aliases.clone(),
             degree: 0,
             external: false,
         })
@@ -727,6 +778,7 @@ pub(crate) fn build_graph(documents: &[CorpusDocument]) -> DocumentGraph {
                 let to = *url_to_index.entry(url.clone()).or_insert_with(|| {
                     nodes.push(GraphNode {
                         label: url_host_label(&url),
+                        aliases: Vec::new(),
                         path: url,
                         degree: 0,
                         external: true,

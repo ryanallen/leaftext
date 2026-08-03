@@ -14,6 +14,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [File tree](#file-tree) | One folder at a time, with a breadcrumb showing where you are and a row that steps back out |
 | [Breadcrumb](#file-tree) | The folder path above the search box; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
 | [Search](#search) | Filename and content search across the active vault |
+| [Other names](#other-names) | A note's `aliases` field: every name in it works wherever the file's own name works |
 | [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
 | [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, with a sync button in its own header |
 | [File actions](#file-actions) | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
@@ -126,10 +127,11 @@ Search covers the active vault. With no vault the field is hidden rather than le
 | Search type | Behavior |
 | --- | --- |
 | Name matches | Ranked first, and by how much of the name you typed: the whole name, then the start of it, then the start of a word in it, then buried inside one |
+| Its [other names](#other-names) | Counted as names, on the same scale — a note's `aliases` entry matched end to end is worth what its file name matched end to end is worth. The row says which name matched |
 | Folder names | Counted, and weakly — everything under `notes/` matches "notes" |
 | Content matches | Ranked by how often the terms appear **for the document's size**, so a long file cannot out-count a one-page note by being long |
 | A match in a heading | Outranks the same word in a paragraph |
-| Multiple terms | Every term must appear, in the name, the folder or the body |
+| Multiple terms | Every term must appear, in a name, the folder or the body |
 | Rows per file | Up to three, one per place the word is |
 | Result limit | The best 50 files. Past that the count says so — "84 results in the first 50 files" |
 
@@ -141,11 +143,47 @@ To search **inside** the document you are reading rather than across the vault, 
 
 The text search reads is the same copy the [graph](#graph) reads: one pass over the vault, held in memory, patched a file at a time by the [watcher](#live-updates) and dropped when you switch vaults or quit. There is no index on disk, so nothing can go stale relative to your files.
 
+## Other names
+
+A note can answer to more than the name of its file. Give it an `aliases` field
+and every name in the list works everywhere the file's own name works:
+
+```markdown
+---
+aliases:
+  - Mozart
+  - W. A. Mozart
+---
+```
+
+Now `[[Mozart]]` reaches `Wolfgang Amadeus Mozart.md` — it draws that edge on the
+map, finds the note in [search](#search), previews it on hover, and appears in
+the `[[` popup with the file it opens named beside it. Written `aliases: [Mozart,
+W. A. Mozart]` on one line, or as a single `aliases: Mozart`, it reads the same.
+This is the same field [Obsidian](https://obsidian.md/help/properties) uses, so a
+vault written there opens here with its links intact.
+
+A few rules, so a preferred name can never quietly take a real one:
+
+- **A file name always wins.** If one note is called `Mozart.md` and another
+  prefers the name, `[[Mozart]]` opens the file.
+- **Between two notes preferring one name**, the first found wins, and the code
+  view's [broken-link check](07-editing.md#typing-help) says which note the link
+  opens and which others wanted it.
+- **A node on the map keeps its file's name** — a node labeled with a preferred
+  name is one you cannot find by the name on disk. Hover it to see the rest.
+- **Thirty-two per note.** Past that they are ignored, and the check marks the
+  `aliases` line to say how many there were.
+
+It works outside a vault too: for a document in a plain folder, Leaftext reads
+the top of each file beside it — the field block and no further — for up to 500
+files. One folder, never the tree below it.
+
 ## Graph
 
 ![The graph view filling the page: dozens of document nodes joined by arrowed lines, the open document highlighted larger in the accent color, names floating in dim gray beneath the nodes](../../imgs/graph.png)
 
-A force-directed relationship map. Each **node** is one of your documents or a [web address](#web-addresses) one of them links to; each **edge** is a link that resolves — a Markdown link, an `<a href>`, a `[[wiki]]` link matched by filename, a TEI `target=`, or a bare URL in the text.
+A force-directed relationship map. Each **node** is one of your documents or a [web address](#web-addresses) one of them links to; each **edge** is a link that resolves — a Markdown link, an `<a href>`, a `[[wiki]]` link matched by file name or by one of the note's [other names](#other-names), a TEI `target=`, or a bare URL in the text.
 
 It is a **view of the page**, not a panel — reach it from the [floating toolbar](02-navigation.md#the-floating-toolbar) under the document, beside reading and the source view. All it needs is a document open. It does **not** need a vault.
 

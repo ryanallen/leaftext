@@ -34,7 +34,10 @@ use std::path::{Path, PathBuf};
 /// How many documents one document's map may gather. A folder is bounded by
 /// construction; this is the backstop for a document sitting in someone's
 /// downloads folder next to a thousand others.
-const MAX_DOCUMENTS: usize = 500;
+///
+/// Also the cap on how many of a folder's files typing help will open
+/// ([`crate::code_intel`]): how much of one folder this app reads is one answer.
+pub(crate) const MAX_DOCUMENTS: usize = 500;
 
 /// The graph around `seed`, sliced by `request` exactly as a vault's graph is.
 ///

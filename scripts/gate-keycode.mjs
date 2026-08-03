@@ -34,8 +34,9 @@ export const ALWAYS = 'AGENTS.md';
 /// it with a slash, which is how a skill gets invoked.
 export function keyedFiles() {
   const skills = [
-    'add-dependency', 'add-format', 'check', 'code-comments', 'design-tokens',
-    'git-release', 'refine', 'shell-fragment', 'sync-docs', 'sync-tests', 'ticket',
+    'add-dependency', 'add-format', 'build', 'check', 'code-comments',
+    'design-tokens', 'git-release', 'refine', 'shell-fragment', 'sync-docs',
+    'sync-tests', 'ticket',
   ];
   return [ALWAYS, ...skills.map((name) => `.agents/skills/${name}/SKILL.md`)];
 }

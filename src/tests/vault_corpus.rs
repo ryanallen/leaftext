@@ -49,6 +49,7 @@ fn synthetic_corpus(count: usize) -> VaultCorpus {
             CorpusDocument {
                 path: format!("/vault/note-{index}.md"),
                 label: format!("note-{index}"),
+                aliases: Vec::new(),
                 text,
             }
         })
@@ -402,6 +403,163 @@ fn ranking_puts_the_file_you_named_first_and_a_long_file_in_its_place() {
     fs::remove_dir_all(&dir).expect("test directory is removed");
     fs::remove_dir_all(&by_folder).expect("test directory is removed");
     fs::remove_dir_all(&by_size).expect("test directory is removed");
+}
+
+#[test]
+fn a_wiki_link_reaches_a_note_by_its_alias() {
+    let dir = corpus_dir("aliases");
+    let root = dir.join("vault");
+    write(
+        &root.join("Wolfgang Amadeus Mozart.md"),
+        "---\naliases:\n  - Mozart\n  - W. A. Mozart\n---\n\n# Mozart\n",
+    );
+    write(
+        &root.join("listening.md"),
+        "# Listening\n\nStarted with [[Mozart]], then [[w. a. mozart]] again.\n",
+    );
+    // Inline form, and an alias that is the file's own name: neither is a second
+    // key, and the self-alias must not draw an edge from a note to itself.
+    write(
+        &root.join("Kv 626.md"),
+        "---\naliases: [Requiem, \"Kv 626\"]\n---\n\n# Requiem\n\nSee [[Requiem]].\n",
+    );
+
+    let corpus = VaultCorpus::read(&root);
+    let mozart = corpus
+        .documents
+        .iter()
+        .find(|document| document.label == "Wolfgang Amadeus Mozart")
+        .expect("the note is in the corpus");
+    assert_eq!(mozart.aliases, vec!["Mozart", "W. A. Mozart"]);
+    let requiem = corpus
+        .documents
+        .iter()
+        .find(|document| document.label == "Kv 626")
+        .expect("the requiem is in the corpus");
+    assert_eq!(requiem.aliases, vec!["Requiem"]);
+
+    // One edge from both wiki links in listening.md, and none from the note that
+    // links to its own alias.
+    let graph = corpus.graph(&GraphRequest::default());
+    assert_eq!(graph.edges.len(), 1);
+    let edge = &graph.edges[0];
+    assert!(
+        edge.source.ends_with("Wolfgang Amadeus Mozart.md")
+            || edge.source.ends_with("listening.md"),
+        "unexpected edge: {edge:?}"
+    );
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn search_finds_a_note_by_its_alias_and_scores_it_like_a_name() {
+    let dir = corpus_dir("alias-search");
+    let root = dir.join("vault");
+    write(
+        &root.join("Wolfgang Amadeus Mozart.md"),
+        "---\naliases: [Mozart]\n---\n\n# A life\n\nNothing here says the short name.\n",
+    );
+    // Says it in the body only, so a name match has to outrank it.
+    write(
+        &root.join("concerts.md"),
+        "# Concerts\n\nMozart, Mozart, Mozart.\n",
+    );
+
+    let corpus = VaultCorpus::read(&root);
+    let hits = corpus.search("mozart");
+    // Three rows for concerts, one per match in it, all below the name match.
+    assert_eq!(
+        titles(&hits)[..2],
+        ["Wolfgang Amadeus Mozart", "concerts"],
+        "an alias matched whole beats a body match"
+    );
+    // The row says which name matched, since it is not the one on the row.
+    assert_eq!(hits.hits[0].alias.as_deref(), Some("Mozart"));
+    assert_eq!(hits.hits[1].alias, None);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+
+    // The whole scale, not a discount: an alias the term matches end to end is
+    // worth the top of it, the same 400 a file name matched end to end is worth.
+    // Anything less and a note would sort below worse matches for using the field.
+    let dir = corpus_dir("alias-score");
+    let root = dir.join("vault");
+    write(&root.join("Zephyr.md"), "plain body\n");
+    write(&root.join("Other.md"), "---\naliases: [Zephyr]\n---\n");
+
+    let corpus = VaultCorpus::read(&root);
+    for title in ["Zephyr", "Other"] {
+        let hit = corpus
+            .search("zephyr")
+            .hits
+            .into_iter()
+            .find(|hit| hit.title == title)
+            .expect("both notes match");
+        assert!(hit.score >= 400.0, "{title} scored {}", hit.score);
+    }
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn a_file_name_beats_an_alias_and_the_alias_cap_holds() {
+    let dir = corpus_dir("alias-collisions");
+    let root = dir.join("vault");
+    // Two notes claim "Shared"; the one actually called that owns it.
+    write(
+        &root.join("First.md"),
+        "---\naliases: [Shared]\n---\n\n# First\n",
+    );
+    write(&root.join("Shared.md"), "# Shared\n");
+    write(&root.join("asking.md"), "# Asking\n\nGo to [[Shared]].\n");
+    // Thirty-three claimed, thirty-two kept.
+    let many: String = (0..33).map(|n| format!("  - name-{n}\n")).collect();
+    write(
+        &root.join("Many.md"),
+        &format!("---\naliases:\n{many}---\n"),
+    );
+
+    let corpus = VaultCorpus::read(&root);
+    let many = corpus
+        .documents
+        .iter()
+        .find(|document| document.label == "Many")
+        .expect("the note is in the corpus");
+    assert_eq!(many.aliases.len(), crate::store::MAX_ALIASES);
+    assert_eq!(many.aliases.last().map(String::as_str), Some("name-31"));
+
+    // The edge lands on the file called Shared, not on the note preferring it.
+    let graph = corpus.graph(&GraphRequest::default());
+    assert_eq!(graph.edges.len(), 1);
+    let shared = graph
+        .nodes
+        .iter()
+        .find(|node| node.label == "Shared")
+        .expect("Shared is a node");
+    assert_eq!(shared.degree, 1);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn an_alias_edited_on_disk_moves_the_link_without_a_restart() {
+    let dir = corpus_dir("alias-refresh");
+    let root = dir.join("vault");
+    let note = root.join("Long Name.md");
+    write(&note, "---\naliases: [Short]\n---\n\n# Long Name\n");
+    write(&root.join("asking.md"), "# Asking\n\nGo to [[Short]].\n");
+
+    let mut corpus = VaultCorpus::read(&root);
+    assert_eq!(corpus.graph(&GraphRequest::default()).edges.len(), 1);
+
+    // The alias is the only thing that changed, and it is in the value the watcher
+    // compares, so the link stops resolving without the vault being read again.
+    write(&note, "# Long Name\n");
+    assert!(corpus.refresh(&note));
+    assert!(corpus.graph(&GraphRequest::default()).edges.is_empty());
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
 }
 
 #[test]

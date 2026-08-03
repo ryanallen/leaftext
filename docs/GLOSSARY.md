@@ -7,6 +7,17 @@ reading, so you never leave the document. You can also link one by hand —
 `[minimap](GLOSSARY.md#minimap)` from a page in this folder, `[minimap](../GLOSSARY.md#minimap)`
 from a page one level down.
 
+## Alias
+
+Another name a note answers to, listed in its `aliases`
+[frontmatter](GLOSSARY.md#frontmatter) field. Every alias works wherever the file's
+own name works: a [wikilink](GLOSSARY.md#wikilink) resolves to it, the
+[graph view](GLOSSARY.md#graph-view) draws that edge,
+[vault search](GLOSSARY.md#vault-search) matches it, and
+[typing help](GLOSSARY.md#typing-help) offers it. A real file name always beats an
+alias, and a node on the map keeps its file's name. Thirty-two per note. See
+[Library](01-features/03-library.md#other-names).
+
 ## Alert
 
 A block quote that opens with `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`
@@ -598,9 +609,9 @@ node. Clicking one opens your browser and leaves the map up.
 
 ## Wikilink
 
-A `[[Note name]]` link, matched to a document by its filename.
-[Typing help](GLOSSARY.md#typing-help) completes them, previews them on hover, and
-underlines the ones that answer to nothing. In the
+A `[[Note name]]` link, matched to a document by its filename or by one of its
+[aliases](GLOSSARY.md#alias). [Typing help](GLOSSARY.md#typing-help) completes them,
+previews them on hover, and underlines the ones that answer to nothing. In the
 [graph view](GLOSSARY.md#graph-view) they resolve across the whole
 [vault](GLOSSARY.md#vault).
 

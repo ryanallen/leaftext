@@ -1,6 +1,6 @@
 ---
 name: refine
-description: Review a ticket before anyone builds it. Opens every file the ticket cites and checks the claim is still true, then holds the plan against the rules this repo already paid for — one table of formats, every value in design/, fragment order, no crawl, no second list, no loosened check, nothing new on the startup path. Fixes what is wrong in place and leaves a record of it at the bottom, so a later reading knows what the first one already thought about. Never touches git and never edits app code. Use when the user says "refine", "review this plan", "check this ticket", or hands over a Markdown plan written by /ticket.
+description: Review a ticket before anyone builds it. Opens every file the ticket cites and checks the claim is still true, then holds the plan against the rules this repo already paid for — one table of formats, every value in design/, fragment order, no crawl, no second list, no loosened check, nothing new on the startup path. Fixes what is wrong in place, signs the top of the file with the date it was checked, and leaves a record of what was wrong at the bottom, so a later reading knows what the first one already thought about and whether anyone has read it against this month's code. Never touches git and never edits app code. Use when the user says "refine", "review this plan", "check this ticket", or hands over a Markdown plan written by /ticket.
 argument-hint: "[path to the ticket]"
 user-invocable: true
 ---
@@ -104,7 +104,25 @@ If a fix changes what gets built rather than how it is described, ask before
 writing it. One round, the question tool, and the answer goes in the file as a
 decision with its reason.
 
-## 6. Leave the record
+## 6. Sign the top
+
+**Say on the file that this ran, and when.** One line, directly under the
+`> **Not built.**` note at the top:
+
+```markdown
+> **Refined 3 August 2026.** Every `path:line` opened and checked against the
+> code; the plan held against `AGENTS.md`. See the record at the bottom.
+```
+
+It goes at the top because that is where somebody decides whether to trust the
+file, and it carries a date because a plan refined in March against code that
+moved in August is a plan nobody has read. Re-refining replaces the line rather
+than stacking another one — the newest reading is the one that counts.
+
+The line is also the flag [build](../build/SKILL.md) tests for: no line, and it
+runs this skill before it writes a single piece of code.
+
+## 7. Leave the record
 
 Fix the file. Then, at the bottom, say what was wrong. Keep the section even
 when the list is short — the file's own history of being doubted is what stops
@@ -136,15 +154,20 @@ Fix the small stuff in place without a line in the record — a stale line
 number, a renamed function, a typo. The record is for things a reader could
 reasonably still believe.
 
-## 7. Hand back
+## 8. Hand back
 
 Say what changed in the plan, in plain words. The ticket is a file in
 `../docs/`; nothing in the app moved, so there is nothing to verify and nothing
 to bundle. The tree stays dirty.
 
+Two things have to be on the file when this ends: the dated line at the top, and
+the record at the bottom. Missing either one, nothing downstream can tell a
+checked plan from an unchecked one.
+
 ## Reference
 
 - `/ticket` — the shape this holds a file to.
+- `/build` — what runs next, once the plan is true.
 - `AGENTS.md` — the rules each paid for in version numbers.
 - `/design-tokens` — where a value lives, for anything the ticket styles.
 - `/add-dependency` — what a ticket owes before it names a crate.

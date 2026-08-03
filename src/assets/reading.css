@@ -1175,6 +1175,13 @@ body.library-resizing {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* The other name a hit matched, beside the file's own name on the same line. */
+.library-hit-alias {
+  margin-left: var(--lt-space-4);
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-400);
+  color: var(--lt-muted-foreground);
+}
 .library-hit-snippet {
   display: -webkit-box;
   -webkit-line-clamp: 2;

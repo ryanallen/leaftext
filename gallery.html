@@ -3520,6 +3520,13 @@ body.library-resizing {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* The other name a hit matched, beside the file's own name on the same line. */
+.library-hit-alias {
+  margin-left: var(--lt-space-4);
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-400);
+  color: var(--lt-muted-foreground);
+}
 .library-hit-snippet {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -8319,7 +8326,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </section>
 <section class="part">
 <header><h3>Search results</h3><code class="built">.library-hit</code><span class="built">library-search.js</span></header>
-<div class="stage"><button type="button" class="library-hit"><span class="library-hit-title">A note</span><span class="library-hit-snippet">the matched words</span></button></div>
+<div class="stage"><button type="button" class="library-hit"><span class="library-hit-title">A note<span class="library-hit-alias">Its other name</span></span><span class="library-hit-snippet">the matched words</span></button></div>
 </section>
 <section class="part">
 <header><h3>Breadcrumbs</h3><code class="built">.library-crumb</code><span class="built">library.js</span></header>

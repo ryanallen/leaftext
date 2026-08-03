@@ -1,5 +1,13 @@
 //! YAML frontmatter: locating it, parsing it, storing its fields.
 
+use super::normalize_name_key;
+use std::collections::HashSet;
+
+/// How many aliases one document may claim. A vault is bounded by construction
+/// but a list inside one file is not, and every alias becomes a key in an
+/// in-memory index.
+pub const MAX_ALIASES: usize = 32;
+
 /// The leading frontmatter block's inner text (between the `---` fences), with
 /// the fences and any leading byte order mark removed. A file read from disk has
 /// already had its mark taken off; this covers text from anywhere else.
@@ -162,4 +170,80 @@ pub fn parse_frontmatter(block: &FrontmatterBlock) -> Result<ParsedFrontmatter, 
         return Err(MetadataError::Unparseable);
     }
     Ok(ParsedFrontmatter { fields })
+}
+
+/// A document's frontmatter fields, empty when it has none or the block does not
+/// parse. One extract-and-parse, so something wanting two keys out of the block
+/// does not read it twice.
+pub fn document_fields(text: &str) -> Vec<FrontmatterField> {
+    extract_frontmatter(text)
+        .and_then(|block| parse_frontmatter(&block).ok())
+        .map(|parsed| parsed.fields)
+        .unwrap_or_default()
+}
+
+/// The other names a document answers to: its `aliases`, as written, in file
+/// order. Deduped by the key names are matched on, and capped at [`MAX_ALIASES`].
+///
+/// An alias equal to the document's own name is dropped — it is already the
+/// label, and keeping it would offer the same note to the popup twice.
+pub fn aliases_from(fields: &[FrontmatterField], label: &str) -> Vec<String> {
+    let mut claimed: HashSet<String> = [normalize_name_key(label)].into();
+    let mut names = Vec::new();
+    for field in fields.iter().filter(|field| field.key == "aliases") {
+        if names.len() >= MAX_ALIASES {
+            break;
+        }
+        let key = normalize_name_key(&field.value);
+        if key.is_empty() || !claimed.insert(key) {
+            continue;
+        }
+        names.push(field.value.clone());
+    }
+    names
+}
+
+/// The byte range of the line declaring `key` in the leading block, for something
+/// that has to point at one field in the source.
+///
+/// A scan, because the parser records no positions. When it does
+/// (`../docs/refactor/properties.md` phase 1 puts the range of every key and value
+/// on the field itself), this takes them from there instead — there should be one
+/// locator, and this is deliberately the smallest thing that answers one question.
+pub fn frontmatter_key_span(text: &str, key: &str) -> Option<(usize, usize)> {
+    let mark = text.len() - text.strip_prefix('\u{feff}').unwrap_or(text).len();
+    let mut at = mark;
+    let mut opened = false;
+    for line in text[mark..].split_inclusive('\n') {
+        let trimmed = line.trim_end_matches(['\n', '\r']);
+        if !opened {
+            if trimmed.trim_end() != "---" {
+                return None; // no leading block, so no field to point at
+            }
+            opened = true;
+        } else if trimmed.trim_end() == "---" {
+            return None; // the block closed without the key in it
+        } else if trimmed
+            .split_once(':')
+            .is_some_and(|(name, _)| name.trim().to_lowercase() == key)
+        {
+            return Some((at, at + trimmed.len()));
+        }
+        at += line.len();
+    }
+    None
+}
+
+/// How many aliases a document claims before the cap, so something can say how
+/// many were left out. Counts what [`aliases_from`] would count, uncapped.
+pub fn alias_count(fields: &[FrontmatterField], label: &str) -> usize {
+    let mut claimed: HashSet<String> = [normalize_name_key(label)].into();
+    fields
+        .iter()
+        .filter(|field| field.key == "aliases")
+        .filter(|field| {
+            let key = normalize_name_key(&field.value);
+            !key.is_empty() && claimed.insert(key)
+        })
+        .count()
 }

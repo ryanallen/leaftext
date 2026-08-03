@@ -291,6 +291,51 @@ fn reading_a_file_reports_the_path_when_it_cannot_be_decoded() {
 }
 
 #[test]
+fn a_head_read_cuts_between_characters_in_every_encoding() {
+    let dir = std::env::temp_dir().join(format!("leaf-encoding-head-{}", unique_suffix()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    // Long enough that every cut below lands inside the body, and made of
+    // characters no cut can divide cleanly: 4 bytes in UTF-8, a surrogate pair in
+    // UTF-16, 4 bytes in UTF-32.
+    let text = format!("# Head\n\n{}\n", "🌿".repeat(64));
+
+    let utf8 = dir.join("utf8.md");
+    fs::write(&utf8, text.as_bytes()).expect("fixture is written");
+    let wide = dir.join("utf16.md");
+    fs::write(&wide, utf16_bytes(&text, false)).expect("fixture is written");
+    let widest = dir.join("utf32.md");
+    fs::write(&widest, utf32_bytes(&text, true)).expect("fixture is written");
+
+    // Every limit through a whole character's width, so each one lands mid-character
+    // in at least one of the three. A cut is not an error in the file: the split
+    // bytes come off and what is left is text.
+    for limit in 30..40 {
+        for path in [&utf8, &wide, &widest] {
+            let head = read_source_head(path, limit).expect("a cut file still reads");
+            assert!(
+                text.starts_with(&head.text),
+                "{}: {limit} bytes gave {:?}",
+                path.display(),
+                head.text
+            );
+        }
+    }
+
+    // Past the end is the whole file, and the encoding is still the file's own.
+    let whole = read_source_head(&wide, 1 << 20).expect("read");
+    assert_eq!(whole.text, text);
+    assert_eq!(whole.spelling.encoding, SourceEncoding::Utf16Le);
+
+    // A legacy code page has bytes no UTF-8 file could hold, which is not a cut —
+    // it decodes as Windows-1252 the same way a whole read does.
+    let legacy = dir.join("legacy.md");
+    fs::write(&legacy, b"# Caf\xe9 words\n").expect("fixture is written");
+    assert_eq!(read_source_head(&legacy, 8).expect("read").text, "# Café w");
+
+    fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
 fn a_document_read_in_utf16_saves_back_as_utf16() {
     // The whole point, end to end: open a UTF-16 file, edit it through the buffer
     // the app actually edits with, write it, and assert the file is still UTF-16.

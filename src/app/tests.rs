@@ -304,6 +304,7 @@ fn an_answer_to_a_query_the_field_moved_past_never_reaches_the_page() {
         documents: vec![CorpusDocument {
             path: "/vault/note.md".to_string(),
             label: "note".to_string(),
+            aliases: Vec::new(),
             text: "A talk on dharma.".to_string(),
         }],
         truncated: false,
@@ -329,6 +330,7 @@ fn the_same_query_over_unchanged_text_is_answered_from_the_last_one() {
         hits: vec![leaftext::store::SearchHit {
             abs_path: "/vault/note.md".to_string(),
             title: "note".to_string(),
+            alias: None,
             start_line: 3,
             end_line: 3,
             anchor: None,
