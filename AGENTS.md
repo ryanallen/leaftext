@@ -97,7 +97,7 @@ In [`.agents/settings.json`](.agents/settings.json) — `.claude/settings.json` 
 
 ## Commands
 
-Needs `rustup`, `just`, `node`. `/check` is the gate before handing work back: `just verify` (fmt, check, test, vendor + theme + token + icon + gallery + docs drift, no hand-written values, US spelling, every Markdown file has something keeping it true, front-end boot, identity, the two hooks) with a test pass in front of it. `just check` / `test` / `format` / `check-shell` run individually.
+Needs `rustup`, `just`, `node`. `/check` is the gate before handing work back: `just verify` (fmt, check, test, vendor + theme + token + icon + gallery + docs drift, no hand-written values, US spelling, every Markdown file has something keeping it true, every path the published pages fetch is a file, front-end boot, identity, the two hooks) with a test pass in front of it. `just check` / `test` / `format` / `check-shell` run individually.
 
 Mac code and the installer cannot be built on this machine, and never have been. **Never say so.** Not as a caveat, not as a footnote, not "it ships unproven", not when the change is in one of them — that is exactly when it is most obvious and least worth a line. GitHub builds both on a tagged release and a break shows up there. It is true every single time, so saying it is the padding Rule 1 refuses. The one exception is a direct question about it.
 

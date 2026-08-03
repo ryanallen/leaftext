@@ -81,6 +81,11 @@ check-spelling:
 check-docs:
     node scripts/check-docs.mjs
 
+# Fail on a file the published pages fetch by a path that has nothing at it — a 404
+# nobody sees until the page is live.
+check-site:
+    node scripts/check-site.mjs
+
 # Fail if a check the Justfile defines is not in `just verify` — a rule with no check
 # in the suite holds only while someone remembers it.
 check-verify:
@@ -157,7 +162,7 @@ conformance *flags:
 doc-images:
     node scripts/doc-images.mjs
 
-verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-shell check-identity check-hooks check-mcp
+verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-site check-shell check-identity check-hooks check-mcp
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

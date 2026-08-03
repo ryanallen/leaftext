@@ -85,6 +85,8 @@ For anyone building, extending, or releasing Leaftext:
 
 The glossary is not an ordinary page: every term in it is matched automatically wherever it appears across these docs, and clicking one opens that entry in a bottom sheet over the page you are reading rather than navigating away. Linking one by hand works too — `[minimap](GLOSSARY.md#minimap)`.
 
+The front page at leaftext.com reads this same file, one folder up, so this is the only copy and it stays here. `just check-site` fails on a page that asks for it anywhere else.
+
 ## How this folder ships
 
 These pages are plain Markdown, but the folder is also a deployable site:

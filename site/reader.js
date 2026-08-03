@@ -28,15 +28,16 @@ const statusEl = document.getElementById('status');
 installSettings({ hasLibrary: false });
 
 // Glossary links (e.g. GLOSSARY.md#karma) open the term in a bottom sheet over
-// the README rather than navigating. The glossary is fetched next to this page.
+// the README rather than navigating. The file is docs/GLOSSARY.md — there is no
+// copy at the site root, so a bare 'GLOSSARY.md' here is a 404 in the sheet.
 //
 // This single-README page has no router, so it cannot render the whole glossary
 // itself. "Open the full glossary" (and any plain link to the glossary file)
 // goes to the docs viewer's GLOSSARY route — `docs/#/GLOSSARY` — which renders
-// the file with full chrome. Without this, the default fetched the raw .md and
-// the browser showed unrendered Markdown.
+// the file with full chrome; the default fetches the raw .md, which the browser
+// shows as unrendered Markdown.
 const glossary = installGlossary({
-  glossaryUrl: 'GLOSSARY.md',
+  glossaryUrl: 'docs/GLOSSARY.md',
   renderMarkdown,
   onNavigate: (href) => {
     const hashAt = href.indexOf('#');
