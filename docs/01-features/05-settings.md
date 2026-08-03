@@ -1,36 +1,34 @@
 # Settings
 
-> Your settings live on your machine, not in an account. Theme, speed reader, minimap, pager, updates, library layout, and window size sit in a plain JSON file you can read.
+> Your settings live on your machine, not in an account. Theme, speed reader, updates, library layout, and window size sit in a plain JSON file you can read.
 
 Settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView.
 
-![The Settings dropdown open under the app bar: the theme row naming the current family and appearance, the graph size selector, the minimap and next/previous checkboxes, and the version number at its foot](../../imgs/settings.png)
+**There is no settings panel.** Every control stands where it applies, and this page is the account of the file they all save to.
 
 ## Options
 
-| Setting | Options | Default |
-| --- | --- | --- |
-| [Theme](#theme) | Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage, Random | Random |
-| [Appearance](06-themes.md#appearance) | System, Light, Dark, Daylight | Daylight |
-| [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus |
-| [Minimap](#minimap) | On / Off | On |
-| [Pager](#pager) | On / Off | On |
+| Setting | Options | Default | Where the control is |
+| --- | --- | --- | --- |
+| [Theme](#theme) | Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage, Random | Random | The palette in the app bar |
+| [Appearance](06-themes.md#appearance) | System, Light, Dark, Daylight | Daylight | The same [theme picker](06-themes.md#choose) |
+| [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus | The [graph](03-library.md#graph) view's own toolbar |
 
-The Theme row is a door, not a control: it names the family and appearance you are on, and opens the [theme picker](06-themes.md#choose), where both are chosen. Everything else in the table is a control in the panel itself.
+Three more preferences are saved here but toggled elsewhere, where they apply: the [Speed Reader](#speed-reader), [typing help](#typing-help), and [the two padlocks](#the-padlocks).
 
-Four more preferences are saved here but toggled elsewhere, where they apply: the [Speed Reader](#speed-reader), [typing help](#typing-help), and [the two padlocks](#the-padlocks).
+**Speed Reader** is a reading-view tool on the [floating toolbar](02-navigation.md#the-floating-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest. The code view's [typing help](07-editing.md#typing-help) wand works the same way: toggled where it applies, saved here.
 
-**Speed Reader** is not in this panel. It is a reading-view tool on the [floating toolbar](02-navigation.md#the-floating-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest. The code view's [typing help](07-editing.md#typing-help) wand works the same way: toggled where it applies, saved here.
+Two things stopped being choices: the [minimap](#minimap) and the [pager](#pager) are always on.
 
 ### The padlocks
 
-Whether a document can be typed into is **not** in this panel either. It is the [padlock](07-editing.md#the-padlock) on the floating toolbar, and there are two — one for the reading view, one for the source — because unlocking the page you read is not consent to rewrite the file by hand.
+Whether a document can be typed into is the [padlock](07-editing.md#the-padlock) on the floating toolbar, and there are two — one for the reading view, one for the source — because unlocking the page you read is not consent to rewrite the file by hand.
 
 Both are saved (`reading_unlocked`, `code_unlocked`), so the answer you gave last time is the answer next launch, on every document. Both start locked.
 
 ## Open
 
-Click **Settings** in the app bar. The panel opens as a dropdown and updates the app immediately as you change values. The version you are running is shown at the foot of the panel ([Updates](#updates)).
+There is nothing to open. Every control changes the app the moment you use it and saves straight away. The version you are running is at the foot of the home screen ([Updates](#updates)).
 
 ## Files
 
@@ -52,8 +50,6 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
 
 ```json
 {
-  "minimap_enabled": true,
-  "pager_enabled": true,
   "speed_reader_enabled": false,
   "code_intel_enabled": true,
   "reading_unlocked": false,
@@ -74,7 +70,7 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
 }
 ```
 
-Missing fields fall back to defaults when the file is loaded.
+Missing fields fall back to defaults when the file is loaded, and unknown ones are ignored — so a file written by an older version, carrying keys for settings that stopped being choices, loads fine and loses them on the next save.
 
 ## Recents
 
@@ -97,12 +93,14 @@ Leaftext removes broken entries automatically and collapses equivalent path spel
 
 ### Theme
 
+- The palette button in the app bar opens the [theme picker](06-themes.md#choose); its tooltip names the family and appearance you are on
 - Saved as `theme_family` (family or `random`) and `theme_mode` (appearance)
 - New installs default to `random` and `daylight`; once you pick a theme your choice is saved and used from then on
 - Choosing [Random](06-themes.md#random) draws a fresh family at each launch; `theme_random_used` records the families already shown in the current no-repeat cycle so the rotation survives restarts
 
 ### Graph size
 
+- A labeled dropdown in the [floating toolbar](02-navigation.md#the-floating-toolbar), shown only while the graph is up — it is the map's own setting, so it stands on the map
 - Controls how many documents the [graph](03-library.md#graph) draws
 - **Focus** (default) shows the open document and its direct links
 - **Medium** shows up to the 2,000 most-linked documents, **Large** up to 5,000, and **Everything** the whole vault with no cap
@@ -111,15 +109,15 @@ Leaftext removes broken entries automatically and collapses equivalent path spel
 
 ### Minimap
 
-- On by default
-- Can be turned off for a single-column reading layout
-- Saved as `minimap_enabled`
+- **Always on.** It is not a choice any more, and there is nothing to switch
+- The rail still comes and goes with the document, and only appears on windows wide enough for it
+- Nothing is saved: a `minimap_enabled` left in an older `settings.json` is ignored and dropped on the next save
 
 ### Speed Reader
 
 ![The same paragraph with Speed Reader on: the prose dimmed back and the first few letters of each word set in bold, so a path of anchors runs down the page](../../imgs/speedreader.png)
 
-- Off by default, toggled from the reading view's [toolbar](02-navigation.md#the-floating-toolbar) rather than this panel
+- Off by default, toggled from the reading view's [toolbar](02-navigation.md#the-floating-toolbar)
 - Dims non-anchor prose text (including headings) so bold lead anchors carry the most contrast against the background
 - Quiets links to the dimmed prose color with a faint underline, until hover or keyboard focus brightens them
 - Regularizes existing bold text and adds bold lead anchors at word starts; all-caps acronyms (HTML, GFM) are bolded whole
@@ -127,28 +125,28 @@ Leaftext removes broken entries automatically and collapses equivalent path spel
 
 ### Typing help
 
-- On by default, toggled with the wand on the code view's [toolbar](07-editing.md#typing-help) rather than this panel
+- On by default, toggled with the wand on the code view's [toolbar](07-editing.md#typing-help)
 - Monaco's IntelliSense, answered from your notes: suggests them after `[[`, headings after `#`, previews a note on hover, and underlines [broken links](07-editing.md#typing-help) in the code view
 - Saved as `code_intel_enabled`
 
 ### Pager
 
-- On by default
+- **Always on.** It is not a choice any more, and there is nothing to switch
 - Appends a Previous / Next bar at the bottom of documents in a folder tree connected by `README.md` files
-- Turn it off when you prefer clean document bottoms without navigation buttons
-- Saved as `pager_enabled`
+- Nothing is saved: a `pager_enabled` left in an older `settings.json` is ignored and dropped on the next save
 
 ### Updates
 
 - **Updating is not a setting.** It always happens, and it means what it says: **quit and reopen, and the app you get is the new one.** There is nothing to click and nothing to switch off
 - **Every launch asks GitHub for the latest release**, unthrottled — opening the app is when you expect it to know whether it is current. A window left open re-checks in the background at most every six hours; `update_last_checked` records when it last did, so a long session does not spend requests against the rate limit
 - When a newer release exists, its installer downloads in the background — the same `.dmg` or `.msi` published for hand-installing, since a release carries nothing else. A download that arrives short or oversized is deleted rather than kept, and the digest of what did land is recorded so the installer can be re-checked before it runs
-- While it downloads, the button carries a spinner and fills left to right with the percentage; the dot over the Settings button turns into a spinning ring
+- While it downloads, the bell wears a spinning ring, and the button under it carries a spinner and fills left to right with the percentage
 - **The next launch installs it, before any window opens.** Windows cannot replace a running executable, so this is the one moment it can happen without interrupting anything: the app hands off to a detached helper, which waits for it to exit, installs, and starts the new version. No prompt — Leaftext installs per-user, which is what lets it replace itself without administrator rights
 - **Restart to update** is still on the button for anyone who does not want to wait for the next launch
 - Each staged version is installed automatically **once**. `update_auto_applied` records the attempt before the installer runs, so an installer that fails silently cannot be retried on every launch — that would be a boot loop. After one failed attempt the version waits for a deliberate click, and the next launch says what went wrong and names the reason
 - **The updater only speaks when it can install.** A check that found nothing, one that could not reach GitHub, and a release with no installer for this platform all pass in silence — there is nothing for you to do about any of them, and the next check retries on its own. The only two things it shows are the download in progress and *Restart to update*
-- The running version is printed at the foot of the panel, so after a relaunch you can confirm which build is installed
+- **The bell is only in the app bar while there is news.** No update, no bell — its presence is the message, and there is no control sitting there saying nothing
+- The running version is printed at the foot of the home screen, so after a relaunch you can confirm which build is installed
 - Saved as `update_last_checked`, `update_staged_version`, and `update_auto_applied`
 
 > [!NOTE]

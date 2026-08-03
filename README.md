@@ -172,11 +172,9 @@ Write one `GLOSSARY.md` and every mention of a defined term, across every docume
 
 [Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) — each in light and dark, plus System and Daylight if you'd rather the app follow the time of day. Everything moves together: text, code, callouts, diagrams, minimap. Each theme's font is fetched from Google Fonts the first time you choose it. **[Themes →](docs/01-features/06-themes.md)**
 
-### Settings you can read
+### Settings you can read, where you need them
 
-![The Settings dropdown open in the app bar, showing the theme row with the current family and appearance, graph size, the minimap and next/previous checkboxes, and the version at its foot](imgs/settings.png)
-
-Theme, appearance, minimap, pager, graph size — and at the foot, the version you're running. When an update is waiting, a button to restart into it appears at the top of the panel. It's all a plain JSON file on your machine, not an account. **[Settings →](docs/01-features/05-settings.md)**
+There's no settings panel to hunt through. Every control stands where it applies: the palette in the app bar for [theme and appearance](docs/01-features/06-themes.md#choose), the [graph](docs/01-features/03-library.md#graph)'s own toolbar for how big a map to draw. It's all a plain JSON file on your machine, not an account. **[Settings →](docs/01-features/05-settings.md)**
 
 ## Your thoughts stay yours
 

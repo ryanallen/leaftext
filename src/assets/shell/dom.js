@@ -14,11 +14,9 @@ const themeSheetClose = document.getElementById('themeSheetClose');
 const themeSheetModes = document.getElementById('themeSheetModes');
 const themeSheetGrid = document.getElementById('themeSheetGrid');
 const themeSheetBrowse = document.getElementById('themeSheetBrowse');
-const themeCurrentLabel = document.getElementById('themeCurrentLabel');
 const THEME_REPO_URL = 'https://github.com/ryanallen/leaftext';
-const minimapEnabledControl = document.getElementById('minimapEnabled');
 const graphScopeControl = document.getElementById('graphScope');
-const pagerEnabledControl = document.getElementById('pagerEnabled');
+const graphScopeTool = document.getElementById('graphScopeTool');
 const libraryShell = document.getElementById('libraryShell');
 const libraryPane = document.getElementById('libraryPane');
 const libraryDivider = document.getElementById('libraryDivider');
@@ -41,7 +39,14 @@ const libraryVaultSwitch = document.getElementById('libraryVaultSwitch');
 const librarySearch = document.getElementById('librarySearch');
 const librarySyncButton = document.getElementById('librarySyncButton');
 const librarySearchResults = document.getElementById('librarySearchResults');
-const settingsMenu = document.getElementById('settingsMenu');
+// The update bell and its panel. Absent from the bar until there is something to
+// install; the updater un-hides the whole menu.
+const updateMenu = document.getElementById('updateMenu');
+const updateAlertDot = document.getElementById('updateAlertDot');
+const updateButton = document.getElementById('updateButton');
+const updateButtonLabel = document.getElementById('updateButtonLabel');
+const updateButtonFill = document.getElementById('updateButtonFill');
+const updateButtonSpinner = document.getElementById('updateButtonSpinner');
 const readerLoading = document.getElementById('readerLoading');
 const readerMinimap = document.getElementById('readerMinimap');
 let tabDrag = null;
@@ -295,7 +300,7 @@ if (window.__leafFrameless) {
   // Drag from empty app-bar space only — never from a control, tab, or field.
   const isDragTarget = (target) =>
     target &&
-    !target.closest('button, a, input, select, textarea, [role="tab"], .tab, .window-controls, .settings-menu');
+    !target.closest('button, a, input, select, textarea, [role="tab"], .tab, .window-controls, .update-menu');
   // Maximize is decided on the way down: a drag hands the window to a Windows
   // move loop that swallows every later mouse event, so an app-bar dblclick can
   // never fire. event.detail is the click count, but it counts in page

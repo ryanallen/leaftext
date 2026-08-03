@@ -12,63 +12,80 @@ so a drawing used five times is in the app once. A mask reads only alpha, so the
 copy in the URI is painted flat black and the visible color is the control's own:
 `background-color: currentColor` on the base class.
 
-**A row marked `heavy` gets a second mask** with its strokes drawn at 2.25 instead of
-1.5, as `--lt-icon-<name>-heavy`. The three view buttons use it: the view you are in
-is drawn a touch bolder as well as brighter, and a mask has no strokes to thicken, so
-the heavier drawing is its own mask.
+## Stroke
 
-| Name | File | Heavy | Where it is worn |
-| --- | --- | --- | --- |
-| back | arrow-left.svg | — | The app bar's Back button. |
-| forward | arrow-right.svg | — | Forward, beside it. |
-| settings | adjustments-vertical.svg | — | The settings menu, and a vault row's own settings — the same sliders, because that panel is that vault's settings. |
-| open-library | panel.svg | — | The library toggle, left of Back. |
-| open | folder-open.svg | — | Open a file. |
-| new | plus.svg | — | New document, and the menu's add row. |
-| code-view | code-bracket.svg | yes | View source, in the reader's view group. |
-| document | document.svg | yes | The reading view. |
-| graph | graph.svg | yes | The graph view. |
-| sync | arrow-path.svg | — | A vault's sync button, spun while it works. |
-| lock-closed | lock-closed.svg | — | Editing is off. |
-| lock-open | lock-open.svg | — | Editing is on. |
-| speed-reader-on | speed-reader-on.svg | — | The speed reader, running. |
-| speed-reader-off | speed-reader-off.svg | — | The speed reader, stopped. |
-| wand | wand.svg | — | Tidy the document. |
-| cloud | cloud.svg | — | A vault that reaches GitHub. |
-| package-open | package-open.svg | — | The vault you are in. |
-| package | package.svg | — | A vault you are not in. |
-| folder | folder.svg | — | A plain directory in the pane. |
-| grip | grip-vertical.svg | — | A sheet's grab bar, and a block's drag handle. |
-| close | x-mark.svg | — | Close a sheet. |
-| text | text.svg | — | Paragraph, in the block gutter and the format bar. |
-| heading | heading.svg | — | Heading. |
-| list | list-bullet.svg | — | List. |
-| quote | text-quote.svg | — | Blockquote. |
-| table | table.svg | — | Table. |
-| image | photo.svg | — | Image. |
-| divider | minus.svg | — | Thematic break. |
-| comment | message-square.svg | — | Comment. |
-| workflow | workflow.svg | — | Flowchart — the block, and the editor's own button. |
-| zoom-in | zoom-in.svg | — | Zoom in, on a diagram and on the flow canvas. |
-| zoom-out | zoom-out.svg | — | Zoom out. |
-| fit | fit.svg | — | Fit the whole thing back on screen. |
-| bold | bold.svg | — | Bold, in the format bar. |
-| italic | italic.svg | — | Italic. |
-| strikethrough | strikethrough.svg | — | Strikethrough. |
-| link | link.svg | — | Link. |
-| undo | undo.svg | — | Undo the last edit, beside the view group. |
-| missing-image | missing-image.svg | — | A picture the reading view could not load. Every platform draws its own broken mark and they look nothing alike, so the app draws one. |
-| chevron-down | chevron-down.svg | — | The app bar's overflow toggle, and any "more below" mark. |
-| theme | theme.svg | — | The theme row in the settings menu. |
-| redo | redo.svg | — | Redo, beside undo in the flowchart editor. |
-| window-minimize | window-minimize.svg | — | The window's own minimize button. Drawn on a 12px grid at a hairline, because it sits in the title bar beside the platform's own chrome. |
-| window-maximize | window-maximize.svg | — | Maximize. Same grid. |
-| window-restore | window-restore.svg | — | Restore down, shown in place of maximize when the window is already maximized. |
-| window-close | window-close.svg | — | The window's close cross. |
-| check | check.svg | — | A chosen row in a menu, and the code block's "copied" mark. |
-| check-circle | check-circle.svg | — | The theme card's selected badge, where the tick needs a ring of its own to read on a colored card. |
-| tab-close | tab-close.svg | — | A tab's close cross. Its own drawing rather than `close`, because at that size a 1.5 stroke disappears. |
-| back-long | back-long.svg | — | The menu row that goes up a folder. A longer arrow than the app bar's Back, which is why it is not the same icon. |
-| trash | trash.svg | — | Delete, in the file menu. |
-| copy | copy.svg | — | Copy a code block. |
-| leaf | leaf.svg | — | The header logomark, and a Markdown file's badge in the pane. |
+**The row sets the line weight, not the drawing.** A `.svg` arrives from wherever it
+was drawn carrying whatever number that tool wrote, and left alone those numbers drift
+— this set reached seven of them, so a new button in the app bar could sit beside an
+old one at half again the weight. `bundle-icons` stamps the row's weight over every
+stroke in the file, so what the drawing says is only a note, and the check fails when
+the two disagree.
+
+| Weight | Value | Where |
+| --- | --- | --- |
+| regular | 1.5 | Everything, unless a row says otherwise. |
+| heavy | 2.25 | A drawing whose whole point is a bolder line: an unlocked padlock beside a shut one, the speed reader running beside stopped, a cross small enough that the regular weight disappears. |
+| hairline | 1 | The window's own minimize / maximize / restore / close, which sit in the title bar beside the platform's chrome and have to match it, not us. |
+| — | none | A drawing with no strokes at all: the leaf, the drag grip. |
+
+**A row marked `heavy` in the fourth column gets a second mask** at the heavy weight,
+published as `--lt-icon-<name>-heavy`. The three view buttons use it: the view you are
+in is drawn a touch bolder as well as brighter, and a mask has no strokes to thicken,
+so the heavier drawing is its own mask.
+
+| Name | File | Stroke | Heavy | Where it is worn |
+| --- | --- | --- | --- | --- |
+| back | arrow-left.svg | regular | — | The app bar's Back button. |
+| forward | arrow-right.svg | regular | — | Forward, beside it. |
+| settings | adjustments-vertical.svg | regular | — | A vault row's own settings — the sliders that open everything you can do to that vault. |
+| update | bell.svg | regular | — | The update bell, in the app bar only while an update is downloading or waiting to install. |
+| open-library | panel.svg | regular | — | The library toggle, left of Back. |
+| open | folder-open.svg | regular | — | Open a file. |
+| new | plus.svg | regular | — | New document, and the menu's add row. |
+| code-view | code-bracket.svg | regular | yes | View source, in the reader's view group. |
+| document | document.svg | regular | yes | The reading view. |
+| graph | graph.svg | regular | yes | The graph view. |
+| sync | arrow-path.svg | regular | — | A vault's sync button, spun while it works. |
+| lock-closed | lock-closed.svg | regular | — | Editing is off. |
+| lock-open | lock-open.svg | heavy | — | Editing is on. |
+| speed-reader-on | speed-reader-on.svg | heavy | — | The speed reader, running. |
+| speed-reader-off | speed-reader-off.svg | regular | — | The speed reader, stopped. |
+| wand | wand.svg | regular | — | Tidy the document. |
+| cloud | cloud.svg | regular | — | A vault that reaches GitHub. |
+| package-open | package-open.svg | regular | — | The vault you are in. |
+| package | package.svg | regular | — | A vault you are not in. |
+| folder | folder.svg | regular | — | A plain directory in the pane. |
+| grip | grip-vertical.svg | — | — | A sheet's grab bar, and a block's drag handle. |
+| close | x-mark.svg | regular | — | Close a sheet. |
+| text | text.svg | regular | — | Paragraph, in the block gutter and the format bar. |
+| heading | heading.svg | regular | — | Heading. |
+| list | list-bullet.svg | regular | — | List. |
+| quote | text-quote.svg | regular | — | Blockquote. |
+| table | table.svg | regular | — | Table. |
+| image | photo.svg | regular | — | Image. |
+| divider | minus.svg | regular | — | Thematic break. |
+| comment | message-square.svg | regular | — | Comment. |
+| workflow | workflow.svg | regular | — | Flowchart — the block, and the editor's own button. |
+| zoom-in | zoom-in.svg | regular | — | Zoom in, on a diagram and on the flow canvas. |
+| zoom-out | zoom-out.svg | regular | — | Zoom out. |
+| fit | fit.svg | regular | — | Fit the whole thing back on screen. |
+| bold | bold.svg | regular | — | Bold, in the format bar. |
+| italic | italic.svg | regular | — | Italic. |
+| strikethrough | strikethrough.svg | regular | — | Strikethrough. |
+| link | link.svg | regular | — | Link. |
+| undo | undo.svg | regular | — | Undo the last edit, beside the view group. |
+| missing-image | missing-image.svg | regular | — | A picture the reading view could not load. Every platform draws its own broken mark and they look nothing alike, so the app draws one. |
+| chevron-down | chevron-down.svg | regular | — | The app bar's overflow toggle, and any "more below" mark. |
+| theme | theme.svg | regular | — | The app bar's palette button, which opens the theme sheet. |
+| redo | redo.svg | regular | — | Redo, beside undo in the flowchart editor. |
+| window-minimize | window-minimize.svg | hairline | — | The window's own minimize button. Drawn on a 12px grid at a hairline, because it sits in the title bar beside the platform's own chrome. |
+| window-maximize | window-maximize.svg | hairline | — | Maximize. Same grid. |
+| window-restore | window-restore.svg | hairline | — | Restore down, shown in place of maximize when the window is already maximized. |
+| window-close | window-close.svg | hairline | — | The window's close cross. |
+| check | check.svg | regular | — | A chosen row in a menu, and the code block's "copied" mark. |
+| check-circle | check-circle.svg | regular | — | The theme card's selected badge, where the tick needs a ring of its own to read on a colored card. |
+| tab-close | tab-close.svg | heavy | — | A tab's close cross. Its own drawing rather than `close`, because at that size a 1.5 stroke disappears. |
+| back-long | back-long.svg | regular | — | The menu row that goes up a folder. A longer arrow than the app bar's Back, which is why it is not the same icon. |
+| trash | trash.svg | regular | — | Delete, in the file menu. |
+| copy | copy.svg | regular | — | Copy a code block. |
+| leaf | leaf.svg | — | — | The header logomark, and a Markdown file's badge in the pane. |

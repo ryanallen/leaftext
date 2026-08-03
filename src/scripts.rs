@@ -33,8 +33,6 @@ pub fn initial_state_script(recent: &[PathBuf]) -> String {
 /// camelCase to match the frontend, not the snake_case on-disk format.
 pub fn initial_settings_script(settings: &Settings) -> String {
     let state = serde_json::json!({
-        "minimapEnabled": settings.minimap_enabled,
-        "pagerEnabled": settings.pager_enabled,
         "speedReaderEnabled": settings.speed_reader_enabled,
         "codeIntelEnabled": settings.code_intel_enabled,
         "readingUnlocked": settings.reading_unlocked,

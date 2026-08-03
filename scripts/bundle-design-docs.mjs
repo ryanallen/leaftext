@@ -34,7 +34,8 @@ function rows(file) {
 
 const colors = rows('colors.md');
 const tokens = rows('tokens.md');
-const icons = rows('icons.md');
+// The rows that name a drawing, not the Stroke table's weights.
+const icons = rows('icons.md').filter(({ cells }) => /\.svg$/.test(cells[1] || ''));
 // Only the first table: the document prefixes and states after it account for
 // classes, they are not components with markup to draw.
 const components = rows('components.md').filter(({ group }) => !group.startsWith('What a document') && !group.startsWith('State'));

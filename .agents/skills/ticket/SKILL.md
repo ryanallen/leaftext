@@ -1,6 +1,6 @@
 ---
 name: ticket
-description: Write a ticket — a Markdown plan with phases and a checkbox per piece of work, so the job can be picked up cold, done in order, and ticked off as it lands. Says why, says what, and cites the repo for every claim it makes. A new capability goes in ../docs/features/, restructuring what already exists goes in ../docs/refactor/. Nothing open-ended survives the file: anything undecided is asked before writing, never left in as a question. Never touches git. Use when the user says "write a ticket", "make a plan for", "spec this out", or hands over work to be scoped rather than built.
+description: Write a ticket — a Markdown plan with phases and a checkbox per piece of work, so the job can be picked up cold, done in order, and ticked off as it lands. Says why, says what, and cites the repo for every claim it makes. A new capability goes in ../docs/features/, restructuring what already exists goes in ../docs/refactor/. Reads ../docs/README.md first so it never re-plans what the tree already shipped or turned down, and updates that index in the same edit. Nothing open-ended survives the file: anything undecided is asked before writing, never left in as a question. Never touches git. Use when the user says "write a ticket", "make a plan for", "spec this out", hands over work to be scoped rather than built, or asks what plans already exist.
 argument-hint: "[what the ticket is for]"
 user-invocable: true
 ---
@@ -20,6 +20,7 @@ which is the published site.
 
 | folder | what belongs there |
 | --- | --- |
+| `../docs/README.md` | one line per ticket in the whole tree. Read it first; update it last |
 | `../docs/features/` | the app cannot do this yet |
 | `../docs/refactor/` | the app already does it; this changes how |
 | `../docs/done/` | shipped. Move it here when the last box is ticked |
@@ -30,6 +31,34 @@ appear. It is a refactor if only the code changes.
 
 The file name is kebab-case and names the thing, not the change:
 `highlight-annotate.md`, `search.md`, `update-system.md`.
+
+## The index — read it first, then keep it
+
+`../docs/README.md` is one line per ticket in the tree, grouped by subject, saying
+what shipped, what is planned and what was turned down. **Read it before writing a
+word.** Ninety-odd plans is more than anyone holds in their head, and the two ways
+that costs are both expensive: planning a thing this tree already turned down, or
+planning around plumbing that already has a ticket. The index is where a ticket
+finds its neighbors — the vault tickets ride on one piece of plumbing, the filter
+tickets share one syntax, and a plan that ignores that gets built twice.
+
+**Then keep it.** Adding, renaming, or moving a ticket is not finished until the
+index matches, in the same edit:
+
+- A new ticket gets a row in the group it belongs to — or a new group if it starts
+  one. The row says what the ticket is in the owner's words, not the file name again.
+- A ticket moved to `done/` or `canceled/` moves rows too, and the row changes from
+  what it plans to **what it shipped, or why not**. A canceled row that does not say
+  why is the row someone re-plans against.
+- A ticket that replaces another says so in both rows, so nobody builds the old one.
+
+The index carries no change log. Git holds when a ticket moved; the outcomes worth
+keeping go in `AGENTS.md`, under the rules each paid for.
+
+**When the index and a ticket disagree, do not quietly fix it.** A ticket in `done/`
+whose own status line says nothing is built is a claim about the app, and only
+reading the code settles it. It goes in the index's **Needs a second look** table
+with both halves of the disagreement stated.
 
 ## Before writing: read, then ask
 
@@ -125,8 +154,12 @@ the top saying it shipped and where the code is:
 > the fragments and serves them as `app.js`. Checked 2 August 2026.
 ```
 
+Move its index row in the same edit, and rewrite it to say what shipped. A row
+still describing a plan is how `../docs/README.md` starts lying about the app.
+
 ## Reference
 
+- `../docs/README.md` — every ticket, one line each. Read first, updated last.
 - `../docs/features/highlight-annotate.md` — measured table, phases, a phase 0.
 - `../docs/refactor/inline-link.md` — short, and shows the shipped note.
 - `../docs/refactor/update-system.md` — how several tickets share a phase order.

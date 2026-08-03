@@ -23,7 +23,10 @@ let emptyDescription = pickEmptyDescription();
 // any page script (the app shell's opaque origin can't use localStorage). We seed
 // from them synchronously here and report every change back so it can save them.
 const LEAF_SETTINGS = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings : {};
-let minimapEnabled = typeof LEAF_SETTINGS.minimapEnabled === 'boolean' ? LEAF_SETTINGS.minimapEnabled : true;
+// The minimap is not a choice any more, so this only ever holds true. It stays a
+// switch because the rail still comes and goes with the document, and everything
+// that draws it asks here.
+let minimapEnabled = true;
 const minimapListeners = new Set();
 window.leafMinimap = {
   getEnabled: () => minimapEnabled,
@@ -39,21 +42,3 @@ window.leafMinimap = {
   },
 };
 window.leafMinimap.setEnabled(minimapEnabled);
-minimapEnabledControl.checked = window.leafMinimap.getEnabled();
-minimapEnabledControl.addEventListener('change', () => {
-  window.leafMinimap.setEnabled(minimapEnabledControl.checked);
-  send({ command: 'setMinimapEnabled', enabled: minimapEnabledControl.checked });
-});
-// Previous/Next pager visibility. A data-attribute on <html> shows/hides the
-// host-emitted markup via CSS, so toggling never re-renders. On by default.
-let pagerEnabled = typeof LEAF_SETTINGS.pagerEnabled === 'boolean' ? LEAF_SETTINGS.pagerEnabled : true;
-function applyPagerEnabled() {
-  document.documentElement.dataset.pagerEnabled = String(pagerEnabled);
-}
-applyPagerEnabled();
-pagerEnabledControl.checked = pagerEnabled;
-pagerEnabledControl.addEventListener('change', () => {
-  pagerEnabled = pagerEnabledControl.checked;
-  applyPagerEnabled();
-  send({ command: 'setPagerEnabled', enabled: pagerEnabled });
-});

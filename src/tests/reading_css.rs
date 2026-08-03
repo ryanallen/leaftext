@@ -1124,7 +1124,7 @@ fn every_floating_surface_throws_the_dot_halftone() {
         ".app-overflow-panel::before,",
         ".context-menu::before,",
         ".rename-box::before,",
-        ".settings-panel::before,",
+        ".update-panel::before,",
         ".app-toast::before,",
         ".flow-menu::before,",
         ".link-hover-tip::before,",

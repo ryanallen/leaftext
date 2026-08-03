@@ -1062,9 +1062,6 @@ pub fn save_recent_files(config_path: impl AsRef<Path>, recent: &RecentFiles) ->
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
-    pub minimap_enabled: bool,
-    /// Append the automatic Previous/Next pager to every document. On by default.
-    pub pager_enabled: bool,
     /// Quiet prose and add bold lead anchors at word starts. Off by default.
     pub speed_reader_enabled: bool,
     /// The code view's typing help: note and heading suggestions, and the
@@ -1116,8 +1113,6 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            minimap_enabled: true,
-            pager_enabled: true,
             speed_reader_enabled: false,
             code_intel_enabled: true,
             reading_unlocked: false,

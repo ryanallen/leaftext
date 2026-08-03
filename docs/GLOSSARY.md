@@ -208,7 +208,8 @@ you — so one file defines the words for a whole set of documents. See
 
 How much of your [vault](GLOSSARY.md#vault) the [graph view](GLOSSARY.md#graph-view)
 draws: **Focus** (the open document and its direct links), Medium, Large, or
-Everything. Set in [Settings](01-features/05-settings.md#graph-size).
+Everything. A labeled dropdown in the [floating toolbar](GLOSSARY.md#floating-toolbar),
+there only while the map is up. See [Settings](01-features/05-settings.md#graph-size).
 
 ## Graph view
 
@@ -425,13 +426,14 @@ the [block](GLOSSARY.md#block) within that section, and a pixel offset. It survi
 rerender, so images, diagrams and the [pager](GLOSSARY.md#pager) settling in cannot
 pull you away from the line you were reading.
 
-## Settings panel
+## Settings
 
-The dropdown under **Settings** in the [app bar](GLOSSARY.md#app-bar): theme,
-[appearance](GLOSSARY.md#appearance), [minimap](GLOSSARY.md#minimap),
-[pager](GLOSSARY.md#pager), [graph size](GLOSSARY.md#graph-size), and at its foot the
-version you are running and the [update status](GLOSSARY.md#update-status). Changes
-apply immediately. See [Settings](01-features/05-settings.md).
+A plain JSON file on your machine, not a panel: there is nowhere to open. Every
+control stands where it applies — the palette in the [app bar](GLOSSARY.md#app-bar)
+for [theme](GLOSSARY.md#theme) and [appearance](GLOSSARY.md#appearance), the
+[graph view](GLOSSARY.md#graph-view)'s own toolbar for [graph size](GLOSSARY.md#graph-size) —
+and each one saves the moment you use it. See
+[Settings](01-features/05-settings.md).
 
 ## Single window
 
@@ -500,7 +502,8 @@ Google Fonts the first time you pick it. See [Themes](01-features/06-themes.md).
 
 ## Theme picker
 
-The [bottom sheet](GLOSSARY.md#bottom-sheet) under **Settings → Theme**. Every
+The [bottom sheet](GLOSSARY.md#bottom-sheet) the palette button in the
+[app bar](GLOSSARY.md#app-bar) opens. Every
 [family](GLOSSARY.md#theme-family) is a card wearing its own colors and type, with
 the [appearance](GLOSSARY.md#appearance) control at the top and
 [Random](GLOSSARY.md#random) at the end.
@@ -537,12 +540,14 @@ What a [new document](GLOSSARY.md#new-document) is called before its first
 [save](GLOSSARY.md#save) — *Untitled 2* and so on when one is already open. The first
 save asks where to put it, and the tab takes the real name.
 
-## Update status
+## Update bell
 
-The line at the foot of the [settings panel](GLOSSARY.md#settings-panel), beside the
-version you are running. It reports what the last check found — up to date, when it
-last looked, or what went wrong — and clicking it forces a fresh check. Updates
-download in the background and install at the next launch, before any window opens.
+The bell in the [app bar](GLOSSARY.md#app-bar), there only when there is something to
+install: a spinning ring while the new version downloads, a green dot once a restart
+would install it. Clicking it opens one button — **Restart to update**. A check that
+found nothing, could not reach GitHub, or found a release with no installer for your
+platform says nothing at all, because there is nothing you could do about any of it.
+See [Installation](02-installation.md#updates).
 
 ## Vault
 

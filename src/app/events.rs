@@ -189,10 +189,6 @@ pub(crate) enum IpcCommand {
     GoBack { scroll_anchor: ScrollAnchor },
     #[serde(rename = "goForward")]
     GoForward { scroll_anchor: ScrollAnchor },
-    #[serde(rename = "setMinimapEnabled")]
-    SetMinimapEnabled { enabled: bool },
-    #[serde(rename = "setPagerEnabled")]
-    SetPagerEnabled { enabled: bool },
     #[serde(rename = "setSpeedReaderEnabled")]
     SetSpeedReaderEnabled { enabled: bool },
     #[serde(rename = "setCodeIntelEnabled")]

@@ -1,13 +1,13 @@
 ---
 name: sync-docs
-description: Update the docs under docs/ (and the /docs site nav) so they match the current app. Reviews recent app/feature changes and edits the right doc page(s), keeping them renderable by the leaftext web renderer, takes any screenshot a page asks for and does not have, then regenerates the SEO/AIO/LLM discovery files (robots.txt, sitemap.xml, sitemap-md.txt, llms.txt, llms-full.txt) so search and AI crawlers stay current. Run it before a release or whenever app behavior changes. Never touches git. Use when the user says "sync the docs", "update the docs", "bundle the docs", "refresh documentation", "update the sitemap/llms.txt", or "make the docs match the code".
+description: Update the docs under docs/ (and the /docs site nav) so they match the current app. Reviews recent app/feature changes and edits the right doc page(s), keeping them renderable by the leaftext web renderer, takes any screenshot a page asks for and does not have, lints the whole set for the faults that live between pages (two pages contradicting each other, a stale count, a page nothing links to, a word used everywhere and defined nowhere, something learned this session and written down nowhere), then regenerates the SEO/AIO/LLM discovery files (robots.txt, sitemap.xml, sitemap-md.txt, llms.txt, llms-full.txt) so search and AI crawlers stay current. Run it before a release or whenever app behavior changes. Never touches git. Use when the user says "sync the docs", "update the docs", "bundle the docs", "refresh documentation", "update the sitemap/llms.txt", "lint the docs", or "make the docs match the code".
 argument-hint: "[topic | since-ref]"
 user-invocable: true
 ---
 
 # Sync Docs
 
-Keep the user-facing documentation in `docs/` truthful to the app. This is a **docs-only** task: edit Markdown (and, if pages are added or removed, the site nav and README list), take any screenshot a page asks for and does not have (step 5), then regenerate the SEO/AIO/LLM discovery files with `scripts/seo-gen.mjs` (step 6). **Never run git** — releasing is a separate step handled by `/git-release`.
+Keep the user-facing documentation in `docs/` truthful to the app. This is a **docs-only** task: edit Markdown (and, if pages are added or removed, the site nav and README list), take any screenshot a page asks for and does not have (step 5), lint the whole set for the faults that live between pages (step 6), then regenerate the SEO/AIO/LLM discovery files with `scripts/seo-gen.mjs` (step 7). **Never run git** — releasing is a separate step handled by `/git-release`.
 
 The docs are served at **leaftext.com/docs** by the static SPA in `docs/` (`index.html` + `docs.js` + `docs.css`). Each page is a plain `.md` file; `docs.js` renders it with the same renderer the root site uses (`site/markdown.js`) and routes by `#/<path>` (a route is the file path under `docs/` without `.md`).
 
@@ -178,7 +178,39 @@ just squeeze-png shot.bmp imgs/<name>.png --palette
 A new reference is part of the same edit that adds it — writing `![…](imgs/x.png)`
 and moving on is what built the backlog this step exists to drain.
 
-### 6. Regenerate the SEO / AIO / LLM discovery files
+### 6. Lint the whole set, not just the pages you touched
+
+Steps 2 and 3 keep a page truthful. This step keeps the *set* coherent — the faults
+that live between pages and that no single edit can see. Run it before a release, or
+any time a change spanned more than one page.
+
+- **Contradictions.** Two pages describing the same behavior differently. The pairs
+  worth checking are the ones that share a subject: `README.md` against
+  `01-introduction.md` (the pitch and the feature list), `03-library.md` against
+  `05-settings.md` (a setting named in both), `02-installation.md` against
+  `02-development/03-releasing.md` (paths and versions), `02-navigation.md` against
+  `03-quickstart.md` (the shortcut lists). Where they differ, the source settles it —
+  not whichever page reads better.
+- **Stale claims.** A sentence that was true at some version and quietly is not: a
+  count, a limit, a "this is not supported yet", a named default. These survive
+  because nothing links to them and nothing tests them. Re-derive the number.
+- **Orphans.** A page nothing links to. The nav reaches every page by folder listing,
+  so an orphan still renders — it just never gets found from the page a reader is
+  already on. Give it an inbound link from the page whose subject leads to it.
+- **A concept with no home.** A word the docs use across several pages as though it
+  were defined somewhere, and it is not — no section, no glossary row. Either it gets
+  a `docs/GLOSSARY.md` row or the page that owns the subject gets a section, and the
+  other mentions link there. This is what stops a term meaning something slightly
+  different on each page.
+- **What was learned and never written down.** If this session derived something real
+  about how the app behaves — a limit, an order of operations, a reason a thing works
+  the way it does — and no page says it, that belongs on a page now. Otherwise the
+  next person re-derives it. This is the most common way the docs fall behind while
+  every individual edit was correct.
+
+Say what the lint found in the hand-back, including anything left unfixed and why.
+
+### 7. Regenerate the SEO / AIO / LLM discovery files
 
 The files AI crawlers and search engines read are generated from the docs, not hand-maintained. After editing docs — and always after adding or removing a page — regenerate them:
 
@@ -196,11 +228,11 @@ It rewrites five files at the repo root (the deployed site root) from `README.md
 
 Page list, titles, summaries, and `<lastmod>` dates are all derived from the current files, so there is no list to maintain by hand. It is deterministic — byte-identical output for the same tree, so a no-op run leaves git untouched. (`<lastmod>` reads the last commit date per file; it refreshes on the next run after you commit.)
 
-### 7. Verify
+### 8. Verify
 
 - Grep the changed files for leftovers: no `<Tabs`, `<Card`, `<Step`, `<Note`, `<Tip`, `<Warning`, `<Accordion`, or `theme={null}`.
 - `node scripts/doc-images.mjs` — every picture a touched page asks for is there, and any that are not are named in the hand-back with the reason.
-- Re-run `node scripts/seo-gen.mjs` and confirm it leaves the discovery files unchanged (a dirty tree here means step 5 was skipped or a doc changed after it ran).
+- Re-run `node scripts/seo-gen.mjs` and confirm it leaves the discovery files unchanged (a dirty tree here means step 7 was skipped or a doc changed after it ran).
 - For every touched page, confirm each Summary/overview table, shortcut list, and enumerated command/settings/feature table matches the source one-for-one — no stale, missing, or extra rows.
 - Confirm every internal link resolves to a real `.md` / route, and that each `#anchor` (including the anchor half of a deep link) matches a real heading slug on the target page.
 - Scan touched pages and the README intro for feature/concept names left as plain text that have a doc page or section — link them, deep-linking to the section anchor where one exists.
@@ -218,9 +250,10 @@ Page list, titles, summaries, and `<lastmod>` dates are all derived from the cur
   node docs/render-docs-check.mjs   # renders every docs/*.md and fails on a throw
   ```
 
-### 8. Hand back — do NOT release
+### 9. Hand back — do NOT release
 
-Leave the changes uncommitted. Tell the user what pages changed. If they want it published, that is a separate, explicit `/git-release` (site-only: no version bump).
+Leave the changes uncommitted. Tell the user what pages changed, and what the lint
+found that is still open. If they want it published, that is a separate, explicit `/git-release` (site-only: no version bump).
 
 ## Reference
 

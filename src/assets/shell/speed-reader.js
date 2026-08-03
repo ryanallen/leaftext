@@ -13,7 +13,6 @@ const SPEED_READER_SKIP_SELECTOR = [
   'math',
   '.katex',
   '.mermaid',
-  '.settings-menu',
   '.library-pane',
   '.tab-bar',
   '.app-bar',
@@ -211,16 +210,6 @@ function libraryRootLabel() {
   const vault = activeVault();
   return (vault && vault.name) || 'Library';
 }
-const GRAPH_SCOPES = ['small', 'medium', 'large', 'xl'];
-let graphScope = GRAPH_SCOPES.includes(LEAF_SETTINGS.graphScope) ? LEAF_SETTINGS.graphScope : 'small';
-// Graph size: persist the choice and, if the graph is on screen, rebuild it for
-// the new scope right away.
-graphScopeControl.value = graphScope;
-graphScopeControl.addEventListener('change', () => {
-  graphScope = GRAPH_SCOPES.includes(graphScopeControl.value) ? graphScopeControl.value : 'small';
-  send({ command: 'setGraphScope', scope: graphScope });
-  if (graphViewOpen) requestGraphData();
-});
 // The folder the pane is inside ('' is the root); the breadcrumb is this path.
 let libraryProjectPath = typeof LEAF_SETTINGS.libraryProjectPath === 'string' ? LEAF_SETTINGS.libraryProjectPath : '';
 // Library pane open/close + resize. The closed preference and last open width are

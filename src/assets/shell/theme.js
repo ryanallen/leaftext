@@ -12,9 +12,11 @@ const THEME_MODE_NAMES = { system: 'System', light: 'Light', dark: 'Dark', dayli
 function updateThemeSelection() {
   const mode = window.leafTheme.getMode();
   const family = window.leafTheme.getFamily();
-  if (themeCurrentLabel) {
-    themeCurrentLabel.textContent =
-      themeFamilyName(family) + ' · ' + (THEME_MODE_NAMES[mode] || mode);
+  // The bar's palette button has no room for a label, so the theme in use rides
+  // its tooltip — the one place left to read it without opening the sheet.
+  if (themeSheetOpen) {
+    themeSheetOpen.title =
+      'Themes — ' + themeFamilyName(family) + ' · ' + (THEME_MODE_NAMES[mode] || mode);
   }
   themeSheetModes.querySelectorAll('.theme-mode-btn').forEach((btn) => {
     const active = btn.dataset.mode === mode;
@@ -28,10 +30,6 @@ function updateThemeSelection() {
   });
 }
 function openThemeSheet() {
-  const settingsMenu = document.getElementById('settingsMenu');
-  if (settingsMenu) {
-    settingsMenu.open = false;
-  }
   themeBackdrop.hidden = false;
   themeSheet.hidden = false;
   loadThemeCardFonts();
@@ -229,8 +227,7 @@ window.leafTheme.subscribe((theme) => {
   // tracks the theme and light/dark like everything else.
   reskinMonacoForTheme();
 });
-window.leafMinimap.subscribe((enabled) => {
-  minimapEnabledControl.checked = enabled;
+window.leafMinimap.subscribe(() => {
   renderState();
 });
 let composing = false;

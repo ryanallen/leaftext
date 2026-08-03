@@ -171,7 +171,7 @@ Reading order follows the same depth-first walk the docs viewer uses: inside eac
 
 Working out the Previous / Next links means scanning the folder tree, so Leaftext does it after the document is already on screen rather than blocking the initial render. A placeholder bar shows in its place for the moment it takes, then the real buttons fill in. In a folder with a great many files the page appears immediately and the pager simply arrives a beat later.
 
-The pager is on by default and can be turned off in [Settings](05-settings.md#pager).
+The pager is always there; it is not a [setting](05-settings.md#pager).
 
 ### Link hints
 

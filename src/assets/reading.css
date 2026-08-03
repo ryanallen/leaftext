@@ -606,16 +606,20 @@ body.is-maximized #winMaximize .wc-restore {
 .rename-input:focus {
   outline: none;
 }
-.settings-menu {
+/* The update bell and the one button under it. Absent from the bar unless the
+   updater has something to install, so nothing here is ever the resting state. */
+.update-menu {
   position: relative;
   font-family: var(--app-font);
 }
-.settings-menu summary {
+.update-menu[hidden] {
+  display: none;
+}
+.update-menu summary {
   /* Box size, radius, and icon come from .icon-button (which this also carries)
      so every toolbar icon button matches; only the summary-specific bits and the
      rest colors live here. `position: relative` anchors the update-alert dot. */
   border: var(--lt-stroke-1) solid transparent;
-  /* No resting fill; icon dimmed at rest, greens on hover like the other icons. */
   background: transparent;
   color: var(--lt-muted-foreground);
   cursor: pointer;
@@ -623,19 +627,19 @@ body.is-maximized #winMaximize .wc-restore {
   list-style: none;
   position: relative;
 }
-.settings-menu summary::-webkit-details-marker {
+.update-menu summary::-webkit-details-marker {
   display: none;
 }
-.settings-menu summary:hover {
+.update-menu summary:hover {
   background: var(--lt-navigation-button-hover-background);
   border-color: transparent;
   color: var(--lt-primary-foreground);
 }
-/* Update dot over the settings button — the whole of what the updater says with
-   the panel shut. The ring keeps it legible on the bar's textured/hover fill.
-   Green means a restart would install a new version; while bytes are moving it
-   becomes a spinning ring instead. Nothing else raises it. */
-.settings-alert-dot {
+/* The mark on the bell, the whole of what the updater says with the panel shut.
+   The ring keeps it legible on the bar's textured/hover fill. Green means a
+   restart would install a new version; while bytes are moving it becomes a
+   spinning ring instead. Nothing else raises it. */
+.update-alert-dot {
   position: absolute;
   top: 4px;
   right: 4px;
@@ -646,7 +650,7 @@ body.is-maximized #winMaximize .wc-restore {
   background: var(--lt-success);
   box-shadow: var(--lt-shadow-ring);
 }
-.settings-alert-dot.is-downloading {
+.update-alert-dot.is-downloading {
   width: 10px;
   height: 10px;
   background: transparent;
@@ -655,10 +659,23 @@ body.is-maximized #winMaximize .wc-restore {
   box-shadow: none;
   animation: lt-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
 }
-/* Green "update to vX" call-to-action pinned above the settings controls. Takes
-   the primary-action fill; spans the panel. `position: relative` anchors the
-   download progress fill. */
-.settings-update {
+.update-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: var(--lt-z-30);
+  display: grid;
+  gap: var(--lt-space-14);
+  width: min(290px, calc(100vw - 28px));
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  padding: var(--lt-space-14);
+}
+/* Green "restart to update" call-to-action, the only thing in the panel. Takes
+   the primary-action fill; spans it. `position: relative` anchors the download
+   progress fill. */
+.update-button {
   position: relative;
   display: flex;
   align-items: center;
@@ -668,12 +685,12 @@ body.is-maximized #winMaximize .wc-restore {
   overflow: hidden;
   font-weight: var(--lt-weight-700);
 }
-.settings-update[hidden] {
+.update-button[hidden] {
   display: none;
 }
 /* Progress behind the label, left to right. Zero width at rest, so the staged
    button — no percent — shows nothing. */
-.settings-update-fill {
+.update-button-fill {
   position: absolute;
   left: 0;
   top: 0;
@@ -683,8 +700,18 @@ body.is-maximized #winMaximize .wc-restore {
   transition: width var(--lt-duration-120) var(--lt-ease-linear);
   pointer-events: none;
 }
-.settings-update-label {
+.update-button-label {
   position: relative;
+}
+.update-button-spinner {
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  border-color: color-mix(in srgb, currentColor 28%, transparent);
+  border-top-color: currentColor;
+}
+.update-button-spinner[hidden] {
+  display: none;
 }
 /* Every floating surface's shadow, said once: the same 2px dot lattice the two toolbars
    throw, in shadow ink, thinning out under an ellipse — a halftone, never a smooth blur.
@@ -694,7 +721,7 @@ body.is-maximized #winMaximize .wc-restore {
 .app-overflow-panel::before,
 .context-menu::before,
 .rename-box::before,
-.settings-panel::before,
+.update-panel::before,
 .app-toast::before,
 .flow-menu::before,
 .link-hover-tip::before,
@@ -731,7 +758,6 @@ body.is-maximized #winMaximize .wc-restore {
   mask-repeat: no-repeat;
   mask-composite: subtract;
 }
-/* Spinner in the update button while it downloads. */
 /* Every spinner in the app: a ring with one lit edge, turning. The shape and the
    turn are here; a site keeps only its own size and colors, because those are what
    differ — a 12px ring in a settings row, a 34px one on an empty reader. */
@@ -746,91 +772,6 @@ body.is-maximized #winMaximize .wc-restore {
   to {
     transform: rotate(360deg);
   }
-}
-.settings-spinner {
-  width: 12px;
-  height: 12px;
-  min-width: 12px;
-  border-color: color-mix(in srgb, currentColor 28%, transparent);
-  border-top-color: currentColor;
-}
-.settings-spinner[hidden] {
-  display: none;
-}
-/* The version row at the foot of the panel. */
-.settings-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--lt-space-10);
-}
-/* Running version: quiet, one line, selectable so it can be pasted into a bug
-   report. */
-.settings-version {
-  margin: 0;
-  display: flex;
-  flex: none;
-  gap: var(--lt-space-4);
-  justify-content: flex-end;
-  white-space: nowrap;
-  color: var(--lt-muted-foreground);
-  font-size: var(--lt-text-11);
-  letter-spacing: var(--lt-tracking-020);
-  user-select: text;
-}
-.settings-version-number {
-  font-variant-numeric: tabular-nums;
-}
-.settings-panel {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 8px);
-  z-index: var(--lt-z-30);
-  display: grid;
-  gap: var(--lt-space-14);
-  width: min(290px, calc(100vw - 28px));
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-lg);
-  background: var(--lt-surface-elevated);
-  padding: var(--lt-space-14);
-}
-.setting-control {
-  display: grid;
-  gap: var(--lt-space-6);
-  color: var(--lt-muted-foreground);
-}
-.setting-label {
-  color: var(--lt-foreground);
-  font-size: var(--lt-text-13);
-  font-weight: var(--lt-weight-800);
-}
-.setting-help {
-  color: var(--lt-muted-foreground);
-  font-size: var(--lt-text-12);
-  line-height: var(--lt-leading-1-35);
-}
-.setting-control-inline {
-  grid-template-columns: auto minmax(0, 1fr);
-  column-gap: var(--lt-space-10);
-  align-items: start;
-}
-.setting-control-inline input {
-  width: 16px;
-  height: 16px;
-  margin: var(--lt-space-1) 0 0;
-  accent-color: var(--lt-primary);
-}
-.setting-control-inline .setting-help {
-  grid-column: 2;
-}
-.setting-control select {
-  width: 100%;
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-md);
-  background: var(--lt-surface-elevated);
-  color: var(--lt-foreground);
-  font: 600 13px var(--app-font);
-  padding: var(--lt-space-7) var(--lt-space-28) var(--lt-space-7) var(--lt-space-9);
 }
 button {
   border: var(--lt-stroke-1) solid var(--lt-primary);
@@ -859,14 +800,18 @@ button {
   height: 16px;
   pointer-events: none;
 }
-/* Open and New are the same button twice over: muted at rest, greening on hover
-   like the other secondary toolbar icons. Said once, so they cannot drift apart. */
+/* Themes, Open and New are the same button three times over: muted at rest,
+   greening on hover like the other secondary toolbar icons. Said once, so they
+   cannot drift apart — and none of them is ever the filled primary button, which
+   is how the bar says which view you are in. */
+.theme-button,
 .open-button,
 .new-button {
   border-color: transparent;
   background: transparent;
   color: var(--lt-muted-foreground);
 }
+.theme-button:hover,
 .open-button:hover,
 .new-button:hover {
   background: var(--lt-navigation-button-hover-background);
@@ -1919,6 +1864,34 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-view-tools[hidden] {
   display: none;
 }
+/* The graph's one setting, the only labeled control in the recess: a named list
+   of four sizes, so it reads rather than being clicked through. Same box as the
+   panel dropdown it came from, one padding step shorter because it stands beside
+   24px buttons. */
+.reader-subselect {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  padding: 0 var(--lt-space-4);
+  color: var(--lt-muted-foreground);
+}
+.reader-subselect[hidden] {
+  display: none;
+}
+.reader-subselect-label {
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-800);
+  white-space: nowrap;
+}
+.reader-subselect select {
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font: 600 12px var(--app-font);
+  padding: var(--lt-space-3) var(--lt-space-24) var(--lt-space-3) var(--lt-space-7);
+}
 /* Smaller than a view button, and never blue: the blue chip is how this bar
    says which view you are in, and a setting inside a view must not wear it. On
    gets a page-colored fill raised out of the recess's grain, so the state reads
@@ -1944,12 +1917,6 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-subtool .lt-icon {
   width: 16px;
   height: 16px;
-  /* Off is thin ink — the closed padlock's weight — whatever the file says. */
-  stroke-width: 1.5;
-}
-.reader-subtool[aria-pressed="true"] .lt-icon {
-  /* On is the heavy stroke, so weight carries the state on every toggle. */
-  stroke-width: 2.75;
 }
 .reader-subtool:hover {
   background: color-mix(in srgb, var(--lt-foreground) 10%, transparent);
@@ -2362,9 +2329,6 @@ body:has(#readerToolbar:not([hidden])) {
   margin-top: var(--app-bar-height);
   padding-top: var(--lt-space-24);
   border-top: var(--lt-stroke-1) solid var(--lt-markdown-rule);
-}
-:root[data-pager-enabled="false"] .docs-pager {
-  display: none;
 }
 .docs-pager a {
   flex: 1 1 0;
@@ -4122,6 +4086,16 @@ body.is-block-dragging .document-body [data-src-start] {
   font: 500 15px/1.6 var(--app-font);
   margin: var(--lt-space-18) 0 0;
 }
+/* Running version, at the foot of the one screen always reachable: quiet, one
+   line, selectable because it exists to be pasted into a bug report. */
+.empty-version {
+  margin: var(--lt-space-24) 0 0;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--lt-tracking-020);
+  user-select: text;
+}
 /* The two ways in, side by side: open a document you have, or start one you
    don't. */
 .empty-actions {
@@ -4381,49 +4355,6 @@ body.is-block-dragging .document-body [data-src-start] {
   z-index: var(--lt-z-41);
   background: var(--lt-background);
   color: var(--lt-foreground);
-}
-/* Settings row that opens the theme selector: label on the left, the current
-   "Family · Appearance" summary and a chevron on the right. */
-.setting-theme-open {
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--lt-space-8);
-  width: 100%;
-  padding: var(--lt-space-8) var(--lt-space-10);
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-md);
-  background: var(--lt-surface-elevated);
-  color: var(--lt-foreground);
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-}
-.setting-theme-open:hover {
-  border-color: var(--lt-border-strong);
-  background: var(--lt-surface-muted);
-}
-.setting-theme-icon {
-  width: 16px;
-  height: 16px;
-}
-.setting-theme-open .setting-label {
-  font-size: var(--lt-text-13);
-  font-weight: var(--lt-weight-800);
-}
-.setting-theme-current {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--lt-muted-foreground);
-  font-size: var(--lt-text-12);
-  text-align: right;
-}
-.setting-theme-chevron {
-  color: var(--lt-muted-foreground);
-  font-size: var(--lt-text-18);
-  line-height: var(--lt-leading-1);
 }
 /* Theme selector bottom sheet — same slide-up pattern as the glossary sheet. */
 .theme-sheet {
@@ -4858,14 +4789,14 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .flow-chip-line {
   stroke: var(--lt-foreground);
-  stroke-width: 1.6;
+  stroke-width: var(--lt-stroke-1-5);
   fill: none;
 }
 .flow-chip-line.is-dotted {
   stroke-dasharray: 4 3;
 }
 .flow-chip-line.is-thick {
-  stroke-width: 3.2;
+  stroke-width: var(--lt-stroke-3);
 }
 /* A line that isn't drawn at all. Shown as the ghost of one, because a button
    with nothing on it reads as a button that failed to load. */
@@ -4880,7 +4811,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-end-mark.is-open {
   fill: none;
   stroke: var(--lt-foreground);
-  stroke-width: 1.6;
+  stroke-width: var(--lt-stroke-1-5);
 }
 .flow-zoom {
   display: flex;
@@ -5100,18 +5031,18 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .flow-rubber {
   stroke: var(--lt-link);
-  stroke-width: 2;
+  stroke-width: var(--lt-stroke-2);
   stroke-dasharray: 5 4;
 }
 /* Mermaid's own line, when it is the one selected or the one a box would drop
    into. Its drawing, our state. */
 .flow-stage path[data-id].is-selected {
   stroke: var(--lt-link) !important;
-  stroke-width: 2.5px !important;
+  stroke-width: var(--lt-stroke-3) !important;
 }
 .flow-stage path[data-id].is-drop {
   stroke: var(--lt-link) !important;
-  stroke-width: 4px !important;
+  stroke-width: var(--lt-stroke-4) !important;
   stroke-dasharray: 6 4 !important;
 }
 /* A group about to take the box being dragged. Mermaid draws the cluster's
@@ -5119,7 +5050,7 @@ body.is-block-dragging .document-body [data-src-start] {
    the group itself — which has no stroke of its own to change. */
 .flow-stage g.cluster.is-drop rect {
   stroke: var(--lt-link) !important;
-  stroke-width: 2px !important;
+  stroke-width: var(--lt-stroke-2) !important;
   stroke-dasharray: 6 4 !important;
 }
 /* Right-click anything on the canvas. The gestures are quicker once they are

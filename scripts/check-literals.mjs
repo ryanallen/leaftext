@@ -65,6 +65,13 @@ const RULES = [
     /\b(?:border|outline|column-rule)(?:-[a-z]+)*\s*:\s*([^;]+);/g,
     (value, prop) => !/radius/.test(prop) && /\d\s*px/.test(value),
   ],
+  [
+    // A drawn line rather than a box's edge: the flowchart picker's own vectors, and
+    // the marks laid over mermaid's. Unitless counts — in SVG that is a user unit.
+    'a stroke width',
+    /\bstroke-width\s*:\s*([^;]+);/g,
+    (value) => /(?<![\w.-])\d*\.?\d+(?:px)?(?![\w.-])/.test(value),
+  ],
   ['a line height', /line-height\s*:\s*([\d.]+)\s*;/g, () => true],
   ['letter spacing', /letter-spacing\s*:\s*(-?[\d.]+(?:em|px|rem))\s*;/g, () => true],
   ['an opacity', /opacity\s*:\s*(0?\.\d+)\s*;/g, () => true],

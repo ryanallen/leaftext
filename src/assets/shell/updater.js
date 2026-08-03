@@ -1,6 +1,8 @@
-// Running version at the foot of the settings panel: confirms an update landed.
-const settingsVersion = document.getElementById('settingsVersion');
-if (settingsVersion) settingsVersion.textContent = LEAF_VERSION ? `v${LEAF_VERSION}` : '';
+// Updates. The check compares the running version against the latest GitHub
+// release; if a newer one publishes this platform's installer, the host is asked
+// to fetch, hash, and stage it, and the bell then offers a restart. Nothing else
+// is shown — the checking, the finding, and the failing are the app's own
+// business.
 function parseVersion(value) {
   return String(value || '').replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
 }
@@ -40,33 +42,54 @@ let updateState = {
 };
 
 function renderUpdateButton() {
-  if (!settingsUpdate) return;
+  if (!updateButton) return;
   const { status, version, percent } = updateState;
   const downloading = status === 'downloading';
   const news = downloading || status === 'staged';
 
-  // The mark on the gear, all a user sees with the panel shut: a spinning ring
-  // while the new version downloads, a dot once a restart would install it.
-  if (settingsAlertDot) {
-    settingsAlertDot.hidden = !news;
-    settingsAlertDot.className = 'settings-alert-dot' + (downloading ? ' is-downloading' : '');
+  // The bell is in the bar only while there is news, so the bar has to be refit:
+  // an action that appears mid-session changes what fits beside the tabs.
+  if (updateMenu) {
+    const wasHidden = updateMenu.hidden;
+    updateMenu.hidden = !news;
+    if (!news) updateMenu.open = false;
+    if (wasHidden !== updateMenu.hidden) refitAppBar();
   }
 
-  settingsUpdate.hidden = !news;
+  // The mark on the bell, all a user sees with the panel shut: a spinning ring
+  // while the new version downloads, a dot once a restart would install it.
+  if (updateAlertDot) {
+    updateAlertDot.hidden = !news;
+    updateAlertDot.className = 'update-alert-dot' + (downloading ? ' is-downloading' : '');
+  }
+
+  updateButton.hidden = !news;
   if (news) {
-    (settingsUpdateLabel || settingsUpdate).textContent = downloading
+    (updateButtonLabel || updateButton).textContent = downloading
       ? `Downloading v${version}… ${percent}%`
       : 'Restart to update';
-    settingsUpdate.title = downloading
+    updateButton.title = downloading
       ? 'Downloading the new version'
       : 'Restart to install the new version';
-    if (settingsUpdateSpinner) settingsUpdateSpinner.hidden = !downloading;
-    if (settingsUpdateFill) settingsUpdateFill.style.width = downloading ? `${percent}%` : '0';
+    if (updateButtonSpinner) updateButtonSpinner.hidden = !downloading;
+    if (updateButtonFill) updateButtonFill.style.width = downloading ? `${percent}%` : '0';
     // Only a staged, verified installer is clickable — a download in flight has
     // nothing to offer yet.
-    settingsUpdate.disabled = downloading;
-    settingsUpdate.onclick = downloading ? null : () => send({ command: 'applyUpdate' });
+    updateButton.disabled = downloading;
+    updateButton.onclick = downloading ? null : () => send({ command: 'applyUpdate' });
   }
+}
+// Shut like every other floating thing in the app: the shared Escape helper and
+// an outside click.
+if (updateMenu) {
+  leafOnEscape(() => {
+    if (!updateMenu.open) return;
+    updateMenu.open = false;
+    updateMenu.querySelector('summary').focus();
+  });
+  document.addEventListener('click', (event) => {
+    if (updateMenu.open && !updateMenu.contains(event.target)) updateMenu.open = false;
+  });
 }
 
 function setUpdateState(next) {
@@ -165,8 +188,8 @@ async function checkForUpdate(force) {
     updateCheckInFlight = false;
   }
 }
-// Paint before anything asks the network, so the gear never flashes a mark on a
-// build with no version to compare.
+// Paint before anything asks the network, so the bell never flashes into the bar
+// on a build with no version to compare.
 renderUpdateButton();
 // Every launch, unthrottled: opening the app is the moment a user expects it to
 // know whether it is current.

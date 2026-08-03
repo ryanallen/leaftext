@@ -65,11 +65,11 @@ The minimap adjusts its preview lane width depending on the available space:
 
 On screens narrower than 600 px the minimap gutters shrink alongside the preview lane, keeping the reading column as wide as possible. The minimap is never hidden on small screens — it remains the primary scroll affordance at every window size.
 
-## Toggling the minimap
+## Always there
 
-The minimap can be toggled from **Settings** in the app bar. The setting is persisted across restarts via `{config_dir}/leaftext/settings.json` as the `minimap_enabled` field, so Leaftext reopens in the same state you left it.
+The minimap is not a choice. There is nothing to switch and nothing saved: it is the reader's scroll indicator at every window size, so turning it off left a page with no answer to "where am I in this".
 
-When the minimap is off, its column collapses to zero and the page widens back out to the window gutter, so no empty band remains to the right of the document. The reader's native scrollbar comes back as a thin one at that point: with no rail there would otherwise be nothing at all showing where you are in a long page. While the rail is present the scrollbar stays hidden, because the rail is that indicator.
+The rail still comes and goes with the document — there is none on the home screen, and none while the [graph](03-library.md#graph) is up. With no rail its column collapses to zero and the page widens back out to the window gutter, so no empty band remains, and the reader's native scrollbar comes back as a thin one. While the rail is present the scrollbar stays hidden, because the rail is that indicator.
 
 > [!TIP]
 > Use the minimap to quickly gauge document length and find dense sections at a glance. Because it is a real rendering of the page, headings, code blocks, verse, and dense paragraphs each keep their own shape — so you can pick out section breaks and dense passages in the rail from the layout itself, without reading a word.
@@ -77,5 +77,5 @@ When the minimap is off, its column collapses to zero and the page widens back o
 ## Next
 
 - [Navigation → Outline](02-navigation.md#outline) — the rail's companion: the document's structure as clickable text
-- [Settings → Minimap](05-settings.md#minimap) — the on/off preference and where it is stored
+- [Settings → Minimap](05-settings.md#minimap) — why it stopped being a preference
 - [Editing → Code view](07-editing.md#code-view) — the view the second rail belongs to

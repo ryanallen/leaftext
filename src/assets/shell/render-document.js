@@ -124,6 +124,9 @@ function renderState() {
         <button type="button" class="primary-new">${newIconSvg()}New document</button>
       </div>
       ${recent.length ? `<div class="recent"><h2>Recent (${escapeText(formatCount(recent.length))})</h2><ol>${recent.map((path) => `<li><button type="button" title="Open ${escapeAttr(path)}" data-path="${escapeAttr(path)}" data-reveal-path="${escapeAttr(path)}">${escapeText(path)}</button></li>`).join('')}</ol></div>` : `<p class="empty-help">Files you open show up here, so you can pick up where you left off.</p>`}
+      <!-- In the template, not filled in later: this screen is rebuilt on every
+           home render, so an element found once at load is gone by the second. -->
+      <p class="empty-version">${LEAF_VERSION ? `v${escapeText(LEAF_VERSION)}` : ''}</p>
     </section>`;
   app.querySelector('.primary-open').addEventListener('click', () => send({ command: 'open' }));
   app.querySelector('.primary-new').addEventListener('click', () => send({ command: 'newDocument' }));

@@ -64,7 +64,7 @@ Leaftext's Rust source is split by concern. Where a concern grew past one file i
 
 The WebView front-end lives outside the Rust source as editable assets, embedded at build time with `include_str!` and served over the asset protocol rather than written into the page:
 
-- **`src/assets/app-shell.html`** — the page markup (app bar, library pane, glossary sheet, settings menu).
+- **`src/assets/app-shell.html`** — the page markup (app bar, library pane, glossary sheet, theme sheet, update bell).
 - **`src/assets/shell/`** — the front-end script, as ordered fragments: the page's own error reporting (`journal.js`, which forwards a throw, a rejected promise and a `console.error` to `src/journal.rs` as a `logError` command, collapsing a repeat to the 1st, 2nd, 4th, 8th … so an error inside a render loop cannot fill the file), the app bar and tabs, the library pane and its search, the PixiJS + d3-force [graph](../01-features/03-library.md#graph) scene, the [code view](../01-features/07-editing.md#code-view) and the Monaco editor it hosts, its [typing help](../01-features/07-editing.md#typing-help) (the completion, hover, and broken-link providers, each answered by the host over one token-matched IPC round trip) and its [pinned headings](../01-features/07-editing.md#pinned-headings) (drawn over the editor rather than by Monaco, so they can sit above the page's edge fade), the reading-view editor and its DOM-to-Markdown conversion, the [block gutter](../01-features/07-editing.md#the-block-gutter) and the [format bar](../01-features/07-editing.md#the-format-bar), the [flowchart editor](../01-features/07-editing.md#the-flowchart-editor) in two fragments (`flow-model.js` the Mermaid grammar and the graph, with no DOM in it so the shell check can run it; `flow-canvas.js` the sheet, which renders the canvas with the same bundled Mermaid the page uses and measures the result to lay its handles over it — there is no layout or shape-drawing of ours between them), the minimap and reader scroll anchoring, the glossary sheet, theme wiring, and the updater. They are **one scope, not modules**: `APP_SHELL_SCRIPT_PARTS` in `lib.rs` concatenates them in order, because the page has no module loader. Order is therefore load-bearing — `journal.js` leads, because its `window.onerror`, `unhandledrejection` and `console.error` handlers are the only thing that sees a later fragment throw as it loads, and it posts to `window.ipc` directly since `send` in `dom.js` is a `const` in its dead zone until then; the flowchart pair follows, since everything else calls into it; `state.js` after that, holding only what more than one fragment touches; and the last fragment ends with the bootstrap call that must run after everything else is defined. The joined script is **served as `app.js` over the [asset protocol](#bundled-asset-protocol)** behind the page's one script tag, because the shell reaches WebView2 as one string with a ceiling on it and the script was 88% of it — the page is now about 4% of the budget the test enforces. Nothing is substituted into the script, which is what lets it be a file. `just check-shell` boots the fragments joined in that order against a stand-in page, so a fragment that throws as it loads fails the build rather than opening a blank window.
 - **`src/assets/reading.css`** — the whole app stylesheet, served as `app.css` over `leaf-asset://` with the theme compiler's token blocks prepended.
 - **`src/assets/tokens.css`** and **`src/assets/icons.css`** — generated, never hand-edited: every value that does not change with the theme, and one mask class per icon. They are compiled from `design/` by `just bundle-tokens` and `bundle-icons`, which also write the color contract into `src/theme.rs`. See [Design system](05-design-system.md).
@@ -157,24 +157,22 @@ Key `IpcCommand` variants include:
 | `goBack` / `goForward` | History buttons or keyboard shortcuts |
 | `openLink`             | In-document link click                |
 | `openGlossary`         | Glossary link click (opens the term in a bottom sheet) |
-| `openExternal`         | The update button in its notify-only state: open the release page in the system browser (unattached to any document) |
+| `openExternal`         | Open a web address in the system browser (unattached to any document): a node on the [graph](../01-features/03-library.md#graph), the theme sheet's GitHub link, the library's git-download prompt |
 | `countLines`           | Link hover: read the linked document and report its line count for the tooltip |
 | `setThemeFamily`       | Theme family button in the theme picker |
 | `setThemeMode`         | Appearance control in the theme picker |
 | `setThemeRandomBag`    | The [Random theme](../01-features/06-themes.md#random) draw: persist the families already shown in the current no-repeat cycle |
-| `setMinimapEnabled`    | Minimap toggle in Settings menu       |
-| `setPagerEnabled`      | Pager toggle in Settings menu         |
 | `setSpeedReaderEnabled` | Speed Reader toggle on the reading toolbar |
 | `setReadingUnlocked`   | The reading view's [padlock](../01-features/07-editing.md#the-padlock) |
 | `setCodeUnlocked`      | The source view's padlock, which is a separate switch |
 | `updateChecked`        | A release check finished: reset the six-hour throttle |
 | `updateDownload`       | The release the check found: fetch that URL natively, hash it, and stage it |
-| `applyUpdate`          | The "Restart to update" button: launch the installer and exit |
+| `applyUpdate`          | The "Restart to update" button under the app bar's update bell: launch the installer and exit |
 | `getFolder`            | Read one folder for the [library pane](../01-features/03-library.md#file-tree) — its children and the trail down to it |
 | `revealInLibrary`      | Opening a document: point the pane at whichever vault holds it and open its folder. A file in none un-roots the pane for the session without forgetting the vault you chose |
 | `getGraph`             | Build the link graph for the current scope + focus seeds — over the active vault when it holds the open document, else over that document |
 | `setGraphView`         | Whether the page is showing the [graph](../01-features/03-library.md#graph), so a change on disk knows whether a map is on screen |
-| `setGraphScope`        | Graph size picker in Settings menu    |
+| `setGraphScope`        | Graph size dropdown in the reader toolbar, shown while the graph is up |
 | `createVault`          | **New vault…**: pick a folder and register it |
 | `setActiveVault`       | Vault switcher: make one the library root (`0` is the whole library) |
 | `renameVault`          | The vault settings panel's name field  |

@@ -677,14 +677,26 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
 
     // One recess, whose contents follow the view you are in. The padlock stands
     // in both editable views because it is one switch for both; the speed reader
-    // belongs to the reading view and the wand to the source view. The map has
-    // no tools, so the recess goes with it.
+    // belongs to the reading view and the wand to the source view. The map's one
+    // setting is how big a graph to draw, so the recess stands there too — with
+    // the dropdown in it and none of the three buttons.
     assert!(html.contains(r#"id="readerViewTools" class="reader-view-tools""#));
+    assert!(html.contains(r#"<label class="reader-subselect" id="graphScopeTool" hidden>"#));
     assert!(html.contains(r#"id="readerLockButton" class="reader-subtool""#));
     assert!(html.contains(r#"id="speedReaderButton" class="reader-subtool""#));
     assert!(html.contains(r#"id="codeIntelButton" class="reader-subtool""#));
     assert!(html.contains("const editable = current === 'reading' || current === 'code';"));
-    assert!(html.contains("readerViewTools.hidden = !editable;"));
+    assert!(html.contains("const onGraph = current === 'graph';"));
+    assert!(html.contains("readerViewTools.hidden = !editable && !onGraph;"));
+    assert!(html.contains("graphScopeTool.hidden = !onGraph;"));
+    // Four named sizes, read rather than clicked through, and the help sentence
+    // the panel spelled out is the dropdown's tooltip now.
+    assert!(html.contains(r#"<option value="small">Focus</option>"#));
+    assert!(html.contains(r#"<option value="xl">Everything</option>"#));
+    assert!(html.contains(r#"title="How many documents the graph view draws. Smaller is faster.""#));
+    // Wired where the rest of the graph lives, not in the speed reader.
+    assert!(html.contains("send({ command: 'setGraphScope', scope: graphScope });"));
+    assert!(css.contains(".reader-subselect select {"));
     assert!(html.contains("readerLockButton.hidden = !editable;"));
     assert!(html.contains("speedReaderButton.hidden = current !== 'reading';"));
     assert!(html.contains("codeIntelButton.hidden = !onCodeView;"));

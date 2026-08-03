@@ -142,17 +142,17 @@ Use `Ctrl+O` on Windows or `Cmd+O` on macOS to open your first file. The [Quicks
 
 ## Updates
 
-![The Settings panel with an update waiting: the update button at the top of the panel showing its download progress, and the version and update status at the foot](../imgs/update.png)
+![A bell in the app bar with a green dot on it, and the panel under it holding a single green Restart to update button](../imgs/update.png)
 
-Leaftext checks GitHub Releases for a newer version at every launch, and re-checks in the background at most every six hours while the window stays open. When one is available, a green dot appears over the Settings button and a button appears at the top of the [Settings](01-features/05-settings.md#updates) menu.
+Leaftext checks GitHub Releases for a newer version at every launch, and re-checks in the background at most every six hours while the window stays open. When one is available, **a bell appears in the app bar** — it is not there otherwise, so its presence is the whole message. Clicking it drops a panel holding one button, and nothing else.
 
-The new installer downloads in the background; a download that arrives short or oversized is discarded rather than kept. While it runs, the button shows a spinner and its percentage and the dot becomes a spinning ring.
+The new installer downloads in the background; a download that arrives short or oversized is discarded rather than kept. While it runs, the bell wears a spinning ring and the button shows a spinner and its percentage. Once the installer is staged and verified the ring becomes a green dot and the button reads **Restart to update**.
 
 **Then quit and reopen, and you are on the new version.** The install happens at launch, before any window opens, because Windows cannot replace a running executable — the app hands off to a detached helper that waits for it to exit, installs, and starts the new build. On macOS that means mounting the disk image, copying the bundle out, and swapping it in. Nothing is prompted for, and nothing interrupts you mid-read. **Restart to update** remains on the button for anyone who would rather not wait for the next launch.
 
-Each version is installed automatically once. If an install fails, the next launch says so and names the reason, and that version then waits for a deliberate click instead of being retried forever. There is no setting for any of this: staying current is what the app does. If a release publishes no installer for your platform, the button opens the release page and you install by hand.
+Each version is installed automatically once. If an install fails, that version then waits for a deliberate click instead of being retried forever. There is no setting for any of this: staying current is what the app does.
 
-The update status at the foot of the Settings panel always reports the outcome — up to date, when it last checked, or what went wrong — including an install that failed after a restart, which is otherwise invisible because the installer runs after Leaftext exits. Clicking it forces a fresh check at any time. Startup is never blocked by any of this, and being offline only changes what that line says.
+**The app only speaks when it can act.** A check that found nothing, could not reach GitHub, was rate-limited, or found a release carrying no installer for your platform says nothing at all — the bell stays away. There is nothing you could do about any of those, and a panel reporting them read as the app asking for work it should be doing itself. Startup is never blocked by any of this, and being offline changes nothing you can see. The version you are running is at the foot of the [home screen](03-quickstart.md).
 
 ## Uninstall
 

@@ -1,4 +1,4 @@
-//! The app shell's chrome: app bar, icons, CSP, settings menu, and theme bootstrap.
+//! The app shell's chrome: app bar, icons, CSP, the update bell, and theme bootstrap.
 
 use super::*;
 
@@ -430,21 +430,32 @@ fn app_shell_header_keeps_one_chrome_shade_with_dividers() {
 }
 
 #[test]
-fn app_shell_persists_minimap_enabled_setting() {
+fn the_minimap_is_always_on_and_still_one_switch() {
     let html = app_shell_page();
 
+    // Not a choice any more: nothing turns it off, so the seed is a constant. The
+    // switch stays because the rail still comes and goes with the document, and
+    // everything that draws it asks here rather than keeping its own copy.
     for expected in [
-            "const minimapEnabledControl = document.getElementById('minimapEnabled');",
-            "let minimapEnabled = typeof LEAF_SETTINGS.minimapEnabled === 'boolean' ? LEAF_SETTINGS.minimapEnabled : true;",
-            "getEnabled: () => minimapEnabled",
-            "setEnabled(nextEnabled)",
-            "document.documentElement.dataset.minimapEnabled = String(minimapEnabled);",
-            "window.leafMinimap.setEnabled(minimapEnabled);",
-            "minimapEnabledControl.checked = window.leafMinimap.getEnabled();",
-            "send({ command: 'setMinimapEnabled', enabled: minimapEnabledControl.checked });",
-        ] {
-            assert_contains(&html, expected);
-        }
+        "let minimapEnabled = true;",
+        "getEnabled: () => minimapEnabled",
+        "setEnabled(nextEnabled)",
+        "document.documentElement.dataset.minimapEnabled = String(minimapEnabled);",
+        "window.leafMinimap.setEnabled(minimapEnabled);",
+    ] {
+        assert_contains(&html, expected);
+    }
+
+    // The checkbox, the command it sent, and the saved value are all gone.
+    for gone in [
+        "minimapEnabledControl",
+        "setMinimapEnabled",
+        "LEAF_SETTINGS.minimapEnabled",
+        "setPagerEnabled",
+        "pagerEnabled",
+    ] {
+        assert!(!html.contains(gone), "the toggle is back: {gone}");
+    }
 
     // The host owns persistence: no localStorage-backed settings.
     assert!(
@@ -489,13 +500,10 @@ fn app_shell_persists_and_applies_speed_reader_setting() {
 }
 
 #[test]
-fn app_shell_labels_minimap_setting_and_hides_decorative_marks_from_accessibility() {
+fn app_shell_hides_the_minimaps_decorative_marks_from_accessibility() {
     let html = app_shell_page();
 
     for expected in [
-        r#"<label class="setting-control setting-control-inline" for="minimapEnabled">"#,
-        r#"<input type="checkbox" id="minimapEnabled" aria-label="Show document minimap" aria-describedby="minimapEnabledHelp">"#,
-        r#"<span class="setting-help" id="minimapEnabledHelp">Show a scrollable document overview on wider windows.</span>"#,
         "aria-label=\"Document minimap\"",
         "document-minimap-track\" aria-hidden=\"true\"",
         "document-minimap-content\" aria-hidden=\"true\"",
@@ -518,16 +526,12 @@ fn app_shell_labels_minimap_setting_and_hides_decorative_marks_from_accessibilit
 fn app_shell_reacts_to_minimap_and_theme_settings() {
     let html = app_shell_page();
 
-    let minimap_subscription_position = html
-        .find("window.leafMinimap.subscribe((enabled) => {")
-        .expect("app shell subscribes to minimap changes");
-    let minimap_render_position = html
-        .find("minimapEnabledControl.checked = enabled;\n  renderState();")
-        .expect("minimap subscription rerenders document state");
-
-    assert!(
-        minimap_subscription_position < minimap_render_position,
-        "minimap visibility should remain a WebView setting"
+    // The rail still comes and goes with the document, so the subscription has to
+    // re-render the page — that is the whole of what it does now the checkbox is
+    // gone.
+    assert_contains(
+        &html,
+        "window.leafMinimap.subscribe(() => {\n  renderState();",
     );
     assert_contains(&html, "window.leafTheme.subscribe((theme) => {");
     assert_contains(&html, "window.leafTheme.setMode(btn.dataset.mode)");
@@ -613,40 +617,24 @@ fn app_shell_theme_bootstrap_supports_system_light_dark_modes() {
 }
 
 #[test]
-fn app_shell_groups_settings_menu_with_accessible_descriptions() {
+fn the_palette_stands_in_the_bar_where_the_gear_did() {
     let html = app_shell_page();
 
+    // Themes were the one thing anybody opened that menu for, so they are one
+    // click. A plain icon button in the same slot, opening the same sheet.
     assert_contains(
         &html,
-        r#"<details class="settings-menu" id="settingsMenu">"#,
+        r#"<button type="button" id="themeSheetOpen" class="icon-button theme-button" aria-label="Themes" title="Themes" aria-haspopup="dialog">"#,
     );
+    assert_icon(&html, "theme");
     assert_contains(
         &html,
-        r#"<summary id="settingsSummary" class="icon-button" aria-label="Settings" title="Settings">"#,
+        "themeSheetOpen.addEventListener('click', openThemeSheet);",
     );
-    assert_icon(&html, "settings");
+    // No label beside it, so the theme in use rides the tooltip.
     assert_contains(
         &html,
-        r#"<div class="settings-panel" role="group" aria-labelledby="settingsSummary">"#,
-    );
-    // Theme lives in a bottom sheet opened from a single settings row.
-    assert_contains(
-        &html,
-        r#"<button type="button" class="setting-theme-open" id="themeSheetOpen" aria-haspopup="dialog">"#,
-    );
-    assert_contains(
-        &html,
-        r#"<span class="setting-help" id="minimapEnabledHelp">Show a scrollable document overview on wider windows.</span>"#,
-    );
-    assert_contains(
-        &html,
-        "const settingsMenu = document.getElementById('settingsMenu');",
-    );
-    assert_contains(&html, "if (event.key === 'Escape')");
-    assert_contains(&html, "settingsMenu.querySelector('summary').focus();");
-    assert_contains(
-        &html,
-        "if (settingsMenu.open && !settingsMenu.contains(event.target))",
+        "'Themes — ' + themeFamilyName(family) + ' · ' + (THEME_MODE_NAMES[mode] || mode);",
     );
     assert_contains(&html, r#"id="themeSheet""#);
     assert_contains(&html, r#"<span class="theme-sheet-title">Themes</span>"#);
@@ -656,29 +644,25 @@ fn app_shell_groups_settings_menu_with_accessible_descriptions() {
 }
 
 #[test]
-fn app_shell_keeps_settings_menu_keyboard_and_pointer_polish() {
+fn the_update_bell_keeps_the_menu_keyboard_and_pointer_polish() {
     let html = app_shell_page();
 
     for expected in [
-        "settingsMenu.addEventListener('keydown', (event) => {",
-        "if (event.key === 'Escape') {",
-        "settingsMenu.open = false;",
-        "settingsMenu.querySelector('summary').focus();",
-        "document.addEventListener('click', (event) => {",
-        "if (settingsMenu.open && !settingsMenu.contains(event.target)) {",
-        "minimapEnabledControl.addEventListener('change'",
+        r#"<summary id="updateSummary" class="icon-button" aria-label="Update" title="Update">"#,
+        r#"<div class="update-panel" role="group" aria-labelledby="updateSummary">"#,
+        "updateMenu.querySelector('summary').focus();",
+        "if (updateMenu.open && !updateMenu.contains(event.target)) updateMenu.open = false;",
     ] {
         assert_contains(&html, expected);
     }
+    assert_icon(&html, "update");
 
     let css = reading_mode_css();
 
+    // The box, the radius and the focus ring the settings summary had, on the bell's.
     for expected in [
-        ".settings-menu summary::-webkit-details-marker",
-        ".settings-panel {",
-        ".setting-control-inline",
-        ".setting-control-inline input",
-        "input:focus-visible",
+        ".update-menu summary::-webkit-details-marker",
+        ".update-panel {",
         "right: 0;",
         "width: min(290px, calc(100vw - 28px));",
         "summary:focus-visible",
@@ -756,15 +740,14 @@ fn app_shell_markup_carries_its_own_text_before_any_script_runs() {
     // Every label is in the markup or in the fragment that writes it, so the
     // first frame is never a shell of blank buttons waiting on script.
     for expected in [
-        r#"<span class="setting-label">Theme</span>"#,
         r#"aria-label="Open" title="Open Markdown file""#,
-        "<span>Version</span>",
         "<h1>Refine your mind.</h1>",
         "<p class=\"empty-subtitle\">Your thoughts, secure and free.</p>",
         ">Choose file</button>",
         "Open a file and read it in peace. It stays on your device, in plain text you own.",
         "Files you open show up here, so you can pick up where you left off.",
-        r#"aria-label="Settings" title="Settings""#,
+        r#"aria-label="Themes" title="Themes""#,
+        r#"<span class="reader-subselect-label">Graph size</span>"#,
     ] {
         assert_contains(&html, expected);
     }
@@ -972,7 +955,7 @@ fn the_front_end_shares_its_repeated_plumbing() {
     // Escape closes what is open: four callers, one listener each, no key checks of
     // their own.
     assert_contains(script, "function leafOnEscape(close, target) {");
-    assert_eq!(script.matches("leafOnEscape(").count(), 5);
+    assert_eq!(script.matches("leafOnEscape(").count(), 6);
 
     // Holding the pointer through a drag, wrapped because a browser may refuse.
     assert_contains(script, "function leafHoldPointer(el, pointerId) {");

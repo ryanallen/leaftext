@@ -32,14 +32,3 @@ window.addEventListener('mousedown', (event) => {
   event.preventDefault();
   sendNavigationCommand(command);
 });
-settingsMenu.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') {
-    settingsMenu.open = false;
-    settingsMenu.querySelector('summary').focus();
-  }
-});
-document.addEventListener('click', (event) => {
-  if (settingsMenu.open && !settingsMenu.contains(event.target)) {
-    settingsMenu.open = false;
-  }
-});

@@ -380,9 +380,8 @@ fn opened_document_carries_minimap_model_for_webview_state() {
 }
 
 #[test]
-fn settings_default_keeps_minimap_on() {
+fn settings_defaults_open_the_pane_on_the_file_list() {
     let settings = Settings::default();
-    assert!(settings.minimap_enabled);
     assert!(!settings.speed_reader_enabled);
     assert_eq!(settings.theme_family, "random");
     assert_eq!(settings.theme_mode, "daylight");

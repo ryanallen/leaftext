@@ -106,11 +106,22 @@ function renderReaderToolbar(hasDocument) {
   renderViewTools(current);
 }
 const GRAPH_ERROR = 'Graph failed to load.';
+const GRAPH_SCOPES = ['small', 'medium', 'large', 'xl'];
+let graphScope = GRAPH_SCOPES.includes(LEAF_SETTINGS.graphScope) ? LEAF_SETTINGS.graphScope : 'small';
+// Graph size: persist the choice and, if the graph is on screen, rebuild it for
+// the new scope right away.
+graphScopeControl.value = graphScope;
+graphScopeControl.addEventListener('change', () => {
+  graphScope = GRAPH_SCOPES.includes(graphScopeControl.value) ? graphScopeControl.value : 'small';
+  send({ command: 'setGraphScope', scope: graphScope });
+  if (graphViewOpen) requestGraphData();
+});
 // The tools of the view you are in. None turns blue: the filled chip means
 // "this is the view you are in", and a setting inside that view must not wear
 // it. The glyph carries the state instead -- a shut padlock, a thin first
 // letter. The padlock stands in both editable views, but it is a different
-// switch in each and its tooltip says which; the map has no tools at all.
+// switch in each and its tooltip says which; the map's one tool is how big a
+// graph to draw.
 function viewLockTooltip(onCodeView) {
   if (onCodeView) {
     return codeUnlocked
@@ -123,7 +134,11 @@ function viewLockTooltip(onCodeView) {
 }
 function renderViewTools(current) {
   const editable = current === 'reading' || current === 'code';
-  if (readerViewTools) readerViewTools.hidden = !editable;
+  const onGraph = current === 'graph';
+  // The recess stands in all three views now: the editable pair fill it with the
+  // padlock and its neighbors, the map with the one dropdown.
+  if (readerViewTools) readerViewTools.hidden = !editable && !onGraph;
+  if (graphScopeTool) graphScopeTool.hidden = !onGraph;
   if (readerLockButton) {
     readerLockButton.hidden = !editable;
     const onCodeView = current === 'code';

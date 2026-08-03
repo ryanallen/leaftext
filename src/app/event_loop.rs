@@ -24,8 +24,6 @@ pub(crate) struct AppCtx {
 /// this returns true. A new persisted toggle is its command plus an arm here.
 fn apply_setting_command(settings: &mut Settings, command: IpcCommand) -> bool {
     match command {
-        IpcCommand::SetMinimapEnabled { enabled } => settings.minimap_enabled = enabled,
-        IpcCommand::SetPagerEnabled { enabled } => settings.pager_enabled = enabled,
         IpcCommand::SetSpeedReaderEnabled { enabled } => settings.speed_reader_enabled = enabled,
         IpcCommand::SetCodeIntelEnabled { enabled } => settings.code_intel_enabled = enabled,
         IpcCommand::SetReadingUnlocked { enabled } => settings.reading_unlocked = enabled,
@@ -712,9 +710,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 // The persisted toggles, applied in one place and saved once.
-                command @ (IpcCommand::SetMinimapEnabled { .. }
-                | IpcCommand::SetPagerEnabled { .. }
-                | IpcCommand::SetSpeedReaderEnabled { .. }
+                command @ (IpcCommand::SetSpeedReaderEnabled { .. }
                 | IpcCommand::SetCodeIntelEnabled { .. }
                 | IpcCommand::SetReadingUnlocked { .. }
                 | IpcCommand::SetCodeUnlocked { .. }

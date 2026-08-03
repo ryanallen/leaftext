@@ -171,8 +171,6 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
     let missing_path = dir.join("missing.json");
 
     let settings = Settings {
-        minimap_enabled: false,
-        pager_enabled: false,
         speed_reader_enabled: true,
         code_intel_enabled: false,
         reading_unlocked: true,
@@ -230,12 +228,12 @@ fn a_byte_order_mark_from_a_windows_editor_does_not_reset_the_config() {
     let settings_path = dir.join("settings.json");
     fs::write(
         &settings_path,
-        "\u{feff}{\"library_width\": 312, \"minimap_enabled\": false}",
+        "\u{feff}{\"library_width\": 312, \"code_intel_enabled\": false}",
     )
     .expect("BOM settings fixture is written");
     let loaded = load_settings(&settings_path);
     assert_eq!(loaded.settings.library_width, 312);
-    assert!(!loaded.settings.minimap_enabled);
+    assert!(!loaded.settings.code_intel_enabled);
     assert!(
         !loaded.unreadable,
         "a byte order mark must not count as an unreadable file"
@@ -283,17 +281,18 @@ fn settings_load_tolerates_partial_json_via_serde_default() {
     let settings_path = dir.join("settings.json");
     fs::create_dir_all(&dir).expect("test directory is created");
 
-    // Only one field present: the rest must fall back to their defaults. An
-    // unknown key — `indexing_enabled`, which every already-installed copy still
-    // has in its settings file — is ignored rather than failing the load.
+    // Only one field present: the rest must fall back to their defaults. Unknown
+    // keys — `indexing_enabled` from the old disk crawler, and the two toggles
+    // that stopped being choices — are ignored rather than failing the load, so
+    // an installed copy needs no migration to lose them.
     fs::write(
         &settings_path,
-        r#"{"library_width": 312, "indexing_enabled": true}"#,
+        r#"{"library_width": 312, "indexing_enabled": true, "minimap_enabled": false, "pager_enabled": false}"#,
     )
     .expect("partial settings fixture is written");
     let loaded = load_settings(&settings_path).settings;
     assert_eq!(loaded.library_width, 312);
-    assert!(loaded.minimap_enabled);
+    assert!(loaded.code_intel_enabled);
     assert_eq!(loaded.theme_mode, "daylight");
     assert!(!loaded.library_closed);
 
@@ -317,11 +316,11 @@ fn a_settings_file_from_before_the_pane_had_one_view_still_loads() {
         let settings_path = dir.join(format!("{legacy}.json"));
         fs::write(
             &settings_path,
-            format!(r#"{{"library_view": "{legacy}", "minimap_enabled": false}}"#),
+            format!(r#"{{"library_view": "{legacy}", "code_intel_enabled": false}}"#),
         )
         .expect("legacy library view fixture is written");
         let loaded = load_settings(&settings_path).settings;
-        assert!(!loaded.minimap_enabled);
+        assert!(!loaded.code_intel_enabled);
     }
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
@@ -589,20 +588,66 @@ fn the_updater_only_speaks_when_it_can_install() {
     }
 
     // What is left: the download's spinner and progress fill, and the dot the
-    // gear raises with the panel shut.
-    assert!(html.contains(r#"id="settingsUpdateSpinner""#));
-    assert!(html.contains(r#"id="settingsUpdateFill""#));
+    // bell raises with its panel shut.
+    assert!(html.contains(r#"id="updateButtonSpinner""#));
+    assert!(html.contains(r#"id="updateButtonFill""#));
     let css = reading_mode_css();
-    assert!(css.contains(".settings-spinner"));
-    assert!(css.contains(".settings-alert-dot.is-downloading"));
+    assert!(css.contains(".update-button-spinner"));
+    assert!(css.contains(".update-alert-dot.is-downloading"));
     assert!(!css.contains(".settings-check"));
 }
 
 #[test]
-fn the_settings_panel_shows_the_running_version() {
+fn the_update_bell_is_out_of_the_bar_until_there_is_news() {
+    // Not a control that sits there saying nothing: the bell is in the app bar
+    // only while an installer is downloading or waiting, so its presence is the
+    // message. An action appearing mid-session changes what fits beside the tabs,
+    // which is why un-hiding it refits the bar.
     let html = app_shell_page();
-    assert!(html.contains(r#"<span class="settings-version-number" id="settingsVersion">"#));
-    assert!(html.contains("<span>Version</span>"));
+    assert!(html.contains(r#"<details class="update-menu" id="updateMenu" hidden>"#));
+    for expected in [
+        "const news = downloading || status === 'staged';",
+        "updateMenu.hidden = !news;",
+        "if (!news) updateMenu.open = false;",
+        "if (wasHidden !== updateMenu.hidden) refitAppBar();",
+    ] {
+        assert_contains(&html, expected);
+    }
+    // Escape and the outside click go through the shared helper, not a second
+    // hand-rolled pair.
+    assert_contains(
+        &html,
+        "if (updateMenu.open && !updateMenu.contains(event.target)) updateMenu.open = false;",
+    );
+    // The settings menu and everything that hung off it are gone.
+    for gone in [
+        "settings-menu",
+        "settingsMenu",
+        "settingsSummary",
+        "settings-panel",
+        "settingsAlertDot",
+        "settingsVersion",
+        "setting-theme-open",
+        "pagerEnabled",
+        "minimapEnabledControl",
+    ] {
+        assert!(!html.contains(gone), "the settings menu is back: {gone}");
+    }
+    let css = reading_mode_css();
+    for gone in [".settings-", ".setting-", "data-pager-enabled"] {
+        assert!(!css.contains(gone), "the stylesheet still paints {gone}");
+    }
+}
+
+#[test]
+fn the_home_screen_shows_the_running_version() {
+    let html = app_shell_page();
+    // In the template string, not read out of the DOM once at load: the home
+    // screen is rebuilt on every render, so a cached element would go stale after
+    // the first showing.
+    assert!(html.contains(
+        r#"<p class="empty-version">${LEAF_VERSION ? `v${escapeText(LEAF_VERSION)}` : ''}</p>"#
+    ));
     // The number itself comes from the init script, not the markup.
     assert!(initial_version_script().contains(env!("CARGO_PKG_VERSION")));
 }

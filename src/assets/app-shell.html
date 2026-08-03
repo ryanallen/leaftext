@@ -31,55 +31,28 @@
     <button type="button" id="overflowToggle" class="icon-button overflow-toggle" aria-haspopup="true" aria-expanded="false" aria-label="More options" title="More options"><span class="lt-icon lt-icon-chevron-down"></span></button>
     <div class="app-trailing-items" id="appTrailingItems">
     <div class="app-actions-items" id="appActionsItems">
-    <details class="settings-menu" id="settingsMenu">
-      <summary id="settingsSummary" class="icon-button" aria-label="Settings" title="Settings">
-        <span class="lt-icon lt-icon-settings"></span>
-        <span class="settings-alert-dot" id="settingsAlertDot" aria-hidden="true" hidden></span>
+    <!-- Only there when there is news: a ring while the new version downloads, a
+         dot once a restart would install it, and nothing at all otherwise. -->
+    <details class="update-menu" id="updateMenu" hidden>
+      <summary id="updateSummary" class="icon-button" aria-label="Update" title="Update">
+        <span class="lt-icon lt-icon-update"></span>
+        <span class="update-alert-dot" id="updateAlertDot" aria-hidden="true" hidden></span>
       </summary>
-      <div class="settings-panel" role="group" aria-labelledby="settingsSummary">
-        <button type="button" class="settings-update" id="settingsUpdate" hidden>
+      <div class="update-panel" role="group" aria-labelledby="updateSummary">
+        <button type="button" class="update-button" id="updateButton" hidden>
           <!-- Progress fill behind the label: the download's only honest signal
                that bytes are moving. Width is set from the percent. -->
-          <span class="settings-update-fill" id="settingsUpdateFill" aria-hidden="true"></span>
-          <span class="lt-spinner settings-spinner" id="settingsUpdateSpinner" aria-hidden="true" hidden></span>
-          <span class="settings-update-label" id="settingsUpdateLabel"></span>
+          <span class="update-button-fill" id="updateButtonFill" aria-hidden="true"></span>
+          <span class="lt-spinner update-button-spinner" id="updateButtonSpinner" aria-hidden="true" hidden></span>
+          <span class="update-button-label" id="updateButtonLabel"></span>
         </button>
-        <button type="button" class="setting-theme-open" id="themeSheetOpen" aria-haspopup="dialog">
-          <span class="lt-icon setting-theme-icon lt-icon-theme"></span>
-          <span class="setting-label">Theme</span>
-          <span class="setting-theme-current" id="themeCurrentLabel"></span>
-          <span class="setting-theme-chevron" aria-hidden="true">›</span>
-        </button>
-        <label class="setting-control" for="graphScope">
-          <span class="setting-label">Graph size</span>
-          <select id="graphScope" aria-label="Graph size" aria-describedby="graphScopeHelp">
-            <option value="small">Focus (open document + links)</option>
-            <option value="medium">Medium (up to 2,000)</option>
-            <option value="large">Large (up to 5,000)</option>
-            <option value="xl">Everything</option>
-          </select>
-          <span class="setting-help" id="graphScopeHelp">How many documents the graph view draws. Smaller is faster.</span>
-        </label>
-        <label class="setting-control setting-control-inline" for="minimapEnabled">
-          <input type="checkbox" id="minimapEnabled" aria-label="Show document minimap" aria-describedby="minimapEnabledHelp">
-          <span class="setting-label">Show minimap</span>
-          <span class="setting-help" id="minimapEnabledHelp">Show a scrollable document overview on wider windows.</span>
-        </label>
-        <label class="setting-control setting-control-inline" for="pagerEnabled">
-          <input type="checkbox" id="pagerEnabled" aria-label="Show next and previous links" aria-describedby="pagerEnabledHelp">
-          <span class="setting-label">Show next/previous</span>
-          <span class="setting-help" id="pagerEnabledHelp">Add Previous and Next links at the bottom of each document, ordered by the folder tree.</span>
-        </label>
-        <!-- The version, and nothing about the updater: it checks and downloads on
-             its own, and the only thing worth a word is the restart button above. -->
-        <div class="settings-footer">
-          <p class="settings-version">
-            <span>Version</span>
-            <span class="settings-version-number" id="settingsVersion"></span>
-          </p>
-        </div>
       </div>
     </details>
+    <!-- Where the settings sliders stood. Themes were the one thing anybody opened
+         that menu for, so they are one click; the title carries the theme in use. -->
+    <button type="button" id="themeSheetOpen" class="icon-button theme-button" aria-label="Themes" title="Themes" aria-haspopup="dialog">
+      <span class="lt-icon lt-icon-theme"></span>
+    </button>
     <button type="button" id="openButton" class="icon-button open-button" aria-label="Open" title="Open Markdown file"><span class="lt-icon lt-icon-open"></span></button>
     <!-- Beside the folder: that one opens a document that exists, this one
          starts a document that doesn't. -->
@@ -157,10 +130,19 @@
          view buttons rather than wedged between them, so reading / source /
          graph always read as one unbroken group. The padlock is the app's one
          answer to "can I type here", so it stands in both editable views; the
-         speed reader and the wand each belong to one. Nothing on a map, so the
-         recess goes with it. Sunk and grained rather than same-level buttons,
-         which would read as more views. -->
+         speed reader and the wand each belong to one, and the map's one setting
+         is how big a graph to draw. Sunk and grained rather than same-level
+         buttons, which would read as more views. -->
     <span id="readerViewTools" class="reader-view-tools" role="group" aria-label="Editing tools" hidden>
+      <label class="reader-subselect" id="graphScopeTool" hidden>
+        <span class="reader-subselect-label">Graph size</span>
+        <select id="graphScope" aria-label="Graph size" title="How many documents the graph view draws. Smaller is faster.">
+          <option value="small">Focus</option>
+          <option value="medium">Medium</option>
+          <option value="large">Large</option>
+          <option value="xl">Everything</option>
+        </select>
+      </label>
       <button type="button" id="readerLockButton" class="reader-subtool" aria-pressed="false" aria-label="Unlock to edit" title="Unlock to edit"><span class="reader-swap-glyph reader-glyph-off"><span class="lt-icon lt-icon-lock-closed"></span></span><span class="reader-swap-glyph reader-glyph-on"><span class="lt-icon lt-icon-lock-open"></span></span></button>
       <button type="button" id="speedReaderButton" class="reader-subtool" aria-pressed="false" aria-label="Speed reader" title="Speed reader"><span class="reader-swap-glyph reader-glyph-off"><span class="lt-icon lt-icon-speed-reader-off"></span></span><span class="reader-swap-glyph reader-glyph-on"><span class="lt-icon lt-icon-speed-reader-on"></span></span></button>
       <button type="button" id="codeIntelButton" class="reader-subtool" aria-pressed="true" aria-label="Typing help" title="Typing help"><span class="lt-icon lt-icon-wand"></span></button>

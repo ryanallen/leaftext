@@ -12,10 +12,14 @@
 // is what made the move possible at all: `normalize_svg_icon_colors` had already
 // turned every fill and stroke into `currentColor`, so no icon carried a color.
 //
-// A row marked `heavy` gets a second mask drawn at stroke-width 2.25, published as
+// A row marked `heavy` gets a second mask drawn at the heavy weight, published as
 // `--lt-icon-<name>-heavy` so a rule can swap to it — the active view is drawn bolder
 // as well as brighter, and a mask has no strokes to thicken. `missing-image.svg` and
 // the footnote arrow are not listed: the renderer hands those out as markup.
+//
+// The row's Stroke cell is the line weight, and it is stamped over whatever the file
+// draws at. A drawing arrives carrying its tool's number; left alone those drift, and
+// this set had reached seven weights before the column existed.
 
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -25,15 +29,27 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const check = process.argv.includes('--check');
 const target = 'src/assets/icons.css';
 
+// The named line weights, read out of the Stroke table so the values live in
+// design/ like every other one. `—` is a drawing with no strokes at all.
+const md = readFileSync(join(root, 'design/icons.md'), 'utf8');
+const WEIGHTS = new Map([['—', null]]);
+for (const [, name, value] of md.matchAll(/^\| (regular|heavy|hairline) \| ([0-9.]+) \|/gm)) {
+  WEIGHTS.set(name, value);
+}
+for (const named of ['regular', 'heavy', 'hairline']) {
+  if (!WEIGHTS.has(named)) throw new Error(`design/icons.md has no ${named} row in its Stroke table`);
+}
+
 // The rows that carry a class, and the ones that only carry a drawing.
 const rows = [];
-for (const line of readFileSync(join(root, 'design/icons.md'), 'utf8').split('\n')) {
+for (const line of md.split('\n')) {
   if (!line.startsWith('|')) continue;
   const cells = line.split('|').slice(1, -1).map((cell) => cell.trim());
-  if (cells.length < 4 || cells[0] === 'Name' || /^-{3,}$/.test(cells[1])) continue;
-  const [name, file, heavy] = cells;
+  if (cells.length < 5 || cells[0] === 'Name' || /^-{3,}$/.test(cells[1])) continue;
+  const [name, file, stroke, heavy] = cells;
   if (!/^[a-z][a-z0-9-]*$/.test(name)) throw new Error(`design/icons.md: "${name}" is not an icon name`);
-  rows.push({ name, file, heavy: heavy.toLowerCase() === 'yes' });
+  if (!WEIGHTS.has(stroke)) throw new Error(`design/icons.md: ${name} asks for stroke "${stroke}", which the Stroke table does not name`);
+  rows.push({ name, file, stroke, heavy: heavy.toLowerCase() === 'yes' });
 }
 if (rows.length < 30) throw new Error(`design/icons.md gave only ${rows.length} icons`);
 
@@ -84,21 +100,36 @@ const lines = [
   '  mask-size: contain;',
   '}',
 ];
+// Every stroke in a drawing, set to one weight. The row decides; the number a file
+// happens to carry is only a note, and the check below holds the two together.
+const STROKE_WIDTH = /stroke-width=(['"])[\d.]+\1/g;
+const atWeight = (svg, value) => svg.replace(STROKE_WIDTH, `stroke-width="${value}"`);
 let drawn = 0;
 const heavy = [];
-for (const { name, file, heavy: wantsHeavy } of rows) {
-  const svg = readFileSync(join(root, 'src/assets', file), 'utf8');
-  const uri = `url("data:image/svg+xml,${encode(svg)}")`;
+for (const { name, file, stroke, heavy: wantsHeavy } of rows) {
+  const raw = readFileSync(join(root, 'src/assets', file), 'utf8');
+  const drawnAt = [...raw.matchAll(STROKE_WIDTH)].map((match) => match[0]);
+  const wanted = WEIGHTS.get(stroke);
+  if (Boolean(drawnAt.length) !== Boolean(wanted)) {
+    problems.push(
+      wanted
+        ? `design/icons.md gives ${name} the ${stroke} stroke, but ${file} draws none`
+        : `${file} draws a stroke, so ${name} needs a weight in design/icons.md rather than the dash`
+    );
+    continue;
+  }
+  // What you open has to be what ships, so a file drawn at another weight is named
+  // rather than quietly restamped.
+  const off = drawnAt.find((match) => !match.includes(`"${wanted}"`));
+  if (off) {
+    problems.push(`src/assets/${file} draws ${off}, but design/icons.md gives ${name} the ${stroke} stroke (${wanted})`);
+    continue;
+  }
+  const uri = `url("data:image/svg+xml,${encode(wanted ? atWeight(raw, wanted) : raw)}")`;
   lines.push(`.lt-icon-${name} {`, `  -webkit-mask-image: ${uri};`, `  mask-image: ${uri};`, '}');
   drawn += 1;
   if (!wantsHeavy) continue;
-  // The rule this replaces set stroke-width on every path and line, whatever the
-  // file drew at, so the heavy copy does the same.
-  if (!/stroke-width=/.test(svg)) {
-    problems.push(`design/icons.md marks ${name} heavy, but ${file} draws no stroke to thicken`);
-    continue;
-  }
-  const bolder = svg.replace(/stroke-width=(['"])[d.]+/g, 'stroke-width=$12.25$1');
+  const bolder = atWeight(raw, WEIGHTS.get('heavy'));
   heavy.push(`  --lt-icon-${name}-heavy: url("data:image/svg+xml,${encode(bolder)}");`);
 }
 if (heavy.length) {
