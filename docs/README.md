@@ -92,7 +92,7 @@ These pages are plain Markdown, but the folder is also a deployable site:
 | File | Role |
 | --- | --- |
 | `index.html` | The docs shell at leaftext.com/docs — loads the shared site styles and applies the saved theme before first paint |
-| `docs.js` | Fills the sidebar navigation and renders the page chosen by the URL route |
+| `docs.js` | Fills the sidebar navigation and renders the page chosen by the URL route. After paint it links every term [GLOSSARY.md](GLOSSARY.md) defines, so a term opens in a sheet over the page the same way it does in the app — not on the glossary itself, where each heading would link to the entry it already is |
 | `docs.css` | Docs-only chrome: the sidebar and the page pager |
 | `render-docs-check.mjs` | Headless smoke test — renders every `.md` file here with the site renderer and fails loudly on errors or empty output |
 

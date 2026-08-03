@@ -26,7 +26,7 @@ import { highlightCode, decorateCodeBlocks } from '../site/codeblocks.js';
 import { decorateAnchorLinks } from '../site/anchors.js';
 import { buildOutline } from '../site/outline.js';
 import { loadDocsNav } from '../site/docs-nav.js';
-import { installGlossary } from '../site/glossary.js';
+import { installGlossary, installAutoGlossary } from '../site/glossary.js';
 import { installLinkTooltip } from '../site/link-tooltip.js';
 import { installSettings } from '../site/settings.js';
 import { applySpeedReaderIfEnabled } from '../site/speed-reader.js';
@@ -544,6 +544,19 @@ async function render(route, anchor) {
     initMinimap(contentEl);
 
     scrollToAnchor(anchor);
+
+    // Every word the glossary defines becomes a link to its entry, after paint so
+    // the page is readable first. A hand-written GLOSSARY.md#slug link is inside an
+    // <a> already, which this skips, so the two never fight. Not on the glossary
+    // itself: ours is a page here, unlike a glossary at the site root, so every
+    // heading would link to the entry it already is.
+    if (!/^GLOSSARY$/i.test(route)) {
+      installAutoGlossary({
+        contentEl,
+        renderMarkdown,
+        glossaryUrl: 'GLOSSARY.md',
+      });
+    }
   } catch (err) {
     statusEl.hidden = false;
     statusEl.textContent =

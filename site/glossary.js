@@ -240,7 +240,7 @@ export function installGlossary({ glossaryUrl, renderMarkdown, onNavigate }) {
 // Text inside existing <a>, <code>, and <pre> elements is skipped.
 //
 // Usage:
-//   installAutoGlossary({ contentEl, renderMarkdown, renderTEI })
+//   installAutoGlossary({ contentEl, renderMarkdown, renderTEI, glossaryUrl })
 //
 // Returns a promise that resolves when linking is done (or quietly fails).
 // ---------------------------------------------------------------------------
@@ -331,14 +331,17 @@ function extractTerms(html) {
 }
 
 /**
- * Fetch the glossary (tries GLOSSARY.md then GLOSSARY.xml / glossary.xml).
- * Returns rendered HTML string or null.
+ * Fetch the glossary and return rendered HTML, or null when none is reachable.
+ * `glossaryUrl` is one path or a list to try in order, each relative to the page
+ * asking. Ours sits in docs/, not at the site root, so the caller has to say
+ * where — a default of `GLOSSARY.md` is a silent no-op from anywhere else.
  * @param {Function} renderMarkdown
  * @param {Function|null} renderTEI
+ * @param {string|string[]} glossaryUrl
  * @returns {Promise<string|null>}
  */
-async function fetchGlossaryHtml(renderMarkdown, renderTEI) {
-  const candidates = ['GLOSSARY.md', 'GLOSSARY.xml', 'glossary.xml'];
+async function fetchGlossaryHtml(renderMarkdown, renderTEI, glossaryUrl) {
+  const candidates = Array.isArray(glossaryUrl) ? glossaryUrl : [glossaryUrl];
   for (const name of candidates) {
     let res;
     try {
@@ -364,11 +367,18 @@ async function fetchGlossaryHtml(renderMarkdown, renderTEI) {
  * @param {Element} opts.contentEl     — the rendered document element
  * @param {Function} opts.renderMarkdown
  * @param {Function} [opts.renderTEI]  — optional; used for .xml glossary files
+ * @param {string|string[]} opts.glossaryUrl — where the glossary is, from this page
  */
-export async function installAutoGlossary({ contentEl, renderMarkdown, renderTEI }) {
+export async function installAutoGlossary({
+  contentEl,
+  renderMarkdown,
+  renderTEI,
+  glossaryUrl,
+}) {
+  if (!glossaryUrl) return;
   let glossaryHtml;
   try {
-    glossaryHtml = await fetchGlossaryHtml(renderMarkdown, renderTEI || null);
+    glossaryHtml = await fetchGlossaryHtml(renderMarkdown, renderTEI || null, glossaryUrl);
   } catch {
     return;
   }

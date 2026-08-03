@@ -197,9 +197,14 @@ async function main() {
     initMinimap(content);
     scrollToHash();
 
-    // Auto-link glossary terms asynchronously after the page is displayed,
-    // checking for GLOSSARY.md or GLOSSARY.xml next to the document.
-    installAutoGlossary({ contentEl: content, renderMarkdown, renderTEI });
+    // Auto-link glossary terms after the page is displayed. The glossary is a
+    // published doc page, so it is under docs/, not beside this one.
+    installAutoGlossary({
+      contentEl: content,
+      renderMarkdown,
+      renderTEI,
+      glossaryUrl: 'docs/GLOSSARY.md',
+    });
   } catch (err) {
     showStatus(
       'Could not load the document (' +
