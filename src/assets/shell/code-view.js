@@ -414,13 +414,66 @@ function loadMonacoOnce() {
   return monacoLoadPromise;
 }
 
-// The Monaco language id for a code-view payload. Only the colorizers bundled
-// (Markdown, XML, YAML) are registered; anything else — including JSON until its
-// grammar is bundled — falls back to plain text, which still edits and minimaps.
+// JSON's colors. Monaco bundles no JSON colorer — its own is inside the language
+// service, which wants a worker — so this is a Monarch grammar, which is in the
+// editor core and so costs nothing in the vendored bundle and needs no worker.
+//
+// The token names are the bundled YAML grammar's, not JSON's own: both formats are
+// keys and values in the same view under the same theme, so a key that is one color
+// in YAML and another in JSON reads as a bug.
+//
+// `//` and `/* */` are not JSON and are colored anyway. A file carrying one is the
+// file whose reading view refuses to parse, so the code view is where its author
+// lands.
+function jsonMonarchLanguage() {
+  return {
+    defaultToken: '',
+    tokenizer: {
+      root: [
+        // A key is only a key because of the colon after it, so the lookahead is
+        // what tells one from a value — and why it has to be tried first.
+        [/"(?:[^"\\]|\\.)*"(?=[ \t]*:)/, 'type'],
+        [/"(?:[^"\\]|\\.)*"/, 'string'],
+        // A quote with no closer takes the rest of its line, which is the quickest
+        // way to see where the closer went missing.
+        [/".*$/, 'string'],
+        [/-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][-+]?\d+)?/, 'number'],
+        [/\b(?:true|false|null)\b/, 'keyword'],
+        [/[{}[\],:]/, 'delimiter'],
+        [/\/\/.*$/, 'comment'],
+        [/\/\*/, 'comment', '@comment'],
+      ],
+      comment: [
+        [/[^/*]+/, 'comment'],
+        [/\*\//, 'comment', '@pop'],
+        [/[/*]/, 'comment'],
+      ],
+    },
+  };
+}
+
+// Monaco keeps grammars globally, not per editor, so re-entering the code view
+// must not hand it a second one.
+let jsonColoringRegistered = false;
+
+// Monaco itself only loads on the first entry to the code view, so this is the
+// earliest there is anything to register the grammar with.
+function registerJsonColoringOnce(monaco) {
+  if (jsonColoringRegistered) return;
+  jsonColoringRegistered = true;
+  const known = monaco.languages.getLanguages().some((language) => language.id === 'json');
+  if (!known) monaco.languages.register({ id: 'json', extensions: ['.json'], aliases: ['JSON', 'json'] });
+  monaco.languages.setMonarchTokensProvider('json', jsonMonarchLanguage());
+}
+
+// The Monaco language id for a code-view payload. Markdown, XML and YAML are
+// bundled colorizers and JSON is the grammar above; anything else falls back to
+// plain text, which still edits and minimaps.
 function monacoLanguageFor(state) {
   const lang = (state.language || '').toLowerCase();
   if (lang.includes('xml') || lang === 'tei') return 'xml';
   if (lang.includes('yaml') || lang === 'yml') return 'yaml';
+  if (lang.includes('json')) return 'json';
   if (lang.includes('markdown') || lang === 'md' || lang === '') return 'markdown';
   return 'plaintext';
 }
@@ -890,6 +943,7 @@ function renderCodeView(state) {
         clearReaderLoading();
         return;
       }
+      registerJsonColoringOnce(monaco);
       createMonacoEditor(monaco, container, state, text);
       clearReaderLoading();
     })

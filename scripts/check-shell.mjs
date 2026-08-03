@@ -476,6 +476,84 @@ if (booted) {
     }
   });
 
+  // JSON has no bundled colorizer, so its grammar is ours. Monarch compiles a
+  // grammar only when a file is first opened, so a bad rule is otherwise a wrongly
+  // colored code view on somebody's machine and nothing before it. Monaco cannot
+  // load here — no DOM, and it is installed only to regenerate the bundle — so the
+  // real rules are driven the way Monarch drives them: one line at a time, first
+  // rule that matches at the position wins, the state stack carried across lines.
+  check('the JSON grammar colors a JSON file, comments and all', () => {
+    const { jsonMonarchLanguage, monacoLanguageFor } = booted;
+    if (monacoLanguageFor({ language: 'json' }) !== 'json') throw new Error('a .json payload is not sent to the grammar');
+    const grammar = jsonMonarchLanguage();
+    const tokenize = (text) => {
+      const out = [];
+      const stack = ['root'];
+      for (const line of text.split('\n')) {
+        let at = 0;
+        while (at < line.length) {
+          let matched = null;
+          for (const [pattern, token, action] of grammar.tokenizer[stack[stack.length - 1]]) {
+            const anchored = new RegExp(pattern.source, 'y');
+            anchored.lastIndex = at;
+            const hit = anchored.exec(line);
+            if (!hit || !hit[0].length) continue;
+            matched = { text: hit[0], token, action };
+            break;
+          }
+          if (!matched) {
+            at += 1; // Monarch's own fallback: one character as the default token.
+            continue;
+          }
+          out.push([matched.text, matched.token]);
+          if (matched.action === '@pop') stack.pop();
+          else if (matched.action) stack.push(matched.action.slice(1));
+          at += matched.text.length;
+        }
+      }
+      return out;
+    };
+    const colorOf = (text, want) => {
+      const found = tokenize(text).find((pair) => pair[0] === want[0]);
+      if (!found) throw new Error(`${JSON.stringify(want[0])} is not a token of ${JSON.stringify(text)}`);
+      if (found[1] !== want[1]) throw new Error(`${JSON.stringify(want[0])} is ${found[1]}, wanted ${want[1]}`);
+    };
+    // A key is `type` and a value is `string`, the way the bundled YAML grammar
+    // spells them — the same pair of colors in both formats, in one code view.
+    colorOf('{ "name": "leaf" }', ['"name"', 'type']);
+    colorOf('{ "name": "leaf" }', ['"leaf"', 'string']);
+    colorOf('{ "name" : "leaf" }', ['"name"', 'type']); // space before the colon
+    colorOf('{ "a\\"b": 1 }', ['"a\\"b"', 'type']); // an escaped quote inside a key
+    colorOf('{ "on": true }', ['true', 'keyword']);
+    colorOf('{ "on": null }', ['null', 'keyword']);
+    colorOf('{ "n": -12.5e-3 }', ['-12.5e-3', 'number']);
+    colorOf('{ "n": 0 }', ['0', 'number']);
+    colorOf('[1, 2]', [',', 'delimiter']);
+    // Neither is JSON, and both are in real .json files — the ones whose reading
+    // view refuses to parse, which is why their author is in the code view.
+    colorOf('{ "a": 1 } // trailing note', ['// trailing note', 'comment']);
+    colorOf('/* head */ { "a": 1 }', ['/*', 'comment']);
+    // A block comment holds its color to the end, over a line break and a `*`
+    // that closes nothing.
+    const block = tokenize('/*\n * still a comment\n */\n{ "a": 1 }');
+    for (const [text, token] of block.slice(0, block.findIndex((pair) => pair[0] === '*/') + 1)) {
+      if (token !== 'comment') throw new Error(`${JSON.stringify(text)} inside a block comment is ${token}`);
+    }
+    colorOf('/*\n * x\n */\n{ "a": 1 }', ['"a"', 'type']); // and the file carries on after it
+    // An unclosed quote takes the rest of its line and no more.
+    colorOf('{ "a": "oops\n{ "b": 1 }', ['"oops', 'string']);
+    colorOf('{ "a": "oops\n{ "b": 1 }', ['"b"', 'type']);
+    // Every color the grammar asks for has to be one the theme paints, or the text
+    // silently falls back to the foreground. `type`/`key`/`number`/`delimiter` are
+    // in defineLeafMonacoTheme for exactly these formats.
+    const painted = ['string', 'number', 'keyword', 'comment', 'type', 'key', 'delimiter'];
+    for (const state of Object.values(grammar.tokenizer)) {
+      for (const [, token] of state) {
+        if (!painted.includes(token)) throw new Error(`nothing paints ${token}`);
+      }
+    }
+  });
+
   check('byte offsets and line numbers agree in both directions', () => {
     // The reader's place is a byte offset on the Rust side and a line number in
     // the editor; multi-byte characters are where the two disagree.
