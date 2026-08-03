@@ -147,10 +147,9 @@ function blockquoteDomToMarkdown(el) {
     .join('\n>\n');
 }
 
-// The delimiter row for a serialized table. Alignment (`:---:`) is stripped by
-// the sanitizer and can't be read from the DOM, so reuse the original delimiter
-// row when its column count still matches; only a column-count change regenerates it.
-function tableDelimiterRow(el, columnCount) {
+// The delimiter row for a serialized table. The original row is reused verbatim
+// while the column count holds, so a cell edit never reformats the table.
+function tableDelimiterRow(el, headCells) {
   const start = Number(el.dataset.srcStart);
   const end = Number(el.dataset.srcEnd);
   if (Number.isFinite(start) && Number.isFinite(end)) {
@@ -159,11 +158,25 @@ function tableDelimiterRow(el, columnCount) {
       const trimmed = line.trim();
       if (/^\|?[\s:|-]+\|?$/.test(trimmed) && trimmed.includes('-')) {
         const cells = trimmed.replace(/^\|/, '').replace(/\|$/, '').split('|');
-        if (cells.length === columnCount) return trimmed;
+        if (cells.length === headCells.length) return trimmed;
       }
     }
   }
-  return '| ' + Array.from({ length: columnCount }, () => '---').join(' | ') + ' |';
+  return tableDelimiterCells(headCells);
+}
+
+// The row rebuilt from the header cells, for a table whose column count changed.
+// Alignment reads off `align`, where the renderer puts it: bare dashes here drop
+// every `:---:` in the table.
+function tableDelimiterCells(headCells) {
+  const dashes = headCells.map((cell) => {
+    const side = (cell.getAttribute('align') || '').toLowerCase();
+    if (side === 'center') return ':---:';
+    if (side === 'right') return '---:';
+    if (side === 'left') return ':---';
+    return '---';
+  });
+  return '| ' + dashes.join(' | ') + ' |';
 }
 
 // Serialize a rendered table to GFM pipes. Cells collapse newlines and escape
@@ -181,7 +194,7 @@ function tableDomToMarkdown(el) {
   };
   const headCells = Array.from(el.querySelectorAll(':scope > thead > tr > th'));
   const lines = ['| ' + headCells.map(cellText).join(' | ') + ' |'];
-  lines.push(tableDelimiterRow(el, headCells.length));
+  lines.push(tableDelimiterRow(el, headCells));
   el.querySelectorAll(':scope > tbody > tr').forEach((tr) => {
     const cells = Array.from(tr.querySelectorAll(':scope > td'));
     lines.push('| ' + cells.map(cellText).join(' | ') + ' |');

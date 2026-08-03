@@ -366,6 +366,31 @@ if (booted) {
     keeps('```\n```', null); // no line inside to edit
   });
 
+  // A table is written back by re-serializing the whole thing, and the dashes
+  // line under the header is what carries each column's alignment. Deleting
+  // across two cells can take a whole cell out, and a changed column count is
+  // when that line is rebuilt instead of copied — a wrong rebuild un-centers a
+  // column with nothing on screen to show for it.
+  check('a rebuilt dashes line keeps each column aligned', () => {
+    const { tableDelimiterCells, tableDelimiterRow } = booted;
+    const column = (align) => ({ getAttribute: (name) => (name === 'align' ? align : null) });
+    const is = (got, want) => {
+      if (got !== want) throw new Error(`got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`);
+    };
+
+    is(tableDelimiterCells([column(null)]), '| --- |');
+    is(tableDelimiterCells([column('left')]), '| :--- |');
+    is(tableDelimiterCells([column('center')]), '| :---: |');
+    is(tableDelimiterCells([column('right')]), '| ---: |');
+    is(tableDelimiterCells([column('CENTER')]), '| :---: |'); // the attribute's case is not ours
+    is(
+      tableDelimiterCells([column(null), column('center'), column('right')]),
+      '| --- | :---: | ---: |',
+    );
+    // A table with no usable source range takes the rebuilt row, alignment and all.
+    is(tableDelimiterRow({ dataset: {} }, [column('right'), column(null)]), '| ---: | --- |');
+  });
+
   check('a save before a block move shifts the ranges it moved', () => {
     // Dragging a block after typing in one sends two edits: the save, then the
     // move against the buffer the save wrote. Ranges that drift here reorder the
