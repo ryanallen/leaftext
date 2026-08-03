@@ -129,6 +129,7 @@ Move its index row in the same edit, and rewrite it to say what shipped. A row s
 
 ## Reference
 
+- `/priority` — ranks every ticket in the tree into one running order.
 - `/refine` — checks a written ticket against the code before anyone builds it.
 - `/build` — builds one, and moves it to `done/` when the last box is ticked.
 - `../docs/README.md` — every ticket, one line each. Read first, updated last.

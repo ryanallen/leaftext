@@ -130,6 +130,7 @@ Two things have to be on the file when this ends: the dated line at the top, and
 
 - `/ticket` — the shape this holds a file to.
 - `/build` — what runs next, once the plan is true.
+- `/priority` — the running order these tickets are ranked into.
 - `AGENTS.md` — the rules each paid for in version numbers.
 - `/design-tokens` — where a value lives, for anything the ticket styles.
 - `/add-dependency` — what a ticket owes before it names a crate.

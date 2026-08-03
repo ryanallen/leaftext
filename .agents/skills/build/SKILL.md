@@ -86,6 +86,6 @@ Then `/check` once more over the whole thing, and hand back: what the app does d
 - `/check` — the end of every phase, and the end of the job.
 - `/sync-docs` — step 5, when the change is wide.
 - `../docs/README.md` — every ticket, one line each.
-- `../docs/plans/` — the running order. The newest file is the live one.
+- `../docs/plans/` — the running order. The newest file is the live one, written by `/priority`.
 
 <!-- keycode: LEAF-2F4B -->

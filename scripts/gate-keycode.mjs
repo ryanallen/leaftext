@@ -28,8 +28,8 @@ export const ALWAYS = 'AGENTS.md';
 export function keyedFiles() {
   const skills = [
     'add-dependency', 'add-format', 'build', 'check', 'code-comments',
-    'design-tokens', 'git-release', 'refine', 'shell-fragment', 'sync-docs',
-    'sync-tests', 'ticket',
+    'design-tokens', 'git-release', 'priority', 'refine', 'shell-fragment',
+    'sync-docs', 'sync-tests', 'ticket',
   ];
   return [ALWAYS, ...skills.map((name) => `.agents/skills/${name}/SKILL.md`)];
 }
