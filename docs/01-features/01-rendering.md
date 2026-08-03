@@ -212,9 +212,7 @@ A table cell whose entire content is a task-list marker — `[ ]` or `[x]` — r
 
 ### Buttons (Leaf extension)
 
-This one is a Leaftext addition, not standard Markdown. Wrap an ordinary inline
-link in braces and it renders as a button styled like the app's action controls,
-linking wherever the link points. The more braces, the more prominent the button:
+This one is a Leaftext addition, not standard Markdown. Wrap an ordinary inline link in braces and it renders as a button styled like the app's action controls, linking wherever the link points. The more braces, the more prominent the button:
 
 | Style | Syntax | Looks like |
 | --- | --- | --- |
@@ -224,13 +222,7 @@ linking wherever the link points. The more braces, the more prominent the button
 
 {[Ghost](https://github.com/ryanallen/leaftext)} {{[Outline](https://github.com/ryanallen/leaftext)}} {{{[Filled](https://github.com/ryanallen/leaftext)}}}
 
-Each is just a normal `[label](url)` link with braces around the whole thing. The
-wrapper is braces only — brackets are link syntax, so `[[Label](url)]` is a plain
-link between two square brackets, not a button. The braces must balance: `{{…}`
-is prose and stays as written. The label may hold inline formatting, and the
-button follows a link like any other (external URLs open in your browser,
-relative `.md` paths open in the reader). Written inside code the wrapper stays
-literal, so this page can show the syntax without turning it into a button.
+Each is just a normal `[label](url)` link with braces around the whole thing. The wrapper is braces only — brackets are link syntax, so `[[Label](url)]` is a plain link between two square brackets, not a button. The braces must balance: `{{…}` is prose and stays as written. The label may hold inline formatting, and the button follows a link like any other (external URLs open in your browser, relative `.md` paths open in the reader). Written inside code the wrapper stays literal, so this page can show the syntax without turning it into a button.
 
 ### Images
 
@@ -250,9 +242,7 @@ Inline math uses `$…$`: the mass–energy equivalence is $E = mc^2$.
 
 Display math uses `$$…$$`:
 
-$$
-\int_{a}^{b} f(x)\,dx = F(b) - F(a)
-$$
+$$ \int_{a}^{b} f(x)\,dx = F(b) - F(a) $$
 
 ### Mermaid diagrams
 

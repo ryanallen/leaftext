@@ -145,8 +145,7 @@ The text search reads is the same copy the [graph](#graph) reads: one pass over 
 
 ## Other names
 
-A note can answer to more than the name of its file. Give it an `aliases` field
-and every name in the list works everywhere the file's own name works:
+A note can answer to more than the name of its file. Give it an `aliases` field and every name in the list works everywhere the file's own name works:
 
 ```markdown
 ---
@@ -156,28 +155,16 @@ aliases:
 ---
 ```
 
-Now `[[Mozart]]` reaches `Wolfgang Amadeus Mozart.md` — it draws that edge on the
-map, finds the note in [search](#search), previews it on hover, and appears in
-the `[[` popup with the file it opens named beside it. Written `aliases: [Mozart,
-W. A. Mozart]` on one line, or as a single `aliases: Mozart`, it reads the same.
-This is the same field [Obsidian](https://obsidian.md/help/properties) uses, so a
-vault written there opens here with its links intact.
+Now `[[Mozart]]` reaches `Wolfgang Amadeus Mozart.md` — it draws that edge on the map, finds the note in [search](#search), previews it on hover, and appears in the `[[` popup with the file it opens named beside it. Written `aliases: [Mozart, W. A. Mozart]` on one line, or as a single `aliases: Mozart`, it reads the same. This is the same field [Obsidian](https://obsidian.md/help/properties) uses, so a vault written there opens here with its links intact.
 
 A few rules, so a preferred name can never quietly take a real one:
 
-- **A file name always wins.** If one note is called `Mozart.md` and another
-  prefers the name, `[[Mozart]]` opens the file.
-- **Between two notes preferring one name**, the first found wins, and the code
-  view's [broken-link check](07-editing.md#typing-help) says which note the link
-  opens and which others wanted it.
-- **A node on the map keeps its file's name** — a node labeled with a preferred
-  name is one you cannot find by the name on disk. Hover it to see the rest.
-- **Thirty-two per note.** Past that they are ignored, and the check marks the
-  `aliases` line to say how many there were.
+- **A file name always wins.** If one note is called `Mozart.md` and another prefers the name, `[[Mozart]]` opens the file.
+- **Between two notes preferring one name**, the first found wins, and the code view's [broken-link check](07-editing.md#typing-help) says which note the link opens and which others wanted it.
+- **A node on the map keeps its file's name** — a node labeled with a preferred name is one you cannot find by the name on disk. Hover it to see the rest.
+- **Thirty-two per note.** Past that they are ignored, and the check marks the `aliases` line to say how many there were.
 
-It works outside a vault too: for a document in a plain folder, Leaftext reads
-the top of each file beside it — the field block and no further — for up to 500
-files. One folder, never the tree below it.
+It works outside a vault too: for a document in a plain folder, Leaftext reads the top of each file beside it — the field block and no further — for up to 500 files. One folder, never the tree below it.
 
 ## Graph
 

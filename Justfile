@@ -81,6 +81,14 @@ check-spelling:
 check-docs:
     node scripts/check-docs.mjs
 
+# Fail on a Markdown paragraph broken across lines. Everything that reads these files
+# reflows, so the newline inside a paragraph only costs: it re-flows by hand on every
+# edit after it, and a one-word change diffs as the whole paragraph. `--fix` joins them.
+# The joining is self-tested before either mode reads a file — it rewrites 150 files,
+# and a wrong transform is caught by nobody until somebody reads one.
+check-wrapping:
+    node scripts/check-wrapping.mjs
+
 # Fail on a file the published pages fetch by a path that has nothing at it — a 404
 # nobody sees until the page is live.
 check-site:
@@ -162,7 +170,7 @@ conformance *flags:
 doc-images:
     node scripts/doc-images.mjs
 
-verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-site check-shell check-identity check-hooks check-mcp
+verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-site check-shell check-identity check-hooks check-mcp
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

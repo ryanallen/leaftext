@@ -185,20 +185,15 @@ git push origin --delete <old-tag-1> <old-tag-2> ...
 
 ## Troubleshooting
 
-**Site change accidentally bumped the version.**
-Cause: a Rust/build path slipped into the commit. Re-check step 1's diff; if it really is site-only, revert the `Cargo.toml`/`Cargo.lock`/tag changes.
+**Site change accidentally bumped the version.** Cause: a Rust/build path slipped into the commit. Re-check step 1's diff; if it really is site-only, revert the `Cargo.toml`/`Cargo.lock`/tag changes.
 
-**Cargo.lock version mismatch / "cannot update the lock file because --locked was passed".**
-Cause: `Cargo.lock` wasn't updated to match `Cargo.toml`. Solution: set the `[[package]] name = "leaftext"` version in `Cargo.lock` to match.
+**Cargo.lock version mismatch / "cannot update the lock file because --locked was passed".** Cause: `Cargo.lock` wasn't updated to match `Cargo.toml`. Solution: set the `[[package]] name = "leaftext"` version in `Cargo.lock` to match.
 
-**Old tags still show on GitHub.**
-Cause: remote tags weren't deleted. Solution: `git push origin --delete v<old-version> ...`.
+**Old tags still show on GitHub.** Cause: remote tags weren't deleted. Solution: `git push origin --delete v<old-version> ...`.
 
-**Deployments keep piling up.**
-Cause: the prune (step 7) was skipped. Re-run it any time — safe standalone, outside a release.
+**Deployments keep piling up.** Cause: the prune (step 7) was skipped. Re-run it any time — safe standalone, outside a release.
 
-**`just verify` is not green.**
-Cause: the release was started on a tree that does not pass. Solution: it is not a release problem — fix the cause, re-run `/check`, and continue. Never tag past it.
+**`just verify` is not green.** Cause: the release was started on a tree that does not pass. Solution: it is not a release problem — fix the cause, re-run `/check`, and continue. Never tag past it.
 
 ## Reference
 

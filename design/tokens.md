@@ -1,22 +1,16 @@
 # Tokens
 
-> Every value in the interface that is not a color. One value each, whatever theme is
-> on.
+> Every value in the interface that is not a color. One value each, whatever theme is on.
 
-A color is themed and lives in [colors.md](colors.md); these do not change with the
-theme, so this file holds the value itself.
+A color is themed and lives in [colors.md](colors.md); these do not change with the theme, so this file holds the value itself.
 
-`just bundle-tokens` compiles the tables below into `src/assets/tokens.css`, which is
-served ahead of `reading.css` so every `var()` in the stylesheet resolves.
-`just check-tokens` fails when the two drift. **Never edit `src/assets/tokens.css`** —
-it is generated, the same way `src/assets/themes.md` is.
+`just bundle-tokens` compiles the tables below into `src/assets/tokens.css`, which is served ahead of `reading.css` so every `var()` in the stylesheet resolves. `just check-tokens` fails when the two drift. **Never edit `src/assets/tokens.css`** — it is generated, the same way `src/assets/themes.md` is.
 
 A row is `| Token | Value | What it is for |`, the name written bare of the `--`.
 
 ## Corners
 
-One scale every surface pulls from, so rounding swaps in a single place. The sizes are
-the values the components already used.
+One scale every surface pulls from, so rounding swaps in a single place. The sizes are the values the components already used.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
@@ -31,9 +25,7 @@ the values the components already used.
 
 ## Document type
 
-The reading view's own scale, and only its own — interface text does not use it. Every
-size derives from `type-base`, so a window that grows moves the whole document with
-it.
+The reading view's own scale, and only its own — interface text does not use it. Every size derives from `type-base`, so a window that grows moves the whole document with it.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
@@ -67,8 +59,7 @@ it.
 
 ## Interface text
 
-The chrome's own sizes, in pixels because chrome does not scale with a document. A
-document's text uses the type scale above.
+The chrome's own sizes, in pixels because chrome does not scale with a document. A document's text uses the type scale above.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
@@ -154,9 +145,7 @@ Interface line heights. A document's come from the type scale above.
 
 ## Spacing
 
-Padding, margins and gaps, in pixels. `0` stays `0`, and a negative pull-back is the
-same token flipped: `calc(var(--lt-space-8) * -1)`. Spacing *inside* a document stays
-in `em`, because it has to follow the text size.
+Padding, margins and gaps, in pixels. `0` stays `0`, and a negative pull-back is the same token flipped: `calc(var(--lt-space-8) * -1)`. Spacing *inside* a document stays in `em`, because it has to follow the text size.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
@@ -186,8 +175,7 @@ in `em`, because it has to follow the text size.
 
 ## Duration
 
-Every transition and animation length, in milliseconds. `0.12s` and `120ms` were the
-same duration written two ways; both are `lt-duration-120` now.
+Every transition and animation length, in milliseconds. `0.12s` and `120ms` were the same duration written two ways; both are `lt-duration-120` now.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
@@ -218,8 +206,7 @@ same duration written two ways; both are `lt-duration-120` now.
 
 ## Layers
 
-Every `z-index` of 20 or more is a page layer and takes a token. Values of 11 or less
-order siblings inside one component and stay literal — they mean nothing outside it.
+Every `z-index` of 20 or more is a page layer and takes a token. Values of 11 or less order siblings inside one component and stay literal — they mean nothing outside it.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
@@ -236,9 +223,7 @@ order siblings inside one component and stay literal — they mean nothing outsi
 
 ## Strokes, rings and one recess
 
-Everything the app puts in a `box-shadow`. None of them is a cast shadow: a floating
-surface throws the dot halftone `reading.css` draws instead. Each takes a color from the
-contract or mixes one, so it still belongs to its theme.
+Everything the app puts in a `box-shadow`. None of them is a cast shadow: a floating surface throws the dot halftone `reading.css` draws instead. Each takes a color from the contract or mixes one, so it still belongs to its theme.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
@@ -251,9 +236,7 @@ contract or mixes one, so it still belongs to its theme.
 
 ## Grain
 
-The dot lattice's ink. Only the ink is a token: each rule writes the circles into its
-own `background-image`, because a custom property holding the whole gradient is
-substituted where it is declared and would paint every surface below it in one ink.
+The dot lattice's ink. Only the ink is a token: each rule writes the circles into its own `background-image`, because a custom property holding the whole gradient is substituted where it is declared and would paint every surface below it in one ink.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
@@ -265,8 +248,7 @@ substituted where it is declared and would paint every surface below it in one i
 
 ## Fixed colors
 
-Five values that are not the theme's to choose. A color in [colors.md](colors.md)
-changes with the family; these do not, and each says why.
+Five values that are not the theme's to choose. A color in [colors.md](colors.md) changes with the family; these do not, and each says why.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
@@ -278,8 +260,7 @@ changes with the family; these do not, and each says why.
 
 ## Fixed tints
 
-Black or gray at an alpha, where a mix toward a theme color would go the wrong way on
-one appearance. Each has its reason in the rule it serves.
+Black or gray at an alpha, where a mix toward a theme color would go the wrong way on one appearance. Each has its reason in the rule it serves.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
@@ -290,8 +271,7 @@ one appearance. Each has its reason in the rule it serves.
 
 ## Inset edges
 
-An edge drawn inside the box as a shadow, so it costs no layout and never shifts what
-is around it. The geometry is the token; the color it is drawn in comes with it.
+An edge drawn inside the box as a shadow, so it costs no layout and never shifts what is around it. The geometry is the token; the color it is drawn in comes with it.
 
 | Token | Value | What it is for |
 | --- | --- | --- |

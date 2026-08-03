@@ -39,9 +39,7 @@ Look at the actual source for anything relevant — the docs must describe real 
 
 ### 2. Map changes to doc pages
 
-Pages carry an ordering prefix (`docs/01-features/03-library.md`); the prefix is
-stripped from the route, so that page is `#/01-features/03-library` in the SPA and
-`03-library.md` from a sibling.
+Pages carry an ordering prefix (`docs/01-features/03-library.md`); the prefix is stripped from the route, so that page is `#/01-features/03-library` in the SPA and `03-library.md` from a sibling.
 
 | App area / source | Doc page(s) to update |
 |:--|:--|
@@ -62,15 +60,9 @@ stripped from the route, so that page is `#/01-features/03-library` in the SPA a
 | The pitch, the feature list, the keyboard-shortcut tour | `docs/01-introduction.md`, `docs/03-quickstart.md`, `README.md` |
 | A word Leaftext uses for a part of itself | `docs/GLOSSARY.md` |
 
-Update **every** page a change touches. A renamed setting, for example, may appear
-in both `05-settings.md` and `03-library.md`.
+Update **every** page a change touches. A renamed setting, for example, may appear in both `05-settings.md` and `03-library.md`.
 
-**The README is a doc page for this purpose.** It carries its own copy of the
-feature tour, the network/privacy claims, the install steps and the format lists,
-so a change to any of those lands there as well as in `docs/`. Claims about what
-reaches the network, what is written to disk, and when an update installs itself
-are the ones worth re-deriving from the source rather than trusting: they are the
-promises a reader is most entitled to, and the easiest to leave behind.
+**The README is a doc page for this purpose.** It carries its own copy of the feature tour, the network/privacy claims, the install steps and the format lists, so a change to any of those lands there as well as in `docs/`. Claims about what reaches the network, what is written to disk, and when an update installs itself are the ones worth re-deriving from the source rather than trusting: they are the promises a reader is most entitled to, and the easiest to leave behind.
 
 ### 3. Edit the page(s)
 
@@ -89,15 +81,12 @@ A useful check: enumerate the source (e.g. the `IpcCommand` variants, the menu i
 
 **Deepen existing page-level links too.** A link that already points at a page top is wrong when the link text or its sentence names a *specific* topic that has its own section on that page — upgrade it to `page#section`. For example, "Data paths → See [Settings](features/settings.md)" should be `features/settings.md#paths`; "the [library](library.md) pane stays current" (about live updates) should be `library.md#live-updates`. Page-level links remain correct where they genuinely point at the whole page: "Next" lists, overview tables, and a deliberate "relative link" demo.
 
+- **A paragraph is one line.** Never hard-wrap. The renderer reflows, GitHub reflows, every editor reflows — a wrap only costs, on every edit after it. `just check-wrapping` fails on one and names the file; `--fix` joins them. A break doing real work keeps two trailing spaces, or the file carries `<!-- keep-wrapping -->`. **This applies to every Markdown file the sweep in step 7 reaches, not only the page being edited** — a wrapped file is fixed where it is found.
 - A single `# Title` H1, followed by a one-line `> tagline` blockquote, then the intro paragraph.
 - Plain, factual prose. No marketing fluff, no changelog entries ("now supports…"). State current behavior.
 - Keep version numbers and counts (e.g. "last 8 files", "4 parse workers", "2 MB limit", current `Cargo.toml` version) matching the code.
 
-**One page is generated and must not be hand-edited:**
-`docs/02-development/05-design-system.md`. Its every count is read out of `design/`, so
-an edit here is lost on the next run and `just check-design-docs` fails first. To
-change what it says, change `design/` (see `/design-tokens`) and run
-`just bundle-design-docs`.
+**One page is generated and must not be hand-edited:** `docs/02-development/05-design-system.md`. Its every count is read out of `design/`, so an edit here is lost on the next run and `just check-design-docs` fails first. To change what it says, change `design/` (see `/design-tokens`) and run `just bundle-design-docs`.
 
 **Renderer constraints — the docs are rendered by `site/markdown.js`, which supports a GFM subset. Use only:**
 
@@ -106,125 +95,65 @@ change what it says, change `design/` (see `/design-tokens`) and run
 
 **Do NOT use** Mintlify/MDX components (`<Tabs>`, `<Tab>`, `<Steps>`, `<Step>`, `<Card>`, `<CardGroup>`, `<Accordion>`, `<Note>`, `<Tip>`, `<Warning>`) or `theme={null}` on code fences. Convert those concepts to plain Markdown: tabs/steps/accordions → `###` subheadings or `**1. …**` numbered bold lines; cards → a bullet list of links; callouts → the `> [!TYPE]` alerts above.
 
-**Cross-page links** must be relative `.md` paths, written with the **prefixed file
-name**, so they work both on GitHub and in the SPA: from `docs/02-installation.md`
-link `03-quickstart.md`; from `docs/01-features/02-navigation.md` link a sibling as
-`06-themes.md` and a top-level page as `../02-installation.md`. `docs.js` intercepts
-these and turns them into `#/route` navigations, stripping the prefixes.
+**Cross-page links** must be relative `.md` paths, written with the **prefixed file name**, so they work both on GitHub and in the SPA: from `docs/02-installation.md` link `03-quickstart.md`; from `docs/01-features/02-navigation.md` link a sibling as `06-themes.md` and a top-level page as `../02-installation.md`. `docs.js` intercepts these and turns them into `#/route` navigations, stripping the prefixes.
 
 ### 4. If you add or remove a page
 
-**The nav builds itself.** `docs.js` derives the sidebar, the mobile dropdown and
-the pager from the folder listing (`site/docs-nav.js`), so there is no table to
-edit — the `NN-` prefix on the file name is what sets its place in the order, and a
-folder's `README.md` is that folder's index. Two places to keep in sync:
+**The nav builds itself.** `docs.js` derives the sidebar, the mobile dropdown and the pager from the folder listing (`site/docs-nav.js`), so there is no table to edit — the `NN-` prefix on the file name is what sets its place in the order, and a folder's `README.md` is that folder's index. Two places to keep in sync:
 
-1. The `.md` file under `docs/` (create or delete), named with the prefix that puts
-   it where you want it. Renumber its siblings if it has to land between two of them.
-2. The **Documentation** list in the root `README.md` — keep the `docs/<path>.md`
-   relative links current.
+1. The `.md` file under `docs/` (create or delete), named with the prefix that puts it where you want it. Renumber its siblings if it has to land between two of them.
+2. The **Documentation** list in the root `README.md` — keep the `docs/<path>.md` relative links current.
 
 ### 5. Take the pictures the pages ask for
 
-A page that names a screenshot nobody took renders a broken frame at leaftext.com.
-Nothing else in the repo notices, so this step is where it is caught.
+A page that names a screenshot nobody took renders a broken frame at leaftext.com. Nothing else in the repo notices, so this step is where it is caught.
 
 ```bash
 node scripts/doc-images.mjs            # every reference, and which are not there
 node scripts/doc-images.mjs --missing  # page, reference, file — one per line
 ```
 
-Take each missing one. Two commands, per picture — the app photographs itself, then
-the same encoder the diagram export uses writes the PNG:
+Take each missing one. Two commands, per picture — the app photographs itself, then the same encoder the diagram export uses writes the PNG:
 
 ```bash
 pwsh scripts/capture-screenshot.ps1 -Doc <the document to open> -Out shot.bmp
 just squeeze-png shot.bmp imgs/<name>.png --palette
 ```
 
-- **The file name is already chosen** — it is whatever the page asks for. Write it
-  there; never rename the reference to match a file you happened to make.
-- **`-Doc` is what should be on screen**, and a screenshot of a feature has to
-  *show* that feature. Omit it for the home screen. `-LibraryOpen` opens the library
-  pane; `-Vault <folder>` registers one, which is the only way the search box and the
-  vault switcher exist at all; `-Recents <files>` fills the home screen's list;
-  `-Unlocked` lifts the padlocks, which typing in the page or the source needs.
-  `-ThemeFamily` and `-ThemeMode` pin the theme (leave them at Fern light unless the
-  picture is about a theme, so the set looks like one app). `-Width`/`-Height` change
-  the window, and the page lays out at the size the window was created with.
-- **`-Do` drives the window** before the shot, so a picture can show a menu, a sheet,
-  a hover or a selection rather than only a document. Steps are `click:X,Y`,
-  `rclick:X,Y`, `move:X,Y`, `drag:X1,Y1,X2,Y2`, `hold:…` (a drag caught mid-gesture),
-  `scroll:X,Y,NOTCHES`, `type:text`, `key:{ESC}`, `wait:MS`. **Coordinates are pixels
-  in the captured image**, so measure them off the last shot you took at the same
-  size — take one plain shot first, look at it, then aim.
-- **`-Crop "X,Y,W,H"`, same pixels.** Detail shots ship cropped: a whole window
-  around a 200 px control is a picture of the window.
-- `--palette` cuts the image to 256 colors: it halves the file and is the only step
-  that moves a pixel. Use it for every screenshot.
-- The shot runs against a throwaway profile under `-Work`, never the owner's — their
-  settings, recent files and vault registry are not read or written. Nothing here
-  needs `settings.json` hand-edited.
-- **Anything the window cannot be made to show is not faked.** A macOS install
-  dialog, an installer that cannot be built here, a state that needs a real GitHub
-  repo or a pending release: leave the reference, say which pictures are still
-  missing and why, in the hand-back.
-- **Check every shot against the sentence that asks for it.** The alt text is a
-  promise about what is in the frame; where the window will not produce it, fix the
-  alt rather than shipping a picture that does not match.
-- Batch politely: each capture launches the app and waits several seconds, so take
-  them in one pass rather than one per edit.
+- **The file name is already chosen** — it is whatever the page asks for. Write it there; never rename the reference to match a file you happened to make.
+- **`-Doc` is what should be on screen**, and a screenshot of a feature has to *show* that feature. Omit it for the home screen. `-LibraryOpen` opens the library pane; `-Vault <folder>` registers one, which is the only way the search box and the vault switcher exist at all; `-Recents <files>` fills the home screen's list; `-Unlocked` lifts the padlocks, which typing in the page or the source needs. `-ThemeFamily` and `-ThemeMode` pin the theme (leave them at Fern light unless the picture is about a theme, so the set looks like one app). `-Width`/`-Height` change the window, and the page lays out at the size the window was created with.
+- **`-Do` drives the window** before the shot, so a picture can show a menu, a sheet, a hover or a selection rather than only a document. Steps are `click:X,Y`, `rclick:X,Y`, `move:X,Y`, `drag:X1,Y1,X2,Y2`, `hold:…` (a drag caught mid-gesture), `scroll:X,Y,NOTCHES`, `type:text`, `key:{ESC}`, `wait:MS`. **Coordinates are pixels in the captured image**, so measure them off the last shot you took at the same size — take one plain shot first, look at it, then aim.
+- **`-Crop "X,Y,W,H"`, same pixels.** Detail shots ship cropped: a whole window around a 200 px control is a picture of the window.
+- `--palette` cuts the image to 256 colors: it halves the file and is the only step that moves a pixel. Use it for every screenshot.
+- The shot runs against a throwaway profile under `-Work`, never the owner's — their settings, recent files and vault registry are not read or written. Nothing here needs `settings.json` hand-edited.
+- **Anything the window cannot be made to show is not faked.** A macOS install dialog, an installer that cannot be built here, a state that needs a real GitHub repo or a pending release: leave the reference, say which pictures are still missing and why, in the hand-back.
+- **Check every shot against the sentence that asks for it.** The alt text is a promise about what is in the frame; where the window will not produce it, fix the alt rather than shipping a picture that does not match.
+- Batch politely: each capture launches the app and waits several seconds, so take them in one pass rather than one per edit.
 
-A new reference is part of the same edit that adds it — writing `![…](imgs/x.png)`
-and moving on is what built the backlog this step exists to drain.
+A new reference is part of the same edit that adds it — writing `![…](imgs/x.png)` and moving on is what built the backlog this step exists to drain.
 
 ### 6. Lint the whole set, not just the pages you touched
 
-Steps 2 and 3 keep a page truthful. This step keeps the *set* coherent — the faults
-that live between pages and that no single edit can see. Run it before a release, or
-any time a change spanned more than one page.
+Steps 2 and 3 keep a page truthful. This step keeps the *set* coherent — the faults that live between pages and that no single edit can see. Run it before a release, or any time a change spanned more than one page.
 
-- **Contradictions.** Two pages describing the same behavior differently. The pairs
-  worth checking are the ones that share a subject: `README.md` against
-  `01-introduction.md` (the pitch and the feature list), `03-library.md` against
-  `05-settings.md` (a setting named in both), `02-installation.md` against
-  `02-development/03-releasing.md` (paths and versions), `02-navigation.md` against
-  `03-quickstart.md` (the shortcut lists). Where they differ, the source settles it —
-  not whichever page reads better.
-- **Stale claims.** A sentence that was true at some version and quietly is not: a
-  count, a limit, a "this is not supported yet", a named default. These survive
-  because nothing links to them and nothing tests them. Re-derive the number.
-- **Orphans.** A page nothing links to. The nav reaches every page by folder listing,
-  so an orphan still renders — it just never gets found from the page a reader is
-  already on. Give it an inbound link from the page whose subject leads to it.
-- **A concept with no home.** A word the docs use across several pages as though it
-  were defined somewhere, and it is not — no section, no glossary row. Either it gets
-  a `docs/GLOSSARY.md` row or the page that owns the subject gets a section, and the
-  other mentions link there. This is what stops a term meaning something slightly
-  different on each page.
-- **What was learned and never written down.** If this session derived something real
-  about how the app behaves — a limit, an order of operations, a reason a thing works
-  the way it does — and no page says it, that belongs on a page now. Otherwise the
-  next person re-derives it. This is the most common way the docs fall behind while
-  every individual edit was correct.
+- **Contradictions.** Two pages describing the same behavior differently. The pairs worth checking are the ones that share a subject: `README.md` against `01-introduction.md` (the pitch and the feature list), `03-library.md` against `05-settings.md` (a setting named in both), `02-installation.md` against `02-development/03-releasing.md` (paths and versions), `02-navigation.md` against `03-quickstart.md` (the shortcut lists). Where they differ, the source settles it — not whichever page reads better.
+- **Stale claims.** A sentence that was true at some version and quietly is not: a count, a limit, a "this is not supported yet", a named default. These survive because nothing links to them and nothing tests them. Re-derive the number.
+- **Orphans.** A page nothing links to. The nav reaches every page by folder listing, so an orphan still renders — it just never gets found from the page a reader is already on. Give it an inbound link from the page whose subject leads to it.
+- **A concept with no home.** A word the docs use across several pages as though it were defined somewhere, and it is not — no section, no glossary row. Either it gets a `docs/GLOSSARY.md` row or the page that owns the subject gets a section, and the other mentions link there. This is what stops a term meaning something slightly different on each page.
+- **What was learned and never written down.** If this session derived something real about how the app behaves — a limit, an order of operations, a reason a thing works the way it does — and no page says it, that belongs on a page now. Otherwise the next person re-derives it. This is the most common way the docs fall behind while every individual edit was correct.
 
 Say what the lint found in the hand-back, including anything left unfixed and why.
 
 ### 7. Every Markdown file, not just the published pages
 
-The page map in step 2 covers what the app publishes. It is not the whole set of
-writing this session can have made untrue, and a map written by hand is exactly
-what misses a folder somebody added last week. **Read the set off the disk:**
+The page map in step 2 covers what the app publishes. It is not the whole set of writing this session can have made untrue, and a map written by hand is exactly what misses a folder somebody added last week. **Read the set off the disk:**
 
 ```bash
 just check-docs                     # fail on a file no role covers
 node scripts/check-docs.mjs --list  # every Markdown file in both trees, and its role
 ```
 
-The list is generated by walking the folders, so a page added anywhere shows up
-without anyone editing anything. **Work down it and ask one question of each file:
-did this session make a word of it untrue?** Only files where the answer is yes get
-edited — this is a sweep, not a rewrite of 150 documents.
+The list is generated by walking the folders, so a page added anywhere shows up without anyone editing anything. **Work down it and ask one question of each file: did this session make a word of it untrue?** Only files where the answer is yes get edited — this is a sweep, not a rewrite of 150 documents.
 
 What each role means in practice:
 
@@ -236,19 +165,16 @@ What each role means in practice:
 | **the guide** (`AGENTS.md`, and `README.md`) | A standing rule changed, or the repo grew a file the guide's tables do not reach. Never a log of what shipped |
 | **a license notice** (`src/assets/*-MIT.md`) | Only when what is vendored changes |
 | **installer text** (`wix/`) | Only when the install flow changes |
+| **any of them, always** | A hard-wrapped paragraph. `just check-wrapping --fix` joins them across both trees, whatever else the sweep found |
 | **plan** (`../docs/features/`, `../docs/refactor/`, `../docs/fixes/`) | **The one this step exists for.** A plan for something that now ships is the most misleading writing in either tree: move the file to `../docs/done/`, and move its row in [`../docs/README.md`](../../../../docs/README.md) under Shipped saying what shipped. A plan half-built gets the built part struck through, not deleted |
 | **the running order** (`../docs/plans/`) | Each file is dated and ranks the live tickets on that date. When one ships, the newest ranking's rows about it are wrong. **Do not rewrite a dated ranking** — the date is the point. Note it in the index row, or write a new dated one |
 | **the ticket index** (`../docs/README.md`) | Its "What the folders mean" paragraph names every folder next door, and its "Needs a second look" table holds every ticket whose own status disagrees with the folder it sits in. A new folder or a settled status lands here |
 | **shipped / canceled / a test document** | Kept for the reasoning. Left alone unless it is now factually wrong about the app |
 | **reading from elsewhere** (`../docs/learn/`) | Somebody else's writing, copied in to read. It is not about this app, so nothing this session did can make it untrue. Never edited here — a correction belongs upstream, and rewriting it loses what was actually said |
 
-**A file with no role fails `just check-docs` and names itself.** That is the
-backstop: add a new kind of document and the suite stops until this table says who
-keeps it true. Fixing it means adding the folder to `ROLES` in
-`scripts/check-docs.mjs` *and* a row above — never just the script.
+**A file with no role fails `just check-docs` and names itself.** That is the backstop: add a new kind of document and the suite stops until this table says who keeps it true. Fixing it means adding the folder to `ROLES` in `scripts/check-docs.mjs` *and* a row above — never just the script.
 
-Never link from `docs/` into `../docs/`: those pages are published and that folder
-is not. Links only go the other way.
+Never link from `docs/` into `../docs/`: those pages are published and that folder is not. Links only go the other way.
 
 ### 8. Regenerate the SEO / AIO / LLM discovery files
 
@@ -270,6 +196,7 @@ Page list, titles, summaries, and `<lastmod>` dates are all derived from the cur
 
 ### 9. Verify
 
+- `just check-wrapping` — no paragraph broken across lines, anywhere in either tree.
 - Grep the changed files for leftovers: no `<Tabs`, `<Card`, `<Step`, `<Note`, `<Tip`, `<Warning`, `<Accordion`, or `theme={null}`.
 - `node scripts/doc-images.mjs` — every picture a touched page asks for is there, and any that are not are named in the hand-back with the reason.
 - Re-run `node scripts/seo-gen.mjs` and confirm it leaves the discovery files unchanged (a dirty tree here means step 8 was skipped or a doc changed after it ran).
@@ -292,8 +219,7 @@ Page list, titles, summaries, and `<lastmod>` dates are all derived from the cur
 
 ### 10. Hand back — do NOT release
 
-Leave the changes uncommitted. Tell the user what pages changed, and what the lint
-found that is still open. If they want it published, that is a separate, explicit `/git-release` (site-only: no version bump).
+Leave the changes uncommitted. Tell the user what pages changed, and what the lint found that is still open. If they want it published, that is a separate, explicit `/git-release` (site-only: no version bump).
 
 ## Reference
 

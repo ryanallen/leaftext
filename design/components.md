@@ -2,15 +2,9 @@
 
 > One row per component: the class family that styles it, and what builds it.
 
-`just check-tokens` reads this file and fails when a row names a class family
-`src/assets/reading.css` does not style, so a renamed or deleted component cannot sit
-here looking real. The other half of the rule — every family having a row, and every
-row having a gallery section — arrives with `gallery.html`.
+`just check-tokens` reads this file and fails when a row names a class family `src/assets/reading.css` does not style, so a renamed or deleted component cannot sit here looking real. The other half of the rule — every family having a row, and every row having a gallery section — arrives with `gallery.html`.
 
-**Class families, not classes.** A family is the prefix a component's classes share:
-`library` covers `library-tree`, `library-file`, `library-row.is-selected` and dozens
-more. No rule count here: it would go stale on the next edit to the stylesheet, and
-what matters is that something styles the family at all.
+**Class families, not classes.** A family is the prefix a component's classes share: `library` covers `library-tree`, `library-file`, `library-row.is-selected` and dozens more. No rule count here: it would go stale on the next edit to the stylesheet, and what matters is that something styles the family at all.
 
 | Component | Class family | Built by | Sample | Also owns |
 | --- | --- | --- | --- | --- |
@@ -63,9 +57,7 @@ what matters is that something styles the family at all.
 
 ## What a document brings
 
-The renderer writes these into a rendered page. They are not parts of the app's own
-interface — there is no state to show and nothing to put in the gallery — so a prefix
-here is all the accounting they need.
+The renderer writes these into a rendered page. They are not parts of the app's own interface — there is no state to show and nothing to put in the gallery — so a prefix here is all the accounting they need.
 
 | Prefix | What it is |
 | --- | --- |
@@ -97,9 +89,7 @@ here is all the accounting they need.
 
 ## State and environment
 
-A flag on something already listed, rather than a thing of its own. Anything starting
-`is-`, `has-` or `no-` is a state without being listed; these are the ones that are
-not spelled that way.
+A flag on something already listed, rather than a thing of its own. Anything starting `is-`, `has-` or `no-` is a state without being listed; these are the ones that are not spelled that way.
 
 | Name | What it says |
 | --- | --- |

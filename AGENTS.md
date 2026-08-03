@@ -14,6 +14,8 @@ Plain English, few words. No jargon or abbreviations. Lead with the answer, then
 
 **Say it in words the owner uses.** Not the code's names for things, not the build's, not a phrase that needs the repo open to parse. If a thing has to be named, say what it does in the same breath. And never pad a reply with a caveat that is true every single time — it teaches the reader to skip everything you write.
 
+**A paragraph is one line.** Never hard-wrap Markdown — not in a reply, a ticket, a skill, a doc page or this file. Everything that reads these files reflows: the app's own renderer, GitHub, every editor. A wrap costs on every edit after it, because a word added in the middle has to be re-flowed by hand and a one-word change diffs as the whole paragraph. `just check-wrapping` fails on one and names the file; `--fix` joins them. A break that is doing real work — verse, a quoted line, a table — keeps two trailing spaces, or the file carries `<!-- keep-wrapping -->`.
+
 **US spellings, never British.** In a reply, in a comment, in a ticket, in a commit message — "favorite", "color", "canceled". `just check-spelling` fails on one and names the line; it reads this repo and the tickets in `../docs/features` and `../docs/refactor`.
 
 **Never invent a reason.** A cost, a limit, a risk — say it only if it is real and it actually applies here. Dressing an option up as expensive to steer the answer is lying, even when every word is separately true. Check the constraint against this repo before you spend it: the ~2MB ceiling is on the inline page script, so a vendored file does not pay it. If you don't know the cost, say you don't know.
@@ -98,7 +100,7 @@ In [`.agents/settings.json`](.agents/settings.json) — `.claude/settings.json` 
 
 ## Commands
 
-Needs `rustup`, `just`, `node`. `/check` is the gate before handing work back: `just verify` (fmt, check, test, vendor + theme + token + icon + gallery + docs drift, no hand-written values, US spelling, every Markdown file has something keeping it true, every path the published pages fetch is a file, front-end boot, identity, the two hooks) with a test pass in front of it. `just check` / `test` / `format` / `check-shell` run individually.
+Needs `rustup`, `just`, `node`. `/check` is the gate before handing work back: `just verify` (fmt, check, test, vendor + theme + token + icon + gallery + docs drift, no hand-written values, US spelling, no hard-wrapped paragraph, every Markdown file has something keeping it true, every path the published pages fetch is a file, front-end boot, identity, the two hooks) with a test pass in front of it. `just check` / `test` / `format` / `check-shell` run individually.
 
 Mac code and the installer cannot be built on this machine, and never have been. **Never say so.** Not as a caveat, not as a footnote, not "it ships unproven", not when the change is in one of them — that is exactly when it is most obvious and least worth a line. GitHub builds both on a tagged release and a break shows up there. It is true every single time, so saying it is the padding Rule 1 refuses. The one exception is a direct question about it.
 

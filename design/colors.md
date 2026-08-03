@@ -1,22 +1,12 @@
 # Colors
 
-> The 82 color names every theme must define. This file is the list; the values live
-> in `themes/`, one file per family.
+> The 82 color names every theme must define. This file is the list; the values live in `themes/`, one file per family.
 
-A color is **themed**: 11 families each give all 82 a value in light and in dark, so
-this file names them and says what each is for and never holds a value. Everything
-that is one value for the whole app — radii, the type scale, shadows — is in
-[tokens.md](tokens.md) instead.
+A color is **themed**: 11 families each give all 82 a value in light and in dark, so this file names them and says what each is for and never holds a value. Everything that is one value for the whole app — radii, the type scale, shadows — is in [tokens.md](tokens.md) instead.
 
-`just bundle-tokens` compiles this into `LEAF_SEMANTIC_TOKEN_CONTRACT` in
-`src/theme.rs`, and `just check-tokens` fails when the two drift. The names here are
-written bare; the compiler adds the `--lt-` prefix, exactly as the theme files do.
+`just bundle-tokens` compiles this into `LEAF_SEMANTIC_TOKEN_CONTRACT` in `src/theme.rs`, and `just check-tokens` fails when the two drift. The names here are written bare; the compiler adds the `--lt-` prefix, exactly as the theme files do.
 
-**A row here is the only way a color exists.** `theme.rs` emits a custom property for
-any row it finds in a theme file, so a key no longer listed here would become dead
-CSS in every theme — `check-tokens` fails on that instead. Adding a color means
-adding a row here *and* a row in all 11 theme files; the startup check refuses a
-family that misses one.
+**A row here is the only way a color exists.** `theme.rs` emits a custom property for any row it finds in a theme file, so a key no longer listed here would become dead CSS in every theme — `check-tokens` fails on that instead. Adding a color means adding a row here *and* a row in all 11 theme files; the startup check refuses a family that misses one.
 
 ## Core
 
@@ -51,8 +41,7 @@ The window, its chrome, and the roles a control can take.
 
 ## Document
 
-The rendered page: its paper, its ink, and the parts of Markdown that carry their own
-color.
+The rendered page: its paper, its ink, and the parts of Markdown that carry their own color.
 
 | Token | What it is for |
 | --- | --- |
@@ -98,8 +87,7 @@ Inline code and fenced blocks, in the reading view and in the code view alike.
 
 ## Syntax
 
-One color per syntactic role. The reading view spends them through the `.syn-` rules;
-the code view builds a Monaco theme from the same list, so one palette dresses both.
+One color per syntactic role. The reading view spends them through the `.syn-` rules; the code view builds a Monaco theme from the same list, so one palette dresses both.
 
 | Token | What it is for |
 | --- | --- |
@@ -136,8 +124,7 @@ The controls that move between documents, and the recent-files list.
 
 ## Minimap
 
-The rail beside the page. The thumbnail in it is a real-text clone of the document, so
-there are no per-line-kind colors — only the box that shows where you are.
+The rail beside the page. The thumbnail in it is a real-text clone of the document, so there are no per-line-kind colors — only the box that shows where you are.
 
 | Token | What it is for |
 | --- | --- |

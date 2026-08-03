@@ -2,24 +2,13 @@
 
 > One row per icon: its name, its drawing, and where it is worn.
 
-`just bundle-icons` compiles the rows below into `src/assets/icons.css`, one
-`.lt-icon-<name>` class each, drawn with `mask-image` and a `data:` URI.
-`just check-icons` fails when the generated file has drifted, when a row names a file
-that is not there, and when a `.svg` under `src/assets/` has no row.
+`just bundle-icons` compiles the rows below into `src/assets/icons.css`, one `.lt-icon-<name>` class each, drawn with `mask-image` and a `data:` URI. `just check-icons` fails when the generated file has drifted, when a row names a file that is not there, and when a `.svg` under `src/assets/` has no row.
 
-An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></span>` —
-so a drawing used five times is in the app once. A mask reads only alpha, so the
-copy in the URI is painted flat black and the visible color is the control's own:
-`background-color: currentColor` on the base class.
+An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></span>` — so a drawing used five times is in the app once. A mask reads only alpha, so the copy in the URI is painted flat black and the visible color is the control's own: `background-color: currentColor` on the base class.
 
 ## Stroke
 
-**The row sets the line weight, not the drawing.** A `.svg` arrives from wherever it
-was drawn carrying whatever number that tool wrote, and left alone those numbers drift
-— this set reached seven of them, so a new button in the app bar could sit beside an
-old one at half again the weight. `bundle-icons` stamps the row's weight over every
-stroke in the file, so what the drawing says is only a note, and the check fails when
-the two disagree.
+**The row sets the line weight, not the drawing.** A `.svg` arrives from wherever it was drawn carrying whatever number that tool wrote, and left alone those numbers drift — this set reached seven of them, so a new button in the app bar could sit beside an old one at half again the weight. `bundle-icons` stamps the row's weight over every stroke in the file, so what the drawing says is only a note, and the check fails when the two disagree.
 
 | Weight | Value | Where |
 | --- | --- | --- |
@@ -28,10 +17,7 @@ the two disagree.
 | hairline | 1 | The window's own minimize / maximize / restore / close, which sit in the title bar beside the platform's chrome and have to match it, not us. |
 | — | none | A drawing with no strokes at all: the leaf, the drag grip. |
 
-**A row marked `heavy` in the fourth column gets a second mask** at the heavy weight,
-published as `--lt-icon-<name>-heavy`. The three view buttons use it: the view you are
-in is drawn a touch bolder as well as brighter, and a mask has no strokes to thicken,
-so the heavier drawing is its own mask.
+**A row marked `heavy` in the fourth column gets a second mask** at the heavy weight, published as `--lt-icon-<name>-heavy`. The three view buttons use it: the view you are in is drawn a touch bolder as well as brighter, and a mask has no strokes to thicken, so the heavier drawing is its own mask.
 
 | Name | File | Stroke | Heavy | Where it is worn |
 | --- | --- | --- | --- | --- |
