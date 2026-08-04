@@ -44,7 +44,7 @@ How the app behaves, page by page. They are numbered in reading order, and each 
 | [Library](01-features/03-library.md) | The left-side pane: vaults, the file tree and its breadcrumb, search, the graph view, GitHub sync, file actions, live updates, and narrow-window layout |
 | [Minimap](01-features/04-minimap.md) | The scaled real-text document clone in the side rail: how it renders, when it rebuilds, the code view's own rail, responsive widths, and the on/off toggle |
 | [Settings](01-features/05-settings.md) | Every preference, its default, and the JSON files on disk that store them — including [updates](01-features/05-settings.md#updates) and [paths](01-features/05-settings.md#paths) |
-| [Themes](01-features/06-themes.md) | The eleven families (Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage), light/dark/System/Daylight appearance, on-demand Google Fonts, diagram colors, and the semantic token contract |
+| [Themes](01-features/06-themes.md) | The eleven families (Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage), light/dark/System/Daylight appearance, on-demand Google Fonts, diagram colors, and the semantic token contract. All eleven are drawn on one page at [leaftext.com/gallery.html](https://leaftext.com/gallery.html) |
 | [Editing](01-features/07-editing.md) | Writing in the rendered page (blocks, the gutter, the format bar, the flowchart editor), the raw-source code view with typing help, and the explicit Save flow |
 
 ### Which page answers which question
@@ -64,6 +64,7 @@ How the app behaves, page by page. They are numbered in reading order, and each 
 | Where are my settings stored? | [Settings → Paths](01-features/05-settings.md#paths) |
 | How do updates work? | [Settings → Updates](01-features/05-settings.md#updates) |
 | How do I change the look? | [Themes → Choose](01-features/06-themes.md#choose) |
+| What do the themes actually look like? | [leaftext.com/gallery.html](https://leaftext.com/gallery.html) — every theme, color, icon and control on one page |
 
 ## Development
 
