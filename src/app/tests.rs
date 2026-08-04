@@ -553,6 +553,15 @@ fn extracts_decoded_link_fragments_for_webview_scrolling() {
     assert_eq!(fragment_from_href("file.md#"), None);
 }
 
+/// The paths a history holds, in order. An entry carries a position too, which these tests read on its own.
+fn history_paths(history: &DocumentHistory) -> Vec<PathBuf> {
+    history
+        .entries
+        .iter()
+        .map(|entry| entry.path.clone())
+        .collect()
+}
+
 #[test]
 fn document_history_tracks_back_forward_and_truncates_forward_entries() {
     let mut history = DocumentHistory::default();
@@ -572,7 +581,7 @@ fn document_history_tracks_back_forward_and_truncates_forward_entries() {
     history.record(PathBuf::from("branch.md"));
     assert_eq!(history.current(), Some(&PathBuf::from("branch.md")));
     assert_eq!(
-        history.entries,
+        history_paths(&history),
         vec![
             PathBuf::from("one.md"),
             PathBuf::from("two.md"),
@@ -597,7 +606,7 @@ fn forget_current_drops_failed_entry_and_falls_back_to_previous() {
     // The failed entry is removed entirely, not left in forward history, so the user can't step forward back onto it.
     assert!(history.forget_current());
     assert_eq!(history.current(), Some(&PathBuf::from("good.md")));
-    assert_eq!(history.entries, vec![PathBuf::from("good.md")]);
+    assert_eq!(history_paths(&history), vec![PathBuf::from("good.md")]);
     assert!(!history.can_go_forward());
     assert!(!history.can_go_back());
 }
@@ -610,6 +619,96 @@ fn forget_current_reports_empty_when_tab_had_only_the_failed_document() {
     assert!(!history.forget_current());
     assert_eq!(history.current(), None);
     assert!(history.entries.is_empty());
+}
+
+#[test]
+fn stepping_back_returns_the_position_the_document_was_left_at() {
+    let mut history = DocumentHistory::default();
+    history.record(PathBuf::from("one.md"));
+    history.stamp_current(test_anchor(42));
+    history.record(PathBuf::from("two.md"));
+
+    // The document just arrived at has never been left, so there is nothing to restore on it.
+    assert_eq!(history.current_anchor(), None);
+
+    history.go_back();
+    assert_eq!(history.current(), Some(&PathBuf::from("one.md")));
+    assert_eq!(history.current_anchor(), Some(test_anchor(42)));
+}
+
+#[test]
+fn recording_after_stepping_back_drops_the_forward_positions_too() {
+    let mut history = DocumentHistory::default();
+    history.record(PathBuf::from("one.md"));
+    history.stamp_current(test_anchor(10));
+    history.record(PathBuf::from("two.md"));
+    history.stamp_current(test_anchor(20));
+    history.record(PathBuf::from("three.md"));
+
+    history.go_back();
+    history.go_back();
+    history.record(PathBuf::from("branch.md"));
+
+    assert_eq!(
+        history_paths(&history),
+        vec![PathBuf::from("one.md"), PathBuf::from("branch.md")]
+    );
+    // `two.md`'s position went with its entry, so a later step can't land on it.
+    assert!(history
+        .entries
+        .iter()
+        .all(|entry| entry.anchor.is_none() || entry.path == PathBuf::from("one.md")));
+    assert_eq!(history.current_anchor(), None);
+}
+
+#[test]
+fn forget_current_takes_the_failed_entry_position_with_it() {
+    let mut history = DocumentHistory::default();
+    history.record(PathBuf::from("good.md"));
+    history.stamp_current(test_anchor(7));
+    history.record(PathBuf::from("missing.md"));
+    history.stamp_current(test_anchor(99));
+
+    assert!(history.forget_current());
+    assert_eq!(history.entries.len(), 1);
+    // Back lands on the document that opened, at its own position — never the failed one's.
+    assert_eq!(history.current_anchor(), Some(test_anchor(7)));
+}
+
+#[test]
+fn leaving_a_tab_and_returning_restores_from_its_history_entry() {
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("one.md"));
+    let left_at = test_anchor(31);
+    // What a tab switch stamps on the way out; the tab holds no field of its own for it.
+    workspace.tabs[0].history.stamp_current(left_at.clone());
+
+    workspace.open_path(PathBuf::from("two.md"));
+    assert_eq!(workspace.active, Some(1));
+    assert_eq!(workspace.tabs[1].history.current_anchor(), None);
+
+    assert!(workspace.set_active(0));
+    assert_eq!(workspace.tabs[0].history.current_anchor(), Some(left_at));
+}
+
+#[test]
+fn a_back_into_the_code_view_asks_for_the_top_of_the_source() {
+    // What GoBack renders with: the place the entry was left at, and the top of the source.
+    let back = ScrollIntent::Restore {
+        anchor: Some(test_anchor(3)),
+        code: Some(0.0),
+    };
+    assert_eq!(code_view_scroll(&back), Some(0.0));
+
+    // A tab switch is the other caller, and carries the tab's own saved fraction.
+    let switch = ScrollIntent::Restore {
+        anchor: Some(test_anchor(3)),
+        code: Some(0.42),
+    };
+    assert_eq!(code_view_scroll(&switch), Some(0.42));
+
+    assert_eq!(code_view_scroll(&ScrollIntent::Reset), Some(0.0));
+    assert_eq!(code_view_scroll(&ScrollIntent::Preserve), None);
 }
 
 /// Build a distinct anchor for scroll-history tests; the block ordinal keeps the entries identifiable.

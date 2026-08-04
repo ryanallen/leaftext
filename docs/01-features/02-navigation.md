@@ -1,6 +1,6 @@
 # Navigation
 
-> Never lose your place. Leaftext moves like a browser — tabs, Back and Forward, in-document jumps, and your scroll position kept across reloads.
+> Never lose your place. Leaftext moves like a browser — tabs, Back and Forward, in-document jumps, and your reading position kept across reloads, tab switches and every step back.
 
 The navigation model is simple from the outside and fairly careful under the hood. Each tab keeps its own file history and its own in-document scroll history.
 
@@ -11,8 +11,8 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Tabs](#tabs) | Open multiple documents at once |
 | [New document](07-editing.md#new-document) | The **+** in the app bar starts a blank page, ready to type |
 | [Outline](#outline) | A collapsed table of contents, built from the document's headings, at the top of each page, labeled with the document's line count |
-| [Back / Forward](#history) | Move through file history and in-page jumps |
-| [Scroll anchors](#restore) | Restore the same reading spot after rerenders |
+| [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading |
+| [Scroll anchors](#restore) | Restore the same reading spot after rerenders, and on every step of a tab's history |
 | [Live reload](#reload) | Reload a changed file without losing your place |
 | [Recent files](#recent-files) | Reopen the last 8 files quickly |
 | [Loading spinner](#loading) | A spinner appears over the reader while a slow document or view renders |
@@ -91,7 +91,7 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 ### Tabs
 
 - Opening another file creates another tab, and so does starting a [new document](07-editing.md#new-document).
-- Each tab keeps its own document history.
+- Each tab keeps its own document history, and every step in it remembers where you were reading on that document.
 - Each tab also keeps its own scroll history.
 - Switching away from a tab and back returns you to where you left it — the same reading position, or, for a tab in the [code view](07-editing.md#code-view), the same spot in the source.
 - A tab with [unsaved edits](07-editing.md#save) shows a dot in the corner where its close button sits, until they are saved; pointing at the tab hands that corner back to the button. The two share one spot rather than each taking their own, so a tab never changes size as the pointer crosses it.
@@ -110,7 +110,7 @@ While the [library sheet](03-library.md#narrow-windows) is up it covers the page
 
 ### History
 
-**Files.** Open `README.md`, then click a link to `docs/guide.md`. Back returns to `README.md`. Forward returns to `docs/guide.md`.
+**Files.** Open `README.md`, then click a link to `docs/guide.md`. Back returns to `README.md`, at the paragraph you left rather than the top of the page. Forward returns to `docs/guide.md`, at the place you left that one.
 
 **Jumps.** Jump from `#intro` to `#api` inside the same document. Back returns to the earlier reading position instead of switching files.
 
@@ -127,6 +127,8 @@ Leaftext stores a reading position as a `ScrollAnchor`:
 | `offsetY` | Pixel offset from that block |
 
 This is more stable than storing only raw scroll pixels, so the app can usually return to the same paragraph after rerendering.
+
+Every step in a tab's [file history](#history) carries one, written as you navigate off that document, so Back and Forward land where you were reading rather than at the top. A document you have not left yet has no anchor, which is why a first visit starts at the top. A document that fails to open loses its step and its position together, so Back never restores a place on a page it cannot show.
 
 The same anchor also holds your place while a document is still settling. Images decode, Mermaid diagrams and math render, and the Pager arrives a beat later; each changes the page height, and Leaftext re-pins the reader to its anchor so the text you were reading stays where you left it. Anything that moves the reader therefore records a fresh anchor as it lands — including a click or drag on the [minimap](04-minimap.md) — or the next late arrival would restore the spot you jumped away from.
 

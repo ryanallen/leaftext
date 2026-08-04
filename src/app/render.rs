@@ -111,16 +111,7 @@ impl Reader {
                     {
                         self.window.set_title(&format!("{title} - Leaftext"));
                     }
-                    // Restoring a tab (switching back) lands at its saved code-view position; a reorder preserves the page's current scroll (None, handled page-side), and a reset starts at the top.
-                    let scroll_fraction = match &scroll {
-                        ScrollIntent::Restore(_) => self
-                            .workspace
-                            .tabs
-                            .get(index)
-                            .and_then(|tab| tab.saved_code_scroll),
-                        ScrollIntent::Preserve => None,
-                        ScrollIntent::Reset => Some(0.0),
-                    };
+                    let scroll_fraction = code_view_scroll(&scroll);
                     // The code view's own payload carries no tabs, so the strip and the active index have to go over separately. A file opened straight into source is a tab the page has never heard of.
                     let tabs = self.workspace.tab_summaries();
                     run_page_script(
@@ -200,7 +191,7 @@ impl Reader {
                         Some(index),
                         Some(&document),
                     ),
-                    ScrollIntent::Restore(anchor) => workspace_switch_script(
+                    ScrollIntent::Restore { anchor, .. } => workspace_switch_script(
                         &self.recent.files,
                         &tabs,
                         Some(index),
@@ -228,6 +219,15 @@ impl Reader {
             }
         }
         update_active_navigation(self.page(), &self.workspace);
+    }
+}
+
+/// Where the source editor goes when a tab showing source is re-rendered. A restore carries the fraction it means; a reorder leaves the page where it is, which the page handles; a reset starts at the top.
+pub(crate) fn code_view_scroll(scroll: &ScrollIntent) -> Option<f64> {
+    match scroll {
+        ScrollIntent::Restore { code, .. } => *code,
+        ScrollIntent::Preserve => None,
+        ScrollIntent::Reset => Some(0.0),
     }
 }
 

@@ -365,7 +365,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                     if let Some(active) = reader.workspace.active {
                         if let Some(tab) = reader.workspace.tabs.get_mut(active) {
-                            tab.saved_scroll_anchor = Some(scroll_anchor);
+                            tab.history.stamp_current(scroll_anchor);
                             // Remember where the source editor was left; `None` for a reading-view tab, which leaves nothing to restore.
                             tab.saved_code_scroll = code_scroll;
                         }
@@ -376,8 +376,16 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                             .workspace
                             .tabs
                             .get(index)
-                            .and_then(|tab| tab.saved_scroll_anchor.clone());
-                        reader.render(ScrollIntent::Restore(saved));
+                            .and_then(|tab| tab.history.current_anchor());
+                        let code = reader
+                            .workspace
+                            .tabs
+                            .get(index)
+                            .and_then(|tab| tab.saved_code_scroll);
+                        reader.render(ScrollIntent::Restore {
+                            anchor: saved,
+                            code,
+                        });
                     }
                 }
                 IpcCommand::MoveTab { from, to } => {
@@ -408,6 +416,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         match nearest_glossary_file(&current_path) {
                             Some(path) if !paths_refer_to_same_document(&path, &current_path) => {
                                 reader.workspace.tabs[active].scroll_history.clear();
+                                reader.workspace.tabs[active]
+                                    .history
+                                    .stamp_current(scroll_anchor);
                                 reader.workspace.tabs[active].history.record(path);
                                 reader.render(ScrollIntent::Reset);
                             }
@@ -452,6 +463,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                                 return;
                             }
                             reader.workspace.tabs[active].scroll_history.clear();
+                            reader.workspace.tabs[active]
+                                .history
+                                .stamp_current(scroll_anchor);
                             reader.workspace.tabs[active].history.record(path);
                             reader.render(ScrollIntent::Reset);
                             if let Some(fragment) = fragment_from_href(&target) {
@@ -523,9 +537,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     };
                     let restored = {
                         let tab = &mut reader.workspace.tabs[active];
-                        if let Some(scroll_position) = tab.scroll_history.back(scroll_anchor) {
+                        if let Some(scroll_position) =
+                            tab.scroll_history.back(scroll_anchor.clone())
+                        {
                             Some(scroll_position)
                         } else if tab.history.can_go_back() {
+                            tab.history.stamp_current(scroll_anchor);
                             tab.history.go_back();
                             None
                         } else {
@@ -537,7 +554,14 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                             restore_scroll_anchor(reader.page(), &scroll_position);
                             update_active_navigation(reader.page(), &reader.workspace);
                         }
-                        None => reader.render(ScrollIntent::Reset),
+                        // Back into the document the reader came from, at the place they left it. A tab showing source starts at the top instead.
+                        None => {
+                            let anchor = reader.workspace.tabs[active].history.current_anchor();
+                            reader.render(ScrollIntent::Restore {
+                                anchor,
+                                code: Some(0.0),
+                            });
+                        }
                     }
                 }
                 IpcCommand::GoForward { scroll_anchor } => {
@@ -546,9 +570,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     };
                     let restored = {
                         let tab = &mut reader.workspace.tabs[active];
-                        if let Some(scroll_position) = tab.scroll_history.forward(scroll_anchor) {
+                        if let Some(scroll_position) =
+                            tab.scroll_history.forward(scroll_anchor.clone())
+                        {
                             Some(scroll_position)
                         } else if tab.history.can_go_forward() {
+                            tab.history.stamp_current(scroll_anchor);
                             tab.history.go_forward();
                             None
                         } else {
@@ -560,7 +587,13 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                             restore_scroll_anchor(reader.page(), &scroll_position);
                             update_active_navigation(reader.page(), &reader.workspace);
                         }
-                        None => reader.render(ScrollIntent::Reset),
+                        None => {
+                            let anchor = reader.workspace.tabs[active].history.current_anchor();
+                            reader.render(ScrollIntent::Restore {
+                                anchor,
+                                code: Some(0.0),
+                            });
+                        }
                     }
                 }
                 IpcCommand::EnterCodeView => {

@@ -8,8 +8,7 @@ pub(crate) struct Tab {
     pub(crate) history: DocumentHistory,
     pub(crate) scroll_history: ScrollHistory,
     pub(crate) title: String,
-    pub(crate) saved_scroll_anchor: Option<ScrollAnchor>,
-    /// Where the code view was scrolled when this tab was last left, as a 0..1 fraction of the scrollable range. Restored on return so switching tabs keeps the source editor's place, the way `saved_scroll_anchor` does for the reading view. `None` until the tab has been left while in code view.
+    /// Where the code view was scrolled when this tab was last left, as a 0..1 fraction of the scrollable range, so switching tabs keeps the source editor's place. On the tab rather than on the history entry beside it: a fraction of a source buffer is not a block in a rendered document. `None` until the tab has been left while in code view.
     pub(crate) saved_code_scroll: Option<f64>,
     /// The editable source buffer, created on first edit and kept so unsaved edits survive view toggles and tab switches. `None` until edited. The authoritative copy a save writes and the reading view re-renders from.
     pub(crate) edit: Option<EditableDocument>,
@@ -253,8 +252,11 @@ pub(crate) enum ScrollIntent {
     Reset,
     /// Keep the reader exactly where it is. Used when the active document does not change, only its surroundings (e.g. reordering tabs).
     Preserve,
-    /// Restore a saved anchor after rendering (switching tabs). `None` lands at the top, used the first time a tab is visited.
-    Restore(Option<ScrollAnchor>),
+    /// Put the reader back where they were after rendering — a tab switch, or Back and Forward across documents. Both positions are named because a tab showing source restores the editor instead of the page: `anchor` is a place in the rendered document and `None` lands at the top; `code` is a 0..1 fraction of the source and `None` leaves it where the page has it.
+    Restore {
+        anchor: Option<ScrollAnchor>,
+        code: Option<f64>,
+    },
 }
 
 /// The active tab's index and its current document path, when a document is open.

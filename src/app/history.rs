@@ -2,9 +2,16 @@
 
 use super::*;
 
+/// One step in a tab's back/forward list: a document, and where the reader was on it when they left. `anchor` is `None` until they leave, so a document never left lands at the top.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub(crate) struct DocumentVisit {
+    pub(crate) path: PathBuf,
+    pub(crate) anchor: Option<ScrollAnchor>,
+}
+
 #[derive(Debug, Default)]
 pub(crate) struct DocumentHistory {
-    pub(crate) entries: Vec<PathBuf>,
+    pub(crate) entries: Vec<DocumentVisit>,
     pub(crate) index: Option<usize>,
 }
 
@@ -48,7 +55,23 @@ impl ScrollHistory {
 
 impl DocumentHistory {
     pub(crate) fn current(&self) -> Option<&PathBuf> {
-        self.index.and_then(|index| self.entries.get(index))
+        self.index
+            .and_then(|index| self.entries.get(index))
+            .map(|entry| &entry.path)
+    }
+
+    /// Where the reader was on the document now showing, if they have ever left it. `None` lands at the top.
+    pub(crate) fn current_anchor(&self) -> Option<ScrollAnchor> {
+        self.index
+            .and_then(|index| self.entries.get(index))
+            .and_then(|entry| entry.anchor.clone())
+    }
+
+    /// Remember where the reader was on the document now showing, before a navigation takes them off it. The one place a position is written, so every navigation stamps the same thing.
+    pub(crate) fn stamp_current(&mut self, anchor: ScrollAnchor) {
+        if let Some(entry) = self.index.and_then(|index| self.entries.get_mut(index)) {
+            entry.anchor = Some(anchor);
+        }
     }
 
     pub(crate) fn record(&mut self, path: PathBuf) {
@@ -59,14 +82,14 @@ impl DocumentHistory {
         if let Some(index) = self.index {
             self.entries.truncate(index + 1);
         }
-        self.entries.push(path);
+        self.entries.push(DocumentVisit { path, anchor: None });
         self.index = Some(self.entries.len() - 1);
     }
 
     /// Rename the current entry in place — the untitled document that has just been given a file. Not a navigation: Back must not gain a step to a name nothing was ever at.
     pub(crate) fn replace_current(&mut self, path: PathBuf) {
         if let Some(entry) = self.index.and_then(|index| self.entries.get_mut(index)) {
-            *entry = path;
+            entry.path = path;
         }
     }
 
@@ -75,11 +98,12 @@ impl DocumentHistory {
         index
             .checked_sub(1)
             .and_then(|previous| self.entries.get(previous))
+            .map(|entry| &entry.path)
     }
 
     pub(crate) fn forward_target(&self) -> Option<&PathBuf> {
         let index = self.index?;
-        self.entries.get(index + 1)
+        self.entries.get(index + 1).map(|entry| &entry.path)
     }
 
     pub(crate) fn go_back(&mut self) {
