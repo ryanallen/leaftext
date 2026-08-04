@@ -498,8 +498,15 @@ fn one_find_bar_serves_both_views_and_replaces_through_the_source() {
         r#"title="Find in selection (Alt+L)""#,
         r#"title="Previous match (Shift+Enter)""#,
         r#"title="Next match (Enter)""#,
+        // Every control on the bar carries the app bar's own icon button. The class and the stylesheet are each half of the 32px box, so both are checked.
+        r#"id="findPrev" class="find-step icon-button""#,
+        r#"id="findClose" class="find-step icon-button""#,
+        r#"id="findMatchCase" class="find-flag icon-button""#,
+        r#"id="findInSelection" class="find-flag icon-button""#,
+        r#"id="findReplaceAll" class="find-action icon-button""#,
         r#"<div class="find-row find-replace-row" id="findReplaceRow" hidden>"#,
-        r#"<button type="button" id="findSelectAll" class="find-action""#,
+        // Still in the hidden replace row, and it stays there until it works: multiple-cursors owns the move.
+        r#"<button type="button" id="findSelectAll" class="find-action icon-button""#,
     ] {
         assert_contains(&html, expected);
     }

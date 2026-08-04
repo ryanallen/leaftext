@@ -167,26 +167,26 @@
       <span id="findCount" class="find-count" aria-live="polite"></span>
     </span>
     <span class="find-flags" role="group" aria-label="How to match">
-      <button type="button" id="findMatchCase" class="find-flag" aria-pressed="false" aria-label="Match case" title="Match case (Alt+C)">Aa</button>
-      <button type="button" id="findWholeWord" class="find-flag" aria-pressed="false" aria-label="Whole word" title="Whole word (Alt+W)">ab|</button>
-      <button type="button" id="findRegex" class="find-flag" aria-pressed="false" aria-label="Regular expression" title="Regular expression (Alt+R)">.*</button>
-      <button type="button" id="findInSelection" class="find-flag" aria-pressed="false" aria-label="Find in selection" title="Find in selection (Alt+L)"><span class="lt-icon lt-icon-text"></span></button>
+      <button type="button" id="findMatchCase" class="find-flag icon-button" aria-pressed="false" aria-label="Match case" title="Match case (Alt+C)">Aa</button>
+      <button type="button" id="findWholeWord" class="find-flag icon-button" aria-pressed="false" aria-label="Whole word" title="Whole word (Alt+W)">ab|</button>
+      <button type="button" id="findRegex" class="find-flag icon-button" aria-pressed="false" aria-label="Regular expression" title="Regular expression (Alt+R)">.*</button>
+      <button type="button" id="findInSelection" class="find-flag icon-button" aria-pressed="false" aria-label="Find in selection" title="Find in selection (Alt+L)"><span class="lt-icon lt-icon-text"></span></button>
     </span>
-    <button type="button" id="findPrev" class="find-step" aria-label="Previous match" title="Previous match (Shift+Enter)"><span class="lt-icon lt-icon-chevron-down find-step-back"></span></button>
-    <button type="button" id="findNext" class="find-step" aria-label="Next match" title="Next match (Enter)"><span class="lt-icon lt-icon-chevron-down"></span></button>
+    <button type="button" id="findPrev" class="find-step icon-button" aria-label="Previous match" title="Previous match (Shift+Enter)"><span class="lt-icon lt-icon-chevron-down find-step-back"></span></button>
+    <button type="button" id="findNext" class="find-step icon-button" aria-label="Next match" title="Next match (Enter)"><span class="lt-icon lt-icon-chevron-down"></span></button>
     <!-- An action, so it stands with the other actions rather than with the
          toggles: it opens the Replace row below. -->
-    <button type="button" id="findReplaceToggle" class="find-step" aria-pressed="false" aria-label="Replace" title="Replace (Ctrl+H)"><span class="lt-icon lt-icon-replace"></span></button>
-    <button type="button" id="findClose" class="find-step" aria-label="Close find" title="Close (Escape)"><span class="lt-icon lt-icon-close"></span></button>
+    <button type="button" id="findReplaceToggle" class="find-step icon-button" aria-pressed="false" aria-label="Replace" title="Replace (Ctrl+H)"><span class="lt-icon lt-icon-replace"></span></button>
+    <button type="button" id="findClose" class="find-step icon-button" aria-label="Close find" title="Close (Escape)"><span class="lt-icon lt-icon-close"></span></button>
   </div>
   <!-- Down only when asked for: most finding is reading, not rewriting. -->
   <div class="find-row find-replace-row" id="findReplaceRow" hidden>
     <span class="find-field">
       <input id="findReplaceInput" class="find-input" type="text" autocomplete="off" spellcheck="false" placeholder="Replace with" aria-label="Replace with">
     </span>
-    <button type="button" id="findReplaceOne" class="find-action">Replace</button>
-    <button type="button" id="findReplaceAll" class="find-action">All</button>
-    <button type="button" id="findSelectAll" class="find-action" title="Put a cursor on every match (Alt+Enter)">Select all</button>
+    <button type="button" id="findReplaceOne" class="find-action icon-button">Replace</button>
+    <button type="button" id="findReplaceAll" class="find-action icon-button">All</button>
+    <button type="button" id="findSelectAll" class="find-action icon-button" title="Put a cursor on every match (Alt+Enter)">Select all</button>
   </div>
 </div>
 <div id="readerEdgeFade" class="reader-edge-fade" aria-hidden="true"></div>

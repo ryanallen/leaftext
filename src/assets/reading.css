@@ -726,6 +726,7 @@ body.is-maximized #winMaximize .wc-restore {
 .flow-menu::before,
 .link-hover-tip::before,
 .block-drag-ghost::before,
+.find-bar::before,
 .leaf-sheet::before {
   content: '';
   position: absolute;
@@ -5354,11 +5355,14 @@ body.is-block-dragging .document-body [data-src-start] {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--lt-space-2);
+  gap: var(--lt-space-4);
+  /* Never wider than the page it floats over — the reading column can be 360px, and what a too-wide bar clips is the field you type into. Its own box-sizing, since this stylesheet has no global one. */
+  box-sizing: border-box;
+  max-width: calc(100% - var(--lt-space-16));
   /* Clear of the app bar the reader's own padding sits under. */
   margin-top: calc(var(--app-bar-height) + var(--lt-space-4));
   margin-right: var(--lt-space-8);
-  padding: var(--lt-space-3);
+  padding: var(--lt-space-10);
   /* Transparent, not gone: the border holds the box's size while ::after paints
      the visible face — the same arrangement the reader's toolbar uses. */
   border: var(--lt-stroke-1) solid transparent;
@@ -5381,10 +5385,12 @@ body.is-block-dragging .document-body [data-src-start] {
   background: var(--lt-surface-elevated);
   pointer-events: none;
 }
+/* Wraps rather than clips: the field shrinks first, and when it has given all it can the toggles and the steps drop under it. */
 .find-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--lt-space-2);
+  gap: var(--lt-space-4);
 }
 .find-row[hidden] {
   display: none;
@@ -5396,8 +5402,11 @@ body.is-block-dragging .document-body [data-src-start] {
   align-items: center;
   gap: var(--lt-space-2);
   box-sizing: border-box;
-  width: 196px;
-  padding: 0 var(--lt-space-3);
+  /* 260px at rest, and the first thing to give when the window narrows — down to a width a short query still reads in. */
+  flex: 1 1 auto;
+  width: 260px;
+  min-width: 120px;
+  padding: 0 var(--lt-space-8);
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-sm);
   background: var(--lt-surface-sunken);
@@ -5405,10 +5414,11 @@ body.is-block-dragging .document-body [data-src-start] {
 .find-field:focus-within {
   border-color: var(--lt-focus-ring);
 }
+/* 30px, so the field's own hairline brings it to the 32px the buttons beside it are: the field takes its height from what is typed into it. */
 .find-input {
   flex: 1 1 auto;
   min-width: 0;
-  height: var(--lt-space-16);
+  height: 30px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -5423,37 +5433,40 @@ body.is-block-dragging .document-body [data-src-start] {
 .find-count {
   flex: 0 0 auto;
   color: var(--lt-muted-foreground);
-  font-size: var(--lt-text-10-5);
+  font-size: var(--lt-text-11);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .find-flags {
   display: flex;
   align-items: center;
-  gap: var(--lt-space-1);
+  gap: var(--lt-space-2);
 }
-/* The three how-to-match toggles are their own glyphs — Aa, ab|, .* — because
-   that is what every editor draws for them, and a picture of "regular
-   expression" does not exist. */
+/* The three how-to-match toggles are their own glyphs — Aa, ab|, .* — because that is what every editor draws for them, and a picture of "regular expression" does not exist.
+   Only the face here. The box is .icon-button's, which all of them carry: a height in this rule would beat it, both being one class deep and this one 4,650 lines later. */
 .find-flag,
 .find-step,
 .find-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: var(--lt-space-16);
-  min-width: var(--lt-space-16);
-  padding: 0 var(--lt-space-2);
   border: var(--lt-stroke-1) solid transparent;
   border-radius: var(--lt-radius-sm);
   background: transparent;
   color: inherit;
   font-family: inherit;
-  font-size: var(--lt-text-11);
+  font-size: var(--lt-text-12);
   cursor: pointer;
 }
+/* Text, not masks: .icon-button sets a width as well as a min-width, and 32px clips `ab|`. */
+.find-flag {
+  width: auto;
+  padding: 0 var(--lt-space-4);
+}
+/* Replace and All are words, and they carry the outline that says they act. */
 .find-action {
-  padding: 0 var(--lt-space-3);
+  width: auto;
+  padding: 0 var(--lt-space-10);
   border-color: var(--lt-border);
 }
 .find-flag:hover,
@@ -5474,6 +5487,14 @@ body.is-block-dragging .document-body [data-src-start] {
    of one arrow would be two files to keep in step. */
 .find-step-back {
   transform: rotate(180deg);
+}
+/* At a phone's width the bar spans the page instead of floating in the corner, held off both edges by the same 8px. The reader's own breakpoint, so there is one number and not two. */
+@media (max-width: 600px) {
+  .find-bar {
+    justify-self: stretch;
+    max-width: none;
+    margin-left: var(--lt-space-8);
+  }
 }
 /* Every match, washed in the accent — the color a matched search hit already
    takes in the library pane. The one you are on is the primary, so stepping

@@ -392,7 +392,7 @@ fn find_matches_are_painted_without_touching_the_document() {
         assert_contains(css, expected);
     }
 
-    // The bar holds its place while the document scrolls under it.
+    // The bar holds its place while the document scrolls under it, and its box is padded rather than being the tightest thing on screen.
     let bar_start = css
         .find(".find-bar {")
         .expect("reading-mode CSS should define .find-bar");
@@ -400,6 +400,76 @@ fn find_matches_are_painted_without_touching_the_document() {
         &css[bar_start..bar_start + css[bar_start..].find('}').expect(".find-bar closes")];
     assert_contains(bar_rule, "grid-column: 2;");
     assert_contains(bar_rule, "grid-row: 1;");
+    assert_contains(bar_rule, "padding: var(--lt-space-10);");
+}
+
+#[test]
+fn find_bar_controls_are_the_app_bars_own_button_size() {
+    // The bar's buttons wear .icon-button for their 32px box, and this rule is 4,650 lines later at the same one-class depth — so a height, a min-width or a padding here would silently win and put them back at 16px, which is an icon with no button around it.
+    let css = reading_mode_css();
+    let start = css
+        .find(".find-flag,\n.find-step,\n.find-action {")
+        .expect("the find bar's buttons share one face rule");
+    let rule = &css[start..start + css[start..].find('}').expect("the rule closes")];
+
+    for absent in ["height:", "min-width:", "padding:"] {
+        assert!(
+            !rule.contains(absent),
+            "the shared find-button rule must not set {absent} — .icon-button owns the box:\n{rule}"
+        );
+    }
+    // The text on them matches the rest of the chrome rather than being a size smaller.
+    assert_contains(rule, "font-size: var(--lt-text-12);");
+
+    // The ones holding text win their width back, because .icon-button sets a width and 32px clips `ab|`. Anchored on the declaration: `.find-action {` on its own also matches the end of the shared selector list above.
+    assert_contains(css, ".find-flag {\n  width: auto;");
+    assert_contains(css, ".find-action {\n  width: auto;");
+
+    // And the box they defer to is the 32px one, so "same as the app bar's" is a number and not a hope. At the start of a line, or the comment that quotes the selector matches first.
+    let box_rule = rule_body(css, "\n.icon-button {");
+    assert_contains(box_rule, "height: 32px;");
+    assert_contains(box_rule, "min-width: 32px;");
+}
+
+#[test]
+fn the_find_bar_throws_the_same_dot_shadow_as_every_other_floating_panel() {
+    // In the shared list, not a tenth copy of it: the spread is a fixed inset and the punch is that inset taken back off, so it fits any size of box. The reader toolbar's own copy is not a precedent — it has one mask, no punch, having no opaque face to clear.
+    let css = reading_mode_css();
+    let shared = css
+        .find(".app-overflow-panel::before,")
+        .expect("the shared dot-shadow rule");
+    let selectors = &css[shared..shared + css[shared..].find('{').expect("the rule opens")];
+    assert_contains(selectors, ".find-bar::before,");
+
+    // The dots have to be the ::before and the opaque face the ::after: both children sit at --lt-z-below, so tree order is what puts the face over the dots that fall on it, and swapping them would draw a screen of dots across the bar.
+    assert_contains(
+        rule_body(css, ".find-bar::after {"),
+        "background: var(--lt-surface-elevated);",
+    );
+}
+
+#[test]
+fn the_find_bar_gives_way_rather_than_running_off_a_narrow_page() {
+    // Three answers, smallest step first: the field shrinks, then the row wraps, then the bar stops floating. The reading column can be 360px (MIN_READER_WIDTH) and the row wants about 370, so without these the part clipped is the field you type into.
+    let css = reading_mode_css();
+
+    let field = rule_body(css, ".find-field {");
+    assert_contains(field, "flex: 1 1 auto;");
+    assert_contains(field, "min-width: 120px;");
+    assert_contains(rule_body(css, ".find-row {"), "flex-wrap: wrap;");
+
+    // The cap needs the box-sizing beside it, or the bar's border and 10px inset fall outside the number.
+    let bar = rule_body(css, ".find-bar {");
+    assert_contains(bar, "max-width: calc(100% - var(--lt-space-16));");
+    assert_contains(bar, "box-sizing: border-box;");
+
+    // The full-width block is the reader's own 600px, not a second number nobody can defend.
+    let phone = css
+        .find("@media (max-width: 600px) {\n  .find-bar {")
+        .expect("the find bar spans the page at a phone's width");
+    let block = &css[phone..phone + css[phone..].find('}').expect("the rule closes")];
+    assert_contains(block, "justify-self: stretch;");
+    assert_contains(block, "max-width: none;");
 }
 
 #[test]
@@ -1043,6 +1113,7 @@ fn every_floating_surface_throws_the_dot_halftone() {
         ".flow-menu::before,",
         ".link-hover-tip::before,",
         ".block-drag-ghost::before,",
+        ".find-bar::before,",
         ".leaf-sheet::before {",
     ] {
         assert_contains(css, surface);
