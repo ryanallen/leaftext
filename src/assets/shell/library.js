@@ -452,6 +452,10 @@ let changeRepoRevealed = false;
 // one click to undo. Kept for the session -- git overwrites the old URL and
 // keeps no copy, which is exactly how one got lost. Keyed by vault id.
 const previousRemoteByVault = new Map();
+// The sync clients whose folders are really on this machine, as the host found them. Null until the first answer lands, which is not an empty list: nothing is offered while we do not know yet.
+let cloudFolders = null;
+// The clone field stays folded behind a row, the way changing a repository does: picking a folder is the common case, and pasting an address is a decision worth taking on purpose.
+let cloneRevealed = false;
 function hideCrumbMenu() {
   if (crumbMenu.hidden) return;
   // Hand focus back to the "…" before hiding, or it would be stranded on a
@@ -460,11 +464,12 @@ function hideCrumbMenu() {
   crumbMenu.hidden = true;
   if (crumbMenuOwner) {
     crumbMenuOwner.setAttribute('aria-expanded', 'false');
-    if (returnFocus && crumbMenuOwner.isConnected) crumbMenuOwner.focus();
+    if (returnFocus) leafFocusForKeyboard(crumbMenuOwner);
   }
   crumbMenuOwner = null;
   crumbMenuVault = null;
   changeRepoRevealed = false;
+  cloneRevealed = false;
 }
 // The folders the "…" stands in for; picking one enters it.
 function folderMenuItems(hidden) {
@@ -483,6 +488,7 @@ function vaultMenuItems() {
   // compare them, and "which of these reach GitHub" is the comparison worth
   // making. Cached after the first look, so this costs once per vault.
   requestKnownVaultStatuses();
+  requestCloudFolders();
   const rootIcon = (on, id) => vaultGlyph(on, id);
   const items = [{
     label: 'Library',
@@ -524,6 +530,7 @@ function vaultMenuItems() {
     icon: MENU_PLUS_SVG,
     run: () => send({ command: 'createVault' }),
   });
+  pushCloneRow(items);
   return items;
 }
 // The expanded "change repository" panel: names where the vault points now,
@@ -919,12 +926,29 @@ function vaultSyncs(id) {
   const repo = state && state.repo;
   return Boolean(repo && repo.atRoot && repo.remote);
 }
-// The mark a vault wears: a cloud once it reaches GitHub, a box until then.
+// One spelling of a path, so two ways of writing the same folder compare equal: Windows takes either slash and does not care about case.
+function samePathKey(path) {
+  return String(path || '').split('\\').join('/').replace(/\/+$/, '').toLowerCase();
+}
+// Whether saving in this vault reaches a cloud because of where it sits: it is one of the sync clients' folders, or inside one. Saving there is Dropbox's business as much as ours, so the row says cloud.
+function vaultIsInACloudFolder(id) {
+  if (!id || !cloudFolders || !cloudFolders.length) return false;
+  const vault = leafVaults.find((entry) => entry && entry.id === id);
+  const path = samePathKey(vault && vault.rootPath);
+  if (!path) return false;
+  return cloudFolders.some((folder) => {
+    const root = samePathKey(folder.path);
+    return root && (path === root || path.startsWith(`${root}/`));
+  });
+}
+// The mark a vault wears: a cloud when saving in it reaches somewhere else — a repository it pushes to, or a folder a sync client keeps — and a box when the files only live here.
 // One cloud, not an open and a closed one -- open/closed says which vault you
 // are standing in, and a cloud is about where the thing lives. The tick still
 // marks the current row.
 function vaultGlyph(current, id) {
-  if (vaultSyncs(id)) return CLOUD_ICON_SVG;
+  // The whole library has no folder and no vault behind it: it is this machine, drive roots and all.
+  if (!id) return COMPUTER_ICON_SVG;
+  if (vaultSyncs(id) || vaultIsInACloudFolder(id)) return CLOUD_ICON_SVG;
   return current ? PACKAGE_OPEN_ICON_SVG : PACKAGE_ICON_SVG;
 }
 // An icon is a masked span, not a drawing. Both callers looked for an `svg`,
@@ -933,8 +957,59 @@ function setVaultGlyph(host, markup) {
   const glyph = host && host.querySelector('.lt-icon');
   if (glyph) glyph.outerHTML = markup;
 }
-// Ask about any vault we have not looked at yet. Bounded by the number of vaults
-// and answered off the event loop, so opening the menu never waits on git.
+// Ask what is on this machine. The host registers anything new as a vault and answers with the folders, which is what puts a cloud on their rows. Asked again when the switcher opens, so a client installed while the app is running is found without a restart.
+function requestCloudFolders() {
+  send({ command: 'getCloudFolders' });
+}
+// Cloning: paste an address, then pick where it lands. The folder picked is the parent — git makes the repository's own folder in it and removes it again if the clone fails, so a failure leaves nothing to tidy up.
+function pushCloneRow(items) {
+  if (!cloneRevealed) {
+    items.push({
+      label: 'Clone a repository…',
+      title: 'Paste a git address; the clone becomes a vault',
+      icon: SYNC_ICON_SVG,
+      keepOpen: true,
+      run: () => {
+        cloneRevealed = true;
+        showCrumbMenu(crumbMenuOwner, vaultMenuItems());
+      },
+    });
+    return;
+  }
+  const startClone = () => {
+    const field = crumbMenu.querySelector('.clone-url-field');
+    const url = field ? field.value.trim() : '';
+    cloneRevealed = false;
+    if (url) send({ command: 'cloneVault', url });
+    hideCrumbMenu();
+  };
+  const closePanel = () => {
+    cloneRevealed = false;
+    showCrumbMenu(crumbMenuOwner, vaultMenuItems());
+  };
+  items.push({ note: 'Paste the address, then choose the folder to clone into. Leaftext holds no sign-in of its own — your git already knows how to reach a private repository.' });
+  items.push({
+    input: '',
+    fieldClass: 'clone-url-field',
+    commitOnBlur: false,
+    onEnter: startClone,
+    onEscape: closePanel,
+    placeholder: 'https://github.com/owner/repo.git',
+  });
+  items.push({
+    buttons: [
+      { label: 'Cancel', keepOpen: true, run: closePanel },
+      { label: 'Clone', icon: MENU_CHECK_SVG, primary: true, keepOpen: true, run: startClone },
+    ],
+  });
+}
+window.leafSetCloudFolders = (folders) => {
+  cloudFolders = Array.isArray(folders) ? folders : [];
+  // The switcher's glyphs are the only thing this changes, so redraw them where they are already drawn rather than rebuilding a menu under someone's cursor.
+  renderLibraryVaultSwitch();
+  refreshSwitcherGlyphs();
+};
+// Ask about any vault we have not looked at yet. Bounded by the number of vaults and answered off the event loop, so opening the menu never waits on git.
 function requestKnownVaultStatuses() {
   for (const vault of leafVaults) {
     if (!vaultGitByVault.has(vault.id)) send({ command: 'getVaultStatus', id: vault.id });
@@ -1125,7 +1200,7 @@ function showCrumbMenu(button, items) {
   // it is, so nothing yanks the cursor out of a field mid-word or drags it into
   // the name box unasked. Callers that want the cursor somewhere on a redraw
   // (the change-repo reveal) place it themselves.
-  if (firstFocusable && !reopening) firstFocusable.focus();
+  if (firstFocusable && !reopening) leafFocusForKeyboard(firstFocusable);
 }
 // Close on a press outside the menu, matching how the rows act: the openers and
 // the rows stop this from firing on their own press, so what reaches here is

@@ -16,7 +16,8 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Search](#search) | Filename and content search across the active vault |
 | [Other names](#other-names) | A note's `aliases` field: every name in it works wherever the file's own name works |
 | [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
-| [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, with a sync button in its own header |
+| [Cloud folders](#your-cloud-is-already-a-folder) | Dropbox, OneDrive, iCloud Drive, Box, Nextcloud and Google Drive become vaults on their own when their app is on this machine, and their rows wear a cloud |
+| [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, with a sync button in its own header — and a repository can be [cloned](#clone-a-repository) into a new vault |
 | [File actions](#file-actions) | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
 | [Folder actions](#folders-and-the-space-around-them) | Right-click a folder — or the empty space in the pane — to paste, reveal it, or see its properties |
 | [Narrow windows](#narrow-windows) | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
@@ -27,15 +28,30 @@ The library is the part of Leaftext that helps you find documents, not just read
 
 A **vault** is a folder you have told Leaftext to treat as a library root. It is the unit that search and syncing work over, and it is what makes the [graph](#graph) bigger — but not what makes the graph possible.
 
-The button at the left of the breadcrumb — a box, or a cloud once the vault [syncs](#github-sync) — opens the vault switcher:
+The button at the left of the breadcrumb opens the vault switcher. What it wears says what you are in: **this machine** for the whole library, a **box** for a vault whose files only live here, and a **cloud** when saving in that vault also reaches somewhere else — [GitHub](#github-sync), or a [cloud folder](#your-cloud-is-already-a-folder).
 
-- **Library** is the no-vault state: the pane starts at your drive roots and browses anywhere. Search is unavailable, because it has no bounded set of words to read. The graph still works: it maps the open document instead of a vault.
+- **Library** is the no-vault state, marked with the machine rather than a box because it is not a collection — the pane starts at your drive roots and browses anywhere. Search is unavailable, because it has no bounded set of words to read. The graph still works: it maps the open document instead of a vault.
 - **A vault** roots the pane at that folder. Everything below it is browsable, searchable and mappable.
 - **New vault…** opens a folder picker; the folder's name becomes the vault's name.
+- **Clone a repository…** takes a git address and makes the clone a vault. See [below](#clone-a-repository).
 - The settings button on a vault's row opens a panel to rename it, point it at a different folder, remove it, or connect it to [GitHub](#github-sync).
 
 > [!NOTE]
 > **Nothing is written into your folder.** A vault is a row in Leaftext's own database, not a marker file. Removing a vault forgets it; the folder and its files are untouched.
+
+### Your cloud is already a folder
+
+If you have the Dropbox, OneDrive, iCloud Drive, Box, Nextcloud or Google Drive app installed, that cloud is a real folder on this machine — so **Leaftext makes it a vault for you**. There is nothing to press: the folders are there in the switcher the first time you open it, named after themselves, and each wears a cloud because saving in one goes wherever that client sends it.
+
+Leaftext holds no account and no password for any of them. **Their app does the syncing; Leaftext only reads and writes the files** — so there is no refresh to wait for here, and a file that has not arrived yet is one their app has not finished with.
+
+Only what is really there is added: a client you do not have is not listed, and neither is one whose folder has been deleted. Where a client records having been moved — Dropbox, OneDrive, Nextcloud — that record is what gets read, so a Dropbox living somewhere other than the default is still found. Nothing is scanned to do it; each is a named place, checked.
+
+Remove one and it comes back the next time Leaftext looks. A vault is a row in a list, not a copy of anything, and it is a folder you have — the alternative is remembering a refusal forever to save you a row.
+
+Google Drive is found on macOS only. On Windows it mounts as a drive letter you choose and records nowhere which one, and guessing would mean offering somebody else's disk — use **New vault…** and pick it.
+
+A vault *inside* one of these folders wears the cloud too. Where the files end up is what the mark is about, and a folder under Dropbox syncs exactly as Dropbox does.
 
 ## Browsing
 
@@ -234,6 +250,14 @@ A vault can be a git repository that pushes to GitHub. Open a vault's settings f
 On Windows, Git for Windows installs Git Credential Manager and sets it as the default, so the first push opens a browser once and never asks again. On macOS the bundled credential helper cannot sign in to GitHub any more, so `gh` or Git Credential Manager has to be installed; the panel says so rather than letting a push fail.
 
 The panel also warns before the fact about the two things git needs and often lacks: an identity (`user.name` and `user.email`) and a way to authenticate.
+
+### Clone a repository
+
+**Clone a repository…** in the vault switcher takes a git address, asks where it should go, and makes the clone a vault. Paste `https://github.com/owner/repo.git` or the `git@` form; the folder you pick is the *parent*, and the repository gets its own folder inside it named after itself.
+
+Nothing of yours is at risk if it goes wrong: git makes that folder and removes it again if the clone fails, so a broken clone leaves nothing behind and no vault is registered. A name already taken in the folder you picked is refused rather than cloned into.
+
+Again there is no sign-in of Leaftext's own. A public repository just works; a private one works when your own git can already reach it, and says what is missing when it cannot — Leaftext never puts up a password box, because a prompt behind a window it cannot show is the one thing worse than a clear refusal.
 
 ### Changing the repository
 

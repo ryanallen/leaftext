@@ -4,6 +4,8 @@
 
 `just check-tokens` reads this file and fails when a row names a class family `src/assets/reading.css` does not style, so a renamed or deleted component cannot sit here looking real. The other half of the rule — every family having a row, and every row having a gallery section — arrives with `gallery.html`.
 
+**A focus ring is the keyboard's.** Every control draws its ring on `:focus-visible`, never `:focus`, and nothing hands focus about after a mouse press: `leafFocusForKeyboard` in `dom.js` is the one way a menu gives focus back to what opened it or puts it on a first row, and it does nothing unless a key was the last thing pressed. A ring left on a button somebody clicked is the app telling a mouse user about a keyboard feature.
+
 **Class families, not classes.** A family is the prefix a component's classes share: `library` covers `library-tree`, `library-file`, `library-row.is-selected` and dozens more. No rule count here: it would go stale on the next edit to the stylesheet, and what matters is that something styles the family at all.
 
 | Component | Class family | Built by | Sample | Also owns |

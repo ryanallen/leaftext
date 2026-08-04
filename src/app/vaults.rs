@@ -106,6 +106,49 @@ pub(crate) fn create_vault(
     apply_active_vault(vault.id, state, proxy, webview);
 }
 
+/// Which sync clients have a folder on this machine. Off the loop: it stats a handful of named paths and reads one small config file, and the thread that answers the window never waits on a disk.
+pub(crate) fn request_cloud_folders(proxy: &EventLoopProxy<UserEvent>) {
+    off_loop(proxy, move || {
+        let folders = CloudRoots::from_environment()
+            .map(|roots| cloud_folders(&roots))
+            .unwrap_or_default();
+        UserEvent::CloudFoldersReady { folders }
+    });
+}
+
+/// Register any cloud folder that is not a vault yet, then tell the page which folders they are so a vault living in one wears a cloud rather than a box.
+///
+/// Nothing switches: a vault appearing is not a reason to move somebody off what they were reading, which is the whole difference between this and [`create_vault`].
+pub(crate) fn deliver_cloud_folders(
+    state: &VaultState,
+    webview: Option<&WebView>,
+    folders: &[CloudFolder],
+) {
+    if let Some(conn) = state.conn.as_ref() {
+        let roots: Vec<String> = state
+            .vaults()
+            .into_iter()
+            .map(|vault| vault.root_path)
+            .collect();
+        let mut added = false;
+        for folder in cloud_folders_to_register(folders, &roots) {
+            let path = Path::new(&folder.path);
+            match add_vault(conn, path, &default_vault_name(path)) {
+                Ok(_) => added = true,
+                Err(error) => eprintln!("Could not add {} as a vault: {error}", folder.path),
+            }
+        }
+        if added {
+            push_vaults(webview, state);
+        }
+    }
+    run_page_script(
+        webview,
+        &cloud_folders_script(folders),
+        "Failed to name the cloud folders",
+    );
+}
+
 /// Point the pane at a vault, or at the whole library with `0`. An id with no row is ignored rather than emptying the pane.
 pub(crate) fn set_active_vault(
     id: i64,

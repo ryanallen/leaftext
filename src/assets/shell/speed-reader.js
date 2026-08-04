@@ -181,6 +181,8 @@ const vaultGitByVault = new Map();
 const CLOUD_ICON_SVG = `<span class="lt-icon lt-icon-cloud"></span>`;
 const PACKAGE_OPEN_ICON_SVG = `<span class="lt-icon lt-icon-package-open"></span>`;
 const PACKAGE_ICON_SVG = `<span class="lt-icon lt-icon-package"></span>`;
+// The whole library is not a vault at all — it is everything on this machine, so it wears the machine rather than a box.
+const COMPUTER_ICON_SVG = `<span class="lt-icon lt-icon-computer"></span>`;
 // And the plain folder, for the things that really are folders.
 const FOLDER_ICON_SVG = `<span class="lt-icon lt-icon-folder"></span>`;
 // The tick on the switcher's active row, and the mark on New vault…. Inline like

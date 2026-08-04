@@ -68,7 +68,7 @@ function showGlossary() {
     glossarySheet.classList.add('open');
   });
   document.addEventListener('keydown', onGlossaryKey);
-  glossarySheetClose.focus();
+  leafFocusForKeyboard(glossarySheetClose);
 }
 function dismissGlossary() {
   if (glossarySheet.hidden) return;
@@ -83,7 +83,7 @@ function dismissGlossary() {
   };
   glossarySheet.addEventListener('transitionend', hide);
   setTimeout(hide, 320);
-  if (glossaryLastFocus && glossaryLastFocus.focus) glossaryLastFocus.focus();
+  leafFocusForKeyboard(glossaryLastFocus);
 }
 // A big glossary takes long enough to read and render that a tap can look like
 // it missed, so the sheet goes up on a spinner the moment the link is followed.

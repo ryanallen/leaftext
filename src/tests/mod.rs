@@ -19,6 +19,7 @@ mod git;
 mod glossary;
 mod images;
 mod indexer_pager;
+mod known_folders;
 mod markdown_code;
 mod markdown_github;
 mod markdown_rawhtml;

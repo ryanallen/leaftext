@@ -147,7 +147,7 @@ function closeFlowSheet() {
   };
   flowSheet.addEventListener('transitionend', hide);
   window.setTimeout(hide, 320);
-  if (flowLastFocus && flowLastFocus.focus) flowLastFocus.focus();
+  leafFocusForKeyboard(flowLastFocus);
 }
 
 function saveFlowSheet() {

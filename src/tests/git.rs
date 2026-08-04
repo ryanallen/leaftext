@@ -4,6 +4,7 @@
 
 use crate::git::{
     commit_message, count_changes, gitignore_addition, parse_ahead_behind, remote_label,
+    repo_folder_name_for_url,
 };
 use crate::repo_name_for_vault;
 
@@ -106,4 +107,66 @@ fn nested_repositories_are_ignored_once_and_the_reason_goes_with_them() {
     // Nothing to add is nothing written, not a stray comment block.
     assert_eq!(gitignore_addition("app/\nsite/theme\n", &nested), "");
     assert_eq!(gitignore_addition("", &[]), "");
+}
+
+/// The folder a clone lands in comes from the address, and only ever as a plain name: the parent is the folder the user picked, and a name is the one thing that cannot reach outside it.
+#[test]
+fn a_clone_takes_its_folder_name_from_the_address() {
+    assert_eq!(
+        repo_folder_name_for_url("https://github.com/owner/leaftext.git"),
+        Some(String::from("leaftext"))
+    );
+    // No `.git`, a trailing slash, and the SSH form, which separates the owner with a colon.
+    assert_eq!(
+        repo_folder_name_for_url("https://github.com/owner/leaftext/"),
+        Some(String::from("leaftext"))
+    );
+    assert_eq!(
+        repo_folder_name_for_url("git@github.com:owner/leaftext.git"),
+        Some(String::from("leaftext"))
+    );
+    // Nothing that is not a plain name. A crafted address must not be able to name the parent, a sibling, or a switch to git.
+    assert_eq!(
+        repo_folder_name_for_url("https://github.com/owner/.."),
+        None
+    );
+    assert_eq!(repo_folder_name_for_url("https://github.com/owner/."), None);
+    assert_eq!(
+        repo_folder_name_for_url("https://github.com/owner/-x"),
+        None
+    );
+    assert_eq!(repo_folder_name_for_url(""), None);
+    assert_eq!(repo_folder_name_for_url("https://github.com/"), None);
+}
+
+/// The two refusals that happen before git is ever run, so neither costs a network call and neither can half-make a vault.
+#[test]
+fn a_clone_is_refused_before_it_starts_when_it_cannot_land() {
+    let parent = std::env::temp_dir().join(format!(
+        "leaf-clone-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    ));
+    std::fs::create_dir_all(parent.join("leaftext")).expect("a folder already in the way");
+
+    let taken = crate::clone_into_vault("https://github.com/owner/leaftext.git", &parent)
+        .expect_err("a name already taken is refused");
+    assert!(
+        taken.detail.contains("already in that folder"),
+        "said {taken}"
+    );
+
+    let empty = crate::clone_into_vault("   ", &parent).expect_err("an empty address is refused");
+    assert!(empty.detail.contains("no address given"), "said {empty}");
+
+    let unnamed = crate::clone_into_vault("https://github.com/", &parent)
+        .expect_err("an address with no repository in it is refused");
+    assert!(
+        unnamed.detail.contains("does not name a repository"),
+        "said {unnamed}"
+    );
+
+    let _ = std::fs::remove_dir_all(&parent);
 }

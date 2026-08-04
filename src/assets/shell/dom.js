@@ -375,5 +375,15 @@ function leafOnEscape(close, target) {
     if (event.key === 'Escape') close(event);
   });
 }
+// Whether the keyboard is what is driving. A mouse never earns a focus ring: pressing a button and getting a ring that stays is the browser telling a mouse user about a keyboard feature, so anything that hands focus about asks this first.
+let leafKeyboardDriving = false;
+window.addEventListener('keydown', () => { leafKeyboardDriving = true; }, true);
+window.addEventListener('pointerdown', () => { leafKeyboardDriving = false; }, true);
+// Move focus, but only for the keyboard. Two jobs, both of them the same rule: giving focus back to whatever opened a menu when it closes, and putting it on the first row when one opens. A keyboard user must never be dropped at the top of the page; a mouse user must never be left with a ring on something they pressed.
+function leafFocusForKeyboard(target) {
+  if (!leafKeyboardDriving || !target || !target.isConnected || !target.focus) return false;
+  target.focus();
+  return true;
+}
 window.leafSetWindowMaximized(window.__leafMaximized);
 

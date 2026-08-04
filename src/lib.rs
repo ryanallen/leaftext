@@ -35,12 +35,17 @@ mod format;
 pub use format::{all_document_extensions, is_supported_document_path, DocumentFormat};
 mod folder_tree;
 pub use folder_tree::{read_folder_listing, FolderCrumb, FolderListing};
+mod known_folders;
+pub use known_folders::{
+    cloud_folders, cloud_folders_to_register, path_is_in_cloud_folder, CloudFolder, CloudRoots,
+};
 
 /// Git, as much of it as a vault needs. Shells out to the machine's own git rather than shipping a second one that would not know the user, their identity, or how they log in to GitHub.
 mod git;
 pub use git::{
-    create_repo_on_github, git_tooling, init_vault_repo, inspect_vault_repo, link_vault_remote,
-    repo_name_for_vault, sync_vault_repo, GitError, GitTooling, SyncReport, VaultRepo,
+    clone_into_vault, create_repo_on_github, git_tooling, init_vault_repo, inspect_vault_repo,
+    link_vault_remote, repo_name_for_vault, sync_vault_repo, GitError, GitTooling, SyncReport,
+    VaultRepo,
 };
 mod vault_corpus;
 pub use vault_corpus::{CorpusDocument, VaultCorpus, MAX_CORPUS_DOCUMENTS};

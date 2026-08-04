@@ -87,6 +87,7 @@ Then, after the tables:
 - **A shipped row is struck through and says what the build found** — what the plan had wrong, and what changed shape. That is the half a later reader cannot get anywhere else.
 - **A claim cites the repo or the ticket.** A cost, a dependency, a "this already ships" — the same bar as a ticket's measured table.
 - **Never re-plan.** A row points at a ticket. Deciding a phase in the ranking puts the decision where nobody building the ticket will look.
+- **A row that has to say "phases 1–2 only" is a ticket that wants splitting.** Ranking half a file in one tier and the rest four tiers down is the ranking admitting the file holds two jobs; the annotation keeps the list honest but leaves a ticket nobody can finish. Say so in the row, and name the split as the work — `/refine` on that file does it, and then each row points at a file that can be closed.
 
 ## 5. When something ships
 

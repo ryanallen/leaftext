@@ -193,10 +193,7 @@ function showContextMenu(x, y, path, kind, link) {
   }
   buildContextMenu();
   clampContextMenu(x, y);
-  const first = contextMenu.querySelector('.context-menu-item');
-  if (first) {
-    first.focus();
-  }
+  leafFocusForKeyboard(contextMenu.querySelector('.context-menu-item'));
 }
 document.addEventListener('contextmenu', (event) => {
   // A link in the document comes first: it is the innermost thing under the pointer

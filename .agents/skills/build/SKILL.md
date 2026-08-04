@@ -49,6 +49,15 @@ Phases ship alone. Build them in the ticket's order and finish each one before s
 - **Every line written is one line.** Never hard-wrap — not a box, not a paragraph, and not a comment in the code. A comment too long for one line is *shortened*, never wrapped: see [code-comments](../code-comments/SKILL.md), which holds that bar. `just check-wrapping` fails on one and `--fix` joins it.
 - **Every phase ends with [check](../check/SKILL.md)**, and with the bundler line when it touched `design/`. A failing check is fixed, not explained past.
 
+## When a phase cannot be built
+
+A phase whose work waits on another ticket is not a reason to stop with the job half done — it is a ticket that was written wrong, and fixing it is part of building.
+
+- **Split the file at the seam.** The phases that shipped keep the file; the blocked ones move into a new ticket in the same folder, renumbered from 1, with a first line saying what it rides on and which ticket it came out of. Both files cross-reference each other.
+- **Then finish the shipped half properly** — every one of the five edits below, so the tree stops describing it as a plan.
+- **Say it in the record**, on both files: what was split, and what the blocked half is waiting for.
+- The one thing worth stopping for is a phase blocked on something the *owner* has to decide, not on code. Ask that, with a recommendation, and carry on.
+
 ## 3. Notes worth writing down
 
 The ticket's value after it ships is what it says about the ground. As each phase lands, add to the record section at the bottom:

@@ -501,7 +501,9 @@ fn a_vault_that_reaches_github_wears_a_cloud() {
     assert_icon(&html, "cloud");
     assert!(html.contains("const CLOUD_ICON_SVG = `"));
     assert!(html.contains("function vaultGlyph(current, id) {"));
-    assert!(html.contains("  if (vaultSyncs(id)) return CLOUD_ICON_SVG;"));
+    assert!(
+        html.contains("if (vaultSyncs(id) || vaultIsInACloudFolder(id)) return CLOUD_ICON_SVG;")
+    );
 
     // A repository with no remote is a pile of commits on one disk, which is not what a cloud promises.
     assert!(html.contains("return Boolean(repo && repo.atRoot && repo.remote);"));
@@ -1108,4 +1110,89 @@ fn going_from_the_map_to_the_source_does_not_lay_out_the_reading_view_on_the_way
     assert!(html.contains(
         "pendingCodeViewSrcOffset = graphViewOpen ? null : topReadingBlockSourceOffset();"
     ));
+}
+
+#[test]
+fn a_mouse_press_never_leaves_a_focus_ring_behind() {
+    let html = app_shell_page();
+    let css = reading_mode_css();
+
+    // One helper, and it is the only way focus is handed about: a menu closing gives it back to whatever opened it, and a menu opening puts it on the first row — both for the keyboard only. Clicking the switcher and picking a vault used to leave a ring on the button.
+    assert!(html.contains("function leafFocusForKeyboard(target) {"));
+    assert!(html.contains("if (!leafKeyboardDriving || !target || !target.isConnected || !target.focus) return false;"));
+    assert!(html.contains(
+        "window.addEventListener('pointerdown', () => { leafKeyboardDriving = false; }, true);"
+    ));
+
+    // Nothing that closes or opens a floating thing may call focus directly, or the rule is one site from being wrong again.
+    for site in [
+        "crumbMenuOwner.focus()",
+        "firstFocusable.focus()",
+        "first.focus()",
+        "glossarySheetClose.focus()",
+        "glossaryLastFocus.focus()",
+        "flowLastFocus.focus()",
+    ] {
+        assert!(
+            !html.contains(site),
+            "{site} must go through leafFocusForKeyboard"
+        );
+    }
+
+    // And the ring itself is drawn for the keyboard: `:focus`, on anything but a text field, paints one for a mouse press too.
+    assert!(css.contains("button:focus-visible,"));
+}
+
+#[test]
+fn the_whole_library_wears_the_machine_it_reads() {
+    let html = app_shell_page();
+
+    // The first row of the switcher is not a vault: it is everything on this machine, drive roots and all, so a box was the one wrong shape for it.
+    assert_icon(&html, "computer");
+    assert!(html.contains("if (!id) return COMPUTER_ICON_SVG;"));
+    // And it is what the button carries before anything has been switched to.
+    assert!(html.contains(
+        r#"id="libraryVaultSwitch" class="library-vault-switch" aria-haspopup="menu" aria-expanded="false" title="Vaults" aria-label="Vaults"><span class="lt-icon lt-icon-computer"></span>"#
+    ));
+}
+
+#[test]
+fn a_cloud_folder_becomes_a_vault_without_being_asked_for() {
+    let html = app_shell_page();
+
+    // The host is asked at boot and again whenever the switcher opens, so a client installed mid-session is found without a restart.
+    assert!(html.contains("send({ command: 'getCloudFolders' });"));
+    assert!(html.contains("window.leafSetCloudFolders = (folders) => {"));
+
+    // Nothing to press: there is no row for a cloud folder, because being found is what registers it.
+    assert!(
+        !html.contains("createCloudVault"),
+        "a cloud folder is registered by being found, not by a button"
+    );
+
+    // What the answer is for is the mark on the row: saving in a synced folder reaches somewhere else, so it reads as a cloud rather than a box.
+    assert!(html.contains("function vaultIsInACloudFolder(id) {"));
+    assert!(
+        html.contains("if (vaultSyncs(id) || vaultIsInACloudFolder(id)) return CLOUD_ICON_SVG;")
+    );
+    // A folder whose name merely starts the same way is not inside it -- the separator is part of the test.
+    assert!(html.contains("path === root || path.startsWith(`${root}/`)"));
+}
+
+#[test]
+fn cloning_a_repository_takes_an_address_and_then_a_folder() {
+    let html = app_shell_page();
+
+    // Folded away until asked for, like changing a repository — the common way in is still picking a folder.
+    assert!(html.contains("label: 'Clone a repository…',"));
+    assert!(html.contains("cloneRevealed = true;"));
+    // And unfolded again when the menu closes, or the panel would be waiting there the next time it opens.
+    assert!(html.contains("cloneRevealed = false;"));
+
+    // The address goes to the host; the folder is picked there, because a dialog belongs to the window's thread.
+    assert!(html.contains("send({ command: 'cloneVault', url });"));
+    assert!(
+        !html.contains("command: 'cloneVault', url, path"),
+        "the page does not choose where a clone lands"
+    );
 }

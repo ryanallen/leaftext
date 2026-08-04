@@ -89,6 +89,14 @@ fn vaults_payload(vaults: &[Vault], active: i64) -> serde_json::Value {
     serde_json::json!({ "vaults": vaults, "active": active })
 }
 
+/// The sync clients whose folders are on this machine. Pushed rather than seeded: it is read off the disk when the vault menu opens, and nothing before that needs it.
+pub fn cloud_folders_script(folders: &[CloudFolder]) -> String {
+    format!(
+        "window.leafSetCloudFolders({});",
+        serde_json::json!(folders)
+    )
+}
+
 /// Every readable extension as `window.__leafDocumentExts`, from the format table, so the page never keeps its own copy of the list.
 pub fn initial_document_exts_script() -> String {
     format!(

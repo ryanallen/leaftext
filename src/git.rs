@@ -15,6 +15,9 @@ use std::time::{Duration, Instant};
 /// How long any one git (or gh) call may run before it is killed. Git normally answers in well under a second; the only things that take longer are a large fetch and a credential helper popping a window the app cannot see. The second one would otherwise hang the sync forever -- the "spinning that never stops". Generous enough for a real fetch, short enough that a wedged prompt gives up.
 const TOOL_TIMEOUT: Duration = Duration::from_secs(90);
 
+/// How long a clone may run. Every other call here answers off the disk in a moment; a clone is a download of somebody's whole history, and 90 seconds would refuse any repository worth cloning.
+const CLONE_TIMEOUT: Duration = Duration::from_secs(600);
+
 /// How deep below a vault to look for repositories that would end up inside a new one. Three is enough for `leaftext/app`, and for a nested clone one level further down; past that the scan costs more than the warning is worth.
 const NESTED_SCAN_DEPTH: usize = 3;
 
@@ -106,8 +109,13 @@ pub struct SyncReport {
 // Running the tools
 // ---------------------------------------------------------------------------
 
-/// Spawn a tool and collect what it said. Windows gets `CREATE_NO_WINDOW`, or a console flashes over the reader on every status check.
-fn output<I, S>(program: &str, dir: Option<&Path>, args: I) -> std::io::Result<Output>
+/// Spawn a tool and collect what it said, allowing `limit` for it. Windows gets `CREATE_NO_WINDOW`, or a console flashes over the reader on every status check.
+fn output_within<I, S>(
+    limit: Duration,
+    program: &str,
+    dir: Option<&Path>,
+    args: I,
+) -> std::io::Result<Output>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
@@ -129,7 +137,16 @@ where
         use std::os::windows::process::CommandExt;
         command.creation_flags(0x0800_0000);
     }
-    run_with_timeout(command, TOOL_TIMEOUT)
+    run_with_timeout(command, limit)
+}
+
+/// The same, on the ordinary limit. Everything but a clone answers off the disk.
+fn output<I, S>(program: &str, dir: Option<&Path>, args: I) -> std::io::Result<Output>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
+    output_within(TOOL_TIMEOUT, program, dir, args)
 }
 
 /// Spawn a command and wait at most `limit` for it, killing it if it overruns.
@@ -182,8 +199,13 @@ fn run_with_timeout(mut command: Command, limit: Duration) -> std::io::Result<Ou
 ///
 /// Trailing whitespace only: a plain `trim()` ate the leading blank that is `status --porcelain`'s first status column, and a commit went out saying "Update EADME.md". Nothing else git prints has meaningful leading space.
 fn git(dir: &Path, args: &[&str]) -> Result<String, GitError> {
+    git_within(TOOL_TIMEOUT, dir, args)
+}
+
+/// The same, with its own limit — a clone is a download and outlives the limit a status question gets.
+fn git_within(limit: Duration, dir: &Path, args: &[&str]) -> Result<String, GitError> {
     let operation = format!("git {}", args.first().copied().unwrap_or_default());
-    match output("git", Some(dir), args) {
+    match output_within(limit, "git", Some(dir), args) {
         Ok(result) if result.status.success() => Ok(String::from_utf8_lossy(&result.stdout)
             .trim_end()
             .to_string()),
@@ -362,6 +384,63 @@ pub fn create_repo_on_github(root: &Path, name: &str) -> Result<(), GitError> {
         "gh repo create",
         String::from_utf8_lossy(&result.stderr).to_string(),
     ))
+}
+
+/// Clone `url` into a new folder under `parent`, and return where it landed. The path from an address to a vault that does not exist yet.
+///
+/// The folder is git's to create, which is what makes a failure clean: git removes what it made, so a clone that dies half way leaves nothing behind to tidy up and nothing to register. A name already taken under `parent` is refused rather than cloned into — merging a clone into somebody's folder is not something to do on their behalf.
+///
+/// No credentials of ours, like every other call here: a private repository works when the machine's git can already log in, and says what is missing when it cannot (`GIT_TERMINAL_PROMPT=0`, above).
+pub fn clone_into_vault(url: &str, parent: &Path) -> Result<PathBuf, GitError> {
+    let url = url.trim();
+    if url.is_empty() {
+        return Err(GitError::new("clone", "no address given"));
+    }
+    let Some(name) = repo_folder_name_for_url(url) else {
+        return Err(GitError::new(
+            "clone",
+            "that address does not name a repository",
+        ));
+    };
+    let target = parent.join(&name);
+    if target.exists() {
+        return Err(GitError::new(
+            "clone",
+            format!("{name} is already in that folder"),
+        ));
+    }
+    git_within(CLONE_TIMEOUT, parent, &["clone", "--", url, &name])?;
+    // git reports success and creates the folder itself, so anything else here is a success that left nothing to open.
+    if !is_repo_root(&target) {
+        return Err(GitError::new(
+            "clone",
+            "the clone left no repository behind",
+        ));
+    }
+    Ok(target)
+}
+
+/// The folder name an address gives: `https://host/owner/repo.git`, `git@host:owner/repo` and a local path all end in the name to use.
+///
+/// `None` when there is no usable segment, and anything that is not a plain name is refused — a folder is joined onto the parent the user picked, and only a name can never reach outside it.
+pub(crate) fn repo_folder_name_for_url(url: &str) -> Option<String> {
+    let trimmed = url.trim().trim_end_matches(['/', '\\']);
+    let without_git = trimmed.strip_suffix(".git").unwrap_or(trimmed);
+    // Past the scheme first, or a bare host reads as a repository: `https://github.com` would clone into a folder called `github.com`, and the address names no repository at all.
+    let after_scheme = without_git
+        .split_once("://")
+        .map_or(without_git, |(_, rest)| rest);
+    // Whatever follows the host: a slash everywhere, or the colon the `git@host:owner/repo` form uses.
+    let (_, path) = after_scheme.split_once(['/', ':'])?;
+    let name = path
+        .rsplit(['/', '\\'])
+        .find(|segment| !segment.is_empty())?;
+    let plain = !name.is_empty()
+        && name != "."
+        && name != ".."
+        && !name.contains(['/', '\\', ':'])
+        && !name.starts_with('-');
+    plain.then(|| name.to_string())
 }
 
 /// Whether this exact folder is a git repository's own top level -- not a folder sitting inside one. Every write below refuses unless this holds, so a command run in a vault can never reach up and rewrite the repository it happens to live inside. That is the failure that pointed a vault's "change repo" at the wrong place and left the parent repo staring at unrelated histories.

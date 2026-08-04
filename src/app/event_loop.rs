@@ -127,6 +127,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 if let Some(path) = pending_open_path.take() {
                     let _ = proxy.send_event(UserEvent::OpenPath(path));
                 }
+                // Once there is a page to tell: any cloud folder on this machine becomes a vault, and the page learns which folders they are. Off the loop, so a slow disk never delays the first paint.
+                request_cloud_folders(&proxy);
             }
             Event::UserEvent(UserEvent::FocusWindow) => {
                 reader.window.set_minimized(false);
@@ -175,6 +177,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             }
             Event::UserEvent(UserEvent::VaultStatusReady { id, json }) => {
                 deliver_vault_status(reader.page(), id, &json);
+            }
+            Event::UserEvent(UserEvent::CloudFoldersReady { folders }) => {
+                deliver_cloud_folders(&vault_state, reader.page(), &folders);
+            }
+            Event::UserEvent(UserEvent::VaultCloneDone { folder, error }) => {
+                deliver_vault_clone(folder, error, &mut vault_state, &proxy, reader.page());
             }
             Event::UserEvent(UserEvent::FolderLoaded { scope, listing }) => {
                 deliver_folder(&mut vault_state, reader.page(), scope, listing);
@@ -772,6 +780,15 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 IpcCommand::CreateVault => {
                     if let Some(folder) = pick_vault_folder() {
                         create_vault(&folder, &mut vault_state, &proxy, reader.page());
+                    }
+                }
+                IpcCommand::GetCloudFolders => {
+                    request_cloud_folders(&proxy);
+                }
+                IpcCommand::CloneVault { url } => {
+                    // The folder is picked here rather than in the worker: a dialog belongs to the window's thread, and picking it first means a canceled dialog starts nothing.
+                    if let Some(parent) = pick_clone_parent_folder() {
+                        clone_vault(url, parent, &proxy);
                     }
                 }
                 IpcCommand::SetActiveVault { id } => {

@@ -65,6 +65,7 @@ The tell is a plan that gets green without the thing being true.
 
 ## 5. The phases hold
 
+- **Every phase is buildable off this repo plus the phases above it.** A phase waiting on another ticket's work is the one fault that makes a file impossible to finish, so it is the first thing to check: read what each phase needs, and ask which of it exists. Where a file's later phases sit behind another ticket, **split the file at that seam** — the buildable phases keep the file and its name, the blocked ones become a new ticket saying what it rides on, and both rows in `../docs/README.md` are written in the same pass. Splitting is not "changing what gets built", so it does not wait on a question; renumbering the phases and re-pointing the running order is part of it.
 - Each phase ships alone and is worth having alone.
 - The italic line says why it is in that position, and is true — phase 2 must really need what phase 1 proved.
 - A box has an obvious done. "Make it fast" does not.

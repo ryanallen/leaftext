@@ -26,6 +26,13 @@ pub(crate) enum UserEvent {
         scope: Option<PathBuf>,
         listing: FolderListing,
     },
+    /// The sync clients whose folders are on this machine, found on the worker that stat'd them.
+    CloudFoldersReady { folders: Vec<CloudFolder> },
+    /// A clone finished. `folder` is where it landed, so the loop can register it as a vault; `error` is what to say instead when it failed.
+    VaultCloneDone {
+        folder: PathBuf,
+        error: Option<String>,
+    },
     /// The active vault's text finished being read. Whatever was waiting on it — a graph, a search — runs when it lands.
     CorpusLoaded { corpus: Box<VaultCorpus> },
     /// A graph finished building. Both this and the search below are computed on a worker thread: they read documents off the disk, which is far too much to do on the thread that answers the window.
@@ -227,6 +234,12 @@ pub(crate) enum IpcCommand {
     /// Pick a folder and register it as a vault, then switch the library to it.
     #[serde(rename = "createVault")]
     CreateVault,
+    /// Which sync clients have a folder on this machine. Each becomes a vault if it is not one already, and the answer is what makes a vault in one wear a cloud.
+    #[serde(rename = "getCloudFolders")]
+    GetCloudFolders,
+    /// Clone a repository into a folder the user picks, and register the clone as a vault.
+    #[serde(rename = "cloneVault")]
+    CloneVault { url: String },
     /// Scope the library to a vault by id; `0` is the whole library.
     #[serde(rename = "setActiveVault")]
     SetActiveVault {

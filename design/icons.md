@@ -37,7 +37,8 @@ An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></spa
 | speed-reader-on | speed-reader-on.svg | heavy | — | The speed reader, running. |
 | speed-reader-off | speed-reader-off.svg | regular | — | The speed reader, stopped. |
 | wand | wand.svg | regular | — | Tidy the document. |
-| cloud | cloud.svg | regular | — | A vault that reaches GitHub. |
+| cloud | cloud.svg | regular | — | A vault whose saves reach somewhere else: a repository it pushes to, or a folder a sync client keeps. |
+| computer | computer.svg | regular | — | The whole library — everything on this machine, which is what the switcher's first row stands for rather than a vault. |
 | package-open | package-open.svg | regular | — | The vault you are in. |
 | package | package.svg | regular | — | A vault you are not in. |
 | folder | folder.svg | regular | — | A plain directory in the pane. |

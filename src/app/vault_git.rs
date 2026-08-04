@@ -80,6 +80,37 @@ fn off_thread<F>(
     });
 }
 
+/// Clone `url` into `parent` and, when it lands, register the clone as a vault. Off the loop like every other git call: a clone is a download, and the loop is the window.
+///
+/// There is no vault yet, so this cannot report through the panel the way the other four do. A toast says what happened, and the vault appearing in the switcher is what says it worked.
+pub(crate) fn clone_vault(url: String, parent: PathBuf, proxy: &EventLoopProxy<UserEvent>) {
+    off_loop(proxy, move || match clone_into_vault(&url, &parent) {
+        Ok(folder) => UserEvent::VaultCloneDone {
+            folder,
+            error: None,
+        },
+        Err(error) => UserEvent::VaultCloneDone {
+            folder: parent,
+            error: Some(error.to_string()),
+        },
+    });
+}
+
+/// A finished clone: the new folder becomes a vault, or the failure is said out loud. Nothing half-made is left behind — git removes a folder it created when the clone fails, so there is no half-vault to register.
+pub(crate) fn deliver_vault_clone(
+    folder: PathBuf,
+    error: Option<String>,
+    state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    webview: Option<&WebView>,
+) {
+    if let Some(error) = error {
+        report_file_action_failure(webview, &error);
+        return;
+    }
+    create_vault(&folder, state, proxy, webview);
+}
+
 /// Read only the folder's own state, for the button in the vault's header.
 ///
 /// Deliberately not [`request_vault_git`]: that one also asks what is installed, and `gh auth status` goes to the network to validate its token. Fine once, when someone opens the panel; not fine every time a file is saved.
