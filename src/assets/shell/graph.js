@@ -2,7 +2,8 @@
 // Graph view: an Obsidian-style force-directed map of how documents link to one
 // another, rendered with PixiJS (WebGL) and laid out with d3-force. Nodes are
 // documents; edges are resolved doc-to-doc links. The active document is the
-// highlighted center; clicking a node opens it; hovering lights up its links.
+// highlighted center; clicking a node opens it and keeps the map, redrawn around
+// what opened and flown to it; hovering lights up its links.
 // ---------------------------------------------------------------------------
 let graphData = null; // last {nodes, edges, truncated} payload from the backend
 let graphRequested = false; // asked the backend since entering the graph view
@@ -216,10 +217,9 @@ function setReaderView(view) {
     return;
   }
   // Going from the map straight to the source: hold the map until the source is
-  // ready, the way clicking a node does. Dropping it first reveals the reading
-  // view, and revealing it lays out a whole document we are about to replace —
-  // which is the reading view flashing up under a spinner on the way to the
-  // code view.
+  // ready. Dropping it first reveals the reading view, and revealing it lays out a
+  // whole document we are about to replace — which is the reading view flashing up
+  // under a spinner on the way to the code view.
   if (graphViewOpen && view === 'code' && !codeViewActive) {
     graphExitPending = true;
     toggleCodeView();

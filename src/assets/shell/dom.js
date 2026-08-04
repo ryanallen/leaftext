@@ -247,9 +247,9 @@ let readerLoadingSafety = 0;
 let readerLoadingOwner = null;
 function beginReaderLoading(owner) {
   const forGraph = owner === 'graph';
-  // Only while the map is staying up. Clicking a node is a navigation out of it,
-  // and the map deliberately holds until the document is ready — so suppressing
-  // the spinner there leaves the whole read looking like a frozen map.
+  // Only while the map is staying up. A gesture that leaves it -- a search hit, or
+  // the jump to the source -- deliberately holds the map until its replacement is
+  // ready, so suppressing the spinner there leaves the wait looking like a freeze.
   if (graphViewOpen && !graphExitPending && !forGraph) return;
   clearReaderLoading(owner);
   readerLoadingOwner = forGraph ? 'graph' : null;

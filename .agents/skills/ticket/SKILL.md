@@ -18,6 +18,7 @@ The ticket tree is `leaftext/docs/`, the folder beside the app — not `app/docs
 | folder | what belongs there |
 | --- | --- |
 | `../docs/README.md` | one line per ticket in the whole tree. Read it first; update it last |
+| `../docs/GLOSSARY.md` | every word this tree uses about itself — ticket, phase, box, tier, the record. **Write the ticket in these words**, and add a row for any planning word it spends that is not there yet |
 | `../docs/features/` | the app cannot do this yet |
 | `../docs/refactor/` | the app already does it; this changes how |
 | `../docs/done/` | shipped. Move it here when the last box is ticked |
@@ -150,6 +151,7 @@ Move its index row in the same edit, and rewrite it to say what shipped. A row s
 - `/refine` — checks a written ticket against the code before anyone builds it.
 - `/build` — builds one, and moves it to `done/` when the last box is ticked.
 - `../docs/README.md` — every ticket, one line each. Read first, updated last.
+- `../docs/GLOSSARY.md` — the words a ticket is written in. A planning word this file spends and that file does not define gets a row there in the same pass.
 - `../docs/features/highlight-annotate.md` — measured table, phases, a phase 0.
 - `../docs/refactor/inline-link.md` — short, and shows the shipped note.
 - `../docs/refactor/update-system.md` — how several tickets share a phase order.

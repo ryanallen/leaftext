@@ -15,11 +15,12 @@ One argument: the ticket. Everything else is worked out from the folders.
 
 ## 1. Read before building
 
-Three files, in this order, and no code before all three are read.
+Four files, in this order, and no code before all four are read.
 
 - **The ticket.** Every phase, every box, and its record section at the bottom.
 - **`../docs/README.md`** — its row in the index, and its neighbors' rows. A ticket that shares plumbing with another is one you can build twice.
 - **The newest file in `../docs/plans/`** (they are named `MM-DD-YYYY.md`) — its row, and what that row says is waiting on it. The plan is the running order; the ticket is the work.
+- **`../docs/GLOSSARY.md`** — the words all three of those are written in. Skim it once, and write the record and the rows in those words rather than inventing a second name for a phase or a tier. A planning word this build genuinely needed and that file does not have gets a row there, in the closing pass below.
 
 ### Refine it first if nobody has
 
@@ -95,6 +96,7 @@ Then `/check` once more over the whole thing, and hand back: what the app does d
 - `/check` — the end of every phase, and the end of the job.
 - `/sync-docs` — step 5, when the change is wide.
 - `../docs/README.md` — every ticket, one line each.
+- `../docs/GLOSSARY.md` — the words a ticket, an index row and a ranking row are written in.
 - `../docs/plans/` — the running order. The newest file is the live one, written by `/priority`.
 
 <!-- keycode: LEAF-2F4B -->

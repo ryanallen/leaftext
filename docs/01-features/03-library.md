@@ -209,12 +209,12 @@ The second map is **smaller, not wrong**. A document only ever records what it l
 - The document you are reading is highlighted in the accent color and pulled larger.
 - **Names** float in dim gray beneath the nodes. They stay a fixed size as you zoom and are decluttered by fit: where the layout is open every name shows, and where nodes crowd only the ones that clear their neighbors do. The document you are on always keeps its name, and hovering shows the hovered node's name and its neighbors'.
 - **Edges point the way the link was written.** An arrowhead sits where the line meets the document being linked *to*. Two documents that link each other get one line with a head at both ends, not two lines on top of each other. Heads are left off a very dense map, and while you are zoomed far out — at that size they are ink and nothing else.
-- **Click** a node to open that document — the map holds until the document is ready, then steps aside. **Hover** to light up a node's direct links and dim the rest.
+- **Click** a node to open that document and **keep the map** — it redraws around what you opened and flies to its node, so you can carry on following links from there. **Hover** to light up a node's direct links and dim the rest.
 - **Drag** a node to reposition it, **drag the background** to pan, **scroll** to zoom.
-- Opening a document from the pane while the map is up **keeps the map up** and moves the highlight. Changing what you are looking at is not a reason to change how you are looking at it.
+- Opening a document from the pane while the map is up **keeps the map up** too, and moves the highlight. Changing what you are looking at is not a reason to change how you are looking at it.
 - Closing the last tab closes the map with it: the start screen is not one of a document's views.
 - Editing a document the map covers **redraws it in place**: every node keeps its position, your pan and zoom are kept, and the layout eases into what changed rather than laying itself out again. An edit that draws the same map — a word typed into a document that links nowhere new — changes nothing on screen at all.
-- Building the map shows the same spinner a slow document does — and so does leaving it. Whether you click a node, open a search hit, or switch to the [source](07-editing.md#code-view), the map holds until its replacement is ready rather than dropping to a half-drawn page, and the wait is shown on top of it.
+- Building the map shows the same spinner a slow document does — including the redraw after a node click, which builds a new map. Leaving the map shows it too: open a search hit or switch to the [source](07-editing.md#code-view) and the map holds until its replacement is ready rather than dropping to a half-drawn page, with the wait shown on top of it.
 
 ### How much it draws
 
@@ -222,7 +222,7 @@ How many documents it draws is set by the [Graph size](05-settings.md#graph-size
 
 ### Web addresses
 
-A `http`/`https` link is a node too, drawn as a **ring with a dot at its center** rather than a filled disc, and labeled by its domain — `reddit.com`, not the whole URL, which stays in the tooltip. **Clicking one opens your browser and leaves the map up**, because nothing replaced the page.
+A `http`/`https` link is a node too, drawn as a **ring with a dot at its center** rather than a filled disc, and labeled by its domain — `reddit.com`, not the whole URL, which stays in the tooltip. **Clicking one opens your browser and leaves the map exactly as it is** — no redraw, because nothing here replaced the document you are on.
 
 They are found wherever the reader can click one: written out as `[text](https://…)`, in `<https://…>` angle brackets, in an `<a href>`, and **bare in the text**, by the same finder that turns bare URLs into links when the document is rendered. So the graph and the page can't disagree about what a link is.
 

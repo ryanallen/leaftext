@@ -265,12 +265,12 @@ fn a_search_row_lands_on_the_match_not_the_heading_above_it() {
 fn changing_document_does_not_change_which_view_you_are_in() {
     let html = app_shell_page();
 
-    // Opening a file from the pane while the map is up must not snap back to the reading view: picking what to look at is not picking how. Only a gesture that *means* "leave the map" closes it: a node click, a search hit (whose anchor has nothing to scroll to on a canvas), and pressing the source button. Each holds the map until its destination is ready rather than dropping it and laying out the reading view in between.
+    // Opening a file while the map is up must not snap back to the reading view: picking what to look at is not picking how. That holds for the pane and for the map's own nodes — clicking one is a hop, and the map redraws around what opened. Only a gesture that *means* "leave the map" closes it: a search hit (whose anchor has nothing to scroll to on a canvas) and pressing the source button. Each holds the map until its destination is ready rather than dropping it and laying out the reading view in between.
     assert!(html.contains("let graphExitPending = false;"));
     let exits = html.matches("graphExitPending = true;").count();
     assert_eq!(
-        exits, 3,
-        "expected the node click, the search hit and the source button to leave the map, found {exits}"
+        exits, 2,
+        "expected the search hit and the source button to leave the map, found {exits}"
     );
     assert!(html.contains("if (graphExitPending) {"));
     // And nothing else may reach for the door, bar the one state where there is nothing left to map: the home screen. Leaving a vault is not such a state — the open document answers for the map instead of the map closing.
@@ -825,10 +825,8 @@ fn a_web_address_is_a_node_drawn_as_a_ring_and_opened_in_the_browser() {
     // Clicking one opens the browser and leaves the map exactly as it is. Nothing replaced the page, so exiting the view would throw away the picture the reader is working through.
     assert!(html.contains("send({ command: 'openExternal', url: node.path });"));
     assert!(html.contains("if (!moved && node.external) {"));
-    // A document still leaves the map, and still holds it until the document lands.
-    assert!(html.contains(
-        "graphExitPending = true;\n        send({ command: 'openRecent', path: node.path });"
-    ));
+    // A document keeps the map too, and for the same reason: the picture is what the reader is working through. It redraws around what opened instead of closing.
+    assert!(html.contains("        send({ command: 'openRecent', path: node.path });"));
 
     // The key shows up only when there are two kinds of node to tell apart, and vanishes with the scene.
     assert!(html.contains(r#"<p id="readerGraphLegend" class="reader-graph-legend" hidden>"#));
@@ -1073,16 +1071,19 @@ fn library_row_context_menu_offers_file_actions() {
 
 #[test]
 fn leaving_the_map_for_a_document_shows_the_spinner() {
-    // Clicking a node navigates out of the map, and the map deliberately holds until the document is ready rather than flashing the file you were on. The wait is a whole document being read, so with the spinner suppressed the map just sits there looking frozen.
+    // A search hit navigates out of the map, and the map deliberately holds until the document is ready rather than flashing the file you were on. The wait is a whole document being read, so with the spinner suppressed the map just sits there looking frozen.
     let html = app_shell_page();
 
     // The gesture arms the exit before the request goes out.
-    assert!(html.contains("        graphExitPending = true;"));
-    assert!(html.contains("send({ command: 'openRecent', path: node.path });"));
+    assert!(html
+        .contains("      graphExitPending = true;\n      send({ command: 'openRecent', path });"));
     assert!(html.contains("const READER_LOADING_COMMANDS = new Set(['openRecent']);"));
 
     // So the spinner is only withheld while the map is staying up.
     assert!(html.contains("if (graphViewOpen && !graphExitPending && !forGraph) return;"));
+
+    // A node click is the other side of it: the map stays, so the document's spinner is withheld and the map raises its own while the new slice builds.
+    assert!(html.contains("  beginReaderLoading('graph');\n  send({ command: 'getGraph'"));
 
     // And the map stepping aside must not pull down the spinner the document raised, or the wait comes back as a blink mid-handover.
     assert!(html.contains("clearReaderLoading('graph');"));

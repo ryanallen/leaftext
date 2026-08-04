@@ -136,7 +136,7 @@ How much of your [vault](GLOSSARY.md#vault) the [graph view](GLOSSARY.md#graph-v
 
 ## Graph view
 
-A force-directed map of how your documents link to each other. Each **node** is a document or a [web address](GLOSSARY.md#web-address-node); each **edge** is a link that resolves, with an arrowhead at the document being linked to. Click a node to open it, drag to reposition, scroll to zoom. It needs a document open — not a [vault](GLOSSARY.md#vault). See [Library](01-features/03-library.md#graph).
+A force-directed map of how your documents link to each other. Each **node** is a document or a [web address](GLOSSARY.md#web-address-node); each **edge** is a link that resolves, with an arrowhead at the document being linked to. Click a node to open that document and stay on the map, which redraws around it and flies to its node; drag to reposition, scroll to zoom. It needs a document open — not a [vault](GLOSSARY.md#vault). See [Library](01-features/03-library.md#graph).
 
 ## Home screen
 

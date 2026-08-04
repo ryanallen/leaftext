@@ -35,7 +35,7 @@ const PLAN_ROLES = [
   ['canceled', 'decided against, kept for the reasoning'],
   ['tests', 'a document to open in the app, not a plan'],
   ['learn', "writing from elsewhere, kept to read — not about this app, so nothing here can go stale"],
-  ['.', 'the ticket index'],
+  ['.', 'the ticket index, and the glossary of the words it is written in'],
 ];
 
 // Generated or vendored: hundreds of files nobody here writes.

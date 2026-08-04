@@ -259,8 +259,8 @@ let codeUnlocked = LEAF_SETTINGS.codeUnlocked === true;
 function readerEditingAllowed() {
   return readingUnlocked;
 }
-// Set by the one gesture that means "leave the map": clicking a node, or a
-// search hit whose whole point is landing on the matching line. Everything else
-// that opens a file -- the pane, a tab, a link -- keeps the view you are in, so
-// changing document does not also change how you are reading it.
+// Set by the two gestures that mean "leave the map": a search hit, whose whole
+// point is landing on the matching line, and the jump to the source view.
+// Everything else that opens a file -- the pane, a tab, a link, a node on the map
+// -- keeps the view you are in, so changing document does not change how you read.
 let graphExitPending = false;

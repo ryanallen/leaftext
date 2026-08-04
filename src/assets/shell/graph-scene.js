@@ -274,10 +274,10 @@ function wireGraphPointer(scene) {
         // they were already on.
         send({ command: 'openExternal', url: node.path });
       } else if (!moved) {
-        // Clicking a document is a navigation out of the map: you picked something
-        // to read. The map holds until that document is ready and then steps aside,
-        // rather than closing now and flashing the file you were already on.
-        graphExitPending = true;
+        // Clicking a document is a change of subject, not a change of view — the
+        // map stays up and redraws around what you opened, the same way opening a
+        // file from the pane does. Reading a map is a loop, and closing it on every
+        // hop ends the loop.
         send({ command: 'openRecent', path: node.path });
       }
     }

@@ -59,6 +59,7 @@ Pages carry an ordering prefix (`docs/01-features/03-library.md`); the prefix is
 | Install paths, platforms, data dirs, app id (`wix/`, `leaf.rc`, `Cargo.toml`) | `docs/02-installation.md` |
 | The pitch, the feature list, the keyboard-shortcut tour | `docs/01-introduction.md`, `docs/03-quickstart.md`, `README.md` |
 | A word Leaftext uses for a part of itself | `docs/GLOSSARY.md` |
+| A word the *planning tree* uses for a part of itself — ticket, phase, box, tier, the record | `../docs/GLOSSARY.md`, the one next to the ticket index. Two files share the name: this one is published and is about the app, that one is not published and is about how work is planned |
 
 Update **every** page a change touches. A renamed setting, for example, may appear in both `05-settings.md` and `03-library.md`.
 
@@ -139,7 +140,7 @@ Steps 2 and 3 keep a page truthful. This step keeps the *set* coherent — the f
 - **Contradictions.** Two pages describing the same behavior differently. The pairs worth checking are the ones that share a subject: `README.md` against `01-introduction.md` (the pitch and the feature list), `03-library.md` against `05-settings.md` (a setting named in both), `02-installation.md` against `02-development/03-releasing.md` (paths and versions), `02-navigation.md` against `03-quickstart.md` (the shortcut lists). Where they differ, the source settles it — not whichever page reads better.
 - **Stale claims.** A sentence that was true at some version and quietly is not: a count, a limit, a "this is not supported yet", a named default. These survive because nothing links to them and nothing tests them. Re-derive the number.
 - **Orphans.** A page nothing links to. The nav reaches every page by folder listing, so an orphan still renders — it just never gets found from the page a reader is already on. Give it an inbound link from the page whose subject leads to it.
-- **A concept with no home.** A word the docs use across several pages as though it were defined somewhere, and it is not — no section, no glossary row. Either it gets a `docs/GLOSSARY.md` row or the page that owns the subject gets a section, and the other mentions link there. This is what stops a term meaning something slightly different on each page.
+- **A concept with no home.** A word the docs use across several pages as though it were defined somewhere, and it is not — no section, no glossary row. Either it gets a `docs/GLOSSARY.md` row or the page that owns the subject gets a section, and the other mentions link there. This is what stops a term meaning something slightly different on each page. **The same fault has a second home:** a word the *tickets, rankings and skills* lean on with no row in `../docs/GLOSSARY.md` drifts the same way, and step 7 is where that is swept.
 - **What was learned and never written down.** If this session derived something real about how the app behaves — a limit, an order of operations, a reason a thing works the way it does — and no page says it, that belongs on a page now. Otherwise the next person re-derives it. This is the most common way the docs fall behind while every individual edit was correct.
 
 Say what the lint found in the hand-back, including anything left unfixed and why.
@@ -169,12 +170,13 @@ What each role means in practice:
 | **plan** (`../docs/features/`, `../docs/refactor/`, `../docs/fixes/`) | **The one this step exists for.** A plan for something that now ships is the most misleading writing in either tree: move the file to `../docs/done/`, and move its row in [`../docs/README.md`](../../../../docs/README.md) under Shipped saying what shipped. A plan half-built gets the built part struck through, not deleted |
 | **the running order** (`../docs/plans/`) | Each file is dated and ranks the live tickets on that date. When one ships, the newest ranking's rows about it are wrong. **Do not rewrite a dated ranking** — the date is the point. Note it in the index row, or write a new dated one |
 | **the ticket index** (`../docs/README.md`) | Its "What the folders mean" paragraph names every folder next door, and its "Needs a second look" table holds every ticket whose own status disagrees with the folder it sits in. A new folder or a settled status lands here |
+| **the planning glossary** (`../docs/GLOSSARY.md`) | Every word that tree uses about itself, and what makes it untrue is the *process* changing, not the app: a new folder, a renamed part of a ticket, a rule about rows or tiers that moved. Sweep it whenever a skill under `.agents/skills/` changed, since those are what spend the words. A word used in a ticket or a ranking and defined nowhere gets a row; a word this file defines and nothing uses any more loses its row |
 | **shipped / canceled / a test document** | Kept for the reasoning. Left alone unless it is now factually wrong about the app |
 | **reading from elsewhere** (`../docs/learn/`) | Somebody else's writing, copied in to read. It is not about this app, so nothing this session did can make it untrue. Never edited here — a correction belongs upstream, and rewriting it loses what was actually said |
 
 **A file with no role fails `just check-docs` and names itself.** That is the backstop: add a new kind of document and the suite stops until this table says who keeps it true. Fixing it means adding the folder to `ROLES` in `scripts/check-docs.mjs` *and* a row above — never just the script.
 
-Never link from `docs/` into `../docs/`: those pages are published and that folder is not. Links only go the other way.
+Never link from `docs/` into `../docs/`: those pages are published and that folder is not. Links only go the other way. **Two files are named `GLOSSARY.md`** and they are not interchangeable — `docs/GLOSSARY.md` is published and defines app words, `../docs/GLOSSARY.md` is not published and defines planning words. A row filed in the wrong one is published writing about tickets, or a ticket word nobody reading the app can find.
 
 ### 8. Regenerate the SEO / AIO / LLM discovery files
 

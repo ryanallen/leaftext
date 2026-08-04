@@ -22,6 +22,7 @@ The newest file in the folder is the live one. Nothing needs to say so; the name
 ## 1. Read before ranking
 
 - **`../docs/README.md`** — the index, every ticket one line. It is the only thing standing between a ranking and a ticket nobody knew existed.
+- **`../docs/GLOSSARY.md`** — the words this tree uses about itself. A ranking is read by somebody who did not write it, so tier, row, seam and track mean what that file says they mean. A planning word spent here and missing there gets a row there in the same pass.
 - **Every file in `../docs/features/` and `../docs/refactor/`**, off the disk rather than off the index. A ticket the index missed still gets a row.
 - **The newest existing file in `../docs/plans/`**, if there is one. What it ranked, what has shipped since, and which of its rows were wrong.
 
@@ -101,6 +102,7 @@ Say what moved and why, in plain words: which rows changed tier, what tier 0 tur
 
 - `../docs/plans/08-03-2026.md` — the first one, with all five tiers, the table track, and the record at the bottom.
 - `../docs/README.md` — every ticket, one line each. Read first.
+- `../docs/GLOSSARY.md` — tier, row, seam, track, the record: what each one means here.
 - `/ticket` — writes the tickets this ranks.
 - `/refine` — fixes a ticket this finds wrong. A tier 0 row is often "run `/refine` on that file".
 - `/build` — builds the top row, and keeps this file true as it goes.

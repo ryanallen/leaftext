@@ -1426,6 +1426,75 @@ if (booted) {
     if (wait < 0) throw new Error('the draw path no longer waits for the fonts');
     if (init < 0 || wait > init) throw new Error('the fonts are waited for after the diagrams are measured');
   });
+
+  // The two halves of a node press, sliced out of the fragment the way the flowchart canvas handler is above: what each one sends is one line, and neither is reachable without a real Pixi stage.
+  const nodePressBranches = () => {
+    const fragment = readFileSync(join(root, 'src/assets/shell/graph-scene.js'), 'utf8');
+    const opened = fragment.indexOf('const endPress = (event) => {');
+    const closed = fragment.indexOf("stage.on('pointerup', endPress)");
+    if (opened < 0 || closed < opened) throw new Error('could not find the node press handler');
+    const handler = fragment.slice(opened, closed);
+    const external = handler.indexOf('if (!moved && node.external)');
+    const document_ = handler.indexOf('} else if (!moved) {');
+    if (external < 0 || document_ < external) throw new Error('the press no longer splits a web address from a document');
+    return { external: handler.slice(external, document_), document: handler.slice(document_) };
+  };
+
+  // Reading a map is a loop — read a name, go there, see what that one links to — and arming the exit ended the loop on every hop, while opening the same file from the pane (`library.js`) always kept the map up. Two controls for one act, disagreeing.
+  check('clicking a node opens the document and stays on the map', () => {
+    const { document: forDocument } = nodePressBranches();
+    if (!/send\(\{ command: 'openRecent', path: node\.path \}\)/.test(forDocument)) {
+      throw new Error('the document branch no longer opens the document');
+    }
+    if (/graphExitPending/.test(forDocument)) throw new Error('the document branch arms the exit, so the map closes on every hop');
+  });
+
+  // The branch beside it was already the behavior the one above just gained: nothing replaced the page, so there is nothing to leave the map for.
+  check('a web address opens in the browser and never moves the map', () => {
+    const { external } = nodePressBranches();
+    if (!/send\(\{ command: 'openExternal', url: node\.path \}\)/.test(external)) {
+      throw new Error('a web address no longer opens in the browser');
+    }
+    if (/graphExitPending/.test(external)) throw new Error('a web address arms the exit');
+  });
+
+  // What the click now rides on: `leafSetState` hands the opened file to `followFileInLibrary`, which calls this. Its two branches are the whole behavior — a picture that is now about the wrong file is refetched, and one that already holds the node is kept and flown to. Neither is reachable through a real scene here, so the three functions it ends in are swapped for spies; they are declarations, so the booted page carries them as properties, while `graphViewOpen` and the rest are top-level `let`s and are written into the same global lexical scope a later script shares.
+  check('with the map up, a new document refetches the slice or keeps the scene', () => {
+    const calls = [];
+    const spy = (name) => () => { calls.push(name); };
+    const original = {
+      requestGraphData: booted.requestGraphData,
+      applyGraphStyles: booted.applyGraphStyles,
+      focusGraphNode: booted.focusGraphNode,
+    };
+    booted.requestGraphData = spy('refetch');
+    booted.applyGraphStyles = spy('recolor');
+    booted.focusGraphNode = spy('fly');
+    try {
+      const setUp = (path, held) => {
+        calls.length = 0;
+        vm.runInContext(
+          `currentState = { recent: [], tabs: [{ path: ${JSON.stringify(path)} }], active: 0, document: {} };` +
+            'graphViewOpen = true; graphScope = \'small\'; activeVaultId = 0;' +
+            `graphScene = { nodeByPath: new Map(${JSON.stringify(held.map((p) => [p, { path: p }]))}) };` +
+            `graphSeedKey = ${JSON.stringify(held.length ? 'small|' + path : 'small|somewhere/else.md')};`,
+          booted,
+        );
+      };
+
+      // A document the scene never drew: the seeds changed, so the map in memory is of the file you left.
+      setUp('notes/new.md', []);
+      booted.graphSetActive('notes/new.md', true);
+      if (calls.join(',') !== 'refetch') throw new Error(`a document off the map gave ${calls.join(',') || 'nothing'}`);
+
+      // A document already on it: keep the picture, move the highlight, fly the camera.
+      setUp('notes/held.md', ['notes/held.md']);
+      booted.graphSetActive('notes/held.md', true);
+      if (calls.join(',') !== 'recolor,fly') throw new Error(`a document on the map gave ${calls.join(',') || 'nothing'}`);
+    } finally {
+      Object.assign(booted, original);
+    }
+  });
 }
 
 // ---- 4. the page reports its own errors -------------------------------------

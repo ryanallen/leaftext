@@ -80,6 +80,7 @@ If a fix changes what gets built rather than how it is described, ask before wri
 A plan is read as a file, so how it sits on the page is part of whether it is followed.
 
 - **A paragraph is one line.** A ticket hard-wrapped at some column is one nobody can edit without re-flowing it by hand, and a one-word change diffs as the whole paragraph. Join them — `just check-wrapping --fix` does the whole tree — and leave a break only where it is doing work: verse, a quoted line, two trailing spaces.
+- **It uses the tree's own words for the tree's own parts.** `../docs/GLOSSARY.md` defines them — ticket, phase, box, tier, seam, the record. A ticket calling a phase a "stage" or a box a "task" reads as a different process to somebody who has only read the glossary, so the word is corrected here. A planning word the ticket genuinely needs and the glossary does not have gets a row **there**, in this pass — that is the one edit this skill makes outside the ticket.
 - **No open question, no TBD, no "decide later"** — step 5's rule, and the one most often left in.
 - **Every phase's boxes are boxes**, not prose with a dash in front.
 
@@ -133,6 +134,7 @@ Two things have to be on the file when this ends: the dated line at the top, and
 - `/build` — what runs next, once the plan is true.
 - `/priority` — the running order these tickets are ranked into.
 - `AGENTS.md` — the rules each paid for in version numbers.
+- `../docs/GLOSSARY.md` — the words a ticket is held to, and the one file outside the ticket this skill may edit.
 - `/design-tokens` — where a value lives, for anything the ticket styles.
 - `/add-dependency` — what a ticket owes before it names a crate.
 - `../docs/refactor/conformance-suites.md` — a refined ticket, with the record section at the bottom.
