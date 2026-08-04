@@ -112,6 +112,21 @@ End the phase list with the block that closes every phase:
 
 Drop the bundler line when the work is nowhere near `design/`.
 
+## Two files finish the job, every time
+
+A ticket nobody can find is a ticket nobody builds. So writing the plan is two-thirds of the work, and neither of the other files is optional — do both in the same pass, before handing back.
+
+**1. The index row.** `../docs/README.md`, in the group the ticket belongs to, saying what it is in the owner's words. The rules for a row are up under [the index](#the-index--read-it-first-then-keep-it): a ticket moved between folders moves its row, a ticket that replaces another says so in both, and a row that only restates the file name is a row nobody can argue with.
+
+**2. The running order.** The newest file in `../docs/plans/` is what somebody reads to pick up work, so a ticket missing from it is invisible however good the plan is. Put it in:
+
+- **Written today, and today's ranking exists** — add the row to that file. It is the same snapshot, so it is fair game all day.
+- **The newest ranking is from an earlier day** — run [priority](../priority/SKILL.md) and let it write today's. Never edit an old one; a ranking is dated because it is a snapshot.
+
+A row is placed by the same three things `/priority` ranks on, in that order: is something wrong today, how many other tickets are waiting on it, then cost. **Absent is not wrong** — a capability the app never had does not reach tier 1 however big its audience. And the numbers run straight through every tier, so inserting a row means fixing every reference to the numbers below it — the tables, the prose, the tier summaries and any subject section — in the same edit. Then say in the file's own numbering note that the row was added and what moved.
+
+Two things to check before handing back: the ticket has a row in the index, and it has a numbered row in the newest ranking. Missing either, the work is not findable.
+
 ## Working a ticket later
 
 That is [build](../build/SKILL.md)'s job — it takes the finished ticket and does everything below, plus the index row, the running order in `../docs/plans/`, and any published page the work made untrue. What it holds itself to:
