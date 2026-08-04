@@ -174,6 +174,8 @@ What each role means in practice:
 | **shipped / canceled / a test document** | Kept for the reasoning. Left alone unless it is now factually wrong about the app |
 | **reading from elsewhere** (`../docs/learn/`) | Somebody else's writing, copied in to read. It is not about this app, so nothing this session did can make it untrue. Never edited here — a correction belongs upstream, and rewriting it loses what was actually said |
 
+**A plan with every box ticked and still filed as live work fails `just check-docs` and names itself.** The move above is remembered by two skills and was still missed once — v0.1.462 shipped `scroll-position` and left it in `../docs/fixes/`, so the running order went on calling it next up. The check runs inside `/check`, so a release cannot go out past it.
+
 **A file with no role fails `just check-docs` and names itself.** That is the backstop: add a new kind of document and the suite stops until this table says who keeps it true. Fixing it means adding the folder to `ROLES` in `scripts/check-docs.mjs` *and* a row above — never just the script.
 
 Never link from `docs/` into `../docs/`: those pages are published and that folder is not. Links only go the other way. **Two files are named `GLOSSARY.md`** and they are not interchangeable — `docs/GLOSSARY.md` is published and defines app words, `../docs/GLOSSARY.md` is not published and defines planning words. A row filed in the wrong one is published writing about tickets, or a ticket word nobody reading the app can find.

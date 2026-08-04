@@ -5,8 +5,10 @@
 //   node scripts/check-docs.mjs --list     every file and its role
 //
 // Roles are folder patterns, so a new page needs no edit here and a new *top* folder does: a new kind of document is a decision about who keeps it true. A subject folder inside one (`features/editing/`) inherits its parent's role by prefix.
+//
+// It also fails on a plan whose boxes are all ticked and which is still filed as live work. v0.1.462 shipped `scroll-position` and left it there, so the running order still called it next up. `/sync-docs` and `/build` both own the move; this is the thing that notices when neither ran.
 
-import { readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -100,5 +102,25 @@ if (orphans.length) {
   process.exit(1);
 }
 
+// Every phase ticked and still filed as live work: the ticket shipped and nobody moved it. A plan with no boxes at all is a report or an index, not work with a finish line.
+const LIVE_PLANS = ['features', 'refactor', 'fixes'];
+const finished = [];
+for (const file of rows.map(([f]) => f)) {
+  if (!LIVE_PLANS.some((p) => file.startsWith(`../docs/${p}/`))) continue;
+  const text = readFileSync(join(plans, file.slice('../docs/'.length)), 'utf8');
+  const ticked = (text.match(/^\s*- \[x\]/gm) || []).length;
+  const open = (text.match(/^\s*- \[ \]/gm) || []).length;
+  if (ticked > 0 && open === 0) finished.push(`${file} (${ticked} ${ticked === 1 ? 'box' : 'boxes'}, all ticked)`);
+}
+
+if (finished.length) {
+  console.error('these plans have every box ticked and are still filed as live work:');
+  for (const file of finished) console.error(`  ${file}`);
+  console.error('move each into a subject folder under ../docs/done/, move its row in');
+  console.error('../docs/README.md under Shipped, and strike its row in ../docs/PLAN.md');
+  console.error('and move that row into ../docs/done/PLAN.md. That is /sync-docs step "plan".');
+  process.exit(1);
+}
+
 const folders = new Set(rows.map(([file]) => file.slice(0, file.lastIndexOf('/')) || '.'));
-console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role`);
+console.log(`docs: ${rows.length} Markdown files across ${folders.size} folders, every one with a role, no shipped plan left in a live folder`);

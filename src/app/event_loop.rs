@@ -248,7 +248,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             }
             Event::UserEvent(UserEvent::PipeState { reply }) => {
                 // try_send, not send: the asker may already have given up and gone, and the window thread must not block on a dead channel.
-                let _ = reply.try_send(Ok(pipe_state(&reader, &vault_state)));
+                let _ = reply.try_send(Ok(pipe_state(&reader.workspace, &vault_state)));
             }
             Event::UserEvent(UserEvent::PipeEval { script, reply }) => {
                 // The one script the app runs for an answer rather than an effect. It arrives later and on whatever thread the web view calls back on, so the reply channel travels into the callback.

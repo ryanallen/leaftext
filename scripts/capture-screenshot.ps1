@@ -1,10 +1,22 @@
-# Take one documentation screenshot from the running app.
+# Drive the app and photograph it. Two modes, and the difference is whose copy it is.
 #
 #   pwsh scripts/capture-screenshot.ps1 -Doc <file> -Out <out.bmp> [-Width 1000] [-Height 799]
+#   pwsh scripts/capture-screenshot.ps1 -Attach -Do 'scroll:500,400,-8' -Out <out.png>
+#   pwsh scripts/capture-screenshot.ps1 -DryRun -Do 'click:20,20' -Out <ignored>
 #
-# Writes a BMP, because Windows can save one with no encoder of its own. Turn it
-# into the PNG that ships with `just squeeze-png <out.bmp> <out.png>` — the same
-# encoder the flowchart export uses, so there is only ever one of them.
+# Unattached is the documentation shot: it kills every copy, launches one against a
+# throwaway profile at a pinned size and theme, photographs it and kills it again.
+# That is what makes a picture reproducible.
+#
+# `-Attach` drives the copy that is already open — the owner's. It launches nothing,
+# kills nothing, and writes no profile of any kind, so every flag that would have
+# shaped one is refused rather than ignored. Use it to prove a change in the window:
+# real wheel notches, real drags, real key presses, then a picture.
+#
+# Writes a BMP, because Windows can save one with no encoder of its own. An -Out
+# ending .png goes on through the app's own `--squeeze-png` — the same encoder the
+# flowchart export uses, so there is only ever one of them — which is the format
+# that can be read back.
 #
 # Five things here each cost a wrong screenshot before they were known:
 #
@@ -22,11 +34,11 @@
 #     shot, and an alt text that promises one is promising a thing this cannot do.
 #
 # The app resolves its config and data roots from %APPDATA% and %LOCALAPPDATA%
-# (`project_config_dir`), so the shot runs against a throwaway profile under
-# -Work rather than the owner's. Nothing here reads or writes the real settings,
-# recent files, or vault registry — a screenshot is not worth risking them, and
-# an earlier version that swapped the owner's settings out and back lost them to
-# any kill that beat its restore.
+# (`project_config_dir`), so an unattached shot runs against a throwaway profile
+# under -Work rather than the owner's. Nothing here reads or writes the real
+# settings, recent files, or vault registry — a screenshot is not worth risking
+# them, and an earlier version that swapped the owner's settings out and back lost
+# them to any kill that beat its restore.
 
 param(
   # Empty opens the no-file home screen.
@@ -56,17 +68,87 @@ param(
   #   scroll:X,Y,NOTCHES (negative scrolls down)
   #   type:text  key:{ESC}   wait:MS
   [string[]]$Do = @(),
+  # The same steps as one string, separated by spaces. `just drive` passes them this
+  # way through scripts/drive.mjs: a step has commas in it, and PowerShell splits an
+  # unquoted comma into an array, so `scroll:600,500,-10` reaches -Do as three.
+  [string]$Steps = '',
   # "X,Y,W,H" in those same image pixels. Detail shots (the app bar, a popup)
   # ship cropped; a whole window around a 200 px control shows the window.
   [string]$Crop = '',
   [int]$SettleMs = 8000,
   # How long to let the page react to each -Do step before the next one.
   [int]$StepMs = 900,
+  # Drive the copy that is already running instead of launching one.
+  [switch]$Attach,
+  # Read the -Do list back and stop. Launches nothing, writes nothing, and never
+  # reaches user32, so it runs in `just verify` on a machine with no app built.
+  [switch]$DryRun,
   [string]$Exe,
   [string]$Work
 )
 
 $ErrorActionPreference = 'Stop'
+
+# ---- what a -Do step means, before anything does it -------------------------
+
+# How many numbers each pointer verb takes. One table: `-DryRun` reads a step and
+# Step-Pointer runs the same reading, so a verb cannot exist in one and not the other.
+$STEP_ARITY = @{ move = 2; click = 2; rclick = 2; drag = 4; hold = 4; scroll = 3 }
+
+function Read-Step([string]$step) {
+  $kind, $arg = $step -split ':', 2
+  if ($kind -in 'wait', 'type', 'key') {
+    if ([string]::IsNullOrEmpty($arg)) { throw "$kind needs something after the colon: $step" }
+    $said = switch ($kind) {
+      'wait' { "wait $([int]$arg) ms" }
+      'type' { "type $arg" }
+      'key' { "press $arg" }
+    }
+    return [pscustomobject]@{ Kind = $kind; Arg = $arg; Numbers = @(); Said = $said }
+  }
+  if (-not $STEP_ARITY.ContainsKey($kind)) { throw "unknown -Do step: $step" }
+  if ([string]::IsNullOrEmpty($arg)) { throw "$kind needs $($STEP_ARITY[$kind]) numbers after the colon: $step" }
+  $n = @($arg -split ',' | ForEach-Object { [int]$_ })
+  if ($n.Count -ne $STEP_ARITY[$kind]) {
+    throw "$kind takes $($STEP_ARITY[$kind]) numbers and got $($n.Count): $step"
+  }
+  $said = switch ($kind) {
+    'move' { "move to $($n[0]),$($n[1])" }
+    'click' { "click at $($n[0]),$($n[1])" }
+    'rclick' { "right-click at $($n[0]),$($n[1])" }
+    'drag' { "drag from $($n[0]),$($n[1]) to $($n[2]),$($n[3])" }
+    'hold' { "drag from $($n[0]),$($n[1]) to $($n[2]),$($n[3]) and hold the button down" }
+    'scroll' { "scroll $($n[2]) notches at $($n[0]),$($n[1])" }
+  }
+  return [pscustomobject]@{ Kind = $kind; Arg = $arg; Numbers = $n; Said = $said }
+}
+
+# Every flag that shapes the throwaway profile. An attached run is inspecting the
+# app somebody else opened, so these are refused with the reason rather than
+# quietly doing nothing — a silently ignored -ThemeFamily reads as a theme bug.
+$PROFILE_FLAGS = @(
+  'Doc', 'Vault', 'Recents', 'Unlocked', 'ThemeFamily', 'ThemeMode',
+  'Width', 'Height', 'GraphScope', 'LibraryOpen', 'Work'
+)
+
+if ($Attach) {
+  $given = @($PROFILE_FLAGS | Where-Object { $PSBoundParameters.ContainsKey($_) })
+  if ($given.Count) {
+    $named = ($given | ForEach-Object { "-$_" }) -join ', '
+    throw "-Attach drives the copy that is already open, so it cannot set $named. Drop them, or run without -Attach to launch a copy of your own."
+  }
+}
+
+$asked = @($Do) + @($Steps.Split(@(' ', "`t"), [System.StringSplitOptions]::RemoveEmptyEntries))
+$plan = @($asked | ForEach-Object { Read-Step $_ })
+
+if ($DryRun) {
+  $whose = if ($Attach) { 'the running copy' } else { 'a fresh copy' }
+  Write-Output "$($plan.Count) steps against $whose"
+  foreach ($step in $plan) { Write-Output "  $($step.Said)" }
+  return
+}
+
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Windows.Forms
 
@@ -78,6 +160,7 @@ public class LeafShot {
   [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
   [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr hdc, uint flags);
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
@@ -90,43 +173,80 @@ public class LeafShot {
 [void][LeafShot]::SetProcessDPIAware()
 
 $root = Split-Path -Parent (Split-Path -Parent $PSCommandPath)
-if (-not $Exe) { $Exe = Join-Path $root 'target\debug\leaftext.exe' }
-if (-not (Test-Path $Exe)) { throw "no binary at $Exe - run 'cargo build' first" }
-if (-not $Work) { $Work = Join-Path ([System.IO.Path]::GetTempPath()) "leaftext-shot" }
 
-$appdata = Join-Path $Work 'roaming'
-$local = Join-Path $Work 'local'
-$config = Join-Path $appdata 'ryanallen\leaftext\config'
-New-Item -ItemType Directory -Force -Path $config | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $local 'ryanallen\leaftext\data') | Out-Null
-
-# See notes 3 and 4: the window size and the theme both come from here.
-$shot = [ordered]@{
-  minimap_enabled      = $true
-  pager_enabled        = $true
-  speed_reader_enabled = $false
-  code_intel_enabled   = $true
-  reading_unlocked     = [bool]$Unlocked
-  code_unlocked        = [bool]$Unlocked
-  theme_family         = $ThemeFamily
-  theme_mode           = $ThemeMode
-  theme_random_used    = @()
-  graph_scope          = $GraphScope
-  library_closed       = (-not $LibraryOpen)
-  library_width        = 240
-  window_width         = $Width
-  window_height        = $Height
-  window_maximized     = $false
+function Take-Foreground([IntPtr]$hwnd, [int]$processId) {
+  [void][LeafShot]::SetForegroundWindow($hwnd)
+  if ([LeafShot]::GetForegroundWindow() -eq $hwnd) { return }
+  # Windows refuses the call from a process that is not already foreground, which a
+  # script run from a terminal is not. AppActivate is the shell's own way in and gets
+  # past it; the SetForegroundWindow above is what works when this is already in front.
+  try { (New-Object -ComObject WScript.Shell).AppActivate($processId) | Out-Null } catch {}
+  Start-Sleep -Milliseconds 200
+  [void][LeafShot]::SetForegroundWindow($hwnd)
 }
-($shot | ConvertTo-Json -Depth 5) | Out-File -FilePath (Join-Path $config 'settings.json') -Encoding utf8
 
-# The home screen reads this file, so a picture of it shows whatever is in here
-# — which is why the shot profile seeds its own instead of borrowing the owner's
-# list of wherever they have been working. Written on every run, empty when none
-# were asked for: the app appends to it as it opens files, so a profile reused
-# across a batch would otherwise carry the last shot's document into this one.
-(@{ files = @($Recents) } | ConvertTo-Json -Depth 3) |
-  Out-File -FilePath (Join-Path $config 'recent-files.json') -Encoding utf8
+function Find-Attached {
+  # One process name, one main window. The app is single-instance, so two windows
+  # means somebody launched a second copy against another profile — a refusal with
+  # a reason, not a guess at which one was meant.
+  $copies = @(Get-Process leaftext -ErrorAction SilentlyContinue |
+    Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero })
+  if (-not $copies.Count) { throw 'no copy of the app is running, so there is no window to drive' }
+  if ($copies.Count -gt 1) { throw "$($copies.Count) copies are running with a window; -Attach cannot tell which one you meant" }
+  return $copies[0]
+}
+
+if ($Attach) {
+  $running = Find-Attached
+  if (-not $Exe) { $Exe = $running.Path }
+  if (-not $Exe) { $Exe = Join-Path $root 'target\debug\leaftext.exe' }
+  # A window that has been up for minutes is settled. The eight seconds are for a
+  # launch, and paying them per gesture is most of what drove this by hand slowly.
+  if (-not $PSBoundParameters.ContainsKey('SettleMs')) { $SettleMs = 300 }
+}
+else {
+  if (-not $Exe) { $Exe = Join-Path $root 'target\debug\leaftext.exe' }
+  if (-not (Test-Path $Exe)) { throw "no binary at $Exe - run 'cargo build' first" }
+  if (-not $Work) { $Work = Join-Path ([System.IO.Path]::GetTempPath()) "leaftext-shot" }
+
+  $appdata = Join-Path $Work 'roaming'
+  $local = Join-Path $Work 'local'
+  $config = Join-Path $appdata 'ryanallen\leaftext\config'
+  New-Item -ItemType Directory -Force -Path $config | Out-Null
+  New-Item -ItemType Directory -Force -Path (Join-Path $local 'ryanallen\leaftext\data') | Out-Null
+
+  # See notes 3 and 4: the window size and the theme both come from here.
+  $shot = [ordered]@{
+    minimap_enabled      = $true
+    pager_enabled        = $true
+    speed_reader_enabled = $false
+    code_intel_enabled   = $true
+    reading_unlocked     = [bool]$Unlocked
+    code_unlocked        = [bool]$Unlocked
+    theme_family         = $ThemeFamily
+    theme_mode           = $ThemeMode
+    theme_random_used    = @()
+    graph_scope          = $GraphScope
+    library_closed       = (-not $LibraryOpen)
+    library_width        = 240
+    window_width         = $Width
+    window_height        = $Height
+    window_maximized     = $false
+  }
+  ($shot | ConvertTo-Json -Depth 5) | Out-File -FilePath (Join-Path $config 'settings.json') -Encoding utf8
+
+  # The home screen reads this file, so a picture of it shows whatever is in here
+  # — which is why the shot profile seeds its own instead of borrowing the owner's
+  # list of wherever they have been working. Written on every run, empty when none
+  # were asked for: the app appends to it as it opens files, so a profile reused
+  # across a batch would otherwise carry the last shot's document into this one.
+  (@{ files = @($Recents) } | ConvertTo-Json -Depth 3) |
+    Out-File -FilePath (Join-Path $config 'recent-files.json') -Encoding utf8
+
+  $env:APPDATA = $appdata
+  $env:LOCALAPPDATA = $local
+  $manifest = Join-Path $local 'ryanallen\leaftext\data\manifest.db'
+}
 
 function Stop-Leaftext {
   # The app is single-instance: launched while one is already up, the second copy
@@ -136,15 +256,11 @@ function Stop-Leaftext {
   Start-Sleep -Milliseconds 500
 }
 
-$env:APPDATA = $appdata
-$env:LOCALAPPDATA = $local
-$manifest = Join-Path $local 'ryanallen\leaftext\data\manifest.db'
-
 # A vault is a row in manifest.db and nothing else (src/store/vaults.rs), so the
 # shot profile can hand the app one without going near the owner's registry. The
 # app owns that database and its migrations, so let it build one before writing
 # to it — a schema written here would be the second copy of the real one.
-if ($Vault.Count) {
+if (-not $Attach -and $Vault.Count) {
   if (-not (Test-Path $manifest)) {
     Stop-Leaftext
     $warm = Start-Process -FilePath $Exe -PassThru
@@ -156,15 +272,12 @@ if ($Vault.Count) {
   node (Join-Path $root 'scripts\shot-add-vault.mjs') $manifest @Vault | Out-Null
 }
 
-function Step-Pointer([string]$step, [int]$left, [int]$top) {
-  $kind, $arg = $step -split ':', 2
-  switch ($kind) {
-    'wait' { Start-Sleep -Milliseconds ([int]$arg); return }
-    'type' { [System.Windows.Forms.SendKeys]::SendWait($arg); return }
-    'key' { [System.Windows.Forms.SendKeys]::SendWait($arg); return }
-  }
-  $n = $arg -split ',' | ForEach-Object { [int]$_ }
-  switch ($kind) {
+function Step-Pointer($step, [int]$left, [int]$top) {
+  $n = $step.Numbers
+  switch ($step.Kind) {
+    'wait' { Start-Sleep -Milliseconds ([int]$step.Arg) }
+    'type' { [System.Windows.Forms.SendKeys]::SendWait($step.Arg) }
+    'key' { [System.Windows.Forms.SendKeys]::SendWait($step.Arg) }
     'move' { [void][LeafShot]::SetCursorPos($left + $n[0], $top + $n[1]) }
     'click' {
       [void][LeafShot]::SetCursorPos($left + $n[0], $top + $n[1])
@@ -206,35 +319,51 @@ function Step-Pointer([string]$step, [int]$left, [int]$top) {
       # `hold` leaves the button down, so the shot catches the gesture in
       # flight. The finally block below releases it whatever happens; a stuck
       # left button outlives this script and takes the desktop with it.
-      if ($kind -eq 'drag') { [LeafShot]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero) }
+      if ($step.Kind -eq 'drag') { [LeafShot]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero) }
       else { $script:buttonDown = $true }
     }
-    default { throw "unknown -Do step: $step" }
   }
 }
 
 $proc = $null
 $buttonDown = $false
 try {
-  Stop-Leaftext
-
-  $launch = @{ FilePath = $Exe; PassThru = $true }
-  # Quoted: a folder with a space in it would otherwise reach the app as two
-  # arguments, and it opens the home screen instead of the file you asked for.
-  if ($Doc) { $launch.ArgumentList = @("`"$Doc`"") }
-  $proc = Start-Process @launch
-  $hwnd = [IntPtr]::Zero
-  for ($i = 0; $i -lt 60; $i++) {
-    $proc.Refresh()
-    if ($proc.MainWindowHandle -ne [IntPtr]::Zero) { $hwnd = $proc.MainWindowHandle; break }
-    Start-Sleep -Milliseconds 250
+  if ($Attach) {
+    $hwnd = $running.MainWindowHandle
+    # Foreground, and no more: a wheel notch and a key press go to the window that
+    # has focus, not the one under the pointer. No restore and no move — those would
+    # un-maximize and shove somebody's window to take its picture.
+    Take-Foreground $hwnd $running.Id
+    # Refused rather than reported as done: SetForegroundWindow fails when the caller
+    # is not already foreground, and a wheel notch then lands in whatever is. Clicks
+    # and drags carry their own position, so they do not need this.
+    $needsFocus = @($plan | Where-Object { $_.Kind -in 'scroll', 'type', 'key' })
+    if ($needsFocus.Count -and [LeafShot]::GetForegroundWindow() -ne $hwnd) {
+      throw ("Windows would not bring the app's window forward, and a $($needsFocus[0].Kind) step " +
+        'goes to whatever has focus. Click the window once and run this again.')
+    }
   }
-  if ($hwnd -eq [IntPtr]::Zero) { throw 'the window never appeared' }
+  else {
+    Stop-Leaftext
 
-  # Move only — SWP_NOSIZE. See note 3.
-  [void][LeafShot]::ShowWindow($hwnd, 9)
-  [void][LeafShot]::SetWindowPos($hwnd, [IntPtr]::Zero, 40, 40, 0, 0, 0x0041)
-  [void][LeafShot]::SetForegroundWindow($hwnd)
+    $launch = @{ FilePath = $Exe; PassThru = $true }
+    # Quoted: a folder with a space in it would otherwise reach the app as two
+    # arguments, and it opens the home screen instead of the file you asked for.
+    if ($Doc) { $launch.ArgumentList = @("`"$Doc`"") }
+    $proc = Start-Process @launch
+    $hwnd = [IntPtr]::Zero
+    for ($i = 0; $i -lt 60; $i++) {
+      $proc.Refresh()
+      if ($proc.MainWindowHandle -ne [IntPtr]::Zero) { $hwnd = $proc.MainWindowHandle; break }
+      Start-Sleep -Milliseconds 250
+    }
+    if ($hwnd -eq [IntPtr]::Zero) { throw 'the window never appeared' }
+
+    # Move only — SWP_NOSIZE. See note 3.
+    [void][LeafShot]::ShowWindow($hwnd, 9)
+    [void][LeafShot]::SetWindowPos($hwnd, [IntPtr]::Zero, 40, 40, 0, 0, 0x0041)
+    [void][LeafShot]::SetForegroundWindow($hwnd)
+  }
   Start-Sleep -Milliseconds $SettleMs
 
   $rect = New-Object LeafShot+RECT
@@ -242,7 +371,7 @@ try {
   $w = $rect.Right - $rect.Left
   $h = $rect.Bottom - $rect.Top
 
-  foreach ($step in $Do) {
+  foreach ($step in $plan) {
     Step-Pointer $step $rect.Left $rect.Top
     Start-Sleep -Milliseconds $StepMs
   }
@@ -270,11 +399,23 @@ try {
     $w = $c[2]; $h = $c[3]
   }
 
-  $bmp.Save($Out, [System.Drawing.Imaging.ImageFormat]::Bmp)
+  # An -Out ending .png is the BMP put through the app's own encoder, so a driven
+  # pass ends with a file that can be read back and there is still one encoder.
+  $wantPng = $Out.ToLowerInvariant().EndsWith('.png')
+  if ($wantPng -and -not (Test-Path $Exe)) { throw "a .png needs the app's own encoder, and there is no binary at $Exe" }
+  $raw = if ($wantPng) { [System.IO.Path]::ChangeExtension($Out, '.bmp') } else { $Out }
+  $bmp.Save($raw, [System.Drawing.Imaging.ImageFormat]::Bmp)
   $bmp.Dispose()
+  if ($wantPng) {
+    & $Exe --squeeze-png $raw $Out | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "the app could not turn $raw into a PNG" }
+    Remove-Item $raw -Force
+  }
   Write-Output "${w}x${h} -> $Out"
 }
 finally {
   if ($buttonDown) { [LeafShot]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero) }
+  # Only the copy this script launched. An attached run leaves the owner's app up
+  # — killing it is the whole reason the two halves could not be used together.
   if ($proc -and -not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
 }

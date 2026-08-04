@@ -190,6 +190,29 @@ window.leafScrollToFragment = (fragment) => {
     });
   });
 };
+// What the reader can see, for the ask pipe. Rust cannot answer it: a visit's anchor is written only when the reader leaves a document, so the live position is the page's alone. A function rather than a string in Rust, so check-shell calls it and a renamed element fails the suite instead of the next ask.
+window.leafReaderState = () => {
+  const selection = typeof window.getSelection === 'function' ? window.getSelection() : null;
+  const selected = selection ? String(selection) : '';
+  return {
+    scrollTop: Math.round(app.scrollTop || 0),
+    scrollHeight: Math.round(app.scrollHeight || 0),
+    viewportHeight: Math.round(app.clientHeight || 0),
+    // Where in the document, not how many pixels down: the anchor a history step carries, so it survives a re-render.
+    anchor: captureReaderScrollAnchor(),
+    codeView: !!codeViewActive,
+    panels: {
+      library: !!libraryShell && !libraryShell.classList.contains('library-closed'),
+      map: !!graphViewOpen,
+      findBar: !!findBar && !findBar.hidden,
+      glossary: !!glossarySheet && !glossarySheet.hidden,
+    },
+    // Long enough to tell which text it is, short enough not to send a page back.
+    selection: selected ? selected.slice(0, 500) : null,
+    // Off the spinner the page already arms and clears, so the answer is the page's rather than a guessed sleep at the other end.
+    renderInFlight: !!readerLoading && !readerLoading.hidden,
+  };
+};
 window.leafRestoreScrollAnchor = (anchor) => {
   if (!anchor) {
     return;

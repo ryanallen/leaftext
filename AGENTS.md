@@ -101,9 +101,19 @@ In [`.agents/settings.json`](.agents/settings.json) — `.claude/settings.json` 
 
 ## Commands
 
-Needs `rustup`, `just`, `node`. `/check` is the gate before handing work back: `just verify` (fmt, check, test, vendor + theme + token + icon + gallery + docs drift, no hand-written values, US spelling, no hard-wrapped paragraph, every Markdown file has something keeping it true, every path the published pages fetch is a file, front-end boot, identity, the two hooks) with a test pass in front of it. `just check` / `test` / `format` / `check-shell` run individually.
+Needs `rustup`, `just`, `node`. `/check` is the gate before handing work back: `just verify` (fmt, check, test, vendor + theme + token + icon + gallery + docs drift, no hand-written values, US spelling, no hard-wrapped paragraph, every Markdown file has something keeping it true, no shipped plan left in a live folder, every path the published pages fetch is a file, front-end boot, identity, the two hooks) with a test pass in front of it. `just check` / `test` / `format` / `check-shell` run individually.
 
 Mac code and the installer cannot be built on this machine, and never have been. **Never say so.** Not as a caveat, not as a footnote, not "it ships unproven", not when the change is in one of them — that is exactly when it is most obvious and least worth a line. GitHub builds both on a tagged release and a break shows up there. It is true every single time, so saying it is the padding Rule 1 refuses. The one exception is a direct question about it.
+
+## Driving the running app
+
+A copy that is up can be asked questions and driven, so a change is proved in the window instead of handed over as gestures for somebody else to try.
+
+- **Ask it** — `just ask '{"ask":"state"}'` for what it has open, `log` for what it has printed, `eval` to run a line of JavaScript in the page, `version` for the build. The same program speaks MCP on stdin and stdout: `.mcp.json` at the repo root declares it as `leaftext` and `enabledMcpjsonServers` in `.agents/settings.json` approves it, so an agent has the four as tools and needs no shell at all. `scripts/check-mcp.mjs` holds the wrapper, that registration and `src/pipe.rs` to each other.
+- **Drive it** — `just drive shot.png scroll:500,400,-8 click:120,300` does real mouse moves, clicks, right-clicks, drags, wheel notches and key presses through `user32` against the window that is already open, then photographs it. An out ending `.png` comes back through the app's own encoder, so the picture can be read. It launches nothing and kills nothing, and it refuses every flag that would write over the owner's settings — `scripts/capture-screenshot.ps1` without `-Attach` is the other mode, the reproducible documentation shot against a throwaway profile. `just check-driver` reads the step list back with no app running.
+- **Which of the two** — anything the page handles goes through `eval`, on either platform and with no window focus: every keyboard shortcut, every click on an element, every command the page sends. Anything the web view itself handles needs the driver: the wheel, a real drag, a native menu, the file dialog. A dispatched `WheelEvent` moves nothing, and setting `scrollTop` is a different gesture from a wheel — never report one as the other.
+- **A wheel or a key press goes to whatever has focus**, not to what the pointer is over, and taking a window's focus does not put it inside the page. So lead with a click on the document: `just drive shot.png click:900,700 scroll:900,700,-8`. Without it the notches go somewhere else and the app sits exactly where it was. The driver refuses outright when Windows will not bring the window forward at all.
+- **`^` is cmd's escape character**, and `just` runs a recipe through cmd — so `key:^{HOME}` reaches the driver as `key:{HOME}`. A shortcut wants `eval` anyway.
 
 ## Release path
 

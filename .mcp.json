@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "leaftext": {
+      "command": "node",
+      "args": ["scripts/mcp-leaftext.mjs"]
+    }
+  }
+}

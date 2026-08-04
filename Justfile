@@ -153,6 +153,20 @@ ask request:
 mcp:
     node scripts/mcp-leaftext.mjs
 
+# Drive the copy that is already open — real clicks, drags, wheel notches and key
+# presses — and photograph it. Steps are separated by spaces:
+#   just drive shot.png scroll:500,400,-8 click:120,300
+# An out ending .png goes through the app's own encoder, so it can be read back.
+# `just ask` is the other half, for anything the page handles itself.
+drive out *steps:
+    node scripts/drive.mjs "{{ out }}" {{ steps }}
+
+# Fail if the gesture driver cannot read its own -Do list: a verb that no longer
+# parses, an unknown one accepted, or an attached run accepting a flag that would
+# write over the owner's settings. Offline: -DryRun needs no app and no window.
+check-driver:
+    node scripts/check-driver.mjs
+
 # Fail if the MCP wrapper and src/pipe.rs disagree about what can be asked, or
 # about where to ask it. Offline: the wrapper itself needs the app running, this
 # reads two files.
@@ -171,7 +185,7 @@ conformance *flags:
 doc-images:
     node scripts/doc-images.mjs
 
-verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-site check-shell check-identity check-hooks check-mcp
+verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-site check-shell check-identity check-hooks check-mcp check-driver
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

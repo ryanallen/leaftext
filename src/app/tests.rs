@@ -1281,6 +1281,118 @@ fn the_pipe_answers_and_refuses_out_loud() {
 }
 
 #[test]
+fn the_state_answer_says_what_is_open_with_no_window_at_all() {
+    // The first test `pipe_state` has ever had. The four pipe tests stub the window out, which is exactly how a state answer with a field renamed in it could ship untested — and the workspace half is the half that has to survive a page too stuck to reply.
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("notes/a.md"));
+    workspace.open_path(PathBuf::from("notes/b.md"));
+    // No database: `load` falls back to no vaults and the whole library, which is what a machine with no manifest.db has.
+    let vaults = VaultState::load(None);
+
+    let state = pipe_state(&workspace, &vaults);
+    assert_eq!(state["version"], env!("CARGO_PKG_VERSION"));
+    assert_eq!(state["activeTab"], 1);
+    assert!(state["activePath"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("b.md"));
+    let tabs = state["tabs"].as_array().expect("a list of tabs");
+    assert_eq!(tabs.len(), 2);
+    assert!(tabs[0]["path"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("a.md"));
+    assert_eq!(tabs[0]["codeView"], false);
+    assert_eq!(tabs[0]["unsaved"], false);
+    assert_eq!(state["vault"]["id"], 0);
+}
+
+#[test]
+fn a_page_that_cannot_answer_costs_the_reader_half_and_nothing_else() {
+    // `state` exists to answer an app that is stuck, so the reader half is opt-in and asked for separately. A wedged page must still hand back the tabs, the paths and the vault.
+    let asked = std::sync::atomic::AtomicUsize::new(0);
+    let reply = pipe::answer(r#"{"ask":"state","reader":true}"#, |ask| match ask {
+        pipe::Ask::State { .. } => Some(Ok(serde_json::json!({ "tabs": [{ "path": "a.md" }] }))),
+        pipe::Ask::Eval { .. } => {
+            asked.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            None
+        }
+        _ => None,
+    });
+    let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
+    assert_eq!(
+        reply["ok"], true,
+        "a silent page must not refuse the answer"
+    );
+    assert_eq!(reply["answer"]["tabs"][0]["path"], "a.md");
+    assert!(
+        reply["answer"]["reader"]["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("did not answer in time"),
+        "the missing half should say why: {reply}"
+    );
+    assert_eq!(asked.load(std::sync::atomic::Ordering::SeqCst), 1);
+
+    // And what the page says is merged onto the same answer rather than arriving as a second one.
+    let reply = pipe::answer(r#"{"ask":"state","reader":true}"#, |ask| match ask {
+        pipe::Ask::State { .. } => Some(Ok(serde_json::json!({ "tabs": [] }))),
+        _ => Some(Ok(serde_json::json!({ "scrollTop": 4000 }))),
+    });
+    let reply: serde_json::Value = serde_json::from_str(&reply).expect("a JSON reply");
+    assert_eq!(reply["answer"]["reader"]["scrollTop"], 4000);
+
+    // Without the flag the page is never asked, which is what makes the plain ask safe on an app that is hanging.
+    let asked = std::sync::atomic::AtomicUsize::new(0);
+    let reply = pipe::answer(r#"{"ask":"state"}"#, |ask| {
+        if matches!(ask, pipe::Ask::Eval { .. }) {
+            asked.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        }
+        Some(Ok(serde_json::json!({ "tabs": [] })))
+    });
+    assert!(reply.contains("\"ok\":true"), "{reply}");
+    assert_eq!(asked.load(std::sync::atomic::Ordering::SeqCst), 0);
+    assert!(
+        !reply.contains("reader"),
+        "the plain ask answers what it always answered: {reply}"
+    );
+}
+
+#[test]
+fn the_idle_ask_says_it_gave_up_rather_than_waiting_for_ever() {
+    // A driven pass asks this instead of sleeping, so the one thing it must never do is hang: a page that never settles is an answer, and it has to be told apart from a page that settled.
+    let settled = pipe::answer(r#"{"ask":"idle"}"#, |_| {
+        Some(Ok(
+            serde_json::json!({ "renderInFlight": false, "scrollTop": 0 }),
+        ))
+    });
+    let settled: serde_json::Value = serde_json::from_str(&settled).expect("a JSON reply");
+    assert_eq!(settled["answer"]["idle"], true);
+    assert_eq!(settled["answer"]["reader"]["scrollTop"], 0);
+
+    let started = std::time::Instant::now();
+    let busy = pipe::answer(r#"{"ask":"idle"}"#, |_| {
+        Some(Ok(serde_json::json!({ "renderInFlight": true })))
+    });
+    let waited = started.elapsed();
+    let busy: serde_json::Value = serde_json::from_str(&busy).expect("a JSON reply");
+    assert_eq!(busy["ok"], true);
+    assert_eq!(busy["answer"]["idle"], false);
+    assert!(
+        busy["answer"]["why"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("still rendering"),
+        "it should say which of the two it hit: {busy}"
+    );
+    // Inside the two seconds the pipe gives the window, or the wait would be cut off by the thing it runs inside.
+    assert!(
+        waited < std::time::Duration::from_secs(2),
+        "the wait took {waited:?}"
+    );
+}
+
+#[test]
 fn a_window_that_cannot_run_it_says_so_rather_than_timing_out() {
     // Two different failures, told apart: nothing to run the script in is an answer the app has, and it should not cost the asker two seconds of waiting to find out.
     let reply = pipe::answer(r#"{"ask":"eval","script":"1+1"}"#, |_| {

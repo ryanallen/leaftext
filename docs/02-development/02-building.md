@@ -50,10 +50,10 @@ just verify
 This runs formatting, type checking, the tests, the drift checks over everything that is generated, the design-system rules, the spelling check, the front-end check, the docs-coverage check, and the repo guards, in sequence. All steps must pass. The `verify` recipe is defined in the project `Justfile` as:
 
 ```text
-verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-site check-shell check-identity check-hooks check-mcp
+verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-site check-shell check-identity check-hooks check-mcp check-driver
 ```
 
-The design-system steps are the ones worth knowing about. `check-tokens`, `check-icons`, `check-gallery` and `check-design-docs` fail when a generated file has drifted from the four files in `design/` it is built from — the stylesheet's fixed values, the icon classes, the page at [leaftext.com/gallery.html](https://leaftext.com/gallery.html), and [Design system](05-design-system.md). `check-classes` fails on a class in `reading.css` that `design/components.md` does not account for, so new interface joins the design system rather than growing beside it. `check-literals` fails on a color, size, spacing or duration typed into `reading.css` instead of coming from a value. `check-verify` fails when a check exists but this recipe does not run it. `check-docs` fails on a Markdown file — in this repo or the plan folder beside it — that no role covers, so a new kind of document has to say who keeps it true rather than quietly going stale. `check-site` opens each page the site publishes, follows the script it loads, and fails on a file the page fetches by a path with nothing at it — a 404 that shows up only once the page is live. `check-identity` fails on an assistant credited anywhere in the repo or its history, and `check-hooks` self-tests the four hooks.
+The design-system steps are the ones worth knowing about. `check-tokens`, `check-icons`, `check-gallery` and `check-design-docs` fail when a generated file has drifted from the four files in `design/` it is built from — the stylesheet's fixed values, the icon classes, the page at [leaftext.com/gallery.html](https://leaftext.com/gallery.html), and [Design system](05-design-system.md). `check-classes` fails on a class in `reading.css` that `design/components.md` does not account for, so new interface joins the design system rather than growing beside it. `check-literals` fails on a color, size, spacing or duration typed into `reading.css` instead of coming from a value. `check-verify` fails when a check exists but this recipe does not run it. `check-docs` fails on a Markdown file — in this repo or the plan folder beside it — that no role covers, so a new kind of document has to say who keeps it true rather than quietly going stale. `check-site` opens each page the site publishes, follows the script it loads, and fails on a file the page fetches by a path with nothing at it — a 404 that shows up only once the page is live. `check-identity` fails on an assistant credited anywhere in the repo or its history, and `check-hooks` self-tests the four hooks. `check-wrapping` fails on a paragraph broken across lines, in Markdown and in a comment in the code alike; `--fix` joins them. The last two are about driving a running copy: `check-mcp` holds the ask pipe's wrapper, its registration and `src/pipe.rs` to each other, and `check-driver` dry-runs every step the gesture driver takes, since a machine with no window open can read the step list back even though it cannot press anything.
 
 A passing `just verify` is the baseline requirement before handing any work back.
 
@@ -90,7 +90,8 @@ Each step in the verification pipeline can also be run on its own:
 | Front end    | `just check-shell`          | Run the page's script against a stand-in page: it parses, it boots, and its edit offsets are right |
 | Identity     | `just check-identity`       | Fail on an assistant credited in the repo or its history |
 | Hooks        | `just check-hooks`          | Self-test the four hooks |
-| Ask pipe     | `just check-mcp`            | Fail when the MCP wrapper and `src/pipe.rs` disagree about what can be asked, or where |
+| Ask pipe     | `just check-mcp`            | Fail when the MCP wrapper, its registration and `src/pipe.rs` disagree about what can be asked, or where |
+| Gesture driver | `just check-driver`       | Fail when the driver cannot read its own step list back, or an attached run accepts a flag that would rewrite your settings |
 | Full verify  | `just verify`               | All steps above in sequence                    |
 
 Additional convenience tasks are available via `just --list`, including `just sync-vendor` to recopy the vendored assets into `site/` and `just bundle-themes` to recompile `themes.md` from the `themes/` folder.
@@ -102,11 +103,17 @@ A running Leaftext answers questions on a local channel — see `src/pipe.rs`. `
 ```bash
 just ask '{"ask":"version"}'
 just ask '{"ask":"state"}'
+just ask '{"ask":"state","reader":true}'
+just ask '{"ask":"idle"}'
 just ask '{"ask":"log","lines":40}'
 just ask '{"ask":"eval","script":"document.title"}'
 ```
 
-`just mcp` runs the same program as an MCP server on stdin/stdout, so an AI gets one tool per ask. It is **not a shipped artifact**: one MSI and one DMG is the rule, and every extra file in a release is one somebody has to ask about. Neither release workflow builds it, and `just verify` cannot run it because it needs the app running — `check-mcp` covers what can be checked offline, which is that the tools and the app's asks still agree.
+`state` answers out of the app's own workspace — the tabs, their paths, which have unsaved edits, the active vault. With `reader` it asks the page as well, for the things only the page holds: where the document is scrolled to and the block it is anchored to, which panels are up, the selected text, and whether a render is still in flight. That half is opt-in because the plain ask has to keep working on an app that is stuck, and a page too stuck to reply would otherwise take the tab list down with it — when it cannot answer, `reader` carries the reason and everything else still comes back.
+
+`idle` waits for that render to finish and then answers the same reader fields, so a driven pass reads the result instead of sleeping and hoping. It gives up inside the two seconds the pipe allows and says which of the two it hit.
+
+`just mcp` runs the same program as an MCP server on stdin/stdout, so an AI gets one tool per ask. `.mcp.json` at the repo root declares it and `.agents/settings.json` approves it, so a session in this folder has the tools without being told to shell out. It is **not a shipped artifact**: one MSI and one DMG is the rule, and every extra file in a release is one somebody has to ask about. Neither release workflow builds it, and `just verify` cannot run it because it needs the app running — `check-mcp` covers what can be checked offline, which is that the tools, the registration and the app's asks still agree.
 
 `eval` runs arbitrary JavaScript inside the app. It is the reason the pipe beats reading the journal afterwards, and it is reachable by anything running under the same account.
 
@@ -136,3 +143,17 @@ Beyond `-Doc`, `-Width`, `-Height`, `-ThemeFamily` and `-ThemeMode`:
 | `-Crop "X,Y,W,H"` | Cuts the shot down to one control |
 
 `-Do` and `-Crop` coordinates are pixels in the captured image, so they are measured off a shot already taken at the same size: take one plain picture, look at it, then aim. `PrintWindow` does not draw the pointer, but it does draw what the pointer is over — a hover state photographs, the cursor arrow never appears.
+
+### Driving the copy you already have open
+
+The same script with `-Attach` drives the window that is up instead of launching one, and leaves it up afterwards. `just drive` is the short way in, with the steps separated by spaces:
+
+```bash
+just drive shot.png click:900,700 scroll:900,700,-8
+```
+
+An out ending `.png` comes back through the app's own encoder, so the picture can be read without a second command. Nothing about the profile is touched — no folders, no settings file, no recents, no vault registry — and every flag that would have shaped one is **refused with the reason** rather than quietly ignored, because this is your session and not a throwaway.
+
+Two things about real input. A wheel notch and a key press go to whatever has focus, not to what the pointer is over, and bringing a window forward does not put focus inside the page — so lead with a click on the document, as above, or the notches land somewhere else and the app sits where it was. And `^` is cmd's escape character, so `key:^{HOME}` reaches the script as `key:{HOME}`; a keyboard shortcut is better sent through `eval`, which needs no focus at all and works on both platforms.
+
+That split is worth knowing before driving anything: everything the page handles — every shortcut, every click on an element, every command the page sends — can go through `eval`, and only what the web view itself handles needs real input: the wheel, a real drag, a native menu, the file dialog. A `WheelEvent` dispatched into the page moves nothing, and setting `scrollTop` is a different gesture from a wheel.

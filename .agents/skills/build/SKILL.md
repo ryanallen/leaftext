@@ -1,6 +1,6 @@
 ---
 name: build
-description: Build a ticket, and leave the plan tree telling the truth about it. Takes one thing — a path to a ticket under ../docs/features/, ../docs/refactor/ or ../docs/fixes/ — and works out the rest: it runs /refine itself when nothing has dated the top of the file, holds the ticket against its row in ../docs/PLAN.md, builds the phases in order, ticks each box in the same edit as the code with the test that covers it, strikes through and explains any box that changed shape, and runs /check at the end of every phase. Where the ticket changes anything a person points at, presses or looks at, it then runs the app and hands the owner the gestures to try — a passing check is not a working app, and nothing is called done until the owner says it works. When the last box is ticked it writes the shipped note, moves the file into the matching subject folder under ../docs/done/, rewrites its row in ../docs/README.md to say what shipped, strikes its row in ../docs/PLAN.md with what the build found, moves that row into ../docs/done/PLAN.md unchanged, and moves the "next up" line on, and fixes any page under docs/ the change just made untrue. Never touches git. Use when the user says "build this", "work that ticket", "do the plan", or hands over a ticket path to be built rather than scoped.
+description: Build a ticket, and leave the plan tree telling the truth about it. Takes one thing — a path to a ticket under ../docs/features/, ../docs/refactor/ or ../docs/fixes/ — and works out the rest: it runs /refine itself when nothing has dated the top of the file, holds the ticket against its row in ../docs/PLAN.md, builds the phases in order, ticks each box in the same edit as the code with the test that covers it, strikes through and explains any box that changed shape, and runs /check at the end of every phase. Where the ticket changes anything a person points at, presses or looks at, it then runs the app and drives it — the ask pipe for anything the page handles, the gesture driver for a real wheel or drag — reports what it saw with a picture, and hands over only the gestures it could not reach. A passing check is not a working app, and nothing is called done until the owner says it works. When the last box is ticked it writes the shipped note, moves the file into the matching subject folder under ../docs/done/, rewrites its row in ../docs/README.md to say what shipped, strikes its row in ../docs/PLAN.md with what the build found, moves that row into ../docs/done/PLAN.md unchanged, and moves the "next up" line on, and fixes any page under docs/ the change just made untrue. Never touches git. Use when the user says "build this", "work that ticket", "do the plan", or hands over a ticket path to be built rather than scoped.
 argument-hint: "[path to the ticket]"
 user-invocable: true
 ---
@@ -66,15 +66,19 @@ The ticket's value after it ships is what it says about the ground. As each phas
 - **What building it changed** — a decision the plan made that turned out to be the wrong shape, and what it is now. This is the section a later reader needs most, because the ticked boxes only say what happened, not why it differs from the plan they are reading above it.
 - **Still open** — work the build touched and deliberately did not do, named so nobody reads it as covered. A piece of scaffolding another ticket should absorb goes here.
 
-## 4. The owner drives it before anything is called done
+## 4. Drive it yourself, then the owner confirms
 
 **A passing check is not a working app.** `deleting` had every box ticked and every check green while the thing it was written to fix was still broken in the window: it had read "a selection can already cross blocks" off Ctrl+A and never asked whether a *drag* could. Nothing in `just verify` could have caught that, because nothing in it uses the app.
 
-So when the ticket changes anything a person does with a pointer, a key, a drag or their eyes:
+Most of that is reachable from here. So when the ticket changes anything a person does with a pointer, a key, a drag or their eyes:
 
 - **Run it.** `cargo run`, in the background, on a document that exercises the change.
-- **Hand over the gestures to try**, in the owner's words — "drag across two paragraphs and press Delete", not "verify the cross-block selection path". Three or four, one line each.
-- **Stop there.** The last box is the owner saying it works. Until that comes back, the ticket stays in `fixes/`, `features/` or `refactor/`, its row stays in the running order, and section 5 below has not started.
+- **Drive every gesture you can reach**, and read back where it landed rather than assuming. `just ask '{"ask":"state","reader":true}'` says where the reader is, which panels are up, what is selected; `{"ask":"idle"}` waits for the render instead of sleeping; `just drive shot.png <steps>` does the real ones. See AGENTS.md, "Driving the running app".
+- **Know which surface a gesture is on**, or a faked event gets reported as a pass. Anything the page handles goes through `eval` — every keyboard shortcut, every click on an element, every command the page sends. Anything the web view handles needs the driver — the wheel, a real drag, a native menu, the file dialog. A dispatched `WheelEvent` moves nothing at all, and setting `scrollTop` is a different gesture from a wheel.
+- **Report what you saw, with the picture.** What you drove, what came back, and the shot.
+- **Hand over only what you could not reach** — in the owner's words, "drag across two paragraphs and press Delete", not "verify the cross-block selection path". One line each, and it should be a short list now rather than the whole thing.
+- **Stop there.** The last box is the owner saying it works — a machine agreeing with itself is not evidence, which is why `deleting` is in the tree. Until that comes back, the ticket stays in `fixes/`, `features/` or `refactor/`, its row stays in the running order, and section 5 below has not started.
+- **That confirmation is a real box**, unticked, at the foot of the phases: `- [ ] The owner says it works in the window: …`. `check-docs` fails a ticket whose every box is ticked and is still filed as live work, so without it the last phase cannot end green.
 - **A gesture no check can reach is named in the ticket**, in `Still open`, so the next reader knows what was proved by machine and what by hand.
 
 A ticket that touches nothing anyone points at — a rename, a test, a doc pass, a build script — skips this and goes straight on.
@@ -85,10 +89,10 @@ Five edits, all in one pass. Skipping any one of them is how the tree starts lyi
 
 1. **The shipped note** replaces `> **Not built.** A plan.` at the top of the ticket: what shipped, where the code is, and the date.
 
+   One line, like every other paragraph — `check-wrapping` reads this file too.
+
    ```markdown
-   > **Done and shipped.** Kept for the reasoning, not as work. All four phases.
-   > `store/frontmatter.rs` reads the field, `vault_corpus.rs` holds it.
-   > Checked 3 August 2026.
+   > **Done and shipped.** Kept for the reasoning, not as work. All four phases. `store/frontmatter.rs` reads the field, `vault_corpus.rs` holds it. Checked 3 August 2026.
    ```
 
 2. **Move the file** into the subject folder under `../docs/done/` that says what kind of thing shipped — `app/` what a reader got, `repo/` how the repo is built, `release/` publishing, `reference/` a document that was never a plan. This is the one move that re-files a ticket's subject: the live folders group by the part of the app, `done/` groups by what kind of thing it was.

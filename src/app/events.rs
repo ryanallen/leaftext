@@ -67,9 +67,10 @@ pub(crate) enum UserEvent {
 pub(crate) type PipeReply = std::sync::mpsc::SyncSender<Result<serde_json::Value, String>>;
 
 /// What the ask pipe's `state` answers with: enough to know what the app is looking at without asking for anything the loop would have to go to disk for.
-pub(crate) fn pipe_state(reader: &Reader, vaults: &VaultState) -> serde_json::Value {
-    let tabs: Vec<serde_json::Value> = reader
-        .workspace
+///
+/// The workspace rather than the whole [`Reader`], because that carries a window and this half of the answer does not need one — which is what lets a test build it.
+pub(crate) fn pipe_state(workspace: &Workspace, vaults: &VaultState) -> serde_json::Value {
+    let tabs: Vec<serde_json::Value> = workspace
         .tabs
         .iter()
         .map(|tab| {
@@ -84,8 +85,8 @@ pub(crate) fn pipe_state(reader: &Reader, vaults: &VaultState) -> serde_json::Va
 
     serde_json::json!({
         "version": env!("CARGO_PKG_VERSION"),
-        "activeTab": reader.workspace.active,
-        "activePath": reader.workspace.active_path().map(|path| path.display().to_string()),
+        "activeTab": workspace.active,
+        "activePath": workspace.active_path().map(|path| path.display().to_string()),
         "tabs": tabs,
         "vault": {
             "id": vaults.active,

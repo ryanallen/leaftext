@@ -9,11 +9,23 @@ use crate::journal;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::sync::mpsc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tao::event_loop::EventLoopProxy;
 
 /// How long the pipe waits on the window thread before answering that it did not reply. A hung app is a fair question to ask, so this has to end.
 const REPLY_TIMEOUT: Duration = Duration::from_secs(2);
+
+/// What the asker is told when the window never filled the reply in.
+const NO_REPLY: &str = "the app did not answer in time — its window thread is busy or stuck";
+
+/// The page's own account of what the reader can see. A function in the shell rather than a line of JavaScript here, so `check-shell` calls it against its fake page and a renamed element fails the suite instead of the next ask.
+const READER_STATE: &str = "window.leafReaderState()";
+
+/// How long `idle` keeps asking the page whether it has finished rendering. Inside [`REPLY_TIMEOUT`]: the pipe stops waiting on the window at two seconds, so a wait that outlasted it would be cut off by the thing it runs inside.
+const IDLE_BUDGET: Duration = Duration::from_millis(1200);
+
+/// The gap between those asks. Short enough that the answer is about now, long enough that the window thread is not being asked in a spin.
+const IDLE_POLL: Duration = Duration::from_millis(60);
 
 /// What can be asked. One enum, written the way `IpcCommand` is: one variant, one arm, and never a second list of the things it accepts.
 #[derive(Debug, Deserialize)]
@@ -25,14 +37,22 @@ pub(crate) enum Ask {
         #[serde(default)]
         lines: Option<usize>,
     },
-    /// What is open right now.
+    /// What is open right now. With `reader` set it also carries what the page can see — where somebody is scrolled to, which panels are up, what is selected — which the workspace does not hold: a visit's anchor is `None` until the reader leaves the document, so the app's own record is always one navigation behind.
+    ///
+    /// Opt-in rather than always, because the whole point of `state` is that it answers an app that is stuck, and a page too stuck to reply would otherwise take the tab list down with it.
     #[serde(rename = "state")]
-    State,
+    State {
+        #[serde(default)]
+        reader: bool,
+    },
     /// Run a line of JavaScript in the page and hand back what it came to.
     ///
     /// This is arbitrary code inside the app, reachable by anything running as this user — the same bar as the single-instance pipe, which accepts only a file path where this accepts anything. It is also the whole reason the pipe beats reading the journal: without it you have a log reader, with it a live app can be inspected on both platforms.
     #[serde(rename = "eval")]
     Eval { script: String },
+    /// Wait for the page to finish rendering, then answer. What a driven pass asks instead of guessing a sleep: guessing costs three seconds a command for a render that takes a fraction of that.
+    #[serde(rename = "idle")]
+    Idle,
     /// The running build.
     #[serde(rename = "version")]
     Version,
@@ -52,7 +72,7 @@ fn refused(reason: impl std::fmt::Display) -> String {
 /// `from_window` is asked only for what the window alone knows. The journal and the version are answered right here, because a hung app is exactly when they are wanted and going through the window would lose them.
 pub(crate) fn answer<F>(request: &str, from_window: F) -> String
 where
-    F: FnOnce(Ask) -> Option<Result<Value, String>>,
+    F: Fn(Ask) -> Option<Result<Value, String>>,
 {
     let ask = match serde_json::from_str::<Ask>(request.trim()) {
         Ok(ask) => ask,
@@ -60,7 +80,8 @@ where
             return refused(format!(
                 "not an ask this app knows ({error}). It answers: \
                  {{\"ask\":\"log\"}}, {{\"ask\":\"log\",\"lines\":50}}, \
-                 {{\"ask\":\"state\"}}, {{\"ask\":\"eval\",\"script\":\"1+1\"}}, \
+                 {{\"ask\":\"state\"}}, {{\"ask\":\"state\",\"reader\":true}}, \
+                 {{\"ask\":\"eval\",\"script\":\"1+1\"}}, {{\"ask\":\"idle\"}}, \
                  {{\"ask\":\"version\"}}"
             ))
         }
@@ -69,11 +90,73 @@ where
     match ask {
         Ask::Version => answered(json!(env!("CARGO_PKG_VERSION"))),
         Ask::Log { lines } => answered(json!(journal::read(lines))),
+        // The workspace half first and on its own, so a page that cannot answer costs the reader half and nothing else — the tabs, the paths and the vault still come back from an app whose window is wedged.
+        Ask::State { reader } => match from_window(Ask::State { reader: false }) {
+            Some(Ok(mut value)) => {
+                if reader {
+                    let seen = from_window(Ask::Eval {
+                        script: READER_STATE.to_string(),
+                    });
+                    if let Some(fields) = value.as_object_mut() {
+                        fields.insert("reader".to_string(), reader_half(seen));
+                    }
+                }
+                answered(value)
+            }
+            Some(Err(reason)) => refused(reason),
+            None => refused(NO_REPLY),
+        },
+        Ask::Idle => idle(from_window),
         window_ask => match from_window(window_ask) {
             Some(Ok(value)) => answered(value),
             Some(Err(reason)) => refused(reason),
-            None => refused("the app did not answer in time — its window thread is busy or stuck"),
+            None => refused(NO_REPLY),
         },
+    }
+}
+
+/// The reader half, or why it is missing. Never an absent field: an asker that cannot tell "the page says nothing is selected" from "the page never answered" would read the first as the second.
+fn reader_half(seen: Option<Result<Value, String>>) -> Value {
+    match seen {
+        Some(Ok(value)) => value,
+        Some(Err(reason)) => json!({ "error": reason }),
+        None => json!({ "error": NO_REPLY }),
+    }
+}
+
+/// Ask the page whether it is still rendering until it says it is not, or until the budget runs out. Answers which of the two it hit, so a driven pass never reads a timeout as a settled page.
+fn idle<F>(from_window: F) -> String
+where
+    F: Fn(Ask) -> Option<Result<Value, String>>,
+{
+    let started = Instant::now();
+    loop {
+        let seen = from_window(Ask::Eval {
+            script: READER_STATE.to_string(),
+        });
+        let value = match seen {
+            Some(Ok(value)) => value,
+            Some(Err(reason)) => return refused(reason),
+            None => return refused(NO_REPLY),
+        };
+        let waited = started.elapsed();
+        let rendering = value.get("renderInFlight") == Some(&Value::Bool(true));
+        if !rendering {
+            return answered(json!({
+                "idle": true,
+                "waitedMs": waited.as_millis(),
+                "reader": value,
+            }));
+        }
+        if waited >= IDLE_BUDGET {
+            return answered(json!({
+                "idle": false,
+                "waitedMs": waited.as_millis(),
+                "why": format!("the page was still rendering after {} ms", waited.as_millis()),
+                "reader": value,
+            }));
+        }
+        std::thread::sleep(IDLE_POLL);
     }
 }
 
@@ -83,7 +166,8 @@ where
 fn from_window(proxy: &EventLoopProxy<UserEvent>, ask: Ask) -> Option<Result<Value, String>> {
     let (reply, answers) = mpsc::sync_channel(1);
     let event = match ask {
-        Ask::State => UserEvent::PipeState { reply },
+        // The reader flag is answered above this, by a second ask through the page: the loop only ever builds the workspace half.
+        Ask::State { .. } => UserEvent::PipeState { reply },
         Ask::Eval { script } => UserEvent::PipeEval { script, reply },
         // Answered before this is reached.
         _ => return None,

@@ -284,6 +284,55 @@ if (booted) {
   const { sourceSpliceSince, lineIndexAtByteOffset, byteOffsetAtLineIndex, rangesAfterCommit, fencedCodeInnerSpan } =
     booted;
 
+  // The ask pipe's reader half is one call into this function (`READER_STATE` in src/pipe.rs), so nothing else in the suite notices when an element it reads is renamed — the next `{"ask":"state","reader":true}` would be the first to find out, and what it loses is silent.
+  check('the page can say what the reader sees', () => {
+    const readerState = () => booted.window.leafReaderState();
+    const state = readerState();
+    for (const field of ['scrollTop', 'scrollHeight', 'viewportHeight', 'codeView', 'panels', 'selection', 'renderInFlight']) {
+      if (!(field in state)) throw new Error(`the reader half has no ${field}`);
+    }
+    for (const field of ['scrollTop', 'scrollHeight', 'viewportHeight']) {
+      if (!Number.isFinite(state[field])) throw new Error(`${field} came back ${state[field]}`);
+    }
+    for (const panel of ['library', 'map', 'findBar', 'glossary']) {
+      if (typeof state.panels[panel] !== 'boolean') throw new Error(`${panel} is not open or shut, it is ${state.panels[panel]}`);
+    }
+    // Nothing is rendered on the fake page, so there is no block to be anchored to.
+    if (state.anchor !== null) throw new Error(`an empty page claimed an anchor: ${JSON.stringify(state.anchor)}`);
+    if (state.selection !== null) throw new Error(`nothing is selected, and it said ${JSON.stringify(state.selection)}`);
+
+    // Each panel read off its own element, so a renamed id fails here rather than answering "shut" for ever.
+    const spinner = booted.document.getElementById('readerLoading');
+    const bar = booted.document.getElementById('findBar');
+    const sheet = booted.document.getElementById('glossarySheet');
+    const shell = booted.document.getElementById('libraryShell');
+    const wasContains = shell.classList.contains;
+    try {
+      spinner.hidden = false;
+      bar.hidden = false;
+      sheet.hidden = false;
+      shell.classList.contains = () => false;
+      const open = readerState();
+      if (!open.renderInFlight) throw new Error('a render in flight was reported as settled');
+      if (!open.panels.findBar || !open.panels.glossary) throw new Error('an open panel was reported shut');
+      if (!open.panels.library) throw new Error('the library pane was reported shut while it is open');
+
+      spinner.hidden = true;
+      bar.hidden = true;
+      sheet.hidden = true;
+      shell.classList.contains = (name) => name === 'library-closed';
+      const shut = readerState();
+      if (shut.renderInFlight) throw new Error('a settled page was reported as rendering');
+      if (shut.panels.findBar || shut.panels.glossary) throw new Error('a shut panel was reported open');
+      if (shut.panels.library) throw new Error('a closed library pane was reported open');
+    } finally {
+      shell.classList.contains = wasContains;
+      spinner.hidden = false;
+      bar.hidden = false;
+      sheet.hidden = false;
+    }
+  });
+
   check('the format bar steps heading levels and stops at both ends', () => {
     const { steppedHeadingLevel, blockFormatChanges } = booted;
     const BIGGER = -1;

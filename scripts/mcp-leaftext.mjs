@@ -68,9 +68,14 @@ const TOOLS = [
   {
     name: 'leaftext_state',
     description:
-      'What the app has open right now: its tabs, which is active, which have unsaved edits, and the active vault.',
-    inputSchema: { type: 'object', properties: {} },
-    ask: () => ({ ask: 'state' }),
+      'What the app has open right now: its tabs, which is active, which have unsaved edits, and the active vault. With `reader` set it also carries what the page can see — the scroll position and the block it is anchored to, which panels are open, the selected text, and whether a render is still in flight. Leave `reader` off when the app may be stuck: the tab list answers without the page, and the reader half does not.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        reader: { type: 'boolean', description: 'Also ask the page what the reader can see' },
+      },
+    },
+    ask: (args) => ({ ask: 'state', reader: !!args.reader }),
   },
   {
     name: 'leaftext_eval',
@@ -82,6 +87,13 @@ const TOOLS = [
       required: ['script'],
     },
     ask: (args) => ({ ask: 'eval', script: String(args.script ?? '') }),
+  },
+  {
+    name: 'leaftext_idle',
+    description:
+      'Wait until the page has finished rendering, then answer what the reader can see. Use it after a gesture instead of sleeping: it says whether the page settled, or that it was still rendering when the wait ran out.',
+    inputSchema: { type: 'object', properties: {} },
+    ask: () => ({ ask: 'idle' }),
   },
   {
     name: 'leaftext_version',

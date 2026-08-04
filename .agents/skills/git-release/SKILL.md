@@ -34,6 +34,8 @@ Before doing anything else — for **both** app and site-only releases — run t
 
 Do not skip this even for app releases: a code change is exactly when the docs most often drift.
 
+**A ticket that shipped in this release leaves the live plan tree here, not later.** `/sync-docs`'s "plan" and "running order" rows own the move — the file into a subject folder under `../docs/done/`, its row in `../docs/README.md` under Shipped, and its row struck and moved into `../docs/done/PLAN.md`. It was missed once and v0.1.462 went out with the running order still calling the shipped ticket next up, so `just check-docs` now fails on a plan with every box ticked that is still filed as live work. `/check` runs it below, which is what makes this unforgettable rather than remembered.
+
 ### Pre-step: Trim verbose code comments (always, before committing)
 
 Run [code-comments](../code-comments/SKILL.md): `/code-comments`. It holds the bar — why not what, the density next door, one line if it fits, cut the drafting history and keep the version-numbered history — and it edits comments in place, leaving them uncommitted for step 0.
