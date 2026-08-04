@@ -918,10 +918,16 @@ fn select_all_in_the_reading_view_selects_only_the_page() {
 
     // A native Ctrl/Cmd+A selects the whole shell — library pane, toolbar and all — so copying a page drags the chrome along. The shortcut selects just the rendered document, and stands aside for editable fields and the code view, whose native select-all is scoped already.
     assert!(html.contains("event.key.toLowerCase() === 'a'"));
-    assert!(html.contains("if (codeViewActive || isEditableMouseTarget(event.target))"));
+    assert!(html.contains("if (!caretBlock && isEditableMouseTarget(event.target))"));
     assert!(html.contains("range.selectNodeContents(body)"));
     assert!(html.contains("selection.removeAllRanges()"));
     assert!(html.contains("selection.addRange(range)"));
+
+    // With the caret in a block it widens a step per press instead — block, section, page — and the first press has to stay the browser's own, so the early return is what the step reaches rather than something that replaced it.
+    assert!(html.contains("const caretBlock = caretBlockForSelectAll(event.target);"));
+    assert!(html.contains("const wanted = selectAllTargetFor(caretBlock);"));
+    assert!(html.contains("if (wanted.browser) {"));
+    assert!(html.contains("selectBlockRun(wanted.section);"));
 }
 
 #[test]

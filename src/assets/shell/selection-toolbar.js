@@ -85,10 +85,15 @@ function closeSelectionLinkBox() {
 
 // The editable block a node sits in, or null. A block mid-source-edit is showing
 // raw text, which the bar has nothing to say about.
+//
+// Matched on the class rather than on `contenteditable`: a block is only an editing
+// host once it has been clicked into, and highlighting words in one that has not
+// been is exactly when the bar is wanted. `applyInlineFormat` opens it before it
+// runs a command, since a command needs a host.
 function selectionEditableBlock(node) {
   const el = node && (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement);
   if (!el || !el.closest) return null;
-  const block = el.closest('[data-src-start][contenteditable="true"]');
+  const block = el.closest('[data-src-start].leaf-editable');
   if (!block || block.dataset.editingSource === 'true') return null;
   if (!app.contains(block)) return null;
   return block;
@@ -203,12 +208,15 @@ function positionSelectionToolbar(range) {
 }
 
 // Put the remembered selection back and hand the block the focus, so a command
-// runs against the words the bar was opened for.
+// runs against the words the bar was opened for. The block is opened for typing
+// first: it may only have been highlighted, and an editing command has nothing to
+// act on without a host.
 function restoreSelectionForEdit() {
   if (!selectionToolbarBlock || !selectionToolbarRange) return false;
   if (!selectionToolbarBlock.isConnected) return false;
   const selection = window.getSelection();
   if (!selection) return false;
+  openWysiwygBlock(selectionToolbarBlock, null);
   selectionToolbarBlock.focus({ preventScroll: true });
   selection.removeAllRanges();
   selection.addRange(selectionToolbarRange);

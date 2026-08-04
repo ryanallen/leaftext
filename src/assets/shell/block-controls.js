@@ -659,9 +659,8 @@ function runBlockInsert(target, option) {
 }
 
 // The run of siblings a block can move within: the blocks sharing its parent, in
-// document order. Refused unless every range is present, ordered and
-// non-overlapping — the host refuses the same way, and a drifted map must not be
-// given the chance to shred a file.
+// document order. The ranges come back from the shared test (`blockRunRanges`),
+// which refuses a run the host would refuse.
 function blockSiblingRun(target) {
   if (!blockGutterFormatAllowed()) return null;
   const parent = target.parentElement;
@@ -672,16 +671,8 @@ function blockSiblingRun(target) {
   // `target` then fails the membership test below and gets no handle.
   const elements = Array.from(parent.children).filter(blockHasSource);
   if (elements.length < 2 || !elements.includes(target)) return null;
-  const ranges = [];
-  let previousEnd = -1;
-  for (const el of elements) {
-    const start = Number(el.dataset.srcStart);
-    const end = Number(el.dataset.srcEnd);
-    if (!Number.isFinite(start) || !Number.isFinite(end) || start < previousEnd) return null;
-    previousEnd = end;
-    ranges.push([start, end]);
-  }
-  return { elements, ranges };
+  const ranges = blockRunRanges(elements);
+  return ranges ? { elements, ranges } : null;
 }
 
 // Where the block would land: the first neighbor whose middle the pointer has

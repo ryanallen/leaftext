@@ -18,6 +18,23 @@ function sliceSourceBytes(source, start, end) {
   return sourceByteDecoder.decode(bytes.slice(start, end));
 }
 
+// The source ranges of a run of blocks, in document order — or null unless every
+// one is present, ordered and non-overlapping. The host refuses a run the same way,
+// and a drifted map must not be given the chance to shred a file. Shared by the
+// gutter's drag and the cross-block delete, which both hand the host one run.
+function blockRunRanges(elements) {
+  const ranges = [];
+  let previousEnd = -1;
+  for (const el of elements) {
+    const start = Number(el.dataset.srcStart);
+    const end = Number(el.dataset.srcEnd);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start < previousEnd) return null;
+    previousEnd = end;
+    ranges.push([start, end]);
+  }
+  return ranges;
+}
+
 // Attach each Markdown block's source range to its rendered element. Blocks come
 // in document order, but a raw-HTML wrapper (e.g. `<div align="center">`) nests
 // the blocks that follow it, so they aren't all immediate children of the body.

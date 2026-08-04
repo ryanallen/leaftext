@@ -4,7 +4,7 @@
 //   node scripts/check-docs.mjs            fail on a file with no role
 //   node scripts/check-docs.mjs --list     every file and its role
 //
-// Roles are folder patterns, so a new page needs no edit here and a new folder does: a new kind of document is a decision about who keeps it true.
+// Roles are folder patterns, so a new page needs no edit here and a new *top* folder does: a new kind of document is a decision about who keeps it true. A subject folder inside one (`features/editing/`) inherits its parent's role by prefix.
 
 import { readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
@@ -29,9 +29,8 @@ const ROLES = [
 const PLAN_ROLES = [
   ['features', 'plan: the app cannot do it yet'],
   ['refactor', 'plan: it does it, this changes how'],
-  ['plans', 'the dated running order over the live tickets'],
   ['fixes', 'plan: something is wrong and this is the fix'],
-  ['done', 'shipped, kept for the reasoning'],
+  ['done', 'shipped, kept for the reasoning (with the retired running-order rows)'],
   ['canceled', 'decided against, kept for the reasoning'],
   ['tests', 'a document to open in the app, not a plan'],
   ['learn', "writing from elsewhere, kept to read — not about this app, so nothing here can go stale"],

@@ -1,6 +1,6 @@
 ---
 name: refine
-description: Review a ticket before anyone builds it. Opens every file the ticket cites and checks the claim is still true, then holds the plan against the rules this repo already paid for — one table of formats, every value in design/, fragment order, no crawl, no second list, no loosened check, nothing new on the startup path. Fixes what is wrong in place, signs the top of the file with the date it was checked, and leaves a record of what was wrong at the bottom, so a later reading knows what the first one already thought about and whether anyone has read it against this month's code. Never touches git and never edits app code. Use when the user says "refine", "review this plan", "check this ticket", or hands over a Markdown plan written by /ticket.
+description: Review a ticket before anyone builds it. Opens every file the ticket cites and checks the claim is still true, then holds the plan against the rules this repo already paid for — one table of formats, every value in design/, fragment order, no crawl, no second list, no loosened check, nothing new on the startup path. Fixes what is wrong in place, signs the top of the file with the date it was checked, and leaves a record of what was wrong at the bottom, so a later reading knows what the first one already thought about and whether anyone has read it against this month's code. Never touches git and never edits app code. Use when the user says "refine", "review this plan", "check this ticket", or hands over a Markdown plan written by /ticket. A running-order row is cited by its ticket's name, never a number.
 argument-hint: "[path to the ticket]"
 user-invocable: true
 ---
@@ -11,7 +11,7 @@ A ticket is followed months later by somebody with none of the conversation in t
 
 **Never run git.** **Never edit app code.** A wrong plan is fixed in the plan. If the ticket turns out to describe a shipping bug, it stays a box in the ticket — fixing it is a separate job with its own `/check`.
 
-Written for the tickets in `../docs/features/` and `../docs/refactor/`. Read [ticket](../ticket/SKILL.md) first: it is the shape this holds a file to.
+Written for the tickets in `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`, each of which groups its files into subject folders. Read [ticket](../ticket/SKILL.md) first: it is the shape this holds a file to.
 
 ## 1. Every citation is opened
 
@@ -75,7 +75,17 @@ The tell is a plan that gets green without the thing being true.
 
 If a fix changes what gets built rather than how it is described, ask before writing it. One round, the question tool, and the answer goes in the file as a decision with its reason.
 
-## 6. The file itself has to read well
+## 6. The six parts are there, and the summary earns its keep
+
+A ticket has the same six parts in the same order — title and one-sentence summary, `## Why`, `## What was measured`, `## How it is built`, `## Phases`, `## What an earlier draft got wrong`. A file missing one, or carrying its own invented heading, is one a reader has to search rather than skim. [ticket](../ticket/SKILL.md) holds the shape; this holds the file to it.
+
+**The summary sentence is checked hardest, because it is the only part most readers finish.** It has four pieces — who it is for, what they will be able to do, the change that does it, and the evidence it will work — and the fourth is the one that goes missing. A summary that stops at the change is a wish: add the reason out of the measured table, or say plainly that nothing measured backs it yet.
+
+Then check the three middle headings answer one question each and stop. `## Why` is the cost of doing nothing and does not describe the build; `## What was measured` is claims with citations and nothing else; `## How it is built` is where the code goes and what was decided, not the why again. A paragraph that could sit under two of them belongs under neither — cut it.
+
+**Anything the running order should not be carrying belongs here.** A row in `../docs/PLAN.md` is two sentences; if this ticket's row has grown past that, move the words into this file and shorten the row in the same pass.
+
+## 7. The file itself has to read well
 
 A plan is read as a file, so how it sits on the page is part of whether it is followed.
 
@@ -84,20 +94,25 @@ A plan is read as a file, so how it sits on the page is part of whether it is fo
 - **No open question, no TBD, no "decide later"** — step 5's rule, and the one most often left in.
 - **Every phase's boxes are boxes**, not prose with a dash in front.
 
-## 7. Sign the top
+## 8. Sign the top
 
-**Say on the file that this ran, and when.** One line, directly under the `> **Not built.**` note at the top:
+**Say on the file that this ran, and when.** One short line, directly under the `> **Not built.**` note:
 
 ```markdown
-> **Refined 3 August 2026.** Every `path:line` opened and checked against the
-> code; the plan held against `AGENTS.md`. See the record at the bottom.
+> **Refined 3 August 2026.** Citations opened; plan held against `AGENTS.md`.
 ```
 
-It goes at the top because that is where somebody decides whether to trust the file, and it carries a date because a plan refined in March against code that moved in August is a plan nobody has read. Re-refining replaces the line rather than stacking another one — the newest reading is the one that counts.
+That is the whole line. It is a date and a scope, not a summary — what the reading *found* is the record at the bottom, and a paragraph here is a paragraph between the reader and the ticket.
 
-The line is also the flag [build](../build/SKILL.md) tests for: no line, and it runs this skill before it writes a single piece of code.
+It goes at the top because that is where somebody decides whether to trust the file, and it carries a date because a plan refined in March against code that moved in August is a plan nobody has read. Re-refining replaces the line rather than stacking another one.
 
-## 8. Leave the record
+It is also the flag [build](../build/SKILL.md) tests for: no line, and it runs this skill before it writes a single piece of code.
+
+**Then tick the box in the running order, in the same pass.** [`../docs/PLAN.md`](../../../docs/PLAN.md) carries a `Refined` column, and this ticket's row goes from `[ ]` to `[x]`. That is the only edit this skill makes to that file — never the tier, never the reasoning, never the order. The box mirrors the line, so writing one without the other is how the two start disagreeing, and the box is the half somebody scanning the list actually sees.
+
+A ticket with no row there yet is a ticket [`/ticket`](../ticket/SKILL.md) did not finish — add the row, unticked, then tick it.
+
+## 9. Leave the record
 
 Fix the file. Then, at the bottom, say what was wrong. Keep the section even when the list is short — the file's own history of being doubted is what stops the second reviewer spending an afternoon on a part the first one settled.
 
@@ -122,7 +137,7 @@ Three headings, in that order. **Checked and left alone** is the one that pays o
 
 Fix the small stuff in place without a line in the record — a stale line number, a renamed function, a typo. The record is for things a reader could reasonably still believe.
 
-## 9. Hand back
+## 10. Hand back
 
 Say what changed in the plan, in plain words. The ticket is a file in `../docs/`; nothing in the app moved, so there is nothing to verify and nothing to bundle. The tree stays dirty.
 
@@ -135,8 +150,9 @@ Two things have to be on the file when this ends: the dated line at the top, and
 - `/priority` — the running order these tickets are ranked into.
 - `AGENTS.md` — the rules each paid for in version numbers.
 - `../docs/GLOSSARY.md` — the words a ticket is held to, and the one file outside the ticket this skill may edit.
+- `../docs/PLAN.md` — how short a row is allowed to be. Words cut from a row land in the ticket.
 - `/design-tokens` — where a value lives, for anything the ticket styles.
 - `/add-dependency` — what a ticket owes before it names a crate.
-- `../docs/refactor/conformance-suites.md` — a refined ticket, with the record section at the bottom.
+- `../docs/done/repo/conformance-suites.md` — a refined ticket, with the record section at the bottom.
 
 <!-- keycode: LEAF-BE23 -->

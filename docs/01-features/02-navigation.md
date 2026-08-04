@@ -48,7 +48,8 @@ flowchart LR
 | Previous tab | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` |
 | Save (with [unsaved edits](07-editing.md#save)) | `Ctrl+S` | `Cmd+S` |
 | [Undo](07-editing.md#undo) the last reading-view edit | `Ctrl+Z` | `Cmd+Z` |
-| Select the page (reading view) | `Ctrl+A` | `Cmd+A` |
+| Select the page — or, with the caret in a block, [a step wider per press](07-editing.md#deleting) | `Ctrl+A` | `Cmd+A` |
+| [Delete](07-editing.md#deleting) a selection that crosses blocks | `Delete` or `Backspace` | `Delete` or `Backspace` |
 | [Find](#find-in-this-document) in this document | `Ctrl+F` | `Cmd+F` |
 | [Find and replace](#find-in-this-document) | `Ctrl+H` | `Cmd+H` |
 | [Bold](07-editing.md#the-format-bar) the highlighted words | `Ctrl+B` | `Cmd+B` |

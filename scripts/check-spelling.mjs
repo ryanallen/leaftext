@@ -136,7 +136,7 @@ const pattern = new RegExp(
 );
 
 // The tickets live in `../docs`, beside the app and outside this git repo, so the walk above never reached them — which is how a British spelling got into one. Only the live plans plus the index: `done/` and `canceled/` are history, not writing to fix, but the index describes them in words written now.
-const TICKET_PATHS = ['../docs/README.md', '../docs/features', '../docs/refactor'];
+const TICKET_PATHS = ['../docs/README.md', '../docs/PLAN.md', '../docs/GLOSSARY.md', '../docs/features', '../docs/refactor', '../docs/fixes'];
 function ticketFiles() {
   const out = [];
   for (const path of TICKET_PATHS) {

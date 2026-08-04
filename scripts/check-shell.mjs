@@ -58,9 +58,12 @@ function elementClasses() {
   return classes;
 }
 
+/** The page's own Element, so `target instanceof Element` answers the way it does in the app. */
+class FakeElement {}
+
 /** A stand-in element: enough surface to be wired up, and inert when used. */
 function fakeElement(id = '') {
-  const element = {
+  const element = Object.assign(new FakeElement(), {
     id,
     tagName: 'DIV',
     hidden: false,
@@ -115,7 +118,7 @@ function fakeElement(id = '') {
       height: 0,
     }),
     getContext: () => null,
-  };
+  });
   return element;
 }
 
@@ -142,6 +145,8 @@ function fakePage() {
     querySelectorAll: () => [],
     createElement: (tag) => fakeElement(tag),
     createTextNode: (text) => ({ textContent: text }),
+    // Nothing is rendered here, so a walk over an element finds no nodes — which is what a walk over the fake page's empty elements would find.
+    createTreeWalker: () => ({ nextNode: () => null }),
     createDocumentFragment: () => fakeElement('fragment'),
     createRange: () => ({
       setStart() {},
@@ -207,6 +212,8 @@ function runShell(source) {
     TextDecoder,
     URL,
     URLSearchParams,
+    NodeFilter: { SHOW_ELEMENT: 1, SHOW_TEXT: 4 },
+    Element: FakeElement,
     getComputedStyle: () => ({ getPropertyValue: () => '', color: 'rgb(0, 0, 0)' }),
     matchMedia: () => ({
       matches: false,
@@ -348,6 +355,417 @@ if (booted) {
     keeps('    indented code', null); // no fences to hide
     keeps('```\nunterminated', null); // no end to trust
     keeps('```\n```', null); // no line inside to edit
+  });
+
+  // Clearing the text out of a paragraph or a heading used to write the leftovers into the file — a bare `##`, or the literal text `<br>` that Chromium leaves in an emptied contenteditable. So an empty serialization is a delete of the whole line, and the range it deletes has to swallow one blank line too: a mapped range stops short of the separator (`trim_block_end`), so splicing the range alone stacks the blank lines from both sides.
+  check('a block typed empty is taken away, and takes one blank line with it', () => {
+    const { blockSerializationEmpty, blockDeleteRange, commitBlockEdit } = booted;
+
+    // What counts as nothing left. The `<br>` and the hashes are what the serializer writes for an empty block, not text somebody typed.
+    const empty = (text, kind, want) => {
+      if (blockSerializationEmpty(text, kind) !== want) {
+        throw new Error(`${JSON.stringify(text)} as a ${kind}: got ${!want}`);
+      }
+    };
+    empty('', 'paragraph', true);
+    empty('<br>', 'paragraph', true);
+    empty('<br/>', 'paragraph', true);
+    empty('<br><br>', 'paragraph', true); // however many it leaves
+    empty('  ', 'paragraph', true);
+    empty('##', 'heading', true);
+    empty('## ', 'heading', true);
+    empty('###### <br>', 'heading', true);
+    empty('still here', 'paragraph', false);
+    empty('## Named', 'heading', false);
+    empty('#', 'paragraph', false); // a paragraph whose text is one hash is text
+
+    // The range, over the real buffer. Deleting it must leave the neighbors one blank line apart, and never two. The offsets are UTF-8 bytes, so the cut is made on bytes.
+    const leaves = (source, start, end, want) => {
+      const span = blockDeleteRange(source, start, end);
+      const bytes = Buffer.from(source, 'utf8');
+      const got = Buffer.concat([bytes.subarray(0, span.start), bytes.subarray(span.end)]).toString('utf8');
+      if (got !== want) throw new Error(`${JSON.stringify(source)} minus [${start},${end}) -> ${JSON.stringify(got)}`);
+    };
+    leaves('A\n\nB\n\nC', 3, 4, 'A\n\nC'); // the middle one
+    leaves('A\n\nB\n\nC', 0, 1, 'B\n\nC'); // the first one
+    leaves('A\n\nB\n\nC', 6, 7, 'A\n\nB'); // the last one takes the run before it
+    leaves('A\n\nB\n', 3, 4, 'A'); // and so does one with only a trailing newline after it
+    leaves('B\n', 0, 1, ''); // the only block leaves an empty buffer
+    leaves('A\n\n\n\nB', 0, 1, 'B'); // an extra blank line somebody left goes with it
+    leaves('# T\n\ncafé 😀\n\nZ', 5, 16, '# T\n\nZ'); // multi-byte, where the offsets matter
+
+    // And the commit itself: what reaches the host.
+    const posted = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    const block = (kind, tag, start, end) => ({
+      tagName: tag,
+      isConnected: true,
+      dataset: { blockKind: kind, srcStart: String(start), srcEnd: String(end) },
+      childNodes: [],
+      textContent: '',
+      previousElementSibling: null,
+      nextElementSibling: null,
+    });
+    const edits = () => posted.filter((message) => message.command === 'editBlock');
+    try {
+      const source = '# Title\n\nA paragraph.\n\n```\ncode\n```\n';
+      booted.window.leafBlocksResynced({ source });
+
+      // The paragraph, emptied: its own range plus the blank line under it, replaced by nothing.
+      posted.length = 0;
+      commitBlockEdit(block('paragraph', 'P', 9, 21), '<br>');
+      const gone = edits();
+      if (gone.length !== 1) throw new Error(`emptying a paragraph sent ${gone.length} edits`);
+      if (gone[0].text !== '') throw new Error(`it wrote ${JSON.stringify(gone[0].text)}`);
+      const after = source.slice(0, gone[0].start) + source.slice(gone[0].end);
+      if (after !== '# Title\n\n```\ncode\n```\n') throw new Error(`the buffer became ${JSON.stringify(after)}`);
+      if (after.includes('<br>')) throw new Error('the leftover break was written into the file');
+
+      // The heading, emptied: no bare hashes left behind.
+      posted.length = 0;
+      commitBlockEdit(block('heading', 'H1', 0, 7), '# ');
+      const headingGone = edits();
+      if (headingGone.length !== 1) throw new Error(`emptying a heading sent ${headingGone.length} edits`);
+      const withoutHeading = source.slice(0, headingGone[0].start) + source.slice(headingGone[0].end);
+      if (withoutHeading !== 'A paragraph.\n\n```\ncode\n```\n') {
+        throw new Error(`the buffer became ${JSON.stringify(withoutHeading)}`);
+      }
+      if (/#/.test(withoutHeading)) throw new Error('the hashes were written into the file');
+
+      // Emptying the inside of a fence leaves an empty fence, not a missing one: the raw-source editor commits a range narrower than its block, and empty there means empty code.
+      posted.length = 0;
+      const fence = block('code_block', 'PRE', 23, 34);
+      commitBlockEdit(fence, '', { start: 27, end: 31 });
+      const inner = edits();
+      if (inner.length !== 1) throw new Error(`emptying a fence sent ${inner.length} edits`);
+      if (inner[0].start !== 27 || inner[0].end !== 31) {
+        throw new Error(`the fence's own range was widened to [${inner[0].start},${inner[0].end})`);
+      }
+      const emptyFence = source.slice(0, 27) + source.slice(31);
+      if (!emptyFence.includes('```\n\n```')) throw new Error(`the fence went: ${JSON.stringify(emptyFence)}`);
+
+      // A narrower range on a paragraph is refused the same way — the guard is the range, not only the kind.
+      posted.length = 0;
+      commitBlockEdit(block('paragraph', 'P', 9, 21), '', { start: 9, end: 15 });
+      if (edits()[0].end !== 15) throw new Error('a partial paragraph commit was turned into a delete');
+
+      // The only block in a document: the buffer empties, and no caret is claimed — bindReadingEditor opens the blank pair instead.
+      posted.length = 0;
+      vm.runInContext('pendingCaret = null;', booted);
+      booted.window.leafBlocksResynced({ source: 'Alone\n' });
+      commitBlockEdit(block('paragraph', 'P', 0, 5), '<br>');
+      const only = edits();
+      if (only.length !== 1 || only[0].start !== 0 || only[0].end !== 6) {
+        throw new Error(`the only block deleted [${only[0].start},${only[0].end})`);
+      }
+      if (vm.runInContext('pendingCaret', booted) !== null) {
+        throw new Error('a caret was claimed in a document with nothing left to put it in');
+      }
+    } finally {
+      booted.ipc = wasIpc;
+      booted.window.leafBlocksResynced({ source: '' });
+      vm.runInContext('pendingCaret = null;', booted);
+    }
+  });
+
+  // A selection can already cross blocks — Ctrl+A makes one — and each block is its own editing host, so the browser has no answer for Delete on it. The splice that answers it runs from the first touched block's start to the last one's end, which is the widest range anything in the reading view writes: getting it wrong takes out text nobody selected.
+  check('Delete over a run of blocks keeps the two ends and nothing between them', () => {
+    const { blockRunForDelete, crossBlockDeletePlan, blockMarkerOf, blockCanBeCutInHalf } = booted;
+
+    // The run the splice is allowed to cover. Refusing leaves the key to the browser, which is the right answer for a selection inside one block.
+    const block = (kind, start, end, tag) => ({
+      tagName: tag || (kind === 'heading' ? 'H2' : 'P'),
+      dataset: { blockKind: kind, srcStart: String(start), srcEnd: String(end) },
+      childNodes: [],
+      querySelector: () => null,
+      parentElement: null,
+      previousElementSibling: null,
+      nextElementSibling: null,
+    });
+    const body = (...blocks) => {
+      const parent = { children: blocks };
+      blocks.forEach((one, index) => {
+        one.parentElement = parent;
+        one.previousElementSibling = blocks[index - 1] || null;
+        one.nextElementSibling = blocks[index + 1] || null;
+      });
+      return blocks;
+    };
+
+    const [a, b, c] = body(block('paragraph', 0, 1), block('paragraph', 3, 4), block('paragraph', 6, 7));
+    const run = blockRunForDelete(a, c);
+    if (!run || run.elements.length !== 3) throw new Error('a run of three siblings was refused');
+    if (JSON.stringify(run.ranges) !== '[[0,1],[3,4],[6,7]]') throw new Error(`the ranges came back ${JSON.stringify(run.ranges)}`);
+    if (blockRunForDelete(b, b)) throw new Error('a selection inside one block should be left to the browser');
+    if (blockRunForDelete(c, a)) throw new Error('a backwards run should be refused');
+    // A raw-HTML wrapper nests the blocks after it, so the two ends can have different parents.
+    const [nested] = body(block('paragraph', 9, 10));
+    if (blockRunForDelete(a, nested)) throw new Error('two ends under different parents were spliced');
+    // A range the host would refuse: the map drifted and two blocks overlap.
+    const [bad, worse] = body(block('paragraph', 0, 9), block('paragraph', 4, 12));
+    if (blockRunForDelete(bad, worse)) throw new Error('overlapping ranges were spliced');
+    // A block that is only in the DOM has no offset to splice at.
+    const [real, blank] = body(block('paragraph', 0, 1), block('paragraph', 3, 3));
+    if (blockRunForDelete(real, blank)) throw new Error('a blank line was made one end of a splice');
+
+    // Which kinds may be cut part way. Everything else the selection touches goes whole — only these two round-trip from their rendered DOM back to source.
+    if (!blockCanBeCutInHalf(block('paragraph', 0, 1))) throw new Error('a paragraph cannot be cut');
+    if (!blockCanBeCutInHalf(block('heading', 0, 1))) throw new Error('a heading cannot be cut');
+    for (const kind of ['code_block', 'table', 'list', 'blockquote', 'html_block', 'rule']) {
+      if (blockCanBeCutInHalf(block(kind, 0, 1))) throw new Error(`a ${kind} was cut in half`);
+    }
+    // And a paragraph the app cannot rebuild from its rendered DOM — one holding a picture — goes whole like the rest.
+    const withPicture = block('paragraph', 0, 1);
+    withPicture.querySelector = () => ({});
+    if (blockCanBeCutInHalf(withPicture)) throw new Error('a paragraph holding a picture was cut in half');
+    if (blockMarkerOf(block('heading', 0, 1, 'H3')) !== '### ') throw new Error('a heading lost its level');
+    if (blockMarkerOf(block('paragraph', 0, 1)) !== '') throw new Error('a paragraph was given a marker');
+
+    // And the splice. The source is four blocks; a selection from the middle of the first to the middle of the last has to leave one block holding both halves.
+    const source = '# Title\n\nFirst paragraph.\n\n```\ncode\n```\n\nLast paragraph.\n';
+    const at = (text) => source.indexOf(text);
+    const half = (markdown) => ({ markdown, text: markdown.length });
+    const applied = (plan) => source.slice(0, plan.start) + plan.text + source.slice(plan.end);
+
+    const across = crossBlockDeletePlan(
+      source,
+      { start: at('First'), marker: '' },
+      { end: source.length - 1, marker: '' },
+      half('First'),
+      half('paragraph.'),
+    );
+    if (applied(across) !== '# Title\n\nFirstparagraph.\n') {
+      throw new Error(`across four blocks left ${JSON.stringify(applied(across))}`);
+    }
+    // The fence in the middle was never serialized — it is simply not in the replacement.
+    if (applied(across).includes('```')) throw new Error('a block in the middle survived');
+
+    // A selection ending inside the fence takes the fence whole rather than half of it: that end survives as nothing.
+    const intoFence = crossBlockDeletePlan(
+      source,
+      { start: at('First'), marker: '' },
+      { end: at('```\ncode\n```') + '```\ncode\n```'.length, marker: '' },
+      half('First'),
+      half(''),
+    );
+    if (applied(intoFence) !== '# Title\n\nFirst\n\nLast paragraph.\n') {
+      throw new Error(`into a fence left ${JSON.stringify(applied(intoFence))}`);
+    }
+
+    // The joined block keeps the kind of the first block that kept any of its own text, so a heading cut part way is still a heading.
+    const fromHeading = crossBlockDeletePlan(
+      source,
+      { start: 0, marker: '# ' },
+      { end: at('First') + 'First paragraph.'.length, marker: '' },
+      half('Ti'),
+      half('paragraph.'),
+    );
+    if (applied(fromHeading) !== '# Tiparagraph.\n\n```\ncode\n```\n\nLast paragraph.\n') {
+      throw new Error(`from a heading left ${JSON.stringify(applied(fromHeading))}`);
+    }
+    // And where the first block went whole, the last one's kind is what is left to keep — a heading's words do not come back as body text.
+    const ontoHeading = crossBlockDeletePlan(
+      source,
+      { start: at('```'), marker: '' },
+      { end: source.length - 1, marker: '## ' },
+      half(''),
+      half('paragraph.'),
+    );
+    if (applied(ontoHeading) !== '# Title\n\nFirst paragraph.\n\n## paragraph.\n') {
+      throw new Error(`onto a heading left ${JSON.stringify(applied(ontoHeading))}`);
+    }
+
+    // Both ends empty: the whole run goes, and the range eats one blank line the way one emptied block does.
+    const fenceEnd = at('```\ncode\n```') + '```\ncode\n```'.length;
+    const whole = crossBlockDeletePlan(source, { start: at('First'), marker: '' }, { end: fenceEnd, marker: '' }, half(''), half(''));
+    if (applied(whole) !== '# Title\n\nLast paragraph.\n') throw new Error(`the whole run left ${JSON.stringify(applied(whole))}`);
+    if (applied(whole).includes('\n\n\n')) throw new Error('the blank lines from both sides were left stacked');
+  });
+
+  // Ctrl+A widens a step per press with the caret in a block — the block, its section, the page — and the section is what the outline draws as one part of the document. The rule has to be the predictable one: stop at the next heading whatever its size, so pressing twice never takes more than what was on screen.
+  check('a section is a heading and everything under it, down to the next heading', () => {
+    const { blockSectionRun, selectAllStep } = booted;
+    // A document as a run of siblings, written the way the outline reads it.
+    const page = (...kinds) => {
+      const blocks = kinds.map((kind, index) => ({
+        dataset: { blockKind: kind === 'p' ? 'paragraph' : 'heading', srcStart: String(index * 10), srcEnd: String(index * 10 + 5) },
+        name: kind + index,
+      }));
+      const parent = { children: blocks };
+      blocks.forEach((one) => { one.parentElement = parent; });
+      return blocks;
+    };
+    const named = (run) => (run ? run.map((one) => one.name).join(' ') : null);
+    const sectionOf = (blocks, index, want) => {
+      const got = named(blockSectionRun(blocks[index]));
+      if (got !== want) throw new Error(`the section of ${blocks[index].name} is ${got}, wanted ${want}`);
+    };
+
+    // A paragraph under an h3 under an h2: the nearest heading above it is the h3, so that is the section — the second press never reaches the h2's whole part.
+    const nested = page('h2', 'p', 'h3', 'p', 'p', 'h2', 'p');
+    sectionOf(nested, 3, 'h32 p3 p4');
+    sectionOf(nested, 4, 'h32 p3 p4');
+    // The h2 itself stops at the h3 under it and goes no further.
+    sectionOf(nested, 0, 'h20 p1');
+    // The last heading in the document takes everything left.
+    sectionOf(nested, 5, 'h25 p6');
+    sectionOf(nested, 6, 'h25 p6');
+    // A document opening with body text: from the first block down to the first heading.
+    const leading = page('p', 'p', 'h2', 'p');
+    sectionOf(leading, 0, 'p0 p1');
+    sectionOf(leading, 1, 'p0 p1');
+    // A heading with nothing under it is its own section, which is what sends the second press on to the page instead.
+    const lone = page('p', 'h2');
+    sectionOf(lone, 1, 'h21');
+    // No headings at all: the section is the whole document, so the second press and the third agree.
+    sectionOf(page('p', 'p', 'p'), 1, 'p0 p1 p2');
+
+    // Which press it is, read off what is already selected rather than counted — so moving the caret between two presses starts again, with nothing to reset.
+    const step = (spans, covers, whole, want, what) => {
+      const got = selectAllStep(spans, covers, whole);
+      if (got !== want) throw new Error(`${what}: step ${got}, wanted ${want}`);
+    };
+    step(false, 0, 40, 1, 'a caret in a block'); // nothing selected: the browser takes the block
+    step(false, 12, 40, 1, 'a word highlighted'); // part of it: still the browser's
+    step(false, 40, 40, 2, 'the whole block'); // the block is taken, so the section is next
+    step(true, 60, 40, 3, 'a selection past the block'); // the section is taken, so the page is next
+    step(false, 0, 0, 2, 'an empty block'); // nothing to select, so the first press takes the section
+
+    // And whether there is a caret in a block at all, which is what decides between stepping and the one press that takes the page. A locked document has no editing host, so it keeps the Ctrl+A it always had.
+    const { caretBlockForSelectAll } = booted;
+    const inApp = booted.document.getElementById('app');
+    const wasContains = inApp.contains;
+    inApp.contains = (node) => !!node && node.inApp === true;
+    try {
+      const host = (attributes, inside) => {
+        const block = {
+          nodeType: 1,
+          dataset: attributes.editingSource ? { editingSource: 'true' } : {},
+          inApp: inside !== false,
+          getAttribute: (name) => (name === 'contenteditable' ? attributes.contenteditable || null : null),
+        };
+        block.closest = () => block;
+        return block;
+      };
+      if (!caretBlockForSelectAll(host({ contenteditable: 'true' }))) {
+        throw new Error('an unlocked block does not step');
+      }
+      if (caretBlockForSelectAll(host({}))) throw new Error('a locked block steps instead of taking the page');
+      if (caretBlockForSelectAll(host({ contenteditable: 'true', editingSource: true }))) {
+        throw new Error('a block showing its raw source lost the browser’s own select-all');
+      }
+      if (caretBlockForSelectAll(host({ contenteditable: 'true' }, false))) {
+        throw new Error('a block outside the document was stepped through');
+      }
+      if (caretBlockForSelectAll({ nodeType: 1, closest: () => null, inApp: true })) {
+        throw new Error('something that is not a block was read as one');
+      }
+    } finally {
+      inApp.contains = wasContains;
+    }
+  });
+
+  // Ctrl+Z used to bow out whenever the keystroke landed in a block you can type in, and after a delete the caret is in one — so the press did nothing while the Undo button beside it worked. A block only owns the key while it has keystrokes of its own to take back.
+  check('Ctrl+Z reaches the app’s undo unless the block has typing to take back', () => {
+    const { nativeUndoOwnsKey } = booted;
+    const inApp = booted.document.getElementById('app');
+    const wasContains = inApp.contains;
+    inApp.contains = () => true;
+    try {
+      const block = (state) => {
+        const el = Object.assign(new FakeElement(), {
+          nodeType: 1,
+          tagName: 'P',
+          dataset: { blockKind: 'paragraph', srcStart: '0', srcEnd: '5' },
+          childNodes: [],
+          classList: { contains: (name) => name === 'leaf-editable' },
+          getAttribute: (name) => (name === 'contenteditable' ? 'true' : null),
+          __editingActive: state.editing === true,
+          __editBaseline: state.baseline,
+        });
+        el.closest = () => el;
+        return el;
+      };
+      // A block being typed in: its own text has moved off the baseline, so the browser's keystroke undo is the right one.
+      if (!nativeUndoOwnsKey(block({ editing: true, baseline: 'something else' }))) {
+        throw new Error('a block mid-typing lost its native undo');
+      }
+      // The same block with nothing typed yet — where the caret lands after a delete or a split.
+      if (nativeUndoOwnsKey(block({ editing: true, baseline: '' }))) {
+        throw new Error('a block with no keystrokes of its own still swallowed Ctrl+Z');
+      }
+      if (nativeUndoOwnsKey(block({ editing: false, baseline: undefined }))) {
+        throw new Error('a block nobody has typed in swallowed Ctrl+Z');
+      }
+      // The code view is Monaco's, always.
+      vm.runInContext('codeViewActive = true;', booted);
+      if (!nativeUndoOwnsKey(block({ editing: false, baseline: undefined }))) {
+        throw new Error('Monaco lost its own undo');
+      }
+      vm.runInContext('codeViewActive = false;', booted);
+      // Nothing editable under the key at all: the app's undo, as before.
+      if (nativeUndoOwnsKey(Object.assign(new FakeElement(), { nodeType: 1, closest: () => null }))) {
+        throw new Error('a press outside every field was treated as typing');
+      }
+    } finally {
+      inApp.contains = wasContains;
+      vm.runInContext('codeViewActive = false;', booted);
+    }
+  });
+
+  // The delete is behind the same padlock as the rest of the editing layer, and the code view has its own. Neither refusal is visible — the key just does nothing — so both are held here rather than left to be found by hand.
+  check('the cross-block delete is behind the padlock and out of the code view', () => {
+    const { handleBlockRunDeleteKey } = booted;
+    let reads = 0;
+    let prevented = 0;
+    const wasSelection = booted.getSelection;
+    booted.getSelection = () => {
+      reads += 1;
+      return null; // Past the guards, and then nothing to delete.
+    };
+    const press = (key) => {
+      reads = 0;
+      prevented = 0;
+      handleBlockRunDeleteKey({ key, preventDefault: () => { prevented += 1; } });
+    };
+    try {
+      // Locked, which is how every document opens.
+      booted.setReadingUnlocked(false);
+      vm.runInContext("codeViewActive = false; currentDocumentFormat = 'markdown';", booted);
+      press('Delete');
+      if (reads) throw new Error('a locked document read the selection');
+      press('Backspace');
+      if (reads) throw new Error('a locked document read the selection on Backspace');
+
+      // Unlocked, the same press gets as far as reading the selection — which is what proves the padlock is what refused above.
+      booted.setReadingUnlocked(true);
+      press('Delete');
+      if (reads !== 1) throw new Error('an unlocked document did not reach the selection');
+      press('Backspace');
+      if (reads !== 1) throw new Error('Backspace does not answer a cross-block selection');
+      if (prevented) throw new Error('the browser was stopped with no run to splice');
+      // No other key is this one's business.
+      for (const key of ['a', 'Enter', 'ArrowLeft', 'x']) {
+        press(key);
+        if (reads) throw new Error(`${key} was read as a delete`);
+      }
+
+      // The code view has its own editor and its own padlock.
+      vm.runInContext('codeViewActive = true;', booted);
+      press('Delete');
+      if (reads) throw new Error('the code view was answered by the reading view’s delete');
+      vm.runInContext('codeViewActive = false;', booted);
+
+      // And a document that is not Markdown has no block map to splice against.
+      vm.runInContext("currentDocumentFormat = 'xml';", booted);
+      press('Delete');
+      if (reads) throw new Error('an XML document was spliced by the Markdown delete');
+    } finally {
+      booted.getSelection = wasSelection;
+      booted.setReadingUnlocked(false);
+      vm.runInContext("codeViewActive = false; currentDocumentFormat = 'markdown';", booted);
+    }
   });
 
   // A table is written back by re-serializing the whole thing, and the dashes line under the header is what carries each column's alignment. Deleting across two cells can take a whole cell out, and a changed column count is when that line is rebuilt instead of copied — a wrong rebuild un-centers a column with nothing on screen to show for it.

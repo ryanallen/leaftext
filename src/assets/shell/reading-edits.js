@@ -41,36 +41,324 @@ function caretTextOffsetIn(el) {
   return before.cloneContents().textContent.length;
 }
 
+// Both ends of the selection as character offsets inside `el`'s visible text, or
+// null unless the whole selection is inside the block. Both ends, not just the
+// caret: a double-clicked word has to survive the block becoming editable under it.
+function selectionTextSpanIn(el) {
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) return null;
+  const range = selection.getRangeAt(0);
+  if (!el.contains(range.startContainer) || !el.contains(range.endContainer)) return null;
+  const upTo = (container, offset) => {
+    const before = document.createRange();
+    before.selectNodeContents(el);
+    before.setEnd(container, offset);
+    return before.cloneContents().textContent.length;
+  };
+  return { start: upTo(range.startContainer, range.startOffset), end: upTo(range.endContainer, range.endOffset) };
+}
+
+// A character offset inside `el`'s visible text as a DOM point, clamped to the end.
+function blockTextPoint(el, offset) {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let remaining = Math.max(0, offset || 0);
+  let lastNode = null;
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (remaining <= node.nodeValue.length) return { node, offset: remaining };
+    remaining -= node.nodeValue.length;
+    lastNode = node;
+  }
+  return lastNode ? { node: lastNode, offset: lastNode.nodeValue.length } : null;
+}
+
 // Put the caret at a character offset inside `el`'s visible text (clamped to the
 // end), walking its text nodes.
 function placeCaretInBlock(el, offset) {
   const selection = window.getSelection();
   if (!selection) return;
   const range = document.createRange();
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-  let remaining = Math.max(0, offset || 0);
-  let lastNode = null;
-  let placed = false;
-  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    const length = node.nodeValue.length;
-    if (remaining <= length) {
-      range.setStart(node, remaining);
-      placed = true;
-      break;
-    }
-    remaining -= length;
-    lastNode = node;
-  }
-  if (!placed) {
-    if (lastNode) {
-      range.setStart(lastNode, lastNode.nodeValue.length);
-    } else {
-      range.selectNodeContents(el);
-    }
-  }
+  const point = blockTextPoint(el, offset);
+  if (point) range.setStart(point.node, point.offset);
+  else range.selectNodeContents(el);
   range.collapse(true);
   selection.removeAllRanges();
   selection.addRange(range);
+}
+
+// Put a span of `el`'s visible text back under the selection.
+function selectTextSpanInBlock(el, span) {
+  if (!span || span.end <= span.start) {
+    placeCaretInBlock(el, span ? span.start : 0);
+    return;
+  }
+  const selection = window.getSelection();
+  const from = blockTextPoint(el, span.start);
+  const to = blockTextPoint(el, span.end);
+  if (!selection || !from || !to) {
+    placeCaretInBlock(el, span.start);
+    return;
+  }
+  const range = document.createRange();
+  range.setStart(from.node, from.offset);
+  range.setEnd(to.node, to.offset);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+function isSourceSpaceByte(byte) {
+  return byte === 0x20 || byte === 0x09 || byte === 0x0a || byte === 0x0d;
+}
+
+// Whether a block serialized to nothing. Chromium leaves a `<br>` behind in a
+// contenteditable whose text has all gone, and a heading always writes its
+// hashes, so neither counts as text.
+function blockSerializationEmpty(text, kind) {
+  const bare = String(text == null ? '' : text)
+    .replace(/<br\s*\/?>/gi, '')
+    .trim();
+  return kind === 'heading' ? /^#*$/.test(bare) : bare === '';
+}
+
+// The range a whole-block delete covers: the block, plus the blank line after it.
+// A mapped range stops short of that separator (`trim_block_end`), so splicing the
+// range alone would leave the blank lines from both sides stacked. The last block
+// has nothing after it and takes the run before instead.
+function blockDeleteRange(source, start, end) {
+  const bytes = sourceByteEncoder.encode(source || '');
+  let from = Math.max(0, Math.min(start, bytes.length));
+  let to = Math.max(from, Math.min(end, bytes.length));
+  while (to < bytes.length && isSourceSpaceByte(bytes[to])) to += 1;
+  if (to >= bytes.length) {
+    while (from > 0 && isSourceSpaceByte(bytes[from - 1])) from -= 1;
+  }
+  return { start: from, end: to };
+}
+
+// Where the caret goes when a run of blocks is taken away: the end of the block
+// above it, or the start of the one below when the run started the document. The
+// offsets are post-splice — a block above keeps its own, one below moves up to
+// where the run started.
+function caretAfterBlockDelete(first, last, span) {
+  const offsetOf = (node) => (node && node.dataset ? Number(node.dataset.srcStart) : NaN);
+  const prev = first.previousElementSibling;
+  if (Number.isFinite(offsetOf(prev))) {
+    return { srcStart: offsetOf(prev), textOffset: visibleTextLength(prev) };
+  }
+  if (Number.isFinite(offsetOf(last.nextElementSibling))) {
+    return { srcStart: span.start, textOffset: 0 };
+  }
+  // Nothing either side: the document is now empty, and bindReadingEditor opens
+  // its blank pair rather than a caret landing anywhere.
+  return null;
+}
+
+// The Markdown a block's kind writes in front of its text. A heading's level comes
+// off the tag the renderer chose, which is where the serializer reads it too.
+function blockMarkerOf(el) {
+  if (!el || el.dataset.blockKind !== 'heading') return '';
+  return '#'.repeat(Number(el.tagName.substring(1)) || 1) + ' ';
+}
+
+// Whether a block can lose part of itself and be rebuilt from what is left. Only a
+// paragraph and a heading round-trip from their rendered DOM back to source
+// (`kind_is_editable`), so every other kind a selection touches goes whole rather
+// than becoming a half the app cannot claim to write.
+function blockCanBeCutInHalf(el) {
+  const kind = el.dataset.blockKind;
+  return (kind === 'paragraph' || kind === 'heading') && markdownBlockWysiwygSafe(el);
+}
+
+// A block typed empty is a block taken away, not a `##` or a `<br>` written into
+// the file. Only a paragraph or a heading committing its whole range: a fence
+// commits a narrower one, where empty means an empty fence and not a missing one.
+// It goes through sendBlockSplice because the DOM still shows the emptied block,
+// and a later blur replaying that range against the new buffer is what that stops.
+function deleteEmptiedBlock(el, text) {
+  const kind = el.dataset.blockKind;
+  if (kind !== 'paragraph' && kind !== 'heading') return false;
+  if (!blockSerializationEmpty(text, kind)) return false;
+  const start = Number(el.dataset.srcStart);
+  const end = Number(el.dataset.srcEnd);
+  // A zero-length range is a block that is only in the DOM — nothing to delete.
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return false;
+  const span = blockDeleteRange(currentDocumentSource, start, end);
+  const landing = caretAfterBlockDelete(el, el, span);
+  sendBlockSplice(el, span.start, span.end, '');
+  if (landing) setPendingCaret(landing);
+  return true;
+}
+
+// The blocks a selection covers, first to last, as one run of siblings — or null,
+// which leaves the key to the browser. Two ends can have different parents because
+// a raw-HTML wrapper nests the blocks after it, and a zero-length range is a block
+// that is only in the DOM, with no offset in the buffer to splice from.
+function blockRunForDelete(first, last) {
+  if (!first || !last || first === last) return null;
+  const parent = first.parentElement;
+  if (!parent || last.parentElement !== parent) return null;
+  const siblings = Array.from(parent.children).filter(blockHasSource);
+  const from = siblings.indexOf(first);
+  const to = siblings.indexOf(last);
+  if (from < 0 || to <= from) return null;
+  const elements = siblings.slice(from, to + 1);
+  const ranges = blockRunRanges(elements);
+  return ranges ? { elements, ranges } : null;
+}
+
+// The mapped block one end of a selection sits in. Not `selectionEditableBlock`,
+// which matches only an editing host — a code fence or an image at either end is
+// invisible to it, and the delete would then take half of one.
+function selectionBlockAt(node) {
+  const el = node && (node.nodeType === 1 ? node : node.parentElement);
+  if (!el || !el.closest) return null;
+  const block = el.closest('[data-src-start]');
+  return block && app.contains(block) ? block : null;
+}
+
+// What survives at one end of the selection: the part of the block outside it, as
+// Markdown and as the count of visible characters, which is what a caret is measured
+// in. A block that cannot be cut in half survives as nothing and goes whole.
+function survivingHalf(el, container, offset, keepStart) {
+  if (!blockCanBeCutInHalf(el)) return { markdown: '', text: 0 };
+  const part = document.createRange();
+  part.selectNodeContents(el);
+  if (keepStart) part.setEnd(container, offset);
+  else part.setStart(container, offset);
+  const contents = part.cloneContents();
+  return { markdown: inlineDomToMarkdown(contents).trim(), text: contents.textContent.trim().length };
+}
+
+// The one splice a cross-block delete makes: the first block's start to the last
+// one's end, carrying the surviving halves joined into a single block. Everything
+// between them is never serialized — it is simply not in the replacement. The kind
+// comes from the first block that keeps any of its own text, so a run whose first
+// block went whole does not leave the last one's heading as body text.
+function crossBlockDeletePlan(source, first, last, head, tail) {
+  const joined = head.markdown + tail.markdown;
+  if (!joined) {
+    const span = blockDeleteRange(source, first.start, last.end);
+    return { start: span.start, end: span.end, text: '' };
+  }
+  return { start: first.start, end: last.end, text: (head.markdown ? first.marker : last.marker) + joined };
+}
+
+// Delete or Backspace over a selection that leaves the block it started in. Each
+// block is its own editing host, so the browser has no answer here — and letting it
+// try would edit the DOM under the splice and leave a focused block's blur
+// replaying a range the buffer no longer has.
+function handleBlockRunDeleteKey(event) {
+  if (event.isComposing) return;
+  if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+  if (codeViewActive || currentDocumentFormat !== 'markdown' || !readerEditingAllowed()) return;
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount || selection.isCollapsed) return;
+  const range = selection.getRangeAt(0);
+  const run = blockRunForDelete(
+    selectionBlockAt(range.startContainer),
+    selectionBlockAt(range.endContainer),
+  );
+  if (!run) return;
+  event.preventDefault();
+  deleteBlockRun(run, range);
+}
+
+// Splice a run of blocks away, keeping whatever the selection left at each end.
+function deleteBlockRun({ elements, ranges }, range) {
+  const first = elements[0];
+  const last = elements[elements.length - 1];
+  const head = survivingHalf(first, range.startContainer, range.startOffset, true);
+  const tail = survivingHalf(last, range.endContainer, range.endOffset, false);
+  const plan = crossBlockDeletePlan(
+    currentDocumentSource,
+    { start: ranges[0][0], marker: blockMarkerOf(first) },
+    { end: ranges[ranges.length - 1][1], marker: blockMarkerOf(last) },
+    head,
+    tail,
+  );
+  sendBlockSplice(first, plan.start, plan.end, plan.text);
+  // Every block in the run still shows its pre-splice content, so each one's blur
+  // baseline is neutralized — not just the one the splice was sent against.
+  for (const el of elements) el.__editBaseline = blockDomToMarkdown(el);
+  const landing = plan.text
+    ? { srcStart: plan.start, textOffset: head.markdown ? head.text : 0 }
+    : caretAfterBlockDelete(first, last, plan);
+  if (landing) setPendingCaret(landing);
+}
+
+// Registered once, at the fragment's top level. Every other listener in this
+// fragment is per block and re-bound on each render, so one inside
+// bindReadingEditor would stack a copy per render.
+window.addEventListener('keydown', handleBlockRunDeleteKey);
+
+// The run of blocks a heading owns: the nearest heading at or above `el`, down to
+// the next heading of ANY level or the end of the document. So deleting a `##`
+// leaves a `###` under it standing, and the section is never more than what was on
+// screen when it was picked. A block with no heading above it takes the run from the
+// first block down to the first heading.
+function blockSectionRun(el) {
+  const parent = el && el.parentElement;
+  if (!parent) return null;
+  const siblings = Array.from(parent.children).filter(blockHasRange);
+  const index = siblings.indexOf(el);
+  if (index < 0) return null;
+  const isHeading = (node) => node.dataset.blockKind === 'heading';
+  let from = index;
+  while (from > 0 && !isHeading(siblings[from])) from -= 1;
+  if (!isHeading(siblings[from])) from = 0;
+  let to = from;
+  while (to + 1 < siblings.length && !isHeading(siblings[to + 1])) to += 1;
+  return siblings.slice(from, to + 1);
+}
+
+// Highlight a run of blocks. The browser paints a selection across blocks on its
+// own, so there is nothing to draw.
+function selectBlockRun(elements) {
+  const selection = window.getSelection();
+  if (!selection || !elements || !elements.length) return false;
+  const range = document.createRange();
+  range.setStartBefore(elements[0]);
+  range.setEndAfter(elements[elements.length - 1]);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  return true;
+}
+
+// Which step Ctrl+A is on, read off what is already selected rather than counted:
+// so a caret moved between two presses starts again by itself, with nothing to
+// reset. 1 — the block is not selected yet, so the browser does it. 2 — the whole
+// block is, so the section is next. 3 — the selection has already left the block.
+function selectAllStep(spans, covers, whole) {
+  if (spans) return 3;
+  return whole > 0 && covers < whole ? 1 : 2;
+}
+
+// The block the caret is in, for Ctrl+A's stepping — an editing host in the
+// document, the only place a caret can be. A locked page has none, and a block
+// showing its raw source keeps the browser's own select-all, so both take Ctrl+A the
+// way they always have: one press, the whole page.
+function caretBlockForSelectAll(target) {
+  const block = selectionBlockAt(target);
+  if (!block || block.dataset.editingSource === 'true') return null;
+  return block.getAttribute('contenteditable') === 'true' ? block : null;
+}
+
+// What Ctrl+A does with the caret in `block`: leave it to the browser, take the
+// block's section, or take the whole page. A heading with nothing under it has no
+// section worth a press of its own — its section is the block the first press
+// already selected — so it goes straight to the page.
+function selectAllTargetFor(block) {
+  const selection = window.getSelection();
+  const range = selection && selection.rangeCount && !selection.isCollapsed ? selection.getRangeAt(0) : null;
+  const spans =
+    !!range &&
+    (selectionBlockAt(range.startContainer) !== block || selectionBlockAt(range.endContainer) !== block);
+  const step = selectAllStep(spans, range ? range.toString().trim().length : 0, block.textContent.trim().length);
+  if (step === 1) return { browser: true };
+  if (step === 2) {
+    const section = blockSectionRun(block);
+    if (section && !(section.length === 1 && section[0] === block)) return { section };
+  }
+  return { page: true };
 }
 
 // Send an edit for `el`'s source range, only if `text` differs from the baseline
@@ -88,6 +376,7 @@ function commitBlockEdit(el, text, range) {
   const end = range ? range.end : Number(el.dataset.srcEnd);
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   if (text === el.__editBaseline) return;
+  if (!range && deleteEmptiedBlock(el, text)) return;
   sendEditCommand({ command: 'editBlock', start, end, text });
   const delta = utf8ByteLength(text) - (end - start);
   window.setTimeout(() => {
@@ -155,8 +444,7 @@ function splitBlockAtCaret(el) {
   const part1Inline = inlineDomToMarkdown(beforeRange.cloneContents()).trim();
   const part2Inline = inlineDomToMarkdown(afterRange.cloneContents()).trim();
   if (!part1Inline) return;
-  const prefix =
-    el.dataset.blockKind === 'heading' ? '#'.repeat(Number(el.tagName.substring(1)) || 1) + ' ' : '';
+  const prefix = blockMarkerOf(el);
   const part1 = prefix + part1Inline;
   if (part2Inline) {
     // Both halves keep the block's own kind — splitting a heading yields two
@@ -535,10 +823,12 @@ function handleWysiwygKeydown(el, event) {
     const selection = window.getSelection();
     if (selection && selection.isCollapsed && caretTextOffsetIn(el) === 0) {
       const prev = el.previousElementSibling;
+      // The class, not `contenteditable`: the block above is only a host once it has
+      // been clicked into, and merging up must work the first time.
       if (
         prev &&
-        prev.getAttribute &&
-        prev.getAttribute('contenteditable') === 'true' &&
+        prev.classList &&
+        prev.classList.contains('leaf-editable') &&
         (prev.dataset.blockKind === 'paragraph' || prev.dataset.blockKind === 'heading')
       ) {
         event.preventDefault();
@@ -548,13 +838,38 @@ function handleWysiwygKeydown(el, event) {
   }
 }
 
-// Make `el` an editing host. Split from the listeners below, and from the
-// `.leaf-editable` class, so bindEditableBlocks can apply each in its own pass.
+// Mark `el` editable — the class and the checkbox islands, not `contenteditable`.
+// **A block is not an editing host until it is clicked into.** A host confines a
+// selection to itself, so making every block one meant a drag could never leave the
+// block it started in and there was nothing to select, copy or delete across two of
+// them. The page is plain text until you point at a line, which is also why nothing
+// is written per block at unlock any more.
 function markMarkdownEditable(el) {
-  el.setAttribute('contenteditable', 'true');
-  el.setAttribute('spellcheck', 'false');
   el.querySelectorAll('input[type="checkbox"]').forEach((box) => box.setAttribute('contenteditable', 'false'));
 }
+
+// Whether `el` is open for typing right now.
+function blockIsEditingHost(el) {
+  return !!el && !!el.getAttribute && el.getAttribute('contenteditable') === 'true';
+}
+
+// Open `el` for typing and put `span` back under the selection — a caret where a
+// click landed, or the word a double-click took. Turning the attribute on moves the
+// selection, so where it was is captured before and restored after.
+function openWysiwygBlock(el, span) {
+  if (blockIsEditingHost(el)) return;
+  el.setAttribute('contenteditable', 'true');
+  el.setAttribute('spellcheck', 'false');
+  el.focus({ preventScroll: true });
+  selectTextSpanInBlock(el, span);
+}
+
+// Hand the block back to the page, so the next drag can leave it.
+function closeWysiwygBlock(el) {
+  el.removeAttribute('contenteditable');
+  el.removeAttribute('spellcheck');
+}
+
 // Wire `el` as a live Markdown editor: keep the rendered styling, edit in place,
 // commit on blur. Checkboxes stay non-editable islands; focus moving within the
 // block neither resets the baseline nor commits.
@@ -574,6 +889,19 @@ function wireMarkdownEditable(el) {
       event.preventDefault();
     }
   });
+  // The press that opens the block, decided on release rather than on the way down:
+  // only then is it known whether this was a click or a drag. Both ends of the
+  // selection inside this block means the pointer never left it, so it is this
+  // block's to open; a drag that reached another block leaves both alone and stands
+  // as the cross-block selection it is.
+  el.addEventListener('pointerup', (event) => {
+    if (event.button !== 0 || blockIsEditingHost(el)) return;
+    const target = event.target;
+    if (target && target.closest && target.closest('a, input[type="checkbox"]')) return;
+    const span = selectionTextSpanIn(el);
+    if (!span) return;
+    openWysiwygBlock(el, span);
+  });
   el.addEventListener('focusin', () => {
     if (!el.__editingActive) {
       el.__editingActive = true;
@@ -590,6 +918,8 @@ function wireMarkdownEditable(el) {
     if (blockGutterHoldsFocus(event.relatedTarget)) return;
     el.__editingActive = false;
     commitBlockEdit(el, blockDomToMarkdown(el));
+    // Back to being page rather than editor, so the next drag can leave it.
+    closeWysiwygBlock(el);
   });
   el.addEventListener('keydown', (event) => handleWysiwygKeydown(el, event));
 }
@@ -706,9 +1036,11 @@ function startBlockSourceEdit(el) {
 //
 // One pass per kind of mutation, never one pass doing all of them per block.
 // Interleaving a `contenteditable` write with the `.leaf-editable` class (which the
-// `:focus` rules key on) makes each block force its own focus recomputation:
+// `:focus` rules key on) made each block force its own focus recomputation:
 // unlocking a 50,000-block glossary took 148 SECONDS that way, half a second
-// batched. Neither write is expensive alone; only alternating them is.
+// batched. No block is made an editing host at unlock at all now — that happens on
+// the click that opens one — so the passes stay separate on the same principle
+// rather than because either is still expensive.
 function bindEditableBlocks(format) {
   const body = app.querySelector('.document-body');
   if (!body) return;
@@ -758,9 +1090,15 @@ function placePendingCaret(body) {
     openInsertBlockAfter(target, pending.blockSpec);
     return;
   }
-  if (target.getAttribute('contenteditable') !== 'true') return;
-  target.focus({ preventScroll: true });
-  placeCaretInBlock(target, pending.textOffset || 0);
+  // The block is not a host until something opens it, and landing a caret is one of
+  // the things that does — the edit before this one was typed, so typing carries on.
+  if (!target.classList.contains('leaf-editable') || target.dataset.editingSource === 'true') return;
+  const offset = pending.textOffset || 0;
+  openWysiwygBlock(target, { start: offset, end: offset });
+  if (blockIsEditingHost(target)) {
+    target.focus({ preventScroll: true });
+    placeCaretInBlock(target, offset);
+  }
 }
 
 // Land a caret the render deferred. The reading view is decorated while hidden (see

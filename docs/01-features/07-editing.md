@@ -14,6 +14,9 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Save As](#new-document) | A new document has no file until its first save, which asks where to put it |
 | [Inline editing](#inline-editing-the-reading-view) | Click into the rendered page and edit it directly — see [Formats](#formats) for what each one allows |
 | [Block editing](#inline-editing-the-reading-view) | `Enter` splits a block or starts a new one; `Backspace` at the start merges into the block above |
+| [Taking a block away](#deleting) | Clear a paragraph or heading of its text and the whole line goes — no bare `##` left standing |
+| [Taking several away](#deleting) | Highlight across blocks and `Delete` removes the lot; whatever survives at each end joins into one block |
+| [Picking a section](#deleting) | `Ctrl+A` with the caret in a block widens a step per press: the block, then the heading and everything under it, then the page |
 | [The block gutter](#the-block-gutter) | A handle and a plus in the page's left margin: drag a block to reorder it, or add one on the empty line |
 | [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider |
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
@@ -61,6 +64,20 @@ The rendered page is a live editor. The **source stays the single source of trut
 - **Nothing is drawn around the line you are typing in.** No ring, no box. The caret says where you are, and a page whose whole point is that it is a page should not turn into a form when you touch it. A block showing its raw source is the exception: its code tint is what says *this is source*.
 - Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way.
 - The reading view opens **locked**: clicks do not enter edit mode until you say so. See [The padlock](#the-padlock).
+
+### Deleting
+
+Taking something out of a document is not the same as emptying it of words. Clear the text out of a paragraph and there should be no paragraph left — not an empty one, and certainly not the leftovers of the one that was there.
+
+- **An emptied block goes.** Delete the last word out of a paragraph or a heading, click away, and the whole line is removed from the file along with the blank line that separated it from the next one. A heading does not leave its `##` behind. The blank lines either side do not stack up: the two neighbors end up exactly one apart, and an extra blank line somebody had put above the block stays where it was.
+- **A highlight can cross blocks.** Drag from one paragraph into the next and the selection follows, through headings, code blocks and tables alike — so it can be copied or deleted in one go. A block only becomes typable when you click into it, which is what lets the drag leave it; click into one and it is an editor again, and the page around it goes back to being selectable when you click away.
+- **`Delete` and `Backspace` work across blocks.** Highlight from the middle of one paragraph to the middle of another and press either: everything between them goes, and the two surviving halves join into one block. It keeps the kind of whichever end kept its own words, so a heading cut part way is still a heading. The caret lands at the join.
+- **Anything that cannot be cut in half goes whole.** A code block, a table, a list, a picture, a diagram — a selection that touches one takes all of it rather than leaving a half the app cannot write back. That is what somebody dragging across a code block means anyway.
+- **It is one edit.** However many blocks the highlight covered, one press of [Undo](#undo) — the button or `Ctrl+Z` — puts all of it back.
+- **The whole document can go.** Empty the last block and the file is empty, and the page comes back as a blank one — a title and a line to type on, the same as a [new document](#new-document).
+- **Selecting a section takes two presses.** With the caret in a block, `Ctrl+A` (`Cmd+A`) widens a step at a time: the first press selects the block you are in, the second the **section** — the nearest heading at or above you and everything under it, down to the next heading of any size — and the third the whole page. Move the caret and the next press starts at the block again. From outside a block it is one press and the whole page, as it always was.
+- **A code block's inside is not a block.** Clear the code out of a fence and you have an empty fence, not a missing one — see [above](#inline-editing-the-reading-view).
+- Deleting is behind the same [padlock](#the-padlock) as typing. A locked page can still be selected and copied, and `Ctrl+A` on one selects the page in one press.
 
 ### The block gutter
 
@@ -144,7 +161,7 @@ The recess holds the tools of the view you are in — the padlock in both, the [
 Reading-view edits are undoable, step by step.
 
 - Every inline edit — a typed change, a block split or merge — records one undo step. An **Undo** button appears beside Save whenever there is a step to take back, and disappears when there is nothing left to undo. (Checkbox toggles are the exception: they auto-save and are not undoable.)
-- Click it, or press `Ctrl+Z` (`Cmd+Z` on macOS), to revert the most recent edit. While you are still typing inside a block, the platform's own undo handles keystrokes as usual; the app-level undo covers edits that have already been written into the buffer.
+- Click it, or press `Ctrl+Z` (`Cmd+Z` on macOS), to revert the most recent edit. The keystroke goes to the platform's own undo only while the block you are in holds typing it has not saved yet — so mid-sentence it takes back letters, and everywhere else it takes back the last edit, including a [delete](#deleting) that removed several blocks.
 - A successful **Save** makes the current text the new baseline and clears the undo history, so Undo only ever steps back through edits made since your last save — it never walks you below saved text.
 - [The flowchart editor](#the-flowchart-editor) keeps its own history while it is open, because everything you do in there arrives here as a single edit.
 

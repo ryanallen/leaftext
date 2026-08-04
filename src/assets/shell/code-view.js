@@ -352,14 +352,26 @@ window.addEventListener('keydown', (event) => {
   event.preventDefault();
   saveActiveDocument();
 });
-// Ctrl/Cmd+Z steps back one committed reading-view edit — but only when the
-// keystroke is NOT inside a live editing surface, whose own native undo still
-// covers uncommitted typing keystroke by keystroke.
+// Whether the surface under the keystroke has typing of its own for the browser to
+// take back. A block only owns Ctrl+Z while it holds uncommitted keystrokes: after a
+// delete or a split the caret sits in a block with no keystroke history at all, and
+// handing the key over there meant the press did nothing while the Undo button beside
+// it worked. Monaco and the app's own fields keep theirs unconditionally.
+function nativeUndoOwnsKey(target) {
+  if (!isEditableMouseTarget(target)) return false;
+  if (codeViewActive) return true;
+  const block = target && target.closest ? target.closest('[data-src-start].leaf-editable') : null;
+  if (!block) return true;
+  return block.__editingActive === true && blockDomToMarkdown(block) !== block.__editBaseline;
+}
+
+// Ctrl/Cmd+Z steps back one committed reading-view edit — but not while the surface
+// under it has uncommitted typing, whose native undo covers it keystroke by keystroke.
 window.addEventListener('keydown', (event) => {
   const undoKey =
     (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && (event.key === 'z' || event.key === 'Z');
   if (!undoKey) return;
-  if (isEditableMouseTarget(event.target)) return;
+  if (nativeUndoOwnsKey(event.target)) return;
   const path = activeDocumentPath();
   if (!path || undoableByPath.get(path) !== true) return;
   event.preventDefault();

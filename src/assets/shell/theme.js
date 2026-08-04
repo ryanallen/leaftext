@@ -256,14 +256,33 @@ window.addEventListener('keydown', (event) => {
   }
   // Select-all in the reading view means the page, not the library and chrome
   // around it. Editable fields and the code view keep their native select-all.
+  //
+  // With the caret in a block it widens a step per press instead: the block, then
+  // the block's section, then the page. The first press is still the browser's own,
+  // which is why the early return has to stay rather than being replaced.
   if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'a') {
-    if (codeViewActive || isEditableMouseTarget(event.target)) {
+    if (codeViewActive) {
+      return;
+    }
+    const caretBlock = caretBlockForSelectAll(event.target);
+    if (!caretBlock && isEditableMouseTarget(event.target)) {
       return;
     }
     const body = app.querySelector('.document-body');
     // offsetParent is null while another view (the graph) sits in its place.
     if (!body || body.offsetParent === null) {
       return;
+    }
+    if (caretBlock) {
+      const wanted = selectAllTargetFor(caretBlock);
+      if (wanted.browser) {
+        return;
+      }
+      if (wanted.section) {
+        event.preventDefault();
+        selectBlockRun(wanted.section);
+        return;
+      }
     }
     event.preventDefault();
     const range = document.createRange();
