@@ -155,20 +155,16 @@ const MERMAID_SCALE_SHAPE = {
   dark: { luminance: 0.12, minSaturation: 0.38, maxSaturation: 0.85 },
 };
 
-// mermaid variable → the fill its text is printed on, so the ink can be measured
-// against it. A theme's `*-foreground` is the ink for its own buttons and says
-// nothing about a diagram: GitHub's greens are mid tones meant to be read as
-// text, so white on one is 2.3:1.
+// mermaid variable → the fill its text is printed on, so the ink can be measured against it. A theme's `*-foreground` is the ink for its own buttons and says nothing about a diagram: GitHub's greens are mid tones meant to be read as text, so white on one is 2.3:1.
 //
-// Naming the wrong fill looks exactly like naming the wrong color — a quadrant
-// point's label sits on the quadrant, not on the point, and measuring it against
-// the point shipped white text on a pale gray panel. Gantt bars are set per state
-// below: four colors, one variable, no ink that reads on all of them.
+// Naming the wrong fill looks exactly like naming the wrong color. A quadrant point's label sits on the quadrant, not on the point, and measuring it against the point shipped white text on a pale gray panel; `errorBkgColor` above is the same trap, because that red is the bomb a failed diagram draws and the words beside it are on the block.
+//
+// Gantt bars are set per state below: four colors, one variable, no ink that reads on all of them.
 const MERMAID_INK_MAP = {
   taskTextColor: ['--lt-primary'],
   taskTextLightColor: ['--lt-primary'],
   sequenceNumberColor: ['--lt-muted-foreground'],
-  errorTextColor: ['--lt-danger'],
+  errorTextColor: ['--lt-editor-code-background'],
   quadrantPointTextFill: ['--lt-surface-muted', '--lt-surface-sunken'],
 };
 
@@ -841,11 +837,11 @@ function drawMermaidBatches(diagrams, generation) {
           try {
             await mermaid.run({ nodes: batch });
           } catch (error) {
-            // One bad diagram must not cost the rest of the page: mermaid has
-            // already drawn its own error into the offender, so mark this batch and
-            // carry on with the next.
+            // Mermaid keeps drawing after one block throws and leaves its error picture in the block it failed on, so only that one is marked and the rest of the batch finishes as usual. A block it never reached has neither the error nor a drawing, and is marked too rather than left spinning.
             console.error(error);
-            for (const diagram of batch) diagram.dataset.mermaidRender = 'failed';
+            for (const diagram of batch) {
+              if (diagram.querySelector('.error-icon') || !diagram.querySelector('svg')) diagram.dataset.mermaidRender = 'failed';
+            }
           }
           for (const diagram of batch) {
             if (diagram.dataset.mermaidRender === 'failed') {

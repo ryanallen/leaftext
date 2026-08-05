@@ -16,6 +16,15 @@ const check = (name, run) => {
     failures.push(`${name}: ${error && error.message ? error.message : error}`);
   }
 };
+// For a check that has to let the page's own promises settle before it can look. Its failure lands in the same list, and the report at the foot waits for every one of them.
+const settled = [];
+const checkSettled = (name, run) => {
+  settled.push(
+    Promise.resolve()
+      .then(run)
+      .catch((error) => failures.push(`${name}: ${error && error.message ? error.message : error}`)),
+  );
+};
 
 // ---- the script, assembled the way the binary assembles it ------------------
 
@@ -1999,6 +2008,15 @@ if (booted) {
     if (defined.size < 50) throw new Error(`only found ${defined.size} tokens`);
     const missing = used.filter((token) => !defined.has(token));
     if (missing.length) throw new Error(`no such token: ${missing.join(', ')}`);
+
+    // A token that exists is not a token the text sits on, and the map names the fill purely so the ink can be measured against it. A failed diagram's words were measured against the red of the bomb beside them and printed near-black on a near-black block — legible only if you already knew what it said.
+    const printedOn = [...maps.matchAll(/errorTextColor: \['(--[a-z0-9-]+)'\]/g)].map((m) => m[1]);
+    const cell = css.slice(css.indexOf('pre.mermaid[data-processed="true"]'));
+    const fill = (cell.match(/background-color: var\((--[a-z0-9-]+)\)/) || [])[1];
+    if (!fill) throw new Error('the diagram cell no longer names the surface it is drawn on');
+    if (printedOn.length !== 1 || printedOn[0] !== fill) {
+      throw new Error(`the failed diagram's words are measured against ${printedOn.join(', ') || 'nothing'}, and printed on ${fill}`);
+    }
   });
 
   // v0.1.468: one line in a document took the whole interface away. Mermaid draws `click A "…"` as a real anchor even at its strict level, and writes only `xlink:href` — which `documentLinkFor` does not match, so the click belonged to the web view and the app page navigated to the site with no tabs, no bar and no way back.
@@ -2028,7 +2046,7 @@ if (booted) {
     }
   });
 
-  // Mermaid substitutes its own glyph for an icon it cannot find — an 80x80 rect in a hardcoded #087ebf, the one color a diagram could show that no theme chose. And a picture whose URL will not decode throws from inside mermaid's renderer, where the catch upstream can only mark the whole batch of three failed. So both are settled before mermaid reads the block.
+  // Mermaid substitutes its own glyph for an icon it cannot find — an 80x80 rect in a hardcoded #087ebf, the one color a diagram could show that no theme chose. And a picture whose URL will not decode throws from inside mermaid's renderer, where all the catch upstream can do is leave the block wearing mermaid's error. So both are settled before mermaid reads the block.
   check('a box mermaid cannot draw becomes our own mark before it sees it', () => {
     const { mermaidHasIcon, mermaidRewriteTyped } = booted;
     if (!mermaidHasIcon('leaf:back')) throw new Error('the generated set does not carry leaf:back');
@@ -2045,6 +2063,52 @@ if (booted) {
     if (!swapped.includes('B["icon: fa:bell"]')) throw new Error(`the label was rewritten: ${swapped}`);
   });
 
+  // Diagrams are drawn three at a time, and mermaid keeps drawing after one of them throws — so the batch comes back with its error picture in the block it failed on and finished drawings in the rest. Marking all three cost two working diagrams their toolbar and their memo entry every time one broken diagram sat beside them.
+  checkSettled('a broken diagram is marked on its own, and the batch beside it finishes', async () => {
+    const block = (name, drawn) => {
+      const element = fakeElement(name);
+      element.__mermaidSource = `flowchart TD\n  ${name} --> B`;
+      element.innerHTML = drawn.includes('svg') ? `<svg id="${name}"></svg>` : '';
+      element.dataset = { diagramWait: 'true' };
+      element.children = [];
+      element.appendChild = (child) => {
+        element.children.push(child);
+        return child;
+      };
+      // Only what mermaid really left behind answers: the error picture it draws into the block it failed on, and the drawing it leaves in every block it drew.
+      element.querySelector = (selector) => (drawn.includes(String(selector)) ? fakeElement(String(selector)) : null);
+      return element;
+    };
+    const bad = block('bad', ['svg', '.error-icon']);
+    const good = block('good', ['svg']);
+    const unreached = block('unreached', []);
+
+    booted.mermaid = {
+      registerIconPacks() {},
+      initialize() {},
+      run() {
+        throw new Error('one block in this batch will not draw');
+      },
+    };
+    booted.drawMermaidDiagrams([bad, good, unreached]);
+    // The batch's own promises are all microtasks up to the yield it ends on, which the fake page's timer never fires.
+    await new Promise((resolve) => setImmediate(resolve));
+    delete booted.mermaid;
+
+    if (bad.dataset.mermaidRender !== 'failed') throw new Error('the diagram carrying mermaid’s error was not marked');
+    if (unreached.dataset.mermaidRender !== 'failed') throw new Error('a block with neither an error nor a drawing was left spinning');
+    if (good.dataset.mermaidRender) throw new Error('a diagram that drew fine was marked failed beside its neighbor');
+    if (good.dataset.diagramWait) throw new Error('a diagram that drew fine never reached finish');
+    if (!good.children.some((child) => child.className === 'mermaid-zoom')) throw new Error('a diagram that drew fine got no toolbar');
+    if (bad.children.length) throw new Error('the broken diagram was given a toolbar');
+
+    // The memo is the other half of finishing: the drawing comes straight back on the next pass, where a block that was wrongly marked has nothing to come back to.
+    const again = block('good', ['svg']);
+    again.innerHTML = '';
+    booted.drawMermaidDiagrams([again]);
+    if (again.innerHTML !== good.innerHTML) throw new Error('a diagram that drew fine left no memo entry');
+  });
+
   // The diagram's labels are set in the theme's body font, which theme.rs emits per family rather than reading.css.
   check('the theme compiler emits the font the diagrams ask for', () => {
     const theme = readFileSync(join(root, 'src/theme.rs'), 'utf8');
@@ -2053,13 +2117,20 @@ if (booted) {
     }
   });
 
-  // An icon is a name on a masked span, never a drawing (see the icon rule in AGENTS.md). Code that swaps one and looks for an `svg` finds nothing and fails in silence: a vault on GitHub kept its box for a release because of exactly this. The flow canvas is the exception — the thing it reaches for there really is mermaid's rendered SVG, not an icon.
+  // An icon is a name on a masked span, never a drawing (see the icon rule in AGENTS.md). Code that swaps one and looks for an `svg` finds nothing and fails in silence: a vault on GitHub kept its box for a release because of exactly this. Mermaid's own drawing is the exception, and it is named line by line rather than by file, so a fourth query cannot ride in behind the three.
   check('nothing looks for an svg where the page draws a masked span', () => {
+    // The flowchart editor's stage, and the block a batch threw on being asked whether mermaid drew anything into it at all.
+    const mermaidsOwn = new Set([
+      "const svg = stage && stage.querySelector('svg');",
+      "if (diagram.querySelector('.error-icon') || !diagram.querySelector('svg')) diagram.dataset.mermaidRender = 'failed';",
+    ]);
     const offenders = [];
     for (const name of names) {
-      if (name === 'shell/flow-canvas.js') continue;
       const text = readFileSync(join(root, 'src/assets', name), 'utf8');
-      if (/querySelector(All)?\(\s*['"]svg['"]\s*\)/.test(text)) offenders.push(name);
+      for (const line of text.split('\n')) {
+        if (!/querySelector(All)?\(\s*['"]svg['"]\s*\)/.test(line)) continue;
+        if (!mermaidsOwn.has(line.trim())) offenders.push(`${name}: ${line.trim()}`);
+      }
     }
     if (offenders.length) throw new Error(`looks for an svg: ${offenders.join(', ')}`);
   });
@@ -2335,6 +2406,8 @@ check('an unhandled rejection reaches the same place', () => {
 });
 
 // ---- report -----------------------------------------------------------------
+
+await Promise.all(settled);
 
 if (failures.length) {
   console.error('front-end check failed:');
