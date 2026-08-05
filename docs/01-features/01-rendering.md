@@ -248,7 +248,7 @@ $$ \int_{a}^{b} f(x)\,dx = F(b) - F(a) $$
 
 ### Mermaid diagrams
 
-`mermaid` fences are rendered with the bundled Mermaid runtime, fully offline. If Mermaid fails, Leaftext leaves the source visible instead of a blank block. A page of many diagrams draws them a few at a time, nearest what you are reading first, so the window stays yours while the rest of the page fills in. Each one waits as a spinner rather than showing the Mermaid it is about to replace, and your place on the page is kept as they land.
+`mermaid` fences are rendered with the bundled Mermaid runtime, fully offline. If Mermaid fails, Leaftext leaves the source visible instead of a blank block. **Only the diagrams near what you are reading are drawn**, a few at a time and nearest first, so a page of sixty opens as fast as a page of three; the rest wait as empty blocks of the right size and draw as you scroll to them, and one you have left several screens behind goes back to a block and comes straight back when you return. A diagram waiting its turn shows a spinner rather than the Mermaid it is about to replace, one too far off to be queued shows nothing, and your place on the page is kept as they land. `Ctrl`+`F` still finds the words inside a diagram nobody has drawn.
 
 Diagrams take your theme's colors and body font — boxes the theme's muted surface, subgraphs its sunken one, arrows its muted ink, and a Gantt chart the theme's own active, done and critical colors. Switch theme and every diagram on the page is redrawn to match. The twelve-color scale a mindmap or pie chart cycles through is your theme's primary hue turned around the wheel, as described in [Themes → Diagrams](06-themes.md#diagrams).
 

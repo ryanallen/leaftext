@@ -1,5 +1,5 @@
 ---
-name: priority
+name: pm
 description: Rank every live ticket into one running order and write it to ../docs/PLAN.md — what to build next, top to bottom, with the reason each row sits where it does. Reads ../docs/README.md and every ticket in ../docs/features/, ../docs/refactor/ and ../docs/fixes/, checks each one's status against the code rather than trusting it, then ranks on three things in a fixed order: is something wrong today, how many other tickets are waiting on it, and what it costs. The live file is a table, not an essay: four lines above the first table, one or two sentences a cell, no method, no record, no empty tiers — anything longer belongs in the ticket. Shipped rows do not stay in the list — they move to ../docs/done/PLAN.md, so the running order is the length of the work that is left. A row is cited by its ticket's name, never a number. Never touches git. Use when the user says "what should I build next", "rank the tickets", "make a plan", "priorities", or hands over the plan folder to be brought up to date.
 argument-hint: "[optional: a subject to rank within]"
 user-invocable: true
@@ -29,7 +29,7 @@ Rows carried numbers until 4 August 2026. They were retired with their rows and 
 
 ### A row moves unchanged
 
-Whatever the row said in the live list is what it says in `done/PLAN.md`: struck through, with the date it closed and what the build found. **Nothing is rewritten on the way across**, so the row a later reader finds is the row somebody actually built against, and moving it is a cut and paste. That is [`/build`](../build/SKILL.md)'s last step, not this skill's.
+Whatever the row said in the live list is what it says in `done/PLAN.md`: struck through, with the date it closed and what the build found. **Nothing is rewritten on the way across**, so the row a later reader finds is the row somebody actually built against, and moving it is a cut and paste. That is [`/pre-release`](../pre-release/SKILL.md)'s job, not this skill's.
 
 ## 1. Read before ranking
 
@@ -81,7 +81,7 @@ Tier 0 comes first because the list is only as good as the statuses it rests on.
 
 **Last ranked 3 August 2026.** Live rows only — a row that ships moves to
 [what was built](done/PLAN.md). Tickets: [README.md](README.md).
-Method, and why a row sits where it does: `/priority`.
+Method, and why a row sits where it does: `/pm`.
 
 **Next up: [ticket-name](path).** Anything that can go beside it, and what waits.
 
@@ -89,7 +89,7 @@ Method, and why a row sits where it does: `/priority`.
 the ticket's name.
 
 **Designed** — has anybody read the ticket against today's code. Unticked means
-the plan is unproven, so `/build` runs `/design` before it writes anything;
+the plan is unproven, so `/dev` runs `/design` before it writes anything;
 the ticket's own dated line is the authority and this box mirrors it.
 
 ## Tier 1 — wrong today, and cheap (days)
@@ -131,7 +131,7 @@ It ends with two things the live file is kept clear of. **What the retired rows 
 
 ## 6. When something ships
 
-That is [build](../build/SKILL.md)'s last step, not this skill's: it moves the row into `done/PLAN.md` unchanged, marks the date, says what the build found, and moves the "where this stands" pointer on in the live file. Run this again when enough has moved that the *order* is wrong rather than one row.
+That is [pre-release](../pre-release/SKILL.md)'s job, not this skill's: it moves the row into `done/PLAN.md` unchanged, marks the date, says what the build found, and moves the "where this stands" pointer on in the live file. Run this again when enough has moved that the *order* is wrong rather than one row.
 
 ## 7. Hand back
 
@@ -145,6 +145,6 @@ Say what moved and why, in plain words: which rows changed tier, what tier 0 tur
 - `../docs/GLOSSARY.md` — tier, row, seam, track, retired row, subject folder: what each one means here.
 - `/ticket` — writes the tickets this ranks.
 - `/design` — fixes a ticket this finds wrong. A tier 0 row is often "run `/design` on that file".
-- `/build` — builds the top row, and keeps both files true as it goes.
+- `/dev` — builds the top row. `/pre-release` is what retires its row once the owner says it works.
 
 <!-- keycode: LEAF-7A15 -->

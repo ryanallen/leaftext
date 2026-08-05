@@ -1,6 +1,6 @@
 ---
 name: ticket
-description: Write a ticket — a Markdown plan with phases and a checkbox per piece of work, so the job can be picked up cold, done in order, and ticked off as it lands. Six parts in a fixed order, opening with one sentence that says who it is for, what they will be able to do, the change that does it, and the evidence it will work — enable <who> to <do the thing> by <the change>, which works because <the evidence>. Then why, what was measured with a citation per claim, how it is built, the phases, and the record. It is also where the words go: a running-order row gets two sentences, so anything longer lands in the ticket. A new capability goes in ../docs/features/, restructuring what already exists goes in ../docs/refactor/, and something the app gets wrong today goes in ../docs/fixes/ — each inside the subject folder for the part of the app it is about. Reads ../docs/README.md first so it never re-plans what the tree already shipped or turned down, and updates that index and the running order in ../docs/PLAN.md in the same edit. Nothing open-ended survives the file: anything undecided is asked before writing, never left in as a question. Never touches git. Use when the user says "write a ticket", "make a plan for", "spec this out", hands over work to be scoped rather than built, or asks what plans already exist.
+description: Write a ticket — a Markdown plan with phases and a checkbox per piece of work, so the job can be picked up cold, done in order, and ticked off as it lands. Six parts in a fixed order, opening with one sentence that says who it is for, what they will be able to do, the change that does it, and the evidence it will work — enable <who> to <do the thing> by <the change>, which works because <the evidence>. Then why, what was measured with a citation per claim, how it is built, the phases, and the record. It is also where the words go: a running-order row gets two sentences, so anything longer lands in the ticket. A new capability goes in ../docs/features/, restructuring what already exists goes in ../docs/refactor/, and something the app gets wrong today goes in ../docs/fixes/ — each inside the subject folder for the part of the app it is about. Reads ../docs/README.md first so it never re-plans what the tree already shipped or turned down, writes that index row in the same pass, and then runs /pm to rank the new ticket among every other live one rather than placing its own row. Nothing open-ended survives the file: anything undecided is asked before writing, never left in as a question. Never touches git. Use when the user says "write a ticket", "make a plan for", "spec this out", hands over work to be scoped rather than built, or asks what plans already exist.
 argument-hint: "[what the ticket is for]"
 user-invocable: true
 ---
@@ -19,7 +19,7 @@ The ticket tree is `leaftext/docs/`, the folder beside the app — not `app/docs
 | --- | --- |
 | `../docs/README.md` | one line per ticket in the whole tree. Read it first; update it last |
 | `../docs/GLOSSARY.md` | every word this tree uses about itself — ticket, phase, box, tier, the record. **Write the ticket in these words**, and add a row for any planning word it spends that is not there yet |
-| `../docs/PLAN.md` | the running order over the live tickets. A new ticket is not findable until it has a row here |
+| `../docs/PLAN.md` | the running order over the live tickets. A new ticket is not findable until it has a row here, and [`/pm`](../pm/SKILL.md) writes that row — never this skill |
 | `../docs/features/` | the app cannot do this yet |
 | `../docs/refactor/` | the app already does it; this changes how |
 | `../docs/fixes/` | something is wrong and this is the fix |
@@ -144,19 +144,17 @@ A ticket nobody can find is a ticket nobody builds. So writing the plan is two-t
 
 **1. The index row.** `../docs/README.md`, in the group the ticket belongs to, saying what it is in the owner's words. The rules for a row are up under [the index](#the-index--read-it-first-then-keep-it): a ticket moved between folders moves its row, a ticket that replaces another says so in both, and a row that only restates the file name is a row nobody can argue with.
 
-**2. The running order.** `../docs/PLAN.md` is what somebody reads to pick up work, so a ticket missing from it is invisible however good the plan is. Add the row in the tier it belongs to. **It is one file, rewritten in place** — never a new dated copy; if the *order* rather than one row is now wrong, run [priority](../priority/SKILL.md) over the whole thing instead.
+**2. The running order — run [`/pm`](../pm/SKILL.md) over the whole tree.** Not a row placed by hand. A new ticket changes what somebody should pick up next, and the author is the last person who can judge that: they have just spent an hour on one file and read none of the others, so a self-placed row lands wherever the writing left them feeling about it. Running the ranking is also the only pass that walks the three live folders off the disk, which is how a ticket with no row at all gets found — the ranking on 4 August 2026 turned up three, one of them a diagram bug that takes the whole drawing down.
 
-A row is placed by the same three things `/priority` ranks on, in that order: is something wrong today, how many other tickets are waiting on it, then cost. **Absent is not wrong** — a capability the app never had does not reach tier 1 however big its audience.
+So finishing a ticket is: write the file, write the index row, then `/pm`. It re-derives every `Designed` box from the tickets, re-checks statuses against the code, and rewrites `../docs/PLAN.md` in place with the new ticket ranked among the rest. Nothing here places a tier by hand, and nothing here writes a `PLAN.md` row.
 
-**The row starts with `Designed` unticked.** The column is second, right after the ticket name, and a ticket nobody has read against the code yet is `[ ]` by definition — including one written five minutes ago off a careful reading, because the box says *somebody checked this against the code afterwards*, not *the author was careful*. [`/design`](../design/SKILL.md) ticks it.
+**Absent is not wrong** — a capability the app never had does not reach tier 1 however big its audience. Worth knowing while writing, because a ticket that argues the app is *broken* when it is merely *incomplete* is a ticket the ranking has to argue back at.
 
-**A row is named, not numbered.** The ticket's name is the row's identity, in both plan files and in every line of prose that cites it, so adding a row is one line and nothing else in either file has to move. If the "next up" line at the top is now wrong, fix that line; that is the only knock-on there is.
-
-Two things to check before handing back: the ticket has a row in the index, and it has a row in `PLAN.md`. Missing either, the work is not findable.
+Two things to check before handing back: the ticket has a row in the index, and `/pm` has run and left it a row in `PLAN.md`. Missing either, the work is not findable.
 
 ## Working a ticket later
 
-That is [build](../build/SKILL.md)'s job — it takes the finished ticket and does everything below, plus the index row, the running order in `../docs/plans/`, and any published page the work made untrue. What it holds itself to:
+That is [dev](../dev/SKILL.md)'s job — it takes the finished ticket and does everything below, plus the index row, the running order in `../docs/plans/`, and any published page the work made untrue. What it holds itself to:
 
 Tick the box — `- [x]` — as each piece lands, in the same edit as the code. A box that will not be done is struck through with the reason beside it.
 
@@ -171,9 +169,9 @@ Move its index row in the same edit, and rewrite it to say what shipped. A row s
 
 ## Reference
 
-- `/priority` — ranks every ticket in the tree into one running order.
+- `/pm` — ranks every ticket in the tree into one running order.
 - `/design` — checks a written ticket against the code before anyone builds it.
-- `/build` — builds one, and moves it to `done/` when the last box is ticked.
+- `/dev` — builds one and stops at the owner's box; `/pre-release` is what moves it to `done/`.
 - `../docs/README.md` — every ticket, one line each. Read first, updated last.
 - `../docs/GLOSSARY.md` — the words a ticket is written in. A planning word this file spends and that file does not define gets a row there in the same pass.
 - `../docs/features/editing/highlight-annotate.md` — measured table, phases, a phase 0.

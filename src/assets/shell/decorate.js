@@ -473,25 +473,65 @@ function mermaidCacheKey(source) {
   const root = document.documentElement.dataset;
   return (root.themeFamily || '') + '\n' + (root.theme || '') + '\n' + source;
 }
+// Keyed like the picture memo, so a box refilled at the height its drawing had moves nothing above the reader.
+const mermaidDrawnHeights = new Map();
+// One window either way. Sixty drawn on open stalled the window for three and a half seconds.
+const MERMAID_NEAR_SCREENS = 1;
+function mermaidViewHeight() {
+  return app.clientHeight || window.innerHeight || 800;
+}
+// For the pass that runs before the observer below has reported anything.
+function mermaidIsNearReader(diagram) {
+  const rect = diagram.getBoundingClientRect();
+  const height = mermaidViewHeight();
+  const margin = height * MERMAID_NEAR_SCREENS;
+  return rect.bottom >= -margin && rect.top <= height + margin;
+}
+// Waiting its turn, or too far away to be queued. Only the waiting one spins, so a page of boxes is not fifty-seven spinners.
+function markMermaidWait(diagram, near) {
+  diagram.dataset.diagramWait = near ? 'near' : 'far';
+  const known = mermaidDrawnHeights.get(mermaidCacheKey(diagram.__mermaidSource || diagram.textContent));
+  // Cleared when unknown: a theme switch keys the memo afresh, and the old theme's height would hold the box open.
+  if (known) diagram.style.minHeight = `${known}px`;
+  else diagram.style.removeProperty('min-height');
+}
 function renderMermaidDiagrams() {
-  // The full-window stage is inside `app` and is a `pre.mermaid` too, but it draws
-  // itself and must never reach the memo — an overlay-sized SVG written into it
-  // comes back in the page at that size.
+  // A render swaps in a fresh body, so the boxes the watcher held are detached. Identity catches that; re-observing does not.
+  const body = app.querySelector('.document-body');
+  if (body !== mermaidWatchedBody) {
+    forgetMermaidWatch();
+    mermaidWatchedBody = body;
+  }
+  // The full-window stage is a `pre.mermaid` inside `app` too, but it draws itself: an overlay-sized SVG in the memo comes back in the page at that size.
   const candidates = Array.from(app.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-stage])'));
+  if (!candidates.length) {
+    return;
+  }
+  const near = [];
+  candidates.forEach((diagram) => {
+    // The only copy of the text once the SVG has replaced it, and a theme change needs it back.
+    diagram.__mermaidSource = diagram.textContent;
+    const isNear = mermaidIsNearReader(diagram);
+    markMermaidWait(diagram, isNear);
+    if (isNear) near.push(diagram);
+  });
+  watchMermaidDiagrams(candidates);
+  drawMermaidDiagrams(near);
+}
+
+// Restore what the memo has, queue the rest. Called with the diagrams near the reader, on open and on every scroll.
+function drawMermaidDiagrams(candidates) {
   if (!candidates.length) {
     return;
   }
   const diagrams = [];
   let restored = false;
   candidates.forEach((diagram) => {
-    const source = diagram.textContent;
-    // Held on every diagram, drawn or restored: it is the only copy of the text
-    // once the SVG has replaced it, and a theme change needs it back.
-    diagram.__mermaidSource = source;
-    const cached = mermaidRenderCache.get(mermaidCacheKey(source));
+    const cached = mermaidRenderCache.get(mermaidCacheKey(diagram.__mermaidSource));
     if (cached) {
       diagram.innerHTML = cached;
       diagram.dataset.processed = 'true';
+      finishMermaidDiagram(diagram);
       addMermaidControls(diagram);
       restored = true;
       return;
@@ -499,7 +539,7 @@ function renderMermaidDiagrams() {
     diagrams.push(diagram);
   });
   if (restored) {
-    readerAnchorBlocks = null;
+    mermaidPageTextChanged();
   }
   if (!diagrams.length) {
     return;
@@ -511,11 +551,135 @@ function renderMermaidDiagrams() {
   drawMermaidBatches(diagrams, mermaidRenderGeneration);
 }
 
-// How far a diagram is from the middle of the window. Everything still gets
-// drawn; only the order changes.
+// The height it drew to is worth keeping: a box refilled at that height moves nothing on the page.
+function finishMermaidDiagram(diagram) {
+  delete diagram.dataset.diagramWait;
+  diagram.style.removeProperty('min-height');
+  if (mermaidViewObserver) mermaidViewObserver.unobserve(diagram);
+  if (diagram.__mermaidSource == null) return;
+  const height = Math.round(diagram.getBoundingClientRect().height);
+  if (!height) return;
+  if (mermaidDrawnHeights.size >= MERMAID_CACHE_CAP) mermaidDrawnHeights.clear();
+  mermaidDrawnHeights.set(mermaidCacheKey(diagram.__mermaidSource), height);
+  watchMermaidForRecycling(diagram);
+}
+
+// A drawing off screen still pays for its own stylesheet — sixty of those are 354 KB in sixty id-scoped sheets, which is what makes a settled page scroll badly.
+const MERMAID_FAR_SCREENS = 3;
+let mermaidRecycleObserver = null;
+const mermaidLeavingView = new Set();
+function watchMermaidForRecycling(diagram) {
+  if (typeof IntersectionObserver === 'undefined') return;
+  if (!mermaidRecycleObserver) {
+    mermaidRecycleObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) mermaidLeavingView.delete(entry.target);
+        else mermaidLeavingView.add(entry.target);
+      }
+      if (mermaidLeavingView.size) scheduleMermaidPass();
+    }, { root: app, rootMargin: `${MERMAID_FAR_SCREENS * 100}% 0px` });
+  }
+  mermaidRecycleObserver.observe(diagram);
+}
+// What must keep its drawing however far away it is.
+function mermaidMayRecycle(diagram) {
+  if (!diagram.isConnected || diagram.dataset.processed !== 'true') return false;
+  // Being edited, or held somewhere other than where the page put it: taking one back throws away what the reader did to it.
+  if (diagram.dataset.editingSource === 'true') return false;
+  if (diagram.classList.contains('is-moved') || diagram.classList.contains('is-panning')) return false;
+  const overlay = diagramOverlayElement();
+  if (overlay && overlay.__diagramBlock === diagram) return false;
+  if (diagram.__mermaidSource == null) return false;
+  const key = mermaidCacheKey(diagram.__mermaidSource);
+  // Past its cap the memo empties wholesale, so a box refilled after that redraws from scratch — worse on every scroll than the stylesheet it carries. A height nothing measured would move the page.
+  return mermaidRenderCache.has(key) && mermaidDrawnHeights.has(key);
+}
+// Back to a box, at exactly the height the drawing had, so nothing on the page moves.
+function recycleMermaidDiagram(diagram) {
+  if (!mermaidMayRecycle(diagram)) return false;
+  if (mermaidRecycleObserver) mermaidRecycleObserver.unobserve(diagram);
+  diagram.textContent = diagram.__mermaidSource;
+  delete diagram.dataset.processed;
+  markMermaidWait(diagram, false);
+  if (mermaidViewObserver) mermaidViewObserver.observe(diagram);
+  return true;
+}
+
+// Drawing swaps a diagram's source out for its labels, so Ctrl+F re-walks and re-lands on the drawn label where the source was.
+function mermaidPageTextChanged() {
+  readerAnchorBlocks = null;
+  refreshFind();
+}
+
+// One window of margin either way, so a diagram is drawn before it is scrolled to rather than after.
+let mermaidViewObserver = null;
+let mermaidWatchedBody = null;
+const mermaidWaitingNearby = new Set();
+let mermaidDrainTimer = 0;
+function watchMermaidDiagrams(candidates) {
+  if (typeof IntersectionObserver === 'undefined') {
+    // No watcher: nothing will ever report a diagram as near, so draw them all.
+    drawMermaidDiagrams(candidates);
+    return;
+  }
+  if (!mermaidViewObserver) {
+    mermaidViewObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const diagram = entry.target;
+        if (diagram.dataset.processed === 'true' || diagram.dataset.mermaidRender === 'failed') {
+          mermaidViewObserver.unobserve(diagram);
+          continue;
+        }
+        markMermaidWait(diagram, entry.isIntersecting);
+        if (entry.isIntersecting) mermaidWaitingNearby.add(diagram);
+        else mermaidWaitingNearby.delete(diagram);
+      }
+      if (mermaidWaitingNearby.size) scheduleMermaidPass();
+    }, { root: app, rootMargin: `${MERMAID_NEAR_SCREENS * 100}% 0px` });
+  }
+  for (const diagram of candidates) mermaidViewObserver.observe(diagram);
+}
+// Wait for the gesture to stop: a diagram growing above the reader mid-scroll shifts the page under their thumb, and the re-pin that would undo that stands aside while they scroll.
+function scheduleMermaidPass() {
+  if (mermaidDrainTimer) return;
+  mermaidDrainTimer = window.setTimeout(() => {
+    mermaidDrainTimer = 0;
+    if (readerScrolling) {
+      scheduleMermaidPass();
+      return;
+    }
+    // Boxes back first: a recycled box holds its drawing's height, so only the drawings can move anything.
+    for (const diagram of mermaidLeavingView) recycleMermaidDiagram(diagram);
+    mermaidLeavingView.clear();
+    const queue = Array.from(mermaidWaitingNearby).filter((diagram) => diagram.isConnected
+      && diagram.dataset.processed !== 'true'
+      && diagram.dataset.mermaidRender !== 'failed');
+    mermaidWaitingNearby.clear();
+    drawMermaidDiagrams(queue);
+  }, READER_SCROLL_SETTLE_MS);
+}
+// A render replaces the document, so every box the old one was watching is gone.
+function forgetMermaidWatch() {
+  if (mermaidViewObserver) {
+    mermaidViewObserver.disconnect();
+    mermaidViewObserver = null;
+  }
+  if (mermaidRecycleObserver) {
+    mermaidRecycleObserver.disconnect();
+    mermaidRecycleObserver = null;
+  }
+  mermaidWaitingNearby.clear();
+  mermaidLeavingView.clear();
+  if (mermaidDrainTimer) {
+    window.clearTimeout(mermaidDrainTimer);
+    mermaidDrainTimer = 0;
+  }
+}
+
+// How far a diagram is from the middle of the window, for the order within a batch.
 function mermaidReaderDistance(diagram) {
   const rect = diagram.getBoundingClientRect();
-  const middle = (window.innerHeight || 800) / 2;
+  const middle = mermaidViewHeight() / 2;
   return Math.abs(rect.top + rect.height / 2 - middle);
 }
 
@@ -556,11 +720,18 @@ function drawMermaidBatches(diagrams, generation) {
             for (const diagram of batch) diagram.dataset.mermaidRender = 'failed';
           }
           for (const diagram of batch) {
-            if (diagram.dataset.mermaidRender === 'failed' || diagram.__mermaidSource == null) continue;
+            if (diagram.dataset.mermaidRender === 'failed') {
+              // It keeps the error it drew, so stop watching — but the spinner has to go, or a refusal spins behind its own message.
+              delete diagram.dataset.diagramWait;
+              if (mermaidViewObserver) mermaidViewObserver.unobserve(diagram);
+              continue;
+            }
+            if (diagram.__mermaidSource == null) continue;
             if (mermaidRenderCache.size >= MERMAID_CACHE_CAP) mermaidRenderCache.clear();
             // Memo first, button second: the cache holds innerHTML, and a button
             // baked into it would come back on every restore and stack up.
             mermaidRenderCache.set(mermaidCacheKey(diagram.__mermaidSource), diagram.innerHTML);
+            finishMermaidDiagram(diagram);
             addMermaidControls(diagram);
           }
           // Each batch changed the block layout; drop the cached anchor list, and
@@ -570,6 +741,8 @@ function drawMermaidBatches(diagrams, generation) {
         }
       } finally {
         resumeMinimapPreview();
+        // The words the search was pointing at inside these diagrams are gone now.
+        mermaidPageTextChanged();
       }
     })
     .catch((error) => {

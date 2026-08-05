@@ -27,8 +27,8 @@ export const ALWAYS = 'AGENTS.md';
 /// Every file that carries a keycode. A skill is required when the message names it with a slash, which is how a skill gets invoked.
 export function keyedFiles() {
   const skills = [
-    'add-dependency', 'add-format', 'build', 'check', 'code-comments',
-    'design-tokens', 'git-release', 'priority', 'design', 'shell-fragment',
+    'add-dependency', 'add-format', 'check', 'code-comments', 'dev',
+    'design-tokens', 'git-release', 'pre-release', 'pm', 'design', 'shell-fragment',
     'sync-docs', 'sync-tests', 'ticket',
   ];
   return [ALWAYS, ...skills.map((name) => `.agents/skills/${name}/SKILL.md`)];

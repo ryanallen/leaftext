@@ -1,12 +1,12 @@
 ---
-name: build
+name: dev
 description: >-
-  Build a ticket, and leave the plan tree telling the truth about it. Takes one thing — a path to a ticket under ../docs/features/, ../docs/refactor/ or ../docs/fixes/ — and works out the rest: it runs /design itself when nothing has dated the top of the file, holds the ticket against its row in ../docs/PLAN.md, builds the phases in order, ticks each box in the same edit as the code with the test that covers it, strikes through and explains any box that changed shape, and runs /check at the end of every phase. Where the ticket changes anything a person points at, presses or looks at, it then runs the app and drives it — the ask pipe for anything the page handles, the gesture driver for a real wheel or drag — reports what it saw with a picture, and hands over only the gestures it could not reach. A passing check is not a working app, and nothing is called done until the owner says it works. When the last box is ticked it writes the shipped note, moves the file into the matching subject folder under ../docs/done/, rewrites its row in ../docs/README.md to say what shipped, strikes its row in ../docs/PLAN.md with what the build found, moves that row into ../docs/done/PLAN.md unchanged, and moves the "next up" line on, and fixes any page under docs/ the change just made untrue. Never touches git. Use when the user says "build this", "work that ticket", "do the plan", or hands over a ticket path to be built rather than scoped.
+  Build a ticket, and stop where a machine's word runs out. Takes one thing — a path to a ticket under ../docs/features/, ../docs/refactor/ or ../docs/fixes/ — and works out the rest: it runs /design itself when nothing has dated the top of the file, holds the ticket against its row in ../docs/PLAN.md, builds the phases in order, ticks each box in the same edit as the code with the test that covers it, strikes through and explains any box that changed shape, and runs /check at the end of every phase. Where the ticket changes anything a person points at, presses or looks at, it then runs the app and drives it — the ask pipe for anything the page handles, the gesture driver for a real wheel or drag — reports what it saw with a picture, and hands over only the gestures it could not reach. A passing check is not a working app, so it ends at the owner's own box, unticked, and closes nothing: the shipped note, the move into ../docs/done/, the index row and the running-order row are /pre-release's, run once the owner has said it works. Never touches git. Use when the user says "build this", "dev this", "work that ticket", "do the plan", or hands over a ticket path to be built rather than scoped.
 argument-hint: "[path to the ticket]"
 user-invocable: true
 ---
 
-# Build a ticket
+# Dev a ticket
 
 A ticket is a plan somebody already wrote. This builds it, and leaves the plan tree saying what actually happened — because the next person reads the tree, not this conversation.
 
@@ -47,7 +47,9 @@ Phases ship alone. Build them in the ticket's order and finish each one before s
 - **A box that changed shape is struck through with the reason**, not silently rewritten: `- [x] ~~what it said~~ — cut, because …`. Two things earn this: the plan asked for something the code already does for free, and the plan's box had no obvious done. Both go in the record section too.
 - **A box that moves to a later phase says so where it was**, and appears in the phase that got it. A box that quietly vanishes reads as built.
 - **Nothing open-ended is left behind.** If building turns up a real question the ticket never answered, ask it — one round, the question tool, with a recommendation — and write the answer into the ticket as a decision with its reason before carrying on.
-- **Every line written is one line.** Never hard-wrap — not a box, not a paragraph, and not a comment in the code. A comment too long for one line is *shortened*, never wrapped: see [code-comments](../code-comments/SKILL.md), which holds that bar. `just check-wrapping` fails on one and `--fix` joins it.
+- **Every line written is one line.** Never hard-wrap — not a box, not a paragraph, and not a comment in the code. A comment too long for one line is *shortened*, never wrapped: the length is the thing to fix. `just check-wrapping` fails on one and `--fix` joins it — **except under `src/assets/`, which it skips entirely**, so the front-end fragments and `reading.css` are the one place a wrapped comment passes every check. That is most of what a build touches, so write those on one line by hand and do not wait to be told.
+- **The comment bar is [code-comments](../code-comments/SKILL.md)'s, and a build meets it as it writes** rather than leaving a pass to clean up after. Why the code is the way it is, never how it got that way; match the density of the file already there; no assistant voice — no "I changed", no "as requested", no note about what this session did. A comment naming an identifier is a claim, so grep it before writing it.
+- **A comment in a `src/assets/shell/*.js` fragment can break a test that never mentions it.** `src/tests/app_shell_*.rs` assert on exact substrings of the assembled script, and some of those substrings are comments. Grep the comment text in `src/tests/` before editing one.
 - **Every phase ends with [check](../check/SKILL.md)**, and with the bundler line when it touched `design/`. A failing check is fixed, not explained past.
 
 ## When a phase cannot be built
@@ -79,45 +81,30 @@ Most of that is reachable from here. So when the ticket changes anything a perso
 - **Know which surface a gesture is on**, or a faked event gets reported as a pass. Anything the page handles goes through `eval` — every keyboard shortcut, every click on an element, every command the page sends. Anything the web view handles needs the driver — the wheel, a real drag, a native menu, the file dialog. A dispatched `WheelEvent` moves nothing at all, and setting `scrollTop` is a different gesture from a wheel.
 - **Report what you saw, with the picture.** What you drove, what came back, and the shot.
 - **Hand over only what you could not reach** — in the owner's words, "drag across two paragraphs and press Delete", not "verify the cross-block selection path". One line each, and it should be a short list now rather than the whole thing.
-- **Stop there.** The last box is the owner saying it works — a machine agreeing with itself is not evidence, which is why `deleting` is in the tree. Until that comes back, the ticket stays in `fixes/`, `features/` or `refactor/`, its row stays in the running order, and section 5 below has not started.
+- **Stop there.** The last box is the owner saying it works — a machine agreeing with itself is not evidence, which is why `deleting` is in the tree. Until that comes back the ticket does not move, and [pre-release](../pre-release/SKILL.md) has not started.
 - **That confirmation is a real box**, unticked, at the foot of the phases: `- [ ] The owner says it works in the window: …`. `check-docs` fails a ticket whose every box is ticked and is still filed as live work, so without it the last phase cannot end green.
 - **A gesture no check can reach is named in the ticket**, in `Still open`, so the next reader knows what was proved by machine and what by hand.
 
 A ticket that touches nothing anyone points at — a rename, a test, a doc pass, a build script — skips this and goes straight on.
 
-## 5. When the last box is ticked
+## 5. Stop. Closing the ticket is not this skill's
 
-Five edits, all in one pass. Skipping any one of them is how the tree starts lying about the app.
+**The ticket stays where it is** — in `fixes/`, `features/` or `refactor/` — its row stays in the running order, and the not-built note stays at the top. Nothing is moved, renamed or rewritten.
 
-1. **The shipped note** replaces `> **Not built.** A plan.` at the top of the ticket: what shipped, where the code is, and the date.
+That is [pre-release](../pre-release/SKILL.md)'s job, and it runs when the owner has said it works, not when the boxes are ticked. The split is deliberate: this skill has been wrong before with every box ticked and every check green, so the tree is not allowed to say a thing shipped on a machine's word alone. `deleting` is in `done/` because that rule did not exist.
 
-   One line, like every other paragraph — `check-wrapping` reads this file too.
-
-   ```markdown
-   > **Done and shipped.** Kept for the reasoning, not as work. All four phases. `store/frontmatter.rs` reads the field, `vault_corpus.rs` holds it. Checked 3 August 2026.
-   ```
-
-2. **Move the file** into the subject folder under `../docs/done/` that says what kind of thing shipped — `app/` what a reader got, `repo/` how the repo is built, `release/` publishing, `reference/` a document that was never a plan. This is the one move that re-files a ticket's subject: the live folders group by the part of the app, `done/` groups by what kind of thing it was.
-
-3. **`../docs/README.md`**: the row moves out of its live-plans group and into the shipped table, and is **rewritten to say what shipped** rather than what was planned. A row still describing a plan is how the index starts lying.
-
-4. **The two plan files.** Strike the row through in `../docs/PLAN.md`, mark it `Done <date>`, and say what the build found — what the plan had wrong, and what changed shape. Then **cut it out of that file and paste it into `../docs/done/PLAN.md`**, unchanged, under the tier it was retired from: the live list is the work that is left, and a finished row is worth keeping only for what it found. Back in the live file, move the **"Where this stands"** paragraph and its "next up" pointer on to the next open row, and fix any reference below the tables that named this ticket — a row is cited by its ticket's name, so a search for that name finds every one of them.
-
-5. **`docs/` — the published pages.** Anything the change just made untrue is now a false statement on leaftext.com. Behavior a person can see gets a section or a line where a reader would look for it; the summary table at the top of that page gets its row. Then `node scripts/seo-gen.mjs` so the discovery files match. This is [sync-docs](../sync-docs/SKILL.md)'s job — run it if the change is wide, or make the edits directly if it is one or two lines.
-
-Then `/check` once more over the whole thing, and hand back: what the app does differently, what the build found that the plan had wrong, and where the ticket went.
+So hand back three things and stop: what the app does differently, what the build found that the plan had wrong, and the gestures the owner has to make for the last box.
 
 ## Reference
 
 - `/run` — the app, launched, for section 4.
-
 - `/ticket` — the shape of the file being built.
 - `/design` — run first, automatically, when the top of the ticket is undated.
 - `/check` — the end of every phase, and the end of the job.
-- `/sync-docs` — step 5, when the change is wide.
+- `/pre-release` — what runs after the owner says it works: the shipped note, the move into `done/`, both rows, the published pages.
 - `../docs/README.md` — every ticket, one line each.
 - `../docs/GLOSSARY.md` — the words a ticket, an index row and a ranking row are written in.
-- `../docs/PLAN.md` — the running order over the live tickets, written by `/priority`.
+- `../docs/PLAN.md` — the running order over the live tickets, written by `/pm`.
 - `../docs/done/PLAN.md` — where a row goes when its ticket ships, unchanged.
 
 <!-- keycode: LEAF-2F4B -->

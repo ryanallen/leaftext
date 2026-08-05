@@ -5764,7 +5764,8 @@ body.is-block-dragging .document-body [data-src-start] {
   overflow: hidden;
   user-select: none;
 }
-.document-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"])::after {
+/* Only the box waiting its turn spins: one too far away to be queued may never be scrolled to, and fifty-seven animating for as long as the file is open is work nobody asked for. */
+.document-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -5779,7 +5780,7 @@ body.is-block-dragging .document-body [data-src-start] {
   pointer-events: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .document-body pre.mermaid:not([data-processed="true"])::after {
+  .document-body pre.mermaid:not([data-processed="true"]):not([data-diagram-wait="far"])::after {
     animation-duration: var(--lt-duration-1600);
   }
 }
@@ -6569,6 +6570,10 @@ body.is-block-dragging .document-body [data-src-start] {
    .glossary-term before stripping; re-blend them to body text here. */
 .document-minimap-preview a.glossary-term {
   color: inherit;
+}
+/* The clone is a .document-body, so an undrawn diagram in it matches the spinner rule too, and a page of boxes would spin dozens down a 68px rail. A pseudo-element survives any stripping of nodes, so only a rule the clone's own class reaches can cancel it. The block stays: its invisible source text is what holds the right height. */
+.document-minimap-preview pre.mermaid::after {
+  content: none;
 }
 .document-minimap-viewport {
   position: absolute;

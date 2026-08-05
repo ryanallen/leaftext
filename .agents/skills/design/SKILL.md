@@ -106,7 +106,7 @@ That is the whole line. It is a date and a scope, not a summary — what the rea
 
 It goes at the top because that is where somebody decides whether to trust the file, and it carries a date because a plan designed in March against code that moved in August is a plan nobody has read. Designing it again replaces the line rather than stacking another one.
 
-It is also the flag [build](../build/SKILL.md) tests for: no line, and it runs this skill before it writes a single piece of code.
+It is also the flag [dev](../dev/SKILL.md) tests for: no line, and it runs this skill before it writes a single piece of code.
 
 **Then tick the box in the running order, in the same pass.** [`../docs/PLAN.md`](../../../docs/PLAN.md) carries a `Designed` column, and this ticket's row goes from `[ ]` to `[x]`. That is the only edit this skill makes to that file — never the tier, never the reasoning, never the order. The box mirrors the line, so writing one without the other is how the two start disagreeing, and the box is the half somebody scanning the list actually sees.
 
@@ -146,8 +146,8 @@ Two things have to be on the file when this ends: the dated line at the top, and
 ## Reference
 
 - `/ticket` — the shape this holds a file to.
-- `/build` — what runs next, once the plan is true.
-- `/priority` — the running order these tickets are ranked into.
+- `/dev` — what runs next, once the plan is true.
+- `/pm` — the running order these tickets are ranked into.
 - `AGENTS.md` — the rules each paid for in version numbers.
 - `../docs/GLOSSARY.md` — the words a ticket is held to, and the one file outside the ticket this skill may edit.
 - `../docs/PLAN.md` — how short a row is allowed to be. Words cut from a row land in the ticket.

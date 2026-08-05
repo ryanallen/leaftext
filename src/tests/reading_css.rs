@@ -763,6 +763,34 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
 }
 
 #[test]
+fn an_undrawn_diagram_does_not_spin_in_the_rail() {
+    let css = reading_mode_css();
+
+    // The rail's copy is a clone of `.document-body` keeping its classes, so every rule that paints an undrawn diagram matches inside it — the spinner included. A pseudo-element survives stripMinimapClone's removal of nodes, so only a rule reaches it.
+    assert_contains(
+        css,
+        ".document-minimap-preview pre.mermaid::after {\n  content: none;\n}",
+    );
+    // The block itself must stay in the copy: its source text is transparent in the page and is the only thing holding the block at the height the real one has.
+    assert_contains(
+        css,
+        ".document-body pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]) {",
+    );
+    let undrawn = rule_body(
+        css,
+        ".document-body pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]) {",
+    );
+    assert!(
+        undrawn.contains("color: transparent;"),
+        "an undrawn diagram's source must stay laid out and unreadable, not removed: {undrawn}"
+    );
+    assert!(
+        !css.contains(".document-minimap-preview pre.mermaid {\n  display: none;"),
+        "hiding the block in the copy would collapse the rail's height for it"
+    );
+}
+
+#[test]
 fn reading_mode_css_keeps_markdown_and_code_ready_for_theme_tokens() {
     let css = reading_mode_css();
 

@@ -49,7 +49,7 @@ Open a `.md` file and it renders the way you'd expect, with the extras people ac
 
 ![A Mermaid flowchart and a pie chart rendered inside a document, drawn in the current theme's colors and body font rather than Mermaid's defaults](imgs/mermaid.png)
 
-Write a `mermaid` code fence and get a diagram — flowchart, sequence, gantt, mindmap, pie — drawn offline in your theme's own colors and font. Switch theme and every diagram on the page is redrawn to match. Drag one to move it, `Ctrl` and the wheel to zoom, without the page around it shifting. **[Diagrams →](docs/01-features/01-rendering.md#mermaid-diagrams)**
+Write a `mermaid` code fence and get a diagram — flowchart, sequence, gantt, mindmap, pie — drawn offline in your theme's own colors and font. Switch theme and the diagrams on the page are redrawn to match. A page of sixty opens as fast as a page of three: only the ones near what you are reading are drawn, and the rest fill in as you scroll to them. Drag one to move it, `Ctrl` and the wheel to zoom, without the page around it shifting. **[Diagrams →](docs/01-features/01-rendering.md#mermaid-diagrams)**
 
 ### XML, sitemaps, feeds, and Buddhist canon
 

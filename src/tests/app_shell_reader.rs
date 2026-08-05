@@ -233,6 +233,9 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
         // Nearest the reader first, a few at a time: a page of sixty diagrams must not freeze the window while they are drawn.
         "diagrams.sort((a, b) => mermaidReaderDistance(a) - mermaidReaderDistance(b));",
         "const MERMAID_BATCH_SIZE = 3;",
+        // And only the ones the reader is near are queued at all — sixty drawn on open cost three and a half seconds of stalled window.
+        "function drawMermaidDiagrams(candidates) {",
+        "watchMermaidDiagrams(candidates);",
         // The structural colors of a diagram are the page's tokens. Mermaid's own light/dark palette stays underneath, never `base`, which recomputes the categorical scale out of our reach — see decorate.js.
         "theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default',",
         "function mermaidThemeVariables() {",
@@ -259,6 +262,141 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
         "runtimes must be self-hosted, not loaded from a CDN"
     );
     assert!(html.contains(LOCAL_ASSET_PROTOCOL));
+}
+
+#[test]
+fn only_the_diagrams_near_the_reader_are_drawn() {
+    let script = app_shell_script();
+
+    for expected in [
+        // One window of margin either way, so a diagram is drawn before it is reached rather than after.
+        "const MERMAID_NEAR_SCREENS = 1;",
+        "rootMargin: `${MERMAID_NEAR_SCREENS * 100}% 0px`",
+        // The root is the reader's own scroller, not the window: the document scrolls inside `app`.
+        "{ root: app, rootMargin:",
+        // A box says which of the two it is, and the stylesheet spins only the one waiting its turn.
+        "diagram.dataset.diagramWait = near ? 'near' : 'far';",
+        // The height it drew to, so a box refilled at that height moves nothing above the reader.
+        "const mermaidDrawnHeights = new Map();",
+        "mermaidDrawnHeights.set(mermaidCacheKey(diagram.__mermaidSource), height);",
+        // Drawing swaps a diagram's source out for its labels, so a search pointing into it re-walks and re-lands.
+        "function mermaidPageTextChanged() {",
+        "  refreshFind();",
+        // A render swaps in a fresh body, so the boxes the watcher held are detached.
+        "function forgetMermaidWatch() {",
+    ] {
+        assert!(
+            script.contains(expected),
+            "the front-end should contain {expected}"
+        );
+    }
+
+    // The drain waits for the gesture to stop: a diagram growing above the reader mid-scroll shifts the page under their thumb, and the re-pin that would put it back stands aside while they scroll.
+    let drain = script
+        .split("function scheduleMermaidPass() {")
+        .nth(1)
+        .expect("the front-end schedules a scroll-triggered pass");
+    let drain = &drain[..drain.find("\n}\n").expect("the drain closes")];
+    assert!(
+        drain.contains("READER_SCROLL_SETTLE_MS"),
+        "the draw must wait the same 120ms the reader already counts: {drain}"
+    );
+    assert!(
+        drain.contains("if (readerScrolling) {"),
+        "a draw landing mid-gesture must re-arm rather than run: {drain}"
+    );
+    // The undrawn box keeps its source text, so Ctrl+F still finds the words inside a diagram nobody has drawn.
+    assert!(
+        !script.contains("diagram.textContent = ''"),
+        "an undrawn diagram's source is what Ctrl+F reads; it must stay in the page"
+    );
+
+    let css = reading_mode_css();
+    // A box too far away to be queued does not spin, in both motion settings.
+    assert_contains(
+        css,
+        ".document-body pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]):not([data-diagram-wait=\"far\"])::after {",
+    );
+    assert_contains(
+        css,
+        ".document-body pre.mermaid:not([data-processed=\"true\"]):not([data-diagram-wait=\"far\"])::after {",
+    );
+}
+
+#[test]
+fn a_diagram_scrolled_well_past_goes_back_to_a_box() {
+    let script = app_shell_script();
+
+    for expected in [
+        // Three screens, against the one that queues a drawing: two screens of slack, so nothing flips back and forth at the edge of a band.
+        "const MERMAID_FAR_SCREENS = 3;",
+        "rootMargin: `${MERMAID_FAR_SCREENS * 100}% 0px`",
+        "function recycleMermaidDiagram(diagram) {",
+        // The box goes back at exactly the height its drawing had, so recycling moves nothing on the page.
+        "diagram.textContent = diagram.__mermaidSource;",
+        "markMermaidWait(diagram, false);",
+    ] {
+        assert!(
+            script.contains(expected),
+            "the front-end should contain {expected}"
+        );
+    }
+
+    let may = script
+        .split("function mermaidMayRecycle(diagram) {")
+        .nth(1)
+        .expect("the front-end decides what may be taken back");
+    let may = &may[..may.find("\n}\n").expect("the guard closes")];
+    // Editing it, or holding it anywhere other than where the page put it, is work of the reader's that a recycle would throw away.
+    for kept in [
+        "diagram.dataset.editingSource === 'true'",
+        "diagram.classList.contains('is-moved')",
+        "diagram.classList.contains('is-panning')",
+        // The full-window view is a picture of the block, and its edit buttons act on the block: recycling it under the overlay hands back a box.
+        "overlay.__diagramBlock === diagram",
+    ] {
+        assert!(
+            may.contains(kept),
+            "a diagram in this state must keep its drawing: {kept} — {may}"
+        );
+    }
+    // Past 200 distinct diagrams the picture memo empties wholesale (MERMAID_CACHE_CAP), so a box refilled after that draws from scratch. Recycling one whose picture is gone would turn every scroll into a full redraw, which is worse than the stylesheet the drawing carries.
+    assert!(
+        may.contains("mermaidRenderCache.has(key) && mermaidDrawnHeights.has(key)"),
+        "a diagram may only go back to a box when its picture and its height are both still known: {may}"
+    );
+
+    // Both halves run off one settle, boxes first: a recycled box holds its drawing's height, so the drawings the pass then makes are the only thing that can move the page.
+    let pass = script
+        .split("function scheduleMermaidPass() {")
+        .nth(1)
+        .expect("the front-end schedules a scroll-triggered pass");
+    let pass = &pass[..pass.find("\n}\n").expect("the pass closes")];
+    let recycles = pass
+        .find("recycleMermaidDiagram")
+        .expect("the pass takes boxes back");
+    let draws = pass
+        .find("drawMermaidDiagrams")
+        .expect("the pass draws what came near");
+    assert!(
+        recycles < draws,
+        "boxes must go back before the pass draws: {pass}"
+    );
+    // A render swaps the body, so both watchers have to let go or they hold detached blocks.
+    let forget = script
+        .split("function forgetMermaidWatch() {")
+        .nth(1)
+        .expect("the front-end drops the watchers on a fresh document");
+    let forget = &forget[..forget.find("\n}\n").expect("the reset closes")];
+    for gone in [
+        "mermaidViewObserver.disconnect()",
+        "mermaidRecycleObserver.disconnect()",
+    ] {
+        assert!(
+            forget.contains(gone),
+            "a fresh document must drop both watchers: {gone}"
+        );
+    }
 }
 
 #[test]
