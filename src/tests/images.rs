@@ -258,7 +258,7 @@ fn changed_image_files_refresh_without_a_document_re_render() {
         "const stamped = `${base}?leaf-epoch=${localImageEpoch}`;",
         "if (img.getAttribute('src') !== stamped) img.setAttribute('src', stamped);",
         // Every render stamps a fresh epoch, so reopening a document after an image was replaced on disk cannot show the cached copy.
-        "    stampLocalImages();\n    decorateBlockquoteLines();",
+        "    stampLocalImages();\n    laneWideTables();",
     ] {
         assert_contains(&html, expected);
     }

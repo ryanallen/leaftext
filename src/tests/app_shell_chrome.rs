@@ -87,8 +87,17 @@ fn every_bottom_sheet_is_the_same_bottom_sheet() {
             "a second spin keyframe is back: {gone}"
         );
     }
-    // And the reader's scrollbar is one definition too, worn by class.
-    assert_contains(&css, ".leaf-scroll::-webkit-scrollbar-thumb {");
+    // And the app's scrollbar is one definition too, worn by everything that draws one — a class where the markup is ours, a selector where it is rendered from Markdown.
+    assert_contains(&css, ".leaf-scroll::-webkit-scrollbar-thumb,");
+    for wearer in [
+        ".library-scroll::-webkit-scrollbar-thumb,",
+        ".reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb,",
+        ".table-lane > table::-webkit-scrollbar-thumb {",
+    ] {
+        assert_contains(&css, wearer);
+    }
+    // A second definition is how the pane ended up with a bar 10px wide beside a reader's at 14.
+    assert_eq!(css.matches("::-webkit-scrollbar-thumb").count(), 12);
     assert_contains(&html, "flow-picker-body leaf-scroll");
 }
 

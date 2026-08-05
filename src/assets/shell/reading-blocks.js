@@ -67,6 +67,13 @@ function attachMarkdownBlockRanges(body, blocks, source) {
   const walk = (elements) => {
     for (const el of elements) {
       if (el.nodeType !== 1 || isInjected(el)) continue;
+      // The reader's own lane round a wide table is a box the page added, not a
+      // block: stamp the table inside it, or an edit would serialize the wrapper
+      // and find no rows in it.
+      if (el.classList.contains('table-lane')) {
+        walk(el.children);
+        continue;
+      }
       const block = nextBlock();
       if (!block) {
         mismatch = true;

@@ -2353,6 +2353,20 @@
      below the fixed bar (document padding, library pane, minimap). */
   --app-bar-height: 40px;
   --reader-content-pad: 32px;
+  /* The strip a widened table keeps clear either side: the block handle and plus,
+     so it is BLOCK_TOOLS_WIDTH in block-controls.js and not a spacing choice.
+     check-shell.mjs holds the two copies to one number. */
+  --reader-table-lane-inset: 62px;
+  /* How deep an edge fade reaches — one number for the dot screen and the wash
+     under it, which have to end together. Given half the depth the wash stopped
+     where the screen carried on, and the break in slope read as a bright edge at
+     the halfway mark; the eye catches a change of gradient far more readily than
+     a gradient. At :root because a widened table's own ends use it too, and every
+     edge in the app is one profile. */
+  --reader-edge-fade-depth: 36px;
+  /* How long a fade holds at full before going, so the cut is crossed solid.
+     Shared for the same reason as the depth: one profile, not two. */
+  --reader-edge-fade-hold: 2px;
   /* Where a document's first line opens, from the reader shell's own top edge (so
      the app bar's height is inside it). Has to clear --reader-edge-fade-depth or the
      line starts half dissolved, and to equal READER_CONTENT_TOP_GAP in the shell
@@ -3473,21 +3487,10 @@ body.library-resizing {
   box-sizing: border-box;
   padding-top: var(--library-chrome-height);
 }
-.library-scroll::-webkit-scrollbar {
-  width: 10px;
-}
+/* The pane wears the app's bar (see .leaf-scroll); only where it starts is its
+   own — clear of the app bar AND the two bands under it. */
 .library-scroll::-webkit-scrollbar-track {
-  /* Transparent, not the pane color: an opaque track masks the grain and leaves an
-     ungrained strip down the pane's right edge. */
-  background: transparent;
-  /* Keep the bar clear of the app bar AND the two bands under it. */
   margin-top: var(--library-chrome-height);
-}
-.library-scroll::-webkit-scrollbar-thumb {
-  border-radius: var(--lt-radius-md);
-  background: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
-  /* Floor the grabber so a huge file list can't shrink it to a sliver. */
-  min-height: 128px;
 }
 .library-tree {
   padding: 0 var(--lt-space-6) var(--lt-space-12);
@@ -4427,15 +4430,6 @@ body:has(#readerToolbar:not([hidden])) {
      editor's code color, so the dots have to follow it or the last lines break
      up into the wrong page. */
   --reader-edge-fade-surface: var(--lt-markdown-background);
-  /* How deep each edge reaches — one number for the dot screen and the wash
-     under it, which have to end together. Given half the depth the wash stopped
-     where the screen carried on, and the break in slope read as a bright edge at
-     the halfway mark; the eye catches a change of gradient far more readily than
-     a gradient. */
-  --reader-edge-fade-depth: 36px;
-  /* How long both fades hold at full before going, so the cut is crossed solid.
-     Shared for the same reason as the depth: one profile, not two. */
-  --reader-edge-fade-hold: 2px;
   grid-column: 2;
   grid-row: 1;
   position: relative;
@@ -4453,11 +4447,23 @@ body:has(#readerToolbar:not([hidden])) {
       to top,
       var(--reader-edge-fade-surface) 0 var(--reader-edge-fade-hold),
       transparent
+    ),
+    linear-gradient(
+      to right,
+      var(--reader-edge-fade-surface) 0 var(--reader-edge-fade-hold),
+      transparent
+    ),
+    linear-gradient(
+      to left,
+      var(--reader-edge-fade-surface) 0 var(--reader-edge-fade-hold),
+      transparent
     );
-  background-size: 100% var(--reader-edge-fade-depth);
+  background-size: 100% var(--reader-edge-fade-depth), 100% var(--reader-edge-fade-depth),
+    var(--reader-edge-fade-depth) 100%, var(--reader-edge-fade-depth) 100%;
   /* The top wash starts at the bar's edge for the same reason the top band does;
-     the bottom one is anchored to the card's edge. */
-  background-position: 0 var(--app-bar-height), 0 100%;
+     the bottom one is anchored to the card's edge, and the two side washes run the
+     whole height so the corners hand over to each other. */
+  background-position: 0 var(--app-bar-height), 0 100%, 0 0, 100% 0;
   background-repeat: no-repeat;
   /* Over the document (the code view's textarea layer sits at 2), under the
      loading wash (6), the library sheet (5) and the app bar (10). */
@@ -4543,6 +4549,48 @@ body:has(#readerToolbar:not([hidden])) {
     transparent
   );
 }
+/* The same two bands turned on their side, for the left and right edges a widened
+   table runs out to: a column sliced down its middle reads as a rendering fault
+   the way a sliced line of text does. Real children rather than more pseudos —
+   ::before and ::after are the top and bottom. Same depth, same hold, same
+   window-anchored lattice, so all four edges are one profile. */
+.reader-edge-fade-side {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--reader-edge-fade-depth);
+  --lt-grain-dot: var(--reader-edge-fade-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
+.reader-edge-fade-left {
+  left: 0;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+}
+.reader-edge-fade-right {
+  right: 0;
+  -webkit-mask-image: linear-gradient(
+    to left,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to left,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+}
 /* The rail is the reader's scroll affordance, so the native bar hides while there
    is one. On a class, not :has() — scrollbar styles don't re-resolve when a
    :has() match flips, so the bar outlived the rail coming back. The two branches
@@ -4555,29 +4603,12 @@ body:has(#readerToolbar:not([hidden])) {
   width: 0;
 }
 /* No rail — the minimap is off, or there is no document — leaves nothing at all
-   showing where you are in a long page, so a thin bar comes back, styled like
-   the library's. */
-.reader-shell:not(.has-minimap)::-webkit-scrollbar {
-  /* 4px of inset each side plus the 6px the thumb actually shows. */
-  width: 14px;
-}
+   showing where you are in a long page, so the app's bar comes back (see
+   .leaf-scroll). Only the app bar needs clearing here; the page scrolls under it,
+   and the thumb insets itself from the other three edges so the track keeps its
+   full travel and the thumb still reaches the very bottom. */
 .reader-shell:not(.has-minimap)::-webkit-scrollbar-track {
-  /* Only the bar needs clearing here — the page scrolls under it. The thumb
-     insets itself from the other three edges, so the track keeps its full travel
-     and the thumb still reaches the very bottom. */
-  background: transparent;
   margin-top: var(--app-bar-height);
-}
-.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb {
-  /* A transparent border with the fill clipped inside it is the only way to
-     inset a webkit thumb: 4px off the card's right border, its rounded bottom
-     corner, and the arc under the bar. */
-  border: var(--lt-stroke-4) solid transparent;
-  background-clip: padding-box;
-  border-radius: var(--lt-radius-md);
-  background-color: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
-  /* Floor the grabber so a long document can't shrink it to a sliver. */
-  min-height: 56px;
 }
 .reader-loading {
   /* Overlays the reader cell so a spinner can show over the current document
@@ -6199,6 +6230,117 @@ body.is-block-dragging .document-body [data-src-start] {
   width: max-content;
   max-width: 100%;
 }
+/* A wide table reads through the reader's whole lane, less the strip the block
+   controls need, and the wrapper is what widens rather than the table: the bands
+   that dissolve a sliced column into the page have to be painted over the table,
+   and a mask can only take ink away. `100cqi` is the room inside .reader-layout's
+   padding, so this rides that container query and nothing else; `max(100%, ...)`
+   hands a narrow window back to the measure it has today. Centering is a
+   percentage transform because CSS cannot read the table's used width. decorate.js
+   wraps only a body table that is not a data table, so a frontmatter table, a data
+   file's wrapping table and a table inside <div align="center"> keep their width. */
+.document-body > .table-lane {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  /* The table's own width, capped. A block box at `auto` fills the measure and a
+     `max-width` alone can only cap it, never let it grow past its parent. */
+  width: max-content;
+  max-width: max(100%, calc(100cqi - 2 * var(--reader-table-lane-inset)));
+  /* The bands sit here and the scroll is the table's, one box down, so the timeline
+     has to be published up to this element for them to name it. */
+  timeline-scope: --lt-table-scroll;
+}
+.table-lane > table {
+  scroll-timeline: --lt-table-scroll inline;
+}
+/* The page's own edge fade turned on its side and laid over the table's cut, which
+   is 62px inside the page's edge where the reader's own side bands cannot reach.
+   Same depth, same hold, same wash under the same dot screen — but both in one box
+   here, ramped once by one mask, because a side band has no parent of its own to
+   carry the wash. The lattice anchors to the wrapper rather than to the window: a
+   transformed element is the containing block for its own fixed background. */
+.table-lane::before,
+.table-lane::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--reader-edge-fade-depth);
+  pointer-events: none;
+  /* Off until the scroll says otherwise, which is also what a table with nothing to
+     scroll is left at: no timeline, no animation, no veil over a narrow table. */
+  opacity: 0;
+  --lt-grain-dot: var(--lt-markdown-background);
+  background-size: 2px 2px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  background-attachment: fixed, scroll;
+  animation-fill-mode: both;
+  animation-timing-function: var(--lt-ease-linear);
+  /* The table's own sideways scroll, not a clock. Left on under Reduce Motion for
+     the same reason: it only moves when the reader moves it. */
+  animation-timeline: --lt-table-scroll;
+}
+.table-lane::before {
+  left: 0;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px),
+    linear-gradient(
+      to right,
+      var(--lt-markdown-background) 0 var(--reader-edge-fade-hold),
+      transparent
+    );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  animation-name: lt-table-edge-behind;
+}
+.table-lane::after {
+  right: 0;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px),
+    linear-gradient(
+      to left,
+      var(--lt-markdown-background) 0 var(--reader-edge-fade-hold),
+      transparent
+    );
+  -webkit-mask-image: linear-gradient(
+    to left,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to left,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  animation-name: lt-table-edge-ahead;
+}
+/* On within the first tenth of the travel and gone again in the last, so a band
+   says "there is more this way" rather than veiling a column already reached. */
+@keyframes lt-table-edge-behind {
+  from {
+    opacity: 0;
+  }
+  10%,
+  to {
+    opacity: 1;
+  }
+}
+@keyframes lt-table-edge-ahead {
+  from,
+  90% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
 .document-body th,
 .document-body td {
   border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
@@ -6688,24 +6830,60 @@ body.is-block-dragging .document-body [data-src-start] {
   right: 10px;
   z-index: 1;
 }
-/* The reader's own scrollbar, as something anything can wear. Never set
-   `scrollbar-width` on an element carrying this: in Chromium either standard
+/* The app's one scrollbar, worn by everything that draws one: the reader with no
+   minimap, the library pane, any box marked .leaf-scroll, and a widened table's
+   sideways bar. Written as a selector list rather than a class on each element
+   because the table is rendered from Markdown and has nowhere to carry a class.
+   Never set `scrollbar-width` on any of them: in Chromium either standard
    scrollbar property silently kills every ::-webkit-scrollbar rule on it. */
-.leaf-scroll::-webkit-scrollbar {
+.leaf-scroll::-webkit-scrollbar,
+.library-scroll::-webkit-scrollbar,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar,
+.table-lane > table::-webkit-scrollbar {
   /* 4px of inset each side plus the 6px the thumb actually shows. */
   width: 14px;
+  height: 14px;
 }
-.leaf-scroll::-webkit-scrollbar-track {
+.leaf-scroll::-webkit-scrollbar-track,
+.library-scroll::-webkit-scrollbar-track,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-track,
+.table-lane > table::-webkit-scrollbar-track {
+  /* Transparent, not the surface color: an opaque track masks the grain and
+     leaves an ungrained strip down the edge it sits on. */
   background: transparent;
 }
-.leaf-scroll::-webkit-scrollbar-thumb {
+.leaf-scroll::-webkit-scrollbar-thumb,
+.library-scroll::-webkit-scrollbar-thumb,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb,
+.table-lane > table::-webkit-scrollbar-thumb {
   /* A transparent border with the fill clipped inside it is the only way to
      inset a webkit thumb. */
   border: var(--lt-stroke-4) solid transparent;
   background-clip: padding-box;
   border-radius: var(--lt-radius-md);
   background-color: color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+}
+/* Floor the grabber so a long page can't shrink it to a sliver. Per axis: a bare
+   `min-height` on a sideways bar sets its thickness instead of its length, which
+   swells the 14px bar into a 56px band. */
+.leaf-scroll::-webkit-scrollbar-thumb:vertical,
+.library-scroll::-webkit-scrollbar-thumb:vertical,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:vertical,
+.table-lane > table::-webkit-scrollbar-thumb:vertical {
   min-height: 56px;
+}
+.leaf-scroll::-webkit-scrollbar-thumb:horizontal,
+.library-scroll::-webkit-scrollbar-thumb:horizontal,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-thumb:horizontal,
+.table-lane > table::-webkit-scrollbar-thumb:horizontal {
+  min-width: 56px;
+}
+/* Where two bars meet, so the square between them is not the platform's gray. */
+.leaf-scroll::-webkit-scrollbar-corner,
+.library-scroll::-webkit-scrollbar-corner,
+.reader-shell:not(.has-minimap)::-webkit-scrollbar-corner,
+.table-lane > table::-webkit-scrollbar-corner {
+  background: transparent;
 }
 .glossary-sheet {
   position: fixed;
@@ -7904,7 +8082,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 81 colors, the 158 values that do not change with the theme, all 56 icons, and all 46 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 81 colors, the 158 values that do not change with the theme, all 56 icons, and all 47 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -7926,7 +8104,7 @@ body.is-block-dragging .document-body [data-src-start] {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>81</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>158</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>56</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>46</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>47</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -8281,7 +8459,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">46 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">47 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App bar</h3><code class="built">.app-bar</code><span class="built">app-shell.html, with overflow.js folding it and code-view.js measuring it</span></header>
 <div class="stage"><div class="app-bar" style="position:static"><span class="app-bar-lead"><button type="button" class="brand-button"><span class="lt-icon lt-icon-leaf"></span></button></span></div></div>
@@ -8436,7 +8614,11 @@ body.is-block-dragging .document-body [data-src-start] {
 </section>
 <section class="part">
 <header><h3>Scroll area</h3><code class="built">.leaf-scroll</code><span class="built">app-shell.html</span></header>
-<div class="stage"><div class="leaf-scroll" style="height:64px;overflow:auto"><p>This box scrolls, and the bar it draws is the app’s own.</p><div style="height:120px"></div></div></div>
+<div class="stage"><div class="leaf-scroll" style="height:64px;overflow:auto"><p>This box scrolls, and the bar it draws is the app’s own.</p><div style="height:120px"></div></div><div class="leaf-scroll" style="overflow:auto;margin-top:12px"><p style="width:1200px">Sideways is the same bar turned on its side — the library pane, the reader with no minimap, and a table too wide for the text all wear it.</p></div></div>
+</section>
+<section class="part">
+<header><h3>Table lane</h3><code class="built">.table-lane</code><span class="built">decorate.js</span></header>
+<div class="stage"><div class="document-body"><div class="table-lane"><table><thead><tr><th>Region</th><th>Quarter</th><th>Pipeline</th></tr></thead><tbody><tr><td>North</td><td>Q1</td><td>412000</td></tr><tr><td>South</td><td>Q1</td><td>501000</td></tr></tbody></table></div></div></div>
 </section>
 <section class="part">
 <header><h3>Toast</h3><code class="built">.app-toast</code><span class="built">dom.js</span></header>

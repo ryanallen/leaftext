@@ -953,6 +953,23 @@ function renderMathElements() {
       console.error(error);
     });
 }
+// Put each body table in a lane of its own, so it can use the reader's width and
+// so the bands that dissolve a sliced column into the page have a box to be painted
+// in — a mask on the table can only take ink away, never lay the dot screen on. The
+// lane belongs to the reader, not the document, so everything that walks the body's
+// blocks sees through it: `attachMarkdownBlockRanges` stamps the table inside, and
+// `unwrapTableLane` in block-controls.js gives the gutter the table it wraps.
+function laneWideTables(root = app) {
+  const body = root.querySelector('.document-body');
+  if (!body) return;
+  for (const table of Array.from(body.children)) {
+    if (table.tagName !== 'TABLE' || table.classList.contains('data-table')) continue;
+    const lane = document.createElement('div');
+    lane.className = 'table-lane';
+    table.replaceWith(lane);
+    lane.appendChild(table);
+  }
+}
 function decorateBlockquoteLines(root = app) {
   root.querySelectorAll('blockquote:not(.markdown-alert) p').forEach((paragraph) => {
     if (paragraph.querySelector('.blockquote-line')) return;

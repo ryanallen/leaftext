@@ -330,10 +330,18 @@ function aimBlockGutter(el, fromMargin) {
 function blockGutterOccupants() {
   const body = app.querySelector('.document-body');
   if (!body) return [];
-  return Array.from(body.children).filter((el) => {
-    const rect = el.getBoundingClientRect();
-    return rect.bottom > rect.top;
-  });
+  return Array.from(body.children)
+    .map(unwrapTableLane)
+    .filter((el) => {
+      const rect = el.getBoundingClientRect();
+      return rect.bottom > rect.top;
+    });
+}
+
+// The lane a wide table sits in belongs to the reader, not the document — the block
+// is the table inside it, and everything here works on blocks.
+function unwrapTableLane(el) {
+  return el.classList && el.classList.contains('table-lane') ? el.firstElementChild || el : el;
 }
 
 // Whether the gutter has anything to say about this element at all. A range, even an
@@ -449,7 +457,11 @@ function positionBlockGutter() {
     return;
   }
   const layoutRect = layout.getBoundingClientRect();
-  const bodyRect = body.getBoundingClientRect();
+  // A wide table hangs out of the measure in a lane of its own, so the handle rides
+  // that block's own left edge — anchored to the body's, it would land on the
+  // table's first column instead of in clear air beside it.
+  const lane = blockGutterTarget && blockGutterTarget.closest && blockGutterTarget.closest('.table-lane');
+  const bodyRect = (lane || body).getBoundingClientRect();
   const margin = Math.max(0, bodyRect.left - layoutRect.left);
   const shift = Math.min(margin, BLOCK_TOOLS_WIDTH + 10);
   blockGutter.style.left = bodyRect.left - layoutRect.left + 'px';
@@ -663,13 +675,15 @@ function runBlockInsert(target, option) {
 // which refuses a run the host would refuse.
 function blockSiblingRun(target) {
   if (!blockGutterFormatAllowed()) return null;
-  const parent = target.parentElement;
+  // A laned table's siblings are the body's, not the lane's one child.
+  const lane = target.parentElement;
+  const parent = lane && lane.classList.contains('table-lane') ? lane.parentElement : lane;
   if (!parent) return null;
   // A zero-length range is a block that exists only in the DOM — a blank line
   // waiting for its first keystroke. It holds no text to drag and contributes no
   // source, so it is left out of the run rather than allowed to invalidate it;
   // `target` then fails the membership test below and gets no handle.
-  const elements = Array.from(parent.children).filter(blockHasSource);
+  const elements = Array.from(parent.children).map(unwrapTableLane).filter(blockHasSource);
   if (elements.length < 2 || !elements.includes(target)) return null;
   const ranges = blockRunRanges(elements);
   return ranges ? { elements, ranges } : null;

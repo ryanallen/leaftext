@@ -36,6 +36,7 @@ function renderState() {
     // Fresh epoch per render, so a reopened document never shows a cached image.
     localImageEpoch += 1;
     stampLocalImages();
+    laneWideTables();
     decorateBlockquoteLines();
     buildDocumentOutline();
     decorateCodeBlocks();

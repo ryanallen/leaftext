@@ -505,9 +505,9 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
     assert_contains(rule, "grid-column: 2;");
     assert_contains(rule, "grid-row: 1;");
     assert_contains(rule, "pointer-events: none;");
-    // The wash behind the dot screen: one band per edge, opaque at each cut and gone by the far side. It sits here rather than on the bands because those are masked, and the mask would ramp it a second time.
-    assert_contains(rule, "--reader-edge-fade-depth: 36px;");
-    assert_contains(rule, "--reader-edge-fade-hold: 2px;");
+    // The wash behind the dot screen: one band per edge, opaque at each cut and gone by the far side. It sits here rather than on the bands because those are masked, and the mask would ramp it a second time. At :root, not on this element: a widened table dissolves its own sliced ends with the same depth and the same hold, so every edge in the app is one profile.
+    assert_contains(css, "  --reader-edge-fade-depth: 36px;");
+    assert_contains(css, "  --reader-edge-fade-hold: 2px;");
     // The scrollbar belongs to the scroller, which paints it inside a box this overlay sits on top of — there is no z-index that puts it back on top, so the bands hold off its gutter instead. It closes with the minimap rail.
     assert_contains(
         rule,
@@ -517,20 +517,35 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
     let railed = rule_body(css, "body:has(.document-minimap) {");
     assert_contains(railed, "--reader-scrollbar: 0px;");
     // Same width the scrollbar itself is set to, which stays a literal there: Chromium won't re-resolve a scrollbar pseudo-element on a :has() flip.
-    let bar = rule_body(css, ".reader-shell:not(.has-minimap)::-webkit-scrollbar {");
+    let bar = rule_body(css, ".table-lane > table::-webkit-scrollbar {");
     assert_contains(bar, "width: 14px;");
-    assert_eq!(rule.matches("linear-gradient(").count(), 2);
+    // Four edges, four washes: the two sides came in with the widened table, which runs out to them.
+    assert_eq!(rule.matches("linear-gradient(").count(), 4);
     // The wash spans the same depth as the screen over it, not its own. Given a shorter one its ramp ends where the screen's carries on, and the break in slope reads as a bright line at the halfway mark.
-    assert_contains(rule, "background-size: 100% var(--reader-edge-fade-depth);");
     assert_contains(
         rule,
-        "background-position: 0 var(--app-bar-height), 0 100%;",
+        "background-size: 100% var(--reader-edge-fade-depth), 100% var(--reader-edge-fade-depth),\n    var(--reader-edge-fade-depth) 100%, var(--reader-edge-fade-depth) 100%;",
+    );
+    assert_contains(
+        rule,
+        "background-position: 0 var(--app-bar-height), 0 100%, 0 0, 100% 0;",
     );
     assert_contains(
         css,
         ".reader-edge-fade::before {\n  top: var(--app-bar-height);",
     );
     assert_contains(css, ".reader-edge-fade::after {\n  bottom: 0;");
+    // The sides are real children, because both pseudo-elements are spent on the top and bottom. Same depth and same hold, so all four edges are one profile.
+    assert_contains(css, ".reader-edge-fade-left {\n  left: 0;");
+    assert_contains(css, ".reader-edge-fade-right {\n  right: 0;");
+    assert_contains(
+        rule_body(css, ".reader-edge-fade-side {"),
+        "width: var(--reader-edge-fade-depth);",
+    );
+    assert_contains(
+        &app_shell_page(),
+        "<span class=\"reader-edge-fade-side reader-edge-fade-left\">",
+    );
     // The code view repaints the card, so the fade has to follow that color.
     assert_contains(css, ":root[data-code-view=\"true\"] .reader-edge-fade {");
 }

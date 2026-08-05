@@ -177,10 +177,9 @@ fn app_shell_opens_both_views_at_the_same_content_top_gap() {
         "top: Math.max(0, READER_CONTENT_TOP_GAP - barHeight),",
     );
 
-    // 88px from the shell's top edge is 48px of clear air below the 40px bar, which has to be more than the fade's reach or the first line opens dissolved.
-    let fade = css_block(&css, ".reader-edge-fade {");
+    // 88px from the shell's top edge is 48px of clear air below the 40px bar, which has to be more than the fade's reach or the first line opens dissolved. The depth is at :root — every edge in the app, and a widened table's own ends, run to one profile.
     assert!(
-        fade.contains("--reader-edge-fade-depth: 36px;"),
+        css.contains("\n  --reader-edge-fade-depth: 36px;"),
         "the top fade's depth must stay under the content top gap's clearance"
     );
 }

@@ -1894,6 +1894,96 @@ if (booted) {
     if (init < 0 || wait > init) throw new Error('the fonts are waited for after the diagrams are measured');
   });
 
+  // The widened table's rules, read as text: none of it is reachable without a laid-out page, and every way it breaks is silent — a table back at the text measure, one grown wider than the lane it sits in, a frontmatter table dragged into the margin, or a fade that veils a column instead of pointing past it.
+  const tableLaneRule = () => {
+    const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');
+    const opened = css.indexOf('.document-body > .table-lane {');
+    if (opened < 0) throw new Error('no rule widens a table lane to the reader lane');
+    return { css, rule: css.slice(opened, css.indexOf('}', opened)) };
+  };
+
+  // The inset is the room the drag handle and plus occupy, written once in the stylesheet and once in the script that places them.
+  check('the table lane leaves exactly the block controls their margin', () => {
+    const { css, rule } = tableLaneRule();
+    if (!rule.includes('var(--reader-table-lane-inset)')) {
+      throw new Error('the lane no longer keeps the block controls their strip');
+    }
+    const declared = css.match(/--reader-table-lane-inset:\s*(\d+)px/);
+    if (!declared) throw new Error('--reader-table-lane-inset is not declared');
+    const script = readFileSync(join(root, 'src/assets/shell/block-controls.js'), 'utf8');
+    const tools = script.match(/BLOCK_TOOLS_WIDTH = (\d+)/);
+    if (!tools) throw new Error('BLOCK_TOOLS_WIDTH is gone from block-controls.js');
+    if (declared[1] !== tools[1]) {
+      throw new Error(`the stylesheet says ${declared[1]}px and the script says ${tools[1]}px`);
+    }
+  });
+
+  // A table's sliced column dissolves into the page, and what makes it safe is that a table with nothing to scroll has no timeline at all — so the bands stay at the opacity 0 they start at. A clock-driven animation would veil every table on the page, once, and never come back.
+  check('a table fades its ends from its own scroll, never from a clock', () => {
+    const { css, rule } = tableLaneRule();
+    // The bands are on the lane and the scroll is the table's, one box down, so the timeline has to be published up for them to name it.
+    if (!rule.includes('timeline-scope: --lt-table-scroll')) {
+      throw new Error("the lane no longer publishes the table's scroll timeline");
+    }
+    for (const declaration of [
+      'scroll-timeline: --lt-table-scroll inline;',
+      'animation-timeline: --lt-table-scroll;',
+      'opacity: 0;',
+    ]) {
+      if (!css.includes(declaration)) throw new Error(`the edge fade lost: ${declaration}`);
+    }
+    const bands = css.slice(css.indexOf('.table-lane::before,'), css.indexOf('.table-lane::before {'));
+    if (/animation-duration|animation-delay/.test(bands)) {
+      throw new Error('the fade has been given a clock, so it runs on a table that cannot scroll');
+    }
+    // The dot screen and the wash the page's own edges use, in the page's color, ramped by one mask.
+    if (!bands.includes('background-attachment: fixed, scroll;')) {
+      throw new Error("the band is no longer the chrome's own window-anchored lattice");
+    }
+    if (!css.includes('--lt-grain-dot: var(--lt-markdown-background);')) {
+      throw new Error('the band draws its dots in something other than the page color');
+    }
+  });
+
+  // `100cqi` with no container falls back to the viewport, which is the whole window — so a lane would grow past the reading column and under the minimap.
+  check('the reader lane is still the container the table measures against', () => {
+    const { css } = tableLaneRule();
+    const layout = css.slice(css.indexOf('.reader-layout {'), css.indexOf('.reader-layout-no-minimap'));
+    if (!/container-type:\s*inline-size/.test(layout)) {
+      throw new Error('.reader-layout no longer declares container-type: inline-size');
+    }
+  });
+
+  // Frontmatter scrolls on its own wrapper and a data file's table wraps its cells on purpose; neither may be pulled into a lane. The gutter reads the body's own children, so a lane with no source range is furniture it steps over and the table loses its handle.
+  check('only a body table is laned, and the lane carries its source range', () => {
+    const { rule } = tableLaneRule();
+    if (!/transform:\s*translateX\(-50%\)/.test(rule) || !/left:\s*50%/.test(rule)) {
+      throw new Error('the lane is no longer centered on its own width');
+    }
+    const decorate = readFileSync(join(root, 'src/assets/shell/decorate.js'), 'utf8');
+    const wrap = decorate.slice(decorate.indexOf('function laneWideTables'), decorate.indexOf('function decorateBlockquoteLines'));
+    if (!wrap) throw new Error('nothing wraps a table in a lane');
+    for (const guard of ["tagName !== 'TABLE'", "classList.contains('data-table')", 'body.children']) {
+      if (!wrap.includes(guard)) throw new Error(`the wrap no longer checks: ${guard}`);
+    }
+    // The lane is the reader's box, not the document's: everything that walks the body's blocks has to see through it, or an edit serializes the wrapper and finds no rows in it.
+    const blocks = readFileSync(join(root, 'src/assets/shell/reading-blocks.js'), 'utf8');
+    if (!blocks.includes("el.classList.contains('table-lane')")) {
+      throw new Error('the range walk stamps the lane instead of the table inside it');
+    }
+    const controls = readFileSync(join(root, 'src/assets/shell/block-controls.js'), 'utf8');
+    if ((controls.match(/unwrapTableLane/g) || []).length < 3) {
+      throw new Error('the block gutter no longer sees through the lane to the table');
+    }
+    // The 62px strip is measured from the reader's edge, and the gutter from the text measure — so a widened table's handle lands on its first column unless it rides the lane.
+    const place = controls.slice(controls.indexOf('function positionBlockGutter'), controls.indexOf('function blockGutterAnchorY'));
+    if (!place.includes(".closest('.table-lane')")) {
+      throw new Error('the drag handle is anchored to the text measure, so it sits on a widened table');
+    }
+    const render = readFileSync(join(root, 'src/assets/shell/render-document.js'), 'utf8');
+    if (!render.includes('laneWideTables();')) throw new Error('nothing calls laneWideTables on a render');
+  });
+
   // The two halves of a node press, sliced out of the fragment the way the flowchart canvas handler is above: what each one sends is one line, and neither is reachable without a real Pixi stage.
   const nodePressBranches = () => {
     const fragment = readFileSync(join(root, 'src/assets/shell/graph-scene.js'), 'utf8');
