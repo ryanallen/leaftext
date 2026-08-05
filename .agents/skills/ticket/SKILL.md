@@ -148,7 +148,7 @@ A ticket nobody can find is a ticket nobody builds. So writing the plan is two-t
 
 A row is placed by the same three things `/priority` ranks on, in that order: is something wrong today, how many other tickets are waiting on it, then cost. **Absent is not wrong** — a capability the app never had does not reach tier 1 however big its audience.
 
-**The row starts with `Refined` unticked.** The column is second, right after the ticket name, and a ticket nobody has read against the code yet is `[ ]` by definition — including one written five minutes ago off a careful reading, because the box says *somebody checked this against the code afterwards*, not *the author was careful*. [`/refine`](../refine/SKILL.md) ticks it.
+**The row starts with `Designed` unticked.** The column is second, right after the ticket name, and a ticket nobody has read against the code yet is `[ ]` by definition — including one written five minutes ago off a careful reading, because the box says *somebody checked this against the code afterwards*, not *the author was careful*. [`/design`](../design/SKILL.md) ticks it.
 
 **A row is named, not numbered.** The ticket's name is the row's identity, in both plan files and in every line of prose that cites it, so adding a row is one line and nothing else in either file has to move. If the "next up" line at the top is now wrong, fix that line; that is the only knock-on there is.
 
@@ -172,7 +172,7 @@ Move its index row in the same edit, and rewrite it to say what shipped. A row s
 ## Reference
 
 - `/priority` — ranks every ticket in the tree into one running order.
-- `/refine` — checks a written ticket against the code before anyone builds it.
+- `/design` — checks a written ticket against the code before anyone builds it.
 - `/build` — builds one, and moves it to `done/` when the last box is ticked.
 - `../docs/README.md` — every ticket, one line each. Read first, updated last.
 - `../docs/GLOSSARY.md` — the words a ticket is written in. A planning word this file spends and that file does not define gets a row there in the same pass.

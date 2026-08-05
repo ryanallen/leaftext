@@ -1,6 +1,7 @@
 ---
 name: build
-description: Build a ticket, and leave the plan tree telling the truth about it. Takes one thing — a path to a ticket under ../docs/features/, ../docs/refactor/ or ../docs/fixes/ — and works out the rest: it runs /refine itself when nothing has dated the top of the file, holds the ticket against its row in ../docs/PLAN.md, builds the phases in order, ticks each box in the same edit as the code with the test that covers it, strikes through and explains any box that changed shape, and runs /check at the end of every phase. Where the ticket changes anything a person points at, presses or looks at, it then runs the app and drives it — the ask pipe for anything the page handles, the gesture driver for a real wheel or drag — reports what it saw with a picture, and hands over only the gestures it could not reach. A passing check is not a working app, and nothing is called done until the owner says it works. When the last box is ticked it writes the shipped note, moves the file into the matching subject folder under ../docs/done/, rewrites its row in ../docs/README.md to say what shipped, strikes its row in ../docs/PLAN.md with what the build found, moves that row into ../docs/done/PLAN.md unchanged, and moves the "next up" line on, and fixes any page under docs/ the change just made untrue. Never touches git. Use when the user says "build this", "work that ticket", "do the plan", or hands over a ticket path to be built rather than scoped.
+description: >-
+  Build a ticket, and leave the plan tree telling the truth about it. Takes one thing — a path to a ticket under ../docs/features/, ../docs/refactor/ or ../docs/fixes/ — and works out the rest: it runs /design itself when nothing has dated the top of the file, holds the ticket against its row in ../docs/PLAN.md, builds the phases in order, ticks each box in the same edit as the code with the test that covers it, strikes through and explains any box that changed shape, and runs /check at the end of every phase. Where the ticket changes anything a person points at, presses or looks at, it then runs the app and drives it — the ask pipe for anything the page handles, the gesture driver for a real wheel or drag — reports what it saw with a picture, and hands over only the gestures it could not reach. A passing check is not a working app, and nothing is called done until the owner says it works. When the last box is ticked it writes the shipped note, moves the file into the matching subject folder under ../docs/done/, rewrites its row in ../docs/README.md to say what shipped, strikes its row in ../docs/PLAN.md with what the build found, moves that row into ../docs/done/PLAN.md unchanged, and moves the "next up" line on, and fixes any page under docs/ the change just made untrue. Never touches git. Use when the user says "build this", "work that ticket", "do the plan", or hands over a ticket path to be built rather than scoped.
 argument-hint: "[path to the ticket]"
 user-invocable: true
 ---
@@ -19,20 +20,20 @@ Four files, in this order, and no code before all four are read.
 
 - **The ticket.** Every phase, every box, and its record section at the bottom.
 - **`../docs/README.md`** — its row in the index, and its neighbors' rows. A ticket that shares plumbing with another is one you can build twice.
-- **`../docs/PLAN.md`** — the running order. This ticket's row, and what other rows say is waiting on it. The plan is the order; the ticket is the work. Its `Refined` box is a mirror, not the authority — **check the ticket's own dated line**, and if the two disagree the ticket wins and the box gets corrected.
+- **`../docs/PLAN.md`** — the running order. This ticket's row, and what other rows say is waiting on it. The plan is the order; the ticket is the work. Its `Designed` box is a mirror, not the authority — **check the ticket's own dated line**, and if the two disagree the ticket wins and the box gets corrected.
 - **`../docs/GLOSSARY.md`** — the words all three of those are written in. Skim it once, and write the record and the rows in those words rather than inventing a second name for a phase or a tier. A planning word this build genuinely needed and that file does not have gets a row there, in the closing pass below.
 
-### Refine it first if nobody has
+### Design it first if nobody has
 
-A refined ticket says so at the top, with the date it was checked:
+A designed ticket says so at the top, with the date it was checked:
 
 ```markdown
-> **Refined 3 August 2026.** Citations opened; plan held against `AGENTS.md`.
+> **Designed 3 August 2026.** Citations opened; plan held against `AGENTS.md`.
 ```
 
-**No line like that, and [refine](../refine/SKILL.md) runs now**, in full, before a line of code is written — an unrefined ticket's citations have never been opened, and building off a stale line number is how a plan costs double. It is not a separate errand and it does not need asking about: refine it, say in one sentence what the plan had wrong, and carry straight on into phase 1.
+**No line like that, and [design](../design/SKILL.md) runs now**, in full, before a line of code is written — a ticket with no design line has never had its citations opened, and building off a stale line number is how a plan costs double. It is not a separate errand and it does not need asking about: design it, say in one sentence what the plan had wrong, and carry straight on into phase 1.
 
-Refine can put one question to the owner, when a fix changes *what gets built* rather than how it is described. If it does, answer that before building — that is the one thing here worth stopping for.
+The design pass can put one question to the owner, when a fix changes *what gets built* rather than how it is described. If it does, answer that before building — that is the one thing here worth stopping for.
 
 A line with a date months older than the code is worth re-reading too, but that is a judgment call, not a rule: if the ticket's citations still land where it says they do, the date is only a date.
 
@@ -65,6 +66,7 @@ The ticket's value after it ships is what it says about the ground. As each phas
 - **What the plan had wrong**, if reading the code corrected it.
 - **What building it changed** — a decision the plan made that turned out to be the wrong shape, and what it is now. This is the section a later reader needs most, because the ticked boxes only say what happened, not why it differs from the plan they are reading above it.
 - **Still open** — work the build touched and deliberately did not do, named so nobody reads it as covered. A piece of scaffolding another ticket should absorb goes here.
+- **Follow-up work gets a ticket before hand-back.** If building exposes a real fix, design pass, or build that this ticket will not do, run [ticket](../ticket/SKILL.md), put the new file in the right live folder, add its index and running-order rows, and link it from `Still open`; do not leave discoverable work as a loose note.
 
 ## 4. Drive it yourself, then the owner confirms
 
@@ -110,7 +112,7 @@ Then `/check` once more over the whole thing, and hand back: what the app does d
 - `/run` — the app, launched, for section 4.
 
 - `/ticket` — the shape of the file being built.
-- `/refine` — run first, automatically, when the top of the ticket is undated.
+- `/design` — run first, automatically, when the top of the ticket is undated.
 - `/check` — the end of every phase, and the end of the job.
 - `/sync-docs` — step 5, when the change is wide.
 - `../docs/README.md` — every ticket, one line each.

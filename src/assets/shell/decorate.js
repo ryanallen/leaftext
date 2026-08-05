@@ -474,7 +474,10 @@ function mermaidCacheKey(source) {
   return (root.themeFamily || '') + '\n' + (root.theme || '') + '\n' + source;
 }
 function renderMermaidDiagrams() {
-  const candidates = Array.from(app.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"])'));
+  // The full-window stage is inside `app` and is a `pre.mermaid` too, but it draws
+  // itself and must never reach the memo — an overlay-sized SVG written into it
+  // comes back in the page at that size.
+  const candidates = Array.from(app.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-stage])'));
   if (!candidates.length) {
     return;
   }
@@ -612,22 +615,32 @@ const MERMAID_ZOOM_BUTTONS = [
   ['fit', 'Whole diagram, back where it started — or double-click it', `<span class="lt-icon lt-icon-fit"></span>`],
   ['in', 'Zoom in — or Ctrl and the wheel. Drag the diagram to move it', `<span class="lt-icon lt-icon-zoom-in"></span>`],
 ];
-function addMermaidZoomControls(diagram) {
-  if (diagram.querySelector('.mermaid-zoom')) return;
+// The fourth, on the block in the page only: the overlay it opens carries the
+// three above and its own way out, so a diagram already full screen has nothing
+// to expand into.
+const MERMAID_FULL_BUTTON = ['full', 'Open it on the whole window', `<span class="lt-icon lt-icon-expand"></span>`];
+// The group the overlay builds too — diagram-view.js asks for the three without
+// the fourth. Its buttons carry no listeners: the click is delegated off `app`,
+// so a group anywhere inside a `pre.mermaid` is answered.
+function mermaidZoomGroup(buttons, label) {
   const group = document.createElement('div');
   group.className = 'mermaid-zoom';
   group.setAttribute('role', 'group');
-  group.setAttribute('aria-label', 'Zoom');
-  for (const [step, label, icon] of MERMAID_ZOOM_BUTTONS) {
+  group.setAttribute('aria-label', label);
+  for (const [step, title, icon] of buttons) {
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset.mermaidZoom = step;
-    button.title = label;
-    button.setAttribute('aria-label', label);
+    button.title = title;
+    button.setAttribute('aria-label', title);
     button.innerHTML = icon;
     group.appendChild(button);
   }
-  diagram.appendChild(group);
+  return group;
+}
+function addMermaidZoomControls(diagram) {
+  if (diagram.querySelector('.mermaid-zoom')) return;
+  diagram.appendChild(mermaidZoomGroup(MERMAID_ZOOM_BUTTONS.concat([MERMAID_FULL_BUTTON]), 'Diagram view'));
 }
 
 // ---- the drawing inside its box --------------------------------------------
@@ -756,7 +769,7 @@ if (app) {
   app.addEventListener(
     'pointerdown',
     (event) => {
-      const control = event.target && event.target.closest ? event.target.closest('.mermaid-tool, .mermaid-zoom button') : null;
+      const control = event.target && event.target.closest ? event.target.closest('.mermaid-tool, .mermaid-zoom button, .diagram-close') : null;
       if (control) event.stopPropagation();
     },
     true,
@@ -766,7 +779,7 @@ if (app) {
     if (event.button !== 0 && event.button !== 1) return;
     const diagram = mermaidDiagramFor(event.target);
     if (!diagram) return;
-    if (event.target.closest('.mermaid-tools, .mermaid-zoom, a')) return;
+    if (event.target.closest('.mermaid-tools, .mermaid-zoom, .diagram-close, a')) return;
     // Keeps the drag from selecting the labels it passes over. It holds focus
     // where it was too, so a block being edited elsewhere is closed by hand.
     if (document.activeElement && document.activeElement.isContentEditable) document.activeElement.blur();
@@ -811,7 +824,8 @@ if (app) {
       const diagram = zoomButton.closest('pre.mermaid');
       if (!diagram) return;
       const step = zoomButton.dataset.mermaidZoom;
-      if (step === 'fit') setMermaidView(diagram, { zoom: 1, x: 0, y: 0 });
+      if (step === 'full') openDiagramOverlay(diagram, zoomButton);
+      else if (step === 'fit') setMermaidView(diagram, { zoom: 1, x: 0, y: 0 });
       else mermaidCenterZoom(diagram, step === 'in' ? 1.25 : 1 / 1.25);
       return;
     }
@@ -827,7 +841,7 @@ if (app) {
   // that went too far without reaching for the Fit button.
   app.addEventListener('dblclick', (event) => {
     const diagram = mermaidDiagramFor(event.target);
-    if (!diagram || event.target.closest('.mermaid-tools, .mermaid-zoom, a')) return;
+    if (!diagram || event.target.closest('.mermaid-tools, .mermaid-zoom, .diagram-close, a')) return;
     setMermaidView(diagram, { zoom: 1, x: 0, y: 0 });
   });
   // Otherwise the middle button opens the web view's own scroll-anywhere puck
@@ -841,7 +855,7 @@ if (app) {
 // as literal values, so recoloring one means drawing it again. One that failed
 // before gets another go — this may be a theme it can be drawn in.
 function repaintMermaidDiagrams() {
-  const diagrams = Array.from(app.querySelectorAll('pre.mermaid'));
+  const diagrams = Array.from(app.querySelectorAll('pre.mermaid:not([data-diagram-stage])'));
   let any = false;
   for (const diagram of diagrams) {
     if (diagram.__mermaidSource == null) continue;
@@ -877,6 +891,8 @@ if (typeof MutationObserver === 'function') {
   new MutationObserver(() => {
     mermaidFontRepaintDone = false;
     repaintMermaidDiagrams();
+    // The sweep above skips the full-window stage, so it is redrawn by name.
+    repaintDiagramOverlay();
     repaintMissingImages();
   }).observe(document.documentElement, {
     attributes: true,

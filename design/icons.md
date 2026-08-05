@@ -56,6 +56,7 @@ An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></spa
 | zoom-in | zoom-in.svg | regular | — | Zoom in, on a diagram and on the flow canvas. |
 | zoom-out | zoom-out.svg | regular | — | Zoom out. |
 | fit | fit.svg | regular | — | Fit the whole thing back on screen. |
+| expand | expand.svg | regular | — | Open a drawn diagram on the whole window. |
 | bold | bold.svg | regular | — | Bold, in the format bar. |
 | italic | italic.svg | regular | — | Italic. |
 | strikethrough | strikethrough.svg | regular | — | Strikethrough. |

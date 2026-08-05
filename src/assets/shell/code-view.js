@@ -931,6 +931,9 @@ function renderCodeView(state) {
   disposeMonacoEditor();
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
+  // Same as a document render: what is in `app` goes, so the overlay has to be
+  // taken down rather than swept away underneath its own handlers.
+  closeDiagramOverlay();
   readerAnchorBlocks = null;
   app.className = 'reader-shell has-document code-view-monaco-shell';
   // Flag the code view at the document root so the header's active tab (a sibling

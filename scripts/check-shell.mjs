@@ -1894,6 +1894,24 @@ if (booted) {
     if (init < 0 || wait > init) throw new Error('the fonts are waited for after the diagrams are measured');
   });
 
+  // The full-window diagram is built per open and torn down by a render, and both halves fail silently: mermaid replaces the stage's contents with the SVG it made, so a control put in before the draw is simply gone, and a variable of this fragment's own is still in its dead zone while theme.js runs the first render — which is one of the things that closes the overlay.
+  check('the full-window diagram survives its own draw and the first render', () => {
+    const fragment = readFileSync(join(root, 'src/assets/shell/diagram-view.js'), 'utf8');
+    const draw = fragment.slice(fragment.indexOf('function drawDiagramStage'));
+    const run = draw.indexOf('mermaid.run({ nodes: [stage] })');
+    const controls = draw.indexOf('addDiagramStageControls(stage)');
+    if (run < 0 || controls < 0) throw new Error('the stage is no longer drawn, or gains no controls');
+    if (controls < run) throw new Error('the controls go in before mermaid draws, so the draw wipes them');
+    const declarations = [...fragment.matchAll(/^(?:let|const|var)\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1]);
+    if (declarations.length) {
+      throw new Error(`this fragment holds state a first render would read too early: ${declarations.join(', ')}`);
+    }
+    // Which is why the overlay is found by query, and what it has to put back is held on the element.
+    if (!fragment.includes("app.querySelector('.diagram-overlay')")) {
+      throw new Error('nothing finds the overlay in the page');
+    }
+  });
+
   // The widened table's rules, read as text: none of it is reachable without a laid-out page, and every way it breaks is silent — a table back at the text measure, one grown wider than the lane it sits in, a frontmatter table dragged into the margin, or a fade that veils a column instead of pointing past it.
   const tableLaneRule = () => {
     const css = readFileSync(join(root, 'src/assets/reading.css'), 'utf8');

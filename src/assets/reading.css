@@ -3523,7 +3523,10 @@ body.is-block-dragging .document-body [data-src-start] {
 /* Direct child, always: the drawing is the block's own SVG, and the corner
    buttons hold SVGs of their own. A descendant selector here takes every icon
    with it — they pile up at the pan offset and leave empty buttons behind. */
-.document-body pre.mermaid[data-processed="true"] > svg {
+/* The full-window stage rides on all three of these: setMermaidView drives them
+   by hand, so a rule the stage misses is a diagram that pans into nowhere. */
+.document-body pre.mermaid[data-processed="true"] > svg,
+.diagram-stage > svg {
   display: inline-block;
   height: auto;
   max-width: 100%;
@@ -3533,16 +3536,19 @@ body.is-block-dragging .document-body [data-src-start] {
    translated — a CSS scale re-lays out the labels inside mermaid's
    foreignObjects against boxes that did not grow with them and clips every one,
    so the size is set on the SVG instead. */
-.document-body pre.mermaid[data-processed="true"].is-moved {
+.document-body pre.mermaid[data-processed="true"].is-moved,
+.diagram-stage.is-moved {
   height: var(--mermaid-box-height);
 }
-.document-body pre.mermaid[data-processed="true"].is-moved > svg {
+.document-body pre.mermaid[data-processed="true"].is-moved > svg,
+.diagram-stage.is-moved > svg {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%) translate(var(--mermaid-pan-x, 0px), var(--mermaid-pan-y, 0px));
 }
-.document-body pre.mermaid[data-processed="true"].is-panning {
+.document-body pre.mermaid[data-processed="true"].is-panning,
+.diagram-stage.is-panning {
   cursor: grabbing;
 }
 /* A diagram swapped for its source is a code block again. The rules above center
@@ -5452,9 +5458,11 @@ body.is-block-dragging .document-body [data-src-start] {
     cursor: row-resize;
   }
 }
-/* A drawn diagram's corner controls: what it can be opened as, top right, and
-   how it is looked at, bottom right. Both sit on the block itself and appear on
-   hover, so a page being read carries none of them. */
+/* A drawn diagram's corner controls: how it is looked at, top right, and what it
+   can be opened as, bottom right. Zoom takes the corner a reader looks at first,
+   because it is the one used on every diagram and editing is the rarer act. Both
+   sit on the block itself and appear on hover, so a page being read carries
+   none of them. */
 .document-body pre.mermaid {
   position: relative;
 }
@@ -5467,11 +5475,11 @@ body.is-block-dragging .document-body [data-src-start] {
   transition: opacity var(--lt-duration-120) var(--lt-ease);
 }
 .mermaid-tools {
-  top: 6px;
+  bottom: 6px;
   gap: var(--lt-space-6);
 }
 .mermaid-zoom {
-  bottom: 6px;
+  top: 6px;
 }
 .document-body pre.mermaid:hover .mermaid-tools,
 .document-body pre.mermaid:hover .mermaid-zoom,
@@ -5519,6 +5527,62 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .mermaid-zoom button + button {
   border-left: 0;
+}
+/* ---- A diagram on the whole window ----------------------------------------
+   Built per open by diagram-view.js, inside #app so the delegated pan, wheel and
+   click answer it with no listeners of its own. It takes the free pair of layers
+   under the flowchart editor's: this is for looking at, and picking up a pen
+   over it closes it. */
+.diagram-overlay {
+  position: fixed;
+  inset: 16px;
+  z-index: var(--lt-z-41);
+  display: flex;
+  background: var(--lt-surface-elevated);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-xl);
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--lt-duration-220) var(--lt-ease);
+}
+.diagram-overlay.open {
+  opacity: 1;
+}
+/* A `pre.mermaid` like the block in the page, and deliberately outside any
+   .document-body: what it is for is the room the reading column does not have. */
+.diagram-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: var(--lt-space-16);
+  overflow: hidden;
+  color: var(--lt-markdown-foreground);
+  cursor: grab;
+}
+/* Fit is the whole drawing in this box, so the height is capped until somebody
+   zooms — past that the size is the SVG's own and a cap here would undo it. */
+.diagram-stage:not(.is-moved) > svg {
+  max-height: 100%;
+}
+/* The window is the box now, so nothing here is something to go hunting for. */
+.diagram-stage .mermaid-zoom,
+.diagram-stage .mermaid-tools {
+  opacity: 1;
+}
+.diagram-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+/* The zoom keeps the top right it has in the page, moved left of the X, which is
+   the one corner the overlay owns. Centered against it: the X is 32px tall and
+   these are 28. The edit pair stays bottom right, as on the block. */
+.diagram-stage .mermaid-zoom {
+  top: 8px;
+  right: 44px;
 }
 /* Wide enough that a sheet across the whole width would be a line of text you
    have to sweep your head along: every sheet becomes a centered column instead.

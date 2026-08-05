@@ -262,6 +262,102 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
 }
 
 #[test]
+fn a_drawn_diagram_opens_on_the_whole_window() {
+    let html = app_shell_page();
+
+    for expected in [
+        // The fourth button sits with the zoom group, so a locked document gets it too, and only the block in the page carries it.
+        "const MERMAID_FULL_BUTTON = ['full', 'Open it on the whole window', `<span class=\"lt-icon lt-icon-expand\"></span>`];",
+        "diagram.appendChild(mermaidZoomGroup(MERMAID_ZOOM_BUTTONS.concat([MERMAID_FULL_BUTTON]), 'Diagram view'));",
+        "if (step === 'full') openDiagramOverlay(diagram, zoomButton);",
+        "function openDiagramOverlay(diagram, opener) {",
+        "function closeDiagramOverlay() {",
+        // The stage is the shape the delegated handlers already answer, built inside `app` because that is what they are bound to.
+        "stage.className = 'mermaid diagram-stage';",
+        "stage.dataset.diagramStage = 'true';",
+        "app.appendChild(overlay);",
+        // Escape, the X and the scrim, and focus back to the button that opened it.
+        "document.addEventListener('keydown', onDiagramOverlayKey, true);",
+        "close.addEventListener('click', closeDiagramOverlay);",
+        "scrim.addEventListener('click', closeDiagramOverlay);",
+        "leafFocusForKeyboard(overlay.__diagramOpener);",
+    ] {
+        assert_contains(&html, expected);
+    }
+    // Both sweeps leave the stage alone: it is a `pre.mermaid` inside `app` like any other, and an overlay-sized SVG in the render memo would come back in the page at that size.
+    assert_contains(
+        &html,
+        "pre.mermaid:not([data-processed=\"true\"]):not([data-mermaid-render=\"failed\"]):not([data-diagram-stage])",
+    );
+    assert_contains(
+        &html,
+        "app.querySelectorAll('pre.mermaid:not([data-diagram-stage])')",
+    );
+    // So the stage is drawn by name instead, on a theme change and nowhere near the memo.
+    assert_contains(&html, "repaintDiagramOverlay();");
+    assert_contains(&html, "await mermaid.run({ nodes: [stage] });");
+    let script = app_shell_script();
+    let fragment = script
+        .split("function openDiagramOverlay")
+        .nth(1)
+        .expect("the full-window diagram fragment");
+    assert!(
+        !fragment.contains("mermaidRenderCache."),
+        "the overlay must never write its own SVG into the render memo"
+    );
+    // A render empties `app`, which would take the overlay with it and leave the Escape handler listening for a diagram that is gone.
+    for entry in [
+        "function renderState() {",
+        "function renderCodeView(state) {",
+    ] {
+        let body = script.split(entry).nth(1).expect(entry);
+        let head = &body[..body
+            .find("app.innerHTML")
+            .expect("the render that empties app")];
+        assert!(
+            head.contains("closeDiagramOverlay();"),
+            "{entry} empties app without taking the overlay down first"
+        );
+    }
+    // It opens at Fit: a zoom number counts from what the box laid out, so the page's own would mean a different size here.
+    assert_contains(&html, "stage.__mermaidNatural = null;");
+    assert_contains(&html, "stage.__mermaidView = null;");
+}
+
+#[test]
+fn the_full_window_diagram_carries_the_edit_buttons_on_an_unlocked_markdown_document() {
+    let script = app_shell_script();
+    let tools = script
+        .split("function addDiagramStageTools(stage) {")
+        .nth(1)
+        .expect("the overlay's edit buttons");
+    let tools = &tools[..tools.find("\n}\n").expect("the function closes")];
+
+    // The same two conditions the block in the page is held to, so a locked document or a JSON file gets neither button.
+    assert_contains(
+        tools,
+        "if (!block || currentDocumentFormat !== 'markdown' || !readerEditingAllowed()) return;",
+    );
+    assert_contains(
+        tools,
+        "if (!Number.isFinite(Number(block.dataset.srcStart)) || !Number.isFinite(Number(block.dataset.srcEnd))) return;",
+    );
+    // The same two buttons, built by the same maker rather than a second copy of them.
+    assert_contains(tools, "mermaidToolButton('source',");
+    assert_contains(tools, "mermaidToolButton('sheet',");
+    // Both hand the document back to the page, so the overlay goes first and the block is what they act on.
+    assert_contains(tools, "closeDiagramOverlay();");
+    assert_contains(tools, "startBlockSourceEdit(block);");
+    assert_contains(tools, "openMermaidBlockSheet(block);");
+    assert!(
+        !tools.contains("(stage)"),
+        "the stage has no place in the file behind it; both buttons act on the block"
+    );
+    // Listened to here, not by the delegated handler in decorate.js — which would hand it the stage.
+    assert_contains(tools, "event.stopPropagation();");
+}
+
+#[test]
 fn a_diagram_bound_for_a_picture_puts_its_labels_in_text() {
     // A mermaid label is a `<foreignObject>` holding a `<div>`, and an SVG loaded as an image drops one outright — which came out as boxes with nothing written in them. Stated on every call, not only the picture's: initialize merges, so a config quiet about it leaves that answer behind for the page.
     let html = app_shell_page();

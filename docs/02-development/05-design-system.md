@@ -9,8 +9,8 @@ Four files under `design/` are the source. Each is plain Markdown, so Leaftext o
 | --- | --- | --- |
 | `design/colors.md` | 81 color names and what each is for — no values, because a color's value belongs to a theme | the token contract in `src/theme.rs` |
 | `design/tokens.md` | 158 values that do not change with the theme | `src/assets/tokens.css` |
-| `design/icons.md` | 56 icons | `src/assets/icons.css`, one mask class each |
-| `design/components.md` | 47 components, and the markup each is drawn with | `src/assets/gallery.html` |
+| `design/icons.md` | 57 icons | `src/assets/icons.css`, one mask class each |
+| `design/components.md` | 48 components, and the markup each is drawn with | `src/assets/gallery.html` |
 
 ## Colors
 
@@ -55,11 +55,11 @@ Widths, heights and positional offsets are **not** tokens: they are one componen
 
 ## Icons
 
-56 icons, each a class drawn with `mask-image`. A mask reads only transparency, so the icon takes the color of whatever it sits in — and a drawing used in five places is in the app once. A control with a bolder active state swaps to a second mask rather than thickening a stroke a mask does not have.
+57 icons, each a class drawn with `mask-image`. A mask reads only transparency, so the icon takes the color of whatever it sits in — and a drawing used in five places is in the app once. A control with a bolder active state swaps to a second mask rather than thickening a stroke a mask does not have.
 
 ## Components
 
-47 components. Each row names its class family, what builds it, and the markup the gallery draws it with — so a component that loses its styling, or gains a class nobody listed, fails the build.
+48 components. Each row names its class family, what builds it, and the markup the gallery draws it with — so a component that loses its styling, or gains a class nobody listed, fails the build.
 
 | Component | Class family |
 | --- | --- |
@@ -109,6 +109,7 @@ Widths, heights and positional offsets are **not** tokens: they are one componen
 | Empty state | `.empty-state` |
 | Reader frame | `.reader-shell` |
 | Diagram controls | `.mermaid-tool` |
+| Full-window diagram | `.diagram` |
 | Syntax colors | `.syn` |
 
 ## Looking at it

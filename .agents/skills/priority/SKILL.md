@@ -11,7 +11,7 @@ Ninety-odd tickets is more than anyone holds in their head, so the question "wha
 
 **Two files, and the split is what makes the first one usable.** [`../docs/PLAN.md`](../../../docs/PLAN.md) holds the **live** rows — the work that is left. [`../docs/done/PLAN.md`](../../../docs/done/PLAN.md) holds every **retired** row — what shipped, when it closed, and what the build found. Nothing else is edited except a ticket's row in `../docs/README.md` if its status turns out to be wrong.
 
-**Never run git.** **Never edit a ticket's phases.** If a ticket is wrong, that is `/refine`; if it is stale about the app, say so in a tier 0 row and fix its status, not its plan.
+**Never run git.** **Never edit a ticket's phases.** If a ticket is wrong, that is `/design`; if it is stale about the app, say so in a tier 0 row and fix its status, not its plan.
 
 ## Why the shipped rows leave
 
@@ -38,7 +38,7 @@ Whatever the row said in the live list is what it says in `done/PLAN.md`: struck
 - **Every ticket in `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`**, off the disk rather than off the index. Those folders hold **subject folders** — `storage/`, `library/`, `reading/`, `editing/`, `filtering/`, `diagrams/`, `big-swings/`, `plugins/` — so walk them, never one level. A ticket the index missed still gets a row.
 - **`../docs/done/PLAN.md`** — what has already closed, and what those builds found. A row here is a row not to re-rank.
 
-**Every row carries a `Refined` box, and this skill re-derives it rather than trusting it.** A ticket with the dated line [`/refine`](../refine/SKILL.md) signs at its top gets `[x]`; a ticket without one gets `[ ]`. Grep the tickets for that line as you read them and write what you find — the box is a mirror, the ticket is the authority, and a ranking is the one pass that reconciles the two. An `[x]` beside a ticket nobody has read is worse than no column at all.
+**Every row carries a `Designed` box, and this skill re-derives it rather than trusting it.** A ticket with the dated line [`/design`](../design/SKILL.md) signs at its top gets `[x]`; a ticket without one gets `[ ]`. Grep the tickets for that line as you read them and write what you find — the box is a mirror, the ticket is the authority, and a ranking is the one pass that reconciles the two. An `[x]` beside a ticket nobody has read is worse than no column at all.
 
 Then check three things per ticket, in the code, not in the file:
 
@@ -88,18 +88,18 @@ Method, and why a row sits where it does: `/priority`.
 **A row is named, not numbered.** One line saying so, and that both files cite
 the ticket's name.
 
-**Refined** — has anybody read the ticket against today's code. Unticked means
-the plan is unproven, so `/build` runs `/refine` before it writes anything;
+**Designed** — has anybody read the ticket against today's code. Unticked means
+the plan is unproven, so `/build` runs `/design` before it writes anything;
 the ticket's own dated line is the authority and this box mirrors it.
 
 ## Tier 1 — wrong today, and cheap (days)
 
-| Ticket | Refined | Why here | Cost |
+| Ticket | Designed | Why here | Cost |
 ```
 
 That is six lines, and the last two each buy something: one says a row is a name so nobody starts numbering again, and the other buys the column, because a reader deciding what to pick up needs to know an unticked row is a guess.
 
-- **The `Refined` box is second, right after the ticket.** `[x]` or `[ ]`, nothing else in the cell — no date, no who. The date is on the ticket, and a date here would be a second copy to go stale. It sits before the reasoning because it is the first thing that decides whether to trust the rest of the row.
+- **The `Designed` box is second, right after the ticket.** `[x]` or `[ ]`, nothing else in the cell — no date, no who. The date is on the ticket, and a date here would be a second copy to go stale. It sits before the reasoning because it is the first thing that decides whether to trust the rest of the row.
 - **A cell is one or two sentences.** Not a paragraph. Not a citation — a `path:line` belongs in the ticket's measured table, where somebody building it will look, and a cost belongs in the ticket's phases. The cell says *why this row is above the next one*, and nothing else.
 - **No tier preamble.** The heading and its rough size say what the tier is. A paragraph under it restates the heading.
 - **An empty tier is deleted, heading and all.** It comes back when it has a row. A heading over nothing is a line to scroll past, and tier 0 sat empty over a link to somewhere else for exactly one edit before this rule existed.
@@ -118,7 +118,7 @@ Then, after the tables, only these:
 
 `../docs/done/PLAN.md` is the retired rows and nothing else. Its top says what it is, that a row is cited by its ticket's name in both files, and that a row arrives unchanged. Then one table per tier the rows were retired from, in tier order, keeping the live file's own column headings so a row can be moved without touching a cell.
 
-It ends with two things the live file is kept clear of. **What the retired rows add up to** — what that work closed, and which rows cost more than the plan said and why: the paragraph somebody reads before trusting the next cost estimate. Then **what earlier rankings got wrong**, the three headings `/refine` uses, sitting beside the rows it is about rather than on top of the work that is left. Anything belonging to one ticket rather than to the ordering goes on that ticket instead.
+It ends with two things the live file is kept clear of. **What the retired rows add up to** — what that work closed, and which rows cost more than the plan said and why: the paragraph somebody reads before trusting the next cost estimate. Then **what earlier rankings got wrong**, the three headings `/design` uses, sitting beside the rows it is about rather than on top of the work that is left. Anything belonging to one ticket rather than to the ordering goes on that ticket instead.
 
 ### Rules both tables hold to
 
@@ -127,7 +127,7 @@ It ends with two things the live file is kept clear of. **What the retired rows 
 - **A retired row is struck through and says what the build found** — what the plan had wrong, and what changed shape. That is the half a later reader cannot get anywhere else, and it is why the row is kept rather than deleted.
 - **A claim cites the repo or the ticket.** A cost, a dependency, a "this already ships" — the same bar as a ticket's measured table.
 - **Never re-plan.** A row points at a ticket. Deciding a phase in the ranking puts the decision where nobody building the ticket will look.
-- **A row that has to say "phases 1–2 only" is a ticket that wants splitting.** Ranking half a file in one tier and the rest four tiers down is the ranking admitting the file holds two jobs; the annotation keeps the list honest but leaves a ticket nobody can finish. Say so in the row, and name the split as the work — `/refine` on that file does it, and then each row points at a file that can be closed.
+- **A row that has to say "phases 1–2 only" is a ticket that wants splitting.** Ranking half a file in one tier and the rest four tiers down is the ranking admitting the file holds two jobs; the annotation keeps the list honest but leaves a ticket nobody can finish. Say so in the row, and name the split as the work — `/design` on that file does it, and then each row points at a file that can be closed.
 
 ## 6. When something ships
 
@@ -144,7 +144,7 @@ Say what moved and why, in plain words: which rows changed tier, what tier 0 tur
 - `../docs/README.md` — every ticket, one line each. Read first.
 - `../docs/GLOSSARY.md` — tier, row, seam, track, retired row, subject folder: what each one means here.
 - `/ticket` — writes the tickets this ranks.
-- `/refine` — fixes a ticket this finds wrong. A tier 0 row is often "run `/refine` on that file".
+- `/design` — fixes a ticket this finds wrong. A tier 0 row is often "run `/design` on that file".
 - `/build` — builds the top row, and keeps both files true as it goes.
 
 <!-- keycode: LEAF-7A15 -->

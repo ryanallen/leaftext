@@ -8,6 +8,9 @@ function renderState() {
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
   cancelReaderScrollSettle();
+  // The full-window diagram lives inside `app`, so the render below would take it
+  // away with nothing knowing — including the Escape handler still listening.
+  closeDiagramOverlay();
   readerAnchorBlocks = null;
   // Any full render shows the reading view, so we're no longer in the code view.
   codeViewActive = false;

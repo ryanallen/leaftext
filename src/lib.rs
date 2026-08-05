@@ -135,6 +135,8 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/shell/render-document.js"),
     include_str!("assets/shell/glossary.js"),
     include_str!("assets/shell/decorate.js"),
+    // After decorate.js: the full-window diagram borrows its zoom group builder and its delegated pan, wheel and click.
+    include_str!("assets/shell/diagram-view.js"),
     include_str!("assets/shell/minimap.js"),
 ];
 

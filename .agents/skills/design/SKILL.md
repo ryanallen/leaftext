@@ -1,11 +1,11 @@
 ---
-name: refine
-description: Review a ticket before anyone builds it. Opens every file the ticket cites and checks the claim is still true, then holds the plan against the rules this repo already paid for — one table of formats, every value in design/, fragment order, no crawl, no second list, no loosened check, nothing new on the startup path. Fixes what is wrong in place, signs the top of the file with the date it was checked, and leaves a record of what was wrong at the bottom, so a later reading knows what the first one already thought about and whether anyone has read it against this month's code. Never touches git and never edits app code. Use when the user says "refine", "review this plan", "check this ticket", or hands over a Markdown plan written by /ticket. A running-order row is cited by its ticket's name, never a number.
+name: design
+description: Design a ticket before anyone builds it. Opens every file the ticket cites and checks the claim is still true, then holds the plan against the rules this repo already paid for — one table of formats, every value in design/, fragment order, no crawl, no second list, no loosened check, nothing new on the startup path. Fixes what is wrong in place, signs the top of the file with the date it was checked, and leaves a record of what was wrong at the bottom, so a later reading knows what the first one already thought about and whether anyone has read it against this month's code. Never touches git and never edits app code. Use when the user says "design this ticket", "review this plan", "check this ticket", or hands over a Markdown plan written by /ticket. A running-order row is cited by its ticket's name, never a number.
 argument-hint: "[path to the ticket]"
 user-invocable: true
 ---
 
-# Refine a ticket
+# Design a ticket
 
 A ticket is followed months later by somebody with none of the conversation in their head. They will trust the file over the code. So this reads the file against the code, fixes what is wrong, and says at the bottom what was wrong — because the same doubtful part attracts a second reviewer, and they should not have to redo the thinking.
 
@@ -99,16 +99,16 @@ A plan is read as a file, so how it sits on the page is part of whether it is fo
 **Say on the file that this ran, and when.** One short line, directly under the `> **Not built.**` note:
 
 ```markdown
-> **Refined 3 August 2026.** Citations opened; plan held against `AGENTS.md`.
+> **Designed 3 August 2026.** Citations opened; plan held against `AGENTS.md`.
 ```
 
 That is the whole line. It is a date and a scope, not a summary — what the reading *found* is the record at the bottom, and a paragraph here is a paragraph between the reader and the ticket.
 
-It goes at the top because that is where somebody decides whether to trust the file, and it carries a date because a plan refined in March against code that moved in August is a plan nobody has read. Re-refining replaces the line rather than stacking another one.
+It goes at the top because that is where somebody decides whether to trust the file, and it carries a date because a plan designed in March against code that moved in August is a plan nobody has read. Designing it again replaces the line rather than stacking another one.
 
 It is also the flag [build](../build/SKILL.md) tests for: no line, and it runs this skill before it writes a single piece of code.
 
-**Then tick the box in the running order, in the same pass.** [`../docs/PLAN.md`](../../../docs/PLAN.md) carries a `Refined` column, and this ticket's row goes from `[ ]` to `[x]`. That is the only edit this skill makes to that file — never the tier, never the reasoning, never the order. The box mirrors the line, so writing one without the other is how the two start disagreeing, and the box is the half somebody scanning the list actually sees.
+**Then tick the box in the running order, in the same pass.** [`../docs/PLAN.md`](../../../docs/PLAN.md) carries a `Designed` column, and this ticket's row goes from `[ ]` to `[x]`. That is the only edit this skill makes to that file — never the tier, never the reasoning, never the order. The box mirrors the line, so writing one without the other is how the two start disagreeing, and the box is the half somebody scanning the list actually sees.
 
 A ticket with no row there yet is a ticket [`/ticket`](../ticket/SKILL.md) did not finish — add the row, unticked, then tick it.
 
@@ -153,6 +153,6 @@ Two things have to be on the file when this ends: the dated line at the top, and
 - `../docs/PLAN.md` — how short a row is allowed to be. Words cut from a row land in the ticket.
 - `/design-tokens` — where a value lives, for anything the ticket styles.
 - `/add-dependency` — what a ticket owes before it names a crate.
-- `../docs/done/repo/conformance-suites.md` — a refined ticket, with the record section at the bottom.
+- `../docs/done/repo/conformance-suites.md` — a designed ticket, with the record section at the bottom.
 
 <!-- keycode: LEAF-BE23 -->

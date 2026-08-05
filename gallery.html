@@ -2256,6 +2256,10 @@
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Crect x='7' y='8' width='10' height='8' rx='1' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Crect x='7' y='8' width='10' height='8' rx='1' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
 }
+.lt-icon-expand {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3.75 8.25v-4.5h4.5M3.75 3.75 9 9M3.75 15.75v4.5h4.5M3.75 20.25 9 15M20.25 8.25v-4.5h-4.5M20.25 3.75 15 9M20.25 15.75v4.5h-4.5M20.25 20.25 15 15' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3.75 8.25v-4.5h4.5M3.75 3.75 9 9M3.75 15.75v4.5h4.5M3.75 20.25 9 15M20.25 8.25v-4.5h-4.5M20.25 3.75 15 9M20.25 15.75v4.5h-4.5M20.25 20.25 15 15' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+}
 .lt-icon-bold {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 12h8a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h6a4 4 0 0 1 0 8' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 12h8a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h6a4 4 0 0 1 0 8' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
@@ -5872,7 +5876,10 @@ body.is-block-dragging .document-body [data-src-start] {
 /* Direct child, always: the drawing is the block's own SVG, and the corner
    buttons hold SVGs of their own. A descendant selector here takes every icon
    with it — they pile up at the pan offset and leave empty buttons behind. */
-.document-body pre.mermaid[data-processed="true"] > svg {
+/* The full-window stage rides on all three of these: setMermaidView drives them
+   by hand, so a rule the stage misses is a diagram that pans into nowhere. */
+.document-body pre.mermaid[data-processed="true"] > svg,
+.diagram-stage > svg {
   display: inline-block;
   height: auto;
   max-width: 100%;
@@ -5882,16 +5889,19 @@ body.is-block-dragging .document-body [data-src-start] {
    translated — a CSS scale re-lays out the labels inside mermaid's
    foreignObjects against boxes that did not grow with them and clips every one,
    so the size is set on the SVG instead. */
-.document-body pre.mermaid[data-processed="true"].is-moved {
+.document-body pre.mermaid[data-processed="true"].is-moved,
+.diagram-stage.is-moved {
   height: var(--mermaid-box-height);
 }
-.document-body pre.mermaid[data-processed="true"].is-moved > svg {
+.document-body pre.mermaid[data-processed="true"].is-moved > svg,
+.diagram-stage.is-moved > svg {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%) translate(var(--mermaid-pan-x, 0px), var(--mermaid-pan-y, 0px));
 }
-.document-body pre.mermaid[data-processed="true"].is-panning {
+.document-body pre.mermaid[data-processed="true"].is-panning,
+.diagram-stage.is-panning {
   cursor: grabbing;
 }
 /* A diagram swapped for its source is a code block again. The rules above center
@@ -7801,9 +7811,11 @@ body.is-block-dragging .document-body [data-src-start] {
     cursor: row-resize;
   }
 }
-/* A drawn diagram's corner controls: what it can be opened as, top right, and
-   how it is looked at, bottom right. Both sit on the block itself and appear on
-   hover, so a page being read carries none of them. */
+/* A drawn diagram's corner controls: how it is looked at, top right, and what it
+   can be opened as, bottom right. Zoom takes the corner a reader looks at first,
+   because it is the one used on every diagram and editing is the rarer act. Both
+   sit on the block itself and appear on hover, so a page being read carries
+   none of them. */
 .document-body pre.mermaid {
   position: relative;
 }
@@ -7816,11 +7828,11 @@ body.is-block-dragging .document-body [data-src-start] {
   transition: opacity var(--lt-duration-120) var(--lt-ease);
 }
 .mermaid-tools {
-  top: 6px;
+  bottom: 6px;
   gap: var(--lt-space-6);
 }
 .mermaid-zoom {
-  bottom: 6px;
+  top: 6px;
 }
 .document-body pre.mermaid:hover .mermaid-tools,
 .document-body pre.mermaid:hover .mermaid-zoom,
@@ -7868,6 +7880,62 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .mermaid-zoom button + button {
   border-left: 0;
+}
+/* ---- A diagram on the whole window ----------------------------------------
+   Built per open by diagram-view.js, inside #app so the delegated pan, wheel and
+   click answer it with no listeners of its own. It takes the free pair of layers
+   under the flowchart editor's: this is for looking at, and picking up a pen
+   over it closes it. */
+.diagram-overlay {
+  position: fixed;
+  inset: 16px;
+  z-index: var(--lt-z-41);
+  display: flex;
+  background: var(--lt-surface-elevated);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-xl);
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--lt-duration-220) var(--lt-ease);
+}
+.diagram-overlay.open {
+  opacity: 1;
+}
+/* A `pre.mermaid` like the block in the page, and deliberately outside any
+   .document-body: what it is for is the room the reading column does not have. */
+.diagram-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: var(--lt-space-16);
+  overflow: hidden;
+  color: var(--lt-markdown-foreground);
+  cursor: grab;
+}
+/* Fit is the whole drawing in this box, so the height is capped until somebody
+   zooms — past that the size is the SVG's own and a cap here would undo it. */
+.diagram-stage:not(.is-moved) > svg {
+  max-height: 100%;
+}
+/* The window is the box now, so nothing here is something to go hunting for. */
+.diagram-stage .mermaid-zoom,
+.diagram-stage .mermaid-tools {
+  opacity: 1;
+}
+.diagram-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+/* The zoom keeps the top right it has in the page, moved left of the X, which is
+   the one corner the overlay owns. Centered against it: the X is 32px tall and
+   these are 28. The edit pair stays bottom right, as on the block. */
+.diagram-stage .mermaid-zoom {
+  top: 8px;
+  right: 44px;
 }
 /* Wide enough that a sheet across the whole width would be a line of text you
    have to sweep your head along: every sheet becomes a centered column instead.
@@ -8107,7 +8175,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 81 colors, the 158 values that do not change with the theme, all 56 icons, and all 47 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 81 colors, the 158 values that do not change with the theme, all 57 icons, and all 48 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -8128,8 +8196,8 @@ body.is-block-dragging .document-body [data-src-start] {
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>81</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>158</b></button>
-<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>56</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>47</b></button>
+<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>57</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>48</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -8424,7 +8492,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </div>
 </section>
 <section class="panel" id="icons" role="tabpanel" hidden>
-<p class="lead">56 icons. Each takes the color of whatever it sits in, which is why they follow the theme.</p><div class="wall">
+<p class="lead">57 icons. Each takes the color of whatever it sits in, which is why they follow the theme.</p><div class="wall">
 <div class="glyph"><span class="lt-icon lt-icon-back"></span><code>back</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-forward"></span><code>forward</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-settings"></span><code>settings</code></div>
@@ -8460,6 +8528,7 @@ body.is-block-dragging .document-body [data-src-start] {
 <div class="glyph"><span class="lt-icon lt-icon-zoom-in"></span><code>zoom-in</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-zoom-out"></span><code>zoom-out</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-fit"></span><code>fit</code></div>
+<div class="glyph"><span class="lt-icon lt-icon-expand"></span><code>expand</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-bold"></span><code>bold</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-italic"></span><code>italic</code></div>
 <div class="glyph"><span class="lt-icon lt-icon-strikethrough"></span><code>strikethrough</code></div>
@@ -8484,7 +8553,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">47 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">48 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App bar</h3><code class="built">.app-bar</code><span class="built">app-shell.html, with overflow.js folding it and code-view.js measuring it</span></header>
 <div class="stage"><div class="app-bar" style="position:static"><span class="app-bar-lead"><button type="button" class="brand-button"><span class="lt-icon lt-icon-leaf"></span></button></span></div></div>
@@ -8635,7 +8704,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </section>
 <section class="part">
 <header><h3>Icon</h3><code class="built">.lt-icon</code><span class="built">everything, drawn by icons.css</span></header>
-<div class="stage"><a class="jump" href="#icons"><span class="lt-icon lt-icon-leaf"></span>All 56 icons, on the Icons tab</a></div>
+<div class="stage"><a class="jump" href="#icons"><span class="lt-icon lt-icon-leaf"></span>All 57 icons, on the Icons tab</a></div>
 </section>
 <section class="part">
 <header><h3>Scroll area</h3><code class="built">.leaf-scroll</code><span class="built">app-shell.html</span></header>
@@ -8668,6 +8737,10 @@ body.is-block-dragging .document-body [data-src-start] {
 <section class="part">
 <header><h3>Diagram controls</h3><code class="built">.mermaid-tool</code><span class="built">decorate.js</span></header>
 <div class="stage"><div class="mermaid-tools" style="opacity:1"><button type="button" class="mermaid-tool"><span class="lt-icon lt-icon-fit"></span></button></div><div class="mermaid-zoom" style="opacity:1"><button type="button"><span class="lt-icon lt-icon-zoom-out"></span></button><button type="button"><span class="lt-icon lt-icon-zoom-in"></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Full-window diagram</h3><code class="built">.diagram</code><span class="built">diagram-view.js</span></header>
+<div class="stage"><div class="diagram-overlay open" style="position:static;height:150px"><pre class="mermaid diagram-stage" data-processed="true"><svg viewBox="0 0 220 60" width="220" height="60"><rect x="1" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><rect x="133" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><path d="M87 30h46" fill="none" stroke="currentColor"></path></svg><button type="button" class="leaf-sheet-close diagram-close"><span class="lt-icon lt-icon-close"></span></button><div class="mermaid-zoom" role="group"><button type="button"><span class="lt-icon lt-icon-zoom-out"></span></button><button type="button"><span class="lt-icon lt-icon-fit"></span></button><button type="button"><span class="lt-icon lt-icon-zoom-in"></span></button></div></pre></div></div>
 </section>
 <section class="part">
 <header><h3>Syntax colors</h3><code class="built">.syn</code><span class="built">markdown/code.rs, whose SYNTAX_STYLE_RULES is the one table of these</span></header>
