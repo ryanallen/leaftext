@@ -318,6 +318,7 @@ function disconnectMinimapPreviewObservers() {
   minimapBuiltVersion = -1;
   minimapBuiltSourceWidth = -1;
   minimapBuiltPreviewWidth = -1;
+  minimapBuiltFrameWidth = -1;
   minimapBuiltRange = null;
   invalidateMinimapMetrics();
 }
@@ -848,6 +849,22 @@ function stripMinimapClone(preview) {
   preview.classList.add('document-minimap-preview');
   preview.setAttribute('aria-hidden', 'true');
 }
+// The room the page lays the document out in, which the clone has to be given or
+// anything measuring itself against the reading layout's container query measures
+// the whole window instead — a wide table drawn wider than the page draws it, so
+// the thumbnail wrapped less and ended a fifth short of its track. The content
+// box, not clientWidth: the layout's inline padding is outside the container
+// query, and counting it would hand the clone room the page never gives it. Read
+// on the rebuild path only; the scroll path reads no geometry at all.
+function minimapFrameWidth(fallbackWidth) {
+  const layout = app.querySelector('.reader-layout');
+  if (!layout) {
+    return fallbackWidth;
+  }
+  const style = window.getComputedStyle(layout);
+  const width = layout.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
+  return width > 0 ? width : fallbackWidth;
+}
 // Build the thumbnail: clone the document, strip ids/links, shrink to the rail
 // width with a transform. Rebuilt on content changes and when scrolling leaves the
 // window it was built for; scroll otherwise just repositions the box and slides it.
@@ -868,17 +885,18 @@ function updateDocumentMinimapPreview() {
   const contentRect = content.getBoundingClientRect();
   const previewWidth = Math.max(1, Math.ceil(contentRect.width));
   const previewScale = previewWidth / metrics.sourceWidth;
+  const frameWidth = minimapFrameWidth(metrics.sourceWidth);
   const scrollTop = metrics.scrollTop;
   // Skip the clone when nothing shaping the thumbnail changed: same content
-  // version, wrap width, rail width, and the window still covers the view. The
-  // common resize (height-only, or a width change within the capped column) just
-  // repositions the box off the existing clone — the cloneNode below is what makes
-  // resize feel like a reload.
+  // version, wrap width, rail width, layout room, and the window still covers the
+  // view. The common resize (height-only) just repositions the box off the
+  // existing clone — the cloneNode below is what makes resize feel like a reload.
   if (
     content.querySelector('.document-minimap-preview') &&
     minimapBuiltVersion === minimapContentVersion &&
     minimapBuiltSourceWidth === metrics.sourceWidth &&
     minimapBuiltPreviewWidth === previewWidth &&
+    minimapBuiltFrameWidth === frameWidth &&
     minimapWindowCoversView(metrics, scrollTop)
   ) {
     updateMinimapViewport();
@@ -887,6 +905,12 @@ function updateDocumentMinimapPreview() {
   const rows = minimapWindowRows(source);
   const view = minimapVisibleDocumentRange(metrics, scrollTop);
   const windowsIt = rows.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;
+  // The clone is laid out inside the frame, which is the page's own room; the frame
+  // is what scales, so the clone keeps the width the body has on the page.
+  const frame = document.createElement('div');
+  frame.className = 'document-minimap-frame';
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.width = `${frameWidth}px`;
   let preview;
   if (!windowsIt) {
     preview = source.cloneNode(true);
@@ -894,7 +918,7 @@ function updateDocumentMinimapPreview() {
     preview.style.width = `${metrics.sourceWidth}px`;
     // Scale to the rail width, then nudge the clone down by the top gap (sourceTop)
     // so the thumbnail sits where the real content sits in the scroll range.
-    preview.style.transform = `translateY(${metrics.sourceTop * previewScale}px) scale(${previewScale})`;
+    frame.style.transform = `translateY(${metrics.sourceTop * previewScale}px) scale(${previewScale})`;
     minimapBuiltRange = null;
   } else {
     const appTop = app.getBoundingClientRect().top;
@@ -910,13 +934,14 @@ function updateDocumentMinimapPreview() {
     const firstTop = first < rows.length
       ? minimapBlockEdges(rows[first], appTop, scrollTop).top
       : metrics.sourceTop;
-    preview.style.transform = `translateY(${firstTop * previewScale}px) scale(${previewScale})`;
+    frame.style.transform = `translateY(${firstTop * previewScale}px) scale(${previewScale})`;
     minimapBuiltRange = {
       top: first < rows.length ? firstTop : 0,
       bottom: last >= 0 ? minimapBlockEdges(rows[last], appTop, scrollTop).bottom : 0,
     };
   }
-  content.replaceChildren(preview);
+  frame.appendChild(preview);
+  content.replaceChildren(frame);
   if (content.style.height !== `${metrics.scaledDocumentHeight}px`) {
     content.style.height = `${metrics.scaledDocumentHeight}px`;
   }
@@ -931,7 +956,7 @@ function updateDocumentMinimapPreview() {
       const landedAt = clonedFirst.getBoundingClientRect().top - content.getBoundingClientRect().top;
       const delta = wanted - landedAt;
       if (Math.abs(delta) > 0.5) {
-        preview.style.transform = `translateY(${wanted + delta}px) scale(${previewScale})`;
+        frame.style.transform = `translateY(${wanted + delta}px) scale(${previewScale})`;
       }
     }
   }
@@ -940,6 +965,7 @@ function updateDocumentMinimapPreview() {
   minimapBuiltVersion = minimapContentVersion;
   minimapBuiltSourceWidth = metrics.sourceWidth;
   minimapBuiltPreviewWidth = previewWidth;
+  minimapBuiltFrameWidth = frameWidth;
   updateMinimapViewport();
 }
 function scheduleMinimapViewportUpdate() {

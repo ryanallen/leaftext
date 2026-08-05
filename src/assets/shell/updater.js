@@ -207,6 +207,11 @@ let minimapContentVersion = 0;
 let minimapBuiltVersion = -1;
 let minimapBuiltSourceWidth = -1;
 let minimapBuiltPreviewWidth = -1;
+// The reading layout's own width, which the clone is laid out against. It moves
+// without the body's moving — the body stops at the text measure and the layout
+// keeps growing — so a widening window has to rebuild on this alone or a wide
+// table stays drawn at the old room.
+let minimapBuiltFrameWidth = -1;
 let minimapDragging = false;
 let minimapPointerId = null;
 let minimapPointerOffsetY = null;

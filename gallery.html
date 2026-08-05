@@ -6550,14 +6550,20 @@ body.is-block-dragging .document-body [data-src-start] {
   pointer-events: none;
   will-change: transform;
 }
-/* The clone: a shrunken rendering of the document. JS sets its width and a
-   translateY + scale transform (origin top-left). Zero the .document-body
-   scroll-origin margin (JS positions it) but keep its padding so the internal
-   layout matches the page. */
+/* The box the clone is laid out in: .reader-layout's own content-box width (JS writes it) and a container query of its own, so a document sizing itself against that container measures the same room here as on the page. Without it a wide table read `100cqi` as the whole window and was drawn wider than the page draws it, so the thumbnail wrapped less and ended a fifth short of its track. It carries the scale as well, which is why the clone below needs a containing block: container-type is layout containment, so this box would otherwise be one. */
+.document-minimap-frame {
+  container-type: inline-size;
+  transform-origin: 0 0;
+}
+/* The clone: a shrunken rendering of the document. JS sets its width; the frame
+   above carries the scale, so `position: relative` is what keeps a document's
+   absolutely positioned parts measuring off the clone rather than off that wider
+   box. Zero the .document-body scroll-origin margin (JS positions it) but keep
+   its padding so the internal layout matches the page. */
 .document-minimap-preview {
   box-sizing: border-box;
+  position: relative;
   margin: 0 !important;
-  transform-origin: 0 0;
   pointer-events: none;
 }
 /* The clone is inert; clicks belong to the rail, which handles jump/drag. */

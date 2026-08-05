@@ -698,6 +698,27 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
             css.contains(".document-minimap-content {\n  position: absolute;\n  top: 0;\n  transform: translateY(var(--minimap-preview-top, 0px));\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
             "the minimap thumbnail lane fills the rail inside the exact 8px padding on both edges"
         );
+    // The clone is laid out inside a frame carrying the same container query the reading layout carries, so a wide table in the thumbnail measures the room the page gives it instead of the whole window — which is what left the thumbnail a fifth short of the bottom.
+    assert!(
+        css.contains(
+            ".document-minimap-frame {\n  container-type: inline-size;\n  transform-origin: 0 0;\n}"
+        ),
+        "the clone's frame must carry the reading layout's container query, and the scale with it"
+    );
+    assert_eq!(
+        css.matches("  container-type:").count(),
+        2,
+        "only the reading layout and the clone's frame declare a container query"
+    );
+    // The frame is the transformed element now, so the clone needs a containing block of its own or every absolutely positioned part of a rendered document measures off a box the width of the layout.
+    assert!(
+        rule_body(&css, ".document-minimap-preview {").contains("position: relative;"),
+        "the clone must stay the containing block for a document's absolutely positioned parts"
+    );
+    assert!(
+        !rule_body(&css, ".document-minimap-preview {").contains("transform-origin"),
+        "the scale is the frame's now, so the clone should not keep a transform origin"
+    );
     // The slide is a transform, not `top`: the lane moves every frame, and as a layout property `top` makes the browser re-lay-out the page to move it — 128ms worst frame on a 4MB glossary against 44ms, the no-rail floor.
     assert!(
         css.contains("  will-change: transform;"),

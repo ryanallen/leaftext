@@ -2,19 +2,19 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://leaftext.com/</loc>
-    <lastmod>2026-08-04</lastmod>
+    <lastmod>2026-08-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/README.md</loc>
-    <lastmod>2026-08-04</lastmod>
+    <lastmod>2026-08-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/#/features/rendering</loc>
-    <lastmod>2026-08-04</lastmod>
+    <lastmod>2026-08-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/01-rendering.md</loc>
-    <lastmod>2026-08-04</lastmod>
+    <lastmod>2026-08-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/#/features/navigation</loc>
@@ -34,11 +34,11 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/#/features/minimap</loc>
-    <lastmod>2026-08-03</lastmod>
+    <lastmod>2026-08-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/04-minimap.md</loc>
-    <lastmod>2026-08-03</lastmod>
+    <lastmod>2026-08-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/#/features/settings</loc>
@@ -50,11 +50,11 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/#/features/themes</loc>
-    <lastmod>2026-08-03</lastmod>
+    <lastmod>2026-08-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/06-themes.md</loc>
-    <lastmod>2026-08-03</lastmod>
+    <lastmod>2026-08-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/#/features/editing</loc>
@@ -146,6 +146,6 @@
   </url>
   <url>
     <loc>https://leaftext.com/gallery.html</loc>
-    <lastmod>2026-08-04</lastmod>
+    <lastmod>2026-08-05</lastmod>
   </url>
 </urlset>
