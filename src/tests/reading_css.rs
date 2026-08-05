@@ -1217,3 +1217,30 @@ fn the_sheet_scrim_dims_and_dots_the_page_behind_it() {
     );
     assert_contains(scrim, "background-attachment: fixed;");
 }
+
+#[test]
+fn only_the_mac_shell_leaves_room_for_apples_dots() {
+    let css = reading_mode_css();
+
+    // Apple draws its three dots over the bar's left zone rather than in it, so the room for them is that zone's own left inset — and only where Apple is drawing them.
+    let mac_lead = rule_body(css, ".mac-frame .app-bar-lead {");
+    assert!(
+        mac_lead.contains("padding-left: var(--app-bar-mac-dots)"),
+        "the Mac lead starts clear of the dots: {mac_lead}"
+    );
+    assert_contains(css, "--app-bar-mac-dots: 86px;");
+
+    // Every other window's lead starts where it always did.
+    let plain_lead = rule_body(css, "\n.app-bar-lead {");
+    assert!(
+        !plain_lead.contains("--app-bar-mac-dots"),
+        "only the Mac shell pays for the dots: {plain_lead}"
+    );
+
+    // The flush close chip owns the window's corner only where we are the ones drawing it; on a Mac that end of the bar is an ordinary toolbar.
+    assert_contains(css, ".frameless:not(.mac-frame) .app-trailing {");
+    assert!(
+        !css.contains("\n.frameless .app-trailing {"),
+        "the frameless trailing inset must exempt the Mac shell"
+    );
+}

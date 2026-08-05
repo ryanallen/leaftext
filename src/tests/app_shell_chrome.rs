@@ -898,6 +898,45 @@ fn app_shell_fills_every_placeholder() {
 }
 
 #[test]
+fn the_mac_shell_takes_the_drag_bar_but_not_our_window_buttons() {
+    // Two kinds of frameless, one flag each. Mac keeps Apple's three dots, so unhiding ours as well would put six buttons on one bar; the drag region and the dropped top border belong to both.
+    let html = app_shell_page();
+    assert_contains(
+        &html,
+        "if (window.__leafFrameless || window.__leafMacFrame) {",
+    );
+    assert_contains(
+        &html,
+        "if (window.__leafMacFrame) document.body.classList.add('mac-frame');",
+    );
+
+    // Everything the Windows-only branch holds, from its `if` to the closing brace at the same indent.
+    let windows_only = html
+        .split_once("  if (window.__leafFrameless) {\n")
+        .expect("our own window buttons are wired behind the Windows flag")
+        .1;
+    let windows_only = &windows_only[..windows_only
+        .find("\n  }")
+        .expect("the Windows-only branch closes")];
+    assert!(
+        windows_only.contains("windowControls.hidden = false")
+            && windows_only.contains("winButton('winClose', 'windowClose')"),
+        "our buttons are revealed and wired only where we draw them: {windows_only}"
+    );
+    assert!(
+        !windows_only.contains("dragWindowFrom"),
+        "the drag region belongs to both kinds of frameless window"
+    );
+
+    // macOS takes the dots away in full screen, so the bar takes its room back. The flag, not the class, says what to restore — the class is what is being toggled.
+    assert_contains(&html, "window.leafSetFullscreen = (fullscreen) => {");
+    assert_contains(
+        &html,
+        "document.body.classList.toggle('mac-frame', !!window.__leafMacFrame && !fullscreen);",
+    );
+}
+
+#[test]
 fn the_app_bar_maximizes_from_the_second_press_not_from_a_dblclick() {
     // A drag hands the window to a Windows move loop that swallows every later mouse event, so an app-bar dblclick listener is dead code.
     let html = app_shell_page();

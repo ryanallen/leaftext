@@ -1570,3 +1570,49 @@ fn a_panic_reaches_the_journal() {
         "the panic did not reach the journal: {written:?}"
     );
 }
+
+#[test]
+fn the_mac_window_pulls_apples_dots_into_the_app_bar() {
+    // Four builder calls make the Mac shell, and each alone is broken: without the fullsize content view the page starts below a gray strip, without the transparent bar the strip is still painted, without the hidden title "Leaftext" sits over the tabs, and without the inset the dots stay where the strip was. `with_decorations(false)` must never join them — tao overwrites every title-bar property when it is set, and the dots go with it.
+    let source = include_str!("../main.rs");
+    let mac_arm = source
+        .split("#[cfg(target_os = \"macos\")]")
+        .find(|arm| arm.contains("with_traffic_light_inset"))
+        .expect("main.rs has a macOS window arm");
+    for call in [
+        "with_fullsize_content_view(true)",
+        "with_titlebar_transparent(true)",
+        "with_title_hidden(true)",
+        "with_traffic_light_inset(",
+    ] {
+        assert_eq!(
+            source.matches(call).count(),
+            1,
+            "{call} belongs once, in the macOS window arm"
+        );
+    }
+    assert!(
+        !mac_arm.contains("with_decorations"),
+        "dropping the decorations on macOS takes Apple's three dots with them"
+    );
+
+    // The Windows arm is a different shell — no native frame at all — and this change leaves it alone.
+    assert_eq!(source.matches("with_decorations(false)").count(), 1);
+    assert_eq!(source.matches("with_undecorated_shadow(true)").count(), 1);
+    // The dock and app-switcher icon is not the strip, so macOS keeps taking it.
+    assert!(source.contains("#[cfg(not(windows))]"));
+}
+
+#[test]
+fn full_screen_is_read_off_the_window_not_off_a_gesture() {
+    // Full screen is reachable from the green dot's menu, the View menu and a shortcut, and only one of the three is a click the page ever sees. The resize every one of them causes is what the loop reads, so the bar's room for the dots cannot be left behind by whichever route was taken.
+    let source = include_str!("event_loop.rs");
+    assert!(
+        source.contains("reader.window.fullscreen().is_some()"),
+        "the window is the source of truth for full screen"
+    );
+    assert!(
+        source.contains("window.leafSetFullscreen({fullscreen});"),
+        "the page is told when it changes"
+    );
+}

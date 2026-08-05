@@ -16,6 +16,7 @@ pub(crate) struct AppCtx {
     pub(crate) vault_state: VaultState,
     pub(crate) last_windowed_size: LogicalSize<f64>,
     pub(crate) last_maximized: bool,
+    pub(crate) last_fullscreen: bool,
 }
 
 /// Apply a page command that records a setting; the one caller persists when this returns true. A new persisted toggle is its command plus an arm here.
@@ -74,6 +75,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
         mut vault_state,
         mut last_windowed_size,
         mut last_maximized,
+        mut last_fullscreen,
     } = ctx;
 
     event_loop.run(move |event, _, control_flow| {
@@ -100,6 +102,16 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         reader.page(),
                         &format!("window.leafSetWindowMaximized({maximized});"),
                         "Failed to sync the maximize button",
+                    );
+                }
+                // Full screen takes Apple's three dots away with the rest of the chrome, so the room the app bar leaves for them goes too. Read off the window, not off a gesture: the green button, the menu item and the shortcut all reach us as a resize and nothing else.
+                let fullscreen = reader.window.fullscreen().is_some();
+                if fullscreen != last_fullscreen {
+                    last_fullscreen = fullscreen;
+                    run_page_script(
+                        reader.page(),
+                        &format!("window.leafSetFullscreen({fullscreen});"),
+                        "Failed to sync the full-screen inset",
                     );
                 }
             }

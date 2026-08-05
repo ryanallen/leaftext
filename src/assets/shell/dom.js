@@ -280,29 +280,36 @@ const send = (message) => {
   window.ipc.postMessage(JSON.stringify(message));
 };
 
-// Custom title-bar chrome for frameless windows (Windows): there's no native
-// title bar, so the app bar is the drag region and carries our own window
-// controls. On decorated platforms this stays hidden and the OS chrome is used.
-if (window.__leafFrameless) {
+// Custom title-bar chrome, in two kinds. Windows has no native title bar, so the
+// app bar is it and carries our own minimize/maximize/close. macOS keeps Apple's
+// three dots and insets them into that same bar, so ours stay hidden there — one
+// implementation of window management, not two. Both kinds get the drag region.
+if (window.__leafFrameless || window.__leafMacFrame) {
   document.body.classList.add('frameless');
-  const windowControls = document.getElementById('windowControls');
-  if (windowControls) {
-    windowControls.hidden = false;
-    windowControls.setAttribute('aria-hidden', 'false');
+  // Only this kind leaves room for Apple's dots at the bar's left end.
+  if (window.__leafMacFrame) document.body.classList.add('mac-frame');
+  if (window.__leafFrameless) {
+    const windowControls = document.getElementById('windowControls');
+    if (windowControls) {
+      windowControls.hidden = false;
+      windowControls.setAttribute('aria-hidden', 'false');
+    }
+    const winButton = (id, command) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('click', () => send({ command }));
+    };
+    winButton('winMinimize', 'windowMinimize');
+    winButton('winMaximize', 'windowToggleMaximize');
+    winButton('winClose', 'windowClose');
   }
-  const winButton = (id, command) => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('click', () => send({ command }));
-  };
-  winButton('winMinimize', 'windowMinimize');
-  winButton('winMaximize', 'windowToggleMaximize');
-  winButton('winClose', 'windowClose');
   // Drag from empty app-bar space only — never from a control, tab, or field.
   const isDragTarget = (target) =>
     target &&
     !target.closest('button, a, input, select, textarea, [role="tab"], .tab, .window-controls, .update-menu');
-  // Maximize is decided on the way down: a drag hands the window to a Windows
-  // move loop that swallows every later mouse event, so an app-bar dblclick can
+  // Apple's dots are native views over the page, so a press on one never reaches
+  // this listener and needs no exclusion beside the controls above.
+  // Maximize is decided on the way down: a drag hands the window to the platform's
+  // own move loop, which swallows every later mouse event, so an app-bar dblclick can
   // never fire. event.detail is the click count, but it counts in page
   // coordinates and a dragged window carries the page under the cursor — so a
   // press just after a quick drag also arrives as 2. An unmoved window.screenX
@@ -328,6 +335,12 @@ if (window.__leafFrameless) {
   // it is open — otherwise the window cannot be moved without closing the sheet.
   dragWindowFrom(document.getElementById('flowSheetHead'));
 }
+// Full screen takes Apple's dots off the bar, so the room left for them goes too.
+// Defined unconditionally, like the maximize sync below, so the host's call is
+// safe on every window. The flag is what says whether to put the class back.
+window.leafSetFullscreen = (fullscreen) => {
+  document.body.classList.toggle('mac-frame', !!window.__leafMacFrame && !fullscreen);
+};
 // Reflect the real maximized state: body.is-maximized swaps the maximize glyph
 // for restore-down (CSS) and the label follows. Defined unconditionally (not just
 // frameless) so the host's call is always safe — a no-op where controls are hidden.

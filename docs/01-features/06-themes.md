@@ -171,6 +171,10 @@ Every palette is pure data, compiled from [`themes.md`](../02-development/04-the
 
 On Windows, Leaftext uses a frameless window with its own title bar rather than the native one, so nothing the OS draws sits above the app. The app bar doubles as the title bar: drag it to move the window, double-click to maximize or restore, and its right edge carries the minimize / maximize / close buttons, which take the same rounded hover chip as the other toolbar icons (close turns red instead of the accent color). The taskbar still shows the leaf icon, and the window border follows the theme's divider color so the app reads as a distinct surface against the desktop.
 
+## macOS
+
+On a Mac the app bar reaches the top of the window too, but the buttons up there stay Apple's. The title strip goes empty and see-through, the page runs up underneath it, and the red, yellow and green dots are inset into the left end of the app bar — so the green one keeps its full-screen and tiling menu and Leaftext draws no window buttons of its own. Drag empty bar space to move the window and double-click it to zoom, the same as on Windows. The dots are the one part of the window a theme does not repaint, which is true of every Mac app. In full screen macOS takes them away and the bar closes the gap where they were.
+
 ## Next
 
 - [Settings](05-settings.md)

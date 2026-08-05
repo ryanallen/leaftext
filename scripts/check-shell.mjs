@@ -234,6 +234,7 @@ function runShell(source) {
     // The host injects these before any page script runs.
     ipc: { postMessage: noop },
     __leafFrameless: false,
+    __leafMacFrame: false,
     __leafMaximized: false,
     __leafSettings: {},
     __leafInitialState: { recent: [], document: null },

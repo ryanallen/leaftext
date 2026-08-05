@@ -63,6 +63,8 @@ use std::{
     thread,
     time::Duration,
 };
+#[cfg(target_os = "macos")]
+use tao::dpi::LogicalPosition;
 #[cfg(not(windows))]
 use tao::window::Icon;
 use tao::{
@@ -234,6 +236,10 @@ fn squeeze_png(source: &str, target: &str, palette: bool) -> Result<String, Box<
     Ok(format!("{width}x{height}  {before} -> {} bytes", png.len()))
 }
 
+/// Apple's three dots inside our own app bar, from the window's top-left: the close button's left edge, then its top, which centers a 14px button in the 40px bar. `--app-bar-mac-dots` in `reading.css` is the other half — where the group of three ends.
+#[cfg(target_os = "macos")]
+const MAC_TRAFFIC_LIGHT_INSET: (f64, f64) = (20.0, 13.0);
+
 fn run_app() -> Result<(), Box<dyn Error>> {
     // First, so everything below has somewhere to print. Not in the tool modes above (`--squeeze-png`, `--dump-css`): those are run from a terminal that is already watching stderr.
     journal::start();
@@ -299,6 +305,20 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             .with_decorations(false)
             .with_undecorated_shadow(true);
     }
+    // On macOS the strip goes empty and see-through with the page running up underneath it, and Apple's three dots come down into the app bar. Keeping Apple's own buttons keeps the green one's tiling menu and their hover and disabled states; the cost is that the dots ignore the theme, as they do in every Mac app.
+    #[cfg(target_os = "macos")]
+    {
+        use tao::platform::macos::WindowBuilderExtMacOS;
+        window_builder = window_builder
+            .with_fullsize_content_view(true)
+            .with_titlebar_transparent(true)
+            .with_title_hidden(true)
+            .with_traffic_light_inset(LogicalPosition::new(
+                MAC_TRAFFIC_LIGHT_INSET.0,
+                MAC_TRAFFIC_LIGHT_INSET.1,
+            ));
+    }
+    // The icon here is the dock's and the app switcher's, not the strip's, so macOS wants it as much as any other non-Windows build.
     #[cfg(not(windows))]
     {
         window_builder = window_builder.with_window_icon(load_window_icon());
@@ -352,8 +372,13 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .with_initialization_script(initial_document_exts_script())
         .with_initialization_script(initial_version_script())
         .with_initialization_script(initial_update_script())
-        // Whether the OS window is frameless (Windows), so the frontend shows its own title-bar chrome — drag region + minimize/maximize/close buttons.
+        // Whether we draw the window buttons ourselves (Windows), so the frontend shows its own title-bar chrome — drag region + minimize/maximize/close buttons.
         .with_initialization_script(format!("window.__leafFrameless = {};", cfg!(windows)))
+        // The other kind of frameless: the app bar is the title bar, but Apple's own three dots are inset into it, so the page leaves room for them and draws no buttons of its own.
+        .with_initialization_script(format!(
+            "window.__leafMacFrame = {};",
+            cfg!(target_os = "macos")
+        ))
         // Initial maximized state, so the maximize button shows the restore-down icon from the first paint when the window opens maximized.
         .with_initialization_script(format!(
             "window.__leafMaximized = {};",
@@ -437,6 +462,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         vault_state,
         last_windowed_size,
         last_maximized,
+        // Nothing persists a full-screen state, so the window is built windowed; macOS restoring a full-screen space arrives as a resize, which corrects this.
+        last_fullscreen: false,
     };
 
     run_event_loop(event_loop, ctx)

@@ -71,7 +71,7 @@ The leaf mark at the left is the way home — click it to return to the no-file 
 
 **There is no Settings button.** Every control stands where it applies — see [Settings](05-settings.md). The one thing that comes and goes is the [update](05-settings.md#updates) bell, which is in the bar only while there is something to download or install.
 
-On Windows the app bar doubles as the title bar — see [Themes → Windows](06-themes.md#windows).
+The app bar doubles as the title bar on both platforms, with our own buttons at its right end on [Windows](06-themes.md#windows) and Apple's three dots inset into its left end on [macOS](06-themes.md#macos).
 
 ### The floating toolbar
 
