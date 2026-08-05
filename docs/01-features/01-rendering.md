@@ -192,7 +192,7 @@ A table cell whose entire content is a task-list marker — `[ ]` or `[x]` — r
 | Search files    | [x]   |
 | Edit the source | [ ]   |
 
-A table wider than the text uses the reader's full width rather than the reading measure, staying centered and holding a strip clear either side for the block handle. Wider still and it scrolls sideways on its own bar, and the column at the cut fades into the page — the near edge only once you have scrolled past it, the far edge until you reach the last column. A table that fits the text is left where it is.
+A table wider than the text uses the reader's full width rather than the reading measure, staying centered and holding a strip clear either side for the block handle. Wider still and it scrolls sideways on its own bar, and the column at the cut fades into the page — the near edge only once you have scrolled past it, the far edge until you reach the last column. Those two marks stay under [Reduce Motion](05-settings.md#reduce-motion), because they only move when you scroll the table. A table that fits the text is left where it is.
 
 ### Task lists
 

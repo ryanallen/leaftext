@@ -40,7 +40,7 @@ Text marked with `>`, rendered with a left bar and a hanging indent. Nest them b
 
 ## Bottom sheet
 
-A panel that slides up over the reading view without taking you off the page — used for [glossary](GLOSSARY.md#glossary) entries and the [theme picker](GLOSSARY.md#theme-picker). Dismiss it with its close button, by clicking outside it, with `Escape`, or by dragging the grab bar at its top downwards.
+A panel that slides up over the reading view without taking you off the page — used for [glossary](GLOSSARY.md#glossary) entries and the [theme picker](GLOSSARY.md#theme-picker). It slows as it lands and leaves quicker than it arrived, or arrives in place under [Reduce Motion](GLOSSARY.md#reduce-motion). Dismiss it with its close button, by clicking outside it, with `Escape`, or by dragging the grab bar at its top downwards.
 
 ## Breadcrumb
 
@@ -249,6 +249,10 @@ The last entry in the [theme picker](GLOSSARY.md#theme-picker). Not a palette bu
 ## Reading view
 
 The rendered document — the view Leaftext is for. Its two companions on the [floating toolbar](GLOSSARY.md#floating-toolbar) are the [code view](GLOSSARY.md#code-view) and the [graph view](GLOSSARY.md#graph-view).
+
+## Reduce Motion
+
+Your system's accessibility setting for cutting animation, which Leaftext follows. Turn it on and nothing in the app slides, rises or fades — [sheets](GLOSSARY.md#bottom-sheet), the [library pane](GLOSSARY.md#library-pane), menus, the [find bar](01-features/02-navigation.md#find-in-this-document), the [tab](GLOSSARY.md#tab) strip and a document opening all arrive in place. Spinners keep turning more slowly, a [wide table](01-features/01-rendering.md#tables)'s edge marks stay, and a loading placeholder stays dim, because stopping any of the three would say something untrue. There is no control for it in the app. See [Settings](01-features/05-settings.md#reduce-motion).
 
 ## Recent files
 

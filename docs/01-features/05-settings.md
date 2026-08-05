@@ -20,6 +20,8 @@ Three more preferences are saved here but toggled elsewhere, where they apply: t
 
 Two things stopped being choices: the [minimap](#minimap) and the [pager](#pager) are always on.
 
+One preference is not saved here at all, because it is your system's: [Reduce Motion](#reduce-motion).
+
 ### The padlocks
 
 Whether a document can be typed into is the [padlock](07-editing.md#the-padlock) on the floating toolbar, and there are two — one for the reading view, one for the source — because unlocking the page you read is not consent to rewrite the file by hand.
@@ -158,6 +160,18 @@ Leaftext removes broken entries automatically and collapses equivalent path spel
 - Saved as `window_width` and `window_height` (in logical, DPI-independent pixels) plus `window_maximized`
 - The size is stored separately from the maximized state, so un-maximizing returns to the windowed dimensions rather than the full-screen ones
 - Window position is not restored — only the size and maximized state
+
+### Reduce Motion
+
+Leaftext follows your system's Reduce Motion setting. There is no control for it here, because the switch already exists in Windows Settings (Accessibility → Visual effects → Animation effects) and macOS System Settings (Accessibility → Display → Reduce motion), and it updates live — no restart.
+
+With it on, nothing in the app slides, rises or fades. Panels, sheets, menus, the find bar, the tab strip and a document opening all arrive in place. Three things carry on, because stopping them would say something untrue:
+
+- **Spinners keep turning, more slowly.** A still spinner reads as a hang, and the app is still working.
+- **A [wide table](01-rendering.md#tables)'s edge marks stay.** They only move when you scroll the table, so they follow your hand rather than a clock.
+- **A loading placeholder stays dim.** At full strength the gray bars read as text that has finished loading.
+
+With it off, a panel arriving slows as it lands and one leaving is gone quicker, and a document you open fades in. Committing an edit does not re-fade the page you are on.
 
 ## Journal
 

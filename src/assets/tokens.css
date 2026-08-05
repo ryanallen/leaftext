@@ -116,6 +116,7 @@
   --lt-space-32: 32px;
   --lt-space-54: 54px;
   /* Duration */
+  --lt-duration-0: 0ms;
   --lt-duration-100: 100ms;
   --lt-duration-120: 120ms;
   --lt-duration-140: 140ms;
@@ -135,6 +136,9 @@
   --lt-ease: ease;
   --lt-ease-linear: linear;
   --lt-ease-in-out: ease-in-out;
+  --lt-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --lt-ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --lt-ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
   --lt-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
   /* Layers */
   --lt-z-below: -1;

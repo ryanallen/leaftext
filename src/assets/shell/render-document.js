@@ -1,3 +1,23 @@
+// Which document was rendered last, so the fade below runs when the document
+// changes and not when an inline edit commits. Only this fragment reads it, which is
+// why it is not in state.js. `var` and not `let`: theme.js runs renderState() as it
+// loads, which reaches the home-screen branch that clears this — and a `let` is in
+// its dead zone until the line declaring it runs, so even the write would throw.
+var lastRenderedDocumentPath = null;
+// The class comes off again so a document at rest carries no animation. Guarded on
+// the target: animation events bubble, and a rendered document animates things of
+// its own — a table's edge bands finishing their scroll strip the fade off the page
+// mid-way without it. A render that supersedes an unfinished one needs no undoing;
+// the innerHTML below throws the whole layout away, listener included.
+function fadeDocumentIn(layout) {
+  layout.classList.add('is-arriving');
+  const settled = (event) => {
+    if (event.target !== layout) return;
+    layout.removeEventListener('animationend', settled);
+    layout.classList.remove('is-arriving');
+  };
+  layout.addEventListener('animationend', settled);
+}
 // The header's plus, for the home screen's New document button. A function, not
 // a const: theme.js runs renderState() as it loads, long before this fragment.
 function newIconSvg() {
@@ -19,6 +39,9 @@ function renderState() {
   renderTabs(state);
   if (state.document) {
     document.title = `${state.document.title} - Leaftext`;
+    const renderedPath = state.document.path || activeDocumentPath();
+    const arriving = renderedPath !== lastRenderedDocumentPath;
+    lastRenderedDocumentPath = renderedPath;
     app.className = 'reader-shell has-document';
     const minimapHtml = renderDocumentMinimap(state.document.minimap);
     const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';
@@ -48,7 +71,10 @@ function renderState() {
     // element, so a commit's caret would be dropped rather than restored.
     bindReadingEditor(state.document, { deferCaret: true });
     // One style pass and one layout, for the finished document.
-    if (readerLayout) readerLayout.style.removeProperty('display');
+    if (readerLayout) {
+      readerLayout.style.removeProperty('display');
+      if (arriving) fadeDocumentIn(readerLayout);
+    }
     // Past this line the document has geometry, so anything that measures it, or
     // renders by measuring text, or wants focus, is safe.
     placeDeferredReadingCaret();
@@ -111,6 +137,9 @@ function renderState() {
     return;
   }
   resetReaderScrollOnNextRender = false;
+  // Back to the home screen, so the next document is an arrival even if it is the
+  // one just closed.
+  lastRenderedDocumentPath = null;
   document.title = 'Leaftext';
   app.className = 'reader-shell empty';
   // No document, no rail — and the shell's column collapses with it.

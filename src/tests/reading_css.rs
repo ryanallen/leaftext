@@ -1219,6 +1219,185 @@ fn the_sheet_scrim_dims_and_dots_the_page_behind_it() {
 }
 
 #[test]
+fn reduce_motion_is_answered_once_and_won_back_by_name() {
+    let css = reading_mode_css();
+
+    // One blanket rule instead of a block per component, which is how fifteen of the eighteen moving transitions came to answer this setting nowhere.
+    let blanket = rule_body(
+        css,
+        "@media (prefers-reduced-motion: reduce) {\n  *,\n  *::before,\n  *::after {",
+    );
+    // `!important` or nothing: `*` has no specificity, so every class rule in the file outranks it and the block would change nothing on screen.
+    assert_contains(
+        blanket,
+        "transition-duration: var(--lt-duration-0) !important;",
+    );
+    assert_contains(
+        blanket,
+        "animation-duration: var(--lt-duration-0) !important;",
+    );
+    // Never the shorthand — it sets `animation-name: none`, and the glossary sheet's waiting panel and the table's edge bands both reach their resting state through an animation rather than despite one.
+    assert!(
+        !blanket.contains("animation:") && !blanket.contains("transition:"),
+        "the blanket rule must cut durations, not whole animations: {blanket}"
+    );
+    // And never the iteration count: pinned to 1, every spinner turns once and stops, which reads as a hang.
+    assert!(
+        !blanket.contains("animation-iteration-count"),
+        "pinning the iteration count stops every spinner after one turn: {blanket}"
+    );
+
+    // What must keep moving wins it back on specificity, both being important. One rule for every .lt-spinner: six elements carry the class and three had no answer of their own.
+    for won_back in [
+        ".lt-spinner {\n    animation-duration: var(--lt-duration-1600) !important;",
+        ".update-alert-dot.is-downloading {\n    animation-duration: var(--lt-duration-1600) !important;",
+        ".library-sync.is-busy .lt-icon {\n    animation-duration: var(--lt-duration-2400) !important;",
+    ] {
+        assert_contains(css, won_back);
+    }
+    assert_contains(
+        rule_body(
+            css,
+            ".document-body pre.mermaid:not([data-processed=\"true\"]):not([data-diagram-wait=\"far\"])::after {\n    animation-duration:",
+        ),
+        "animation-duration: var(--lt-duration-1600) !important;",
+    );
+
+    // The edge bands run on the table's own sideways scroll, not a clock. A zero duration lands a scroll-driven animation on its last keyframe and holds it there — `opacity: 0` for the ahead band — so the cut edge would go unmarked on exactly the tables that need it. `auto` hands progress back to the scroll.
+    assert_contains(
+        css,
+        ".table-lane::before,\n  .table-lane::after {\n    animation-duration: auto !important;\n  }",
+    );
+
+    // The pager skeleton keeps its own block: the blanket rule carries no opacity and the bars have none, so bars stopped at full strength read as loaded content.
+    let skeleton = rule_body(
+        css,
+        ".docs-pager-label-skeleton,\n  .docs-pager-title-skeleton {",
+    );
+    assert_contains(skeleton, "animation: none;");
+    assert_contains(skeleton, "opacity: var(--lt-opacity-55);");
+
+    // The blocks the blanket rule replaced are gone rather than left to say the same thing twice.
+    for gone in [
+        ".library-shell.library-narrow .library-pane {\n    transition: none;",
+        ".library-sync.is-leaving {\n    transition: none;",
+        ".app-toast {\n    transition: none;",
+        ".reader-loading-spinner {\n    animation-duration:",
+        ".document-minimap-spinner {\n    animation-duration:",
+        ".glossary-sheet-spinner {\n    animation-duration:",
+    ] {
+        assert!(
+            !css.contains(gone),
+            "the blanket rule covers this now, so it should be gone: {gone}"
+        );
+    }
+}
+
+#[test]
+fn a_curve_says_which_way_a_move_is_going() {
+    let css = reading_mode_css();
+
+    // Material Design 3's three, at its values: arriving, leaving, and staying put while it changes shape or place.
+    for curve in [
+        "--lt-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);",
+        "--lt-ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);",
+        "--lt-ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);",
+        // Motion off is a duration like any other, so the reduce rule reads a token.
+        "--lt-duration-0: 0ms;",
+    ] {
+        assert_contains(css, curve);
+    }
+    // The drag-tuned curve stays on the sheet's rise; only its dismiss changes.
+    assert_contains(css, "--lt-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);");
+}
+
+#[test]
+fn every_move_is_drawn_on_the_curve_its_direction_asks_for() {
+    let css = reading_mode_css();
+
+    // A direction per curve means the transition is declared twice: the base rule is where a thing rests and where it goes back to, so it carries the exit, and the state class carries the way in. One transition serving both directions cannot honor the rule.
+    for (selector, expected) in [
+        (
+            ".lt-backdrop {",
+            "transition: opacity var(--lt-duration-160) var(--lt-ease-accelerate);",
+        ),
+        (
+            ".lt-backdrop.open {",
+            "transition: opacity var(--lt-duration-200) var(--lt-ease-decelerate);",
+        ),
+        (
+            ".leaf-sheet {\n  left: 0;",
+            "transition: transform var(--lt-duration-200) var(--lt-ease-accelerate);",
+        ),
+        // The rise keeps the curve tuned against a real drag, which is the gesture it has to feel continuous with.
+        (
+            ".leaf-sheet.open {",
+            "transition: transform var(--lt-duration-260) var(--lt-ease-sheet);",
+        ),
+        (
+            ".app-toast {",
+            "transition: opacity var(--lt-duration-120) var(--lt-ease-accelerate), transform var(--lt-duration-120) var(--lt-ease-accelerate);",
+        ),
+        (
+            ".app-toast.is-shown {",
+            "transition: opacity var(--lt-duration-200) var(--lt-ease-decelerate), transform var(--lt-duration-200) var(--lt-ease-decelerate);",
+        ),
+        (
+            ".library-shell.library-narrow .library-pane {",
+            "transition: transform var(--lt-duration-160) var(--lt-ease-accelerate);",
+        ),
+        (
+            ".library-shell.library-narrow.library-overlay .library-pane {",
+            "transition: transform var(--lt-duration-220) var(--lt-ease-decelerate);",
+        ),
+        (
+            ".flow-sheet {",
+            "transition: transform var(--lt-duration-160) var(--lt-ease-accelerate), opacity var(--lt-duration-160) var(--lt-ease-accelerate);",
+        ),
+        (
+            ".flow-sheet.open {",
+            "transition: transform var(--lt-duration-220) var(--lt-ease-sheet), opacity var(--lt-duration-220) var(--lt-ease-decelerate);",
+        ),
+        // Neither arriving nor leaving: the strip rearranges around a tab, a caret turns in place, and a block steps aside without leaving the page.
+        (
+            ".tab {",
+            "transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized);",
+        ),
+        (
+            "body.is-block-dragging .document-body [data-src-start] {",
+            "transition: transform var(--lt-duration-140) var(--lt-ease-emphasized);",
+        ),
+        (
+            ".document-body .document-outline-summary::before {",
+            "transition: transform var(--lt-duration-150) var(--lt-ease-emphasized);",
+        ),
+    ] {
+        assert_contains(rule_body(css, selector), expected);
+    }
+
+    // The sheet's drag exemption ties with `.open` on specificity, so it wins only by coming after it — the drag has to track the pointer exactly.
+    let open = css
+        .find(".leaf-sheet.open {")
+        .expect("the sheet has an open state");
+    let dragging = css
+        .find(".leaf-sheet.is-dragging {")
+        .expect("the sheet exempts its own drag");
+    assert!(
+        open < dragging,
+        "the drag exemption must follow .open to win the tie"
+    );
+
+    // A hover has no direction, so it keeps the symmetric curve. Anything that started saying `ease-emphasized` here would be claiming a hover arrives.
+    for hover in [
+        ".block-gutter .block-insert-option {",
+        ".document-body pre > .code-copy {",
+        ".mermaid-zoom {",
+    ] {
+        assert_contains(rule_body(css, hover), "var(--lt-ease)");
+    }
+}
+
+#[test]
 fn only_the_mac_shell_leaves_room_for_apples_dots() {
     let css = reading_mode_css();
 

@@ -119,6 +119,22 @@ body {
      families. Lifting instead moves every dark theme by a steady ~15. */
   --reader-row-grain: var(--lt-grain-lift);
 }
+/* Reduce Motion for the whole file, so a new transition is covered by existing: a
+   block per component left fifteen of the eighteen moving ones answering it nowhere.
+   `!important` is not optional — `*` has no specificity, so every class rule below
+   outranks it and the block does nothing on screen. Never the `animation` shorthand:
+   it sets `animation-name: none`, and two rules reach their resting state through an
+   animation rather than despite one. Never `animation-iteration-count`: pinned to 1
+   it stops every spinner after a single turn, and a still spinner reads as a hang.
+   Whatever must keep moving wins this back by name below, with its reason. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: var(--lt-duration-0) !important;
+    animation-duration: var(--lt-duration-0) !important;
+  }
+}
 /* Every piece of app chrome — this bar, the library pane, its two bands, the
    search field — takes `--lt-surface` itself. No per-surface tint or mix: any
    variant shows up as a tone seam where two of them meet. */
@@ -298,7 +314,8 @@ body {
   background-repeat: repeat;
   cursor: grab;
   user-select: none;
-  transition: max-width var(--lt-duration-120) var(--lt-ease), transform var(--lt-duration-120) var(--lt-ease);
+  /* Emphasized: a tab neither arrives nor leaves, the strip rearranges around it. */
+  transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized);
 }
 .tab-active {
   max-width: none;
@@ -685,6 +702,13 @@ body.is-maximized #winMaximize .wc-restore {
   box-shadow: none;
   animation: lt-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
 }
+/* Its own answer: the dot is not an .lt-spinner, and a download in flight is the
+   one thing it says. */
+@media (prefers-reduced-motion: reduce) {
+  .update-alert-dot.is-downloading {
+    animation-duration: var(--lt-duration-1600) !important;
+  }
+}
 .update-panel {
   position: absolute;
   right: 0;
@@ -798,6 +822,15 @@ body.is-maximized #winMaximize .wc-restore {
 @keyframes lt-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+/* Slowed under Reduce Motion, never stopped: the app is still working, and a still
+   spinner reads as a hang. On the shared class rather than on each spinner's own —
+   five elements carry .lt-spinner, two of them with no rule of their own, and the
+   blanket rule above stops anything it does not reach here. */
+@media (prefers-reduced-motion: reduce) {
+  .lt-spinner {
+    animation-duration: var(--lt-duration-1600) !important;
   }
 }
 button {
@@ -951,10 +984,13 @@ body:has(.document-minimap) {
   width: 100%;
   z-index: 5;
   transform: translateX(-100%);
-  transition: transform var(--lt-duration-220) var(--lt-ease);
+  /* The base rule is where the sheet rests and where it leaves to, so it carries the
+     exit — quicker than the way in, because you have stopped caring about it. */
+  transition: transform var(--lt-duration-160) var(--lt-ease-accelerate);
 }
 .library-shell.library-narrow.library-overlay .library-pane {
   transform: translateX(0);
+  transition: transform var(--lt-duration-220) var(--lt-ease-decelerate);
 }
 /* Nothing to drag when the sheet is the full width. */
 .library-shell.library-narrow .library-divider {
@@ -972,11 +1008,6 @@ body:has(.library-overlay) .app-bar::after {
 }
 body:has(.library-overlay) .tab-bar {
   visibility: hidden;
-}
-@media (prefers-reduced-motion: reduce) {
-  .library-shell.library-narrow .library-pane {
-    transition: none;
-  }
 }
 .library-shell.library-closed {
   grid-template-columns: 0 minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
@@ -1820,13 +1851,11 @@ body:has(#readerToolbar:not([hidden])) {
 /* On its way out, still turning. */
 .library-sync.is-leaving {
   opacity: 0;
-  transition: opacity var(--lt-duration-260) var(--lt-ease);
+  /* Accelerate, because it is leaving. Its length stays: SYNC_FADE_MS in library.js
+     hides the button on the same 260ms, and it is slow on purpose — the last thing
+     seen is the work finishing. */
+  transition: opacity var(--lt-duration-260) var(--lt-ease-accelerate);
   pointer-events: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .library-sync.is-leaving {
-    transition: none;
-  }
 }
 .library-sync .lt-icon {
   width: 13px;
@@ -1842,9 +1871,11 @@ body:has(#readerToolbar:not([hidden])) {
   transform-origin: 50% 50%;
   animation: lt-spin var(--lt-duration-1100) var(--lt-ease-linear) infinite;
 }
+/* Slowed, not stopped, and its own rule because the glyph is an icon rather than an
+   .lt-spinner. */
 @media (prefers-reduced-motion: reduce) {
   .library-sync.is-busy .lt-icon {
-    animation-duration: var(--lt-duration-2400);
+    animation-duration: var(--lt-duration-2400) !important;
   }
 }
 
@@ -2277,11 +2308,6 @@ body:has(#readerToolbar:not([hidden])) {
   border-color: color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
   border-top-color: var(--lt-accent);
 }
-@media (prefers-reduced-motion: reduce) {
-  .reader-loading-spinner {
-    animation-duration: var(--lt-duration-1600);
-  }
-}
 .reader-layout {
   --reader-layout-padding-inline: var(--reader-content-pad);
   container-type: inline-size;
@@ -2295,6 +2321,20 @@ body:has(#readerToolbar:not([hidden])) {
      stops them widening the horizontal scroll without making this a scroll
      container. */
   overflow-x: clip;
+}
+/* A document arriving, rather than appearing in one hard frame. An animation and not
+   a transition: render-document.js takes the class off again on `animationend`, and a
+   transition carried by a class removed after it is a transition removed with it.
+   Opacity only — everything past the reveal measures this box, and a transform would
+   also make it the containing block for anything fixed inside it. The fill mode is
+   what makes Reduce Motion land it at full opacity on the first frame. */
+.reader-layout.is-arriving {
+  animation: leaf-document-arrive var(--lt-duration-160) var(--lt-ease-decelerate) both;
+}
+@keyframes leaf-document-arrive {
+  from {
+    opacity: 0;
+  }
 }
 .reader-layout-no-minimap {
   justify-items: center;
@@ -2316,20 +2356,16 @@ body:has(#readerToolbar:not([hidden])) {
   padding: var(--lt-space-12) var(--lt-space-14);
   opacity: 0;
   transform: translateY(6px);
-  transition: opacity var(--lt-duration-160) var(--lt-ease), transform var(--lt-duration-160) var(--lt-ease);
+  transition: opacity var(--lt-duration-120) var(--lt-ease-accelerate), transform var(--lt-duration-120) var(--lt-ease-accelerate);
 }
 .app-toast.is-shown {
   opacity: 1;
   transform: none;
+  transition: opacity var(--lt-duration-200) var(--lt-ease-decelerate), transform var(--lt-duration-200) var(--lt-ease-decelerate);
 }
 .app-toast.is-error {
   border-color: var(--lt-danger);
   color: var(--lt-danger);
-}
-@media (prefers-reduced-motion: reduce) {
-  .app-toast {
-    transition: none;
-  }
 }
 .document-body {
   width: min(var(--type-measure-body), 100%);
@@ -2401,6 +2437,10 @@ body:has(#readerToolbar:not([hidden])) {
     opacity: var(--lt-opacity-78);
   }
 }
+/* Its own block, because the blanket rule carries no opacity and the bars have none
+   of their own: a skeleton stopped at full strength reads as loaded content. The
+   shorthand here takes the name away too, so the pulse is off rather than parked on
+   whichever keyframe it ended at. */
 @media (prefers-reduced-motion: reduce) {
   .docs-pager-label-skeleton,
   .docs-pager-title-skeleton {
@@ -2600,7 +2640,8 @@ body:has(#readerToolbar:not([hidden])) {
   border-top: 0.32em solid transparent;
   border-bottom: 0.32em solid transparent;
   vertical-align: middle;
-  transition: transform var(--lt-duration-150) var(--lt-ease);
+  /* Emphasized: the caret turns in place and both ends of the turn are at rest. */
+  transition: transform var(--lt-duration-150) var(--lt-ease-emphasized);
 }
 .document-body .document-outline[open] > .document-outline-summary::before {
   transform: rotate(90deg);
@@ -2676,7 +2717,7 @@ body:has(#readerToolbar:not([hidden])) {
   border-top: 0.32em solid transparent;
   border-bottom: 0.32em solid transparent;
   vertical-align: middle;
-  transition: transform var(--lt-duration-150) var(--lt-ease);
+  transition: transform var(--lt-duration-150) var(--lt-ease-emphasized);
 }
 .document-body .tei-front[open] > .tei-front-summary::before {
   transform: rotate(90deg);
@@ -3067,7 +3108,9 @@ body.is-block-dragging {
   user-select: none;
 }
 body.is-block-dragging .document-body [data-src-start] {
-  transition: transform var(--lt-duration-140) var(--lt-ease);
+  /* Emphasized: a block stays where it is on the page and steps aside, so both ends
+     of the move are at rest. */
+  transition: transform var(--lt-duration-140) var(--lt-ease-emphasized);
 }
 /* ---- The selection toolbar ---------------------------------------------
    What highlighted text can become, floating over it. Positioned inside
@@ -3388,9 +3431,11 @@ body.is-block-dragging .document-body [data-src-start] {
   animation: lt-spin var(--lt-duration-800) var(--lt-ease-linear) infinite;
   pointer-events: none;
 }
+/* Slowed, not stopped: a diagram can take a while and the tile has nothing else to
+   say it is coming. Its own rule — a pseudo-element carries no class. */
 @media (prefers-reduced-motion: reduce) {
   .document-body pre.mermaid:not([data-processed="true"]):not([data-diagram-wait="far"])::after {
-    animation-duration: var(--lt-duration-1600);
+    animation-duration: var(--lt-duration-1600) !important;
   }
 }
 .document-body pre.highlight::before,
@@ -3983,6 +4028,16 @@ body.is-block-dragging .document-body [data-src-start] {
   );
   animation-name: lt-table-edge-ahead;
 }
+/* Exempt by name: a zero duration lands a scroll-driven animation on its last
+   keyframe and holds it there, which for the ahead band is `opacity: 0` — the cut
+   edge unmarked on the very tables that need it. `auto` hands progress back to the
+   scroll. */
+@media (prefers-reduced-motion: reduce) {
+  .table-lane::before,
+  .table-lane::after {
+    animation-duration: auto !important;
+  }
+}
 /* On within the first tenth of the travel and gone again in the last, so a band
    says "there is more this way" rather than veiling a column already reached. */
 @keyframes lt-table-edge-behind {
@@ -4156,11 +4211,6 @@ body.is-block-dragging .document-body [data-src-start] {
 /* Nothing to point at yet — the box would otherwise sit over blank rail. */
 .document-minimap.is-loading .document-minimap-viewport {
   opacity: 0;
-}
-@media (prefers-reduced-motion: reduce) {
-  .document-minimap-spinner {
-    animation-duration: var(--lt-duration-1600);
-  }
 }
 /* Holds the scaled document clone; slides within the clipped track (JS sets
    --minimap-preview-top) when the document is taller than the rail. A transform,
@@ -4406,11 +4456,14 @@ body.is-block-dragging .document-body [data-src-start] {
   background-repeat: repeat;
   background-attachment: fixed;
   opacity: 0;
-  transition: opacity var(--lt-duration-200) var(--lt-ease);
+  /* The exit, because this rule is both where the scrim rests and where it goes back
+     to. The way in is on `.open`, and is the longer of the two. */
+  transition: opacity var(--lt-duration-160) var(--lt-ease-accelerate);
   z-index: var(--lt-z-40);
 }
 .lt-backdrop.open {
   opacity: 1;
+  transition: opacity var(--lt-duration-200) var(--lt-ease-decelerate);
 }
 /* The flowchart editor's shape picker opens over the flow sheet rather than over
    the page, so its scrim takes the layer above. */
@@ -4427,7 +4480,8 @@ body.is-block-dragging .document-body [data-src-start] {
   border-top-left-radius: var(--lt-radius-2xl);
   border-top-right-radius: var(--lt-radius-2xl);
   transform: translateY(100%);
-  transition: transform var(--lt-duration-260) var(--lt-ease-sheet);
+  /* Dropping away, so it accelerates and is over sooner than the rise. */
+  transition: transform var(--lt-duration-200) var(--lt-ease-accelerate);
 }
 /* The same cassette grain the app bar and the reading surfaces wear, so a sheet
    reads as one of this app's surfaces rather than a plain card dropped on it.
@@ -4444,6 +4498,9 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .leaf-sheet.open {
   transform: translateY(var(--sheet-drag, 0px));
+  /* `lt-ease-sheet` and not `lt-ease-decelerate`: it is the same shape, tuned by hand
+     against a real drag, and the drag is what it has to feel continuous with. */
+  transition: transform var(--lt-duration-260) var(--lt-ease-sheet);
 }
 .leaf-sheet.is-dragging {
   transition: none;
@@ -4806,11 +4863,6 @@ body.is-block-dragging .document-body [data-src-start] {
     opacity: 1;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .glossary-sheet-spinner {
-    animation-duration: var(--lt-duration-1600);
-  }
-}
 /* A lookup that came back with nothing to show: no such term, no glossary file,
    or one that wouldn't read. */
 .glossary-sheet-message {
@@ -4861,11 +4913,14 @@ body.is-block-dragging .document-body [data-src-start] {
   font-family: var(--app-font);
   transform: translateY(12px);
   opacity: 0;
-  transition: transform var(--lt-duration-220) var(--lt-ease-sheet), opacity var(--lt-duration-220) var(--lt-ease);
+  transition: transform var(--lt-duration-160) var(--lt-ease-accelerate), opacity var(--lt-duration-160) var(--lt-ease-accelerate);
 }
 .flow-sheet.open {
   transform: none;
   opacity: 1;
+  /* The rise keeps the drag-tuned curve the bottom sheet's does; the fade rides
+     along on plain decelerate. */
+  transition: transform var(--lt-duration-220) var(--lt-ease-sheet), opacity var(--lt-duration-220) var(--lt-ease-decelerate);
 }
 .flow-sheet-head {
   flex: none;
@@ -5539,7 +5594,8 @@ body.is-block-dragging .document-body [data-src-start] {
   border-radius: var(--lt-radius-xl);
   overflow: hidden;
   opacity: 0;
-  transition: opacity var(--lt-duration-220) var(--lt-ease);
+  /* Only ever arrives: closing removes the element, so there is no exit to curve. */
+  transition: opacity var(--lt-duration-220) var(--lt-ease-decelerate);
 }
 .diagram-overlay.open {
   opacity: 1;

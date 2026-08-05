@@ -30,20 +30,25 @@ fn a_narrow_window_opens_the_library_as_a_sliding_sheet() {
         "position: absolute;",
         "width: 100%;",
         "transform: translateX(-100%);",
-        "transition: transform var(--lt-duration-220) var(--lt-ease);",
+        // The base rule is where the sheet rests and where it goes back to, so the curve here is the way out — every_move_is_drawn_on_the_curve_its_direction_asks_for pins both halves.
+        "transition: transform var(--lt-duration-160) var(--lt-ease-accelerate);",
     ] {
         assert_contains(sheet, expected);
     }
     assert_contains(
         css,
-        ".library-shell.library-narrow.library-overlay .library-pane {\n  transform: translateX(0);\n}",
+        ".library-shell.library-narrow.library-overlay .library-pane {\n  transform: translateX(0);",
     );
     // Under the app bar, or the button that opened it could not close it.
     assert!(
         sheet.contains("z-index: 5;"),
         "the sheet must stay below the app bar: {sheet}"
     );
-    assert_contains(css, "@media (prefers-reduced-motion: reduce)");
+    // Reduce Motion is answered by the file's one blanket rule now, not by a block of the pane's own — see reduce_motion_is_answered_once_and_won_back_by_name.
+    assert!(
+        !css.contains(".library-shell.library-narrow .library-pane {\n    transition: none;"),
+        "the pane must not keep a reduced-motion block of its own"
+    );
 
     // The sheet is "closed" only to the grid, so the rule that hides the path and search box on a snapped-shut pane has to be undone — it opened onto a blank band otherwise.
     assert_contains(

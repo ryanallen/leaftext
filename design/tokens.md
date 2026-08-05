@@ -179,6 +179,7 @@ Every transition and animation length, in milliseconds. `0.12s` and `120ms` were
 
 | Token | Value | What it is for |
 | --- | --- | --- |
+| lt-duration-0 | 0ms | Motion off — how long anything lasts once Reduce Motion is on. The one row that is not a length. |
 | lt-duration-100 | 100ms | A hover that must feel instant. |
 | lt-duration-120 | 120ms | The default: hover, fade, color change. |
 | lt-duration-140 | 140ms | A small move. |
@@ -197,12 +198,17 @@ Every transition and animation length, in milliseconds. `0.12s` and `120ms` were
 
 ## Easing
 
+**A curve says which way a move is going.** Something arriving decelerates, something leaving accelerates, and something staying put while it changes shape or place takes emphasized. An exit is also shorter than the enter that matched it — you have already stopped caring about it. The three shapes are Material Design 3's, at its values.
+
 | Token | Value | What it is for |
 | --- | --- | --- |
-| lt-ease | ease | Everything that is not a sheet or a spin. |
+| lt-ease | ease | A hover, a color change — anything with no direction to say. |
 | lt-ease-linear | linear | A spinner or a progress bar, where any curve reads as a stutter. |
 | lt-ease-in-out | ease-in-out | A loop that has to come back the way it went, so it never reads as a jerk. |
-| lt-ease-sheet | `cubic-bezier(0.32, 0.72, 0, 1)` | A sheet rising: fast off the mark, settling slowly. |
+| lt-ease-emphasized | `cubic-bezier(0.2, 0, 0, 1)` | Something already on screen, changing shape or place. Starts and ends at rest. |
+| lt-ease-decelerate | `cubic-bezier(0.05, 0.7, 0.1, 1)` | Something arriving. Fast in, settling hard. |
+| lt-ease-accelerate | `cubic-bezier(0.3, 0, 0.8, 0.15)` | Something leaving. Slow off the mark, then gone. |
+| lt-ease-sheet | `cubic-bezier(0.32, 0.72, 0, 1)` | A sheet rising: fast off the mark, settling slowly. Emphasized-decelerate drawn by hand against a real drag, and kept because that is what it was tuned on. |
 
 ## Layers
 

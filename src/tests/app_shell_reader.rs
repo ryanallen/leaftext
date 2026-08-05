@@ -21,6 +21,61 @@ fn app_shell_decorates_blockquote_hard_break_lines_for_hanging_indent() {
 }
 
 #[test]
+fn a_document_fades_in_when_it_is_a_different_document() {
+    let html = app_shell_page();
+    let css = reading_mode_css();
+
+    // The class goes on at the reveal, not before it: the document is decorated hidden, and everything past that line measures the page.
+    assert_contains(
+        &html,
+        "if (readerLayout) {\n      readerLayout.style.removeProperty('display');\n      if (arriving) fadeDocumentIn(readerLayout);\n    }",
+    );
+    // A fresh open and a tab switch fade; committing an inline edit re-renders the same path and does not.
+    assert_contains(
+        &html,
+        "const arriving = renderedPath !== lastRenderedDocumentPath;",
+    );
+    assert_contains(&html, "lastRenderedDocumentPath = renderedPath;");
+    // Cleared on the home screen, so reopening the document just closed is an arrival.
+    assert_contains(
+        &html,
+        "lastRenderedDocumentPath = null;\n  document.title = 'Leaftext';",
+    );
+    // `var`, because theme.js runs renderState() as it loads and reaches that clear — a `let` would still be in its dead zone, and even the write would throw.
+    assert_contains(&html, "var lastRenderedDocumentPath = null;");
+
+    // Taken off again on animationend, and guarded on the target: animation events bubble, so a table's edge bands finishing their scroll would otherwise strip the fade off the page part-way through.
+    assert_contains(&html, "function fadeDocumentIn(layout) {");
+    assert_contains(&html, "layout.classList.add('is-arriving');");
+    assert_contains(&html, "if (event.target !== layout) return;");
+    assert_contains(
+        &html,
+        "layout.removeEventListener('animationend', settled);",
+    );
+    assert_contains(&html, "layout.classList.remove('is-arriving');");
+
+    // Opacity only: a transform on this box changes geometry the scroll restore lands on, and makes it the containing block for anything fixed inside it.
+    let arrive = rule_body(css, ".reader-layout.is-arriving {");
+    assert_contains(
+        arrive,
+        "animation: leaf-document-arrive var(--lt-duration-160) var(--lt-ease-decelerate) both;",
+    );
+    assert!(
+        !arrive.contains("transform"),
+        "the arrival must not move the page: {arrive}"
+    );
+    assert_contains(
+        css,
+        "@keyframes leaf-document-arrive {\n  from {\n    opacity: 0;\n  }\n}",
+    );
+    // The fill mode is what makes the blanket reduced-motion rule land it at full opacity on the first frame rather than leaving the page invisible.
+    assert_contains(
+        css,
+        "animation: leaf-document-arrive var(--lt-duration-160) var(--lt-ease-decelerate) both;",
+    );
+}
+
+#[test]
 fn app_shell_builds_collapsed_heading_outline_under_the_title() {
     let html = app_shell_page();
 
