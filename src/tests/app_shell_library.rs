@@ -946,7 +946,10 @@ fn the_vault_switcher_is_its_own_button_beside_the_trail() {
     assert!(html.contains("icon: rootIcon(vault.id === activeVaultId, vault.id),"));
     // The pane still lists directories as directories.
     assert!(html.contains("const FOLDER_ICON_SVG = `"));
-    assert!(html.contains(r#"<span class="library-crumb-caret" aria-hidden="true">"#));
+    // The arrow leads, so the open highlight runs from it through the glyph and on into the vault's name beside the button.
+    assert!(html.contains(
+        r#"<span class="library-crumb-caret" aria-hidden="true">▾</span><span class="lt-icon"#
+    ));
     // Its label names the root you are in, so hovering says what would change.
     assert!(html.contains("function renderLibraryVaultSwitch()"));
     assert!(html.contains("const label = `Switch vault (in ${libraryRootLabel()})`;"));
@@ -1145,6 +1148,42 @@ fn a_mouse_press_never_leaves_a_focus_ring_behind() {
 }
 
 #[test]
+fn the_open_switcher_lights_the_vault_name_beside_it() {
+    let html = app_shell_page();
+    let css = reading_mode_css();
+
+    // Opening the list changes what the whole pane is about, so the highlight reaches across the name rather than stopping at the icon. One selector: open is an attribute on the button, and the name is the first crumb of the trail next to it.
+    assert!(css.contains(
+        ".library-vault-switch[aria-expanded=\"true\"] + .library-crumb-trail .library-crumb:first-child {"
+    ));
+    // Standing at the vault's own root the name is a span, which centers nothing on its own.
+    assert!(css.contains(
+        ".library-vault-switch[aria-expanded=\"true\"] + .library-crumb-trail .library-crumb.is-current:first-child {"
+    ));
+    // The two make one pill: the facing corners square and the button grows into the 2px gap, pulled back by the same amount so no folder after the name moves.
+    assert!(css.contains("padding-right: calc(var(--lt-space-7) + var(--lt-space-2));"));
+    assert!(css.contains("margin-right: calc(-1 * var(--lt-space-2));"));
+
+    // A sibling selector, so it is silently dead the moment anything is put between the button and the trail. Only whitespace may sit there.
+    let switcher = html
+        .find(r#"<button type="button" id="libraryVaultSwitch""#)
+        .expect("the switcher is in the shell");
+    let closed =
+        switcher + html[switcher..].find("</button>").expect("it closes") + "</button>".len();
+    let trail = html
+        .find(r#"<nav class="library-crumb-trail""#)
+        .expect("the trail is in the shell");
+    assert!(
+        closed < trail && html[closed..trail].trim().is_empty(),
+        "nothing may sit between the switcher and the trail, found {:?}",
+        &html[closed..trail]
+    );
+
+    // The name is still a place: clicking it enters that folder, and nothing about it opens the menu.
+    assert!(html.contains("setLibraryFolder(crumb.dataset.crumbPath)"));
+}
+
+#[test]
 fn the_whole_library_wears_the_machine_it_reads() {
     let html = app_shell_page();
 
@@ -1153,7 +1192,7 @@ fn the_whole_library_wears_the_machine_it_reads() {
     assert!(html.contains("if (!id) return COMPUTER_ICON_SVG;"));
     // And it is what the button carries before anything has been switched to.
     assert!(html.contains(
-        r#"id="libraryVaultSwitch" class="library-vault-switch" aria-haspopup="menu" aria-expanded="false" title="Vaults" aria-label="Vaults"><span class="lt-icon lt-icon-computer"></span>"#
+        r#"id="libraryVaultSwitch" class="library-vault-switch" aria-haspopup="menu" aria-expanded="false" title="Vaults" aria-label="Vaults"><span class="library-crumb-caret" aria-hidden="true">▾</span><span class="lt-icon lt-icon-computer"></span>"#
     ));
 }
 

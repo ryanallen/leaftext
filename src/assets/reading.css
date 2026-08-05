@@ -1374,6 +1374,31 @@ body.library-resizing {
   background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
   color: var(--lt-foreground);
 }
+/* Open, the button and the vault's name beside it are one pill: what the list
+   changes is the whole pane, not the 20px of icon you pressed. The button grows
+   into the 2px gap and pulls the trail back by the same amount, so the name and
+   every folder after it stay exactly where they were. The state is an attribute on
+   the button, so a disk change rebuilding the trail underneath cannot lose it. */
+.library-vault-switch[aria-expanded="true"] {
+  padding-right: calc(var(--lt-space-7) + var(--lt-space-2));
+  margin-right: calc(-1 * var(--lt-space-2));
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.library-vault-switch[aria-expanded="true"] + .library-crumb-trail .library-crumb:first-child {
+  height: 26px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
+  color: var(--lt-foreground);
+}
+/* Standing at the vault's own root, the name is a span rather than a button, so
+   nothing centers its text in a box this tall. It is also the only crumb there, so
+   there is no ellipsis to lose. */
+.library-vault-switch[aria-expanded="true"] + .library-crumb-trail .library-crumb.is-current:first-child {
+  display: flex;
+  align-items: center;
+}
 .library-crumb-caret {
   flex: none;
   font-size: var(--lt-text-9);

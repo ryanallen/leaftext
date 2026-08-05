@@ -3723,6 +3723,31 @@ body.library-resizing {
   background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
   color: var(--lt-foreground);
 }
+/* Open, the button and the vault's name beside it are one pill: what the list
+   changes is the whole pane, not the 20px of icon you pressed. The button grows
+   into the 2px gap and pulls the trail back by the same amount, so the name and
+   every folder after it stay exactly where they were. The state is an attribute on
+   the button, so a disk change rebuilding the trail underneath cannot lose it. */
+.library-vault-switch[aria-expanded="true"] {
+  padding-right: calc(var(--lt-space-7) + var(--lt-space-2));
+  margin-right: calc(-1 * var(--lt-space-2));
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.library-vault-switch[aria-expanded="true"] + .library-crumb-trail .library-crumb:first-child {
+  height: 26px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
+  color: var(--lt-foreground);
+}
+/* Standing at the vault's own root, the name is a span rather than a button, so
+   nothing centers its text in a box this tall. It is also the only crumb there, so
+   there is no ellipsis to lose. */
+.library-vault-switch[aria-expanded="true"] + .library-crumb-trail .library-crumb.is-current:first-child {
+  display: flex;
+  align-items: center;
+}
 .library-crumb-caret {
   flex: none;
   font-size: var(--lt-text-9);
@@ -8534,7 +8559,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </section>
 <section class="part">
 <header><h3>Breadcrumbs</h3><code class="built">.library-crumb</code><span class="built">library.js</span></header>
-<div class="stage"><div class="library-crumb-trail"><button type="button" class="library-crumb">Vault</button><button type="button" class="library-crumb">Folder</button></div></div>
+<div class="stage"><div class="library-crumbs" style="position:static"><button type="button" class="library-vault-switch" aria-haspopup="menu" aria-expanded="true"><span class="library-crumb-caret" aria-hidden="true">▾</span><span class="lt-icon lt-icon-package-open"></span></button><nav class="library-crumb-trail"><button type="button" class="library-crumb">Vault</button><span class="library-crumb-sep" aria-hidden="true">›</span><button type="button" class="library-crumb">Folder</button></nav></div></div>
 </section>
 <section class="part">
 <header><h3>Minimap rail</h3><code class="built">.document-minimap</code><span class="built">minimap.js</span></header>

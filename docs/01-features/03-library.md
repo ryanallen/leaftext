@@ -24,11 +24,13 @@ The library is the part of Leaftext that helps you find documents, not just read
 
 ## Vaults
 
-![The vault switcher open: the Library entry at the top for the no-vault state, then each named vault with a settings button on its row, and New vault at the foot](../../imgs/vault-switcher.png)
+![The vault switcher open, lit as one shape with the vault's name beside it: the Library entry at the top for the no-vault state, then each vault with a settings button on its row and a cloud on the ones a sync client keeps, then New vault and Clone a repository at the foot](../../imgs/vault-switcher.png)
 
 A **vault** is a folder you have told Leaftext to treat as a library root. It is the unit that search and syncing work over, and it is what makes the [graph](#graph) bigger — but not what makes the graph possible.
 
 The button at the left of the breadcrumb opens the vault switcher. What it wears says what you are in: **this machine** for the whole library, a **box** for a vault whose files only live here, and a **cloud** when saving in that vault also reaches somewhere else — [GitHub](#github-sync), or a [cloud folder](#your-cloud-is-already-a-folder).
+
+While the list is open, the button and the vault's name beside it light as one shape, because what you pick changes the whole pane — the name, the path, the file tree and what search reads — rather than the icon you pressed. The name is still a place: clicking it goes to the vault's top folder.
 
 - **Library** is the no-vault state, marked with the machine rather than a box because it is not a collection — the pane starts at your drive roots and browses anywhere. Search is unavailable, because it has no bounded set of words to read. The graph still works: it maps the open document instead of a vault.
 - **A vault** roots the pane at that folder. Everything below it is browsable, searchable and mappable.

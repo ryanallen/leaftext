@@ -1236,8 +1236,7 @@ window.addEventListener('resize', scheduleCrumbFit);
 // are in, so hovering it says what changing would change.
 function renderLibraryVaultSwitch() {
   if (!libraryVaultSwitch) return;
-  // The button shows the vault you are in, so it wears that vault's mark. The
-  // caret is ours and stays; only the glyph before it is replaced.
+  // The button shows the vault you are in, so it wears that vault's mark. The caret leads and stays; the glyph after it is the one replaced, found by class rather than by position.
   setVaultGlyph(libraryVaultSwitch, vaultGlyph(true, activeVaultId));
   const label = `Switch vault (in ${libraryRootLabel()})`;
   libraryVaultSwitch.title = label;
