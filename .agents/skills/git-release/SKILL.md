@@ -1,6 +1,6 @@
 ---
 name: git-release
-description: Commit and push releases. Runs sync-docs, code-comments, then check (tests plus `just verify`) before it commits — a tag never goes out on untested code. App (Rust) changes bump the version, tag, and trigger CI builds; site-only changes (README/index.html/site/imgs) just push — no version bump. Always cleans up GitHub Pages deployments to keep only the newest. The commits are the owner's, never co-authored. Use only when user instructs git operations like "bump and push", "release version X", or "release the site". Use when user says bump, release, push with tag, commit and push.
+description: Commit and push releases. Closes any ticket waiting only on the owner's box first — asking for the release is the owner saying it works — then runs sync-docs, code-comments, and check (tests plus `just verify`) before it commits — a tag never goes out on untested code. App (Rust) changes bump the version, tag, and trigger CI builds; site-only changes (README/index.html/site/imgs) just push — no version bump. Always cleans up GitHub Pages deployments to keep only the newest. The commits are the owner's, never co-authored. Use only when user instructs git operations like "bump and push", "release version X", or "release the site". Use when user says bump, release, push with tag, commit and push.
 disable-model-invocation: true
 argument-hint: "[version] [message]"
 user-invocable: true
@@ -23,6 +23,23 @@ Repo: `ryanallen/leaftext`.
 2. **Message** (optional): Commit message. Defaults to `Release v<version>` (app) or a short summary of the changes (site-only).
 
 ## Process
+
+### Pre-step: Close the ticket this release ships (always, first)
+
+**A `/git-release` on a ticket waiting only on the owner's box *is* the owner saying it works.** Nothing else explains asking for the release. So before anything else, look for a ticket whose only open box is the last one:
+
+```bash
+cd ../docs && for f in features/*/*.md refactor/*/*.md fixes/*/*.md; do
+  open=$(grep -c '^\s*- \[ \]' "$f"); ticked=$(grep -c '^\s*- \[x\]' "$f")
+  [ "$open" = "1" ] && [ "$ticked" -gt 0 ] && echo "$f — 1 box open, $ticked ticked"
+done
+```
+
+If one comes back and its open box is the owner's — the box under `### The owner's box`, or the last box in the file, the one that reads "the owner says it works in the window" — run [pre-release](../pre-release/SKILL.md) on it: `/pre-release ../docs/<path>`. Let it finish; it does the five edits and runs `/sync-docs`, `/code-comments`, `/check` and `/pm` itself, which are three of the four pre-steps below, so run those again only for what `/pre-release` did not cover. Then continue.
+
+If the open box is **not** the owner's, the work is not finished. Say which box is open and stop — do not release it and do not tick it.
+
+**Why this is here.** `just check-docs` only fails on a plan with *every* box ticked, so a ticket waiting on the owner is invisible to it by design — that is the box `/dev` is forbidden to tick. v0.1.469 shipped `clickable-and-icon-boxes` with every check green and the ticket still filed as live work, still named "next up" in the running order, because nothing between "the code is built" and "the tag is pushed" was looking at the ticket at all. This step is the thing that looks.
 
 ### Pre-step: Sync the docs first (always)
 
@@ -199,6 +216,7 @@ git push origin --delete <old-tag-1> <old-tag-2> ...
 
 ## Reference
 
+- [pre-release](../pre-release/SKILL.md) — closes a ticket waiting on the owner's box; the first pre-step.
 - [check](../check/SKILL.md) — tests plus `just verify`; the gate before step 0.
 - [sync-tests](../sync-tests/SKILL.md) — what `/check` runs first.
 - [code-comments](../code-comments/SKILL.md) — the comment bar, in one place.

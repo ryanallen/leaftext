@@ -2097,6 +2097,10 @@ body:has(#readerToolbar:not([hidden])) {
    an opaque app bar, the bottom stops dead at the card's hairline, and a line of
    text sliced through its x-height reads as a rendering fault. These dissolve
    the last few pixels back to the page color instead.
+   Top and bottom only. Nothing is cut at the sides: the one box that widens past
+   the words is a table, and it stops 62px short and dissolves its own ends. A
+   band there veils the first and last letter of every line instead, which is
+   what v0.1.469 shipped.
    Its own element in the reader's grid cell, not a pseudo-element inside the
    scroller: an absolutely positioned child of a scroll container is placed
    against the scrolled content, so it would slide away with the document. Same
@@ -2110,7 +2114,7 @@ body:has(#readerToolbar:not([hidden])) {
   grid-row: 1;
   position: relative;
   pointer-events: none;
-  /* The wash the dot screen sits on, one band per edge. On the element, not the
+  /* The wash the dot screen sits on, one band for the top and one for the bottom. On the element, not the
      bands: those carry the mask that fades the dots, and a mask takes the whole
      box with it, so the wash would come out ramped twice. A parent's background
      paints under its pseudo-elements, which puts it behind the screen for free. */
@@ -2123,23 +2127,11 @@ body:has(#readerToolbar:not([hidden])) {
       to top,
       var(--reader-edge-fade-surface) 0 var(--reader-edge-fade-hold),
       transparent
-    ),
-    linear-gradient(
-      to right,
-      var(--reader-edge-fade-surface) 0 var(--reader-edge-fade-hold),
-      transparent
-    ),
-    linear-gradient(
-      to left,
-      var(--reader-edge-fade-surface) 0 var(--reader-edge-fade-hold),
-      transparent
     );
-  background-size: 100% var(--reader-edge-fade-depth), 100% var(--reader-edge-fade-depth),
-    var(--reader-edge-fade-depth) 100%, var(--reader-edge-fade-depth) 100%;
+  background-size: 100% var(--reader-edge-fade-depth), 100% var(--reader-edge-fade-depth);
   /* The top wash starts at the bar's edge for the same reason the top band does;
-     the bottom one is anchored to the card's edge, and the two side washes run the
-     whole height so the corners hand over to each other. */
-  background-position: 0 var(--app-bar-height), 0 100%, 0 0, 100% 0;
+     the bottom one is anchored to the card's edge. */
+  background-position: 0 var(--app-bar-height), 0 100%;
   background-repeat: no-repeat;
   /* Over the document (the code view's textarea layer sits at 2), under the
      loading wash (6), the library sheet (5) and the app bar (10). */
@@ -2221,48 +2213,6 @@ body:has(#readerToolbar:not([hidden])) {
   );
   mask-image: linear-gradient(
     to top,
-    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
-    transparent
-  );
-}
-/* The same two bands turned on their side, for the left and right edges a widened
-   table runs out to: a column sliced down its middle reads as a rendering fault
-   the way a sliced line of text does. Real children rather than more pseudos —
-   ::before and ::after are the top and bottom. Same depth, same hold, same
-   window-anchored lattice, so all four edges are one profile. */
-.reader-edge-fade-side {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: var(--reader-edge-fade-depth);
-  --lt-grain-dot: var(--reader-edge-fade-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
-  background-repeat: repeat;
-  background-attachment: fixed;
-}
-.reader-edge-fade-left {
-  left: 0;
-  -webkit-mask-image: linear-gradient(
-    to right,
-    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
-    transparent
-  );
-  mask-image: linear-gradient(
-    to right,
-    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
-    transparent
-  );
-}
-.reader-edge-fade-right {
-  right: 0;
-  -webkit-mask-image: linear-gradient(
-    to left,
-    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
-    transparent
-  );
-  mask-image: linear-gradient(
-    to left,
     var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
     transparent
   );

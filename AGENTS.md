@@ -75,7 +75,7 @@ In [`.agents/skills/`](.agents/skills/), which `.claude/` and `.codex/` symlink 
 | [`design`](.agents/skills/design/SKILL.md) | designing a ticket before anyone builds it. Opens every line it cites, holds the plan against the rules here, fixes it, dates the top of the file, and records what was wrong. |
 | [`dev`](.agents/skills/dev/SKILL.md) | building a ticket somebody already planned. Runs `design` first if nothing has dated the file, then works the phases in order, ticks the boxes, drives what it can reach in the running window, and **stops at the owner's own box**. It closes nothing and moves nothing — a machine agreeing with itself is not evidence. |
 | [`pre-release`](.agents/skills/pre-release/SKILL.md) | the owner has said a built ticket works. **The only thing that closes a ticket**: ticks that last box, writes the shipped note, moves the file into `../docs/done/`, rewrites its index row, moves its running-order row across, fixes any published page the work made untrue, then runs `sync-docs`, `code-comments`, `check` and `pm`. Never git. |
-| [`git-release`](.agents/skills/git-release/SKILL.md) | only on `/git-release`. Runs `sync-docs`, `code-comments` and `check`, then commits, tags and pushes. |
+| [`git-release`](.agents/skills/git-release/SKILL.md) | only on `/git-release`. Runs `pre-release` on any ticket waiting only on the owner's box — asking for the release is the sentence — then `sync-docs`, `code-comments` and `check`, then commits, tags and pushes. |
 
 ## Hooks
 
