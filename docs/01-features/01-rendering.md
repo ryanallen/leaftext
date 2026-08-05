@@ -258,6 +258,8 @@ The fourth button in that group opens the diagram on the whole window. It is dra
 
 Hovering a diagram on an unlocked page also shows two buttons in the opposite corner: one swaps it for the Mermaid behind it, editable in place like any other block ([Editing](07-editing.md)), and one opens it in [the flowchart editor](07-editing.md#the-flowchart-editor) — a canvas beside the Mermaid text, for drawing a flowchart rather than typing it. Both ride along into the full-window view, where picking either one closes it and takes you to the diagram in the page.
 
+A box can also carry a link, an icon or a picture. `click A "https://…"` makes the box a link, and clicking it does exactly what clicking a link in the text does — it opens in the app, in a tab, and `Ctrl` (or `Cmd`) or a middle click opens it as a page behind the one you are reading. `A@{ icon: "leaf:back" }` draws one of the app's own drawings, named as `leaf:` and the icon's name; nothing is fetched, and an icon or a set the app does not have draws the same mark a picture that will not load draws, with the rest of the diagram intact. `B@{ img: "shot.png" }` draws a picture — a file beside the document, or an address — and a picture that will not load is caught before Mermaid sees it, so a bad one costs that box its picture rather than costing the diagram. `click A call fn()` is read and does nothing: a document cannot name a function inside the app and have it run.
+
 One more detail: a `---` front-matter block inside a `mermaid` fence reaches Mermaid intact, so `title:`, `config:`, `look:` and `layout:` written that way all work, as does a `%%{init: { ... }}%%` line.
 
 ```mermaid

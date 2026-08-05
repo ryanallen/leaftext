@@ -13,9 +13,9 @@
 //
 // Fail closed. parseFlow returns null on anything it does not fully understand,
 // never a partial graph: a canvas that quietly drops the half it didn't read
-// turns "I tidied my diagram" into lost work. Subgraphs, classes, styles,
-// clicks and typed `@{}` shapes are refused by that rule alone, because nothing
-// here matches them.
+// turns "I tidied my diagram" into lost work. A box given its own size or its own
+// place on the page is refused by that rule alone, because nothing here matches
+// them and a save would drop them.
 //
 // Refusing is not the same as saying nothing. flowRefusal walks the same text
 // again and names the line that beat the parser, because "we can't model this"
@@ -265,6 +265,12 @@ const FLOW_CLASSDEF_RE = /^[ \t]*classDef[ \t]+\S[\s\S]*$/;
 const FLOW_CLASS_RE = /^[ \t]*class[ \t]+([A-Za-z0-9_.,\- \t]+?)[ \t]+([A-Za-z0-9_-]+)[ \t]*;?[ \t]*$/;
 const FLOW_STYLE_RE = /^[ \t]*style[ \t]+([A-Za-z0-9_.-]+)[ \t]+(\S.*?)[ \t]*;?[ \t]*$/;
 const FLOW_LINKSTYLE_RE = /^[ \t]*linkStyle[ \t]+(default|[0-9][0-9, \t]*?)[ \t]+(\S.*?)[ \t]*;?[ \t]*$/;
+// Where a box goes when it is clicked: `click A "…"`, with `href` optional and a
+// second string the tooltip. Both spellings reach the same anchor in the page, so
+// the short one is what gets written back.
+const FLOW_CLICK_RE = /^click[ \t]+([A-Za-z0-9_][A-Za-z0-9_.-]*)[ \t]+(?:href[ \t]+)?"([^"]*)"(?:[ \t]+"([^"]*)")?[ \t]*;?[ \t]*$/;
+// The form that names a function. Read, written back, and dead.
+const FLOW_CLICK_CALL_RE = /^click[ \t]+[A-Za-z0-9_][A-Za-z0-9_.-]*[ \t]+call(?:back)?\b/;
 // The class a box carries on its own line: `A[Careful]:::warn`.
 const FLOW_NODE_CLASS_RE = /^:::([A-Za-z0-9_-]+)/;
 // A line's own name, and the one thing a named line is for. `@{` is excluded
@@ -357,11 +363,10 @@ function flowTypedParts(body) {
   return parts;
 }
 
-// The typed form: `A@{ shape: cyl, label: "Cache" }`. Only those two keys are
-// read — an icon or an image is a box we cannot draw at all (mermaid needs an
-// icon pack registered, and none is), and a size or a position is a layout we
-// do not keep. Anything else in the braces refuses the diagram rather than
-// being dropped on the next save.
+// The typed form: `A@{ shape: cyl, label: "Cache", icon: "leaf:back" }`. Four
+// keys are read; a size or a position is a layout we do not keep, and anything
+// else in the braces refuses the diagram rather than being dropped on the next
+// save.
 function takeFlowTyped(rest) {
   if (!rest.startsWith('@{')) return null;
   // Scanned rather than searched for: a label may hold a brace or a comma, and
@@ -378,7 +383,7 @@ function takeFlowTyped(rest) {
   }
   if (close < 0) return null;
   const body = rest.slice(2, close);
-  const typed = { shape: null, text: null };
+  const typed = { shape: null, text: null, icon: null, img: null };
   for (const part of flowTypedParts(body)) {
     if (!part.trim()) continue;
     const at = part.indexOf(':');
@@ -399,6 +404,13 @@ function takeFlowTyped(rest) {
       // except the comma that would have ended it. Quoted, it may hold that too.
       if (!quoted && !flowBareLabelOk(value) && value !== '') return null;
       typed.text = decodeFlowLabel(value);
+      continue;
+    }
+    // Handed straight back on save, so nothing here has to understand either —
+    // only that a brace or a comma in one would have ended the value.
+    if (key === 'icon' || key === 'img') {
+      if (!quoted && !flowBareLabelOk(value)) return null;
+      typed[key] = value;
       continue;
     }
     return null;
@@ -426,7 +438,14 @@ function takeFlowNode(rest) {
     const taken = takeFlowTyped(after);
     if (!taken) return null;
     return withClass(
-      { id: id[0], shape: taken.typed.shape, text: taken.typed.text, typed: true },
+      {
+        id: id[0],
+        shape: taken.typed.shape,
+        text: taken.typed.text,
+        icon: taken.typed.icon,
+        img: taken.typed.img,
+        typed: true,
+      },
       taken.rest,
     );
   }
@@ -559,8 +578,8 @@ function parseFlowStatement(line) {
 // on a line the parser has already refused, and the fallback below is the
 // honest answer when none of them fits.
 const FLOW_REFUSALS = [
-  { re: /^click\b/, what: 'a click' },
-  { re: /@\{[^}]*\b(?:icon|img|pos|constraint)\b/, what: 'a typed box with more than a shape and a label' },
+  { re: /^click\b/, what: 'a click written a way we cannot read' },
+  { re: /@\{[^}]*\b(?:w|h|pos|constraint)\b/, what: 'a typed box with a size or a place of its own' },
   { re: /@\{/, what: 'a shape name mermaid doesn’t have' },
   { re: /~~~/, what: 'an invisible line' },
   { re: /`/, what: 'a markdown label with no quotes around it' },
@@ -696,6 +715,10 @@ function walkFlow(text) {
     // vocabulary of one word we do not speak.
     classDefs: [],
     linkStyleDefault: null,
+    // `click A call fn()` lines, kept whole and doing nothing. The page renders
+    // at mermaid's strict level and has no `unsafe-eval`, so they never ran; they
+    // are written back so a save does not delete a line the reader wrote.
+    deadClicks: [],
     // Every group, flat and in the order they were opened; `parent` is what
     // nests them. Flat because a box names its group by id, and a tree would
     // make that lookup a walk.
@@ -783,6 +806,19 @@ function walkFlow(text) {
     // `e1@{ animate: true }` gives a named line its animation. The same spelling
     // with a `shape` or a `label` in it is a box, so the keys decide which, and
     // only these two keys are ours to write back.
+    // `click A "…"` sends a box somewhere. It may be written above the box it
+    // names, so it waits with the classes and the styles and is attached once
+    // every box is known. A `call` line is kept whole and left dead: a document
+    // must not be able to name a function inside the app and have it run.
+    const clicked = FLOW_CLICK_RE.exec(line.trim());
+    if (clicked) {
+      painting.push({ kind: 'click', ids: [clicked[1]], href: clicked[2], tip: clicked[3] || null, line, number: began + 1 });
+      continue;
+    }
+    if (FLOW_CLICK_CALL_RE.test(line.trim())) {
+      graph.deadClicks.push(line.trim());
+      continue;
+    }
     const attributed = FLOW_EDGE_ATTR_RE.exec(line);
     if (attributed && flowIsAnimation(attributed[2])) {
       painting.push({ kind: 'animate', name: attributed[1], rule: attributed[2].trim(), line, number: began + 1 });
@@ -802,6 +838,10 @@ function walkFlow(text) {
           group: inside(),
           classes: [],
           style: null,
+          icon: null,
+          img: null,
+          href: null,
+          hrefTip: null,
           shapedBy: '',
         };
         byId.set(node.id, node);
@@ -824,6 +864,8 @@ function walkFlow(text) {
           node.shape = found.shape;
         }
         if (found.text != null) node.text = found.text;
+        if (found.icon != null) node.icon = found.icon;
+        if (found.img != null) node.img = found.img;
       } else if (found.shape) {
         // Two shapes for one node is a document whose meaning depends on which
         // one mermaid keeps. Not one to guess at.
@@ -890,7 +932,10 @@ function walkFlow(text) {
       const painted = byId.get(id) || byGroup.get(id);
       if (!painted) return flowRefused(flowLineRefusal(item.line, item.number, 'a box that isn’t there'));
       if (item.kind === 'style') painted.style = item.rule;
-      else if (!painted.classes.includes(item.name)) painted.classes.push(item.name);
+      else if (item.kind === 'click') {
+        painted.href = item.href;
+        painted.hrefTip = item.tip;
+      } else if (!painted.classes.includes(item.name)) painted.classes.push(item.name);
     }
   }
   if (!graph.nodes.length) return flowRefused('There are no boxes in it yet.');
@@ -905,8 +950,21 @@ function walkFlow(text) {
 function flowNodeText(node) {
   const shape = flowShape(node.shape);
   const label = '"' + encodeFlowLabel(node.text) + '"';
-  if (shape.open) return node.id + shape.open + label + shape.close;
-  return node.id + '@{ shape: ' + shape.id + ', label: ' + label + ' }';
+  // A picture or an icon is only sayable in the typed form, so a box carrying one
+  // is written that way whatever shape it has.
+  const extra = [];
+  if (node.icon) extra.push('icon: "' + node.icon + '"');
+  if (node.img) extra.push('img: "' + node.img + '"');
+  if (!extra.length && shape.open) return node.id + shape.open + label + shape.close;
+  return node.id + '@{ shape: ' + shape.id + ', label: ' + label + (extra.length ? ', ' + extra.join(', ') : '') + ' }';
+}
+
+// The `click` line for a box that has one. Written under the boxes because it
+// names one, and in the short spelling: `href` is optional and both forms draw
+// the same anchor.
+function flowClickText(node) {
+  const tip = node.hrefTip ? ' "' + node.hrefTip + '"' : '';
+  return 'click ' + node.id + ' "' + node.href + '"' + tip;
 }
 
 // One group and everything inside it, then the groups inside that, one indent
@@ -976,6 +1034,10 @@ function renderFlow(graph) {
   graph.edges.forEach((edge, index) => {
     if (edge.style) lines.push(FLOW_INDENT + 'linkStyle ' + index + ' ' + edge.style);
   });
+  for (const node of graph.nodes) {
+    if (node.href) lines.push(FLOW_INDENT + flowClickText(node));
+  }
+  for (const raw of graph.deadClicks || []) lines.push(FLOW_INDENT + raw);
   return lines.join('\n');
 }
 
@@ -998,6 +1060,10 @@ function flowAddNode(graph, type, text) {
     group: null,
     classes: [],
     style: null,
+    icon: null,
+    img: null,
+    href: null,
+    hrefTip: null,
   };
   graph.nodes.push(node);
   return node;

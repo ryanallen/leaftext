@@ -16,10 +16,13 @@ fn highlighter_boundary_escapes_when_requested_language_has_no_syntax() {
         "missing syntaxes should not produce highlighter HTML"
     );
 
-    let rendered = render_code_block(&CodeBlockCapture {
-        language: Some("imaginary-leaf-syntax".to_string()),
-        code: "<b>raw</b>".to_string(),
-    });
+    let rendered = render_code_block(
+        &CodeBlockCapture {
+            language: Some("imaginary-leaf-syntax".to_string()),
+            code: "<b>raw</b>".to_string(),
+        },
+        Path::new("README.md"),
+    );
 
     assert_contains(&rendered, r#"data-language="imaginary-leaf-syntax""#);
     assert_contains(&rendered, "&lt;b&gt;raw&lt;/b&gt;");

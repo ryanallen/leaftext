@@ -11,8 +11,9 @@ fn the_missing_image_glyph_is_inlined_painted_and_allowed() {
     // The drawing is in the stylesheet, as a class, not in the page.
     assert_contains(css, ".lt-icon-missing-image {");
     assert_contains(css, "M6.3,22.1c-1.1,0-2-.9-2-2V4.1");
+    // Not drawn into the page's markup. The script carries the same path once more, as one entry of the icon set a diagram box draws from — generated from the same row, so there is still one drawing of it.
     assert!(
-        !html.contains("M6.3,22.1c-1.1,0-2-.9-2-2V4.1"),
+        !app_shell_html().contains("M6.3,22.1c-1.1,0-2-.9-2-2V4.1"),
         "the mark must not be pasted into the page as well"
     );
     for expected in [
@@ -290,6 +291,29 @@ fn resolves_relative_media_against_source_file_directory() {
         &rendered.html,
         &expected_img("assets/logo.svg", r#"alt="Leaf logo" title="Leaf logo""#),
     );
+}
+
+/// A diagram box can hold a picture, and the page has no idea where the document sits — so a path beside it has to be resolved here, exactly as a Markdown image is. Only inside `@{ … }` and only that key: the same word in a label is the reader's own text.
+#[test]
+fn resolves_a_diagram_box_picture_the_way_a_markdown_image_resolves() {
+    let source_path = fixture_source_path("project/README.md");
+    let markdown = "```mermaid\nflowchart TD\n  A@{ img: \"assets/logo.svg\", label: \"Logo\" }\n  B[\"img: assets/logo.svg\"]\n```";
+
+    let rendered = render_markdown_document(markdown, &source_path);
+
+    assert_contains(
+        &rendered.html,
+        &format!("img: \"{}\"", local_img("assets/logo.svg")),
+    );
+    // The same words in a label are text the reader typed, and a rewrite there would change what the diagram says.
+    assert_contains(&rendered.html, "B[\"img: assets/logo.svg\"]");
+    // The label beside it is untouched, and so is a remote address the web view can already fetch.
+    assert_contains(&rendered.html, "label: \"Logo\"");
+    let remote = render_markdown_document(
+        "```mermaid\nflowchart TD\n  A@{ img: \"https://example.com/a.png\" }\n```",
+        &source_path,
+    );
+    assert_contains(&remote.html, "img: \"https://example.com/a.png\"");
 }
 
 #[test]

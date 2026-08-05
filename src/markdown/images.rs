@@ -224,6 +224,87 @@ pub(crate) fn is_safe_relative_image_destination(destination: &str) -> bool {
     )
 }
 
+/// A diagram box can carry a picture — `B@{ img: "shot.png" }` — and the web view has no idea where the document is, so a path beside it means nothing there. Resolved with the same function a Markdown image goes through, so both spellings of "the picture next to this file" reach the page as one URL. Only inside `@{ … }` and only that key: the same word in a label is the reader's own text. Neither editor sees this — both read the block out of the file, never the page.
+pub(crate) fn resolve_mermaid_image_destinations(code: &str, source_path: &Path) -> String {
+    if !code.contains("@{") {
+        return code.to_string();
+    }
+    let mut resolved = String::with_capacity(code.len());
+    let mut rest = code;
+    while let Some(open) = rest.find("@{") {
+        resolved.push_str(&rest[..open + 2]);
+        let body = &rest[open + 2..];
+        let Some(close) = mermaid_typed_body_end(body) else {
+            resolved.push_str(body);
+            return resolved;
+        };
+        resolved.push_str(&resolve_mermaid_typed_body(&body[..close], source_path));
+        resolved.push('}');
+        rest = &body[close + 1..];
+    }
+    resolved.push_str(rest);
+    resolved
+}
+
+/// The `}` that closes `@{`, skipping any inside a quoted label — a label may hold the brace and the comma the braces out here are made of.
+fn mermaid_typed_body_end(body: &str) -> Option<usize> {
+    let mut quoted = false;
+    for (at, character) in body.char_indices() {
+        match character {
+            '"' => quoted = !quoted,
+            '}' if !quoted => return Some(at),
+            _ => {}
+        }
+    }
+    None
+}
+
+fn resolve_mermaid_typed_body(body: &str, source_path: &Path) -> String {
+    let mut parts = Vec::new();
+    let mut quoted = false;
+    let mut start = 0usize;
+    for (at, character) in body.char_indices() {
+        match character {
+            '"' => quoted = !quoted,
+            ',' if !quoted => {
+                parts.push(&body[start..at]);
+                start = at + 1;
+            }
+            _ => {}
+        }
+    }
+    parts.push(&body[start..]);
+    parts
+        .into_iter()
+        .map(|part| resolve_mermaid_typed_part(part, source_path))
+        .collect::<Vec<String>>()
+        .join(",")
+}
+
+fn resolve_mermaid_typed_part(part: &str, source_path: &Path) -> String {
+    let Some(colon) = part.find(':') else {
+        return part.to_string();
+    };
+    let (key, after) = part.split_at(colon);
+    if key.trim() != "img" {
+        return part.to_string();
+    }
+    let value = &after[1..];
+    let bare = value.trim();
+    let quoted = bare.len() >= 2 && bare.starts_with('"') && bare.ends_with('"');
+    let destination = if quoted {
+        &bare[1..bare.len() - 1]
+    } else {
+        bare
+    };
+    let Some(url) = resolve_image_destination(destination, source_path) else {
+        return part.to_string();
+    };
+    // Always quoted on the way out: a resolved URL can hold the comma or the brace a bare value would end on.
+    let gap = &value[..value.len() - value.trim_start().len()];
+    format!("{key}:{gap}\"{url}\"")
+}
+
 pub(crate) fn resolve_rendered_html_image_urls(html: &str, source_path: &Path) -> String {
     let mut resolved = String::with_capacity(html.len());
     let mut offset = 0usize;

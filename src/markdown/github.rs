@@ -5,6 +5,7 @@ use super::*;
 pub(crate) fn github_markdown_extras(
     events: Vec<Event<'static>>,
     repository: Option<&RepositoryContext>,
+    source_path: &Path,
 ) -> Vec<Event<'static>> {
     let mut transformed = Vec::new();
     let mut link_depth = 0usize;
@@ -20,7 +21,10 @@ pub(crate) fn github_markdown_extras(
             match event {
                 Event::Text(text) => capture.code.push_str(text.as_ref()),
                 Event::End(TagEnd::CodeBlock) => {
-                    transformed.push(Event::Html(cowstr(&render_code_block(capture))));
+                    transformed.push(Event::Html(cowstr(&render_code_block(
+                        capture,
+                        source_path,
+                    ))));
                     code_block = None;
                 }
                 _ => {}
@@ -87,7 +91,10 @@ pub(crate) fn github_markdown_extras(
     }
 
     if let Some(capture) = &code_block {
-        transformed.push(Event::Html(cowstr(&render_code_block(capture))));
+        transformed.push(Event::Html(cowstr(&render_code_block(
+            capture,
+            source_path,
+        ))));
     }
 
     relocate_footnote_definitions(transformed, footnote_ranges, &footnotes)

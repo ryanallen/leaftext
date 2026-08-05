@@ -192,7 +192,7 @@ fn app_shell_renders_history_controls_and_intercepts_document_links() {
             "code_scroll: codeViewActive ? viewScrollFraction() : null,",
             "send({ command: 'closeTab', index: Number(close.dataset.tabClose) });",
             "send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });",
-            "send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor(), newPage });",
+            "send({ command: 'openLink', href: documentLinkHref(link), scroll_anchor: currentScrollAnchor(), newPage });",
             "function bindDocumentLinks() {",
             "function documentLinkFor(target) {",
             "const link = target && target.closest ? target.closest('a[href]') : null;",
@@ -326,6 +326,44 @@ fn app_shell_back_icon_uses_current_color_and_keeps_no_square_fallback() {
         !html.contains(r#"<path d="m15 18-6-6 6-6"/>"#),
         "Back button must not regress to the generic fallback chevron"
     );
+}
+
+/// `A@{ icon: "leaf:back" }` in a diagram draws the app's own back arrow, out of a set generated from the same rows as the stylesheet — so an icon is named in one place and mermaid never falls back to its own glyph, an 80x80 square in a hardcoded #087ebf.
+#[test]
+fn every_icon_row_reaches_the_diagram_icon_set_and_nothing_else_does() {
+    let rows: Vec<String> = include_str!("../../design/icons.md")
+        .lines()
+        .filter(|line| line.starts_with('|'))
+        .filter_map(|line| {
+            let cells: Vec<&str> = line.split('|').map(str::trim).collect();
+            let name = cells.get(1).copied().unwrap_or_default();
+            let file = cells.get(2).copied().unwrap_or_default();
+            (file.ends_with(".svg") && !name.is_empty()).then(|| name.to_string())
+        })
+        .collect();
+    assert!(rows.len() > 30, "only found {} icon rows", rows.len());
+
+    let set = include_str!("../assets/mermaid-icons.js");
+    for name in &rows {
+        assert_contains(set, &format!("'{name}': {{ body:"));
+    }
+    let entries = set.matches("': { body:").count();
+    assert_eq!(
+        entries,
+        rows.len(),
+        "the generated set has {entries} icons and design/icons.md has {} rows",
+        rows.len()
+    );
+    // The mark a box with an icon or a picture we cannot draw falls back to, so it has to be in the set the fallback names.
+    assert_contains(set, "'missing-image': { body:");
+    // Every drawing keeps `currentColor`, so an icon in a diagram takes the ink of the page rather than a color of its own.
+    assert!(
+        !set.contains("#087ebf") && !set.contains(r#"fill=\"black\""#),
+        "a drawing in the diagram icon set carries a color of its own"
+    );
+    // The set is a fragment of the page's one script, so it reaches mermaid without a fetch.
+    assert_contains(app_shell_script(), "const LEAF_MERMAID_ICONS = {");
+    assert_contains(app_shell_script(), "mermaid.registerIconPacks([");
 }
 
 #[test]

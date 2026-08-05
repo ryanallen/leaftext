@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // design/icons.md is the list of icons; this compiles it into src/assets/icons.css, one `.lt-icon-<name>` mask class each. The page then wears an icon by name — `<span class="lt-icon lt-icon-back"></span>` — so a drawing used five times is in the app once. The code-view icon was pasted in five places, the heading icon three.
 //
-//   node scripts/bundle-icons.mjs           write src/assets/icons.css
-//   node scripts/bundle-icons.mjs --check   fail on drift (`just verify`)
+//   node scripts/bundle-icons.mjs           write src/assets/icons.css and src/assets/mermaid-icons.js
+//   node scripts/bundle-icons.mjs --check   fail on drift in either (`just verify`)
+//
+// The second output is the same rows as an icon set mermaid can be handed, so `A@{ icon: "leaf:back" }` in a diagram draws the app's own back arrow. It is generated for the same reason the stylesheet is: design/icons.md stays the only place an icon is named, and a second hand-written list of them would drift the way the stroke weights did. Without it mermaid substitutes its own unknown-icon glyph — an 80x80 square in a hardcoded #087ebf, which is the one color in a diagram no theme chose.
 //
 // A mask reads only alpha, so the copy in the URI is painted flat black and the visible color comes from `background-color: currentColor` on the base class. That is what made the move possible at all: `normalize_svg_icon_colors` had already turned every fill and stroke into `currentColor`, so no icon carried a color.
 //
@@ -17,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const check = process.argv.includes('--check');
 const target = 'src/assets/icons.css';
+const setTarget = 'src/assets/mermaid-icons.js';
 
 // The named line weights, read out of the Stroke table so the values live in design/ like every other one. `—` is a drawing with no strokes at all.
 const md = readFileSync(join(root, 'design/icons.md'), 'utf8');
@@ -89,8 +92,19 @@ const lines = [
 // Every stroke in a drawing, set to one weight. The row decides; the number a file happens to carry is only a note, and the check below holds the two together.
 const STROKE_WIDTH = /stroke-width=(['"])[\d.]+\1/g;
 const atWeight = (svg, value) => svg.replace(STROKE_WIDTH, `stroke-width="${value}"`);
+// What a drawing is once the `<svg>` wrapper is off it: the body an icon set carries, sized by the viewBox it was drawn in. `currentColor` is left alone, so the icon takes the ink of the diagram it lands in rather than a color of its own.
+const VIEWBOX = /viewBox="0 0 ([\d.]+) ([\d.]+)"/;
+const OUTER_SVG = /^[\s\S]*?<svg\b[^>]*>([\s\S]*)<\/svg>\s*$/;
+function iconSetEntry(name, svg) {
+  const box = VIEWBOX.exec(svg);
+  const inner = OUTER_SVG.exec(svg);
+  if (!box || !inner) return null;
+  const body = inner[1].replace(/\s*\n\s*/g, '').trim();
+  return `  '${name}': { body: ${JSON.stringify(body)}, width: ${box[1]}, height: ${box[2]} },`;
+}
 let drawn = 0;
 const heavy = [];
+const set = [];
 for (const { name, file, stroke, heavy: wantsHeavy } of rows) {
   const raw = readFileSync(join(root, 'src/assets', file), 'utf8');
   const drawnAt = [...raw.matchAll(STROKE_WIDTH)].map((match) => match[0]);
@@ -109,8 +123,12 @@ for (const { name, file, stroke, heavy: wantsHeavy } of rows) {
     problems.push(`src/assets/${file} draws ${off}, but design/icons.md gives ${name} the ${stroke} stroke (${wanted})`);
     continue;
   }
-  const uri = `url("data:image/svg+xml,${encode(wanted ? atWeight(raw, wanted) : raw)}")`;
+  const stamped = wanted ? atWeight(raw, wanted) : raw;
+  const uri = `url("data:image/svg+xml,${encode(stamped)}")`;
   lines.push(`.lt-icon-${name} {`, `  -webkit-mask-image: ${uri};`, `  mask-image: ${uri};`, '}');
+  const entry = iconSetEntry(name, stamped);
+  if (!entry) problems.push(`src/assets/${file} has no viewBox, or no <svg> wrapper, so ${name} cannot be an icon in a diagram`);
+  else set.push(entry);
   drawn += 1;
   if (!wantsHeavy) continue;
   const bolder = atWeight(raw, WEIGHTS.get('heavy'));
@@ -122,25 +140,43 @@ if (heavy.length) {
 }
 const css = lines.join('\n') + '\n';
 
+// A fragment of the page's one script, so it declares a `const` and nothing else — there is no module loader to export to. decorate.js hands it to mermaid.registerIconPacks once, and rewrites an `icon:` it cannot find to the missing-picture row before mermaid ever sees the block.
+if (!set.some((entry) => entry.startsWith("  'missing-image'"))) {
+  problems.push('design/icons.md has no missing-image row, which is the mark a diagram falls back to');
+}
+const js = [
+  '// Generated from design/icons.md by `just bundle-icons`. Do not edit.',
+  '// The app\'s own drawings as an icon set mermaid can draw a box with: `A@{ icon: "leaf:back" }`.',
+  "const LEAF_MERMAID_ICON_PREFIX = 'leaf';",
+  'const LEAF_MERMAID_ICONS = {',
+  `  prefix: ${JSON.stringify('leaf')},`,
+  '  icons: {',
+  ...set.map((entry) => '  ' + entry),
+  '  },',
+  '};',
+].join('\n') + '\n';
+
 if (problems.length) {
   console.error('design/icons.md and the files disagree:');
   for (const problem of problems) console.error(`  ${problem}`);
   process.exit(1);
 }
 
-let current = '';
-try {
-  current = readFileSync(join(root, target), 'utf8');
-} catch {
-  current = '';
+const written = [];
+for (const [path, wanted] of [[target, css], [setTarget, js]]) {
+  let current = '';
+  try {
+    current = readFileSync(join(root, path), 'utf8');
+  } catch {
+    current = '';
+  }
+  if (current === wanted) continue;
+  if (check) {
+    console.error(`${path} has drifted from design/icons.md — run \`just bundle-icons\``);
+    process.exit(1);
+  }
+  writeFileSync(join(root, path), wanted);
+  written.push(path);
 }
-if (current === css) {
-  console.log(`icons: ${drawn} classes and ${heavy.length} heavy masks from ${rows.length} rows — ${target} matches`);
-  process.exit(0);
-}
-if (check) {
-  console.error(`${target} has drifted from design/icons.md — run \`just bundle-icons\``);
-  process.exit(1);
-}
-writeFileSync(join(root, target), css);
-console.log(`icons: wrote ${drawn} classes and ${heavy.length} heavy masks to ${target}`);
+const made = `${drawn} classes, ${heavy.length} heavy masks and ${set.length} diagram icons from ${rows.length} rows`;
+console.log(written.length ? `icons: wrote ${made} to ${written.join(' and ')}` : `icons: ${made} — both files match`);

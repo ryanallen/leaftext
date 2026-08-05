@@ -947,8 +947,13 @@ function drawFlowOverlay() {
     tools.style.top = box.y - FLOW_RING_GAP + 'px';
     tools.style.width = box.width + FLOW_RING_GAP * 2 + 'px';
     tools.style.height = box.height + FLOW_RING_GAP * 2 + 'px';
+    const node = flowFindNode(graph, box.id);
     const ring = document.createElement('div');
-    ring.className = 'flow-ring';
+    // A picture and an icon show themselves — mermaid draws them. A link shows
+    // nothing at all, so the box wears a dotted ring of its own and says where it
+    // goes: a box holding something invisible is a box nobody edits on purpose.
+    ring.className = 'flow-ring' + (node && node.href ? ' is-linked' : '');
+    if (node && node.href) ring.title = 'Clicking this box opens ' + node.href;
     ring.dataset.node = box.id;
     // Nested corners, in reverse: the inner radius is the outer minus the gap,
     // so the outer is the inner plus it. A square shape still gets the gap's
@@ -1835,6 +1840,7 @@ function drawFlowPicker() {
       });
     }
   } else if (node) {
+    for (const extra of FLOW_NODE_EXTRAS) flowPickerExtraField(graph, node, extra);
     for (const family of flowShapeFamilies()) {
       flowPickerChoices(family.name, family.shapes, node.shape, (id) => flowShapeChip(id), (id) => {
         node.shape = id;
@@ -1905,6 +1911,41 @@ function flowPickerField(graph, node, edge) {
   });
   field.addEventListener('change', () => flowGraphChanged());
   return field;
+}
+
+// The three things a box can carry that are not its shape. `key` is the field on
+// the box and the key mermaid writes, so there is one name for each of them.
+const FLOW_NODE_EXTRAS = [
+  { key: 'href', label: 'Link', placeholder: 'Where clicking this box goes' },
+  { key: 'icon', label: 'Icon', placeholder: 'leaf:back' },
+  { key: 'img', label: 'Picture', placeholder: 'A picture beside this document, or its address' },
+];
+
+// Typed, not picked: a link and a picture are addresses, and an icon is one of
+// fifty-seven names — none of them a short row of chips.
+function flowPickerExtraField(graph, node, extra) {
+  const heading = document.createElement('div');
+  heading.className = 'flow-menu-heading';
+  heading.textContent = extra.label;
+  flowPickerBody.appendChild(heading);
+  const field = document.createElement('input');
+  field.type = 'text';
+  field.className = 'flow-field';
+  field.spellcheck = false;
+  field.placeholder = extra.placeholder;
+  field.value = node[extra.key] || '';
+  field.setAttribute('aria-label', extra.label);
+  field.addEventListener('input', () => {
+    node[extra.key] = field.value.trim() || null;
+    // Emptying the link takes its tooltip with it, or a link typed back in would
+    // arrive wearing words somebody wrote for a different destination.
+    if (extra.key === 'href' && !node.href) node.hrefTip = null;
+    flowSession.text = renderFlow(graph);
+    if (flowCode) flowCode.value = flowSession.text;
+    queueFlowDiagram();
+  });
+  field.addEventListener('change', () => flowGraphChanged());
+  flowPickerBody.appendChild(field);
 }
 
 // One heading and the run of choices under it, each drawn by `chip` and applied

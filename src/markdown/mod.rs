@@ -160,7 +160,7 @@ pub(crate) fn register_markdown_extensions(
     let repository = repository_context(source_path.parent().unwrap_or_else(|| Path::new(".")));
     let events = button_links(events);
     let events = linkify_plain_text(events);
-    let events = github_markdown_extras(events, repository.as_ref());
+    let events = github_markdown_extras(events, repository.as_ref(), source_path);
     let events = table_cell_task_list_markers(events);
     let events = add_markdown_heading_ids(events);
     let events = resolve_absolute_markdown_image_urls(events, source_path);

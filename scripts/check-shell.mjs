@@ -1194,6 +1194,141 @@ if (booted) {
           .join('\n') +
         '\n    a --> b\n    b --> c\n    c --> d',
     );
+    // A link, an icon and a picture. The `click` line goes under the boxes because it names one, and the two keys ride in the typed form because that is the only place they can be said.
+    same('flowchart TD\n    A["Home"]\n    click A "https://example.com"');
+    same('flowchart TD\n    A["Home"]\n    click A "https://example.com" "Opens the site"');
+    same('flowchart TD\n    A@{ shape: rect, label: "Back", icon: "leaf:back" }');
+    same('flowchart TD\n    A@{ shape: rect, label: "A shot", img: "shot.png" }');
+    same('flowchart TD\n    A@{ shape: rect, label: "All three", icon: "leaf:back", img: "shot.png" }\n    click A "./other.md"');
+    // The form that names a function is kept whole and does nothing. It goes last because it is not attached to a box at all.
+    same('flowchart TD\n    A["Home"]\n    click A call go()');
+  });
+
+  // The hardest block the canvas is ever handed: the "everything at once" section of the mermaid test page. A hand-written diagram is not in the shape we write, so the test is that it opens at all and that our own writing of it is stable — the two together are what "every flowchart on that page opens in the editor" means. Kept here as a literal rather than read out of the plan tree next door: nothing else in `just verify` reaches out of this repo, and a boot check that needs a folder beside it fails on a partial clone.
+  check('the hardest block on the test page opens on the canvas', () => {
+    const { parseFlow, renderFlow, flowRefusal } = booted;
+    const settles = (text, why) => {
+      const graph = parseFlow(text);
+      if (!graph) throw new Error(`${why}: refused — ${flowRefusal(text)}`);
+      const once = renderFlow(graph);
+      const twice = renderFlow(parseFlow(once));
+      if (once !== twice) throw new Error(`${why}: our own writing of it does not settle\n${once}\n---\n${twice}`);
+      return { graph, written: once };
+    };
+
+    const everything = [
+      '---',
+      'title: One file in, one page out',
+      '---',
+      '%%{init: {"flowchart": {"curve": "basis"}}}%%',
+      'flowchart TD',
+      '  accTitle: How Leaftext turns a file into a page',
+      '  accDescr: A file is read, routed by its format, parsed or shaped into a tree, then shown, edited and written back.',
+      '  classDef io fill:#e0f2fe,stroke:#0369a1,color:#082f49',
+      '  classDef risk fill:#ffe4e6,stroke:#b91c1c,color:#7f1d1d',
+      '  classDef done fill:#dcfce7,stroke:#15803d,color:#14532d',
+      '',
+      '  %% one file in, one page out',
+      '  file@{ shape: lean-r, label: "The file on disk" }',
+      '  file --> fmt{Which format?}',
+      '',
+      '  fmt -->|md| md',
+      '  fmt -->|xml, json, yaml| tree',
+      '',
+      '  subgraph md [Markdown]',
+      '    direction TB',
+      '    p[Parse to events] --> g[GitHub extras]',
+      '    g --> h[Highlight fences]',
+      '    h --> s[Sanitize]:::risk',
+      '  end',
+      '',
+      '  subgraph tree [Tree formats]',
+      '    direction TB',
+      '    t1[Read to one ordered tree] --> t2[Shape rules]',
+      '  end',
+      '',
+      '  s --> page',
+      '  t2 ---> page',
+      '  page@{ shape: curv-trap, label: "The reading view" }',
+      '  page -.->|click a block| edit@{ shape: notch-rect, label: "Edit in place" }',
+      '  edit -->|leave it| page',
+      '  edit ==>|one splice| buffer@{ shape: cyl, label: "The buffer in Rust" }',
+      '  buffer e1@--> file',
+      '  watch[The watcher] --> watch',
+      '  watch ~~~ file',
+      '  e1@{ animate: true }',
+      '',
+      '  %% a typed shape cannot carry :::class on the same line — see section 22',
+      '  class file io',
+      '  class page done',
+      '  linkStyle 0 stroke:#0369a1,stroke-width:2px',
+    ].join('\n');
+
+    const { written } = settles(everything, 'everything at once');
+    // Each of the nine things that section was short of, still there after a save.
+    for (const kept of [
+      'title: One file in, one page out',
+      '%%{init:',
+      'accTitle: How Leaftext turns a file into a page',
+      'accDescr: A file is read',
+      '--->', // the stretched arrow
+      '~~~', // the invisible line
+      'watch --> watch', // the self-loop
+      'e1@-->', // the named line
+      'e1@{ animate: true }',
+      'linkStyle 0 stroke:#0369a1',
+    ]) {
+      if (!written.includes(kept)) throw new Error(`a save lost ${kept}:\n${written}`);
+    }
+    // Two lines between the same pair, both kept rather than folded into one.
+    if (written.split('\n').filter((line) => /^\s*(page|edit) .* (edit|page)$/.test(line)).length < 2) {
+      throw new Error(`the second line between one pair went missing:\n${written}`);
+    }
+
+    // `look: handDrawn` is a whole-diagram setting, so the section says it in a block of its own.
+    settles(
+      [
+        '---',
+        'title: The same pipeline, still an argument',
+        'look: handDrawn',
+        '---',
+        'flowchart LR',
+        '  file@{ shape: lean-r, label: "The file" } --> render[Render] --> page@{ shape: curv-trap, label: "The page" }',
+        '  page -.->|edit| render',
+      ].join('\n'),
+      'the hand-drawn block',
+    );
+  });
+
+  // Each of the three is written where mermaid reads it, and a box that loses one loses the line with it — the click line goes when the link does, and the key goes from the braces when the icon or the picture does.
+  check('a box gives up its link, its icon and its picture cleanly', () => {
+    const { parseFlow, renderFlow, flowFindNode } = booted;
+    const text = 'flowchart TD\n    A@{ shape: rect, label: "All three", icon: "leaf:back", img: "shot.png" }\n    click A "https://example.com" "Go"';
+    const graph = parseFlow(text);
+    if (!graph) throw new Error('the three-way box did not parse');
+    const node = flowFindNode(graph, 'A');
+    if (node.icon !== 'leaf:back') throw new Error(`the icon read as ${node.icon}`);
+    if (node.img !== 'shot.png') throw new Error(`the picture read as ${node.img}`);
+    if (node.href !== 'https://example.com') throw new Error(`the link read as ${node.href}`);
+    if (node.hrefTip !== 'Go') throw new Error(`the tooltip read as ${node.hrefTip}`);
+
+    node.href = null;
+    node.hrefTip = null;
+    node.icon = null;
+    node.img = null;
+    const back = renderFlow(graph);
+    if (back.includes('click')) throw new Error(`the click line outlived the link: ${back}`);
+    if (back.includes('icon:') || back.includes('img:')) throw new Error(`a key outlived its value: ${back}`);
+    if (back !== 'flowchart TD\n    A["All three"]') throw new Error(`the box did not go back to brackets: ${back}`);
+  });
+
+  // `click A href "…"` is mermaid's long spelling of the same thing, so it is read and written back short — one spelling of a link in the file, the way one shape has one spelling.
+  check('both spellings of a click reach the same box', () => {
+    const { parseFlow, renderFlow } = booted;
+    const short = parseFlow('flowchart TD\n    A["Home"]\n    click A "https://example.com"');
+    const long = parseFlow('flowchart TD\n    A["Home"]\n    click A href "https://example.com"');
+    if (!short || !long) throw new Error('one of the two spellings was refused');
+    if (renderFlow(short) !== renderFlow(long)) throw new Error('the two spellings wrote different text');
   });
 
   // The canvas has no gesture that draws a box around boxes, so the menu is the whole of it: make a group, join one, leave one, take one away. Each has to leave a diagram that still says something.
@@ -1520,7 +1655,6 @@ if (booted) {
 
     // Shapes past phase 2, and brackets that are a syntax error either way.
     refused('flowchart TD\n    A@{ shape: nosuchshape }', 'a shape mermaid does not have');
-    refused('flowchart TD\n    A@{ shape: rect, icon: "fa:bell" }', 'an icon box');
     refused('flowchart TD\n    A@{ shape: rect, w: 40, h: 20 }', 'a box given a size');
     refused('flowchart TD\n    A@{ shape: rect, label: "x"', 'braces that never close');
     refused('flowchart TD\n    A[/x]', 'an opener with the wrong closer');
@@ -1534,7 +1668,8 @@ if (booted) {
     refused('flowchart TD\n    A["a"]\n    style nosuch fill:#f9f', 'a style for a box that is not there');
     refused('flowchart TD\n    A["a"]\n    class nosuch warn', 'a class for a box that is not there');
     refused('flowchart TD\n    A["a"]\n    B["b"]\n    A --> B\n    linkStyle 3 stroke:#f00', 'a style past the last line');
-    refused('flowchart TD\n    click A "https://example.com"', 'click');
+    refused('flowchart TD\n    click A "https://example.com"', 'a click on a box that is not there');
+    refused('flowchart TD\n    A["a"]\n    click A _blank', 'a click written a way we cannot read');
     refused('flowchart TD\n    A["x"]; B["y"]', 'two statements on a line');
     // And things that are not a flowchart at all.
     refused('sequenceDiagram\n    a ->> b: hi', 'another diagram type');
@@ -1557,11 +1692,12 @@ if (booted) {
     says('flowchart TD\n    A["a"]\n    style nosuch fill:#f9f', 'Line 3', 'a box that isn’t there');
     says('flowchart TD\n    A["a"]\n    B["b"]\n    A --> B\n    linkStyle 9 stroke:#f00', 'Line 5', 'a line that isn’t there');
     says('flowchart TD\n    A@{ shape: nosuchshape }', 'Line 2', 'a shape name mermaid doesn’t have');
-    says('flowchart TD\n    A@{ shape: rect, icon: "fa:bell" }', 'Line 2', 'more than a shape and a label');
+    says('flowchart TD\n    A@{ shape: rect, w: 40 }', 'Line 2', 'a size or a place of its own');
+    says('flowchart TD\n    A["a"]\n    click A _blank', 'Line 3', 'a click written a way we cannot read');
     says('flowchart TD\n    A["x"]; B["y"]', 'Line 2', 'a semicolon');
     says('flowchart TD\n    A["a"]\n    A{"a"}', 'Line 3', 'a second shape');
     // Front matter is part of the block, so it counts toward the line number.
-    says('---\ntitle: Plan\n---\nflowchart TD\n    A["a"]\n    click A "https://example.com"', 'Line 6');
+    says('---\ntitle: Plan\n---\nflowchart TD\n    A["a"]\n    A{"a"}', 'Line 6');
     // The ones with no line to point at say what is wrong with the whole block.
     says('sequenceDiagram\n    a ->> b: hi', 'sequenceDiagram');
     says('pie\n    "a": 1', 'pie');
@@ -1823,7 +1959,7 @@ if (booted) {
     const { parseFlow } = booted;
     const graph = parseFlow('flowchart TD\n    A["a"]\n    B["b"]\n    A -.->|"maybe"| B');
     const nodeFields = Object.keys(graph.nodes[0]).sort().join(',');
-    if (nodeFields !== 'classes,group,id,shape,style,text') throw new Error(`a node carries ${nodeFields}`);
+    if (nodeFields !== 'classes,group,href,hrefTip,icon,id,img,shape,style,text') throw new Error(`a node carries ${nodeFields}`);
     const edgeFields = Object.keys(graph.edges[0]).sort().join(',');
     if (edgeFields !== 'animate,ends,from,id,label,line,name,stretch,style,to') throw new Error(`an edge carries ${edgeFields}`);
     for (const path of ['src/assets/shell/flow-model.js', 'src/assets/shell/flow-canvas.js']) {
@@ -1863,6 +1999,50 @@ if (booted) {
     if (defined.size < 50) throw new Error(`only found ${defined.size} tokens`);
     const missing = used.filter((token) => !defined.has(token));
     if (missing.length) throw new Error(`no such token: ${missing.join(', ')}`);
+  });
+
+  // v0.1.468: one line in a document took the whole interface away. Mermaid draws `click A "…"` as a real anchor even at its strict level, and writes only `xlink:href` — which `documentLinkFor` does not match, so the click belonged to the web view and the app page navigated to the site with no tabs, no bar and no way back.
+  check('a box wired to a link is the app’s click, not the web view’s', () => {
+    const { claimMermaidLinks, documentLinkHref } = booted;
+    const anchor = (attributes) => ({
+      attributes,
+      hasAttribute: (name) => name in attributes,
+      getAttribute: (name) => (name in attributes ? attributes[name] : null),
+      getAttributeNS: (ns, name) => attributes[ns + '|' + name] || null,
+      setAttribute: (name, value) => {
+        attributes[name] = value;
+      },
+    });
+    const xlink = 'http://www.w3.org/1999/xlink';
+    const linked = anchor({ [xlink + '|href']: 'https://example.com/x' });
+    const already = anchor({ href: '/its/own' });
+    const plain = anchor({});
+    claimMermaidLinks({ querySelectorAll: () => [linked, already, plain] });
+    if (linked.attributes.href !== 'https://example.com/x') throw new Error(`the anchor was not claimed: ${linked.attributes.href}`);
+    if (already.attributes.href !== '/its/own') throw new Error('an anchor that had its own href was overwritten');
+    if ('href' in plain.attributes) throw new Error('an anchor with nowhere to go was given an href');
+
+    // An SVG anchor's `href` property is an SVGAnimatedString, so reading it as a string sends the host "[object SVGAnimatedString]".
+    if (documentLinkHref({ ...linked, href: { baseVal: 'x' } }) !== 'https://example.com/x') {
+      throw new Error('the SVG anchor’s href was read off the property rather than the attribute');
+    }
+  });
+
+  // Mermaid substitutes its own glyph for an icon it cannot find — an 80x80 rect in a hardcoded #087ebf, the one color a diagram could show that no theme chose. And a picture whose URL will not decode throws from inside mermaid's renderer, where the catch upstream can only mark the whole batch of three failed. So both are settled before mermaid reads the block.
+  check('a box mermaid cannot draw becomes our own mark before it sees it', () => {
+    const { mermaidHasIcon, mermaidRewriteTyped } = booted;
+    if (!mermaidHasIcon('leaf:back')) throw new Error('the generated set does not carry leaf:back');
+    if (mermaidHasIcon('fa:bell')) throw new Error('a set we do not have was taken as ours');
+    if (mermaidHasIcon('leaf:nosuchicon')) throw new Error('a name we do not have was taken as ours');
+    if (mermaidHasIcon('back')) throw new Error('a name with no prefix was taken as ours');
+    if (!mermaidHasIcon('leaf:missing-image')) throw new Error('the mark both failures fall back to is not in the set');
+
+    // The rewrite reaches only inside `@{ … }`: the same word in a label is the reader's own text.
+    const swapped = mermaidRewriteTyped('flowchart TD\n  A@{ icon: "fa:bell" }\n  B["icon: fa:bell"]', (key, value) =>
+      key === 'icon' && value !== 'leaf:back' ? 'icon: "leaf:missing-image"' : null,
+    );
+    if (!swapped.includes('A@{ icon: "leaf:missing-image" }')) throw new Error(`the icon was not swapped: ${swapped}`);
+    if (!swapped.includes('B["icon: fa:bell"]')) throw new Error(`the label was rewritten: ${swapped}`);
   });
 
   // The diagram's labels are set in the theme's body font, which theme.rs emits per family rather than reading.css.

@@ -8,13 +8,13 @@ pub(crate) struct CodeBlockCapture {
     pub(crate) code: String,
 }
 
-pub(crate) fn render_code_block(capture: &CodeBlockCapture) -> String {
+pub(crate) fn render_code_block(capture: &CodeBlockCapture, source_path: &Path) -> String {
     let Some(language) = capture.language.as_deref() else {
         return format!("<pre><code>{}</code></pre>", encode_text(&capture.code));
     };
 
     if language.eq_ignore_ascii_case("mermaid") {
-        return render_mermaid_code_block(&capture.code);
+        return render_mermaid_code_block(&capture.code, source_path);
     }
 
     let requested_language = language;
@@ -35,11 +35,11 @@ pub(crate) fn render_code_block(capture: &CodeBlockCapture) -> String {
     )
 }
 
-// The block goes to mermaid exactly as it was written, front matter and all: mermaid 11 reads `title:`, `config:`, `look:` and `layout:` itself. Cut that section out here and the page draws it one way, the flowchart sheet another.
-pub(crate) fn render_mermaid_code_block(code: &str) -> String {
+// The block goes to mermaid as it was written, front matter and all: mermaid 11 reads `title:`, `config:`, `look:` and `layout:` itself. Cut that section out here and the page draws it one way, the flowchart sheet another. The one exception is a box's `img:` path, which is resolved against the document the way a Markdown image is — the page has no idea where the document sits, so a bare path would reach the web view meaning nothing.
+pub(crate) fn render_mermaid_code_block(code: &str, source_path: &Path) -> String {
     format!(
         r#"<pre class="mermaid" data-language="mermaid">{}</pre>"#,
-        encode_text(code)
+        encode_text(&resolve_mermaid_image_destinations(code, source_path))
     )
 }
 

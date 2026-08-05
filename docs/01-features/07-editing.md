@@ -21,6 +21,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider |
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
 | [Drawing a flowchart](#the-flowchart-editor) | The flowchart button, and the one in any drawn diagram's corner, open a canvas beside the Mermaid text |
+| [A box's link, icon or picture](#what-it-can-draw) | A selected box has a field for each: where clicking it goes, one of the app's own drawings by name, and a picture beside the document or at an address |
 | [Exporting a diagram](#export) | The flowchart sheet writes the diagram out as its own file — Markdown or PNG |
 | [The format bar](#the-format-bar) | Highlight words and a bar appears over them: bold, italic, strikethrough, code, link, then text, bigger/smaller heading and quote for the whole block |
 | [Interactive checkboxes](#inline-editing-the-reading-view) | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
@@ -223,18 +224,18 @@ The canvas models the whole of Mermaid's flowchart language:
 - **Subgraphs** — nesting, a `direction` of their own, and arrows pointing at the group itself. A box says which group it is in, so reordering never moves it out of one.
 - **Labels** — quoted, unquoted, with Markdown inside the quotes, and broken across two lines.
 - **Color** — `classDef`, `class`, `:::name`, `style` and `linkStyle` are read onto the box or the line they paint and written back off it, so deleting a box takes its color with it. The canvas has no color picker; it carries what your diagram already says.
+- **A link, an icon or a picture on a box** — a selected box has a field for each. The link is where clicking the box goes, written back as `click A "…"`; the icon is one of the app's own drawings by name (`leaf:back`); the picture is a file beside the document or an address. A box carrying a link wears a dotted ring on the canvas, because a link is the one of the three that shows nothing.
 - **Front matter, `%%{init}%%` directives and comments** written in the block are carried through a save untouched.
 
 ### What it refuses
 
-The canvas fails closed: a diagram it cannot fully model opens with the canvas switched off, and the **text pane still edits it normally**. It never quietly drops the half it did not understand, and one unmodeled line switches the canvas off for the whole diagram rather than half of it. Two things do that:
+The canvas fails closed: a diagram it cannot fully model opens with the canvas switched off, and the **text pane still edits it normally**. It never quietly drops the half it did not understand, and one unmodeled line switches the canvas off for the whole diagram rather than half of it. One thing does that:
 
 | In the diagram | Example |
 | --- | --- |
-| Click handlers | `click A "https://…"` |
-| Icon and image boxes | `A@{ icon: "fa:bell" }`, `B@{ img: "…" }` |
+| A box given a size or a place of its own | `A@{ shape: rect, w: 40, h: 20 }`, `A@{ pos: "t" }` |
 
-Neither works anywhere in Leaftext — see [Mermaid diagrams](01-rendering.md#mermaid-diagrams). When the canvas does switch off it names the line that stopped it and what on that line did, rather than leaving you to find it.
+The canvas does not keep a layout, so a save would drop those two silently. `click A call fn()` is the other thing it will not act on: it is read, written back, and does nothing — the page renders diagrams at Mermaid's strict level with no `unsafe-eval`, so a document cannot name a function inside the app and have it run. When the canvas does switch off it names the line that stopped it and what on that line did, rather than leaving you to find it.
 
 **Every other kind of Mermaid diagram** — sequence, class, state, pie, Gantt and the rest — opens the same sheet as a **live preview** beside its text: drawn as you type, pannable and zoomable, but without handles, because the canvas draws flowcharts. Export works on all of them.
 

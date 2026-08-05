@@ -461,6 +461,116 @@ function mermaidRuntimeConfig(options) {
   };
 }
 
+// The app's own drawings, handed over once, so `A@{ icon: "leaf:back" }` draws the back arrow the app bar wears. Nothing is fetched: the set is a fragment of this same script, generated from design/icons.md by `just bundle-icons`.
+let mermaidIconsRegistered = false;
+function registerMermaidIcons(mermaid) {
+  if (mermaidIconsRegistered || typeof mermaid.registerIconPacks !== 'function') return;
+  mermaidIconsRegistered = true;
+  mermaid.registerIconPacks([{ name: LEAF_MERMAID_ICON_PREFIX, icons: LEAF_MERMAID_ICONS }]);
+}
+
+// Where both failures land: an icon we have no drawing for, and a picture that will not load. Mermaid's own stand-in is an 80x80 square in a hardcoded #087ebf, the one color a diagram could show that no theme chose.
+const MERMAID_FALLBACK_ICON = LEAF_MERMAID_ICON_PREFIX + ':missing-image';
+
+function mermaidHasIcon(name) {
+  const at = (name || '').indexOf(':');
+  if (at < 0) return false;
+  return (
+    name.slice(0, at) === LEAF_MERMAID_ICON_PREFIX &&
+    Object.prototype.hasOwnProperty.call(LEAF_MERMAID_ICONS.icons, name.slice(at + 1))
+  );
+}
+
+// Mermaid throws out of its own renderer on a URL it cannot decode, and the catch upstream can only mark the whole batch of three failed — so a bad picture would cost two innocent diagrams their toolbar. Answered once per URL, because a theme switch redraws the page.
+const mermaidPictureAnswers = new Map();
+function mermaidPictureDraws(url) {
+  let answer = mermaidPictureAnswers.get(url);
+  if (!answer) {
+    answer = new Promise((resolve) => {
+      const probe = new Image();
+      // Decoded, not just fetched: decoding is the step mermaid does and the step that threw.
+      probe.onload = () => (probe.decode ? probe.decode().then(() => resolve(true), () => resolve(false)) : resolve(true));
+      probe.onerror = () => resolve(false);
+      probe.src = url;
+    });
+    mermaidPictureAnswers.set(url, answer);
+  }
+  return answer;
+}
+
+// Every key inside a box's `@{ … }`, rewritten where `rewrite` hands back a replacement. Only in there: the same words in a label are the reader's own text. Quotes are tracked because a label may hold the brace and the comma these are made of.
+function mermaidRewriteTyped(source, rewrite) {
+  let out = '';
+  let rest = source;
+  for (;;) {
+    const open = rest.indexOf('@{');
+    if (open < 0) return out + rest;
+    out += rest.slice(0, open + 2);
+    const body = rest.slice(open + 2);
+    let close = -1;
+    let quoted = false;
+    for (let at = 0; at < body.length; at += 1) {
+      const char = body[at];
+      if (char === '"') quoted = !quoted;
+      else if (char === '}' && !quoted) {
+        close = at;
+        break;
+      }
+    }
+    if (close < 0) return out + body;
+    out += mermaidRewriteTypedBody(body.slice(0, close), rewrite) + '}';
+    rest = body.slice(close + 1);
+  }
+}
+
+const MERMAID_TYPED_KEY_RE = /^(\s*)([A-Za-z_][\w-]*)\s*:\s*([\s\S]*?)(\s*)$/;
+function mermaidRewriteTypedBody(body, rewrite) {
+  const parts = [];
+  let start = 0;
+  let quoted = false;
+  for (let at = 0; at <= body.length; at += 1) {
+    const char = body[at];
+    if (char === '"') quoted = !quoted;
+    else if ((at === body.length || char === ',') && !quoted) {
+      parts.push(body.slice(start, at));
+      start = at + 1;
+    }
+  }
+  return parts
+    .map((part) => {
+      const named = MERMAID_TYPED_KEY_RE.exec(part);
+      if (!named) return part;
+      const value = named[3].replace(/^"([\s\S]*)"$/, '$1');
+      const swap = rewrite(named[2], value);
+      // The spacing either side is the reader's, and this text goes on to be drawn.
+      return swap == null ? part : named[1] + swap + named[4];
+    })
+    .join(',');
+}
+
+// What mermaid is actually handed: the block with anything it cannot draw turned into the missing-picture mark. Never the cache key — `__mermaidSource` stays what the reader typed, so both editors still open their own words.
+async function mermaidDrawableSource(source) {
+  if (!source || source.indexOf('@{') < 0) return source;
+  const pictures = [];
+  mermaidRewriteTyped(source, (key, value) => {
+    if (key === 'img' && value) pictures.push(value);
+    return null;
+  });
+  const dead = new Set();
+  if (pictures.length) {
+    const draws = await Promise.all(pictures.map(mermaidPictureDraws));
+    pictures.forEach((url, at) => {
+      if (!draws[at]) dead.add(url);
+    });
+  }
+  return mermaidRewriteTyped(source, (key, value) => {
+    if (key === 'icon') return mermaidHasIcon(value) ? null : 'icon: "' + MERMAID_FALLBACK_ICON + '"';
+    // The key changes too: an icon box is the one shape the page's own ink can paint our drawing into.
+    if (key === 'img' && dead.has(value)) return 'icon: "' + MERMAID_FALLBACK_ICON + '"';
+    return null;
+  });
+}
+
 // Rendered-diagram memo: diagram source (+ theme) → finished SVG. Editing
 // re-renders the whole document per commit, resetting diagrams to raw text;
 // unchanged ones restore from here instantly, so only new/edited ones re-render.
@@ -552,7 +662,18 @@ function drawMermaidDiagrams(candidates) {
 }
 
 // The height it drew to is worth keeping: a box refilled at that height moves nothing on the page.
+// A `click A "…"` box is drawn as a real SVG anchor, and mermaid writes only `xlink:href` — which `documentLinkFor` does not match, so the click was the web view's and it navigated the whole app out of the app. Copying the target onto `href` hands the box to the reader's own link handlers.
+const MERMAID_XLINK_NS = 'http://www.w3.org/1999/xlink';
+function claimMermaidLinks(diagram) {
+  for (const link of diagram.querySelectorAll('a')) {
+    if (link.hasAttribute('href')) continue;
+    const target = link.getAttributeNS(MERMAID_XLINK_NS, 'href');
+    if (target) link.setAttribute('href', target);
+  }
+}
+
 function finishMermaidDiagram(diagram) {
+  claimMermaidLinks(diagram);
   delete diagram.dataset.diagramWait;
   diagram.style.removeProperty('min-height');
   if (mermaidViewObserver) mermaidViewObserver.unobserve(diagram);
@@ -700,6 +821,7 @@ function drawMermaidBatches(diagrams, generation) {
       if (generation !== mermaidRenderGeneration) return;
       // Re-read every time: the theme in force at this render is what these
       // diagrams must be drawn in, not the one that was in force at the last.
+      registerMermaidIcons(mermaid);
       mermaid.initialize(mermaidRuntimeConfig());
       // The rail mirrors the document, so every batch would rebuild it. One
       // rebuild for the pass instead; the reader's own re-pin still runs per
@@ -710,6 +832,12 @@ function drawMermaidBatches(diagrams, generation) {
           if (generation !== mermaidRenderGeneration) return;
           const batch = diagrams.slice(at, at + MERMAID_BATCH_SIZE).filter((diagram) => diagram.isConnected);
           if (!batch.length) continue;
+          // Before mermaid reads them, not after: a box it cannot draw takes the whole batch down from inside its own renderer.
+          for (const diagram of batch) {
+            const drawable = await mermaidDrawableSource(diagram.__mermaidSource);
+            if (drawable != null && drawable !== diagram.textContent) diagram.textContent = drawable;
+          }
+          if (generation !== mermaidRenderGeneration) return;
           try {
             await mermaid.run({ nodes: batch });
           } catch (error) {

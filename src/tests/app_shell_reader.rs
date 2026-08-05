@@ -1007,12 +1007,12 @@ fn app_shell_routes_fragment_links_through_reader_anchor_scrolling() {
     );
     assert_contains(
             &html,
-            "send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor(), newPage });",
+            "send({ command: 'openLink', href: documentLinkHref(link), scroll_anchor: currentScrollAnchor(), newPage });",
         );
     assert!(
             html.contains("if (fragmentHref) {")
                 && html.contains("send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });")
-                && html.contains("send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor(), newPage });"),
+                && html.contains("send({ command: 'openLink', href: documentLinkHref(link), scroll_anchor: currentScrollAnchor(), newPage });"),
             "fragment-only links must be sent through app navigation before non-fragment links are routed"
         );
 }
@@ -1023,7 +1023,7 @@ fn app_shell_preserves_external_link_routing_for_native_opening() {
 
     assert_contains(
             &html,
-            "send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor(), newPage });",
+            "send({ command: 'openLink', href: documentLinkHref(link), scroll_anchor: currentScrollAnchor(), newPage });",
         );
     assert!(
         !html.contains(
@@ -1047,7 +1047,7 @@ fn app_shell_opens_a_held_or_middle_click_as_a_page_of_its_own() {
         "function newPageModifierHeld(event) {",
         "return isMacPlatform ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;",
         "sendDocumentLink(link, newPageModifierHeld(event));",
-        "send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor(), newPage });",
+        "send({ command: 'openLink', href: documentLinkHref(link), scroll_anchor: currentScrollAnchor(), newPage });",
         // The middle button raises `auxclick` and never `click`; the web view's own scroll puck opens on the mousedown before it, so both are answered.
         "app.addEventListener('auxclick', (event) => {",
         "app.addEventListener('mousedown', (event) => {",

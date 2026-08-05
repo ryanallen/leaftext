@@ -340,6 +340,11 @@ function documentLinkFor(target) {
   const link = target && target.closest ? target.closest('a[href]') : null;
   return link && app.contains(link) && link.closest('.document-body') ? link : null;
 }
+// An SVG anchor's `href` is an SVGAnimatedString rather than a string, so only an HTML one can be asked for the resolved form. A diagram's box is the SVG kind.
+function documentLinkHref(link) {
+  const raw = (link.getAttribute('href') || '').trim();
+  return typeof link.href === 'string' ? link.href || raw : raw;
+}
 // Hold this and the link opens as a page behind the one you are reading: Cmd on a
 // Mac, where Ctrl is already the right-click, and Ctrl everywhere else.
 function newPageModifierHeld(event) {
@@ -410,5 +415,5 @@ function sendDocumentLink(link, newPage) {
     send({ command: 'openLink', href: fragmentHref, scroll_anchor: currentScrollAnchor() });
     return;
   }
-  send({ command: 'openLink', href: link.href || rawHref, scroll_anchor: currentScrollAnchor(), newPage });
+  send({ command: 'openLink', href: documentLinkHref(link), scroll_anchor: currentScrollAnchor(), newPage });
 }
