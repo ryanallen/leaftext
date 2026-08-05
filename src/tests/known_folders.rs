@@ -114,6 +114,50 @@ fn a_cloud_folder_is_registered_once_however_the_path_is_spelled() {
     let _ = fs::remove_dir_all(&home);
 }
 
+/// The documentation screenshot's whole trick, held here so a change to the names read above cannot break it silently. `scripts/capture-screenshot.ps1` points `%USERPROFILE%`, `%APPDATA%` and `%LOCALAPPDATA%` at a throwaway profile and clears the three `OneDrive*` variables, so the app looks for cloud folders under a home with no client in it, finds none, and registers none — which is why a picture of the vault list is not a picture of this machine's folders. Windows only: that is the only platform the script runs on, and on macOS the home folder comes from `HOME`, which another test here reads.
+#[cfg(windows)]
+#[test]
+fn a_starved_home_offers_no_cloud_folder() {
+    let home = temp_home("starved");
+    let was: Vec<(&str, Option<std::ffi::OsString>)> = [
+        "USERPROFILE",
+        "OneDrive",
+        "OneDriveConsumer",
+        "OneDriveCommercial",
+    ]
+    .into_iter()
+    .map(|name| (name, std::env::var_os(name)))
+    .collect();
+    std::env::set_var("USERPROFILE", &home);
+    for name in ["OneDrive", "OneDriveConsumer", "OneDriveCommercial"] {
+        std::env::remove_var(name);
+    }
+
+    let mut read = CloudRoots::from_environment().expect("a home folder is set");
+    assert_eq!(read.home, home, "the home folder is read from USERPROFILE");
+    assert!(
+        read.onedrive.is_empty(),
+        "cleared OneDrive variables leave no record to follow: {:?}",
+        read.onedrive
+    );
+    // The script points the two config folders at the same profile, which is what stops a real Dropbox `info.json` being found under the machine's own AppData. Set here rather than in the environment because other tests read those two variables.
+    read.local_app_data = home.join("local");
+    read.roaming_app_data = home.join("roaming");
+    let found = cloud_folders(&read);
+    assert!(
+        found.is_empty(),
+        "a profile with no client under it must offer nothing: {found:?}"
+    );
+
+    for (name, value) in was {
+        match value {
+            Some(value) => std::env::set_var(name, value),
+            None => std::env::remove_var(name),
+        }
+    }
+    let _ = fs::remove_dir_all(&home);
+}
+
 /// Saving anywhere under a cloud folder goes through that client, so the vault wears a cloud — not only the folder itself.
 #[test]
 fn a_vault_inside_a_cloud_folder_counts_as_being_in_it() {

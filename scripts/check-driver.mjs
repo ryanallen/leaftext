@@ -4,8 +4,10 @@
 //   node scripts/check-driver.mjs   (`just verify`)
 //
 // `-DryRun` returns before the script loads an assembly, launches anything or reaches user32, so this is the one thing about the driver that a machine with no app built and no window open can check: that every verb parses, that an unknown one is refused, and that an attached run refuses the flags that would rewrite the owner's profile rather than ignoring them.
+//
+// It also reads the script itself for the half a dry run never reaches: that the throwaway profile is built from nothing on every run. That one is not a matter of taste — a profile carrying the last shot's vaults photographs them.
 
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -74,6 +76,10 @@ for (const [step, said] of VERBS) {
 if (!all.text.includes(`${VERBS.length} steps`)) {
   problems.push(`a dry run of ${VERBS.length} steps did not say how many it had`);
 }
+// A coordinate is a pixel in the picture, and the picture is what the app draws — not the rectangle around it that includes the invisible resize border. Sizing the bitmap to the wrong one put a black strip on six published pictures and would move every step in every list already written.
+if (!all.text.includes('not the invisible resize border')) {
+  problems.push('a dry run does not say which rectangle it would photograph and offset steps by');
+}
 // The point of the mode: it stops before it does anything.
 if (existsSync(out)) problems.push('a dry run wrote a file, so it did more than read the list');
 
@@ -108,10 +114,25 @@ else if (!attached.text.includes('the running copy')) {
   problems.push('an attached dry run does not say it is driving the copy that is already open');
 }
 
+// Every file the shot profile is made of, written or removed on every unattached run. The recent list was already like this — the app appends to it as it opens files — and the vault registry has the same fault for the same reason: the app registers a cloud folder as a vault at every launch, so a database reused across a batch photographs whatever the earlier shots found.
+const text = readFileSync(script, 'utf8');
+const PROFILE = [
+  ["settings.json", /Out-File -FilePath \(Join-Path \$config 'settings\.json'\)/],
+  ['recent-files.json', /Out-File -FilePath \(Join-Path \$config 'recent-files\.json'\)/],
+  ['manifest.db', /Remove-Item \$stale -Force/],
+  ['a home folder with no cloud client under it', /\$env:USERPROFILE = \$shotHome/],
+  ['the three OneDrive variables', /\$env:OneDriveCommercial = ''/],
+];
+for (const [what, pattern] of PROFILE) {
+  if (!pattern.test(text)) problems.push(`the shot profile no longer starts every run with ${what}`);
+}
+
 if (problems.length) {
   console.error('the gesture driver does not read its own -Do list:');
   for (const problem of problems) console.error(`  ${problem}`);
   console.error('scripts/capture-screenshot.ps1 is the only driver; -DryRun is the half that runs with no app.');
   process.exit(1);
 }
-console.log(`driver: ${VERBS.length} verbs read back, an unknown one refused, and -Attach refuses every profile flag`);
+console.log(
+  `driver: ${VERBS.length} verbs read back, an unknown one refused, -Attach refuses every profile flag, and the shot profile starts empty in ${PROFILE.length} ways`
+);

@@ -128,7 +128,11 @@ just squeeze-png shot.bmp imgs/rendering.png --palette
 
 `just doc-images` lists every picture the documentation asks for and which of them are not there, so a page cannot quietly point at a screenshot nobody took. It is not part of `just verify`: there is a backlog of missing ones, and a check that is red before anybody touches it stops being read. The repo's `sync-docs` skill runs it instead, so the pass that edits a page also takes what the page asks for.
 
-The script closes any running copy first (the app is single-instance, so a second launch hands the file over and exits), and writes the window size and theme into a `settings.json` of its own, because the webview lays out at the size it was created with. That file, the recent-files list and the vault registry all live in a throwaway profile under `-Work`: the app resolves both roots from `%APPDATA%` and `%LOCALAPPDATA%`, so a screenshot never reads or writes your own.
+[Screenshots](06-screenshots.md) is the list of what each picture in `imgs/` shows and what takes it. `just check-shot-edges` fails on one carrying a black strip nobody drew — the window's invisible resize border, photographed.
+
+The script closes any running copy first (the app is single-instance, so a second launch hands the file over and exits), and writes the window size and theme into a `settings.json` of its own, because the webview lays out at the size it was created with. That file, the recent-files list and the vault registry are all written from nothing on every run, in a throwaway profile under `-Work`: the app resolves both roots from `%APPDATA%` and `%LOCALAPPDATA%`, so a screenshot never reads or writes your own. `%USERPROFILE%` and the three `OneDrive` variables point there too, because the app makes a vault of every cloud folder it finds under them, and a picture of the vault list would otherwise show the folders on the machine the shot was taken on.
+
+The picture is the app's own client rectangle, not `GetWindowRect` — that spans an invisible resize border the app never draws into, and two dozen published pictures shipped with a black strip round them before it was noticed. Coordinates in `-Do` are offset the same way, so a step is a pixel in the picture.
 
 Beyond `-Doc`, `-Width`, `-Height`, `-ThemeFamily` and `-ThemeMode`:
 

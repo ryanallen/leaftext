@@ -77,6 +77,7 @@ For anyone building, extending, or releasing Leaftext:
 | [Releasing](02-development/03-releasing.md) | `just release <version>`: the version bump, the tag push, and the CI builds it triggers on Windows and macOS |
 | [Theming](02-development/04-theming.md) | The startup-validated contract of 81 `--lt-*` CSS custom properties, the theme sources, and how the CSS is compiled and validated |
 | [Design system](02-development/05-design-system.md) | Where every value in the interface comes from: the four files under `design/`, the icons, the components, the gallery, and the checks that fail the build on a hand-written value |
+| [Screenshots](02-development/06-screenshots.md) | One row per picture in `imgs/`: what it shows and what takes it, so a fault common to all of them can be fixed as a batch |
 
 ## Shared reference
 

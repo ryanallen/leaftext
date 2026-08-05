@@ -18,7 +18,7 @@
 # flowchart export uses, so there is only ever one of them — which is the format
 # that can be read back.
 #
-# Five things here each cost a wrong screenshot before they were known:
+# Six things here each cost a wrong screenshot before they were known:
 #
 #  1. PrintWindow needs PW_RENDERFULLCONTENT (flag 2). Without it the webview
 #     area comes out blank, because it composites outside the window's DC.
@@ -32,13 +32,24 @@
 #  5. PrintWindow does not draw the pointer, but it does draw what the pointer is
 #     over. So a hover state photographs; the cursor arrow never appears in the
 #     shot, and an alt text that promises one is promising a thing this cannot do.
+#  6. The picture is the client rectangle, which is not GetWindowRect. That spans
+#     the invisible resize border — 11 px down the left, right and bottom at this
+#     machine's scaling — and PrintWindow renders nothing into it, so 24 of the 43
+#     published pictures shipped with a black strip. DWMWA_EXTENDED_FRAME_BOUNDS
+#     is not it either: measured against this window it stops 2 px short on each of
+#     those sides and photographs 2 px of the same black. The client rectangle is
+#     what the app draws, and it comes out at exactly the -Width and -Height asked
+#     for. Pointer steps are offset by it too, so a coordinate goes on meaning a
+#     pixel in the picture.
 #
 # The app resolves its config and data roots from %APPDATA% and %LOCALAPPDATA%
 # (`project_config_dir`), so an unattached shot runs against a throwaway profile
 # under -Work rather than the owner's. Nothing here reads or writes the real
 # settings, recent files, or vault registry — a screenshot is not worth risking
 # them, and an earlier version that swapped the owner's settings out and back lost
-# them to any kill that beat its restore.
+# them to any kill that beat its restore. %USERPROFILE% and the OneDrive variables
+# go with them, because the app makes a vault of every cloud folder it finds under
+# them and a picture of the vault list then shows this machine's folders.
 
 param(
   # Empty opens the no-file home screen.
@@ -146,6 +157,8 @@ if ($DryRun) {
   $whose = if ($Attach) { 'the running copy' } else { 'a fresh copy' }
   Write-Output "$($plan.Count) steps against $whose"
   foreach ($step in $plan) { Write-Output "  $($step.Said)" }
+  # Which rectangle a coordinate is in, and which one the picture is, said out loud: they are the same one, and getting that wrong is invisible until a click lands 11 px off.
+  Write-Output 'photographing the client rectangle, not the invisible resize border around it'
   return
 }
 
@@ -159,6 +172,8 @@ public class LeafShot {
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
   [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr h, ref POINT p);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
@@ -166,6 +181,7 @@ public class LeafShot {
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
   [DllImport("user32.dll")] public static extern void mouse_event(uint flags, int dx, int dy, uint data, UIntPtr extra);
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
+  [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
 }
 '@
 
@@ -173,6 +189,20 @@ public class LeafShot {
 [void][LeafShot]::SetProcessDPIAware()
 
 $root = Split-Path -Parent (Split-Path -Parent $PSCommandPath)
+
+# The rectangle the app draws into, in screen pixels. See note 6.
+function Get-VisibleRect([IntPtr]$hwnd, $window) {
+  $client = New-Object LeafShot+RECT
+  $at = New-Object LeafShot+POINT
+  if (-not [LeafShot]::GetClientRect($hwnd, [ref]$client) -or $client.Right -le 0 -or $client.Bottom -le 0) { return $window }
+  if (-not [LeafShot]::ClientToScreen($hwnd, [ref]$at)) { return $window }
+  $frame = New-Object LeafShot+RECT
+  $frame.Left = $at.X
+  $frame.Top = $at.Y
+  $frame.Right = $at.X + $client.Right
+  $frame.Bottom = $at.Y + $client.Bottom
+  return $frame
+}
 
 function Take-Foreground([IntPtr]$hwnd, [int]$processId) {
   [void][LeafShot]::SetForegroundWindow($hwnd)
@@ -243,9 +273,21 @@ else {
   (@{ files = @($Recents) } | ConvertTo-Json -Depth 3) |
     Out-File -FilePath (Join-Path $config 'recent-files.json') -Encoding utf8
 
+  # The vault registry, for the reason written above the recent list: a vault registered for one picture is still registered for the next, and the app registers cloud folders itself at every launch. Deleted rather than emptied — the app owns the schema and builds it.
+  $manifest = Join-Path $local 'ryanallen\leaftext\data\manifest.db'
+  foreach ($stale in @($manifest, "$manifest-wal", "$manifest-shm")) {
+    if (Test-Path $stale) { Remove-Item $stale -Force }
+  }
+
   $env:APPDATA = $appdata
   $env:LOCALAPPDATA = $local
-  $manifest = Join-Path $local 'ryanallen\leaftext\data\manifest.db'
+  # A home folder with nothing in it. src/known_folders.rs is the only thing in the app that reads these four, and it makes a vault of every cloud folder it finds under them — which is how a picture of the vault list came to show this machine's folders. Starved rather than switched off, so the app needs no branch that exists only for a screenshot.
+  $shotHome = Join-Path $Work 'home'
+  New-Item -ItemType Directory -Force -Path $shotHome | Out-Null
+  $env:USERPROFILE = $shotHome
+  $env:OneDrive = ''
+  $env:OneDriveConsumer = ''
+  $env:OneDriveCommercial = ''
 }
 
 function Stop-Leaftext {
@@ -259,7 +301,8 @@ function Stop-Leaftext {
 # A vault is a row in manifest.db and nothing else (src/store/vaults.rs), so the
 # shot profile can hand the app one without going near the owner's registry. The
 # app owns that database and its migrations, so let it build one before writing
-# to it — a schema written here would be the second copy of the real one.
+# to it — a schema written here would be the second copy of the real one. The
+# profile setup above deleted any earlier one, so this is always a fresh database.
 if (-not $Attach -and $Vault.Count) {
   if (-not (Test-Path $manifest)) {
     Stop-Leaftext
@@ -368,27 +411,41 @@ try {
 
   $rect = New-Object LeafShot+RECT
   [void][LeafShot]::GetWindowRect($hwnd, [ref]$rect)
-  $w = $rect.Right - $rect.Left
-  $h = $rect.Bottom - $rect.Top
+  $ww = $rect.Right - $rect.Left
+  $wh = $rect.Bottom - $rect.Top
+  # See note 6. PrintWindow renders at the window rectangle whatever is asked of it, so the picture is taken whole and the resize border cut off afterwards.
+  $vis = Get-VisibleRect $hwnd $rect
+  $offX = $vis.Left - $rect.Left
+  $offY = $vis.Top - $rect.Top
+  $w = $vis.Right - $vis.Left
+  $h = $vis.Bottom - $vis.Top
 
   foreach ($step in $plan) {
-    Step-Pointer $step $rect.Left $rect.Top
+    Step-Pointer $step $vis.Left $vis.Top
     Start-Sleep -Milliseconds $StepMs
   }
 
-  $bmp = New-Object System.Drawing.Bitmap $w, $h
+  $bmp = New-Object System.Drawing.Bitmap $ww, $wh
   $gfx = [System.Drawing.Graphics]::FromImage($bmp)
   $hdc = $gfx.GetHdc()
   $drawn = [LeafShot]::PrintWindow($hwnd, $hdc, 2) # PW_RENDERFULLCONTENT, note 1
   $gfx.ReleaseHdc($hdc)
-  # A transparent middle pixel means the webview never rendered into the DC. The
-  # screen is the fallback, not a choice: GetWindowRect spans the invisible
-  # resize border, so a screen copy takes a strip of whatever is behind with it.
-  if (-not $drawn -or $bmp.GetPixel([int]($w / 2), [int]($h / 2)).A -eq 0) {
+  # A transparent middle pixel means the webview never rendered into the DC, and
+  # the screen is the fallback. It copies the visible frame into the same place
+  # the crop below takes it from, so it takes no strip of the desktop with it.
+  if (-not $drawn -or $bmp.GetPixel([int]($ww / 2), [int]($wh / 2)).A -eq 0) {
     Write-Output 'PrintWindow came back empty; copying from the screen instead'
-    $gfx.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bmp.Size)
+    $gfx.CopyFromScreen($vis.Left, $vis.Top, $offX, $offY, (New-Object System.Drawing.Size $w, $h))
   }
   $gfx.Dispose()
+
+  # The resize border off, so the picture is what somebody sees.
+  if ($w -ne $ww -or $h -ne $wh) {
+    $box = New-Object System.Drawing.Rectangle $offX, $offY, $w, $h
+    $frame = $bmp.Clone($box, $bmp.PixelFormat)
+    $bmp.Dispose()
+    $bmp = $frame
+  }
 
   if ($Crop) {
     $c = $Crop -split ',' | ForEach-Object { [int]$_ }

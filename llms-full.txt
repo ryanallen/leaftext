@@ -72,6 +72,11 @@
 - Markdown: https://leaftext.com/docs/02-development/05-design-system.md
 - Summary: Four files under design/ are the source. Each is plain Markdown, so Leaftext opens them.
 
+## Screenshots
+- Page: https://leaftext.com/docs/#/development/screenshots
+- Markdown: https://leaftext.com/docs/02-development/06-screenshots.md
+- Summary: One row per picture in imgs/: what it shows, and what takes it. Before this existed the commands were gone the moment each shot was taken, so a fault common to all of them — a black strip round two...
+
 ## Installation
 - Page: https://leaftext.com/docs/#/installation
 - Markdown: https://leaftext.com/docs/02-installation.md

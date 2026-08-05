@@ -185,7 +185,12 @@ conformance *flags:
 doc-images:
     node scripts/doc-images.mjs
 
-verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-site check-shell check-identity check-hooks check-mcp check-driver
+# Fail on a picture carrying a black strip nobody drew — the window's invisible
+# resize border, photographed. Twenty-four of them shipped to leaftext.com.
+check-shot-edges:
+    node scripts/check-shot-edges.mjs --check
+
+verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-site check-shell check-identity check-hooks check-mcp check-driver check-shot-edges
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:
