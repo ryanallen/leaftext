@@ -113,7 +113,7 @@ That is six lines, and the last two each buy something: one says a row is a name
 
 Then, after the tables, only these:
 
-- **A subject that spans tiers gets its own short section**, with its order as numbered steps. A ranking puts the four table tickets in four tiers, which is right for a ranking and useless as an order — so the order is written once, and it is where a conflict between two tickets is decided rather than warned about twice. One line of why, then the steps.
+- **A subject spanning more than one ticket gets a track** — its own short section, with the order as numbered steps. **Two tickets is the threshold.** A ranking splits a subject across tiers, which is right for a ranking and useless as an order, and a dependency written into two rows is a dependency that drifts; so the order is written once, and it is where a conflict between two tickets is decided rather than warned about twice. One line of why, then the steps. A row belonging to a track says which step it is instead of restating what it waits on. **One ticket is never a track**, however many tiers its own phases land in — a file already holds its phases in order.
 - **Anything deliberately off the list**, in a sentence or two, with what would have to be answered to schedule it. Off the ranking beats bottom of it: bottom reads as "someday", off with a reason reads as a question somebody can answer.
 
 **If a row needs more than two sentences, the ticket is what needs the words.** Put them there and cut the cell. A ranking that grows every time something is learned is a ranking nobody opens.

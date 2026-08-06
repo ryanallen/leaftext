@@ -53,6 +53,8 @@ flowchart LR
 | [Delete](07-editing.md#deleting) a selection that crosses blocks | `Delete` or `Backspace` | `Delete` or `Backspace` |
 | [Find](#find-in-this-document) in this document | `Ctrl+F` | `Cmd+F` |
 | [Find and replace](#find-in-this-document) | `Ctrl+H` | `Cmd+H` |
+| [Put a cursor on every match](#find-in-this-document), from the find field | `Alt+Enter` | `Alt+Enter` |
+| [Add a cursor where you click](#find-in-this-document), in the source view | `Ctrl`+click | `Cmd`+click |
 | [Bold](07-editing.md#the-format-bar) the highlighted words | `Ctrl+B` | `Cmd+B` |
 | [Italic](07-editing.md#the-format-bar) the highlighted words | `Ctrl+I` | `Cmd+I` |
 | [Link](07-editing.md#the-format-bar) the highlighted words | `Ctrl+K` | `Cmd+K` |
@@ -181,7 +183,7 @@ Opening a document hands it to the Rust side to parse and render before the view
 
 Replacing needs the [padlock](07-editing.md#the-padlock) lifted for the view you are in, and the padlocks are separate: unlocking the page you read is not consent to rewrite the file by hand. **Replace** rewrites the match you are on, **All** rewrites every one, and either way it is a single edit — one `Ctrl+Z` puts the whole thing back.
 
-**Select all** does not work yet, in either view. In the rendered page the button is switched off. In the source view it marks every match but the padlock then refuses what you type, because that one button does not check the lock the way Replace does. Putting a cursor on every match is planned work, not shipped behavior.
+**Put a cursor on every match** — the two-caret button between Next and Replace, or `Alt+Enter` from the field — works in the source view. Every match becomes a selection with the cursor at its end, so the first thing you type overwrites all of them at once and one `Ctrl+Z` puts them all back. It needs the source padlock lifted; with it shut the button says so rather than leaving you with carets that refuse to type. In the source view you can also hold `Ctrl` (`Cmd` on a Mac) and click to put a cursor wherever you click, as many times as you like. In the rendered page the button is still switched off — a cursor per match there is planned work, not shipped behavior.
 
 In the rendered view a replace is written to the file's source, not to the page. That means the odd match cannot be replaced from there: `**dh**arma` reads as one word on screen and is three pieces in the file, so Leaftext says so and leaves it for the source view rather than guessing. Replacing in the rendered view is Markdown only; open the source view for the other formats.
 

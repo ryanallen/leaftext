@@ -14,6 +14,10 @@ Plain English, few words. No jargon or abbreviations. Lead with the answer, then
 
 **Say it in words the owner uses.** Not the code's names for things, not the build's, not a phrase that needs the repo open to parse. If a thing has to be named, say what it does in the same breath. And never pad a reply with a caveat that is true every single time — it teaches the reader to skip everything you write.
 
+**Name nothing the owner does not press.** No command, no check, no test, no file, no function, no id, no byte count, no line number. They use the app; the build is your problem. So "everything passes", not what ran — and "the button on the find bar", not the id it carries. A reply they have to open the repo to read is a reply that failed.
+
+**Handing work back is two things: is anything broken, and what to press.** Whether it needs fixing, then the gestures in the order a person makes them — "open a file, switch to source view, open the padlock, hold Ctrl and click in three spots, type". Never a summary of what changed, what was proved, or what is left for later. The ticket holds all of that, which is what the ticket is for.
+
 **A paragraph is one line.** Never hard-wrap — not in a reply, a ticket, a skill, a doc page, this file, or a comment in the code. Everything that reads them reflows: the app's own renderer, GitHub, every editor. A wrap costs on every edit after it, because a word added in the middle has to be re-flowed by hand and a one-word change diffs as the whole paragraph. `just check-wrapping` fails on one and names the file; `--fix` joins them, in Markdown and in `.rs`/`.js` comments alike. A break doing real work stays: two trailing spaces in Markdown, any indent of its own in a comment — a command, a table, a list — or `<!-- keep-wrapping -->` on a whole file.
 
 **US spellings, never British.** In a reply, in a comment, in a ticket, in a commit message — "favorite", "color", "canceled". `just check-spelling` fails on one and names the line; it reads this repo and the plan tree next door — the index, the running order, the glossary and every live ticket.

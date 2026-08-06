@@ -1059,6 +1059,54 @@ if (booted) {
     booted.setCodeUnlocked(false);
   });
 
+  // Carets in a read-only editor are a set of cursors every keystroke then growls at, so the button asks the padlock before it places any. And the modifier that adds one by hand is ours, not the editor's default Alt — Alt is the menu key here.
+  check('a cursor on every match asks the padlock first, and Ctrl adds one by hand', () => {
+    const { findSelectAllOccurrences } = booted;
+    const growls = [];
+    const selections = [];
+    booted.leafToast = (message) => growls.push(message);
+    booted.__fakeMonaco = {
+      setSelections: (next) => selections.push(next),
+      updateOptions: () => {},
+      focus: () => {},
+    };
+    const range = { startLineNumber: 3, startColumn: 1, endLineNumber: 3, endColumn: 7 };
+    try {
+      vm.runInContext('monacoEditor = __fakeMonaco; codeViewActive = true;', booted);
+      vm.runInContext('findMatches = [__fakeRange];', Object.assign(booted, { __fakeRange: range }));
+      // A growl is throttled, and the locked-replace check above just spent one.
+      vm.runInContext('lastLockedGrowl = 0;', booted);
+
+      // Locked, which is how every source opens: the refusal names the padlock and no caret is placed.
+      findSelectAllOccurrences();
+      if (selections.length) throw new Error('a locked source was given carets');
+      if (growls.length !== 1 || !growls[0].includes('padlock')) {
+        throw new Error(`a locked source said: ${JSON.stringify(growls)}`);
+      }
+
+      // Unlocked, every match becomes a selection with the cursor at its end — which is what proves the padlock is what refused above.
+      growls.length = 0;
+      booted.setCodeUnlocked(true);
+      findSelectAllOccurrences();
+      if (growls.length) throw new Error(`an unlocked source still refused: ${JSON.stringify(growls)}`);
+      if (selections.length !== 1 || selections[0].length !== 1) {
+        throw new Error(`the button set: ${JSON.stringify(selections)}`);
+      }
+      const one = selections[0][0];
+      if (one.selectionStartColumn !== 1 || one.positionColumn !== 7) {
+        throw new Error(`the cursor is not at the end of the match: ${JSON.stringify(one)}`);
+      }
+    } finally {
+      booted.setCodeUnlocked(false);
+      vm.runInContext('monacoEditor = null; codeViewActive = false; findMatches = [];', booted);
+    }
+
+    // The editor's own default is altKey; nothing else in the app sets this, so a lost line means Ctrl-click silently goes back to placing one cursor.
+    if (!source.includes("multiCursorModifier: 'ctrlCmd'")) {
+      throw new Error('the code view does not ask for Ctrl or Cmd as the add-a-cursor modifier');
+    }
+  });
+
   // JSON has no bundled colorizer, so its grammar is ours. Monarch compiles a grammar only when a file is first opened, so a bad rule is otherwise a wrongly colored code view on somebody's machine and nothing before it. Monaco cannot load here — no DOM, and it is installed only to regenerate the bundle — so the real rules are driven the way Monarch drives them: one line at a time, first rule that matches at the position wins, the state stack carried across lines.
   check('the JSON grammar colors a JSON file, comments and all', () => {
     const { jsonMonarchLanguage, monacoLanguageFor } = booted;

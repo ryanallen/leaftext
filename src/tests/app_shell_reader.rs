@@ -803,11 +803,27 @@ fn one_find_bar_serves_both_views_and_replaces_through_the_source() {
         r#"id="findInSelection" class="find-flag icon-button""#,
         r#"id="findReplaceAll" class="find-action icon-button""#,
         r#"<div class="find-row find-replace-row" id="findReplaceRow" hidden>"#,
-        // Still in the hidden replace row, and it stays there until it works: multiple-cursors owns the move.
-        r#"<button type="button" id="findSelectAll" class="find-action icon-button""#,
+        // A cursor on every match takes hold of them, so it stands with Previous and Next on the row that is always there — the two-caret mask says more than one cursor.
+        r#"<button type="button" id="findSelectAll" class="find-step icon-button" aria-label="Put a cursor on every match" title="Put a cursor on every match (Alt+Enter)"><span class="lt-icon lt-icon-select-all"></span></button>"#,
     ] {
         assert_contains(&html, expected);
     }
+
+    // On the always-visible row, between Next and the Replace toggle — and out of the hidden replace row, which now holds only Replace and All.
+    let place = |id: &str| {
+        html.find(id)
+            .unwrap_or_else(|| panic!("{id} is not in the page"))
+    };
+    let replace_row = place(r#"id="findReplaceRow""#);
+    let select_all = place(r#"id="findSelectAll""#);
+    assert!(
+        place(r#"id="findNext""#) < select_all && select_all < place(r#"id="findReplaceToggle""#),
+        "the cursor-on-every-match button does not sit between Next and Replace"
+    );
+    assert!(
+        select_all < replace_row,
+        "the cursor-on-every-match button is still in the hidden replace row"
+    );
 
     // One keyboard path, and it reaches both views: Ctrl+F opens, Ctrl+H opens on the replace row, Escape closes, Enter steps.
     for expected in [
@@ -1252,6 +1268,19 @@ fn app_shell_code_view_is_a_worker_free_monaco_with_its_own_minimap() {
     assert!(html.contains("function loadMonacoOnce()"));
     assert!(html.contains("self.MonacoEnvironment = {"));
     assert!(html.contains("getWorker() {"));
+}
+
+// The editor's add-a-cursor commands come from a contribution, not the core, so a re-bundle that drops the import from scripts/bundle-monaco.mjs takes them out with nothing on screen to show for it — Ctrl-click keeps working (the mouse handling is core) while add-a-cursor-below and add-the-next-match silently do nothing. Only a regeneration touches this file, and it is not part of `just verify`.
+#[test]
+fn the_vendored_editor_carries_its_add_a_cursor_commands() {
+    let bundle = String::from_utf8_lossy(assets::MONACO_JS);
+
+    for command in ["insertCursorBelow", "addSelectionToNextFindMatch"] {
+        assert!(
+            bundle.contains(command),
+            "the vendored editor is missing {command} — re-run `just bundle-monaco` with contrib/multicursor imported"
+        );
+    }
 }
 
 // The code view's wrap is a column count, so it is only a width once a character has been measured — and every theme brings its own code font. Monaco measures a font when it is told to use it, which for a web font is before the face has arrived, so it measures the fallback; a font landing changes no geometry, so the layout event the column rides never fires to correct it. Uncorrected, the wrap reads as a property of the theme: text running under the minimap on some, stopping short on others, depending only on whether that font is loaded already and how wide the fallback is.

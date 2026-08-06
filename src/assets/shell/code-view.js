@@ -820,6 +820,8 @@ function createMonacoEditor(monaco, container, state, text) {
     fontSize: 14,
     renderWhitespace: 'none',
     unicodeHighlight: { ambiguousCharacters: false, invisibleCharacters: false },
+    // Not the editor's default Alt: one modifier has to mean add-a-cursor in both views, and the reading view's is Ctrl.
+    multiCursorModifier: 'ctrlCmd',
     quickSuggestions: false,
     // No echoing back words already in the file: the only suggestions worth a
     // popup are the ones the host answers (code-intel.js), on their triggers.

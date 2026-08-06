@@ -178,6 +178,8 @@
     </span>
     <button type="button" id="findPrev" class="find-step icon-button" aria-label="Previous match" title="Previous match (Shift+Enter)"><span class="lt-icon lt-icon-chevron-down find-step-back"></span></button>
     <button type="button" id="findNext" class="find-step icon-button" aria-label="Next match" title="Next match (Enter)"><span class="lt-icon lt-icon-chevron-down"></span></button>
+    <!-- With Previous and Next, not down in Replace: it takes hold of matches rather than rewriting them. -->
+    <button type="button" id="findSelectAll" class="find-step icon-button" aria-label="Put a cursor on every match" title="Put a cursor on every match (Alt+Enter)"><span class="lt-icon lt-icon-select-all"></span></button>
     <!-- An action, so it stands with the other actions rather than with the
          toggles: it opens the Replace row below. -->
     <button type="button" id="findReplaceToggle" class="find-step icon-button" aria-pressed="false" aria-label="Replace" title="Replace (Ctrl+H)"><span class="lt-icon lt-icon-replace"></span></button>
@@ -190,7 +192,6 @@
     </span>
     <button type="button" id="findReplaceOne" class="find-action icon-button">Replace</button>
     <button type="button" id="findReplaceAll" class="find-action icon-button">All</button>
-    <button type="button" id="findSelectAll" class="find-action icon-button" title="Put a cursor on every match (Alt+Enter)">Select all</button>
   </div>
 </div>
 <div id="readerEdgeFade" class="reader-edge-fade" aria-hidden="true"></div>

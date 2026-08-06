@@ -539,8 +539,14 @@ function findReplace(all) {
 // A cursor on every match: a multiple-cursor edit, which is why it belongs to find
 // rather than sitting beside it. The source view only — the reading view has no
 // cursors to put anywhere.
+//
+// The lock is asked before any caret is placed: carets in a read-only editor are cursors every keystroke then growls at, which reads as broken rather than as refused.
 function findSelectAllOccurrences() {
   if (!findInSourceView() || !findMatches.length) return;
+  if (!codeUnlocked) {
+    growlLockedForReading();
+    return;
+  }
   monacoEditor.setSelections(
     findMatches.map((range) => ({
       selectionStartLineNumber: range.startLineNumber,

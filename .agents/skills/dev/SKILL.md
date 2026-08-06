@@ -94,7 +94,7 @@ A ticket that touches nothing anyone points at — a rename, a test, a doc pass,
 
 That is [pre-release](../pre-release/SKILL.md)'s job, and it runs when the owner asks for it, not when the boxes are ticked. The split is deliberate: this skill has been wrong before with every box ticked and every check green, so the tree is not allowed to say a thing shipped on a machine's word alone. `deleting` is in `done/` because that rule did not exist.
 
-So hand back three things and stop: what the app does differently, what the build found that the plan had wrong, and the gestures the owner has to make for the last box.
+So hand back two things and stop: whether anything needs fixing, and the gestures the owner has to make for the last box. What the app does differently and what the plan had wrong go in the ticket, not in the reply — see Rule 1, "Handing work back".
 
 ## Reference
 

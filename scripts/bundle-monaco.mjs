@@ -1,6 +1,6 @@
 // Rebuild the vendored Monaco bundle at src/assets/vendor/monaco/{monaco.js,monaco.css}.
 //
-// Monaco (the VS Code editor) powers the raw-source code view. Unlike the other vendored libraries it is NOT distributed as one drop-in file, so we bundle it here: the core editor (which includes the minimap and line wrapping), the Markdown / XML / YAML colorizers, and the two UI contributions typing help stands on — the suggestion popup and the hover card. Still no language services and no web workers: the popup's *answers* come from the host over IPC (code-intel.js), so colorizing, the minimap and the popup all run on the main thread. esbuild inlines the icon font, so the output is just monaco.js + monaco.css.
+// Monaco (the VS Code editor) powers the raw-source code view. Unlike the other vendored libraries it is NOT distributed as one drop-in file, so we bundle it here: the core editor (which includes the minimap, line wrapping and the mouse handling that puts a second cursor down), the Markdown / XML / YAML colorizers, and the three UI contributions we stand on — the suggestion popup and the hover card for typing help, and multicursor for add-a-cursor-above/below and add-the-next-match. Still no language services and no web workers: the popup's *answers* come from the host over IPC (code-intel.js), so colorizing, the minimap and the popup all run on the main thread. esbuild inlines the icon font, so the output is just monaco.js + monaco.css.
 //
 // This is a manual regeneration step, like the other vendored assets — it is not part of `just verify`. It needs monaco-editor and esbuild:
 //
@@ -25,6 +25,7 @@ import 'monaco-editor/esm/vs/basic-languages/xml/xml.contribution';
 import 'monaco-editor/esm/vs/basic-languages/yaml/yaml.contribution';
 import 'monaco-editor/esm/vs/editor/contrib/suggest/browser/suggestController';
 import 'monaco-editor/esm/vs/editor/contrib/hover/browser/hoverContribution';
+import 'monaco-editor/esm/vs/editor/contrib/multicursor/browser/multicursor';
 globalThis.LeafMonaco = monaco;
 `;
 
