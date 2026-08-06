@@ -11,6 +11,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | Feature | What you get |
 | --- | --- |
 | [Vaults](#vaults) | A folder you name as a library root. The switcher beside the breadcrumb creates, edits and moves between them |
+| [First-launch bubble](#the-bubble-on-your-first-launch) | One bubble points at the switcher the first time you open the pane, and goes for good the moment you point at that button |
 | [File tree](#file-tree) | One folder at a time, with a breadcrumb showing where you are and a row that steps back out |
 | [Breadcrumb](#file-tree) | The folder path above the search box; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
 | [Search](#search) | Filename and content search across the active vault |
@@ -41,6 +42,14 @@ While the list is open, the button and the vault's name beside it light as one s
 
 > [!NOTE]
 > **Nothing is written into your folder.** A vault is a row in Leaftext's own database, not a marker file. Removing a vault forgets it; the folder and its files are untouched.
+
+### The bubble on your first launch
+
+A caret and a mark is not much to go on, so the first time you open Leaftext with the pane showing, a small bubble floats over the window with a chevron aimed at that button, saying **"Pick which folder the list below shows."**
+
+It goes the moment you point at the button, and it never comes back — pressing the button does the same. The bubble itself ignores the pointer, so moving across it on the way somewhere else neither takes the words away nor gets in the way of what is under it. There is no close button and no timer.
+
+One bubble per launch at most, with a quiet launch in between, and nothing at all once you have met them. With the pane shut there is no bubble, and that launch is not spent — you get it the next time the pane is open.
 
 ### Your cloud is already a folder
 
@@ -363,6 +372,7 @@ The sheet is not saved. It describes the current view rather than a preference, 
 | Documents read | Up to 5,000 per vault |
 | Search results | Top 50 |
 | Folder listing | One directory per click |
+| First-launch bubbles | One per launch at most, with a quiet launch between; each one shows until you point at what it points at, then never again |
 
 > [!NOTE]
 > `manifest.db` keeps its name from when it held a file index. It no longer does — anything that reads a document reads the disk. What it holds now is the list of folders you called vaults, which is why losing it loses that list.

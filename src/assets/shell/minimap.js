@@ -1115,3 +1115,6 @@ if (window.__leafSettingsUnreadable) {
 // The vault list came in on the window rather than through its callback, so
 // nothing has asked about its repository yet.
 requestActiveVaultStatus();
+// The first-run bubble, a frame later: a hint measures the control it points at,
+// and a control the page has not laid out yet has no rectangle to measure.
+window.requestAnimationFrame(runHintPass);

@@ -46,6 +46,10 @@ A panel that slides up over the reading view without taking you off the page —
 
 The folder path across the top of the [library pane](GLOSSARY.md#library-pane) — `Vajrayana › docs › features`. Click any crumb to step back to that level. What does not fit collapses into a `…` menu. The [sync button](GLOSSARY.md#sync-button) appears at its end.
 
+## Bubble
+
+A small box that floats over the window on a first launch with a chevron aimed at one control, saying what pressing that control does. It goes the moment you point at that control, or press it, and never comes back. The bubble itself ignores the pointer, so crossing it takes nothing away and blocks nothing. One per launch at most, with a quiet launch between two of them, and nothing at all once you have met them. See [Library](01-features/03-library.md#the-bubble-on-your-first-launch).
+
 ## Byte order mark
 
 A few bytes some editors write at the very start of a file to say how the rest is spelled. Leaftext reads it to pick the [file encoding](GLOSSARY.md#file-encoding), strips it from the text, and writes it back on save — so a file never quietly changes shape.

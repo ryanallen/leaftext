@@ -2503,6 +2503,65 @@ body:has(#readerToolbar:not([hidden])) {
   border-color: var(--lt-danger);
   color: var(--lt-danger);
 }
+/* The first-run bubble. Floats over the window rather than being wedged into a
+   row, so nothing on screen moves to make room and it takes the width it needs.
+   Deaf to the pointer: nothing in it can be pressed, a pointer crossing it on the
+   way somewhere else must not lose the words mid-sentence, and it must not stand
+   between the pointer and whatever it is laid over. */
+.hint-bubble {
+  position: fixed;
+  pointer-events: none;
+  left: 0;
+  top: 0;
+  z-index: var(--lt-z-60);
+  max-width: 260px;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  box-shadow: var(--lt-shadow-raised);
+  font: var(--lt-weight-600) var(--lt-text-13) / var(--lt-leading-1-45) var(--app-font);
+  padding: var(--lt-space-10) var(--lt-space-12);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity var(--lt-duration-200) var(--lt-ease-decelerate), transform var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+.hint-bubble.is-shown {
+  opacity: 1;
+  transform: none;
+}
+/* The chevron: a corner of the box turned 45 degrees, so it carries the same
+   edge and fill and cannot drift out of step with them. `--hint-tail` is where
+   along the facing edge the target's center is, set by the placement pass — the
+   box gets clamped away from an edge, the chevron does not follow it. */
+.hint-bubble-tail {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--lt-surface-elevated);
+  border-left: var(--lt-stroke-1) solid var(--lt-border);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  transform: rotate(45deg);
+}
+.hint-bubble.is-right .hint-bubble-tail {
+  left: -6px;
+  top: calc(var(--hint-tail) - 5px);
+}
+.hint-bubble.is-left .hint-bubble-tail {
+  right: -6px;
+  top: calc(var(--hint-tail) - 5px);
+  transform: rotate(-135deg);
+}
+.hint-bubble.is-above .hint-bubble-tail {
+  bottom: -6px;
+  left: calc(var(--hint-tail) - 5px);
+  transform: rotate(-45deg);
+}
+.hint-bubble.is-below .hint-bubble-tail {
+  top: -6px;
+  left: calc(var(--hint-tail) - 5px);
+  transform: rotate(135deg);
+}
 .document-body {
   width: min(var(--type-measure-body), 100%);
   margin: calc(-1 * var(--reader-scroll-origin, 0px)) 0 0;

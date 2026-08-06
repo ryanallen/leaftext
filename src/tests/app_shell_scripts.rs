@@ -169,11 +169,14 @@ fn initial_settings_script_defines_camelcase_global() {
         update_last_checked: 1_780_000_000,
         update_staged_version: "0.1.400".to_string(),
         update_auto_applied: String::new(),
+        hint_launches: 3,
+        hints_seen: vec!["libraryVault".to_string()],
+        hint_last_launch: 2,
     });
     // Window geometry is host-only (applied to the native window, not the webview), so it must not leak into the injected settings global. The update fields do cross: the page owns the check throttle and the button.
     assert_eq!(
         script,
-        r#"window.__leafSettings = {"codeIntelEnabled":false,"codeUnlocked":false,"graphScope":"large","libraryClosed":true,"libraryProjectPath":"docs","libraryWidth":312,"readingUnlocked":true,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[],"updateLastChecked":1780000000,"updateStagedVersion":"0.1.400"};"#
+        r#"window.__leafSettings = {"codeIntelEnabled":false,"codeUnlocked":false,"graphScope":"large","hintLastLaunch":2,"hintLaunches":3,"hintsSeen":["libraryVault"],"libraryClosed":true,"libraryProjectPath":"docs","libraryWidth":312,"readingUnlocked":true,"speedReaderEnabled":true,"themeFamily":"nightshade","themeMode":"dark","themeRandomUsed":[],"updateLastChecked":1780000000,"updateStagedVersion":"0.1.400"};"#
     );
 }
 
@@ -209,11 +212,13 @@ fn a_taken_code_view_edit_reports_only_the_dirty_state() {
 /// The two sides are joined by a name in a string, so a rename on one side is a silent no-op at runtime. Every name the host emits must exist in the page, and every one the page defines must be reached.
 #[test]
 fn the_host_and_the_page_agree_on_every_call() {
-    /// Names the page owns. `leafShowCodeView` it calls itself after fetching the payload; the other two are state one fragment publishes for the rest, each with a `subscribe` — the shape new shared state should copy.
+    /// Names the page owns. `leafShowCodeView` it calls itself after fetching the payload; the next two are state one fragment publishes for the rest, each with a `subscribe` — the shape new shared state should copy. The last two are forcing switches for the first-run bubble, driven from outside over `eval` so one can be looked at without a fresh install; nothing in the host reaches them, and that is the point.
     const PAGE_ONLY: &[&str] = &[
         "window.leafShowCodeView",
         "window.leafMinimap",
         "window.leafTheme",
+        "window.leafShowHint",
+        "window.leafResetHints",
     ];
 
     fn leaf_calls(text: &str) -> std::collections::BTreeSet<String> {

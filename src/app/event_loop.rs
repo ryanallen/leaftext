@@ -29,6 +29,15 @@ fn apply_setting_command(settings: &mut Settings, command: IpcCommand) -> bool {
         IpcCommand::SetThemeFamily { family } => settings.theme_family = family,
         IpcCommand::SetThemeMode { mode } => settings.theme_mode = mode,
         IpcCommand::SetThemeRandomBag { used } => settings.theme_random_used = used,
+        IpcCommand::SetHintState {
+            launches,
+            seen,
+            last_launch,
+        } => {
+            settings.hint_launches = launches;
+            settings.hints_seen = seen;
+            settings.hint_last_launch = last_launch;
+        }
         IpcCommand::SetLibraryState { project_path } => {
             settings.library_project_path = project_path
         }
@@ -778,6 +787,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 | IpcCommand::SetThemeFamily { .. }
                 | IpcCommand::SetThemeMode { .. }
                 | IpcCommand::SetThemeRandomBag { .. }
+                | IpcCommand::SetHintState { .. }
                 | IpcCommand::SetLibraryState { .. }
                 | IpcCommand::SetLibraryLayout { .. }
                 | IpcCommand::SetGraphScope { .. }) => {

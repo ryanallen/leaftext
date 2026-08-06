@@ -121,6 +121,8 @@ Type `[[` and your notes are listed, by file name and by any [other name](docs/0
 
 A side pane that browses one folder at a time, with a breadcrumb that always says where you are. Name a folder a **vault** and it becomes the thing search and syncing work over. Nothing is crawled, and nothing is written into your folder. **[Library →](docs/01-features/03-library.md)**
 
+The button that changes where the list is rooted is a caret and a mark, which says nothing on its own — so the first time you open the pane, one small bubble points at it and then never appears again. **[The first-launch bubble →](docs/01-features/03-library.md#the-bubble-on-your-first-launch)**
+
 ### Search everything you've written
 
 ![Search results in the library pane: a filename match at the top, then content matches each with a snippet showing the search terms in context](imgs/search.png)

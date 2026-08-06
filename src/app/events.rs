@@ -193,6 +193,14 @@ pub(crate) enum IpcCommand {
     /// The families already shown in the current random-theme cycle.
     #[serde(rename = "setThemeRandomBag")]
     SetThemeRandomBag { used: Vec<String> },
+    /// The first-run bubbles' whole one-shot state, sent together: nothing here is meaningful without the other two.
+    #[serde(rename = "setHintState")]
+    SetHintState {
+        launches: u32,
+        seen: Vec<String>,
+        #[serde(rename = "lastLaunch")]
+        last_launch: u32,
+    },
     /// Custom title-bar controls (the app bar is the title bar on frameless Windows).
     #[serde(rename = "windowDrag")]
     WindowDrag,

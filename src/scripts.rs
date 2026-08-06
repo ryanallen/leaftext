@@ -37,6 +37,9 @@ pub fn initial_settings_script(settings: &Settings) -> String {
         "libraryWidth": settings.library_width,
         "updateLastChecked": settings.update_last_checked,
         "updateStagedVersion": settings.update_staged_version,
+        "hintLaunches": settings.hint_launches,
+        "hintsSeen": settings.hints_seen,
+        "hintLastLaunch": settings.hint_last_launch,
     });
     format!("window.__leafSettings = {};", state)
 }

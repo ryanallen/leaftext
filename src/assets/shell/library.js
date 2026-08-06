@@ -1310,6 +1310,12 @@ function renderLibraryVaultSwitch() {
   libraryVaultSwitch.setAttribute('aria-label', label);
 }
 if (libraryVaultSwitch) {
+  // Nothing on screen says a caret and a mark is how you get somewhere else, so
+  // the first launch with the pane open points at it once. The words say what
+  // pressing it does, not what is behind it: the drives, the cloud folders and
+  // the word "vault" are all things to meet after the press. First registered,
+  // and so the first hint anybody meets.
+  registerHint('libraryVault', () => libraryVaultSwitch, 'Pick which folder the list below shows.');
   // On the press, and stopping it there: the menu's own close-on-outside-press
   // listens for the same event, so a click-based toggle here would let that
   // listener close the menu on the way down and this reopen it on the way up.
@@ -1317,6 +1323,8 @@ if (libraryVaultSwitch) {
     if (event.button !== 0) return;
     event.stopPropagation();
     event.preventDefault();
+    // Whoever opened this has found it, so the hint has done its work.
+    retireHint('libraryVault');
     // Opening (or reopening) the switcher shows the list, not a settings panel.
     crumbMenuVault = null;
     toggleCrumbMenu(libraryVaultSwitch, vaultMenuItems());

@@ -68,7 +68,10 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
   "window_maximized": false,
   "update_last_checked": 0,
   "update_staged_version": "",
-  "update_auto_applied": ""
+  "update_auto_applied": "",
+  "hint_launches": 0,
+  "hints_seen": [],
+  "hint_last_launch": 0
 }
 ```
 
@@ -160,6 +163,13 @@ Leaftext removes broken entries automatically and collapses equivalent path spel
 - Saved as `window_width` and `window_height` (in logical, DPI-independent pixels) plus `window_maximized`
 - The size is stored separately from the maximized state, so un-maximizing returns to the windowed dimensions rather than the full-screen ones
 - Window position is not restored — only the size and maximized state
+
+### First-launch bubble
+
+- The [bubble that points at the vault switcher](03-library.md#the-bubble-on-your-first-launch) shows once and then never again, so what has already been met is remembered here
+- Saved as `hints_seen` (the ones you have met), `hint_launches` (launches that had one to show) and `hint_last_launch` (the launch the last bubble showed at, which is what puts a quiet launch between two of them)
+- A launch with nothing to point at — the pane shut — is not counted, so it costs you nothing
+- Emptying `hints_seen` and setting both numbers to `0` puts the bubbles back
 
 ### Reduce Motion
 

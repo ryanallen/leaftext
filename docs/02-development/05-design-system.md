@@ -10,7 +10,7 @@ Four files under `design/` are the source. Each is plain Markdown, so Leaftext o
 | `design/colors.md` | 81 color names and what each is for — no values, because a color's value belongs to a theme | the token contract in `src/theme.rs` |
 | `design/tokens.md` | 153 values that do not change with the theme | `src/assets/tokens.css` |
 | `design/icons.md` | 60 icons | `src/assets/icons.css`, one mask class each |
-| `design/components.md` | 51 components, and the markup each is drawn with | `src/assets/gallery.html` |
+| `design/components.md` | 52 components, and the markup each is drawn with | `src/assets/gallery.html` |
 
 ## Colors
 
@@ -59,7 +59,7 @@ Widths, heights and positional offsets are **not** tokens: they are one componen
 
 ## Components
 
-51 components. Each row names its class family, what builds it, and the markup the gallery draws it with — so a component that loses its styling, or gains a class nobody listed, fails the build.
+52 components. Each row names its class family, what builds it, and the markup the gallery draws it with — so a component that loses its styling, or gains a class nobody listed, fails the build.
 
 | Component | Class family |
 | --- | --- |
@@ -107,6 +107,7 @@ Widths, heights and positional offsets are **not** tokens: they are one componen
 | Scroll area | `.leaf-scroll` |
 | Table lane | `.table-lane` |
 | Toast | `.app-toast` |
+| First-run bubble | `.hint-bubble` |
 | Reader tool bar | `.reader-tool` |
 | Window controls | `.window-control` |
 | Empty state | `.empty-state` |

@@ -334,6 +334,9 @@ fn settings_persistence_round_trips_and_falls_back_safely() {
         update_last_checked: 1_780_000_000,
         update_staged_version: "0.1.400".to_string(),
         update_auto_applied: String::new(),
+        hint_launches: 3,
+        hints_seen: vec!["libraryVault".to_string()],
+        hint_last_launch: 2,
     };
 
     save_settings(&settings_path, &settings).expect("settings save");
@@ -431,6 +434,10 @@ fn settings_load_tolerates_partial_json_via_serde_default() {
     assert!(loaded.code_intel_enabled);
     assert_eq!(loaded.theme_mode, "daylight");
     assert!(!loaded.library_closed);
+    // A file written before the first-run bubble existed reads as a first launch: no launches counted, no hint met, nothing shown yet. Anything else and an installed copy would either never see a hint or be told it had already met one.
+    assert_eq!(loaded.hint_launches, 0);
+    assert!(loaded.hints_seen.is_empty());
+    assert_eq!(loaded.hint_last_launch, 0);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }

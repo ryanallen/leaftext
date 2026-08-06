@@ -943,6 +943,24 @@ fn the_new_page_flag_arrives_only_under_the_name_the_page_sends() {
 }
 
 #[test]
+fn the_first_run_bubbles_state_arrives_under_the_names_the_page_sends() {
+    // The page's own message, verbatim. Nothing on this enum rejects a name the two sides spelled differently — it would fail to deserialize, the arm would never run, and the bubble would come back on every launch for ever with nothing said. `lastLaunch` is the one that is renamed, so it is the one that can drift.
+    let sent = r#"{"command":"setHintState","launches":3,"seen":["libraryVault"],"lastLaunch":2}"#;
+    match serde_json::from_str::<IpcCommand>(sent) {
+        Ok(IpcCommand::SetHintState {
+            launches,
+            seen,
+            last_launch,
+        }) => {
+            assert_eq!(launches, 3);
+            assert_eq!(seen, vec!["libraryVault".to_string()]);
+            assert_eq!(last_launch, 2, "the pacing mark is what spaces two bubbles");
+        }
+        other => panic!("the bubble's state did not arrive: {other:?}"),
+    }
+}
+
+#[test]
 fn the_link_menus_two_host_items_arrive_under_the_names_the_page_sends() {
     // Reveal file and Copy path on a link are the only two items that cannot be done in the page. They are new command names on both sides, so this pins the pair.
     match serde_json::from_str::<IpcCommand>(r#"{"command":"revealLink","href":"./b.md"}"#) {

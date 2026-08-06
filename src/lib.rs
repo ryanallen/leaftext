@@ -117,6 +117,8 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     // Then the state more than one fragment touches, in scope before any of them run. See the file for why it cannot live with its own subject.
     include_str!("assets/shell/state.js"),
     include_str!("assets/shell/dom.js"),
+    // The first-run bubble, ahead of every fragment that registers a hint against it. It needs `send` from dom.js and nothing else.
+    include_str!("assets/shell/hints.js"),
     include_str!("assets/shell/overflow.js"),
     include_str!("assets/shell/context-menu.js"),
     include_str!("assets/shell/navigation.js"),
@@ -1133,6 +1135,12 @@ pub struct Settings {
     /// Version the app already tried to install by itself at launch: one automatic attempt each, then the button. Without it, a failing installer boot-loops.
     #[serde(default)]
     pub update_auto_applied: String,
+    /// Launches that had a first-run hint to draw. A launch whose target was not on screen is not counted, so the hint waits for one where it can be pointed at rather than being spent on a shut pane.
+    pub hint_launches: u32,
+    /// First-run hints already met — the pointer reached the control the bubble pointed at, or it was pressed. A name in here never shows again on this install.
+    pub hints_seen: Vec<String>,
+    /// The launch count the last bubble showed at, so the next hint waits out a quiet launch. One number for every hint, because only one bubble can show in a launch.
+    pub hint_last_launch: u32,
 }
 
 impl Default for Settings {
@@ -1155,6 +1163,9 @@ impl Default for Settings {
             update_last_checked: 0,
             update_staged_version: String::new(),
             update_auto_applied: String::new(),
+            hint_launches: 0,
+            hints_seen: Vec::new(),
+            hint_last_launch: 0,
         }
     }
 }
