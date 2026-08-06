@@ -57,7 +57,7 @@ impl MarkdownParserConfig {
 pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
     // A leading `--- ... ---` block renders as a metadata table, not raw Markdown (which would become a stray heading/thematic break).
     let (frontmatter_html, body_markdown) = match split_leading_frontmatter(source.markdown) {
-        Some((inner, rest)) => (render_frontmatter_table(&inner), rest),
+        Some((inner, rest)) => (render_frontmatter_table(&inner, source.source_path), rest),
         None => (String::new(), source.markdown),
     };
     let parser_config = MarkdownParserConfig::github_flavored();
@@ -72,7 +72,7 @@ pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
     stamp_image_intrinsic_sizes(&sanitize_rendered_html(&body), source.source_path)
 }
 
-/// A table column's alignment, moved from an inline `style` onto `align`, which `td` and `th` are allowed to keep. `style` is never allowed through the sanitizer — it is an injection surface — so before this, `:-:` centered nothing.
+/// A table column's alignment, moved from an inline `style` onto `align`, which `td` and `th` are allowed to keep. `style` is never allowed through the sanitizer — it is an injection surface — so without this, `:-:` centers nothing.
 fn table_alignment_as_attribute(html: &str) -> String {
     let mut out = html.to_string();
     for side in ["left", "center", "right"] {
@@ -123,25 +123,138 @@ pub(crate) fn split_leading_frontmatter(markdown: &str) -> Option<(String, &str)
 }
 
 /// Render a parsed frontmatter block as a `key`/`value` metadata table, or an empty string when nothing parses. Cells are untrusted, so they're escaped.
-pub(crate) fn render_frontmatter_table(inner: &str) -> String {
-    let block = crate::store::FrontmatterBlock {
-        body: inner.to_string(),
-    };
-    let fields = crate::store::parse_frontmatter(&block)
-        .map(|parsed| parsed.fields)
-        .unwrap_or_default();
-    if fields.is_empty() {
+///
+/// This is also the one place that runs once per document opened, so it is where everything in the block that did not land is gathered: to the log here, and onto the table for the page to raise as one growl.
+pub(crate) fn render_frontmatter_table(inner: &str, source_path: &Path) -> String {
+    let mut parsed = crate::store::parse_frontmatter(&crate::store::FrontmatterBlock::detached(
+        inner.to_string(),
+    ));
+    let mut unread: Vec<String> = parsed
+        .refusals
+        .iter()
+        .map(|refusal| format!("{:?} — {}", refusal.line, refusal.reason))
+        .collect();
+    if parsed.fields.is_empty() {
+        say_what_did_not_land(source_path, &unread);
         return String::new();
     }
+    // What the vault and the note itself say a field is, over what its value's own shape said.
+    let vault_types = crate::store::vault_types_for(source_path);
+    let pinned = crate::store::pinned_types(&parsed.fields);
+    crate::store::apply_types(&mut parsed.fields, &vault_types, &pinned);
+    let (classes, unknown_classes) = document_classes(&parsed.fields);
+    unread.extend(
+        unknown_classes
+            .iter()
+            .map(|name| format!("{name:?} — no style of that name here")),
+    );
+    say_what_did_not_land(source_path, &unread);
+
     let mut rows = String::new();
-    for field in &fields {
+    for field in &parsed.fields {
         rows.push_str("<tr><th>");
         rows.push_str(&encode_text(&field.key));
         rows.push_str("</th><td>");
-        rows.push_str(&encode_text(&field.value));
+        rows.push_str(&frontmatter_value_html(field));
         rows.push_str("</td></tr>");
     }
-    format!(r#"<div class="frontmatter"><table><tbody>{rows}</tbody></table></div>"#)
+    // The page reads both of these off this element after a render: `data-leaf-` attributes are the one channel the sanitizer passes through on any tag, so neither needs a parameter threaded down the render path.
+    let classes = attribute("data-leaf-doc-classes", &classes.join(" "));
+    let unread = attribute("data-leaf-unread", &unread.join("; "));
+    format!(
+        r#"<div class="frontmatter"{classes}{unread}><table><tbody>{rows}</tbody></table></div>"#
+    )
+}
+
+/// One attribute, or nothing when there is no value to carry.
+fn attribute(name: &str, value: &str) -> String {
+    if value.is_empty() {
+        return String::new();
+    }
+    format!(
+        r#" {name}="{}""#,
+        html_escape::encode_double_quoted_attribute(value)
+    )
+}
+
+/// Everything in the block that did not land, said once per document. The log is where it lives on the host side; the growl the page raises off `data-leaf-unread` is what a reader actually sees.
+fn say_what_did_not_land(source_path: &Path, unread: &[String]) {
+    if unread.is_empty() {
+        return;
+    }
+    eprintln!(
+        "{}: frontmatter, {} thing(s) not read: {}",
+        source_path.display(),
+        unread.len(),
+        unread.join("; ")
+    );
+}
+
+/// A style a document may ask for by name in its `cssclasses`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DocumentClass {
+    Wide,
+}
+
+impl DocumentClass {
+    /// Every name a document may write, against what it means here. Obsidian's classes name CSS snippets in its own config, which this app does not load, so most have nothing behind them — this is the short list of the ones that map to something this app really does.
+    const TABLE: &'static [(&'static str, DocumentClass)] =
+        &[("wide", Self::Wide), ("full-width", Self::Wide)];
+
+    /// Our own class name, never the document's string. A note's word is looked up and *this* is what reaches the page, so a document can never name anything the app uses for its own chrome. Exhaustive, so a new row in the table above has to say what it does.
+    fn class(self) -> &'static str {
+        match self {
+            Self::Wide => "document-body-wide",
+        }
+    }
+}
+
+/// The classes a document asked for that this app has, and the names it asked for that it does not. A name it does not have changes nothing — saying which ones beats silently doing nothing.
+fn document_classes(fields: &[crate::store::FrontmatterField]) -> (Vec<&'static str>, Vec<String>) {
+    let mut ours = Vec::new();
+    let mut unknown = Vec::new();
+    for field in fields.iter().filter(|field| field.key_is("cssclasses")) {
+        for value in &field.values {
+            let asked = value.text.trim().to_lowercase();
+            match DocumentClass::TABLE.iter().find(|(name, _)| *name == asked) {
+                Some((_, known)) => {
+                    let class = known.class();
+                    if !ours.contains(&class) {
+                        ours.push(class);
+                    }
+                }
+                None if !asked.is_empty() => unknown.push(value.text.clone()),
+                None => {}
+            }
+        }
+    }
+    (ours, unknown)
+}
+
+/// One field's value, drawn as the thing it is: a checkbox as a box, a list as items, everything else as its text.
+///
+/// The checkbox is the same disabled `input` a `[x]` in a table cell already renders, so the sanitizer's allowance and the stylesheet's rule both already cover it. The list carries no class — `class` is not allowed through on a `ul`, and the stylesheet reaches it as a descendant of the table instead.
+fn frontmatter_value_html(field: &crate::store::FrontmatterField) -> String {
+    use crate::store::FieldType;
+    match field.kind {
+        FieldType::Checkbox => {
+            let checked = if field.text().eq_ignore_ascii_case("true") {
+                " checked"
+            } else {
+                ""
+            };
+            format!(r#"<input type="checkbox" disabled{checked}>"#)
+        }
+        FieldType::List => {
+            let items: String = field
+                .values
+                .iter()
+                .map(|value| format!("<li>{}</li>", encode_text(&value.text)))
+                .collect();
+            format!("<ul>{items}</ul>")
+        }
+        _ => encode_text(field.text()).to_string(),
+    }
 }
 
 pub(crate) fn parse_markdown_source(

@@ -148,6 +148,30 @@ fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
 }
 
 #[test]
+fn a_note_that_asked_for_a_full_width_page_gets_the_whole_lane() {
+    let css = reading_mode_css();
+
+    // Two classes deep, so it out-specifies `.document-body`'s own measure without a `!important`.
+    let wide = css
+        .find(".document-body.document-body-wide {")
+        .expect("the full-width page rule");
+    let measure = css
+        .find(".document-body {")
+        .expect("the reading measure rule");
+    assert!(
+        measure < wide,
+        "the wide rule has to come after the measure it overrides"
+    );
+    assert_contains(&css[wide..], "width: 100%;");
+
+    // A list-valued field is reached through the table, because `class` does not survive the sanitizer on a `ul`.
+    let list = css
+        .find(".document-body .frontmatter td ul {")
+        .expect("the list-valued field rule");
+    assert_contains(&css[list..], "list-style: none;");
+}
+
+#[test]
 fn reading_mode_css_keeps_one_name_per_color() {
     // A property whose whole value is one var() over a contract token is a second name for that color. Four such layers over 112 tokens is what this replaced, so the rule is: every rule reads the contract name.
     let css = reading_mode_css();

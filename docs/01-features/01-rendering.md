@@ -310,27 +310,33 @@ Footnotes collect at the foot of the page, each with a back-link.[^one] Referenc
 
 ### Frontmatter
 
-A leading `--- … ---` block becomes a metadata table at the top of the page:
+A leading `--- … ---` block becomes a metadata table at the top of the page, and **each field is drawn as the thing it is**:
 
 ```yaml
 ---
-title: Launch Notes                # key: value scalar
-status: draft                      # strings, booleans, numbers, dates → text
-audience: [readers, testers]       # inline array → one row per item
-tags:                              # block list → one row per item
+Author: Ada Lovelace               # the key keeps the case you wrote it in
+status: draft                      # text
+audience: [readers, testers]       # inline array → a list
+tags:                              # block list → a list
   - markdown
   - demo
-created: 2026-06-14
-pinned: true
+created: 2026-06-14                # a real date; 2026-13-45 is text
+pinned: true                       # a checkbox
+version: "1.0"                     # quoted, so text — bare 1.0 is a number
 ---
 ```
 
-…renders as this table (list values expand to one row each):
+…renders as this table:
 
-<div class="frontmatter"><table><tbody><tr><th>title</th><td>Launch Notes</td></tr><tr><th>status</th><td>draft</td></tr><tr><th>audience</th><td>readers</td></tr><tr><th>audience</th><td>testers</td></tr><tr><th>tags</th><td>markdown</td></tr><tr><th>tags</th><td>demo</td></tr><tr><th>created</th><td>2026-06-14</td></tr><tr><th>pinned</th><td>true</td></tr></tbody></table></div>
+<div class="frontmatter"><table><tbody><tr><th>Author</th><td>Ada Lovelace</td></tr><tr><th>status</th><td>draft</td></tr><tr><th>audience</th><td><ul><li>readers</li><li>testers</li></ul></td></tr><tr><th>tags</th><td><ul><li>markdown</li><li>demo</li></ul></td></tr><tr><th>created</th><td>2026-06-14</td></tr><tr><th>pinned</th><td><input type="checkbox" disabled checked></td></tr><tr><th>version</th><td>1.0</td></tr></tbody></table></div>
+
+**Six types, the same six Obsidian uses:** text, list, number, checkbox, date, and date and time. A field's type comes from four places, and the later ones win: the quoting the file already carries, then the value's own shape, then the vault's own `.obsidian/types.json` if it has one, then a `leaftext-types` line in the note itself — `leaftext-types: [phone=text, due=date]`, one `key=type` per item. `aliases`, `cssclasses` and `tags` are always lists, so `tags: one` is a list of one.
+
+**What a note may ask for by name.** `cssclasses: [wide]` gives the page the reader's whole lane. That is the only style so far, under the names `wide` and `full-width`; a name the app does not have changes nothing and says so.
 
 - Only the **leading** block counts; a later `---` is a horizontal rule.
 - Malformed frontmatter still renders — just without the table.
+- **Nested fields are not read.** A `person:` with `name:` indented under it is refused rather than turned into a top-level `name`, and a key set twice keeps the first. Anything the block could not read arrives as one message when the note opens.
 
 ### Collapsible sections
 

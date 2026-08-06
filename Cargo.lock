@@ -1410,6 +1410,7 @@ dependencies = [
  "serde_json",
  "syntect",
  "tao",
+ "time",
  "two-face",
  "url",
  "windows-sys 0.59.0",

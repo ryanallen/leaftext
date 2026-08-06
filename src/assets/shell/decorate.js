@@ -1552,3 +1552,18 @@ function flashCodeCopied(button) {
     setCodeCopyLabel(button, 'Copy code');
   }, 1400);
 }
+// What the field block at the top of the document asked for, and what of it did
+// not land. Both ride on `data-leaf-` attributes the renderer stamped on the
+// table: the host cannot call into the page, and this is the one channel the
+// sanitizer passes on any tag, so nothing had to be threaded down the render path.
+function applyFrontmatterAsks(root) {
+  const table = root.querySelector('.frontmatter');
+  if (!table) return;
+  const body = root.querySelector('.document-body');
+  const asked = (table.dataset.leafDocClasses || '').split(/\s+/).filter(Boolean);
+  if (body) body.classList.add(...asked);
+  // One growl for the whole block -- a refused line and an unrecognized style
+  // name arrive as one message, not one per name and not two systems.
+  const unread = table.dataset.leafUnread || '';
+  if (unread && window.leafShowNotice) window.leafShowNotice(`Some of this note's fields were not read: ${unread}`);
+}

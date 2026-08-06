@@ -312,6 +312,28 @@ fn lint_columns_count_utf16_units_the_way_the_editor_does() {
 }
 
 #[test]
+fn the_alias_cap_notice_underlines_the_aliases_key() {
+    let dir = intel_dir("alias-cap");
+    let source = dir.join("doc.md");
+    let claimed: String = (0..crate::store::MAX_ALIASES + 3)
+        .map(|n| format!("  - Name{n}\n"))
+        .collect();
+    let text = format!("---\naliases:\n{claimed}---\n\n# Doc\n");
+    fs::write(&source, &text).expect("source written");
+
+    let markers = lint_links(&text, &source, &NoteNames::default());
+    assert_eq!(markers.len(), 1, "markers: {markers:?}");
+    // The key on line 2, not the whole line and not the list under it: the field's own key range is the only locator now.
+    assert_eq!(markers[0].start_line, 2);
+    assert_eq!(markers[0].start_col, 1);
+    assert_eq!(markers[0].end_line, 2);
+    assert_eq!(markers[0].end_col, 1 + "aliases".len() as u32);
+    assert!(markers[0].message.contains("35 aliases"));
+
+    fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
 fn known_note_names_use_the_graph_s_normalization() {
     let documents = vec![doc("My Note", "C:/vault/My Note.md", "")];
     let names = known_note_names(&documents);

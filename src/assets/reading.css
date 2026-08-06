@@ -4151,6 +4151,23 @@ body.is-block-dragging .document-body [data-src-start] {
   white-space: nowrap;
   color: var(--lt-muted-foreground);
 }
+/* A document that asked for a full-width page by name in its `cssclasses`. The
+   only style a note can ask for so far, and it uses the reader's whole lane the
+   way a widened table does. The class is ours, looked up from the note's word in
+   `markdown/mod.rs` — a document's own string never reaches the page. */
+.document-body.document-body-wide {
+  width: 100%;
+}
+/* A list-valued field, one item per line. The cell is the list's whole box, so
+   the marker, the indent and the outer margin all go: what says "list" here is
+   the items sitting one under another, not a row of bullets down a compact
+   table. No class on the `ul` — the sanitizer does not pass one on a list — so
+   this reaches it as a descendant of the table. */
+.document-body .frontmatter td ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 .document-body img {
   display: block;
   height: auto;

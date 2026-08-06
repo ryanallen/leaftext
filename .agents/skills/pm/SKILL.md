@@ -60,13 +60,15 @@ That order is the whole method, and it is what makes a row arguable rather than 
 
 ## 3. The tiers
 
-| Tier | What is in it | Rough size |
+| Tier | What is in it | Time band |
 | --- | --- | --- |
-| **0** | Not builds. Somebody reading the code to settle a claim the rest of the list rests on | hours |
-| **1** | Wrong today, and cheap. The best ratio of "someone notices" to "work done" in the tree | days |
-| **2** | The pieces other tickets are waiting on. Nothing here is a feature a reader would name | weeks |
-| **3** | The features people would name. Cheaper after tier 2 and more expensive before it | weeks each |
-| **4** | Big swings. Each one absorbs the time all of tiers 1 to 3 take together | months |
+| **0** | Not builds. Somebody reading the code to settle a claim the rest of the list rests on | 5m |
+| **1** | Wrong today, and cheap. The best ratio of "someone notices" to "work done" in the tree | 10m |
+| **2** | The pieces other tickets are waiting on. Nothing here is a feature a reader would name | 15m |
+| **3** | The features people would name. Cheaper after tier 2 and more expensive before it | 20m |
+| **4** | Big swings. Each one absorbs the time all of tiers 1 to 3 take together | 30m |
+
+The band is the size of the work set, in minutes, not a calendar estimate. Never write days, weeks or months into a tier heading or cost cell.
 
 Tier 0 comes first because the list is only as good as the statuses it rests on. **A tier with no rows is not in the file** — no heading, no note saying where its rows went. It comes back the moment it has one. Tier 0 is usually the empty one, and it sat as a heading over a link to somewhere else until the size rules below said not to.
 
@@ -92,7 +94,7 @@ the ticket's name.
 the plan is unproven, so `/dev` runs `/design` before it writes anything;
 the ticket's own dated line is the authority and this box mirrors it.
 
-## Tier 1 — wrong today, and cheap (days)
+## Tier 1 — wrong today, and cheap (10m)
 
 | Ticket | Designed | Why here | Cost |
 ```
@@ -101,7 +103,7 @@ That is six lines, and the last two each buy something: one says a row is a name
 
 - **The `Designed` box is second, right after the ticket.** `[x]` or `[ ]`, nothing else in the cell — no date, no who. The date is on the ticket, and a date here would be a second copy to go stale. It sits before the reasoning because it is the first thing that decides whether to trust the rest of the row.
 - **A cell is one or two sentences.** Not a paragraph. Not a citation — a `path:line` belongs in the ticket's measured table, where somebody building it will look, and a cost belongs in the ticket's phases. The cell says *why this row is above the next one*, and nothing else.
-- **No tier preamble.** The heading and its rough size say what the tier is. A paragraph under it restates the heading.
+- **No tier preamble.** The heading and its minute band say what the tier is. A paragraph under it restates the heading.
 - **An empty tier is deleted, heading and all.** It comes back when it has a row. A heading over nothing is a line to scroll past, and tier 0 sat empty over a link to somewhere else for exactly one edit before this rule existed.
 - **No method in the file.** How rows are ranked is this skill; the file links to it. Copying the three criteria into the file means two copies that drift.
 - **No record in the file.** What an earlier ranking got wrong goes in `done/PLAN.md`, beside the rows it is about. Anything that belongs to one ticket rather than to the ordering goes on that ticket, in its own record — that is what a ticket's record section is for.

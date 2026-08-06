@@ -5,8 +5,7 @@
 //! Everything is a plain function over text and paths, so the binary can run it on a worker and the tests can call it directly.
 
 use crate::store::{
-    alias_count, aliases_from, document_fields, document_links, frontmatter_key_span,
-    normalize_name_key, MAX_ALIASES,
+    alias_count, aliases_from, document_fields, document_links, normalize_name_key, MAX_ALIASES,
 };
 use crate::vault_corpus::{read_document, CorpusDocument};
 use crate::{
@@ -387,13 +386,15 @@ fn shared_name_notice(claimants: &[String]) -> Option<String> {
 /// The note's own `aliases` field when it claims more than the cap keeps, with the range of the line that says so. A silently ignored alias is a link that will never resolve and nothing anywhere saying why.
 fn alias_cap_notice(text: &str, path: &Path) -> Option<((usize, usize), String)> {
     let label = path.file_stem().unwrap_or_default().to_string_lossy();
-    let claimed = alias_count(&document_fields(text), &label);
+    let fields = document_fields(text);
+    let claimed = alias_count(&fields, &label);
     if claimed <= MAX_ALIASES {
         return None;
     }
-    let span = frontmatter_key_span(text, "aliases")?;
+    // The key, not the whole line: a block list's value spans every item, which would underline the entire list.
+    let key = fields.iter().find(|field| field.key_is("aliases"))?;
     Some((
-        span,
+        (key.key_range.start, key.key_range.end),
         format!("This note claims {claimed} aliases; only the first {MAX_ALIASES} are used."),
     ))
 }

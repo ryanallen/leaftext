@@ -22,6 +22,61 @@ fn markdown_parser_config_enables_expected_github_flavored_extensions() {
 }
 
 #[test]
+fn the_metadata_table_draws_each_field_as_the_thing_it_is() {
+    let markdown = "---\nAuthor: Ada\npublish: true\ndraft: false\ntags: [one, two]\ncount: 42\n---\n\n# Doc\n";
+    let html = render_markdown_document(markdown, "note.md").html;
+
+    // The key keeps the case the file wrote it in. It used to arrive lowercased.
+    assert!(html.contains("<th>Author</th>"), "html: {html}");
+    // A checkbox as a box, checked or not, and it survives the sanitizer because a `[x]` in a table cell already renders the same element. The sanitizer is what writes these out, so the assertion is on its spelling of a boolean attribute, not ours.
+    assert!(
+        html.contains(r#"<td><input type="checkbox" disabled="" checked=""></td>"#),
+        "html: {html}"
+    );
+    assert!(html.contains(r#"<td><input type="checkbox" disabled=""></td>"#));
+    // A list as items, with no class on the `ul` — the sanitizer does not pass one there, so the stylesheet reaches it through the table.
+    assert!(html.contains("<td><ul><li>one</li><li>two</li></ul></td>"));
+    assert!(html.contains("<td>42</td>"));
+}
+
+#[test]
+fn a_document_gets_the_styles_it_names_and_one_message_for_everything_that_did_not_land() {
+    let markdown =
+        "---\ncssclasses: [wide, midnight, comfy]\nperson:\n  name: nested\n---\n\n# Doc\n";
+    let html = render_markdown_document(markdown, "note.md").html;
+
+    // The one style it asked for that this app has — as *our* class name, never the note's own string.
+    assert!(
+        html.contains(r#"data-leaf-doc-classes="document-body-wide""#),
+        "html: {html}"
+    );
+    // One message covering the whole block: the two style names with nothing behind them, and the nested line the parser refused.
+    let unread = html
+        .split(r#"data-leaf-unread=""#)
+        .nth(1)
+        .and_then(|rest| rest.split('"').next())
+        .expect("an unread message");
+    assert!(unread.contains("midnight"), "unread: {unread}");
+    assert!(unread.contains("comfy"), "unread: {unread}");
+    assert!(
+        unread.contains("nested fields are not read"),
+        "unread: {unread}"
+    );
+    assert_eq!(html.matches("data-leaf-unread").count(), 1);
+
+    // A note naming a class the app uses for its own chrome changes nothing: the table is the only way in, and it maps names rather than passing them through.
+    let chrome = "---\ncssclasses: [app-bar, document-body-wide, frontmatter]\n---\n\n# Doc\n";
+    let html = render_markdown_document(chrome, "note.md").html;
+    assert!(!html.contains("data-leaf-doc-classes"), "html: {html}");
+
+    // Nothing to say, nothing said.
+    let quiet = "---\ncssclasses: [wide]\n---\n\n# Doc\n";
+    let html = render_markdown_document(quiet, "note.md").html;
+    assert!(html.contains("data-leaf-doc-classes"));
+    assert!(!html.contains("data-leaf-unread"), "html: {html}");
+}
+
+#[test]
 fn markdown_pipeline_stages_keep_raw_rendering_before_sanitization() {
     let source_path = Path::new("README.md");
     let events = parse_markdown_source(
@@ -52,8 +107,7 @@ fn opened_document_from_markdown_matches_loading_from_disk() {
         .duration_since(UNIX_EPOCH)
         .expect("system time is after Unix epoch")
         .as_nanos();
-    // Use a dedicated subdirectory so the on-disk load and already-read
-    // render both see the same source path.
+    // Use a dedicated subdirectory so the on-disk load and already-read render both see the same source path.
     let dir = std::env::temp_dir().join(format!("leaf-reload-parity-{unique}"));
     fs::create_dir_all(&dir).expect("test directory is created");
     let path = dir.join("doc.md");
@@ -65,8 +119,7 @@ fn opened_document_from_markdown_matches_loading_from_disk() {
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 
-    // Rendering the already-read string must produce the same document the
-    // on-disk loader would, so the live-reload path can read the file once.
+    // Rendering the already-read string must produce the same document the on-disk loader would, so the live-reload path can read the file once.
     assert_eq!(from_memory.title, from_disk.title);
     assert_eq!(from_memory.html, from_disk.html);
     assert_eq!(from_memory.path, from_disk.path);
@@ -322,8 +375,7 @@ Already linked [https://example.net](https://example.net) stays one link.
     let rendered = render_markdown_document(markdown, "README.md");
 
     assert_contains(&rendered.html, "<table>");
-    // A column's alignment reaches the page as `align`: `style` never survives the
-    // sanitizer, so an inline one would center nothing.
+    // A column's alignment reaches the page as `align`: `style` never survives the sanitizer, so an inline one would center nothing.
     assert_contains(&rendered.html, "<th align=\"left\">Left</th>");
     assert_contains(&rendered.html, "<th align=\"center\">Center</th>");
     assert_contains(&rendered.html, "<th align=\"right\">Right</th>");

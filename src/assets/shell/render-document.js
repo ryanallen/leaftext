@@ -66,6 +66,8 @@ function renderState() {
     decorateBlockquoteLines();
     buildDocumentOutline();
     decorateCodeBlocks();
+    // Only on arrival: a re-render after a commit or a live reload would growl again about a note the reader was already told about.
+    if (arriving) applyFrontmatterAsks(readerLayout);
     applySpeedReaderToDocument();
     // The caret waits for the reveal below: focus() does nothing on a hidden
     // element, so a commit's caret would be dropped rather than restored.

@@ -294,6 +294,43 @@ if (booted) {
   const { sourceSpliceSince, lineIndexAtByteOffset, byteOffsetAtLineIndex, rangesAfterCommit, fencedCodeInnerSpan } =
     booted;
 
+  // The two things the field block asks the page for ride on `data-leaf-` attributes the renderer stamped on the table, so the names have to agree across Rust and here. They are read from the DOM rather than passed in, which means a rename on either side is silent: the class stops arriving and nothing throws.
+  check('a note gets the style it asked for and one growl for what did not land', () => {
+    const win = booted.window;
+    const growls = [];
+    const wasNotice = win.leafShowNotice;
+    // A stand-in reader: one table carrying what the renderer stamped, and one body to receive the class.
+    const layout = (asked, unread) => {
+      const added = [];
+      const table = { dataset: { leafDocClasses: asked, leafUnread: unread } };
+      const body = { classList: { add: (...names) => added.push(...names) } };
+      return {
+        added,
+        root: { querySelector: (selector) => (selector === '.frontmatter' ? table : body) },
+      };
+    };
+    const run = (asked, unread) => {
+      const stand = layout(asked, unread);
+      growls.length = 0;
+      win.leafShowNotice = (message) => growls.push(message);
+      try {
+        win.applyFrontmatterAsks(stand.root);
+      } finally {
+        win.leafShowNotice = wasNotice;
+      }
+      return stand.added;
+    };
+
+    const added = run('document-body-wide', '"midnight" — no style of that name here');
+    if (!added.includes('document-body-wide')) throw new Error(`the class the note asked for never reached the page: ${JSON.stringify(added)}`);
+    if (growls.length !== 1) throw new Error(`one growl for the whole block, not ${growls.length}`);
+    if (!growls[0].includes('midnight')) throw new Error(`the growl does not say what did not land: ${growls[0]}`);
+
+    // Nothing to say, nothing said -- a note whose block read cleanly must not growl at all.
+    if (run('', '').length !== 0) throw new Error('a class was added out of an empty attribute');
+    if (growls.length !== 0) throw new Error('a clean block still growled');
+  });
+
   // The ask pipe's reader half is one call into this function (`READER_STATE` in src/pipe.rs), so nothing else in the suite notices when an element it reads is renamed — the next `{"ask":"state","reader":true}` would be the first to find out, and what it loses is silent.
   check('the page can say what the reader sees', () => {
     const readerState = () => booted.window.leafReaderState();

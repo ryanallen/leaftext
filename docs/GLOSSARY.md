@@ -116,7 +116,11 @@ The small bar that appears over words you highlight in an unlocked page: bold, i
 
 ## Frontmatter
 
-A leading `--- … ---` block of metadata at the top of a file. Leaftext renders it as a table above the document. Only the first block counts; a later `---` is a horizontal rule.
+A leading `--- … ---` block of metadata at the top of a file. Leaftext renders it as a table above the document, drawing each field as the thing it is — a checkbox as a checkbox, a list as items — and keeping the case the key was written in. Only the first block counts; a later `---` is a horizontal rule. Nesting is not part of it: an indented `key: value` is refused rather than read as a field of its own. See [Rendering](01-features/01-rendering.md#frontmatter).
+
+## Field type
+
+What one [frontmatter](GLOSSARY.md#frontmatter) field holds. Six of them, the same six Obsidian uses: text, list, number, checkbox, date, and date and time. Four things decide it, each beating the one before: the quotes the file already carries, so `version: "1.0"` is text where bare `1.0` is a number; then the value's own shape; then the vault's `.obsidian/types.json` if it has one; then a `leaftext-types` line in the note, one `key=type` per item. `aliases`, `cssclasses` and `tags` are always lists. See [Rendering](01-features/01-rendering.md#frontmatter).
 
 ## GFM
 

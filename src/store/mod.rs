@@ -5,12 +5,14 @@
 mod db;
 mod frontmatter;
 mod links;
+mod obsidian_types;
 mod vaults;
 
 // Re-exported so `store::x` reaches every public item, wherever it lives.
 pub use db::*;
 pub use frontmatter::*;
 pub use links::*;
+pub use obsidian_types::*;
 pub use vaults::*;
 
 use std::collections::HashSet;

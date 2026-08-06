@@ -248,33 +248,327 @@ fn a_vault_can_be_renamed_repointed_and_removed() {
 fn frontmatter_parses_scalars_arrays_and_block_lists() {
     let block = extract_frontmatter("---\ntitle: Hi\n---\n\nbody\n").expect("leading block");
     assert_eq!(block.body, "title: Hi\n");
+    assert_eq!(block.offset, "---\n".len());
     // A `---` deeper in the document is body content, not a fence.
     assert_eq!(
         extract_frontmatter("# Heading\n\nintro\n\n---\n\nmore\n"),
         None
     );
     assert_eq!(extract_frontmatter("---\ntitle: Hi\nno close\n"), None);
-    // A BOM before the fence is still a fence.
-    assert!(extract_frontmatter("\u{feff}---\ntitle: Hi\n---\nbody\n").is_some());
+    // A BOM before the fence is still a fence, and the body starts past it.
+    let marked = extract_frontmatter("\u{feff}---\ntitle: Hi\n---\nbody\n").expect("block");
+    assert_eq!(marked.offset, "\u{feff}---\n".len());
+    // Sliced rather than reassembled, so a CRLF document keeps every byte and every offset stays the file's.
+    let crlf = extract_frontmatter("---\r\ntitle: Hi\r\n---\r\nbody\r\n").expect("block");
+    assert_eq!(crlf.body, "title: Hi\r\n");
 
     let block = extract_frontmatter(
         "---\ntitle: Notes\ntags: [one, two]\nauthors:\n  - Ada\n  - Grace\n---\n",
     )
     .expect("block");
-    let parsed = parse_frontmatter(&block).expect("parsed");
-    let pairs: Vec<(String, String)> = parsed
+    let parsed = parse_frontmatter(&block);
+    assert!(
+        parsed.refusals.is_empty(),
+        "refusals: {:?}",
+        parsed.refusals
+    );
+    let pairs: Vec<(String, Vec<String>)> = parsed
         .fields
         .iter()
-        .map(|field| (field.key.clone(), field.value.clone()))
+        .map(|field| {
+            (
+                field.key.clone(),
+                field.values.iter().map(|v| v.text.clone()).collect(),
+            )
+        })
         .collect();
-    assert!(pairs.contains(&("title".to_string(), "Notes".to_string())));
-    assert!(pairs.contains(&("tags".to_string(), "one".to_string())));
-    assert!(pairs.contains(&("tags".to_string(), "two".to_string())));
-    assert!(pairs.contains(&("authors".to_string(), "Ada".to_string())));
-    assert!(pairs.contains(&("authors".to_string(), "Grace".to_string())));
+    // Both list forms are one field holding items now, not one field per item.
+    assert_eq!(
+        pairs,
+        vec![
+            ("title".to_string(), vec!["Notes".to_string()]),
+            (
+                "tags".to_string(),
+                vec!["one".to_string(), "two".to_string()]
+            ),
+            (
+                "authors".to_string(),
+                vec!["Ada".to_string(), "Grace".to_string()]
+            ),
+        ]
+    );
 
+    // A block nothing parses out of is no fields and a refusal per line — the same answer the old error variant gave, without a second type to carry it.
     let garbage = extract_frontmatter("---\nthis is not yaml at all\n---\n").expect("block");
-    assert_eq!(parse_frontmatter(&garbage), Err(MetadataError::Unparseable));
+    let parsed = parse_frontmatter(&garbage);
+    assert!(parsed.fields.is_empty());
+    assert_eq!(parsed.refusals.len(), 1);
+    assert_eq!(parsed.refusals[0].reason, RefusalReason::NoColon);
+}
+
+#[test]
+fn a_frontmatter_key_keeps_its_case_and_is_matched_either_way() {
+    let fields = document_fields("---\nAuthor: Ada\n---\n");
+    assert_eq!(fields.len(), 1);
+    assert_eq!(fields[0].key, "Author");
+    assert!(fields[0].key_is("author"));
+    assert!(fields[0].key_is("AUTHOR"));
+    // The alias reader compares through the same helper, so a capitalized key still answers.
+    assert_eq!(
+        aliases_from(
+            &document_fields("---\nAliases: [Mozart]\n---\n"),
+            "Wolfgang"
+        ),
+        vec!["Mozart"]
+    );
+}
+
+#[test]
+fn a_nested_frontmatter_field_is_refused_rather_than_promoted() {
+    let parsed = parse_frontmatter(
+        &extract_frontmatter("---\nperson:\n  name: Ada\n  born: 1815\n---\n").expect("block"),
+    );
+    // `name` and `born` used to arrive as top-level fields nobody typed.
+    assert!(parsed.fields.is_empty(), "fields: {:?}", parsed.fields);
+    assert_eq!(parsed.refusals.len(), 2);
+    assert!(parsed
+        .refusals
+        .iter()
+        .all(|refusal| refusal.reason == RefusalReason::Nested));
+    assert_eq!(parsed.refusals[0].line, "name: Ada");
+}
+
+#[test]
+fn the_first_of_a_duplicate_frontmatter_key_wins_and_the_rest_are_reported() {
+    let parsed = parse_frontmatter(
+        &extract_frontmatter("---\ntitle: First\ntitle: Second\nTITLE: Third\n---\n")
+            .expect("block"),
+    );
+    assert_eq!(parsed.fields.len(), 1);
+    assert_eq!(parsed.fields[0].text(), "First");
+    assert_eq!(parsed.refusals.len(), 2);
+    assert!(parsed
+        .refusals
+        .iter()
+        .all(|refusal| refusal.reason == RefusalReason::Duplicate));
+
+    // A list under the losing key attaches to nothing rather than joining the first one.
+    let parsed = parse_frontmatter(
+        &extract_frontmatter("---\naliases:\n  - A\naliases:\n  - B\n---\n").expect("block"),
+    );
+    let values: Vec<&str> = parsed.fields.iter().map(|field| field.text()).collect();
+    assert_eq!(values, vec!["A"]);
+    assert_eq!(
+        parsed
+            .refusals
+            .iter()
+            .map(|refusal| refusal.reason)
+            .collect::<Vec<_>>(),
+        vec![RefusalReason::Duplicate, RefusalReason::OrphanItem]
+    );
+}
+
+#[test]
+fn every_frontmatter_field_points_at_its_own_bytes() {
+    let text = "---\nversion: \"1.0\"\ntags: [one, two]\nauthors:\n  - Ada\ntime: 12:30\n---\n";
+    let fields = document_fields(text);
+    let at = |key: &str| {
+        fields
+            .iter()
+            .find(|field| field.key_is(key))
+            .unwrap_or_else(|| panic!("no {key} field"))
+    };
+    let slice = |range: &std::ops::Range<usize>| &text[range.clone()];
+
+    let version = at("version");
+    assert_eq!(slice(&version.key_range), "version");
+    // The range covers the value as written, so putting the quotes back needs no guessing.
+    assert_eq!(slice(&version.values[0].range), "\"1.0\"");
+    assert_eq!(version.text(), "1.0");
+    assert!(version.values[0].quoted);
+
+    // Every item of a list has its own range, under the one key that declared them.
+    let tags: Vec<&str> = at("tags")
+        .values
+        .iter()
+        .map(|value| slice(&value.range))
+        .collect();
+    assert_eq!(tags, vec!["one", "two"]);
+
+    let authors = at("authors");
+    assert_eq!(slice(&authors.key_range), "authors");
+    assert_eq!(slice(&authors.values[0].range), "Ada");
+
+    // Split on the first colon only, so the value keeps the rest of them.
+    let time = at("time");
+    assert_eq!(slice(&time.values[0].range), "12:30");
+    assert!(!time.values[0].quoted);
+}
+
+#[test]
+fn a_frontmatter_field_knows_which_of_the_six_types_it_is() {
+    let kind = |line: &str| {
+        document_fields(&format!("---\n{line}\n---\n"))
+            .first()
+            .map(|field| field.kind)
+            .expect("one field")
+    };
+
+    assert_eq!(kind("note: hello"), FieldType::Text);
+    assert_eq!(kind("done: true"), FieldType::Checkbox);
+    assert_eq!(kind("done: FALSE"), FieldType::Checkbox);
+    assert_eq!(kind("count: 42"), FieldType::Number);
+    assert_eq!(kind("ratio: -1.5e3"), FieldType::Number);
+    assert_eq!(kind("due: 2026-08-10"), FieldType::Date);
+    // All four shapes Obsidian accepts: `T` or a space, seconds or not. Reading only the first would type half a real vault as text.
+    assert_eq!(kind("at: 2026-08-10T09:30:00"), FieldType::DateTime);
+    assert_eq!(kind("at: 2026-08-10 09:30:00"), FieldType::DateTime);
+    assert_eq!(kind("at: 2026-08-10T09:30"), FieldType::DateTime);
+    assert_eq!(kind("at: 2026-08-10 09:30"), FieldType::DateTime);
+    assert_eq!(kind("crew: [Ada, Grace]"), FieldType::List);
+
+    // Quoting is the file saying "text", so it wins over every shape below it.
+    assert_eq!(kind("version: 1.0"), FieldType::Number);
+    assert_eq!(kind("version: \"1.0\""), FieldType::Text);
+    assert_eq!(kind("due: \"2026-08-10\""), FieldType::Text);
+    assert_eq!(kind("done: \"true\""), FieldType::Text);
+
+    // A quoted number keeps every character it was written with.
+    let phone = document_fields("---\nphone: \"0123\"\n---\n");
+    assert_eq!(phone[0].text(), "0123");
+    assert_eq!(phone[0].kind, FieldType::Text);
+
+    // Shaped like a date is not being one, and a word is a word.
+    assert_eq!(kind("due: 2026-13-45"), FieldType::Text);
+    assert_eq!(kind("due: 2026-02-30"), FieldType::Text);
+    assert_eq!(kind("ratio: inf"), FieldType::Text);
+    assert_eq!(kind("ratio: NaN"), FieldType::Text);
+}
+
+#[test]
+fn a_list_of_one_is_still_a_list_and_the_documented_properties_never_guess() {
+    // The shape before this could not tell these two apart at all.
+    let one = document_fields("---\ncrew: [Ada]\n---\n");
+    assert_eq!(one[0].kind, FieldType::List);
+    assert_eq!(one[0].values.len(), 1);
+    let plain = document_fields("---\ncrew: Ada\n---\n");
+    assert_eq!(plain[0].kind, FieldType::Text);
+
+    // Obsidian's own frozen table is these three and nothing else, so one note's value never decides them.
+    let documented = |line: &str| {
+        document_fields(&format!("---\n{line}\n---\n"))
+            .first()
+            .map(|field| field.kind)
+            .expect("one field")
+    };
+    assert_eq!(documented("tags: one"), FieldType::List);
+    assert_eq!(documented("aliases: Mozart"), FieldType::List);
+    assert_eq!(documented("cssclasses: wide"), FieldType::List);
+    // Matched the way every other key is: case does not change what a property is.
+    assert_eq!(documented("Tags: one"), FieldType::List);
+
+    // The Publish properties are not in that table, so they are worked out like anything else — which is what Obsidian does with them too. Forcing them would type a note differently from the app it came from.
+    assert_eq!(documented("publish: true"), FieldType::Checkbox);
+    assert_eq!(documented("publish: maybe"), FieldType::Text);
+    assert_eq!(documented("description: 42"), FieldType::Number);
+    assert_eq!(documented("permalink: 2026-08-10"), FieldType::Date);
+    assert_eq!(documented("cover: 1.5"), FieldType::Number);
+}
+
+#[test]
+fn the_vault_s_own_types_and_a_note_s_pin_override_the_value_s_shape() {
+    let dir = unique_dir("obsidian-types");
+    let vault = dir.join("vault");
+    let notes = vault.join("notes");
+    std::fs::create_dir_all(vault.join(".obsidian")).expect("config folder");
+    std::fs::create_dir_all(&notes).expect("notes folder");
+    // The shape Obsidian's own writer produces: the key as the file spelled it, against its widget name. `multitext`, `aliases` and `tags` are all lists here; `file` points at another note and has no type of ours.
+    std::fs::write(
+        vault.join(".obsidian").join("types.json"),
+        r#"{"types":{"Count":"text","note":"multitext","when":"datetime","Ref":"file"}}"#,
+    )
+    .expect("types written");
+    let note = notes.join("deep.md");
+
+    let text = "---\nCount: 42\nnote: one\nwhen: 2026-08-10\nRef: 7\nloose: 1.5\n---\n";
+    let block = extract_frontmatter(text).expect("block");
+    let mut fields = parse_frontmatter(&block).fields;
+    // Found by walking up from the note, so a document several folders deep still finds its vault.
+    let vault_types = vault_types_for(&note);
+    assert!(!vault_types.is_empty());
+    let no_pins = pinned_types(&fields);
+    apply_types(&mut fields, &vault_types, &no_pins);
+    let kind = |key: &str| {
+        fields
+            .iter()
+            .find(|field| field.key_is(key))
+            .map(|field| field.kind)
+            .expect("field")
+    };
+    // The file's word beats the value's shape, and its keys match whatever case either side used.
+    assert_eq!(kind("Count"), FieldType::Text);
+    assert_eq!(kind("note"), FieldType::List);
+    assert_eq!(kind("when"), FieldType::DateTime);
+    assert_eq!(kind("Ref"), FieldType::Text);
+    // A key the file says nothing about keeps what it worked out for itself.
+    assert_eq!(kind("loose"), FieldType::Number);
+
+    // The note's own pin wins over the vault's file.
+    let pinned_text =
+        "---\nCount: 42\nleaftext-types: [Count=number, when=text, nope=banana]\n---\n";
+    let mut fields = parse_frontmatter(&extract_frontmatter(pinned_text).expect("block")).fields;
+    let pinned = pinned_types(&fields);
+    apply_types(&mut fields, &vault_types, &pinned);
+    assert_eq!(fields[0].kind, FieldType::Number);
+    // A pin naming a type this app does not have costs that one pin, not the field: two of the three landed.
+    assert!(!pinned.is_empty());
+
+    // A document in no vault behaves exactly as it did before any of this.
+    let loose = dir.join("loose.md");
+    assert!(vault_types_for(&loose).is_empty());
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn which_folder_holds_the_types_file_is_only_worked_out_once() {
+    let dir = unique_dir("obsidian-types-cache");
+    let notes = dir.join("a").join("b").join("c");
+    std::fs::create_dir_all(&notes).expect("folders");
+    let note = notes.join("note.md");
+
+    // Nothing to find yet, which is the answer that gets remembered.
+    assert!(vault_types_for(&note).is_empty());
+
+    // Now give it something to find. The walk is what is cached, so this folder's answer does not change until the app restarts — the cost of not paying eight disk checks on every open.
+    std::fs::create_dir_all(dir.join(".obsidian")).expect("config folder");
+    std::fs::write(
+        dir.join(".obsidian").join("types.json"),
+        r#"{"types":{"when":"date"}}"#,
+    )
+    .expect("types written");
+    assert!(
+        vault_types_for(&note).is_empty(),
+        "the walk ran again, so it is not being remembered"
+    );
+
+    // A folder nobody has asked about yet does the walk, finds it, and reads the file.
+    let sibling = dir.join("a").join("other");
+    std::fs::create_dir_all(&sibling).expect("folder");
+    assert!(!vault_types_for(&sibling.join("note.md")).is_empty());
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn the_alias_cap_counts_aliases_and_not_fields() {
+    let claimed: String = (0..40).map(|n| format!("  - Name{n}\n")).collect();
+    let fields = document_fields(&format!("---\naliases:\n{claimed}---\n"));
+    // One field, forty items: the cap used to count fields, which meant the same number only by accident.
+    assert_eq!(fields.len(), 1);
+    assert_eq!(fields[0].values.len(), 40);
+    assert_eq!(alias_count(&fields, "Doc"), 40);
+    assert_eq!(aliases_from(&fields, "Doc").len(), MAX_ALIASES);
 }
 
 #[test]
