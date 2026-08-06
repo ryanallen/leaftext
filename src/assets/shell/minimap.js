@@ -96,6 +96,11 @@ function scheduleMinimapWidthSync() {
   if (minimapWidthFrame) return;
   minimapWidthFrame = requestAnimationFrame(() => {
     minimapWidthFrame = 0;
+    // Mid library-toggle this write changes a grid column and retargets the pane's transition, desyncing it from the bar — hold the write until the motion ends.
+    if (/is-library-/.test(document.body.className)) {
+      scheduleMinimapWidthSync();
+      return;
+    }
     syncMinimapWidthToCodeView();
   });
 }

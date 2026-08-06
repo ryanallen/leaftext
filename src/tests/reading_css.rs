@@ -1326,6 +1326,8 @@ fn a_curve_says_which_way_a_move_is_going() {
         "--lt-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);",
         "--lt-ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);",
         "--lt-ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);",
+        // Arriving with spring: runs about a tenth past its mark and settles back.
+        "--lt-ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);",
         // Motion off is a duration like any other, so the reduce rule reads a token.
         "--lt-duration-0: 0ms;",
     ] {
@@ -1419,6 +1421,110 @@ fn every_move_is_drawn_on_the_curve_its_direction_asks_for() {
     ] {
         assert_contains(rule_body(css, hover), "var(--lt-ease)");
     }
+}
+
+#[test]
+fn the_normal_width_library_toggle_rides_the_motion_rail() {
+    let css = reading_mode_css();
+
+    // The pane's grid track, the bar's lead and the reader divider's left end all read --library-rail-width, so one var write moves the three of them — and the toggle's body classes carry the transitions: opening springs past its mark on the overshoot curve, closing slams on the accelerate one, and the settle class carries the close's bounce-out and settle-shut legs.
+    for (selector, expected) in [
+        (
+            "body.is-library-opening .library-shell {",
+            "transition: grid-template-columns var(--lt-duration-220) var(--lt-ease-overshoot);",
+        ),
+        (
+            "body.is-library-closing .library-shell {",
+            "transition: grid-template-columns var(--lt-duration-160) var(--lt-ease-accelerate);",
+        ),
+        (
+            "body.is-library-settling .library-shell {",
+            "transition: grid-template-columns var(--lt-duration-120) var(--lt-ease-decelerate);",
+        ),
+        (
+            "body.is-library-opening .app-bar-lead {",
+            "transition: width var(--lt-duration-220) var(--lt-ease-overshoot);",
+        ),
+        (
+            "body.is-library-closing .app-bar-lead {",
+            "transition: width var(--lt-duration-160) var(--lt-ease-accelerate);",
+        ),
+        (
+            "body.is-library-settling .app-bar-lead {",
+            "transition: width var(--lt-duration-120) var(--lt-ease-decelerate);",
+        ),
+        (
+            "body.is-library-opening .app-bar::after {",
+            "transition: left var(--lt-duration-220) var(--lt-ease-overshoot);",
+        ),
+        (
+            "body.is-library-closing .app-bar::after {",
+            "transition: left var(--lt-duration-160) var(--lt-ease-accelerate);",
+        ),
+        (
+            "body.is-library-settling .app-bar::after {",
+            "transition: left var(--lt-duration-120) var(--lt-ease-decelerate);",
+        ),
+    ] {
+        assert_contains(rule_body(css, selector), expected);
+    }
+
+    // The wide grid spends the rail width itself, so the transition above has one property to interpolate; the closed state is the same rule with the var at 0px, not a second track list.
+    assert_contains(
+        rule_body(css, "\n.library-shell {"),
+        "grid-template-columns: var(--library-rail-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);",
+    );
+    assert!(!css.contains(".library-shell.library-closed {\n  grid-template-columns:"));
+
+    // Never @property: registering the rail as an inherited length and transitioning it off :root crashed the whole app in this web view — library-sidebar-motion's phase 0 measured it, twice. The stylesheet's one mention is the comment saying so.
+    assert!(!css.contains("@property --"));
+
+    // The reader divider's left end spends the bare rail value — the same number the grid track spends — so its left transition and the grid's interpolate the same span on the same curve and the line stays attached to the pane's corner arc on every frame. A gutter floor here changed the span and detached them near zero, right where the close's bounce lives.
+    assert_contains(
+        rule_body(css, ".app-bar::after {"),
+        "left: calc(var(--library-rail-width, 0px) + var(--lt-radius-md) - 1px);",
+    );
+    // The closed resting place is its own rule, landing in the same layout pass as the pane's closed corner rule, so the line and the arc jump to rest together.
+    assert_contains(
+        rule_body(css, ".app-bar:not(.has-rail)::after {"),
+        "left: calc(var(--reader-gutter) + var(--lt-radius-md) - 1px);",
+    );
+    assert!(!css.contains(".app-bar.has-rail::after {"));
+
+    // The pane's list clips sideways: rows truncate themselves, so a horizontal scrollbar on a narrow pane is noise — and it popped in and out while the pane animates.
+    let scroll = rule_body(css, "\n.library-scroll {");
+    assert_contains(scroll, "overflow-y: auto;");
+    assert_contains(scroll, "overflow-x: hidden;");
+
+    // The pane's contents fade with the travel — out over the close, and back in at the same pace on the open, where an animation is needed because the bands were display:none while closed.
+    let fade_out = rule_body(css, "body.is-library-closing .library-header,");
+    assert_contains(fade_out, "opacity: 0;");
+    assert_contains(
+        fade_out,
+        "transition: opacity var(--lt-duration-260) var(--lt-ease);",
+    );
+    assert_contains(fade_out, "body.is-library-settling .library-scroll {");
+    let fade_in = rule_body(css, "body.is-library-opening .library-header,");
+    assert_contains(
+        fade_in,
+        "animation: leaf-document-arrive var(--lt-duration-260) var(--lt-ease);",
+    );
+    assert_contains(fade_in, "body.is-library-opening .library-scroll {");
+
+    // A grid item's min-width is its content, which would hold the shrinking track open; the pane itself still never clips, because the corner arc on its right edge is real geometry.
+    assert_contains(rule_body(css, "\n.library-pane {"), "min-width: 0;");
+
+    // No component Reduce Motion block: the file's blanket rule zeroes these transitions like every other, so each motion rule appears exactly once.
+    assert_eq!(
+        css.matches("body.is-library-opening .library-shell {")
+            .count(),
+        1
+    );
+    assert_eq!(
+        css.matches("body.is-library-closing .library-shell {")
+            .count(),
+        1
+    );
 }
 
 #[test]

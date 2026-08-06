@@ -190,20 +190,17 @@ body {
      pixel of overlap with each arc's tangent, so a rounding difference between the
      boxes can't open a gap. On the right that also clears the rail's column (0
      wide when there is no rail), which is chrome the line must not cross. */
-  left: calc(var(--reader-gutter) + var(--lt-radius-md) - 1px);
+  /* The left end starts past the library rail — one unbroken surface the line must not cut — and spends the same number the grid track does, so their transitions interpolate the same span and the line stays on the pane's corner arc every frame; a gutter floor here is what detached them. */
+  left: calc(var(--library-rail-width, 0px) + var(--lt-radius-md) - 1px);
   right: calc(var(--reader-gutter) + var(--reader-minimap-column) + var(--lt-radius-md) - 1px);
   bottom: 0;
   height: 1px;
   background: var(--lt-border);
   z-index: 0;
 }
-.app-bar.has-rail::after {
-  /* Don't run the reader divider across the library column: the rail is one
-     unbroken surface from the window's top edge down through the file list, so a
-     line here would cut it in two. Push the divider's start past the rail so
-     .reader-corner-tl, which sits on the rail's right edge, arcs down to the pane's
-     vertical border from there. */
-  left: calc(var(--library-rail-width, 0px) + var(--lt-radius-md) - 1px);
+.app-bar:not(.has-rail)::after {
+  /* No rail: the line starts at the reader's gutter. This lands in the same layout pass as the pane's own closed corner rule, so the line and the arc jump to their resting closed places together. */
+  left: calc(var(--reader-gutter) + var(--lt-radius-md) - 1px);
 }
 .app-bar-lead {
   /* The header's left zone, sized to the library rail so the tab strip begins at
@@ -218,8 +215,7 @@ body {
   align-self: stretch;
   box-sizing: border-box;
   width: var(--library-rail-width, 240px);
-  /* Never let the rail clip the brand + history controls: floor the zone at their
-     natural width when the library is narrow. */
+  /* Never let the rail clip the brand + history controls: floor the zone at their natural width — at a rail of 0 the floor is the whole zone, what width:auto used to give. */
   min-width: fit-content;
   /* Left inset matches the library header's 12px so the logo lines up with the
      GRAPH/search controls directly below it. */
@@ -230,10 +226,6 @@ body {
      zone's own left inset. The class comes off in full screen, where macOS takes
      the dots away and the bar would otherwise start with 86px of nothing. */
   padding-left: var(--app-bar-mac-dots);
-}
-.app-bar:not(.has-rail) .app-bar-lead {
-  /* Library closed: no rail to align to, so the lead is just its controls. */
-  width: auto;
 }
 .brand-button > .lt-icon {
   width: 22px;
@@ -958,7 +950,8 @@ body:has(.document-minimap) {
   display: grid;
   /* A trailing column and a bottom row hold the reader off the window frame; the
      rail spans both so only the page is inset. */
-  grid-template-columns: var(--library-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
+  /* The first track spends the rail width the app bar's lead follows — 0px closed — so one var write moves pane and page together and the motion classes below transition this one property. Never an @property registration for the rail: animating a registered inherited length off :root crashed the whole app in this web view (library-sidebar-motion, phase 0). */
+  grid-template-columns: var(--library-rail-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
   grid-template-rows: minmax(0, 1fr) var(--reader-gutter);
   height: 100vh;
   /* Positioning context for the open-library button, pinned to the left edge so
@@ -1009,8 +1002,33 @@ body:has(.library-overlay) .app-bar::after {
 body:has(.library-overlay) .tab-bar {
   visibility: hidden;
 }
-.library-shell.library-closed {
-  grid-template-columns: 0 minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
+/* The toggle's motion: open springs past its width on the overshoot curve; close slams to the reader's padding, bounces off it, and seats — three chained legs, because one curve cannot come back out of its target. The track, the bar's lead and the divider line all read --library-rail-width, so one var write moves the three in step; the transitions live only on these classes (library.js holds one per leg), so a drag or resize stays immediate and Reduce Motion's blanket rule zeroes every leg. */
+body.is-library-opening .library-shell {
+  transition: grid-template-columns var(--lt-duration-220) var(--lt-ease-overshoot);
+}
+body.is-library-closing .library-shell {
+  transition: grid-template-columns var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+body.is-library-settling .library-shell {
+  transition: grid-template-columns var(--lt-duration-120) var(--lt-ease-decelerate);
+}
+body.is-library-opening .app-bar-lead {
+  transition: width var(--lt-duration-220) var(--lt-ease-overshoot);
+}
+body.is-library-closing .app-bar-lead {
+  transition: width var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+body.is-library-settling .app-bar-lead {
+  transition: width var(--lt-duration-120) var(--lt-ease-decelerate);
+}
+body.is-library-opening .app-bar::after {
+  transition: left var(--lt-duration-220) var(--lt-ease-overshoot);
+}
+body.is-library-closing .app-bar::after {
+  transition: left var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+body.is-library-settling .app-bar::after {
+  transition: left var(--lt-duration-120) var(--lt-ease-decelerate);
 }
 /* The rail's own column: the lead-in holds it off the page's right border, and
    the gutter beyond gives it the same outer inset the page card has. The bar's
@@ -1038,6 +1056,8 @@ body:has(.library-overlay) .tab-bar {
   grid-column: 1;
   grid-row: 1 / -1;
   position: relative;
+  /* A grid item's min-width is its content, which would hold the shrinking track open; the pane itself still never clips — the corner arc on its right edge is real geometry. */
+  min-width: 0;
   height: 100vh;
   /* The app bar's shade and grain, so the pane continues the bar rather than
      sitting under it. The tree rows on top are transparent, so the whole pane
@@ -1140,6 +1160,22 @@ body:has(.library-overlay) .tab-bar {
      them past the 0px column and show them behind the reader. */
   display: none;
 }
+/* Fading with the travel: everything in the pane leaves 100% opaque and thins out over the close — riding visible to the seat reads as a ghost over the page, and vanishing on the first frame reads as a glitch. The pane itself keeps its surface, and the corner arc riding its edge never fades. */
+body.is-library-closing .library-header,
+body.is-library-closing .library-crumbs,
+body.is-library-closing .library-scroll,
+body.is-library-settling .library-header,
+body.is-library-settling .library-crumbs,
+body.is-library-settling .library-scroll {
+  opacity: 0;
+  transition: opacity var(--lt-duration-260) var(--lt-ease);
+}
+/* And back in at the same pace on open. An animation, not a transition: these were display:none while closed, and a freshly displayed element renders at its final value instead of transitioning. */
+body.is-library-opening .library-header,
+body.is-library-opening .library-crumbs,
+body.is-library-opening .library-scroll {
+  animation: leaf-document-arrive var(--lt-duration-260) var(--lt-ease);
+}
 /* Except as a sheet, which is "closed" only to the grid — it is off-screen when
    shut, so there is nothing to bleed, and with these hidden it opened onto a
    blank band where the path and the search box belong. */
@@ -1177,7 +1213,9 @@ body.library-resizing {
      property silently disables all `::-webkit-scrollbar` pseudo-elements. */
   position: absolute;
   inset: 0;
-  overflow: auto;
+  /* Down only. Every row truncates itself, so a sideways bar on a narrow pane is noise — and it popped in and out while the pane animates. */
+  overflow-y: auto;
+  overflow-x: hidden;
   box-sizing: border-box;
   padding-top: var(--library-chrome-height);
 }

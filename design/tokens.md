@@ -201,6 +201,7 @@ Every transition and animation length, in milliseconds. `0.12s` and `120ms` were
 | lt-ease-decelerate | `cubic-bezier(0.05, 0.7, 0.1, 1)` | Something arriving. Fast in, settling hard. |
 | lt-ease-accelerate | `cubic-bezier(0.3, 0, 0.8, 0.15)` | Something leaving. Slow off the mark, then gone. |
 | lt-ease-sheet | `cubic-bezier(0.32, 0.72, 0, 1)` | A sheet rising: fast off the mark, settling slowly. Emphasized-decelerate drawn by hand against a real drag, and kept because that is what it was tuned on. |
+| lt-ease-overshoot | `cubic-bezier(0.34, 1.56, 0.64, 1)` | Something arriving with spring in it: runs about a tenth past its mark and settles back. The library pane's open. |
 
 ## Layers
 

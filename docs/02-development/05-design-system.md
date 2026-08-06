@@ -1,14 +1,14 @@
 <!-- Generated from design/ by `just bundle-design-docs`. Do not edit. -->
 # Design system
 
-> Every value in Leaftext's interface comes from a token. 81 of them are colors, which each theme sets for itself; 152 are everything else, one value for the whole app. Nothing is written by hand, and a check fails the build when something is.
+> Every value in Leaftext's interface comes from a token. 81 of them are colors, which each theme sets for itself; 153 are everything else, one value for the whole app. Nothing is written by hand, and a check fails the build when something is.
 
 Four files under `design/` are the source. Each is plain Markdown, so Leaftext opens them.
 
 | File | Holds | Compiles to |
 | --- | --- | --- |
 | `design/colors.md` | 81 color names and what each is for — no values, because a color's value belongs to a theme | the token contract in `src/theme.rs` |
-| `design/tokens.md` | 152 values that do not change with the theme | `src/assets/tokens.css` |
+| `design/tokens.md` | 153 values that do not change with the theme | `src/assets/tokens.css` |
 | `design/icons.md` | 57 icons | `src/assets/icons.css`, one mask class each |
 | `design/components.md` | 48 components, and the markup each is drawn with | `src/assets/gallery.html` |
 
@@ -43,7 +43,7 @@ One value each, whatever theme is on.
 | Opacity | 12 |
 | Spacing | 13 |
 | Duration | 16 |
-| Easing | 7 |
+| Easing | 8 |
 | Layers | 10 |
 | Strokes, rings and one recess | 6 |
 | Grain | 5 |

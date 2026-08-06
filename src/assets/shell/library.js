@@ -29,7 +29,7 @@ function closeLibrarySheet() {
   librarySheetOpen = false;
   applyPaneLayout();
 }
-function applyPaneLayout() {
+function applyPaneLayout(holdRail) {
   const closed = libraryIsClosed();
   // Too narrow for a pane beside the page, so the library becomes a sheet over
   // it. Grid-wise it stays closed — the sheet is out of flow — and widening the
@@ -43,10 +43,9 @@ function applyPaneLayout() {
   // Mirror the pane state onto the header so its left zone (the tab rail) tracks
   // the library width and its dividing stroke drops when the library is closed.
   appBar.classList.toggle('has-rail', !closed);
+  // One width for everything that follows the pane: the shell's first grid track, the app bar's lead and the reader divider all read this var, so writing it is the whole layout change. `holdRail` lands the classes without it — the open's first step.
   if (!closed) {
-    const width = clampOpenPaneWidth(libraryWidth);
-    libraryShell.style.setProperty('--library-width', width + 'px');
-    document.documentElement.style.setProperty('--library-rail-width', width + 'px');
+    if (!holdRail) document.documentElement.style.setProperty('--library-rail-width', clampOpenPaneWidth(libraryWidth) + 'px');
   } else {
     document.documentElement.style.setProperty('--library-rail-width', '0px');
   }
@@ -56,6 +55,53 @@ function applyPaneLayout() {
   // Opening, closing, or re-clamping the pane changes the breadcrumb's room too.
   scheduleCrumbFit();
 }
+// The toggle's motion: a body class holds the transition on for just this gesture, transitionend advances it, and a timeout ends a run Reduce Motion made zero-duration (no event fires) or something interrupted — the flow and glossary sheets' pattern.
+// Open is one overshooting leg. Close is three — slam to the reader's padding, bounce off it once, seat back on it — because one curve cannot come back out of its target, and the padding floors the whole motion: the closed card rests there, so the pane never touches the window edge.
+const LIBRARY_MOTION_FALLBACK_MS = 600;
+const LIBRARY_BOUNCE_PX = 16;
+function readerGutterPx() {
+  return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--reader-gutter')) || 0;
+}
+let libraryMotionTimer = 0;
+let libraryMotionDone = null;
+let libraryMotionStage = '';
+function endLibraryMotion() {
+  window.clearTimeout(libraryMotionTimer);
+  libraryMotionTimer = 0;
+  libraryMotionStage = '';
+  document.body.classList.remove('is-library-opening', 'is-library-closing', 'is-library-settling');
+  const done = libraryMotionDone;
+  libraryMotionDone = null;
+  // A full layout of the resting truth, so ending mid-bounce still seats everything.
+  if (done) done();
+}
+function startLibraryMotion(direction, done) {
+  // Settle any motion still running, so a re-toggle retargets from where the rail is.
+  endLibraryMotion();
+  document.body.classList.add(direction);
+  libraryMotionStage = direction === 'is-library-closing' ? 'slam' : '';
+  libraryMotionDone = done || null;
+  libraryMotionTimer = window.setTimeout(endLibraryMotion, LIBRARY_MOTION_FALLBACK_MS);
+}
+libraryShell.addEventListener('transitionend', (event) => {
+  // Only the shell's own track: transitionend bubbles, and the lead's width ending must not finish a motion the grid is still drawing.
+  if (event.target !== libraryShell || event.propertyName !== 'grid-template-columns') return;
+  if (libraryMotionStage === 'slam') {
+    // Hit the padding: bounce open a bit, on the settling curve.
+    libraryMotionStage = 'bounce';
+    document.body.classList.remove('is-library-closing');
+    document.body.classList.add('is-library-settling');
+    document.documentElement.style.setProperty('--library-rail-width', readerGutterPx() + LIBRARY_BOUNCE_PX + 'px');
+    return;
+  }
+  if (libraryMotionStage === 'bounce') {
+    // Bounced: seat back on the padding, where the closed card rests.
+    libraryMotionStage = 'settle';
+    document.documentElement.style.setProperty('--library-rail-width', readerGutterPx() + 'px');
+    return;
+  }
+  endLibraryMotion();
+});
 // The panel button in the app bar toggles the library: closed → open at the
 // default width (never the sliver it was dragged to before snapping shut), open
 // → closed. On a too-narrow window it slides the sheet in and out instead —
@@ -69,10 +115,18 @@ function toggleLibrary() {
   if (libraryIsClosed()) {
     libraryUserClosed = false;
     libraryWidth = DEFAULT_PANE_WIDTH;
+    // Two steps: land the open classes with the rail at the padding (the closed card's resting edge), flush, then grow — so nothing jumps on the first frame.
+    document.documentElement.style.setProperty('--library-rail-width', readerGutterPx() + 'px');
+    applyPaneLayout(true);
+    void libraryShell.offsetWidth;
+    startLibraryMotion('is-library-opening', null);
+    applyPaneLayout();
   } else {
     libraryUserClosed = true;
+    // Closing: slam to the padding; the chain above bounces off it and seats there.
+    startLibraryMotion('is-library-closing', applyPaneLayout);
+    document.documentElement.style.setProperty('--library-rail-width', readerGutterPx() + 'px');
   }
-  applyPaneLayout();
   persistLibraryLayout();
 }
 libraryOpen.addEventListener('click', toggleLibrary);
@@ -84,8 +138,7 @@ function applyPendingDividerWidth() {
   dividerDrag.frame = 0;
   if (dividerDrag.pendingWidth != null) {
     libraryWidth = dividerDrag.pendingWidth;
-    libraryShell.style.setProperty('--library-width', libraryWidth + 'px');
-    // Push the header's tab rail live so the tabs track the pane during the drag.
+    // One var moves the pane, the tabs and the divider line together, live under the pointer — no motion class, so nothing eases behind the drag.
     document.documentElement.style.setProperty('--library-rail-width', libraryWidth + 'px');
     // The breadcrumb shows as much of the path as fits, so it refits mid-drag.
     scheduleCrumbFit();

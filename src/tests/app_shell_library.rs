@@ -160,10 +160,8 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
     // The toggle icon is the bundled asset, normalized to currentColor like the other toolbar icons (no stray literal stroke color survives).
     assert_icon(&html, "open-library");
 
-    // CSS: the collapsed-grid override and the divider hit target.
-    assert!(css.contains(
-        ".library-shell.library-closed {\n  grid-template-columns: 0 minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);\n}"
-    ));
+    // The snap-only closed grid rule is gone: the first track reads the rail var, which applyPaneLayout writes as 0px when closed, so open and closed are one rule and the toggle's transition can interpolate between them.
+    assert!(!css.contains(".library-shell.library-closed {\n  grid-template-columns:"));
     assert!(css.contains(".library-divider {"));
     assert!(css.contains("cursor: col-resize;"));
     assert!(css.contains(".library-open:hover {"));
@@ -190,6 +188,66 @@ fn app_shell_wires_library_pane_open_close_and_resize() {
 }
 
 #[test]
+fn the_normal_width_toggle_moves_the_pane_bar_and_page_together() {
+    let html = app_shell_page();
+
+    // Opening is two steps: the open classes land with the rail at the reader's padding — the closed card's resting edge, so the first frame draws the same pixels — then the flushed width write eases everything out together.
+    assert_contains(
+        &html,
+        "document.documentElement.style.setProperty('--library-rail-width', readerGutterPx() + 'px');\n    applyPaneLayout(true);\n    void libraryShell.offsetWidth;\n    startLibraryMotion('is-library-opening', null);\n    applyPaneLayout();",
+    );
+    assert_contains(&html, "function applyPaneLayout(holdRail) {");
+    // Closing slams to the reader's padding — the motion's floor; the pane must never pass it to touch the window edge — and the closed class plus the bar's no-rail state land through the deferred layout pass when the whole run ends, drawing the same pixels the seat already shows.
+    assert_contains(
+        &html,
+        "startLibraryMotion('is-library-closing', applyPaneLayout);\n    document.documentElement.style.setProperty('--library-rail-width', readerGutterPx() + 'px');",
+    );
+    // The floor is the stylesheet's own gutter token, read where it is spent.
+    assert_contains(&html, "function readerGutterPx() {");
+    // Every motion class always comes off, and whatever the close deferred always runs.
+    assert_contains(
+        &html,
+        "document.body.classList.remove('is-library-opening', 'is-library-closing', 'is-library-settling');",
+    );
+    // transitionend bubbles, so only the shell's own track may advance the motion — the lead's width ending must not cut the grid off mid-move.
+    assert_contains(&html, "if (event.target !== libraryShell || event.propertyName !== 'grid-template-columns') return;");
+    // The close chains three legs — slam to the padding, bounce off it once, seat back on it — because one curve can cross its target once but cannot come back out of it; the open overshoots in a single leg on its own curve.
+    assert_contains(&html, "const LIBRARY_BOUNCE_PX = 16;");
+    assert_contains(
+        &html,
+        "libraryMotionStage = direction === 'is-library-closing' ? 'slam' : '';",
+    );
+    assert_contains(&html, "  if (libraryMotionStage === 'slam') {");
+    assert_contains(&html, "    document.body.classList.remove('is-library-closing');\n    document.body.classList.add('is-library-settling');\n    document.documentElement.style.setProperty('--library-rail-width', readerGutterPx() + LIBRARY_BOUNCE_PX + 'px');");
+    assert_contains(&html, "  if (libraryMotionStage === 'bounce') {");
+    assert_contains(&html, "document.documentElement.style.setProperty('--library-rail-width', readerGutterPx() + 'px');\n    return;");
+    // Reduce Motion runs every leg at zero duration and zero-duration transitions never fire transitionend, so a timeout behind the whole run lands the final classes — through the same full layout pass, so ending mid-bounce still seats everything.
+    assert_contains(&html, "const LIBRARY_MOTION_FALLBACK_MS = 600;");
+    assert_contains(
+        &html,
+        "libraryMotionTimer = window.setTimeout(endLibraryMotion, LIBRARY_MOTION_FALLBACK_MS);",
+    );
+    // A re-toggle mid-move settles the old state first, so the new transition retargets from wherever the rail visually is.
+    assert_contains(
+        &html,
+        "function startLibraryMotion(direction, done) {\n  // Settle any motion still running, so a re-toggle retargets from where the rail is.\n  endLibraryMotion();",
+    );
+    // The minimap's width write reacts to the reader resizing one frame in; mid-toggle it would change a grid column and retarget the pane's transition, so it waits the motion out.
+    assert_contains(
+        &html,
+        "if (/is-library-/.test(document.body.className)) {\n      scheduleMinimapWidthSync();\n      return;\n    }",
+    );
+    // Only the toggle's two branches start a motion: the divider drag and the resize re-clamp write the rail with no motion class up, so they stay immediate.
+    assert_eq!(
+        html.matches("startLibraryMotion(").count(),
+        3,
+        "the toggle's two branches and the definition are the only mentions"
+    );
+    // Never a registered rail property: animating a registered inherited length off :root crashed the whole app in this web view (library-sidebar-motion, phase 0).
+    assert!(!html.contains("registerProperty"));
+}
+
+#[test]
 fn app_shell_includes_library_pane_settings_and_wording() {
     let html = app_shell_page();
     let css = reading_mode_css();
@@ -197,7 +255,7 @@ fn app_shell_includes_library_pane_settings_and_wording() {
     // Layout: the shell driven by the CSS variable — rail, reader, the minimap's own column (0 until a document has one), and the gutter track that holds the reader off the window frame.
     assert!(html.contains(r#"<div id="libraryShell" class="library-shell">"#));
     assert!(css.contains(
-        "grid-template-columns: var(--library-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);"
+        "grid-template-columns: var(--library-rail-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);"
     ));
     assert!(html.contains(r#"<aside id="libraryPane" class="library-pane">"#));
     assert!(html.contains(r#"<div id="libraryTree" class="library-tree"></div>"#));
