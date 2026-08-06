@@ -109,6 +109,10 @@ pub struct SearchResults {
     pub truncated: bool,
     /// Every path that matched, not just the fifty shown. Never sent to the page — it is what lets the next keystroke scan these documents instead of the vault, because a longer query can only ever match fewer of them.
     pub matched: Vec<String>,
+    /// The query read back in words, shown under the box. Empty for a query of plain words, which needs no explaining.
+    pub understood: String,
+    /// Field names the query used that no document in the vault sets. Such a filter can only ever match nothing, so the box says which name it did not know rather than showing an empty list.
+    pub unknown_fields: Vec<String>,
 }
 
 // ---------------------------------------------------------------------------

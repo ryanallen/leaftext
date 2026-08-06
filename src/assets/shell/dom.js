@@ -39,6 +39,7 @@ const libraryVaultSwitch = document.getElementById('libraryVaultSwitch');
 const librarySearch = document.getElementById('librarySearch');
 const librarySyncButton = document.getElementById('librarySyncButton');
 const librarySearchResults = document.getElementById('librarySearchResults');
+const filterMenu = document.getElementById('filterMenu');
 // The update bell and its panel. Absent from the bar until there is something to
 // install; the updater un-hides the whole menu.
 const updateMenu = document.getElementById('updateMenu');

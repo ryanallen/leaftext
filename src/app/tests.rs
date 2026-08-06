@@ -3,6 +3,11 @@
 use super::*;
 use std::io;
 
+/// A query as the page would send one, with no date of its own.
+fn typed(query: &str) -> TypedQuery {
+    TypedQuery::new(query.to_string(), None)
+}
+
 fn fixture_source_path(relative_path: &str) -> PathBuf {
     std::env::temp_dir()
         .join("leaf-link-fixtures")
@@ -298,10 +303,12 @@ fn an_answer_to_a_query_the_field_moved_past_never_reaches_the_page() {
     };
     let generation = state.search.generation.clone();
     assert!(corpus
-        .search_until("dharma", None, &|| !generation.is_current(second))
+        .search_until(&typed("dharma").parsed, None, &|| !generation
+            .is_current(second))
         .is_some());
     assert!(corpus
-        .search_until("dharma", None, &|| !generation.is_current(first))
+        .search_until(&typed("dharma").parsed, None, &|| !generation
+            .is_current(first))
         .is_none());
 
     // Switching vaults abandons the scan with nothing taking its place, so the answer about the vault we left is dropped too.
@@ -324,21 +331,26 @@ fn the_same_query_over_unchanged_text_is_answered_from_the_last_one() {
             score: 1.0,
         }],
         truncated: false,
+        understood: String::new(),
+        unknown_fields: Vec::new(),
         matched: vec!["/vault/note.md".to_string()],
     };
     let corpus = state.corpus_generation;
     state.search.remember("dharma", corpus, answer);
 
     // The pane re-runs its search on every folder move, and the same query over the same text has the same answer.
-    assert!(state.search.remembered("dharma", corpus).is_some());
+    assert!(state.search.remembered(&typed("dharma"), corpus).is_some());
     // Another query is another question.
-    assert!(state.search.remembered("dharmas", corpus).is_none());
+    assert!(state.search.remembered(&typed("dharmas"), corpus).is_none());
     // Text that has moved on since is not what the kept answer describes: the watcher patching the vault and a vault switch both count.
-    assert!(state.search.remembered("dharma", corpus + 1).is_none());
+    assert!(state
+        .search
+        .remembered(&typed("dharma"), corpus + 1)
+        .is_none());
     state.drop_corpus();
     assert!(state
         .search
-        .remembered("dharma", state.corpus_generation)
+        .remembered(&typed("dharma"), state.corpus_generation)
         .is_none());
 }
 
@@ -348,6 +360,8 @@ fn one_more_letter_scans_what_the_last_letter_matched() {
     let answer = SearchResults {
         hits: Vec::new(),
         truncated: false,
+        understood: String::new(),
+        unknown_fields: Vec::new(),
         matched: vec!["/vault/one.md".to_string(), "/vault/two.md".to_string()],
     };
     let corpus = state.corpus_generation;
@@ -356,17 +370,20 @@ fn one_more_letter_scans_what_the_last_letter_matched() {
     // Typing on the end can only shrink the set, so the next keystroke reads those two documents rather than the vault.
     let within = state
         .search
-        .narrowing("dharma", corpus)
+        .narrowing(&typed("dharma"), corpus)
         .expect("a longer query narrows to the shorter one's matches");
     assert_eq!(within.len(), 2);
 
     // Everything else is a different question: the same query (already answered from the kept results), a letter deleted, a different word, another case.
-    assert!(state.search.narrowing("dhar", corpus).is_none());
-    assert!(state.search.narrowing("dha", corpus).is_none());
-    assert!(state.search.narrowing("sutra", corpus).is_none());
-    assert!(state.search.narrowing("Dharma", corpus).is_none());
+    assert!(state.search.narrowing(&typed("dhar"), corpus).is_none());
+    assert!(state.search.narrowing(&typed("dha"), corpus).is_none());
+    assert!(state.search.narrowing(&typed("sutra"), corpus).is_none());
+    assert!(state.search.narrowing(&typed("Dharma"), corpus).is_none());
     // And text that moved under it is not narrowed at all — a file saved mid-typing would otherwise be invisible until the query changed.
-    assert!(state.search.narrowing("dharma", corpus + 1).is_none());
+    assert!(state
+        .search
+        .narrowing(&typed("dharma"), corpus + 1)
+        .is_none());
 }
 
 #[test]

@@ -63,9 +63,17 @@ pub fn search_results_script(query: &str, results: &SearchResults) -> String {
         "query": query,
         "hits": results.hits,
         "truncated": results.truncated,
+        "understood": results.understood,
+        "unknownFields": results.unknown_fields,
         "error": serde_json::Value::Null,
     });
     format!("window.leafSetSearchResults({payload});")
+}
+
+/// The field names and values the search box completes from. Pushed once when a vault's text is read, so typing costs no round trip. Every string is file-derived and untrusted; the page escapes them before the DOM.
+pub fn filter_hints_script(hints: &FilterHints) -> String {
+    let payload = serde_json::to_string(hints).unwrap_or_else(|_| "null".to_string());
+    format!("window.leafSetFilterHints({payload});")
 }
 
 /// One folder's contents, for the library pane. Every string in it is file-derived and untrusted; the page escapes them before the DOM.

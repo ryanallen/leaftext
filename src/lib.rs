@@ -47,8 +47,15 @@ pub use git::{
     link_vault_remote, repo_name_for_vault, sync_vault_repo, GitError, GitTooling, SyncReport,
     VaultRepo,
 };
+mod query;
+pub use query::{
+    today_or_utc, utc_today, Asks, Bound, Candidate, Compare, Condition, FieldAnswer, FieldTest,
+    FieldValue, Needle, Query, TaskTally,
+};
 mod vault_corpus;
-pub use vault_corpus::{CorpusDocument, VaultCorpus, MAX_CORPUS_DOCUMENTS};
+pub use vault_corpus::{
+    CorpusDocument, FilterHintField, FilterHints, VaultCorpus, MAX_CORPUS_DOCUMENTS,
+};
 mod doc_graph;
 pub use doc_graph::document_graph;
 mod code_intel;

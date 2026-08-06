@@ -1235,6 +1235,25 @@ body.library-resizing {
   font-size: var(--lt-text-11);
   color: var(--lt-muted-foreground);
 }
+/* What the box made of a filter, above the results. Only ever shown for a query
+   with syntax in it — a plain word would just be read back to the person who
+   typed it. */
+.library-search-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  margin: var(--lt-space-4) var(--lt-space-6) var(--lt-space-2);
+  font-size: var(--lt-text-11);
+  line-height: var(--lt-leading-1-4);
+}
+.library-search-read {
+  color: var(--lt-muted-foreground);
+}
+/* A field name nobody in the vault has set. It reads as a warning rather than as
+   a result count, because a filter naming one can only ever match nothing. */
+.library-search-unknown {
+  color: var(--lt-warning);
+}
 /* A search hit: the file's title on top, the match snippet below it. */
 .library-hit {
   display: block;
@@ -1322,6 +1341,41 @@ body.library-resizing {
 }
 .library-search:focus {
   outline: none;
+}
+/* The platform's own clear button, in the platform's own blue. Escape already clears the field, and nothing else in the app wears a color nobody chose. */
+.library-search::-webkit-search-cancel-button {
+  display: none;
+}
+/* What you can type next, under the search box and placed from it: the header clips at its own height, so the menu cannot live inside it. */
+.filter-menu {
+  position: absolute;
+  z-index: var(--lt-z-50);
+  max-width: 240px;
+  padding: var(--lt-space-2);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  box-shadow: var(--lt-shadow-raised);
+}
+.filter-menu[hidden] {
+  display: none;
+}
+.filter-menu-item {
+  display: block;
+  width: 100%;
+  padding: var(--lt-space-2) var(--lt-space-6);
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-11);
+  text-align: left;
+  cursor: pointer;
+}
+.filter-menu-item.is-active,
+.filter-menu-item:hover {
+  background: var(--lt-surface-muted);
 }
 /* Search reads the active vault's text, so with no vault there is nothing for
    it to read: the row collapses and the list starts where the field was. */

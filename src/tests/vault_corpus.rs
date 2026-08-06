@@ -31,6 +31,13 @@ fn titles(results: &crate::store::SearchResults) -> Vec<String> {
     results.hits.iter().map(|hit| hit.title.clone()).collect()
 }
 
+/// A query of plain words, which is what the narrowing shortcut is sound for.
+fn plain(query: &str) -> Query {
+    let parsed = Query::parse(query, crate::utc_today());
+    assert!(parsed.is_plain(), "{query} should be plain words");
+    parsed
+}
+
 /// A vault the size of the cap, built in memory: the read is not what is being timed, the scan is.
 fn synthetic_corpus(count: usize) -> VaultCorpus {
     const FILLER: &str = "The path is long and the notes are many. Sitting still is a practice of attention and of patience, and the page says so again. ";
@@ -79,7 +86,7 @@ fn search_over_a_full_vault_is_timed_not_guessed() {
             .map(|_| {
                 let started = std::time::Instant::now();
                 let results = corpus
-                    .search_until(query, within, &|| false)
+                    .search_until(&plain(query), within, &|| false)
                     .expect("nothing overtook it");
                 (started.elapsed(), results)
             })
@@ -304,7 +311,7 @@ fn a_longer_query_scans_only_what_the_shorter_one_matched() {
 
     // The same answer, off two documents instead of three.
     let narrowed = corpus
-        .search_until("dharma", Some(&wide.matched), &|| false)
+        .search_until(&plain("dharma"), Some(&wide.matched), &|| false)
         .expect("nothing overtook it");
     assert_eq!(titles(&narrowed), titles(&corpus.search("dharma")));
 
@@ -312,7 +319,7 @@ fn a_longer_query_scans_only_what_the_shorter_one_matched() {
     write(&root.join("four.md"), "# Four\n\nMore dharma still.\n");
     assert!(corpus.refresh(&root.join("four.md")));
     let stale = corpus
-        .search_until("dharma", Some(&wide.matched), &|| false)
+        .search_until(&plain("dharma"), Some(&wide.matched), &|| false)
         .expect("nothing overtook it");
     assert!(!titles(&stale).contains(&"four".to_string()));
     // Scanned whole, the new document is there.
@@ -591,6 +598,154 @@ fn a_change_that_changed_nothing_says_so() {
     // A link to a file that is not there is not a node, so nothing changes when one that was never in the corpus is reported gone.
     assert!(!corpus.refresh(&root.join("c.md")));
     assert_eq!(corpus.documents.len(), 1);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+/// A vault with everything a filter can ask about: a field block, a checkbox list, two folders and two formats.
+fn filtered_vault(tag: &str) -> (PathBuf, PathBuf) {
+    let dir = corpus_dir(tag);
+    let root = dir.join("vault");
+    write(
+        &root.join("notes").join("plan.md"),
+        "---\nstatus: open\ndue: 2026-08-07\nrating: 5\n---\n\n# Plan\n\nA dharma plan.\n\n- [ ] write it\n- [x] think about it\n",
+    );
+    write(
+        &root.join("notes").join("shipped.md"),
+        "---\nstatus: done\ndue: 2026-08-01\n---\n\n# Shipped\n\nThe dharma shipped.\n\n- [x] all of it\n",
+    );
+    write(
+        &root.join("archive").join("old.md"),
+        "# Old\n\nA dharma draft with no field block at all.\n",
+    );
+    write(&root.join("archive").join("data.json"), "{\"dharma\": 1}\n");
+    (dir, root)
+}
+
+/// The day the filter tests read `friday` against. A Thursday, so `friday` is the 7th.
+fn filter_query(query: &str) -> Query {
+    Query::parse(
+        query,
+        time::Date::from_calendar_date(2026, time::Month::August, 6).expect("a real date"),
+    )
+}
+
+fn filtered(corpus: &VaultCorpus, query: &str) -> Vec<String> {
+    let mut names = titles(
+        &corpus
+            .search_until(&filter_query(query), None, &|| false)
+            .expect("nothing overtook it"),
+    );
+    names.dedup();
+    names.sort();
+    names
+}
+
+#[test]
+fn the_search_box_speaks_the_filter_syntax() {
+    let (dir, root) = filtered_vault("filter");
+    let corpus = VaultCorpus::read(&root);
+
+    // A plain word is exactly what it was before there was a syntax.
+    assert_eq!(
+        filtered(&corpus, "dharma"),
+        vec!["data", "old", "plan", "shipped"]
+    );
+    // The three that search.md moved here unbuilt.
+    assert_eq!(filtered(&corpus, "\"dharma plan\""), vec!["plan"]);
+    assert_eq!(
+        filtered(&corpus, "dharma -draft"),
+        vec!["data", "plan", "shipped"]
+    );
+    assert_eq!(filtered(&corpus, "in:archive"), vec!["data", "old"]);
+    // The typed fields `properties` shipped, compared as what they are.
+    assert_eq!(filtered(&corpus, "status:open"), vec!["plan"]);
+    assert_eq!(filtered(&corpus, "due:<friday"), vec!["shipped"]);
+    assert_eq!(filtered(&corpus, "due:<=friday"), vec!["plan", "shipped"]);
+    assert_eq!(filtered(&corpus, "rating:>4"), vec!["plan"]);
+    assert_eq!(filtered(&corpus, "status:"), vec!["plan", "shipped"]);
+    // The unfinished checkbox, read through the markers the editor already maps.
+    assert_eq!(filtered(&corpus, "task:open"), vec!["plan"]);
+    assert_eq!(filtered(&corpus, "task:done"), vec!["shipped"]);
+    // The one table of formats, off the path.
+    assert_eq!(filtered(&corpus, "ext:json"), vec!["data"]);
+    // Either side, and a group.
+    assert_eq!(
+        filtered(&corpus, "status:open OR ext:json"),
+        vec!["data", "plan"]
+    );
+    assert_eq!(
+        filtered(&corpus, "(status:open OR status:done) -shipped"),
+        vec!["plan"]
+    );
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn a_tag_matches_nothing_until_something_knows_the_vaults_tags() {
+    let dir = corpus_dir("filter-tags");
+    let root = dir.join("vault");
+    // The word is in the prose, and the corpus still refuses to guess: a second definition of a tag is what this ticket exists to avoid.
+    write(&root.join("a.md"), "# A\n\nFiled under #work today.\n");
+    let corpus = VaultCorpus::read(&root);
+
+    assert!(filtered(&corpus, "#work").is_empty());
+    // Quoted, it is text again, so nothing about the prose has become unfindable.
+    assert_eq!(filtered(&corpus, "\"#work\""), vec!["a"]);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn a_field_name_nobody_defined_says_so_instead_of_returning_everything() {
+    let (dir, root) = filtered_vault("filter-unknown");
+    let corpus = VaultCorpus::read(&root);
+
+    let answer = corpus
+        .search_until(&filter_query("duee:friday"), None, &|| false)
+        .expect("nothing overtook it");
+    assert!(answer.hits.is_empty(), "a field nobody set matches nothing");
+    assert_eq!(answer.unknown_fields, vec!["duee".to_string()]);
+    assert_eq!(answer.understood, "duee is 2026-08-07");
+
+    // A name the vault does set is not reported, even by a query that finds nothing with it.
+    let known = corpus
+        .search_until(&filter_query("status:parked"), None, &|| false)
+        .expect("nothing overtook it");
+    assert!(known.hits.is_empty());
+    assert!(known.unknown_fields.is_empty());
+
+    // A plain query explains nothing, because it would only read the box back.
+    let plain_answer = corpus
+        .search_until(&filter_query("dharma"), None, &|| false)
+        .expect("nothing overtook it");
+    assert!(plain_answer.understood.is_empty());
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn a_query_with_syntax_in_it_is_never_narrowed_to_the_last_answers_matches() {
+    let (dir, root) = filtered_vault("filter-narrow");
+    let corpus = VaultCorpus::read(&root);
+
+    // Typed one letter at a time, `plan OR shipped` passes through prefixes that match less than it does. Narrowing off one of those would lose a match, which is why only a plain query may narrow.
+    let full = "plan OR shipped";
+    for length in 1..=full.len() {
+        let typed = &full[..length];
+        let parsed = filter_query(typed);
+        if parsed.is_plain() {
+            continue;
+        }
+        let whole = corpus
+            .search_until(&parsed, None, &|| false)
+            .expect("nothing overtook it");
+        // Every prefix with an OR in it finds both, and none of them may be narrowed.
+        assert!(!parsed.is_plain(), "{typed} has syntax in it");
+        assert!(!whole.hits.is_empty(), "{typed} finds something");
+    }
+    assert_eq!(filtered(&corpus, full), vec!["plan", "shipped"]);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }

@@ -85,6 +85,14 @@ Then check the three middle headings answer one question each and stop. `## Why`
 
 **Anything the running order should not be carrying belongs here.** A row in `../docs/PLAN.md` is two sentences; if this ticket's row has grown past that, move the words into this file and shorten the row in the same pass.
 
+## 6a. Anything the reader will see gets drawn here, and the owner says yes to the drawing
+
+**A ticket whose phases touch the window and has no `## What it looks like` section is one this pass draws.** Sketch it as HTML under `../docs/imgs/wireframes/` and photograph it with `node scripts/wireframe.mjs` — a **picture** in the ticket, never box characters: `just check-ascii-art` fails on a `┌` anywhere in the tree, because no renderer lines them up — with the markup and the `design/components.md` row each new control will take. See [ticket](../ticket/SKILL.md) for the command and the shape of a sketch. Then **put the drawing in front of the owner and wait**: two or three drawn options where there is a real choice, one marked the pick with the reason. Their yes is what goes in the file. This is the one question this skill is allowed to stop on, and the only thing here worth stopping for.
+
+Then hold every phase to the approved drawing: **a box that draws a control the section does not show is struck**, with the reason. That is what would have caught v0.1.479's second search box, its `?` button and its popup panel — three controls no line of the plan asked for, all three taken back out.
+
+And check the drawing for the thing it most often gets wrong: **new interface where the existing control would do**. A second input, a second button, a second panel. The ticket has to say why the one already there could not carry it; without that sentence, the answer is the one already there.
+
 ## 7. The file itself has to read well
 
 A plan is read as a file, so how it sits on the page is part of whether it is followed.

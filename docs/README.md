@@ -41,7 +41,7 @@ How the app behaves, page by page. They are numbered in reading order, and each 
 | --- | --- |
 | [Rendering](01-features/01-rendering.md) | The full supported syntax with live examples: CommonMark, GFM, syntax highlighting, Mermaid, math, alerts, footnotes, emoji, Leaf buttons, local images, XML (any file, plus 84000 TEI translations), JSON/YAML, email (`.eml`), and file encodings |
 | [Navigation](01-features/02-navigation.md) | Tabs, Back/Forward history, the toolbar, the outline, scroll anchors, live reload, recent files, the glossary sheet, link hints, the pager, and the single-window rule |
-| [Library](01-features/03-library.md) | The left-side pane: vaults, the file tree and its breadcrumb, search, the graph view, GitHub sync, file actions, live updates, and narrow-window layout |
+| [Library](01-features/03-library.md) | The left-side pane: vaults, the file tree and its breadcrumb, search, the filter syntax, the graph view, GitHub sync, file actions, live updates, and narrow-window layout |
 | [Minimap](01-features/04-minimap.md) | The scaled real-text document clone in the side rail: how it renders, when it rebuilds, the code view's own rail, responsive widths, and the on/off toggle |
 | [Settings](01-features/05-settings.md) | Every preference, its default, and the JSON files on disk that store them — including [updates](01-features/05-settings.md#updates) and [paths](01-features/05-settings.md#paths) |
 | [Themes](01-features/06-themes.md) | The eleven families (Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage), light/dark/System/Daylight appearance, on-demand Google Fonts, diagram colors, and the semantic token contract. All eleven are drawn on one page at [leaftext.com/gallery.html](https://leaftext.com/gallery.html) |
@@ -56,6 +56,7 @@ How the app behaves, page by page. They are numbered in reading order, and each 
 | How do I keep several documents open? | [Navigation → Tabs](01-features/02-navigation.md#tabs) |
 | What are the keyboard shortcuts? | [Navigation → Shortcuts](01-features/02-navigation.md#shortcuts) |
 | How do I search my notes? | [Library → Search](01-features/03-library.md#search) |
+| Can I filter by tag, field or date? | [Library → Filtering](01-features/03-library.md#filtering) |
 | What is a vault, and do I need one? | [Library → Vaults](01-features/03-library.md#vaults) |
 | How do I push my notes to GitHub? | [Library → GitHub sync](01-features/03-library.md#github-sync) |
 | How do I edit without leaving the page? | [Editing → Inline editing](01-features/07-editing.md#inline-editing-the-reading-view) |

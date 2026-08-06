@@ -34,7 +34,11 @@ pub(crate) enum UserEvent {
         error: Option<String>,
     },
     /// The active vault's text finished being read. Whatever was waiting on it — a graph, a search — runs when it lands.
-    CorpusLoaded { corpus: Box<VaultCorpus> },
+    CorpusLoaded {
+        corpus: Box<VaultCorpus>,
+        /// The field names and values the search box completes from, read on the same worker.
+        hints: Box<FilterHints>,
+    },
     /// A graph finished building. Both this and the search below are computed on a worker thread: they read documents off the disk, which is far too much to do on the thread that answers the window.
     ///
     /// `source` is what the map is of — a vault, or one document — so a graph that finished after the reader moved somewhere a different source answers for is dropped rather than painted.
@@ -276,12 +280,12 @@ pub(crate) enum IpcCommand {
     /// Persist the graph size the frontend just selected.
     #[serde(rename = "setGraphScope")]
     SetGraphScope { scope: String },
-    /// Run a full-text search over the active vault's text. `scope` is the folder the pane is showing, sent as a hint and currently ignored — the whole vault is searched either way (see `event_loop.rs`).
+    /// Filter the active vault's text. `today` is the reader's own date, from the page, so `due:<friday` means their Friday; a missing or unreadable one falls back to UTC.
     #[serde(rename = "search")]
     Search {
         query: String,
         #[serde(default)]
-        scope: Option<Vec<String>>,
+        today: Option<String>,
     },
     /// Compute Previous/Next pager links without blocking the initial render.
     #[serde(rename = "loadPager")]

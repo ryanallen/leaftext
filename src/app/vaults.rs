@@ -24,7 +24,7 @@ pub(crate) struct VaultState {
     pub(crate) corpus_loading: bool,
     /// What asked for the corpus while it was being read.
     pub(crate) pending_graph: Option<GraphRequest>,
-    pub(crate) pending_search: Option<String>,
+    pub(crate) pending_search: Option<TypedQuery>,
     /// The search thread and its query counter — see `vault_search.rs`.
     pub(crate) search: VaultSearch,
     /// The last graph asked for, so an edit on disk can redraw it.
@@ -426,8 +426,14 @@ pub(crate) fn read_corpus(state: &mut VaultState, proxy: &EventLoopProxy<UserEve
         return;
     };
     state.corpus_loading = true;
-    off_loop(proxy, move || UserEvent::CorpusLoaded {
-        corpus: Box::new(VaultCorpus::read(&root)),
+    off_loop(proxy, move || {
+        let corpus = VaultCorpus::read(&root);
+        // Read here, on the worker that has the text open anyway, rather than on the thread that answers the window: it is a frontmatter parse per document.
+        let hints = corpus.filter_hints();
+        UserEvent::CorpusLoaded {
+            corpus: Box::new(corpus),
+            hints: Box::new(hints),
+        }
     });
 }
 

@@ -245,9 +245,17 @@ let librarySearchError = null;
 let librarySearchLoading = false;
 // Whether the host cut the list at its cap, so the count can say so.
 let librarySearchTruncated = false;
-// Above this many paths the scope is dropped and the query goes out unscoped
-// (see librarySearchScopePaths).
-const SEARCH_SCOPE_CAP = 1500;
+// The filter read back in words, and any field name the vault has never set.
+// Shown under the box so a mistyped field is visible instead of silently
+// matching nothing. Empty for a query of plain words, which needs no explaining.
+let librarySearchUnderstood = '';
+let librarySearchUnknownFields = [];
+// The vault's field names and the values each holds, pushed once when its text is
+// read. What the completion menu offers; empty until a vault is open.
+let filterHintFields = [];
+// What the completion menu is offering under the search box, and which row is picked.
+let filterMenuItems = [];
+let filterMenuIndex = 0;
 // A heading anchor to scroll to once a clicked result's document has rendered.
 let pendingSearchJump = null;
 // The padlocks: whether documents open ready to type into. Saved settings, not

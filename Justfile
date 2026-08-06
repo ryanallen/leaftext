@@ -90,6 +90,12 @@ check-docs:
 check-wrapping:
     node scripts/check-wrapping.mjs
 
+# Fail on a diagram drawn with box characters. No renderer lines them up, and a
+# wireframe in a ticket is what an interface gets approved from — it has to be a
+# picture. `scripts/wireframe.mjs` draws one from an HTML sketch.
+check-ascii-art:
+    node scripts/check-ascii-art.mjs
+
 # Fail on a file the published pages fetch by a path that has nothing at it — a 404
 # nobody sees until the page is live.
 check-site:
@@ -190,7 +196,7 @@ doc-images:
 check-shot-edges:
     node scripts/check-shot-edges.mjs --check
 
-verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-site check-shell check-identity check-hooks check-mcp check-driver check-shot-edges
+verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-mcp check-driver check-shot-edges
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

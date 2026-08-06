@@ -26,6 +26,19 @@ struct SearchMemo {
     matched: Arc<Vec<String>>,
 }
 
+/// One typed query, ready to run: the text the page sent, and what it parsed to. The text is kept because the page matches an answer against what is in the field, character for character.
+pub(crate) struct TypedQuery {
+    pub(crate) text: String,
+    pub(crate) parsed: Query,
+}
+
+impl TypedQuery {
+    pub(crate) fn new(text: String, today: Option<&str>) -> Self {
+        let parsed = Query::parse(&text, today_or_utc(today));
+        Self { text, parsed }
+    }
+}
+
 /// Which query is being waited for. The loop claims a number per keystroke; the scan reads it between documents, and anything holding an older one is work nobody will read.
 #[derive(Clone, Default)]
 pub(crate) struct SearchGeneration(Arc<AtomicU64>);
@@ -49,7 +62,7 @@ impl SearchGeneration {
 
 struct SearchJob {
     corpus: Arc<VaultCorpus>,
-    query: String,
+    query: TypedQuery,
     /// The vault this was asked of, so an answer whose vault moved is dropped.
     scope: Option<PathBuf>,
     generation: u64,
@@ -64,17 +77,29 @@ impl VaultSearch {
     }
 
     /// The answer to this query, if it is the one already given and the vault's text has not moved since.
-    pub(crate) fn remembered(&self, query: &str, corpus: u64) -> Option<SearchResults> {
+    ///
+    /// Only for a query of plain words. One with a date in it — `due:<today` — would otherwise still be answering yesterday for a window left open overnight.
+    pub(crate) fn remembered(&self, query: &TypedQuery, corpus: u64) -> Option<SearchResults> {
+        if !query.parsed.is_plain() {
+            return None;
+        }
         let last = self.last.as_ref()?;
-        (last.query == query && last.corpus == corpus).then(|| last.results.clone())
+        (last.query == query.text && last.corpus == corpus).then(|| last.results.clone())
     }
 
     /// The paths to scan for `query`, when a shorter query has already been answered over the same text. Typing one more letter can only ever shrink the set — every term is required, and the longer query's terms contain the shorter one's — so the documents that missed before cannot match now.
-    pub(crate) fn narrowing(&self, query: &str, corpus: u64) -> Option<Arc<Vec<String>>> {
+    ///
+    /// That promise is only a plain query's. `OR` can grow what a longer query matches and a `-` can too, so anything past required words scans the whole vault. Every prefix of a plain query is itself plain, which is why testing this one is enough.
+    pub(crate) fn narrowing(&self, query: &TypedQuery, corpus: u64) -> Option<Arc<Vec<String>>> {
+        if !query.parsed.is_plain() {
+            return None;
+        }
         let last = self.last.as_ref()?;
         // Same text, and this query is the last one with more typed on the end. Anything else — a letter deleted, a different case, a space added — is a different question and gets the whole vault.
-        (last.corpus == corpus && query.len() > last.query.len() && query.starts_with(&last.query))
-            .then(|| Arc::clone(&last.matched))
+        (last.corpus == corpus
+            && query.text.len() > last.query.len()
+            && query.text.starts_with(&last.query))
+        .then(|| Arc::clone(&last.matched))
     }
 
     pub(crate) fn remember(&mut self, query: &str, corpus: u64, mut results: SearchResults) {
@@ -92,14 +117,14 @@ impl VaultSearch {
 pub(crate) fn request_vault_search(
     state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
-    query: String,
+    query: TypedQuery,
 ) {
     // Already answered, over text that has not changed since. Sent as an event rather than painted here, so a kept answer and a fresh one arrive by one path.
     if let Some(results) = state.search.remembered(&query, state.corpus_generation) {
         state.search.generation.cancel();
         let _ = proxy.send_event(UserEvent::SearchReady {
             scope: state.root.clone(),
-            query,
+            query: query.text,
             results,
         });
         return;
@@ -121,7 +146,7 @@ pub(crate) fn run_search(
     state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
     corpus: Arc<VaultCorpus>,
-    query: String,
+    query: TypedQuery,
     within: Option<Arc<Vec<String>>>,
 ) {
     let job = SearchJob {
@@ -161,13 +186,16 @@ fn spawn_search_worker(
             }
             let overtaken = || !generation.is_current(job.generation);
             let within = job.within.as_ref().map(|paths| paths.as_slice());
-            let Some(results) = job.corpus.search_until(&job.query, within, &overtaken) else {
+            let Some(results) = job
+                .corpus
+                .search_until(&job.query.parsed, within, &overtaken)
+            else {
                 continue;
             };
             if proxy
                 .send_event(UserEvent::SearchReady {
                     scope: job.scope,
-                    query: job.query,
+                    query: job.query.text,
                     results,
                 })
                 .is_err()
@@ -184,11 +212,11 @@ fn search_ready(job: SearchJob) -> UserEvent {
     let within = job.within.as_ref().map(|paths| paths.as_slice());
     let results = job
         .corpus
-        .search_until(&job.query, within, &|| false)
+        .search_until(&job.query.parsed, within, &|| false)
         .unwrap_or_default();
     UserEvent::SearchReady {
         scope: job.scope,
-        query: job.query,
+        query: job.query.text,
         results,
     }
 }

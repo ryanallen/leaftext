@@ -199,8 +199,17 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::FolderLoaded { scope, listing }) => {
                 deliver_folder(&mut vault_state, reader.page(), scope, listing);
             }
-            Event::UserEvent(UserEvent::CorpusLoaded { corpus }) => {
+            Event::UserEvent(UserEvent::CorpusLoaded { corpus, hints }) => {
+                let root = corpus.root.clone();
                 deliver_corpus(&mut vault_state, &proxy, *corpus);
+                // Only for the vault still on screen: the hints name that vault's fields, and `deliver_corpus` has already thrown the read away if it is not.
+                if vault_state.root.as_deref() == Some(root.as_path()) {
+                    run_page_script(
+                        reader.page(),
+                        &filter_hints_script(&hints),
+                        "Failed to seed the filter hints",
+                    );
+                }
             }
             Event::UserEvent(UserEvent::GraphReady { source, graph }) => {
                 deliver_graph(
@@ -896,10 +905,10 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         request,
                     );
                 }
-                IpcCommand::Search { query, scope } => {
+                IpcCommand::Search { query, today } => {
                     // Search reads the active vault's text. Without a vault there is nothing bounded to read, so the page says so and never asks.
-                    let _ = scope;
-                    request_vault_search(&mut vault_state, &proxy, query);
+                    let typed = TypedQuery::new(query, today.as_deref());
+                    request_vault_search(&mut vault_state, &proxy, typed);
                 }
                 IpcCommand::LoadPager { path } => {
                     off_loop(&proxy, move || {

@@ -6,11 +6,14 @@
 
 use crate::read_source;
 use crate::store::{
-    document_links, normalize_name_key, path_to_string, url_host_label, DocumentGraph, GraphEdge,
-    GraphNode, GraphRequest, SearchHit, SearchResults,
+    document_fields, document_links, normalize_name_key, path_to_string, url_host_label,
+    DocumentGraph, FieldType, FrontmatterField, GraphEdge, GraphNode, GraphRequest, SearchHit,
+    SearchResults,
 };
 use crate::unique_heading_slug;
+use crate::{Candidate as _, FieldAnswer, FieldValue as QueryValue, Needle, Query, TaskTally};
 
+use std::cell::OnceCell;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -158,29 +161,31 @@ impl VaultCorpus {
         graph
     }
 
-    /// Search the vault. A document matches when it carries every term, in its name or its text; hits are ranked name-first, then by how often the terms appear. Scanning a few megabytes of RAM beats a round trip to SQLite, and it can never be out of step with the disk.
-    ///
-    /// Ranked before anything is drawn: a snippet, its line and its heading cost a walk of the document, and a broad query has hundreds of matches to show fifty of.
+    /// Search the vault, with the filter syntax read against today's UTC date. The convenience door: anything with a reader behind it parses the query itself, so `friday` is the reader's Friday.
     pub fn search(&self, query: &str) -> SearchResults {
-        self.search_until(query, None, &|| false)
+        self.search_until(&Query::parse(query, crate::utc_today()), None, &|| false)
             .unwrap_or_default()
     }
 
-    /// The same search, with two things the caller can hand it.
+    /// The whole search: a document passes the parsed filter, then scores on the words in it. Hits are ranked name-first, then by how often those words appear. Scanning a few megabytes of RAM beats a round trip to SQLite, and it can never be out of step with the disk.
+    ///
+    /// Ranked before anything is drawn: a snippet, its line and its heading cost a walk of the document, and a broad query has hundreds of matches to show fifty of.
     ///
     /// `overtaken` is checked between documents: the field has moved on, so finishing is work for an answer nobody will read. One atomic load against a document's scan.
     ///
-    /// `within` narrows the scan to the paths that matched a shorter query. Every term is required and a longer query's terms contain the shorter one's, so extending a query can only ever shrink the set — anything outside it cannot match. The caller owns the "shorter query, same text" part of that promise.
+    /// `within` narrows the scan to the paths that matched a shorter query — sound only for a query of required words, which is the caller's half of the promise (see [`Query::is_plain`]).
     pub fn search_until(
         &self,
-        query: &str,
+        query: &Query,
         within: Option<&[String]>,
         overtaken: &dyn Fn() -> bool,
     ) -> Option<SearchResults> {
-        let terms = search_terms(query);
-        if terms.is_empty() {
+        if query.is_empty() {
             return Some(SearchResults::default());
         }
+        // Worked out once for the whole scan rather than per document: a plain query's words are all required, which is what lets one pass both accept and score a document.
+        let needles = query.scoring_needles();
+        let required = query.is_plain();
         // A set that holds the whole vault narrows nothing, and building it to discover that costs more than the scan saves — a one-letter query matches every document, so this is the common first keystroke.
         let narrowed: Option<HashSet<&str>> = within
             .filter(|paths| paths.len() < self.documents.len())
@@ -197,7 +202,11 @@ impl VaultCorpus {
             if overtaken() {
                 return None;
             }
-            if let Some(candidate) = score_document(document, &terms) {
+            // A plain query is proved by the scan below, which is why it does not pay for a pass of its own — the words it needs are exactly the words it scores.
+            if !required && !query.matches(&DocumentCandidate::new(document)) {
+                continue;
+            }
+            if let Some(candidate) = score_document(document, &needles, required) {
                 matched.push(document.path.clone());
                 ranked.push(candidate);
             }
@@ -213,8 +222,135 @@ impl VaultCorpus {
             hits: files.into_iter().flatten().collect(),
             truncated,
             matched,
+            // A query of plain words reads back as the words themselves, which is the box repeating what is already in it.
+            understood: if required {
+                String::new()
+            } else {
+                query.describe()
+            },
+            unknown_fields: self.unknown_fields(query),
         })
     }
+
+    /// The field names in `query` that no document in this vault sets. A filter naming one can only ever match nothing, so the box says which name it did not know instead of showing an empty list and leaving somebody to guess.
+    pub fn unknown_fields(&self, query: &Query) -> Vec<String> {
+        let mut wanted: Vec<&str> = query.field_names();
+        if wanted.is_empty() {
+            return Vec::new();
+        }
+        for document in &self.documents {
+            if wanted.is_empty() {
+                break;
+            }
+            let candidate = DocumentCandidate::new(document);
+            wanted.retain(|name| !matches!(candidate.field(name), FieldAnswer::Values(_)));
+        }
+        wanted.into_iter().map(str::to_string).collect()
+    }
+}
+
+/// One corpus document with the answers a filter asks for. Frontmatter is parsed and checkboxes counted at most once per document per query, and only if something asks — a plain word query pays for neither.
+struct DocumentCandidate<'a> {
+    document: &'a CorpusDocument,
+    fields: OnceCell<Vec<FrontmatterField>>,
+    tasks: OnceCell<TaskTally>,
+}
+
+impl<'a> DocumentCandidate<'a> {
+    fn new(document: &'a CorpusDocument) -> Self {
+        Self {
+            document,
+            fields: OnceCell::new(),
+            tasks: OnceCell::new(),
+        }
+    }
+}
+
+impl crate::Candidate for DocumentCandidate<'_> {
+    fn name(&self) -> &str {
+        &self.document.label
+    }
+
+    fn path(&self) -> &str {
+        &self.document.path
+    }
+
+    fn aliases(&self) -> &[String] {
+        &self.document.aliases
+    }
+
+    fn text(&self) -> Option<&str> {
+        Some(&self.document.text)
+    }
+
+    fn field(&self, name: &str) -> FieldAnswer {
+        let fields = self
+            .fields
+            .get_or_init(|| document_fields(&self.document.text));
+        let Some(field) = fields.iter().find(|field| field.key_is(name)) else {
+            return FieldAnswer::Missing;
+        };
+        FieldAnswer::Values(
+            field
+                .values
+                .iter()
+                .map(|value| typed(field, value))
+                .collect(),
+        )
+    }
+
+    fn tasks(&self) -> Option<TaskTally> {
+        Some(*self.tasks.get_or_init(|| tally_tasks(self.document)))
+    }
+}
+
+/// One frontmatter value as the filter compares it — the field's own type decides, so `due:<friday` is a date comparison and `rating:>4` a number one.
+fn typed(field: &FrontmatterField, value: &crate::store::FieldValue) -> QueryValue {
+    match field.kind {
+        FieldType::Date | FieldType::DateTime => value
+            .text
+            .get(..10)
+            .and_then(|day| {
+                time::Date::parse(
+                    day,
+                    time::macros::format_description!("[year]-[month]-[day]"),
+                )
+                .ok()
+            })
+            .map(QueryValue::Date)
+            .unwrap_or_else(|| QueryValue::Text(value.text.clone())),
+        FieldType::Number => value
+            .text
+            .parse::<f64>()
+            .map(QueryValue::Number)
+            .unwrap_or_else(|_| QueryValue::Text(value.text.clone())),
+        FieldType::Checkbox => QueryValue::Checkbox(value.text.eq_ignore_ascii_case("true")),
+        FieldType::Text | FieldType::List => QueryValue::Text(value.text.clone()),
+    }
+}
+
+/// A document's checkboxes, counted. Only Markdown has any, and the cheap test for a bracket pair comes first because the real count is a whole parse of the document and nearly every file in a vault has no task in it at all.
+fn tally_tasks(document: &CorpusDocument) -> TaskTally {
+    if crate::DocumentFormat::from_path(Path::new(&document.path))
+        != crate::DocumentFormat::Markdown
+    {
+        return TaskTally::default();
+    }
+    if !document.text.contains("[ ]")
+        && !document.text.contains("[x]")
+        && !document.text.contains("[X]")
+    {
+        return TaskTally::default();
+    }
+    let mut tally = TaskTally::default();
+    for offset in crate::task_marker_offsets(&document.text) {
+        match document.text.as_bytes().get(offset) {
+            Some(b' ') => tally.open += 1,
+            Some(_) => tally.done += 1,
+            None => {}
+        }
+    }
+    tally
 }
 
 /// Best first, then alphabetical so equal scores hold a stable order.
@@ -279,8 +415,12 @@ impl Candidate<'_> {
     }
 }
 
-/// Score one document, or refuse it on the first term it does not carry.
-fn score_document<'a>(document: &'a CorpusDocument, terms: &[Term]) -> Option<Candidate<'a>> {
+/// Score one document on the words the query is worth ranking by. `required` is a plain query, where every word has to land and a miss is the document refused on the spot — the one pass then both accepts and ranks. With syntax in the query the tree has already accepted this document, so a word it does not carry simply scores nothing.
+fn score_document<'a>(
+    document: &'a CorpusDocument,
+    terms: &[&Needle],
+    required: bool,
+) -> Option<Candidate<'a>> {
     let name = document.label.to_lowercase();
     let aliases: Vec<String> = document
         .aliases
@@ -293,17 +433,20 @@ fn score_document<'a>(document: &'a CorpusDocument, terms: &[Term]) -> Option<Ca
     // The best any one term managed against an alias, so a row found by one can say which name it was rather than looking like a mystery.
     let mut best_alias: Option<(f64, usize)> = None;
     for term in terms {
-        let (named, alias) = best_name_score(&name, &aliases, &term.text);
+        let (named, alias) = best_name_score(&name, &aliases, term.text());
         if let Some(index) = alias {
             if best_alias.is_none_or(|(best, _)| named > best) {
                 best_alias = Some((named, index));
             }
         }
         let scan = scan_term(&document.text, term);
-        let foldered = find_case_insensitive(folder, term, 0).is_some();
-        // Every term has to land somewhere, or this is not the document — and there is no reason to read it for the rest of them.
+        let foldered = term.is_in(folder);
         if named == 0.0 && scan.count == 0 && !foldered {
-            return None;
+            // Every term of a plain query has to land somewhere, or this is not the document — and there is no reason to read it for the rest of them.
+            if required {
+                return None;
+            }
+            continue;
         }
         score += named;
         if foldered {
@@ -370,43 +513,6 @@ fn on_heading_line(text: &str, at: usize) -> bool {
     text[start..].trim_start().starts_with('#')
 }
 
-/// One term of the query. Lowercased once, with the path it takes and the byte it skips to decided here rather than per document.
-struct Term {
-    text: String,
-    ascii: bool,
-    pivot: usize,
-}
-
-/// Letters of English prose, rarest first. Skipping to a term's rarest byte finds far fewer false starts than skipping to its first: 'm' in "dharma" turns up half as often as 'd' does, and every false start costs a comparison.
-const LETTERS_BY_RARITY: &[u8] = b"zqxjkvbpygfwmucldrhsnioate";
-
-fn rarest_byte(term: &[u8]) -> usize {
-    let rank = |byte: u8| {
-        LETTERS_BY_RARITY
-            .iter()
-            .position(|candidate| *candidate == byte)
-            // Anything that is not a letter is rarer than every letter.
-            .unwrap_or(0)
-    };
-    (0..term.len())
-        .min_by_key(|index| rank(term[*index]))
-        .unwrap_or(0)
-}
-
-/// Split user input into terms: whitespace-separated and lowercased. There is no query language here — every term is literal text.
-fn search_terms(query: &str) -> Vec<Term> {
-    query
-        .split_whitespace()
-        .map(|term| term.trim().to_lowercase())
-        .filter(|term| !term.is_empty())
-        .map(|text| Term {
-            ascii: text.is_ascii(),
-            pivot: rarest_byte(text.as_bytes()),
-            text,
-        })
-        .collect()
-}
-
 /// What one walk of a document answers about one term: how often it appears, and where its first few are. Both questions in one pass, and the count stops at [`SCORE_COUNT_CAP`] because the score cannot go higher.
 struct TermScan {
     count: usize,
@@ -414,14 +520,13 @@ struct TermScan {
     spots: Vec<(usize, usize)>,
 }
 
-/// Offsets here are into the text as it sits on disk, never into a lowercased copy of it: lowercasing can change a string's length, and offsets borrowed across that shift showed the wrong window of text and could land mid-character.
-fn scan_term(text: &str, term: &Term) -> TermScan {
+fn scan_term(text: &str, term: &Needle) -> TermScan {
     let mut scan = TermScan {
         count: 0,
         spots: Vec::new(),
     };
     let mut from = 0usize;
-    while let Some((at, length)) = find_case_insensitive(text, term, from) {
+    while let Some((at, length)) = term.find(text, from) {
         if scan.spots.len() < ROWS_PER_DOCUMENT {
             scan.spots.push((at, length));
         }
@@ -433,66 +538,6 @@ fn scan_term(text: &str, term: &Term) -> TermScan {
         from = at + length.max(1);
     }
     scan
-}
-
-fn find_case_insensitive(text: &str, term: &Term, from: usize) -> Option<(usize, usize)> {
-    if term.ascii {
-        find_ascii(text, term, from)
-    } else {
-        find_folded(text, &term.text, from)
-    }
-}
-
-/// An all-ASCII term — nearly every query — against text of any kind: skip to a byte that could be the term's rarest, in either case, then confirm the window around it. No allocation, and an ASCII byte in UTF-8 is never part of a longer character, so the offset is always a character boundary.
-fn find_ascii(text: &str, term: &Term, from: usize) -> Option<(usize, usize)> {
-    let needle = term.text.as_bytes();
-    let bytes = text.as_bytes();
-    let lower = *needle.get(term.pivot)?;
-    let upper = lower.to_ascii_uppercase();
-    let mut at = from + term.pivot;
-    while at + (needle.len() - term.pivot) <= bytes.len() {
-        let last_pivot = bytes.len() - (needle.len() - term.pivot) + 1;
-        let found = at + memchr::memchr2(lower, upper, &bytes[at..last_pivot])?;
-        let start = found - term.pivot;
-        if bytes[start..start + needle.len()].eq_ignore_ascii_case(needle) {
-            return Some((start, needle.len()));
-        }
-        at = found + 1;
-    }
-    None
-}
-
-/// A term carrying a non-ASCII character, so `É` still finds `é`. Folds the text a character at a time as it walks it, which is slower per byte than the ASCII path and is the rare query.
-fn find_folded(text: &str, term: &str, from: usize) -> Option<(usize, usize)> {
-    let head = term.chars().next()?;
-    for (offset, ch) in text[from..].char_indices() {
-        if ch.to_lowercase().next() != Some(head) {
-            continue;
-        }
-        if let Some(length) = folded_match_len(&text[from + offset..], term) {
-            return Some((from + offset, length));
-        }
-    }
-    None
-}
-
-/// How much of `text` a folded `term` covers at its start, if it covers any. Not the term's own length: `İ` folds to two characters, so the span in the text can be a different number of bytes than the term is.
-fn folded_match_len(text: &str, term: &str) -> Option<usize> {
-    let mut wanted = term.chars().peekable();
-    let mut consumed = 0usize;
-    for ch in text.chars() {
-        if wanted.peek().is_none() {
-            break;
-        }
-        for folded in ch.to_lowercase() {
-            // A character that folds into more than the term still wants ends past the match, so this is not one.
-            if wanted.next() != Some(folded) {
-                return None;
-            }
-        }
-        consumed += ch.len_utf8();
-    }
-    wanted.next().is_none().then_some(consumed)
 }
 
 fn collect_documents(dir: &Path, depth: usize, out: &mut Vec<PathBuf>) {
@@ -808,5 +853,70 @@ pub(crate) fn narrow(graph: DocumentGraph, request: &GraphRequest) -> DocumentGr
             .filter(|node| kept.contains(&node.path))
             .collect(),
         truncated,
+    }
+}
+
+/// How many field names one vault offers the box, and how many values of one field. A vault with a `uuid` on every note would otherwise push thousands of one-off values at a menu nobody can read.
+const MAX_HINT_FIELDS: usize = 200;
+const MAX_HINT_VALUES: usize = 50;
+
+/// What a filter box can offer: every frontmatter field name in the vault, and the values each one is known to hold. Read once when the vault's text is read, on the same worker, so typing costs nothing.
+#[derive(Debug, Clone, Default, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FilterHints {
+    pub fields: Vec<FilterHintField>,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FilterHintField {
+    pub name: String,
+    pub values: Vec<String>,
+}
+
+impl VaultCorpus {
+    /// The field names and values in this vault, alphabetical, for the completion menu. Names keep the case the first file that wrote one gave it, so a menu offers `Status` to a vault that spells it that way.
+    pub fn filter_hints(&self) -> FilterHints {
+        let mut order: Vec<String> = Vec::new();
+        let mut seen: HashMap<String, Vec<String>> = HashMap::new();
+        for document in &self.documents {
+            for field in document_fields(&document.text) {
+                let key = field.key.to_lowercase();
+                let values = match seen.entry(key) {
+                    std::collections::hash_map::Entry::Occupied(entry) => entry.into_mut(),
+                    std::collections::hash_map::Entry::Vacant(entry) => {
+                        if order.len() >= MAX_HINT_FIELDS {
+                            continue;
+                        }
+                        order.push(field.key.clone());
+                        entry.insert(Vec::new())
+                    }
+                };
+                for value in &field.values {
+                    if values.len() >= MAX_HINT_VALUES {
+                        break;
+                    }
+                    if value.text.is_empty()
+                        || values
+                            .iter()
+                            .any(|held| held.eq_ignore_ascii_case(&value.text))
+                    {
+                        continue;
+                    }
+                    values.push(value.text.clone());
+                }
+            }
+        }
+        order.sort_by_key(|name| name.to_lowercase());
+        FilterHints {
+            fields: order
+                .into_iter()
+                .map(|name| {
+                    let mut values = seen.remove(&name.to_lowercase()).unwrap_or_default();
+                    values.sort_by_key(|value| value.to_lowercase());
+                    FilterHintField { name, values }
+                })
+                .collect(),
+        }
     }
 }

@@ -58,6 +58,8 @@ That order is the whole method, and it is what makes a row arguable rather than 
 
 **Absent is not wrong.** "The app cannot open a `.docx`" is missing capability, not incorrect behavior — it does not lift a row into tier 1 however big its audience. Say that in the row, or the next reader moves it.
 
+**A ticket that changes the window and has not drawn it in the file is not rankable.** Its `Designed` box is unticked and its row says so — "owes a drawn `What it looks like` section" — because the cost of a row nobody has drawn is unknown, and the thing that gets built is whatever the builder invents. [ticket](../ticket/SKILL.md) holds the shape of that section; [design](../design/SKILL.md) is what fails a ticket without one.
+
 ## 3. The tiers
 
 | Tier | What is in it | Time band |

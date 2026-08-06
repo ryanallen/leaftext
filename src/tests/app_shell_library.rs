@@ -282,7 +282,10 @@ fn app_shell_includes_library_pane_settings_and_wording() {
     // The search field, its debounced request, and the result-open + jump.
     assert!(html.contains(r#"<input id="librarySearch" class="library-search""#));
     assert!(html.contains(r#"placeholder="Search files...""#));
-    assert!(html.contains("send({ command: 'search', query, scope: librarySearchScopePaths() });"));
+    assert!(html.contains("send({ command: 'search', query, today: localDateStamp() });"));
+    // The line under the box: what the filter was read as, and any field name the vault has never set.
+    assert!(html.contains(r#"<p class="library-search-note">"#));
+    assert!(html.contains(r#"<span class="library-search-unknown">"#));
     assert!(html.contains("window.leafScrollToFragment('#' + jump.anchor);"));
 
     // File-derived strings are escaped before reaching the DOM (tree + hits).

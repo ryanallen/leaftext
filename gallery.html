@@ -3583,6 +3583,25 @@ body.library-resizing {
   font-size: var(--lt-text-11);
   color: var(--lt-muted-foreground);
 }
+/* What the box made of a filter, above the results. Only ever shown for a query
+   with syntax in it — a plain word would just be read back to the person who
+   typed it. */
+.library-search-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  margin: var(--lt-space-4) var(--lt-space-6) var(--lt-space-2);
+  font-size: var(--lt-text-11);
+  line-height: var(--lt-leading-1-4);
+}
+.library-search-read {
+  color: var(--lt-muted-foreground);
+}
+/* A field name nobody in the vault has set. It reads as a warning rather than as
+   a result count, because a filter naming one can only ever match nothing. */
+.library-search-unknown {
+  color: var(--lt-warning);
+}
 /* A search hit: the file's title on top, the match snippet below it. */
 .library-hit {
   display: block;
@@ -3670,6 +3689,41 @@ body.library-resizing {
 }
 .library-search:focus {
   outline: none;
+}
+/* The platform's own clear button, in the platform's own blue. Escape already clears the field, and nothing else in the app wears a color nobody chose. */
+.library-search::-webkit-search-cancel-button {
+  display: none;
+}
+/* What you can type next, under the search box and placed from it: the header clips at its own height, so the menu cannot live inside it. */
+.filter-menu {
+  position: absolute;
+  z-index: var(--lt-z-50);
+  max-width: 240px;
+  padding: var(--lt-space-2);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  box-shadow: var(--lt-shadow-raised);
+}
+.filter-menu[hidden] {
+  display: none;
+}
+.filter-menu-item {
+  display: block;
+  width: 100%;
+  padding: var(--lt-space-2) var(--lt-space-6);
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-11);
+  text-align: left;
+  cursor: pointer;
+}
+.filter-menu-item.is-active,
+.filter-menu-item:hover {
+  background: var(--lt-surface-muted);
 }
 /* Search reads the active vault's text, so with no vault there is nothing for
    it to read: the row collapses and the list starts where the field was. */
@@ -8287,7 +8341,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 81 colors, the 153 values that do not change with the theme, all 57 icons, and all 48 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 81 colors, the 153 values that do not change with the theme, all 57 icons, and all 50 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -8309,7 +8363,7 @@ body.is-block-dragging .document-body [data-src-start] {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>81</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>153</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>57</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>48</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>50</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -8660,7 +8714,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">48 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">50 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App bar</h3><code class="built">.app-bar</code><span class="built">app-shell.html, with overflow.js folding it and code-view.js measuring it</span></header>
 <div class="stage"><div class="app-bar" style="position:static"><span class="app-bar-lead"><button type="button" class="brand-button"><span class="lt-icon lt-icon-leaf"></span></button></span></div></div>
@@ -8732,6 +8786,14 @@ body.is-block-dragging .document-body [data-src-start] {
 <section class="part">
 <header><h3>Search results</h3><code class="built">.library-hit</code><span class="built">library-search.js</span></header>
 <div class="stage"><button type="button" class="library-hit"><span class="library-hit-title">A note<span class="library-hit-alias">Its other name</span></span><span class="library-hit-snippet">the matched words</span></button></div>
+</section>
+<section class="part">
+<header><h3>Filter completion</h3><code class="built">.filter-menu</code><span class="built">library-search.js, off the vault's own field names</span></header>
+<div class="stage"><div class="filter-menu" style="position:static"><button type="button" class="filter-menu-item is-active" role="option">status:</button><button type="button" class="filter-menu-item" role="option">due:</button></div></div>
+</section>
+<section class="part">
+<header><h3>Understood filter</h3><code class="built">.library-search-note</code><span class="built">library-search.js</span></header>
+<div class="stage"><p class="library-search-note"><span class="library-search-read">tagged work, status is open, due before 2026-08-07, not draft</span><span class="library-search-unknown">No field called “duee”</span></p></div>
 </section>
 <section class="part">
 <header><h3>Breadcrumbs</h3><code class="built">.library-crumb</code><span class="built">library.js</span></header>

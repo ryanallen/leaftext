@@ -154,7 +154,9 @@ fn the_file_list_starts_with_a_way_back_out() {
     assert!(html
         .contains("libraryTree.querySelectorAll('[data-nav-into]').forEach(bindFolderEntryRow);"));
     // An empty folder is exactly where the way out matters, so the rows still render alongside the empty notice.
-    assert!(html.contains("libraryTree.innerHTML = renderProject(libraryEntries)\n      + `<p class=\"library-empty\">"));
+    assert!(html.contains(
+        "libraryTree.innerHTML = renderProject(libraryEntries)\n      + `<p class=\"library-empty\">"
+    ));
 
     assert!(html.contains("const label = `Back to ${parent.name}`;"));
 }

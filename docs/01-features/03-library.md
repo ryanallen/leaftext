@@ -14,6 +14,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [File tree](#file-tree) | One folder at a time, with a breadcrumb showing where you are and a row that steps back out |
 | [Breadcrumb](#file-tree) | The folder path above the search box; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
 | [Search](#search) | Filename and content search across the active vault |
+| [Filtering](#filtering) | More than words in the search box: `#work status:open due:<friday -draft` |
 | [Other names](#other-names) | A note's `aliases` field: every name in it works wherever the file's own name works |
 | [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
 | [Cloud folders](#your-cloud-is-already-a-folder) | Dropbox, OneDrive, iCloud Drive, Box, Nextcloud and Google Drive become vaults on their own when their app is on this machine, and their rows wear a cloud |
@@ -150,6 +151,7 @@ Search covers the active vault. With no vault the field is hidden rather than le
 | Content matches | Ranked by how often the terms appear **for the document's size**, so a long file cannot out-count a one-page note by being long |
 | A match in a heading | Outranks the same word in a paragraph |
 | Multiple terms | Every term must appear, in a name, the folder or the body |
+| More than words | The box takes a [filter](#filtering) — `#work status:open due:<friday -draft` |
 | Rows per file | Up to three, one per place the word is |
 | Result limit | The best 50 files. Past that the count says so — "84 results in the first 50 files" |
 
@@ -160,6 +162,36 @@ Asking the same thing twice costs nothing: the last answer is kept and handed st
 To search **inside** the document you are reading rather than across the vault, see [Find in this document](02-navigation.md#find-in-this-document).
 
 The text search reads is the same copy the [graph](#graph) reads: one pass over the vault, held in memory, patched a file at a time by the [watcher](#live-updates) and dropped when you switch vaults or quit. There is no index on disk, so nothing can go stale relative to your files.
+
+## Filtering
+
+The search box takes more than words.
+
+| You type | You get |
+| --- | --- |
+| `dharma` | the word, in a name, one of its [other names](#other-names), the folder path or the text |
+| `"the dharma bums"` | those words in that order |
+| `-draft` | not that. It goes in front of anything, not just a word — `-status:open` works |
+| `#work` | the note carries that tag, or one under it like `#work/reports` |
+| `status:open` | a [frontmatter field](01-rendering.md#frontmatter) with that value |
+| `status:` | the field is set, whatever it says |
+| `due:<friday` | a date field before that day |
+| `rating:>4` | a number field over that. `<`, `>`, `<=` and `>=` all work |
+| `ext:md` | a file of that kind |
+| `in:notes/2026` | inside that folder, or anything under it |
+| `task:open` | the document holds an unfinished `- [ ]`; `task:done` wants every box in it ticked |
+| `a OR b` | either. `OR` and `AND` are the only reserved words, and only in capitals — a note called `or` is still found by typing `or` |
+| `(a OR b) -c` | grouped |
+
+A date can be `today`, `tomorrow`, `yesterday`, a weekday name (`friday` means the next one, and today when today is a Friday), `2026-08-10`, or `last7d` / `next7d` for any number of days. The day it counts from is your machine's, not a server's.
+
+**Nothing you type is an error.** A search box spends most of its life holding half a filter, so every unfinished shape means something: an unclosed quote runs to the end of what you typed, an unclosed bracket groups to the end, a stray `)` is ignored, and a trailing `OR` drops with the side you did type still standing. Inside quotes nothing is special, so `"-draft"` and `"#work"` find those characters.
+
+A colon only starts a field when what is in front of it looks like a field name and what follows does not start with a slash — so `C:\Users\me`, `https://leaftext.com` and `12:30` are all still findable text rather than filters that match nothing.
+
+**It says what it understood.** Type anything past plain words and a line appears under the box reading the filter back — `tagged work, status is open, due before 2026-08-07, not draft` — and naming any field the vault has never set. A filter on a field nobody uses matches nothing, and an empty list that really means "there is no such field" is the one thing a filter must not do quietly.
+
+**It completes as you type.** The field names your vault actually uses, and the values each one holds, are offered under the box. Arrows walk the list, Enter or Tab takes one, Escape closes it — and only then does a second Escape clear the field.
 
 ## Other names
 

@@ -84,6 +84,10 @@ The problem, and the cost of leaving it alone. Numbers if there are numbers.
 
 Where the code goes and what each piece touches. Decisions, with their reasons.
 
+## What it looks like
+
+Only when the reader will see a difference — drawn, not described. See below.
+
 ## Phases
 
 ## What an earlier draft got wrong
@@ -146,6 +150,26 @@ Drop the bundler line when the work is nowhere near `design/`.
 - **Embed it where it is evidence**, under the line it backs, with alt text saying what it shows: `![The palette icon the owner supplied, in a small box](../../imgs/theme-palette-icon.png)`. From a subject folder that is two levels up.
 - **A drawing gets pasted as well as pictured.** A picture of an icon cannot be built from, so the markup or the `d` goes in `How it is built` beside it, and the picture is what proves the markup is the right thing.
 - **The same rule holds mid-build.** [`/dev`](../dev/SKILL.md) and [`/design`](../design/SKILL.md) file a handed-over picture the same way rather than leaving it in the transcript.
+
+## Anything the reader will see gets drawn before it gets built
+
+**A ticket that adds, moves or restyles one thing in the window carries a `## What it looks like` section, and no phase may build a control that is not in it.** Without one the builder invents the interface, and the owner finds out by looking at their own app. v0.1.479's filter work put a second search box, a `?` button and a popup panel into the pane, none of them named in the plan; all three came straight back out.
+
+That section holds three things, and a box in a phase that has no counterpart here is a box to cut:
+
+- **Where it goes, as a picture in the file.** Write the sketch as HTML in `../docs/imgs/wireframes/<ticket>.html` and photograph it: `node scripts/wireframe.mjs ../docs/imgs/wireframes/<ticket>.html ../docs/imgs/<ticket>-wireframe.png 760 470`. The PNG is embedded in the ticket, the HTML stays beside it so a later edit redraws rather than restarts. **Never ASCII boxes** — they come out ragged in every renderer that matters, break the moment a label runs long, and are the reason this rule is written down. Not a sentence describing it either: a reader has to point at where the thing sits and what it is beside.
+
+![The library pane with a filter typed in: the completion menu open under the search box, and under that the read-back line and a warning naming a field the vault has not got](../../../docs/imgs/query-language-wireframe.png)
+
+The sketch is plain HTML — boxes, borders, real text, a numbered dot per changed part and a key beside it saying what each one is. `scripts/wireframe.mjs --check` says which browser it will use; it takes the Edge or Chrome already on the machine, so nothing is added to the tree.
+
+> **Never draw with box characters.** Not here, not in `How it is built`, not in a reply, not anywhere in the plan tree. `┌ │ └ ─` line up in exactly one font at exactly one size and nowhere else: the app's own renderer, GitHub and every editor set the characters beside them differently, so what looked square when it was typed arrives as a ragged mess, and it breaks outright the first time a label runs long. `just check-ascii-art` fails on one and names the line. A picture instead — the command above — or a Mermaid block where the thing really is a graph rather than a layout.
+- **What it is made of** — the markup, the component row it will get in `design/components.md`, and the tokens it takes. A new control is a new row there, so the row is written here first.
+- **What it replaces or leaves alone.** Naming what does *not* change is the half that stops a build growing a second copy of something.
+
+**Prefer nothing new.** The strongest version of this section is "no new control — it rides the box that is already there". A second input, a second button, a second panel: each one is a thing the owner has to look at forever, and the ticket has to say why the existing one could not carry it. If it cannot say that, the answer is the existing one.
+
+**Draw it, show the drawing, get a yes.** Not "ask whether to add a control" — write the sketch into the ticket, then put that same sketch in front of the owner and let them look at it. Two or three drawn options where there is a real choice, with one marked the pick and why. Their answer becomes the section and a decision in the file, and it is what a builder is held to later. A ticket that reaches `/dev` with an unapproved drawing has not been written yet.
 
 ## Two files finish the job, every time
 

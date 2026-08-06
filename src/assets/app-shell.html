@@ -93,6 +93,10 @@
       <input id="librarySearch" class="library-search" type="search" autocomplete="off" spellcheck="false" placeholder="Search files...">
     </div>
   </div>
+  <!-- Field names and the values they hold, offered as you type in the search box.
+       A child of the pane rather than of the box, because the header clips at its
+       own height. -->
+  <div id="filterMenu" class="filter-menu" role="listbox" hidden></div>
   <div id="libraryDivider" class="library-divider" title="Resize library" role="separator" aria-orientation="vertical"></div>
   <!-- The card's top-left corner. A child of the pane so it is placed by the same
        grid line as the card's left border and can't drift off it. See
