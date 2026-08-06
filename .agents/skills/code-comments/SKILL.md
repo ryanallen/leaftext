@@ -1,6 +1,6 @@
 ---
 name: code-comments
-description: The comment bar for this repo, in one place. Why not what, match the density next door, one line if it fits, cut the drafting history, keep the version-numbered or measured history. Scope is the file, not the author. Every rewrite is checked against the code, because a plausible rewrite that is false is worse than the history it replaced. A quality pass over comments only; it changes no logic and runs no git. Use when the user says "trim the comments", "the comments are too long", or before committing; /git-release calls it.
+description: The comment bar for this repo, in one place. Why not what, match the density next door, one line if it fits, cut the drafting history, keep the version-numbered or measured history. A quality pass over comments only; it changes no logic. Use when the user says "trim the comments", "the comments are too long", or before committing; /git-release calls it.
 argument-hint: "[path]"
 user-invocable: true
 ---

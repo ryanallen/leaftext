@@ -1,6 +1,6 @@
 ---
 name: sync-tests
-description: Make the tests match the code, the way sync-docs makes the docs match the app. Names the test that covers each change, writes the ones that are missing, and says what cannot be tested when a change needs a real window, live selection or a held pointer — never that Mac code, the installer or the workflows do not build here, which is true every time and so worth nothing. With no argument it works the uncommitted diff; pass a path to audit a file or folder whether or not it changed, or a git ref to work everything since it. Runs `cargo test` and `just check-shell` and never touches git. Use when the user says "sync the tests", "what test covers this", "is this tested", or before a release.
+description: Make the tests match the code. Names the test that covers each change, writes the ones that are missing, and says what cannot be tested. With no argument it works the uncommitted diff; pass a path to audit a file or folder, or a git ref to work everything since it. Use when the user says "sync the tests", "what test covers this", "is this tested", or before a release.
 argument-hint: "[path | since-ref]"
 user-invocable: true
 ---

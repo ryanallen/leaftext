@@ -2,3 +2,4 @@
 /dist
 .release-tag
 /.tmp
+.agents/settings.local.json

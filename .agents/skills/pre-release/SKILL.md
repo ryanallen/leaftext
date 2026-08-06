@@ -1,6 +1,6 @@
 ---
 name: pre-release
-description: Close a ticket, on the owner's word. Being asked to run it is that word — only the owner may ask, and no other skill or agent may call it, bar /git-release. Ticks the owner's last box, writes the shipped note, moves the file into the matching subject folder under ../docs/done/, rewrites its row in ../docs/README.md to say what shipped, cuts its row out of ../docs/PLAN.md and pastes it into ../docs/done/PLAN.md unchanged bar the Designed cell, moves the "next up" pointer on, fixes any published page the work made untrue, then runs /sync-docs, /code-comments, /check and /pm. Never touches git — a dirty tree is the correct end state, and /git-release is the only thing that writes. Use when the owner says a built ticket works, says "mark it done", "close the ticket", or "get ready for release".
+description: Close a ticket, on the owner's word. Being asked to run it is that word — only the owner may ask, and no other skill or agent may call it, bar /git-release. Makes the five edits that close a ticket — shipped note, move into ../docs/done/, index row, both plan files, published pages — then runs /sync-docs, /code-comments, /check and /pm. Use when the owner says a built ticket works, says "mark it done", "close the ticket", or "get ready for release".
 argument-hint: "[ticket path]"
 user-invocable: true
 ---

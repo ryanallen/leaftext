@@ -1,6 +1,6 @@
 ---
 name: ticket
-description: Write a ticket — a Markdown plan with phases and a checkbox per piece of work, so the job can be picked up cold, done in order, and ticked off as it lands. Six parts in a fixed order, opening with one sentence that says who it is for, what they will be able to do, the change that does it, and the evidence it will work — enable <who> to <do the thing> by <the change>, which works because <the evidence>. Then why, what was measured with a citation per claim, how it is built, the phases, and the record. It is also where the words go: a running-order row gets two sentences, so anything longer lands in the ticket. A new capability goes in ../docs/features/, restructuring what already exists goes in ../docs/refactor/, and something the app gets wrong today goes in ../docs/fixes/ — each inside the subject folder for the part of the app it is about. Reads ../docs/README.md first so it never re-plans what the tree already shipped or turned down, writes that index row in the same pass, and then runs /pm to rank the new ticket among every other live one rather than placing its own row. Nothing open-ended survives the file: anything undecided is asked before writing, never left in as a question. Never touches git. Use when the user says "write a ticket", "make a plan for", "spec this out", hands over work to be scoped rather than built, or asks what plans already exist.
+description: Write a ticket — a Markdown plan with phases and a checkbox per piece of work, filed in a subject folder under ../docs/features/, ../docs/refactor/ or ../docs/fixes/. Reads ../docs/README.md first so it never re-plans what the tree already answered, writes that index row in the same pass, then runs /pm to rank the new ticket; anything undecided is asked before writing, never left in as a question. Use when the user says "write a ticket", "make a plan for", "spec this out", hands over work to be scoped rather than built, or asks what plans already exist.
 argument-hint: "[what the ticket is for]"
 user-invocable: true
 ---
@@ -28,7 +28,7 @@ The ticket tree is `leaftext/docs/`, the folder beside the app — not `app/docs
 
 Not sure between the first three? It is a **feature** if a user would notice it appear, a **refactor** if only the code changes, and a **fix** if the app is doing something wrong today.
 
-**Then a subject folder inside it.** None of those folders is a flat pile: the ticket goes in the folder for the part of the app it is about. The live three share one vocabulary — `storage/`, `library/`, `reading/`, `editing/`, `filtering/`, `diagrams/`, `big-swings/`, `plugins/` — and **the word does not change when the ticket moves**, so `features/editing/table-editing.md` can become `refactor/editing/` or `fixes/editing/` without being re-filed. `done/` and `canceled/` group by what kind of thing it was instead: `app/`, `repo/`, `release/`, `reference/`, `indexer/`, `pdf/`, `not-this-app/`. A ticket whose subject is genuinely new gets a new folder plus a row in `../docs/GLOSSARY.md` under [subject folder](../../../docs/GLOSSARY.md#subject-folder) naming it — `scripts/check-docs.mjs` matches a role by folder prefix, so a subject folder inherits its parent's role and needs no edit there.
+**Then a subject folder inside it.** None of those folders is a flat pile: the ticket goes in the folder for the part of the app it is about. The live three share one vocabulary — `storage/`, `library/`, `reading/`, `editing/`, `filtering/`, `diagrams/`, `big-swings/`, `plugins/`, plus `repo/` for a ticket about how the repo is built rather than about the app — and **the word does not change when the ticket moves**, so `features/editing/table-editing.md` can become `refactor/editing/` or `fixes/editing/` without being re-filed. `done/` and `canceled/` group by what kind of thing it was instead: `app/`, `repo/`, `release/`, `reference/`, `indexer/`, `pdf/`, `not-this-app/`. A ticket whose subject is genuinely new gets a new folder plus a row in `../docs/GLOSSARY.md` under [subject folder](../../../docs/GLOSSARY.md#subject-folder) naming it — `scripts/check-docs.mjs` matches a role by folder prefix, so a subject folder inherits its parent's role and needs no edit there.
 
 The file name is kebab-case and names the thing, not the change: `highlight-annotate.md`, `search.md`, `update-system.md`.
 
@@ -163,18 +163,7 @@ Two things to check before handing back: the ticket has a row in the index, and 
 
 ## Working a ticket later
 
-That is [dev](../dev/SKILL.md)'s job — it takes the finished ticket and does everything below, plus the index row, the running order in `../docs/plans/`, and any published page the work made untrue. What it holds itself to:
-
-Tick the box — `- [x]` — as each piece lands, in the same edit as the code. A box that will not be done is struck through with the reason beside it.
-
-When the last one is ticked, move the file into the right subject folder under `../docs/done/` and put a note at the top saying it shipped and where the code is:
-
-```markdown
-> **Done and shipped.** Kept for the reasoning, not as work. `lib.rs:139` joins
-> the fragments and serves them as `app.js`. Checked 2 August 2026.
-```
-
-Move its index row in the same edit, and rewrite it to say what shipped. A row still describing a plan is how `../docs/README.md` starts lying about the app.
+That is [dev](../dev/SKILL.md)'s job — it builds the phases in order, ticks each box (`- [x]`) in the same edit as the code, strikes through a box that will not be done with the reason beside it, and **stops at the owner's own box**. Closing is [pre-release](../pre-release/SKILL.md)'s, on the owner's word alone: the shipped note at the top, the move into the right subject folder under `../docs/done/`, the index row rewritten to say what shipped, and the running-order row moved into `../docs/done/PLAN.md`.
 
 ## Reference
 

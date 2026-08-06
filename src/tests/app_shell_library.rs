@@ -901,10 +901,16 @@ fn library_breadcrumbs_sit_above_the_search_box() {
     // A fit that would draw the same crumbs at the same width leaves the DOM alone, or a watcher tick would rebuild the trail under an open "…" menu.
     assert!(html.contains("function crumbFitKey(segments)"));
     assert!(html.contains("if (key === libraryCrumbFitKey) return;"));
-    // Entering a folder is the same move as a crumb, so both go through one path.
+    // Entering a folder acts on the mouse's press — a watcher rebuild between press and release replaces the button and swallows the click — while keyboard, touch and pen keep the click path.
+    assert!(html
+        .contains("libraryTree.querySelectorAll('[data-nav-into]').forEach(bindFolderEntryRow);"));
+    assert!(html.contains("function bindFolderEntryRow(button)"));
+    assert!(html.contains("if (event.pointerType !== 'mouse' || event.button !== 0) return;"));
     assert!(html.contains(
-        "button.addEventListener('click', () => setLibraryFolder(button.dataset.navInto));"
+        "button.leafPressEntered = true;\n    setLibraryFolder(button.dataset.navInto);"
     ));
+    // The click that completes a press the helper already handled is the only one suppressed; a stable row must not open twice and a keyboard click must never be ignored.
+    assert!(html.contains("if (button.leafPressEntered) {\n      button.leafPressEntered = false;\n      return;\n    }\n    setLibraryFolder(button.dataset.navInto);"));
     // A folder that has gone missing falls back to the top level. The host decides that as it reads, so the page never holds a path it cannot show.
 
     // The two bands share one treatment (the pane's own surface and grain) and the list starts below both.

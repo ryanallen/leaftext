@@ -311,8 +311,22 @@ function bindLibraryRows() {
       closeLibrarySheet();
     });
   });
-  libraryTree.querySelectorAll('[data-nav-into]').forEach((button) => {
-    button.addEventListener('click', () => setLibraryFolder(button.dataset.navInto));
+  libraryTree.querySelectorAll('[data-nav-into]').forEach(bindFolderEntryRow);
+}
+// Enter on the mouse's press, not the full click: the watcher re-reads on any change under a recursively watched vault, every re-read rewrites these rows through innerHTML, and a rebuild landing between press and release replaces the button so the click never fires. Keyboard keeps click (it has no press), and so do touch and pen — a touch press that starts a scroll must not enter the folder under the finger.
+function bindFolderEntryRow(button) {
+  button.addEventListener('pointerdown', (event) => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    // A slow host answer leaves this button in place, so the click completing this press still fires and would enter twice without the flag.
+    button.leafPressEntered = true;
+    setLibraryFolder(button.dataset.navInto);
+  });
+  button.addEventListener('click', () => {
+    if (button.leafPressEntered) {
+      button.leafPressEntered = false;
+      return;
+    }
+    setLibraryFolder(button.dataset.navInto);
   });
 }
 // The breadcrumb: the library root, then one crumb per folder entered, the last

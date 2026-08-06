@@ -1,6 +1,6 @@
 ---
 name: pm
-description: Rank every live ticket into one running order and write it to ../docs/PLAN.md — what to build next, top to bottom, with the reason each row sits where it does. Reads ../docs/README.md and every ticket in ../docs/features/, ../docs/refactor/ and ../docs/fixes/, checks each one's status against the code rather than trusting it, then ranks on three things in a fixed order: is something wrong today, how many other tickets are waiting on it, and what it costs. The live file is a table, not an essay: four lines above the first table, one or two sentences a cell, no method, no record, no empty tiers — anything longer belongs in the ticket. Shipped rows do not stay in the list — they move to ../docs/done/PLAN.md, so the running order is the length of the work that is left. A row is cited by its ticket's name, never a number. Never touches git. Use when the user says "what should I build next", "rank the tickets", "make a plan", "priorities", or hands over the plan folder to be brought up to date.
+description: Rank every live ticket into one running order and write it to ../docs/PLAN.md — what to build next, top to bottom, checking each ticket's status against the code rather than trusting it. Wrong today first, then what other tickets are waiting on it, then cost; shipped rows live in ../docs/done/PLAN.md, moved there by /pre-release, not this. Use when the user says "what should I build next", "rank the tickets", "make a plan", "priorities", or hands over the plan folder to be brought up to date.
 argument-hint: "[optional: a subject to rank within]"
 user-invocable: true
 ---
@@ -29,13 +29,13 @@ Rows carried numbers until 4 August 2026. They were retired with their rows and 
 
 ### A row moves unchanged
 
-Whatever the row said in the live list is what it says in `done/PLAN.md`: struck through, with the date it closed and what the build found. **Nothing is rewritten on the way across**, so the row a later reader finds is the row somebody actually built against, and moving it is a cut and paste. That is [`/pre-release`](../pre-release/SKILL.md)'s job, not this skill's.
+Whatever the row said in the live list is what it says in `done/PLAN.md`: struck through, with the date it closed and what the build found. **Nothing is rewritten on the way across** bar the `Designed` cell, which is dropped — whether a plan can be trusted has no meaning once the work is built. So the row a later reader finds is the row somebody actually built against, and moving it is a cut and paste. That is [`/pre-release`](../pre-release/SKILL.md)'s job, not this skill's.
 
 ## 1. Read before ranking
 
 - **`../docs/README.md`** — the index, every ticket one line. It is the only thing standing between a ranking and a ticket nobody knew existed.
 - **`../docs/GLOSSARY.md`** — the words this tree uses about itself. A ranking is read by somebody who did not write it, so tier, row, seam, track and retired row mean what that file says they mean. A planning word spent here and missing there gets a row there in the same pass.
-- **Every ticket in `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`**, off the disk rather than off the index. Those folders hold **subject folders** — `storage/`, `library/`, `reading/`, `editing/`, `filtering/`, `diagrams/`, `big-swings/`, `plugins/` — so walk them, never one level. A ticket the index missed still gets a row.
+- **Every ticket in `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`**, off the disk rather than off the index. Those folders hold **subject folders** — `storage/`, `library/`, `reading/`, `editing/`, `filtering/`, `diagrams/`, `big-swings/`, `plugins/`, plus `repo/` — so walk them, never one level. A ticket the index missed still gets a row.
 - **`../docs/done/PLAN.md`** — what has already closed, and what those builds found. A row here is a row not to re-rank.
 
 **Every row carries a `Designed` box, and this skill re-derives it rather than trusting it.** A ticket with the dated line [`/design`](../design/SKILL.md) signs at its top gets `[x]`; a ticket without one gets `[ ]`. Grep the tickets for that line as you read them and write what you find — the box is a mirror, the ticket is the authority, and a ranking is the one pass that reconciles the two. An `[x]` beside a ticket nobody has read is worse than no column at all.

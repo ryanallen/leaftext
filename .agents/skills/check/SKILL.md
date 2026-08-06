@@ -1,6 +1,6 @@
 ---
 name: check
-description: The gate before work is handed back or released. Runs /sync-tests so the change has a test, then `just verify` — twenty-one steps: formatting, compile, tests, no hand-written value in the stylesheet, every class and token and icon and component listed in `design/`, the gallery and the published design page in step with it, US spelling, every Markdown file in the repo and the plan tree next door covered by something that keeps it true, the front-end boots, no assistant identity in the repo, the two hooks, the ask pipe and its registration in step with the app, the gesture driver able to read its own step list, and that every check is in the suite. A failure is fixed and re-run, never explained past. Never mentions that the Mac build, the installer or the GitHub workflows do not run here — that is true every time and GitHub builds them on a tagged release. Never touches git. Use when the user says "check it", "verify", or before handing work back; /git-release calls it before it commits.
+description: The gate before work is handed back or released. Runs /sync-tests so the change has a test, then `just verify`; a failure is fixed and re-run, never explained past. Use when the user says "check it", "verify", or before handing work back; /git-release calls it before it commits.
 argument-hint: ""
 user-invocable: true
 ---

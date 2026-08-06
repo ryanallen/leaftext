@@ -1,6 +1,6 @@
 ---
 name: design
-description: Design a ticket before anyone builds it. Opens every file the ticket cites and checks the claim is still true, then holds the plan against the rules this repo already paid for — one table of formats, every value in design/, fragment order, no crawl, no second list, no loosened check, nothing new on the startup path. Fixes what is wrong in place, signs the top of the file with the date it was checked, and leaves a record of what was wrong at the bottom, so a later reading knows what the first one already thought about and whether anyone has read it against this month's code. Never touches git and never edits app code. Use when the user says "design this ticket", "review this plan", "check this ticket", or hands over a Markdown plan written by /ticket. A running-order row is cited by its ticket's name, never a number.
+description: Design a ticket before anyone builds it. Opens every line it cites against the code, holds the plan against the rules this repo already paid for, fixes what is wrong in place, dates the top of the file, and records what was wrong at the bottom. Never edits app code. Use when the user says "design this ticket", "review this plan", "check this ticket", or hands over a Markdown plan written by /ticket.
 argument-hint: "[path to the ticket]"
 user-invocable: true
 ---

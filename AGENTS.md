@@ -58,24 +58,7 @@ Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document 
 
 ## Skills
 
-In [`.agents/skills/`](.agents/skills/), which `.claude/` and `.codex/` symlink to. Invoke by name; each row links the file that defines it.
-
-| skill | when |
-| --- | --- |
-| [`check`](.agents/skills/check/SKILL.md) | before handing work back. Runs `sync-tests`, then `just verify`, and names anything the change left untested. |
-| [`sync-tests`](.agents/skills/sync-tests/SKILL.md) | the change needs a test that would have caught it. `check` calls it. |
-| [`sync-docs`](.agents/skills/sync-docs/SKILL.md) | app behavior changed, or before a release. Edits `docs/` and the ticket index next door, never git. |
-| [`code-comments`](.agents/skills/code-comments/SKILL.md) | the comment bar, in one place: why not what, one line if it fits, cut the drafting history. |
-| [`design-tokens`](.agents/skills/design-tokens/SKILL.md) | changing how the app looks. A value goes in `design/`, never into a rule. |
-| [`add-dependency`](.agents/skills/add-dependency/SKILL.md) | a new crate. Reports what it drags in, then asks. |
-| [`add-format`](.agents/skills/add-format/SKILL.md) | teaching the app another file type. One arm in `format.rs`. |
-| [`shell-fragment`](.agents/skills/shell-fragment/SKILL.md) | adding, splitting or reordering a front-end fragment. Order is load-bearing. |
-| [`ticket`](.agents/skills/ticket/SKILL.md) | scoping work instead of building it. Writes a phased plan with checkboxes into a subject folder under `../docs/features/`, `../docs/refactor/` or `../docs/fixes/`, and keeps `../docs/README.md` — the one line per ticket that says what shipped, what is planned and what was turned down. Read that index before planning anything; it is the only thing standing between a new plan and one this tree already answered. |
-| [`pm`](.agents/skills/pm/SKILL.md) | deciding what to build next. Ranks every live ticket into one running order and writes it to `../docs/PLAN.md` — wrong today first, then what other tickets are waiting on, then cost. It does not retire a row: `pre-release` moves a shipped one to `../docs/done/PLAN.md`, so this list is the length of the work that is left. |
-| [`design`](.agents/skills/design/SKILL.md) | designing a ticket before anyone builds it. Opens every line it cites, holds the plan against the rules here, fixes it, dates the top of the file, and records what was wrong. |
-| [`dev`](.agents/skills/dev/SKILL.md) | building a ticket somebody already planned. Runs `design` first if nothing has dated the file, then works the phases in order, ticks the boxes, drives what it can reach in the running window, and **stops at the owner's own box**. It closes nothing and moves nothing — a machine agreeing with itself is not evidence. |
-| [`pre-release`](.agents/skills/pre-release/SKILL.md) | the owner asks for it, which is them saying the built ticket works — never call it yourself. **The only thing that closes a ticket**: ticks that last box, writes the shipped note, moves the file into `../docs/done/`, rewrites its index row, moves its running-order row across, fixes any published page the work made untrue, then runs `sync-docs`, `code-comments`, `check` and `pm`. Never git. |
-| [`git-release`](.agents/skills/git-release/SKILL.md) | only on `/git-release`. Runs `pre-release` on any ticket waiting only on the owner's box — asking for the release is the sentence — then `sync-docs`, `code-comments` and `check`, then commits, tags and pushes. |
+In [`.agents/skills/`](.agents/skills/), which `.claude/` and `.codex/` symlink to — one folder per repeatable job. Each `SKILL.md` carries its own description and triggers, and the host surfaces every one, so this file does not repeat the list. The shape worth one line: `/ticket` scopes work, `/design` proves the plan, `/dev` builds and stops at the owner's box, `/pre-release` closes on the owner's word alone — never call it yourself — `/git-release` (only on `/git-release`) is the one thing that writes git, and `/check` gates every hand-back.
 
 ## Hooks
 

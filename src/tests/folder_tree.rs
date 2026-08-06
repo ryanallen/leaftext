@@ -149,11 +149,10 @@ fn the_file_list_starts_with_a_way_back_out() {
     assert!(html.contains(
         "return parent ? { path: parent.path, name: parent.name } : { path: '', name: libraryRootLabel() };"
     ));
-    // It navigates through the same handler every folder row uses.
+    // It navigates through the same helper every folder row uses, so it too enters on the mouse's press.
     assert!(html.contains(r#"data-nav-into="${escapeAttr(parent.path)}""#));
-    assert!(html.contains(
-        "button.addEventListener('click', () => setLibraryFolder(button.dataset.navInto));"
-    ));
+    assert!(html
+        .contains("libraryTree.querySelectorAll('[data-nav-into]').forEach(bindFolderEntryRow);"));
     // An empty folder is exactly where the way out matters, so the rows still render alongside the empty notice.
     assert!(html.contains("libraryTree.innerHTML = renderProject(libraryEntries)\n      + `<p class=\"library-empty\">"));
 

@@ -1,6 +1,6 @@
 ---
 name: git-release
-description: Commit and push releases. Closes any ticket waiting only on the owner's box first — asking for the release is the owner saying it works — then runs sync-docs, code-comments, and check (tests plus `just verify`) before it commits — a tag never goes out on untested code. App (Rust) changes bump the version, tag, and trigger CI builds; site-only changes (README/index.html/site/imgs) just push — no version bump. Always cleans up GitHub Pages deployments to keep only the newest. The commits are the owner's, never co-authored. Use only when user instructs git operations like "bump and push", "release version X", or "release the site". Use when user says bump, release, push with tag, commit and push.
+description: Commit and push releases — the one skill that writes git, only on /git-release. Closes any ticket waiting only on the owner's box first — asking for the release is the owner saying it works — then runs sync-docs, code-comments and check before it commits. App changes bump the version, tag, and trigger CI builds; site-only changes just push. Use only when the user instructs git operations like "bump and push", "release version X", or "release the site".
 disable-model-invocation: true
 argument-hint: "[version] [message]"
 user-invocable: true
