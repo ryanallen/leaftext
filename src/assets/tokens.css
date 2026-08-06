@@ -94,27 +94,17 @@
   /* Spacing */
   --lt-space-1: 1px;
   --lt-space-2: 2px;
-  --lt-space-3: 3px;
   --lt-space-4: 4px;
-  --lt-space-5: 5px;
   --lt-space-6: 6px;
-  --lt-space-7: 7px;
   --lt-space-8: 8px;
-  --lt-space-9: 9px;
   --lt-space-10: 10px;
-  --lt-space-11: 11px;
   --lt-space-12: 12px;
-  --lt-space-13: 13px;
   --lt-space-14: 14px;
   --lt-space-16: 16px;
-  --lt-space-18: 18px;
   --lt-space-20: 20px;
-  --lt-space-22: 22px;
   --lt-space-24: 24px;
-  --lt-space-26: 26px;
-  --lt-space-28: 28px;
   --lt-space-32: 32px;
-  --lt-space-54: 54px;
+  --lt-space-48: 48px;
   /* Duration */
   --lt-duration-0: 0ms;
   --lt-duration-100: 100ms;

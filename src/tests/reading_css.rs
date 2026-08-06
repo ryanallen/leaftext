@@ -1423,3 +1423,67 @@ fn only_the_mac_shell_leaves_room_for_apples_dots() {
         "the frameless trailing inset must exempt the Mac shell"
     );
 }
+
+#[test]
+fn the_spacing_scale_is_thirteen_even_steps() {
+    let css = reading_mode_css();
+
+    // Every whole pixel from 1 to 14 and then a scatter is not a scale — it cannot be picked from, so a value gets chosen by eye and frozen as a token. Thirteen steps, 2px apart to 16, 4px to 24, then 32 and 48.
+    let mut defined: Vec<u32> = css
+        .lines()
+        .filter_map(|line| {
+            let rest = line.trim().strip_prefix("--lt-space-")?;
+            let (name, value) = rest.split_once(':')?;
+            value.trim().strip_suffix("px;")?;
+            name.parse::<u32>().ok()
+        })
+        .collect();
+    defined.sort_unstable();
+    defined.dedup();
+    assert_eq!(
+        defined,
+        vec![1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32, 48],
+        "the spacing scale has drifted off its steps"
+    );
+
+    // The 1px hairline is the width of a line rather than a step of the scale; everything above it is even, so no rule can land on an odd pixel.
+    for step in defined.iter().skip(1) {
+        assert_eq!(step % 2, 0, "--lt-space-{step} is not even");
+    }
+
+    // And nothing spends a step the table does not define, which is the half `check-tokens` cannot see: it compares the two generated files, not what the rules ask for.
+    let mut used: Vec<u32> = Vec::new();
+    let mut rest = css;
+    while let Some(at) = rest.find("var(--lt-space-") {
+        rest = &rest[at + "var(--lt-space-".len()..];
+        let name = &rest[..rest.find(')').expect("the token reference closes")];
+        used.push(name.parse().expect("a spacing token is named by its value"));
+    }
+    for step in used {
+        assert!(
+            defined.contains(&step),
+            "--lt-space-{step} is spent but not defined"
+        );
+    }
+}
+
+#[test]
+fn every_icon_sits_the_same_distance_from_its_label() {
+    let css = reading_mode_css();
+
+    // The commonest relationship in the interface — a small drawing, then the word for it — is one value everywhere, so a seventh control cannot pick its own out of the scale.
+    for selector in [
+        "\n.crumb-menu-item {",
+        "\n.flow-menu-item {",
+        "\n.library-file,\n.library-nav-folder {",
+        "\n.reader-graph-legend {",
+        "\n.primary-new {",
+        "\n.library-sync {",
+    ] {
+        let rule = rule_body(css, selector);
+        assert_contains(rule, "gap: var(--lt-space-6);");
+    }
+
+    // The one place it cannot land: the vault switcher and the name beside it are two controls sharing one pill, so each owes its own hover shape an edge and the joint between them is two 4px paddings plus the trail's seam.
+    assert_contains(css, "padding: 0 var(--lt-space-4) 0 var(--lt-space-8);");
+}

@@ -147,31 +147,23 @@ Interface line heights. A document's come from the type scale above.
 
 Padding, margins and gaps, in pixels. `0` stays `0`, and a negative pull-back is the same token flipped: `calc(var(--lt-space-8) * -1)`. Spacing *inside* a document stays in `em`, because it has to follow the text size.
 
+**Thirteen steps, and every one even bar the hairline** — 2px apart to 16, 4px apart to 24, then 32 and 48. There were 23, every whole pixel from 1 to 14 and then a scatter, and a scale with a step for every pixel cannot be picked from: a value gets chosen by eye and frozen as a token, which is how one control's edge came to be 7px and one gap on the home screen 54px. A pull-back that is half of a box is not spacing at all — it belongs to the box, as `--lt-spinner-size` in `reading.css`.
+
 | Token | Value | What it is for |
 | --- | --- | --- |
-| lt-space-1 | 1px | A hairline nudge. |
+| lt-space-1 | 1px | A hairline nudge, against a border or a focus ring. |
 | lt-space-2 | 2px | The tightest gap between two things. |
-| lt-space-3 | 3px | A gap inside a control. |
-| lt-space-4 | 4px | Between an icon and its label. |
-| lt-space-5 | 5px | A half-step where 4 crowds and 6 loosens. |
-| lt-space-6 | 6px | The default gap inside a row. |
-| lt-space-7 | 7px | A row's own inset. |
-| lt-space-8 | 8px | The workhorse: between rows, around a panel. |
-| lt-space-9 | 9px | A step for a row with a marker in the margin. |
+| lt-space-4 | 4px | Inside a control, and where two controls' paddings meet in one shape. |
+| lt-space-6 | 6px | Between an icon and its label, everywhere in the app. |
+| lt-space-8 | 8px | The workhorse: a control's own edge, between rows, around a panel. |
 | lt-space-10 | 10px | A comfortable inset. |
-| lt-space-11 | 11px | A sheet row's inset. |
 | lt-space-12 | 12px | Between groups. |
-| lt-space-13 | 13px | Where a control has to clear a neighbor exactly. |
 | lt-space-14 | 14px | A panel's inset. |
 | lt-space-16 | 16px | Between sections. |
-| lt-space-18 | 18px | A sheet's own inset. |
-| lt-space-20 | 20px | A wide inset. |
-| lt-space-22 | 22px | A tab's room for its close cross. |
+| lt-space-20 | 20px | A wide inset, and a sheet's own. |
 | lt-space-24 | 24px | Between the big blocks of a view. |
-| lt-space-26 | 26px | A control's reserved lane. |
-| lt-space-28 | 28px | Room for a leading glyph. |
 | lt-space-32 | 32px | The page's own margin. |
-| lt-space-54 | 54px | The widest gap in the app, holding a header off its content. |
+| lt-space-48 | 48px | The widest gap in the app, holding a header off its content. |
 
 ## Duration
 

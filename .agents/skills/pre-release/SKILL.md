@@ -1,6 +1,6 @@
 ---
 name: pre-release
-description: Close a ticket the owner has said works, and leave the tree ready for a release. Ticks the owner's last box, writes the shipped note, moves the file into the matching subject folder under ../docs/done/, rewrites its row in ../docs/README.md to say what shipped, cuts its row out of ../docs/PLAN.md and pastes it into ../docs/done/PLAN.md unchanged bar the Designed cell, moves the "next up" pointer on, fixes any published page the work made untrue, then runs /sync-docs, /code-comments, /check and /pm. Never touches git — a dirty tree is the correct end state, and /git-release is the only thing that writes. Use when the owner says a built ticket works, says "mark it done", "close the ticket", or "get ready for release".
+description: Close a ticket, on the owner's word. Being asked to run it is that word — only the owner may ask, and no other skill or agent may call it, bar /git-release. Ticks the owner's last box, writes the shipped note, moves the file into the matching subject folder under ../docs/done/, rewrites its row in ../docs/README.md to say what shipped, cuts its row out of ../docs/PLAN.md and pastes it into ../docs/done/PLAN.md unchanged bar the Designed cell, moves the "next up" pointer on, fixes any published page the work made untrue, then runs /sync-docs, /code-comments, /check and /pm. Never touches git — a dirty tree is the correct end state, and /git-release is the only thing that writes. Use when the owner says a built ticket works, says "mark it done", "close the ticket", or "get ready for release".
 argument-hint: "[ticket path]"
 user-invocable: true
 ---
@@ -15,7 +15,7 @@ One argument: the ticket. With none, find the one whose every box is ticked and 
 
 ## What has to be true before anything moves
 
-**The owner has to have said it works, in words, in this conversation.** Not a passing check, not a green `just verify`, not a driven gesture — those are [dev](../dev/SKILL.md)'s evidence and they are not the same thing. `deleting` had every box ticked and every check green while the thing it was written to fix was still broken in the window. If that sentence has not been said, stop and say which box is waiting on it.
+**Asking for it is the approval.** `/pre-release` is the owner's own command and closing a ticket is the only thing it does, so running it is the sentence — do not ask again, and do not wait for a separate "it works". Nothing else counts on its own: a passing check, a green `just verify` and a driven gesture are [dev](../dev/SKILL.md)'s evidence, and `deleting` had every box ticked and every check green while the thing it was written to fix was still broken in the window. That is why **no skill and no agent may run this one** — [git-release](../git-release/SKILL.md) is the single exception, because asking for a release is the same sentence said louder.
 
 **Then tick it**, the real unticked box at the foot of the phases, in the same pass as everything below.
 
@@ -46,7 +46,7 @@ Order is the point: docs before comments before check, and the ranking last beca
 
 - **Not a release.** Nothing here bumps a version, writes a tag, or pushes. [git-release](../git-release/SKILL.md) does that, only on `/git-release`, and it runs `sync-docs`, `code-comments` and `check` again itself.
 - **Not a build.** If boxes are still unticked, the work is not finished and [dev](../dev/SKILL.md) is the skill. This one closes; it does not write app code.
-- **Not a second opinion on whether it works.** That sentence is the owner's and this skill takes it at face value.
+- **Not a second opinion on whether it works.** Being asked to run is the owner saying so, and this skill takes it at face value.
 
 ## Say at the end
 

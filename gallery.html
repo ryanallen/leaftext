@@ -2018,27 +2018,17 @@
   /* Spacing */
   --lt-space-1: 1px;
   --lt-space-2: 2px;
-  --lt-space-3: 3px;
   --lt-space-4: 4px;
-  --lt-space-5: 5px;
   --lt-space-6: 6px;
-  --lt-space-7: 7px;
   --lt-space-8: 8px;
-  --lt-space-9: 9px;
   --lt-space-10: 10px;
-  --lt-space-11: 11px;
   --lt-space-12: 12px;
-  --lt-space-13: 13px;
   --lt-space-14: 14px;
   --lt-space-16: 16px;
-  --lt-space-18: 18px;
   --lt-space-20: 20px;
-  --lt-space-22: 22px;
   --lt-space-24: 24px;
-  --lt-space-26: 26px;
-  --lt-space-28: 28px;
   --lt-space-32: 32px;
-  --lt-space-54: 54px;
+  --lt-space-48: 48px;
   /* Duration */
   --lt-duration-0: 0ms;
   --lt-duration-100: 100ms;
@@ -2607,7 +2597,7 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  padding: var(--lt-space-3);
+  padding: var(--lt-space-4);
   border: var(--lt-stroke-1) solid transparent;
   border-radius: var(--lt-radius-lg);
   background: transparent;
@@ -2748,7 +2738,7 @@ body {
   background: transparent;
   color: var(--lt-muted-foreground);
   font: 600 13px var(--app-font);
-  padding: var(--lt-space-5) var(--lt-space-14);
+  padding: var(--lt-space-6) var(--lt-space-14);
   text-align: left;
   /* Long names fade out instead of showing an ellipsis. The fade ends at the
      content edge, not the border box: overflow clips at the padding box, so
@@ -2818,7 +2808,7 @@ body {
      than the first one comes to the history buttons. Without it the strip's own
      12px is all that stands between a title and the toolbar. */
   padding-left: var(--lt-space-16);
-  padding-right: var(--lt-space-22);
+  padding-right: var(--lt-space-24);
 }
 .app-trailing-items {
   display: flex;
@@ -2954,7 +2944,7 @@ body.is-maximized #winMaximize .wc-restore {
 .context-menu-item {
   display: block;
   width: 100%;
-  padding: var(--lt-space-7) var(--lt-space-12);
+  padding: var(--lt-space-8) var(--lt-space-12);
   border: 0;
   border-radius: var(--lt-radius-sm);
   background: transparent;
@@ -3300,7 +3290,7 @@ input:focus-visible,
 a:focus-visible,
 summary:focus-visible {
   outline: var(--lt-stroke-3) solid var(--lt-focus-ring);
-  outline-offset: var(--lt-space-3);
+  outline-offset: var(--lt-space-2);
 }
 /* The minimap is chrome, not page: it gets its own column outside the card so
    the page's right border stops short of it and the shell's texture runs behind
@@ -3712,6 +3702,11 @@ body.library-resizing {
   text-overflow: ellipsis;
   cursor: pointer;
 }
+/* The vault's own name, and the right half of the open pill (see the switcher below): the pill's outside edge, then its inside joint. Unconditional, open or closed — this crumb has a hover pill of its own, and paying the room all the time is what stops the name moving as the list opens. */
+.library-crumb:first-child {
+  padding-left: var(--lt-space-4);
+  padding-right: var(--lt-space-8);
+}
 .library-crumb:hover {
   background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
   color: var(--lt-foreground);
@@ -3732,7 +3727,7 @@ body.library-resizing {
 /* The "…" standing in for the folders that didn't fit. A real button: it opens a
    menu of what it swallowed (see .crumb-menu). */
 .library-crumb.is-elided {
-  padding: var(--lt-space-1) var(--lt-space-3);
+  padding: var(--lt-space-1) var(--lt-space-4);
   cursor: pointer;
 }
 .library-crumb.is-elided[aria-expanded="true"] {
@@ -3754,11 +3749,12 @@ body.library-resizing {
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: var(--lt-space-3);
+  gap: var(--lt-space-2);
   /* A bigger target than the glyph inside it: the whole thing is one button, and
      20px of it is easy to miss. */
   height: 26px;
-  padding: 0 var(--lt-space-7);
+  /* 8px on the pill's outside edge, 4px on the side facing the vault's name: that side is an inside joint, and both halves paying an edge's worth puts 16px between the icon and the word. */
+  padding: 0 var(--lt-space-4) 0 var(--lt-space-8);
   border: 0;
   border-radius: var(--lt-radius-sm);
   background: transparent;
@@ -3780,7 +3776,7 @@ body.library-resizing {
    every folder after it stay exactly where they were. The state is an attribute on
    the button, so a disk change rebuilding the trail underneath cannot lose it. */
 .library-vault-switch[aria-expanded="true"] {
-  padding-right: calc(var(--lt-space-7) + var(--lt-space-2));
+  padding-right: calc(var(--lt-space-4) + var(--lt-space-2));
   margin-right: calc(-1 * var(--lt-space-2));
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
@@ -3894,7 +3890,7 @@ body.library-resizing {
 .crumb-menu-item {
   display: flex;
   align-items: center;
-  gap: var(--lt-space-8);
+  gap: var(--lt-space-6);
   font-weight: var(--lt-weight-500);
 }
 .crumb-menu-item .library-folder-icon {
@@ -3919,7 +3915,7 @@ body.library-resizing {
 .library-nav-up {
   color: var(--lt-muted-foreground);
   margin-bottom: var(--lt-space-6);
-  padding-bottom: var(--lt-space-5);
+  padding-bottom: var(--lt-space-6);
   border-bottom: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-border) 60%, transparent);
   border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
 }
@@ -3937,7 +3933,7 @@ body.library-resizing {
   gap: var(--lt-space-6);
   width: 100%;
   text-align: left;
-  padding: var(--lt-space-3) var(--lt-space-6);
+  padding: var(--lt-space-4) var(--lt-space-6);
   /* A hair of vertical space so adjacent row highlights don't touch. */
   margin-bottom: var(--lt-space-2);
   border: 0;
@@ -4187,7 +4183,7 @@ body:has(#readerToolbar:not([hidden])) {
 .library-sync {
   display: inline-flex;
   align-items: center;
-  gap: var(--lt-space-4);
+  gap: var(--lt-space-6);
   flex: 0 0 auto;
   margin-left: auto;
   padding: var(--lt-space-2) var(--lt-space-6) var(--lt-space-2) var(--lt-space-4);
@@ -4326,7 +4322,7 @@ body:has(#readerToolbar:not([hidden])) {
   background: var(--lt-surface-elevated);
   color: var(--lt-foreground);
   font: 600 12px var(--app-font);
-  padding: var(--lt-space-3) var(--lt-space-24) var(--lt-space-3) var(--lt-space-7);
+  padding: var(--lt-space-4) var(--lt-space-24) var(--lt-space-4) var(--lt-space-8);
 }
 /* Smaller than a view button, and never blue: the blue chip is how this bar
    says which view you are in, and a setting inside a view must not wear it. On
@@ -4933,7 +4929,7 @@ body:has(#readerToolbar:not([hidden])) {
   background: var(--lt-primary);
   color: var(--lt-primary-foreground);
   font: 600 15px var(--app-font);
-  padding: var(--lt-space-11) var(--lt-space-18);
+  padding: var(--lt-space-12) var(--lt-space-20);
   text-decoration: none;
   cursor: pointer;
 }
@@ -5622,7 +5618,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .selection-format-divider {
   width: 1px;
   height: 18px;
-  margin: 0 var(--lt-space-5);
+  margin: 0 var(--lt-space-4);
   background: var(--lt-border);
 }
 .selection-toolbar:not(.has-block-formats) .selection-format-divider {
@@ -5779,9 +5775,11 @@ body.is-block-dragging .document-body [data-src-start] {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 18px;
-  height: 18px;
-  margin: calc(var(--lt-space-9) * -1) 0 0 calc(var(--lt-space-9) * -1);
+  /* Pulled back half its own size to center it. Not a spacing step — it is locked to the box, and the spin animation owns `transform`, so the usual translate is not available. */
+  --lt-spinner-size: 18px;
+  width: var(--lt-spinner-size);
+  height: var(--lt-spinner-size);
+  margin: calc(var(--lt-spinner-size) / -2) 0 0 calc(var(--lt-spinner-size) / -2);
   border-radius: var(--lt-radius-full);
   border: var(--lt-stroke-2) solid color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
   border-top-color: var(--lt-accent);
@@ -6656,13 +6654,13 @@ body.is-block-dragging .document-body [data-src-start] {
 .empty-description {
   color: var(--lt-muted-foreground);
   font: 500 16px/1.6 var(--app-font);
-  margin: 0 0 var(--lt-space-26);
+  margin: 0 0 var(--lt-space-24);
   max-width: 54ch;
 }
 .empty-help {
   color: var(--lt-muted-foreground);
   font: 500 15px/1.6 var(--app-font);
-  margin: var(--lt-space-18) 0 0;
+  margin: var(--lt-space-20) 0 0;
 }
 /* Running version, at the foot of the one screen always reachable: quiet, one
    line, selectable because it exists to be pasted into a bug report. */
@@ -6683,16 +6681,16 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .primary-open {
   font-size: var(--lt-text-15);
-  padding: var(--lt-space-11) var(--lt-space-18);
+  padding: var(--lt-space-12) var(--lt-space-20);
 }
 /* Quieter than Choose file. Only one of the two can be the obvious thing to do,
    so this one is an outline. */
 .primary-new {
   display: inline-flex;
   align-items: center;
-  gap: var(--lt-space-7);
+  gap: var(--lt-space-6);
   font-size: var(--lt-text-15);
-  padding: var(--lt-space-11) var(--lt-space-16);
+  padding: var(--lt-space-12) var(--lt-space-16);
   border-color: var(--lt-border);
   background: transparent;
   color: var(--lt-markdown-foreground);
@@ -6711,7 +6709,7 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .recent {
   border-top: var(--lt-stroke-1) solid var(--lt-navigation-recent-border);
-  margin-top: var(--lt-space-54);
+  margin-top: var(--lt-space-48);
   padding-top: var(--lt-space-24);
 }
 .recent ol {
@@ -7092,7 +7090,7 @@ body.is-block-dragging .document-body [data-src-start] {
   background: var(--sw-dark);
 }
 .theme-item-name {
-  padding: var(--lt-space-11) var(--lt-space-14) var(--lt-space-13);
+  padding: var(--lt-space-12) var(--lt-space-14) var(--lt-space-12);
   /* The app font until the picker has loaded this theme's own font; then swap. */
   font-family: var(--app-font);
   overflow: hidden;
@@ -7108,9 +7106,11 @@ body.is-block-dragging .document-body [data-src-start] {
   position: absolute;
   top: 39px;
   left: 50%;
-  width: 26px;
-  height: 26px;
-  margin: calc(var(--lt-space-13) * -1) 0 0 calc(var(--lt-space-13) * -1);
+  /* Half its own size, like the diagram spinner: the pull-back belongs to the box, not to a spacing step. */
+  --lt-spinner-size: 26px;
+  width: var(--lt-spinner-size);
+  height: var(--lt-spinner-size);
+  margin: calc(var(--lt-spinner-size) / -2) 0 0 calc(var(--lt-spinner-size) / -2);
   border-color: color-mix(in srgb, var(--lt-foreground) 22%, transparent);
   border-top-color: var(--lt-foreground);
   background: color-mix(in srgb, var(--lt-surface-elevated) 78%, transparent);
@@ -7173,7 +7173,7 @@ body.is-block-dragging .document-body [data-src-start] {
   line-height: var(--lt-leading-1-2);
 }
 .link-hover-tip-detail {
-  margin-top: var(--lt-space-3);
+  margin-top: var(--lt-space-4);
   color: var(--lt-muted-foreground);
   font-family: var(--font-mono);
   font-size: 0.76rem;
@@ -7193,7 +7193,7 @@ body.is-block-dragging .document-body [data-src-start] {
   width: auto;
   margin: 0;
   overflow-y: auto;
-  padding: var(--lt-space-6) var(--lt-space-16) var(--lt-space-4) var(--lt-space-28);
+  padding: var(--lt-space-6) var(--lt-space-16) var(--lt-space-4) var(--lt-space-24);
 }
 .glossary-sheet-body > :first-child {
   margin-top: 0;
@@ -7228,7 +7228,7 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .glossary-sheet-footer {
   flex: none;
-  padding: var(--lt-space-12) var(--lt-space-28) var(--lt-space-20);
+  padding: var(--lt-space-12) var(--lt-space-24) var(--lt-space-20);
   border-top: var(--lt-stroke-1) solid var(--lt-border);
 }
 .glossary-sheet-fulllink {
@@ -7304,7 +7304,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-sheet-export,
 .flow-sheet-cancel,
 .flow-sheet-save {
-  padding: var(--lt-space-7) var(--lt-space-14);
+  padding: var(--lt-space-8) var(--lt-space-14);
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
@@ -7475,7 +7475,7 @@ body.is-block-dragging .document-body [data-src-start] {
   font-size: var(--lt-text-12);
 }
 .flow-sheet-direction select {
-  padding: var(--lt-space-5) var(--lt-space-8);
+  padding: var(--lt-space-4) var(--lt-space-8);
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
@@ -7696,7 +7696,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-menu-heading {
   grid-column: 1 / -1;
   margin: var(--lt-space-6) 0 var(--lt-space-2);
-  padding: 0 var(--lt-space-9);
+  padding: 0 var(--lt-space-10);
   color: var(--lt-muted-foreground);
   font-size: var(--lt-text-10-5);
   font-weight: var(--lt-weight-800);
@@ -7709,9 +7709,9 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-menu-item {
   display: flex;
   align-items: center;
-  gap: var(--lt-space-8);
+  gap: var(--lt-space-6);
   width: 100%;
-  padding: var(--lt-space-6) var(--lt-space-9);
+  padding: var(--lt-space-6) var(--lt-space-10);
   border: 0;
   border-radius: var(--lt-radius-md);
   background: transparent;
@@ -7800,7 +7800,7 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .flow-field {
   min-width: 0;
-  padding: var(--lt-space-6) var(--lt-space-9);
+  padding: var(--lt-space-6) var(--lt-space-10);
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
@@ -8231,7 +8231,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 81 colors, the 162 values that do not change with the theme, all 57 icons, and all 48 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 81 colors, the 152 values that do not change with the theme, all 57 icons, and all 48 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -8251,7 +8251,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>81</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>162</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>152</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>57</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>48</b></button>
 </div>
@@ -8353,7 +8353,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">162 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">152 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -8456,27 +8456,17 @@ body.is-block-dragging .document-body [data-src-start] {
 <h3>Spacing</h3><div class="wall wide">
 <div class="value"><code>lt-space-1</code><i class="demo bar" style="width:var(--lt-space-1)"></i><code>1px</code></div>
 <div class="value"><code>lt-space-2</code><i class="demo bar" style="width:var(--lt-space-2)"></i><code>2px</code></div>
-<div class="value"><code>lt-space-3</code><i class="demo bar" style="width:var(--lt-space-3)"></i><code>3px</code></div>
 <div class="value"><code>lt-space-4</code><i class="demo bar" style="width:var(--lt-space-4)"></i><code>4px</code></div>
-<div class="value"><code>lt-space-5</code><i class="demo bar" style="width:var(--lt-space-5)"></i><code>5px</code></div>
 <div class="value"><code>lt-space-6</code><i class="demo bar" style="width:var(--lt-space-6)"></i><code>6px</code></div>
-<div class="value"><code>lt-space-7</code><i class="demo bar" style="width:var(--lt-space-7)"></i><code>7px</code></div>
 <div class="value"><code>lt-space-8</code><i class="demo bar" style="width:var(--lt-space-8)"></i><code>8px</code></div>
-<div class="value"><code>lt-space-9</code><i class="demo bar" style="width:var(--lt-space-9)"></i><code>9px</code></div>
 <div class="value"><code>lt-space-10</code><i class="demo bar" style="width:var(--lt-space-10)"></i><code>10px</code></div>
-<div class="value"><code>lt-space-11</code><i class="demo bar" style="width:var(--lt-space-11)"></i><code>11px</code></div>
 <div class="value"><code>lt-space-12</code><i class="demo bar" style="width:var(--lt-space-12)"></i><code>12px</code></div>
-<div class="value"><code>lt-space-13</code><i class="demo bar" style="width:var(--lt-space-13)"></i><code>13px</code></div>
 <div class="value"><code>lt-space-14</code><i class="demo bar" style="width:var(--lt-space-14)"></i><code>14px</code></div>
 <div class="value"><code>lt-space-16</code><i class="demo bar" style="width:var(--lt-space-16)"></i><code>16px</code></div>
-<div class="value"><code>lt-space-18</code><i class="demo bar" style="width:var(--lt-space-18)"></i><code>18px</code></div>
 <div class="value"><code>lt-space-20</code><i class="demo bar" style="width:var(--lt-space-20)"></i><code>20px</code></div>
-<div class="value"><code>lt-space-22</code><i class="demo bar" style="width:var(--lt-space-22)"></i><code>22px</code></div>
 <div class="value"><code>lt-space-24</code><i class="demo bar" style="width:var(--lt-space-24)"></i><code>24px</code></div>
-<div class="value"><code>lt-space-26</code><i class="demo bar" style="width:var(--lt-space-26)"></i><code>26px</code></div>
-<div class="value"><code>lt-space-28</code><i class="demo bar" style="width:var(--lt-space-28)"></i><code>28px</code></div>
 <div class="value"><code>lt-space-32</code><i class="demo bar" style="width:var(--lt-space-32)"></i><code>32px</code></div>
-<div class="value"><code>lt-space-54</code><i class="demo bar" style="width:var(--lt-space-54)"></i><code>54px</code></div>
+<div class="value"><code>lt-space-48</code><i class="demo bar" style="width:var(--lt-space-48)"></i><code>48px</code></div>
 </div>
 <h3>Duration</h3><div class="wall wide">
 <div class="value"><code>lt-duration-0</code><code>0ms</code></div>

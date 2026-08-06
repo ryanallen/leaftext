@@ -1,7 +1,7 @@
 ---
 name: dev
 description: >-
-  Build a ticket, and stop where a machine's word runs out. Takes one thing — a path to a ticket under ../docs/features/, ../docs/refactor/ or ../docs/fixes/ — and works out the rest: it runs /design itself when nothing has dated the top of the file, holds the ticket against its row in ../docs/PLAN.md, builds the phases in order, ticks each box in the same edit as the code with the test that covers it, strikes through and explains any box that changed shape, and runs /check at the end of every phase. Where the ticket changes anything a person points at, presses or looks at, it then runs the app and drives it — the ask pipe for anything the page handles, the gesture driver for a real wheel or drag — reports what it saw with a picture, and hands over only the gestures it could not reach. A passing check is not a working app, so it ends at the owner's own box, unticked, and closes nothing: the shipped note, the move into ../docs/done/, the index row and the running-order row are /pre-release's, run once the owner has said it works. Never touches git. Use when the user says "build this", "dev this", "work that ticket", "do the plan", or hands over a ticket path to be built rather than scoped.
+  Build a ticket, and stop where a machine's word runs out. Takes one thing — a path to a ticket under ../docs/features/, ../docs/refactor/ or ../docs/fixes/ — and works out the rest: it runs /design itself when nothing has dated the top of the file, holds the ticket against its row in ../docs/PLAN.md, builds the phases in order, ticks each box in the same edit as the code with the test that covers it, strikes through and explains any box that changed shape, and runs /check at the end of every phase. Where the ticket changes anything a person points at, presses or looks at, it then runs the app and drives it — the ask pipe for anything the page handles, the gesture driver for a real wheel or drag — reports what it saw with a picture, and hands over only the gestures it could not reach. A passing check is not a working app, so it ends at the owner's own box, unticked, and closes nothing: the shipped note, the move into ../docs/done/, the index row and the running-order row are /pre-release's, run when the owner asks for /pre-release, which is them saying it works. Never touches git. Use when the user says "build this", "dev this", "work that ticket", "do the plan", or hands over a ticket path to be built rather than scoped.
 argument-hint: "[path to the ticket]"
 user-invocable: true
 ---
@@ -81,7 +81,7 @@ Most of that is reachable from here. So when the ticket changes anything a perso
 - **Know which surface a gesture is on**, or a faked event gets reported as a pass. Anything the page handles goes through `eval` — every keyboard shortcut, every click on an element, every command the page sends. Anything the web view handles needs the driver — the wheel, a real drag, a native menu, the file dialog. A dispatched `WheelEvent` moves nothing at all, and setting `scrollTop` is a different gesture from a wheel.
 - **Report what you saw, with the picture.** What you drove, what came back, and the shot.
 - **Hand over only what you could not reach** — in the owner's words, "drag across two paragraphs and press Delete", not "verify the cross-block selection path". One line each, and it should be a short list now rather than the whole thing.
-- **Stop there.** The last box is the owner saying it works — a machine agreeing with itself is not evidence, which is why `deleting` is in the tree. Until that comes back the ticket does not move, and [pre-release](../pre-release/SKILL.md) has not started.
+- **Stop there.** The last box is the owner saying it works — a machine agreeing with itself is not evidence, which is why `deleting` is in the tree. Until the owner asks for [pre-release](../pre-release/SKILL.md) the ticket does not move, and never call that skill yourself — being asked for it is the whole of the approval.
 - **That confirmation is a real box**, unticked, at the foot of the phases: `- [ ] The owner says it works in the window: …`. `check-docs` fails a ticket whose every box is ticked and is still filed as live work, so without it the last phase cannot end green.
 - **A gesture no check can reach is named in the ticket**, in `Still open`, so the next reader knows what was proved by machine and what by hand.
 
@@ -91,7 +91,7 @@ A ticket that touches nothing anyone points at — a rename, a test, a doc pass,
 
 **The ticket stays where it is** — in `fixes/`, `features/` or `refactor/` — its row stays in the running order, and the not-built note stays at the top. Nothing is moved, renamed or rewritten.
 
-That is [pre-release](../pre-release/SKILL.md)'s job, and it runs when the owner has said it works, not when the boxes are ticked. The split is deliberate: this skill has been wrong before with every box ticked and every check green, so the tree is not allowed to say a thing shipped on a machine's word alone. `deleting` is in `done/` because that rule did not exist.
+That is [pre-release](../pre-release/SKILL.md)'s job, and it runs when the owner asks for it, not when the boxes are ticked. The split is deliberate: this skill has been wrong before with every box ticked and every check green, so the tree is not allowed to say a thing shipped on a machine's word alone. `deleting` is in `done/` because that rule did not exist.
 
 So hand back three things and stop: what the app does differently, what the build found that the plan had wrong, and the gestures the owner has to make for the last box.
 
@@ -101,7 +101,7 @@ So hand back three things and stop: what the app does differently, what the buil
 - `/ticket` — the shape of the file being built.
 - `/design` — run first, automatically, when the top of the ticket is undated.
 - `/check` — the end of every phase, and the end of the job.
-- `/pre-release` — what runs after the owner says it works: the shipped note, the move into `done/`, both rows, the published pages.
+- `/pre-release` — what the owner runs to close it: the shipped note, the move into `done/`, both rows, the published pages.
 - `../docs/README.md` — every ticket, one line each.
 - `../docs/GLOSSARY.md` — the words a ticket, an index row and a ranking row are written in.
 - `../docs/PLAN.md` — the running order over the live tickets, written by `/pm`.

@@ -1166,8 +1166,13 @@ fn the_open_switcher_lights_the_vault_name_beside_it() {
         ".library-vault-switch[aria-expanded=\"true\"] + .library-crumb-trail .library-crumb.is-current:first-child {"
     ));
     // The two make one pill: the facing corners square and the button grows into the 2px gap, pulled back by the same amount so no folder after the name moves.
-    assert!(css.contains("padding-right: calc(var(--lt-space-7) + var(--lt-space-2));"));
+    assert!(css.contains("padding-right: calc(var(--lt-space-4) + var(--lt-space-2));"));
     assert!(css.contains("margin-right: calc(-1 * var(--lt-space-2));"));
+    // The pill's two outside edges are one token and the joint in its middle a smaller one, on both halves: an edge's worth of padding twice over puts 16px between the icon and the vault's name.
+    assert!(css.contains("padding: 0 var(--lt-space-4) 0 var(--lt-space-8);"));
+    assert!(css.contains(
+        ".library-crumb:first-child {\n  padding-left: var(--lt-space-4);\n  padding-right: var(--lt-space-8);\n}"
+    ));
 
     // A sibling selector, so it is silently dead the moment anything is put between the button and the trail. Only whitespace may sit there.
     let switcher = html
