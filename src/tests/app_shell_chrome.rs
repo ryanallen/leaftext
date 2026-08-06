@@ -655,6 +655,55 @@ fn the_palette_stands_in_the_bar_where_the_gear_did() {
 }
 
 #[test]
+fn the_palette_color_marks_are_wide_enough_to_see_in_the_app_bar() {
+    // One viewBox unit is 0.67px inside the bar's 16px icon box, so the marks it shipped with — half-unit dots — were thinner than the outline around them. Radius, not the old string: a test that only refused `r=".5"` would pass by finding nothing.
+    let svg = include_str!("../assets/theme.svg");
+    let mut radii: Vec<f64> = Vec::new();
+
+    for circle in svg.split("<circle").skip(1) {
+        let r = circle
+            .split("r=\"")
+            .nth(1)
+            .and_then(|rest| rest.split('"').next())
+            .expect("a circle carries a radius");
+        radii.push(r.parse().expect("a radius is a number"));
+    }
+    for path in svg.split("<path").skip(1) {
+        let d = path
+            .split("d=\"")
+            .nth(1)
+            .and_then(|rest| rest.split('"').next())
+            .expect("a path carries a d");
+        // A mark is a ring: nothing but a move and arcs. The palette outline draws curves too, and its size is not what this is about.
+        if !d
+            .chars()
+            .all(|c| !c.is_alphabetic() || matches!(c, 'M' | 'm' | 'A' | 'a'))
+        {
+            continue;
+        }
+        for arc in d.split(['a', 'A']).skip(1) {
+            let r = arc
+                .split_whitespace()
+                .next()
+                .expect("an arc opens with its radius");
+            radii.push(r.parse().expect("an arc radius is a number"));
+        }
+    }
+
+    assert!(
+        radii.len() >= 3,
+        "found {} color marks in theme.svg, so this test is passing by finding nothing",
+        radii.len()
+    );
+    for r in radii {
+        assert!(
+            r >= 1.0,
+            "a color mark is {r} units of radius, under the 1 that reaches a visible width at 16px"
+        );
+    }
+}
+
+#[test]
 fn the_update_bell_keeps_the_menu_keyboard_and_pointer_polish() {
     let html = app_shell_page();
 

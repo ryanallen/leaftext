@@ -138,6 +138,15 @@ End the phase list with the block that closes every phase:
 
 Drop the bundler line when the work is nowhere near `design/`.
 
+## A picture the owner hands over goes in the tree, not in the chat
+
+**Every image the owner sends is saved to `../docs/imgs/` and embedded in the ticket it is about, in the same pass.** One folder at the top of the plan tree, so every ticket points at the same copies and a picture outlives the conversation it arrived in. Without this it is gone the moment the session ends, and the next reader — or the next agent — goes and takes it again, which is somebody's window and somebody's time.
+
+- **Name it after the ticket**, `theme-palette-icon.png`, and add a number when a ticket has more than one: `-2`, `-3`. Never `1.png`, never a name off the host's cache.
+- **Embed it where it is evidence**, under the line it backs, with alt text saying what it shows: `![The palette icon the owner supplied, in a small box](../../imgs/theme-palette-icon.png)`. From a subject folder that is two levels up.
+- **A drawing gets pasted as well as pictured.** A picture of an icon cannot be built from, so the markup or the `d` goes in `How it is built` beside it, and the picture is what proves the markup is the right thing.
+- **The same rule holds mid-build.** [`/dev`](../dev/SKILL.md) and [`/design`](../design/SKILL.md) file a handed-over picture the same way rather than leaving it in the transcript.
+
 ## Two files finish the job, every time
 
 A ticket nobody can find is a ticket nobody builds. So writing the plan is two-thirds of the work, and neither of the other files is optional — do both in the same pass, before handing back.
@@ -173,6 +182,7 @@ Move its index row in the same edit, and rewrite it to say what shipped. A row s
 - `/design` — checks a written ticket against the code before anyone builds it.
 - `/dev` — builds one and stops at the owner's box; `/pre-release` is what moves it to `done/`.
 - `../docs/README.md` — every ticket, one line each. Read first, updated last.
+- `../docs/imgs/` — every picture the owner has handed over, named after the ticket that uses it.
 - `../docs/GLOSSARY.md` — the words a ticket is written in. A planning word this file spends and that file does not define gets a row there in the same pass.
 - `../docs/features/editing/highlight-annotate.md` — measured table, phases, a phase 0.
 - `../docs/done/repo/inline-link.md` — short, and shows the shipped note.
