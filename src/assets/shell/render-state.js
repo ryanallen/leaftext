@@ -146,6 +146,7 @@ window.leafSetWorkspace = (state) => {
   const next = state || {};
   currentState = Object.assign({}, currentState || {}, {
     recent: next.recent || [],
+    favorites: next.favorites || [],
     tabs: next.tabs || [],
     active: next.active == null ? null : next.active,
   });
@@ -241,11 +242,32 @@ function tabDisplayName(tab) {
   const base = (tab.path || '').split(/[\\/]/).pop() || '';
   return stripDocumentExt(base) || tab.title || tab.path || '';
 }
+// The kept paths the host last sent, and whether one of them is this file.
+function currentFavorites() {
+  return (currentState && currentState.favorites) || [];
+}
+function isFavoritePath(path) {
+  return !!path && currentFavorites().some((favorite) => favorite.path === path);
+}
+// Mark or unmark, showing it immediately: the page flips its own copy and redraws, so the heart fills under the pointer rather than a beat later, and the host's next payload is it agreeing. The vault is the host's to work out — the page only ever compares paths.
+function toggleFavorite(path, kind) {
+  if (!path) return;
+  const kept = currentFavorites();
+  currentState.favorites = isFavoritePath(path)
+    ? kept.filter((favorite) => favorite.path !== path)
+    : kept.concat([{ vaultId: null, path, kind: kind || 'document' }]);
+  renderTabs(currentState);
+  send({ command: 'toggleFavorite', path, kind: kind || 'document' });
+}
 function renderTabs(state) {
   const tabs = state.tabs || [];
   const active = state.active;
   // A pure HTML write; the strip's listeners live on the bar itself (below).
-  tabBar.innerHTML = tabs.map((tab, index) => `<span class="tab${index === active ? ' tab-active' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(tabDisplayName(tab))}</button><span class="tab-dirty-dot" aria-hidden="true"></span><button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><span class="lt-icon lt-icon-tab-close"></span></button></span>`).join('');
+  tabBar.innerHTML = tabs.map((tab, index) => {
+    const kept = isFavoritePath(tab.path);
+    const mark = kept ? 'Unfavorite' : 'Favorite';
+    return `<span class="tab${index === active ? ' tab-active' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-favorite${kept ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${kept}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${kept ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(tabDisplayName(tab))}</button><span class="tab-dirty-dot" aria-hidden="true"></span><button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><span class="lt-icon lt-icon-tab-close"></span></button></span>`;
+  }).join('');
   // A tab opening, closing, or changing title changes what the strip needs —
   // refold so a longer title takes a button rather than getting clipped.
   refitAppBar();
@@ -256,6 +278,14 @@ tabBar.addEventListener('click', (event) => {
   if (close) {
     event.stopPropagation();
     send({ command: 'closeTab', index: Number(close.dataset.tabClose) });
+    return;
+  }
+  // The heart sits over the first letters of the name, so it answers before the label does — pointing at it is asking for the heart, not the tab.
+  const mark = event.target.closest('[data-tab-favorite]');
+  if (mark) {
+    event.stopPropagation();
+    const tab = (currentState.tabs || [])[Number(mark.dataset.tabFavorite)];
+    toggleFavorite(tab ? tab.path : null, 'document');
     return;
   }
   const label = event.target.closest('[data-tab-index]');
@@ -281,7 +311,7 @@ tabBar.addEventListener('click', (event) => {
 });
 tabBar.addEventListener('pointerdown', (event) => {
   const tabEl = event.target.closest('.tab');
-  if (!tabEl || event.button !== 0 || event.target.closest('.tab-close')) return;
+  if (!tabEl || event.button !== 0 || event.target.closest('.tab-close, .tab-favorite')) return;
   const dragIndex = Number(tabEl.dataset.tabPos);
   const dragRect = tabEl.getBoundingClientRect();
   const dragMid = dragRect.left + dragRect.width / 2;

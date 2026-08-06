@@ -40,13 +40,48 @@ fn scroll_anchor_script_restores_webview_reader_anchor() {
 #[test]
 fn workspace_reload_script_preserves_scroll_via_reload_entry_point() {
     let tabs = [("Guide".to_string(), "guide.md".to_string())];
-    let script = workspace_reload_script(&[PathBuf::from("guide.md")], &tabs, Some(0), None);
+    let script = workspace_reload_script(
+        &[PathBuf::from("guide.md")],
+        &Favorites::default(),
+        &tabs,
+        Some(0),
+        None,
+    );
 
     // The reload path must call leafReloadDocument (which keeps the reader's scroll position), never leafSetState (which jumps back to the top).
     assert!(script.starts_with("window.leafReloadDocument({"));
     assert!(!script.contains("leafSetState"));
     assert_contains(&script, r#""active":0"#);
     assert_contains(&script, r#""title":"Guide""#);
+}
+
+#[test]
+fn workspace_payload_carries_favorites_beside_recents() {
+    let tabs = [("Guide".to_string(), "guide.md".to_string())];
+    let mut favorites = Favorites::default();
+    favorites.add(Favorite {
+        vault_id: Some(4),
+        path: PathBuf::from("notes/archive"),
+        kind: FavoriteKind::Folder,
+    });
+    favorites.add(Favorite {
+        vault_id: None,
+        path: PathBuf::from("scratch.md"),
+        kind: FavoriteKind::Document,
+    });
+
+    // Every screen reads this one payload, so a sender left out of it would never hear about a mark.
+    for script in [
+        workspace_state_script(&[], &favorites, &tabs, Some(0), None),
+        workspace_only_script(&[], &favorites, &tabs, Some(0)),
+        workspace_reload_script(&[], &favorites, &tabs, Some(0), None),
+        workspace_switch_script(&[], &favorites, &tabs, Some(0), None, None),
+    ] {
+        assert_contains(&script, r#""kind":"folder""#);
+        assert_contains(&script, r#""vaultId":4"#);
+        assert_contains(&script, r#""vaultId":null"#);
+        assert_contains(&script, r#""path":"scratch.md""#);
+    }
 }
 
 #[test]
@@ -59,6 +94,7 @@ fn workspace_switch_script_restores_target_tab_anchor_without_reset() {
     };
     let script = workspace_switch_script(
         &[PathBuf::from("guide.md")],
+        &Favorites::default(),
         &tabs,
         Some(0),
         None,
@@ -72,7 +108,10 @@ fn workspace_switch_script_restores_target_tab_anchor_without_reset() {
     assert!(script.ends_with(r#", {"section":"intro","block":2,"offsetY":12.5});"#));
 
     // No saved anchor (first visit to a tab) passes null, which starts the reader at the top of the content.
-    assert!(workspace_switch_script(&[], &[], None, None, None).ends_with(", null);"));
+    assert!(
+        workspace_switch_script(&[], &Favorites::default(), &[], None, None, None)
+            .ends_with(", null);")
+    );
 }
 
 #[test]

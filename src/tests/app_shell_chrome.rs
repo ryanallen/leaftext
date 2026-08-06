@@ -1069,3 +1069,78 @@ fn the_app_carries_no_gallery_of_its_own() {
     // What the app does owe the gallery is its stylesheet, which only Rust can compile — that is what `--dump-css` is for.
     assert_contains(reading_mode_css(), "--lt-background:");
 }
+
+#[test]
+fn a_tab_carries_the_heart_and_the_menu_marks_everything_else() {
+    let page = app_shell_page();
+
+    // The tab of whatever you are reading, and the right-click item for everything that is not open — the two places the drawing approved, and no mark in any list.
+    for expected in [
+        r#"<button type="button" class="tab-favorite${kept ? ' is-on' : ''}""#,
+        r#"<span class="lt-icon lt-icon-favorite-${kept ? 'on' : 'off'}"></span>"#,
+        "{ action: 'favorite', label: 'Favorite' },",
+        "return { action: entry.action, label: 'Unfavorite' };",
+    ] {
+        assert_contains(&page, expected);
+    }
+    assert!(
+        !page.contains("library-file-favorite") && !page.contains("recent-favorite"),
+        "a mark in a list row was turned down: each row is one button"
+    );
+}
+
+#[test]
+fn marking_from_the_tab_and_from_the_menu_take_the_same_path() {
+    let script = app_shell_script();
+
+    // One function, so the heart and the menu item can never disagree about what marking means — and it flips the page's own copy before it tells the host, which is what makes the change instant.
+    assert_eq!(script.matches("function toggleFavorite(").count(), 1);
+    // The declaration, the heart's click, and the menu item: two gestures, one path.
+    assert_eq!(script.matches("toggleFavorite(").count(), 3);
+    assert_contains(
+        script,
+        "send({ command: 'toggleFavorite', path, kind: kind || 'document' });",
+    );
+    assert_contains(
+        script,
+        "  renderTabs(currentState);\n  send({ command: 'toggleFavorite'",
+    );
+}
+
+#[test]
+fn a_marked_tab_is_the_width_of_an_unmarked_one() {
+    let css = reading_mode_css();
+
+    // Out of the label's flow, like the close button in the corner opposite, so a mark costs the tab nothing.
+    let mark = css
+        .split(".tab-favorite {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines the tab's heart");
+    assert!(mark.contains("position: absolute;"));
+    assert!(mark.contains("top: 2px;") && mark.contains("left: 2px;"));
+    assert!(
+        !mark.contains("margin"),
+        "an out-of-flow heart has no margin to push the row with: {mark}"
+    );
+    // Never drawn at rest, and every value of the fade a token: in decelerating, then a hold, then a shorter exit that accelerates.
+    assert!(mark.contains("opacity: 0;"));
+    assert_contains(
+        &mark.to_string(),
+        "transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);",
+    );
+    assert_contains(
+        css,
+        ".tab:hover .tab-favorite,\n.tab:focus-within .tab-favorite {\n  opacity: 1;\n  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate);\n}",
+    );
+    // The tab's own padding is untouched: the right inset still reserves the close button's corner, and the left is what it always was.
+    let tab = css
+        .split("\n.tab {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines a tab");
+    assert_contains(
+        &tab.to_string(),
+        "padding: 0 var(--lt-space-12) 0 var(--lt-space-4);",
+    );
+}

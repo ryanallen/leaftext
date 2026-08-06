@@ -161,6 +161,152 @@ fn recent_files_persistence_round_trips_and_falls_back_safely() {
 }
 
 #[test]
+fn favorites_round_trip_through_the_file_recent_files_uses() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-favorites-persistence-{unique}"));
+    let config_path = dir.join("settings").join("recent-files.json");
+
+    let mut favorites = Favorites::default();
+    favorites.add(Favorite {
+        vault_id: Some(3),
+        path: PathBuf::from("notes/daily.md"),
+        kind: FavoriteKind::Document,
+    });
+    favorites.add(Favorite {
+        vault_id: Some(3),
+        path: PathBuf::from("notes/archive"),
+        kind: FavoriteKind::Folder,
+    });
+    // Something opened from outside every vault is kept, not refused.
+    favorites.add(Favorite {
+        vault_id: None,
+        path: PathBuf::from("desktop/scratch.md"),
+        kind: FavoriteKind::Document,
+    });
+
+    let mut recent = RecentFiles::default();
+    recent.record(PathBuf::from("notes/daily.md"));
+    save_recent_files(&config_path, &recent).expect("recent files save");
+    save_favorites(&config_path, &favorites).expect("favorites save");
+
+    // Both lists share the file, so saving one keeps the other.
+    assert_eq!(load_favorites(&config_path), favorites);
+    assert_eq!(load_recent_files(&config_path), recent);
+    assert_eq!(
+        load_favorites(&dir.join("missing.json")),
+        Favorites::default()
+    );
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn favorites_collapse_equivalent_path_spellings() {
+    let mut favorites = Favorites::default();
+    let clean = Path::new("app").join("README.md");
+    let messy = Path::new("app").join(".tmp").join("..").join("README.md");
+
+    assert!(favorites.add(Favorite {
+        vault_id: Some(1),
+        path: clean.clone(),
+        kind: FavoriteKind::Document,
+    }));
+    // The same file under another spelling is already kept, so it is not added twice.
+    assert!(!favorites.add(Favorite {
+        vault_id: Some(1),
+        path: messy.clone(),
+        kind: FavoriteKind::Document,
+    }));
+    assert_eq!(favorites.entries.len(), 1);
+    assert!(favorites.contains(&messy));
+    assert!(favorites.remove(&messy));
+    assert!(!favorites.contains(&clean));
+}
+
+#[test]
+fn favorites_load_empty_from_a_config_file_written_before_them() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("leaf-favorites-older-config-{unique}"));
+    let config_path = dir.join("settings").join("recent-files.json");
+    fs::create_dir_all(config_path.parent().expect("config folder"))
+        .expect("test directory is created");
+    fs::write(&config_path, r#"{"files":["guide.md"]}"#).expect("older config fixture is written");
+
+    assert_eq!(load_favorites(&config_path), Favorites::default());
+    assert_eq!(
+        load_recent_files(&config_path).files,
+        vec![PathBuf::from("guide.md")]
+    );
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn removing_a_vault_forgets_only_its_own_favorites() {
+    let mut favorites = Favorites::default();
+    for (vault_id, path) in [
+        (Some(1), "work/plan.md"),
+        (Some(2), "personal/journal.md"),
+        (None, "desktop/scratch.md"),
+    ] {
+        favorites.add(Favorite {
+            vault_id,
+            path: PathBuf::from(path),
+            kind: FavoriteKind::Document,
+        });
+    }
+
+    assert!(favorites.forget_vault(1));
+    assert_eq!(
+        favorites
+            .entries
+            .iter()
+            .map(|kept| kept.path.clone())
+            .collect::<Vec<_>>(),
+        vec![
+            PathBuf::from("personal/journal.md"),
+            PathBuf::from("desktop/scratch.md"),
+        ]
+    );
+    // A vault with nothing kept in it reports no change, so nothing is saved.
+    assert!(!favorites.forget_vault(1));
+}
+
+#[test]
+fn favorites_reorder_moves_one_entry_and_ignores_an_index_it_does_not_have() {
+    let mut favorites = Favorites::default();
+    for path in ["first.md", "second.md", "third.md"] {
+        favorites.add(Favorite {
+            vault_id: None,
+            path: PathBuf::from(path),
+            kind: FavoriteKind::Document,
+        });
+    }
+
+    assert!(favorites.reorder(2, 0));
+    assert_eq!(
+        favorites
+            .entries
+            .iter()
+            .map(|kept| kept.path.clone())
+            .collect::<Vec<_>>(),
+        vec![
+            PathBuf::from("third.md"),
+            PathBuf::from("first.md"),
+            PathBuf::from("second.md"),
+        ]
+    );
+    assert!(!favorites.reorder(0, 9));
+    assert!(!favorites.reorder(1, 1));
+}
+
+#[test]
 fn settings_persistence_round_trips_and_falls_back_safely() {
     let unique = SystemTime::now()
         .duration_since(UNIX_EPOCH)

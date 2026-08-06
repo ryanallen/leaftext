@@ -17,6 +17,7 @@ let contextMenuTargetKind = 'file';
 let contextMenuLink = null;
 const CONTEXT_MENU_ITEMS = [
   { action: 'open', label: 'Open' },
+  { action: 'favorite', label: 'Favorite' },
   'separator',
   { action: 'cut', label: 'Cut' },
   { action: 'copy', label: 'Copy' },
@@ -34,6 +35,7 @@ const CONTEXT_MENU_ITEMS = [
 // item this menu exists for.
 const FOLDER_MENU_ITEMS = [
   { action: 'openFolder', label: 'Open folder', folderOnly: true },
+  { action: 'favorite', label: 'Favorite', folderOnly: true },
   'separator',
   { action: 'paste', label: 'Paste' },
   'separator',
@@ -97,6 +99,7 @@ function runContextAction(action, path, link) {
       send({ command: 'pasteFile', path: transfer.path, intoFolder: path, cut: transfer.cut });
       break;
     }
+    case 'favorite': toggleFavorite(path, contextMenuTargetKind === 'folder' ? 'folder' : 'document'); break;
     case 'copyPath': send({ command: 'copyPath', path }); break;
     case 'reveal': send({ command: 'revealFile', path }); break;
     case 'properties': send({ command: 'showProperties', path }); break;
@@ -118,13 +121,21 @@ function contextMenuEntries() {
   const entries =
     contextMenuTargetKind === 'file' ? CONTEXT_MENU_ITEMS : FOLDER_MENU_ITEMS;
   return tidySeparators(
-    entries.filter((entry) => {
-      if (entry === 'separator') return true;
-      if (entry.action === 'paste') return !!libraryTransfer;
-      if (entry.folderOnly) return contextMenuTargetKind === 'folder';
-      return true;
-    })
+    entries
+      .filter((entry) => {
+        if (entry === 'separator') return true;
+        if (entry.action === 'paste') return !!libraryTransfer;
+        if (entry.folderOnly) return contextMenuTargetKind === 'folder';
+        return true;
+      })
+      .map(labelForFavoriteEntry)
   );
+}
+// One item, both ways round: it says what the click will do, not what the file is.
+function labelForFavoriteEntry(entry) {
+  if (entry === 'separator' || entry.action !== 'favorite') return entry;
+  if (!isFavoritePath(contextMenuPath)) return entry;
+  return { action: entry.action, label: 'Unfavorite' };
 }
 // Open says where it is sending you when that is out of the app, so the one item
 // that leaves says so before you pick it.

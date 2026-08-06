@@ -254,7 +254,13 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
     let tabs = reader.workspace.tab_summaries();
     run_page_script(
         reader.page(),
-        &workspace_reload_script(&reader.recent.files, &tabs, Some(index), Some(&document)),
+        &workspace_reload_script(
+            &reader.recent.files,
+            &reader.favorites,
+            &tabs,
+            Some(index),
+            Some(&document),
+        ),
         "Live reload: failed to update document view",
     );
 }

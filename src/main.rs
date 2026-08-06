@@ -27,20 +27,20 @@ use leaftext::{
     initial_state_script, initial_update_script, initial_vaults_script, initial_version_script,
     inspect_vault_repo, is_local_image_path, is_supported_document_path, known_note_names,
     library_folder_script, library_refresh_script, line_count_script, link_vault_remote,
-    lint_links, load_recent_files, load_settings, local_image_protocol_response,
+    lint_links, load_favorites, load_recent_files, load_settings, local_image_protocol_response,
     local_image_source_dir, markdown_image_insert_destination, navigation_state_script,
     note_preview, notice_toast_script, open_error_state_script, opened_document_from_source,
     pager_loaded_script, read_folder_listing, read_folder_note, read_source, reading_mode_css,
-    render_markdown_document, repo_name_for_vault, rgba_from_bmp, save_recent_files,
-    save_result_script, save_settings, scroll_anchor_script, search_results_script,
-    settings_file_path, settings_unreadable_script, source_payload_url, source_updated_script,
-    sync_vault_repo, today_or_utc, unlock_reading_script, update_progress_script,
-    update_state_script, vaults_script, webview_user_data_dir, workspace_only_script,
-    workspace_reload_script, workspace_state_script, workspace_switch_script, write_source,
-    CloudFolder, CloudRoots, CorpusDocument, DocumentFormat, EditableDocument, FilterHints,
-    FolderListing, GitTooling, GraphScope, OpenedDocument, Query, RecentFiles, ScrollAnchor,
-    Settings, SettingsLoad, SourceText, UpdateDownload, VaultCorpus, VaultRepo,
-    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
+    render_markdown_document, repo_name_for_vault, rgba_from_bmp, save_favorites,
+    save_recent_files, save_result_script, save_settings, scroll_anchor_script,
+    search_results_script, settings_file_path, settings_unreadable_script, source_payload_url,
+    source_updated_script, sync_vault_repo, today_or_utc, unlock_reading_script,
+    update_progress_script, update_state_script, vaults_script, webview_user_data_dir,
+    workspace_only_script, workspace_reload_script, workspace_state_script,
+    workspace_switch_script, write_source, CloudFolder, CloudRoots, CorpusDocument, DocumentFormat,
+    EditableDocument, Favorite, FavoriteKind, Favorites, FilterHints, FolderListing, GitTooling,
+    GraphScope, OpenedDocument, Query, RecentFiles, ScrollAnchor, Settings, SettingsLoad,
+    SourceText, UpdateDownload, VaultCorpus, VaultRepo, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -356,6 +356,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         .as_ref()
         .map(load_recent_files)
         .unwrap_or_default();
+    // The kept paths ride in the same file, so one read answers both.
+    let favorites = config_path.as_ref().map(load_favorites).unwrap_or_default();
 
     // The vault registry, so the leftmost crumb reads the active vault's name on the first paint. Opening the manifest here is also what applies its migrations, before anything else reads it.
     let data_dir = app_data_dir();
@@ -452,6 +454,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             webview,
             workspace,
             recent,
+            favorites,
             config_path,
             image_dir: local_image_source_dir,
         },

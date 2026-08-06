@@ -125,6 +125,9 @@ pub(crate) enum IpcCommand {
     CopyFile { path: PathBuf, cut: bool },
     #[serde(rename = "copyPath")]
     CopyPath { path: PathBuf },
+    /// Mark or unmark a path — the heart on a tab, and the right-click item for everything not open. Which vault it belongs to is worked out here rather than sent, since the page never knows it.
+    #[serde(rename = "toggleFavorite")]
+    ToggleFavorite { path: PathBuf, kind: FavoriteKind },
     #[serde(rename = "renameFile")]
     RenameFile {
         path: PathBuf,

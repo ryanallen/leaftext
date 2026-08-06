@@ -267,7 +267,92 @@ impl RecentFiles {
     }
 }
 
-/// Resolve `.` and `..` in `path` lexically (not via the filesystem) so two spellings of the same file collapse to one Recent entry. Lexical rather than canonicalized keeps the path human-readable (no `\\?\` prefix) and usable by OS file-reveal commands.
+/// What a kept path points at. A folder is keepable too, so a shortcut to one is the same store rather than a second list.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum FavoriteKind {
+    Document,
+    Folder,
+}
+
+/// One kept path, with the vault it was marked inside. `vault_id` is `None` for something outside every vault — kept in its own group rather than refused, since a file on the desktop is still a file you can keep.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Favorite {
+    #[serde(default)]
+    pub vault_id: Option<i64>,
+    pub path: PathBuf,
+    pub kind: FavoriteKind,
+}
+
+/// The kept paths, in the order the user put them in. Unlike [`RecentFiles`] there is no cap and nothing but the user takes an entry out: a recent is a record of what happened, and this is a decision somebody made.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Favorites {
+    pub entries: Vec<Favorite>,
+}
+
+impl Favorites {
+    /// Keep `favorite`, at the end of the list. Returns whether it was added; marking something twice is not an error and never moves it.
+    pub fn add(&mut self, favorite: Favorite) -> bool {
+        let favorite = Favorite {
+            path: normalize_recent_path(&favorite.path),
+            ..favorite
+        };
+        if self.entries.iter().any(|kept| kept.path == favorite.path) {
+            return false;
+        }
+        self.entries.push(favorite);
+        true
+    }
+
+    /// Stop keeping `path`. Returns whether it was there, so the save is skipped when nothing changed.
+    pub fn remove(&mut self, path: &Path) -> bool {
+        let path = normalize_recent_path(path);
+        let before = self.entries.len();
+        self.entries.retain(|kept| kept.path != path);
+        before != self.entries.len()
+    }
+
+    pub fn contains(&self, path: &Path) -> bool {
+        let path = normalize_recent_path(path);
+        self.entries.iter().any(|kept| kept.path == path)
+    }
+
+    /// Move the entry at `from` so it sits at `to`. An index the list does not have changes nothing, so a drop the page mis-measured cannot scramble the order.
+    pub fn reorder(&mut self, from: usize, to: usize) -> bool {
+        if from == to || from >= self.entries.len() || to >= self.entries.len() {
+            return false;
+        }
+        let entry = self.entries.remove(from);
+        self.entries.insert(to, entry);
+        true
+    }
+
+    /// Drop everything marked inside `vault_id`, for a vault being removed. The registry is the only record of what that id meant, so keeping them would leave paths nobody can name.
+    pub fn forget_vault(&mut self, vault_id: i64) -> bool {
+        let before = self.entries.len();
+        self.entries.retain(|kept| kept.vault_id != Some(vault_id));
+        before != self.entries.len()
+    }
+
+    /// Collapse entries to normalized form, dropping duplicates in order. Run on load, like Recent's, so the same path kept under two spellings self-heals.
+    fn normalize_entries(&mut self) {
+        let mut normalized: Vec<Favorite> = Vec::with_capacity(self.entries.len());
+        for entry in self.entries.drain(..) {
+            let entry = Favorite {
+                path: normalize_recent_path(&entry.path),
+                ..entry
+            };
+            if !normalized.iter().any(|kept| kept.path == entry.path) {
+                normalized.push(entry);
+            }
+        }
+        self.entries = normalized;
+    }
+}
+
+/// Resolve `.` and `..` in `path` lexically (not via the filesystem) so two spellings of the same file collapse to one entry in Recent or in the kept list. Lexical rather than canonicalized keeps the path human-readable (no `\\?\` prefix) and usable by OS file-reveal commands.
 fn normalize_recent_path(path: &Path) -> PathBuf {
     use std::path::Component;
 
@@ -961,22 +1046,54 @@ fn read_config_text(path: impl AsRef<Path>) -> io::Result<String> {
     Ok(read_source(path)?.text)
 }
 
-pub fn load_recent_files(config_path: impl AsRef<Path>) -> RecentFiles {
-    let mut recent: RecentFiles = read_config_text(config_path)
+/// Both lists in the config file. They share one file, so each save reads what is on disk and replaces only its own half; a file written before favorites existed loads with an empty one.
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
+struct ConfigLists {
+    files: Vec<PathBuf>,
+    favorites: Favorites,
+}
+
+fn read_config_lists(config_path: impl AsRef<Path>) -> ConfigLists {
+    read_config_text(config_path)
         .ok()
         .and_then(|contents| serde_json::from_str(&contents).ok())
-        .unwrap_or_default();
+        .unwrap_or_default()
+}
+
+fn write_config_lists(config_path: impl AsRef<Path>, lists: &ConfigLists) -> io::Result<()> {
+    let config_path = config_path.as_ref();
+    if let Some(parent) = config_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let json = serde_json::to_string_pretty(lists)?;
+    fs::write(config_path, json)
+}
+
+pub fn load_recent_files(config_path: impl AsRef<Path>) -> RecentFiles {
+    let mut recent = RecentFiles {
+        files: read_config_lists(config_path).files,
+    };
     recent.normalize_entries();
     recent
 }
 
 pub fn save_recent_files(config_path: impl AsRef<Path>, recent: &RecentFiles) -> io::Result<()> {
-    let config_path = config_path.as_ref();
-    if let Some(parent) = config_path.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    let json = serde_json::to_string_pretty(recent)?;
-    fs::write(config_path, json)
+    let mut lists = read_config_lists(&config_path);
+    lists.files.clone_from(&recent.files);
+    write_config_lists(config_path, &lists)
+}
+
+pub fn load_favorites(config_path: impl AsRef<Path>) -> Favorites {
+    let mut favorites = read_config_lists(config_path).favorites;
+    favorites.normalize_entries();
+    favorites
+}
+
+pub fn save_favorites(config_path: impl AsRef<Path>, favorites: &Favorites) -> io::Result<()> {
+    let mut lists = read_config_lists(&config_path);
+    lists.favorites.clone_from(favorites);
+    write_config_lists(config_path, &lists)
 }
 
 /// UI toggles that survive a restart. The app shell's opaque origin can't use localStorage, so the host owns these: injected on boot via [`initial_settings_script`] and saved whenever the frontend reports a change.

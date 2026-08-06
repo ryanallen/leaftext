@@ -74,6 +74,8 @@ An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></spa
 | check | check.svg | regular | — | A chosen row in a menu, and the code block's "copied" mark. |
 | check-circle | check-circle.svg | regular | — | The theme card's selected badge, where the tick needs a ring of its own to read on a colored card. |
 | tab-close | tab-close.svg | heavy | — | A tab's close cross. Its own drawing rather than `close`, because at that size a 1.5 stroke disappears. |
+| favorite-off | heart.svg | regular | — | The heart in a tab's other corner, on a file that is not kept. |
+| favorite-on | heart-filled.svg | — | — | The same heart, filled, on one that is. A fill is a different drawing, not a bolder line, which is why it is its own row rather than the heavy weight. |
 | back-long | back-long.svg | regular | — | The menu row that goes up a folder. A longer arrow than the app bar's Back, which is why it is not the same icon. |
 | trash | trash.svg | regular | — | Delete, in the file menu. |
 | copy | copy.svg | regular | — | Copy a code block. |

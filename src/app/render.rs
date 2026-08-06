@@ -11,12 +11,13 @@ pub(crate) fn run_page_script(webview: Option<&WebView>, script: &str, what: &st
     }
 }
 
-/// What it takes to put a document on screen: the window to title, the page to write to, the tabs to draw, the recents to record, and where images resolve from. One bundle because they always travel together.
+/// What it takes to put a document on screen: the window to title, the page to write to, the tabs to draw, the recents to record, the kept paths to mark, and where images resolve from. One bundle because they always travel together.
 pub(crate) struct Reader {
     pub(crate) window: tao::window::Window,
     pub(crate) webview: Option<WebView>,
     pub(crate) workspace: Workspace,
     pub(crate) recent: RecentFiles,
+    pub(crate) favorites: Favorites,
     pub(crate) config_path: Option<PathBuf>,
     pub(crate) image_dir: Arc<Mutex<Option<PathBuf>>>,
 }
@@ -49,12 +50,51 @@ impl Reader {
         self.save_recent();
     }
 
+    /// Save the kept paths, if there is a file to save them to.
+    fn persist_favorites(&self) {
+        if let Some(config_path) = self.config_path.as_ref() {
+            if let Err(error) = save_favorites(config_path, &self.favorites) {
+                eprintln!("Failed to save favorites: {error}");
+            }
+        }
+    }
+
+    /// Mark or unmark `path`, save, and tell every screen that draws the list. Marking is its own answer: the page has already drawn it, and this is the host agreeing.
+    pub(crate) fn toggle_favorite(
+        &mut self,
+        path: PathBuf,
+        kind: FavoriteKind,
+        vault_id: Option<i64>,
+    ) {
+        if !self.favorites.remove(&path) {
+            self.favorites.add(Favorite {
+                vault_id,
+                path,
+                kind,
+            });
+        }
+        self.persist_favorites();
+        self.refresh_tab_strip();
+    }
+
+    /// Drop what was kept inside a vault that has just been removed.
+    pub(crate) fn forget_vault_favorites(&mut self, vault_id: i64) {
+        if self.favorites.forget_vault(vault_id) {
+            self.persist_favorites();
+        }
+    }
+
     /// Redraw the tab strip and leave the document on screen alone — what a page opened behind the reader needs, and nothing more.
     pub(crate) fn refresh_tab_strip(&self) {
         let tabs = self.workspace.tab_summaries();
         run_page_script(
             self.page(),
-            &workspace_only_script(&self.recent.files, &tabs, self.workspace.active),
+            &workspace_only_script(
+                &self.recent.files,
+                &self.favorites,
+                &tabs,
+                self.workspace.active,
+            ),
             "Failed to refresh the tab strip",
         );
     }
@@ -116,7 +156,12 @@ impl Reader {
                     let tabs = self.workspace.tab_summaries();
                     run_page_script(
                         self.page(),
-                        &workspace_only_script(&self.recent.files, &tabs, Some(index)),
+                        &workspace_only_script(
+                            &self.recent.files,
+                            &self.favorites,
+                            &tabs,
+                            Some(index),
+                        ),
                         "Failed to update tabs for the code view",
                     );
                     enter_code_view(self.webview.as_ref(), &mut self.workspace, scroll_fraction);
@@ -187,12 +232,14 @@ impl Reader {
                 let script = match scroll {
                     ScrollIntent::Preserve => workspace_reload_script(
                         &self.recent.files,
+                        &self.favorites,
                         &tabs,
                         Some(index),
                         Some(&document),
                     ),
                     ScrollIntent::Restore { anchor, .. } => workspace_switch_script(
                         &self.recent.files,
+                        &self.favorites,
                         &tabs,
                         Some(index),
                         Some(&document),
@@ -200,6 +247,7 @@ impl Reader {
                     ),
                     ScrollIntent::Reset => workspace_state_script(
                         &self.recent.files,
+                        &self.favorites,
                         &tabs,
                         Some(index),
                         Some(&document),
@@ -213,7 +261,7 @@ impl Reader {
                 let tabs = self.workspace.tab_summaries();
                 run_page_script(
                     self.page(),
-                    &workspace_state_script(&self.recent.files, &tabs, None, None),
+                    &workspace_state_script(&self.recent.files, &self.favorites, &tabs, None, None),
                     "Failed to update view",
                 );
             }

@@ -15,6 +15,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Scroll anchors](#restore) | Restore the same reading spot after rerenders, and on every step of a tab's history |
 | [Live reload](#reload) | Reload a changed file without losing your place |
 | [Recent files](#recent-files) | Reopen the last 8 files quickly |
+| [Favorites](#favorites) | Keep a file or folder so it is never lost off the end of Recent |
 | [Loading spinner](#loading) | A spinner appears over the reader while a slow document or view renders |
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is and where it points |
@@ -145,6 +146,15 @@ The no-file home screen shows the last 8 opened files, under the **Choose file**
 - Missing files are removed automatically.
 - Equivalent path spellings collapse to one entry.
 - Clicking a recent file opens it immediately.
+
+### Favorites
+
+Recent holds eight, and anything that fails to open drops off it. A favorite is a choice you made, so it is kept until you say otherwise.
+
+- **From the tab you are reading.** Point at the tab and a heart appears in its top-left corner: click it to keep the file, click it again to stop. It is filled when the file is already kept, and it fades out a beat after the pointer leaves — a strip of tabs at rest carries no marks, so the list is where you see them all.
+- **From a right-click, for anything else.** **Favorite** in the menu, reading **Unfavorite** on one you already keep. It works on a row in the [library](03-library.md) pane, on a tab, and on a row in the recent list — and on a folder as well as a file.
+- Marking shows straight away and is saved beside the recent list, in the same file.
+- A favorite is kept with the [vault](03-library.md#vaults) it was marked inside. Something opened from outside every vault is still kept; removing a vault takes its own favorites with it.
 
 ### Loading
 

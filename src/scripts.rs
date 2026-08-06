@@ -141,9 +141,10 @@ pub fn document_state_script(document: &OpenedDocument, recent: &[PathBuf]) -> S
     call_with_json("window.leafSetState", &state)
 }
 
-/// The payload every workspace script carries: recents, tabs, active index and document (`null` on the home screen). One builder so the four senders agree.
+/// The payload every workspace script carries: recents, the kept paths, tabs, active index and document (`null` on the home screen). One builder so the four senders agree — a screen left out of it is a screen that never hears about a change.
 fn workspace_payload(
     recent: &[PathBuf],
+    favorites: &Favorites,
     tabs: &[(String, String)],
     active: Option<usize>,
     document: Option<&OpenedDocument>,
@@ -152,12 +153,25 @@ fn workspace_payload(
         .iter()
         .map(|path| path.display().to_string())
         .collect();
+    // Spelled out rather than serialized whole, so a kept path reaches the page the way a recent does: as the text the page compares against a document's own path.
+    let favorites: Vec<serde_json::Value> = favorites
+        .entries
+        .iter()
+        .map(|favorite| {
+            serde_json::json!({
+                "vaultId": favorite.vault_id,
+                "path": favorite.path.display().to_string(),
+                "kind": favorite.kind,
+            })
+        })
+        .collect();
     let tabs: Vec<serde_json::Value> = tabs
         .iter()
         .map(|(title, path)| serde_json::json!({ "title": title, "path": path }))
         .collect();
     serde_json::json!({
         "recent": recent,
+        "favorites": favorites,
         "tabs": tabs,
         "active": active,
         "document": document,
@@ -167,38 +181,41 @@ fn workspace_payload(
 /// Full workspace state, applied via `leafSetState` (resets the scroll).
 pub fn workspace_state_script(
     recent: &[PathBuf],
+    favorites: &Favorites,
     tabs: &[(String, String)],
     active: Option<usize>,
     document: Option<&OpenedDocument>,
 ) -> String {
     call_with_json(
         "window.leafSetState",
-        &workspace_payload(recent, tabs, active, document),
+        &workspace_payload(recent, favorites, tabs, active, document),
     )
 }
 
 /// Tabs, recents and the active index with no document. The code view renders itself from its own payload, so the state script never runs for a tab showing source — this is how such a tab still gets its entry in the strip and gives the page an active document to name. The page reads only the fields it merges (recent, tabs, active); the null document is ignored.
 pub fn workspace_only_script(
     recent: &[PathBuf],
+    favorites: &Favorites,
     tabs: &[(String, String)],
     active: Option<usize>,
 ) -> String {
     format!(
         "window.leafSetWorkspace({});",
-        workspace_payload(recent, tabs, active, None)
+        workspace_payload(recent, favorites, tabs, active, None)
     )
 }
 
 /// Like [`workspace_state_script`] but via `leafReloadDocument`, which re-renders in place and preserves scroll position. Used by live-reload.
 pub fn workspace_reload_script(
     recent: &[PathBuf],
+    favorites: &Favorites,
     tabs: &[(String, String)],
     active: Option<usize>,
     document: Option<&OpenedDocument>,
 ) -> String {
     call_with_json(
         "window.leafReloadDocument",
-        &workspace_payload(recent, tabs, active, document),
+        &workspace_payload(recent, favorites, tabs, active, document),
     )
 }
 
@@ -225,12 +242,13 @@ fn scroll_anchor_json(anchor: &ScrollAnchor) -> String {
 /// Like [`workspace_state_script`] but via `leafSwitchTab`, which renders the target tab and restores `anchor` in the same frame so the switch never snaps to the top. `anchor` is `None` the first time a tab is opened.
 pub fn workspace_switch_script(
     recent: &[PathBuf],
+    favorites: &Favorites,
     tabs: &[(String, String)],
     active: Option<usize>,
     document: Option<&OpenedDocument>,
     anchor: Option<&ScrollAnchor>,
 ) -> String {
-    let state = workspace_payload(recent, tabs, active, document);
+    let state = workspace_payload(recent, favorites, tabs, active, document);
     let anchor = match anchor {
         Some(anchor) => scroll_anchor_json(anchor),
         None => "null".to_string(),

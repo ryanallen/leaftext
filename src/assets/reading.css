@@ -436,6 +436,44 @@ body {
      light accent (Fern green, Amaranth lavender) are unreadable. */
   color: var(--lt-primary-foreground);
 }
+/* The heart, in the corner opposite the close button and out of the label's flow the same way, so the tab keeps its width and its padding. It covers the first letters of the name on purpose; the wash is what keeps it readable over them. */
+.tab-favorite {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0;
+  border: var(--lt-stroke-1) solid transparent;
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: var(--lt-muted-foreground);
+  /* Never there at rest, marked or not, so a strip of tabs carries nothing extra to read. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival that matched it. */
+  opacity: 0;
+  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
+}
+.tab-favorite .lt-icon {
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+.tab:hover .tab-favorite,
+.tab:focus-within .tab-favorite {
+  opacity: 1;
+  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate);
+}
+/* A hollow heart is an offer; a filled one is a fact, so it is drawn in full ink. */
+.tab-favorite.is-on {
+  color: var(--lt-foreground);
+}
+.tab-favorite:hover {
+  background: var(--lt-navigation-button-hover-background);
+  border-color: transparent;
+  color: var(--lt-primary-foreground);
+}
 .history-actions {
   display: flex;
   gap: var(--lt-space-10);

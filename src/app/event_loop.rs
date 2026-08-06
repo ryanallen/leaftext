@@ -344,6 +344,15 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         );
                     }
                 }
+                IpcCommand::ToggleFavorite { path, kind } => {
+                    // Which vault holds it is the registry's answer, not the pane's: something opened from outside every vault is kept under none.
+                    let vault_id = vault_state
+                        .conn
+                        .as_ref()
+                        .and_then(|conn| vault_containing(conn, &path))
+                        .map(|vault| vault.id);
+                    reader.toggle_favorite(path, kind, vault_id);
+                }
                 IpcCommand::CopyPath { path } => {
                     if let Err(error) = copy_path_to_clipboard(&path) {
                         eprintln!(
@@ -865,6 +874,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 IpcCommand::RemoveVault { id } => {
                     remove_vault_row(id, &mut vault_state, reader.page());
+                    // The registry was the only record of what that id meant, so what was kept inside it goes too.
+                    reader.forget_vault_favorites(id);
                     // Removing the vault on screen lands back at the top of the whole library.
                     vault_state.folder.clear();
                     request_folder(&vault_state, &proxy, String::new());
