@@ -173,6 +173,12 @@ drive out *steps:
 check-driver:
     node scripts/check-driver.mjs
 
+# Fail if the release workflows can no longer find the app's binary in the
+# workspace — the browser package sorts first, and taking the first member cost
+# v0.1.484's Mac build after it had compiled both chips.
+check-release-package:
+    node scripts/check-release-package.mjs
+
 # Fail if the MCP wrapper and src/pipe.rs disagree about what can be asked, or
 # about where to ask it. Offline: the wrapper itself needs the app running, this
 # reads two files.
@@ -220,7 +226,7 @@ preview-web folder="":
 drive-web url *steps:
     node scripts/drive-web.mjs "{{ url }}" {{ steps }}
 
-verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-mcp check-driver check-shot-edges
+verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-release-package check-mcp check-driver check-shot-edges
 
 # Cut a release: commit, tag, and push so CI builds all platforms.
 release version:

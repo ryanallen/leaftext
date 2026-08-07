@@ -88,16 +88,10 @@ jobs:
           import json
           import subprocess
 
+          # The app by name. `--no-deps` returns no resolve graph, so there is no root to ask for, and the browser package sorts ahead of the app — taking the first member shipped a release that found no binary to package.
           metadata = json.loads(subprocess.check_output(["cargo", "metadata", "--no-deps", "--format-version", "1"]))
           packages = metadata.get("packages", [])
-          resolve = metadata.get("resolve") or {}
-          root_id = resolve.get("root")
-          package = next((item for item in packages if item.get("id") == root_id), None)
-          if package is None and metadata.get("workspace_members"):
-              members = set(metadata["workspace_members"])
-              package = next((item for item in packages if item.get("id") in members), None)
-          if package is None and packages:
-              package = packages[0]
+          package = next((item for item in packages if item.get("name") == "leaftext"), None)
           if package is None:
               raise SystemExit("Could not resolve Cargo package metadata")
 
