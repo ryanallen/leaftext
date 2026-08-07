@@ -307,6 +307,65 @@ fn frontmatter_parses_scalars_arrays_and_block_lists() {
 }
 
 #[test]
+fn a_comma_inside_a_quoted_inline_item_belongs_to_that_item() {
+    let items = |line: &str| {
+        let text = format!("---\n{line}\n---\n");
+        document_fields(&text)
+            .first()
+            .map(|field| {
+                field
+                    .values
+                    .iter()
+                    .map(|value| value.text.clone())
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default()
+    };
+
+    // The name a note was written with, rather than two halves the app then answers to — and no stray quote mark on either item.
+    assert_eq!(
+        items("aliases: [\"Smith, John\", Jack]"),
+        ["Smith, John", "Jack"]
+    );
+    assert_eq!(items("tags: ['a, b', \"c, d\"]"), ["a, b", "c, d"]);
+    // A quote opens a run only where an item starts, so an apostrophe mid-word is an ordinary character.
+    assert_eq!(items("tags: [a, don't, b]"), ["a", "don't", "b"]);
+    // Text past the closing quote is part of that one item, and keeps its marks — the far end is not a quote, so nothing unwraps it.
+    assert_eq!(items("tags: [\"a, b\" tail, c]"), ["\"a, b\" tail", "c"]);
+    // Unchanged where there was nothing wrong.
+    assert_eq!(items("tags: [one, two]"), ["one", "two"]);
+    assert!(items("tags: []").is_empty());
+    assert_eq!(items("tags: [one]"), ["one"]);
+    // An unclosed quote is one item running to the bracket, rather than three invented ones.
+    assert_eq!(items("tags: [\"a, b, c]"), ["\"a, b, c"]);
+
+    // Every item still points at what the file wrote it as, quotes included, so a splice over one replaces the whole thing.
+    let text = "---\naliases: [\"Smith, John\", Jack, 'Q, R']\n---\n";
+    let fields = document_fields(text);
+    let written: Vec<&str> = fields[0]
+        .values
+        .iter()
+        .map(|value| &text[value.range.clone()])
+        .collect();
+    assert_eq!(written, ["\"Smith, John\"", "Jack", "'Q, R'"]);
+    assert_eq!(
+        fields[0]
+            .values
+            .iter()
+            .map(|value| value.quoted)
+            .collect::<Vec<_>>(),
+        [true, false, true]
+    );
+
+    // The one name the writer meant is the one name the app offers.
+    let names = aliases_from(
+        &document_fields("---\naliases: [\"Smith, John\"]\n---\n"),
+        "Doc",
+    );
+    assert_eq!(names, vec!["Smith, John"]);
+}
+
+#[test]
 fn a_frontmatter_key_keeps_its_case_and_is_matched_either_way() {
     let fields = document_fields("---\nAuthor: Ada\n---\n");
     assert_eq!(fields.len(), 1);
@@ -629,8 +688,23 @@ fn a_list_is_written_back_in_the_form_the_file_wrote_it() {
         spliced(block, set_list_field(block, "authors", &["Ada"])),
         "---\nauthors:\n  - Ada\ncount: 3\n---\n"
     );
-    // An item carrying a comma cannot go in an inline list at all — the reader splits on every comma in the line — so it is refused rather than written as something that reads back as two. A `- item` list takes it.
-    assert_eq!(set_list_field(inline, "tags", &["a, b", "plain"]), None);
+    // An item carrying a comma is quoted on the way in, and reads back as the one item it was.
+    let commas = spliced(inline, set_list_field(inline, "tags", &["a, b", "plain"]));
+    assert_eq!(commas, "---\ntags: [\"a, b\", plain]\ncount: 3\n---\n");
+    assert_eq!(
+        document_fields(&commas)[0]
+            .values
+            .iter()
+            .map(|value| value.text.as_str())
+            .collect::<Vec<_>>(),
+        ["a, b", "plain"]
+    );
+    // An item already holding a double quote takes the other mark, so its run still closes where it should.
+    let other = spliced(inline, set_list_field(inline, "tags", &["a, \"b\""]));
+    assert_eq!(other, "---\ntags: ['a, \"b\"']\ncount: 3\n---\n");
+    assert_eq!(document_fields(&other)[0].text(), "a, \"b\"");
+    // Only one item is still refused: a comma with both marks in it leaves no mark to wrap it in, and nothing here escapes.
+    assert_eq!(set_list_field(inline, "tags", &["a, \"b\" 'c'"]), None);
     assert_eq!(
         spliced(block, set_list_field(block, "authors", &["Ada, again"])),
         "---\nauthors:\n  - Ada, again\ncount: 3\n---\n"

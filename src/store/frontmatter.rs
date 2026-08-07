@@ -155,24 +155,50 @@ fn strip_quotes(value: &str) -> (&str, bool) {
 }
 
 /// The items of the inline-array form `[a, b, c]`: each one's text, its range within `inner` **as written**, and whether it was quoted. Empty items are dropped. The caller has already confirmed the brackets.
+///
+/// A quote opens a run only where an item starts — the first character past the bracket or the last comma, past any spaces — and closes at its own pair, so a comma inside it belongs to the item and `["Smith, John", Jack]` is two names. Anywhere else a quote is an ordinary character, which is why `[a, don't, b]` is three items. An unclosed quote runs to the end of the brackets as one item: guessing where it was meant to close would invent content.
 fn inline_array_items(inner: &str) -> Vec<(String, Range<usize>, bool)> {
     let mut items = Vec::new();
-    let mut at = 0usize;
-    for piece in inner.split(',') {
-        let start = at;
-        at += piece.len() + 1; // past the comma this piece was cut on
+    let mut push = |from: usize, to: usize| {
+        let piece = &inner[from..to];
         let written = piece.trim();
         if written.is_empty() {
-            continue;
+            return;
         }
         let (value, quoted) = strip_quotes(written);
         let value = value.trim();
         if value.is_empty() {
-            continue;
+            return;
         }
-        let offset = start + (piece.len() - piece.trim_start().len());
+        let offset = from + (piece.len() - piece.trim_start().len());
         items.push((value.to_string(), offset..offset + written.len(), quoted));
+    };
+    let mut start = 0usize;
+    // The quote a run was opened with, and whether the walk is still in the spaces before an item starts.
+    let mut run: Option<char> = None;
+    let mut opening = true;
+    for (at, ch) in inner.char_indices() {
+        match run {
+            Some(mark) => {
+                if ch == mark {
+                    run = None;
+                }
+            }
+            None if ch == ',' => {
+                push(start, at);
+                start = at + ch.len_utf8();
+                opening = true;
+            }
+            None if opening && !ch.is_whitespace() => {
+                opening = false;
+                if ch == '"' || ch == '\'' {
+                    run = Some(ch);
+                }
+            }
+            None => {}
+        }
     }
+    push(start, inner.len());
     items
 }
 
@@ -612,12 +638,14 @@ enum ListForm {
     Block(String),
 }
 
-/// An item as it goes inside `[ ... ]`, or `None` for one the inline form cannot hold. A closing bracket is quoted away; a comma is not, because [`inline_array_items`] splits on every comma in the line, quoted or not, so an item carrying one could not be read back whatever it was written as. A `- item` list has no such trouble and takes it.
+/// An item as it goes inside `[ ... ]`, or `None` for one the inline form cannot hold. A comma and a closing bracket are both quoted away — the quote is put on here rather than in [`needs_quotes`], which answers for every scalar in the block, where a comma needs nothing.
+///
+/// The one item still refused carries a comma and both quote marks: whichever mark wrapped it would close the run early, and the comma after it would split the item again. Nothing here escapes, so there is no mark left; a `- item` list takes it.
 fn write_inline_item(item: &str) -> Option<String> {
-    if item.contains(',') {
+    if item.contains(',') && item.contains('"') && item.contains('\'') {
         return None;
     }
-    if item.contains(']') {
+    if item.contains([',', ']']) {
         let mark = quote_mark(item);
         return Some(format!("{mark}{item}{mark}"));
     }
