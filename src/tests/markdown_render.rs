@@ -30,13 +30,13 @@ fn the_metadata_table_draws_each_field_as_the_thing_it_is() {
     assert!(html.contains("<th>Author</th>"), "html: {html}");
     // A checkbox as a box, checked or not, and it survives the sanitizer because a `[x]` in a table cell already renders the same element. The sanitizer is what writes these out, so the assertion is on its spelling of a boolean attribute, not ours.
     assert!(
-        html.contains(r#"<td><input type="checkbox" disabled="" checked=""></td>"#),
+        html.contains(r#"><input type="checkbox" disabled="" checked=""></td>"#),
         "html: {html}"
     );
-    assert!(html.contains(r#"<td><input type="checkbox" disabled=""></td>"#));
+    assert!(html.contains(r#"><input type="checkbox" disabled=""></td>"#));
     // A list as items, with no class on the `ul` — the sanitizer does not pass one there, so the stylesheet reaches it through the table.
-    assert!(html.contains("<td><ul><li>one</li><li>two</li></ul></td>"));
-    assert!(html.contains("<td>42</td>"));
+    assert!(html.contains("><ul><li>one</li><li>two</li></ul></td>"));
+    assert!(html.contains(">42</td>"));
 }
 
 #[test]
@@ -74,6 +74,52 @@ fn a_document_gets_the_styles_it_names_and_one_message_for_everything_that_did_n
     let html = render_markdown_document(quiet, "note.md").html;
     assert!(html.contains("data-leaf-doc-classes"));
     assert!(!html.contains("data-leaf-unread"), "html: {html}");
+}
+
+#[test]
+fn a_field_table_names_the_bytes_each_value_occupies_in_the_file() {
+    // The table used to be drawn from a copy of the block with no idea where it sat, so its ranges could only point at that copy. Read them back out of the whole document: a range that addresses the copy slices the wrong text rather than failing loudly.
+    let markdown =
+        "\u{feff}---\ntitle: Notes\nversion: \"1.0\"\ntags: [one, two]\ndone: true\n---\n\n# Doc\n";
+    let html = render_markdown_document(markdown, "note.md").html;
+    let cell = |key: &str| {
+        let mark = format!(r#"data-leaf-field="{key}""#);
+        let at = html
+            .find(&mark)
+            .unwrap_or_else(|| panic!("no {key} cell: {html}"));
+        let tag = &html[at..at + html[at..].find('>').expect("a closed tag")];
+        let value = |name: &str| {
+            let mark = format!(r#"{name}=""#);
+            let start = tag
+                .find(&mark)
+                .unwrap_or_else(|| panic!("no {name} on {tag}"))
+                + mark.len();
+            tag[start..].split('"').next().expect("a closed value")
+        };
+        let range = |name: &str| value(name).parse::<usize>().expect("a number");
+        (
+            value("data-leaf-field-kind").to_string(),
+            &markdown[range("data-leaf-field-start")..range("data-leaf-field-end")],
+        )
+    };
+
+    // Past the byte order mark and past the opening fence, the way every other range in the document is measured.
+    assert_eq!(cell("title"), ("text".to_string(), "Notes"));
+    // The value as written, quotes included, so putting them back needs no guessing.
+    assert_eq!(cell("version"), ("text".to_string(), "\"1.0\""));
+    // A list spans its first item to its last, so one value written over it replaces the list.
+    assert_eq!(cell("tags"), ("list".to_string(), "one, two"));
+    assert_eq!(cell("done"), ("checkbox".to_string(), "true"));
+
+    // Its own attributes, not the block walk's `data-src-*`: everything reading that name treats what carries it as a Markdown block, and the field block is not one.
+    let table = &html[html.find("frontmatter").expect("the table")
+        ..html.find("</table>").expect("the table's end")];
+    assert!(!table.contains("data-src-start"), "{table}");
+
+    // A field the file opened and put nothing in has no value bytes to name.
+    let empty = render_markdown_document("---\ntags: []\n---\n\n# Doc\n", "note.md").html;
+    assert!(empty.contains(r#"data-leaf-field="tags""#), "{empty}");
+    assert!(!empty.contains("data-leaf-field-start"), "{empty}");
 }
 
 #[test]

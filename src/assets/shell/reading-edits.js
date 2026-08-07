@@ -1134,6 +1134,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   }
   if (currentDocumentFormat === 'markdown') {
     bindTableCheckboxes();
+    bindFrontmatterFields(body);
   }
   // The gutter and the selection bar read the format and the unlock, so they bind
   // after both are set.

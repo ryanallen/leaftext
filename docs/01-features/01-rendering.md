@@ -337,7 +337,7 @@ version: "1.0"                     # quoted, so text — bare 1.0 is a number
 - Only the **leading** block counts; a later `---` is a horizontal rule.
 - Malformed frontmatter still renders — just without the table.
 - **Nested fields are not read.** A `person:` with `name:` indented under it is refused rather than turned into a top-level `name`, and a key set twice keeps the first. Anything the block could not read arrives as one message when the note opens.
-- **The table itself is read-only**, but the document under it is not: a note that opens with a field block takes [edits in the page](07-editing.md) exactly like one that has none.
+- **The table is edited in place**, and so is the document under it — see [the fields at the top of a note](07-editing.md#the-fields-at-the-top-of-a-note).
 
 ### Collapsible sections
 

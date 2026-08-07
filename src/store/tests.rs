@@ -445,6 +445,241 @@ fn a_frontmatter_field_knows_which_of_the_six_types_it_is() {
     assert_eq!(kind("ratio: NaN"), FieldType::Text);
 }
 
+/// The document `splice` produces, or the document unchanged when it produced nothing.
+fn spliced(text: &str, splice: Option<FieldSplice>) -> String {
+    splice.map_or_else(|| text.to_string(), |splice| splice.applied_to(text))
+}
+
+#[test]
+fn setting_one_field_leaves_every_other_byte_of_the_block_alone() {
+    let text = "---\n# who wrote it\nAuthor: 'Ada'\n\nversion: \"1.0\"\ntags: [one, two]\ncount: 3\n---\n\n# Heading\n";
+    // The comment, the blank line, the key's case, the other fields and the body all survive; only the one value moves.
+    assert_eq!(
+        spliced(text, set_field(text, "count", "4")),
+        "---\n# who wrote it\nAuthor: 'Ada'\n\nversion: \"1.0\"\ntags: [one, two]\ncount: 4\n---\n\n# Heading\n"
+    );
+    // A value that arrived in quotes keeps them, in the mark it was written with — dropping them would retype the field as a number.
+    assert_eq!(
+        spliced(text, set_field(text, "version", "2.0")),
+        text.replace("\"1.0\"", "\"2.0\"")
+    );
+    assert_eq!(
+        spliced(text, set_field(text, "Author", "Grace")),
+        text.replace("'Ada'", "'Grace'")
+    );
+    // The key is matched the way every other reader matches it, and the file's own case is what stays.
+    assert_eq!(
+        spliced(text, set_field(text, "author", "Grace")),
+        text.replace("'Ada'", "'Grace'")
+    );
+    // One value over a list replaces the list, not its first item.
+    assert_eq!(
+        spliced(text, set_field(text, "tags", "three")),
+        text.replace("[one, two]", "[three]")
+    );
+    // Nothing to write is nothing spliced.
+    assert_eq!(set_field(text, "count", "3"), None);
+    // No single-line field can hold a line break.
+    assert_eq!(set_field(text, "count", "4\n5"), None);
+}
+
+#[test]
+fn a_value_is_quoted_only_where_reading_it_back_needs_it() {
+    let written = |value: &str| {
+        let text = "---\nnote: old\n---\n";
+        spliced(&text, set_field(text, "note", value))
+            .trim_start_matches("---\nnote: ")
+            .trim_end_matches("\n---\n")
+            .to_string()
+    };
+    // Bare where bare reads back, because quoting a value that never needed it rewrites a line nobody asked to change.
+    assert_eq!(written("hello"), "hello");
+    assert_eq!(written("-1.5"), "-1.5");
+    assert_eq!(written("12:30"), "12:30");
+    // A colon and a space, a comment mark, or an opener at the front all end the value early otherwise.
+    assert_eq!(written("Notes: a start"), "\"Notes: a start\"");
+    assert_eq!(written("done # really"), "\"done # really\"");
+    assert_eq!(written("[draft]"), "\"[draft]\"");
+    assert_eq!(written("- item"), "\"- item\"");
+    assert_eq!(written("ends with:"), "\"ends with:\"");
+    // The mark the value does not itself hold, so the quoted run does not look closed early.
+    assert_eq!(written("#\"quoted\""), "'#\"quoted\"'");
+    // And what goes in comes back out.
+    for value in ["Notes: a start", "done # really", "[draft]", "#\"quoted\""] {
+        let text = "---\nnote: old\n---\n";
+        let out = spliced(text, set_field(text, "note", value));
+        assert_eq!(
+            document_fields(&out)[0].text(),
+            value,
+            "round trip: {value}"
+        );
+    }
+}
+
+#[test]
+fn a_field_the_block_does_not_have_is_appended_and_a_missing_block_is_written() {
+    let text = "---\ntitle: Notes\n---\n\nbody\n";
+    assert_eq!(
+        spliced(text, set_field(text, "status", "draft")),
+        "---\ntitle: Notes\nstatus: draft\n---\n\nbody\n"
+    );
+    // A CRLF document keeps its endings, or the one spliced line reads differently from every other.
+    let crlf = "---\r\ntitle: Notes\r\n---\r\n\r\nbody\r\n";
+    assert_eq!(
+        spliced(crlf, set_field(crlf, "status", "draft")),
+        "---\r\ntitle: Notes\r\nstatus: draft\r\n---\r\n\r\nbody\r\n"
+    );
+    // A block with nothing in it still takes a field.
+    assert_eq!(
+        spliced("---\n---\nbody\n", set_field("---\n---\nbody\n", "a", "b")),
+        "---\na: b\n---\nbody\n"
+    );
+    // The first field on a file that starts with a heading writes the fences and leaves the heading where it was.
+    let plain = "# Heading\n\nbody\n";
+    assert_eq!(
+        spliced(plain, set_field(plain, "title", "Notes")),
+        "---\ntitle: Notes\n---\n\n# Heading\n\nbody\n"
+    );
+    assert_eq!(
+        document_fields(&spliced(plain, set_field(plain, "title", "Notes")))[0].text(),
+        "Notes"
+    );
+    // Past a byte order mark, so the fences are still the first line.
+    let marked = "\u{feff}# Heading\n";
+    assert!(spliced(marked, set_field(marked, "title", "Notes")).starts_with("\u{feff}---\n"));
+    // A key that opened a list and got no items is neither a field nor a refusal, so setting it writes onto that line instead of adding a second one the parser would refuse.
+    let empty = "---\ntags:\ntitle: Notes\n---\n";
+    assert_eq!(
+        spliced(empty, set_field(empty, "tags", "one")),
+        "---\ntags: one\ntitle: Notes\n---\n"
+    );
+    // A key the file opened and put nothing in is a field with no value range of its own, so the rest of its line is what the value goes over.
+    let brackets = "---\ntags: []\ntitle: Notes\n---\n";
+    assert_eq!(
+        spliced(brackets, set_field(brackets, "tags", "one")),
+        "---\ntags: one\ntitle: Notes\n---\n"
+    );
+}
+
+#[test]
+fn a_splice_only_lands_on_bytes_the_parser_reported() {
+    // The first of a repeated key is the field, so the first is what changes and the loser is left exactly as written.
+    let twice = "---\ntitle: First\ntitle: Second\n---\n";
+    assert_eq!(
+        spliced(twice, set_field(twice, "title", "Third")),
+        "---\ntitle: Third\ntitle: Second\n---\n"
+    );
+    assert_eq!(
+        spliced(twice, remove_field(twice, "title")),
+        "---\ntitle: Second\n---\n"
+    );
+
+    // A nested line is a refusal, never a field: setting its key appends a real one and leaves the refused line alone, and removing it removes nothing.
+    let nested = "---\nperson:\n  name: Ada\n---\n";
+    assert_eq!(
+        spliced(nested, set_field(nested, "name", "Grace")),
+        "---\nperson:\n  name: Ada\nname: Grace\n---\n"
+    );
+    assert_eq!(remove_field(nested, "name"), None);
+    assert_eq!(remove_field("# Heading\n", "title"), None);
+}
+
+#[test]
+fn removing_a_field_takes_its_line_and_the_items_under_it() {
+    let text = "---\ntitle: Notes\nauthors:\n  - Ada\n  - Grace\ncount: 3\n---\n\nbody\n";
+    assert_eq!(
+        spliced(text, remove_field(text, "authors")),
+        "---\ntitle: Notes\ncount: 3\n---\n\nbody\n"
+    );
+    // An inline list is one line, so one line is what goes.
+    let inline = "---\ntags: [one, two]\ncount: 3\n---\n";
+    assert_eq!(
+        spliced(inline, remove_field(inline, "tags")),
+        "---\ncount: 3\n---\n"
+    );
+    // Taking the last thing in the block takes the fences and the blank line under them, rather than opening the file on an empty pair.
+    let only = "---\ntitle: Notes\n---\n\nbody\n";
+    assert_eq!(spliced(only, remove_field(only, "title")), "body\n");
+    // A comment, or a line the parser refused, is worth keeping the fences for.
+    let commented = "---\n# who wrote it\ntitle: Notes\n---\n\nbody\n";
+    assert_eq!(
+        spliced(commented, remove_field(commented, "title")),
+        "---\n# who wrote it\n---\n\nbody\n"
+    );
+}
+
+#[test]
+fn a_list_is_written_back_in_the_form_the_file_wrote_it() {
+    // Inline stays inline.
+    let inline = "---\ntags: [one, two]\ncount: 3\n---\n";
+    assert_eq!(
+        spliced(
+            inline,
+            set_list_field(inline, "tags", &["one", "two", "three"])
+        ),
+        "---\ntags: [one, two, three]\ncount: 3\n---\n"
+    );
+    // A block list keeps its own indent, and only the items move.
+    let block = "---\nauthors:\n  - Ada\n  - Grace\ncount: 3\n---\n";
+    assert_eq!(
+        spliced(block, set_list_field(block, "authors", &["Ada", "Bob"])),
+        "---\nauthors:\n  - Ada\n  - Bob\ncount: 3\n---\n"
+    );
+    assert_eq!(
+        spliced(block, set_list_field(block, "authors", &["Ada"])),
+        "---\nauthors:\n  - Ada\ncount: 3\n---\n"
+    );
+    // An item carrying a comma cannot go in an inline list at all — the reader splits on every comma in the line — so it is refused rather than written as something that reads back as two. A `- item` list takes it.
+    assert_eq!(set_list_field(inline, "tags", &["a, b", "plain"]), None);
+    assert_eq!(
+        spliced(block, set_list_field(block, "authors", &["Ada, again"])),
+        "---\nauthors:\n  - Ada, again\ncount: 3\n---\n"
+    );
+    assert_eq!(
+        document_fields(&spliced(
+            block,
+            set_list_field(block, "authors", &["Ada, again"])
+        ))[0]
+            .text(),
+        "Ada, again"
+    );
+    // Emptying it rewrites the whole field: a block list would otherwise keep the dash that opened its first item, and a key with no items is one the parser stops reporting.
+    assert_eq!(
+        spliced(block, set_list_field(block, "authors", &[])),
+        "---\nauthors: []\ncount: 3\n---\n"
+    );
+    // A key the block does not have arrives as one.
+    assert_eq!(
+        spliced(inline, set_list_field(inline, "crew", &["Ada"])),
+        "---\ntags: [one, two]\ncount: 3\ncrew: [Ada]\n---\n"
+    );
+    assert_eq!(set_list_field(inline, "tags", &["one", "two"]), None);
+    assert_eq!(set_list_field(inline, "tags", &["one\ntwo"]), None);
+}
+
+#[test]
+fn renaming_a_key_keeps_its_value_and_its_place_in_the_block() {
+    let text = "---\ntitle: Notes\nversion: \"1.0\"\n---\n\nbody\n";
+    // One splice over the key's own bytes: the value, its quoting and the row's position all stay where they were.
+    assert_eq!(
+        spliced(text, rename_field(text, "version", "release")),
+        "---\ntitle: Notes\nrelease: \"1.0\"\n---\n\nbody\n"
+    );
+    // Only the case changing is still a change, because the file keeps the case it was written in.
+    assert_eq!(
+        spliced(text, rename_field(text, "title", "Title")),
+        "---\nTitle: Notes\nversion: \"1.0\"\n---\n\nbody\n"
+    );
+    // A name the block already holds would become a duplicate the parser then refuses, so it is refused here instead.
+    assert_eq!(rename_field(text, "version", "title"), None);
+    assert_eq!(rename_field(text, "version", "TITLE"), None);
+    // A name no key can hold, and a key that is not there.
+    assert_eq!(rename_field(text, "version", "a: b"), None);
+    assert_eq!(rename_field(text, "version", "  "), None);
+    assert_eq!(rename_field(text, "version", "- item"), None);
+    assert_eq!(rename_field(text, "missing", "release"), None);
+}
+
 #[test]
 fn a_list_of_one_is_still_a_list_and_the_documented_properties_never_guess() {
     // The shape before this could not tell these two apart at all.

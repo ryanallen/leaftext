@@ -1358,3 +1358,101 @@ fn app_shell_holds_the_code_view_clear_of_the_edge_fades() {
         "the code view's top padding is {clearance}px, which does not clear the {fade}px fade"
     );
 }
+
+#[test]
+fn the_field_block_at_the_top_of_a_note_is_bound_to_the_block_not_to_a_place_on_the_page() {
+    let html = app_shell_page();
+
+    // Found by the block, never by where the block sits, so the table can later move into a sheet and the same binding reaches it. Its absence is an answer too — a note with no block is the state a first field is started from.
+    assert_contains(&html, "function frontmatterBlock(root) {");
+    assert_contains(&html, "return (root || app).querySelector('.frontmatter');");
+    assert_contains(&html, "function bindFrontmatterFields(root) {");
+    assert_contains(&html, "const block = frontmatterBlock(root);");
+    assert_contains(&html, "if (!block || !readerEditingAllowed()) return;");
+    assert_contains(&html, "bindFrontmatterFields(body);");
+
+    // The value cells the renderer stamped, and the control each type asks for — never one this guesses at.
+    assert_contains(&html, "block.querySelectorAll('td[data-leaf-field]')");
+    assert_contains(&html, "if (kind === 'list') {");
+    assert_contains(&html, "} else if (kind === 'checkbox') {");
+    // A date the picker cannot read keeps the text box, rather than opening a picker that shows nothing and clears the value on the way out.
+    assert_contains(
+        &html,
+        "} else if (kind === 'date' && frontmatterDateValue(cell.textContent.trim())) {",
+    );
+    assert_contains(
+        &html,
+        "return /^\\d{4}-\\d{2}-\\d{2}$/.test(text) ? text : '';",
+    );
+    // The checkbox the renderer already drew, with its `disabled` taken off — not a second one beside it.
+    assert_contains(&html, "box.disabled = false;");
+    assert_contains(
+        &html,
+        "box.addEventListener('change', () => sendFieldEdit(key, box.checked ? 'true' : 'false'));",
+    );
+    // A list goes back whole, because how it is written is the file's own shape to keep.
+    assert_contains(
+        &html,
+        "send({ command: 'setListField', key, items: next });",
+    );
+
+    // Enter commits, Escape abandons, leaving the box commits — the vault menu's fields, in a table cell.
+    assert_contains(&html, "field.addEventListener('blur', () => finish(true));");
+    assert_contains(
+        &html,
+        "if (write && commit && commit(field.value.trim()) === false) return;",
+    );
+
+    // The host owns every write: where a field's bytes are, whether a quote goes back on, and whether a new name would collide, are all the parser's to know.
+    assert_contains(&html, "send({ command: 'setField', key, value });");
+    assert_contains(&html, "send({ command: 'renameField', key, to: text });");
+
+    // The cross per row and the add row under the last field, both inside the block.
+    assert_contains(&html, "button.className = 'frontmatter-remove';");
+    assert_contains(&html, "sendFieldEdit(key, null);");
+    assert_contains(&html, "row.className = 'frontmatter-add';");
+    assert_contains(
+        &html,
+        "if (write && key) sendFieldEdit(key, value.value.trim());",
+    );
+
+    // The names the app really reads, offered rather than typed — and one list on the page, since an input cannot hold a datalist of its own.
+    assert_contains(
+        &html,
+        "const FRONTMATTER_KNOWN_KEYS = ['aliases', 'cssclasses', 'tags', 'leaftext-types'];",
+    );
+    assert_contains(
+        &html,
+        "if (known) field.setAttribute('list', frontmatterKnownKeyList());",
+    );
+}
+
+#[test]
+fn a_note_with_no_fields_starts_one_from_the_plus_that_is_already_in_the_gutter() {
+    let html = app_shell_page();
+
+    // Above everything, on an unlocked Markdown note that has no block — and nowhere else, or an insert between two paragraphs would make metadata nobody meant.
+    assert_contains(&html, "function frontmatterCanStart(gap) {");
+    assert_contains(&html, "&& !gap.above");
+    assert_contains(&html, "&& currentDocumentFormat === 'markdown'");
+    assert_contains(&html, "&& readerEditingAllowed()");
+    assert_contains(&html, "&& !frontmatterBlock();");
+
+    // The plus already there, saying what it does rather than reading as the insert menu it is not.
+    assert_contains(&html, "function labelBlockAdd(startsFrontmatter) {");
+    assert_contains(
+        &html,
+        "const what = startsFrontmatter ? 'Add frontmatter' : 'Insert a block';",
+    );
+    assert_contains(&html, "if (frontmatterCanStart(blockGutterGap)) {");
+    assert_contains(&html, "startFrontmatterAtTop();");
+
+    // It opens the same name-and-value pair the add row opens, and an abandoned one takes the block away again so the file never moved.
+    assert_contains(&html, "function startFrontmatterAtTop() {");
+    assert_contains(&html, "block.className = 'frontmatter is-editable';");
+    assert_contains(
+        &html,
+        "const button = frontmatterAddRow(block, () => block.remove());",
+    );
+    assert_contains(&html, "else if (onEmpty) onEmpty();");
+}

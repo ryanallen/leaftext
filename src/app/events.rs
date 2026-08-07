@@ -350,6 +350,19 @@ pub(crate) enum IpcCommand {
         #[serde(default)]
         autosave: bool,
     },
+    /// Write one frontmatter field on the active buffer, or remove it when `value` is absent. The host works out the splice: where the field's bytes are, and whether a quote goes back on, is the parser's to know, and a second reader of the block in the page would be a second answer.
+    #[serde(rename = "setField")]
+    SetField {
+        key: String,
+        #[serde(default)]
+        value: Option<String>,
+    },
+    /// Set every item of a list field at once. Its own command rather than one value with commas in it: how a list is written — inline or a line each, at the file's own indent — is the parser's to keep, and joining the items in the page would settle it there instead.
+    #[serde(rename = "setListField")]
+    SetListField { key: String, items: Vec<String> },
+    /// Rename one frontmatter field's key on the active buffer, keeping its value and its place in the block. Refused when the block already holds that name, since the parser would then read the second as a duplicate and drop it.
+    #[serde(rename = "renameField")]
+    RenameField { key: String, to: String },
     /// Drag-reorder one run of sibling blocks in the reading view. `ranges` are their source ranges in document order; `from` and `to` are slots in that run. The page sends the whole run because the page is what knows which blocks are siblings — the buffer only sees text.
     #[serde(rename = "moveBlock")]
     MoveBlock {

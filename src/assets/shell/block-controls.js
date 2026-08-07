@@ -318,6 +318,7 @@ function aimBlockGutter(el, fromMargin) {
   const canInsert = blockIsEmpty(el) && blockInsertOptions(el).length > 0;
   blockGutterGrip.hidden = !canMove;
   blockGutterAdd.hidden = !canInsert;
+  labelBlockAdd(false);
   // Nothing to offer on this block, so nothing to show beside it.
   blockGutter.hidden = !canMove && !canInsert;
   positionBlockGutter();
@@ -439,8 +440,17 @@ function aimBlockGutterAtSpace(gap) {
   openBlockGapLine(gap);
   blockGutterGrip.hidden = true;
   blockGutterAdd.hidden = false;
+  labelBlockAdd(frontmatterCanStart(gap));
   blockGutter.hidden = false;
   positionBlockGutter();
+}
+
+// What the plus says it does. Above everything on a note with no field block it
+// starts one, so it says so rather than reading as the insert menu it is not.
+function labelBlockAdd(startsFrontmatter) {
+  const what = startsFrontmatter ? 'Add frontmatter' : 'Insert a block';
+  blockGutterAdd.title = what;
+  blockGutterAdd.setAttribute('aria-label', what);
 }
 
 // Place the gutter beside its block: vertically on the block's first line, and
@@ -875,6 +885,14 @@ function bindBlockControls() {
   blockGutterGrip.addEventListener('pointerup', () => endBlockDrag(true));
   blockGutterGrip.addEventListener('pointercancel', () => endBlockDrag(false));
   blockGutterAdd.addEventListener('click', () => {
+    // The one gap where the plus does something else: a note with no fields has
+    // nowhere else a first one could go, and the insert options have nothing to
+    // offer above the whole document.
+    if (frontmatterCanStart(blockGutterGap)) {
+      hideBlockGutter();
+      startFrontmatterAtTop();
+      return;
+    }
     if (blockGutterExpanded) collapseBlockInsertRow();
     else expandBlockInsertRow();
   });

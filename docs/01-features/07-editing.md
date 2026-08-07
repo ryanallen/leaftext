@@ -17,6 +17,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Taking a block away](#deleting) | Clear a paragraph or heading of its text and the whole line goes — no bare `##` left standing |
 | [Taking several away](#deleting) | Highlight across blocks and `Delete` removes the lot; whatever survives at each end joins into one block |
 | [Picking a section](#deleting) | `Ctrl+A` with the caret in a block widens a step per press: the block, then the heading and everything under it, then the page |
+| [The fields at the top](#the-fields-at-the-top-of-a-note) | Click a value in a note's field block and change it, pick a date, tick a box, add and drop tag chips, rename a key, add a field or take one away — and start a block on a note that has none |
 | [The block gutter](#the-block-gutter) | A handle and a plus in the page's left margin: drag a block to reorder it, or add one on the empty line |
 | [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider |
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
@@ -61,11 +62,26 @@ The rendered page is a live editor. The **source stays the single source of trut
 - **Every other block edits its exact source.** Code blocks, [alerts](01-rendering.md#blockquotes-and-alerts), loose lists, blocks with images, footnotes, or math, and blocks containing raw HTML tags outside a small safe set (links, line breaks, bold, italic, strikethrough, inline code, and the inline HTML tags Leaftext can rebuild exactly — `<abbr>`, `<kbd>`, `<mark>`, `<ins>`, `<sub>`, `<sup>`, `<span>`, and `<div>`) open their raw source in place when you click them, then splice back on the way out. This is also how **[XML](01-rendering.md#xml)** edits: XML carries meaning the rendered HTML cannot reconstruct, so an XML block is edited as its true source.
 - **A code block hands you the code, not the fences.** Click into one and you get what is inside the ``` ``` ``` lines; the fences and the language tag stay out of reach, so there is no way to backspace through them and lose the block. Delete every line and you still have an empty code block. An indented code block has no fences to hide, and neither does an unterminated one — those open whole, as before.
 - **A diagram edits as its diagram.** A rendered [Mermaid diagram](01-rendering.md#mermaid-diagrams) carries two buttons in its corner, shown on hover: one swaps it for the Mermaid behind it, on the same code tint as any other source block, and the other opens it in [the flowchart editor](#the-flowchart-editor). Click away from the source and it is drawn again. A press on the drawing itself moves it — see [zoom and pan](01-rendering.md#mermaid-diagrams) — which is why the source opens from a button rather than from a click.
-- **The field block at the top is read-only, and the document under it is not.** A note's leading [frontmatter](01-rendering.md#frontmatter) is drawn by the reader rather than being a block of the document, so it takes no caret — but every paragraph, heading, list and table below it edits exactly as it would in a note with no fields.
+- **The field block at the top edits too**, in its own way — see [the fields at the top of a note](#the-fields-at-the-top-of-a-note). It is drawn by the reader rather than being a block of the document, so it takes no caret and no gutter handle; every paragraph, heading, list and table below it edits exactly as it would in a note with no fields.
 - **Nothing is ever mangled.** A block only edits WYSIWYG when its rendered form can be turned back into the identical source; anything else edits its source directly. Either way the edit is a precise splice, and the [live reload](02-navigation.md#reload) watcher recognizes your own save so it never fights it.
 - **Nothing is drawn around the line you are typing in.** No ring, no box. The caret says where you are, and a page whose whole point is that it is a page should not turn into a form when you touch it. A block showing its raw source is the exception: its code tint is what says *this is source*.
 - Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way.
 - The reading view opens **locked**: clicks do not enter edit mode until you say so. See [The padlock](#the-padlock).
+
+### The fields at the top of a note
+
+A note's [field block](01-rendering.md#frontmatter) — the `title`, `status`, `due` and `tags` between the two `---` lines — is edited where you read it, with the reading padlock open. There is no save button of its own: a change raises the same green **Save** as any other edit in the page, and `Ctrl+Z` steps back through them.
+
+![A note's field block with the pointer on one row: the row lightens and shows a small cross at its end, a checkbox is a real tick box, the tags are chips each with a cross and a plus after them, and an Add a field row sits under the last field](../../imgs/frontmatter-fields.png)
+
+- **Click a value and type.** `Enter` keeps it, `Escape` abandons it, and clicking away keeps it.
+- **The control matches the field.** A date opens a calendar. A checkbox is a real box you tick. A list draws one chip per item, each with a cross, and a `+` for the next one. Everything else is a plain box. The app never guesses a control for a value it cannot read — a field pinned as a date but holding `sometime` keeps its plain box rather than opening a picker that would blank it.
+- **Click a field's name to rename it.** The value, its quoting and its place in the block all stay where they were. A name the block already uses is refused, since two fields of one name is a note that half reads.
+- **A cross at the end of a row takes the field away**, shown when you point at the row. `Ctrl+Z` puts it back.
+- **"Add a field" under the last row** asks for a name and a value side by side. Four names are offered as you type — `aliases`, `cssclasses`, `tags` and `leaftext-types`, the four the app itself reads — and anything else is still typed freely.
+- **A note with no fields can start one.** Rest the pointer in the strip above the first line and the [gutter](#the-block-gutter)'s plus appears, reading *Add frontmatter*. Press it and the same name-and-value pair opens; filling it writes the two `---` lines and the first field together, and leaving it empty writes nothing at all.
+- **Your file keeps its shape.** Every change is a splice over that one field's own bytes, so comments, blank lines, the order of the fields, the case of each key and the quotes around a value all survive exactly as they were. A list stays in the form it was written in: `[a, b]` stays on one line, and a `- item` list keeps its own indent. Removing the last field takes the two `---` lines with it rather than leaving an empty pair.
+- **A locked page shows none of it** — no edit box, no cross, no add row, and the block reads exactly as it did before.
 
 ### Deleting
 

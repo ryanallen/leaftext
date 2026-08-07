@@ -267,6 +267,41 @@ pub(crate) fn apply_block_edit(
     true
 }
 
+/// What one field-edit command asks for.
+pub(crate) enum FieldEdit<'a> {
+    Set(&'a str),
+    /// Every item of a list at once, in the form the file already wrote it.
+    SetList(&'a [String]),
+    /// The key's own bytes, replaced. One splice rather than a remove and an add, so the field keeps its value, its quoting and its place in the block.
+    Rename(&'a str),
+    Remove,
+}
+
+/// Seed the edit buffer, then set, rename or remove one frontmatter field in it. The splice comes from the parser, so the block keeps its order, its comments, its quoting and every line the parser would not read.
+///
+/// It goes on the undo stack and marks the document dirty, rather than writing itself to disk the way a checkbox toggle does — saving is what ends an undo stack, so the two cannot both be true. Taking a removed field back with the history is what the cross needs instead of an undo button beside it.
+///
+/// Returns whether the buffer moved — a key that is not there to remove, a name the block already holds, or a value already written, moves nothing and re-renders nothing.
+pub(crate) fn apply_field_edit(workspace: &mut Workspace, key: &str, value: FieldEdit<'_>) -> bool {
+    let Some((_, edit)) = seeded_active_edit(workspace, "Set field") else {
+        return false;
+    };
+    let splice = match value {
+        FieldEdit::Set(value) => leaftext::store::set_field(edit.text(), key, value),
+        FieldEdit::SetList(items) => {
+            let items: Vec<&str> = items.iter().map(String::as_str).collect();
+            leaftext::store::set_list_field(edit.text(), key, &items)
+        }
+        FieldEdit::Rename(to) => leaftext::store::rename_field(edit.text(), key, to),
+        FieldEdit::Remove => leaftext::store::remove_field(edit.text(), key),
+    };
+    let Some(splice) = splice else {
+        return false;
+    };
+    edit.replace_range(splice.range.start, splice.range.end, &splice.text);
+    true
+}
+
 /// Seed the edit buffer, then drag-reorder a run of sibling blocks in it. One undo step, like any other reading-view edit. Returns whether the buffer moved (the caller re-renders when so); a range list the buffer can't trust moves nothing.
 pub(crate) fn apply_block_move(
     workspace: &mut Workspace,

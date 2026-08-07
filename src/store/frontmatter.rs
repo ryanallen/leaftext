@@ -387,6 +387,338 @@ pub fn parse_frontmatter(block: &FrontmatterBlock) -> ParsedFrontmatter {
     ParsedFrontmatter { fields, refusals }
 }
 
+/// One replacement in a document: the bytes to take out, and what goes in their place. A field is changed by splicing over what the parser already located, never by writing the block back — comments, blank lines and the lines the parser refused are not fields, so re-serializing would drop them and reformat a file over one value.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FieldSplice {
+    pub range: Range<usize>,
+    pub text: String,
+}
+
+impl FieldSplice {
+    /// The document with this splice in it.
+    pub fn applied_to(&self, text: &str) -> String {
+        let mut out = String::with_capacity(text.len() + self.text.len());
+        out.push_str(&text[..self.range.start]);
+        out.push_str(&self.text);
+        out.push_str(&text[self.range.end..]);
+        out
+    }
+}
+
+/// The line break the text uses, read off its first one. A CRLF document has to keep its endings, or a spliced-in line is the one line in the block that reads differently.
+fn line_break(text: &str) -> &'static str {
+    match text.find('\n') {
+        Some(at) if text[..at].ends_with('\r') => "\r\n",
+        _ => "\n",
+    }
+}
+
+/// The start of the line `at` sits on, never earlier than `floor`.
+fn line_start(text: &str, at: usize, floor: usize) -> usize {
+    text[floor..at]
+        .rfind('\n')
+        .map(|found| floor + found + 1)
+        .unwrap_or(floor)
+}
+
+/// Past the end of the line `at` sits on, its line break included, never later than `ceiling`.
+fn line_end(text: &str, at: usize, ceiling: usize) -> usize {
+    text[at..ceiling]
+        .find('\n')
+        .map(|found| at + found + 1)
+        .unwrap_or(ceiling)
+}
+
+/// Whether a value has to be quoted to read back as itself. A bare value stays bare: quoting one that never needed it rewrites a line the reader did not ask to change, and would retype a number as text.
+fn needs_quotes(value: &str) -> bool {
+    const OPENERS: [char; 15] = [
+        '[', ']', '{', '}', '#', '&', '*', '!', '|', '>', '\'', '"', '%', '@', '`',
+    ];
+    value.is_empty()
+        || value.starts_with(OPENERS)
+        // `-`, `?` and `:` only open something when a space follows, so `-1.5` is still a number.
+        || matches!(value, "-" | "?" | ":")
+        || value.starts_with("- ")
+        || value.starts_with("? ")
+        || value.starts_with(": ")
+        || value.ends_with(':')
+        || value.contains(": ")
+        || value.contains(" #")
+}
+
+/// Which quote to wrap a value in: the one the value does not itself hold, so the run does not look closed early to any other reader of the file.
+fn quote_mark(value: &str) -> char {
+    if value.contains('"') && !value.contains('\'') {
+        '\''
+    } else {
+        '"'
+    }
+}
+
+/// A value as it goes into the file. `kept` is the quote the value already carried, which goes back on — it is YAML's way of saying "text, not a number", and dropping it would retype the field.
+fn write_value(value: &str, kept: Option<char>) -> String {
+    let mark = match kept {
+        Some(mark) if !value.contains(mark) => mark,
+        Some(_) => quote_mark(value),
+        None if needs_quotes(value) => quote_mark(value),
+        None => return value.to_string(),
+    };
+    format!("{mark}{value}{mark}")
+}
+
+/// Where a value goes on a key's own line: everything after the colon, to the end of that line. It is what a key the file opened and put nothing in has to be written over — `tags: []`, or a `tags:` with no items under it — since neither leaves a value range behind to splice.
+fn value_slot(text: &str, key_range: &Range<usize>, ceiling: usize) -> Range<usize> {
+    let stop = key_range.end
+        + text[key_range.end..line_end(text, key_range.end, ceiling)]
+            .trim_end_matches(['\n', '\r'])
+            .len();
+    let start = text[key_range.end..stop]
+        .find(':')
+        .map(|at| key_range.end + at + 1)
+        .unwrap_or(stop);
+    start..stop
+}
+
+/// A top-level `key:` line holding nothing, and where its key sits. Such a line is neither a field nor a refusal — a key that opens a list and gets no items is left out of both — so setting it writes onto that line, rather than appending a second one the parser would then refuse as a duplicate.
+fn empty_key_range(block: &FrontmatterBlock, key: &str) -> Option<Range<usize>> {
+    let mut at = block.offset;
+    for raw in block.body.split_inclusive('\n') {
+        let start = at;
+        at += raw.len();
+        let line = raw.trim_end_matches(['\n', '\r']);
+        if line.starts_with([' ', '\t']) {
+            continue;
+        }
+        let Some((name, value)) = line.split_once(':') else {
+            continue;
+        };
+        if !value.trim().is_empty() || !name.trim_end().eq_ignore_ascii_case(key) {
+            continue;
+        }
+        return Some(start..start + name.trim_end().len());
+    }
+    None
+}
+
+/// Set one field, as a splice over the bytes the parser located — so order, case, comments, quoting and every other field survive the write untouched. A key the document does not have is appended to the block; a document with no block at all gets the fences too.
+///
+/// `None` when there is nothing to write: a value carrying a line break, which no single-line field can hold, or a change that leaves the document exactly as it was.
+pub fn set_field(text: &str, key: &str, value: &str) -> Option<FieldSplice> {
+    let value = value.trim();
+    if value.contains(['\n', '\r']) {
+        return None;
+    }
+    // The mark the value already carried, so [`write_value`] can put the same one back.
+    let kept = extract_frontmatter(text)
+        .map(|block| parse_frontmatter(&block))
+        .and_then(|parsed| {
+            parsed
+                .fields
+                .iter()
+                .find(|field| field.key_is(key))
+                .and_then(|field| field.values.first().cloned())
+        })
+        .filter(|first| first.quoted)
+        .and_then(|first| text[first.range].chars().next());
+    set_written_field(text, key, &write_value(value, kept))
+}
+
+/// Set one field to a value that is already written the way it will sit in the file — brackets, quotes and all. The one path every write takes once its encoding is settled, so where a field goes is decided in one place rather than once per kind of value.
+fn set_written_field(text: &str, key: &str, written: &str) -> Option<FieldSplice> {
+    let Some(block) = extract_frontmatter(text) else {
+        // Past a byte order mark, so the fences are still the first line of the document.
+        let start = text.len() - text.strip_prefix('\u{feff}').unwrap_or(text).len();
+        let end = line_break(text);
+        return Some(FieldSplice {
+            range: start..start,
+            text: format!("---{end}{key}: {written}{end}---{end}{end}"),
+        });
+    };
+    let parsed = parse_frontmatter(&block);
+    let body_end = block.offset + block.body.len();
+    let (range, written) = match parsed.fields.iter().find(|field| field.key_is(key)) {
+        // Every item of a list, so one value written over a list replaces the list rather than its first item — for both written forms, since the punctuation between items falls inside the span.
+        Some(field) => match (field.values.first(), field.values.last()) {
+            (Some(first), Some(last)) => (first.range.start..last.range.end, written.to_string()),
+            _ => (
+                value_slot(text, &field.key_range, body_end),
+                format!(" {written}"),
+            ),
+        },
+        None => match empty_key_range(&block, key) {
+            Some(key_range) => (
+                value_slot(text, &key_range, body_end),
+                format!(" {written}"),
+            ),
+            None => (
+                body_end..body_end,
+                format!(
+                    "{key}: {written}{}",
+                    line_break(if block.body.is_empty() {
+                        text
+                    } else {
+                        &block.body
+                    })
+                ),
+            ),
+        },
+    };
+    (text[range.clone()] != written).then_some(FieldSplice {
+        range,
+        text: written,
+    })
+}
+
+/// Remove one field: its whole line, and the item lines under it when it has them. Taking the last thing in the block takes the fences with it, rather than leaving an empty pair at the top of the file. `None` when no field answers to that name — a line the parser refused is never guessed at, so a nested `name:` is not what removing `name` takes.
+pub fn remove_field(text: &str, key: &str) -> Option<FieldSplice> {
+    let block = extract_frontmatter(text)?;
+    let parsed = parse_frontmatter(&block);
+    let field = parsed.fields.iter().find(|field| field.key_is(key))?;
+    let last = field
+        .values
+        .iter()
+        .map(|value| value.range.end)
+        .max()
+        .unwrap_or(field.key_range.end)
+        .max(field.key_range.end);
+    let body_end = block.offset + block.body.len();
+    let start = line_start(text, field.key_range.start, block.offset);
+    let end = line_end(text, last, body_end);
+    // What the block would still hold. A comment or a refused line is worth keeping the fences for; nothing at all is not.
+    let rest = format!("{}{}", &text[block.offset..start], &text[end..body_end]);
+    if !rest.trim().is_empty() {
+        return Some(FieldSplice {
+            range: start..end,
+            text: String::new(),
+        });
+    }
+    // Past a byte order mark, which is not the block's, and past the blank line under the closing fence so the document does not open on one.
+    let opens = text.len() - text.strip_prefix('\u{feff}').unwrap_or(text).len();
+    let mut closes = line_end(text, body_end, text.len());
+    if text[closes..].starts_with("\r\n") || text[closes..].starts_with('\n') {
+        closes = line_end(text, closes, text.len());
+    }
+    Some(FieldSplice {
+        range: opens..closes,
+        text: String::new(),
+    })
+}
+
+/// How a list was written, so it is written back the same way rather than reformatted into whichever form this code prefers.
+enum ListForm {
+    /// `key: [a, b]`.
+    Inline,
+    /// `key:` and a `- item` line each, at the indent the file used.
+    Block(String),
+}
+
+/// An item as it goes inside `[ ... ]`, or `None` for one the inline form cannot hold. A closing bracket is quoted away; a comma is not, because [`inline_array_items`] splits on every comma in the line, quoted or not, so an item carrying one could not be read back whatever it was written as. A `- item` list has no such trouble and takes it.
+fn write_inline_item(item: &str) -> Option<String> {
+    if item.contains(',') {
+        return None;
+    }
+    if item.contains(']') {
+        let mark = quote_mark(item);
+        return Some(format!("{mark}{item}{mark}"));
+    }
+    Some(write_value(item, None))
+}
+
+/// Every item as the inline form would write them, or `None` when one of them cannot go there.
+fn write_inline_items(items: &[&str]) -> Option<String> {
+    items
+        .iter()
+        .map(|item| write_inline_item(item))
+        .collect::<Option<Vec<_>>>()
+        .map(|written| written.join(", "))
+}
+
+/// Set every item of a list field at once, in the form the file already wrote it — an inline `[a, b]` stays inline and a `- item` list keeps its own indent. Empty rewrites the field as `key: []`, because a key with no items under it is a key the parser stops reporting at all.
+///
+/// `None` when an item carries a line break, or when the change leaves the document as it was.
+pub fn set_list_field(text: &str, key: &str, items: &[&str]) -> Option<FieldSplice> {
+    let items: Vec<&str> = items
+        .iter()
+        .map(|item| item.trim())
+        .filter(|item| !item.is_empty())
+        .collect();
+    if items.iter().any(|item| item.contains(['\n', '\r'])) {
+        return None;
+    }
+    let Some(block) = extract_frontmatter(text) else {
+        return set_written_field(text, key, &format!("[{}]", write_inline_items(&items)?));
+    };
+    let parsed = parse_frontmatter(&block);
+    let body_end = block.offset + block.body.len();
+    let end = line_break(if block.body.is_empty() {
+        text
+    } else {
+        &block.body
+    });
+    let Some(field) = parsed.fields.iter().find(|field| field.key_is(key)) else {
+        return set_written_field(text, key, &format!("[{}]", write_inline_items(&items)?));
+    };
+    let (Some(first), Some(last)) = (field.values.first(), field.values.last()) else {
+        return set_written_field(text, key, &format!("[{}]", write_inline_items(&items)?));
+    };
+    // An empty list cannot be written over the items alone: a block list would keep the `- ` that opened its first one, and a key with no items is a key the parser leaves out. The whole field is rewritten instead, keeping its own case.
+    if items.is_empty() {
+        let range = line_start(text, field.key_range.start, block.offset)
+            ..line_end(text, last.range.end.max(field.key_range.end), body_end);
+        let written = format!("{}: []{end}", &text[field.key_range.clone()]);
+        return (text[range.clone()] != written).then_some(FieldSplice {
+            range,
+            text: written,
+        });
+    }
+    let form = match text[block.offset..first.range.start]
+        .trim_end()
+        .ends_with('[')
+    {
+        true => ListForm::Inline,
+        false => {
+            let at = line_start(text, first.range.start, block.offset);
+            ListForm::Block(
+                text[at..first.range.start]
+                    .trim_end_matches("- ")
+                    .to_string(),
+            )
+        }
+    };
+    let written = match &form {
+        ListForm::Inline => write_inline_items(&items)?,
+        // Past the first, each item brings the line and the dash that carry it; the first sits in the one the file already has.
+        ListForm::Block(indent) => items
+            .iter()
+            .map(|item| write_value(item, None))
+            .collect::<Vec<_>>()
+            .join(&format!("{end}{indent}- ")),
+    };
+    let range = first.range.start..last.range.end;
+    (text[range.clone()] != written).then_some(FieldSplice {
+        range,
+        text: written,
+    })
+}
+
+/// Rename one field's key, keeping its value, its quoting and its place in the block — one splice over the key's own bytes, never a remove and an add that would move it to the bottom. `None` when no field answers to `key`, when `to` is already a key in the block (the parser would refuse the second), or when the name is empty or carries something no key can hold.
+pub fn rename_field(text: &str, key: &str, to: &str) -> Option<FieldSplice> {
+    let to = to.trim();
+    if to.is_empty() || to.contains([':', '\n', '\r']) || to.starts_with(['#', '-']) {
+        return None;
+    }
+    let block = extract_frontmatter(text)?;
+    let parsed = parse_frontmatter(&block);
+    if !key.eq_ignore_ascii_case(to) && parsed.fields.iter().any(|field| field.key_is(to)) {
+        return None;
+    }
+    let field = parsed.fields.iter().find(|field| field.key_is(key))?;
+    (text[field.key_range.clone()] != *to).then(|| FieldSplice {
+        range: field.key_range.clone(),
+        text: to.to_string(),
+    })
+}
+
 /// A document's frontmatter fields, empty when it has none. One extract-and-parse, so something wanting two keys out of the block does not read it twice.
 pub fn document_fields(text: &str) -> Vec<FrontmatterField> {
     extract_frontmatter(text)

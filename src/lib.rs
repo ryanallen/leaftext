@@ -141,6 +141,8 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
     include_str!("assets/shell/reading-blocks.js"),
     include_str!("assets/shell/dom-to-markdown.js"),
     include_str!("assets/shell/reading-edits.js"),
+    // The field block at the top of a note, beside the reading view's other edit path: it needs the padlock and `send`, and reading-edits.js calls into it once a document has rendered.
+    include_str!("assets/shell/frontmatter-fields.js"),
     include_str!("assets/shell/block-controls.js"),
     include_str!("assets/shell/selection-toolbar.js"),
     // Find, after both views' own code: it drives Monaco through code-view.js's editor and splices through reading-edits.js's edit path.

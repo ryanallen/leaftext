@@ -732,6 +732,29 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         resync_editing_state(reader.page(), &reader.workspace);
                     }
                 }
+                // Re-rendered rather than patched in place: a field other things read has to change everywhere it is shown, not only in the cell it was typed into.
+                IpcCommand::SetField { key, value } => {
+                    let edit = match value.as_deref() {
+                        Some(value) => FieldEdit::Set(value),
+                        None => FieldEdit::Remove,
+                    };
+                    if apply_field_edit(&mut reader.workspace, &key, edit) {
+                        reader.render(ScrollIntent::Preserve);
+                        resync_editing_state(reader.page(), &reader.workspace);
+                    }
+                }
+                IpcCommand::SetListField { key, items } => {
+                    if apply_field_edit(&mut reader.workspace, &key, FieldEdit::SetList(&items)) {
+                        reader.render(ScrollIntent::Preserve);
+                        resync_editing_state(reader.page(), &reader.workspace);
+                    }
+                }
+                IpcCommand::RenameField { key, to } => {
+                    if apply_field_edit(&mut reader.workspace, &key, FieldEdit::Rename(&to)) {
+                        reader.render(ScrollIntent::Preserve);
+                        resync_editing_state(reader.page(), &reader.workspace);
+                    }
+                }
                 IpcCommand::MoveBlock { ranges, from, to } => {
                     if apply_block_move(&mut reader.workspace, &ranges, from, to) {
                         reader.render(ScrollIntent::Preserve);

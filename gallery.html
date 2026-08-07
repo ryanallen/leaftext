@@ -6789,6 +6789,135 @@ body.is-block-dragging .document-body [data-src-start] {
   margin: 0;
   padding: 0;
 }
+/* A field block whose values can be typed into. The wash says which row the
+   click will land on -- the table carries no chrome of its own, so without it
+   there is nothing telling a reader the value is a control. A locked document
+   never gets the class, and reads exactly as it did before. */
+.document-body .frontmatter.is-editable td[data-leaf-field] {
+  border-radius: var(--lt-radius-sm);
+  cursor: text;
+}
+.document-body .frontmatter.is-editable td[data-leaf-field]:hover {
+  background: var(--lt-wash-hover);
+}
+/* The box sits in the row it replaced, at the row's own size, so opening one
+   moves no other line of the table. */
+.document-body .frontmatter td.is-editing {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.frontmatter-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 120px;
+  padding: 0 var(--lt-space-4);
+  border-radius: var(--lt-radius-sm);
+  border: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  background: var(--lt-surface);
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: var(--lt-leading-1-5);
+}
+.frontmatter-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--lt-foreground) 45%, transparent);
+}
+/* Two boxes on the add row are one editor, so they sit side by side rather than
+   stacking into two things to fill in. */
+.document-body .frontmatter tr.frontmatter-add td {
+  display: flex;
+  gap: var(--lt-space-6);
+}
+/* The cross at the right end of a row, drawn on every row and shown under the
+   pointer: the table has no chrome of its own, and a column of crosses down a
+   note's metadata is the note about the app rather than the note. */
+.document-body .frontmatter td.frontmatter-actions {
+  width: 1%;
+  padding-right: 0;
+}
+.frontmatter-remove {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: none;
+  color: var(--lt-muted-foreground);
+  cursor: pointer;
+  opacity: 0;
+}
+.document-body .frontmatter tr:hover .frontmatter-remove,
+.frontmatter-remove:focus-visible {
+  opacity: 1;
+}
+.frontmatter-remove:hover {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+.frontmatter-remove .lt-icon {
+  width: 13px;
+  height: 13px;
+}
+/* The add row is the quietest thing in the block until it is reached for: it is
+   an offer under the fields, not a sixth field. */
+.frontmatter-add-button {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lt-muted-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+.frontmatter-add-button:hover {
+  color: var(--lt-foreground);
+}
+.frontmatter-add-button .lt-icon {
+  width: 12px;
+  height: 12px;
+}
+/* A list, as one chip an item. The cell already drew the items one under
+   another; a chip is the same list with somewhere to press. */
+.frontmatter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-4);
+}
+.frontmatter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  padding: 0 var(--lt-space-2) 0 var(--lt-space-6);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-wash-hover);
+}
+.frontmatter-chip-remove,
+.frontmatter-chip-add {
+  display: flex;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-sm);
+  background: none;
+  color: var(--lt-muted-foreground);
+  cursor: pointer;
+}
+.frontmatter-chip-remove:hover,
+.frontmatter-chip-add:hover {
+  color: var(--lt-foreground);
+}
+.frontmatter-chip-remove .lt-icon,
+.frontmatter-chip-add .lt-icon {
+  width: 11px;
+  height: 11px;
+}
+/* The picker's own indicator is the platform's; the box round it is ours. */
+.frontmatter-date {
+  min-width: 0;
+  width: auto;
+}
 .document-body img {
   display: block;
   height: auto;
@@ -8522,7 +8651,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 154 values that do not change with the theme, all 60 icons, and all 52 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 154 values that do not change with the theme, all 60 icons, and all 53 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -8544,7 +8673,7 @@ body.is-block-dragging .document-body [data-src-start] {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>154</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>60</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>52</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>53</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -8902,7 +9031,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">52 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">53 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App bar</h3><code class="built">.app-bar</code><span class="built">app-shell.html, with overflow.js folding it and code-view.js measuring it</span></header>
 <div class="stage"><div class="app-bar" style="position:static"><span class="app-bar-lead"><button type="button" class="brand-button"><span class="lt-icon lt-icon-leaf"></span></button></span></div></div>
@@ -9106,6 +9235,10 @@ body.is-block-dragging .document-body [data-src-start] {
 <section class="part">
 <header><h3>Full-window diagram</h3><code class="built">.diagram</code><span class="built">diagram-view.js</span></header>
 <div class="stage"><div class="diagram-overlay open" style="position:static;height:150px"><pre class="mermaid diagram-stage" data-processed="true"><svg viewBox="0 0 220 60" width="220" height="60"><rect x="1" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><rect x="133" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><path d="M87 30h46" fill="none" stroke="currentColor"></path></svg><button type="button" class="leaf-sheet-close diagram-close"><span class="lt-icon lt-icon-close"></span></button><div class="mermaid-zoom" role="group"><button type="button"><span class="lt-icon lt-icon-zoom-out"></span></button><button type="button"><span class="lt-icon lt-icon-fit"></span></button><button type="button"><span class="lt-icon lt-icon-zoom-in"></span></button></div></pre></div></div>
+</section>
+<section class="part">
+<header><h3>Editable fields</h3><code class="built">.frontmatter-input</code><span class="built">frontmatter-fields.js</span></header>
+<div class="stage"><div class="document-body"><div class="frontmatter is-editable"><table><tbody><tr><th>title</th><td data-leaf-field="title">A note</td><td class="frontmatter-actions"><button type="button" class="frontmatter-remove" style="opacity:1"><span class="lt-icon lt-icon-close"></span></button></td></tr><tr><th>status</th><td data-leaf-field="status" class="is-editing"><input type="text" class="frontmatter-input" value="draft"></td><td class="frontmatter-actions"></td></tr><tr><th>tags</th><td data-leaf-field="tags"><div class="frontmatter-chips"><span class="frontmatter-chip">one<button type="button" class="frontmatter-chip-remove"><span class="lt-icon lt-icon-close"></span></button></span><span class="frontmatter-chip">two<button type="button" class="frontmatter-chip-remove"><span class="lt-icon lt-icon-close"></span></button></span><button type="button" class="frontmatter-chip-add"><span class="lt-icon lt-icon-new"></span></button></div></td><td class="frontmatter-actions"></td></tr><tr><th>due</th><td data-leaf-field="due" class="is-editing"><input type="date" class="frontmatter-input frontmatter-date" value="2026-08-10"></td><td class="frontmatter-actions"></td></tr><tr class="frontmatter-add"><td colspan="3"><button type="button" class="frontmatter-add-button"><span class="lt-icon lt-icon-new"></span><span>Add a field</span></button></td></tr></tbody></table></div></div></div>
 </section>
 <section class="part">
 <header><h3>Syntax colors</h3><code class="built">.syn</code><span class="built">markdown/code.rs, whose SYNTAX_STYLE_RULES is the one table of these</span></header>

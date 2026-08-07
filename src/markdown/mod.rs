@@ -60,8 +60,8 @@ impl MarkdownParserConfig {
 pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
     // A leading `--- ... ---` block renders as a metadata table, not raw Markdown (which would become a stray heading/thematic break).
     let (frontmatter_html, body_markdown) = match split_leading_frontmatter(source.markdown) {
-        Some((inner, rest)) => (
-            render_frontmatter_table(&inner, source.source_path, source.host),
+        Some((block, rest)) => (
+            render_frontmatter_table(&block, source.source_path, source.host),
             rest,
         ),
         None => (String::new(), source.markdown),
@@ -94,11 +94,16 @@ fn table_alignment_as_attribute(html: &str) -> String {
     out
 }
 
-/// Split a leading `--- ... ---` frontmatter block off the front, returning its inner text and the Markdown that follows. Detected only when `---` is the first line and a later `---` closes it — the same rule [`extract_frontmatter`](crate::store::extract_frontmatter) reads by.
+/// Split a leading `--- ... ---` frontmatter block off the front, returning the block and the Markdown that follows. Detected only when `---` is the first line and a later `---` closes it — the same rule [`extract_frontmatter`](crate::store::extract_frontmatter) reads by.
+///
+/// The block carries where its text begins in `markdown`, so the table drawn from it can name the bytes each field occupies in the file rather than in a copy.
 ///
 /// A leading mark should never arrive — [`read_source`] takes it off precisely so it can't stop a fence being first on the line — but Markdown also reaches here from the code view's buffer and from tests, so one is still stepped over.
-pub(crate) fn split_leading_frontmatter(markdown: &str) -> Option<(String, &str)> {
+pub(crate) fn split_leading_frontmatter(
+    markdown: &str,
+) -> Option<(crate::store::FrontmatterBlock, &str)> {
     let after_bom = markdown.strip_prefix('\u{feff}').unwrap_or(markdown);
+    let mark = markdown.len() - after_bom.len();
     let first_end = after_bom
         .find('\n')
         .map(|i| i + 1)
@@ -123,7 +128,10 @@ pub(crate) fn split_leading_frontmatter(markdown: &str) -> Option<(String, &str)
             == "---"
         {
             return Some((
-                after_bom[inner_start..offset].to_string(),
+                crate::store::FrontmatterBlock {
+                    body: after_bom[inner_start..offset].to_string(),
+                    offset: mark + inner_start,
+                },
                 &after_bom[line_end..],
             ));
         }
@@ -136,13 +144,11 @@ pub(crate) fn split_leading_frontmatter(markdown: &str) -> Option<(String, &str)
 ///
 /// This is also the one place that runs once per document opened, so it is where everything in the block that did not land is gathered: to the log here, and onto the table for the page to raise as one growl.
 pub(crate) fn render_frontmatter_table(
-    inner: &str,
+    block: &crate::store::FrontmatterBlock,
     source_path: &Path,
     host: &dyn LeafHost,
 ) -> String {
-    let mut parsed = crate::store::parse_frontmatter(&crate::store::FrontmatterBlock::detached(
-        inner.to_string(),
-    ));
+    let mut parsed = crate::store::parse_frontmatter(block);
     let mut unread: Vec<String> = parsed
         .refusals
         .iter()
@@ -168,7 +174,9 @@ pub(crate) fn render_frontmatter_table(
     for field in &parsed.fields {
         rows.push_str("<tr><th>");
         rows.push_str(&encode_text(&field.key));
-        rows.push_str("</th><td>");
+        rows.push_str("</th><td");
+        rows.push_str(&frontmatter_value_marks(field));
+        rows.push('>');
         rows.push_str(&frontmatter_value_html(field));
         rows.push_str("</td></tr>");
     }
@@ -243,6 +251,37 @@ fn document_classes(fields: &[crate::store::FrontmatterField]) -> (Vec<&'static 
         }
     }
     (ours, unknown)
+}
+
+/// What the value cell tells the page about the field behind it: the key to write, what the field is, and the bytes the value occupies in the file. Its own attributes rather than the block walk's `data-src-*`, because the field block is not a Markdown block and everything reading that name treats what carries it as one.
+///
+/// The range is missing for a field the file opened and put nothing in (`tags: []`), which has no value bytes to name; the page leaves such a cell alone and the key is what a write goes by.
+fn frontmatter_value_marks(field: &crate::store::FrontmatterField) -> String {
+    use crate::store::FieldType;
+    let kind = match field.kind {
+        FieldType::Text => "text",
+        FieldType::List => "list",
+        FieldType::Number => "number",
+        FieldType::Checkbox => "checkbox",
+        FieldType::Date => "date",
+        FieldType::DateTime => "datetime",
+    };
+    let mut marks = format!(
+        "{}{}",
+        attribute("data-leaf-field", &field.key),
+        attribute("data-leaf-field-kind", kind)
+    );
+    if let (Some(first), Some(last)) = (field.values.first(), field.values.last()) {
+        marks.push_str(&attribute(
+            "data-leaf-field-start",
+            &first.range.start.to_string(),
+        ));
+        marks.push_str(&attribute(
+            "data-leaf-field-end",
+            &last.range.end.to_string(),
+        ));
+    }
+    marks
 }
 
 /// One field's value, drawn as the thing it is: a checkbox as a box, a list as items, everything else as its text.

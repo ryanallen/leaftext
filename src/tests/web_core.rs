@@ -164,7 +164,7 @@ fn a_host_with_no_answers_renders_the_document_without_those_decorations() {
     assert!(!html.contains("width=\"640\""), "html: {html}");
     assert!(!html.contains("glossary:"), "html: {html}");
     // The field is still drawn, as the text it looks like — only the vault's word on its type is missing.
-    assert_contains(&html, "<td>sometime</td>");
+    assert_contains(&html, ">sometime</td>");
     assert!(!html.contains(r#"<input type="checkbox""#), "html: {html}");
 }
 
@@ -465,7 +465,7 @@ pub(super) fn web_core_render_digest(document: &OpenedDocument) -> String {
 const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     (
         "markdown",
-        "6a393f2a33a7d20d6ec0465659ab318b966ef2a90ef2da0e1498d53cca0e55b5",
+        "1e836f606aaebf4e88ea876b3d54cc0d7d22dbe942f81736668a99abd19e7a88",
     ),
     (
         "mermaid",
