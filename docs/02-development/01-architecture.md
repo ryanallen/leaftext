@@ -139,7 +139,7 @@ After traversal, any collected footnotes are appended as a `<section class="foot
 
 **6. Auto-link glossary (optional)**
 
-`auto_link_glossary()` walks up from the document's folder to the nearest `GLOSSARY.md` (the same lookup the `glossary:` sheet links use), then wraps matched terms with `<a href="glossary:slug">` anchors — skipping text already inside a link, `code`, or `pre`. The identical pass runs for Markdown documents (the glossary file itself is exempt, so its entries are not self-linked).
+`auto_link_glossary()` walks up from the document's folder to the nearest `GLOSSARY.md` — `nearest_glossary_file` reads each folder and matches the name ignoring case, so the spelling on disk is what comes back, and it is the one lookup the `glossary:` sheet links use too — then wraps matched terms with `<a href="glossary:slug">` anchors — skipping text already inside a link, `code`, or `pre`. The identical pass runs for Markdown documents (the glossary file itself is exempt, so its entries are not self-linked).
 
 **7. Inject into shell**
 

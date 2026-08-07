@@ -900,15 +900,20 @@ fn replace_terms_in_text(
     result
 }
 
-/// Find the nearest `GLOSSARY.md` by walking up from `doc_dir` to the root (the glossary usually sits at a project root well above the document). A lowercase `glossary.md` is accepted too, for case-sensitive trees.
-fn nearest_glossary_file(doc_dir: &Path) -> Option<PathBuf> {
+/// Find the nearest `GLOSSARY.md` by walking up from `doc_dir` to the root (the glossary usually sits at a project root well above the document). Each folder is read and the name compared ignoring case, the way [`pager::readme_in`] finds a `README.md`, so `Glossary.md` counts on a disk that tells the spellings apart and the path handed back carries the file's own name. The glossary sheet takes this too, so nothing can disagree about which file is the glossary.
+pub fn nearest_glossary_file(doc_dir: &Path) -> Option<PathBuf> {
     let mut dir = Some(doc_dir);
     while let Some(folder) = dir {
-        for name in ["GLOSSARY.md", "glossary.md"] {
-            let candidate = folder.join(name);
-            if candidate.is_file() {
-                return Some(candidate);
-            }
+        let found = fs::read_dir(folder).ok().and_then(|entries| {
+            entries.flatten().find_map(|entry| {
+                let name = entry.file_name();
+                let name = name.to_str()?;
+                name.eq_ignore_ascii_case("GLOSSARY.md")
+                    .then(|| entry.path())
+            })
+        });
+        if let Some(found) = found.filter(|path| path.is_file()) {
+            return Some(found);
         }
         dir = folder.parent();
     }

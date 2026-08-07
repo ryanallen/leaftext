@@ -452,7 +452,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     };
                     // A bare `glossary:` link ("open the full glossary"): resolve to the nearest GLOSSARY.md and open it as a tab.
                     if glossary_scheme_slug(&href).is_some() {
-                        match nearest_glossary_file(&current_path) {
+                        match nearest_glossary_above(&current_path) {
                             Some(path) if !paths_refer_to_same_document(&path, &current_path) => {
                                 reader.workspace.tabs[active].scroll_history.clear();
                                 reader.workspace.tabs[active]

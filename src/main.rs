@@ -29,7 +29,7 @@ use leaftext::{
     library_folder_script, library_refresh_script, line_count_script, link_vault_remote,
     lint_links, load_favorites, load_recent_files, load_settings, local_image_protocol_response,
     local_image_source_dir, markdown_image_insert_destination, navigation_state_script,
-    note_preview, notice_toast_script, open_error_state_script,
+    nearest_glossary_file, note_preview, notice_toast_script, open_error_state_script,
     opened_document_from_source_with_host, pager_loaded_script, read_folder_listing,
     read_folder_note, read_source, reading_mode_css, render_markdown_document, repo_name_for_vault,
     rgba_from_bmp, save_favorites, save_recent_files, save_result_script, scroll_anchor_script,

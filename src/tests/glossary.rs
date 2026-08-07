@@ -108,6 +108,43 @@ fn does_not_auto_link_terms_inside_the_glossary_file_itself() {
 }
 
 #[test]
+fn finds_a_glossary_whatever_its_capitals_and_hands_back_the_name_on_disk() {
+    // Windows and a stock Mac fold case in a file lookup, so asking for "GLOSSARY.md" finds a "Glossary.md" there anyway. What proves the fix on those disks is the name that comes back: the folder is read, so it is the file's own, not the spelling that was asked for.
+    for spelling in ["GLOSSARY.md", "glossary.md", "Glossary.md"] {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time is after Unix epoch")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("leaf-glossary-case-{unique}"));
+        let deep = root.join("collection").join("book");
+        fs::create_dir_all(&deep).expect("tree is created");
+        fs::write(
+            root.join(spelling),
+            "# Glossary\n\n## Sparrow\na small brown bird.\n",
+        )
+        .expect("glossary written");
+
+        let md = deep.join("chapter.md");
+        fs::write(&md, "# Chapter\n\nA Sparrow sat on the wall.\n").expect("markdown written");
+        let found = nearest_glossary_file(&deep);
+        let rendered =
+            opened_document_from_markdown("# Chapter\n\nA Sparrow sat on the wall.\n", &md);
+
+        fs::remove_dir_all(&root).expect("tree removed");
+
+        assert_eq!(
+            found
+                .as_deref()
+                .and_then(Path::file_name)
+                .and_then(|name| name.to_str()),
+            Some(spelling),
+            "the walk should hand back the file's own name"
+        );
+        assert_contains(&rendered.html, r#"<a href="glossary:sparrow">Sparrow</a>"#);
+    }
+}
+
+#[test]
 fn app_shell_raises_a_spinner_when_a_glossary_link_is_followed() {
     let html = app_shell_page();
 

@@ -11,19 +11,9 @@ pub(crate) fn glossary_scheme_slug(href: &str) -> Option<String> {
     Some(percent_decode_path(rest.trim_start_matches('#')))
 }
 
-/// Find the nearest `GLOSSARY.md` by walking up from `current_path`, so a `glossary:` link binds to the open document's project. A lowercase `glossary.md` is also accepted for case-sensitive trees.
-pub(crate) fn nearest_glossary_file(current_path: &Path) -> Option<PathBuf> {
-    let mut dir = current_path.parent();
-    while let Some(folder) = dir {
-        for name in ["GLOSSARY.md", "glossary.md"] {
-            let candidate = folder.join(name);
-            if candidate.is_file() {
-                return Some(candidate);
-            }
-        }
-        dir = folder.parent();
-    }
-    None
+/// The nearest glossary above the open document, so a `glossary:` link binds to that document's project. The walk itself is the library's, shared with the term auto-linker; this only starts it at the document's own folder.
+pub(crate) fn nearest_glossary_above(current_path: &Path) -> Option<PathBuf> {
+    nearest_glossary_file(current_path.parent()?)
 }
 
 /// Tell the page a lookup failed. The sheet went up on a spinner when the link was followed, so every path out of `show_glossary_entry` has to say something.
@@ -41,7 +31,7 @@ pub(crate) fn show_glossary_entry(webview: Option<&WebView>, href: &str, current
         return;
     };
     let (path, anchor) = if let Some(slug) = glossary_scheme_slug(href) {
-        match nearest_glossary_file(current_path) {
+        match nearest_glossary_above(current_path) {
             Some(path) => (path, slug),
             None => {
                 eprintln!("No GLOSSARY.md found above {}", current_path.display());
