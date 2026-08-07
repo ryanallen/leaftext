@@ -2978,6 +2978,13 @@ body.mac-frame.is-fullscreen .window-controls {
   order: -1;
   background: var(--lt-danger);
 }
+/* Stacked in the menu the three read top to bottom, so the row's order is upside down there: zoom at the top, close at the foot and farthest from the pointer that opened it. */
+.mac-frame .app-overflow-panel #winMaximize {
+  order: -1;
+}
+.mac-frame .app-overflow-panel .window-control-close {
+  order: 1;
+}
 .mac-frame #winMaximize {
   background: var(--lt-success);
 }

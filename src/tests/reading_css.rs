@@ -1556,6 +1556,18 @@ fn the_macs_three_dots_are_ours_and_take_the_themes_colors() {
         rule_body(css, ".mac-frame .window-control-close {"),
         "order: -1;",
     );
+    // Stacked in the chevron menu they read top to bottom, so that order turns over: zoom at the top, close at the foot and farthest from the pointer that opened it.
+    assert_contains(
+        rule_body(css, ".mac-frame .app-overflow-panel #winMaximize {"),
+        "order: -1;",
+    );
+    assert_contains(
+        rule_body(
+            css,
+            ".mac-frame .app-overflow-panel .window-control-close {",
+        ),
+        "order: 1;",
+    );
     // Hovering shows the mark in the bar's own color, and the dot keeps its own — the square Windows chip must not take over.
     assert_contains(
         rule_body(css, ".mac-frame .window-control:hover {"),

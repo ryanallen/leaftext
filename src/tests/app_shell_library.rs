@@ -75,8 +75,8 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
         // Rightmost first, and everything is unfolded before re-measuring so a widening window puts the buttons back where they came from.
         "for (let index = overflowCandidates.length - 1; index >= 0; index -= 1) {",
         r#"<div class="app-overflow-panel" id="appOverflowPanel"></div>"#,
-        // The window controls and the lead's history buttons fold too, but only after every action has — which is what their place at the head of the list buys.
-        "{ el: document.getElementById('windowControls'), home: appTrailingItems },",
+        // The window controls and the lead's history buttons fold too, but only after every action has — which is what their place at the head of the list buys. Their container is read off the page, never named here: a Mac stands them at the bar's left end, and naming the other one left them stuck in the menu until the app was quit.
+        "    home: windowControls && windowControls.parentElement,",
         "{ el: document.getElementById('backButton'), home: historyActions, inLead: true },",
         // Folding out of the lead frees nothing while an open library pins it to the rail's width, so those are skipped rather than hidden for nothing.
         "if (inLead && leadIsPinned) continue;",

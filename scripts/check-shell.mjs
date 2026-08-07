@@ -58,17 +58,16 @@ function elementIds() {
   return [...pageMarkup().matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]);
 }
 
-/** Every class the real page carries, so a selector for one is answered. */
-function elementClasses() {
-  const classes = new Set();
-  for (const match of pageMarkup().matchAll(/\bclass="([^"]+)"/g)) {
-    for (const name of match[1].split(/\s+/)) if (name) classes.add(name);
-  }
-  return classes;
-}
-
 /** The page's own Element, so `target instanceof Element` answers the way it does in the app. */
 class FakeElement {}
+
+/** Take a node out of whatever is holding it, so a move is a move rather than a second listing. */
+function detachChild(child) {
+  const held = child && child.parentElement && child.parentElement.children;
+  if (!held) return;
+  const at = held.indexOf(child);
+  if (at >= 0) held.splice(at, 1);
+}
 
 /** A stand-in element: enough surface to be wired up, and inert when used. */
 function fakeElement(id = '') {
@@ -97,8 +96,23 @@ function fakeElement(id = '') {
     parentElement: null,
     addEventListener() {},
     removeEventListener() {},
-    appendChild: (child) => child,
-    removeChild: (child) => child,
+    // Real moves, because moving a node is the whole of what the app-bar fold does: it takes buttons out of their containers and later puts each one back where it was standing. A stub that returns the child reads as "put back" while nothing moved.
+    appendChild(child) {
+      detachChild(child);
+      this.children.push(child);
+      child.parentElement = this;
+      return child;
+    },
+    prepend(child) {
+      detachChild(child);
+      this.children.unshift(child);
+      child.parentElement = this;
+      return child;
+    },
+    removeChild: (child) => {
+      detachChild(child);
+      return child;
+    },
     insertBefore: (child) => child,
     remove() {},
     setAttribute() {},
@@ -131,16 +145,48 @@ function fakeElement(id = '') {
   return element;
 }
 
+/** One stand-in per element the markup names, nested the way the page nests them. The app-bar fold takes buttons out of their containers and later puts each back where it was standing, so a flat bag of elements cannot say whether it worked — a wide window left the Mac's dots in the menu until the app was quit, and nothing here could see it. */
+function pageElements() {
+  const markup = pageMarkup();
+  const voids = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
+  const byId = new Map();
+  // First element carrying a class answers a query for it, the way querySelector's first match does.
+  const byClass = new Map();
+  const open = [];
+  for (const tag of markup.matchAll(/<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g)) {
+    const [, closing, rawName, attrs] = tag;
+    const name = rawName.toLowerCase();
+    if (closing) {
+      const at = open.map((one) => one.name).lastIndexOf(name);
+      if (at >= 0) open.length = at;
+      continue;
+    }
+    const id = (attrs.match(/\bid="([^"]+)"/) || [])[1];
+    const classAttr = (attrs.match(/\bclass="([^"]*)"/) || [])[1] || '';
+    let node = null;
+    if (id || classAttr) {
+      node = fakeElement(id || '');
+      node.className = classAttr;
+      if (id) byId.set(id, node);
+      for (const one of classAttr.split(/\s+/)) if (one && !byClass.has(one)) byClass.set(one, node);
+      const holder = [...open].reverse().find((one) => one.node);
+      if (holder) holder.node.appendChild(node);
+    }
+    if (!voids.has(name) && !/\/\s*$/.test(attrs)) open.push({ name, node });
+  }
+  return { byId, byClass };
+}
+
 function fakePage() {
-  const byId = new Map(elementIds().map((id) => [id, fakeElement(id)]));
-  const classes = elementClasses();
+  const { byId, byClass } = pageElements();
+  // Every id the markup declares has a stand-in, including any the walker's nesting missed.
+  for (const id of elementIds()) if (!byId.has(id)) byId.set(id, fakeElement(id));
   // Only what the page really declares gets an answer. A selector for a class or id the markup does not have returns null, the way it would in the app.
   const find = (selector) => {
     const one = String(selector).trim();
     if (one.startsWith('#')) return byId.get(one.slice(1)) || null;
-    if (/^\.[A-Za-z0-9_-]+$/.test(one)) {
-      return classes.has(one.slice(1)) ? fakeElement(one) : null;
-    }
+    // The page's own element, not a fresh one each call: two fragments asking for the same container have to get the same container, or one of them writes into a copy nobody reads.
+    if (/^\.[A-Za-z0-9_-]+$/.test(one)) return byClass.get(one.slice(1)) || null;
     return null;
   };
   const document = {
@@ -2595,6 +2641,19 @@ if (booted) {
     if (tiny.left < 14 || tiny.top < 14) throw new Error(`the bubble went off a small window: ${tiny.left},${tiny.top}`);
   });
 
+  check('a folded button goes back to the container it was actually standing in', () => {
+    // Every candidate's home is read off the page, never named a second time in the list. Naming it left the Mac's three dots in the menu for good: dom.js had already moved them to the bar's left end, the list still said the trailing group, and widening the window put back only what that group remembered holding. Quitting was the only way out.
+    const source = readFileSync(join(root, 'src/assets/shell/overflow.js'), 'utf8');
+    const list = source.slice(source.indexOf('const overflowCandidates = ['), source.indexOf('].filter('));
+    if (!list.includes('home: windowControls && windowControls.parentElement')) {
+      throw new Error('the window buttons must take their home from where they are standing');
+    }
+    // Their home decides the other half too: folding out of the bar's left zone frees nothing while an open pane pins it to the rail's width, and that is true of the dots exactly when they are in it.
+    if (!list.includes('inLead: !!windowControls && windowControls.parentElement === appBarLead')) {
+      throw new Error('whether the window buttons sit in the pinned zone must be read, not assumed');
+    }
+  });
+
   check('the chevron menu is laid out in its own order, with the window buttons at the foot', () => {
     const panel = booted.document.getElementById('appOverflowPanel');
     const tabBar = booted.document.getElementById('tabBar');
@@ -2620,7 +2679,7 @@ if (booted) {
       booted.refitAppBar();
       const order = inside.map((el) => el.id);
       // Back leads because a reader opens this menu to go back a page; the window buttons are last, so close is not the first thing under the pointer. They fold last of all, which is exactly why inserting as they left put them on top.
-      const expected = ['backButton', 'forwardButton', 'windowControls'];
+      const expected = ['backButton', 'forwardButton', 'themeSheetOpen', 'openButton', 'newButton', 'windowControls'];
       if (order.join(',') !== expected.join(',')) {
         throw new Error(`the menu came out as ${order.join(',')}, not ${expected.join(',')}`);
       }
@@ -2632,10 +2691,24 @@ if (booted) {
       inside.length = 0;
       for (const el of [controls, booted.document.getElementById('backButton'), booted.document.getElementById('forwardButton')]) el.parentElement = null;
       booted.refitAppBar();
-      const mac = inside.map((el) => el.id);
+      const withoutControls = inside.map((el) => el.id);
       controls.hidden = false;
-      if (mac.join(',') !== 'backButton,forwardButton') {
-        throw new Error(`the Mac menu came out as ${mac.join(',')}`);
+      if (withoutControls.join(',') !== expected.slice(0, -1).join(',')) {
+        throw new Error(`with the buttons hidden the menu came out as ${withoutControls.join(',')}`);
+      }
+
+      // Widening the window puts every one of them back where it was standing. The Mac's dots stayed in the menu until the app was quit, because the fold was told their container rather than reading it, and the one it was told no longer held them.
+      inside.length = 0;
+      tabBar.scrollWidth = 0;
+      tabBar.clientWidth = 900;
+      booted.refitAppBar();
+      if (inside.length) {
+        throw new Error(`a wide bar left ${inside.map((el) => el.id).join(',')} in the menu`);
+      }
+      for (const el of [controls, booted.document.getElementById('backButton')]) {
+        if (!el.parentElement || el.parentElement === panel) {
+          throw new Error(`${el.id} did not go back to the bar`);
+        }
       }
     } finally {
       delete panel.childElementCount;

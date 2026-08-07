@@ -107,7 +107,7 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 
 Tabs are never squeezed to make space for the toolbar. As the strip fills, the app bar's buttons fold into a chevron menu one at a time, right to left: the trailing actions first, then Back and Forward, then the window controls. Two never fold — the leaf, which is the way home, and the [library](03-library.md#layout) button, which on a narrow window is the only way to reach the library at all. Widening the window puts each one back where it came from.
 
-The menu reads in its own order, not the order things folded into it: Back, Forward, Themes, Open, New, then minimize, maximize and close at the foot. So the controls you open it for are at the top, and the close button is not the first thing under the pointer. On macOS the window buttons are Apple's own, so the menu is the other five.
+The menu reads in its own order, not the order things folded into it: Back, Forward, Themes, Open, New, then the window buttons at the foot. So the controls you open it for are at the top, and close is not the first thing under the pointer. On a Mac that means the three dots stack at the bottom with zoom above and close at the very foot — the reverse of how they read across the bar, since stacked they run top to bottom.
 
 While the [library sheet](03-library.md#narrow-windows) is up it covers the page, so the tab strip goes with it.
 

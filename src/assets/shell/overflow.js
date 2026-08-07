@@ -13,8 +13,14 @@ const overflowPanel = document.getElementById('appOverflowPanel');
 const appTrailingItems = document.getElementById('appTrailingItems');
 const historyActions = document.querySelector('.history-actions');
 const appBarLead = document.querySelector('.app-bar-lead');
+// dom.js has already stood the window buttons where the platform wants them — the bar's left end on a Mac, the trailing group on Windows — so their home is read off the page rather than named twice here. Naming it was what left them stuck in the menu on a Mac: unfolding put every button back with the container it started in, and theirs no longer held them.
+const windowControls = document.getElementById('windowControls');
 const overflowCandidates = [
-  { el: document.getElementById('windowControls'), home: appTrailingItems },
+  {
+    el: windowControls,
+    home: windowControls && windowControls.parentElement,
+    inLead: !!windowControls && windowControls.parentElement === appBarLead,
+  },
   { el: document.getElementById('backButton'), home: historyActions, inLead: true },
   { el: document.getElementById('forwardButton'), home: historyActions, inLead: true },
   ...Array.from(appActionsItems.children).map((el) => ({ el, home: appActionsItems })),
