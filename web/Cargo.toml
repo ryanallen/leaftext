@@ -1,6 +1,6 @@
 [package]
 name = "leaftext-web"
-version = "0.1.484"
+version = "0.1.485"
 edition = "2021"
 
 # A browser loads a module, not a Rust library, so this is the one place the core is built as one.

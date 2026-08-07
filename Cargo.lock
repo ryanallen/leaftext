@@ -1410,7 +1410,7 @@ dependencies = [
 
 [[package]]
 name = "leaftext"
-version = "0.1.484"
+version = "0.1.485"
 dependencies = [
  "ammonia",
  "blake3",
@@ -1440,7 +1440,7 @@ dependencies = [
 
 [[package]]
 name = "leaftext-web"
-version = "0.1.484"
+version = "0.1.485"
 dependencies = [
  "leaftext",
  "serde_json",
