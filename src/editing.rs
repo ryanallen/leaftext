@@ -308,8 +308,15 @@ pub fn kind_is_editable(kind: &str) -> bool {
 }
 
 /// Map every top-level block of `markdown` to its source byte range. Nested blocks (list items, table cells, inline spans) fold into their enclosing top-level block's range.
+///
+/// A leading frontmatter block is taken off first, because the renderer takes it off too and draws it from its own parse — so it has no element the page can pair a span with. Left in, its fences read as a rule and a setext heading, and the page drops every range in the document rather than trust a mapping it cannot line up. The ranges stay the file's: the body's own offset goes back on at the end.
 pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
-    let parser = Parser::new_ext(markdown, markdown_options()).into_offset_iter();
+    let body = match crate::markdown::split_leading_frontmatter(markdown) {
+        Some((_, rest)) => rest,
+        None => markdown,
+    };
+    let offset = markdown.len() - body.len();
+    let parser = Parser::new_ext(body, markdown_options()).into_offset_iter();
     let mut spans = Vec::new();
     let mut depth = 0usize;
     let mut next_id = 0usize;
@@ -319,7 +326,7 @@ pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
             Event::Start(tag) => {
                 if depth == 0 {
                     if let Some(kind) = block_kind(tag) {
-                        let end = trim_block_end(markdown, range.start, range.end);
+                        let end = trim_block_end(body, range.start, range.end);
                         spans.push(BlockSpan::new(next_id, kind, range.start, end));
                         next_id += 1;
                     }
@@ -329,12 +336,12 @@ pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
             Event::End(_) => depth = depth.saturating_sub(1),
             // Rules and raw HTML blocks are leaf events (no Start/End pair) but still top-level blocks.
             Event::Rule if depth == 0 => {
-                let end = trim_block_end(markdown, range.start, range.end);
+                let end = trim_block_end(body, range.start, range.end);
                 spans.push(BlockSpan::new(next_id, "rule", range.start, end));
                 next_id += 1;
             }
             Event::Html(_) if depth == 0 => {
-                let end = trim_block_end(markdown, range.start, range.end);
+                let end = trim_block_end(body, range.start, range.end);
                 spans.push(BlockSpan::new(next_id, "html_block", range.start, end));
                 next_id += 1;
             }
@@ -342,6 +349,10 @@ pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
         }
     }
 
+    for span in &mut spans {
+        span.start += offset;
+        span.end += offset;
+    }
     spans
 }
 

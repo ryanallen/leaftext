@@ -297,6 +297,47 @@ fn block_source_map_covers_top_level_blocks_in_order() {
 }
 
 #[test]
+fn block_source_map_leaves_out_a_leading_field_block() {
+    // The renderer draws the field block from its own parse, so the page has one skipped div where this map would otherwise report two spans: the opening `---` reads as a rule, and the lines under it plus the closing fence read as a setext heading. One span the walk cannot pair with drops every range in the document, so a note that starts with fields had no editable block at all.
+    let markdown = super::web_core::MARKDOWN_FIXTURE;
+    let spans = block_source_map(markdown);
+    let kinds: Vec<&str> = spans.iter().map(|span| span.kind).collect();
+    assert!(!kinds.contains(&"rule"), "{kinds:?}");
+    assert_eq!(kinds.first(), Some(&"heading"), "{kinds:?}");
+    assert_eq!(&markdown[spans[0].start..spans[0].end], "# Heading");
+}
+
+#[test]
+fn block_source_map_keeps_file_offsets_past_a_field_block() {
+    // The body is parsed on its own, so every range would address the body and not the file until the block's own length goes back on. Read the ranges back out of the whole document: an unshifted span would slice the wrong text rather than fail loudly.
+    let markdown = "---\ntitle: Notes\n---\n\n# Heading\n\nA paragraph.\n";
+    let spans = block_source_map(markdown);
+    let kinds: Vec<&str> = spans.iter().map(|span| span.kind).collect();
+    assert_eq!(kinds, ["heading", "paragraph"]);
+    assert_eq!(&markdown[spans[0].start..spans[0].end], "# Heading");
+    assert_eq!(&markdown[spans[1].start..spans[1].end], "A paragraph.");
+}
+
+#[test]
+fn block_source_map_takes_only_the_leading_fences() {
+    // A `---` in the body is a thematic break a reader can see and edit around, and an empty field block is still a field block. Trimming by "drop anything that looks like a fence" would take the first and miss the second.
+    let with_rule = "---\ntitle: Notes\n---\n\nBefore.\n\n---\n\nAfter.\n";
+    let kinds: Vec<&str> = block_source_map(with_rule)
+        .iter()
+        .map(|span| span.kind)
+        .collect();
+    assert_eq!(kinds, ["paragraph", "rule", "paragraph"]);
+
+    let empty_block = "---\n---\n\nJust a paragraph.\n";
+    let spans = block_source_map(empty_block);
+    assert_eq!(spans.len(), 1, "{spans:?}");
+    assert_eq!(
+        &empty_block[spans[0].start..spans[0].end],
+        "Just a paragraph."
+    );
+}
+
+#[test]
 fn block_source_map_maps_rules_and_ignores_nested_blocks() {
     // A thematic break is a top-level block even though it has no Start/End pair; list items and inline emphasis are nested, so they fold into their enclosing block rather than getting their own top-level spans.
     let markdown = "Para *one*.\n\n---\n\n> quote\n";

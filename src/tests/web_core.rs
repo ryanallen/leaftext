@@ -460,10 +460,12 @@ pub(super) fn web_core_render_digest(document: &OpenedDocument) -> String {
 }
 
 /// What each fixture rendered to before the host boundary was drawn, taken on 6 August 2026. Nothing in that work is allowed to move one of these.
+///
+/// The markdown one has moved since, on purpose: it is the only fixture with a leading field block, and its two fences were reported as blocks the page has no element for, which cost that document every editable range it had. Same title, same HTML, two fewer blocks.
 const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     (
         "markdown",
-        "f000c4cad5431caf92d981ed3b1bfa644809edcf92eb60d4cdcbf0549e48c578",
+        "6a393f2a33a7d20d6ec0465659ab318b966ef2a90ef2da0e1498d53cca0e55b5",
     ),
     (
         "mermaid",

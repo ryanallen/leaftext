@@ -377,6 +377,30 @@ if (booted) {
     if (growls.length !== 0) throw new Error('a clean block still growled');
   });
 
+  // The walk pairs rendered elements with the host's spans in document order and throws every range away if it cannot line them up, so one span too many leaves a whole document uneditable and says nothing. The field block is the standing case: the page skips its div, and the host has to leave the fences out to match (`block_source_map_leaves_out_a_leading_field_block`).
+  check('a note that opens with a field block still gets a range on every block', () => {
+    const source = '---\ntitle: Notes\n---\n\n# Heading\n\nA paragraph.\n';
+    // The spans the host reports for that document, which the Rust side pins by slicing them back out of it.
+    const blocks = [
+      { id: 0, kind: 'heading', start: 22, end: 31, editable: true },
+      { id: 1, kind: 'paragraph', start: 33, end: 45, editable: true },
+    ];
+    const element = (tag, className) => ({
+      nodeType: 1,
+      tagName: tag,
+      dataset: {},
+      children: [],
+      classList: { contains: (name) => name === className },
+    });
+    const body = { children: [element('DIV', 'frontmatter'), element('H1', ''), element('P', '')] };
+    booted.attachMarkdownBlockRanges(body, blocks, source);
+
+    const [field, heading, paragraph] = body.children;
+    if ('srcStart' in field.dataset) throw new Error('the field block took a source range, so it is being edited as Markdown');
+    if (heading.dataset.srcStart !== '22' || paragraph.dataset.srcStart !== '33') throw new Error(`the ranges did not land: ${JSON.stringify([heading.dataset, paragraph.dataset])}`);
+    if (source.slice(Number(paragraph.dataset.srcStart), Number(paragraph.dataset.srcEnd)) !== 'A paragraph.') throw new Error('the paragraph range does not slice back to the paragraph');
+  });
+
   // The ask pipe's reader half is one call into this function (`READER_STATE` in src/pipe.rs), so nothing else in the suite notices when an element it reads is renamed — the next `{"ask":"state","reader":true}` would be the first to find out, and what it loses is silent.
   check('the page can say what the reader sees', () => {
     const readerState = () => booted.window.leafReaderState();
