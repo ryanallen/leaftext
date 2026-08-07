@@ -61,7 +61,8 @@ lines.push(`| \`design/components.md\` | ${components.length} components, and th
 lines.push('');
 lines.push('## Colors');
 lines.push('');
-lines.push(`Grouped by what they dress. Every one of the ${themes} theme families gives all ${colors.length} a value, in light and in dark, and the app refuses to start if one is missing.`);
+const optional = colors.filter(({ cells }) => cells[1]);
+lines.push(`Grouped by what they dress. Every one of the ${themes} theme families gives ${colors.length - optional.length} of them a value, in light and in dark, and the app refuses to start if one is missing. ${optional.length === 1 ? 'The last is optional' : `The other ${optional.length} are optional`}: leave it out and the compiler copies the value of the color named beside it, so a family only says what it wants to differ.`);
 lines.push('');
 lines.push('| Group | Colors |');
 lines.push('| --- | --- |');

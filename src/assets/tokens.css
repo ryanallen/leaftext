@@ -166,6 +166,8 @@
   --lt-tint-backdrop: rgba(0, 0, 0, 0.45);
   --lt-tint-row: rgba(110, 118, 129, 0.08);
   --lt-grain-dot-strong: rgba(0, 0, 0, 0.55);
+  /* The hover wash */
+  --lt-wash-hover: color-mix(in srgb, var(--lt-hover-tint) 16%, transparent);
   /* Inset edges */
   --lt-shadow-edge-strong: inset 0 0 0 1px var(--lt-border-strong);
   --lt-shadow-edge-accent: inset 0 0 0 2px var(--lt-accent);

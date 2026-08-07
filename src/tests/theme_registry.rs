@@ -71,6 +71,125 @@ fn theme_compiler_requires_complete_semantic_sources_and_keeps_ui_controlled() {
 }
 
 #[test]
+fn defaulted_colors_compile_to_a_copied_value_not_a_pointer() {
+    // A `Default` in design/colors.md lets a family leave a row out. What it gets is the named row's *value*, written into its own block as a hex: a `var()` there would be a second name for that color, which src/tests/reading_css.rs refuses, and it would make a family's compiled block a mix of colors and indirection to read.
+    let css = reading_mode_css();
+
+    for source in theme_sources() {
+        for (token, from) in LEAF_SEMANTIC_TOKEN_DEFAULTS {
+            let value = theme_source_token_value(source, token)
+                .unwrap_or_else(|| panic!("{} resolves {token}", source.id));
+            assert!(
+                value.starts_with('#'),
+                "expected {} {token} to compile to a hex, got {value}",
+                source.id
+            );
+            assert_contains(
+                css_block(css, &format!("{} {{", source.selector)),
+                &format!("{token}: {value};"),
+            );
+            // Silent by default: a family that says nothing lands on the row it copies.
+            let copied = theme_source_token_value(source, from).expect("the copied row is set");
+            assert!(
+                value == copied
+                    || source.tokens.iter().any(|(name, _)| name == token)
+                    || source.overrides.iter().any(|(name, _)| name == token),
+                "expected {} {token} to equal {from} unless the family sets it",
+                source.id
+            );
+        }
+    }
+}
+
+#[test]
+fn a_family_that_names_a_defaulted_color_keeps_its_own_value() {
+    // The other half of the default: setting the row wins over the copy, so a family can run its hovers in a hue of its own with no code change. Proved on a source built here rather than on whichever family happens to set one today.
+    let quiet = "#6e6550";
+    let mine = "#f0b400";
+    let base: &'static [(&'static str, &'static str)] = &[("--lt-muted-foreground", "#6e6550")];
+    let named: &'static [(&'static str, &'static str)] = &[
+        ("--lt-muted-foreground", "#6e6550"),
+        ("--lt-hover-tint", "#f0b400"),
+    ];
+
+    let mut source = ThemeSource {
+        id: "test-light",
+        family: "test",
+        family_name: "Test",
+        appearance: Appearance::Light,
+        selector: ":root[data-leaf-theme=\"test\"][data-leaf-appearance=\"light\"]",
+        tokens: base,
+        overrides: &[],
+        font_heading: "",
+        font_body: "",
+        font_code: "",
+        font_google: "",
+    };
+    assert_eq!(
+        theme_source_token_value(&source, "--lt-hover-tint"),
+        Some(quiet)
+    );
+
+    source.tokens = named;
+    assert_eq!(
+        theme_source_token_value(&source, "--lt-hover-tint"),
+        Some(mine)
+    );
+
+    // An Overrides block wins the same way, which is how a family layers one value over a shared table.
+    source.tokens = base;
+    source.overrides = &[("--lt-hover-tint", "#f0b400")];
+    assert_eq!(
+        theme_source_token_value(&source, "--lt-hover-tint"),
+        Some(mine)
+    );
+}
+
+#[test]
+fn goldenrod_washes_its_hovers_in_its_own_gold() {
+    // The door `hover-tint` opens, proved on the one family that walks through it. Every other family copies its quiet-text color, so Goldenrod's hovered row has to come out a different color from all of them over the same panel — otherwise the override is a row nobody reads.
+    let css = reading_mode_css();
+    let sources = theme_sources();
+
+    // The wash is 16% of the tint over whatever is behind it, and the panel the three menus are drawn on is `surface-elevated`. Held to one family's panel so the comparison is of tints, not of eleven different panels.
+    let panel = css_token_for_source(css, &sources[0], "--lt-surface-elevated");
+    let washed = |source: &ThemeSource| {
+        let tint = css_token_for_source(css, source, "--lt-hover-tint");
+        // Back to the 0-255 the screen draws in: a channel is a byte, so two washes that round to the same byte are the same color to look at.
+        [
+            ((tint.red * 0.16 + panel.red * 0.84) * 255.0).round() as i64,
+            ((tint.green * 0.16 + panel.green * 0.84) * 255.0).round() as i64,
+            ((tint.blue * 0.16 + panel.blue * 0.84) * 255.0).round() as i64,
+        ]
+    };
+
+    for appearance in [Appearance::Light, Appearance::Dark] {
+        let gold = sources
+            .iter()
+            .find(|source| source.family == "goldenrod" && source.appearance == appearance)
+            .expect("goldenrod ships both halves");
+        for other in sources
+            .iter()
+            .filter(|source| source.family != "goldenrod" && source.appearance == appearance)
+        {
+            assert_ne!(
+                washed(gold),
+                washed(other),
+                "expected goldenrod's {} wash to differ from {}'s",
+                appearance.as_str(),
+                other.id
+            );
+        }
+        // And it is a set value, not the copy every other family takes.
+        assert_ne!(
+            theme_source_token_value(gold, "--lt-hover-tint"),
+            theme_source_token_value(gold, "--lt-muted-foreground"),
+            "goldenrod names its own tint rather than falling back"
+        );
+    }
+}
+
+#[test]
 fn theme_preview_images_are_prose_the_parser_ignores() {
     // Every family file opens with a preview screenshot (`![…](../imgs/themes/…)`), carried into the bundle verbatim by scripts/bundle-themes.mjs. The parser reads only headings and tables, so those lines must be inert: they are not families, not tokens, and not part of any display name.
     let bundle = include_str!("../assets/themes.md");

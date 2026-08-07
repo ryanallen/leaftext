@@ -172,6 +172,53 @@ fn a_note_that_asked_for_a_full_width_page_gets_the_whole_lane() {
 }
 
 #[test]
+fn every_hover_fills_with_the_one_wash() {
+    // One strength for everything under the pointer, so a menu row, a file in the pane and a tool in the reading bar all lift by the same amount. A surface color instead is free to be the very value of the panel behind it, which is what left a right-click menu marking nothing in Pippin dark.
+    let css = reading_mode_css();
+
+    // The rule a selector opens, up to its closing brace. Named selectors are grouped (`.a:hover,\n.a:focus-visible {`), so the block is found from the name rather than from a whole selector list.
+    let rule_after = |selector: &str| -> &str {
+        let at = css
+            .find(selector)
+            .unwrap_or_else(|| panic!("expected a rule for {selector}"));
+        let open = css[at..].find('{').expect("the rule opens");
+        let close = css[at + open..].find('}').expect("the rule closes");
+        &css[at + open..at + open + close]
+    };
+
+    for selector in [
+        ".context-menu-item:hover",
+        ".filter-menu-item.is-active",
+        ".flow-menu-item:hover",
+        ".library-file:hover",
+        ".library-hit:hover",
+        ".library-crumb:hover",
+        ".library-vault-switch:hover",
+        ".crumb-menu-edit:hover",
+        ".reader-tool:hover",
+        ".reader-subtool:hover",
+        ".history-button:hover:not(:disabled)",
+    ] {
+        assert!(
+            rule_after(selector).contains("background: var(--lt-wash-hover);"),
+            "expected {selector} to fill with the hover wash"
+        );
+    }
+
+    // And the wash is one mix of a color the family owns, so it can never come out the tone of what it sits on.
+    assert_contains(
+        css,
+        "--lt-wash-hover: color-mix(in srgb, var(--lt-hover-tint) 16%, transparent);",
+    );
+
+    // The locked diagram canvas is the one rule left filling with the tinted-panel color, and it has to stay one: it is a panel, not a hover, and a transparent wash over the page would leave a locked diagram looking live.
+    assert!(
+        rule_after(".flow-canvas.is-disabled").contains("background: var(--lt-surface-muted);"),
+        "the disabled diagram canvas is a panel and keeps its own fill"
+    );
+}
+
+#[test]
 fn reading_mode_css_keeps_one_name_per_color() {
     // A property whose whole value is one var() over a contract token is a second name for that color. Four such layers over 112 tokens is what this replaced, so the rule is: every rule reads the contract name.
     let css = reading_mode_css();

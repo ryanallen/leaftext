@@ -5,7 +5,9 @@
 
 Every theme in Leaftext is plain data — one Markdown file per family, right here in this folder. Because they are Markdown, they render as the color tables below in Leaf itself and at [leaftext.com/themes](https://leaftext.com/themes).
 
-11 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full 82-token contract inside its file.
+11 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full 81-color contract inside its file.
+
+One color is optional, and it is the only one: `hover-tint`, the ink every fill under the pointer is mixed from. Leave it out — as ten of the eleven do — and the family's quiet-text color is copied in, which is the normal case. Set it, as Goldenrod does, and every menu row, toolbar button and file in the pane washes in that hue instead.
 
 Mermaid diagrams take these same tokens, so a family says nothing about diagrams and gets them anyway: boxes the muted surface, subgraphs the sunken one, arrows the muted foreground, and a Gantt chart the theme's own active / done / critical colors. Text printed inside one of those fills takes whichever of the theme's inks reads on it, measured rather than assumed. The twelve-color categorical scale a mindmap or pie chart cycles through is the family's own primary, its hue stepped around the wheel with every entry held to the same weight, so one ink reads on all twelve.
 

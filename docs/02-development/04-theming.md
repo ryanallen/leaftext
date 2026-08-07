@@ -1,8 +1,10 @@
 # Theming
 
-> Leaftext enforces a semantic token contract of 81 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.md` compiled from per-family Markdown files — so adding a theme takes no Rust.
+> Leaftext enforces a semantic token contract of 82 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.md` compiled from per-family Markdown files — so adding a theme takes no Rust.
 
-Leaftext's theme system is built around a semantic token contract — 81 `--lt-*` CSS custom properties that every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
+Leaftext's theme system is built around a semantic token contract — 82 `--lt-*` CSS custom properties, 81 of which every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
+
+**One property is optional, and it is the only one.** `--lt-hover-tint` is the ink every fill under the pointer is mixed from. A family that names it runs its hovers in that hue; a family that says nothing gets its own `--lt-muted-foreground` **copied in as a value**, not aliased to it, so the compiled block stays a flat list of colors. Which properties may be left out is generated alongside the contract, from the `Default` column of `design/colors.md`, as `LEAF_SEMANTIC_TOKEN_DEFAULTS` in `src/theme.rs`.
 
 **One name per color.** A token is spelled the same way in a theme file, in the compiled CSS, and in every rule that reads it. There is no alias layer over the contract: a rule reads `var(--lt-surface)` itself, never a second name for it.
 
@@ -119,7 +121,7 @@ The editable source of truth is the **`themes/` folder at the repo root**. Being
 - `**Family ID:** \`<family>\`` — the family id used in `data-leaf-theme` and in the `<family>.md` filename (the bundler checks they match).
 - An optional preview image — a standalone `![Display Name](../imgs/themes/<family>.png)` line in the header, above the `**Family ID:**` line. The Rust parser ignores it (only headings and tables carry data), while the bundler lifts it into the family's gallery entry and fails the run if the path does not resolve. Shipping families point at `imgs/themes/<family>.png`, one screenshot of the reference document split across the light and dark variants.
 - `## Fonts` — a `Role | Stack` table with `Heading`, `Body`, `Code`, and `Google` rows.
-- `## Light` and `## Dark` — a `Token | Value` table covering every contract property, each optionally followed by a `### Overrides` table for per-source token nudges. **Token names drop the `--lt-` prefix** (re-added at parse time) and values are wrapped in backticks (`` `#282a36` ``).
+- `## Light` and `## Dark` — a `Token | Value` table covering every required contract property (all but `hover-tint`, which may be left out), each optionally followed by a `### Overrides` table for per-source token nudges. **Token names drop the `--lt-` prefix** (re-added at parse time) and values are wrapped in backticks (`` `#282a36` ``).
 
 There is no manifest — the bundler globs `themes/*.md`. `scripts/bundle-themes.mjs` produces two outputs: it concatenates the family files into `src/assets/themes.md` (the embedded bundle) and regenerates [`themes/README.md`](https://github.com/ryanallen/leaftext/blob/main/themes/README.md) (the gallery above), both ordered **by display name** so the picker and gallery stay alphabetical no matter what order they're added. `just bundle-themes` rebuilds them; `just check-themes` (part of `just verify`) fails if either has drifted from the folder — the same drift-guard pattern used for the vendored site assets.
 
@@ -223,7 +225,7 @@ Create `themes/myfamily.md`. Copy an existing family file (e.g. `themes/amaranth
 - the `# My Family` heading and the `**Family ID:** \`myfamily\`` line (it must match the filename);
 - optionally a preview screenshot — a standalone `![My Family](../imgs/themes/myfamily.png)` line between the heading and the `**Family ID:**` line. `bundle-themes` picks up the first such image in the header, copies it into the gallery entry in `themes/README.md`, and fails if the path does not resolve (relative to `themes/`);
 - the `## Fonts` table (set the `Google` row to a Google Fonts `css2` URL, or leave it blank for system fonts);
-- the `## Light` and `## Dark` `Token | Value` tables — every property in `LEAF_SEMANTIC_TOKEN_CONTRACT` (minus the `--lt-` prefix), with an optional `### Overrides` table for tokens you nudge off the base.
+- the `## Light` and `## Dark` `Token | Value` tables — every property in `LEAF_SEMANTIC_TOKEN_CONTRACT` (minus the `--lt-` prefix) that is not in `LEAF_SEMANTIC_TOKEN_DEFAULTS`, with an optional `### Overrides` table for tokens you nudge off the base. Add `hover-tint` only if you want the hovers in a hue of their own.
 
 **2. Bundle and verify**
 

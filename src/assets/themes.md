@@ -1212,6 +1212,7 @@
 | border                                  | `#e6ddc6`                          |
 | border-strong                           | `#cbbd98`                          |
 | muted-foreground                        | `#6e6550`                          |
+| hover-tint                              | `#f0b400`                          |
 | primary                                 | `#f0b400`                          |
 | primary-foreground                      | `#1c1a15`                          |
 | accent                                  | `#f0b400`                          |
@@ -1298,6 +1299,7 @@
 | border                                  | `#2b2820`                        |
 | border-strong                           | `#4a4536`                        |
 | muted-foreground                        | `#a49c86`                        |
+| hover-tint                              | `#ffc300`                        |
 | primary                                 | `#ffc300`                        |
 | primary-foreground                      | `#131210`                        |
 | accent                                  | `#ffc300`                        |

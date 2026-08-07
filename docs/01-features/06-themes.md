@@ -127,8 +127,13 @@ The semantic token set covers:
 - code surfaces and syntax colors
 - minimap colors
 - focus and selection styling
+- the hover ink, which is the one color a family may leave out
 
 If a theme source misses one required token, Leaftext fails the contract check instead of silently rendering with broken fallback colors. See [Theming](../02-development/04-theming.md#the-token-contract) for the full contract.
+
+### What is under the pointer
+
+Every fill under the pointer — a menu row, a toolbar button, a file in the library pane, a step in the folder path — is one wash, mixed from the family's own hover ink and left transparent. Because it is transparent it lightens a dark family and darkens a light one whatever it sits over, so a hovered row can never come out the same tone as the panel behind it. A family that says nothing about the hover ink gets its own quiet-text color, which is the normal case; **Goldenrod** names its own instead, so its hovers wash in gold rather than gray.
 
 ## Diagrams
 
@@ -155,7 +160,7 @@ The theme picker links to the project on GitHub for making your own theme. A the
 
 ## See them all
 
-[**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) draws every theme on one page — all 81 colors, every icon, and every part of the interface — with a switcher for the family and for light or dark. It is built from the same files the app is, by `just bundle-gallery`, so it cannot show you a theme the app does not have.
+[**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) draws every theme on one page — all 82 colors, every icon, and every part of the interface — with a switcher for the family and for light or dark. It is built from the same files the app is, by `just bundle-gallery`, so it cannot show you a theme the app does not have.
 
 ## CSS
 

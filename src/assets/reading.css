@@ -684,7 +684,7 @@ body.mac-frame.is-fullscreen .window-controls {
 }
 .context-menu-item:hover,
 .context-menu-item:focus-visible {
-  background: var(--lt-surface-muted);
+  background: var(--lt-wash-hover);
   outline: none;
 }
 .context-menu-item.is-danger {
@@ -1004,7 +1004,7 @@ button:disabled:hover {
 }
 .history-button:hover:not(:disabled) {
   border-color: transparent;
-  background: var(--lt-surface-elevated);
+  background: var(--lt-wash-hover);
 }
 .history-button:disabled,
 .history-button:disabled:hover {
@@ -1355,7 +1355,7 @@ body.library-resizing {
   cursor: pointer;
 }
 .library-hit:hover {
-  background: color-mix(in srgb, var(--lt-muted-foreground) 14%, transparent);
+  background: var(--lt-wash-hover);
 }
 .library-hit-title {
   display: block;
@@ -1461,7 +1461,7 @@ body.library-resizing {
 }
 .filter-menu-item.is-active,
 .filter-menu-item:hover {
-  background: var(--lt-surface-muted);
+  background: var(--lt-wash-hover);
 }
 /* Search reads the active vault's text, so with no vault there is nothing for
    it to read: the row collapses and the list starts where the field was. */
@@ -1539,7 +1539,7 @@ body.library-resizing {
   padding-right: var(--lt-space-8);
 }
 .library-crumb:hover {
-  background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 /* The folder you are in: full ink, and it gets the leftover room — the ancestors
@@ -1562,7 +1562,7 @@ body.library-resizing {
   cursor: pointer;
 }
 .library-crumb.is-elided[aria-expanded="true"] {
-  background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 /* While the trail measures how much of the path fits, nothing shrinks or clips —
@@ -1598,7 +1598,7 @@ body.library-resizing {
 }
 .library-vault-switch:hover,
 .library-vault-switch[aria-expanded="true"] {
-  background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 /* Open, the button and the vault's name beside it are one pill: what the list
@@ -1616,7 +1616,7 @@ body.library-resizing {
   height: 26px;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
-  background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 /* Standing at the vault's own root, the name is a span rather than a button, so
@@ -1679,7 +1679,7 @@ body.library-resizing {
   color: var(--lt-muted-foreground);
 }
 .crumb-menu-edit:hover {
-  background: color-mix(in srgb, var(--lt-muted-foreground) 20%, transparent);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 /* Which vault the panel is about, so the rows below it are unambiguous. */
@@ -1776,7 +1776,7 @@ body.library-resizing {
 }
 .library-file:hover,
 .library-nav-folder:hover {
-  background: color-mix(in srgb, var(--lt-muted-foreground) 12%, transparent);
+  background: var(--lt-wash-hover);
 }
 /* The currently-open file: accent-tinted, outranking hover so it holds while
    pointing elsewhere. */
@@ -2182,7 +2182,7 @@ body:has(#readerToolbar:not([hidden])) {
   height: 16px;
 }
 .reader-subtool:hover {
-  background: color-mix(in srgb, var(--lt-foreground) 10%, transparent);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 /* On is a lit chip in its own frame: the page color pushed away from the
@@ -2233,7 +2233,7 @@ body:has(#readerToolbar:not([hidden])) {
 /* No `:not(:disabled)` here: every tool in the bar is always enterable, and the
    bar itself is gone when there is no document. */
 .reader-tool:hover {
-  background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 /* The view you are in. The one piece of color in the bar, so the bar answers
@@ -3489,7 +3489,7 @@ body.is-block-dragging .document-body [data-src-start] {
   height: 13px;
 }
 .selection-format:hover:not(:disabled) {
-  background: var(--lt-surface-muted);
+  background: var(--lt-wash-hover);
 }
 /* The kind the block already is: grayed, not pressable. Overrides the app-wide
    disabled fill — in a floating bar a filled box reads as pressed, not unavailable. */
@@ -4807,7 +4807,7 @@ body.is-block-dragging .document-body [data-src-start] {
   cursor: pointer;
 }
 .leaf-sheet-close:hover {
-  background: var(--lt-surface-muted);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 .leaf-sheet-close .lt-icon {
@@ -4917,7 +4917,7 @@ body.is-block-dragging .document-body [data-src-start] {
   cursor: pointer;
 }
 .theme-mode-btn:hover {
-  background: var(--lt-surface-muted);
+  background: var(--lt-wash-hover);
   border-color: var(--lt-border-strong);
 }
 .theme-mode-btn.is-active {
@@ -5229,7 +5229,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .flow-sheet-export:hover,
 .flow-sheet-cancel:hover {
   border-color: var(--lt-border-strong);
-  background: var(--lt-surface-muted);
+  background: var(--lt-wash-hover);
 }
 .flow-sheet-export:disabled {
   opacity: var(--lt-opacity-45);
@@ -5294,7 +5294,7 @@ body.is-block-dragging .document-body [data-src-start] {
   cursor: pointer;
 }
 .flow-steps button:hover:not(:disabled) {
-  background: var(--lt-surface-muted);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 .flow-steps button:disabled {
@@ -5371,7 +5371,7 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .flow-zoom button:hover {
   border-color: var(--lt-border-strong);
-  background: var(--lt-surface-muted);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 .flow-sheet-direction {
@@ -5630,7 +5630,7 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .flow-menu-item:hover,
 .flow-menu-item:focus-visible {
-  background: var(--lt-surface-muted);
+  background: var(--lt-wash-hover);
   outline: none;
 }
 .flow-menu-item .flow-chip {
@@ -5821,7 +5821,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .mermaid-tool:hover,
 .mermaid-zoom button:hover {
   border-color: var(--lt-border-strong);
-  background: var(--lt-surface-muted);
+  background: var(--lt-wash-hover);
   color: var(--lt-foreground);
 }
 .mermaid-tool .lt-icon,
@@ -6055,7 +6055,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .find-flag:hover,
 .find-step:hover,
 .find-action:hover:not(:disabled) {
-  background: var(--lt-surface-muted);
+  background: var(--lt-wash-hover);
 }
 .find-flag[aria-pressed='true'],
 .find-step[aria-pressed='true'] {

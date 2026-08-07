@@ -113,7 +113,7 @@ out.push('<html lang="en" data-leaf-theme="fern" data-leaf-appearance="light" da
 out.push('<meta charset="utf-8">');
 out.push('<meta name="viewport" content="width=device-width, initial-scale=1">');
 out.push('<title>Leaftext themes — every color, value, icon and component</title>');
-out.push('<meta name="description" content="Every theme Leaftext ships, drawn: all 82 colors, the type and spacing scales, every icon and every part of the interface, in light and dark.">');
+out.push(`<meta name="description" content="Every theme Leaftext ships, drawn: all ${colors.length} colors, the type and spacing scales, every icon and every part of the interface, in light and dark.">`);
 // The app's own stylesheet, inside the page so it stands alone.
 out.push('<style>');
 out.push(css.trimEnd());

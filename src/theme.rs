@@ -79,6 +79,7 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
     "--lt-border",
     "--lt-border-strong",
     "--lt-muted-foreground",
+    "--lt-hover-tint",
     "--lt-primary",
     "--lt-primary-foreground",
     "--lt-accent",
@@ -151,6 +152,12 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
     "--lt-navigation-recent-item-hover-foreground",
     "--lt-minimap-viewport-border",
     "--lt-minimap-viewport-background",
+];
+
+/// A contract color a family may leave out, paired with the one whose value is copied in when it does. Everything not listed here is required of every family.
+#[rustfmt::skip]
+pub(crate) const LEAF_SEMANTIC_TOKEN_DEFAULTS: &[(&str, &str)] = &[
+    ("--lt-hover-tint", "--lt-muted-foreground"),
 ];
 // END GENERATED
 
@@ -470,6 +477,7 @@ pub(crate) fn assert_theme_sources_cover_contract(sources: &[ThemeSource]) {
             );
         }
         for token in LEAF_SEMANTIC_TOKEN_CONTRACT {
+            // Only the rows with no default are demanded: a defaulted one resolves through the row it copies, so a family that leaves it out is complete.
             assert!(
                 theme_source_token_value(source, token).is_some(),
                 "theme source {} missing required token {token}",
@@ -503,12 +511,23 @@ pub(crate) fn assert_theme_sources_cover_contract(sources: &[ThemeSource]) {
     }
 }
 
-pub(crate) fn theme_source_token_value(source: &ThemeSource, token: &str) -> Option<&'static str> {
+/// What this family itself says a token is, overrides winning over the base table. `None` means it never named the token at all.
+fn declared_token_value(source: &ThemeSource, token: &str) -> Option<&'static str> {
     source
         .overrides
         .iter()
         .chain(source.tokens.iter())
         .find_map(|(name, value)| (*name == token).then_some(*value))
+}
+
+/// The value a family compiles a token to. A token with a default in [`LEAF_SEMANTIC_TOKEN_DEFAULTS`] may go unnamed, and copies the value of the row it defaults to — the value itself, so the compiled block stays a flat list of colors rather than one name pointing at another.
+pub(crate) fn theme_source_token_value(source: &ThemeSource, token: &str) -> Option<&'static str> {
+    declared_token_value(source, token).or_else(|| {
+        LEAF_SEMANTIC_TOKEN_DEFAULTS
+            .iter()
+            .find(|(name, _)| *name == token)
+            .and_then(|(_, from)| declared_token_value(source, from))
+    })
 }
 
 /// The registered theme family ids as a JSON array (registration order), injected into the bootstrap so its `VALID_FAMILIES` set derives from the registry rather than a hand-kept literal that can drift.

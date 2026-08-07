@@ -14,6 +14,8 @@
 //     minimap's widths. Each is one geometry said once, and its own name already.
 //
 // A @media condition cannot hold a var(), so those lines are exempt by necessity.
+//
+// It also holds every hover fill to the one wash. Two hand-written forms are refused there: a surface color, which a family may set to the very value of the panel behind it, and a strength mixed from the theme's ink here rather than in the token. A control already saying something — pressed, selected, open, disabled — keeps its own fill, and so does one deepening its own accent.
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -24,24 +26,28 @@ const relative = 'src/assets/reading.css';
 const css = readFileSync(join(root, relative), 'utf8');
 
 // Comments and @media conditions are not declarations.
-let inComment = false;
-const code = css.split('\n').map((line, index) => {
-  let text = line;
-  if (inComment) {
-    const end = text.indexOf('*/');
-    if (end < 0) return { n: index + 1, text: '' };
-    text = text.slice(end + 2);
-    inComment = false;
-  }
-  text = text.replace(/\/\*.*?\*\//g, '');
-  const open = text.indexOf('/*');
-  if (open >= 0) {
-    inComment = true;
-    text = text.slice(0, open);
-  }
-  if (/@media|@container|@supports/.test(text)) text = '';
-  return { n: index + 1, text };
-});
+function strip(source) {
+  let inComment = false;
+  return source.split('\n').map((line, index) => {
+    let text = line;
+    if (inComment) {
+      const end = text.indexOf('*/');
+      if (end < 0) return { n: index + 1, text: '' };
+      text = text.slice(end + 2);
+      inComment = false;
+    }
+    text = text.replace(/\/\*.*?\*\//g, '');
+    const open = text.indexOf('/*');
+    if (open >= 0) {
+      inComment = true;
+      text = text.slice(0, open);
+    }
+    if (/@media|@container|@supports/.test(text)) text = '';
+    return { n: index + 1, text };
+  });
+}
+
+const code = strip(css);
 
 // The metrics that are one geometry, named once, and stay in the stylesheet.
 const METRICS = /^\s*--(?:app-bar-height|reader-|library-|minimap-|cv-|tab-|sheet-|flow-|mermaid-|block-|selection-|card-|sw-|code-|glossary-|graph-|type-)/;
@@ -91,10 +97,71 @@ for (const { n, text } of code) {
   }
 }
 
+// A hover fill is one wash, and only that wash. Two ways of writing one leave a row under the pointer invisible: naming a surface color, which a family is free to set to the very value of the panel behind it, and mixing a percentage here, which is a strength nothing checks — it reached five different numbers across nine rules before this.
+const HOVERED = /:hover|:focus-visible/;
+// A control that is already saying something — pressed, selected, the open file, a button with nowhere to go. Its fill is an accent, a recess or its own rest state, and it shares a selector with :hover so that reading holds while the pointer is elsewhere.
+const ALREADY_ON = /\[aria-pressed|\[aria-selected|\[aria-current|:disabled|\.is-open|\.is-active|\.is-selected/;
+const A_SURFACE = /^var\(--lt-(?:background|surface|surface-elevated|surface-muted|surface-sunken)\)$/;
+// A wash is neutral: the theme's ink or its paper, thinned. A hover mixed from the accent is a colored state deepening its own rest fill — the sync chip, the chrome buttons — which is a decision about that control, not a strength nobody checked.
+const A_NEUTRAL = /var\(--lt-(?:foreground|muted-foreground|background|surface|surface-elevated|surface-muted|surface-sunken)\)/;
+
+function hoverFills(lines) {
+  const out = [];
+  let selector = '';
+  let pending = '';
+  for (const { n, text } of lines) {
+    const brace = text.indexOf('{');
+    if (brace >= 0) {
+      selector = (pending + ' ' + text.slice(0, brace)).trim();
+      pending = '';
+    } else if (!selector) {
+      pending = (pending + ' ' + text).trim();
+    }
+    if (text.includes('}')) {
+      selector = '';
+      pending = '';
+    }
+    if (!selector || !HOVERED.test(selector) || ALREADY_ON.test(selector)) continue;
+    for (const match of text.matchAll(/\bbackground(?:-color)?\s*:\s*([^;]+);/g)) {
+      const value = match[1].trim();
+      if (A_SURFACE.test(value)) out.push({ n, why: 'fills with a surface color', value });
+      else if (/^color-mix\(/.test(value) && /\d\s*%/.test(value) && A_NEUTRAL.test(value)) {
+        out.push({ n, why: 'mixes its own strength', value });
+      }
+    }
+  }
+  return out;
+}
+
+// The check proves it fires every time it runs: a rule matching nothing passes silently for ever, and both of these are written to match nothing once the stylesheet is right.
+const FIXTURE = [
+  ['.a:hover {\n  background: var(--lt-surface-elevated);\n}', 1, 'a surface named under :hover'],
+  ['.a:focus-visible {\n  background: var(--lt-surface-muted);\n}', 1, 'a surface named under :focus-visible'],
+  ['.a:hover {\n  background: color-mix(in srgb, var(--lt-muted-foreground) 16%, transparent);\n}', 1, 'a strength mixed by hand'],
+  ['.a:hover {\n  background: color-mix(in srgb, var(--lt-foreground) 10%, transparent);\n}', 1, 'a strength mixed from the body ink'],
+  ['.a:hover {\n  background: var(--lt-wash-hover);\n}', 0, 'the wash itself'],
+  ['.a:hover {\n  background: color-mix(in srgb, var(--lt-accent) 26%, transparent);\n}', 0, 'a chip deepening its own accent'],
+  ['.a[aria-pressed="true"]:hover {\n  background: color-mix(in srgb, var(--lt-background) 88%, var(--lt-foreground));\n}', 0, 'a pressed control'],
+  ['.a:disabled:hover {\n  background: var(--lt-surface-elevated);\n}', 0, 'a button with nowhere to go'],
+  ['.a {\n  background: var(--lt-surface);\n}', 0, 'a rest state'],
+  ['.a:hover,\n.b:hover {\n  background: var(--lt-surface);\n}', 1, 'a selector split over two lines'],
+];
+for (const [source, want, label] of FIXTURE) {
+  const got = hoverFills(strip(source)).length;
+  if (got !== want) {
+    console.error(`the hover check is broken: ${label} gave ${got} hit(s), wanted ${want}`);
+    process.exit(1);
+  }
+}
+
+for (const { n, why, value } of hoverFills(code)) {
+  hits.push(`${relative}:${n}  a hover ${why}: ${value} — every hover fill is var(--lt-wash-hover)`);
+}
+
 if (hits.length) {
   console.error(`Hand-written values in ${hits.length} place(s) — every one comes from a token:`);
   for (const hit of hits) console.error(`  ${hit}`);
   console.error('Add a row to design/tokens.md (or design/colors.md for a color), then `just bundle-tokens`.');
   process.exit(1);
 }
-console.log(`literals: none in ${relative} — every value comes from a token`);
+console.log(`literals: none in ${relative} — every value comes from a token, and every hover fill is the one wash`);

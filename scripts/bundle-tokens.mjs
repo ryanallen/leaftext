@@ -61,13 +61,24 @@ function compare(relative, generated) {
 // --- colors.md -> the contract in theme.rs ---------------------------------
 
 const colors = readFileSync(join(root, 'design/colors.md'), 'utf8');
-const colorNames = tableRows(colors).map(([name]) => name);
+const colorRows = tableRows(colors).map(([name, fallback]) => [name, fallback || '']);
+const colorNames = colorRows.map(([name]) => name);
 if (colorNames.length < 50) throw new Error(`design/colors.md gave only ${colorNames.length} colors`);
 for (const name of colorNames) {
   if (!/^[a-z0-9-]+$/.test(name)) problems.push(`design/colors.md: "${name}" is not a token name`);
 }
 const duplicates = colorNames.filter((name, index) => colorNames.indexOf(name) !== index);
 if (duplicates.length) problems.push(`design/colors.md lists twice: ${duplicates.join(', ')}`);
+
+// A Default cell names another row whose value the compiler copies for a family that says nothing. One hop only: a default pointing at a defaulted row would resolve differently depending on which family was asked.
+const defaults = colorRows.filter(([, fallback]) => fallback);
+for (const [name, fallback] of defaults) {
+  if (!colorNames.includes(fallback)) {
+    problems.push(`design/colors.md: ${name} defaults to ${fallback}, which is not a color`);
+  } else if (defaults.some(([other]) => other === fallback)) {
+    problems.push(`design/colors.md: ${name} defaults to ${fallback}, which has a default of its own`);
+  }
+}
 
 const themePath = join(root, 'src/theme.rs');
 const theme = readFileSync(themePath, 'utf8');
@@ -80,6 +91,15 @@ const contractBlock = [
   CONTRACT_START,
   'pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[',
   ...colorNames.map((name) => `    "${TOKEN_PREFIX}${name}",`),
+  '];',
+  '',
+  '/// A contract color a family may leave out, paired with the one whose value is copied in when it does. Everything not listed here is required of every family.',
+  // One row per line whatever the count: rustfmt would fold a short list onto one line and the next run here would unfold it, so `just verify` would fail on drift with nothing to fix.
+  '#[rustfmt::skip]',
+  'pub(crate) const LEAF_SEMANTIC_TOKEN_DEFAULTS: &[(&str, &str)] = &[',
+  ...defaults.map(
+    ([name, fallback]) => `    ("${TOKEN_PREFIX}${name}", "${TOKEN_PREFIX}${fallback}"),`
+  ),
   '];',
   CONTRACT_END,
 ].join('\n');

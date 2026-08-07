@@ -268,6 +268,14 @@ Black or gray at an alpha, where a mix toward a theme color would go the wrong w
 | lt-tint-row | `rgba(110, 118, 129, 0.08)` | A table's alternating row: a neutral gray so the stripe never picks up a theme's hue. |
 | lt-grain-dot-strong | `rgba(0, 0, 0, 0.55)` | The grain under the tab strip's fade, which has to show through a mask. |
 
+## The hover wash
+
+One fill for everything under the pointer — a menu row, a toolbar button, a file in the pane. It is transparent and mixed from a color the family owns, so it lightens a dark theme and darkens a light one whatever it sits over and can never come out the same tone as the panel behind it. A hover that names a surface color instead can, and did: a right-click menu in one family drew its panel and its hovered row at the same value.
+
+| Token | Value | What it is for |
+| --- | --- | --- |
+| lt-wash-hover | `color-mix(in srgb, var(--lt-hover-tint) 16%, transparent)` | Every hover and expanded-state fill in the app. The ink is [`hover-tint`](colors.md), which a family may set and otherwise copies its quiet-text color. |
+
 ## Inset edges
 
 An edge drawn inside the box as a shadow, so it costs no layout and never shifts what is around it. The geometry is the token; the color it is drawn in comes with it.

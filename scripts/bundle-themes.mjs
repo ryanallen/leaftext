@@ -187,7 +187,14 @@ function buildGallery(families) {
     `${families.length} families ship today, listed alphabetically (the order the theme ` +
       'picker uses). Each links to its full file; the screenshot is the same document split ' +
       'across the light and dark variants, and the table previews the key colors — every ' +
-      'family also defines the full 82-token contract inside its file.',
+      'family also defines the full 81-color contract inside its file.',
+  );
+  lines.push('');
+  lines.push(
+    'One color is optional, and it is the only one: `hover-tint`, the ink every fill under ' +
+      'the pointer is mixed from. Leave it out — as ten of the eleven do — and the family\'s ' +
+      'quiet-text color is copied in, which is the normal case. Set it, as Goldenrod does, and ' +
+      'every menu row, toolbar button and file in the pane washes in that hue instead.',
   );
   lines.push('');
   lines.push(

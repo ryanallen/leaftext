@@ -1,24 +1,24 @@
 <!-- Generated from design/ by `just bundle-design-docs`. Do not edit. -->
 # Design system
 
-> Every value in Leaftext's interface comes from a token. 81 of them are colors, which each theme sets for itself; 153 are everything else, one value for the whole app. Nothing is written by hand, and a check fails the build when something is.
+> Every value in Leaftext's interface comes from a token. 82 of them are colors, which each theme sets for itself; 154 are everything else, one value for the whole app. Nothing is written by hand, and a check fails the build when something is.
 
 Four files under `design/` are the source. Each is plain Markdown, so Leaftext opens them.
 
 | File | Holds | Compiles to |
 | --- | --- | --- |
-| `design/colors.md` | 81 color names and what each is for — no values, because a color's value belongs to a theme | the token contract in `src/theme.rs` |
-| `design/tokens.md` | 153 values that do not change with the theme | `src/assets/tokens.css` |
+| `design/colors.md` | 82 color names and what each is for — no values, because a color's value belongs to a theme | the token contract in `src/theme.rs` |
+| `design/tokens.md` | 154 values that do not change with the theme | `src/assets/tokens.css` |
 | `design/icons.md` | 60 icons | `src/assets/icons.css`, one mask class each |
 | `design/components.md` | 52 components, and the markup each is drawn with | `src/assets/gallery.html` |
 
 ## Colors
 
-Grouped by what they dress. Every one of the 11 theme families gives all 81 a value, in light and in dark, and the app refuses to start if one is missing.
+Grouped by what they dress. Every one of the 11 theme families gives 81 of them a value, in light and in dark, and the app refuses to start if one is missing. The last is optional: leave it out and the compiler copies the value of the color named beside it, so a family only says what it wants to differ.
 
 | Group | Colors |
 | --- | --- |
-| Core | 24 |
+| Core | 25 |
 | Document | 25 |
 | Code | 7 |
 | Syntax | 17 |
@@ -49,6 +49,7 @@ One value each, whatever theme is on.
 | Grain | 5 |
 | Fixed colors | 5 |
 | Fixed tints | 4 |
+| The hover wash | 1 |
 | Inset edges | 3 |
 
 Widths, heights and positional offsets are **not** tokens: they are one component's geometry, used once, and a name for each would buy nothing. Nor is a document's `em` sizing, which follows the text on purpose.
