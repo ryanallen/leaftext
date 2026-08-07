@@ -25,8 +25,8 @@ impl TypeOverrides {
         self.by_key.get(&key.to_lowercase()).copied()
     }
 
-    /// First writer wins, which is how Obsidian resolves two spellings of one key in its own file.
-    fn insert(&mut self, key: &str, kind: FieldType) {
+    /// First writer wins, which is how Obsidian resolves two spellings of one key in its own file. Public because a host that is not this machine still has to be able to say what its fields are — see [`LeafHost::field_types`](crate::LeafHost::field_types).
+    pub fn insert(&mut self, key: &str, kind: FieldType) {
         self.by_key.entry(key.to_lowercase()).or_insert(kind);
     }
 }

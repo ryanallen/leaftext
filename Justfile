@@ -196,6 +196,30 @@ doc-images:
 check-shot-edges:
     node scripts/check-shot-edges.mjs --check
 
+# The two browser modules, and what a page pays for each. Not in `verify`: it needs
+# the wasm32 target installed, and a machine without one would go red having done
+# nothing wrong. It asserts the core's own ceiling, which is the whole reason the
+# highlighter is a second module rather than part of the first.
+build-web:
+    node scripts/build-web.mjs
+
+# A folder of documents as a static Leaftext site: no server, nothing to run at
+# the far end. Drop the result on any static host. Defaults to the Emptyguru
+# folder beside this repo; pass another.
+export-web folder="":
+    node scripts/export-web.mjs {{ folder }}
+
+# The same export, served locally so it can be looked at — a page cannot fetch
+# its neighbors off file://. It serves the exported folder and nothing else.
+preview-web folder="":
+    node scripts/serve-web.mjs {{ folder }}
+
+# Press things in the exported site and read the page back — the browser half of
+# `just drive`. A check that passes is not a button that works.
+#   just drive-web http://localhost:8123/#README.md click:.docs-pager-next shot:out.png
+drive-web url *steps:
+    node scripts/drive-web.mjs "{{ url }}" {{ steps }}
+
 verify: format-check check test check-vendor check-themes check-tokens check-icons check-gallery check-design-docs check-classes check-literals check-verify check-spelling check-docs check-wrapping check-ascii-art check-site check-shell check-identity check-hooks check-mcp check-driver check-shot-edges
 
 # Cut a release: commit, tag, and push so CI builds all platforms.

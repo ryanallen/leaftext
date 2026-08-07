@@ -391,6 +391,7 @@ pub(super) fn read_case(suite: Suite, case: &Case) {
             let _ = render_markdown_body(MarkdownSource {
                 markdown: &case.source,
                 source_path: &path,
+                host: &DesktopHost::default(),
             });
         }
         DocumentFormat::Xml => {

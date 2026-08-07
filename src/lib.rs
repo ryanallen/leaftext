@@ -1,6 +1,9 @@
 //! Core document rendering and app-state helpers for leaftext.
 
+/// What the render asks its host for, so the four things it reads off this machine can come from somewhere else.
+mod host;
 mod markdown;
+pub use host::{BareHost, DesktopHost, GlossaryTerm, LeafHost, SourceSplice};
 pub mod store;
 mod tei;
 pub(crate) use tei::*;
@@ -22,7 +25,7 @@ mod scripts;
 pub use scripts::*;
 mod pager;
 pub(crate) use pager::*;
-pub use pager::{document_pager_html, pager_loaded_script};
+pub use pager::{document_pager_html, pager_loaded_script, pager_loading_html};
 mod minimap;
 pub use minimap::{
     build_minimap_model, build_minimap_model_from_html, DocumentMinimap, MinimapLineCategory,
@@ -98,6 +101,7 @@ use pulldown_cmark::{
     html, CodeBlockKind, CowStr, Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd,
 };
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "highlight")]
 use syntect::{
     parsing::{ParseState, Scope, ScopeStack, SyntaxReference, SyntaxSet},
     util::LinesWithEndings,
@@ -154,7 +158,7 @@ const APP_SHELL_SCRIPT_PARTS: &[&str] = &[
 /// The whole front-end, joined and served as `app.js` over the asset protocol.
 ///
 /// The page goes to WebView2 as one string with a ~2 MB ceiling, and the script was 505,232 of its 576,693 characters. Served instead, the page is a skeleton — and because no fragment carries a placeholder any more, this is a join and nothing else: no substitution pass, and one file on the wire rather than two.
-pub(crate) fn app_shell_script() -> &'static str {
+pub fn app_shell_script() -> &'static str {
     static SCRIPT: OnceLock<String> = OnceLock::new();
     SCRIPT.get_or_init(|| APP_SHELL_SCRIPT_PARTS.concat())
 }
@@ -385,15 +389,48 @@ pub fn load_document(path: impl AsRef<Path>) -> io::Result<OpenedDocument> {
     Ok(opened_document_from_source(&source.text, path))
 }
 
+/// What a tab is called: the file's own name without its suffix, never the document's heading — a tab strip is a list of files, and two notes titled the same are still two files.
+pub fn tab_title_from_path(path: &Path) -> String {
+    path.file_stem()
+        .and_then(|stem| stem.to_str())
+        .map(str::to_string)
+        .unwrap_or_else(|| path.display().to_string())
+}
+
 /// Render source already in hand, picking the renderer by the path's format: the counterpart to [`load_document`] for live reload's hash-gated bytes and the code view's unsaved edits. The one routing table, because a second one drifts.
 pub fn opened_document_from_source(source: &str, path: impl AsRef<Path>) -> OpenedDocument {
+    opened_document_from_source_with_host(source, path.as_ref(), &DesktopHost::default())
+}
+
+/// The same routing table, told who answers the four things a render cannot get from the text. Every entry point above it is this one with [`DesktopHost`].
+pub fn opened_document_from_source_with_host(
+    source: &str,
+    path: impl AsRef<Path>,
+    host: &dyn LeafHost,
+) -> OpenedDocument {
     let path = path.as_ref();
     match DocumentFormat::from_path(path) {
-        DocumentFormat::Xml => opened_document_from_xml(source, path),
-        DocumentFormat::Json => opened_document_from_json(source, path),
-        DocumentFormat::Yaml => opened_document_from_yaml(source, path),
-        DocumentFormat::Eml => opened_document_from_eml(source, path),
-        DocumentFormat::Markdown => opened_document_from_markdown(source, path),
+        DocumentFormat::Xml => {
+            opened_document_from_tree(source, path, DocumentFormat::Xml, render_xml_document, host)
+        }
+        DocumentFormat::Json => opened_document_from_tree(
+            source,
+            path,
+            DocumentFormat::Json,
+            render_json_document,
+            host,
+        ),
+        DocumentFormat::Yaml => opened_document_from_tree(
+            source,
+            path,
+            DocumentFormat::Yaml,
+            render_yaml_document,
+            host,
+        ),
+        DocumentFormat::Eml => {
+            opened_document_from_tree(source, path, DocumentFormat::Eml, render_eml_document, host)
+        }
+        DocumentFormat::Markdown => opened_document_from_markdown_with_host(source, path, host),
     }
 }
 
@@ -406,7 +443,13 @@ pub fn load_xml_document(path: impl AsRef<Path>) -> io::Result<OpenedDocument> {
 
 /// Render an XML string into an `OpenedDocument`: TEI through the TEI renderer, any other XML through the generic one.
 pub fn opened_document_from_xml(xml: &str, path: impl AsRef<Path>) -> OpenedDocument {
-    opened_document_from_tree(xml, path.as_ref(), DocumentFormat::Xml, render_xml_document)
+    opened_document_from_tree(
+        xml,
+        path.as_ref(),
+        DocumentFormat::Xml,
+        render_xml_document,
+        &DesktopHost::default(),
+    )
 }
 
 /// Render a JSON string into an `OpenedDocument`.
@@ -416,6 +459,7 @@ pub fn opened_document_from_json(json: &str, path: impl AsRef<Path>) -> OpenedDo
         path.as_ref(),
         DocumentFormat::Json,
         render_json_document,
+        &DesktopHost::default(),
     )
 }
 
@@ -426,12 +470,19 @@ pub fn opened_document_from_yaml(yaml: &str, path: impl AsRef<Path>) -> OpenedDo
         path.as_ref(),
         DocumentFormat::Yaml,
         render_yaml_document,
+        &DesktopHost::default(),
     )
 }
 
 /// Render a MIME message (.eml, .mht) into an `OpenedDocument`.
 pub fn opened_document_from_eml(eml: &str, path: impl AsRef<Path>) -> OpenedDocument {
-    opened_document_from_tree(eml, path.as_ref(), DocumentFormat::Eml, render_eml_document)
+    opened_document_from_tree(
+        eml,
+        path.as_ref(),
+        DocumentFormat::Eml,
+        render_eml_document,
+        &DesktopHost::default(),
+    )
 }
 
 /// Render a document that is a tree rather than prose — XML, JSON, YAML — into an `OpenedDocument`. They differ only in the reader that turns source into HTML; the shell around it is the same, and none of them can be reconstructed from the DOM, so each sends its `source` along.
@@ -440,8 +491,9 @@ fn opened_document_from_tree(
     path: &Path,
     format: DocumentFormat,
     render: impl Fn(&str, Option<&str>) -> (Option<String>, String, Vec<BlockSpan>),
+    host: &dyn LeafHost,
 ) -> OpenedDocument {
-    let render_path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let render_path = host.resolve_path(path);
 
     // A document with no title of its own is titled by its file name, which the renderer also heads the page with (a sitemap, or a lock file, has nowhere else to say what it is).
     let fallback_title = render_path
@@ -458,13 +510,13 @@ fn opened_document_from_tree(
 
     let base_href = render_path
         .parent()
-        .and_then(|parent| Url::from_directory_path(parent).ok())
+        .and_then(file_url_for_directory)
         .map(|url| format!(r#"<base href="{}">"#, encode_text(url.as_str())))
         .unwrap_or_default();
 
     // Optionally auto-link glossary terms from GLOSSARY.md next to the doc.
     let body_html = match render_path.parent() {
-        Some(dir) => auto_link_glossary(body_html, dir),
+        Some(dir) => auto_link_glossary(body_html, dir, host),
         None => body_html,
     };
 
@@ -473,7 +525,7 @@ fn opened_document_from_tree(
 
     let article = format!(
         r#"{base_href}<article class="document-body">{body_html}{}</article>"#,
-        pager_loading_html()
+        host.pager_placeholder().unwrap_or_default()
     );
 
     OpenedDocument {
@@ -490,14 +542,26 @@ fn opened_document_from_tree(
 
 /// Render an already-loaded markdown string into an `OpenedDocument`. Split out from [`load_document`] so live-reload can read the file once and reuse the string rather than reading twice.
 pub fn opened_document_from_markdown(markdown: &str, path: impl AsRef<Path>) -> OpenedDocument {
-    let path = path.as_ref();
-    let render_path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
-    let rendered = render_markdown_document(markdown, &render_path);
+    opened_document_from_markdown_with_host(markdown, path.as_ref(), &DesktopHost::default())
+}
 
-    // Placeholder; the real Previous/Next pager scans the folder tree after the document is on screen.
-    let html = match rendered.html.strip_suffix("</article>") {
-        Some(body) => format!("{body}{}</article>", pager_loading_html()),
-        None => rendered.html,
+/// The same render, told who answers for it.
+pub fn opened_document_from_markdown_with_host(
+    markdown: &str,
+    path: impl AsRef<Path>,
+    host: &dyn LeafHost,
+) -> OpenedDocument {
+    let path = path.as_ref();
+    let render_path = host.resolve_path(path);
+    let rendered = render_markdown_document_with_host(markdown, &render_path, host);
+
+    // A waiting state only where something is coming: the real Previous/Next strip scans the folder tree after the document is on screen.
+    let html = match (
+        host.pager_placeholder(),
+        rendered.html.strip_suffix("</article>"),
+    ) {
+        (Some(waiting), Some(body)) => format!("{body}{waiting}</article>"),
+        _ => rendered.html,
     };
 
     OpenedDocument {
@@ -607,6 +671,15 @@ pub fn open_document_with_recent(
 }
 
 pub fn render_markdown_document(markdown: &str, source_path: impl AsRef<Path>) -> RenderedDocument {
+    render_markdown_document_with_host(markdown, source_path.as_ref(), &DesktopHost::default())
+}
+
+/// The Markdown render, told who answers the four things it cannot get from the text: the vault's field types, the repository a `#123` points at, an image's own size, and the nearest glossary. A host that answers none of them renders the document without those four decorations.
+pub fn render_markdown_document_with_host(
+    markdown: &str,
+    source_path: impl AsRef<Path>,
+    host: &dyn LeafHost,
+) -> RenderedDocument {
     let source_path = source_path.as_ref();
     // Detect the title past any leading frontmatter, so the tab title is the document's real heading, not the `---` metadata.
     let title_markdown = split_leading_frontmatter(markdown)
@@ -623,6 +696,7 @@ pub fn render_markdown_document(markdown: &str, source_path: impl AsRef<Path>) -
     let body = render_markdown_body(MarkdownSource {
         markdown,
         source_path,
+        host,
     });
     // Auto-link glossary terms from the nearest GLOSSARY.md (occurrences already inside a link or code are left alone). Skip the glossary file itself.
     let is_glossary = source_path
@@ -631,12 +705,12 @@ pub fn render_markdown_document(markdown: &str, source_path: impl AsRef<Path>) -
         .map(|n| n.eq_ignore_ascii_case("GLOSSARY.md"))
         .unwrap_or(false);
     let body = match (is_glossary, source_path.parent()) {
-        (false, Some(dir)) => auto_link_glossary(body, dir),
+        (false, Some(dir)) => auto_link_glossary(body, dir, host),
         _ => body,
     };
     let base_href = source_path
         .parent()
-        .and_then(|parent| Url::from_directory_path(parent).ok())
+        .and_then(file_url_for_directory)
         .map(|url| format!(r#"<base href="{}">"#, encode_text(url.as_str())))
         .unwrap_or_default();
 
@@ -657,6 +731,14 @@ fn parse_glossary_terms(path: &Path) -> Vec<(String, String)> {
     let Ok(content) = fs::read_to_string(path) else {
         return Vec::new();
     };
+    glossary_terms_in(&content)
+        .into_iter()
+        .map(|term| (term.term, term.slug))
+        .collect()
+}
+
+/// The same reading, over text rather than a file, so a host with no disk can hand a glossary over — see [`LeafHost::glossary_terms`].
+pub fn glossary_terms_in(content: &str) -> Vec<GlossaryTerm> {
     let mut terms: Vec<(String, String)> = content
         .lines()
         .filter_map(|line| {
@@ -670,6 +752,9 @@ fn parse_glossary_terms(path: &Path) -> Vec<(String, String)> {
         .collect();
     terms.sort_by(|a, b| b.0.len().cmp(&a.0.len())); // longest first
     terms
+        .into_iter()
+        .map(|(term, slug)| GlossaryTerm { term, slug })
+        .collect()
 }
 
 /// Walk the HTML body string and wrap term occurrences in glossary links, skipping text inside `<a>`, `<code>`, or `<pre>` elements. Matches are whole-word (Unicode letter/digit boundaries) and case-insensitive.
@@ -831,28 +916,46 @@ fn nearest_glossary_file(doc_dir: &Path) -> Option<PathBuf> {
 }
 
 /// Find the nearest GLOSSARY.md at or above `doc_dir` and auto-link its terms in `body_html`.
-fn auto_link_glossary(body_html: String, doc_dir: &Path) -> String {
-    let Some(glossary_path) = nearest_glossary_file(doc_dir) else {
-        return body_html;
-    };
-    let terms = parse_glossary_terms(&glossary_path);
+fn auto_link_glossary(body_html: String, doc_dir: &Path, host: &dyn LeafHost) -> String {
+    let terms: Vec<(String, String)> = host
+        .glossary_terms(doc_dir)
+        .into_iter()
+        .map(|term| (term.term, term.slug))
+        .collect();
     if terms.is_empty() {
         return body_html;
     }
     link_terms_in_html(&body_html, &terms)
 }
 
+/// The nearest glossary's terms, which is what [`DesktopHost`] answers with. Longest first, so a multi-word term matches before its own substring.
+pub(crate) fn nearest_glossary_terms(doc_dir: &Path) -> Vec<GlossaryTerm> {
+    let Some(glossary_path) = nearest_glossary_file(doc_dir) else {
+        return Vec::new();
+    };
+    parse_glossary_terms(&glossary_path)
+        .into_iter()
+        .map(|(term, slug)| GlossaryTerm { term, slug })
+        .collect()
+}
+
 /// The page, with the five things only the host knows filled in: the script, the theme bootstrap, the theme picker's cards, and two asset URLs whose scheme is the platform's to choose. No icon is substituted — every one is a class in `icons.css`, so the drawings are served with the stylesheet instead of pasted into this string.
 pub fn app_shell_html() -> String {
+    app_shell_html_for_host(&DesktopHost::default())
+}
+
+/// The same page, with the asset URLs the host chooses. A browser serves them over http; the desktop over its own protocol.
+pub fn app_shell_html_for_host(host: &dyn LeafHost) -> String {
+    let asset = |name: &str| host.asset_url(name).unwrap_or_default();
     APP_SHELL_HTML
-        .replace("{{APP_SCRIPT_URL}}", &bundled_asset_url("app.js"))
-        .replace("{{THEME_BOOTSTRAP_SCRIPT}}", &theme_bootstrap_script())
-        .replace("{{APP_CSS_URL}}", &bundled_asset_url("app.css"))
-        .replace("{{THEME_ITEMS}}", &theme_items_html())
+        .replace("{{APP_SCRIPT_URL}}", &asset("app.js"))
         .replace(
-            "{{KATEX_CSS_URL}}",
-            &bundled_asset_url("katex/katex.min.css"),
+            "{{THEME_BOOTSTRAP_SCRIPT}}",
+            &theme_bootstrap_script_for_host(host),
         )
+        .replace("{{APP_CSS_URL}}", &asset("app.css"))
+        .replace("{{THEME_ITEMS}}", &theme_items_html())
+        .replace("{{KATEX_CSS_URL}}", &asset("katex/katex.min.css"))
 }
 
 /// Selected-state check badge shown on the active theme card (Heroicons check-circle, stroked in the accent color via `currentColor`). Hidden until the card is `.is-active`.
@@ -942,18 +1045,19 @@ fn theme_items_html() -> String {
     items
 }
 
-fn theme_bootstrap_script() -> String {
+/// The bootstrap, with the vendored runtimes' URLs the host chooses: their spelling is the host's, and a browser serves them over http where the desktop serves its own protocol.
+fn theme_bootstrap_script_for_host(host: &dyn LeafHost) -> String {
     // Runs inline before first paint, so it sits beside the other web-view assets rather than in a Rust literal. Both placeholders are filled from the theme registry, so the family list here can never drift from the registered sources.
     const THEME_BOOTSTRAP_JS: &str = include_str!("assets/theme-bootstrap.js");
 
     THEME_BOOTSTRAP_JS
         .replace("{{VALID_FAMILIES}}", &theme_family_ids_json())
         .replace("{{FAMILY_FONTS}}", &theme_web_font_hrefs_json())
-        .replace("{{ASSET_URLS}}", &vendored_asset_urls_json())
+        .replace("{{ASSET_URLS}}", &vendored_asset_urls_json_for_host(host))
 }
 
 /// The vendored runtimes' URLs, as one JSON object for `window.__lt.assets`. Each is a `leaf-asset://` URL whose spelling depends on the platform, so the page cannot hold them as literals — and a fragment that held one could not be served as a file.
-fn vendored_asset_urls_json() -> String {
+fn vendored_asset_urls_json_for_host(host: &dyn LeafHost) -> String {
     let entries = [
         ("mermaid", "mermaid.min.js"),
         ("katex", "katex/katex.min.js"),
@@ -965,7 +1069,12 @@ fn vendored_asset_urls_json() -> String {
     ];
     let pairs: Vec<String> = entries
         .iter()
-        .map(|(key, asset)| format!("\"{key}\":\"{}\"", bundled_asset_url(asset)))
+        .map(|(key, asset)| {
+            format!(
+                "\"{key}\":\"{}\"",
+                host.asset_url(asset).unwrap_or_default()
+            )
+        })
         .collect();
     format!("{{{}}}", pairs.join(","))
 }
@@ -973,7 +1082,9 @@ fn vendored_asset_urls_json() -> String {
 /// Reverse-DNS app id, and the two halves it is built from. macOS names the per-app folder with the whole id; Windows nests organization inside application. Both spellings are load-bearing: they are where every existing install already keeps its settings, recent files, and vault registry. Only macOS spells the qualifier into a path; Windows ignores it entirely.
 #[cfg(target_os = "macos")]
 const APP_QUALIFIER: &str = "com";
+#[cfg(feature = "desktop")]
 const APP_ORGANIZATION: &str = "ryanallen";
+#[cfg(feature = "desktop")]
 const APP_NAME: &str = "leaftext";
 
 /// Roaming per-user configuration root.
@@ -981,6 +1092,7 @@ const APP_NAME: &str = "leaftext";
 /// Windows: `%APPDATA%\ryanallen\leaftext\config`. macOS: `~/Library/Application Support/com.ryanallen.leaftext`.
 ///
 /// These reproduce, exactly, the layout the `directories` crate produced for `ProjectDirs::from("com", "ryanallen", "leaftext")` — including the `config` leaf on Windows, which is easy to miss and would strand every existing user's settings if it were dropped. `project_dirs_match_the_documented_layout` pins both.
+#[cfg(feature = "desktop")]
 pub fn project_config_dir() -> Option<PathBuf> {
     #[cfg(windows)]
     {
@@ -1000,6 +1112,7 @@ pub fn project_config_dir() -> Option<PathBuf> {
 /// Machine-local per-user data root (WebView2's cache, the vault registry, and staged updates).
 ///
 /// Windows: `%LOCALAPPDATA%\ryanallen\leaftext\data`. macOS: `~/Library/Application Support/com.ryanallen.leaftext`, which is the same folder as the config root — the platform draws no roaming distinction.
+#[cfg(feature = "desktop")]
 pub fn project_data_local_dir() -> Option<PathBuf> {
     #[cfg(windows)]
     {
@@ -1026,15 +1139,18 @@ fn macos_application_support_dir() -> Option<PathBuf> {
     )
 }
 
+#[cfg(feature = "desktop")]
 pub fn config_file_path() -> Option<PathBuf> {
     project_config_dir().map(|dir| dir.join("recent-files.json"))
 }
 
+#[cfg(feature = "desktop")]
 pub fn webview_user_data_dir() -> Option<PathBuf> {
     project_data_local_dir().map(|dir| dir.join("webview2"))
 }
 
 /// The app data root for leaftext's own files: `manifest.db` (the vault registry) and staged updates. The local data dir itself, not the WebView2 cache subfolder, so neither is entangled with the browser's storage.
+#[cfg(feature = "desktop")]
 pub fn app_data_dir() -> Option<PathBuf> {
     project_data_local_dir()
 }
@@ -1203,6 +1319,7 @@ impl GraphScope {
     }
 }
 
+#[cfg(feature = "desktop")]
 pub fn settings_file_path() -> Option<PathBuf> {
     project_config_dir().map(|dir| dir.join("settings.json"))
 }

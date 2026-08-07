@@ -16,9 +16,11 @@ pub struct Vault {
 }
 
 /// The `app_state` key holding the active vault's id.
+#[cfg(feature = "desktop")]
 const ACTIVE_VAULT_KEY: &str = "active_vault";
 
 /// Every vault, oldest first, so the switcher's order is the order they were added rather than something that reshuffles as folders are renamed.
+#[cfg(feature = "desktop")]
 pub fn list_vaults(conn: &Connection) -> DbResult<Vec<Vault>> {
     let mut stmt = conn
         .prepare("SELECT id, name, root_path FROM vaults ORDER BY added_at, id")
@@ -40,6 +42,7 @@ pub fn list_vaults(conn: &Connection) -> DbResult<Vec<Vault>> {
 }
 
 /// Register `root` as a vault and return it. A folder that is already a vault is returned as it stands — picking it again opens it rather than doubling it.
+#[cfg(feature = "desktop")]
 pub fn add_vault(conn: &Connection, root: &Path, name: &str) -> DbResult<Vault> {
     let root_path = path_to_string(root);
     conn.execute(
@@ -62,6 +65,7 @@ pub fn add_vault(conn: &Connection, root: &Path, name: &str) -> DbResult<Vault> 
 }
 
 /// Relabel a vault. The name is only a label — the folder is untouched, and two vaults may end up reading alike, which is why nothing keys on it.
+#[cfg(feature = "desktop")]
 pub fn rename_vault(conn: &Connection, id: i64, name: &str) -> DbResult<()> {
     let name = name.trim();
     if name.is_empty() {
@@ -76,6 +80,7 @@ pub fn rename_vault(conn: &Connection, id: i64, name: &str) -> DbResult<()> {
 }
 
 /// Point an existing vault at a different folder — the fix for picking the wrong one. Fails if another vault already holds that folder, since `root_path` is unique and two rows for one folder are two names for the same place.
+#[cfg(feature = "desktop")]
 pub fn set_vault_root(conn: &Connection, id: i64, root: &Path) -> DbResult<()> {
     let root_path = path_to_string(root);
     let taken: i64 = conn
@@ -97,6 +102,7 @@ pub fn set_vault_root(conn: &Connection, id: i64, root: &Path) -> DbResult<()> {
 }
 
 /// Forget a vault. The row goes; the folder and every file in it stay exactly as they are, because nothing was ever written into it.
+#[cfg(feature = "desktop")]
 pub fn remove_vault(conn: &Connection, id: i64) -> DbResult<()> {
     conn.execute("DELETE FROM vaults WHERE id = ?1", params![id])
         .map_err(to_err)?;
@@ -104,6 +110,7 @@ pub fn remove_vault(conn: &Connection, id: i64) -> DbResult<()> {
 }
 
 /// The vault whose folder holds `path`, or `None` when no vault does. The innermost wins: a vault nested inside another owns the files under it, which is the same rule the pane uses when both are on the list.
+#[cfg(feature = "desktop")]
 pub fn vault_containing(conn: &Connection, path: &Path) -> Option<Vault> {
     let path = path_to_string(path);
     list_vaults(conn)
@@ -139,6 +146,7 @@ fn holds(root: &str, path: &str) -> bool {
 }
 
 /// The vault with this id, or `None` — including for `0`, which is the whole library rather than a vault.
+#[cfg(feature = "desktop")]
 pub fn find_vault(conn: &Connection, id: i64) -> DbResult<Option<Vault>> {
     if id == 0 {
         return Ok(None);
@@ -162,6 +170,7 @@ pub fn find_vault(conn: &Connection, id: i64) -> DbResult<Option<Vault>> {
 }
 
 /// The active vault's id, or `0` for the whole library. Anything unreadable or unparseable reads as `0`: the pane falls back to what it has always shown rather than to nothing.
+#[cfg(feature = "desktop")]
 pub fn active_vault_id(conn: &Connection) -> i64 {
     conn.query_row(
         "SELECT value FROM app_state WHERE key = ?1",
@@ -174,6 +183,7 @@ pub fn active_vault_id(conn: &Connection) -> i64 {
 }
 
 /// Remember which vault the pane is scoped to. `0` is the whole library.
+#[cfg(feature = "desktop")]
 pub fn set_active_vault_id(conn: &Connection, id: i64) -> DbResult<()> {
     conn.execute(
         "INSERT INTO app_state (key, value) VALUES (?1, ?2)

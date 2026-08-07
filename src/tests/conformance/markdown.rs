@@ -224,6 +224,7 @@ fn rendered(source: &str) -> String {
     render_markdown_body(MarkdownSource {
         markdown: source,
         source_path: &path,
+        host: &DesktopHost::default(),
     })
 }
 

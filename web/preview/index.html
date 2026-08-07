@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en" data-leaf-theme="fern" data-leaf-appearance="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leaftext in someone else's page</title>
+<!-- The frame is the embedding product's. Everything it is drawn with is Leaftext's, because inventing a second set of colors here is how a preview stops telling you anything about the real thing. -->
+<style id="leaf-styles"></style>
+<style>
+  body { margin: 0; background: var(--lt-app-background, var(--lt-markdown-background)); color: var(--lt-foreground); font-family: var(--lt-font-ui, system-ui, sans-serif); font-size: var(--type-ui-size, 14px); }
+  header { display: flex; gap: var(--space-md, 12px); align-items: center; padding: var(--space-sm, 8px) var(--space-md, 12px); background: var(--lt-surface); color: var(--lt-foreground); border-bottom: var(--lt-stroke-1, 1px) solid var(--lt-border); position: sticky; top: 0; z-index: 2; }
+  header strong { font-weight: var(--lt-weight-600, 600); }
+  header .spacer { flex: 1; }
+  header .quiet { color: var(--lt-foreground-muted, var(--lt-foreground)); }
+  select { background: var(--lt-control-background, var(--lt-surface)); color: var(--lt-foreground); border: var(--lt-stroke-1, 1px) solid var(--lt-border); border-radius: var(--lt-radius-md, 6px); padding: 4px 6px; font: inherit; }
+  main { display: flex; align-items: flex-start; }
+  /* The pane is the app's, lifted out of a window that is not here: its own scroll layer is pinned to the app bar and the bands under it, and this page has neither. */
+  .library-pane { position: relative; width: 280px; flex: none; height: calc(100vh - 45px); }
+  .library-scroll { position: absolute; inset: 0; padding-top: var(--lt-space-6, 6px); }
+  /* The frame the host owns: where the document sits is the host's call, not the document's. */
+  #frame { flex: 1; min-width: 0; height: calc(100vh - 45px); overflow: auto; display: flex; justify-content: center; padding: 0 clamp(16px, 4vw, 56px); background: var(--lt-markdown-background); }
+  #status { padding: 48px 0; color: var(--lt-foreground-muted, var(--lt-foreground)); }
+  .tree-group { margin: 0 0 2px; }
+  .tree-children { margin-left: 14px; border-left: var(--lt-stroke-1, 1px) solid var(--lt-border); padding-left: 4px; }
+  .library-file { width: 100%; }
+</style>
+</head>
+<body>
+<header>
+  <strong>Some Other Product</strong>
+  <span class="quiet">Theme</span> <select id="theme"></select>
+  <span class="quiet">Look</span> <select id="appearance"><option value="dark">dark</option><option value="light">light</option></select>
+  <span class="spacer"></span>
+  <span class="quiet" id="cost"></span>
+</header>
+<main>
+  <div class="library-pane"><div class="library-scroll"><div class="library-tree" id="tree"></div></div></div>
+  <div id="frame"><p id="status">Loading the renderer…</p></div>
+</main>
+
+<script type="module">
+import { createLeaftext } from './leaftext.js';
+
+const frame = document.getElementById('frame');
+const tree = document.getElementById('tree');
+const cost = document.getElementById('cost');
+
+const themes = ['amaranth','arabica','bloodleaf','fern','ginger','github','goldenrod','halcyon','nightshade','pippin','sage'];
+const themePicker = document.getElementById('theme');
+for (const name of themes) {
+  const option = document.createElement('option');
+  option.value = option.textContent = name;
+  if (name === 'fern') option.selected = true;
+  themePicker.append(option);
+}
+const appearance = document.getElementById('appearance');
+
+// A theme is in the address too, so a particular one can be linked to and checked.
+const asked = new URLSearchParams(location.search);
+if (themes.includes(asked.get('theme'))) themePicker.value = asked.get('theme');
+if (['light', 'dark'].includes(asked.get('look'))) appearance.value = asked.get('look');
+function applyLook() {
+  document.documentElement.dataset.leafTheme = themePicker.value;
+  document.documentElement.dataset.leafAppearance = appearance.value;
+}
+themePicker.onchange = applyLook;
+appearance.onchange = applyLook;
+applyLook();
+
+let leaftext;
+try {
+  leaftext = await createLeaftext();
+} catch (error) {
+  frame.innerHTML = `<p id="status">${error.message}</p>`;
+  throw error;
+}
+// Leaftext's own stylesheet, straight out of the module: the themes, the tokens, the icons and the document rules.
+document.getElementById('leaf-styles').textContent = leaftext.styles;
+
+const documents = await (await fetch('/documents.json')).json();
+const known = new Set(documents.map((entry) => entry.path));
+const rows = new Map();
+
+// A folder holding a hundred files is a folder, not a hundred rows. Nested, folded shut, and the folder holding the open document is the one that is open.
+function buildTree(container, entries, prefix = '') {
+  const folders = new Map();
+  for (const entry of entries) {
+    const rest = entry.path.slice(prefix.length);
+    const cut = rest.indexOf('/');
+    if (cut === -1) {
+      container.append(fileRow(entry));
+      continue;
+    }
+    const name = rest.slice(0, cut);
+    if (!folders.has(name)) folders.set(name, []);
+    folders.get(name).push(entry);
+  }
+  for (const [name, held] of folders) {
+    const group = document.createElement('div');
+    group.className = 'tree-group';
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'library-nav-folder';
+    toggle.innerHTML = `<span class="lt-icon lt-icon-folder library-folder-icon"></span><span class="library-file-label"></span>`;
+    toggle.querySelector('.library-file-label').textContent = name;
+    const children = document.createElement('div');
+    children.className = 'tree-children';
+    children.hidden = true;
+    toggle.onclick = () => { children.hidden = !children.hidden; };
+    group.append(toggle, children);
+    container.append(group);
+    buildTree(children, held, `${prefix}${name}/`);
+  }
+}
+
+function fileRow(entry) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'library-file';
+  button.innerHTML = `<span class="lt-icon lt-icon-leaf"></span><span class="library-file-label"></span>`;
+  button.querySelector('.library-file-label').textContent = entry.path.split('/').pop();
+  button.title = entry.path;
+  button.onclick = () => { location.hash = entry.path; };
+  rows.set(entry.path, button);
+  return button;
+}
+
+buildTree(tree, documents);
+
+let active = null;
+
+/** Show the row for the open document, and open every folder above it. */
+function markOpen(path) {
+  for (const row of rows.values()) row.classList.remove('is-selected');
+  const row = rows.get(path);
+  if (!row) return;
+  row.classList.add('is-selected');
+  for (let node = row.parentElement; node; node = node.parentElement) {
+    if (node.classList.contains('tree-children')) node.hidden = false;
+  }
+  row.scrollIntoView({ block: 'nearest' });
+}
+
+/** Resolve a link written in one document against the folder it sits in, the way a relative path works anywhere else. */
+function resolveFrom(documentPath, href) {
+  const base = documentPath.split('/').slice(0, -1);
+  const parts = href.split('/');
+  for (const part of parts) {
+    if (part === '.' || part === '') continue;
+    if (part === '..') base.pop();
+    else base.push(part);
+  }
+  return base.join('/');
+}
+
+/** A link inside the document goes to another document, an anchor on this one, or out to the web. The first two are ours to handle; only the third leaves the page. */
+function followLinks(documentPath) {
+  frame.addEventListener('click', (event) => {
+    const link = event.target.closest('a[href]');
+    if (!link || !frame.contains(link)) return;
+    const href = link.getAttribute('href');
+    if (!href || /^[a-z][a-z0-9+.-]*:/i.test(href)) return; // http, mailto, anything with a scheme of its own
+    event.preventDefault();
+    if (href.startsWith('#')) {
+      const target = frame.querySelector(`[id="${CSS.escape(href.slice(1))}"]`);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    const [path, anchor] = href.split('#');
+    const wanted = resolveFrom(documentPath, path);
+    // A link to a folder means that folder's own page, which is how the app reads one too.
+    const target = known.has(wanted) ? wanted : `${wanted.replace(/\/$/, '')}/README.md`;
+    if (!known.has(target)) {
+      cost.textContent = `nothing at ${wanted}`;
+      return;
+    }
+    location.hash = anchor ? `${target}#${anchor}` : target;
+  });
+}
+followLinks('');
+
+function draw(document_) {
+  frame.innerHTML = document_.html;
+}
+
+async function open(path, anchor) {
+  active = path;
+  frame.innerHTML = '<p id="status">Rendering…</p>';
+  markOpen(path);
+  try {
+    const source = await (await fetch(`/source/${path}`)).text();
+    const started = performance.now();
+    const rendered = await leaftext.render(source, path, (colored) => {
+      // The second module landed: same document, now with colored code.
+      if (active === path) draw(colored);
+    });
+    if (!rendered) { frame.innerHTML = '<p id="status">The renderer refused that document.</p>'; return; }
+    draw(rendered);
+    cost.textContent = `${rendered.blocks.length} blocks · ${Math.round(performance.now() - started)} ms`;
+    if (anchor) frame.querySelector(`[id="${CSS.escape(anchor)}"]`)?.scrollIntoView({ block: 'start' });
+    else frame.scrollTop = 0;
+  } catch (error) {
+    frame.innerHTML = `<p id="status">${error.message}</p>`;
+    throw error;
+  }
+}
+
+// The document is in the address, so one can be linked to, reloaded, and reached with the browser's own Back.
+function fromAddress() {
+  const [path, anchor] = decodeURIComponent(location.hash.slice(1)).split('#');
+  if (known.has(path)) open(path, anchor);
+  else if (documents.length) location.hash = documents[0].path;
+}
+addEventListener('hashchange', fromAddress);
+fromAddress();
+</script>
+</body>
+</html>

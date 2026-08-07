@@ -4,19 +4,21 @@
 
 Leaftext is a single Rust binary that embeds a WebView (via `wry`) inside a native window (via `tao`). The Markdown rendering pipeline runs on the Rust side; the result is injected into the WebView as HTML. All user interaction — opening files, navigating history, adjusting settings — flows through a typed IPC bridge between JavaScript running in the WebView and the Rust host.
 
+The same renderer also builds for the browser. The window, the WebView, the file dialog, the watcher and SQLite are optional dependencies the binary asks for by name, so the library alone compiles for `wasm32` — see [The browser modules](#the-browser-modules).
+
 ## Core crates
 
 | Crate                   | Role                                                 |
 | ----------------------- | ---------------------------------------------------- |
-| `tao`                   | Native windowing and event loop                      |
-| `wry`                   | WebView embedding (WKWebView / WebView2)             |
+| `tao`                   | Native windowing and event loop. Optional: the `desktop` feature |
+| `wry`                   | WebView embedding (WKWebView / WebView2). Optional: the `desktop` feature |
 | `pulldown-cmark`        | CommonMark + GFM Markdown parser                     |
-| `syntect` + `two-face`  | Syntax highlighting for code blocks                 |
+| `syntect` + `two-face`  | Syntax highlighting for code blocks. Optional: the `highlight` feature, so a browser module can be built without them |
 | `ammonia`               | HTML sanitization (allowlist-based)                  |
-| `rusqlite` (bundled)    | SQLite for the [vault](../01-features/03-library.md#vaults) registry |
-| `rfd`                   | Native file dialogs                                  |
+| `rusqlite` (bundled)    | SQLite for the [vault](../01-features/03-library.md#vaults) registry. Optional: the `desktop` feature |
+| `rfd`                   | Native file dialogs. Optional: the `desktop` feature  |
 | `serde` / `serde_json`  | IPC message serialization                            |
-| `notify-debouncer-mini` | Filesystem watcher for live reload and the [library pane](../01-features/03-library.md#live-updates) |
+| `notify-debouncer-mini` | Filesystem watcher for live reload and the [library pane](../01-features/03-library.md#live-updates). Optional: the `desktop` feature |
 | `blake3`                | Content hashing: re-checking a staged installer before it runs |
 | `flate2`                | Deflate for the PNG encoder in `src/png.rs`. Already in the tree under `syntect`, so it costs a line rather than a crate |
 | `roxmltree`             | Read-only XML DOM parsing for TEI and other XML      |
@@ -26,7 +28,9 @@ Leaftext is a single Rust binary that embeds a WebView (via `wry`) inside a nati
 
 The list is deliberately short. Clipboard, Recycle Bin, per-user data paths, update downloads, and [git](../01-features/03-library.md#github-sync) are all done against the platform rather than through a crate — see [Dependencies](../../AGENTS.md) for the standing policy, and `src/platform.rs` for where the native code lives.
 
-Features are trimmed for the same reason. `syntect` is taken with `default-features = false` and only `parsing`, `html`, and `regex-onig`: its syntax definitions come from `two-face`'s binary dumps, so its own bundled syntax and theme dumps are dead weight, and its `yaml-load` feature — which reads `.sublime-syntax` YAML and was the only thing pulling in the unmaintained `yaml-rust` — is not needed at all. `yaml-rust2` is likewise taken without its `encoding` feature, since files reach it as decoded Rust strings.
+Features are trimmed for the same reason. `syntect` is taken with `default-features = false` and only `parsing` and `html`: its syntax definitions come from `two-face`'s binary dumps, so its own bundled syntax and theme dumps are dead weight, and its `yaml-load` feature — which reads `.sublime-syntax` YAML and was the only thing pulling in the unmaintained `yaml-rust` — is not needed at all. `yaml-rust2` is likewise taken without its `encoding` feature, since files reach it as decoded Rust strings.
+
+The regex engine behind the highlighter is chosen by feature rather than pinned: the desktop takes `regex-onig`, which is oniguruma, a C library; a browser module takes syntect's pure-Rust `regex-fancy`, because oniguruma has no `wasm32` build. Both read the same syntax dumps, and a test pins the markup they have to agree on.
 
 ## Source files
 
@@ -35,6 +39,7 @@ Leaftext's Rust source is split by concern. Where a concern grew past one file i
 - **`src/main.rs`** — Entry point. Builds the window and the WebView2 instance, registers the custom protocol handlers, and runs the startup sequence that assembles the event loop's state. It tunes WebView2 with a trimmed browser-argument set (site isolation and background networking off, GPU and the renderer kept hot) to reduce the process/background footprint of a single-window offline reader. Three argument forms open no window at all: the detached update applier, `--squeeze-png <in.bmp> <out.png> [--palette]`, which is how `just squeeze-png` reaches the encoder in `src/png.rs`, and `--dump-css`, which prints the compiled stylesheet so `just bundle-gallery` can paint the [gallery page](https://leaftext.com/gallery.html) with the same CSS the app paints itself with.
 - **`src/app/`** — The binary's guts. `event_loop.rs` holds `AppCtx` (the state the loop owns between events) and the loop itself: one arm per thing the window, the page or the watcher can report. Around it, `events.rs` (`IpcCommand` — the page's whole vocabulary — plus `UserEvent` for the app's own signals, the IPC bridge, and `off_loop`, the one way work is handed to a worker thread), `workspace.rs` (`Workspace` and `Tab` — a new tab inherits the [source view](../01-features/07-editing.md#code-view) from the one you were in), `history.rs` (back/forward and the scroll position each entry remembers), `watch.rs` (the `FileWatch` live-reload watcher), `vaults.rs` (the vault switcher, the folder reads, and the corpus's lifecycle), `vault_search.rs` (the one search thread, and the query counter a scan reads between documents so a keystroke the field has moved past stops rather than finishing), `vault_git.rs` (the [GitHub panel](../01-features/03-library.md#github-sync)'s four jobs, each on its own thread), `editing_cmds.rs`, `code_intel.rs` (gathers what a [typing help](../01-features/07-editing.md#typing-help) ask needs — the corpus or the document's folder, the edit buffer — and computes the answer on a worker), `render.rs` (`Reader`: the window, the page, the tabs and the recents that every render needs, bundled so a render is one call, plus the per-tab render cache), `glossary.rs`, `links.rs` (what a clicked href means), `fileops.rs`, and `update_flow.rs`.
 - **`src/lib.rs`** — Core document rendering and app-state helpers. Contains `render_markdown_document()` (which orchestrates the Markdown pipeline in `markdown/`), document loading, glossary auto-linking, recent-files and settings persistence, and `app_shell_html()`, which assembles the WebView page from the shell markup in `src/assets/` (see below) and fills in the five things only the host knows: the script's URL, the theme bootstrap, the theme picker's cards, and two asset URLs.
+- **`src/host.rs`** — `LeafHost`: what the renderer asks the machine it is running on for, so the same render works where there is no machine to ask. Two halves. Four reads it cannot get from the document's own text — the vault's field types, the repository a `#123` resolves against, an image's own pixel size, and the nearest glossary — plus resolving a path and taking a line of log; and the commands the page sends: open, save, splice, follow a link, search, draw the map, find an asset, fetch the highlighter, read and write settings, and the Previous/Next strip. Every method has a default, so a host implements only what it can answer, and a host that answers none of the four renders the document without those decorations rather than failing. `DesktopHost` is this machine — the running app hands it the three things the library cannot reach on its own: where the settings file is, the vault's text, and a way to hand a link to the OS. `BareHost` answers nothing, which is what proves the interface is optional rather than load-bearing.
 - **`src/format.rs`** — `DocumentFormat` and the single table of readable formats and their extensions. Everything that has to know what counts as a document asks this one: the Open dialog's filters, drag and drop, whether a clicked link opens in the reading view or goes to the OS, the [pager](../01-features/02-navigation.md#pager)'s page list, the [library](../01-features/03-library.md)'s indexable set, and the render router's choice of pipeline. `for_path()` answers whether a file can be opened at all (`None` if not); `from_path()` answers which renderer to use, falling back to Markdown so an extension-less `README` still opens. Adding a format is one arm here — the matches on it are exhaustive on purpose, so the compiler names every site that must account for it. Public, re-exported at the crate root.
 - **`src/scripts.rs`** — Generators for the small JS snippets the host injects to drive the WebView: initial/document/workspace state, navigation, scroll anchoring (`ScrollAnchor`), the glossary sheet, and error state. Each returns a `String` of `window.leaf*(...)` calls that the event loop hands to `webview.evaluate_script()`. The state is written out as a JavaScript value. Handing it over as `JSON.parse("…")` instead was tried and is slower here: that trick wins on dense object structure and loses on long strings, because the text is scanned and unescaped once as a JS string before the JSON reader sees it — and a document payload is mostly two very large strings, the rendered HTML and the source.
 - **`src/pager.rs`** — The Previous/Next pager: walks the document's folder tree in reading order (`document_pager_html()`, `PagerEntry`, `pager_label()`) and builds the pager HTML plus the async `pager_loaded_script()` hand-off.
@@ -241,6 +246,22 @@ A path is resolved against the open document's directory and then read: a relati
 URL segments carry the shape of the path. `__leaf_parent__` stands in for each `..` step, and `__leaf_absolute__/<encoded path>` carries a whole absolute path for images that do not sit under the document's directory. Because a Windows drive letter parses as a one-character URL scheme, `parse_image_destination_url()` treats a single-letter scheme as a path rather than a URL.
 
 Responses carry `Cache-Control: no-store`, and the page adds a `?leaf-epoch=<n>` query — bumped on every render, and again whenever `image_refresh_script()` reports a changed file — because the web view otherwise keeps showing the copy it already decoded for that URL until the process restarts. The handler resolves the path from the URL's segments alone, so the query is inert on the way in. `is_local_image_path()` is what tells the watcher an image changed rather than a document: the file bytes are unchanged, so the [live reload](../01-features/02-navigation.md#reload) would hash-gate itself out, and the images are refreshed in place instead.
+
+## The browser modules
+
+`web/` is the renderer built as something a browser loads. It is the same crate — the same parser, the same sanitizer, the same block maps — with the desktop's dependencies switched off, so there is one renderer and not a second implementation of one.
+
+Two modules, not one. The highlighter's syntax dumps and regex engine are most of the weight and most documents have no code in them, so a page downloads the core, renders, and fetches the second module only for a document that turns out to have a fenced code block — then renders that document again, with colors. A page that never fetches it keeps plain code, which is the same bargain as the four reads above.
+
+A page and a module share only memory and numbers, so strings cross as bytes: the page calls `leaf_alloc`, writes UTF-8 into what comes back, calls `leaf_render`, reads a little-endian `u32` length off the front of the answer, and frees both. `leaf_styles` hands over Leaftext's whole stylesheet — themes, tokens, icons and document rules — so an embedded document looks like a Leaftext document wherever it sits; a theme is chosen by stamping `data-leaf-theme` and `data-leaf-appearance` on the root element, exactly as the desktop's own page does. No binding generator is involved.
+
+`just build-web` builds both, loads each one and renders a document through it, and holds the core to a size ceiling — the reason for the split stops being true if the core drifts past it. It is not part of `just verify`, because it needs the `wasm32` target installed and a machine without one would fail having done nothing wrong.
+
+A third build carries the app's own page and front end as well — `leaf_page`, `leaf_script`, `leaf_boot_script` — behind the `shell` feature, because an embedding product has no use for half a megabyte of front end. That is what makes a published Leaftext site *the app* rather than a copy of it: the same page, the same script, the same stylesheet, with a browser host answering the commands a static site can answer.
+
+`just drive-web` presses things in it and reads the page back — the browser half of `just drive`, over the browser's own debugging port, no package added.
+
+`just export-web` writes a folder of documents out as one of those sites: page, front end, module, vendored runtimes, the document list and the documents. **Nothing serves it** — drop it on any static host. `just preview-web` exports and then serves that folder locally, only because a page cannot fetch its neighbors off `file://`; it serves nothing the export does not contain.
 
 ## Bundled asset protocol
 

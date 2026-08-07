@@ -215,11 +215,15 @@ body {
   align-self: stretch;
   box-sizing: border-box;
   width: var(--library-rail-width, 240px);
-  /* Never let the rail clip the brand + history controls: floor the zone at their natural width — at a rail of 0 the floor is the whole zone, what width:auto used to give. */
+  /* Never let the rail clip the brand + history controls: floor the zone at their natural width. A second floor behind the closed-state width below, not the only one — alone it lets a Mac squeeze the library button out under the tab strip. */
   min-width: fit-content;
   /* Left inset matches the library header's 12px so the logo lines up with the
      GRAPH/search controls directly below it. */
   padding: 0 var(--lt-space-16) 0 var(--lt-space-12);
+}
+/* No rail: size the zone from the buttons it holds, so it shrinks behind any that fold away and never squeezes the ones that stay. It lands after the close motion's transitions have come off, so the flip is never animated. */
+.app-bar:not(.has-rail) .app-bar-lead {
+  width: auto;
 }
 .mac-frame .app-bar-lead {
   /* Apple's dots are drawn over this zone, not in it, so the room for them is the
@@ -1224,6 +1228,8 @@ body.is-library-opening .library-scroll {
 /* The library toggle sits in the app bar's lead, left of Back. Rests muted like
    the other secondary toolbar icons, greens on hover. */
 .library-open {
+  /* The only control that opens the pane, so it holds its box however tight the zone gets, like the brand beside it. It never folds either. */
+  flex-shrink: 0;
   border-color: transparent;
   background: transparent;
   color: var(--lt-muted-foreground);

@@ -146,9 +146,9 @@ pub(crate) fn auto_apply_staged_update(
 
 /// Write the UI toggles to disk, logging but not propagating I/O errors.
 pub(crate) fn persist_settings(settings: &Settings, settings_path: Option<&PathBuf>) {
-    if let Some(path) = settings_path {
-        if let Err(error) = save_settings(path, settings) {
-            eprintln!("Failed to save settings to {}: {error}", path.display());
-        }
+    DesktopHost {
+        settings_path: settings_path.map(PathBuf::as_path),
+        ..DesktopHost::default()
     }
+    .set_settings(settings);
 }

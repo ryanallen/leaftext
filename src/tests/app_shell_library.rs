@@ -82,6 +82,9 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
         "if (inLead && leadIsPinned) continue;",
         // Restoring rebuilds each container's original order, so a button that folded comes back in its own slot beside siblings that never left.
         "for (const child of children) home.appendChild(child);",
+        // Folding order and menu order are separate. Each item has to leave the bar before the next measurement, so they go in rightmost-first; the panel is then laid out in its own order, which puts the window buttons at the foot instead of on top. check-shell reads the resulting order back.
+        "  ...overflowCandidates.filter((entry) => entry.el.id === 'windowControls'),",
+        "      if (el.parentElement === overflowPanel) overflowPanel.appendChild(el);",
     ] {
         assert_contains(&html, expected);
     }
@@ -97,6 +100,13 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
     let css = reading_mode_css();
     assert_contains(css, ".app-trailing.has-overflow .overflow-toggle {");
     assert_contains(css, ".app-trailing.overflow-open .app-overflow-panel {");
+    // Staying off the fold list is only half of it: a squeezed zone shrank the button out from under the tab strip instead, so it refuses to give up any of its box.
+    let library_open = css
+        .split(".library-open {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines .library-open");
+    assert_contains(library_open, "flex-shrink: 0;");
     // Stacked inside the panel: it is only as wide as the chevron's corner allows, and an inline three-across row overflows it, clipping maximize and close off the end.
     let folded_controls = css
         .split(".app-overflow-panel .window-controls {")
@@ -144,6 +154,39 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
         ),
         "the narrow override shifted the whole left group right"
     );
+}
+
+#[test]
+fn a_shut_pane_leaves_the_bars_left_zone_sized_by_its_own_buttons() {
+    let css = reading_mode_css();
+
+    let lead = css
+        .split(".app-bar-lead {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .expect("stylesheet defines .app-bar-lead");
+    // Open, the zone still follows the rail so the tabs begin at the pane's edge.
+    assert_contains(lead, "width: var(--library-rail-width, 240px);");
+    // Shut, it sizes from content instead. `fit-content` alone was not enough: a Mac squeezed the library button out from under the tab strip, and the button is the only way back to the pane.
+    assert_contains(lead, "min-width: fit-content;");
+    assert_contains(
+        css,
+        ".app-bar:not(.has-rail) .app-bar-lead {\n  width: auto;\n}",
+    );
+
+    // The close's motion is untouched: the rail still goes to zero, and the zone's three legs still animate its width, so the flip to auto rides in behind them with the closed class.
+    let html = app_shell_page();
+    assert_contains(
+        &html,
+        "document.documentElement.style.setProperty('--library-rail-width', '0px');",
+    );
+    for leg in [
+        "body.is-library-opening .app-bar-lead {",
+        "body.is-library-closing .app-bar-lead {",
+        "body.is-library-settling .app-bar-lead {",
+    ] {
+        assert_contains(css, leg);
+    }
 }
 
 #[test]

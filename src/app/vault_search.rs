@@ -186,10 +186,11 @@ fn spawn_search_worker(
             }
             let overtaken = || !generation.is_current(job.generation);
             let within = job.within.as_ref().map(|paths| paths.as_slice());
-            let Some(results) = job
-                .corpus
-                .search_until(&job.query.parsed, within, &overtaken)
-            else {
+            let host = DesktopHost {
+                vault: Some(&job.corpus),
+                ..DesktopHost::default()
+            };
+            let Some(results) = host.search(&job.query.parsed, within, &overtaken) else {
                 continue;
             };
             if proxy
@@ -210,9 +211,12 @@ fn spawn_search_worker(
 /// The whole scan, run to completion off the worker: the fallback path when the worker thread has died and this query would otherwise go unanswered.
 fn search_ready(job: SearchJob) -> UserEvent {
     let within = job.within.as_ref().map(|paths| paths.as_slice());
-    let results = job
-        .corpus
-        .search_until(&job.query.parsed, within, &|| false)
+    let host = DesktopHost {
+        vault: Some(&job.corpus),
+        ..DesktopHost::default()
+    };
+    let results = host
+        .search(&job.query.parsed, within, &|| false)
         .unwrap_or_default();
     UserEvent::SearchReady {
         scope: job.scope,

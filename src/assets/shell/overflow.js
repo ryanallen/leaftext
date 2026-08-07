@@ -19,6 +19,11 @@ const overflowCandidates = [
   { el: document.getElementById('forwardButton'), home: historyActions, inLead: true },
   ...Array.from(appActionsItems.children).map((el) => ({ el, home: appActionsItems })),
 ].filter((entry) => entry.el && entry.home);
+// The menu's own order, separate from the order things fold in — items go in as they leave the bar, rightmost first, which would otherwise put close under the pointer of somebody who opened the menu to go back a page. The window buttons go to the foot; on a Mac they are hidden and the menu is the rest in this order.
+const overflowMenuOrder = [
+  ...overflowCandidates.filter((entry) => entry.el.id !== 'windowControls'),
+  ...overflowCandidates.filter((entry) => entry.el.id === 'windowControls'),
+].map((entry) => entry.el);
 // Each affected container's children as they started, non-candidates included.
 const overflowHomes = new Map();
 for (const { home } of overflowCandidates) {
@@ -51,6 +56,10 @@ function refitAppBar() {
       if (el.hidden || el.offsetParent === null) continue;
       if (inLead && leadIsPinned) continue;
       overflowPanel.prepend(el);
+    }
+    // Laid out only once folding has finished: each fold has to free real width before the next measurement, so the order things go in cannot also be the order they read in. appendChild on a child already here moves it, so one walk seats them all.
+    for (const el of overflowMenuOrder) {
+      if (el.parentElement === overflowPanel) overflowPanel.appendChild(el);
     }
     const folded = overflowPanel.childElementCount > 0;
     appTrailing.classList.toggle('has-overflow', folded);

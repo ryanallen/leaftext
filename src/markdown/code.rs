@@ -24,9 +24,12 @@ pub(crate) fn render_code_block(capture: &CodeBlockCapture, source_path: &Path) 
         .map(|language| language.display_name)
         .unwrap_or(requested_language);
     let language_class = format!("language-{}", safe_css_identifier(display_language));
+    #[cfg(feature = "highlight")]
     let highlighted = language
         .and_then(|language| highlight_code(&capture.code, &language))
         .unwrap_or_else(|| encode_text(&capture.code).to_string());
+    #[cfg(not(feature = "highlight"))]
+    let highlighted = encode_text(&capture.code).to_string();
     format!(
         r#"<pre class="highlight" data-language="{}"><code class="{}">{}</code></pre>"#,
         encode_double_quoted_attribute(display_language),
@@ -180,6 +183,7 @@ pub(crate) fn language_definition(language: &str) -> Option<LanguageDefinition> 
 }
 
 /// Every `.syn-` rule in `assets/reading.css`, as the class set one element must carry to match it. The class names are this table's union, and a token keeps exactly the classes of the rules it satisfies — `the_syntax_rules_match_the_stylesheet` fails when the two drift, because a missing rule goes uncolored rather than loud.
+#[cfg(feature = "highlight")]
 pub(crate) const SYNTAX_STYLE_RULES: &[&[&str]] = &[
     &["attribute"],
     &["boolean"],
@@ -213,6 +217,7 @@ pub(crate) const SYNTAX_STYLE_RULES: &[&[&str]] = &[
 ];
 
 /// The class names, sorted and deduplicated — a class's index here is its bit in the masks below, so the emitted class order is stable.
+#[cfg(feature = "highlight")]
 pub(crate) fn styled_syntax_classes() -> &'static [&'static str] {
     static CLASSES: OnceLock<Vec<&'static str>> = OnceLock::new();
     CLASSES.get_or_init(|| {
@@ -232,6 +237,7 @@ pub(crate) fn styled_syntax_classes() -> &'static [&'static str] {
 }
 
 /// One bit per class of each rule, so "does this token satisfy the rule" is `rule & !token == 0`.
+#[cfg(feature = "highlight")]
 fn syntax_rule_masks() -> &'static [u64] {
     static MASKS: OnceLock<Vec<u64>> = OnceLock::new();
     MASKS.get_or_init(|| {
@@ -245,6 +251,7 @@ fn syntax_rule_masks() -> &'static [u64] {
     })
 }
 
+#[cfg(feature = "highlight")]
 fn class_bit(class: &str) -> u64 {
     styled_syntax_classes()
         .iter()
@@ -254,6 +261,7 @@ fn class_bit(class: &str) -> u64 {
 }
 
 /// The class list for everything `carried`, as the union of the rules it satisfies. A class in no satisfied rule cannot affect the cascade, so dropping it paints the same — and dropping all of them means no element is needed.
+#[cfg(feature = "highlight")]
 pub(crate) fn styled_class_list(carried: u64) -> String {
     let styled = syntax_rule_masks()
         .iter()
@@ -280,6 +288,7 @@ pub(crate) fn styled_class_list(carried: u64) -> String {
 /// Highlight `code` as one `<span class="syn-…">` per run of identically-styled text. Syntect's `ClassedHTMLGenerator` instead nests a span per scope level naming every scope atom, which on a 4 MB glossary was 336k spans carrying 16 MB of class text — mostly classes no rule could match, since Markdown puts a `meta.paragraph` scope over the whole document and `syn-meta` styles nothing on its own. Keeping only the satisfied rules' classes leaves plain prose with no span at all.
 ///
 /// Spans close at every newline, and the newline sits outside them, because the code view splits this markup per source line.
+#[cfg(feature = "highlight")]
 pub(crate) fn highlight_code(code: &str, language: &LanguageDefinition) -> Option<String> {
     let syntax_set = syntax_set();
     let syntax = find_syntax(syntax_set, language)?;
@@ -322,6 +331,7 @@ pub(crate) fn highlight_code(code: &str, language: &LanguageDefinition) -> Optio
 }
 
 /// Append `text` under the class list `wanted`, reusing the span already open when the list has not changed — that reuse is what merges adjacent tokens into one element.
+#[cfg(feature = "highlight")]
 pub(crate) fn push_run(html: &mut String, open: &mut String, wanted: &str, text: &str) {
     if text.is_empty() {
         return;
@@ -342,12 +352,14 @@ pub(crate) fn push_run(html: &mut String, open: &mut String, wanted: &str, text:
 }
 
 /// The classes a token carries, cached at both steps a document repeats: one scope's bits, and one whole stack's class list.
+#[cfg(feature = "highlight")]
 #[derive(Default)]
 struct ScopeClasses {
     bits: HashMap<Scope, u64>,
     lists: HashMap<u64, String>,
 }
 
+#[cfg(feature = "highlight")]
 impl ScopeClasses {
     fn scope_bits(&mut self, scope: Scope) -> u64 {
         if let Some(bits) = self.bits.get(&scope) {
@@ -376,11 +388,13 @@ impl ScopeClasses {
     }
 }
 
+#[cfg(feature = "highlight")]
 pub(crate) fn syntax_set() -> &'static SyntaxSet {
     static SYNTAX_SET: OnceLock<SyntaxSet> = OnceLock::new();
     SYNTAX_SET.get_or_init(two_face::syntax::extra_newlines)
 }
 
+#[cfg(feature = "highlight")]
 pub(crate) fn find_syntax<'a>(
     syntax_set: &'a SyntaxSet,
     language: &LanguageDefinition,

@@ -112,7 +112,8 @@ impl Reader {
         {
             return Ok(cache.document.clone());
         }
-        let document = opened_document_from_source(&source.text, path);
+        let document =
+            opened_document_from_source_with_host(&source.text, path, &DesktopHost::default());
         if let Some(tab) = self.workspace.tabs.get_mut(index) {
             tab.rendered = Some(RenderedCache {
                 path: path.to_path_buf(),

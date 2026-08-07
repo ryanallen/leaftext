@@ -84,6 +84,11 @@ pub fn platform_asset_suffix() -> &'static str {
     {
         "-macos-universal.dmg"
     }
+    // A browser core has no installer to offer, which the page already reads as notify-only.
+    #[cfg(not(any(windows, target_os = "macos")))]
+    {
+        ""
+    }
 }
 
 /// Root of the staging area, beside the vault registry in the app data folder.

@@ -83,7 +83,7 @@ fn markdown_pipeline_stages_keep_raw_rendering_before_sanitization() {
         "<script>alert(1)</script>\n\nVisit www.example.com.",
         MarkdownParserConfig::github_flavored(),
     );
-    let events = register_markdown_extensions(events, source_path);
+    let events = register_markdown_extensions(events, source_path, &DesktopHost::default());
     let raw_html = render_markdown_events_to_html(events);
 
     assert_contains(&raw_html, "<script>alert(1)</script>");

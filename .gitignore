@@ -1,5 +1,7 @@
 /target
 /dist
+# The two browser modules, built by `just build-web`.
+/web/dist
 .release-tag
 /.tmp
 .agents/settings.local.json

@@ -17,14 +17,17 @@ pub use vaults::*;
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+#[cfg(feature = "desktop")]
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+#[cfg(feature = "desktop")]
 use rusqlite::{params, Connection, OpenFlags};
 use serde::Serialize;
 
 use crate::DocumentFormat;
 
 /// Latest applied schema migration. 1–4 were the crawl's: files, headings, chunks, full-text search, frontmatter and links, all of them a manifest of the whole computer. They are gone, and 5 — the vaults — is the whole schema.
+#[cfg(feature = "desktop")]
 pub(super) const SCHEMA_VERSION: i64 = 5;
 
 // ---------------------------------------------------------------------------
@@ -119,12 +122,15 @@ pub struct SearchResults {
 // Errors / small helpers
 // ---------------------------------------------------------------------------
 
+#[cfg(feature = "desktop")]
 pub(super) type DbResult<T> = Result<T, String>;
 
+#[cfg(feature = "desktop")]
 pub(super) fn to_err<E: std::fmt::Display>(error: E) -> String {
     error.to_string()
 }
 
+#[cfg(feature = "desktop")]
 pub(super) fn now_secs() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)

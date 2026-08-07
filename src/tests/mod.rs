@@ -32,6 +32,7 @@ mod settings_paths;
 mod theme_registry;
 mod updater;
 mod vault_corpus;
+mod web_core;
 
 #[derive(Debug, Clone, Copy)]
 struct Rgb {

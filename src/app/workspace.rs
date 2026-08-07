@@ -123,7 +123,7 @@ impl Workspace {
             .and_then(|index| self.tabs.get(index))
             .is_some_and(|tab| tab.code_view);
         let mut tab = Tab {
-            title: tab_title_from_path(&path),
+            title: leaftext::tab_title_from_path(&path),
             code_view,
             ..Tab::default()
         };
@@ -136,7 +136,7 @@ impl Workspace {
     pub(crate) fn open_untitled(&mut self) -> PathBuf {
         let path = self.next_untitled_path();
         let mut tab = Tab {
-            title: tab_title_from_path(&path),
+            title: leaftext::tab_title_from_path(&path),
             edit: Some(EditableDocument::untitled(path.clone())),
             ..Tab::default()
         };
@@ -238,13 +238,6 @@ impl Workspace {
 pub(crate) const UNTITLED_STEM: &str = "Untitled";
 
 /// Fallback tab label (file stem) used until the document title is known.
-pub(crate) fn tab_title_from_path(path: &Path) -> String {
-    path.file_stem()
-        .and_then(|stem| stem.to_str())
-        .map(str::to_string)
-        .unwrap_or_else(|| path.display().to_string())
-}
-
 /// How the reader's scroll position should behave when a render replaces the document view.
 #[derive(Clone)]
 pub(crate) enum ScrollIntent {

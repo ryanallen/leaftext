@@ -2,6 +2,45 @@
 
 use super::*;
 
+/// A `file://` URL for a folder, which is what a rendered document's `base href` is. `None` where there are no file paths to make a URL out of — a browser has neither, and `url` does not compile the conversion for that target at all.
+pub(crate) fn file_url_for_directory(directory: &Path) -> Option<Url> {
+    #[cfg(any(unix, windows))]
+    {
+        Url::from_directory_path(directory).ok()
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let _ = directory;
+        None
+    }
+}
+
+/// A `file://` URL for one file. `None` where there are none, as above.
+pub(crate) fn file_url_for_path(path: &Path) -> Option<Url> {
+    #[cfg(any(unix, windows))]
+    {
+        Url::from_file_path(path).ok()
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let _ = path;
+        None
+    }
+}
+
+/// The path a `file://` URL points at, and `None` on a host with no file paths.
+pub(crate) fn path_from_file_url(url: &Url) -> Option<PathBuf> {
+    #[cfg(any(unix, windows))]
+    {
+        url.to_file_path().ok()
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let _ = url;
+        None
+    }
+}
+
 pub(crate) fn percent_encode_url_path_segment(segment: &str) -> String {
     if segment == "." {
         return "%2E".to_string();

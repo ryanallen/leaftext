@@ -88,9 +88,7 @@ pub(crate) fn markdown_image_destination_for_html(
 
     if let Ok(url) = Url::parse(destination) {
         if url.scheme() == "file" {
-            return url
-                .to_file_path()
-                .ok()
+            return path_from_file_url(&url)
                 .and_then(|path| local_image_relative_url_for_path(&path, &source_dir));
         }
     }
@@ -158,9 +156,7 @@ pub(crate) fn resolve_image_destination(destination: &str, source_path: &Path) -
     if let Some(url) = parse_image_destination_url(destination) {
         return match url.scheme() {
             "http" | "https" => Some(url.to_string()),
-            "file" => url
-                .to_file_path()
-                .ok()
+            "file" => path_from_file_url(&url)
                 .and_then(|path| local_image_url_for_absolute_path(&path, source_path)),
             _ => None,
         };

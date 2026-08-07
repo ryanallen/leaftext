@@ -28,6 +28,7 @@ pub(crate) use paths::*;
 pub(crate) use rawhtml::*;
 
 // The crate's public surface. A pub(crate) glob cannot carry these out of the crate, and lib.rs re-exports them, so name them explicitly.
+pub use github::RepositoryContext;
 pub use image_protocol::{
     is_local_image_path, local_image_protocol_response, local_image_source_dir,
 };
@@ -35,10 +36,12 @@ pub use images::markdown_image_insert_destination;
 
 use crate::*;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub(crate) struct MarkdownSource<'a> {
     pub(crate) markdown: &'a str,
     pub(crate) source_path: &'a Path,
+    /// Who answers the four things the render cannot work out from the text alone.
+    pub(crate) host: &'a dyn LeafHost,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -57,19 +60,26 @@ impl MarkdownParserConfig {
 pub(crate) fn render_markdown_body(source: MarkdownSource<'_>) -> String {
     // A leading `--- ... ---` block renders as a metadata table, not raw Markdown (which would become a stray heading/thematic break).
     let (frontmatter_html, body_markdown) = match split_leading_frontmatter(source.markdown) {
-        Some((inner, rest)) => (render_frontmatter_table(&inner, source.source_path), rest),
+        Some((inner, rest)) => (
+            render_frontmatter_table(&inner, source.source_path, source.host),
+            rest,
+        ),
         None => (String::new(), source.markdown),
     };
     let parser_config = MarkdownParserConfig::github_flavored();
     let events = parse_markdown_source(body_markdown, parser_config);
     let events = sanitize_raw_markdown_html(events);
-    let events = register_markdown_extensions(events, source.source_path);
+    let events = register_markdown_extensions(events, source.source_path, source.host);
     let body = render_markdown_events_to_html(events);
     let body = table_alignment_as_attribute(&body);
     let body = resolve_rendered_html_image_urls(&body, source.source_path);
     let body = format!("{frontmatter_html}{body}");
     // The size goes on last, after the sanitizer: the numbers are ours, and `img` keeps the attribute list it was given.
-    stamp_image_intrinsic_sizes(&sanitize_rendered_html(&body), source.source_path)
+    stamp_image_intrinsic_sizes(
+        &sanitize_rendered_html(&body),
+        source.source_path,
+        source.host,
+    )
 }
 
 /// A table column's alignment, moved from an inline `style` onto `align`, which `td` and `th` are allowed to keep. `style` is never allowed through the sanitizer — it is an injection surface — so without this, `:-:` centers nothing.
@@ -125,7 +135,11 @@ pub(crate) fn split_leading_frontmatter(markdown: &str) -> Option<(String, &str)
 /// Render a parsed frontmatter block as a `key`/`value` metadata table, or an empty string when nothing parses. Cells are untrusted, so they're escaped.
 ///
 /// This is also the one place that runs once per document opened, so it is where everything in the block that did not land is gathered: to the log here, and onto the table for the page to raise as one growl.
-pub(crate) fn render_frontmatter_table(inner: &str, source_path: &Path) -> String {
+pub(crate) fn render_frontmatter_table(
+    inner: &str,
+    source_path: &Path,
+    host: &dyn LeafHost,
+) -> String {
     let mut parsed = crate::store::parse_frontmatter(&crate::store::FrontmatterBlock::detached(
         inner.to_string(),
     ));
@@ -135,11 +149,11 @@ pub(crate) fn render_frontmatter_table(inner: &str, source_path: &Path) -> Strin
         .map(|refusal| format!("{:?} — {}", refusal.line, refusal.reason))
         .collect();
     if parsed.fields.is_empty() {
-        say_what_did_not_land(source_path, &unread);
+        say_what_did_not_land(source_path, &unread, host);
         return String::new();
     }
     // What the vault and the note itself say a field is, over what its value's own shape said.
-    let vault_types = crate::store::vault_types_for(source_path);
+    let vault_types = host.field_types(source_path);
     let pinned = crate::store::pinned_types(&parsed.fields);
     crate::store::apply_types(&mut parsed.fields, &vault_types, &pinned);
     let (classes, unknown_classes) = document_classes(&parsed.fields);
@@ -148,7 +162,7 @@ pub(crate) fn render_frontmatter_table(inner: &str, source_path: &Path) -> Strin
             .iter()
             .map(|name| format!("{name:?} — no style of that name here")),
     );
-    say_what_did_not_land(source_path, &unread);
+    say_what_did_not_land(source_path, &unread, host);
 
     let mut rows = String::new();
     for field in &parsed.fields {
@@ -178,16 +192,16 @@ fn attribute(name: &str, value: &str) -> String {
 }
 
 /// Everything in the block that did not land, said once per document. The log is where it lives on the host side; the growl the page raises off `data-leaf-unread` is what a reader actually sees.
-fn say_what_did_not_land(source_path: &Path, unread: &[String]) {
+fn say_what_did_not_land(source_path: &Path, unread: &[String], host: &dyn LeafHost) {
     if unread.is_empty() {
         return;
     }
-    eprintln!(
+    host.log(&format!(
         "{}: frontmatter, {} thing(s) not read: {}",
         source_path.display(),
         unread.len(),
         unread.join("; ")
-    );
+    ));
 }
 
 /// A style a document may ask for by name in its `cssclasses`.
@@ -269,8 +283,9 @@ pub(crate) fn parse_markdown_source(
 pub(crate) fn register_markdown_extensions(
     events: Vec<Event<'static>>,
     source_path: &Path,
+    host: &dyn LeafHost,
 ) -> Vec<Event<'static>> {
-    let repository = repository_context(source_path.parent().unwrap_or_else(|| Path::new(".")));
+    let repository = host.repository(source_path.parent().unwrap_or_else(|| Path::new(".")));
     let events = button_links(events);
     let events = linkify_plain_text(events);
     let events = github_markdown_extras(events, repository.as_ref(), source_path);

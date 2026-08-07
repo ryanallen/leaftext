@@ -100,10 +100,11 @@ pub(crate) fn github_markdown_extras(
     relocate_footnote_definitions(transformed, footnote_ranges, &footnotes)
 }
 
+/// Named in [`LeafHost`](crate::LeafHost), so it is the host's to supply rather than the renderer's to find.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct RepositoryContext {
-    pub(crate) owner: String,
-    pub(crate) repo: String,
+pub struct RepositoryContext {
+    pub owner: String,
+    pub repo: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

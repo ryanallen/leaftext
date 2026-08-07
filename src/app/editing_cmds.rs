@@ -58,7 +58,7 @@ pub(crate) fn source_payload_response(uri: &str) -> SourcePayload {
 
 /// Render a tab's reading view from its edit buffer, so unsaved edits show. The buffer's format came from its path, so the shared router picks the same renderer an initial open would have.
 pub(crate) fn reading_document_from_buffer(edit: &EditableDocument, path: &Path) -> OpenedDocument {
-    opened_document_from_source(edit.text(), path)
+    opened_document_from_source_with_host(edit.text(), path, &DesktopHost::default())
 }
 
 /// The active tab's edit buffer, seeded from disk the first time; re-entry reuses it so unsaved edits survive. `what` names the caller in the error line. Also returns the tab's index.
@@ -203,7 +203,7 @@ pub(crate) fn name_untitled_document(
             edit.adopt_path(chosen.clone());
         }
         tab.history.replace_current(chosen.clone());
-        tab.title = tab_title_from_path(&chosen);
+        tab.title = leaftext::tab_title_from_path(&chosen);
         // Cached under the old name, and the render reads the buffer anyway.
         tab.rendered = None;
     }
@@ -225,7 +225,13 @@ pub(crate) fn save_active_document(
     let text = edit.text().to_string();
     let path_str = path.display().to_string();
 
-    let script = match write_source(&path, &text, edit.spelling) {
+    let script = match DesktopHost::default().save(
+        &path,
+        &SourceText {
+            text: text.clone(),
+            spelling: edit.spelling,
+        },
+    ) {
         Ok(()) => {
             edit.mark_saved();
             // Self-save suppression: reload_active_document skips when the hash matches, so our own write-back FileChanged won't clobber the buffer.
@@ -280,7 +286,13 @@ pub(crate) fn autosave_active_buffer(workspace: &mut Workspace, file_watch: &mut
         return;
     };
     let text = edit.text().to_string();
-    match write_source(&edit.path, &text, edit.spelling) {
+    match DesktopHost::default().save(
+        &edit.path,
+        &SourceText {
+            text: text.clone(),
+            spelling: edit.spelling,
+        },
+    ) {
         Ok(()) => {
             edit.mark_saved();
             file_watch.active_hash = Some(content_hash(&text));
@@ -301,7 +313,13 @@ pub(crate) fn toggle_task_marker(
     };
     edit.toggle_task_without_undo(index);
     let text = edit.text().to_string();
-    match write_source(&edit.path, &text, edit.spelling) {
+    match DesktopHost::default().save(
+        &edit.path,
+        &SourceText {
+            text: text.clone(),
+            spelling: edit.spelling,
+        },
+    ) {
         Ok(()) => {
             edit.mark_saved();
             file_watch.active_hash = Some(content_hash(&text));

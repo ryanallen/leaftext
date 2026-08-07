@@ -1179,7 +1179,7 @@ fn the_render_cache_answers_only_for_the_same_file_unchanged() {
     let cache = RenderedCache {
         path: path.clone(),
         hash,
-        document: opened_document_from_source(text, &path),
+        document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
     };
 
     assert!(cache.answers_for(&path, hash), "same file, unchanged");
@@ -1210,7 +1210,7 @@ fn a_tab_starts_with_nothing_cached_and_keeps_what_it_renders() {
     workspace.tabs[0].rendered = Some(RenderedCache {
         path: path.clone(),
         hash: content_hash(text),
-        document: opened_document_from_source(text, &path),
+        document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
     });
     assert!(
         workspace.tabs[1].rendered.is_none(),

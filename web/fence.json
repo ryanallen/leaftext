@@ -1,0 +1,5 @@
+{
+  "why": "The desktop highlights through oniguruma, a C library; the browser module cannot use it and highlights through a regex engine written in Rust. Same syntax dumps, different engine — so the one thing that could quietly differ is the markup itself. Both sides render this fence and compare against this file: the Rust test in src/tests/web_core.rs, and scripts/build-web.mjs against the built module.",
+  "markdown": "```rust\nfn main() {}\n```\n",
+  "code_html": "<pre class=\"highlight\" data-language=\"Rust\"><code class=\"language-rust\"><span class=\"syn-function syn-storage syn-type\">fn</span><span class=\"syn-function\"> </span><span class=\"syn-entity syn-function\">main</span><span class=\"syn-function syn-punctuation\">()</span><span class=\"syn-function\"> </span><span class=\"syn-function syn-punctuation\">{}</span>\n</code></pre>"
+}

@@ -18,8 +18,11 @@ pub fn pager_loaded_script(path: impl AsRef<Path>, html: &str) -> String {
     format!("window.leafSetPager({state});")
 }
 
-pub(crate) fn pager_loading_html() -> &'static str {
-    r#"<nav class="docs-pager docs-pager-loading" aria-label="Document navigation" aria-busy="true"><span class="docs-pager-skeleton"><span class="docs-pager-label-skeleton"></span><span class="docs-pager-title-skeleton"></span></span><span class="docs-pager-skeleton docs-pager-next"><span class="docs-pager-label-skeleton"></span><span class="docs-pager-title-skeleton"></span></span></nav>"#
+/// The waiting state under a document, for a host that can find its neighbors and mean it.
+pub fn pager_loading_html() -> Option<&'static str> {
+    Some(
+        r#"<nav class="docs-pager docs-pager-loading" aria-label="Document navigation" aria-busy="true"><span class="docs-pager-skeleton"><span class="docs-pager-label-skeleton"></span><span class="docs-pager-title-skeleton"></span></span><span class="docs-pager-skeleton docs-pager-next"><span class="docs-pager-label-skeleton"></span><span class="docs-pager-title-skeleton"></span></span></nav>"#,
+    )
 }
 
 /// Build the Previous/Next pager for `current`. Ordering is a depth-first walk of the doc tree: at each folder, non-README files first (sorted by name), then each subfolder (its README as the landing page), then that folder's pages. The root is the highest ancestor still covered by a chain of READMEs. Empty string when the file has no neighbors.
@@ -52,15 +55,15 @@ pub(crate) fn pager_html(current: &Path) -> String {
     }
 
     let button = |entry: &PagerEntry, side: &str, kicker: &str| -> String {
-        match Url::from_file_path(&entry.path) {
-            Ok(url) => format!(
+        match file_url_for_path(&entry.path) {
+            Some(url) => format!(
                 r#"<a class="docs-pager-{side}" href="{href}"><span class="docs-pager-label">{kicker}</span>{title}</a>"#,
                 side = side,
                 href = encode_text(url.as_str()),
                 kicker = kicker,
                 title = encode_text(&entry.label),
             ),
-            Err(_) => "<span></span>".to_string(),
+            None => "<span></span>".to_string(),
         }
     };
     let prev_html = prev.map_or_else(

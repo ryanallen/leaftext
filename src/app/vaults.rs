@@ -395,7 +395,7 @@ fn build_document_graph_off_thread(
     request: GraphRequest,
 ) {
     off_loop(proxy, move || {
-        let graph = document_graph(&seed, &request);
+        let graph = DesktopHost::default().graph(&seed, &request);
         UserEvent::GraphReady {
             source: GraphSource::Document(seed),
             graph,

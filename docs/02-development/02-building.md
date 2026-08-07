@@ -93,8 +93,16 @@ Each step in the verification pipeline can also be run on its own:
 | Ask pipe     | `just check-mcp`            | Fail when the MCP wrapper, its registration and `src/pipe.rs` disagree about what can be asked, or where |
 | Gesture driver | `just check-driver`       | Fail when the driver cannot read its own step list back, or an attached run accepts a flag that would rewrite your settings |
 | Full verify  | `just verify`               | All steps above in sequence                    |
+| Browser modules | `just build-web`         | Build both browser modules, render a document through each, and hold the core to its size ceiling. Needs the `wasm32-unknown-unknown` target, so it is not part of `verify` |
+| Static site  | `just export-web [folder]`  | Write a folder of documents out as a static Leaftext site — no server needed to read it |
+| Browser preview | `just preview-web [folder]` | Export, then serve that folder locally so it can be looked at |
+| Browser driver | `just drive-web <url> [steps]` | Click things in the exported site, read the page back, photograph it |
 
 Additional convenience tasks are available via `just --list`, including `just sync-vendor` to recopy the vendored assets into `site/` and `just bundle-themes` to recompile `themes.md` from the `themes/` folder.
+
+### The browser build
+
+The renderer also builds for the browser. `rustup target add wasm32-unknown-unknown` once, then `just build-web` produces three modules — the core, the same with the code highlighter compiled in, and one carrying the app's whole page and front end — and proves each renders. `just export-web [folder]` writes a folder of documents out as a static Leaftext site that needs no server; `just preview-web [folder]` exports and serves it locally, because a page cannot fetch its neighbors off `file://`. See [The browser modules](01-architecture.md#the-browser-modules).
 
 ### Asking a running app
 

@@ -10,7 +10,7 @@ use crate::store::{
 use crate::vault_corpus::{read_document, CorpusDocument};
 use crate::{
     append_title_text, normalize_title_whitespace, parse_markdown_source,
-    register_markdown_extensions, MarkdownParserConfig,
+    register_markdown_extensions, DesktopHost, MarkdownParserConfig,
 };
 
 use pulldown_cmark::{Event, Tag, TagEnd};
@@ -254,7 +254,7 @@ pub fn read_folder_note(name: &str, folder: &Path) -> Option<CorpusDocument> {
 /// Runs the renderer's own pipeline (`register_markdown_extensions` ends by assigning heading ids) and reads the ids back off the events — one definition of a slug, so a completed `](#anchor)` always lands.
 pub fn document_headings(text: &str, path: &Path) -> Vec<HeadingItem> {
     let events = parse_markdown_source(text, MarkdownParserConfig::github_flavored());
-    let events = register_markdown_extensions(events, path);
+    let events = register_markdown_extensions(events, path, &DesktopHost::default());
     let mut out = Vec::new();
     let mut capture: Option<(String, String)> = None;
     for event in events {

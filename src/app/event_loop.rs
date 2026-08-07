@@ -514,9 +514,16 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::OpenExternal { url } => {
-                    if let Err(error) = open_with_os(&url) {
-                        eprintln!("Failed to open {url} with the OS: {error}");
+                    let open = |target: &str| {
+                        if let Err(error) = open_with_os(target) {
+                            eprintln!("Failed to open {target} with the OS: {error}");
+                        }
+                    };
+                    DesktopHost {
+                        open_with_os: Some(&open),
+                        ..DesktopHost::default()
                     }
+                    .open_link(&url);
                 }
                 IpcCommand::OpenGlossary { href } => {
                     let Some(current_path) = reader.workspace.active_path().map(Path::to_path_buf)

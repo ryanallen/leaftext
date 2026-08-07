@@ -3,10 +3,41 @@ name = "leaftext"
 version = "0.1.483"
 edition = "2021"
 
+# The window, the web view, the file dialog, the watcher and SQLite are the desktop's, and none of them builds for a browser. They are optional so the library alone — the renderer, the format table, the editor's maps and the host boundary — compiles for `wasm32`, which is what a browser core is. The binary asks for them by name, so a plain `cargo build` is unchanged.
+[features]
+default = ["desktop"]
+desktop = [
+    "dep:tao",
+    "dep:wry",
+    "dep:rfd",
+    "dep:rusqlite",
+    "dep:notify-debouncer-mini",
+    "highlight",
+    "syntect/regex-onig",
+    "two-face/syntect-onig",
+]
+# Coloring code. Optional because the syntax dumps and the regex engine are four fifths of a browser module, and most documents have no code in them — so a browser core ships without it and fetches it only for a document that turns out to have a fence. A fence renders as plain text without it, never as an error.
+highlight = ["dep:syntect", "dep:two-face"]
+# The same highlighter over a regex engine written in Rust. The desktop's is oniguruma, a C library with no wasm build.
+web = ["highlight", "syntect/regex-fancy", "two-face/syntect-fancy"]
+
+[[bin]]
+name = "leaftext"
+path = "src/main.rs"
+required-features = ["desktop"]
+
+# The browser package. It is a member rather than a folder because a browser loads a module and the desktop links a library, and only one of the two can be a crate's output at a time.
+[workspace]
+members = ["web"]
+
 [profile.release]
 strip = true
 lto = "thin"
 codegen-units = 1
+
+# The module a page downloads, so size is the thing to optimize rather than speed. The desktop keeps its own settings above.
+[profile.release.package.leaftext-web]
+opt-level = "z"
 
 # Parsing, sanitizing and highlighting all happen inside crates, so an unoptimized
 # debug build lies about performance — 3.0s to open a 4MB glossary against 0.5s
@@ -27,7 +58,7 @@ html-escape = "0.2.13"
 # a new crate.
 memchr = "2"
 linkify = "0.11.0"
-notify-debouncer-mini = "0.4"
+notify-debouncer-mini = { version = "0.4", optional = true }
 pulldown-cmark = { version = "0.13.4", default-features = false, features = [
     "html",
 ] }
@@ -37,9 +68,9 @@ pulldown-cmark = { version = "0.13.4", default-features = false, features = [
 mail-parser = { version = "0.11", default-features = false, features = [
     "full_encoding",
 ] }
-rfd = "0.17.2"
+rfd = { version = "0.17.2", optional = true }
 roxmltree = "0.20"
-rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite = { version = "0.31", features = ["bundled"], optional = true }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 # Only the highlighter and its syntax set are used, and the syntaxes come from
@@ -50,9 +81,8 @@ serde_json = "1.0.150"
 syntect = { version = "5.3.0", default-features = false, features = [
     "parsing",
     "html",
-    "regex-onig",
-] }
-tao = "0.35.3"
+], optional = true }
+tao = { version = "0.35.3", optional = true }
 # Tells a real date in a note's fields from text shaped like one. Already in the
 # tree — wry builds on it through cookie, with `parsing` and `macros` already
 # switched on — so this is a line, not a new crate and not a new feature.
@@ -60,9 +90,9 @@ time = { version = "0.3.47", default-features = false, features = [
     "parsing",
     "macros",
 ] }
-two-face = "0.5.1"
+two-face = { version = "0.5.1", default-features = false, optional = true }
 url = "2.5.8"
-wry = "0.55.1"
+wry = { version = "0.55.1", optional = true }
 # The one YAML parser in the binary: reads the documents the app opens, and is
 # maintained and fuzzed, which the input it is pointed at requires. `encoding`
 # is off because files arrive as Rust strings already decoded.

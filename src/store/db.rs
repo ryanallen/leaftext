@@ -7,6 +7,7 @@ use super::*;
 /// Migration 5: vaults. A vault is a folder the app treats as a library root, and it is recorded here — nothing is written into the folder itself, so adding one leaves the user's files untouched. `root_path` is unique: adding the same folder twice is the same vault, not a second one.
 ///
 /// `app_state` is the app's own scratch row store; `active_vault` lives there (absent, empty, or `0` all mean the whole library).
+#[cfg(feature = "desktop")]
 const MIGRATION_5_SQL: &str = r#"
 CREATE TABLE vaults (
     id        INTEGER PRIMARY KEY,
@@ -22,6 +23,7 @@ CREATE TABLE app_state (
 "#;
 
 /// Migration 6: drop the crawl. `IF EXISTS` throughout because a database created after this point never had these tables, and one created before has all of them. The FTS5 mirror goes before `chunks`, which owns it.
+#[cfg(feature = "desktop")]
 const MIGRATION_6_SQL: &str = r#"
 DROP TRIGGER IF EXISTS chunks_ai;
 DROP TRIGGER IF EXISTS chunks_ad;
@@ -39,6 +41,7 @@ DROP TABLE IF EXISTS scan_roots;
 "#;
 
 /// Open (creating if needed) the database, apply PRAGMAs, and migrate.
+#[cfg(feature = "desktop")]
 pub fn open_db(data_dir: &Path) -> DbResult<Connection> {
     std::fs::create_dir_all(data_dir).map_err(to_err)?;
     let mut conn = Connection::open(manifest_path(data_dir)).map_err(to_err)?;
@@ -54,6 +57,7 @@ pub fn open_db(data_dir: &Path) -> DbResult<Connection> {
 }
 
 /// A read-only connection. Safe alongside the writer under WAL.
+#[cfg(feature = "desktop")]
 pub fn open_read_db(data_dir: &Path) -> DbResult<Connection> {
     let conn = Connection::open_with_flags(
         manifest_path(data_dir),
@@ -67,6 +71,7 @@ pub fn open_read_db(data_dir: &Path) -> DbResult<Connection> {
     Ok(conn)
 }
 
+#[cfg(feature = "desktop")]
 fn run_migrations(conn: &mut Connection) -> DbResult<()> {
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS schema_migrations (

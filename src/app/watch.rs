@@ -232,7 +232,7 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
     }
 
     // Render through the same path as an initial open, reusing the content already read for the hash-gate.
-    let document = opened_document_from_source(&contents, &path);
+    let document = opened_document_from_source_with_host(&contents, &path, &DesktopHost::default());
     if let Some(tab) = workspace.tabs.get_mut(index) {
         tab.title = document.title.clone();
         // Cache it, so switching away and back doesn't redo this render.

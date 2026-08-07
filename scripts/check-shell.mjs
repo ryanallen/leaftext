@@ -2594,6 +2594,56 @@ if (booted) {
     const tiny = booted.hintPlacement(box(10, 10, 40, 40), size, { width: 200, height: 120 });
     if (tiny.left < 14 || tiny.top < 14) throw new Error(`the bubble went off a small window: ${tiny.left},${tiny.top}`);
   });
+
+  check('the chevron menu is laid out in its own order, with the window buttons at the foot', () => {
+    const panel = booted.document.getElementById('appOverflowPanel');
+    const tabBar = booted.document.getElementById('tabBar');
+    const original = { prepend: panel.prepend, appendChild: panel.appendChild, children: panel.children };
+    // Real list semantics for the panel: the fold moves elements into it, and the order they come to rest in is the whole claim — a string in the stylesheet cannot say it.
+    const inside = [];
+    const move = (child) => {
+      const at = inside.indexOf(child);
+      if (at >= 0) inside.splice(at, 1);
+      child.parentElement = panel;
+      return child;
+    };
+    Object.assign(panel, {
+      children: inside,
+      prepend: (child) => inside.unshift(move(child)),
+      appendChild: (child) => inside.push(move(child)) && child,
+    });
+    Object.defineProperty(panel, 'childElementCount', { get: () => inside.length, configurable: true });
+    // A strip that can never fit, so every candidate folds.
+    tabBar.scrollWidth = 900;
+    tabBar.clientWidth = 100;
+    try {
+      booted.refitAppBar();
+      const order = inside.map((el) => el.id);
+      // Back leads because a reader opens this menu to go back a page; the window buttons are last, so close is not the first thing under the pointer. They fold last of all, which is exactly why inserting as they left put them on top.
+      const expected = ['backButton', 'forwardButton', 'windowControls'];
+      if (order.join(',') !== expected.join(',')) {
+        throw new Error(`the menu came out as ${order.join(',')}, not ${expected.join(',')}`);
+      }
+
+      // On a Mac the window buttons stay hidden, because Apple's dots are the window management. A hidden item is skipped by the fold, so the menu is simply the rest in the same order with nothing empty left at its foot.
+      const controls = booted.document.getElementById('windowControls');
+      controls.hidden = true;
+      // Stand in for the unfold: the fake page's containers were empty when the fragment recorded them, so the real refit's first step has nothing to move back out.
+      inside.length = 0;
+      for (const el of [controls, booted.document.getElementById('backButton'), booted.document.getElementById('forwardButton')]) el.parentElement = null;
+      booted.refitAppBar();
+      const mac = inside.map((el) => el.id);
+      controls.hidden = false;
+      if (mac.join(',') !== 'backButton,forwardButton') {
+        throw new Error(`the Mac menu came out as ${mac.join(',')}`);
+      }
+    } finally {
+      delete panel.childElementCount;
+      Object.assign(panel, original);
+      tabBar.scrollWidth = 0;
+      tabBar.clientWidth = 0;
+    }
+  });
 }
 
 // ---- 5. the page reports its own errors -------------------------------------

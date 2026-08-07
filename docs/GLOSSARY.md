@@ -236,7 +236,7 @@ The collapsed table of contents under a document's title, built from its heading
 
 ## Overflow menu
 
-The chevron menu the [app bar](GLOSSARY.md#app-bar)'s buttons fold into as the [tab](GLOSSARY.md#tab) strip fills — trailing actions first, then Back and Forward, then the window controls. Tabs are never squeezed to make room. The [leaf mark](GLOSSARY.md#leaf-mark) and the [library pane](GLOSSARY.md#library-pane) button never fold.
+The chevron menu the [app bar](GLOSSARY.md#app-bar)'s buttons fold into as the [tab](GLOSSARY.md#tab) strip fills — trailing actions first, then Back and Forward, then the window controls. Tabs are never squeezed to make room. The [leaf mark](GLOSSARY.md#leaf-mark) and the [library pane](GLOSSARY.md#library-pane) button never fold. What the menu *reads* in is its own order, with the window controls at the foot: see [When the bar runs out of room](01-features/02-navigation.md#when-the-bar-runs-out-of-room).
 
 ## Padlock
 

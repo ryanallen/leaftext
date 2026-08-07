@@ -11,7 +11,11 @@ const IMAGE_HEADER_READ_LIMIT: u64 = 64 * 1024;
 const IMAGE_MAX_PIXEL_SIZE: u32 = 100_000;
 
 /// Add `width` and `height` to every local image. After the sanitizer on purpose: the numbers are ours, so `img` keeps the attribute allowlist it was given — which is what strips a document's own sizing before we get here.
-pub(crate) fn stamp_image_intrinsic_sizes(html: &str, source_path: &Path) -> String {
+pub(crate) fn stamp_image_intrinsic_sizes(
+    html: &str,
+    source_path: &Path,
+    host: &dyn LeafHost,
+) -> String {
     let Some(source_dir) = local_image_source_dir(source_path) else {
         return html.to_string();
     };
@@ -29,7 +33,7 @@ pub(crate) fn stamp_image_intrinsic_sizes(html: &str, source_path: &Path) -> Str
         let tag = &html[tag_start..tag_end];
 
         stamped.push_str(&html[offset..tag_start]);
-        stamped.push_str(&stamp_img_tag(tag, &source_dir, &mut sizes));
+        stamped.push_str(&stamp_img_tag(tag, &source_dir, &mut sizes, host));
         offset = tag_end;
     }
 
@@ -41,6 +45,7 @@ fn stamp_img_tag(
     tag: &str,
     source_dir: &Path,
     sizes: &mut HashMap<PathBuf, Option<(u32, u32)>>,
+    host: &dyn LeafHost,
 ) -> String {
     let Some(src) = find_html_attribute(tag, "src") else {
         return tag.to_string();
@@ -50,7 +55,7 @@ fn stamp_img_tag(
     };
     let size = *sizes
         .entry(path.clone())
-        .or_insert_with(|| image_pixel_size(&path));
+        .or_insert_with(|| host.image_size(&path));
     let Some((width, height)) = size else {
         return tag.to_string();
     };
