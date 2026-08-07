@@ -74,7 +74,7 @@ The leaf mark at the left is the way home — click it to return to the no-file 
 
 **There is no Settings button.** Every control stands where it applies — see [Settings](05-settings.md). The one thing that comes and goes is the [update](05-settings.md#updates) bell, which is in the bar only while there is something to download or install.
 
-The app bar doubles as the title bar on both platforms, with our own buttons at its right end on [Windows](06-themes.md#windows) and Apple's three dots inset into its left end on [macOS](06-themes.md#macos).
+The app bar doubles as the title bar on both platforms, and Leaftext draws the window buttons itself on each: squares at its right end on [Windows](06-themes.md#windows), and three dots at its left end on [macOS](06-themes.md#macos), where a Mac's belong. Both fold into the chevron menu when the bar runs out of room.
 
 ### The floating toolbar
 

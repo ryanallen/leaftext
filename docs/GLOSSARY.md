@@ -12,7 +12,7 @@ A block quote that opens with `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WA
 
 ## App bar
 
-The strip along the top of the window: the leaf mark, the [library pane](GLOSSARY.md#library-pane) button, Back and Forward, the [tab](GLOSSARY.md#tab) strip, then the palette that opens the [theme picker](GLOSSARY.md#theme-picker), Open and **+** at the right. There is no Settings button; the [update bell](GLOSSARY.md#update-bell) joins the right-hand group only while there is something to install. It is also the title bar — drag it to move the window, double-click it to maximize or restore — with Leaftext's own window buttons at its right end on Windows and Apple's three dots inset into its left end on a Mac. What it holds is about the app; what the [floating toolbar](GLOSSARY.md#floating-toolbar) holds is about the document.
+The strip along the top of the window: the leaf mark, the [library pane](GLOSSARY.md#library-pane) button, Back and Forward, the [tab](GLOSSARY.md#tab) strip, then the palette that opens the [theme picker](GLOSSARY.md#theme-picker), Open and **+** at the right. There is no Settings button; the [update bell](GLOSSARY.md#update-bell) joins the right-hand group only while there is something to install. It is also the title bar — drag it to move the window, double-click it to maximize or restore — with Leaftext's own window buttons on both: squares at its right end on Windows, three theme-colored dots at its left end on a Mac. What it holds is about the app; what the [floating toolbar](GLOSSARY.md#floating-toolbar) holds is about the document.
 
 ## Appearance
 

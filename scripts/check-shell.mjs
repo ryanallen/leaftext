@@ -2625,7 +2625,7 @@ if (booted) {
         throw new Error(`the menu came out as ${order.join(',')}, not ${expected.join(',')}`);
       }
 
-      // On a Mac the window buttons stay hidden, because Apple's dots are the window management. A hidden item is skipped by the fold, so the menu is simply the rest in the same order with nothing empty left at its foot.
+      // A hidden item is skipped by the fold, so the menu is the rest in the same order with nothing empty left at its foot. Both platforms draw these three now, so this is the update bell's case rather than the Mac's — it is only ever there when there is something to install.
       const controls = booted.document.getElementById('windowControls');
       controls.hidden = true;
       // Stand in for the unfold: the fake page's containers were empty when the fragment recorded them, so the real refit's first step has nothing to move back out.

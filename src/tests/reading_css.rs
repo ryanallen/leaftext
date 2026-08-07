@@ -1528,22 +1528,38 @@ fn the_normal_width_library_toggle_rides_the_motion_rail() {
 }
 
 #[test]
-fn only_the_mac_shell_leaves_room_for_apples_dots() {
+fn the_macs_three_dots_are_ours_and_take_the_themes_colors() {
     let css = reading_mode_css();
 
-    // Apple draws its three dots over the bar's left zone rather than in it, so the room for them is that zone's own left inset — and only where Apple is drawing them.
-    let mac_lead = rule_body(css, ".mac-frame .app-bar-lead {");
+    // The bar reserves nothing for Apple's dots any more. It used to hold 86px at the left zone whether the bar had the room or not, because a native view pinned to the window cannot fold — and with the zone sized from its content that was a quarter of a narrow bar spent on nothing, pushing the tab strip right.
     assert!(
-        mac_lead.contains("padding-left: var(--app-bar-mac-dots)"),
-        "the Mac lead starts clear of the dots: {mac_lead}"
+        !css.contains("--app-bar-mac-dots"),
+        "the bar must not reserve room for dots it draws itself"
     );
-    assert_contains(css, "--app-bar-mac-dots: 86px;");
 
-    // Every other window's lead starts where it always did.
-    let plain_lead = rule_body(css, "\n.app-bar-lead {");
-    assert!(
-        !plain_lead.contains("--app-bar-mac-dots"),
-        "only the Mac shell pays for the dots: {plain_lead}"
+    // Round, and in the theme's own stop, careful and good — never three fixed hex values, which was the one thing Apple's dots got wrong.
+    let dot = rule_body(css, ".mac-frame .window-control {");
+    assert_contains(dot, "border-radius: 50%;");
+    assert_contains(dot, "background: var(--lt-warning);");
+    // No mark until the pointer is on it, the way a Mac's has none.
+    assert_contains(dot, "color: transparent;");
+    assert_contains(
+        rule_body(css, ".mac-frame .window-control-close {"),
+        "background: var(--lt-danger);",
+    );
+    assert_contains(
+        rule_body(css, ".mac-frame #winMaximize {"),
+        "background: var(--lt-success);",
+    );
+    // Apple's order out of markup that runs minimize, maximize, close: only the close moves.
+    assert_contains(
+        rule_body(css, ".mac-frame .window-control-close {"),
+        "order: -1;",
+    );
+    // Hovering shows the mark in the bar's own color, and the dot keeps its own — the square Windows chip must not take over.
+    assert_contains(
+        rule_body(css, ".mac-frame .window-control:hover {"),
+        "color: var(--lt-surface);",
     );
 
     // The flush close chip owns the window's corner only where we are the ones drawing it; on a Mac that end of the bar is an ordinary toolbar.

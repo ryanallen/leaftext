@@ -173,7 +173,7 @@ On Windows, Leaftext uses a frameless window with its own title bar rather than 
 
 ## macOS
 
-On a Mac the app bar reaches the top of the window too, but the buttons up there stay Apple's. The title strip goes empty and see-through, the page runs up underneath it, and the red, yellow and green dots are inset into the left end of the app bar — so the green one keeps its full-screen and tiling menu and Leaftext draws no window buttons of its own. Drag empty bar space to move the window and double-click it to zoom, the same as on Windows. The dots are the one part of the window a theme does not repaint, which is true of every Mac app. In full screen macOS takes them away and the bar closes the gap where they were.
+On a Mac the app bar reaches the top of the window too. The title strip goes empty and see-through, the page runs up underneath it, and three dots sit at the bar's left end where a Mac's always are — close, minimize, zoom, centered in the bar, with the mark inside each one appearing as you point at it. **They are Leaftext's, not Apple's**, which is why they take the theme: the close is the theme's red, the minimize its yellow and the zoom its green, so they change with the family like everything else on the bar. Drawing them is also what lets them fold into the [chevron menu](02-navigation.md#when-the-bar-runs-out-of-room) when the bar runs out of room, which Apple's could never do — they are pinned to the window, so the bar had to hold room for them whether it had any or not. The cost is the green dot's tiling menu: ours zooms, and that is all it does. Drag empty bar space to move the window and double-click it to zoom, the same as on Windows.
 
 ## Next
 

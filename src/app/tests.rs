@@ -1607,18 +1607,23 @@ fn a_panic_reaches_the_journal() {
 }
 
 #[test]
-fn the_mac_window_pulls_apples_dots_into_the_app_bar() {
-    // Four builder calls make the Mac shell, and each alone is broken: without the fullsize content view the page starts below a gray strip, without the transparent bar the strip is still painted, without the hidden title "Leaftext" sits over the tabs, and without the inset the dots stay where the strip was. `with_decorations(false)` must never join them — tao overwrites every title-bar property when it is set, and the dots go with it.
+fn the_mac_window_is_the_app_bar_with_our_own_three_dots() {
+    // Four builder calls make the Mac shell, and each alone is broken: without the fullsize content view the page starts below a gray strip, without the transparent bar the strip is still painted, without the hidden title "Leaftext" sits over the tabs, and without the buttons hidden Apple's dots sit on top of the three the page now draws. `with_decorations(false)` must never join them — tao overwrites every title-bar property when it is set, and the see-through strip goes with it.
     let source = include_str!("../main.rs");
     let mac_arm = source
         .split("#[cfg(target_os = \"macos\")]")
-        .find(|arm| arm.contains("with_traffic_light_inset"))
+        .find(|arm| arm.contains("with_titlebar_buttons_hidden"))
         .expect("main.rs has a macOS window arm");
+    // Nothing insets Apple's dots any more, because there are none to inset — the page's own fold into the chevron menu, which a native view pinned to the window never could.
+    assert!(
+        !source.contains("with_traffic_light_inset"),
+        "the dots are ours now, so there is nothing to inset"
+    );
     for call in [
         "with_fullsize_content_view(true)",
         "with_titlebar_transparent(true)",
         "with_title_hidden(true)",
-        "with_traffic_light_inset(",
+        "with_titlebar_buttons_hidden(true)",
     ] {
         assert_eq!(
             source.matches(call).count(),

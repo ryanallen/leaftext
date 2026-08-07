@@ -281,34 +281,37 @@ const send = (message) => {
   window.ipc.postMessage(JSON.stringify(message));
 };
 
-// Custom title-bar chrome, in two kinds. Windows has no native title bar, so the
-// app bar is it and carries our own minimize/maximize/close. macOS keeps Apple's
-// three dots and insets them into that same bar, so ours stay hidden there — one
-// implementation of window management, not two. Both kinds get the drag region.
+// Custom title-bar chrome, in two kinds. Neither platform gives us a native title
+// bar to keep: on Windows there is none, and on a Mac Apple's own three dots are
+// turned off so ours can fold into the chevron menu the way every other control
+// does. So both draw the same three buttons, from the same markup, wired to the
+// same three commands — the Mac styles them as dots and stands them at the bar's
+// left end. Both kinds get the drag region.
 if (window.__leafFrameless || window.__leafMacFrame) {
   document.body.classList.add('frameless');
-  // Only this kind leaves room for Apple's dots at the bar's left end.
+  // The Mac's own look for those three: circles at the left, not squares at the right.
   if (window.__leafMacFrame) document.body.classList.add('mac-frame');
-  if (window.__leafFrameless) {
-    const windowControls = document.getElementById('windowControls');
-    if (windowControls) {
-      windowControls.hidden = false;
-      windowControls.setAttribute('aria-hidden', 'false');
-    }
-    const winButton = (id, command) => {
-      const el = document.getElementById(id);
-      if (el) el.addEventListener('click', () => send({ command }));
-    };
-    winButton('winMinimize', 'windowMinimize');
-    winButton('winMaximize', 'windowToggleMaximize');
-    winButton('winClose', 'windowClose');
+  const windowControls = document.getElementById('windowControls');
+  if (windowControls) {
+    windowControls.hidden = false;
+    windowControls.setAttribute('aria-hidden', 'false');
+    // Left of the leaf, where a Mac's are. Moved rather than written twice, and before overflow.js loads, so the fold records this as where they came from and puts them back here.
+    const lead = window.__leafMacFrame && document.querySelector('.app-bar-lead');
+    if (lead) lead.prepend(windowControls);
   }
+  const winButton = (id, command) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', () => send({ command }));
+  };
+  winButton('winMinimize', 'windowMinimize');
+  winButton('winMaximize', 'windowToggleMaximize');
+  winButton('winClose', 'windowClose');
   // Drag from empty app-bar space only — never from a control, tab, or field.
   const isDragTarget = (target) =>
     target &&
     !target.closest('button, a, input, select, textarea, [role="tab"], .tab, .window-controls, .update-menu');
-  // Apple's dots are native views over the page, so a press on one never reaches
-  // this listener and needs no exclusion beside the controls above.
+  // The three window buttons are ours on both platforms now, so the one exclusion
+  // above covers a press on a Mac dot as well as on a Windows one.
   // Maximize is decided on the way down: a drag hands the window to the platform's
   // own move loop, which swallows every later mouse event, so an app-bar dblclick can
   // never fire. event.detail is the click count, but it counts in page
@@ -336,11 +339,13 @@ if (window.__leafFrameless || window.__leafMacFrame) {
   // it is open — otherwise the window cannot be moved without closing the sheet.
   dragWindowFrom(document.getElementById('flowSheetHead'));
 }
-// Full screen takes Apple's dots off the bar, so the room left for them goes too.
-// Defined unconditionally, like the maximize sync below, so the host's call is
-// safe on every window. The flag is what says whether to put the class back.
+// A full-screen Mac window shows no window buttons — the pointer at the top edge
+// is how you get them — so ours go with them and the bar takes the room back. The
+// Mac class itself stays on: it is what says which shell this is, and the dots'
+// look and place are still the Mac's underneath. Defined unconditionally, like the
+// maximize sync below, so the host's call is safe on every window.
 window.leafSetFullscreen = (fullscreen) => {
-  document.body.classList.toggle('mac-frame', !!window.__leafMacFrame && !fullscreen);
+  document.body.classList.toggle('is-fullscreen', !!fullscreen);
 };
 // Reflect the real maximized state: body.is-maximized swaps the maximize glyph
 // for restore-down (CSS) and the label follows. Defined unconditionally (not just

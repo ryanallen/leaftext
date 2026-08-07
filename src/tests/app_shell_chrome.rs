@@ -947,8 +947,8 @@ fn app_shell_fills_every_placeholder() {
 }
 
 #[test]
-fn the_mac_shell_takes_the_drag_bar_but_not_our_window_buttons() {
-    // Two kinds of frameless, one flag each. Mac keeps Apple's three dots, so unhiding ours as well would put six buttons on one bar; the drag region and the dropped top border belong to both.
+fn both_shells_draw_their_own_three_window_buttons() {
+    // Two kinds of frameless, one flag each, and neither platform leaves us a native title bar to keep. Apple's dots are off, so the same three buttons and the same three commands serve both; only the look and the place differ, and the Mac's move to the bar's left end where Apple's were.
     let html = app_shell_page();
     assert_contains(
         &html,
@@ -959,29 +959,28 @@ fn the_mac_shell_takes_the_drag_bar_but_not_our_window_buttons() {
         "if (window.__leafMacFrame) document.body.classList.add('mac-frame');",
     );
 
-    // Everything the Windows-only branch holds, from its `if` to the closing brace at the same indent.
-    let windows_only = html
-        .split_once("  if (window.__leafFrameless) {\n")
-        .expect("our own window buttons are wired behind the Windows flag")
-        .1;
-    let windows_only = &windows_only[..windows_only
-        .find("\n  }")
-        .expect("the Windows-only branch closes")];
+    // Revealed and wired for both, not behind the Windows flag: a Mac with them hidden has no way to close the window at all now that Apple's are gone.
     assert!(
-        windows_only.contains("windowControls.hidden = false")
-            && windows_only.contains("winButton('winClose', 'windowClose')"),
-        "our buttons are revealed and wired only where we draw them: {windows_only}"
+        !html.contains("  if (window.__leafFrameless) {\n"),
+        "our own three are no longer Windows-only"
     );
-    assert!(
-        !windows_only.contains("dragWindowFrom"),
-        "the drag region belongs to both kinds of frameless window"
+    assert_contains(&html, "windowControls.hidden = false;");
+    assert_contains(&html, "winButton('winClose', 'windowClose');");
+    // Moved into the bar's left zone rather than written into the markup twice, and before the fold reads where things came from, so unfolding puts them back at the left.
+    assert_contains(
+        &html,
+        "const lead = window.__leafMacFrame && document.querySelector('.app-bar-lead');",
     );
 
-    // macOS takes the dots away in full screen, so the bar takes its room back. The flag, not the class, says what to restore — the class is what is being toggled.
+    // A full-screen Mac shows no window buttons, so ours go with them — but the Mac class stays on, because it says which shell this is and the dots keep their look and place underneath.
     assert_contains(&html, "window.leafSetFullscreen = (fullscreen) => {");
     assert_contains(
         &html,
-        "document.body.classList.toggle('mac-frame', !!window.__leafMacFrame && !fullscreen);",
+        "document.body.classList.toggle('is-fullscreen', !!fullscreen);",
+    );
+    assert_contains(
+        reading_mode_css(),
+        "body.mac-frame.is-fullscreen .window-controls {\n  display: none;\n}",
     );
 }
 

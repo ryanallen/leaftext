@@ -64,8 +64,6 @@ use std::{
     thread,
     time::Duration,
 };
-#[cfg(target_os = "macos")]
-use tao::dpi::LogicalPosition;
 #[cfg(not(windows))]
 use tao::window::Icon;
 use tao::{
@@ -237,10 +235,6 @@ fn squeeze_png(source: &str, target: &str, palette: bool) -> Result<String, Box<
     Ok(format!("{width}x{height}  {before} -> {} bytes", png.len()))
 }
 
-/// Apple's three dots inside our own app bar, from the window's top-left: the close button's left edge, then its top, which centers a 14px button in the 40px bar. `--app-bar-mac-dots` in `reading.css` is the other half — where the group of three ends.
-#[cfg(target_os = "macos")]
-const MAC_TRAFFIC_LIGHT_INSET: (f64, f64) = (20.0, 13.0);
-
 fn run_app() -> Result<(), Box<dyn Error>> {
     // First, so everything below has somewhere to print. Not in the tool modes above (`--squeeze-png`, `--dump-css`): those are run from a terminal that is already watching stderr.
     journal::start();
@@ -306,7 +300,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             .with_decorations(false)
             .with_undecorated_shadow(true);
     }
-    // On macOS the strip goes empty and see-through with the page running up underneath it, and Apple's three dots come down into the app bar. Keeping Apple's own buttons keeps the green one's tiling menu and their hover and disabled states; the cost is that the dots ignore the theme, as they do in every Mac app.
+    // On macOS the strip goes empty and see-through with the page running up underneath it, and the app bar is what fills it. Apple's three dots go off and the page draws its own in the same place: theirs are pinned to the window and cannot fold, so the bar had to reserve 86px for them whether it had the room or not, which cost the tab strip a quarter of its width on a narrow window. The price of drawing them is the green one's tiling menu, and Apple's own hover and disabled states.
     #[cfg(target_os = "macos")]
     {
         use tao::platform::macos::WindowBuilderExtMacOS;
@@ -314,10 +308,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             .with_fullsize_content_view(true)
             .with_titlebar_transparent(true)
             .with_title_hidden(true)
-            .with_traffic_light_inset(LogicalPosition::new(
-                MAC_TRAFFIC_LIGHT_INSET.0,
-                MAC_TRAFFIC_LIGHT_INSET.1,
-            ));
+            .with_titlebar_buttons_hidden(true);
     }
     // The icon here is the dock's and the app switcher's, not the strip's, so macOS wants it as much as any other non-Windows build.
     #[cfg(not(windows))]

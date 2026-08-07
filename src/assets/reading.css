@@ -3,11 +3,6 @@
   /* App bar height, shared by the bar itself and everything that offsets content
      below the fixed bar (document padding, library pane, minimap). */
   --app-bar-height: 40px;
-  /* Where the bar's left zone starts on a Mac, clearing Apple's three dots: the
-     group ends 74px in (MAC_TRAFFIC_LIGHT_INSET in main.rs puts the close button
-     at 20, then the system's own spacing and a 14px button twice over), and the
-     logo keeps the same 12px it has on Windows. */
-  --app-bar-mac-dots: 86px;
   --reader-content-pad: 32px;
   /* The strip a widened table keeps clear either side: the block handle and plus,
      so it is BLOCK_TOOLS_WIDTH in block-controls.js and not a spacing choice.
@@ -224,12 +219,6 @@ body {
 /* No rail: size the zone from the buttons it holds, so it shrinks behind any that fold away and never squeezes the ones that stay. It lands after the close motion's transitions have come off, so the flip is never animated. */
 .app-bar:not(.has-rail) .app-bar-lead {
   width: auto;
-}
-.mac-frame .app-bar-lead {
-  /* Apple's dots are drawn over this zone, not in it, so the room for them is the
-     zone's own left inset. The class comes off in full screen, where macOS takes
-     the dots away and the bar would otherwise start with 86px of nothing. */
-  padding-left: var(--app-bar-mac-dots);
 }
 .brand-button > .lt-icon {
   width: 22px;
@@ -603,6 +592,52 @@ body.is-maximized #winMaximize .wc-restore {
   background: var(--lt-window-close);
   border-color: var(--lt-window-close);
   color: var(--lt-window-close-foreground);
+}
+/* A Mac's three, at the bar's left end. Ours rather than Apple's because a native view is pinned to the window and cannot fold into the chevron menu, which meant the bar reserving room for them whether it had any or not. Centered by the zone's own rule instead of inset into the top corner. */
+.mac-frame .window-controls {
+  gap: var(--lt-space-8);
+  margin-left: 0;
+}
+/* The theme's stop, careful and good, rather than three fixed hex values — Apple's dots ignoring the theme was the one real complaint against them. Minimize takes the middle one here; the two either side name their own below. */
+.mac-frame .window-control {
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  border: none;
+  border-radius: 50%;
+  background: var(--lt-warning);
+  /* No mark at rest, the way a Mac's has none. The icon is still there, painted in nothing, so hover only has to change a color. */
+  color: transparent;
+}
+/* Full screen: a Mac shows no window buttons there, so ours go too and the bar takes the room back. */
+body.mac-frame.is-fullscreen .window-controls {
+  display: none;
+}
+/* Apple's order, from markup that runs minimize, maximize, close: only the close has to move. */
+.mac-frame .window-control-close {
+  order: -1;
+  background: var(--lt-danger);
+}
+.mac-frame #winMaximize {
+  background: var(--lt-success);
+}
+.mac-frame .window-control .lt-icon {
+  width: 8px;
+  height: 8px;
+}
+/* Hover shows the mark, punched out of the dot in the bar's own color. Each dot keeps its color, so all three are said again here rather than letting the toolbar chip below take them. */
+.mac-frame .window-control:hover {
+  background: var(--lt-warning);
+  border-color: transparent;
+  color: var(--lt-surface);
+}
+.mac-frame .window-control-close:hover {
+  background: var(--lt-danger);
+  border-color: transparent;
+  color: var(--lt-surface);
+}
+.mac-frame #winMaximize:hover {
+  background: var(--lt-success);
 }
 /* Frameless: the close chip is in the window's corner, so its inset matches the
    4px the chip leaves above it — the default trailing inset reads lopsided. Not on
