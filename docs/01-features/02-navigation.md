@@ -22,6 +22,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Open a link in a new page](#opening-a-link-in-a-new-page) | Ctrl-click, middle-click or right-click a link to open it behind what you are reading |
 | [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order |
 | [Single window](#tabs) | A second launch opens the file as a tab in the running window instead of a new copy |
+| [When the bar runs out of room](#when-the-bar-runs-out-of-room) | On a window too narrow for the whole app bar, its buttons fold into a chevron menu one at a time — and the window's own close, minimize and maximize stay on the bar |
 | [Code view](07-editing.md) | Toggle any document to its raw, editable source |
 
 ## Model
@@ -105,7 +106,9 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 
 #### When the bar runs out of room
 
-Tabs are never squeezed to make space for the toolbar. As the strip fills, the app bar's buttons fold into a chevron menu one at a time, right to left: the trailing actions first, then Back and Forward, then the window controls. Two never fold — the leaf, which is the way home, and the [library](03-library.md#layout) button, which on a narrow window is the only way to reach the library at all. Widening the window puts each one back where it came from.
+Tabs are never squeezed to make space for the toolbar. As the strip fills — or as the bar itself runs wider than the window, which is what happens on a narrow window with nothing open — the app bar's buttons fold into a chevron menu one at a time, right to left: the trailing actions first, then Back and Forward, then the window controls. Two never fold — the leaf, which is the way home, and the [library](03-library.md#layout) button, which on a narrow window is the only way to reach the library at all. Widening the window puts each one back where it came from.
+
+Both halves of that matter on a small window. Closing your last document empties the tab strip, and an empty strip has nothing to run out of — so the bar is measured on its own account as well, and the window's own close, minimize and maximize buttons stay drawn inside the window with the chevron holding whatever will not fit beside them.
 
 The menu reads in its own order, not the order things folded into it: Back, Forward, Themes, Open, New, then the window buttons at the foot. So the controls you open it for are at the top, and close is not the first thing under the pointer. On a Mac that means the three dots stack at the bottom with zoom above and close at the very foot — the reverse of how they read across the bar, since stacked they run top to bottom.
 

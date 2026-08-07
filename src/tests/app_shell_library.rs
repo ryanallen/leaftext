@@ -69,8 +69,10 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
     let html = app_shell_page();
 
     for expected in [
-        // Folding is driven by the tab strip actually overflowing, not a width budget: a budget reserves a sliver for the tabs and lets a title be sliced in half long before anything folds.
-        "if (tabBar.scrollWidth <= tabBar.clientWidth + 1) break;",
+        // Folding is driven by the strip or the bar actually overflowing, not a width budget: a budget reserves a sliver for the tabs and lets a title be sliced in half long before anything folds. Both are asked, because an empty strip cannot overflow — and that is the case where the window's own buttons ran off the right edge.
+        "if (tabBar.scrollWidth <= tabBar.clientWidth + 1 && appBar.scrollWidth <= appBar.clientWidth + 1) break;",
+        // The chevron is a button wide and is drawn only once something has folded, so the pass that raises it measured a bar without it. The bar is pinned to both window edges, so nothing resizes and no observer fires to finish the job — that pass measures again, once.
+        "    if (foldAppBar()) foldAppBar();",
         "overflowPanel.prepend(el);",
         // Rightmost first, and everything is unfolded before re-measuring so a widening window puts the buttons back where they came from.
         "for (let index = overflowCandidates.length - 1; index >= 0; index -= 1) {",
@@ -84,7 +86,7 @@ fn app_bar_actions_fold_one_at_a_time_before_a_tab_is_clipped() {
         "for (const child of children) home.appendChild(child);",
         // Folding order and menu order are separate. Each item has to leave the bar before the next measurement, so they go in rightmost-first; the panel is then laid out in its own order, which puts the window buttons at the foot instead of on top. check-shell reads the resulting order back.
         "  ...overflowCandidates.filter((entry) => entry.el.id === 'windowControls'),",
-        "      if (el.parentElement === overflowPanel) overflowPanel.appendChild(el);",
+        "    if (el.parentElement === overflowPanel) overflowPanel.appendChild(el);",
     ] {
         assert_contains(&html, expected);
     }

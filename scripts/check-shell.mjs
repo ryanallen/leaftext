@@ -2741,6 +2741,127 @@ if (booted) {
       tabBar.clientWidth = 0;
     }
   });
+
+  /** A button, at the owner's window at its narrowest: every control on the bar is this wide, and the window buttons are three of them. */
+  const BAR_BUTTON = 32;
+  /** The page across, at the smallest window the app allows. */
+  const BAR_WIDTH = 366;
+
+  /** The bar measured the way a window measures it: scrollWidth is what is still standing on it, so a fold frees real width and the chevron costs its own — which is the whole reason a pass can measure wrong. */
+  function measuredAppBar() {
+    const bar = booted.document.getElementById('appBar');
+    const panel = booted.document.getElementById('appOverflowPanel');
+    const tabBar = booted.document.getElementById('tabBar');
+    const foldable = ['windowControls', 'backButton', 'forwardButton', 'themeSheetOpen', 'openButton', 'newButton'].map((id) => booted.document.getElementById(id));
+    // What the bar keeps whatever folds — the leaf, the library button, the empty strip and its own padding. Chosen so folding two lands the bar exactly on its width, which is where a single pass stopped in the live window with close still off the edge.
+    const FURNITURE = 174;
+    const chevronUp = () => vm.runInContext('overflowChevronUp', booted);
+    const width = (el) => (el.id === 'windowControls' ? BAR_BUTTON * 3 : BAR_BUTTON);
+    const standing = () => foldable.filter((el) => el.parentElement !== panel);
+    Object.defineProperty(panel, 'childElementCount', { get: () => panel.children.length, configurable: true });
+    Object.defineProperty(bar, 'scrollWidth', {
+      get: () => FURNITURE + standing().reduce((sum, el) => sum + width(el), 0) + (chevronUp() ? BAR_BUTTON : 0),
+      configurable: true,
+    });
+    bar.clientWidth = BAR_WIDTH;
+    // The case this is all about: nothing open, so the strip is empty — and an empty strip reports no overflow, which is why it cannot be the only thing asked.
+    tabBar.scrollWidth = 24;
+    tabBar.clientWidth = 24;
+    // Every run starts with the chevron down, whatever an earlier check left behind.
+    vm.runInContext('overflowChevronUp = false;', booted);
+    const folded = () => panel.children.map((el) => el.id);
+    return {
+      bar,
+      panel,
+      folded,
+      standing: () => standing().map((el) => el.id),
+      done() {
+        bar.clientWidth = 0;
+        tabBar.scrollWidth = 0;
+        tabBar.clientWidth = 0;
+        delete bar.scrollWidth;
+        bar.scrollWidth = 0;
+        // Puts every button back on the bar before the next check reads the page.
+        booted.refitAppBar();
+        delete panel.childElementCount;
+      },
+    };
+  }
+
+  check('a bar wider than its own window folds, even with a tab strip that cannot overflow', () => {
+    const bar = measuredAppBar();
+    try {
+      booted.refitAppBar();
+      if (!bar.folded().length) {
+        throw new Error('a bar 430 across a 366-wide window folded nothing');
+      }
+      if (bar.bar.scrollWidth > BAR_WIDTH) {
+        throw new Error(`the bar was left at ${bar.bar.scrollWidth} in a ${BAR_WIDTH}-wide window`);
+      }
+    } finally {
+      bar.done();
+    }
+  });
+
+  check('a bar that fits folds nothing, so the fold cannot pass by folding always', () => {
+    const bar = measuredAppBar();
+    try {
+      bar.bar.clientWidth = 900;
+      booted.refitAppBar();
+      if (bar.folded().length) {
+        throw new Error(`a bar with room to spare folded ${bar.folded().join(',')}`);
+      }
+    } finally {
+      bar.done();
+    }
+  });
+
+  check('the refit measures again when it was the pass that raised the chevron', () => {
+    const bar = measuredAppBar();
+    try {
+      // One pass alone stops the moment the bar fits, and it fits before the chevron it is about to raise is standing on it.
+      booted.foldAppBar();
+      const onePass = bar.folded();
+      if (onePass.length !== 2) {
+        throw new Error(`a single pass folded ${onePass.join(',') || 'nothing'}, expected two`);
+      }
+      if (bar.bar.scrollWidth <= BAR_WIDTH) {
+        throw new Error('the chevron cost the bar nothing, so this proves nothing about a second pass');
+      }
+
+      // The refit, from the chevron down: the second pass measures a bar the chevron is on and folds the one more that takes.
+      vm.runInContext('overflowChevronUp = false;', booted);
+      booted.refitAppBar();
+      const settled = bar.folded();
+      if (settled.length !== 3) {
+        throw new Error(`the refit folded ${settled.join(',')}, expected one more than a single pass`);
+      }
+      if (bar.bar.scrollWidth > BAR_WIDTH) {
+        throw new Error(`two passes left the bar at ${bar.bar.scrollWidth}`);
+      }
+
+      // And it is two, not the start of a run: the chevron is up now, so a further refit folds exactly the same three.
+      booted.refitAppBar();
+      if (bar.folded().join(',') !== settled.join(',')) {
+        throw new Error(`a third pass changed the fold to ${bar.folded().join(',')}`);
+      }
+    } finally {
+      bar.done();
+    }
+  });
+
+  check('the fold runs out of work with the window buttons still on the bar', () => {
+    const bar = measuredAppBar();
+    try {
+      booted.refitAppBar();
+      // They are first in the list and the loop walks it backwards, so they are the last thing it would reach — closing the window stays one press.
+      if (!bar.standing().includes('windowControls')) {
+        throw new Error('the window buttons folded into the menu');
+      }
+    } finally {
+      bar.done();
+    }
+  });
 }
 
 // ---- 5. the page reports its own errors -------------------------------------
