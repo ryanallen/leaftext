@@ -402,6 +402,30 @@ if (booted) {
     if (source.slice(Number(paragraph.dataset.srcStart), Number(paragraph.dataset.srcEnd)) !== 'A paragraph.') throw new Error('the paragraph range does not slice back to the paragraph');
   });
 
+  // The other side of the same bargain: a comment is stripped before the page sees it, so the host must not report a span for it (`block_source_map_leaves_out_a_comment_between_two_paragraphs`). This proves both halves — the spans it now reports stamp every element, and the span it used to report would have left the whole note uneditable.
+  check('a note with a comment line in it gets a range on every block', () => {
+    const source = 'Before.\n\n<!-- a note -->\n\nAfter.\n';
+    const paragraphs = [
+      { id: 0, kind: 'paragraph', start: 0, end: 7, editable: true },
+      { id: 1, kind: 'paragraph', start: 26, end: 32, editable: true },
+    ];
+    const element = () => ({ nodeType: 1, tagName: 'P', dataset: {}, children: [], classList: { contains: () => false } });
+    const drawn = () => ({ children: [element(), element()] });
+
+    const body = drawn();
+    booted.attachMarkdownBlockRanges(body, paragraphs, source);
+    const [before, after] = body.children;
+    if (source.slice(Number(before.dataset.srcStart), Number(before.dataset.srcEnd)) !== 'Before.') throw new Error('the first paragraph range does not slice back to it');
+    if (source.slice(Number(after.dataset.srcStart), Number(after.dataset.srcEnd)) !== 'After.') throw new Error('the second paragraph range does not slice back to it');
+    // The blank-page pair opens on a document with no `[data-src-start]` anywhere, which is why an unstamped note claimed to be a new one.
+    if (!body.children.every((el) => 'srcStart' in el.dataset)) throw new Error('a block was left unstamped, so the page would offer the new-document lines over a note with content');
+
+    // What the host used to send: a span for the comment, with no element to pair it with.
+    const withComment = drawn();
+    booted.attachMarkdownBlockRanges(withComment, [paragraphs[0], { id: 1, kind: 'html_block', start: 9, end: 24, editable: false }, { ...paragraphs[1], id: 2 }], source);
+    if (withComment.children.some((el) => 'srcStart' in el.dataset)) throw new Error('a span with no element still stamped, so the guard that makes this fix necessary is gone');
+  });
+
   // The ask pipe's reader half is one call into this function (`READER_STATE` in src/pipe.rs), so nothing else in the suite notices when an element it reads is renamed — the next `{"ask":"state","reader":true}` would be the first to find out, and what it loses is silent.
   check('the page can say what the reader sees', () => {
     const readerState = () => booted.window.leafReaderState();

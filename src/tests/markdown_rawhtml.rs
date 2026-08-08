@@ -251,3 +251,35 @@ fn data_leaf_attribute_prefixes_survive_sanitizing() {
     assert!(cleaned.contains(r#"data-src-start="10""#));
     assert!(cleaned.contains(r#"data-src-end="20""#));
 }
+
+#[test]
+fn a_block_that_reaches_the_page_as_nothing_is_told_from_one_that_draws() {
+    // The block map drops a block this answers yes for, so a yes on something the page really draws would leave an element with no source range and take the whole document's editing with it. A closing tag is the case to keep saying no to: the page steps over it itself.
+    for nothing in [
+        "<!-- a note -->",
+        "<!-- a --> <!-- b -->",
+        "<!-- x --> text",
+        "<!-- unterminated",
+        "<script>alert(1)</script>",
+        "<style>p { color: red; }</style>",
+        "<script>\nalert(1)\n",
+    ] {
+        assert!(
+            html_block_renders_to_no_element(nothing),
+            "{nothing:?} draws nothing, and it was called drawn"
+        );
+    }
+
+    for drawn in [
+        "<div align=\"center\">",
+        "</div>",
+        "<p>Body</p>",
+        "<!-- a note --><div>",
+        "</script>",
+    ] {
+        assert!(
+            !html_block_renders_to_no_element(drawn),
+            "{drawn:?} is not the sanitizer's to remove, and it was dropped"
+        );
+    }
+}

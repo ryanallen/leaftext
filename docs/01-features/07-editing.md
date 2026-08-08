@@ -346,6 +346,7 @@ What the *reading view* offers differs by format, because a block can only be ed
 |---|---|
 | Markdown text blocks | Edit WYSIWYG — type in the rendered page, styling intact. [Block gutter](#the-block-gutter) and [format bar](#the-format-bar) |
 | Markdown blocks that cannot round-trip losslessly | Edit their exact source in place. [Block gutter](#the-block-gutter) |
+| Markdown blocks the page never draws — an HTML comment, a `<script>` or `<style>` block | Nothing is drawn for them, so there is nothing to click; edited in the code view. Every other block in the document stays editable around them |
 | XML | Edit their exact source in place. [Block gutter](#the-block-gutter) |
 | JSON | Edit their exact source in place |
 | YAML plain values | Edit their exact source in place |

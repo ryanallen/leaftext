@@ -332,3 +332,46 @@ pub(crate) fn configure_rendered_html_sanitizer(sanitizer: &mut Builder<'_>) {
         // Editing-model block markers (`data-leaf-*`, `data-src-*`): no script, never a URL context, so allowed on every tag.
         .add_generic_attribute_prefixes(&["data-leaf-", "data-src-"]);
 }
+
+/// Whether a raw HTML block reaches the page as no element: every tag in it is a comment, which the sanitizer above strips (`strip_comments` is ammonia's default and is never turned off), or a `script`/`style`, which goes with its contents. Text beside a comment counts as nothing too — a text node is not an element a source range can be stamped on.
+///
+/// A closing `</div>` is not this case: its tag survives, and the page steps over it as the structural half of a wrapper.
+pub(crate) fn html_block_renders_to_no_element(source: &str) -> bool {
+    let mut rest = source;
+
+    while let Some(open) = rest.find('<') {
+        let tail = &rest[open..];
+
+        if let Some(after_open) = tail.strip_prefix("<!--") {
+            // Unterminated, it is escaped into the page as text rather than drawn — still nothing to stamp.
+            let Some(close) = after_open.find("-->") else {
+                return true;
+            };
+            rest = &after_open[close + "-->".len()..];
+            continue;
+        }
+
+        let Some(tag_end) = find_html_tag_end(tail, 0) else {
+            return false;
+        };
+        let tag = &tail[..tag_end];
+        let Some(tag_name) = html_tag_name(tag) else {
+            return false;
+        };
+        if !matches!(tag_name.as_str(), "script" | "style") || is_html_closing_tag(tag) {
+            return false;
+        }
+
+        // Unclosed, the removal swallows the rest of the block — [`sanitize_raw_markdown_html_fragment`] stops in the same place.
+        let lower_tail = tail.to_ascii_lowercase();
+        let Some(close_start) = lower_tail[tag_end..].find(&format!("</{tag_name}")) else {
+            return true;
+        };
+        let Some(close_end) = find_html_tag_end(tail, tag_end + close_start) else {
+            return true;
+        };
+        rest = &tail[close_end..];
+    }
+
+    true
+}

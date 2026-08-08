@@ -365,8 +365,10 @@ pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
                 if depth == 0 {
                     if let Some(kind) = block_kind(tag) {
                         let end = trim_block_end(body, range.start, range.end);
-                        spans.push(BlockSpan::new(next_id, kind, range.start, end));
-                        next_id += 1;
+                        if !block_reaches_the_page_as_nothing(kind, &body[range.start..end]) {
+                            spans.push(BlockSpan::new(next_id, kind, range.start, end));
+                            next_id += 1;
+                        }
                     }
                 }
                 depth += 1;
@@ -392,6 +394,11 @@ pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
         span.end += offset;
     }
     spans
+}
+
+/// Whether this block draws nothing on the page, so no element can carry its span — a comment, a `script` or a `style`. One span the page cannot pair with drops every range in the document, which is why a leading frontmatter block is taken off above too. What the sanitizer removes is `markdown`'s to say, never a second list here.
+fn block_reaches_the_page_as_nothing(kind: &str, source: &str) -> bool {
+    kind == "html_block" && crate::markdown::html_block_renders_to_no_element(source)
 }
 
 /// One GFM table found in a document, with a proved byte range for every part an edit can splice.

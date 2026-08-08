@@ -378,6 +378,93 @@ fn block_source_map_treats_html_wrapper_open_and_close_as_separate_blocks() {
 }
 
 #[test]
+fn block_source_map_leaves_out_a_comment_between_two_paragraphs() {
+    // The comment is stripped before the page ever sees it, so a span for it is one the walk cannot pair with — and one unpaired span drops every range in the document, which is how a single comment line took editing away from a whole file.
+    let markdown = "Before.\n\n<!-- a note -->\n\nAfter.\n";
+    let spans = block_source_map(markdown);
+    let kinds: Vec<&str> = spans.iter().map(|span| span.kind).collect();
+    assert_eq!(kinds, ["paragraph", "paragraph"], "{spans:?}");
+    assert_eq!(&markdown[spans[0].start..spans[0].end], "Before.");
+    assert_eq!(&markdown[spans[1].start..spans[1].end], "After.");
+    assert_eq!(
+        spans[1].id, 1,
+        "ids stay in document order with none missing"
+    );
+}
+
+#[test]
+fn block_source_map_leaves_a_table_its_span_under_a_comment() {
+    // The shape table-scanner's comment finder was written for: a comment touching a table, with and without a blank line between them. The table keeps the range a cell write rides on either way.
+    for markdown in [
+        "<!-- schema -->\n| a | b |\n| --- | --- |\n| 1 | 2 |\n",
+        "<!-- schema -->\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n",
+    ] {
+        let spans = block_source_map(markdown);
+        let kinds: Vec<&str> = spans.iter().map(|span| span.kind).collect();
+        assert_eq!(kinds, ["table"], "{markdown:?} gave {spans:?}");
+        assert!(markdown[spans[0].start..spans[0].end].starts_with("| a | b |"));
+    }
+}
+
+#[test]
+fn block_source_map_leaves_out_a_comment_sharing_its_line() {
+    // Two comments on one line are one block, and a comment with text after it is one block whose survivor is a bare text node — not an element, so neither can be stamped and neither may take the document's other blocks with it.
+    for markdown in [
+        "Before.\n\n<!-- a --> <!-- b -->\n\nAfter.\n",
+        "Before.\n\n<!-- x --> text\n\nAfter.\n",
+    ] {
+        let kinds: Vec<&str> = block_source_map(markdown)
+            .iter()
+            .map(|span| span.kind)
+            .collect();
+        assert_eq!(kinds, ["paragraph", "paragraph"], "{markdown:?}");
+    }
+}
+
+#[test]
+fn block_source_map_leaves_out_a_script_or_style_block() {
+    // The sanitizer removes these two with their contents, so they reach the page as nothing exactly as a comment does — the same fault, not a comment-only one.
+    for markdown in [
+        "Before.\n\n<script>alert(1)</script>\n\nAfter.\n",
+        "Before.\n\n<style>p { color: red; }</style>\n\nAfter.\n",
+        "Before.\n\n<script>\nalert(1)\n",
+    ] {
+        let kinds: Vec<&str> = block_source_map(markdown)
+            .iter()
+            .map(|span| span.kind)
+            .collect();
+        assert!(
+            !kinds.contains(&"html_block"),
+            "{markdown:?} gave {kinds:?}"
+        );
+    }
+}
+
+#[test]
+fn a_dropped_block_really_does_reach_the_page_as_nothing() {
+    // The whole fix rests on the sanitizer removing these, so read it back out of the render rather than trusting the reading of its configuration: the page is handed a document with two paragraphs and nothing between them.
+    for markdown in [
+        "Before.\n\n<!-- a note -->\n\nAfter.\n",
+        "Before.\n\n<!-- x --> <!-- y -->\n\nAfter.\n",
+        "Before.\n\n<script>alert(1)</script>\n\nAfter.\n",
+        "Before.\n\n<style>p { color: red; }</style>\n\nAfter.\n",
+    ] {
+        let html = render_markdown_document(markdown, "notes.md").html;
+        assert!(!html.contains("<!--"), "{markdown:?} kept a comment");
+        assert!(!html.contains("alert(1)"), "{markdown:?} kept a script");
+        assert!(!html.contains("color: red"), "{markdown:?} kept a style");
+        // Anything the block did draw would sit between the two paragraphs, so what is between them has to be whitespace and nothing else.
+        let start = html.find("Before.</p>").expect("the first paragraph") + "Before.</p>".len();
+        let end = html.find("<p>After.").expect("the second paragraph");
+        assert!(
+            html[start..end].trim().is_empty(),
+            "{markdown:?} drew something between the paragraphs: {:?}",
+            &html[start..end]
+        );
+    }
+}
+
+#[test]
 fn editable_document_tracks_dirty_and_save() {
     let mut doc = EditableDocument::new(
         PathBuf::from("notes.md"),
