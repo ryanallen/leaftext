@@ -226,6 +226,8 @@ function fakePage() {
 function runShell(source) {
   const { document } = fakePage();
   const noop = () => {};
+  const frames = new Map();
+  let frameId = 0;
   const sandbox = {
     console: { log: noop, warn: noop, error: noop, debug: noop },
     document,
@@ -245,8 +247,15 @@ function runShell(source) {
     setInterval: () => 0,
     clearInterval: noop,
     queueMicrotask: noop,
-    requestAnimationFrame: () => 0,
-    cancelAnimationFrame: noop,
+    // A real queue, not a stub that swallows the callback: a job that puts itself straight back on the frame queue is a page that never goes idle, and a stub can only ever report that nothing happened.
+    requestAnimationFrame: (fn) => {
+      frameId += 1;
+      frames.set(frameId, fn);
+      return frameId;
+    },
+    cancelAnimationFrame: (id) => {
+      frames.delete(id);
+    },
     fetch: () => new Promise(() => {}),
     MutationObserver: class {
       observe() {}
@@ -313,6 +322,22 @@ function runShell(source) {
     setFamily() {},
     subscribe() {},
     appearance: () => 'light',
+  };
+
+  // Run every frame the page has asked for, and every frame those ask for in turn, until there are none left. A job that re-arms itself never reaches that point, so the cap is the failure rather than a hang.
+  sandbox.__frames = {
+    waiting: () => frames.size,
+    drain: (cap = 200) => {
+      let ran = 0;
+      while (frames.size) {
+        if (ran >= cap) throw new Error(`the page kept asking for another animation frame (${cap} of them)`);
+        const [id, fn] = frames.entries().next().value;
+        frames.delete(id);
+        ran += 1;
+        fn(0);
+      }
+      return ran;
+    },
   };
 
   const context = vm.createContext(sandbox);
@@ -2601,6 +2626,83 @@ if (booted) {
       if (calls.join(',') !== 'recolor,fly') throw new Error(`a document on the map gave ${calls.join(',') || 'nothing'}`);
     } finally {
       Object.assign(booted, original);
+    }
+  });
+
+  // The rail's thumbnail is a clone of one slice of the document, and this comparison decides whether the slice on the page still holds what the rail shows. A no asks for another rebuild, on the next animation frame, and a rebuild deep-clones the slice — so a no that can never become a yes is about a gigabyte a minute until the page dies. Numbers here are a real document's: 13,142px tall, scaled to a tenth.
+  check('the thumbnail counts as covering the view at the top and the foot', () => {
+    const { minimapWindowCoversView } = booted;
+    const metrics = { scrollable: 12322, scaledDocumentHeight: 1314.2, trackHeight: 700, previewScale: 0.1 };
+    const covers = (range, scrollTop) => {
+      vm.runInContext(`minimapBuiltRange = ${range === null ? 'null' : JSON.stringify(range)};`, booted);
+      return minimapWindowCoversView(metrics, scrollTop);
+    };
+    try {
+      const ends = { top: 0, bottom: 13142 };
+      if (!covers(ends, 0)) throw new Error('a thumbnail holding the whole document still rebuilt at the top');
+      if (!covers(ends, 12322)) throw new Error('a thumbnail holding the whole document still rebuilt at the foot');
+      // Measured off the rows alone, which is what shipped: the first block starts below the layout's padding and the last ends above it, so the view reaches past both ends of the clone and neither end can ever agree.
+      const rowsOnly = { top: 87.85, bottom: 13058 };
+      if (covers(rowsOnly, 0) || covers(rowsOnly, 12322)) throw new Error('the rows-only range passes now, so this proves nothing');
+      // A slice out of the middle still rebuilds when the reader leaves it, and still does not when they have not.
+      const middle = { top: 3000, bottom: 10100 };
+      if (covers(middle, 0)) throw new Error('a scroll above the built slice stopped rebuilding');
+      if (covers(middle, 12322)) throw new Error('a scroll below the built slice stopped rebuilding');
+      if (!covers(middle, 6161)) throw new Error('a view inside the built slice rebuilt anyway');
+      // A short document is not windowed, so there is no slice to leave.
+      if (!covers(null, 0)) throw new Error('a document with no window asked for a rebuild');
+    } finally {
+      vm.runInContext('minimapBuiltRange = null;', booted);
+    }
+  });
+
+  // The keep-it half. This answers without asking the guard at all, which is the whole point: a guard that starts failing again for some later reason costs one comparison rather than a rebuild every frame for as long as the window is open.
+  check('a rebuild that would clone the same rows keeps the thumbnail', () => {
+    const { minimapRebuildWouldChangeNothing } = booted;
+    const metrics = { sourceWidth: 800 };
+    const built = (extra = '') => vm.runInContext(
+      'minimapContentVersion = 7; minimapBuiltVersion = 7; minimapBuiltSourceWidth = 800;'
+        + 'minimapBuiltPreviewWidth = 90; minimapBuiltFrameWidth = 760;'
+        + `minimapBuiltFirstRow = 12; minimapBuiltLastRow = 40;${extra}`,
+      booted,
+    );
+    try {
+      built();
+      if (!minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 40)) throw new Error('an untouched document rebuilt its thumbnail anyway');
+      // Everything that shapes a clone still forces one.
+      if (minimapRebuildWouldChangeNothing(metrics, 90, 760, 13, 40)) throw new Error('a scroll into a new slice kept the old thumbnail');
+      if (minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 41)) throw new Error('a slice ending on a new row kept the old thumbnail');
+      if (minimapRebuildWouldChangeNothing(metrics, 91, 760, 12, 40)) throw new Error('a wider rail kept the old thumbnail');
+      if (minimapRebuildWouldChangeNothing(metrics, 90, 800, 12, 40)) throw new Error('more room for the layout kept the old thumbnail');
+      if (minimapRebuildWouldChangeNothing({ sourceWidth: 900 }, 90, 760, 12, 40)) throw new Error('a rewrapped document kept the old thumbnail');
+      built('minimapContentVersion = 8;');
+      if (minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 40)) throw new Error('an edited document kept the old thumbnail');
+    } finally {
+      vm.runInContext(
+        'minimapContentVersion = 0; minimapBuiltVersion = -1; minimapBuiltSourceWidth = -1;'
+          + 'minimapBuiltPreviewWidth = -1; minimapBuiltFrameWidth = -1;'
+          + 'minimapBuiltFirstRow = -1; minimapBuiltLastRow = -1;',
+        booted,
+      );
+    }
+  });
+  // Nothing in the page may put itself straight back on the frame queue: a job that does keeps the window drawing for as long as its condition holds, and the condition here is a 600ms pane motion. Draining has to reach a fixed point, and the pane finishing is what asks again.
+  check('the rail waits for the library pane instead of asking every frame', () => {
+    const frames = booted.__frames;
+    const body = booted.document.body;
+    const wasClass = body.className;
+    try {
+      frames.drain();
+      body.className = 'is-library-opening';
+      booted.scheduleMinimapWidthSync();
+      const ran = frames.drain();
+      if (ran !== 1) throw new Error(`one request for the rail's width ran ${ran} frames`);
+      body.className = '';
+      booted.endLibraryMotion();
+      if (frames.drain() !== 1) throw new Error('the pane finishing its motion never asked for the width it held back');
+    } finally {
+      body.className = wasClass;
+      frames.drain();
     }
   });
 }

@@ -127,7 +127,7 @@ phase rides on the same plumbing.*
 - [ ] Test: the bar appears on a locked document; bold and headings do not
 ```
 
-A box is one piece of work with an obvious done. "Make search fast" is not a box. Tests get their own boxes, in the phase that needs them.
+A box is one piece of work with an obvious done. "Make search fast" is not a box. Tests get their own boxes, in the phase that needs them — see [how a phase is proved](#every-phase-says-how-it-is-proved) below, which is where the shape of that box is written.
 
 **Every phase in a file has to be buildable off this repo as it stands, plus the phases above it.** A phase that waits on *another ticket* does not belong in this one — it belongs in its own file, whose first line says what it rides on. A file with a buildable half and a blocked half cannot be finished, so it never moves to `done/`, its index row goes on describing a plan forever, and whoever picks it up stops halfway with no idea whether that was the plan. Split it at the seam and cross-reference both halves: the buildable file ships and closes, the blocked one waits with a name of its own.
 
@@ -141,6 +141,17 @@ End the phase list with the block that closes every phase:
 ```
 
 Drop the bundler line when the work is nowhere near `design/`.
+
+## Every phase says how it is proved
+
+**Every phase carries at least one test box, and the box names where the test goes.** `just verify` runs the tests that exist and nothing asks whether the change made one necessary, so a phase with no test box is code shipped with nothing that would have caught it going wrong. [`/sync-tests`](../sync-tests/SKILL.md) holds the table of where a test lives and the naming rule; the short version is `src/tests/`, one file per subject, for library code, `src/app/tests.rs` for the binary, and `scripts/check-shell.mjs` for anything in `src/assets/shell/`, which boots the fragments in order rather than reading them.
+
+- **Name the claim, not the function.** A test box is `Test: a comment on its own line leaves every other block editable`, in the file it goes in. `Test the new code` is not a box, for the same reason "make search fast" is not one.
+- **A fix's test is named after what went wrong**, so the regression cannot ship twice. A ticket in `../docs/fixes/` whose phases do not carry that box has not been written: the fix is the easy half.
+- **A new class, component, token or icon has no test to ask for.** `just check-classes`, `check-tokens`, `check-icons` and `check-gallery` already refuse anything `design/` does not list, so that phase's box is the row in `design/` and the bundler run — asking for a test there is a box nobody can write.
+- **Say in the phase what cannot be tested here**, where that is true: a real window, live selected text, a held pointer. One line, so the next reader does not take a missing test for an oversight. Never a general caveat about the Mac build, the installer or the workflows — GitHub compiles all three on a tagged release, and a caveat that is true on every ticket is one nobody reads.
+
+**A test gap outside this ticket is its own ticket.** Reading the code to write a plan is the pass most likely to turn up a subject nothing covers, and that finding is worth keeping: it does not survive the session any other way. It does **not** become a box here — a ticket about the find bar that quietly grows four tests for the pager is a ticket nobody can review and a diff nobody can read. Write the second file in the same pass, under `../docs/refactor/` in the subject folder the gap is in, with its row in the index, and run [`/pm`](../pm/SKILL.md) once for both. Every skill that reads the code holds to this — [`/design`](../design/SKILL.md), [`/dev`](../dev/SKILL.md), [`/pm`](../pm/SKILL.md) and [`/sync-tests`](../sync-tests/SKILL.md) all file rather than fix in passing, and **it is always a ticket**, never a sentence in a hand-back.
 
 ## A picture the owner hands over goes in the tree, not in the chat
 
@@ -220,6 +231,7 @@ That is [dev](../dev/SKILL.md)'s job — it builds the phases in order, ticks ea
 - `/pm` — ranks every ticket in the tree into one running order.
 - `/design` — checks a written ticket against the code before anyone builds it.
 - `/dev` — builds one and stops at the owner's box; `/git-release` ships it; `/done` moves it to `done/`.
+- `/sync-tests` — where a test goes, how it is named, and the pass that writes the ones a phase asked for.
 - `../docs/README.md` — every ticket, one line each. Read first, updated last.
 - `../docs/imgs/` — every picture the owner has handed over, named after the ticket that uses it.
 - `../docs/GLOSSARY.md` — the words a ticket is written in. A planning word this file spends and that file does not define gets a row there in the same pass.

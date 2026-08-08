@@ -35,6 +35,7 @@ git diff --name-only HEAD~5..HEAD   # recent
 | --- | --- |
 | `src/**.rs` (library) | `src/tests/`, one file per subject — add the `mod` line in `src/tests/mod.rs` if the subject is new |
 | `src/app/**.rs` (binary) | `src/app/tests.rs` |
+| `src/store/**.rs` | `src/store/tests.rs` |
 | `src/assets/shell/*.js` | `scripts/check-shell.mjs` |
 | `src/assets/reading.css`, `src/theme.rs`, `themes/` | `src/tests/reading_css.rs`, `src/tests/theme_registry.rs`, and `just check-themes` |
 | a new class, component, token or icon | no test to write — `just check-classes`, `check-tokens`, `check-icons` and `check-gallery` already refuse anything `design/` does not list. Run them and add the row |
@@ -66,6 +67,14 @@ Report one row per change: the change, the test that covers it, or **missing**. 
 - **Cover what it cost.** A bug fixed in a version gets a test named after what went wrong, so the same regression cannot ship twice.
 - Put it in the subject's file, beside its neighbors, and match their style. A new subject file needs its `mod` line in `src/tests/mod.rs`.
 - Front-end behavior goes in `scripts/check-shell.mjs`, which boots the fragments in order against a stand-in page — a fragment that throws as it loads fails there rather than opening a blank window.
+
+### 3a. A gap wider than the change is a ticket
+
+This pass writes the tests **this change** needed. Walking the suite to do that is also how a subject with no coverage at all gets noticed, and that finding is real work — it is not this pass's.
+
+- **File it, do not fix it.** [`/ticket`](../ticket/SKILL.md) under `../docs/refactor/` in the subject folder the gap is in, with its row in the index and [`/pm`](../pm/SKILL.md) run once. Tests written for code the change never touched make a diff nobody can review and a release nobody can read back.
+- **Never leave it in the hand-back only.** A sentence in a reply dies with the session; a ticket is the one place a finding survives, and it is always a ticket.
+- Where a phase in the ticket being built asked for a test and the suite already has it, say which one covers it rather than writing a second.
 
 ### 4. Run them
 

@@ -277,7 +277,7 @@ The pages are plain Markdown under [`docs/`](docs/) — the same format the app 
 
 ## Development
 
-See [Building](docs/02-development/02-building.md), [Architecture](docs/02-development/01-architecture.md), [Theming](docs/02-development/04-theming.md), [Design system](docs/02-development/05-design-system.md), and [Releasing](docs/02-development/03-releasing.md) for the full developer docs.
+See [Building](docs/02-development/02-building.md), [Architecture](docs/02-development/01-architecture.md), [Theming](docs/02-development/04-theming.md), [Design system](docs/02-development/05-design-system.md), [Releasing](docs/02-development/03-releasing.md), and [Workflow](docs/02-development/07-workflow.md) for the full developer docs.
 
 Every theme is drawn on one page at **[leaftext.com/gallery.html](https://leaftext.com/gallery.html)** — all 82 colors, every icon and every part of the interface, in light and dark.
 
@@ -303,7 +303,7 @@ The prose, the design sources, and the guidance an agent reads — each of these
 |:--|:--|
 | [Documentation](docs/README.md) | Every page published at [leaftext.com/docs](https://leaftext.com/docs), listed above |
 | [Glossary](docs/GLOSSARY.md) | Every word Leaftext uses for a part of itself |
-| [Agent guide](AGENTS.md) | The standing rules for anyone — person or agent — changing this repo. `CLAUDE.md` and `CODEX.md` are the same file. Its tables link the thirteen [skills](.agents/skills/) and the [hook settings](.agents/settings.json) |
+| [Agent guide](AGENTS.md) | The standing rules for anyone — person or agent — changing this repo. `CLAUDE.md` and `CODEX.md` are the same file. Its tables link the fourteen [skills](.agents/skills/) and the [hook settings](.agents/settings.json), and [Workflow](docs/02-development/07-workflow.md) is the published account of how they fit together |
 | [Design sources](docs/02-development/05-design-system.md) | [Colors](design/colors.md), [tokens](design/tokens.md), [icons](design/icons.md) and [components](design/components.md) — the four files every value in the interface is compiled from |
 | [Themes](themes/README.md) | The eleven families, one Markdown file each, with the colors they set. `just bundle-themes` compiles them into [one bundle](src/assets/themes.md) the app reads at startup |
 | Third-party notices | [Heroicons](src/assets/Heroicons-MIT.md), [KaTeX](src/assets/KaTeX-MIT.md), [Lucide](src/assets/Lucide-ISC.md), [Noto](src/assets/Noto-OFL.md) — the licenses of what is vendored into the app |

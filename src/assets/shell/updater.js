@@ -225,6 +225,10 @@ let minimapBodyObserver = null;
 // clone is a window on long documents, so scrolling out of range is a third reason
 // to rebuild (see updateDocumentMinimapPreview).
 let minimapBuiltRange = null;
+// The rows the built clone was sliced from. A rebuild that would slice the same two
+// cannot change anything, so it keeps the thumbnail and stops asking for another.
+let minimapBuiltFirstRow = -1;
+let minimapBuiltLastRow = -1;
 // Rail geometry, cached for the scroll path: scrolling changes none of it, and
 // re-measuring per wheel click forces a fresh layout of the whole document.
 let minimapScrollMetrics = null;

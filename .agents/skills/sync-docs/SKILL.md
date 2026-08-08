@@ -55,6 +55,9 @@ Pages carry an ordering prefix (`docs/01-features/03-library.md`); the prefix is
 | Which Monaco colorizers are bundled (`scripts/bundle-monaco.mjs`) | `docs/01-features/07-editing.md#code-view` — a format with no grammar opens as uncolored text, and the page says which |
 | Crates, IPC commands, source-file roles, data structures | `docs/02-development/01-architecture.md` |
 | Toolchain, `Justfile`, `just verify`, platform build deps | `docs/02-development/02-building.md` |
+| A new check (`scripts/check-*.mjs`, a `just check-*` recipe), or a step added to or removed from `verify` | `docs/02-development/02-building.md` — the `verify` recipe line, the prose that names each check, **and** the **Individual tasks** table. All three carry the list, so one edited alone is drift |
+| A new test subject file under `src/tests/`, a new test module, or a change to where a kind of code is tested (`src/tests/mod.rs`, `src/app/tests.rs`, `src/store/tests.rs`, `scripts/check-shell.mjs`) | `docs/02-development/07-workflow.md#where-a-test-goes` and the source-file roles in `docs/02-development/01-architecture.md`. `/sync-tests` holds the same table for a builder — the two say the same thing to two readers, so they move together |
+| A skill added, removed or renamed under `.agents/skills/`, or a change to how the workflow runs — what gates what, what a plan owes, who may write git | `docs/02-development/07-workflow.md` (the order, the rules and the skill table), and the skill count in `README.md` |
 | Release flow (`Justfile` `release`, `scripts/prepare-release.mts`, `.github/workflows/release-*`), version | `docs/02-development/03-releasing.md` |
 | Install paths, platforms, data dirs, app id (`wix/`, `leaf.rc`, `Cargo.toml`) | `docs/02-installation.md` |
 | The pitch, the feature list, the keyboard-shortcut tour | `docs/01-introduction.md`, `docs/03-quickstart.md`, `README.md` |
@@ -75,6 +78,8 @@ Update **every** page a change touches. A renamed setting, for example, may appe
 - `docs/01-features/05-settings.md` — the **settings** table (one row per field in `Settings` in `src/lib.rs`).
 - `docs/01-features/07-editing.md` — the **Summary** table and the block-kind list the insert row offers (`MARKDOWN_INSERTS` in `block-controls.js`).
 - `docs/01-features/06-themes.md` and `README.md` — the **family list and count** (`themes/*.md`, one file per family).
+- `docs/02-development/07-workflow.md` — the **skill table** (one row per folder under `.agents/skills/`) and the **where a test goes** table (the same rows `/sync-tests` holds).
+- `docs/02-development/02-building.md` — the **Individual tasks** table and the `verify` recipe (one row per `check-*` in the `Justfile`).
 
 A useful check: enumerate the source (e.g. the `IpcCommand` variants, the menu items, the settings fields) and confirm the doc table has exactly those rows — no extras, none missing.
 
@@ -162,7 +167,7 @@ What each role means in practice:
 |:--|:--|
 | **published** (`docs/`) | Behavior changed. Step 2's map says which page; step 3 says how to edit it |
 | **source of a token / a color** (`design/`, `themes/`) | Never edited here. A value changes in `design/` and the bundlers regenerate — see [`/design-tokens`](../design-tokens/SKILL.md) |
-| **a repeatable job** (`.agents/skills/`) | The steps a skill names moved, or a rule it enforces changed. A skill describing a script or a path that no longer exists is worse than no skill |
+| **a repeatable job** (`.agents/skills/`) | The steps a skill names moved, or a rule it enforces changed. A skill describing a script or a path that no longer exists is worse than no skill. A change here is also published: [Workflow](../../../docs/02-development/07-workflow.md) is the account of these skills a contributor reads, so it is swept in the same pass |
 | **the guide** (`AGENTS.md`, and `README.md`) | A standing rule changed, or the repo grew a file the guide's tables do not reach. Never a log of what shipped |
 | **a license notice** (`src/assets/*-MIT.md`) | Only when what is vendored changes |
 | **installer text** (`wix/`) | Only when the install flow changes |

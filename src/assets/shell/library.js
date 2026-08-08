@@ -72,6 +72,8 @@ function endLibraryMotion() {
   document.body.classList.remove('is-library-opening', 'is-library-closing', 'is-library-settling');
   const done = libraryMotionDone;
   libraryMotionDone = null;
+  // The rail's width write is dropped while the pane moves, since it retargets the transition mid-gesture. This is the one place the classes come off, so it is the one place that can ask for it again.
+  scheduleMinimapWidthSync();
   // A full layout of the resting truth, so ending mid-bounce still seats everything.
   if (done) done();
 }

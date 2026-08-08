@@ -96,11 +96,8 @@ function scheduleMinimapWidthSync() {
   if (minimapWidthFrame) return;
   minimapWidthFrame = requestAnimationFrame(() => {
     minimapWidthFrame = 0;
-    // Mid library-toggle this write changes a grid column and retargets the pane's transition, desyncing it from the bar — hold the write until the motion ends.
-    if (/is-library-/.test(document.body.className)) {
-      scheduleMinimapWidthSync();
-      return;
-    }
+    // Mid library-toggle this write changes a grid column and retargets the pane's transition, desyncing it from the bar. Drop it — the motion's own end asks again. Re-arming here instead keeps the page drawing frames for the whole gesture.
+    if (/is-library-/.test(document.body.className)) return;
     syncMinimapWidthToCodeView();
   });
 }
@@ -325,6 +322,8 @@ function disconnectMinimapPreviewObservers() {
   minimapBuiltPreviewWidth = -1;
   minimapBuiltFrameWidth = -1;
   minimapBuiltRange = null;
+  minimapBuiltFirstRow = -1;
+  minimapBuiltLastRow = -1;
   invalidateMinimapMetrics();
 }
 // Drop the cached rail geometry. Everything that can change it calls this; the
@@ -777,6 +776,16 @@ function minimapWindowCoversView(metrics, scrollTop) {
   const view = minimapVisibleDocumentRange(metrics, scrollTop);
   return view.top >= minimapBuiltRange.top && view.bottom <= minimapBuiltRange.bottom;
 }
+// Would a rebuild clone the same rows out of the same document at the same widths? Then
+// it puts back what is already there, and asking again cannot change the guard's answer.
+function minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, first, last) {
+  return minimapBuiltVersion === minimapContentVersion
+    && minimapBuiltSourceWidth === metrics.sourceWidth
+    && minimapBuiltPreviewWidth === previewWidth
+    && minimapBuiltFrameWidth === frameWidth
+    && minimapBuiltFirstRow === first
+    && minimapBuiltLastRow === last;
+}
 // Document offset of an element's top/bottom edge, on the same basis as
 // metrics.sourceTop (the scroll container's content coordinates).
 function minimapBlockEdges(el, appTop, scrollTop) {
@@ -910,6 +919,27 @@ function updateDocumentMinimapPreview() {
   const rows = minimapWindowRows(source);
   const view = minimapVisibleDocumentRange(metrics, scrollTop);
   const windowsIt = rows.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;
+  const appTop = windowsIt ? app.getBoundingClientRect().top : 0;
+  let first = 0;
+  let last = rows.length - 1;
+  if (windowsIt) {
+    const slack = view.height * MINIMAP_WINDOW_SLACK;
+    first = minimapFirstBlockPast(rows, appTop, scrollTop, view.top - slack);
+    last = Math.min(
+      rows.length - 1,
+      minimapFirstBlockPast(rows, appTop, scrollTop, view.bottom + slack),
+    );
+    // Keep the clone already on the page and — unlike the skip above — do not ask for
+    // another: a guard that cannot be satisfied would otherwise rebuild every frame.
+    if (
+      content.querySelector('.document-minimap-preview') &&
+      minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, first, last)
+    ) {
+      minimap.classList.remove('is-loading');
+      placeMinimapViewport(minimap, metrics, null);
+      return;
+    }
+  }
   // The clone is laid out inside the frame, which is the page's own room; the frame
   // is what scales, so the clone keeps the width the body has on the page.
   const frame = document.createElement('div');
@@ -917,6 +947,9 @@ function updateDocumentMinimapPreview() {
   frame.setAttribute('aria-hidden', 'true');
   frame.style.width = `${frameWidth}px`;
   let preview;
+  // Where the clone lands. Kept apart from the built range below, which widens to the
+  // document's ends: landing the clone at a widened top drags the thumbnail off the text.
+  let firstTop = metrics.sourceTop;
   if (!windowsIt) {
     preview = source.cloneNode(true);
     stripMinimapClone(preview);
@@ -925,25 +958,28 @@ function updateDocumentMinimapPreview() {
     // so the thumbnail sits where the real content sits in the scroll range.
     frame.style.transform = `translateY(${metrics.sourceTop * previewScale}px) scale(${previewScale})`;
     minimapBuiltRange = null;
+    minimapBuiltFirstRow = -1;
+    minimapBuiltLastRow = -1;
   } else {
-    const appTop = app.getBoundingClientRect().top;
-    const slack = view.height * MINIMAP_WINDOW_SLACK;
-    const first = minimapFirstBlockPast(rows, appTop, scrollTop, view.top - slack);
-    const last = Math.min(
-      rows.length - 1,
-      minimapFirstBlockPast(rows, appTop, scrollTop, view.bottom + slack),
-    );
     preview = buildWindowedMinimapClone(source, first, last);
     stripMinimapClone(preview);
     preview.style.width = `${metrics.sourceWidth}px`;
-    const firstTop = first < rows.length
-      ? minimapBlockEdges(rows[first], appTop, scrollTop).top
-      : metrics.sourceTop;
+    if (first < rows.length) {
+      firstTop = minimapBlockEdges(rows[first], appTop, scrollTop).top;
+    }
     frame.style.transform = `translateY(${firstTop * previewScale}px) scale(${previewScale})`;
+    // At the ends of the document the range takes the document's own ends: above the
+    // first row and below the last there is only the layout's padding, which no clone of
+    // the rows can hold. Row edges there fail the guard at every scroll top and every
+    // foot, and every failure asks for another rebuild.
     minimapBuiltRange = {
-      top: first < rows.length ? firstTop : 0,
-      bottom: last >= 0 ? minimapBlockEdges(rows[last], appTop, scrollTop).bottom : 0,
+      top: first === 0 ? 0 : firstTop,
+      bottom: last >= rows.length - 1
+        ? metrics.scrollHeight
+        : minimapBlockEdges(rows[last], appTop, scrollTop).bottom,
     };
+    minimapBuiltFirstRow = first;
+    minimapBuiltLastRow = last;
   }
   frame.appendChild(preview);
   content.replaceChildren(frame);
@@ -957,7 +993,7 @@ function updateDocumentMinimapPreview() {
   if (minimapBuiltRange) {
     const clonedFirst = preview.firstElementChild;
     if (clonedFirst) {
-      const wanted = minimapBuiltRange.top * previewScale;
+      const wanted = firstTop * previewScale;
       const landedAt = clonedFirst.getBoundingClientRect().top - content.getBoundingClientRect().top;
       const delta = wanted - landedAt;
       if (Math.abs(delta) > 0.5) {
@@ -1055,6 +1091,8 @@ function settleReaderScroll() {
   readerScrollAnchor = captureReaderScrollAnchor();
   // The clamp may have moved the reader; the rail follows it.
   updateMinimapViewport();
+  // Diagrams stand aside while the reader scrolls, so this is where they are told they can draw.
+  readerScrollSettled();
 }
 // A render places the reader deliberately, so a settle queued by a scroll of the
 // OUTGOING document must not land on the new one — it would overwrite the anchor

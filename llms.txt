@@ -19,6 +19,7 @@
 - [Theming](https://leaftext.com/docs/02-development/04-theming.md)
 - [Design system](https://leaftext.com/docs/02-development/05-design-system.md)
 - [Screenshots](https://leaftext.com/docs/02-development/06-screenshots.md)
+- [Workflow](https://leaftext.com/docs/02-development/07-workflow.md)
 - [Installation](https://leaftext.com/docs/02-installation.md)
 - [Quickstart](https://leaftext.com/docs/03-quickstart.md)
 - [Glossary](https://leaftext.com/docs/GLOSSARY.md)

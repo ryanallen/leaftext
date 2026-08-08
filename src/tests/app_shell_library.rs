@@ -277,10 +277,24 @@ fn the_normal_width_toggle_moves_the_pane_bar_and_page_together() {
         &html,
         "function startLibraryMotion(direction, done) {\n  // Settle any motion still running, so a re-toggle retargets from where the rail is.\n  endLibraryMotion();",
     );
-    // The minimap's width write reacts to the reader resizing one frame in; mid-toggle it would change a grid column and retarget the pane's transition, so it waits the motion out.
+    // The minimap's width write reacts to the reader resizing one frame in; mid-toggle it would change a grid column and retarget the pane's transition, so it is dropped and the motion's own end asks again. Re-arming it here instead drew a frame for every frame of the gesture.
     assert_contains(
         &html,
-        "if (/is-library-/.test(document.body.className)) {\n      scheduleMinimapWidthSync();\n      return;\n    }",
+        "if (/is-library-/.test(document.body.className)) return;",
+    );
+    assert!(
+        !html.contains("      scheduleMinimapWidthSync();\n      return;"),
+        "the rail's width must wait to be told, not ask every frame"
+    );
+    // And the one place the motion classes come off is the one place that tells it.
+    let ending = html
+        .split("function endLibraryMotion() {")
+        .nth(1)
+        .expect("the front-end ends a library motion");
+    assert!(
+        ending[..ending.find("\n}\n").expect("that function closes")]
+            .contains("scheduleMinimapWidthSync();"),
+        "the pane finishing its motion must ask for the rail width it held back"
     );
     // Only the toggle's two branches start a motion: the divider drag and the resize re-clamp write the rail with no motion class up, so they stay immediate.
     assert_eq!(

@@ -761,10 +761,8 @@ function scheduleMermaidPass() {
   if (mermaidDrainTimer) return;
   mermaidDrainTimer = window.setTimeout(() => {
     mermaidDrainTimer = 0;
-    if (readerScrolling) {
-      scheduleMermaidPass();
-      return;
-    }
+    // Still scrolling: drop the pass rather than set another timer. The settle after the last wheel click calls back.
+    if (readerScrolling) return;
     // Boxes back first: a recycled box holds its drawing's height, so only the drawings can move anything.
     for (const diagram of mermaidLeavingView) recycleMermaidDiagram(diagram);
     mermaidLeavingView.clear();
@@ -774,6 +772,11 @@ function scheduleMermaidPass() {
     mermaidWaitingNearby.clear();
     drawMermaidDiagrams(queue);
   }, READER_SCROLL_SETTLE_MS);
+}
+// The gesture stopped, so anything held for it can go now. Only when something is
+// actually waiting: a settle with an empty queue has nothing to draw.
+function readerScrollSettled() {
+  if (mermaidWaitingNearby.size || mermaidLeavingView.size) scheduleMermaidPass();
 }
 // A render replaces the document, so every box the old one was watching is gone.
 function forgetMermaidWatch() {

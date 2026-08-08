@@ -70,11 +70,28 @@ The tell is a plan that gets green without the thing being true.
 - Each phase ships alone and is worth having alone.
 - The italic line says why it is in that position, and is true — phase 2 must really need what phase 1 proved.
 - A box has an obvious done. "Make it fast" does not.
-- Tests have their own boxes, in the phase that needs them.
+- Tests have their own boxes, in the phase that needs them — step 5a is the pass that checks it.
 - Every phase ends with `/check`, and with the bundler line if it touched `design/`.
 - Nothing open-ended survives: no TBD, no "decide later", no question left in the file. Something genuinely unknowable until code exists is **phase 0** — one grep, one measurement, spelled out as a box.
 
 If a fix changes what gets built rather than how it is described, ask before writing it. One round, the question tool, and the answer goes in the file as a decision with its reason.
+
+## 5a. Every phase says how it is proved, and this pass checks it against the suite
+
+**A phase with no test box is a phase this pass writes one for.** [ticket](../ticket/SKILL.md) holds the shape; adding a missing test box is describing the same work more honestly, not changing it, so it does not wait on a question. `just verify` runs the tests that exist and nothing else asks whether the change made one necessary — which is why a plan is the cheapest place to catch it.
+
+**Search the suite before writing the box.** The same reading this skill already does, aimed at the tests:
+
+```bash
+grep -rn "<the behavior>" src/tests/ src/app/tests.rs src/store/tests.rs scripts/check-shell.mjs
+```
+
+- Where a test already covers the claim, **the box says so and names it** rather than asking for a second one. A phase that writes a test the suite already has is work done twice, and the second copy is the one that rots.
+- **A box naming a test that does not exist is struck**, with the reason, and rewritten as the test that is actually missing. That belongs in the record: a reader trusts a named test the way they trust a citation.
+- The box names the file it goes in — `src/tests/` per subject, `src/app/tests.rs` for the binary, `scripts/check-shell.mjs` for `src/assets/shell/`. A phase whose only work is a row in `design/` asks for no test; the design checks already refuse what is not listed.
+- **What genuinely cannot be tested here gets its line in the phase** — a real window, live selected text, a held pointer. Nothing about the Mac build, the installer or the workflows: GitHub compiles those on a tagged release, and the caveat is true on every ticket.
+
+**A gap this reading turns up outside the ticket is its own ticket, never a box smuggled into this one.** Opening every citation walks a lot of code, so this is the pass that notices a subject nothing covers. File it — `../docs/refactor/` in the subject folder it belongs to, its row in the index, [`/pm`](../pm/SKILL.md) once — and name it in this ticket's **Still open** so nobody reads it as covered. Widening the ticket in front of you is how a plan stops being reviewable.
 
 ## 6. The six parts are there, and the summary earns its keep
 
@@ -175,7 +192,8 @@ Two things have to be on the file when this ends: the dated line at the top, and
 
 - `/ticket` — the shape this holds a file to.
 - `/dev` — what runs next, once the plan is true.
-- `/pm` — the running order these tickets are ranked into.
+- `/pm` — the running order these tickets are ranked into, and what it refuses to rank.
+- `/sync-tests` — where a test goes and how it is named, for the boxes step 5a writes.
 - `AGENTS.md` — the rules each paid for in version numbers.
 - `../docs/GLOSSARY.md` — the words a ticket is held to, and the one file outside the ticket this skill may edit.
 - `../docs/PLAN.md` — how short a row is allowed to be. Words cut from a row land in the ticket.

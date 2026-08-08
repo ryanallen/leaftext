@@ -45,6 +45,7 @@ Then check three things per ticket, in the code, not in the file:
 - **Does its status match the app?** A ticket saying "not built" whose feature ships, or the reverse, poisons every row that rests on it.
 - **Is what it is waiting on real?** A dependency drawn from one ticket's own words is how a plan ends up circular — two tickets each waiting on the other.
 - **Do its citations still land?** A line number drifts on every edit above it. A ticket citing a function that moved is not evidence of anything.
+- **Does every phase say how it is proved?** A test box per phase, naming where the test goes. Missing them changes the row — see below.
 
 A ticket that cannot be settled by reading gets a **tier 0** row rather than a guess.
 
@@ -61,6 +62,12 @@ That order is the whole method, and it is what makes a row arguable rather than 
 **Absent is not wrong.** "The app cannot open a `.docx`" is missing capability, not incorrect behavior — it does not lift a row into tier 1 however big its audience. Say that in the row, or the next reader moves it.
 
 **A ticket that changes the window and has not drawn it in the file is not rankable.** Its `Stage` is `Ready` and its row says so — "owes a drawn `What it looks like` section" — because the cost of a row nobody has drawn is unknown, and the thing that gets built is whatever the builder invents. [ticket](../ticket/SKILL.md) holds the shape of that section; [design](../design/SKILL.md) is what fails a ticket without one.
+
+**A ticket whose phases do not say how they are proved is not rankable either.** Every phase owes a test box naming where the test goes; a file with none is `Ready` with "owes test boxes" in its row, however finished the rest of it reads. The cost is the reason it belongs here rather than only in [design](../design/SKILL.md): a phase that has not counted its tests is a phase costed at half, and the row is what somebody picks up work from. This is the check to run over every ticket while walking the folders, not only over the ones being re-ranked.
+
+**A missing test is not the app being wrong.** [Absent is not wrong](../../../../docs/GLOSSARY.md#absent-is-not-wrong) covers this too: a subject nothing covers is a risk, not a bug, so a test-coverage ticket ranks on what it unblocks and what it costs, not in tier 1 — unless something ships wrong today, which is then the row's real reason. Say that in the cell, or the next reader moves it.
+
+**A gap this pass turns up gets a ticket, not a row.** Ranking is the only pass that walks the three live folders off the disk and reads the code behind them, so it finds subjects nothing covers. A row cannot hold work no ticket describes: write the file with [`/ticket`](../ticket/SKILL.md), give it its index row, and rank it here in the same pass.
 
 ## 3. The tiers
 

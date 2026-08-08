@@ -77,6 +77,11 @@
 - Markdown: https://leaftext.com/docs/02-development/06-screenshots.md
 - Summary: One row per picture in imgs/: what it shows, and what takes it. Before this existed the commands were gone the moment each shot was taken, so a fault common to all of them — a black strip round two...
 
+## Workflow
+- Page: https://leaftext.com/docs/#/development/workflow
+- Markdown: https://leaftext.com/docs/02-development/07-workflow.md
+- Summary: Work here starts as a written plan and ends as a released version, and the same path is followed by a person or an agent. The steps are kept as skills — one folder each under .agents/skills/, read ...
+
 ## Installation
 - Page: https://leaftext.com/docs/#/installation
 - Markdown: https://leaftext.com/docs/02-installation.md

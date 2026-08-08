@@ -367,8 +367,26 @@ fn only_the_diagrams_near_the_reader_are_drawn() {
         "the draw must wait the same 120ms the reader already counts: {drain}"
     );
     assert!(
-        drain.contains("if (readerScrolling) {"),
-        "a draw landing mid-gesture must re-arm rather than run: {drain}"
+        drain.contains("if (readerScrolling) return;"),
+        "a draw landing mid-gesture must stand down rather than run: {drain}"
+    );
+    assert!(
+        !drain.contains("scheduleMermaidPass();"),
+        "the pass must wait to be told the scroll settled, not set itself another timer: {drain}"
+    );
+    // And the settle is what tells it, only when something is actually held back.
+    assert!(
+        script.contains("function readerScrollSettled() {\n  if (mermaidWaitingNearby.size || mermaidLeavingView.size) scheduleMermaidPass();"),
+        "the scroll settling must be what releases a held diagram pass"
+    );
+    let settle = script
+        .split("function settleReaderScroll() {")
+        .nth(1)
+        .expect("the front-end settles the reader's scroll");
+    assert!(
+        settle[..settle.find("\n}\n").expect("that function closes")]
+            .contains("readerScrollSettled();"),
+        "the reader's own settle must be what calls it"
     );
     // The undrawn box keeps its source text, so Ctrl+F still finds the words inside a diagram nobody has drawn.
     assert!(
