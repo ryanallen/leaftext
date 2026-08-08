@@ -127,4 +127,6 @@ Every crate ships to users and nobody here reviews it — a security boundary, n
 
 LF endings (`.gitattributes`); images and archives binary. Never commit build output (`dist/`, `target/`, `.release-tag`) or large binaries. **No assistant or third-party identity in the repo or its history — commits are the owner's, never a co-author trailer.**
 
+**Every file in this repo is a guide, not a log.** The rule at the top of this file is the whole repo's: a `design/` table, a `themes/` page, a `docs/` page, a skill, a comment. No changelog entry, no "what I found", no count of what was audited, no note of what a pass covered, no paragraph explaining why the file now says what it says. State the current rule and stop. What a build turned up goes in its ticket, which is what the ticket is for — a reader opening the icon table wants the rule for adding an icon, not the account of somebody checking sixty of them.
+
 <!-- keycode: LEAF-9D2F -->

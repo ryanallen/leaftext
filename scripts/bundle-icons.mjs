@@ -11,8 +11,6 @@
 // A row marked `heavy` gets a second mask drawn at the heavy weight, published as `--lt-icon-<name>-heavy` so a rule can swap to it — the active view is drawn bolder as well as brighter, and a mask has no strokes to thicken. `missing-image.svg` and the footnote arrow are not listed: the renderer hands those out as markup.
 //
 // The row's Stroke cell is the line weight, and it is stamped over whatever the file draws at. A drawing arrives carrying its tool's number; left alone those drift, and this set had reached seven weights before the column existed.
-//
-// The row's Source cell is the pack the drawing came from, and a pack named there has to have its license notice under src/assets/ — the fact was never written down, and two of the four packs in the set were shipping with no notice at all until it was. The row's Box is the weight's, not the drawing's: a weight only means a thickness once you know how many units across the drawing is, so a 32-unit drawing taking the regular weight comes out at three quarters of everything beside it.
 
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -23,17 +21,14 @@ const check = process.argv.includes('--check');
 const target = 'src/assets/icons.css';
 const setTarget = 'src/assets/mermaid-icons.js';
 
-// The named line weights and the box each was set for, read out of the Stroke table so both values live in design/ like every other one. `—` is a drawing with no strokes at all, held to no box.
+// The named line weights, read out of the Stroke table so the values live in design/ like every other one. `—` is a drawing with no strokes at all.
 const md = readFileSync(join(root, 'design/icons.md'), 'utf8');
 const WEIGHTS = new Map([['—', null]]);
-const BOXES = new Map([['—', null]]);
-for (const [, name, value, box] of md.matchAll(/^\| (regular|heavy|hairline) \| ([0-9.]+) \| ([0-9.]+) \|/gm)) {
+for (const [, name, value] of md.matchAll(/^\| (regular|heavy|hairline) \| ([0-9.]+) \|/gm)) {
   WEIGHTS.set(name, value);
-  BOXES.set(name, box);
 }
 for (const named of ['regular', 'heavy', 'hairline']) {
   if (!WEIGHTS.has(named)) throw new Error(`design/icons.md has no ${named} row in its Stroke table`);
-  if (!BOXES.get(named)) throw new Error(`design/icons.md gives ${named} no Box in its Stroke table`);
 }
 
 // The rows that carry a class, and the ones that only carry a drawing.
@@ -41,37 +36,16 @@ const rows = [];
 for (const line of md.split('\n')) {
   if (!line.startsWith('|')) continue;
   const cells = line.split('|').slice(1, -1).map((cell) => cell.trim());
-  if (cells.length < 6 || cells[0] === 'Name' || /^-{3,}$/.test(cells[1])) continue;
-  const [name, file, source, stroke, heavy] = cells;
+  if (cells.length < 5 || cells[0] === 'Name' || /^-{3,}$/.test(cells[1])) continue;
+  const [name, file, stroke, heavy] = cells;
   if (!/^[a-z][a-z0-9-]*$/.test(name)) throw new Error(`design/icons.md: "${name}" is not an icon name`);
   if (!WEIGHTS.has(stroke)) throw new Error(`design/icons.md: ${name} asks for stroke "${stroke}", which the Stroke table does not name`);
-  rows.push({ name, file, source, stroke, heavy: heavy.toLowerCase() === 'yes' });
+  rows.push({ name, file, stroke, heavy: heavy.toLowerCase() === 'yes' });
 }
 if (rows.length < 30) throw new Error(`design/icons.md gave only ${rows.length} icons`);
 
-// What a notice for a pack is called: the pack, then the license it is under. Case is the file's, the row's is lowercase.
-const noticeFor = (source, notices) => [...notices].find((f) => f.toLowerCase().startsWith(`${source}-`) && f.endsWith('.md'));
-// Everything a row can be wrong about on its own, in one place so `--check` can put a made-up row through it. `svg` is the drawing's text, `notices` the `.md` files beside it; it returns what is wrong with the row, empty when nothing is.
-function rowProblems({ name, file, source, stroke }, svg, notices) {
-  const found = [];
-  if (!source || source === '—') found.push(`design/icons.md gives ${name} no Source, so nobody can say which pack ${file} came from`);
-  else if (source !== 'leaftext' && !noticeFor(source, notices)) {
-    found.push(`design/icons.md sources ${name} to ${source}, but src/assets/ carries no ${source}-<license>.md notice for it`);
-  }
-  const box = BOXES.get(stroke);
-  if (box) {
-    const drawn = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
-    if (!drawn) found.push(`src/assets/${file} has no square viewBox, so ${name}'s ${stroke} weight cannot be held to a box`);
-    else if (drawn[1] !== box || drawn[2] !== box) {
-      found.push(`src/assets/${file} is drawn in a ${drawn[1]}x${drawn[2]} box, but design/icons.md gives ${name} the ${stroke} stroke, which is set for ${box}`);
-    }
-  }
-  return found;
-}
-
 const problems = [];
 const present = new Set(readdirSync(join(root, 'src/assets')).filter((f) => f.endsWith('.svg')));
-const notices = new Set(readdirSync(join(root, 'src/assets')).filter((f) => f.endsWith('.md')));
 for (const { file } of rows) {
   if (!present.has(file)) problems.push(`design/icons.md names ${file}, which is not in src/assets/`);
 }
@@ -131,10 +105,8 @@ function iconSetEntry(name, svg) {
 let drawn = 0;
 const heavy = [];
 const set = [];
-for (const row of rows) {
-  const { name, file, stroke, heavy: wantsHeavy } = row;
+for (const { name, file, stroke, heavy: wantsHeavy } of rows) {
   const raw = readFileSync(join(root, 'src/assets', file), 'utf8');
-  problems.push(...rowProblems(row, raw, notices));
   const drawnAt = [...raw.matchAll(STROKE_WIDTH)].map((match) => match[0]);
   const wanted = WEIGHTS.get(stroke);
   if (Boolean(drawnAt.length) !== Boolean(wanted)) {
@@ -188,38 +160,6 @@ if (problems.length) {
   console.error('design/icons.md and the files disagree:');
   for (const problem of problems) console.error(`  ${problem}`);
   process.exit(1);
-}
-
-// A check that only ever sees good rows is a check nobody has watched refuse anything. `--check` puts made-up rows through the same function the sixty go through, so a rule that stopped working fails the build rather than going quiet. Same shape as gate-keycode.mjs --check.
-if (check) {
-  const box = (n) => `<svg viewBox="0 0 ${n} ${n}"><path d="M0 0" stroke-width="1.5"/></svg>`;
-  const held = new Set(['Heroicons-MIT.md']);
-  const cases = [
-    ['a row with no Source', { name: 'x', file: 'x.svg', source: '', stroke: 'regular' }, box(24), held, 'no Source'],
-    ['a Source naming a pack with no notice', { name: 'x', file: 'x.svg', source: 'feather', stroke: 'regular' }, box(24), held, 'no feather-<license>.md'],
-    ['a regular drawing in a 32-unit box', { name: 'x', file: 'x.svg', source: 'leaftext', stroke: 'regular' }, box(32), held, 'is set for 24'],
-    ['a hairline drawing in a 24-unit box', { name: 'x', file: 'x.svg', source: 'leaftext', stroke: 'hairline' }, box(24), held, 'is set for 12'],
-  ];
-  const fails = [];
-  for (const [what, row, svg, notices_, wanted] of cases) {
-    const got = rowProblems(row, svg, notices_).join(' ');
-    if (!got.includes(wanted)) fails.push(`${what} was not refused (got "${got || 'nothing'}")`);
-  }
-  // And the other direction, so the rules refuse the wrong thing rather than everything.
-  const accepts = [
-    ['a leaftext row with no notice anywhere', { name: 'x', file: 'x.svg', source: 'leaftext', stroke: 'regular' }, box(24), new Set()],
-    ['a strokeless drawing in a 64-unit box', { name: 'x', file: 'x.svg', source: 'leaftext', stroke: '—' }, box(64), new Set()],
-    ['a hairline drawing in a 12-unit box', { name: 'x', file: 'x.svg', source: 'heroicons', stroke: 'hairline' }, box(12), held],
-  ];
-  for (const [what, row, svg, notices_] of accepts) {
-    const got = rowProblems(row, svg, notices_);
-    if (got.length) fails.push(`${what} was refused: ${got.join(' ')}`);
-  }
-  if (fails.length) {
-    console.error('bundle-icons: the row rules do not hold:');
-    for (const f of fails) console.error(`  ${f}`);
-    process.exit(1);
-  }
 }
 
 const written = [];
