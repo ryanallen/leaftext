@@ -289,6 +289,19 @@
     <div class="flow-picker-body leaf-scroll" id="flowPickerBody"></div>
   </aside>
 </aside>
+<!-- The one question the app asks. Declared here rather than built in script so it
+     is in the page before anything can need it, and so the scrim it shares with the
+     sheets is the same element type theirs is. Its words are written in when it
+     opens: what is asked is the caller's, the frame is the app's. -->
+<div id="confirmBackdrop" class="lt-backdrop" hidden></div>
+<div id="confirmDialog" class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmDialogTitle" aria-describedby="confirmDialogDetail" hidden>
+  <h2 id="confirmDialogTitle" class="confirm-dialog-title"></h2>
+  <p id="confirmDialogDetail" class="confirm-dialog-detail"></p>
+  <div class="confirm-dialog-actions">
+    <button type="button" id="confirmDialogCancel" class="confirm-dialog-button">Cancel</button>
+    <button type="button" id="confirmDialogAccept" class="confirm-dialog-button is-danger">Delete</button>
+  </div>
+</div>
 <!-- The front-end, over the asset protocol rather than inline: the page is handed
      to WebView2 as one string with a ceiling on it and this was 88% of it. A plain
      script tag, not a module, because the fragments are written as one shared

@@ -1093,6 +1093,26 @@ window.leafShowNotice = (message) => leafToast(message, 'ok');
 window.leafShowOpenError = (path, reason) => {
   window.leafShowError(`Failed to open ${path}: ${reason}`);
 };
+// A file went to the bin, and can come back. Sent by the host once the delete has
+// actually happened, which is what keeps the app from ever drawing an offer it
+// could not keep. The offer and the message are the same thing, so it expires with
+// it — nothing here counts down on its own.
+window.leafFileDeleted = (path, name) => {
+  undoableDelete = path;
+  leafToast(`Deleted ${name}`, 'ok', {
+    label: 'Undo',
+    run: undoLastDelete,
+    gone: () => { undoableDelete = null; },
+  });
+};
+// Put back whatever the last delete took. Cleared first, so a second press and a
+// Ctrl+Z chasing the same message cannot ask for it twice.
+function undoLastDelete() {
+  const path = undoableDelete;
+  if (!path) return;
+  undoableDelete = null;
+  send({ command: 'undoDelete', path });
+}
 function escapeText(value) {
   return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }

@@ -60,8 +60,8 @@ fn every_bottom_sheet_is_the_same_bottom_sheet() {
     assert_contains(&css, ".leaf-sheet-close {");
     assert_contains(&css, ".leaf-sheet-grip {");
     assert_contains(&css, ".leaf-sheet.open {");
-    // And one scrim behind all three, rather than three identical ones. The flowchart picker opens over the flow sheet, so only its layer differs.
-    assert_eq!(html.matches("class=\"lt-backdrop\"").count(), 3);
+    // And one scrim behind all of them, rather than four identical ones — the three sheets plus the confirmation, which is not a sheet but dims the page the same way. The flowchart picker opens over the flow sheet, so only its layer differs.
+    assert_eq!(html.matches("class=\"lt-backdrop\"").count(), 4);
     assert_contains(&css, ".lt-backdrop {");
     assert_contains(
         rule_body(&css, "#flowBackdrop {"),
@@ -1032,9 +1032,9 @@ fn the_front_end_shares_its_repeated_plumbing() {
     // Three things every part of the front-end needed and each used to write for itself. A second copy is how two menus end up clamping to different margins, or one drag losing the pointer where another keeps it.
     let script = app_shell_script();
 
-    // Escape closes what is open: four callers, one listener each, no key checks of their own.
+    // Escape closes what is open: every caller one listener, no key checks of their own.
     assert_contains(script, "function leafOnEscape(close, target) {");
-    assert_eq!(script.matches("leafOnEscape(").count(), 6);
+    assert_eq!(script.matches("leafOnEscape(").count(), 7);
 
     // Holding the pointer through a drag, wrapped because a browser may refuse.
     assert_contains(script, "function leafHoldPointer(el, pointerId) {");

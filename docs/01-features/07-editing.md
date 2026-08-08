@@ -183,6 +183,7 @@ Reading-view edits are undoable, step by step.
 - Click it, or press `Ctrl+Z` (`Cmd+Z` on macOS), to revert the most recent edit. The keystroke goes to the platform's own undo only while the block you are in holds typing it has not saved yet — so mid-sentence it takes back letters, and everywhere else it takes back the last edit, including a [delete](#deleting) that removed several blocks.
 - A successful **Save** makes the current text the new baseline and clears the undo history, so Undo only ever steps back through edits made since your last save — it never walks you below saved text.
 - [The flowchart editor](#the-flowchart-editor) keeps its own history while it is open, because everything you do in there arrives here as a single edit.
+- A file you just deleted from the [library pane](03-library.md#deleting-asks-first-and-can-be-taken-back) takes the key first, while the message offering it back is still on screen. That is a file coming out of the Recycle Bin, not a text edit, and it is the only thing here that does not touch the document you are reading.
 
 ## The flowchart editor
 

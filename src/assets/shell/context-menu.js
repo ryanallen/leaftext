@@ -103,7 +103,17 @@ function runContextAction(action, path, link) {
     case 'copyPath': send({ command: 'copyPath', path }); break;
     case 'reveal': send({ command: 'revealFile', path }); break;
     case 'properties': send({ command: 'showProperties', path }); break;
-    case 'delete': send({ command: 'deleteFile', path }); break;
+    // The only item that asks. Naming the file is what makes it a question rather than a formality, and where the file goes is what makes the answer easy.
+    case 'delete':
+      openConfirm(
+        `Delete “${fileBaseName(path)}”?`,
+        isMacPlatform
+          ? 'It goes to the Trash, so you can put it back.'
+          : 'It goes to the Recycle Bin, so you can put it back.',
+        'Delete',
+        () => send({ command: 'deleteFile', path })
+      );
+      break;
     case 'rename': openRenameBox(path); break;
   }
 }
@@ -331,5 +341,64 @@ renameInput.addEventListener('keydown', (event) => {
 renameInput.addEventListener('blur', () => {
   commitRename();
 });
+// The one question the app asks, and the only thing in it that stands in your way
+// until you answer. The frame is declared in the boot HTML; what is asked is the
+// caller's, so a second thing worth confirming needs no second dialog.
+const confirmBackdrop = document.getElementById('confirmBackdrop');
+const confirmDialog = document.getElementById('confirmDialog');
+const confirmDialogTitle = document.getElementById('confirmDialogTitle');
+const confirmDialogDetail = document.getElementById('confirmDialogDetail');
+const confirmDialogCancel = document.getElementById('confirmDialogCancel');
+const confirmDialogAccept = document.getElementById('confirmDialogAccept');
+let confirmAction = null;
+let confirmReturnFocus = null;
+let confirmFadeTimer = 0;
+function openConfirm(title, detail, acceptLabel, action) {
+  confirmAction = action;
+  confirmReturnFocus = document.activeElement;
+  confirmDialogTitle.textContent = title;
+  confirmDialogDetail.textContent = detail;
+  confirmDialogAccept.textContent = acceptLabel;
+  if (confirmFadeTimer) {
+    clearTimeout(confirmFadeTimer);
+    confirmFadeTimer = 0;
+  }
+  confirmBackdrop.hidden = false;
+  confirmDialog.hidden = false;
+  // A frame later, so the scrim has a start state to fade from — the same two steps every sheet's scrim takes.
+  window.requestAnimationFrame(() => confirmBackdrop.classList.add('open'));
+  // The destructive button takes the focus, so Enter answers the question that was asked rather than the button nearest the pointer.
+  leafFocusForKeyboard(confirmDialogAccept);
+}
+// Matching the scrim's own fade: the dialog goes at once, the dim under it catches up.
+const CONFIRM_FADE_MS = 160;
+function closeConfirm() {
+  if (confirmDialog.hidden) return;
+  confirmDialog.hidden = true;
+  confirmBackdrop.classList.remove('open');
+  confirmFadeTimer = setTimeout(() => {
+    confirmBackdrop.hidden = true;
+    confirmFadeTimer = 0;
+  }, CONFIRM_FADE_MS);
+  confirmAction = null;
+  leafFocusForKeyboard(confirmReturnFocus);
+  confirmReturnFocus = null;
+}
+function acceptConfirm() {
+  const action = confirmAction;
+  closeConfirm();
+  if (action) action();
+}
+confirmDialogCancel.addEventListener('click', closeConfirm);
+confirmDialogAccept.addEventListener('click', acceptConfirm);
+confirmBackdrop.addEventListener('click', closeConfirm);
+// Enter answers yes, for the pointer user who was handed no focus to press it with. Not while Cancel holds the focus: a focused button's own Enter has to win, or Tab would reach a button that cannot be pressed.
+window.addEventListener('keydown', (event) => {
+  if (confirmDialog.hidden || event.key !== 'Enter') return;
+  if (document.activeElement === confirmDialogCancel) return;
+  event.preventDefault();
+  acceptConfirm();
+});
 // On window, so the insert row and a rename field get Escape first.
 leafOnEscape(hideContextMenu, window);
+leafOnEscape(closeConfirm, window);

@@ -105,3 +105,12 @@ let pendingCaret = null;
 // whose own height swings across the re-render: it points at the stable block
 // ABOVE the edit, so the reader holds its place rather than snapping to the top.
 let pendingEditAnchor = null;
+
+// ---- the last delete, and whether it can be taken back ---------------------
+
+// The file the last delete could put back, or null. Set only by the host saying
+// the delete happened, so nothing offers to undo one that never went through.
+// Three fragments read it: the toast that carries the Undo button, the Ctrl+Z
+// handler in code-view.js, and the toast's own end, which clears it — the offer
+// lasts exactly as long as the message does.
+let undoableDelete = null;

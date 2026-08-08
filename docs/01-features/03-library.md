@@ -21,6 +21,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Cloud folders](#your-cloud-is-already-a-folder) | Dropbox, OneDrive, iCloud Drive, Box, Nextcloud and Google Drive become vaults on their own when their app is on this machine, and their rows wear a cloud |
 | [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, with a sync button in its own header — and a repository can be [cloned](#clone-a-repository) into a new vault |
 | [File actions](#file-actions) | Right-click a file to open, cut/copy, copy path, rename, reveal, view properties, or delete |
+| [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
 | [Folder actions](#folders-and-the-space-around-them) | Right-click a folder — or the empty space in the pane — to paste, reveal it, or see its properties |
 | [Narrow windows](#narrow-windows) | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
 
@@ -115,14 +116,28 @@ Right-click a file row for a context menu of file actions:
 | Rename | Edits the name inline; press Enter to apply, Escape to cancel |
 | Reveal file | Shows the file in your OS file manager |
 | Properties | Opens the OS file-properties view |
-| Delete | Moves the file to the Recycle Bin / Trash |
+| Delete | Asks first, then moves the file to the Recycle Bin / Trash — and offers it back |
 
 A link inside a document you are reading has [its own menu](02-navigation.md#opening-a-link-in-a-new-page), which shares Reveal file and Copy path with this one.
 
-Delete is reversible — the file goes to the Recycle Bin or Trash, not gone for good. Reveal and Properties map to each OS:
+Reveal and Properties map to each OS:
 
 - Windows: Explorer; the file Properties dialog.
 - macOS: Finder; Get Info.
+
+### Deleting asks first, and can be taken back
+
+![The confirmation over a dimmed page: "Delete “Reading list.md”?", the line saying it goes to the Recycle Bin, then Cancel and a red Delete](../../imgs/delete-confirm.png)
+
+Delete does not act on the click. It asks — naming the file and saying where it goes — and the safe answer is where the pointer already is. Escape or a click on the dimmed page cancels; Enter deletes.
+
+![A message in the bottom-right corner reading "Deleted Reading list.md", with an Undo button on it](../../imgs/delete-undo.png)
+
+Once the file has gone, a message in the bottom-right corner says so and carries an **Undo** button. Press it and the file goes back to the folder it came from, under its own name. **Ctrl+Z** does the same thing while that message is up, unless you are typing — anything you are editing keeps the key.
+
+The offer lasts as long as the message and covers one delete. After it goes the file is still in the Recycle Bin or the Trash, so nothing is lost by letting it pass; you just put it back the way you would any other file.
+
+Two things stop an undo, and it says which: the file is no longer in the bin, or something else has taken its name in the meantime. It never writes over the newer file.
 
 ### Folders, and the space around them
 

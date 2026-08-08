@@ -213,13 +213,25 @@ function makeSheetDraggable(sheet, grip, dismiss) {
 const TOAST_MS = 5000;
 const TOAST_ERROR_MS = 8000;
 let toastTimer = 0;
-function leafToast(message, tone) {
+// What to run when the current toast leaves, whether it timed out or another
+// replaced it. An offer riding on a toast is only good while the toast is up, so
+// whatever armed it is told the moment it is not.
+let toastGone = null;
+function endToast() {
+  const gone = toastGone;
+  toastGone = null;
+  if (gone) gone();
+}
+// `action` is an optional { label, run, gone } -- a single button on the toast,
+// which is the only thing on one that has ever been pressable.
+function leafToast(message, tone, action) {
   const existing = document.querySelector('.app-toast');
   if (existing) existing.remove();
   if (toastTimer) {
     clearTimeout(toastTimer);
     toastTimer = 0;
   }
+  endToast();
   if (!message) return;
   const toast = document.createElement('div');
   const error = tone === 'error';
@@ -227,13 +239,34 @@ function leafToast(message, tone) {
   // `status` rather than `alert` even for failures: nothing here is urgent
   // enough to interrupt a screen reader mid-sentence.
   toast.setAttribute('role', 'status');
-  toast.textContent = message;
+  if (action) {
+    const said = document.createElement('span');
+    said.className = 'app-toast-text';
+    said.textContent = message;
+    toast.appendChild(said);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'app-toast-action';
+    button.textContent = action.label;
+    // The toast goes as the button is pressed: the offer has been taken, so
+    // leaving it up invites a second press on an offer already spent.
+    button.addEventListener('click', () => {
+      const run = action.run;
+      leafToast('');
+      run();
+    });
+    toast.appendChild(button);
+    toastGone = action.gone || null;
+  } else {
+    toast.textContent = message;
+  }
   document.body.appendChild(toast);
   // A frame later, so the transition has a start state to move away from.
   window.requestAnimationFrame(() => toast.classList.add('is-shown'));
   toastTimer = setTimeout(() => {
     toast.classList.remove('is-shown');
     setTimeout(() => toast.remove(), 200);
+    endToast();
   }, error ? TOAST_ERROR_MS : TOAST_MS);
 }
 

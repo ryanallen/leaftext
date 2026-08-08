@@ -87,6 +87,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
         mut last_fullscreen,
     } = ctx;
 
+    // The last file sent to the bin and where it landed, so Undo has something to act on. One deep on purpose: the offer lives only as long as its message, so a second delete has already retired the first.
+    let mut last_delete: Option<(PathBuf, Option<PathBuf>)> = None;
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
@@ -378,12 +381,43 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 },
                 IpcCommand::DeleteFile { path } => match delete_to_trash(&path) {
-                    Ok(()) => refresh_library_folder(reader.page()),
+                    Ok(landed) => {
+                        // Where it went, kept only until the next delete or the undo that spends it. Windows answers `None` and needs nothing more than the original path.
+                        last_delete = Some((path.clone(), landed));
+                        refresh_library_folder(reader.page());
+                        report_file_deleted(reader.page(), &path);
+                    }
                     Err(error) => {
                         eprintln!("Failed to move {} to the trash: {error}", path.display());
                         report_file_action_failure(reader.page(), &error);
                     }
                 },
+                IpcCommand::UndoDelete { path } => {
+                    // Only the delete the record is actually about: the page's offer expires with its message, and the two must not be able to drift apart.
+                    let restoring = match last_delete.take() {
+                        Some((original, landed)) if original == path => Some((original, landed)),
+                        // Not ours to undo, and putting the record back would leave a spent offer live.
+                        _ => None,
+                    };
+                    match restoring {
+                        Some((original, landed)) => {
+                            match restore_from_trash(&original, landed.as_deref()) {
+                                Ok(()) => refresh_library_folder(reader.page()),
+                                Err(error) => {
+                                    eprintln!(
+                                        "Failed to bring {} back: {error}",
+                                        original.display()
+                                    );
+                                    report_file_action_failure(reader.page(), &error);
+                                }
+                            }
+                        }
+                        None => report_file_action_failure(
+                            reader.page(),
+                            "there is nothing left to put back",
+                        ),
+                    }
+                }
                 IpcCommand::ShowProperties { path } => {
                     if let Err(error) = show_properties(&path) {
                         eprintln!("Failed to show properties for {}: {error}", path.display());

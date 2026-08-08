@@ -372,6 +372,12 @@ window.addEventListener('keydown', (event) => {
     (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && (event.key === 'z' || event.key === 'Z');
   if (!undoKey) return;
   if (nativeUndoOwnsKey(event.target)) return;
+  // Ahead of the line below, which ends the keystroke unless the open document has an edit of its own — and a file deleted from the pane usually is not that document.
+  if (undoableDelete) {
+    event.preventDefault();
+    undoLastDelete();
+    return;
+  }
   const path = activeDocumentPath();
   if (!path || undoableByPath.get(path) !== true) return;
   event.preventDefault();

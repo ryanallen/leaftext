@@ -1717,3 +1717,22 @@ fn the_first_run_bubble_never_takes_the_pointer() {
         assert_contains(css, &format!(".hint-bubble.{side} .hint-bubble-tail {{"));
     }
 }
+
+#[test]
+fn the_confirmation_throws_the_shared_dot_shadow_rather_than_a_blur_of_its_own() {
+    // Nothing in this app casts a smooth shadow: every floating surface is a name in one dot-lattice rule, and none of the shadow tokens is a cast shadow. A new surface growing its own `box-shadow` beside that rule is the drift this pins.
+    let css = reading_mode_css();
+    let shared = css
+        .find(".app-overflow-panel::before,")
+        .expect("the shared dot-shadow rule");
+    let selectors = &css[shared..shared + css[shared..].find('{').expect("the rule opens")];
+    assert_contains(selectors, ".confirm-dialog::before,");
+
+    let dialog = rule_body(css, "\n.confirm-dialog {");
+    assert!(
+        !dialog.contains("box-shadow"),
+        "the confirmation takes the shared lattice, not a shadow of its own"
+    );
+    // On the layer already named for a sheet over the sheets' own scrim, so it needs no new token.
+    assert_contains(dialog, "z-index: var(--lt-z-41);");
+}

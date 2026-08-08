@@ -3237,6 +3237,7 @@ body.mac-frame.is-fullscreen .window-controls {
 .link-hover-tip::before,
 .block-drag-ghost::before,
 .find-bar::before,
+.confirm-dialog::before,
 .leaf-sheet::before {
   content: '';
   position: absolute;
@@ -4934,6 +4935,28 @@ body:has(#readerToolbar:not([hidden])) {
 .app-toast.is-error {
   border-color: var(--lt-danger);
   color: var(--lt-danger);
+}
+/* A toast that carries an offer: the words, then the one button. Laid out only
+   when there is something to lay out beside — a plain growl is still its own text. */
+.app-toast:has(.app-toast-action) {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-12);
+  padding-right: var(--lt-space-8);
+}
+.app-toast-action {
+  flex: none;
+  padding: var(--lt-space-4) var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+.app-toast-action:hover {
+  border-color: var(--lt-border-strong);
+  background: var(--lt-wash-hover);
 }
 /* The first-run bubble. Floats over the window rather than being wedged into a
    row, so nothing on screen moves to make room and it takes the width it needs.
@@ -7245,6 +7268,71 @@ body.is-block-dragging .document-body [data-src-start] {
 #flowBackdrop {
   z-index: var(--lt-z-42);
 }
+/* The one question the app asks, on the scrim the sheets already throw. Centered
+   rather than slid up from the bottom: a sheet is somewhere you go, and this is
+   something standing in your way until you answer it. */
+.confirm-dialog {
+  position: fixed;
+  left: 50%;
+  top: 44%;
+  transform: translate(-50%, -50%);
+  z-index: var(--lt-z-41);
+  width: min(360px, calc(100vw - 48px));
+  box-sizing: border-box;
+  padding: var(--lt-space-20);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  font-family: var(--app-font);
+}
+.confirm-dialog[hidden] {
+  display: none;
+}
+.confirm-dialog-title {
+  margin: 0;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-15);
+  font-weight: var(--lt-weight-700);
+}
+.confirm-dialog-detail {
+  margin: var(--lt-space-8) 0 0;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-13);
+  line-height: var(--lt-leading-1-45);
+}
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--lt-space-8);
+  margin-top: var(--lt-space-20);
+}
+.confirm-dialog-button {
+  padding: var(--lt-space-8) var(--lt-space-14);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font: inherit;
+  font-size: var(--lt-text-13);
+  cursor: pointer;
+}
+.confirm-dialog-button:hover {
+  border-color: var(--lt-border-strong);
+  background: var(--lt-wash-hover);
+}
+/* The destructive one, in the color the menu item it came from already wears. */
+.confirm-dialog-button.is-danger {
+  border-color: transparent;
+  background: var(--lt-danger);
+  color: var(--lt-danger-foreground);
+  font-weight: var(--lt-weight-700);
+}
+/* The app's own hover wash, laid over the red rather than replacing it: the wash is
+   transparent and mixed from the family's ink, so it deepens a light theme and lifts
+   a dark one without a second red to keep in step. */
+.confirm-dialog-button.is-danger:hover {
+  background-image: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover));
+}
 .leaf-sheet {
   left: 0;
   right: 0;
@@ -8651,7 +8739,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 154 values that do not change with the theme, all 60 icons, and all 53 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 154 values that do not change with the theme, all 60 icons, and all 54 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -8673,7 +8761,7 @@ body.is-block-dragging .document-body [data-src-start] {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>154</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>60</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>53</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>54</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -9031,7 +9119,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">53 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">54 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App bar</h3><code class="built">.app-bar</code><span class="built">app-shell.html, with overflow.js folding it and code-view.js measuring it</span></header>
 <div class="stage"><div class="app-bar" style="position:static"><span class="app-bar-lead"><button type="button" class="brand-button"><span class="lt-icon lt-icon-leaf"></span></button></span></div></div>
@@ -9189,6 +9277,10 @@ body.is-block-dragging .document-body [data-src-start] {
 <div class="stage"><div class="lt-backdrop open" style="position:static;height:48px"></div></div>
 </section>
 <section class="part">
+<header><h3>Confirmation</h3><code class="built">.confirm-dialog</code><span class="built">app-shell.html, asked by context-menu.js</span></header>
+<div class="stage"><div class="confirm-dialog" style="position:static;transform:none;width:340px"><h2 class="confirm-dialog-title">Delete “favorites.md”?</h2><p class="confirm-dialog-detail">It goes to the Recycle Bin, so you can put it back.</p><div class="confirm-dialog-actions"><button type="button" class="confirm-dialog-button">Cancel</button><button type="button" class="confirm-dialog-button is-danger">Delete</button></div></div></div>
+</section>
+<section class="part">
 <header><h3>Spinner</h3><code class="built">.lt-spinner</code><span class="built">app-shell.html, glossary.js, minimap.js, lib.rs</span></header>
 <div class="stage"><div class="reader-loading" style="position:static"><div class="lt-spinner reader-loading-spinner"></div></div><div class="glossary-sheet-waiting"><div class="lt-spinner glossary-sheet-spinner"></div></div></div>
 </section>
@@ -9206,7 +9298,7 @@ body.is-block-dragging .document-body [data-src-start] {
 </section>
 <section class="part">
 <header><h3>Toast</h3><code class="built">.app-toast</code><span class="built">dom.js</span></header>
-<div class="stage"><div class="app-toast is-shown">Saved</div></div>
+<div class="stage"><div class="app-toast is-shown">Saved</div> <div class="app-toast is-shown" style="margin-top:8px"><span class="app-toast-text">Deleted favorites.md</span><button type="button" class="app-toast-action">Undo</button></div></div>
 </section>
 <section class="part">
 <header><h3>First-run bubble</h3><code class="built">.hint-bubble</code><span class="built">hints.js</span></header>

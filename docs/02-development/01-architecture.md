@@ -216,7 +216,8 @@ Key `IpcCommand` variants include:
 | `copyFile`             | File row context menu: cut/copy the file to the clipboard |
 | `copyPath`             | File row context menu: copy the file path as text |
 | `renameFile`           | File row context menu: inline rename |
-| `deleteFile`           | File row context menu: move to Recycle Bin / Trash |
+| `deleteFile`           | File row context menu: move to Recycle Bin / Trash, once the confirmation is answered |
+| `undoDelete`           | Put the last deleted file back where it came from. Carries the path, so a stale offer cannot restore something else |
 | `showProperties`       | File or folder context menu: OS properties view |
 | `pasteFile`            | Folder context menu: [move or copy](../01-features/03-library.md#cut-copy-paste) what was cut or copied into that folder |
 | `goHome`               | Clicking the Leaftext logo            |

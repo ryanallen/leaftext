@@ -304,6 +304,13 @@ pub fn notice_toast_script(message: &str) -> String {
     format!("window.leafShowNotice({message});")
 }
 
+/// Say a file went to the bin, and can come back. The page arms its Undo off this rather than off the asking, so a build with nothing behind the delete never draws an offer it could not keep.
+pub fn file_deleted_script(path: &str, name: &str) -> String {
+    let path = serde_json::to_string(path).expect("path serializes");
+    let name = serde_json::to_string(name).expect("name serializes");
+    format!("window.leafFileDeleted({path}, {name});")
+}
+
 /// Re-fetch the local images on screen. Sent when an image file changes: nothing to re-render, but the web view would otherwise keep the copy it decoded.
 pub fn image_refresh_script() -> String {
     "window.leafRefreshImages();".to_string()

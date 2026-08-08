@@ -136,6 +136,9 @@ pub(crate) enum IpcCommand {
     },
     #[serde(rename = "deleteFile")]
     DeleteFile { path: PathBuf },
+    /// Put back the file the last delete took. The path comes with it so a stale offer cannot restore something else.
+    #[serde(rename = "undoDelete")]
+    UndoDelete { path: PathBuf },
     #[serde(rename = "showProperties")]
     ShowProperties { path: PathBuf },
     #[serde(rename = "closeTab")]

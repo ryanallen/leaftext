@@ -12,10 +12,10 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[cfg(windows)]
-pub use windows_impl::{download_to, move_to_trash, set_clipboard_text};
+pub use windows_impl::{download_to, move_to_trash, restore_from_trash, set_clipboard_text};
 
 #[cfg(target_os = "macos")]
-pub use macos_impl::{download_to, move_to_trash, set_clipboard_text};
+pub use macos_impl::{download_to, move_to_trash, restore_from_trash, set_clipboard_text};
 
 /// Point this process's stderr at an already-open file. The Windows build has no console, so without this everything the app prints is thrown away.
 ///
@@ -333,7 +333,7 @@ fn install(installer: &Path, relaunch: &Path) -> Result<(), String> {
 
 #[cfg(windows)]
 mod windows_impl {
-    use super::{failed, io, Path, DOWNLOAD_CHUNK_BYTES};
+    use super::{failed, io, Path, PathBuf, DOWNLOAD_CHUNK_BYTES};
     use core::ffi::c_void;
     use std::ptr;
     use url::Url;
@@ -558,7 +558,9 @@ mod windows_impl {
     /// Send a file to the Recycle Bin.
     ///
     /// `SHFileOperationW` wants an absolute path in a *double* null-terminated buffer (the field is a list, empty-string terminated), and it reports failure through its return value rather than the last-error channel.
-    pub fn move_to_trash(path: &Path) -> Result<(), String> {
+    ///
+    /// Nothing comes back saying where the file went, and nothing needs to: the bin records the folder each item came from, so `restore_from_trash` finds it again from the original path alone.
+    pub fn move_to_trash(path: &Path) -> Result<Option<PathBuf>, String> {
         let absolute = path
             .canonicalize()
             .map_err(|error| format!("resolve path: {error}"))?;
@@ -588,13 +590,60 @@ mod windows_impl {
         if operation.fAnyOperationsAborted != 0 {
             return Err("the delete was canceled".to_string());
         }
-        Ok(())
+        Ok(None)
+    }
+
+    /// Put a file back where it was deleted from.
+    ///
+    /// The shell's own move, driven through PowerShell the way the properties window is: it finds the item by the folder the bin recorded against it, and moving it out is what clears the bin's index entry too — renaming the `$R` file off the disk would strip the file and leave the entry behind. The verb on the item's own menu is translated, so it is never named; `MoveHere` is not.
+    ///
+    /// `trashed` is ignored here. Windows never says where the file went, because the bin is a namespace rather than a place.
+    pub fn restore_from_trash(original: &Path, _trashed: Option<&Path>) -> Result<(), String> {
+        // Whatever took the name is a different file, and the shell's move overwrites without asking once it is told not to confirm — so the refusal has to be ours.
+        if original.exists() {
+            return Err(format!(
+                "something else is called {} there now, so the file stayed in the Recycle Bin",
+                original
+                    .file_name()
+                    .map(|name| name.to_string_lossy().into_owned())
+                    .unwrap_or_default()
+            ));
+        }
+        // Single-quoted inside, because PowerShell re-parses what `-Command` is handed and a double quote would not survive the trip. Exit codes rather than output: 2 is nothing matching in the bin, 3 is the move never landing. The move is asynchronous, hence the wait.
+        const SCRIPT: &str = "$t = $env:LEAF_TARGET;\
+            $dir = Split-Path $t;\
+            $leaf = Split-Path $t -Leaf;\
+            $shell = New-Object -ComObject Shell.Application;\
+            $bin = $shell.Namespace(10);\
+            $hit = $null;\
+            foreach ($it in $bin.Items()) {\
+              if ($it.Name -eq $leaf -and $it.ExtendedProperty('System.Recycle.DeletedFrom') -eq $dir) {\
+                if ($null -eq $hit -or $it.ExtendedProperty('System.Recycle.DateDeleted') -gt $hit.ExtendedProperty('System.Recycle.DateDeleted')) { $hit = $it }\
+              }\
+            };\
+            if ($null -eq $hit) { exit 2 };\
+            $shell.Namespace($dir).MoveHere($hit, 20);\
+            for ($n = 0; $n -lt 100; $n++) { if (Test-Path $t) { exit 0 }; Start-Sleep -Milliseconds 50 };\
+            exit 3";
+        use std::os::windows::process::CommandExt;
+        let output = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-STA", "-Command", SCRIPT])
+            .env("LEAF_TARGET", original)
+            // CREATE_NO_WINDOW keeps the helper from flashing a console window.
+            .creation_flags(0x0800_0000)
+            .output()
+            .map_err(|error| format!("could not reach the Recycle Bin: {error}"))?;
+        match output.status.code() {
+            Some(0) => Ok(()),
+            Some(2) => Err("that file is not in the Recycle Bin any more".to_string()),
+            _ => Err("the Recycle Bin would not give the file back".to_string()),
+        }
     }
 }
 
 #[cfg(target_os = "macos")]
 mod macos_impl {
-    use super::{failed, io, Path, DOWNLOAD_CHUNK_BYTES};
+    use super::{failed, io, Path, PathBuf, DOWNLOAD_CHUNK_BYTES};
     use std::io::{Read, Write};
     use std::process::{Command, Stdio};
 
@@ -680,10 +729,12 @@ mod macos_impl {
         }
     }
 
-    /// Move a file to the Trash.
+    /// Move a file to the Trash, and say where it landed.
     ///
     /// Finder is asked first because a Finder delete records the Put Back location, which a plain move cannot. If that fails — Finder not running, or the automation permission declined — fall back to moving the file into `~/.Trash` ourselves, which still gets it out of the user's way.
-    pub fn move_to_trash(path: &Path) -> Result<(), String> {
+    ///
+    /// Finder's delete hands back the item it just trashed, so asking for its POSIX path is one clause more of the same one-line script — the app learns the name in the Trash without giving Put Back up. Undo is then a plain rename back, with no Finder and no automation prompt at the moment somebody is waiting.
+    pub fn move_to_trash(path: &Path) -> Result<Option<PathBuf>, String> {
         let escaped = path
             .to_string_lossy()
             .replace('\\', "\\\\")
@@ -691,17 +742,42 @@ mod macos_impl {
         let finder = Command::new("osascript")
             .arg("-e")
             .arg(format!(
-                "tell application \"Finder\" to delete POSIX file \"{escaped}\""
+                "tell application \"Finder\" to POSIX path of (delete POSIX file \"{escaped}\")"
             ))
-            .status();
-        if matches!(finder, Ok(status) if status.success()) {
-            return Ok(());
+            .output();
+        if let Ok(done) = finder {
+            if done.status.success() {
+                let landed = String::from_utf8_lossy(&done.stdout).trim().to_string();
+                // A Finder that answered but named nothing still deleted the file; the undo is what is lost, not the delete.
+                return Ok((!landed.is_empty()).then(|| PathBuf::from(landed)));
+            }
         }
-        move_into_trash_folder(path)
+        move_into_trash_folder(path).map(Some)
     }
 
-    /// Fallback: rename into `~/.Trash`, uniquifying the name on collision so an existing trashed file of the same name is never clobbered.
-    fn move_into_trash_folder(path: &Path) -> Result<(), String> {
+    /// Put a file back where it was deleted from.
+    ///
+    /// Both delete paths hand back a real path in the Trash, so this is a rename and nothing more — no Finder, no automation prompt, and nothing to enumerate.
+    pub fn restore_from_trash(original: &Path, trashed: Option<&Path>) -> Result<(), String> {
+        let from = trashed.ok_or("the app does not know where that file went")?;
+        if !from.exists() {
+            return Err("that file is not in the Trash any more".to_string());
+        }
+        // Whatever took the name is a different file, and a rename would write straight over it.
+        if original.exists() {
+            return Err(format!(
+                "something else is called {} there now, so the file stayed in the Trash",
+                original
+                    .file_name()
+                    .map(|name| name.to_string_lossy().into_owned())
+                    .unwrap_or_default()
+            ));
+        }
+        std::fs::rename(from, original).map_err(|error| format!("move out of the Trash: {error}"))
+    }
+
+    /// Fallback: rename into `~/.Trash`, uniquifying the name on collision so an existing trashed file of the same name is never clobbered. Hands back the name it wrote, which is the whole reason undo can find it again.
+    fn move_into_trash_folder(path: &Path) -> Result<PathBuf, String> {
         let home = std::env::var_os("HOME").ok_or("HOME is not set")?;
         let trash = Path::new(&home).join(".Trash");
         let name = path
@@ -724,6 +800,7 @@ mod macos_impl {
             attempt += 1;
         }
 
-        std::fs::rename(path, &target).map_err(|error| format!("move to Trash: {error}"))
+        std::fs::rename(path, &target).map_err(|error| format!("move to Trash: {error}"))?;
+        Ok(target)
     }
 }

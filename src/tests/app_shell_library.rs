@@ -521,8 +521,8 @@ fn one_growl_serves_every_thing_worth_saying_in_passing() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // One growl for both tones, rather than a second thing in the same corner doing the same job.
-    assert!(html.contains("function leafToast(message, tone) {"));
+    // One growl for both tones, rather than a second thing in the same corner doing the same job. The third argument is the one offer a toast may carry.
+    assert!(html.contains("function leafToast(message, tone, action) {"));
     assert!(html.contains("window.leafShowError = (message) => leafToast(message, 'error');"));
     assert!(!html.contains("error.className = 'app-error';"));
     assert!(css.contains(".app-toast {"));
@@ -1181,7 +1181,8 @@ fn library_row_context_menu_offers_file_actions() {
     assert!(html.contains("send({ command: 'copyFile', path, cut: false })"));
     assert!(html.contains("send({ command: 'copyPath', path })"));
     assert!(html.contains("send({ command: 'showProperties', path })"));
-    assert!(html.contains("send({ command: 'deleteFile', path })"));
+    // Delete is the one item that does not send when it is picked: it asks first, and the command is what the answer runs.
+    assert!(html.contains("() => send({ command: 'deleteFile', path })"));
     assert!(html.contains("send({ command: 'renameFile', path, newName })"));
 
     // The inline rename box and the new menu labels are present.
@@ -1356,5 +1357,110 @@ fn cloning_a_repository_takes_an_address_and_then_a_folder() {
     assert!(
         !html.contains("command: 'cloneVault', url, path"),
         "the page does not choose where a clone lands"
+    );
+}
+
+#[test]
+fn deleting_a_file_asks_before_it_goes() {
+    // Delete used to send the moment it was picked, so one click on the wrong row emptied it out of the folder with nothing asked. It asks now, and the question is in the page before anything can need it.
+    let html = app_shell_page();
+
+    // The frame is in the boot HTML, and it starts hidden.
+    assert!(html.contains(r#"<div id="confirmDialog" class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmDialogTitle" aria-describedby="confirmDialogDetail" hidden>"#));
+    assert!(html.contains(r#"<div id="confirmBackdrop" class="lt-backdrop" hidden></div>"#));
+
+    // Cancel is where the pointer lands and Delete is the red one, in that order.
+    let cancel = html.find("confirmDialogCancel").expect("a cancel button");
+    let accept = html.find("confirmDialogAccept").expect("an accept button");
+    assert!(cancel < accept, "Cancel comes before Delete");
+    assert!(html.contains(r#"class="confirm-dialog-button is-danger">Delete<"#));
+
+    // It names the file and says where the file goes, which is what makes it a question rather than a formality.
+    assert!(html.contains("`Delete “${fileBaseName(path)}”?`"));
+    assert!(html.contains("'It goes to the Recycle Bin, so you can put it back.'"));
+    assert!(html.contains("'It goes to the Trash, so you can put it back.'"));
+
+    // Escape and a click on the scrim cancel; Enter answers yes unless Cancel holds the focus.
+    assert!(html.contains("leafOnEscape(closeConfirm, window);"));
+    assert!(html.contains("confirmBackdrop.addEventListener('click', closeConfirm);"));
+    assert!(html.contains("if (document.activeElement === confirmDialogCancel) return;"));
+
+    // Focus lands on the destructive button and goes back where it came from.
+    assert!(html.contains("leafFocusForKeyboard(confirmDialogAccept);"));
+    assert!(html.contains("leafFocusForKeyboard(confirmReturnFocus);"));
+}
+
+#[test]
+fn canceling_a_delete_sends_nothing_and_the_item_sends_one_command() {
+    // Two failures worth pinning: an answer of no that deletes anyway, and a question whose yes fires twice.
+    let html = app_shell_page();
+
+    // Cancel closes and nothing else — the command lives on the accept path alone.
+    assert!(html.contains("confirmDialogCancel.addEventListener('click', closeConfirm);"));
+    assert!(html.contains("confirmDialogAccept.addEventListener('click', acceptConfirm);"));
+
+    // The pending action is cleared before it runs, so a second yes has nothing left to fire.
+    assert!(html.contains("function acceptConfirm() {\n  const action = confirmAction;\n  closeConfirm();\n  if (action) action();\n}"));
+    assert!(html.contains("  confirmAction = null;\n  leafFocusForKeyboard(confirmReturnFocus);"));
+
+    // Exactly one place in the page sends the delete.
+    assert_eq!(
+        html.matches("command: 'deleteFile'").count(),
+        1,
+        "the delete is sent from one place"
+    );
+}
+
+#[test]
+fn a_delete_can_be_taken_back_while_its_message_is_up() {
+    // A delete that worked used to say nothing at all, so there was no moment in which to change your mind. The offer and the message are the same thing now.
+    let html = app_shell_page();
+
+    // The host arms it, not the asking — so a build with nothing behind the delete never draws an offer it could not keep.
+    assert!(html.contains("window.leafFileDeleted = (path, name) => {"));
+    assert!(html.contains("undoableDelete = path;"));
+    assert!(html.contains("leafToast(`Deleted ${name}`, 'ok', {"));
+    assert!(html.contains("label: 'Undo',"));
+
+    // The offer expires with the message rather than on a timer of its own.
+    assert!(html.contains("gone: () => { undoableDelete = null; },"));
+    assert!(html.contains("toastGone = action.gone || null;"));
+
+    // One delete is undone once: the state is cleared before the command goes out, so a second press and a Ctrl+Z chasing the same message cannot both spend it.
+    assert!(html.contains("function undoLastDelete() {\n  const path = undoableDelete;\n  if (!path) return;\n  undoableDelete = null;\n  send({ command: 'undoDelete', path });\n}"));
+
+    // The button is the first pressable thing a toast has ever carried.
+    assert!(html.contains("button.className = 'app-toast-action';"));
+}
+
+#[test]
+fn ctrl_z_undoes_the_delete_only_when_nothing_is_being_typed() {
+    // Three claims on one key, in a fixed order: whatever is being typed in wins it, then the delete, then the reading view's own edit. Get the order wrong and the key either does nothing or undoes the wrong thing.
+    let script = app_shell_script();
+
+    // Measured from the handler onward: the same early return guards the Undo button higher up the file, and the first match is that one.
+    let handler = script
+        .find("  if (nativeUndoOwnsKey(event.target)) return;")
+        .expect("the editor's claim on the key");
+    let rest = &script[handler..];
+    let delete = rest
+        .find("  if (undoableDelete) {")
+        .expect("the delete's claim");
+    let document_edit = rest
+        .find("  if (!path || undoableByPath.get(path) !== true) return;")
+        .expect("the reading view's early return");
+
+    assert!(delete > 0, "typing takes the key before the delete");
+    assert!(
+        delete < document_edit,
+        "the delete is checked ahead of the return that ends the keystroke unless the open document has an edit of its own"
+    );
+
+    // And it is the delete that runs, not a second copy of the command.
+    assert!(script.contains("    undoLastDelete();\n    return;"));
+    assert_eq!(
+        script.matches("command: 'undoDelete'").count(),
+        1,
+        "the undo is sent from one place"
     );
 }

@@ -88,7 +88,11 @@ A GitHub-style name between colons — `:rocket:` — rendered as the emoji.
 
 ## File actions
 
-The right-click menu in the [library pane](GLOSSARY.md#library-pane). On a file: Open, Cut, Copy, Copy path, Rename, Reveal file, Properties, Delete. On a folder or the empty space around it: Open folder, Paste, Reveal folder, Properties. Delete goes to the Recycle Bin or Trash, not away for good.
+The right-click menu in the [library pane](GLOSSARY.md#library-pane). On a file: Open, Cut, Copy, Copy path, Rename, Reveal file, Properties, Delete. On a folder or the empty space around it: Open folder, Paste, Reveal folder, Properties. Delete goes to the Recycle Bin or Trash, not away for good, and it asks first — see [Confirmation](GLOSSARY.md#confirmation).
+
+## Confirmation
+
+The one question the app asks before it does something: a box over the dimmed page, naming what is about to happen. Only [Delete](GLOSSARY.md#file-actions) asks. Escape or a click on the dim cancels, Enter goes ahead, and the safe answer is where the pointer already is. Cut, copy, paste and rename do not ask, because each is reversible by hand and asking about all of them is how asking stops being read.
 
 ## File association
 
@@ -332,7 +336,7 @@ Suggestions while you write in the [code view](GLOSSARY.md#code-view), answered 
 
 ## Undo
 
-Stepping back through [inline edits](GLOSSARY.md#inline-editing), one at a time. An **Undo** button sits beside [Save](GLOSSARY.md#save) whenever there is a step to take back. A successful save clears the history, so undo never walks you below saved text.
+Stepping back through [inline edits](GLOSSARY.md#inline-editing), one at a time. An **Undo** button sits beside [Save](GLOSSARY.md#save) whenever there is a step to take back. A successful save clears the history, so undo never walks you below saved text. `Ctrl+Z` also answers a file you just deleted, while the message offering it back is still on screen — that one comes out of the Recycle Bin rather than out of the document.
 
 ## Unsaved marker
 

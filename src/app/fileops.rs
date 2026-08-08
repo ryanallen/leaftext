@@ -224,9 +224,16 @@ fn same_path(left: &Path, right: &Path) -> bool {
     left == right || canonical(left) == canonical(right)
 }
 
-/// Move a file to the OS trash / Recycle Bin (reversible).
-pub(crate) fn delete_to_trash(path: &Path) -> Result<(), String> {
+/// Move a file to the OS trash / Recycle Bin (reversible), and say where it went.
+///
+/// The answer is `None` on Windows, where the bin is a namespace rather than a place and the original path is enough to find the item again. Whatever comes back is what `restore_from_trash` has to be handed.
+pub(crate) fn delete_to_trash(path: &Path) -> Result<Option<PathBuf>, String> {
     platform::move_to_trash(path)
+}
+
+/// Put a file back where it was deleted from. `trashed` is whatever `delete_to_trash` answered.
+pub(crate) fn restore_from_trash(original: &Path, trashed: Option<&Path>) -> Result<(), String> {
+    platform::restore_from_trash(original, trashed)
 }
 
 /// Open the OS file-properties view: the Properties dialog on Windows, Finder's Get Info on macOS.
@@ -362,6 +369,19 @@ pub(crate) fn refresh_library_folder(webview: Option<&WebView>) {
         webview,
         &library_refresh_script(),
         "Failed to refresh the library pane",
+    );
+}
+
+/// Say a file has gone to the bin, and offer it back. A delete the app never mentions leaves no moment in which to change your mind, which is what the message is for.
+pub(crate) fn report_file_deleted(webview: Option<&WebView>, path: &Path) {
+    let name = path
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_else(|| path.to_string_lossy().into_owned());
+    run_page_script(
+        webview,
+        &file_deleted_script(&path.to_string_lossy(), &name),
+        "Failed to report a delete",
     );
 }
 

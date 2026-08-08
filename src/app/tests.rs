@@ -1656,3 +1656,91 @@ fn full_screen_is_read_off_the_window_not_off_a_gesture() {
         "the page is told when it changes"
     );
 }
+
+/// Deleted and put back, against the real Recycle Bin. The whole of the undo is a claim about the shell, so a test that mocked it would prove nothing — this one deletes a file of its own and asks for it back.
+#[test]
+#[cfg(windows)]
+fn undo_restores_a_deleted_file_to_its_folder_under_its_own_name() {
+    let folder = std::env::temp_dir().join("leaf-undo-delete-test");
+    let _ = fs::create_dir_all(&folder);
+    let file = folder.join("a note.md");
+    fs::write(&file, b"the words that have to survive").expect("write the fixture");
+
+    let landed = delete_to_trash(&file).expect("the delete works");
+    assert!(!file.exists(), "the file left the folder");
+
+    restore_from_trash(&file, landed.as_deref()).expect("the file comes back");
+    assert!(file.exists(), "back in the folder it came from");
+    assert_eq!(
+        fs::read(&file).expect("read it back"),
+        b"the words that have to survive",
+        "and it is the same file, not an empty one of the same name"
+    );
+
+    let _ = fs::remove_dir_all(&folder);
+}
+
+/// The second half of "one delete is undone once": nothing left in the bin under that name means the restore says so rather than reporting a success it did not have.
+#[test]
+#[cfg(windows)]
+fn putting_back_a_file_that_was_never_deleted_says_so() {
+    let missing = std::env::temp_dir()
+        .join("leaf-undo-delete-test")
+        .join("no such note.md");
+    let error = restore_from_trash(&missing, None).expect_err("nothing to put back");
+    assert!(
+        error.contains("not in the Recycle Bin"),
+        "says what is wrong: {error}"
+    );
+}
+
+/// A name taken back before the undo. The shell's own move overwrites without asking once it is told not to confirm, so the refusal has to be the app's — losing the newer file would be a worse loss than the one being undone.
+#[test]
+#[cfg(windows)]
+fn a_name_taken_back_before_the_undo_stops_the_restore() {
+    let folder = std::env::temp_dir().join("leaf-undo-collide-test");
+    let _ = fs::create_dir_all(&folder);
+    let file = folder.join("collided.md");
+    fs::write(&file, b"the first one").expect("write the fixture");
+
+    let landed = delete_to_trash(&file).expect("the delete works");
+    fs::write(&file, b"a different file entirely").expect("something takes the name");
+
+    let error = restore_from_trash(&file, landed.as_deref()).expect_err("the restore refuses");
+    assert!(
+        error.contains("something else is called"),
+        "says why: {error}"
+    );
+    assert_eq!(
+        fs::read(&file).expect("read it back"),
+        b"a different file entirely",
+        "and the file that took the name is untouched"
+    );
+
+    let _ = fs::remove_dir_all(&folder);
+}
+
+/// The undo carries the path it means. Without it a message left on screen through a second delete would put the wrong file back, and nothing on this enum would notice.
+#[test]
+fn the_undo_names_the_file_it_means_to_put_back() {
+    let sent = r#"{"command":"undoDelete","path":"/notes/a note.md"}"#;
+    match serde_json::from_str::<IpcCommand>(sent) {
+        Ok(IpcCommand::UndoDelete { path }) => {
+            assert_eq!(path, PathBuf::from("/notes/a note.md"));
+        }
+        other => panic!("the undo did not arrive: {other:?}"),
+    }
+}
+
+/// What the host says after a delete, and the two things the page reads off it: the path it may ask back, and the name to show.
+#[test]
+fn the_message_after_a_delete_carries_the_path_and_the_name() {
+    let script = file_deleted_script(r#"C:\notes\a "quoted" note.md"#, r#"a "quoted" note.md"#);
+    assert!(script.starts_with("window.leafFileDeleted("));
+    // Both are JSON, so a backslash in a Windows path and a quote in a name reach the page as themselves rather than ending the string early.
+    assert!(
+        script.contains(r#""C:\\notes\\a \"quoted\" note.md""#),
+        "{script}"
+    );
+    assert!(script.contains(r#""a \"quoted\" note.md""#), "{script}");
+}

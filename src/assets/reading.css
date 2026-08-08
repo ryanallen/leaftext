@@ -853,6 +853,7 @@ body.mac-frame.is-fullscreen .window-controls {
 .link-hover-tip::before,
 .block-drag-ghost::before,
 .find-bar::before,
+.confirm-dialog::before,
 .leaf-sheet::before {
   content: '';
   position: absolute;
@@ -2550,6 +2551,28 @@ body:has(#readerToolbar:not([hidden])) {
 .app-toast.is-error {
   border-color: var(--lt-danger);
   color: var(--lt-danger);
+}
+/* A toast that carries an offer: the words, then the one button. Laid out only
+   when there is something to lay out beside — a plain growl is still its own text. */
+.app-toast:has(.app-toast-action) {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-12);
+  padding-right: var(--lt-space-8);
+}
+.app-toast-action {
+  flex: none;
+  padding: var(--lt-space-4) var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+.app-toast-action:hover {
+  border-color: var(--lt-border-strong);
+  background: var(--lt-wash-hover);
 }
 /* The first-run bubble. Floats over the window rather than being wedged into a
    row, so nothing on screen moves to make room and it takes the width it needs.
@@ -4860,6 +4883,71 @@ body.is-block-dragging .document-body [data-src-start] {
    the page, so its scrim takes the layer above. */
 #flowBackdrop {
   z-index: var(--lt-z-42);
+}
+/* The one question the app asks, on the scrim the sheets already throw. Centered
+   rather than slid up from the bottom: a sheet is somewhere you go, and this is
+   something standing in your way until you answer it. */
+.confirm-dialog {
+  position: fixed;
+  left: 50%;
+  top: 44%;
+  transform: translate(-50%, -50%);
+  z-index: var(--lt-z-41);
+  width: min(360px, calc(100vw - 48px));
+  box-sizing: border-box;
+  padding: var(--lt-space-20);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  font-family: var(--app-font);
+}
+.confirm-dialog[hidden] {
+  display: none;
+}
+.confirm-dialog-title {
+  margin: 0;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-15);
+  font-weight: var(--lt-weight-700);
+}
+.confirm-dialog-detail {
+  margin: var(--lt-space-8) 0 0;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-13);
+  line-height: var(--lt-leading-1-45);
+}
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--lt-space-8);
+  margin-top: var(--lt-space-20);
+}
+.confirm-dialog-button {
+  padding: var(--lt-space-8) var(--lt-space-14);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font: inherit;
+  font-size: var(--lt-text-13);
+  cursor: pointer;
+}
+.confirm-dialog-button:hover {
+  border-color: var(--lt-border-strong);
+  background: var(--lt-wash-hover);
+}
+/* The destructive one, in the color the menu item it came from already wears. */
+.confirm-dialog-button.is-danger {
+  border-color: transparent;
+  background: var(--lt-danger);
+  color: var(--lt-danger-foreground);
+  font-weight: var(--lt-weight-700);
+}
+/* The app's own hover wash, laid over the red rather than replacing it: the wash is
+   transparent and mixed from the family's ink, so it deepens a light theme and lifts
+   a dark one without a second red to keep in step. */
+.confirm-dialog-button.is-danger:hover {
+  background-image: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover));
 }
 .leaf-sheet {
   left: 0;
