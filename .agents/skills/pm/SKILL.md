@@ -9,7 +9,7 @@ user-invocable: true
 
 Ninety-odd tickets is more than anyone holds in their head, so the question "what next" gets answered from whichever file was open. This writes the answer down once: every live ticket, ranked, with the reason each row is where it is.
 
-**Two files, and the split is what makes the first one usable.** [`../docs/PLAN.md`](../../../docs/PLAN.md) holds the **live** rows — the work that is left. [`../docs/done/PLAN.md`](../../../docs/done/PLAN.md) holds every **retired** row — what shipped, when it closed, and what the build found. Nothing else is edited except a ticket's row in `../docs/README.md` if its status turns out to be wrong.
+**Two files, and the split is what makes the first one usable.** [`../docs/PLAN.md`](../../../../docs/PLAN.md) holds the **live** rows — the work that is left. [`../docs/done/PLAN.md`](../../../../docs/done/PLAN.md) holds every **retired** row — what shipped, when it closed, and what the build found. Nothing else is edited except a ticket's row in `../docs/README.md` if its status turns out to be wrong.
 
 **Never run git.** **Never edit a ticket's phases.** If a ticket is wrong, that is `/design`; if it is stale about the app, say so in a tier 0 row and fix its status, not its plan.
 

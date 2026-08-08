@@ -12,7 +12,7 @@ Retire a ticket after `/git-release` has shipped it for testing. Run only when t
 The ticket must be at `Released for test`. With no argument, find a live ticket at that stage.
 
 1. Add the shipped note and keep the dated `Designed` line.
-2. Move the ticket into the matching folder under `../docs/done/` and fix its relative links.
+2. Move the ticket into the matching folder under `../docs/done/` and fix its relative links. Take the links pointing *at* it with it: search both trees for its file name and repoint every one, or `/check` fails naming each.
 3. Rewrite its index row to say what shipped.
 4. Remove its live row from `../docs/PLAN.md` and move it into `../docs/done/PLAN.md`, dropping the `Stage` cell. Move the `Next up` pointer.
 5. Sync any published pages made false by the change.
