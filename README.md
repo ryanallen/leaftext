@@ -161,7 +161,7 @@ A tiny version of your document runs down the side — real text, not abstract b
 
 ![The Previous / Next pager bar at the foot of a document, each button naming the document it leads to](imgs/pager.png)
 
-Where folders are joined by `README.md` files, a **Previous / Next** bar appears at the bottom of each page, so a folder of notes reads like a book. **[Pager →](docs/01-features/02-navigation.md#pager)**
+Where folders are joined by `README.md` files, a **Previous / Next** bar appears at the bottom of each page, so a folder of notes reads like a book. Point at a button and it fills with the same fine dot texture the page's code blocks wear, with a tooltip naming the document it opens. **[Pager →](docs/01-features/02-navigation.md#pager)**
 
 ### Define a word once for a whole set of notes
 

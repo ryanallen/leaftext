@@ -15,7 +15,7 @@
 //
 // A @media condition cannot hold a var(), so those lines are exempt by necessity.
 //
-// It also holds every hover fill to the one wash. Two hand-written forms are refused there: a surface color, which a family may set to the very value of the panel behind it, and a strength mixed from the theme's ink here rather than in the token. A control already saying something — pressed, selected, open, disabled — keeps its own fill, and so does one deepening its own accent.
+// It also holds every hover fill to the one wash, or to the app's own dot lattice where a target is too big to take a flat tint. Refused there: a surface color, which a family may set to the very value of the panel behind it; a strength mixed from the theme's ink here rather than in the token; and a lattice drawn in any ink but the hover's, or any other image at all. A control already saying something — pressed, selected, open, disabled — keeps its own fill, and so does one deepening its own accent.
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -104,11 +104,28 @@ const ALREADY_ON = /\[aria-pressed|\[aria-selected|\[aria-current|:disabled|\.is
 const A_SURFACE = /^var\(--lt-(?:background|surface|surface-elevated|surface-muted|surface-sunken)\)$/;
 // A wash is neutral: the theme's ink or its paper, thinned. A hover mixed from the accent is a colored state deepening its own rest fill — the sync chip, the chrome buttons — which is a decision about that control, not a strength nobody checked.
 const A_NEUTRAL = /var\(--lt-(?:foreground|muted-foreground|background|surface|surface-elevated|surface-muted|surface-sunken)\)/;
+// The other legal fill: the app's own dot lattice, for a target too big to take a flat tint. Only this exact shape counts, and only in the one ink a hover has — a lattice in the chrome's own grain, or any other image, is a strength nobody chose.
+const A_LATTICE = /^radial-gradient\(circle,\s*var\(--lt-grain-dot\)\s+0\s+0\.6px,\s*transparent\s+0\.7px\)$/;
+const A_HOVER_INK = 'var(--lt-grain-hover)';
+// The wash written as an image, which is how a control keeps a fill of its own underneath it — the destructive button's red.
+const A_WASH_IMAGE = /^linear-gradient\(var\(--lt-wash-hover\),\s*var\(--lt-wash-hover\)\)$/;
 
 function hoverFills(lines) {
   const out = [];
   let selector = '';
   let pending = '';
+  // A block's ink and its images are only judged against each other, so both are held until the closing brace — the rule may set either one first.
+  let ink = '';
+  let images = [];
+  const close = () => {
+    for (const image of images) {
+      if (A_WASH_IMAGE.test(image.value)) continue;
+      if (!A_LATTICE.test(image.value)) out.push({ n: image.n, why: 'fills with an image of its own', value: image.value });
+      else if (ink !== A_HOVER_INK) out.push({ n: image.n, why: 'draws the lattice in another ink', value: ink || 'no --lt-grain-dot of its own' });
+    }
+    ink = '';
+    images = [];
+  };
   for (const { n, text } of lines) {
     const brace = text.indexOf('{');
     if (brace >= 0) {
@@ -117,17 +134,21 @@ function hoverFills(lines) {
     } else if (!selector) {
       pending = (pending + ' ' + text).trim();
     }
+    if (selector && HOVERED.test(selector) && !ALREADY_ON.test(selector)) {
+      for (const match of text.matchAll(/\bbackground(?:-color)?\s*:\s*([^;]+);/g)) {
+        const value = match[1].trim();
+        if (A_SURFACE.test(value)) out.push({ n, why: 'fills with a surface color', value });
+        else if (/^color-mix\(/.test(value) && /\d\s*%/.test(value) && A_NEUTRAL.test(value)) {
+          out.push({ n, why: 'mixes its own strength', value });
+        }
+      }
+      for (const match of text.matchAll(/--lt-grain-dot\s*:\s*([^;]+);/g)) ink = match[1].trim();
+      for (const match of text.matchAll(/\bbackground-image\s*:\s*([^;]+);/g)) images.push({ n, value: match[1].trim() });
+    }
     if (text.includes('}')) {
+      close();
       selector = '';
       pending = '';
-    }
-    if (!selector || !HOVERED.test(selector) || ALREADY_ON.test(selector)) continue;
-    for (const match of text.matchAll(/\bbackground(?:-color)?\s*:\s*([^;]+);/g)) {
-      const value = match[1].trim();
-      if (A_SURFACE.test(value)) out.push({ n, why: 'fills with a surface color', value });
-      else if (/^color-mix\(/.test(value) && /\d\s*%/.test(value) && A_NEUTRAL.test(value)) {
-        out.push({ n, why: 'mixes its own strength', value });
-      }
     }
   }
   return out;
@@ -145,6 +166,12 @@ const FIXTURE = [
   ['.a:disabled:hover {\n  background: var(--lt-surface-elevated);\n}', 0, 'a button with nowhere to go'],
   ['.a {\n  background: var(--lt-surface);\n}', 0, 'a rest state'],
   ['.a:hover,\n.b:hover {\n  background: var(--lt-surface);\n}', 1, 'a selector split over two lines'],
+  ['.a:hover {\n  --lt-grain-dot: var(--lt-grain-hover);\n  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);\n}', 0, 'the shared lattice in the hover ink'],
+  ['.a:hover {\n  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);\n}', 1, 'the lattice in whatever ink was inherited'],
+  ['.a:hover {\n  --lt-grain-dot: var(--lt-grain-dark);\n  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);\n}', 1, 'the lattice in the chrome ink'],
+  ['.a:hover {\n  --lt-grain-dot: var(--lt-grain-hover);\n  background-image: linear-gradient(var(--lt-grain-dot), transparent);\n}', 1, 'an image that is not the lattice'],
+  ['.a:hover {\n  background-image: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover));\n}', 0, 'the wash laid over a fill of its own'],
+  ['.a {\n  --lt-grain-dot: var(--reader-surface-grain);\n  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);\n}', 0, 'a grained surface at rest'],
 ];
 for (const [source, want, label] of FIXTURE) {
   const got = hoverFills(strip(source)).length;

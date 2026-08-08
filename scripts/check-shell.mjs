@@ -450,6 +450,53 @@ if (booted) {
     }
   });
 
+  // The card over a pager button has to name the page it opens rather than call the document behind it an app command. Its target is a `file://` URL, so the scheme branch answers first unless the page the pager stamped on the button is read ahead of everything.
+  check('a pager button’s hint names its page and keeps the address under it', () => {
+    const { linkHoverInfo, linkHoverKind } = booted;
+    const anchor = (attributes) => ({ getAttribute: (name) => (name in attributes ? attributes[name] : null) });
+    const href = 'file:///docs/002-rains.md';
+    const pager = linkHoverInfo(href, anchor({ href, 'data-pager-title': 'The Rains Retreat' }));
+    if (pager.kind !== 'The Rains Retreat') throw new Error(`the card calls it ${pager.kind}`);
+    if (pager.detail !== href) throw new Error(`the address moved: ${pager.detail}`);
+
+    // An ordinary document link keeps the answer it has, its line count included.
+    const plain = linkHoverInfo('notes/other.md', anchor({ href: 'notes/other.md' }));
+    if (plain.kind !== 'Another page') throw new Error(`a plain link became ${plain.kind}`);
+
+    // The right-click menu asks with the href alone, so a pager button there is unmoved.
+    if (linkHoverKind(href) !== 'App link') throw new Error('the menu’s reading of a pager link moved');
+  });
+
+  // The card follows the pointer at a fixed offset, which lands inside a target this size — so it covered the very page name it had just been given. Pure arithmetic over two rectangles, and the one part of this nothing else can see.
+  check('the card over a pager button stands clear of it', () => {
+    const { positionLinkHoverTip } = booted;
+    const tip = vm.runInContext('linkHoverTip', booted);
+    const wasRect = tip.getBoundingClientRect;
+    tip.getBoundingClientRect = () => ({ top: 0, left: 0, right: 300, bottom: 70, width: 300, height: 70 });
+    const target = (title, top) => ({
+      getAttribute: (name) => (name === 'data-pager-title' ? title : null),
+      getBoundingClientRect: () => ({ top, bottom: top + 70, left: 100, right: 775, width: 675, height: 70 }),
+    });
+    const place = (link, y) => {
+      booted.__hovered = link;
+      vm.runInContext('activeHoverLink = __hovered;', booted);
+      positionLinkHoverTip({ clientX: 400, clientY: y });
+      return tip.style.top;
+    };
+    try {
+      // Pointer in the middle of a button two thirds down the window: the card goes above the whole button, not to the pointer.
+      if (place(target('The Rains Retreat', 600), 620) !== '520px') throw new Error(`the card landed at ${tip.style.top} instead of above the button`);
+      // A button at the top of the window has no room above it, so the card goes under it rather than off screen.
+      if (place(target('The Rains Retreat', 20), 40) !== '100px') throw new Error(`with no room above, the card landed at ${tip.style.top}`);
+      // An ordinary link is not a big target, and its card still follows the pointer.
+      if (place(target(null, 600), 620) !== '638px') throw new Error(`an ordinary link's card moved to ${tip.style.top}`);
+    } finally {
+      tip.getBoundingClientRect = wasRect;
+      vm.runInContext('activeHoverLink = null;', booted);
+      delete booted.__hovered;
+    }
+  });
+
   check('the format bar steps heading levels and stops at both ends', () => {
     const { steppedHeadingLevel, blockFormatChanges } = booted;
     const BIGGER = -1;

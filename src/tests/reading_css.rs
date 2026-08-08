@@ -439,6 +439,50 @@ fn reading_surfaces_carry_the_chrome_dot_grain() {
 }
 
 #[test]
+fn the_pager_button_grains_under_the_pointer_and_keeps_its_label_unmarked() {
+    let css = reading_mode_css();
+
+    // The fill is the page's own lattice in the one ink a hover has, on the same window-anchored grid every grained surface uses — a box-anchored one falls out of phase with the code block above it at the button's edge.
+    let hover = rule_body(
+        css,
+        ".document-body .docs-pager a:hover,\n.document-body .docs-pager a:focus-visible {",
+    );
+    for expected in [
+        "--lt-grain-dot: var(--lt-grain-hover);",
+        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);",
+        "background-size: 2px 2px;",
+        "background-attachment: fixed;",
+        "text-decoration: none;",
+    ] {
+        assert_contains(hover, expected);
+    }
+
+    // The ink is black at an alpha like every other grain, so the button sinks on a light family and a dark one alike rather than lifting on one of them.
+    assert_contains(css, "--lt-grain-hover: rgba(0, 0, 0, 0.55);");
+
+    // Both pager rules are scoped under the document. Unscoped they weigh the same as the blanket link rule and lose to it for sitting earlier, which underlines the page name and takes its color.
+    for scoped in [
+        ".document-body .docs-pager a {",
+        ".document-body .docs-pager a:hover,",
+    ] {
+        assert_contains(css, scoped);
+    }
+    assert!(
+        !css.contains("\n.docs-pager a"),
+        "an unscoped pager rule loses the underline fight to .document-body a:hover"
+    );
+
+    // And nothing may set a background after it: at equal weight a later `background:` shorthand blanks the image.
+    let at = css
+        .find(".document-body .docs-pager a:hover,")
+        .expect("the pager hover rule");
+    assert!(
+        !css[at..].contains(".docs-pager a {"),
+        "a later pager fill would blank the lattice"
+    );
+}
+
+#[test]
 fn reading_mode_css_offsets_document_by_measured_scroll_origin() {
     let css = reading_mode_css();
 

@@ -8,6 +8,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { describeLink } from '../site/link-tooltip.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -66,10 +67,18 @@ for (const page of PAGES) {
   }
 }
 
+// And what the hover card says about a pager button. The href is a `#/route`, so the in-page-jump branch answers it unless the page the pager stamped on the button is read ahead of everything — which is a thing nothing else here runs the site's script to find out.
+const anchor = (attributes) => ({ getAttribute: (name) => (name in attributes ? attributes[name] : null) });
+const pager = describeLink(anchor({ href: '#/reading/002-rains', 'data-pager-title': 'The Rains Retreat' }));
+if (pager.kind !== 'The Rains Retreat') problems.push(`a pager button's card calls it '${pager.kind}', not the page it opens`);
+if (pager.detail !== '#/reading/002-rains') problems.push(`a pager button's card lost its address: '${pager.detail}'`);
+const jump = describeLink(anchor({ href: '#a-heading' }));
+if (jump.kind !== 'In-page jump') problems.push(`an ordinary fragment link became '${jump.kind}'`);
+
 if (problems.length) {
   console.error('the published pages ask for files that are not there:');
   for (const problem of problems) console.error(`  ${problem}`);
   console.error('a path in a shared helper is relative to the page that loads it, not to the helper.');
   process.exit(1);
 }
-console.log(`site: ${checked} fetched paths across ${PAGES.length} pages, every one a file`);
+console.log(`site: ${checked} fetched paths across ${PAGES.length} pages, every one a file, and a pager button's card names its page`);

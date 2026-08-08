@@ -2658,7 +2658,10 @@ body:has(#readerToolbar:not([hidden])) {
   padding-top: var(--lt-space-24);
   border-top: var(--lt-stroke-1) solid var(--lt-markdown-rule);
 }
-.docs-pager a {
+/* Scoped under the document, never a bare `.docs-pager a`: the blanket link rule below
+   is the same weight and later, so at that weight it takes this button's color at rest
+   and its color and an underline on hover. */
+.document-body .docs-pager a {
   flex: 1 1 0;
   min-width: 0;
   text-decoration: none;
@@ -2714,7 +2717,17 @@ body:has(#readerToolbar:not([hidden])) {
     opacity: var(--lt-opacity-55);
   }
 }
-.docs-pager a:hover {
+/* The page's own lattice rather than the flat wash: this button is wide enough that a
+   tint reads as a slab laid over the grained code blocks and table heads beside it.
+   Window-anchored so the dots stay in phase across its edge, and nothing may set
+   `background` after this — at equal weight the shorthand blanks the image. */
+.document-body .docs-pager a:hover,
+.document-body .docs-pager a:focus-visible {
+  --lt-grain-dot: var(--lt-grain-hover);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
+  background-size: 2px 2px;
+  background-repeat: repeat;
+  background-attachment: fixed;
   border-color: var(--lt-markdown-link);
   color: var(--lt-markdown-link);
   text-decoration: none;

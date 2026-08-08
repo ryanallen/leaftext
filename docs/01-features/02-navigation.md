@@ -20,7 +20,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is and where it points |
 | [Open a link in a new page](#opening-a-link-in-a-new-page) | Ctrl-click, middle-click or right-click a link to open it behind what you are reading |
-| [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order |
+| [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order, filling with the page's own dot texture under the pointer |
 | [Single window](#tabs) | A second launch opens the file as a tab in the running window instead of a new copy |
 | [When the bar runs out of room](#when-the-bar-runs-out-of-room) | On a window too narrow for the whole app bar, its buttons fold into a chevron menu one at a time — and the window's own close, minimize and maximize stay on the bar |
 | [Code view](07-editing.md) | Toggle any document to its raw, editable source |
@@ -216,6 +216,8 @@ Reading order follows the same depth-first walk the docs viewer uses: inside eac
 
 Working out the Previous / Next links means scanning the folder tree, so Leaftext does it after the document is already on screen rather than blocking the initial render. A placeholder bar shows in its place for the moment it takes, then the real buttons fill in. In a folder with a great many files the page appears immediately and the pager simply arrives a beat later.
 
+Point at either button and it fills with the same fine dot texture the code blocks and table headers on that page wear, so it reads as one of the page's own surfaces rather than a panel laid over it, and the document name on it stays plain. The [hover tooltip](#link-hints) names the page that button opens, with the address underneath, and sits clear of the button rather than over it.
+
 The pager is always there; it is not a [setting](05-settings.md#pager).
 
 ### Link hints
@@ -234,8 +236,9 @@ Hovering a link shows a small tooltip that names what kind of link it is and sho
 | Email link | A `mailto:` link |
 | App link | Any other URL scheme |
 | Local path | A root-relative `/path` link |
+| The page's own name | A [Previous / Next](#pager) button, which names the document it opens rather than the kind of link it is |
 
-This is a desktop affordance: it appears only with a mouse (a fine pointer that can hover), and is left off on touch screens. The tooltip follows the cursor, flips to stay on screen near the edges, and hides on scroll or when the window loses focus.
+This is a desktop affordance: it appears only with a mouse (a fine pointer that can hover), and is left off on touch screens. The tooltip follows the cursor, flips to stay on screen near the edges, and hides on scroll or when the window loses focus. Over a Previous / Next button it stands clear of the whole button instead of following the cursor into it, so it never covers the name it is giving you.
 
 The hint also tells you where a click will land. A link to a document Leaftext reads opens in the reading view, in the current tab, with a history entry — that covers every format it renders, not Markdown alone, so a link from a note to the `.json` beside it stays inside the app. A link to any other local file (an image, a PDF, a spreadsheet) is handed to your operating system to open in whatever owns that type.
 

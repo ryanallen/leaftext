@@ -193,7 +193,12 @@
   border-radius: var(--radius);
   color: var(--text);
 }
-.docs-pager a:hover {
+/* The fill the nav links already hover with. The app grains this button instead; the
+   site has no lattice anywhere, so a texture here would be a second one with nothing
+   behind it. */
+.docs-pager a:hover,
+.docs-pager a:focus-visible {
+  background: var(--bg-elevated);
   border-color: var(--link);
   color: var(--link);
   text-decoration: none;

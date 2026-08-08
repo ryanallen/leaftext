@@ -97,9 +97,11 @@ check-ascii-art:
     node scripts/check-ascii-art.mjs
 
 # Fail on a file the published pages fetch by a path that has nothing at it — a 404
-# nobody sees until the page is live.
+# nobody sees until the page is live — and on what the pages say about a pager button.
+# The warning silenced is Node's own: it imports the site's tooltip module, and no
+# package.json here declares `.js` to be modules.
 check-site:
-    node scripts/check-site.mjs
+    node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-site.mjs
 
 # Fail if a check the Justfile defines is not in `just verify` — a rule with no check
 # in the suite holds only while someone remembers it.

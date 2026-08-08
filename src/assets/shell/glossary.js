@@ -187,13 +187,9 @@ function formatLineCount(n) {
   return formatCount(n) + ' ' + (n === 1 ? 'line' : 'lines');
 }
 function setLinkHoverLines(count) {
-  if (typeof count === 'number' && count >= 0) {
-    linkHoverTipLines.textContent = formatLineCount(count);
-    linkHoverTipLines.hidden = false;
-  } else {
-    linkHoverTipLines.textContent = '';
-    linkHoverTipLines.hidden = true;
-  }
+  const text = typeof count === 'number' && count >= 0 ? formatLineCount(count) : '';
+  linkHoverTipLines.textContent = text;
+  linkHoverTipLines.hidden = !text;
 }
 window.leafLineCount = (token, lines) => {
   const key = pendingLineTokens.get(token);
@@ -221,6 +217,12 @@ function positionLinkHoverTip(event) {
   if (top + rect.height > window.innerHeight - margin) {
     top = Math.max(margin, event.clientY - rect.height - 18);
   }
+  // A pager button is a big target, so a card following the pointer into it covers the very page name it is there to give. It stands clear of the whole button instead — above it, or under it when there is no room.
+  const button = pagerHoverTitle(activeHoverLink) ? activeHoverLink.getBoundingClientRect() : null;
+  if (button && top < button.bottom && top + rect.height > button.top) {
+    const above = button.top - rect.height - 10;
+    top = above >= margin ? above : Math.min(button.bottom + 10, window.innerHeight - margin - rect.height);
+  }
   linkHoverTip.style.left = left + 'px';
   linkHoverTip.style.top = top + 'px';
 }
@@ -229,8 +231,15 @@ function positionLinkHoverTip(event) {
 function hoverDetail(rawHref) {
   try { return decodeURIComponent(rawHref); } catch (e) { return rawHref; }
 }
-function linkHoverInfo(rawHref) {
+// The page a pager button opens, which the pager stamped on it. Read ahead of every branch below, because the target is a `file://` URL and the scheme test would answer it as an app command.
+function pagerHoverTitle(link) {
+  return link && link.getAttribute ? (link.getAttribute('data-pager-title') || '').trim() : '';
+}
+// The element is optional: the right-click menu asks what a link is with the href alone, and a pager button there keeps whatever it resolves to.
+function linkHoverInfo(rawHref, link) {
   if (!rawHref) return null;
+  const pagerTitle = pagerHoverTitle(link);
+  if (pagerTitle) return { kind: pagerTitle, detail: hoverDetail(rawHref) };
   if (/^glossary:\s*$/i.test(rawHref)) {
     return { kind: 'Full glossary', detail: hoverDetail(rawHref) };
   }
@@ -264,7 +273,7 @@ if (canHoverLinks) {
     const link = event.target.closest('a[href]');
     if (!link) return;
     const rawHref = (link.getAttribute('href') || '').trim();
-    const info = linkHoverInfo(rawHref);
+    const info = linkHoverInfo(rawHref, link);
     if (!info) {
       hideLinkHoverTip();
       return;

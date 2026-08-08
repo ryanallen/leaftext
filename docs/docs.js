@@ -307,11 +307,12 @@ function buildPager(route) {
   const idx = route === '' ? -1 : PAGES.findIndex((p) => p.route === route);
   const prev = idx > 0 ? PAGES[idx - 1] : null;
   const next = route === '' ? PAGES[0] || null : idx >= 0 && idx < PAGES.length - 1 ? PAGES[idx + 1] : null;
+  // The page this button opens, for the hover card. Stamped here because nothing else knows it — the tooltip sees a `#/route`.
   const prevHtml = prev
-    ? `<a class="docs-pager-prev" href="#/${prev.route}"><span class="docs-pager-label">Previous</span>${prev.label}</a>`
+    ? `<a class="docs-pager-prev" href="#/${prev.route}" data-pager-title="${prev.label}"><span class="docs-pager-label">Previous</span>${prev.label}</a>`
     : '<span></span>';
   const nextHtml = next
-    ? `<a class="docs-pager-next" href="#/${next.route}"><span class="docs-pager-label">Next</span>${next.label}</a>`
+    ? `<a class="docs-pager-next" href="#/${next.route}" data-pager-title="${next.label}"><span class="docs-pager-label">Next</span>${next.label}</a>`
     : '<span></span>';
   pagerEl.innerHTML = prevHtml + nextHtml;
 }

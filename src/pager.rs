@@ -54,13 +54,15 @@ pub(crate) fn pager_html(current: &Path) -> String {
         return String::new();
     }
 
+    // The page this button opens, for the hover card. Carried on the anchor because the pager is the only thing that knows it — the card sees a `file://` URL and nothing else.
     let button = |entry: &PagerEntry, side: &str, kicker: &str| -> String {
         match file_url_for_path(&entry.path) {
             Some(url) => format!(
-                r#"<a class="docs-pager-{side}" href="{href}"><span class="docs-pager-label">{kicker}</span>{title}</a>"#,
+                r#"<a class="docs-pager-{side}" href="{href}" data-pager-title="{attr}"><span class="docs-pager-label">{kicker}</span>{title}</a>"#,
                 side = side,
                 href = encode_text(url.as_str()),
                 kicker = kicker,
+                attr = encode_double_quoted_attribute(&entry.label),
                 title = encode_text(&entry.label),
             ),
             None => "<span></span>".to_string(),

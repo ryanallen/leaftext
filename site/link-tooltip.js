@@ -47,9 +47,20 @@ function isDocumentLink(rawHref) {
   return /\.(md|markdown|mdown|xml)$/i.test(path);
 }
 
-function describeLink(link) {
+function pagerTitleOf(link) {
+  return (link.getAttribute('data-pager-title') || '').trim();
+}
+
+// What a link is, for the tooltip. Exported so `scripts/check-site.mjs` can hold the pager's own answer without a browser.
+export function describeLink(link) {
   const rawHref = (link.getAttribute('href') || '').trim();
   if (!rawHref) return null;
+
+  // The page a pager button opens, which the pager stamped on it. Read ahead of every branch below, because the href is a `#/route` and the in-page-jump test would answer it first.
+  const pagerTitle = pagerTitleOf(link);
+  if (pagerTitle) {
+    return { kind: pagerTitle, detail: detailText(rawHref), countable: false };
+  }
 
   const countable = isDocumentLink(rawHref);
 
@@ -184,6 +195,12 @@ export function installLinkTooltip(root = document, options = {}) {
     }
     if (top + rect.height > window.innerHeight - margin) {
       top = Math.max(margin, event.clientY - rect.height - 18);
+    }
+    // A pager button is a big target, so a tooltip following the pointer into it covers the very page name it is there to give. It stands clear of the whole button instead — above it, or under it when there is no room.
+    const button = activeLink && pagerTitleOf(activeLink) ? activeLink.getBoundingClientRect() : null;
+    if (button && top < button.bottom && top + rect.height > button.top) {
+      const above = button.top - rect.height - 10;
+      top = above >= margin ? above : Math.min(button.bottom + 10, window.innerHeight - margin - rect.height);
     }
     tip.style.left = `${left}px`;
     tip.style.top = `${top}px`;

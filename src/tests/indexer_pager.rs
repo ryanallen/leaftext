@@ -132,3 +132,36 @@ fn pager_orders_by_folder_tree_like_the_web_viewer() {
         "glossary must not be a pager page: {html}"
     );
 }
+
+#[test]
+fn each_pager_button_carries_the_page_it_opens() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time is after Unix epoch")
+        .as_nanos();
+    let root = std::env::temp_dir().join(format!("leaf-pager-title-{unique}"));
+    fs::create_dir_all(&root).expect("folder is created");
+    fs::write(root.join("README.md"), "# Landing\n").expect("README written");
+    for name in ["001-ordination.md", "002-rains.md", "003-robes.md"] {
+        fs::write(root.join(name), "# x\n").expect("page written");
+    }
+
+    // Standing on the middle page: back one and on one, each button saying which page it opens.
+    let middle = pager_html(&root.join("002-rains.md"));
+    // The landing page is not a sequential entry, so Next from it opens the first page.
+    let landing = pager_html(&root.join("README.md"));
+    fs::remove_dir_all(&root).expect("folder removed");
+
+    assert_contains(&middle, r#"data-pager-title="001 Ordination""#);
+    assert_contains(&middle, r#"data-pager-title="003 Robes""#);
+    assert_contains(&landing, r#"data-pager-title="001 Ordination""#);
+    // Nothing counts the pages: the reading order climbs through every folder above the one being read, so a total says nothing a reader can use.
+    assert!(
+        !middle.contains("data-pager-position"),
+        "the pager must not number the book: {middle}"
+    );
+    assert!(
+        !landing.contains("docs-pager-prev"),
+        "the landing page has nothing before it: {landing}"
+    );
+}
