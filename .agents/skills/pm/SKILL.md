@@ -29,7 +29,7 @@ Rows carried numbers until 4 August 2026. They were retired with their rows and 
 
 ### A row moves unchanged
 
-Whatever the row said in the live list is what it says in `done/PLAN.md`: struck through, with the date it closed and what the build found. **Nothing is rewritten on the way across** bar the `Stage` cell, which is dropped — a live stage has no meaning once the work is built. So the row a later reader finds is the row somebody actually built against, and moving it is a cut and paste. That is [`/done`](../done/SKILL.md)'s job, not this skill's.
+Whatever the row said in the live list is what it says in `done/PLAN.md`: struck through, with the date it closed and what the build found. **Nothing is rewritten on the way across** bar the `Status` cell, which becomes the date the row closed — a live status has no meaning once the work is built. So the row a later reader finds is the row somebody actually built against, and moving it is a cut and paste. That is [`/done`](../done/SKILL.md)'s job, not this skill's.
 
 ## 1. Read before ranking
 
@@ -96,21 +96,19 @@ Tier 0 comes first because the list is only as good as the statuses it rests on.
 [what was built](done/PLAN.md). Tickets: [README.md](README.md).
 Method, and why a row sits where it does: `/pm`.
 
-**Next up: [ticket-name](path).** Anything that can go beside it, and what waits.
-
 **A row is named, not numbered.** One line saying so, and that both files cite
 the ticket's name.
 
-**Stage** — where the ticket is in the workflow. `Ready` means it needs design, `Designed` means design is complete, `In development` means implementation has started, and `Released for test` means the release happened but `/done` has not retired it.
+**Status** — where the ticket is in the workflow. `Ready` means it needs design, `Designed` means design is complete, `In development` means implementation has started, and `Released for test` means the release happened but `/done` has not retired it.
 
 ## Tier 1 — wrong today, and cheap
 
-| Ticket | Stage | Why here | Cost |
+| Ticket | Status | Why here | Cost |
 ```
 
-That is six lines, and the last two each buy something: one says a row is a name so nobody starts numbering again, and the other buys the column, because a reader deciding what to pick up needs to know an unticked row is a guess.
+That is four lines, and the last two each buy something: one says a row is a name so nobody starts numbering again, and the other buys the column, because a reader deciding what to pick up needs to know an unticked row is a guess.
 
-- **The `Stage` cell is second, right after the ticket.** Use only `Ready`, `Designed`, `In development`, or `Released for test` — no date, no who. It sits before the reasoning because it tells the reader what can happen next.
+- **The `Status` cell is second, right after the ticket.** Use only `Ready`, `Designed`, `In development`, or `Released for test` — no date, no who. It sits before the reasoning because it tells the reader what can happen next.
 - **A cell is one or two sentences.** Not a paragraph. Not a citation — a `path:line` belongs in the ticket's measured table, where somebody building it will look, and a cost belongs in the ticket's phases. The cell says *why this row is above the next one*, and nothing else.
 - **No tier preamble.** The heading says what the tier is. A paragraph under it restates the heading.
 - **An empty tier is deleted, heading and all.** It comes back when it has a row. A heading over nothing is a line to scroll past, and tier 0 sat empty over a link to somewhere else for exactly one edit before this rule existed.

@@ -8,11 +8,11 @@
 //
 // A mask reads only alpha, so the copy in the URI is painted flat black and the visible color comes from `background-color: currentColor` on the base class. That is what made the move possible at all: `normalize_svg_icon_colors` had already turned every fill and stroke into `currentColor`, so no icon carried a color.
 //
-// A row marked `heavy` gets a second mask drawn at the heavy weight, published as `--lt-icon-<name>-heavy` so a rule can swap to it — the active view is drawn bolder as well as brighter, and a mask has no strokes to thicken. `missing-image.svg` and the footnote arrow are not listed: the renderer hands those out as markup.
+// A row marked `heavy` gets a second mask drawn at the heavy weight, published as `--lt-icon-<name>-heavy` so a rule can swap to it — the active view is drawn bolder as well as brighter, and a mask has no strokes to thicken. The footnote arrow is not listed: the renderer hands it out as markup. `missing-image.svg` has a row, because a diagram falls back to it.
 //
 // The row's Stroke cell is the line weight, and it is stamped over whatever the file draws at. A drawing arrives carrying its tool's number; left alone those drift, and this set had reached seven weights before the column existed.
 //
-// The row's Source cell is the pack the drawing came from, and a pack named there has to have its license notice beside the drawings — two of the four packs in the set were shipping with none. The box is the weight's, not the drawing's: a weight only means a thickness once you know how many units across the drawing is, so a 32-unit drawing taking the regular weight comes out at three quarters of everything beside it.
+// The row's Source cell is the pack the drawing came from, and a pack named there has to have its license notice beside the drawings. The box is the weight's, not the drawing's: a weight only means a thickness once you know how many units across the drawing is, so a 32-unit drawing taking the regular weight comes out at three quarters of everything beside it.
 
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

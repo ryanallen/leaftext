@@ -78,7 +78,7 @@ Each step in the verification pipeline can also be run on its own:
 | Vendor check | `just check-vendor`         | Verify `site/` vendored assets match `src/assets` |
 | Themes check | `just check-themes`         | Verify `src/assets/themes.md` matches the `themes/` folder |
 | Values check | `just check-tokens`         | Verify the color contract and the fixed values match `design/` |
-| Icons check  | `just check-icons`          | Verify the icon classes match `design/icons.md` |
+| Icons check  | `just check-icons`          | Verify the icon classes match `design/icons.md`, and every row names a licensed pack and a drawing in its weight's box |
 | Gallery check | `just check-gallery`       | Verify `gallery.html` matches `design/` |
 | Design docs check | `just check-design-docs` | Verify [Design system](05-design-system.md) matches `design/` |
 | Classes check | `just check-classes`       | Fail on a class in `reading.css` that `design/components.md` does not account for |

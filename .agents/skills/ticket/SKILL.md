@@ -216,7 +216,7 @@ A ticket nobody can find is a ticket nobody builds. So writing the plan is two-t
 
 **2. The running order — run [`/pm`](../pm/SKILL.md) over the whole tree.** Not a row placed by hand. A new ticket changes what somebody should pick up next, and the author is the last person who can judge that: they have just spent an hour on one file and read none of the others, so a self-placed row lands wherever the writing left them feeling about it. Running the ranking is also the only pass that walks the three live folders off the disk, which is how a ticket with no row at all gets found — the ranking on 4 August 2026 turned up three, one of them a diagram bug that takes the whole drawing down.
 
-So finishing a ticket is: write the file, write the index row, then `/pm`. It re-derives every `Stage` cell from the tickets, re-checks statuses against the code, and rewrites `../docs/PLAN.md` in place with the new ticket ranked among the rest. Nothing here places a tier by hand, and nothing here writes a `PLAN.md` row.
+So finishing a ticket is: write the file, write the index row, then `/pm`. It re-derives every `Status` cell from the tickets, re-checks statuses against the code, and rewrites `../docs/PLAN.md` in place with the new ticket ranked among the rest. Nothing here places a tier by hand, and nothing here writes a `PLAN.md` row.
 
 **Absent is not wrong** — a capability the app never had does not reach tier 1 however big its audience. Worth knowing while writing, because a ticket that argues the app is *broken* when it is merely *incomplete* is a ticket the ranking has to argue back at.
 
