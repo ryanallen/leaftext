@@ -110,6 +110,7 @@ That is six lines, and the last two each buy something: one says a row is a name
 - **No method in the file.** How rows are ranked is this skill; the file links to it. Copying the three criteria into the file means two copies that drift.
 - **No record in the file.** What an earlier ranking got wrong goes in `done/PLAN.md`, beside the rows it is about. Anything that belongs to one ticket rather than to the ordering goes on that ticket, in its own record — that is what a ticket's record section is for.
 - **No summary of what the list adds up to.** The tables are the list. A paragraph reading them back is the file arguing with itself.
+- **No picture, and no diagram.** A wireframe and a flow diagram both belong to one ticket, where somebody building it will look; drawn in the ranking they push row one down the page and go stale the moment that ticket is designed. A [track](../../../docs/GLOSSARY.md#track) is numbered steps for the same reason — an order reads faster as a short list than as a graph.
 
 Then, after the tables, only these:
 

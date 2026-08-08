@@ -21,6 +21,7 @@ A ticket earns its keep with the measured table — the claim beside the line it
 - Fix the line number silently. A claim that is now **false** is not a silent fix — it goes in the record at the bottom.
 - A claim with no citation is either checked and cited, or cut.
 - Names get opened too. A ticket that says a function will be called with a string, when it takes a struct, sends the next person the wrong way.
+- **A flow diagram is a measured table drawn sideways, so every node and every edge is opened.** A node is a real thing or it is cut; an edge is a call that exists, or one this ticket is adding and says so. A drawing reads as settled in a way a sentence does not, which is exactly why a wrong one costs more — see step 6b.
 
 Read the repo, do not remember it. A plausible sentence that is false is worse than no sentence.
 
@@ -100,6 +101,17 @@ Where there **is** a fork, **put the drawing in front of the owner and wait**: t
 Then hold every phase to the approved drawing: **a box that draws a control the section does not show is struck**, with the reason. That is what would have caught v0.1.479's second search box, its `?` button and its popup panel — three controls no line of the plan asked for, all three taken back out.
 
 And check the drawing for the thing it most often gets wrong: **new interface where the existing control would do**. A second input, a second button, a second panel. The ticket has to say why the one already there could not carry it; without that sentence, the answer is the one already there.
+
+## 6b. The flow diagram is held to the code and to the phases
+
+**Where a ticket explains a mechanism in prose that a picture would carry, this pass draws it** — a Mermaid block in `## How it is built`, per [ticket](../ticket/SKILL.md)'s rule: three or more hops, a branch, anything crossing the line between the page and the host, or an order the phases rest on. It is a block in the file, not a photographed sketch — the wireframe rule above is for layouts, and a flow costs no file at all. Never box characters.
+
+Then two readings nothing else in this repo does:
+
+- **The diagram against the code.** Every node named as the code names it, every edge a call that exists, and the files cited under the block. Where the ticket is adding a piece, its node says so — an undated drawing that mixes what ships with what is planned is one a builder reads as all shipping.
+- **The diagram against the phase list.** A node nothing in the phases builds is either a node to cut or a box nobody wrote, and a hop the phases build that the picture does not show means the picture is out of date. This is the one check that turns the drawing from decoration into the thing that makes a plan followable, and it takes one pass.
+
+A diagram answering more than one question gets split; a diagram of two boxes and an arrow is cut back to the sentence it was.
 
 ## 7. The file itself has to read well
 

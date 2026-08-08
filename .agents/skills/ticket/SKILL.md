@@ -171,6 +171,32 @@ The sketch is plain HTML — boxes, borders, real text, a numbered dot per chang
 
 **Draw it, show the drawing, get a yes.** Not "ask whether to add a control" — write the sketch into the ticket, then put that same sketch in front of the owner and let them look at it. Two or three drawn options where there is a real choice, with one marked the pick and why. Their answer becomes the section and a decision in the file, and it is what a builder is held to later. A ticket that reaches `/dev` with an unapproved drawing has not been written yet.
 
+## Anything with an order or a branch gets drawn as a flow
+
+**A wireframe answers where a control sits; a flow diagram answers what happens, in what order, and who answers it.** A ticket about a mechanism needs the second as much as a ticket about a control needs the first, and it is the half most often left as four paragraphs somebody has to hold in their head. [api-documents](../../../docs/features/storage/api-documents.md) is the shape a live ticket uses; [stage-2-module-split](../../../docs/done/reference/stage-2-module-split/README.md) is what one is still worth long after the work shipped.
+
+**It is a Mermaid block in the ticket itself** — no sketch file, no photograph, nothing in `../docs/imgs/`. The app renders it, GitHub renders it, and editing the block redraws the picture, which is the whole reason a flow is cheap where a layout has to be photographed. Pick the kind by the question: `flowchart` for a path, `sequenceDiagram` for who calls whom in what order, `stateDiagram-v2` for a thing with modes. **Never box characters** — `just check-ascii-art` fails on a `┌` anywhere in the tree, for the reasons under the wireframe rule above.
+
+**One earns its place when the prose has to hold more than a reader can.** Three or more hops; a branch, where the same input goes two ways; anything crossing the line between the page and the host, because that boundary is what a builder gets wrong; and an order the phases rest on, since a phase's italic line is far easier to check against a picture than against four paragraphs. Two boxes and an arrow is a sentence — write the sentence.
+
+**Every node is a real thing, named as the code names it, with the files cited under the block.** A node nobody can find is an uncited claim that reads as settled because it is drawn, which makes it worse than the same sentence. An edge says what carries the message rather than merely that something happens. And where the ticket is *adding* a piece, the node says so — a drawing that mixes what ships with what is planned and marks neither is one a builder cannot use.
+
+````markdown
+```mermaid
+flowchart LR
+    P[Page] --"send('openPath')"--> H[Host]
+    H --> F{Extension readable?}
+    F --"yes"--> T[Tab opens]
+    F --"no"--> S[Says so, instead of silence: phase 2]
+```
+
+The host's arm is `src/app/event_loop.rs:141` and the readable test is `src/format.rs:88`. Everything but the refusal ships today.
+````
+
+**It goes in `## How it is built`, and it covers what the phases build and no more.** `## What was measured` stays claims with citations — a picture there is a plan hiding in the evidence. Read the drawing against the phase list once, deliberately, before handing back: a node nothing in the phases builds is either a node to cut or a box somebody forgot to write, and that one pass is the cheapest way this section pays for itself.
+
+**Keep it to one question.** One diagram per thing being explained, a dozen nodes at the outside. Two small diagrams answering one question each beat one answering three, and a diagram nobody can read at a glance is prose with lines on it.
+
 ## Two files finish the job, every time
 
 A ticket nobody can find is a ticket nobody builds. So writing the plan is two-thirds of the work, and neither of the other files is optional — do both in the same pass, before handing back.
