@@ -25,7 +25,7 @@ Tests come before `verify` because `verify` runs the tests that exist. A change 
 just verify
 ```
 
-Twenty-one steps: `format-check`, `cargo check --all-targets`, `cargo test`, `check-vendor`, `check-themes`, `check-tokens`, `check-icons`, `check-gallery`, `check-design-docs`, `check-classes`, `check-literals`, `check-verify`, `check-spelling`, `check-docs`, `check-wrapping`, `check-site`, `check-shell`, `check-identity`, `check-hooks`, `check-mcp`, `check-driver`.
+Twenty-four steps: `format-check`, `cargo check --all-targets`, `cargo test`, `check-vendor`, `check-themes`, `check-tokens`, `check-icons`, `check-gallery`, `check-design-docs`, `check-classes`, `check-literals`, `check-verify`, `check-spelling`, `check-docs`, `check-wrapping`, `check-ascii-art`, `check-site`, `check-shell`, `check-identity`, `check-hooks`, `check-release-package`, `check-mcp`, `check-driver`, `check-shot-edges`.
 
 Six of those hold the design system together: a value, a class, a component, an icon or a token that `design/` does not list fails the build. When one fires, the fix is a row in `design/` and a bundler run — see `/design-tokens` — never a loosened check.
 

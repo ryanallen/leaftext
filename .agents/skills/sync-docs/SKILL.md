@@ -196,12 +196,14 @@ node scripts/seo-gen.mjs
 It rewrites five files at the repo root (the deployed site root) from `README.md` + the `docs/` tree:
 
 - `robots.txt` — allows the major search + AI crawlers (Googlebot, Bingbot, GPTBot, OAI-SearchBot, ChatGPT-User, CCBot, PerplexityBot, ClaudeBot, Google-Extended) and points at the sitemap.
-- `sitemap.xml` — every canonical page URL **and** its raw `.md` source URL, each with a git-derived `<lastmod>`.
+- `sitemap.xml` — every address a fetcher can actually ask for, each with a git-derived `<lastmod>`. A doc page's advertised address **is** its raw `.md`: a `#/route` never reaches the server, so advertising one is 18 addresses that all answer with the docs shell. The router still serves those routes for people who share them; they are simply not what a crawler is pointed at.
 - `sitemap-md.txt` — one `.md` source URL per line.
 - `llms.txt` — a concise index: page title → `.md` link.
 - `llms-full.txt` — a fuller enumeration: title, page URL, Markdown URL, and a one-line description per page.
 
 Page list, titles, summaries, and `<lastmod>` dates are all derived from the current files, so there is no list to maintain by hand. It is deterministic — byte-identical output for the same tree, so a no-op run leaves git untouched. (`<lastmod>` reads the last commit date per file; it refreshes on the next run after you commit.)
+
+**Forgetting this step is now caught rather than shipped.** `check-site.mjs` runs the generator in memory on every `just verify` and names any committed file that disagrees, along with the address it should gain or lose — so a doc page added, renamed or removed cannot leave the discovery files quietly stale. Dates are not compared: a file's `<lastmod>` is its own last commit date, which the commit that changes it cannot know in advance.
 
 ### 9. Verify
 

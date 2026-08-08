@@ -8,6 +8,14 @@
     <!-- Canonical + alternate are updated per page by docs.js as the route
          changes; these are the defaults for the docs home. -->
     <link rel="canonical" href="https://leaftext.com/docs/" />
+    <!-- The Markdown this page renders. docs.js repoints this one at the current
+         route's own file as the reader navigates. -->
+    <link rel="alternate" type="text/markdown" href="README.md" />
+    <!-- The two AI indexes, plus the full list of Markdown addresses — a fetcher
+         that lands here reaches every page from these three. -->
+    <link rel="alternate" type="text/plain" href="../llms.txt" title="AI index — every page as Markdown" />
+    <link rel="alternate" type="text/plain" href="../llms-full.txt" title="AI index, with a description per page" />
+    <link rel="alternate" type="text/plain" href="../sitemap-md.txt" title="Every page's Markdown address" />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#0d1117" />
     <link rel="icon" type="image/png" href="/assets/leaf-icon.png" />
@@ -62,6 +70,22 @@
       <select class="docs-mobile-nav" id="mobileNav" aria-label="Documentation pages"></select>
       <article class="markdown-body" id="content" tabindex="-1"></article>
       <p class="status" id="status">Loading…</p>
+      <!-- Nothing here is drawn when the script runs. Without it the page is
+           empty, so say where the text actually is; the style hides the
+           Loading… line that will never finish. -->
+      <noscript>
+        <style>
+          #status {
+            display: none;
+          }
+        </style>
+        <p class="status">
+          These pages are drawn from Markdown by a script. The full text of this one is
+          <a href="README.md">README.md</a>. Every page of the documentation as Markdown:
+          <a href="../sitemap-md.txt">sitemap-md.txt</a>, <a href="../llms.txt">llms.txt</a>,
+          <a href="../llms-full.txt">llms-full.txt</a>.
+        </p>
+      </noscript>
       <nav class="docs-pager" id="pager" aria-label="Page navigation"></nav>
     </main>
     <!-- docs.js renders the markdown with the same renderer the root site uses

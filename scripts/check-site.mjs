@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeLink } from '../site/link-tooltip.js';
+import { discoveryFiles } from './seo-gen.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -67,6 +68,79 @@ for (const page of PAGES) {
   }
 }
 
+// Every address a discovery file names has to be one a crawler can fetch. A fragment never reaches the server, so 18 doc routes shipped in the sitemap all answering with the same empty shell.
+const origin = 'https://' + readFileSync(join(root, 'CNAME'), 'utf8').trim();
+
+// The file the static host serves for an address: a folder serves its index.html, everything else is the path itself. Anything off this site cannot be checked.
+function fileFor(url) {
+  if (!url.startsWith(origin + '/')) return null;
+  const path = url.slice(origin.length + 1);
+  return path === '' || path.endsWith('/') ? path + 'index.html' : path;
+}
+
+const read = (name) => readFileSync(join(root, name), 'utf8');
+const matches = (text, pattern) => [...text.matchAll(pattern)].map((m) => m[1]);
+const sitemapUrls = matches(read('sitemap.xml'), /<loc>([^<]+)<\/loc>/g);
+const advertised = [
+  ['sitemap.xml', sitemapUrls],
+  ['sitemap-md.txt', read('sitemap-md.txt').split('\n').filter(Boolean)],
+  ['llms.txt', matches(read('llms.txt'), /\]\((https?:[^)]+)\)/g)],
+  ['llms-full.txt', matches(read('llms-full.txt'), /^- (?:Page|Markdown): (\S+)$/gm)],
+];
+
+for (const url of sitemapUrls) {
+  if (url.includes('#')) problems.push(`sitemap.xml advertises '${url}' — the server only ever sees '${url.split('#')[0]}'`);
+}
+let addresses = 0;
+for (const [name, urls] of advertised) {
+  for (const url of urls) {
+    const file = fileFor(url);
+    if (!file) continue;
+    addresses += 1;
+    if (!existsSync(join(root, file))) problems.push(`${name} advertises '${url}' — no ${file}`);
+  }
+}
+
+// An entry page answers with a loading shell, so it has to name its own Markdown twice: in the head for a machine, in a `noscript` block for a body read without the script. An AI given the shell and neither guessed at a hostname that does not exist and gave up.
+const INDEXES = ['llms.txt', 'llms-full.txt'];
+for (const page of PAGES) {
+  const html = read(page);
+  const base = posix.dirname(page.split('\\').join('/'));
+  const resolve = (href) => posix.normalize(posix.join(base, href));
+  const source = /<link[^>]*\brel="alternate"[^>]*\btype="text\/markdown"[^>]*\bhref="([^"]+)"/.exec(html);
+  if (!source) problems.push(`${page} names no Markdown source — a fetcher gets the loading shell and nothing else`);
+  const alternates = matches(html, /<link[^>]*\brel="alternate"[^>]*\bhref="([^"]+)"/g);
+  for (const index of INDEXES) {
+    if (!alternates.some((href) => resolve(href) === index)) problems.push(`${page} has no alternate link to ${index}`);
+  }
+  const noscript = /<noscript>([\s\S]*?)<\/noscript>/.exec(html);
+  if (!noscript) problems.push(`${page} has no noscript block, so a reader without the script sees Loading… for ever`);
+  const links = [...alternates, ...(noscript ? matches(noscript[1], /<a[^>]*\bhref="([^"]+)"/g) : [])];
+  for (const href of links) {
+    const file = resolve(href);
+    addresses += 1;
+    if (!existsSync(join(root, file))) problems.push(`${page} points at '${href}' — no ${file}`);
+  }
+}
+
+// Nothing regenerates the discovery files but somebody remembering to, so run the generator here and hold the committed files to it. Dates are left out: a `<lastmod>` is a file's last commit date, which the commit that changes the file cannot know in advance.
+const undated = (text) =>
+  text
+    .split('\n')
+    .filter((line) => !line.includes('<lastmod>'))
+    .join('\n');
+const names = (lines) => lines.filter((line) => line.trim()).slice(0, 3).join(', ') || 'nothing';
+for (const [name, body] of Object.entries(discoveryFiles().files)) {
+  const committed = undated(read(name)).split('\n');
+  const fresh = undated(body).split('\n');
+  const was = new Set(committed);
+  const now = new Set(fresh);
+  const gained = fresh.filter((line) => !was.has(line));
+  const lost = committed.filter((line) => !now.has(line));
+  if (!gained.length && !lost.length) continue;
+  problems.push(`${name} is stale — it should gain ${names(gained)} and lose ${names(lost)}`);
+}
+
 // And what the hover card says about a pager button. The href is a `#/route`, so the in-page-jump branch answers it unless the page the pager stamped on the button is read ahead of everything — which is a thing nothing else here runs the site's script to find out.
 const anchor = (attributes) => ({ getAttribute: (name) => (name in attributes ? attributes[name] : null) });
 const pager = describeLink(anchor({ href: '#/reading/002-rains', 'data-pager-title': 'The Rains Retreat' }));
@@ -79,6 +153,9 @@ if (problems.length) {
   console.error('the published pages ask for files that are not there:');
   for (const problem of problems) console.error(`  ${problem}`);
   console.error('a path in a shared helper is relative to the page that loads it, not to the helper.');
+  console.error('an advertised address is regenerated by scripts/seo-gen.mjs, not edited by hand.');
   process.exit(1);
 }
-console.log(`site: ${checked} fetched paths across ${PAGES.length} pages, every one a file, and a pager button's card names its page`);
+console.log(
+  `site: ${checked} fetched paths across ${PAGES.length} pages and ${addresses} advertised addresses, every one a file, none behind a fragment, both entry pages naming their own source and the AI indexes in the head and in a noscript block, every discovery file the one the generator would write today, and a pager button's card names its page`
+);
