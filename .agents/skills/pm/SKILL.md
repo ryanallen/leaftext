@@ -1,13 +1,13 @@
 ---
 name: pm
-description: Rank every live ticket into one running order and write it to ../docs/PLAN.md — what to build next, top to bottom, checking each ticket's status and stage against the code rather than trusting it. Wrong today first, then what other tickets are waiting on it, then cost; shipped rows live in ../docs/done/PLAN.md, moved there by /done, not this. Use when the user says "what should I build next", "rank the tickets", "make a plan", "priorities", or hands over the plan folder to be brought up to date.
+description: Rank every live ticket into one running order and write it to ../docs/PLAN.md — what to build next, top to bottom, checking each ticket's status against the code rather than trusting it. Wrong today first, then dependencies, then cost; shipped rows live in ../docs/done/PLAN.md, moved there by /done, not this. Use when the user says "what should I build next", "rank the tickets", "make a plan", "priorities", or hands over the plan folder to be brought up to date.
 argument-hint: "[optional: a subject to rank within]"
 user-invocable: true
 ---
 
 # Build the running order
 
-Ninety-odd tickets is more than anyone holds in their head, so the question "what next" gets answered from whichever file was open. This writes the answer down once: every live ticket, ranked, with the reason each row is where it is.
+This writes one answer down: every live ticket, ranked, with the reason each row is where it is.
 
 **Two files, and the split is what makes the first one usable.** [`../docs/PLAN.md`](../../../../docs/PLAN.md) holds the **live** rows — the work that is left. [`../docs/done/PLAN.md`](../../../../docs/done/PLAN.md) holds every **retired** row — what shipped, when it closed, and what the build found. Nothing else is edited except a ticket's row in `../docs/README.md` if its status turns out to be wrong.
 
@@ -38,7 +38,7 @@ Whatever the row said in the live list is what it says in `done/PLAN.md`: struck
 - **Every ticket in `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`**, off the disk rather than off the index. Those folders hold **subject folders** — `storage/`, `library/`, `reading/`, `editing/`, `filtering/`, `diagrams/`, `big-swings/`, `plugins/`, plus `repo/` — so walk them, never one level. A ticket the index missed still gets a row.
 - **`../docs/done/PLAN.md`** — what has already closed, and what those builds found. A row here is a row not to re-rank.
 
-**Every row carries a `Stage`, and this skill re-derives it rather than trusting it.** Use `Ready` without the dated [`/design`](../design/SKILL.md) line, `Designed` after that line exists but no implementation box is ticked, `In development` after implementation has started, and `Released for test` when `/git-release` has shipped the code but `/done` has not retired the ticket. The ticket is the authority, and ranking is the pass that reconciles the plan.
+**Every row carries a `Status`, and this skill re-derives it rather than trusting it.** Use `Ready` without the dated [`/design`](../design/SKILL.md) line, `Designed` after that line exists but no implementation box is ticked, `In development` after implementation has started, and `Released for test` when `/git-release` has shipped the code but `/done` has not retired the ticket. The ticket is the authority, and ranking is the pass that reconciles the plan.
 
 Then check three things per ticket, in the code, not in the file:
 
@@ -49,7 +49,7 @@ Then check three things per ticket, in the code, not in the file:
 
 A ticket that cannot be settled by reading gets a **tier 0** row rather than a guess.
 
-**Every ticket named in `PLAN.md` is a link to that ticket.** This includes the next-up note, dependency cells, tier prose, track introductions and every track step, including a ticket mentioned in a sentence rather than as the row's subject. Use the path from `README.md` and link the ticket's displayed name, for example `[home-screen](refactor/library/home-screen.md)`. A bare ticket name, a name in backticks, or a name linked only in the same row is a failed ranking. Ordinary words that are not ticket names stay plain.
+**Every ticket named in `PLAN.md` is a link to that ticket.** This includes dependency cells and tier prose. Track steps belong in `TRACKS.md`, not in the ranking. Use the path from `README.md` and link the ticket's displayed name, for example `[home-screen](refactor/library/home-screen.md)`. A bare ticket name, a name in backticks, or a name linked only in the same row is a failed ranking. Ordinary words that are not ticket names stay plain.
 
 ## 2. Rank on three things, in this order
 
@@ -61,7 +61,7 @@ That order is the whole method, and it is what makes a row arguable rather than 
 
 **Absent is not wrong.** "The app cannot open a `.docx`" is missing capability, not incorrect behavior — it does not lift a row into tier 1 however big its audience. Say that in the row, or the next reader moves it.
 
-**A ticket that changes the window and has not drawn it in the file is not rankable.** Its `Stage` is `Ready` and its row says so — "owes a drawn `What it looks like` section" — because the cost of a row nobody has drawn is unknown, and the thing that gets built is whatever the builder invents. [ticket](../ticket/SKILL.md) holds the shape of that section; [design](../design/SKILL.md) is what fails a ticket without one.
+**A ticket that changes the window and has not drawn it in the file is not rankable.** Its `Status` is `Ready` and its row says so — "owes a drawn `What it looks like` section" — because the cost of a row nobody has drawn is unknown, and the thing that gets built is whatever the builder invents. [ticket](../ticket/SKILL.md) holds the shape of that section; [design](../design/SKILL.md) is what fails a ticket without one.
 
 **A ticket whose phases do not say how they are proved is not rankable either.** Every phase owes a test box naming where the test goes; a file with none is `Ready` with "owes test boxes" in its row, however finished the rest of it reads. The cost is the reason it belongs here rather than only in [design](../design/SKILL.md): a phase that has not counted its tests is a phase costed at half, and the row is what somebody picks up work from. This is the check to run over every ticket while walking the folders, not only over the ones being re-ranked.
 

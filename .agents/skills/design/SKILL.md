@@ -7,7 +7,7 @@ user-invocable: true
 
 # Design a ticket
 
-A ticket is followed months later by somebody with none of the conversation in their head. They will trust the file over the code. So this reads the file against the code, fixes what is wrong, and says at the bottom what was wrong — because the same doubtful part attracts a second reviewer, and they should not have to redo the thinking.
+A ticket is followed months later by somebody with none of the conversation in their head. They will trust the file over the code. So this reads the file against the code, decides between the researched options, fixes what is wrong in the plan, and says at the bottom what was wrong — because the same doubtful part attracts a second reviewer, and they should not have to redo the thinking.
 
 **Never run git.** **Never edit app code.** A wrong plan is fixed in the plan. If the ticket turns out to describe a shipping bug, it stays a box in the ticket — fixing it is a separate job with its own `/check`.
 
@@ -74,7 +74,7 @@ The tell is a plan that gets green without the thing being true.
 - Every phase ends with `/check`, and with the bundler line if it touched `design/`.
 - Nothing open-ended survives: no TBD, no "decide later", no question left in the file. Something genuinely unknowable until code exists is **phase 0** — one grep, one measurement, spelled out as a box.
 
-If a fix changes what gets built rather than how it is described, ask before writing it. One round, the question tool, and the answer goes in the file as a decision with its reason.
+If a fix changes what gets built rather than how it is described, choose among the ticket's researched options from the code and the repo rules, then record the decision and its reason. Ask the owner only when the ticket's intent cannot be established from the request or the evidence; do not send a build choice back to the ticket author.
 
 ## 5a. Every phase says how it is proved, and this pass checks it against the suite
 
@@ -113,7 +113,7 @@ Then check the three middle headings answer one question each and stop. `## Why`
 
 **Then ask whether there is a question at all.** Two drawn options are for a real fork — two things the code could genuinely do, both worth having. Where the answer falls out of the order the code already folds, sorts or lays out in, there is no fork: draw the one outcome and say what makes it the only one. Inventing a second option to have something to ask about is how a bug turns into a layout review, and it puts a bad idea in front of the owner with a number next to it.
 
-Where there **is** a fork, **put the drawing in front of the owner and wait**: two or three drawn options, one marked the pick with the reason. Their yes is what goes in the file. And where the ticket's own intent is not certain — what the owner meant by the symptom, which of two readings of the ask is the real one — that is a question too, asked before the sketch rather than guessed at and drawn. These are the only questions this skill is allowed to stop on, and the only things here worth stopping for.
+Where there **is** a fork, **choose among the researched drawings**: two or three options, one marked the pick with the reason. That decision is what goes in the file. Ask the owner only where the ticket's intent is not certain — what the owner meant by the symptom, or which reading of the request is real — rather than asking them to make the design choice.
 
 Then hold every phase to the approved drawing: **a box that draws a control the section does not show is struck**, with the reason. That is what would have caught v0.1.479's second search box, its `?` button and its popup panel — three controls no line of the plan asked for, all three taken back out.
 

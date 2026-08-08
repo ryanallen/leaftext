@@ -1,13 +1,13 @@
 ---
 name: ticket
-description: Write a ticket — a Markdown plan with phases and a checkbox per piece of work, filed in a subject folder under ../docs/features/, ../docs/refactor/ or ../docs/fixes/. Reads ../docs/README.md first so it never re-plans what the tree already answered, writes that index row in the same pass, then runs /pm to rank the new ticket; anything undecided is asked before writing, never left in as a question. Use when the user says "write a ticket", "make a plan for", "spec this out", hands over work to be scoped rather than built, or asks what plans already exist.
+description: Write a ticket — a Markdown plan with phases and a checkbox per piece of work, filed in a subject folder under ../docs/features/, ../docs/refactor/ or ../docs/fixes/. Reads ../docs/README.md first so it never re-plans what the tree already answered, writes that index row in the same pass, then runs /pm to rank the new ticket. It researches the code and records options; /design makes the decisions. Use when the user says "write a ticket", "make a plan for", "spec this out", hands over work to be scoped rather than built, or asks what plans already exist.
 argument-hint: "[what the ticket is for]"
 user-invocable: true
 ---
 
 # Write a ticket
 
-A ticket is the plan somebody follows months later with none of this conversation in their head. It says **why**, it says **what**, and it breaks the work into phases with a box per piece so progress shows on the page.
+A ticket is the research somebody follows months later with none of this conversation in their head. It says **why**, it says **what**, records the evidence and viable options, and breaks the work into phases with a box per piece so progress shows on the page. It does not choose between genuine options; `/design` does.
 
 **Never run git.** Writing a ticket is not a release.
 
@@ -50,13 +50,13 @@ The index carries no change log. Git holds when a ticket moved; the outcomes wor
 
 **Read the repo, do not remember it.** Every claim in a ticket is checked against the code, and it carries the line it came from — `src/format.rs:41`, not "the format table". A plausible claim that is false sends the next person down a dead end, and they will trust the file over the code.
 
-**Then ask about anything still open.** A ticket with a question in it is not finished. Use the question tool, one round, before writing a word:
+**Then research anything still open.** A ticket does not ask the owner to choose between build options and does not pretend one is settled. Measure each viable option, record what it wins and costs, and leave the choice for `/design`:
 
-- Two ways to build it, and the choice changes the phases
-- Something the app has no precedent for
-- Scope that could reasonably stop at half
+- Two ways to build it, and the choice changes the phases: record both and identify the decision `/design` must make
+- Something the app has no precedent for: record the closest evidence and the gap
+- Scope that could reasonably stop at half: record the seams and the consequence of each boundary
 
-The answers go in the file as decisions, with the reason. There is no "decisions still open" section, no TBD, no "confirm this before building". If a thing genuinely cannot be known until code is written, that is not a question — it is **phase 0**: one grep, one measurement, spelled out as a box.
+The evidence and options go in the file; the decision belongs to `/design`. A ticket may name a decision needed from `/design`, but it must not hide one in a phase or silently make it itself. If a thing genuinely cannot be known until code is written, that is not a question — it is **phase 0**: one grep, one measurement, spelled out as a box.
 
 ## The shape of the file
 
@@ -82,7 +82,7 @@ The problem, and the cost of leaving it alone. Numbers if there are numbers.
 
 ## How it is built
 
-Where the code goes and what each piece touches. Decisions, with their reasons.
+Where the code goes and what each piece touches. Options, evidence, and the decision `/design` must make.
 
 ## What it looks like
 
@@ -180,7 +180,7 @@ The sketch is plain HTML — boxes, borders, real text, a numbered dot per chang
 
 **Prefer nothing new.** The strongest version of this section is "no new control — it rides the box that is already there". A second input, a second button, a second panel: each one is a thing the owner has to look at forever, and the ticket has to say why the existing one could not carry it. If it cannot say that, the answer is the existing one.
 
-**Draw it, show the drawing, get a yes.** Not "ask whether to add a control" — write the sketch into the ticket, then put that same sketch in front of the owner and let them look at it. Two or three drawn options where there is a real choice, with one marked the pick and why. Their answer becomes the section and a decision in the file, and it is what a builder is held to later. A ticket that reaches `/dev` with an unapproved drawing has not been written yet.
+**Draw the options and leave the choice to `/design`.** Not "ask whether to add a control" — write the sketch into the ticket. Two or three drawn options where there is a real fork, with what each wins and costs. `/design` records the selected option and why; a ticket that reaches `/dev` with an undecided drawing has not been designed yet.
 
 ## Anything with an order or a branch gets drawn as a flow
 
