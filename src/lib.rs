@@ -69,7 +69,9 @@ pub use code_intel::{
 };
 mod editing;
 pub use editing::{
-    block_source_map, kind_is_editable, task_marker_offsets, BlockSpan, EditableDocument,
+    block_source_map, kind_is_editable, table_cell_replacement, table_source_map,
+    task_marker_offsets, BlockSpan, EditableDocument, TableCellMap, TableComment, TableMap,
+    TableRowMap,
 };
 mod encoding;
 pub use encoding::{
@@ -98,7 +100,8 @@ use ammonia::Builder;
 use html_escape::{decode_html_entities, encode_double_quoted_attribute, encode_text};
 use linkify::{LinkFinder, LinkKind};
 use pulldown_cmark::{
-    html, CodeBlockKind, CowStr, Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd,
+    html, Alignment, CodeBlockKind, CowStr, Event, HeadingLevel, LinkType, Options, Parser, Tag,
+    TagEnd,
 };
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "highlight")]

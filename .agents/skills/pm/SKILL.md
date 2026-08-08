@@ -48,6 +48,8 @@ Then check three things per ticket, in the code, not in the file:
 
 A ticket that cannot be settled by reading gets a **tier 0** row rather than a guess.
 
+**Every ticket named in `PLAN.md` is a link to that ticket.** This includes the next-up note, dependency cells, tier prose, track introductions and every track step, including a ticket mentioned in a sentence rather than as the row's subject. Use the path from `README.md` and link the ticket's displayed name, for example `[home-screen](refactor/library/home-screen.md)`. A bare ticket name, a name in backticks, or a name linked only in the same row is a failed ranking. Ordinary words that are not ticket names stay plain.
+
 ## 2. Rank on three things, in this order
 
 1. **Is something wrong today.** A bug, a panic, a real vault opening incorrectly, a broken frame on the published site. The app being *incorrect* outranks the app being *incomplete*.
@@ -135,6 +137,8 @@ It ends with two things the live file is kept clear of. **What the retired rows 
 - **A row that has to say "phases 1–2 only" is a ticket that wants splitting.** Ranking half a file in one tier and the rest four tiers down is the ranking admitting the file holds two jobs; the annotation keeps the list honest but leaves a ticket nobody can finish. Say so in the row, and name the split as the work — `/design` on that file does it, and then each row points at a file that can be closed.
 
 ## 6. When something ships
+
+**A ticket mention without a link is a ranking error.** Before handing back, compare every live and shipped ticket name in `PLAN.md` with the paths in `README.md`; check the next-up note, every tier cell and every track paragraph and step. Fix the link in the same edit. Do not make a second list of ticket names in the skill — `README.md` is the source of paths.
 
 That is [pre-release](../pre-release/SKILL.md)'s job, not this skill's: it moves the row into `done/PLAN.md` unchanged, marks the date, says what the build found, and moves the "where this stands" pointer on in the live file. Run this again when enough has moved that the *order* is wrong rather than one row.
 

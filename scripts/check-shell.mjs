@@ -267,6 +267,7 @@ function runShell(source) {
     TextDecoder,
     URL,
     URLSearchParams,
+    Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 },
     NodeFilter: { SHOW_ELEMENT: 1, SHOW_TEXT: 4 },
     Element: FakeElement,
     getComputedStyle: () => ({ getPropertyValue: () => '', color: 'rgb(0, 0, 0)' }),
@@ -1000,6 +1001,60 @@ if (booted) {
     );
     // A table with no usable source range takes the rebuilt row, alignment and all.
     is(tableDelimiterRow({ dataset: {} }, [column('right'), column(null)]), '| ---: | --- |');
+  });
+
+  // Typing one character into a cell used to rebuild every row of the table, so a table lined up by hand lost its columns. What stops that is finding the one cell that moved and sending only that; anything else — a column gained, two cells changed at once — has to fall back to the whole-table rewrite, and reporting a fallback as a one-cell edit would write the wrong bytes.
+  check('a table sends the one cell that changed, and nothing when more did', () => {
+    const { tableCellTexts, tableCellChange, tableCellPosition } = booted;
+    const cell = (text, checked) => ({
+      childNodes: text ? [{ nodeType: 3, nodeValue: text }] : [],
+      querySelector: () => (checked === undefined ? null : { checked }),
+    });
+    const row = (...cells) => {
+      const tr = { children: cells };
+      cells.forEach((one) => {
+        one.parentElement = tr;
+      });
+      return tr;
+    };
+    const table = (head, ...body) => ({
+      dataset: { blockKind: 'table' },
+      querySelector: (selector) => (selector === ':scope > thead > tr' ? head : null),
+      querySelectorAll: (selector) => (selector === ':scope > tbody > tr' ? body : []),
+    });
+    const same = (got, want) => {
+      if (JSON.stringify(got) !== JSON.stringify(want)) {
+        throw new Error(`got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`);
+      }
+    };
+
+    const head = row(cell('item'), cell('cost'));
+    const box = cell('', true);
+    const drawn = table(head, row(cell('apple'), cell('1')), row(box, cell('a | b')));
+    // A checkbox-only cell writes its live state, and a pipe in a cell is escaped so it cannot be read as a column.
+    same(tableCellTexts(drawn), [
+      ['item', 'cost'],
+      ['apple', '1'],
+      ['[x]', 'a \\| b'],
+    ]);
+
+    const before = tableCellTexts(drawn);
+    same(tableCellChange(before, before), null); // nothing typed, nothing sent
+    same(tableCellChange(before, [['item', 'price'], ['apple', '1'], ['[x]', 'a \\| b']]), {
+      row: 0,
+      column: 1,
+      columns: 2,
+      text: 'price',
+    });
+    // Two cells at once, a column gained, a row gained: all of them the whole-table rewrite's.
+    same(tableCellChange(before, [['id', 'price'], ['apple', '1'], ['[x]', 'a \\| b']]), null);
+    same(tableCellChange(before, [['item', 'cost', 'vat'], ['apple', '1'], ['[x]', 'a \\| b']]), null);
+    same(tableCellChange(before, [['item', 'cost'], ['apple', '1']]), null);
+
+    // A checkbox knows its own cell without a baseline to diff against; the head row is row 0.
+    same(tableCellPosition(drawn, box), { row: 2, column: 0, columns: 2, text: '[x]' });
+    same(tableCellPosition(drawn, head.children[1]), { row: 0, column: 1, columns: 2, text: 'cost' });
+    same(tableCellPosition(drawn, cell('loose')), null);
   });
 
   check('a save before a block move shifts the ranges it moved', () => {

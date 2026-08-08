@@ -133,9 +133,10 @@ function bindTaskCheckboxes(tasks) {
 }
 
 // Make table-cell checkboxes interactive. They have no marker offset to flip
-// (synthesized from cell text), so a click re-serializes the whole table from the
-// DOM and splices it over the table's source range. WYSIWYG tables only — checked
-// directly, since these bind even when reader editing is off (no contenteditable).
+// (synthesized from cell text), so a click sends the box's own cell for the host to
+// write, with the whole table re-serialized behind it as the fallback. WYSIWYG
+// tables only — checked directly, since these bind even when reader editing is off
+// (no contenteditable).
 function bindTableCheckboxes() {
   const body = app.querySelector('.document-body');
   if (!body) return;
@@ -145,9 +146,11 @@ function bindTableCheckboxes() {
     const end = Number(table.dataset.srcEnd);
     if (!Number.isFinite(start) || !Number.isFinite(end)) return;
     table.querySelectorAll('td input[type="checkbox"]').forEach((box) => {
+      const cell = box.closest('td');
       box.removeAttribute('disabled');
       box.addEventListener('change', () => {
-        sendCheckboxBlockEdit(table, start, end, tableDomToMarkdown(table));
+        // Read after the flip: the change event fires with the new state already on.
+        sendCheckboxBlockEdit(table, start, end, tableDomToMarkdown(table), tableCellPosition(table, cell));
       });
     });
   });

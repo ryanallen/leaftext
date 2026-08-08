@@ -922,6 +922,31 @@ fn a_link_opened_as_a_new_page_lands_behind_the_one_being_read() {
 }
 
 #[test]
+fn a_table_cell_edit_arrives_under_the_names_the_page_sends() {
+    // Nothing on this enum rejects an unknown field, so a cell spelled differently on the two sides would deserialize to None and every cell edit would silently go back to rewriting the whole table — which is the fault this was built to fix, back with nothing on screen to show for it.
+    let sent = r#"{"command":"editBlock","start":11,"end":60,"text":"the whole table rewritten","cell":{"row":1,"column":0,"columns":1,"text":"2"}}"#;
+    match serde_json::from_str::<IpcCommand>(sent) {
+        Ok(IpcCommand::EditBlock { start, cell, .. }) => {
+            let cell = cell.expect("the cell the page named arrives with the edit");
+            assert_eq!((start, cell.row, cell.column, cell.columns), (11, 1, 0, 1));
+            assert_eq!(cell.text, "2");
+        }
+        other => panic!("the cell edit did not arrive: {other:?}"),
+    }
+
+    // Every other edit still sends no cell at all, and a table whose cell the page could not place sends it as null.
+    for sent in [
+        r#"{"command":"editBlock","start":0,"end":5,"text":"Hi"}"#,
+        r#"{"command":"editBlock","start":0,"end":5,"text":"Hi","cell":null}"#,
+    ] {
+        match serde_json::from_str::<IpcCommand>(sent) {
+            Ok(IpcCommand::EditBlock { cell, .. }) => assert!(cell.is_none(), "{sent}"),
+            other => panic!("the edit did not arrive: {other:?}"),
+        }
+    }
+}
+
+#[test]
 fn the_new_page_flag_arrives_only_under_the_name_the_page_sends() {
     // Nothing on this enum rejects an unknown field, so a name the two sides spelled differently would deserialize to false and the gesture would do nothing, silently. That is what this pins.
     let held = r#"{"command":"openLink","href":"./next.md","scroll_anchor":{"section":null,"block":0,"offsetY":0},"newPage":true}"#;

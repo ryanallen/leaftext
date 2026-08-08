@@ -1,6 +1,7 @@
 //! The editing model: the source-backed document buffer and the Markdown block source map in-viewer editing stands on. Rust owns the editable text; the webview is the interaction shell.
 
 use crate::*;
+use std::ops::Range;
 
 /// Reading-view undo entries kept per document; each is a full buffer snapshot.
 const UNDO_STACK_CAP: usize = 200;
@@ -267,6 +268,43 @@ impl EditableDocument {
         }
     }
 
+    /// Write one table cell, addressed the way the page draws it: the table's own source start, then the row (head row first) and the column, with the width the page drew that row at. Returns whether the cell was proved and written — `false` leaves the buffer untouched, and the caller falls back to rewriting the whole table.
+    pub fn replace_table_cell(
+        &mut self,
+        table_start: usize,
+        row: usize,
+        column: usize,
+        columns: usize,
+        text: &str,
+        record_undo: bool,
+    ) -> bool {
+        let Some(span) = self
+            .table_source_map()
+            .into_iter()
+            .find(|table| table.table.start == table_start)
+            .and_then(|table| table.writable_cell(row, column, columns))
+        else {
+            return false;
+        };
+        let Some(existing) = self.text.get(span.clone()) else {
+            return false;
+        };
+        let replacement = table_cell_replacement(existing, text);
+        self.splice(span.start, span.end, &replacement, record_undo);
+        true
+    }
+
+    /// Where every cell of every table in the live buffer sits, so a one-cell edit splices one cell (Markdown only; the data formats have no GFM tables).
+    pub fn table_source_map(&self) -> Vec<TableMap> {
+        match self.format {
+            DocumentFormat::Markdown => table_source_map(&self.text),
+            DocumentFormat::Xml
+            | DocumentFormat::Json
+            | DocumentFormat::Yaml
+            | DocumentFormat::Eml => Vec::new(),
+        }
+    }
+
     /// The task-marker offsets for the live buffer (Markdown only; the data formats have no task lists).
     pub fn task_offsets(&self) -> Vec<usize> {
         match self.format {
@@ -354,6 +392,242 @@ pub fn block_source_map(markdown: &str) -> Vec<BlockSpan> {
         span.end += offset;
     }
     spans
+}
+
+/// One GFM table found in a document, with a proved byte range for every part an edit can splice.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TableMap {
+    pub table: Range<usize>,
+    pub head: TableRowMap,
+    /// The `| --- | ---: |` line. It fires no event; this is the gap between the head row and the first body row, or the table's own end when there is no body row.
+    pub delimiter: Range<usize>,
+    /// The parser's, not re-read from the colons.
+    pub alignments: Vec<Alignment>,
+    pub rows: Vec<TableRowMap>,
+    /// Every lone `<!-- … -->` block touching this table. A table can carry one above and one below at once, which is what the two tickets waiting on this want — a schema over it and a formula line under it.
+    pub comments: Vec<TableComment>,
+    /// False for a table inside a blockquote or a list item, where the continuation markers sit between the rows. A cell write is safe either way; a row or table rewrite is only safe when this is true.
+    pub top_level: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TableRowMap {
+    pub row: Range<usize>,
+    pub cells: Vec<TableCellMap>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TableCellMap {
+    /// The bytes between the pipes, padding included — what a one-cell write replaces.
+    pub span: Range<usize>,
+    /// False for a cell GFM invented to fill a short row. It has no bytes of its own, and two of them can share one offset, so nothing may be written there.
+    pub written: bool,
+}
+
+/// A lone `<!-- … -->` block touching a table, above or below it. The grammar inside stays with whoever owns it; this only proves where it sits.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TableComment {
+    pub span: Range<usize>,
+    /// The text between `<!--` and `-->`, unparsed.
+    pub inner: String,
+    /// Whether it sits above the table or below it.
+    pub before: bool,
+}
+
+impl TableMap {
+    /// The head row as row 0 and the body rows after it, so the page can name a cell by the position it draws.
+    pub fn row(&self, row: usize) -> Option<&TableRowMap> {
+        match row.checked_sub(1) {
+            None => Some(&self.head),
+            Some(body) => self.rows.get(body),
+        }
+    }
+
+    /// The bytes one cell may be written over, or `None` where the map cannot prove them: a row or column that is not there, a cell GFM invented to fill a short row, or a row whose width disagrees with the `columns` the caller drew.
+    pub fn writable_cell(&self, row: usize, column: usize, columns: usize) -> Option<Range<usize>> {
+        let row = self.row(row)?;
+        if row.cells.len() != columns {
+            return None;
+        }
+        let cell = row.cells.get(column)?;
+        cell.written.then(|| cell.span.clone())
+    }
+}
+
+/// Map every GFM table in `markdown` to the byte ranges an edit can splice: the table, its head row, its delimiter row, every body row, every cell, and a lone HTML comment touching it.
+///
+/// Built on demand — a cell edit asks for it — rather than on the path to first paint: a document of nothing but tables is a couple of hundred thousand ranges, which is worth one walk when somebody types and worth nothing when they only read. One walk answers all of it; there is no second pass over the raw source, because the parser already carries a range for every cell, escaped pipes included.
+///
+/// Frontmatter is taken off first and its offset put back on, so the ranges are the file's — the same bargain [`block_source_map`] makes, and what makes a range from here comparable with a block's.
+pub fn table_source_map(markdown: &str) -> Vec<TableMap> {
+    let body = match crate::markdown::split_leading_frontmatter(markdown) {
+        Some((_, rest)) => rest,
+        None => markdown,
+    };
+    let offset = markdown.len() - body.len();
+    let parser = Parser::new_ext(body, markdown_options()).into_offset_iter();
+    let mut tables: Vec<TableMap> = Vec::new();
+    let mut comments: Vec<TableComment> = Vec::new();
+    let mut depth = 0usize;
+    // The table being walked, and the row inside it. Tables never nest, so one of each is enough.
+    let mut open: Option<TableMap> = None;
+    let mut row: Option<TableRowMap> = None;
+
+    for (event, range) in parser {
+        match &event {
+            Event::Start(tag) => {
+                match tag {
+                    Tag::Table(alignments) => {
+                        open = Some(TableMap {
+                            table: range.clone(),
+                            head: TableRowMap {
+                                row: range.clone(),
+                                cells: Vec::new(),
+                            },
+                            delimiter: range.start..range.start,
+                            alignments: alignments.clone(),
+                            rows: Vec::new(),
+                            comments: Vec::new(),
+                            top_level: depth == 0,
+                        });
+                    }
+                    Tag::TableHead | Tag::TableRow => {
+                        row = Some(TableRowMap {
+                            row: range.clone(),
+                            cells: Vec::new(),
+                        });
+                    }
+                    Tag::TableCell => {
+                        if let Some(row) = row.as_mut() {
+                            // A cell GFM invented to fill a short row is empty and sits at the row's end offset — two of them share it, so neither is a place anything may be written.
+                            let written = !range.is_empty();
+                            row.cells.push(TableCellMap {
+                                span: range.clone(),
+                                written,
+                            });
+                        }
+                    }
+                    Tag::HtmlBlock => {
+                        if let Some(comment) = html_block_comment(body, range.clone()) {
+                            comments.push(comment);
+                        }
+                    }
+                    _ => {}
+                }
+                depth += 1;
+            }
+            Event::End(tag) => {
+                depth = depth.saturating_sub(1);
+                match tag {
+                    TagEnd::TableHead => {
+                        if let (Some(table), Some(row)) = (open.as_mut(), row.take()) {
+                            table.head = row;
+                        }
+                    }
+                    TagEnd::TableRow => {
+                        if let (Some(table), Some(row)) = (open.as_mut(), row.take()) {
+                            table.rows.push(row);
+                        }
+                    }
+                    TagEnd::Table => {
+                        if let Some(mut table) = open.take() {
+                            // The delimiter fires no event of its own: it is what lies between the head row and whatever follows it inside the table.
+                            let after = table
+                                .rows
+                                .first()
+                                .map(|row| row.row.start)
+                                .unwrap_or(table.table.end);
+                            table.delimiter = table.head.row.end..after.max(table.head.row.end);
+                            tables.push(table);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
+    }
+
+    attach_table_comments(body, &mut tables, &comments);
+    for table in &mut tables {
+        shift_table_map(table, offset);
+    }
+    tables
+}
+
+/// What goes over one cell's bytes, keeping the padding it was written with: the left pipe never moves, and the right one moves only by what the text itself changed. A cell holding nothing but space gets one space each side, which is how the app writes a table it builds.
+pub fn table_cell_replacement(existing: &str, text: &str) -> String {
+    let text = text.trim();
+    let trimmed = existing.trim_start();
+    let (lead, trail) = if trimmed.is_empty() {
+        (" ", " ")
+    } else {
+        (
+            &existing[..existing.len() - trimmed.len()],
+            &existing[existing.trim_end().len()..],
+        )
+    };
+    format!("{lead}{text}{trail}")
+}
+
+/// Read an HTML block as a lone comment: it has to be the whole of its block, because a block holding `<!-- x --> text` has a range that is not the comment's and nothing may be written over it.
+fn html_block_comment(source: &str, range: Range<usize>) -> Option<TableComment> {
+    let text = source.get(range.clone())?.trim_end();
+    let inner = text.strip_prefix("<!--")?.strip_suffix("-->")?;
+    if inner.contains("-->") {
+        return None;
+    }
+    Some(TableComment {
+        span: range.start..range.start + text.len(),
+        inner: inner.to_string(),
+        before: false,
+    })
+}
+
+/// Give each table the comment touching it, above or below. Touching means nothing but whitespace between the two — a blank line is allowed, another block is not, since a block between them is what the comment is really about.
+fn attach_table_comments(source: &str, tables: &mut [TableMap], comments: &[TableComment]) {
+    for table in tables.iter_mut() {
+        for comment in comments {
+            let gap = if comment.span.end <= table.table.start {
+                source.get(comment.span.end..table.table.start)
+            } else if table.table.end <= comment.span.start {
+                source.get(table.table.end..comment.span.start)
+            } else {
+                None
+            };
+            let Some(gap) = gap else { continue };
+            if !gap.trim().is_empty() {
+                continue;
+            }
+            let before = comment.span.end <= table.table.start;
+            table.comments.push(TableComment {
+                before,
+                ..comment.clone()
+            });
+        }
+    }
+}
+
+/// Put the frontmatter offset back on every range in one table's map.
+fn shift_table_map(table: &mut TableMap, offset: usize) {
+    if offset == 0 {
+        return;
+    }
+    let shift = |range: &mut Range<usize>| {
+        range.start += offset;
+        range.end += offset;
+    };
+    shift(&mut table.table);
+    shift(&mut table.delimiter);
+    for row in std::iter::once(&mut table.head).chain(table.rows.iter_mut()) {
+        shift(&mut row.row);
+        for cell in &mut row.cells {
+            shift(&mut cell.span);
+        }
+    }
+    for comment in &mut table.comments {
+        shift(&mut comment.span);
+    }
 }
 
 /// Trim a block's trailing whitespace/newlines, which pulldown-cmark folds into the range but are really separators between blocks. Excluding them keeps the surrounding blank lines intact when an edit replaces the range.

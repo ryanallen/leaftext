@@ -179,25 +179,73 @@ function tableDelimiterCells(headCells) {
   return '| ' + dashes.join(' | ') + ' |';
 }
 
-// Serialize a rendered table to GFM pipes. Cells collapse newlines and escape
-// pipes; a checkbox-only cell writes its live state as `[ ]`/`[x]`.
+// One rendered cell as GFM: newlines collapse and pipes escape, so what comes back
+// always fits between two pipes. A checkbox-only cell writes its live state as
+// `[ ]`/`[x]` — the marker in a cell is drawn from the text, not parsed as one.
+function tableCellMarkdown(cell) {
+  const box = cell.querySelector('input[type="checkbox"]');
+  const text = inlineDomToMarkdown(cell)
+    .trim()
+    .replace(/\|/g, '\\|')
+    .replace(/\\\n/g, ' ')
+    .replace(/\n+/g, ' ');
+  if (box && !text) return box.checked ? '[x]' : '[ ]';
+  return text;
+}
+
+// The table's rows as the host counts them: the head row first, then the body.
+function tableRowElements(el) {
+  const head = el.querySelector(':scope > thead > tr');
+  const rows = head ? [head] : [];
+  el.querySelectorAll(':scope > tbody > tr').forEach((tr) => rows.push(tr));
+  return rows;
+}
+
+// Every cell of a table as Markdown, row by row. The baseline a commit measures
+// against to find the one cell somebody typed in.
+function tableCellTexts(el) {
+  if (!el || el.dataset.blockKind !== 'table') return null;
+  return tableRowElements(el).map((tr) => Array.from(tr.children).map(tableCellMarkdown));
+}
+
+// The one cell that changed between the baseline and the table as it stands now, in
+// the form the host writes: `{ row, column, columns, text }`. Null unless exactly one
+// cell moved and the table kept every row and column it had — anything else is a
+// whole-table rewrite, which is the only thing that can add or drop a column.
+function tableCellChange(before, after) {
+  if (!before || !after || before.length !== after.length) return null;
+  let found = null;
+  for (let row = 0; row < after.length; row += 1) {
+    if (before[row].length !== after[row].length) return null;
+    for (let column = 0; column < after[row].length; column += 1) {
+      if (before[row][column] === after[row][column]) continue;
+      if (found) return null;
+      found = { row, column, columns: after[row].length, text: after[row][column] };
+    }
+  }
+  return found;
+}
+
+// Where one cell sits in the table that owns it, in that same form. Null for a cell
+// this table does not own — a nested table's is its own block's business.
+function tableCellPosition(el, cell) {
+  const tr = cell.parentElement;
+  const row = tableRowElements(el).indexOf(tr);
+  const column = tr ? Array.from(tr.children).indexOf(cell) : -1;
+  if (row < 0 || column < 0) return null;
+  return { row, column, columns: tr.children.length, text: tableCellMarkdown(cell) };
+}
+
+// Serialize a rendered table to GFM pipes. The fallback for a table whose cell the
+// host cannot place: it rebuilds every row, so a table lined up by hand loses its
+// columns — see tableCellChange for the path that writes one cell instead.
 function tableDomToMarkdown(el) {
-  const cellText = (cell) => {
-    const box = cell.querySelector('input[type="checkbox"]');
-    const text = inlineDomToMarkdown(cell)
-      .trim()
-      .replace(/\|/g, '\\|')
-      .replace(/\\\n/g, ' ')
-      .replace(/\n+/g, ' ');
-    if (box && !text) return box.checked ? '[x]' : '[ ]';
-    return text;
-  };
   const headCells = Array.from(el.querySelectorAll(':scope > thead > tr > th'));
-  const lines = ['| ' + headCells.map(cellText).join(' | ') + ' |'];
+  const lines = ['| ' + headCells.map(tableCellMarkdown).join(' | ') + ' |'];
   lines.push(tableDelimiterRow(el, headCells));
   el.querySelectorAll(':scope > tbody > tr').forEach((tr) => {
     const cells = Array.from(tr.querySelectorAll(':scope > td'));
-    lines.push('| ' + cells.map(cellText).join(' | ') + ' |');
+    lines.push('| ' + cells.map(tableCellMarkdown).join(' | ') + ' |');
   });
   return lines.join('\n');
 }

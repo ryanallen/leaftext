@@ -352,6 +352,9 @@ pub(crate) enum IpcCommand {
         /// Set by checkbox toggles: splice with no undo step and write to disk immediately, rather than the normal undoable, dirty-marking edit.
         #[serde(default)]
         autosave: bool,
+        /// Set when one cell of a table was what changed. The cell is written on its own so the rest of the table keeps the spacing somebody gave it; `text` and the range stay the whole-table rewrite, which is what a cell the source map cannot prove falls back to.
+        #[serde(default)]
+        cell: Option<TableCellEdit>,
     },
     /// Write one frontmatter field on the active buffer, or remove it when `value` is absent. The host works out the splice: where the field's bytes are, and whether a quote goes back on, is the parser's to know, and a second reader of the block in the page would be a second answer.
     #[serde(rename = "setField")]
@@ -410,6 +413,15 @@ pub(crate) enum IpcCommand {
     /// Something threw in the page. `count` is how many times that same text has been seen, because `journal.js` collapses repeats rather than sending every one — see the fragment for why.
     #[serde(rename = "logError")]
     LogError { message: String, count: u32 },
+}
+
+/// Which cell of a table an [`IpcCommand::EditBlock`] was really about, as the page draws it: the head row is row 0. `columns` is the width the page drew that row at, so a row the source map reads at another width is a row this edit is not describing and the whole-table rewrite takes over.
+#[derive(Debug, Deserialize)]
+pub(crate) struct TableCellEdit {
+    pub row: usize,
+    pub column: usize,
+    pub columns: usize,
+    pub text: String,
 }
 
 pub(crate) fn ipc_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(Request<String>) {

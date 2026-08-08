@@ -755,9 +755,17 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     end,
                     text,
                     autosave,
+                    cell,
                 } => {
                     // Splice into the source buffer, then re-render from it, keeping the reader's place. Source stays authoritative for MD and XML. A checkbox toggle (autosave) splices without an undo step and writes to disk right away.
-                    if apply_block_edit(&mut reader.workspace, start, end, &text, !autosave) {
+                    if apply_block_edit(
+                        &mut reader.workspace,
+                        start,
+                        end,
+                        &text,
+                        !autosave,
+                        cell.as_ref(),
+                    ) {
                         if autosave {
                             autosave_active_buffer(&mut reader.workspace, &mut file_watch);
                         }

@@ -249,16 +249,31 @@ pub(crate) fn save_active_document(
 }
 
 /// Seed the edit buffer from disk on the first edit, then splice a reading-view inline edit over `[start, end)`. Returns whether a buffer was available (the caller re-renders from the now-authoritative buffer when so).
+///
+/// `cell` says the edit was one cell of the table `[start, end)` covers. That cell is written on its own where the source map can prove where it sits, so a table lined up by hand keeps its spacing and its delimiter row; where it cannot — no map, a cell GFM invented to fill a short row, a row the page drew at another width — the whole-table rewrite is what lands, so no edit is ever refused.
 pub(crate) fn apply_block_edit(
     workspace: &mut Workspace,
     start: usize,
     end: usize,
     text: &str,
     record_undo: bool,
+    cell: Option<&TableCellEdit>,
 ) -> bool {
     let Some((_, edit)) = seeded_active_edit(workspace, "Edit block") else {
         return false;
     };
+    if let Some(cell) = cell {
+        if edit.replace_table_cell(
+            start,
+            cell.row,
+            cell.column,
+            cell.columns,
+            &cell.text,
+            record_undo,
+        ) {
+            return true;
+        }
+    }
     if record_undo {
         edit.replace_range(start, end, text);
     } else {

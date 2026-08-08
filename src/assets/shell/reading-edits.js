@@ -278,7 +278,7 @@ function deleteBlockRun({ elements, ranges }, range) {
   sendBlockSplice(first, plan.start, plan.end, plan.text);
   // Every block in the run still shows its pre-splice content, so each one's blur
   // baseline is neutralized — not just the one the splice was sent against.
-  for (const el of elements) el.__editBaseline = blockDomToMarkdown(el);
+  for (const el of elements) setEditBaseline(el);
   const landing = plan.text
     ? { srcStart: plan.start, textOffset: head.markdown ? head.text : 0 }
     : caretAfterBlockDelete(first, last, plan);
@@ -361,6 +361,13 @@ function selectAllTargetFor(block) {
   return { page: true };
 }
 
+// The baseline a commit measures `el` against: its Markdown, plus each table cell's
+// own, so the one cell somebody typed in can be found in what comes back.
+function setEditBaseline(el) {
+  el.__editBaseline = blockDomToMarkdown(el);
+  el.__editCells = tableCellTexts(el);
+}
+
 // Send an edit for `el`'s source range, only if `text` differs from the baseline
 // captured when editing began (so a no-edit focus costs nothing). If the caret
 // already moved into another block, carry it across this commit's re-render
@@ -377,8 +384,13 @@ function commitBlockEdit(el, text, range) {
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   if (text === el.__editBaseline) return;
   if (!range && deleteEmptiedBlock(el, text)) return;
-  sendEditCommand({ command: 'editBlock', start, end, text });
-  const delta = utf8ByteLength(text) - (end - start);
+  // A table where one cell changed writes that cell and leaves the rest of the file
+  // alone; `text` rides along as what the host falls back to when it cannot place it.
+  const cell = range ? null : tableCellChange(el.__editCells, tableCellTexts(el));
+  sendEditCommand({ command: 'editBlock', start, end, text, cell });
+  const delta = cell
+    ? utf8ByteLength(cell.text) - utf8ByteLength(el.__editCells[cell.row][cell.column])
+    : utf8ByteLength(text) - (end - start);
   window.setTimeout(() => {
     if (pendingCaret) return; // a structural edit already claimed the caret
     const active = document.activeElement;
@@ -410,15 +422,16 @@ function commitActiveEditingBlock() {
 // the blur commit fire would replay a stale range against the new buffer.
 function sendBlockSplice(el, start, end, text) {
   sendEditCommand({ command: 'editBlock', start, end, text });
-  el.__editBaseline = blockDomToMarkdown(el);
+  setEditBaseline(el);
 }
 
 // A table checkbox toggle: autosave tells the host to write to disk with no undo
-// step, and the plain send avoids a dirty flash. Neutralizes the blur baseline
-// like sendBlockSplice, in case the table was also being edited.
-function sendCheckboxBlockEdit(el, start, end, text) {
-  send({ command: 'editBlock', start, end, text, autosave: true });
-  el.__editBaseline = blockDomToMarkdown(el);
+// step, and the plain send avoids a dirty flash. `cell` is the box's own cell, so
+// the rest of the table keeps its spacing. Neutralizes the blur baseline like
+// sendBlockSplice, in case the table was also being edited.
+function sendCheckboxBlockEdit(el, start, end, text, cell) {
+  send({ command: 'editBlock', start, end, text, autosave: true, cell });
+  setEditBaseline(el);
 }
 
 // Enter inside a paragraph/heading: split the block at the caret into two
@@ -905,7 +918,7 @@ function wireMarkdownEditable(el) {
   el.addEventListener('focusin', () => {
     if (!el.__editingActive) {
       el.__editingActive = true;
-      el.__editBaseline = blockDomToMarkdown(el);
+      setEditBaseline(el);
     }
   });
   el.addEventListener('focusout', (event) => {

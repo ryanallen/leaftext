@@ -482,3 +482,330 @@ fn a_code_view_splice_lands_on_the_same_bytes_the_page_meant() {
         "code-view typing records no reader undo step"
     );
 }
+
+/// Every part of one table's map, read back out of the source it was built from.
+fn table_map_slices<'a>(source: &'a str, table: &TableMap) -> Vec<(&'static str, &'a str)> {
+    let mut slices = vec![
+        ("table", &source[table.table.clone()]),
+        ("delimiter", &source[table.delimiter.clone()]),
+    ];
+    for (index, row) in std::iter::once(&table.head)
+        .chain(table.rows.iter())
+        .enumerate()
+    {
+        let name: &'static str = if index == 0 { "head" } else { "row" };
+        slices.push((name, &source[row.row.clone()]));
+        for cell in &row.cells {
+            slices.push(("cell", &source[cell.span.clone()]));
+        }
+    }
+    slices
+}
+
+#[test]
+fn a_table_map_cuts_exactly_the_bytes_it_claims() {
+    // Frontmatter on the front so the ranges are proved to be the file's, not the body's; hand padding so a claim about spacing is a claim about real spacing; an escaped pipe because that is what an earlier plan believed the parser could not carry.
+    let source =
+        "---\ntitle: T\n---\n\n| id  | title      |\n| --- | ---------: |\n| 1   | The \\| Bar |\n";
+    let maps = table_source_map(source);
+    assert_eq!(maps.len(), 1);
+    let table = &maps[0];
+    assert!(table.top_level);
+    assert_eq!(table.alignments, vec![Alignment::None, Alignment::Right]);
+    assert_eq!(
+        table_map_slices(source, table),
+        vec![
+            (
+                "table",
+                "| id  | title      |\n| --- | ---------: |\n| 1   | The \\| Bar |\n"
+            ),
+            ("delimiter", "| --- | ---------: |\n"),
+            ("head", "| id  | title      |\n"),
+            ("cell", " id  "),
+            ("cell", " title      "),
+            ("row", "| 1   | The \\| Bar |\n"),
+            ("cell", " 1   "),
+            ("cell", " The \\| Bar "),
+        ]
+    );
+    for row in std::iter::once(&table.head).chain(table.rows.iter()) {
+        for cell in &row.cells {
+            assert!(cell.written, "{cell:?}");
+        }
+    }
+}
+
+#[test]
+fn a_header_only_table_maps_its_delimiter_row() {
+    // No body row to close the gap, so the table's own end has to.
+    let source = "| id |\n| --- |\n";
+    let maps = table_source_map(source);
+    assert_eq!(maps.len(), 1);
+    assert_eq!(&source[maps[0].delimiter.clone()], "| --- |\n");
+    assert!(maps[0].rows.is_empty());
+}
+
+#[test]
+fn cells_gfm_invented_to_fill_a_short_row_are_unwritable() {
+    let source = "| a | b | c |\n| - | - | - |\n| 1 |\n";
+    let maps = table_source_map(source);
+    let row = &maps[0].rows[0];
+    assert_eq!(row.cells.len(), 3);
+    assert_eq!(&source[row.cells[0].span.clone()], " 1 ");
+    assert!(row.cells[0].written);
+    // Both invented cells sit at one offset, so writing to either would write to the other's place.
+    assert_eq!(row.cells[1].span, row.cells[2].span);
+    assert!(!row.cells[1].written && !row.cells[2].written);
+    assert_eq!(
+        maps[0].writable_cell(1, 0, 3),
+        Some(row.cells[0].span.clone())
+    );
+    assert_eq!(maps[0].writable_cell(1, 1, 3), None);
+    // A row the page draws at a different width is a row this map is not describing.
+    assert_eq!(maps[0].writable_cell(1, 0, 2), None);
+    assert_eq!(maps[0].writable_cell(9, 0, 3), None);
+}
+
+#[test]
+fn a_table_inside_a_blockquote_keeps_its_cells_and_loses_its_rows() {
+    let source = "> | a | b |\n> | - | - |\n> | c | d |\n";
+    let maps = table_source_map(source);
+    assert_eq!(maps.len(), 1);
+    let table = &maps[0];
+    assert!(!table.top_level, "the `> ` markers sit between the rows");
+    assert_eq!(&source[table.head.cells[0].span.clone()], " a ");
+    assert_eq!(&source[table.rows[0].cells[1].span.clone()], " d ");
+}
+
+#[test]
+fn a_malformed_table_produces_no_map() {
+    for source in [
+        "| a | b\n| ragged\n",
+        "| a | b |\n",
+        "just a paragraph\n",
+        "",
+        "| |\n|-|\n| |\n",
+    ] {
+        let maps = table_source_map(source);
+        for table in &maps {
+            // Whatever it found, every range it stamped has to be a range this source actually has.
+            for (_, slice) in table_map_slices(source, table) {
+                let _ = slice;
+            }
+        }
+    }
+    assert!(table_source_map("| a | b\n| ragged\n").is_empty());
+    assert!(table_source_map("| a | b |\n").is_empty());
+}
+
+/// A hand-padded table, and a document with something either side of it so a splice that overran would show.
+const PADDED_TABLE_DOC: &str = "# Prices
+
+| item   | cost |
+| :----- | ---: |
+| apple  |    1 |
+| cherry |   12 |
+
+After.
+";
+
+fn padded_table_doc() -> EditableDocument {
+    EditableDocument::new(
+        PathBuf::from("prices.md"),
+        SourceText::utf8(PADDED_TABLE_DOC.to_string()),
+    )
+}
+
+/// Where the one table in `PADDED_TABLE_DOC` starts, as the page reads it off the block map.
+fn padded_table_start(edit: &EditableDocument) -> usize {
+    edit.block_source_map()
+        .into_iter()
+        .find(|block| block.kind == "table")
+        .expect("the document has a table")
+        .start
+}
+
+#[test]
+fn writing_one_cell_leaves_every_other_byte_of_the_document_alone() {
+    let mut edit = padded_table_doc();
+    let start = padded_table_start(&edit);
+
+    // The head row, then a body cell: the padding each was written with stays, so the pipes move only by what the text itself changed.
+    assert!(edit.replace_table_cell(start, 0, 1, 2, "price", true));
+    assert!(edit.replace_table_cell(start, 2, 0, 2, "banana", true));
+    assert_eq!(
+        edit.text(),
+        "# Prices
+
+| item   | price |
+| :----- | ---: |
+| apple  |    1 |
+| banana |   12 |
+
+After.
+"
+    );
+
+    // The delimiter row is untouched, and so is everything outside the table.
+    assert!(edit.text().contains("| :----- | ---: |"));
+    assert!(edit.text().starts_with(
+        "# Prices
+
+"
+    ));
+    assert!(edit.text().ends_with(
+        "
+
+After.
+"
+    ));
+    // One undo per edit, like any other reading-view edit.
+    assert!(edit.undo() && edit.undo());
+    assert_eq!(edit.text(), PADDED_TABLE_DOC);
+}
+
+#[test]
+fn a_cell_that_gains_a_pipe_keeps_the_row_it_is_in() {
+    let mut edit = padded_table_doc();
+    let start = padded_table_start(&edit);
+    // The page escapes the pipe before it sends the cell; what this proves is that the escaped text lands between the cell's own pipes and the row still parses at two columns wide.
+    assert!(edit.replace_table_cell(start, 1, 0, 2, "a \\| b", true));
+    assert!(edit.text().contains("| a \\| b  |    1 |"));
+    let maps = table_source_map(edit.text());
+    assert_eq!(maps[0].rows[0].cells.len(), 2);
+    assert_eq!(
+        &edit.text()[maps[0].rows[0].cells[0].span.clone()],
+        " a \\| b  "
+    );
+}
+
+#[test]
+fn a_checkbox_in_a_cell_rewrites_that_cell_and_nothing_else() {
+    let markdown = "| done   | task    |
+| ------ | ------- |
+| [ ]    | Write   |
+| [x]    | Ship    |
+";
+    let mut edit = EditableDocument::new(
+        PathBuf::from("tasks.md"),
+        SourceText::utf8(markdown.to_string()),
+    );
+    let start = padded_table_start(&edit);
+    // The auto-saving path: no undo step, exactly like the list checkbox it sits beside.
+    assert!(edit.replace_table_cell(start, 1, 0, 2, "[x]", false));
+    assert_eq!(
+        edit.text(),
+        "| done   | task    |
+| ------ | ------- |
+| [x]    | Write   |
+| [x]    | Ship    |
+"
+    );
+    assert!(!edit.can_undo());
+}
+
+#[test]
+fn a_cell_the_map_cannot_prove_is_left_to_the_whole_table_rewrite() {
+    let mut edit = EditableDocument::new(
+        PathBuf::from("short.md"),
+        SourceText::utf8(
+            "| a | b | c |
+| - | - | - |
+| 1 |
+"
+            .to_string(),
+        ),
+    );
+    let start = padded_table_start(&edit);
+    let before = edit.text().to_string();
+    for (row, column, columns) in [
+        (1, 1, 3), // a cell GFM invented to fill the short row: no bytes of its own
+        (1, 0, 2), // a row the page drew at another width
+        (9, 0, 3), // a row that is not there
+    ] {
+        assert!(!edit.replace_table_cell(start, row, column, columns, "x", true));
+    }
+    // A table start that names nothing, and a document with no table at all.
+    assert!(!edit.replace_table_cell(999, 0, 0, 3, "x", true));
+    assert_eq!(edit.text(), before);
+    assert!(!edit.can_undo());
+
+    let mut prose = EditableDocument::new(
+        PathBuf::from("prose.md"),
+        SourceText::utf8(
+            "Just a paragraph.
+"
+            .to_string(),
+        ),
+    );
+    assert!(!prose.replace_table_cell(0, 0, 0, 1, "x", true));
+    assert_eq!(
+        prose.text(),
+        "Just a paragraph.
+"
+    );
+}
+
+#[test]
+fn a_written_cell_keeps_the_spacing_it_was_written_with() {
+    // The left pipe never moves; the right one moves only by what the text changed. A cell holding nothing but space is the one that gets padding invented for it.
+    assert_eq!(table_cell_replacement("  id   ", "ident"), "  ident   ");
+    assert_eq!(table_cell_replacement(" a ", "b"), " b ");
+    assert_eq!(table_cell_replacement("x", "y"), "y");
+    assert_eq!(table_cell_replacement("   ", "new"), " new ");
+    assert_eq!(table_cell_replacement(" old ", "  padded  "), " padded ");
+}
+
+#[test]
+fn a_table_finds_the_lone_comments_touching_it() {
+    // One above with no blank line, one below with one: both touch, and each says which side it is on. A table can carry a schema over it and a formula line under it at once, which is what the two tickets waiting on this map want.
+    let source = "<!-- leaf:table id -->
+| a |
+| - |
+| 1 |
+
+<!-- TBLFM: @2=1 -->
+";
+    let maps = table_source_map(source);
+    assert_eq!(maps.len(), 1);
+    let comments = &maps[0].comments;
+    assert_eq!(comments.len(), 2);
+    assert!(comments[0].before);
+    assert_eq!(comments[0].inner, " leaf:table id ");
+    assert_eq!(&source[comments[0].span.clone()], "<!-- leaf:table id -->");
+    assert!(!comments[1].before);
+    assert_eq!(comments[1].inner, " TBLFM: @2=1 ");
+    // The range cuts the comment whole, so writing over it replaces the comment and nothing around it.
+    assert_eq!(&source[comments[1].span.clone()], "<!-- TBLFM: @2=1 -->");
+}
+
+#[test]
+fn a_comment_sharing_its_block_or_standing_apart_is_not_the_tables() {
+    for source in [
+        // Text on the same line: the block's range is not the comment's, so there is nothing to write over.
+        "<!-- x --> text
+
+| a |
+| - |
+",
+        // A block of its own between the two.
+        "<!-- x -->
+
+A paragraph.
+
+| a |
+| - |
+",
+        "| a |
+| - |
+
+A paragraph.
+
+<!-- x -->
+",
+    ] {
+        let maps = table_source_map(source);
+        assert_eq!(maps.len(), 1, "{source:?}");
+        assert!(maps[0].comments.is_empty(), "{source:?}");
+    }
+}
