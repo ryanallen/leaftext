@@ -2,7 +2,7 @@
 // design/icons.md is the list of icons; this compiles it into src/assets/icons.css, one `.lt-icon-<name>` mask class each. The page then wears an icon by name — `<span class="lt-icon lt-icon-back"></span>` — so a drawing used five times is in the app once. The code-view icon was pasted in five places, the heading icon three.
 //
 //   node scripts/bundle-icons.mjs           write src/assets/icons.css and src/assets/mermaid-icons.js
-//   node scripts/bundle-icons.mjs --check   fail on drift in either (`just verify`)
+//   node scripts/bundle-icons.mjs --check   fail on drift in either, after proving the copy rule on made-up rows (`just verify`)
 //
 // The second output is the same rows as an icon set mermaid can be handed, so `A@{ icon: "leaf:back" }` in a diagram draws the app's own back arrow. It is generated for the same reason the stylesheet is: design/icons.md stays the only place an icon is named, and a second hand-written list of them would drift the way the stroke weights did. Without it mermaid substitutes its own unknown-icon glyph — an 80x80 square in a hardcoded #087ebf, which is the one color in a diagram no theme chose.
 //
@@ -102,9 +102,34 @@ function iconSetEntry(name, svg) {
   const body = inner[1].replace(/\s*\n\s*/g, '').trim();
   return `  '${name}': { body: ${JSON.stringify(body)}, width: ${box[1]}, height: ${box[2]} },`;
 }
+// Two rows that land on one mask are two controls wearing one drawing — Remove vault wore the Back arrow, and a plain folder wore the open one. The comparison is on the mask rather than the file, after the row's weight is stamped: an inert attribute or a stray newline cannot hide a copy, and the speed reader's two rows — one shape at two named weights — are two masks and not a copy.
+function collisions(masks) {
+  const seen = new Map();
+  const found = [];
+  for (const mask of masks) {
+    const first = seen.get(mask.uri);
+    if (first) found.push(`${mask.label} draws the same mask as ${first.label} — one of them is a copy of the other`);
+    else seen.set(mask.uri, mask);
+  }
+  return found;
+}
+// The rule proves its own refusal on made-up rows, because the real table is the one input that must never trip it.
+if (check) {
+  const one = { label: 'a (a.svg)', uri: 'x' };
+  const fails = [];
+  if (collisions([one, { label: 'b (b.svg)', uri: 'x' }]).length !== 1) fails.push('two rows on one mask were accepted');
+  if (collisions([one, { label: 'b (b.svg)', uri: 'y' }]).length) fails.push('two different masks were called a copy');
+  if (fails.length) {
+    console.error('bundle-icons: the copy rule is wrong:');
+    for (const fail of fails) console.error(`  ${fail}`);
+    process.exit(1);
+  }
+}
+
 let drawn = 0;
 const heavy = [];
 const set = [];
+const masks = [];
 for (const { name, file, stroke, heavy: wantsHeavy } of rows) {
   const raw = readFileSync(join(root, 'src/assets', file), 'utf8');
   const drawnAt = [...raw.matchAll(STROKE_WIDTH)].map((match) => match[0]);
@@ -125,15 +150,18 @@ for (const { name, file, stroke, heavy: wantsHeavy } of rows) {
   }
   const stamped = wanted ? atWeight(raw, wanted) : raw;
   const uri = `url("data:image/svg+xml,${encode(stamped)}")`;
+  masks.push({ label: `${name} (${file})`, uri });
   lines.push(`.lt-icon-${name} {`, `  -webkit-mask-image: ${uri};`, `  mask-image: ${uri};`, '}');
   const entry = iconSetEntry(name, stamped);
   if (!entry) problems.push(`src/assets/${file} has no viewBox, or no <svg> wrapper, so ${name} cannot be an icon in a diagram`);
   else set.push(entry);
   drawn += 1;
   if (!wantsHeavy) continue;
-  const bolder = atWeight(raw, WEIGHTS.get('heavy'));
-  heavy.push(`  --lt-icon-${name}-heavy: url("data:image/svg+xml,${encode(bolder)}");`);
+  const bolder = `url("data:image/svg+xml,${encode(atWeight(raw, WEIGHTS.get('heavy')))}")`;
+  masks.push({ label: `${name} heavy (${file})`, uri: bolder });
+  heavy.push(`  --lt-icon-${name}-heavy: ${bolder};`);
 }
+problems.push(...collisions(masks));
 if (heavy.length) {
   // Properties rather than classes: the rule that swaps to one belongs to the component that has an active state, not to the icon.
   lines.push('/* The bolder drawing an active control swaps to. */', ':root {', ...heavy, '}');

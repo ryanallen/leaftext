@@ -71,15 +71,15 @@ That order is the whole method, and it is what makes a row arguable rather than 
 
 ## 3. The tiers
 
-| Tier | What is in it | Time band |
-| --- | --- | --- |
-| **0** | Not builds. Somebody reading the code to settle a claim the rest of the list rests on | 5m |
-| **1** | Wrong today, and cheap. The best ratio of "someone notices" to "work done" in the tree | 10m |
-| **2** | The pieces other tickets are waiting on. Nothing here is a feature a reader would name | 15m |
-| **3** | The features people would name. Cheaper after tier 2 and more expensive before it | 20m |
-| **4** | Big swings. Each one absorbs the time all of tiers 1 to 3 take together | 30m |
+| Tier | What is in it |
+| --- | --- |
+| **0** | Not builds. Somebody reading the code to settle a claim the rest of the list rests on |
+| **1** | Wrong today, and cheap. The best ratio of "someone notices" to "work done" in the tree |
+| **2** | The pieces other tickets are waiting on. Nothing here is a feature a reader would name |
+| **3** | The features people would name. Cheaper after tier 2 and more expensive before it |
+| **4** | Big swings. Each one absorbs the time all of tiers 1 to 3 take together |
 
-The band is the size of the work set, in minutes, not a calendar estimate. Never write days, weeks or months into a tier heading or cost cell.
+**No estimate anywhere.** Not in a tier heading, not in a cost cell: no minutes, no hours, no days. A tier is an ordering, and a number beside it reads as a promise about a calendar nobody made. What a row costs is said in what the work *is* — two columns and a check condition — which is a size a reader can argue with.
 
 Tier 0 comes first because the list is only as good as the statuses it rests on. **A tier with no rows is not in the file** — no heading, no note saying where its rows went. It comes back the moment it has one. Tier 0 is usually the empty one, and it sat as a heading over a link to somewhere else until the size rules below said not to.
 
@@ -103,7 +103,7 @@ the ticket's name.
 
 **Stage** — where the ticket is in the workflow. `Ready` means it needs design, `Designed` means design is complete, `In development` means implementation has started, and `Released for test` means the release happened but `/done` has not retired it.
 
-## Tier 1 — wrong today, and cheap (10m)
+## Tier 1 — wrong today, and cheap
 
 | Ticket | Stage | Why here | Cost |
 ```
@@ -112,7 +112,7 @@ That is six lines, and the last two each buy something: one says a row is a name
 
 - **The `Stage` cell is second, right after the ticket.** Use only `Ready`, `Designed`, `In development`, or `Released for test` — no date, no who. It sits before the reasoning because it tells the reader what can happen next.
 - **A cell is one or two sentences.** Not a paragraph. Not a citation — a `path:line` belongs in the ticket's measured table, where somebody building it will look, and a cost belongs in the ticket's phases. The cell says *why this row is above the next one*, and nothing else.
-- **No tier preamble.** The heading and its minute band say what the tier is. A paragraph under it restates the heading.
+- **No tier preamble.** The heading says what the tier is. A paragraph under it restates the heading.
 - **An empty tier is deleted, heading and all.** It comes back when it has a row. A heading over nothing is a line to scroll past, and tier 0 sat empty over a link to somewhere else for exactly one edit before this rule existed.
 - **No method in the file.** How rows are ranked is this skill; the file links to it. Copying the three criteria into the file means two copies that drift.
 - **No record in the file.** What an earlier ranking got wrong goes in `done/PLAN.md`, beside the rows it is about. Anything that belongs to one ticket rather than to the ordering goes on that ticket, in its own record — that is what a ticket's record section is for.

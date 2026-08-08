@@ -687,13 +687,18 @@ body.mac-frame.is-fullscreen .window-controls {
   background: var(--lt-wash-hover);
   outline: none;
 }
-.context-menu-item.is-danger {
-  color: var(--lt-danger);
-}
+/* A dangerous row is plain until it is pointed at. Its drawing says what it
+   does, and red on every open menu spends the one color that means stop. */
 .context-menu-item.is-danger:hover,
 .context-menu-item.is-danger:focus-visible {
   background: var(--lt-danger);
   color: var(--lt-danger-foreground);
+}
+/* A mask is painted by its row's color, so without this the glyph keeps the
+   muted tone and sits gray on the red while the label beside it does not. */
+.context-menu-item.is-danger:hover .lt-icon,
+.context-menu-item.is-danger:focus-visible .lt-icon {
+  color: inherit;
 }
 .context-menu-separator {
   height: 1px;

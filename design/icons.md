@@ -2,7 +2,7 @@
 
 > One row per icon: its name, its drawing, and where it is worn.
 
-`just bundle-icons` compiles the rows below into `src/assets/icons.css`, one `.lt-icon-<name>` class each, drawn with `mask-image` and a `data:` URI. `just check-icons` fails when the generated file has drifted, when a row names a file that is not there, and when a `.svg` under `src/assets/` has no row.
+`just bundle-icons` compiles the rows below into `src/assets/icons.css`, one `.lt-icon-<name>` class each, drawn with `mask-image` and a `data:` URI. `just check-icons` fails when the generated file has drifted, when a row names a file that is not there, when a `.svg` under `src/assets/` has no row, and when two rows compile to the same mask — two controls wearing one drawing. That last one is measured on the mask, so an inert attribute cannot hide a copy and one shape at two named weights is not one.
 
 An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></span>` — so a drawing used five times is in the app once. A mask reads only alpha, so the copy in the URI is painted flat black and the visible color is the control's own: `background-color: currentColor` on the base class.
 
@@ -78,6 +78,6 @@ An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></spa
 | favorite-off | heart.svg | regular | — | The heart in a tab's other corner, on a file that is not kept. |
 | favorite-on | heart-filled.svg | — | — | The same heart, filled, on one that is. A fill is a different drawing, not a bolder line, which is why it is its own row rather than the heavy weight. |
 | back-long | back-long.svg | regular | — | The menu row that goes up a folder. A longer arrow than the app bar's Back, which is why it is not the same icon. |
-| trash | trash.svg | regular | — | Delete, in the file menu. |
+| trash | trash.svg | regular | — | Remove vault, in the vault settings menu. |
 | copy | copy.svg | regular | — | Copy a code block. |
 | leaf | leaf.svg | — | — | The header logomark, and a Markdown file's badge in the pane. |
