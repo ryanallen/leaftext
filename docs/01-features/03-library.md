@@ -75,7 +75,7 @@ The pane lists one folder at a time — the folder you are in, not a whole hiera
 - Click a folder row — or its `›` chevron — to go into it.
 - The row above the list steps back out one level.
 - The **breadcrumb** above the search box is the path you are on: `Vajrayana › docs › features`. Click any crumb to step back to that level. It shows as much of the path as fits the band, so widening the pane reveals more crumbs and dragging the divider refits it mid-drag. Whatever does not fit collapses behind a `…` button that opens a menu of the skipped folders.
-- Folders sort before files, each alphabetized. Hidden folders, common build folders, and symlinks or Windows reparse points are not descended.
+- Folders sort before files, each alphabetized. Every folder is listed, including the ones whose names start with a dot and the ones a shortcut points at.
 - Opening a file moves the pane to that file's folder and highlights the row. A file inside a vault switches to that vault first; a file in none switches to the whole library.
 - The folder you are in is saved, so a restart reopens it. If the folder has gone, the pane falls back to the top of the vault.
 
@@ -89,17 +89,11 @@ Data files are searchable by name and title but draw no [graph](#graph) edges at
 
 ### Skipped folders
 
-Browsing skips hidden folders and the common heavy or generated ones:
+The pane lists every folder there is. A name starting with a dot, a build folder, a shortcut to somewhere else — all of them are rows you can open, because a folder you can see in Explorer or Finder should be a folder you can open here. A shortcut opens onto whatever it points at, the same as it does there.
 
-- `node_modules`
-- `target`
-- `vendor`
-- `dist`
-- `build`
-- `.venv`
-- `__pycache__`
+Two things are left out. At the top of a drive, the operating system's own folders — `Windows`, `Program Files`, `AppData`, `Library` and the rest — are skipped, and only there: a folder of yours with one of those names, anywhere else, is listed. And a shortcut pointing at nothing is not a folder to open.
 
-At a drive root, system directories such as `Windows`, `Program Files`, `AppData` and `Library` are skipped too. Symlinks and Windows reparse points are not descended.
+Search and the [graph](#graph) read every folder too, so a note in a folder whose name starts with a dot is findable and on the map. The one thing that walk still refuses is a shortcut, which can point back at a folder above it and make the walk run forever.
 
 ## File actions
 
@@ -386,7 +380,7 @@ The sheet is not saved. It describes the current view rather than a preference, 
 | --- | --- |
 | Vault registry | `manifest.db` — the vaults you have named, and which one is active |
 | Vault text | Held in memory for the active vault only; dropped on a switch and on quit |
-| Documents read | Up to 5,000 per vault |
+| Documents read | Up to 25,000 per vault, or 32 MB of text — whichever comes first, smallest documents first |
 | Search results | Top 50 |
 | Folder listing | One directory per click |
 | First-launch bubbles | One per launch at most, with a quiet launch between; each one shows until you point at what it points at, then never again |

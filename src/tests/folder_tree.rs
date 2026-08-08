@@ -40,9 +40,6 @@ fn a_folder_lists_only_itself_with_no_index_and_no_walk_below_it() {
     write(&root.join("notes").join("under").join("deeper.md"), "# D\n");
     // Not a document, so not a row.
     write(&root.join("photo.png"), "not really a png");
-    // Build output and hidden folders are never somewhere to browse.
-    write(&root.join("node_modules").join("pkg.md"), "# Vendored\n");
-    write(&root.join(".git").join("COMMIT_EDITMSG.md"), "# Internal\n");
 
     let top = read_folder_listing(Some(&root), "");
     // The vault's folder is the top: its own children, folders first, then documents, each alphabetical. Nothing from inside `notes` is here — nothing under it has been read.
@@ -75,6 +72,107 @@ fn a_folder_lists_only_itself_with_no_index_and_no_walk_below_it() {
     fs::create_dir_all(root.join("empty")).expect("folder created");
     let listing = read_folder_listing(Some(&root), &root.join("empty").to_string_lossy());
     assert!(listing.entries.is_empty());
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+/// A link to a folder, made the way the platform lets an ordinary user make one: a junction on Windows, a symlink everywhere else.
+fn link_dir(link: &Path, target: &Path) {
+    #[cfg(windows)]
+    {
+        let made = std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(link)
+            .arg(target)
+            .output()
+            .expect("mklink runs");
+        assert!(
+            made.status.success(),
+            "a junction is made without elevation"
+        );
+    }
+    #[cfg(not(windows))]
+    std::os::unix::fs::symlink(target, link).expect("symlink created");
+}
+
+#[test]
+fn every_folder_is_listed_even_the_ones_the_pane_used_to_throw_away() {
+    let dir = tree_dir("hidden");
+    let root = dir.join("vault");
+    write(&root.join("plain.md"), "# Plain\n");
+    // A leading dot is a Unix convention Windows does not act on, and the pane lists hidden files either way.
+    write(&root.join(".agents").join("skill.md"), "# Skill\n");
+    write(&root.join(".git").join("COMMIT_EDITMSG.md"), "# Internal\n");
+    // A folder called `target` may be somebody's notes on a target.
+    write(&root.join("target").join("built.md"), "# Built\n");
+    write(&root.join("node_modules").join("pkg.md"), "# Vendored\n");
+    // Following a junction can loop, and this listing descends nowhere, so it cannot.
+    write(&dir.join("elsewhere").join("linked.md"), "# Linked\n");
+    link_dir(&root.join("shortcut"), &dir.join("elsewhere"));
+
+    let top = read_folder_listing(Some(&root), "");
+    assert_eq!(
+        names(&top),
+        vec![
+            ".agents",
+            ".git",
+            "node_modules",
+            "shortcut",
+            "target",
+            "plain.md"
+        ]
+    );
+
+    // And each one opens.
+    let hidden = read_folder_listing(Some(&root), &root.join(".agents").to_string_lossy());
+    assert_eq!(names(&hidden), vec!["skill.md"]);
+    let built = read_folder_listing(Some(&root), &root.join("target").to_string_lossy());
+    assert_eq!(names(&built), vec!["built.md"]);
+    // A link opens onto what it points at, the same as it does in the file explorer.
+    let followed = read_folder_listing(Some(&root), &root.join("shortcut").to_string_lossy());
+    assert_eq!(names(&followed), vec!["linked.md"]);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn the_os_furniture_is_skipped_at_the_top_of_a_drive_and_nowhere_else() {
+    // The one name rule left, and it fires only where the name is known to be the OS's.
+    let os_names = [
+        "Library",
+        "AppData",
+        "Windows",
+        "Program Files",
+        "Program Files (x86)",
+        "ProgramData",
+        "System Volume Information",
+        "$RECYCLE.BIN",
+        "proc",
+        "sys",
+    ];
+
+    let root = crate::store::detect_roots()
+        .into_iter()
+        .next()
+        .expect("there is always at least one drive");
+    let listing = read_folder_listing(None, &root.to_string_lossy());
+    for name in os_names {
+        assert!(
+            !names(&listing).contains(&name.to_string()),
+            "{name} should not be listed at the top of a drive"
+        );
+    }
+
+    // The same name deeper in is somebody's own folder, so it is listed.
+    let dir = tree_dir("system-names");
+    let vault = dir.join("vault");
+    for name in os_names {
+        write(&vault.join(name).join("note.md"), "# Note\n");
+    }
+    let listing = read_folder_listing(Some(&vault), "");
+    let mut expected: Vec<String> = os_names.iter().map(|name| name.to_string()).collect();
+    expected.sort_by_key(|name| name.to_lowercase());
+    assert_eq!(names(&listing), expected);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }

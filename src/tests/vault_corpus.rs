@@ -128,6 +128,99 @@ fn search_over_a_full_vault_is_timed_not_guessed() {
 }
 
 #[test]
+fn a_note_in_a_folder_whose_name_starts_with_a_dot_is_found_and_drawn() {
+    let dir = corpus_dir("hidden");
+    let root = dir.join("vault");
+    // A vault whose notes all live under one dotted folder would otherwise give search and the map nothing at all.
+    write(
+        &root.join(".notes").join("refuge.md"),
+        "# Refuge\n\nOn taking refuge, and [[vows]].\n",
+    );
+    write(&root.join("target").join("vows.md"), "# Vows\n");
+    write(&root.join("plain.md"), "# Plain\n");
+
+    let corpus = VaultCorpus::read(&root);
+    let graph = corpus.graph(&GraphRequest::default());
+    assert_eq!(labels(&graph), vec!["plain", "refuge", "vows"]);
+    // The link out of the dotted folder is an edge, so it is on the map rather than merely in it.
+    assert_eq!(graph.edges.len(), 1);
+
+    // And typing its words finds it.
+    let hits = corpus.search("refuge");
+    assert!(!hits.hits.is_empty());
+    assert!(hits
+        .hits
+        .iter()
+        .all(|hit| hit.abs_path
+            == crate::store::path_to_string(&root.join(".notes").join("refuge.md"))));
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn a_vault_past_the_document_limit_says_its_picture_is_partial() {
+    let dir = corpus_dir("count");
+    let root = dir.join("vault");
+    fs::create_dir_all(&root).expect("vault created");
+    // Empty files, so this proves the count limit and nothing else. Spread over folders because one directory of this many is slower to read than to write.
+    for index in 0..=crate::MAX_CORPUS_DOCUMENTS {
+        let folder = root.join(format!("part-{:02}", index / 500));
+        if index % 500 == 0 {
+            fs::create_dir_all(&folder).expect("folder created");
+        }
+        fs::write(folder.join(format!("note-{index}.md")), "").expect("file written");
+    }
+
+    let corpus = VaultCorpus::read(&root);
+    assert!(corpus.truncated);
+    assert!(corpus.graph(&GraphRequest::default()).truncated);
+    assert!(corpus.documents.len() <= crate::MAX_CORPUS_DOCUMENTS);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn the_biggest_documents_are_what_a_full_vault_drops() {
+    let dir = corpus_dir("budget");
+    let root = dir.join("vault");
+    // Past the byte budget in big files, and the small notes written where a walk in name order would never reach them.
+    let big = "x".repeat(1024 * 1024);
+    for index in 0..35 {
+        write(&root.join(format!("big-{index:02}.md")), &big);
+    }
+    for index in 0..5 {
+        write(
+            &root.join(format!("zzz-note-{index}.md")),
+            &format!("# Note {index}\n\nOn sitting still.\n"),
+        );
+    }
+
+    let mut corpus = VaultCorpus::read(&root);
+    // Every small note is held. In the order the walk found them the budget would be spent on the big files before it reached one of these.
+    assert_eq!(
+        titles(&corpus.search("sitting")).len(),
+        5,
+        "the five notes somebody wrote are the five the budget kept"
+    );
+    // And the vault says its picture is partial, so the map does too.
+    assert!(corpus.truncated);
+    assert!(corpus.graph(&GraphRequest::default()).truncated);
+    assert!(
+        corpus.documents.len() < 40,
+        "something was dropped, or the budget did not fire"
+    );
+
+    // A file appearing while the vault is open is held to the same budget, or a session grows past it one save at a time.
+    let held = corpus.documents.len();
+    let fresh = root.join("written-just-now.md");
+    write(&fresh, "# Fresh\n\nOn sitting still.\n");
+    assert!(!corpus.refresh(&fresh));
+    assert_eq!(corpus.documents.len(), held);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
 fn one_read_graphs_the_vault_with_no_database_involved() {
     let dir = corpus_dir("graph");
     let root = dir.join("vault");

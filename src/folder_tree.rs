@@ -5,24 +5,13 @@
 //! The top level is the vault's own folder, or — with no vault — the drive roots.
 
 use crate::store::{
-    detect_roots, is_dir_reparse, is_system_dir, path_to_string, root_label, FileTreeNode, NodeKind,
+    detect_roots, is_system_dir, path_to_string, root_label, FileTreeNode, NodeKind,
 };
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
-
-/// Directories never listed: build output and vendored code. Anything hidden (a leading dot) is skipped too. None of it is what someone opened the pane to read.
-const SKIPPED_DIRS: &[&str] = &[
-    "node_modules",
-    "target",
-    "dist",
-    "build",
-    "vendor",
-    "Pods",
-    "__pycache__",
-];
 
 /// One step of the trail between the root and the folder on screen. The root itself is not here — that is the switcher's crumb.
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -123,6 +112,8 @@ fn drive_root_entries() -> Vec<FileTreeNode> {
 }
 
 /// One directory's immediate children: the folders you can open, and the documents you can read. Nothing below them is touched — that is the point.
+///
+/// Every folder is listed — a leading dot, a build name, a junction. Guards against a runaway walk belong where a walk runs: this reads one directory and descends nowhere, and `vault_corpus.rs`, which does descend, keeps its junction guard.
 fn read_entries(dir: &Path) -> Vec<FileTreeNode> {
     let Ok(entries) = fs::read_dir(dir) else {
         return Vec::new();
@@ -139,15 +130,19 @@ fn read_entries(dir: &Path) -> Vec<FileTreeNode> {
         let name = entry.file_name().to_string_lossy().to_string();
         let path = entry.path();
 
-        if file_type.is_dir() {
-            if name.starts_with('.') || SKIPPED_DIRS.contains(&name.as_str()) {
-                continue;
-            }
+        // A junction or symlink is neither a folder nor a file to the directory entry; whatever it points at is. `None` is a link pointing nowhere, which is the one thing here that cannot be listed.
+        let is_folder = if file_type.is_symlink() {
+            fs::metadata(&path).ok().map(|meta| meta.is_dir())
+        } else if file_type.is_dir() {
+            Some(true)
+        } else if file_type.is_file() {
+            Some(false)
+        } else {
+            None
+        };
+
+        if is_folder == Some(true) {
             if at_drive_root && is_system_dir(&name) {
-                continue;
-            }
-            // A junction or symlink can point back up its own tree.
-            if is_dir_reparse(&path) {
                 continue;
             }
             folders.push(FileTreeNode {
@@ -157,7 +152,7 @@ fn read_entries(dir: &Path) -> Vec<FileTreeNode> {
                 title: None,
                 children: Vec::new(),
             });
-        } else if file_type.is_file() && crate::is_supported_document_path(&path) {
+        } else if is_folder == Some(false) && crate::is_supported_document_path(&path) {
             files.push(FileTreeNode {
                 name,
                 path: path_to_string(&path),

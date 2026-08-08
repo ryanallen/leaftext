@@ -18,19 +18,11 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// Directories never read, matching the pane's own listing rules.
-const SKIPPED_DIRS: &[&str] = &[
-    "node_modules",
-    "target",
-    "dist",
-    "build",
-    "vendor",
-    "Pods",
-    "__pycache__",
-];
-
 /// How many documents one vault may hold in memory. A vault is bounded by construction; this is the backstop for someone pointing one at a source tree.
-pub const MAX_CORPUS_DOCUMENTS: usize = 5_000;
+pub const MAX_CORPUS_DOCUMENTS: usize = 25_000;
+
+/// How much text one vault may hold. The count above does not bound memory, because the many files and the many bytes sit in different folders: measured on this repo, a count of 5,000 filled with 5 MB of build output and left every note somebody wrote unread.
+const MAX_CORPUS_BYTES: usize = 32 * 1024 * 1024;
 
 /// How much of one document is kept. Long enough for anything anyone reads; short enough that one enormous file cannot dominate the vault's footprint.
 const MAX_DOCUMENT_BYTES: usize = 2 * 1024 * 1024;
@@ -93,27 +85,46 @@ pub struct CorpusDocument {
 pub struct VaultCorpus {
     pub root: PathBuf,
     pub documents: Vec<CorpusDocument>,
-    /// Set when the walk hit [`MAX_CORPUS_DOCUMENTS`], so the graph can say the picture is partial.
+    /// Set when the read hit either limit, so the graph can say the picture is partial.
     pub truncated: bool,
 }
 
 impl VaultCorpus {
     /// Read the whole vault. The expensive call, made once per vault per session, on a background thread.
     pub fn read(root: &Path) -> Self {
-        let mut paths = Vec::new();
-        collect_documents(root, 0, &mut paths);
-        let truncated = paths.len() > MAX_CORPUS_DOCUMENTS;
-        paths.truncate(MAX_CORPUS_DOCUMENTS);
+        let mut found = Vec::new();
+        collect_documents(root, 0, &mut found);
+        // Smallest first, so the byte budget buys as many documents as it can: the whole of a vault of notes, and as much as fits of a folder of generated ones. The sizes came back off the same directory entries the walk had already read, so this costs no second look at the disk.
+        found.sort_by_key(|(size, _)| *size);
+        let mut truncated = found.len() > MAX_CORPUS_DOCUMENTS;
+        found.truncate(MAX_CORPUS_DOCUMENTS);
 
-        let documents = paths
-            .iter()
-            .filter_map(|path| read_document(path))
-            .collect();
+        let mut held = 0;
+        let mut documents = Vec::new();
+        for (_, path) in found {
+            if held >= MAX_CORPUS_BYTES {
+                truncated = true;
+                break;
+            }
+            let Some(document) = read_document(&path) else {
+                continue;
+            };
+            held += document.text.len();
+            documents.push(document);
+        }
         Self {
             root: root.to_path_buf(),
             documents,
             truncated,
         }
+    }
+
+    /// How much text is held. A read of a length per document, so it costs nothing next to what it guards.
+    fn held_bytes(&self) -> usize {
+        self.documents
+            .iter()
+            .map(|document| document.text.len())
+            .sum()
     }
 
     /// Whether a changed path is one this corpus holds text for. Asked before [`Self::refresh`], because getting that far can cost a clone of the whole corpus, and most of what the watcher reports is not a document.
@@ -141,7 +152,11 @@ impl VaultCorpus {
                 self.documents[index] = fresh;
                 true
             }
-            (Some(fresh), None) if self.documents.len() < MAX_CORPUS_DOCUMENTS => {
+            // A document that appears while the vault is open joins it under the same two limits the first read held to, or the corpus grows past them one save at a time.
+            (Some(fresh), None)
+                if self.documents.len() < MAX_CORPUS_DOCUMENTS
+                    && self.held_bytes() < MAX_CORPUS_BYTES =>
+            {
                 self.documents.push(fresh);
                 true
             }
@@ -540,7 +555,8 @@ fn scan_term(text: &str, term: &Needle) -> TermScan {
     scan
 }
 
-fn collect_documents(dir: &Path, depth: usize, out: &mut Vec<PathBuf>) {
+/// Every document under one folder, each with its size. No folder is skipped for its name: a vault whose notes live under a dotted folder otherwise reads as empty.
+fn collect_documents(dir: &Path, depth: usize, out: &mut Vec<(u64, PathBuf)>) {
     if depth >= MAX_DEPTH || out.len() > MAX_CORPUS_DOCUMENTS {
         return;
     }
@@ -554,16 +570,14 @@ fn collect_documents(dir: &Path, depth: usize, out: &mut Vec<PathBuf>) {
         };
         let path = entry.path();
         if file_type.is_dir() {
-            let name = entry.file_name().to_string_lossy().to_string();
-            if name.starts_with('.') || SKIPPED_DIRS.contains(&name.as_str()) {
-                continue;
-            }
+            // This is the walk that can loop: a junction pointing back up its own tree never ends. The pane's listing reads one folder and descends nowhere, which is why it does not need this.
             if crate::store::is_dir_reparse(&path) {
                 continue;
             }
             subfolders.push(path);
         } else if file_type.is_file() && crate::is_supported_document_path(&path) {
-            out.push(path);
+            // The size is already in the directory entry, so this is not a second look at the disk.
+            out.push((entry.metadata().map(|meta| meta.len()).unwrap_or(0), path));
         }
     }
     for folder in subfolders {

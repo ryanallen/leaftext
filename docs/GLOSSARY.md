@@ -288,7 +288,7 @@ One Leaftext, however many times you launch it. Opening a file from Explorer or 
 
 ## Skipped folders
 
-What browsing never descends into: hidden folders, `node_modules`, `target`, `vendor`, `dist`, `build`, `.venv`, `__pycache__`, the system folders at a drive root, and symlinks or Windows reparse points.
+The two things browsing leaves out, now that every other folder is listed: the operating system's own folders at the top of a drive, and a shortcut pointing at nothing. Search and the graph also refuse a shortcut, which can point back above itself and make their walk run forever.
 
 ## Slug
 
