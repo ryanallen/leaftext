@@ -648,6 +648,75 @@ fn installer_claims_every_readable_extension() {
     }
 }
 
+/// The `CFBundleDocumentTypes` entries out of the Info.plist the macOS workflow writes, one string per entry. Read as structure rather than searched as text: an extension in a comment is not a claim, and a key in one entry says nothing about the next.
+fn macos_document_type_entries() -> Vec<String> {
+    let workflow = include_str!("../../.github/workflows/release-distributions.yml");
+    let block = workflow
+        .split_once("<key>CFBundleDocumentTypes</key>")
+        .expect("the macOS bundle must claim document types")
+        .1;
+    let block = block
+        .split_once("</plist>")
+        .expect("the Info.plist heredoc must close")
+        .0;
+
+    let mut entries = Vec::new();
+    let mut rest = block;
+    while let Some((_, after_open)) = rest.split_once("<dict>") {
+        let (entry, after_close) = after_open
+            .split_once("</dict>")
+            .expect("every document type entry must close");
+        entries.push(entry.to_string());
+        rest = after_close;
+    }
+    entries
+}
+
+/// The value of a plist `<string>` key inside one entry.
+fn plist_string(entry: &str, key: &str) -> Option<String> {
+    let after_key = entry.split_once(&format!("<key>{key}</key>"))?.1;
+    let value = after_key
+        .split_once("<string>")?
+        .1
+        .split_once("</string>")?
+        .0;
+    Some(value.trim().to_string())
+}
+
+/// An entry that claims a file type and names no icon leaves Finder nothing to draw for that type, whoever the default handler is — which is why every `.md` file on a Mac was a blank page while the app itself wore the leaf. The plain text entry is the one that claims no extensions, on purpose, so an icon there would mark files the app never claimed.
+#[test]
+fn every_macos_file_type_claiming_extensions_names_the_icon() {
+    let workflow = include_str!("../../.github/workflows/release-distributions.yml");
+    let entries = macos_document_type_entries();
+    assert_eq!(entries.len(), 6, "the bundle claims six file types");
+
+    for entry in &entries {
+        let name = plist_string(entry, "CFBundleTypeName").expect("every entry names its type");
+        if !entry.contains("<key>CFBundleTypeExtensions</key>") {
+            assert_eq!(
+                name, "Plain Text Document",
+                "{name} claims no extensions; only plain text is allowed to"
+            );
+            assert!(
+                plist_string(entry, "CFBundleTypeIconFile").is_none(),
+                "{name} claims no extensions, so the leaf would mark files the app never claimed"
+            );
+            continue;
+        }
+        assert_eq!(
+            plist_string(entry, "CFBundleTypeIconFile").as_deref(),
+            Some("Leaf"),
+            "{name} claims extensions and must name the Leaf icon, or Finder draws a blank page"
+        );
+    }
+
+    // The name every entry gives is a resource in the bundle, built by the packaging step below the plist.
+    assert!(
+        workflow.contains(r#"${app_resources}/Leaf.icns"#),
+        "the packaging step must write the Leaf.icns the entries name"
+    );
+}
+
 /// The pager, the file dialog, drag-and-drop, link following and the library pane all ask `format.rs` rather than carrying a list. Anything the app can open must page too.
 #[test]
 fn every_readable_format_is_a_pager_page_and_an_in_app_link() {

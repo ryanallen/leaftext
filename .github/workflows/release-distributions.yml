@@ -195,6 +195,10 @@ jobs:
                  macOS reserves Editor for apps that own saving the format.
                  Every format src/format.rs reads is claimed here;
                  `installer_claims_every_readable_extension` pins the two lists.
+                 Every entry claiming extensions names Leaf too, the icon the
+                 packaging step below builds: an entry with no icon of its own
+                 leaves Finder a blank page whoever the default handler is, so
+                 CFBundleIconFile on the app never reaches its documents.
                  Default rank so Launch Services hands an unclaimed type over on
                  its own — a choice the user made, or an app owning the format,
                  still wins. public.plain-text stays Alternate in its own entry:
@@ -206,6 +210,8 @@ jobs:
               <dict>
                 <key>CFBundleTypeName</key>
                 <string>Markdown Document</string>
+                <key>CFBundleTypeIconFile</key>
+                <string>Leaf</string>
                 <key>CFBundleTypeRole</key>
                 <string>Viewer</string>
                 <key>LSHandlerRank</key>
@@ -236,6 +242,8 @@ jobs:
               <dict>
                 <key>CFBundleTypeName</key>
                 <string>XML Document</string>
+                <key>CFBundleTypeIconFile</key>
+                <string>Leaf</string>
                 <key>CFBundleTypeRole</key>
                 <string>Viewer</string>
                 <key>LSHandlerRank</key>
@@ -252,6 +260,8 @@ jobs:
               <dict>
                 <key>CFBundleTypeName</key>
                 <string>JSON Document</string>
+                <key>CFBundleTypeIconFile</key>
+                <string>Leaf</string>
                 <key>CFBundleTypeRole</key>
                 <string>Viewer</string>
                 <key>LSHandlerRank</key>
@@ -268,6 +278,8 @@ jobs:
               <dict>
                 <key>CFBundleTypeName</key>
                 <string>YAML Document</string>
+                <key>CFBundleTypeIconFile</key>
+                <string>Leaf</string>
                 <key>CFBundleTypeRole</key>
                 <string>Viewer</string>
                 <key>LSHandlerRank</key>
@@ -287,6 +299,8 @@ jobs:
               <dict>
                 <key>CFBundleTypeName</key>
                 <string>Email Message</string>
+                <key>CFBundleTypeIconFile</key>
+                <string>Leaf</string>
                 <key>CFBundleTypeRole</key>
                 <string>Viewer</string>
                 <key>LSHandlerRank</key>
