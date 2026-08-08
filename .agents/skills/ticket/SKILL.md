@@ -205,7 +205,7 @@ A ticket nobody can find is a ticket nobody builds. So writing the plan is two-t
 
 **2. The running order — run [`/pm`](../pm/SKILL.md) over the whole tree.** Not a row placed by hand. A new ticket changes what somebody should pick up next, and the author is the last person who can judge that: they have just spent an hour on one file and read none of the others, so a self-placed row lands wherever the writing left them feeling about it. Running the ranking is also the only pass that walks the three live folders off the disk, which is how a ticket with no row at all gets found — the ranking on 4 August 2026 turned up three, one of them a diagram bug that takes the whole drawing down.
 
-So finishing a ticket is: write the file, write the index row, then `/pm`. It re-derives every `Designed` box from the tickets, re-checks statuses against the code, and rewrites `../docs/PLAN.md` in place with the new ticket ranked among the rest. Nothing here places a tier by hand, and nothing here writes a `PLAN.md` row.
+So finishing a ticket is: write the file, write the index row, then `/pm`. It re-derives every `Stage` cell from the tickets, re-checks statuses against the code, and rewrites `../docs/PLAN.md` in place with the new ticket ranked among the rest. Nothing here places a tier by hand, and nothing here writes a `PLAN.md` row.
 
 **Absent is not wrong** — a capability the app never had does not reach tier 1 however big its audience. Worth knowing while writing, because a ticket that argues the app is *broken* when it is merely *incomplete* is a ticket the ranking has to argue back at.
 
@@ -213,13 +213,13 @@ Two things to check before handing back: the ticket has a row in the index, and 
 
 ## Working a ticket later
 
-That is [dev](../dev/SKILL.md)'s job — it builds the phases in order, ticks each box (`- [x]`) in the same edit as the code, strikes through a box that will not be done with the reason beside it, and **stops at the owner's own box**. Closing is [pre-release](../pre-release/SKILL.md)'s, on the owner's word alone: the shipped note at the top, the move into the right subject folder under `../docs/done/`, the index row rewritten to say what shipped, and the running-order row moved into `../docs/done/PLAN.md`.
+That is [dev](../dev/SKILL.md)'s job — it builds the phases in order, ticks each box (`- [x]`) in the same edit as the code, strikes through a box that will not be done with the reason beside it, and **stops at the owner's own box**. Shipping is [git-release](../git-release/SKILL.md)'s; closing is [done](../done/SKILL.md)'s, on the owner's word alone: the shipped note at the top, the move into the right subject folder under `../docs/done/`, the index row rewritten to say what shipped, and the running-order row moved into `../docs/done/PLAN.md`.
 
 ## Reference
 
 - `/pm` — ranks every ticket in the tree into one running order.
 - `/design` — checks a written ticket against the code before anyone builds it.
-- `/dev` — builds one and stops at the owner's box; `/pre-release` is what moves it to `done/`.
+- `/dev` — builds one and stops at the owner's box; `/git-release` ships it; `/done` moves it to `done/`.
 - `../docs/README.md` — every ticket, one line each. Read first, updated last.
 - `../docs/imgs/` — every picture the owner has handed over, named after the ticket that uses it.
 - `../docs/GLOSSARY.md` — the words a ticket is written in. A planning word this file spends and that file does not define gets a row there in the same pass.

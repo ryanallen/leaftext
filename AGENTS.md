@@ -63,7 +63,7 @@ Rust desktop app for reading Markdown, XML, JSON and YAML — rendered document 
 
 ## Skills
 
-In [`.agents/skills/`](.agents/skills/), which `.claude/` and `.codex/` symlink to — one folder per repeatable job. Each `SKILL.md` carries its own description and triggers, and the host surfaces every one, so this file does not repeat the list. The shape worth one line: `/ticket` scopes work, `/design` proves the plan, `/dev` builds and stops at the owner's box, `/pre-release` closes on the owner's word alone — never call it yourself — `/git-release` (only on `/git-release`) is the one thing that writes git, and `/check` gates every hand-back.
+In [`.agents/skills/`](.agents/skills/), which `.claude/` and `.codex/` symlink to — one folder per repeatable job. Each `SKILL.md` carries its own description and triggers, and the host surfaces every one, so this file does not repeat the list. The workflow is `/ticket`, `/design`, `/dev`, `/git-release`, then `/done`; `/check` gates every hand-back, and only `/git-release` writes git.
 
 ## Hooks
 

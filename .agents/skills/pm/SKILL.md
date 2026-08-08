@@ -1,6 +1,6 @@
 ---
 name: pm
-description: Rank every live ticket into one running order and write it to ../docs/PLAN.md — what to build next, top to bottom, checking each ticket's status against the code rather than trusting it. Wrong today first, then what other tickets are waiting on it, then cost; shipped rows live in ../docs/done/PLAN.md, moved there by /pre-release, not this. Use when the user says "what should I build next", "rank the tickets", "make a plan", "priorities", or hands over the plan folder to be brought up to date.
+description: Rank every live ticket into one running order and write it to ../docs/PLAN.md — what to build next, top to bottom, checking each ticket's status and stage against the code rather than trusting it. Wrong today first, then what other tickets are waiting on it, then cost; shipped rows live in ../docs/done/PLAN.md, moved there by /done, not this. Use when the user says "what should I build next", "rank the tickets", "make a plan", "priorities", or hands over the plan folder to be brought up to date.
 argument-hint: "[optional: a subject to rank within]"
 user-invocable: true
 ---
@@ -29,7 +29,7 @@ Rows carried numbers until 4 August 2026. They were retired with their rows and 
 
 ### A row moves unchanged
 
-Whatever the row said in the live list is what it says in `done/PLAN.md`: struck through, with the date it closed and what the build found. **Nothing is rewritten on the way across** bar the `Designed` cell, which is dropped — whether a plan can be trusted has no meaning once the work is built. So the row a later reader finds is the row somebody actually built against, and moving it is a cut and paste. That is [`/pre-release`](../pre-release/SKILL.md)'s job, not this skill's.
+Whatever the row said in the live list is what it says in `done/PLAN.md`: struck through, with the date it closed and what the build found. **Nothing is rewritten on the way across** bar the `Stage` cell, which is dropped — a live stage has no meaning once the work is built. So the row a later reader finds is the row somebody actually built against, and moving it is a cut and paste. That is [`/done`](../done/SKILL.md)'s job, not this skill's.
 
 ## 1. Read before ranking
 
@@ -38,7 +38,7 @@ Whatever the row said in the live list is what it says in `done/PLAN.md`: struck
 - **Every ticket in `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`**, off the disk rather than off the index. Those folders hold **subject folders** — `storage/`, `library/`, `reading/`, `editing/`, `filtering/`, `diagrams/`, `big-swings/`, `plugins/`, plus `repo/` — so walk them, never one level. A ticket the index missed still gets a row.
 - **`../docs/done/PLAN.md`** — what has already closed, and what those builds found. A row here is a row not to re-rank.
 
-**Every row carries a `Designed` box, and this skill re-derives it rather than trusting it.** A ticket with the dated line [`/design`](../design/SKILL.md) signs at its top gets `[x]`; a ticket without one gets `[ ]`. Grep the tickets for that line as you read them and write what you find — the box is a mirror, the ticket is the authority, and a ranking is the one pass that reconciles the two. An `[x]` beside a ticket nobody has read is worse than no column at all.
+**Every row carries a `Stage`, and this skill re-derives it rather than trusting it.** Use `Ready` without the dated [`/design`](../design/SKILL.md) line, `Designed` after that line exists but no implementation box is ticked, `In development` after implementation has started, and `Released for test` when `/git-release` has shipped the code but `/done` has not retired the ticket. The ticket is the authority, and ranking is the pass that reconciles the plan.
 
 Then check three things per ticket, in the code, not in the file:
 
@@ -60,7 +60,7 @@ That order is the whole method, and it is what makes a row arguable rather than 
 
 **Absent is not wrong.** "The app cannot open a `.docx`" is missing capability, not incorrect behavior — it does not lift a row into tier 1 however big its audience. Say that in the row, or the next reader moves it.
 
-**A ticket that changes the window and has not drawn it in the file is not rankable.** Its `Designed` box is unticked and its row says so — "owes a drawn `What it looks like` section" — because the cost of a row nobody has drawn is unknown, and the thing that gets built is whatever the builder invents. [ticket](../ticket/SKILL.md) holds the shape of that section; [design](../design/SKILL.md) is what fails a ticket without one.
+**A ticket that changes the window and has not drawn it in the file is not rankable.** Its `Stage` is `Ready` and its row says so — "owes a drawn `What it looks like` section" — because the cost of a row nobody has drawn is unknown, and the thing that gets built is whatever the builder invents. [ticket](../ticket/SKILL.md) holds the shape of that section; [design](../design/SKILL.md) is what fails a ticket without one.
 
 ## 3. The tiers
 
@@ -94,18 +94,16 @@ Method, and why a row sits where it does: `/pm`.
 **A row is named, not numbered.** One line saying so, and that both files cite
 the ticket's name.
 
-**Designed** — has anybody read the ticket against today's code. Unticked means
-the plan is unproven, so `/dev` runs `/design` before it writes anything;
-the ticket's own dated line is the authority and this box mirrors it.
+**Stage** — where the ticket is in the workflow. `Ready` means it needs design, `Designed` means design is complete, `In development` means implementation has started, and `Released for test` means the release happened but `/done` has not retired it.
 
 ## Tier 1 — wrong today, and cheap (10m)
 
-| Ticket | Designed | Why here | Cost |
+| Ticket | Stage | Why here | Cost |
 ```
 
 That is six lines, and the last two each buy something: one says a row is a name so nobody starts numbering again, and the other buys the column, because a reader deciding what to pick up needs to know an unticked row is a guess.
 
-- **The `Designed` box is second, right after the ticket.** `[x]` or `[ ]`, nothing else in the cell — no date, no who. The date is on the ticket, and a date here would be a second copy to go stale. It sits before the reasoning because it is the first thing that decides whether to trust the rest of the row.
+- **The `Stage` cell is second, right after the ticket.** Use only `Ready`, `Designed`, `In development`, or `Released for test` — no date, no who. It sits before the reasoning because it tells the reader what can happen next.
 - **A cell is one or two sentences.** Not a paragraph. Not a citation — a `path:line` belongs in the ticket's measured table, where somebody building it will look, and a cost belongs in the ticket's phases. The cell says *why this row is above the next one*, and nothing else.
 - **No tier preamble.** The heading and its minute band say what the tier is. A paragraph under it restates the heading.
 - **An empty tier is deleted, heading and all.** It comes back when it has a row. A heading over nothing is a line to scroll past, and tier 0 sat empty over a link to somewhere else for exactly one edit before this rule existed.
@@ -140,7 +138,7 @@ It ends with two things the live file is kept clear of. **What the retired rows 
 
 **A ticket mention without a link is a ranking error.** Before handing back, compare every live and shipped ticket name in `PLAN.md` with the paths in `README.md`; check the next-up note, every tier cell and every track paragraph and step. Fix the link in the same edit. Do not make a second list of ticket names in the skill — `README.md` is the source of paths.
 
-That is [pre-release](../pre-release/SKILL.md)'s job, not this skill's: it moves the row into `done/PLAN.md` unchanged, marks the date, says what the build found, and moves the "where this stands" pointer on in the live file. Run this again when enough has moved that the *order* is wrong rather than one row.
+That is [done](../done/SKILL.md)'s job, not this skill's: it moves the row into `done/PLAN.md` unchanged, marks the date, says what the build found, and moves the "where this stands" pointer on in the live file. Run this again when enough has moved that the *order* is wrong rather than one row.
 
 ## 7. Hand back
 
@@ -154,6 +152,6 @@ Say what moved and why, in plain words: which rows changed tier, what tier 0 tur
 - `../docs/GLOSSARY.md` — tier, row, seam, track, retired row, subject folder: what each one means here.
 - `/ticket` — writes the tickets this ranks.
 - `/design` — fixes a ticket this finds wrong. A tier 0 row is often "run `/design` on that file".
-- `/dev` — builds the top row. `/pre-release` is what retires its row once the owner says it works.
+- `/dev` — builds the top row. `/git-release` ships it for testing. `/done` retires its row after that release when the owner says it works.
 
 <!-- keycode: LEAF-7A15 -->

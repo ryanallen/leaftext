@@ -136,7 +136,7 @@ It goes at the top because that is where somebody decides whether to trust the f
 
 It is also the flag [dev](../dev/SKILL.md) tests for: no line, and it runs this skill before it writes a single piece of code.
 
-**Then tick the box in the running order, in the same pass.** [`../docs/PLAN.md`](../../../docs/PLAN.md) carries a `Designed` column, and this ticket's row goes from `[ ]` to `[x]`. That is the only edit this skill makes to that file — never the tier, never the reasoning, never the order. The box mirrors the line, so writing one without the other is how the two start disagreeing, and the box is the half somebody scanning the list actually sees.
+**Then set the ticket's stage in the running order, in the same pass.** [`../docs/PLAN.md`](../../../docs/PLAN.md) carries a `Stage` column, and this ticket's row becomes `Designed`. That is the only edit this skill makes to that file — never the tier, never the reasoning, never the order. The stage mirrors the ticket's dated line, so writing one without the other is how the two start disagreeing.
 
 A ticket with no row there yet is a ticket [`/ticket`](../ticket/SKILL.md) did not finish — add the row, unticked, then tick it.
 

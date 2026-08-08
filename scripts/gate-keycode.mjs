@@ -28,7 +28,7 @@ export const ALWAYS = 'AGENTS.md';
 export function keyedFiles() {
   const skills = [
     'add-dependency', 'add-format', 'check', 'code-comments', 'dev',
-    'design-tokens', 'git-release', 'pre-release', 'pm', 'design', 'shell-fragment',
+    'design-tokens', 'git-release', 'done', 'pm', 'design', 'shell-fragment',
     'sync-docs', 'sync-tests', 'ticket',
   ];
   return [ALWAYS, ...skills.map((name) => `.agents/skills/${name}/SKILL.md`)];
