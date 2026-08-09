@@ -1,17 +1,8 @@
-// A drawn diagram, on the whole window. The reading column is narrow on purpose,
-// so anything wider is read today by leaning into a box the height of a paragraph
-// and dragging around inside it. Here it is drawn again at the overlay's size
-// rather than carried across as an SVG — mermaid lays a diagram out to whatever
-// room it is given, and that is the entire point of the button.
+// A drawn diagram, on the whole window. The reading column is narrow on purpose, so anything wider is read today by leaning into a box the height of a paragraph and dragging around inside it. Here it is drawn again at the overlay's size rather than carried across as an SVG — mermaid lays a diagram out to whatever room it is given, and that is the entire point of the button.
 //
-// It is built here rather than in app-shell.html because everything inside `app`
-// is replaced on every render. Inside `app` is also what makes it work: the pan,
-// the wheel, the click and the double-click are all delegated off that element,
-// and the stage is the `pre.mermaid[data-processed="true"]` they already look for.
+// It is built here rather than in app-shell.html because everything inside `app` is replaced on every render. Inside `app` is also what makes it work: the pan, the wheel, the click and the double-click are all delegated off that element, and the stage is the `pre.mermaid[data-processed="true"]` they already look for.
 
-// No variable holds it: a `let` in this fragment is still in its dead zone while
-// theme.js runs the first render, and the first render is one of the things that
-// closes the overlay.
+// No variable holds it: a `let` in this fragment is still in its dead zone while theme.js runs the first render, and the first render is one of the things that closes the overlay.
 function diagramOverlayElement() {
   return app ? app.querySelector('.diagram-overlay') : null;
 }
@@ -26,18 +17,14 @@ function openDiagramOverlay(diagram, opener) {
   overlay.className = 'diagram-overlay';
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-label', 'Diagram, full window');
-  // Where focus goes back to. On the element, not in a variable of ours, for the
-  // same reason the overlay itself is found by query.
+  // Where focus goes back to. On the element, not in a variable of ours, for the same reason the overlay itself is found by query.
   overlay.__diagramOpener = opener || null;
   overlay.__diagramScrim = scrim;
-  // The block this is a picture of. Both edit buttons act on that, never on the
-  // stage: the stage has no place in the file behind it.
+  // The block this is a picture of. Both edit buttons act on that, never on the stage: the stage has no place in the file behind it.
   overlay.__diagramBlock = diagram;
   const stage = document.createElement('pre');
   stage.className = 'mermaid diagram-stage';
-  // Read by both sweeps in decorate.js, which must leave this one alone: it draws
-  // itself, and an overlay-sized SVG in the render memo comes back in the page at
-  // that size.
+  // Read by both sweeps in decorate.js, which must leave this one alone: it draws itself, and an overlay-sized SVG in the render memo comes back in the page at that size.
   stage.dataset.diagramStage = 'true';
   stage.__mermaidSource = diagram.__mermaidSource;
   overlay.appendChild(stage);
@@ -59,8 +46,7 @@ function closeDiagramOverlay() {
   leafFocusForKeyboard(overlay.__diagramOpener);
 }
 
-// Escape, in the capture pass: it has to beat the handlers registered before this
-// fragment, or closing the overlay also closes whatever is under it.
+// Escape, in the capture pass: it has to beat the handlers registered before this fragment, or closing the overlay also closes whatever is under it.
 function onDiagramOverlayKey(event) {
   if (event.key !== 'Escape' || !diagramOverlayElement()) return;
   event.preventDefault();
@@ -69,14 +55,11 @@ function onDiagramOverlayKey(event) {
 }
 document.addEventListener('keydown', onDiagramOverlayKey, true);
 
-// Straight through mermaid, never through mermaidRenderCache: the memo is keyed on
-// the source and the theme, so a picture drawn for this box would be handed back
-// to the page.
+// Straight through mermaid, never through mermaidRenderCache: the memo is keyed on the source and the theme, so a picture drawn for this box would be handed back to the page.
 function drawDiagramStage(stage) {
   const source = stage.__mermaidSource;
   if (source == null) return;
-  // Fit, at this box's size. Zoom counts from what the page laid out, so the
-  // numbers the block in the document is holding mean a different size here.
+  // Fit, at this box's size. Zoom counts from what the page laid out, so the numbers the block in the document is holding mean a different size here.
   stage.__mermaidNatural = null;
   stage.__mermaidView = null;
   stage.classList.remove('is-moved');
@@ -107,8 +90,7 @@ function drawDiagramStage(stage) {
     });
 }
 
-// After the drawing, always: mermaid replaces the stage's contents with the SVG
-// it made, error and all, so anything put in first is gone.
+// After the drawing, always: mermaid replaces the stage's contents with the SVG it made, error and all, so anything put in first is gone.
 function addDiagramStageControls(stage) {
   if (!stage.isConnected || stage.querySelector('.mermaid-zoom')) return;
   const close = document.createElement('button');
@@ -123,11 +105,7 @@ function addDiagramStageControls(stage) {
   addDiagramStageTools(stage);
 }
 
-// The same two corner buttons a drawn diagram carries in the page, under the same
-// conditions — and they are listened to here rather than left to the delegated
-// handler in decorate.js, which would hand it the stage. Both of them give the
-// document back to the page, so the overlay goes first: editing the text puts a
-// caret in the block, and the flowchart editor is a second modal above this one.
+// The same two corner buttons a drawn diagram carries in the page, under the same conditions — and they are listened to here rather than left to the delegated handler in decorate.js, which would hand it the stage. Both of them give the document back to the page, so the overlay goes first: editing the text puts a caret in the block, and the flowchart editor is a second modal above this one.
 function addDiagramStageTools(stage) {
   const overlay = stage.parentElement;
   const block = overlay ? overlay.__diagramBlock : null;
@@ -149,8 +127,7 @@ function addDiagramStageTools(stage) {
   stage.appendChild(tools);
 }
 
-// A theme change recolors nothing in an SVG, so the stage is drawn again — the
-// repaint sweep skips it, and decorate.js calls this instead.
+// A theme change recolors nothing in an SVG, so the stage is drawn again — the repaint sweep skips it, and decorate.js calls this instead.
 function repaintDiagramOverlay() {
   const overlay = diagramOverlayElement();
   const stage = overlay ? overlay.querySelector('.diagram-stage') : null;

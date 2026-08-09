@@ -1,28 +1,13 @@
 // The block of fields at the top of a note, editable where it is read.
 //
-// It binds to the block, never to where the block sits: it finds `.frontmatter`
-// and works from there, so the table can later move into a sheet and the same
-// binding reaches it with nothing rewritten.
+// It binds to the block, never to where the block sits: it finds `.frontmatter` and works from there, so the table can later move into a sheet and the same binding reaches it with nothing rewritten.
 //
-// The renderer stamps each value cell with the key it stands for, what type the
-// field is, and the bytes its value occupies in the file. The write itself goes
-// back to the host by key: where a field's bytes are, and whether a quote goes
-// back on, is the parser's to know, and a reader of the block in here would be a
-// second answer to the same question. A field change is a normal undoable edit
-// and waits for Save, not the checkbox's write-straight-to-disk: saving is what
-// ends an undo stack, so a field that saved itself could not be taken back --
-// and the history is what takes a removed field back, which is why the cross
-// needs no undo button beside it.
+// The renderer stamps each value cell with the key it stands for, what type the field is, and the bytes its value occupies in the file. The write itself goes back to the host by key: where a field's bytes are, and whether a quote goes back on, is the parser's to know, and a reader of the block in here would be a second answer to the same question. A field change is a normal undoable edit and waits for Save, not the checkbox's write-straight-to-disk: saving is what ends an undo stack, so a field that saved itself could not be taken back -- and the history is what takes a removed field back, which is why the cross needs no undo button beside it.
 
-// The names this app really reads out of a block, offered on the add row rather
-// than typed. Not a list of likely-looking keys: `aliases`, `cssclasses` and
-// `tags` are the three the parser gives a type to without looking at a value,
-// and `leaftext-types` is the note's own word on what its fields are.
+// The names this app really reads out of a block, offered on the add row rather than typed. Not a list of likely-looking keys: `aliases`, `cssclasses` and `tags` are the three the parser gives a type to without looking at a value, and `leaftext-types` is the note's own word on what its fields are.
 const FRONTMATTER_KNOWN_KEYS = ['aliases', 'cssclasses', 'tags', 'leaftext-types'];
 
-// The offered names, as one list on the page rather than one per box. An input
-// cannot hold a datalist of its own, and a fresh one per opened cell would leave
-// a pile of them behind every time a document re-renders.
+// The offered names, as one list on the page rather than one per box. An input cannot hold a datalist of its own, and a fresh one per opened cell would leave a pile of them behind every time a document re-renders.
 const FRONTMATTER_KEY_LIST_ID = 'frontmatterKnownKeys';
 function frontmatterKnownKeyList() {
   if (!document.getElementById(FRONTMATTER_KEY_LIST_ID)) {
@@ -38,9 +23,7 @@ function frontmatterKnownKeyList() {
   return FRONTMATTER_KEY_LIST_ID;
 }
 
-// The field block of the document on screen, or null when the note has none.
-// A note with no block is not a failure to bind -- it is the state the top of
-// the page offers to start one from.
+// The field block of the document on screen, or null when the note has none. A note with no block is not a failure to bind -- it is the state the top of the page offers to start one from.
 function frontmatterBlock(root) {
   return (root || app).querySelector('.frontmatter');
 }
@@ -50,11 +33,7 @@ function sendFieldEdit(key, value) {
   send({ command: 'setField', key, value });
 }
 
-// A single-line box that lives inside a table cell for as long as it is being
-// typed into: Enter commits, Escape abandons, leaving it commits. The vault
-// menu's fields, in the field block. `commit` is given the trimmed text; a
-// falsy return leaves the box open, which is how the add row refuses a blank
-// name without throwing away what was typed beside it.
+// A single-line box that lives inside a table cell for as long as it is being typed into: Enter commits, Escape abandons, leaving it commits. The vault menu's fields, in the field block. `commit` is given the trimmed text; a falsy return leaves the box open, which is how the add row refuses a blank name without throwing away what was typed beside it.
 function frontmatterBox(label, known) {
   const field = document.createElement('input');
   field.type = 'text';
@@ -62,8 +41,7 @@ function frontmatterBox(label, known) {
   field.spellcheck = false;
   field.setAttribute('autocomplete', 'off');
   field.setAttribute('aria-label', label);
-  // The browser's own completion over the drawn box: names offered, nothing new
-  // on the page, and anything else still typeable.
+  // The browser's own completion over the drawn box: names offered, nothing new on the page, and anything else still typeable.
   if (known) field.setAttribute('list', frontmatterKnownKeyList());
   return field;
 }
@@ -93,10 +71,7 @@ function frontmatterInput({ value, label, known, commit, abandon }) {
   return field;
 }
 
-// Put a box over a cell's own text. `write` is handed the new text and says
-// whether to send it; the cell shows it at once either way, because the host's
-// re-render replaces the whole document a moment later and this is only what
-// stands in until it arrives.
+// Put a box over a cell's own text. `write` is handed the new text and says whether to send it; the cell shows it at once either way, because the host's re-render replaces the whole document a moment later and this is only what stands in until it arrives.
 function editFrontmatterCell(cell, label, write, known) {
   if (cell.classList.contains('is-editing')) return;
   const before = cell.textContent;
@@ -121,16 +96,12 @@ function editFrontmatterCell(cell, label, write, known) {
   field.select();
 }
 
-// A date the app can actually read: the one shape a date picker speaks, and the
-// one the parser types as a date. Anything else keeps the text box rather than
-// opening a picker that shows nothing and clears the value on the way out.
+// A date the app can actually read: the one shape a date picker speaks, and the one the parser types as a date. Anything else keeps the text box rather than opening a picker that shows nothing and clears the value on the way out.
 function frontmatterDateValue(text) {
   return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : '';
 }
 
-// A date field: the platform's own picker, in the row. Committing writes the
-// same `YYYY-MM-DD` the file already holds, so nothing about the value's shape
-// changes by being edited.
+// A date field: the platform's own picker, in the row. Committing writes the same `YYYY-MM-DD` the file already holds, so nothing about the value's shape changes by being edited.
 function editFrontmatterDate(cell, key) {
   if (cell.classList.contains('is-editing')) return;
   const before = cell.textContent.trim();
@@ -162,8 +133,7 @@ function editFrontmatterDate(cell, key) {
   field.focus();
 }
 
-// A checkbox field: the box the renderer already drew, with its `disabled` taken
-// off. Same control, now answering — rather than a second one beside it.
+// A checkbox field: the box the renderer already drew, with its `disabled` taken off. Same control, now answering — rather than a second one beside it.
 function bindFrontmatterCheckbox(cell, key) {
   const box = cell.querySelector('input[type="checkbox"]');
   if (!box) return;
@@ -172,9 +142,7 @@ function bindFrontmatterCheckbox(cell, key) {
   box.addEventListener('change', () => sendFieldEdit(key, box.checked ? 'true' : 'false'));
 }
 
-// A list field: one chip an item, each with its own cross, and a `+` that opens
-// a box for the next one. The whole list goes back to the host at once, because
-// how it is written -- inline or a line each -- is the file's own shape to keep.
+// A list field: one chip an item, each with its own cross, and a `+` that opens a box for the next one. The whole list goes back to the host at once, because how it is written -- inline or a line each -- is the file's own shape to keep.
 function bindFrontmatterChips(cell, key) {
   const items = Array.from(cell.querySelectorAll('li')).map((item) => item.textContent);
   const chips = document.createElement('div');
@@ -222,8 +190,7 @@ function bindFrontmatterChips(cell, key) {
   cell.appendChild(chips);
 }
 
-// The cross at the right end of a row. Drawn on every row, shown under the
-// pointer, so the table reads as a table until somebody reaches for it.
+// The cross at the right end of a row. Drawn on every row, shown under the pointer, so the table reads as a table until somebody reaches for it.
 function frontmatterRemoveCell(key) {
   const cell = document.createElement('td');
   cell.className = 'frontmatter-actions';
@@ -241,9 +208,7 @@ function frontmatterRemoveCell(key) {
   return cell;
 }
 
-// The "Add a field" row under the last field, inside the same block. Pressing it
-// opens a name and a value side by side; the field is written when both are
-// filled, so a name typed and abandoned leaves the file alone.
+// The "Add a field" row under the last field, inside the same block. Pressing it opens a name and a value side by side; the field is written when both are filled, so a name typed and abandoned leaves the file alone.
 function frontmatterAddRow(block, onEmpty) {
   const row = document.createElement('tr');
   row.className = 'frontmatter-add';
@@ -259,8 +224,7 @@ function frontmatterAddRow(block, onEmpty) {
   };
   button.addEventListener('click', () => {
     cell.textContent = '';
-    // Two boxes, one editor: a name with no value beside it is not a field yet,
-    // so what settles the row is leaving both of them, not leaving either.
+    // Two boxes, one editor: a name with no value beside it is not a field yet, so what settles the row is leaving both of them, not leaving either.
     const name = frontmatterBox('Name', true);
     const value = frontmatterBox('Value');
     let settled = false;
@@ -270,8 +234,7 @@ function frontmatterAddRow(block, onEmpty) {
       const key = name.value.trim();
       rest();
       if (write && key) sendFieldEdit(key, value.value.trim());
-      // Nothing was written, so a block that only existed to hold this row goes
-      // again and the file is left exactly as it was.
+      // Nothing was written, so a block that only existed to hold this row goes again and the file is left exactly as it was.
       else if (onEmpty) onEmpty();
     };
     const leaving = () => window.setTimeout(() => {
@@ -284,8 +247,7 @@ function frontmatterAddRow(block, onEmpty) {
         event.stopPropagation();
         if (event.key === 'Enter') {
           event.preventDefault();
-          // Enter on a half-filled row moves to the empty half rather than
-          // writing a key with nothing under it.
+          // Enter on a half-filled row moves to the empty half rather than writing a key with nothing under it.
           if (!name.value.trim()) name.focus();
           else if (!value.value.trim()) value.focus();
           else settle(true);
@@ -305,10 +267,7 @@ function frontmatterAddRow(block, onEmpty) {
   return button;
 }
 
-// Whether the gutter's plus, aimed at this gap, starts a field block rather than
-// opening the insert options. Only above everything, and only on a Markdown note
-// that has none: anywhere else it would make metadata out of an insert nobody
-// meant that way.
+// Whether the gutter's plus, aimed at this gap, starts a field block rather than opening the insert options. Only above everything, and only on a Markdown note that has none: anywhere else it would make metadata out of an insert nobody meant that way.
 function frontmatterCanStart(gap) {
   return !!gap
     && !gap.above
@@ -317,10 +276,7 @@ function frontmatterCanStart(gap) {
     && !frontmatterBlock();
 }
 
-// Start a field block on a note with none: an empty one at the top of the page,
-// open on its own add row. Committing writes the fences and the first field
-// together, through the same command every other field write goes through;
-// abandoning takes the block away again and the file never moved.
+// Start a field block on a note with none: an empty one at the top of the page, open on its own add row. Committing writes the fences and the first field together, through the same command every other field write goes through; abandoning takes the block away again and the file never moved.
 function startFrontmatterAtTop() {
   const body = app.querySelector('.document-body');
   if (!body || frontmatterBlock(body)) return;
@@ -332,17 +288,14 @@ function startFrontmatterAtTop() {
   if (button) button.click();
 }
 
-// Bind the field block. A locked document gets none of this: no edit box, no
-// cross, no add row, and the table reads exactly as it did before.
+// Bind the field block. A locked document gets none of this: no edit box, no cross, no add row, and the table reads exactly as it did before.
 function bindFrontmatterFields(root) {
   const block = frontmatterBlock(root);
   if (!block || !readerEditingAllowed()) return;
   block.classList.add('is-editable');
   for (const cell of block.querySelectorAll('td[data-leaf-field]')) {
     const key = cell.dataset.leafField;
-    // Which control to draw comes from the type the parser already worked out;
-    // this never guesses one, and a value the picker cannot read keeps the text
-    // box rather than opening a picker that would clear it.
+    // Which control to draw comes from the type the parser already worked out; this never guesses one, and a value the picker cannot read keeps the text box rather than opening a picker that would clear it.
     const kind = cell.dataset.leafFieldKind;
     if (kind === 'list') {
       bindFrontmatterChips(cell, key);
@@ -356,8 +309,7 @@ function bindFrontmatterFields(root) {
     const row = cell.parentElement;
     const name = row && row.querySelector('th');
     if (name) {
-      // Renaming is one splice over the key's own bytes on the host side, so the
-      // field keeps its value, its quoting and its place in the block.
+      // Renaming is one splice over the key's own bytes on the host side, so the field keeps its value, its quoting and its place in the block.
       name.addEventListener('click', () => editFrontmatterCell(name, `Name of ${key}`, (text) => {
         send({ command: 'renameField', key, to: text });
       }, true));

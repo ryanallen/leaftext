@@ -1,26 +1,15 @@
 // ---------------------------------------------------------------------------
-// The selection toolbar: highlight words in the reading view and what they can
-// become appears over them.
+// The selection toolbar: highlight words in the reading view and what they can become appears over them.
 //
-// The inline buttons work on the DOM of a block that is already a live editor, so
-// bold is a `<strong>` the block's own blur commit serializes into `**` — one path
-// into the buffer, not a second one beside it. The block buttons (text, the two
-// heading sizes, quote) are the exception: a block's KIND is source rather than
-// markup, so those splice the block's range the way Enter and Backspace already do.
+// The inline buttons work on the DOM of a block that is already a live editor, so bold is a `<strong>` the block's own blur commit serializes into `**` — one path into the buffer, not a second one beside it. The block buttons (text, the two heading sizes, quote) are the exception: a block's KIND is source rather than markup, so those splice the block's range the way Enter and Backspace already do.
 //
-// Only WYSIWYG Markdown blocks are offered anything. A raw-source block is showing
-// its own `**` while you edit it, and a bar that wrote a second pair over the
-// selection would be marking up the markup.
+// Only WYSIWYG Markdown blocks are offered anything. A raw-source block is showing its own `**` while you edit it, and a bar that wrote a second pair over the selection would be marking up the markup.
 // ---------------------------------------------------------------------------
 
 // How far above the highlighted line the bar floats, leaving room for its point.
 const SELECTION_TOOLBAR_LIFT = 12;
 
-// The inline formats, in the order the bar shows them. `command` is the browser's
-// own — worth having, because it already knows how to bold half of an italic and
-// how to undo it; the tags it reaches for are normalized afterwards. The rest are
-// wrapped by hand: `code` holds text and nothing else, and a link needs a URL
-// before it can exist.
+// The inline formats, in the order the bar shows them. `command` is the browser's own — worth having, because it already knows how to bold half of an italic and how to undo it; the tags it reaches for are normalized afterwards. The rest are wrapped by hand: `code` holds text and nothing else, and a link needs a URL before it can exist.
 const INLINE_FORMATS = [
   { id: 'bold', label: 'Bold', icon: `<span class="lt-icon lt-icon-bold"></span>`, command: 'bold', tag: 'strong' },
   { id: 'italic', label: 'Italic', icon: `<span class="lt-icon lt-icon-italic"></span>`, command: 'italic', tag: 'em' },
@@ -29,42 +18,32 @@ const INLINE_FORMATS = [
   { id: 'link', label: 'Link', icon: `<span class="lt-icon lt-icon-link"></span>`, tag: 'a' },
 ];
 
-// What the whole block can become, in the order the bar shows them. Each is written
-// by rewriting that block's source from its text.
+// What the whole block can become, in the order the bar shows them. Each is written by rewriting that block's source from its text.
 //
-// Nothing here toggles: a button with nowhere to go grays out, and Text is the way
-// out of a heading. Pressing the size you are on and having the heading come off
-// says the wrong thing.
+// Nothing here toggles: a button with nowhere to go grays out, and Text is the way out of a heading. Pressing the size you are on and having the heading come off says the wrong thing.
 //
-// The H's are a bigger and a smaller, one level per press. Relative rather than fixed
-// levels so all six are reachable, including the `#` a document may hold many of.
+// The H's are a bigger and a smaller, one level per press. Relative rather than fixed levels so all six are reachable, including the `#` a document may hold many of.
 const BLOCK_FORMATS = [
   { id: 'text', label: 'Text', icon: `<span class="lt-icon lt-icon-text"></span>` },
   { id: 'bigger', label: 'Bigger heading', icon: `<span class="lt-icon lt-icon-heading"></span>`, step: -1, cls: 'is-heading-bigger' },
   { id: 'smaller', label: 'Smaller heading', icon: `<span class="lt-icon lt-icon-heading"></span>`, step: 1, cls: 'is-heading-smaller' },
   { id: 'quote', label: 'Quote', icon: `<span class="lt-icon lt-icon-quote"></span>`, quote: true },
 ];
-// Where a paragraph or a quote steps in when made a heading: the ordinary section
-// heading, with `#` one more press of the bigger H away.
+// Where a paragraph or a quote steps in when made a heading: the ordinary section heading, with `#` one more press of the bigger H away.
 const HEADING_ENTRY_LEVEL = 2;
 const BLOCK_FORMAT_KINDS = new Set(['paragraph', 'heading', 'blockquote']);
 
-// Rebuilt with the document, like the block gutter: renderState replaces the
-// reader's markup and everything pointing into it goes with it.
+// Rebuilt with the document, like the block gutter: renderState replaces the reader's markup and everything pointing into it goes with it.
 let selectionToolbar = null;
 let selectionToolbarRow = null;
 let selectionToolbarLinkRow = null;
 let selectionToolbarLinkInput = null;
 let selectionToolbarButtons = new Map();
-// The block the current selection lives in, and the range itself — held because
-// the link box takes the focus, and a selection nobody remembers is one the URL
-// has nothing to attach to.
+// The block the current selection lives in, and the range itself — held because the link box takes the focus, and a selection nobody remembers is one the URL has nothing to attach to.
 let selectionToolbarBlock = null;
 let selectionToolbarRange = null;
 
-// True while the link box is open, so the block underneath is allowed to keep its
-// pending edits: committing it there would re-render the page out from under the
-// selection the URL is for.
+// True while the link box is open, so the block underneath is allowed to keep its pending edits: committing it there would re-render the page out from under the selection the URL is for.
 function selectionToolbarHoldsFocus(node) {
   return !!(selectionToolbar && node && selectionToolbar.contains(node));
 }
@@ -83,13 +62,9 @@ function closeSelectionLinkBox() {
   if (selectionToolbarLinkInput) selectionToolbarLinkInput.value = '';
 }
 
-// The editable block a node sits in, or null. A block mid-source-edit is showing
-// raw text, which the bar has nothing to say about.
+// The editable block a node sits in, or null. A block mid-source-edit is showing raw text, which the bar has nothing to say about.
 //
-// Matched on the class rather than on `contenteditable`: a block is only an editing
-// host once it has been clicked into, and highlighting words in one that has not
-// been is exactly when the bar is wanted. `applyInlineFormat` opens it before it
-// runs a command, since a command needs a host.
+// Matched on the class rather than on `contenteditable`: a block is only an editing host once it has been clicked into, and highlighting words in one that has not been is exactly when the bar is wanted. `applyInlineFormat` opens it before it runs a command, since a command needs a host.
 function selectionEditableBlock(node) {
   const el = node && (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement);
   if (!el || !el.closest) return null;
@@ -113,12 +88,10 @@ function selectionAncestor(tag) {
   return null;
 }
 
-// Show the bar for the selection as it stands, or take it away. Called from
-// selectionchange, so it runs on every caret move and must be cheap and quiet.
+// Show the bar for the selection as it stands, or take it away. Called from selectionchange, so it runs on every caret move and must be cheap and quiet.
 function syncSelectionToolbar() {
   if (!selectionToolbar) return;
-  // The link box owns the selection while it is open — the input's own focus
-  // collapsed it, and reading that back would close the bar mid-typing.
+  // The link box owns the selection while it is open — the input's own focus collapsed it, and reading that back would close the bar mid-typing.
   if (selectionToolbar.classList.contains('is-linking')) return;
   const selection = window.getSelection();
   if (!selection || !selection.rangeCount || selection.isCollapsed) {
@@ -138,9 +111,7 @@ function syncSelectionToolbar() {
   positionSelectionToolbar(range);
 }
 
-// Light the inline buttons the selection already answers to, gray the block button
-// the block already is, and hide the block row where the block is not one of the
-// kinds it rewrites.
+// Light the inline buttons the selection already answers to, gray the block button the block already is, and hide the block row where the block is not one of the kinds it rewrites.
 function markSelectionToolbarState() {
   const kind = selectionToolbarBlock.dataset.blockKind;
   const blockable = BLOCK_FORMAT_KINDS.has(kind);
@@ -157,24 +128,21 @@ function markSelectionToolbarState() {
   selectionToolbar.classList.toggle('has-block-formats', blockable);
 }
 
-// Whether pressing a block button would change anything. False grays it out: nothing
-// is bigger than `#`, nothing smaller than `######`, and Text is already text.
+// Whether pressing a block button would change anything. False grays it out: nothing is bigger than `#`, nothing smaller than `######`, and Text is already text.
 function blockFormatChanges(format, kind, level) {
   if (format.step) return !!steppedHeadingLevel(level, format.step);
   if (format.quote) return kind !== 'blockquote';
   return kind !== 'paragraph';
 }
 
-// The level one press lands on, or 0 where it has nowhere to go. Only the bigger H
-// steps body text in — there is nothing to shrink about a paragraph.
+// The level one press lands on, or 0 where it has nowhere to go. Only the bigger H steps body text in — there is nothing to shrink about a paragraph.
 function steppedHeadingLevel(level, step) {
   if (!level) return step < 0 ? HEADING_ENTRY_LEVEL : 0;
   const next = level + step;
   return next >= 1 && next <= 6 ? next : 0;
 }
 
-// A heading's level, read from the tag the renderer chose — the same place the
-// serializer takes it from. 0 for anything that is not a heading.
+// A heading's level, read from the tag the renderer chose — the same place the serializer takes it from. 0 for anything that is not a heading.
 function blockHeadingLevel(block) {
   return Number(block.tagName.substring(1)) || 0;
 }
@@ -188,8 +156,7 @@ function selectionFormatActive(format) {
   return !!selectionAncestor(format.tag);
 }
 
-// Float the bar over the highlighted words: centered on them, above the first
-// line, and never past the edges of the page it belongs to.
+// Float the bar over the highlighted words: centered on them, above the first line, and never past the edges of the page it belongs to.
 function positionSelectionToolbar(range) {
   const layout = app.querySelector('.reader-layout');
   if (!layout) return;
@@ -202,15 +169,11 @@ function positionSelectionToolbar(range) {
   const left = Math.max(half + 8, Math.min(layoutRect.width - half - 8, wanted));
   selectionToolbar.style.left = left + 'px';
   selectionToolbar.style.top = rect.top - layoutRect.top - SELECTION_TOOLBAR_LIFT + 'px';
-  // The point under the bar tracks the words even where the bar itself had to
-  // stop at the page edge, so it still says which text this is about.
+  // The point under the bar tracks the words even where the bar itself had to stop at the page edge, so it still says which text this is about.
   selectionToolbar.style.setProperty('--selection-arrow', Math.round(wanted - left + half) + 'px');
 }
 
-// Put the remembered selection back and hand the block the focus, so a command
-// runs against the words the bar was opened for. The block is opened for typing
-// first: it may only have been highlighted, and an editing command has nothing to
-// act on without a host.
+// Put the remembered selection back and hand the block the focus, so a command runs against the words the bar was opened for. The block is opened for typing first: it may only have been highlighted, and an editing command has nothing to act on without a host.
 function restoreSelectionForEdit() {
   if (!selectionToolbarBlock || !selectionToolbarRange) return false;
   if (!selectionToolbarBlock.isConnected) return false;
@@ -223,11 +186,7 @@ function restoreSelectionForEdit() {
   return true;
 }
 
-// What the browser's own commands leave behind, in the tags this app's serializer
-// reads. Engines differ on which of `<strike>`, `<s>` or a styled `<span>` they
-// reach for, and a wrapper the serializer doesn't know is formatting that
-// disappears on save — so the shapes are folded back to one set here, at once,
-// while the edit is still only in the page.
+// What the browser's own commands leave behind, in the tags this app's serializer reads. Engines differ on which of `<strike>`, `<s>` or a styled `<span>` they reach for, and a wrapper the serializer doesn't know is formatting that disappears on save — so the shapes are folded back to one set here, at once, while the edit is still only in the page.
 function normalizeInlineFormatting(block) {
   const swap = (el, tag) => {
     const replacement = document.createElement(tag);
@@ -251,8 +210,7 @@ function normalizeInlineFormatting(block) {
   });
 }
 
-// Wrap the selection in `wrapper` and leave it selected, so a second button
-// press lands on the same words.
+// Wrap the selection in `wrapper` and leave it selected, so a second button press lands on the same words.
 function surroundSelection(wrapper, textOnly) {
   const selection = window.getSelection();
   if (!selection || !selection.rangeCount) return;
@@ -303,8 +261,7 @@ function applyInlineFormat(format) {
   syncSelectionToolbarSoon();
 }
 
-// The link button: a URL box, filled in with the link already there if there is
-// one. Enter writes it, an empty box takes the link away, Escape leaves it alone.
+// The link button: a URL box, filled in with the link already there if there is one. Enter writes it, an empty box takes the link away, Escape leaves it alone.
 function openSelectionLinkBox() {
   if (!selectionToolbar || !selectionToolbarLinkInput) return;
   const existing = selectionAncestor('a');
@@ -331,10 +288,7 @@ function commitSelectionLink() {
   syncSelectionToolbarSoon();
 }
 
-// Rewrite the block as another kind. Its text comes back through the same
-// serializer the blur commit uses, stripped of the markers the old kind carried, so
-// switching between kinds never stacks one on top of another — and the button for
-// the kind it already is is disabled, so there is no toggle to reason about.
+// Rewrite the block as another kind. Its text comes back through the same serializer the blur commit uses, stripped of the markers the old kind carried, so switching between kinds never stacks one on top of another — and the button for the kind it already is is disabled, so there is no toggle to reason about.
 function applyBlockFormat(format) {
   const block = selectionToolbarBlock;
   if (!block) return;
@@ -342,13 +296,10 @@ function applyBlockFormat(format) {
   const end = Number(block.dataset.srcEnd);
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   const kind = block.dataset.blockKind;
-  // Recomputed rather than trusted to the disabled button: a level outside 1-6 is not
-  // a heading Markdown can write.
+  // Recomputed rather than trusted to the disabled button: a level outside 1-6 is not a heading Markdown can write.
   const marker = blockFormatMarker(format, kind === 'heading' ? blockHeadingLevel(block) : 0);
   if (marker === null) return;
-  // An empty range is a block that exists only in the page: its words are not in the
-  // buffer for a splice to replace, so its own commit carries the marker. Splicing
-  // from out here writes the marker beside the words and then writes them twice.
+  // An empty range is a block that exists only in the page: its words are not in the buffer for a splice to replace, so its own commit carries the marker. Splicing from out here writes the marker beside the words and then writes them twice.
   if (end === start) {
     if (!block.__commitAs) return;
     hideSelectionToolbar();
@@ -375,17 +326,14 @@ function applyBlockFormat(format) {
   setPendingCaret({ srcStart: start, textOffset: 0 });
 }
 
-// The Markdown a block button puts in front of the text, or null where the press has
-// nowhere to go and nothing should be written.
+// The Markdown a block button puts in front of the text, or null where the press has nowhere to go and nothing should be written.
 function blockFormatMarker(format, level) {
   if (!format.step) return format.quote ? '> ' : '';
   const next = steppedHeadingLevel(level, format.step);
   return next ? '#'.repeat(next) + ' ' : null;
 }
 
-// A block's words with its kind's markers taken off — a heading's `#`s, a quote's
-// `>`s. A quote's blank `>` line becomes the blank line between two paragraphs,
-// which is what it was standing in for.
+// A block's words with its kind's markers taken off — a heading's `#`s, a quote's `>`s. A quote's blank `>` line becomes the blank line between two paragraphs, which is what it was standing in for.
 function blockBodyMarkdown(block) {
   return blockDomToMarkdown(block)
     .split('\n')
@@ -395,8 +343,7 @@ function blockBodyMarkdown(block) {
     .trim();
 }
 
-// Re-read the selection after the DOM under it changed. A tick late on purpose:
-// the browser settles the selection after a command before it is worth asking.
+// Re-read the selection after the DOM under it changed. A tick late on purpose: the browser settles the selection after a command before it is worth asking.
 function syncSelectionToolbarSoon() {
   window.setTimeout(() => {
     if (!selectionToolbar || selectionToolbar.hidden) return;
@@ -411,15 +358,13 @@ function selectionToolbarButton(format, onPress) {
   button.title = format.label;
   button.setAttribute('aria-label', format.label);
   button.innerHTML = format.icon;
-  // Keep the focus (and so the selection) in the block: a button that took it
-  // would have nothing left to format by the time it was pressed.
+  // Keep the focus (and so the selection) in the block: a button that took it would have nothing left to format by the time it was pressed.
   button.addEventListener('mousedown', (event) => event.preventDefault());
   button.addEventListener('click', onPress);
   return button;
 }
 
-// Build the bar for the render that just landed. One bar for the page, moved to
-// whatever is highlighted — see block-controls.js for why not one per block.
+// Build the bar for the render that just landed. One bar for the page, moved to whatever is highlighted — see block-controls.js for why not one per block.
 function bindSelectionToolbar() {
   selectionToolbar = null;
   selectionToolbarRow = null;
@@ -435,9 +380,7 @@ function bindSelectionToolbar() {
   selectionToolbar = document.createElement('div');
   selectionToolbar.className = 'selection-toolbar';
   selectionToolbar.hidden = true;
-  // The point is an element rather than a pseudo because both pseudos are spoken
-  // for: the bar's shadow and its face have to be two stacked layers behind the
-  // buttons. See .selection-toolbar in reading.css.
+  // The point is an element rather than a pseudo because both pseudos are spoken for: the bar's shadow and its face have to be two stacked layers behind the buttons. See .selection-toolbar in reading.css.
   selectionToolbar.innerHTML =
     '<div class="selection-format-row"></div>' +
     '<div class="selection-link-row"><input type="text" class="selection-link-input" spellcheck="false" placeholder="Paste or type a link"></div>' +
@@ -482,9 +425,7 @@ document.addEventListener('selectionchange', () => {
   if (!selectionToolbar) return;
   syncSelectionToolbar();
 });
-// Bold, italic and a link where the hands already are. The browser would do the
-// first two on its own inside a contenteditable, but not through the normalizing
-// the serializer needs, and not with the bar keeping up.
+// Bold, italic and a link where the hands already are. The browser would do the first two on its own inside a contenteditable, but not through the normalizing the serializer needs, and not with the bar keeping up.
 window.addEventListener('keydown', (event) => {
   if (!selectionToolbar || selectionToolbar.hidden || !selectionToolbarBlock) return;
   if (event.key === 'Escape') {

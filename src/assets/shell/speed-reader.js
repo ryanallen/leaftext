@@ -40,8 +40,7 @@ function isSpeedReaderWord(word) {
   }
   return /^\p{L}+(?:['\u2019]\p{L}+)?$/u.test(word);
 }
-// An all-uppercase word (HTML, GFM, JSON) is an acronym read as a single unit,
-// so it is bolded whole rather than split into a lead prefix and a dim tail.
+// An all-uppercase word (HTML, GFM, JSON) is an acronym read as a single unit, so it is bolded whole rather than split into a lead prefix and a dim tail.
 function isSpeedReaderAcronym(word) {
   return /^\p{Lu}+$/u.test(word);
 }
@@ -79,9 +78,7 @@ function appendSpeedReaderCandidate(fragment, token) {
 function isSpeedReaderWordChar(char) {
   return Boolean(char && /[\p{L}\p{N}]/u.test(char));
 }
-// A token is code-like (no lead anchor) only when a digit is fused to it (page2)
-// or a joiner glues it to a word char on its far side (file.md, a@b, x=y). A
-// joiner against whitespace or sentence punctuation is ordinary prose.
+// A token is code-like (no lead anchor) only when a digit is fused to it (page2) or a joiner glues it to a word char on its far side (file.md, a@b, x=y). A joiner against whitespace or sentence punctuation is ordinary prose.
 const SPEED_READER_JOINER = /[:/\\._@#?=&%+~]/;
 function speedReaderTouchesCode(text, start, end) {
   const before = text[start - 1];
@@ -160,24 +157,16 @@ function setSpeedReaderEnabled(enabled) {
   }
 }
 setSpeedReaderEnabled(speedReaderEnabled);
-// Whether the page is showing the graph instead of the document. Not a pane mode
-// and not per-tab: one flag, dropped the moment a document is opened, so there is
-// never a question of which tab the map belonged to.
+// Whether the page is showing the graph instead of the document. Not a pane mode and not per-tab: one flag, dropped the moment a document is opened, so there is never a question of which tab the map belonged to.
 let graphViewOpen = false;
-// Markdown files are badged with the app's own leaf mark. The host inlines the
-// same glyph the header uses, so the row tints it via stroke/fill currentColor
-// rather than shipping a fixed color.
+// Markdown files are badged with the app's own leaf mark. The host inlines the same glyph the header uses, so the row tints it via stroke/fill currentColor rather than shipping a fixed color.
 const LEAF_FILE_ICON = `<span class="lt-icon lt-icon-leaf"></span>`;
 // Sending a vault to GitHub. Inlined the same way the rest are.
 const SYNC_ICON_SVG = `<span class="lt-icon lt-icon-sync"></span>`;
-// What the host last said about each vault's repository, by id. Kept so
-// reopening the panel shows what it knew rather than blanking while git is
-// asked again.
+// What the host last said about each vault's repository, by id. Kept so reopening the panel shows what it knew rather than blanking while git is asked again.
 const vaultGitByVault = new Map();
 
-// A vault's glyph, inlined from the same files the host stamps into the
-// switcher's button, so the button and its menu can never drift apart. Open is
-// the vault you are in; closed is one you are not.
+// A vault's glyph, inlined from the same files the host stamps into the switcher's button, so the button and its menu can never drift apart. Open is the vault you are in; closed is one you are not.
 const CLOUD_ICON_SVG = `<span class="lt-icon lt-icon-cloud"></span>`;
 const PACKAGE_OPEN_ICON_SVG = `<span class="lt-icon lt-icon-package-open"></span>`;
 const PACKAGE_ICON_SVG = `<span class="lt-icon lt-icon-package"></span>`;
@@ -185,21 +174,14 @@ const PACKAGE_ICON_SVG = `<span class="lt-icon lt-icon-package"></span>`;
 const COMPUTER_ICON_SVG = `<span class="lt-icon lt-icon-computer"></span>`;
 // And the plain folder, for the things that really are folders.
 const FOLDER_ICON_SVG = `<span class="lt-icon lt-icon-folder"></span>`;
-// The tick on the switcher's active row, and the mark on New vault…. Inline like
-// the folder glyph so both take the row's color from currentColor, and so every
-// row carries one and the labels line up.
+// The tick on the switcher's active row, and the mark on New vault…. Inline like the folder glyph so both take the row's color from currentColor, and so every row carries one and the labels line up.
 const MENU_CHECK_SVG = '<span class="lt-icon crumb-menu-check lt-icon-check"></span>';
 const MENU_PLUS_SVG = '<span class="lt-icon library-folder-icon lt-icon-new"></span>';
-// The button on a vault row that opens everything you can do to it — the same
-// sliders the app's own Settings wears, because that panel is this vault's
-// settings. Visible on the row, not behind a right-click: a menu you have to
-// guess at is a menu nobody finds.
+// The button on a vault row that opens everything you can do to it — the same sliders the app's own Settings wears, because that panel is this vault's settings. Visible on the row, not behind a right-click: a menu you have to guess at is a menu nobody finds.
 const MENU_SETTINGS_SVG = `<span class="lt-icon lt-icon-settings"></span>`;
 const MENU_TRASH_SVG = '<span class="lt-icon library-folder-icon lt-icon-trash"></span>';
 const BACK_ARROW_SVG = '<span class="lt-icon library-folder-icon lt-icon-back-long"></span>';
-// Vaults. A vault is a folder the app treats as a library root; nothing is
-// written into it, the app just remembers the choice. The host owns the list and
-// seeds it before the first paint. Rows are keyed on id, never on name.
+// Vaults. A vault is a folder the app treats as a library root; nothing is written into it, the app just remembers the choice. The host owns the list and seeds it before the first paint. Rows are keyed on id, never on name.
 const LEAF_VAULTS = (window.__leafVaults && typeof window.__leafVaults === 'object') ? window.__leafVaults : {};
 let leafVaults = Array.isArray(LEAF_VAULTS.vaults) ? LEAF_VAULTS.vaults : [];
 let activeVaultId = Number.isFinite(LEAF_VAULTS.active) ? LEAF_VAULTS.active : 0;
@@ -214,29 +196,21 @@ function libraryRootLabel() {
 }
 // The folder the pane is inside ('' is the root); the breadcrumb is this path.
 let libraryProjectPath = typeof LEAF_SETTINGS.libraryProjectPath === 'string' ? LEAF_SETTINGS.libraryProjectPath : '';
-// Library pane open/close + resize. The closed preference and last open width are
-// host-persisted (window.__leafSettings + setLibraryLayout), like the other
-// settings.
+// Library pane open/close + resize. The closed preference and last open width are host-persisted (window.__leafSettings + setLibraryLayout), like the other settings.
 const SNAP_SHUT = 40;           // drag narrower than this and the pane closes
 const DEFAULT_PANE_WIDTH = 240; // first-run fallback only
 const MIN_READER_WIDTH = 360;   // keep the document column usable as the pane grows
 let libraryUserClosed = LEAF_SETTINGS.libraryClosed === true;
-// Whether the narrow-window sheet is showing. Never persisted: it describes the
-// current view, not a preference, and a window opened wide has no sheet.
+// Whether the narrow-window sheet is showing. Never persisted: it describes the current view, not a preference, and a window opened wide has no sheet.
 let librarySheetOpen = false;
 let libraryWidth = Number.isFinite(LEAF_SETTINGS.libraryWidth) && LEAF_SETTINGS.libraryWidth > 0
   ? LEAF_SETTINGS.libraryWidth
   : DEFAULT_PANE_WIDTH;
-// The pane shows one folder at a time, read off the disk by the host. These are
-// that folder: where it is, the trail down to it, and what is in it. There is no
-// tree here and no index behind it — nothing is known about a folder until it is
-// opened.
+// The pane shows one folder at a time, read off the disk by the host. These are that folder: where it is, the trail down to it, and what is in it. There is no tree here and no index behind it — nothing is known about a folder until it is opened.
 let libraryEntries = [];
 let libraryChain = [];
 let libraryError = null;
-// Full-text search over the library. A non-empty query replaces the tree with
-// ranked results; clearing it restores the tree. The backend echoes the query so
-// a slow response for an old one is dropped.
+// Full-text search over the library. A non-empty query replaces the tree with ranked results; clearing it restores the tree. The backend echoes the query so a slow response for an old one is dropped.
 const SEARCH_DEBOUNCE_MS = 150;
 let librarySearchQuery = '';
 let librarySearchTimer = 0;
@@ -245,30 +219,21 @@ let librarySearchError = null;
 let librarySearchLoading = false;
 // Whether the host cut the list at its cap, so the count can say so.
 let librarySearchTruncated = false;
-// The filter read back in words, and any field name the vault has never set.
-// Shown under the box so a mistyped field is visible instead of silently
-// matching nothing. Empty for a query of plain words, which needs no explaining.
+// The filter read back in words, and any field name the vault has never set. Shown under the box so a mistyped field is visible instead of silently matching nothing. Empty for a query of plain words, which needs no explaining.
 let librarySearchUnderstood = '';
 let librarySearchUnknownFields = [];
-// The vault's field names and the values each holds, pushed once when its text is
-// read. What the completion menu offers; empty until a vault is open.
+// The vault's field names and the values each holds, pushed once when its text is read. What the completion menu offers; empty until a vault is open.
 let filterHintFields = [];
 // What the completion menu is offering under the search box, and which row is picked.
 let filterMenuItems = [];
 let filterMenuIndex = 0;
 // A heading anchor to scroll to once a clicked result's document has rendered.
 let pendingSearchJump = null;
-// The padlocks: whether documents open ready to type into. Saved settings, not
-// a question asked again on every file you open. One per editable view, because
-// typing in the page and typing in the source are two different risks and
-// unlocking one is not consent to the other. Both locked by default.
+// The padlocks: whether documents open ready to type into. Saved settings, not a question asked again on every file you open. One per editable view, because typing in the page and typing in the source are two different risks and unlocking one is not consent to the other. Both locked by default.
 let readingUnlocked = LEAF_SETTINGS.readingUnlocked === true;
 let codeUnlocked = LEAF_SETTINGS.codeUnlocked === true;
 function readerEditingAllowed() {
   return readingUnlocked;
 }
-// Set by the two gestures that mean "leave the map": a search hit, whose whole
-// point is landing on the matching line, and the jump to the source view.
-// Everything else that opens a file -- the pane, a tab, a link, a node on the map
-// -- keeps the view you are in, so changing document does not change how you read.
+// Set by the two gestures that mean "leave the map": a search hit, whose whole point is landing on the matching line, and the jump to the source view. Everything else that opens a file -- the pane, a tab, a link, a node on the map -- keeps the view you are in, so changing document does not change how you read.
 let graphExitPending = false;

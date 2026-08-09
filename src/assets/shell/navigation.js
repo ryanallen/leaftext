@@ -1,5 +1,4 @@
-// The reader's place as a document-intrinsic anchor (heading + block + offset),
-// so it survives a full re-render. Falls back to the top with no document.
+// The reader's place as a document-intrinsic anchor (heading + block + offset), so it survives a full re-render. Falls back to the top with no document.
 function currentScrollAnchor() {
   return captureReaderScrollAnchor() || { section: null, block: 0, offsetY: 0 };
 }

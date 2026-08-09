@@ -1,5 +1,4 @@
-// Position node graphics + redraw edges for the current simulation state, then
-// draw one Pixi frame. Called on every d3 tick and after each interaction.
+// Position node graphics + redraw edges for the current simulation state, then draw one Pixi frame. Called on every d3 tick and after each interaction.
 function renderGraphFrame(scene) {
   const { edgesGfx, colors, hoverNode } = scene;
   edgesGfx.clear();
@@ -22,15 +21,12 @@ function renderGraphFrame(scene) {
   for (const node of scene.nodes) {
     if (typeof node.x === 'number') node.gfx.position.set(node.x, node.y);
   }
-  // Labels keep a fixed on-screen size and stay anchored under their node; this
-  // only moves the labels already chosen visible, it does not re-decide the set.
+  // Labels keep a fixed on-screen size and stay anchored under their node; this only moves the labels already chosen visible, it does not re-decide the set.
   positionGraphLabels(scene);
   scene.app.render();
 }
 
-// One arrowhead on the line into `at`, coming from `from`. Backed off by `at`'s
-// radius *and* its current scale — without the scale the head hides under the
-// active node, the one whose incoming links you most want to read.
+// One arrowhead on the line into `at`, coming from `from`. Backed off by `at`'s radius *and* its current scale — without the scale the head hides under the active node, the one whose incoming links you most want to read.
 function drawGraphArrow(scene, at, from, color, alpha) {
   const dx = at.x - from.x;
   const dy = at.y - from.y;
@@ -39,8 +35,7 @@ function drawGraphArrow(scene, at, from, color, alpha) {
   const ux = dx / distance;
   const uy = dy / distance;
   const clear = graphNodeRadius(at.degree) * (at.gfx ? at.gfx.scale.x : 1) + 1;
-  // Two circles this close leave no line to put a head on; drawing one anyway puts
-  // it inside the node it points at.
+  // Two circles this close leave no line to put a head on; drawing one anyway puts it inside the node it points at.
   if (distance < clear + GRAPH_ARROW_LENGTH) return;
   const tipX = at.x - ux * clear;
   const tipY = at.y - uy * clear;
@@ -54,17 +49,14 @@ function drawGraphArrow(scene, at, from, color, alpha) {
     .fill({ color, alpha });
 }
 
-// Recolor and resize the node dots for the current active/hover state, then let
-// the label pass decide which names to show. Cheap and only called on state
-// changes, not per frame.
+// Recolor and resize the node dots for the current active/hover state, then let the label pass decide which names to show. Cheap and only called on state changes, not per frame.
 function applyGraphStyles() {
   const scene = graphScene;
   if (!scene) return;
   const { colors, hoverNode } = scene;
   const hoverSet = hoverNode ? scene.neighbors.get(hoverNode.path) : null;
   for (const node of scene.nodes) {
-    // A web address rests dimmer than a document, so the documents are what the eye
-    // lands on: the map is of your notes, and the addresses are where they point.
+    // A web address rests dimmer than a document, so the documents are what the eye lands on: the map is of your notes, and the addresses are where they point.
     let color = node.external ? colors.external : colors.node;
     let alpha = 1;
     let scale = 1;
@@ -83,19 +75,14 @@ function applyGraphStyles() {
   renderGraphFrame(scene);
 }
 
-// Re-read the theme tokens into the live scene and repaint, so the open graph
-// recolors when the theme changes (the palette is captured at build time).
+// Re-read the theme tokens into the live scene and repaint, so the open graph recolors when the theme changes (the palette is captured at build time).
 function refreshGraphColors() {
   if (!graphScene) return;
   graphScene.colors = graphColors();
   applyGraphStyles();
 }
 
-// Choose which labels are visible and place them. Active/hovered nodes (and a
-// hover's neighbors) are forced; when settled with no hover, every other node
-// is an ambient candidate walked most-connected-first, each winning a label only
-// if its screen box clears the ones already placed. So the visible set scales
-// with available room, and zooming in surfaces more names.
+// Choose which labels are visible and place them. Active/hovered nodes (and a hover's neighbors) are forced; when settled with no hover, every other node is an ambient candidate walked most-connected-first, each winning a label only if its screen box clears the ones already placed. So the visible set scales with available room, and zooming in surfaces more names.
 function layoutGraphLabels(scene) {
   const { world, colors } = scene;
   const ws = world.scale.x || 1;
@@ -107,9 +94,7 @@ function layoutGraphLabels(scene) {
   const hoverSet = hoverNode ? scene.neighbors.get(hoverNode.path) : null;
   const activeNode = graphActivePath ? scene.nodeByPath.get(graphActivePath) : null;
 
-  // Build the priority-ordered candidate list. `forced` labels always show;
-  // ambient ones must clear the collision test. Nodes without a position yet
-  // (before the first tick) are skipped.
+  // Build the priority-ordered candidate list. `forced` labels always show; ambient ones must clear the collision test. Nodes without a position yet (before the first tick) are skipped.
   const candidates = [];
   const seen = new Set();
   const push = (node, color, forced) => {
@@ -165,8 +150,7 @@ function layoutGraphLabels(scene) {
   positionGraphLabels(scene);
 }
 
-// Measure a label's on-screen width once (labels are a fixed screen size, so the
-// unscaled text width is the screen width) and cache it on the node.
+// Measure a label's on-screen width once (labels are a fixed screen size, so the unscaled text width is the screen width) and cache it on the node.
 function labelScreenWidth(scene, node) {
   if (node.labelWidth == null) {
     scene.measureCtx.font = GRAPH_LABEL_FONT_SIZE + 'px "Noto Sans", sans-serif';
@@ -175,9 +159,7 @@ function labelScreenWidth(scene, node) {
   return node.labelWidth;
 }
 
-// Keep every visible label a constant on-screen size (counter-scaling the world
-// zoom) and anchored a fixed gap under its node. Positions live in world space;
-// the inverse scale cancels the world zoom so the text neither grows nor blurs.
+// Keep every visible label a constant on-screen size (counter-scaling the world zoom) and anchored a fixed gap under its node. Positions live in world space; the inverse scale cancels the world zoom so the text neither grows nor blurs.
 function positionGraphLabels(scene) {
   const inv = 1 / (scene.world.scale.x || 1);
   for (const node of scene.nodes) {
@@ -192,14 +174,11 @@ function setNodeLabel(scene, node, show, color) {
   if (show && !node.labelText) {
     const text = new PIXI.Text({
       text: node.label,
-      // White base so the tint reproduces the target color exactly, the same way
-      // the node dots are drawn white and tinted.
+      // White base so the tint reproduces the target color exactly, the same way the node dots are drawn white and tinted.
       style: { fontFamily: 'Noto Sans, sans-serif', fontSize: GRAPH_LABEL_FONT_SIZE, fill: 0xffffff, align: 'center' },
     });
     text.anchor.set(0.5, 0);
-    // Labels hold a fixed on-screen size (positionGraphLabels counter-scales the
-    // world zoom), so the bitmap never magnifies past its rasterized size — the
-    // display density alone keeps it crisp at every zoom.
+    // Labels hold a fixed on-screen size (positionGraphLabels counter-scales the world zoom), so the bitmap never magnifies past its rasterized size — the display density alone keeps it crisp at every zoom.
     text.resolution = window.devicePixelRatio || 1;
     node.labelText = text;
     scene.labelsLayer.addChild(text);
@@ -210,9 +189,7 @@ function setNodeLabel(scene, node, show, color) {
   }
 }
 
-// Pixi "global" coordinates are logical (CSS) pixels measured from the canvas
-// origin, the same space the world container's position/scale live in — so a
-// global point maps to world space directly, no getBoundingClientRect needed.
+// Pixi "global" coordinates are logical (CSS) pixels measured from the canvas origin, the same space the world container's position/scale live in — so a global point maps to world space directly, no getBoundingClientRect needed.
 function graphGlobalToWorld(scene, gx, gy) {
   return {
     x: (gx - scene.world.position.x) / scene.world.scale.x,
@@ -231,9 +208,7 @@ function startNodeDrag(scene, node, event) {
   scene.sim.alphaTarget(0.3).restart();
 }
 
-// All pointer interaction runs through Pixi's own event graph so background vs.
-// node presses are disambiguated by event.target (deterministic), not listener
-// order. Wheel is the one exception — a DOM event on the canvas.
+// All pointer interaction runs through Pixi's own event graph so background vs. node presses are disambiguated by event.target (deterministic), not listener order. Wheel is the one exception — a DOM event on the canvas.
 function wireGraphPointer(scene) {
   const stage = scene.app.stage;
   stage.eventMode = 'static';
@@ -268,22 +243,15 @@ function wireGraphPointer(scene) {
       const moved = scene.pressGlobal
         && Math.hypot(event.global.x - scene.pressGlobal.x, event.global.y - scene.pressGlobal.y) > 4;
       if (!moved && node.external) {
-        // A web address opens in the browser, and the map stays exactly as it is.
-        // Nothing here replaced the page, so leaving the view would be throwing
-        // away the picture the reader is working through to show them the document
-        // they were already on.
+        // A web address opens in the browser, and the map stays exactly as it is. Nothing here replaced the page, so leaving the view would be throwing away the picture the reader is working through to show them the document they were already on.
         send({ command: 'openExternal', url: node.path });
       } else if (!moved) {
-        // Clicking a document is a change of subject, not a change of view — the
-        // map stays up and redraws around what you opened, the same way opening a
-        // file from the pane does. Reading a map is a loop, and closing it on every
-        // hop ends the loop.
+        // Clicking a document is a change of subject, not a change of view — the map stays up and redraws around what you opened, the same way opening a file from the pane does. Reading a map is a loop, and closing it on every hop ends the loop.
         send({ command: 'openRecent', path: node.path });
       }
     }
     if (scene.panning) {
-      // A pan slid nodes across the viewport edges; re-decide which labels are
-      // on screen (overlaps are translation-invariant, but culling is not).
+      // A pan slid nodes across the viewport edges; re-decide which labels are on screen (overlaps are translation-invariant, but culling is not).
       scene.panning = false;
       scene.panLast = null;
       layoutGraphLabels(scene);
@@ -300,16 +268,13 @@ function wireGraphPointer(scene) {
     const factor = event.deltaY < 0 ? 1.12 : 1 / 1.12;
     scene.autoFit = false;
     graphZoomAt(scene, event.offsetX, event.offsetY, factor);
-    // Zoom changes how far apart the nodes sit on screen, so re-decide which
-    // ambient labels fit before repainting.
+    // Zoom changes how far apart the nodes sit on screen, so re-decide which ambient labels fit before repainting.
     layoutGraphLabels(scene);
     renderGraphFrame(scene);
   }, { passive: false });
 }
 
-// Pixi's `resizeTo` only reacts to window resizes, so a pane-splitter drag
-// (element resize) wouldn't resize or repaint. Observe the canvas ourselves:
-// resize, shift the view by half the delta to keep content centered, repaint.
+// Pixi's `resizeTo` only reacts to window resizes, so a pane-splitter drag (element resize) wouldn't resize or repaint. Observe the canvas ourselves: resize, shift the view by half the delta to keep content centered, repaint.
 function wireGraphResize(scene) {
   const ro = new ResizeObserver(() => {
     const w = readerGraphCanvas.clientWidth;
@@ -321,8 +286,7 @@ function wireGraphResize(scene) {
     scene.lastHeight = h;
     try { scene.app.renderer.resize(w, h); } catch (_) { /* renderer gone */ }
     if (scene.autoFit) {
-      // Still ours to frame, so a wider pane shows more of the map rather than
-      // the same crop with margins.
+      // Still ours to frame, so a wider pane shows more of the map rather than the same crop with margins.
       fitGraphToView(scene);
     } else {
       scene.world.position.x += dx;
@@ -335,8 +299,7 @@ function wireGraphResize(scene) {
   scene.resizeObserver = ro;
 }
 
-// Whether the layout's box is entirely inside the padded view at the camera's
-// current setting — i.e. whether there is anything to follow.
+// Whether the layout's box is entirely inside the padded view at the camera's current setting — i.e. whether there is anything to follow.
 function graphBoundsInView(scene, minX, minY, maxX, maxY) {
   const ws = scene.world.scale.x || 1;
   const ox = scene.world.position.x;
@@ -348,15 +311,9 @@ function graphBoundsInView(scene, minX, minY, maxX, maxY) {
     && oy + maxY * ws <= scene.app.screen.height - pad;
 }
 
-// Frame every node: the tightest zoom that still holds the whole layout, with
-// the bounding box centered. Two documents fill the view; two thousand shrink to
-// fit. Clamped to the same limits the wheel obeys, so a pair of nodes 40px apart
-// stops at 4x rather than filling the screen with two dots.
+// Frame every node: the tightest zoom that still holds the whole layout, with the bounding box centered. Two documents fill the view; two thousand shrink to fit. Clamped to the same limits the wheel obeys, so a pair of nodes 40px apart stops at 4x rather than filling the screen with two dots.
 //
-// `follow` is the settling case: it moves only when the layout has left the frame.
-// A force layout breathes, and refitting on every tick of that puts the pumping on
-// screen. Following what escapes and leaving the rest to the fit at `end` keeps
-// the same guarantee — nothing off screen — without the ride.
+// `follow` is the settling case: it moves only when the layout has left the frame. A force layout breathes, and refitting on every tick of that puts the pumping on screen. Following what escapes and leaving the rest to the fit at `end` keeps the same guarantee — nothing off screen — without the ride.
 function fitGraphToView(scene, follow) {
   if (!scene || !scene.nodes || !scene.nodes.length) return;
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -395,9 +352,7 @@ function graphZoomAt(scene, sx, sy, factor) {
   scene.world.scale.set(next);
 }
 
-// Smoothly pan+zoom so `node` ends centered and zoomed in. The target recomputes
-// each frame from the node's live position, so it lands centered even mid-settle.
-// Cancels any in-flight focus animation so rapid tab clicks don't fight.
+// Smoothly pan+zoom so `node` ends centered and zoomed in. The target recomputes each frame from the node's live position, so it lands centered even mid-settle. Cancels any in-flight focus animation so rapid tab clicks don't fight.
 function focusGraphNode(scene, node) {
   if (!scene || !node || typeof node.x !== 'number') return;
   // A flight to one node is a chosen framing; stop refitting behind it.
@@ -415,9 +370,7 @@ function focusGraphNode(scene, node) {
     // easeInOutCubic
     const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     const scale = startScale + (targetScale - startScale) * e;
-    // Where the world must sit for the node (at its current position) to be
-    // centered on the canvas at this scale; blend from the start position so the
-    // motion eases rather than snapping.
+    // Where the world must sit for the node (at its current position) to be centered on the canvas at this scale; blend from the start position so the motion eases rather than snapping.
     const wantX = width / 2 - node.x * scale;
     const wantY = height / 2 - node.y * scale;
     scene.world.scale.set(scale);
@@ -436,27 +389,17 @@ function focusGraphNode(scene, node) {
   scene.focusRaf = requestAnimationFrame(step);
 }
 
-// Move the highlight to a newly active document. Refetches+rebuilds when the new
-// document means a different picture rather than a different highlight in the same
-// one; otherwise keeps the scene and recolors, flying the camera when `focus`.
-// `forceRefresh` (resync gesture) always rebuilds so a stale graph catches up.
+// Move the highlight to a newly active document. Refetches+rebuilds when the new document means a different picture rather than a different highlight in the same one; otherwise keeps the scene and recolors, flying the camera when `focus`. `forceRefresh` (resync gesture) always rebuilds so a stale graph catches up.
 function graphSetActive(path, focus, forceRefresh) {
   graphActivePath = path || null;
   if (!graphViewOpen) return;
-  // Focus scope's slice is the active document's neighborhood, so changed seeds
-  // (a different document) mean the scene in memory is for the wrong file.
+  // Focus scope's slice is the active document's neighborhood, so changed seeds (a different document) mean the scene in memory is for the wrong file.
   //
-  // With no vault that holds at every size, not just Focus: the map is then of the
-  // open document — its folder and what it links to — so another document is
-  // another map, and one drawn for the file you have left may not even contain the
-  // file you are on. A vault's map is the same picture whichever of its documents
-  // you are reading, which is why the vault case still only refetches for Focus.
+  // With no vault that holds at every size, not just Focus: the map is then of the open document — its folder and what it links to — so another document is another map, and one drawn for the file you have left may not even contain the file you are on. A vault's map is the same picture whichever of its documents you are reading, which is why the vault case still only refetches for Focus.
   const seedChanged =
     (graphScope === 'small' || !activeVaultId) &&
     graphScope + '|' + graphSeeds().join('\n') !== graphSeedKey;
-  // No scene, or the document's node isn't in it (a file added since the scene was
-  // built), or an explicit resync: fetch a fresh slice and fly to the node once it
-  // builds.
+  // No scene, or the document's node isn't in it (a file added since the scene was built), or an explicit resync: fetch a fresh slice and fly to the node once it builds.
   const staleForActive =
     focus && !!graphActivePath && (!graphScene || !graphScene.nodeByPath.has(graphActivePath));
   if (forceRefresh || seedChanged || staleForActive) {

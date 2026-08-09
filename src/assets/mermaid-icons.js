@@ -1,5 +1,4 @@
-// Generated from design/icons.md by `just bundle-icons`. Do not edit.
-// The app's own drawings as an icon set mermaid can draw a box with: `A@{ icon: "leaf:back" }`.
+// Generated from design/icons.md by `just bundle-icons`. Do not edit. The app's own drawings as an icon set mermaid can draw a box with: `A@{ icon: "leaf:back" }`.
 const LEAF_MERMAID_ICON_PREFIX = 'leaf';
 const LEAF_MERMAID_ICONS = {
   prefix: "leaf",

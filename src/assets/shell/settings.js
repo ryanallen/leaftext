@@ -1,8 +1,6 @@
 let currentState = { recent: [], favorites: [], tabs: [], active: null, document: null };
 let navigationState = { canGoBack: false, canGoForward: false };
-// Subtext under the home-screen hero: one of several palm-leaf facts, chosen at
-// random per showing. The chosen one is kept so a re-render shows the same fact
-// rather than re-rolling.
+// Subtext under the home-screen hero: one of several palm-leaf facts, chosen at random per showing. The chosen one is kept so a re-render shows the same fact rather than re-rolling.
 const EMPTY_DESCRIPTIONS = [
   'Open a file and read it in peace. It stays on your device, in plain text you own.',
   'For two thousand years knowledge was incised on palm leaves — talipot and palmyra, dried and smoke-cured. Turn over a new one.',
@@ -19,13 +17,9 @@ function pickEmptyDescription() {
   return EMPTY_DESCRIPTIONS[Math.floor(Math.random() * EMPTY_DESCRIPTIONS.length)];
 }
 let emptyDescription = pickEmptyDescription();
-// UI toggles are persisted by the host, injected as window.__leafSettings before
-// any page script (the app shell's opaque origin can't use localStorage). We seed
-// from them synchronously here and report every change back so it can save them.
+// UI toggles are persisted by the host, injected as window.__leafSettings before any page script (the app shell's opaque origin can't use localStorage). We seed from them synchronously here and report every change back so it can save them.
 const LEAF_SETTINGS = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings : {};
-// The minimap is not a choice any more, so this only ever holds true. It stays a
-// switch because the rail still comes and goes with the document, and everything
-// that draws it asks here.
+// The minimap is not a choice any more, so this only ever holds true. It stays a switch because the rail still comes and goes with the document, and everything that draws it asks here.
 let minimapEnabled = true;
 const minimapListeners = new Set();
 window.leafMinimap = {

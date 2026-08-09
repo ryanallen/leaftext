@@ -23,9 +23,7 @@ function loadMermaid() {
 }
 // A diagram takes the page's colors, over mermaid's own light/dark theme.
 //
-// mermaid variable → the page token it takes its color from. A variable missing
-// from here keeps mermaid's value; check-shell.mjs holds every name in this table
-// to the ones reading.css defines.
+// mermaid variable → the page token it takes its color from. A variable missing from here keeps mermaid's value; check-shell.mjs holds every name in this table to the ones reading.css defines.
 const MERMAID_COLOR_MAP = {
   // The page the diagram is drawn on, and the ink on it.
   background: '--lt-markdown-background',
@@ -34,8 +32,7 @@ const MERMAID_COLOR_MAP = {
   lineColor: '--lt-muted-foreground',
   errorBkgColor: '--lt-danger',
 
-  // Flowcharts. Boxes are surfaces, not brand color: forty brand-colored boxes is
-  // a poster.
+  // Flowcharts. Boxes are surfaces, not brand color: forty brand-colored boxes is a poster.
   mainBkg: '--lt-surface-muted',
   nodeBorder: '--lt-border-strong',
   nodeTextColor: '--lt-markdown-foreground',
@@ -78,8 +75,7 @@ const MERMAID_COLOR_MAP = {
   attributeBackgroundColorOdd: '--lt-surface-muted',
   attributeBackgroundColorEven: '--lt-surface-sunken',
 
-  // Gantt. A bar means something here, so the states are the theme's states:
-  // ordinary, active, done, critical, and today.
+  // Gantt. A bar means something here, so the states are the theme's states: ordinary, active, done, critical, and today.
   sectionBkgColor: '--lt-surface-muted',
   sectionBkgColor2: '--lt-surface-sunken',
   altSectionBkgColor: '--lt-markdown-background',
@@ -95,8 +91,7 @@ const MERMAID_COLOR_MAP = {
   todayLineColor: '--lt-danger',
   gridColor: '--lt-border',
 
-  // Pie. The slices are the categorical scale below; these are the parts around
-  // them.
+  // Pie. The slices are the categorical scale below; these are the parts around them.
   pieTitleTextColor: '--lt-markdown-heading',
   pieLegendTextColor: '--lt-markdown-foreground',
   pieStrokeColor: '--lt-markdown-background',
@@ -134,22 +129,13 @@ const MERMAID_COLOR_MAP = {
   relationLabelColor: '--lt-markdown-foreground',
 };
 
-// The twelve-color categorical scale (mindmap, timeline, kanban, journey, pie,
-// git graph). Every entry is named, because mermaid re-applies what it is handed
-// *after* its own arithmetic: a `cScale` we set survives, a color that only feeds
-// the scale gets darkened out of reach — which is what v0.1.423 shipped.
+// The twelve-color categorical scale (mindmap, timeline, kanban, journey, pie, git graph). Every entry is named, because mermaid re-applies what it is handed *after* its own arithmetic: a `cScale` we set survives, a color that only feeds the scale gets darkened out of reach — which is what v0.1.423 shipped.
 //
-// 150° a step so that neighbors, which is what a timeline puts side by side, land
-// opposite rather than one notch apart; twelve such steps still visit all twelve
-// hues. Entries share a luminance, not a lightness — a yellow and a blue at one
-// lightness are nowhere near one weight, and one weight is what lets one ink read
-// on all twelve. A mindmap needs that: its labels are HTML and take the page's
-// ink whatever `cScaleLabel` says.
+// 150° a step so that neighbors, which is what a timeline puts side by side, land opposite rather than one notch apart; twelve such steps still visit all twelve hues. Entries share a luminance, not a lightness — a yellow and a blue at one lightness are nowhere near one weight, and one weight is what lets one ink read on all twelve. A mindmap needs that: its labels are HTML and take the page's ink whatever `cScaleLabel` says.
 const MERMAID_SCALE_SEED = '--lt-primary';
 const MERMAID_SCALE_STEPS = 12;
 const MERMAID_SCALE_HUE_STEP = 150;
-// Off the page but under the page's ink, and the mirror of that in light mode.
-// Saturated enough that twelve hues stay apart when the primary is nearly gray.
+// Off the page but under the page's ink, and the mirror of that in light mode. Saturated enough that twelve hues stay apart when the primary is nearly gray.
 const MERMAID_SCALE_SHAPE = {
   light: { luminance: 0.45, minSaturation: 0.42, maxSaturation: 0.85 },
   dark: { luminance: 0.12, minSaturation: 0.38, maxSaturation: 0.85 },
@@ -168,8 +154,7 @@ const MERMAID_INK_MAP = {
   quadrantPointTextFill: ['--lt-surface-muted', '--lt-surface-sunken'],
 };
 
-// Every ink a diagram may print in — all theme colors, so a diagram never prints
-// in one the theme does not contain.
+// Every ink a diagram may print in — all theme colors, so a diagram never prints in one the theme does not contain.
 const MERMAID_INK_CANDIDATES = [
   '--lt-markdown-foreground',
   '--lt-markdown-background',
@@ -179,9 +164,7 @@ const MERMAID_INK_CANDIDATES = [
   '--lt-danger-foreground',
 ];
 
-// A bar's state is its color, so each state's text class takes the ink measured
-// against its own bar. Mermaid appends `themeCSS` after its own stylesheet, which
-// is the only way to give one variable four values.
+// A bar's state is its color, so each state's text class takes the ink measured against its own bar. Mermaid appends `themeCSS` after its own stylesheet, which is the only way to give one variable four values.
 const MERMAID_GANTT_STATE_INKS = [
   ['taskText', '--lt-primary'],
   ['activeText', '--lt-accent'],
@@ -192,9 +175,7 @@ const MERMAID_GANTT_STATE_INKS = [
 ];
 const MERMAID_GANTT_SECTIONS = 4;
 
-// The XY chart keeps its colors in a group of its own rather than beside the
-// rest, so it needs its own pass. Its plot palette *is* ours to set: mermaid does
-// no arithmetic on it, unlike the categorical scale.
+// The XY chart keeps its colors in a group of its own rather than beside the rest, so it needs its own pass. Its plot palette *is* ours to set: mermaid does no arithmetic on it, unlike the categorical scale.
 const MERMAID_XYCHART_COLOR_MAP = {
   backgroundColor: '--lt-markdown-background',
   titleColor: '--lt-markdown-heading',
@@ -208,17 +189,14 @@ const MERMAID_XYCHART_COLOR_MAP = {
   yAxisLineColor: '--lt-border-strong',
 };
 
-// What a bar or a line is painted with, in order. Six because a chart with more
-// series than that is past the point where color is what tells them apart.
+// What a bar or a line is painted with, in order. Six because a chart with more series than that is past the point where color is what tells them apart.
 const MERMAID_PLOT_TOKENS = ['--lt-primary', '--lt-accent', '--lt-success', '--lt-warning', '--lt-danger', '--lt-done'];
 
 function themeTokenValue(style, token) {
   return (style.getPropertyValue(token) || '').trim();
 }
 
-// Relative luminance, for deciding which of two inks reads on a color. Hex only:
-// a token that is a gradient, a color function or a name is not something to
-// measure, and the caller falls back rather than guess.
+// Relative luminance, for deciding which of two inks reads on a color. Hex only: a token that is a gradient, a color function or a name is not something to measure, and the caller falls back rather than guess.
 function colorLuminance(color) {
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim());
   if (!hex) return null;
@@ -242,8 +220,7 @@ function colorContrast(a, b) {
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
 }
 
-// The theme ink that reads best on every one of `fills`. The worst fill decides:
-// one ink is only as readable as it is on the poorer surface.
+// The theme ink that reads best on every one of `fills`. The worst fill decides: one ink is only as readable as it is on the poorer surface.
 function inkOn(style, fills) {
   if (!fills.length) return '';
   let best = '';
@@ -281,8 +258,7 @@ function colorChannels(color) {
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
 }
 
-// Hue and saturation only: the scale sets its own lightness, so that is the one
-// part of the seed we throw away.
+// Hue and saturation only: the scale sets its own lightness, so that is the one part of the seed we throw away.
 function colorHueSaturation(channels) {
   const [r, g, b] = channels.map((byte) => byte / 255);
   const high = Math.max(r, g, b);
@@ -326,9 +302,7 @@ function colorAtLuminance(hue, saturation, luminance) {
   return color;
 }
 
-// The categorical scale, seeded from the theme's primary. Empty if the seed is
-// not something we can measure, which leaves mermaid's own palette in place
-// rather than guessing at one.
+// The categorical scale, seeded from the theme's primary. Empty if the seed is not something we can measure, which leaves mermaid's own palette in place rather than guessing at one.
 function mermaidCategoricalScale(style, darkMode) {
   const seed = colorChannels(themeTokenValue(style, MERMAID_SCALE_SEED));
   if (!seed) return [];
@@ -342,10 +316,7 @@ function mermaidCategoricalScale(style, darkMode) {
   return scale;
 }
 
-// C4 paints its relation lines and labels a hardcoded #444444 — 1.5:1 on a dark
-// page, with no theme variable and no class behind it. Nothing else mermaid draws
-// sets `fill` or `stroke` as an attribute to that value, so the attribute is the
-// only handle.
+// C4 paints its relation lines and labels a hardcoded #444444 — 1.5:1 on a dark page, with no theme variable and no class behind it. Nothing else mermaid draws sets `fill` or `stroke` as an attribute to that value, so the attribute is the only handle.
 const MERMAID_C4_RELATION_COLOR = '#444444';
 
 function mermaidC4RelationCss(style) {
@@ -357,8 +328,7 @@ function mermaidC4RelationCss(style) {
   ].join('\n');
 }
 
-// The per-state gantt label colors, as CSS. Mermaid's own gantt rules carry
-// `!important` on the active and done states, so ours have to as well.
+// The per-state gantt label colors, as CSS. Mermaid's own gantt rules carry `!important` on the active and done states, so ours have to as well.
 function mermaidGanttStateCss(style) {
   const rules = [];
   for (const [selector, fillToken] of MERMAID_GANTT_STATE_INKS) {
@@ -373,9 +343,7 @@ function mermaidGanttStateCss(style) {
   return rules.join('\n');
 }
 
-// The theme, as mermaid wants it. A token the page has not defined is left out
-// rather than passed empty — mermaid derives from what it is given, and an empty
-// string is not a color.
+// The theme, as mermaid wants it. A token the page has not defined is left out rather than passed empty — mermaid derives from what it is given, and an empty string is not a color.
 function mermaidThemeVariables() {
   const style = window.getComputedStyle(document.documentElement);
   const variables = { darkMode: document.documentElement.dataset.theme === 'dark' };
@@ -396,10 +364,7 @@ function mermaidThemeVariables() {
   if (plot.length) xyChart.plotColorPalette = plot.join(', ');
   if (Object.keys(xyChart).length) variables.xyChart = xyChart;
 
-  // The scale, and an ink measured on each entry. The git graph and the journey
-  // keep it under their own names and have to be pointed at it — left alone the
-  // one labels branch 1 `white` whatever it lands on, the other bands the chart
-  // midnight blue and magenta in every theme.
+  // The scale, and an ink measured on each entry. The git graph and the journey keep it under their own names and have to be pointed at it — left alone the one labels branch 1 `white` whatever it lands on, the other bands the chart midnight blue and magenta in every theme.
   const scale = mermaidCategoricalScale(style, variables.darkMode);
   scale.forEach((color, index) => {
     variables['cScale' + index] = color;
@@ -413,26 +378,20 @@ function mermaidThemeVariables() {
   if (scale.length) {
     // One variable for all twelve slices, so it is measured against all twelve.
     variables.pieSectionTextColor = inkOn(style, scale);
-    // Mermaid's 0.7 mixes three tenths of the page into every slice, which on a
-    // light page is two pale slices nobody can tell apart.
+    // Mermaid's 0.7 mixes three tenths of the page into every slice, which on a light page is two pale slices nobody can tell apart.
     variables.pieOpacity = '1';
   }
 
   return variables;
 }
 
-// The body font of the theme in force, so diagram labels are set in the same
-// face as the words around them.
+// The body font of the theme in force, so diagram labels are set in the same face as the words around them.
 function mermaidFontFamily() {
   const style = window.getComputedStyle(document.documentElement);
   return themeTokenValue(style, '--reading-font') || "'Noto Sans', sans-serif";
 }
 
-// `htmlLabels` off puts a label in an SVG `<text>` rather than a
-// `<foreignObject>`, which an SVG loaded as an image drops outright. The page
-// keeps the foreign object; anything bound for a picture asks for text. Stated
-// on every call because `mermaid.initialize` merges: a config quiet about it
-// leaves the last answer in place for the next diagram drawn.
+// `htmlLabels` off puts a label in an SVG `<text>` rather than a `<foreignObject>`, which an SVG loaded as an image drops outright. The page keeps the foreign object; anything bound for a picture asks for text. Stated on every call because `mermaid.initialize` merges: a config quiet about it leaves the last answer in place for the next diagram drawn.
 function mermaidRuntimeConfig(options) {
   const htmlLabels = !options || options.htmlLabels !== false;
   const style = window.getComputedStyle(document.documentElement);
@@ -444,13 +403,11 @@ function mermaidRuntimeConfig(options) {
     securityLevel: 'strict',
     htmlLabels,
     flowchart: { htmlLabels },
-    // Appended after mermaid's own stylesheet, so it settles what a variable
-    // cannot: one ink per gantt state, and C4's one hardcoded color.
+    // Appended after mermaid's own stylesheet, so it settles what a variable cannot: one ink per gantt state, and C4's one hardcoded color.
     themeCSS: [mermaidGanttStateCss(style), mermaidC4RelationCss(style)]
       .filter(Boolean)
       .join('\n'),
-    // Mermaid's own light and dark palettes underneath, never `base`: `base`
-    // recomputes the categorical scale and darkens every entry it derives.
+    // Mermaid's own light and dark palettes underneath, never `base`: `base` recomputes the categorical scale and darkens every entry it derives.
     theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default',
     fontFamily,
     themeVariables,
@@ -567,14 +524,10 @@ async function mermaidDrawableSource(source) {
   });
 }
 
-// Rendered-diagram memo: diagram source (+ theme) → finished SVG. Editing
-// re-renders the whole document per commit, resetting diagrams to raw text;
-// unchanged ones restore from here instantly, so only new/edited ones re-render.
+// Rendered-diagram memo: diagram source (+ theme) → finished SVG. Editing re-renders the whole document per commit, resetting diagrams to raw text; unchanged ones restore from here instantly, so only new/edited ones re-render.
 const mermaidRenderCache = new Map();
 const MERMAID_CACHE_CAP = 200;
-// Keyed on the family as well as light or dark: two themes of the same
-// appearance draw the same diagram in different colors, and a key that cannot
-// tell them apart hands back the previous theme's picture.
+// Keyed on the family as well as light or dark: two themes of the same appearance draw the same diagram in different colors, and a key that cannot tell them apart hands back the previous theme's picture.
 function mermaidCacheKey(source) {
   const root = document.documentElement.dataset;
   return (root.themeFamily || '') + '\n' + (root.theme || '') + '\n' + source;
@@ -650,15 +603,13 @@ function drawMermaidDiagrams(candidates) {
   if (!diagrams.length) {
     return;
   }
-  // Nearest the reader first, a few at a time. Sixty diagrams in one batch froze
-  // the window for five seconds, nothing painted until the last was done.
+  // Nearest the reader first, a few at a time. Sixty diagrams in one batch froze the window for five seconds, nothing painted until the last was done.
   diagrams.sort((a, b) => mermaidReaderDistance(a) - mermaidReaderDistance(b));
   mermaidRenderGeneration += 1;
   drawMermaidBatches(diagrams, mermaidRenderGeneration);
 }
 
-// The height it drew to is worth keeping: a box refilled at that height moves nothing on the page.
-// A `click A "…"` box is drawn as a real SVG anchor, and mermaid writes only `xlink:href` — which `documentLinkFor` does not match, so the click was the web view's and it navigated the whole app out of the app. Copying the target onto `href` hands the box to the reader's own link handlers.
+// The height it drew to is worth keeping: a box refilled at that height moves nothing on the page. A `click A "…"` box is drawn as a real SVG anchor, and mermaid writes only `xlink:href` — which `documentLinkFor` does not match, so the click was the web view's and it navigated the whole app out of the app. Copying the target onto `href` hands the box to the reader's own link handlers.
 const MERMAID_XLINK_NS = 'http://www.w3.org/1999/xlink';
 function claimMermaidLinks(diagram) {
   for (const link of diagram.querySelectorAll('a')) {
@@ -773,8 +724,7 @@ function scheduleMermaidPass() {
     drawMermaidDiagrams(queue);
   }, READER_SCROLL_SETTLE_MS);
 }
-// The gesture stopped, so anything held for it can go now. Only when something is
-// actually waiting: a settle with an empty queue has nothing to draw.
+// The gesture stopped, so anything held for it can go now. Only when something is actually waiting: a settle with an empty queue has nothing to draw.
 function readerScrollSettled() {
   if (mermaidWaitingNearby.size || mermaidLeavingView.size) scheduleMermaidPass();
 }
@@ -805,26 +755,19 @@ function mermaidReaderDistance(diagram) {
 
 // Small enough that one slow diagram cannot hold the window.
 const MERMAID_BATCH_SIZE = 3;
-// Which render pass is the current one. A theme switch mid-draw starts another,
-// and the one it interrupted must stop rather than finish painting the old colors
-// over the new.
+// Which render pass is the current one. A theme switch mid-draw starts another, and the one it interrupted must stop rather than finish painting the old colors over the new.
 let mermaidRenderGeneration = 0;
 
 function drawMermaidBatches(diagrams, generation) {
   loadMermaid()
     .then(async (mermaid) => {
-      // A box is only as wide as mermaid measured its label, so measuring in the
-      // fallback face and painting in the theme's takes the last letter off every
-      // one of them. Wait for the faces the page has asked for before measuring.
+      // A box is only as wide as mermaid measured its label, so measuring in the fallback face and painting in the theme's takes the last letter off every one of them. Wait for the faces the page has asked for before measuring.
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
       if (generation !== mermaidRenderGeneration) return;
-      // Re-read every time: the theme in force at this render is what these
-      // diagrams must be drawn in, not the one that was in force at the last.
+      // Re-read every time: the theme in force at this render is what these diagrams must be drawn in, not the one that was in force at the last.
       registerMermaidIcons(mermaid);
       mermaid.initialize(mermaidRuntimeConfig());
-      // The rail mirrors the document, so every batch would rebuild it. One
-      // rebuild for the pass instead; the reader's own re-pin still runs per
-      // batch, which is what holds the reading position as diagrams grow.
+      // The rail mirrors the document, so every batch would rebuild it. One rebuild for the pass instead; the reader's own re-pin still runs per batch, which is what holds the reading position as diagrams grow.
       pauseMinimapPreview();
       try {
         for (let at = 0; at < diagrams.length; at += MERMAID_BATCH_SIZE) {
@@ -855,14 +798,12 @@ function drawMermaidBatches(diagrams, generation) {
             }
             if (diagram.__mermaidSource == null) continue;
             if (mermaidRenderCache.size >= MERMAID_CACHE_CAP) mermaidRenderCache.clear();
-            // Memo first, button second: the cache holds innerHTML, and a button
-            // baked into it would come back on every restore and stack up.
+            // Memo first, button second: the cache holds innerHTML, and a button baked into it would come back on every restore and stack up.
             mermaidRenderCache.set(mermaidCacheKey(diagram.__mermaidSource), diagram.innerHTML);
             finishMermaidDiagram(diagram);
             addMermaidControls(diagram);
           }
-          // Each batch changed the block layout; drop the cached anchor list, and
-          // let whatever else watches the page catch up before the next one.
+          // Each batch changed the block layout; drop the cached anchor list, and let whatever else watches the page catch up before the next one.
           readerAnchorBlocks = null;
           await new Promise((resolve) => window.setTimeout(resolve, 0));
         }
@@ -877,9 +818,7 @@ function drawMermaidBatches(diagrams, generation) {
     });
 }
 
-// A drawn diagram gets its corner controls. The drawing itself is dragged to
-// move it, so the source opens from a button here rather than from a press
-// anywhere on the block — see wireSourceEditable, which stands aside for these.
+// A drawn diagram gets its corner controls. The drawing itself is dragged to move it, so the source opens from a button here rather than from a press anywhere on the block — see wireSourceEditable, which stands aside for these.
 function addMermaidControls(diagram) {
   addMermaidZoomControls(diagram);
   addMermaidEditButtons(diagram);
@@ -907,21 +846,15 @@ function mermaidToolButton(tool, label, icon) {
   return button;
 }
 
-// Zoom is not an editing affordance: a locked document gets it too. Each tooltip
-// names the other way of doing the same thing, because the wheel and the drag
-// have nothing on screen to announce them.
+// Zoom is not an editing affordance: a locked document gets it too. Each tooltip names the other way of doing the same thing, because the wheel and the drag have nothing on screen to announce them.
 const MERMAID_ZOOM_BUTTONS = [
   ['out', 'Zoom out — or Ctrl and the wheel', `<span class="lt-icon lt-icon-zoom-out"></span>`],
   ['fit', 'Whole diagram, back where it started — or double-click it', `<span class="lt-icon lt-icon-fit"></span>`],
   ['in', 'Zoom in — or Ctrl and the wheel. Drag the diagram to move it', `<span class="lt-icon lt-icon-zoom-in"></span>`],
 ];
-// The fourth, on the block in the page only: the overlay it opens carries the
-// three above and its own way out, so a diagram already full screen has nothing
-// to expand into.
+// The fourth, on the block in the page only: the overlay it opens carries the three above and its own way out, so a diagram already full screen has nothing to expand into.
 const MERMAID_FULL_BUTTON = ['full', 'Open it on the whole window', `<span class="lt-icon lt-icon-expand"></span>`];
-// The group the overlay builds too — diagram-view.js asks for the three without
-// the fourth. Its buttons carry no listeners: the click is delegated off `app`,
-// so a group anywhere inside a `pre.mermaid` is answered.
+// The group the overlay builds too — diagram-view.js asks for the three without the fourth. Its buttons carry no listeners: the click is delegated off `app`, so a group anywhere inside a `pre.mermaid` is answered.
 function mermaidZoomGroup(buttons, label) {
   const group = document.createElement('div');
   group.className = 'mermaid-zoom';
@@ -945,28 +878,19 @@ function addMermaidZoomControls(diagram) {
 
 // ---- the drawing inside its box --------------------------------------------
 
-// The block keeps the height it was laid out at and the drawing moves inside it,
-// so leaning into one diagram never shifts the words around it.
+// The block keeps the height it was laid out at and the drawing moves inside it, so leaning into one diagram never shifts the words around it.
 const MERMAID_ZOOM_MIN = 0.5;
 const MERMAID_ZOOM_MAX = 8;
 
-// Held on the block, never as a style on the SVG: the render cache stores the
-// SVG's own markup, and a size baked into that would come back zoomed on every
-// restore.
+// Held on the block, never as a style on the SVG: the render cache stores the SVG's own markup, and a size baked into that would come back zoomed on every restore.
 function mermaidView(diagram) {
   return diagram.__mermaidView || { zoom: 1, x: 0, y: 0 };
 }
 
-// Panning is bounded by the box, not by the drawing's edges: a diagram that fills
-// its box still has to move, because a box taller than the window is read by
-// dragging it up rather than by scrolling the page away from it. This much stays
-// inside, so it can never be pushed out of sight and lost.
+// Panning is bounded by the box, not by the drawing's edges: a diagram that fills its box still has to move, because a box taller than the window is read by dragging it up rather than by scrolling the page away from it. This much stays inside, so it can never be pushed out of sight and lost.
 const MERMAID_PAN_KEEP = 48;
 
-// The drawing as it sits on an untouched page, taken the first time one is moved
-// — the last moment it is still what the page laid out. Zoom counts from here,
-// not from the viewBox: a diagram wider than the column is already drawn shrunk
-// to fit, and that is what "life size" has to mean or Fit would not put it back.
+// The drawing as it sits on an untouched page, taken the first time one is moved — the last moment it is still what the page laid out. Zoom counts from here, not from the viewBox: a diagram wider than the column is already drawn shrunk to fit, and that is what "life size" has to mean or Fit would not put it back.
 function mermaidNatural(diagram, svg) {
   if (!diagram.__mermaidNatural) {
     const drawn = svg.getBoundingClientRect();
@@ -982,10 +906,7 @@ function mermaidNatural(diagram, svg) {
   return diagram.__mermaidNatural;
 }
 
-// The SVG is resized, never scaled: a CSS scale re-lays out the HTML inside
-// mermaid's foreignObject labels against boxes that did not grow with them, and
-// every label loses its last letter. The flowchart sheet sizes its stage the
-// same way, for the same reason.
+// The SVG is resized, never scaled: a CSS scale re-lays out the HTML inside mermaid's foreignObject labels against boxes that did not grow with them, and every label loses its last letter. The flowchart sheet sizes its stage the same way, for the same reason.
 function setMermaidView(diagram, next) {
   // The block's own drawing, not the icons in the corner buttons.
   const svg = diagram.querySelector(':scope > svg');
@@ -1006,8 +927,7 @@ function setMermaidView(diagram, next) {
     resetMermaidView(diagram, svg, natural);
     return;
   }
-  // Out of flow, so the block keeps the height the page gave it however big the
-  // drawing gets.
+  // Out of flow, so the block keeps the height the page gave it however big the drawing gets.
   diagram.classList.add('is-moved');
   diagram.style.setProperty('--mermaid-box-height', natural.boxHeight + 'px');
   diagram.style.setProperty('--mermaid-pan-x', view.x + 'px');
@@ -1030,8 +950,7 @@ function resetMermaidView(diagram, svg, natural) {
   svg.style.maxWidth = natural.maxWidth;
 }
 
-// Zoom about a point, holding whatever sits under it still — otherwise leaning
-// in on one corner walks the thing you were looking at off the box.
+// Zoom about a point, holding whatever sits under it still — otherwise leaning in on one corner walks the thing you were looking at off the box.
 function zoomMermaidAt(diagram, factor, clientX, clientY) {
   const view = mermaidView(diagram);
   const zoom = Math.max(MERMAID_ZOOM_MIN, Math.min(MERMAID_ZOOM_MAX, view.zoom * factor));
@@ -1051,8 +970,7 @@ function mermaidCenterZoom(diagram, factor) {
   zoomMermaidAt(diagram, factor, box.left + box.width / 2, box.top + box.height / 2);
 }
 
-// The drawn diagram under a pointer, or nothing — one swapped for its source is
-// a code block being typed in and answers to none of this.
+// The drawn diagram under a pointer, or nothing — one swapped for its source is a code block being typed in and answers to none of this.
 function mermaidDiagramFor(target) {
   if (!target || !target.closest) return null;
   const diagram = target.closest('pre.mermaid[data-processed="true"]');
@@ -1060,10 +978,7 @@ function mermaidDiagramFor(target) {
   return diagram;
 }
 
-// Delegated, not per-button: a diagram restored from its own rendered HTML (an
-// abandoned source edit does exactly that) brings the markup back without the
-// listeners. The capture pass keeps a press on a control off the block
-// underneath, whose gutter and selection handling would otherwise answer first.
+// Delegated, not per-button: a diagram restored from its own rendered HTML (an abandoned source edit does exactly that) brings the markup back without the listeners. The capture pass keeps a press on a control off the block underneath, whose gutter and selection handling would otherwise answer first.
 let mermaidPan = null;
 if (app) {
   app.addEventListener(
@@ -1080,8 +995,7 @@ if (app) {
     const diagram = mermaidDiagramFor(event.target);
     if (!diagram) return;
     if (event.target.closest('.mermaid-tools, .mermaid-zoom, .diagram-close, a')) return;
-    // Keeps the drag from selecting the labels it passes over. It holds focus
-    // where it was too, so a block being edited elsewhere is closed by hand.
+    // Keeps the drag from selecting the labels it passes over. It holds focus where it was too, so a block being edited elsewhere is closed by hand.
     if (document.activeElement && document.activeElement.isContentEditable) document.activeElement.blur();
     event.preventDefault();
     mermaidPan = { diagram, pointer: event.pointerId, x: event.clientX, y: event.clientY, from: mermaidView(diagram) };
@@ -1103,8 +1017,7 @@ if (app) {
   };
   app.addEventListener('pointerup', endMermaidPan);
   app.addEventListener('pointercancel', endMermaidPan);
-  // Ctrl or Cmd and the wheel, the way every canvas does it — and what a trackpad
-  // pinch arrives as. A plain wheel is left alone so it still scrolls the page.
+  // Ctrl or Cmd and the wheel, the way every canvas does it — and what a trackpad pinch arrives as. A plain wheel is left alone so it still scrolls the page.
   app.addEventListener(
     'wheel',
     (event) => {
@@ -1137,23 +1050,19 @@ if (app) {
     if (tool.dataset.mermaidTool === 'source') startBlockSourceEdit(diagram);
     else openMermaidBlockSheet(diagram);
   });
-  // Double-click puts it back where it started, so there is a way out of a pan
-  // that went too far without reaching for the Fit button.
+  // Double-click puts it back where it started, so there is a way out of a pan that went too far without reaching for the Fit button.
   app.addEventListener('dblclick', (event) => {
     const diagram = mermaidDiagramFor(event.target);
     if (!diagram || event.target.closest('.mermaid-tools, .mermaid-zoom, .diagram-close, a')) return;
     setMermaidView(diagram, { zoom: 1, x: 0, y: 0 });
   });
-  // Otherwise the middle button opens the web view's own scroll-anywhere puck
-  // over a diagram already being dragged with it.
+  // Otherwise the middle button opens the web view's own scroll-anywhere puck over a diagram already being dragged with it.
   app.addEventListener('auxclick', (event) => {
     if (event.button === 1 && mermaidDiagramFor(event.target)) event.preventDefault();
   });
 }
 
-// Draw the diagrams again in the theme that just arrived: an SVG holds its colors
-// as literal values, so recoloring one means drawing it again. One that failed
-// before gets another go — this may be a theme it can be drawn in.
+// Draw the diagrams again in the theme that just arrived: an SVG holds its colors as literal values, so recoloring one means drawing it again. One that failed before gets another go — this may be a theme it can be drawn in.
 function repaintMermaidDiagrams() {
   const diagrams = Array.from(app.querySelectorAll('pre.mermaid:not([data-diagram-stage])'));
   let any = false;
@@ -1169,11 +1078,7 @@ function repaintMermaidDiagrams() {
   return any;
 }
 
-// The backstop for a face that lands after a diagram was drawn anyway. Once per
-// theme — a repaint asks for no new faces, so this cannot chase itself — and
-// only spent on a page that had diagrams to repaint: the app's own faces finish
-// long before a document is open, and burning the one shot there is how every
-// box came to be measured in the fallback and shipped clipped in v0.1.441.
+// The backstop for a face that lands after a diagram was drawn anyway. Once per theme — a repaint asks for no new faces, so this cannot chase itself — and only spent on a page that had diagrams to repaint: the app's own faces finish long before a document is open, and burning the one shot there is how every box came to be measured in the fallback and shipped clipped in v0.1.441.
 let mermaidFontRepaintDone = false;
 function repaintMermaidDiagramsForFonts() {
   if (mermaidFontRepaintDone) return;
@@ -1183,10 +1088,7 @@ if (document.fonts && typeof document.fonts.addEventListener === 'function') {
   document.fonts.addEventListener('loadingdone', repaintMermaidDiagramsForFonts);
 }
 
-// The theme is announced on the root element, by the picker and by the system's
-// own light/dark switch alike — so watching the attribute catches every way it
-// can change without each of them having to know diagrams exist. A new family
-// brings a new font, so the font repaint is armed again with it.
+// The theme is announced on the root element, by the picker and by the system's own light/dark switch alike — so watching the attribute catches every way it can change without each of them having to know diagrams exist. A new family brings a new font, so the font repaint is armed again with it.
 if (typeof MutationObserver === 'function') {
   new MutationObserver(() => {
     mermaidFontRepaintDone = false;
@@ -1199,9 +1101,7 @@ if (typeof MutationObserver === 'function') {
     attributeFilter: ['data-theme', 'data-leaf-theme'],
   });
 }
-// KaTeX (bundled, loaded lazily) renders the .math elements pulldown-cmark emits
-// for $…$ and $$…$$. The raw TeX is the element's text; KaTeX replaces it in
-// place, falling back to that readable text if the runtime can't load.
+// KaTeX (bundled, loaded lazily) renders the .math elements pulldown-cmark emits for $…$ and $$…$$. The raw TeX is the element's text; KaTeX replaces it in place, falling back to that readable text if the runtime can't load.
 function loadKatex() {
   if (window.katex) {
     return Promise.resolve(window.katex);
@@ -1225,9 +1125,7 @@ function loadKatex() {
   });
   return katexLoadPromise;
 }
-// Typeset-math memo: TeX source (plus display mode) → the finished KaTeX
-// markup. Same reasoning as the Mermaid cache: full re-renders on every editing
-// commit re-typeset every formula; unchanged formulas restore instantly.
+// Typeset-math memo: TeX source (plus display mode) → the finished KaTeX markup. Same reasoning as the Mermaid cache: full re-renders on every editing commit re-typeset every formula; unchanged formulas restore instantly.
 const katexRenderCache = new Map();
 const KATEX_CACHE_CAP = 1000;
 function renderMathElements() {
@@ -1269,12 +1167,7 @@ function renderMathElements() {
       console.error(error);
     });
 }
-// Put each body table in a lane of its own, so it can use the reader's width and
-// so the bands that dissolve a sliced column into the page have a box to be painted
-// in — a mask on the table can only take ink away, never lay the dot screen on. The
-// lane belongs to the reader, not the document, so everything that walks the body's
-// blocks sees through it: `attachMarkdownBlockRanges` stamps the table inside, and
-// `unwrapTableLane` in block-controls.js gives the gutter the table it wraps.
+// Put each body table in a lane of its own, so it can use the reader's width and so the bands that dissolve a sliced column into the page have a box to be painted in — a mask on the table can only take ink away, never lay the dot screen on. The lane belongs to the reader, not the document, so everything that walks the body's blocks sees through it: `attachMarkdownBlockRanges` stamps the table inside, and `unwrapTableLane` in block-controls.js gives the gutter the table it wraps.
 function laneWideTables(root = app) {
   const body = root.querySelector('.document-body');
   if (!body) return;
@@ -1308,12 +1201,9 @@ function decorateBlockquoteLines(root = app) {
     paragraph.classList.add('blockquote-lines');
   });
 }
-// Copy ("document duplicate") and check marks, sized by CSS. The button holds
-// both and the .is-copied class swaps which one shows.
+// Copy ("document duplicate") and check marks, sized by CSS. The button holds both and the .is-copied class swaps which one shows.
 const CODE_COPY_ICON = '<span class="lt-icon code-copy-mark code-copy-copy lt-icon-copy"></span><span class="lt-icon code-copy-mark code-copy-check lt-icon-check"></span>';
-// Give every fenced/indented code block (but not Mermaid diagrams) a "copy all"
-// button. Done here in JS, after the sanitized HTML is in the DOM, so the markup
-// the sanitizer sees stays just <pre><code>. The button copies the code verbatim.
+// Give every fenced/indented code block (but not Mermaid diagrams) a "copy all" button. Done here in JS, after the sanitized HTML is in the DOM, so the markup the sanitizer sees stays just <pre><code>. The button copies the code verbatim.
 function decorateCodeBlocks() {
   app.querySelectorAll('.document-body pre:not(.mermaid)').forEach((pre) => {
     if (pre.querySelector(':scope > .code-copy')) return;
@@ -1328,11 +1218,9 @@ function decorateCodeBlocks() {
     pre.appendChild(button);
   });
 }
-// The body blocks the outline counts as "lines". `pre:not(.mermaid)` excludes
-// diagrams, which are one figure however many lines of source drew them.
+// The body blocks the outline counts as "lines". `pre:not(.mermaid)` excludes diagrams, which are one figure however many lines of source drew them.
 const DOCUMENT_LINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre:not(.mermaid), table, details, figure, div[id], a[id]';
-// A list item that is purely a link (or links) is a table-of-contents /
-// navigation entry, not body content, so it doesn't count.
+// A list item that is purely a link (or links) is a table-of-contents / navigation entry, not body content, so it doesn't count.
 function isNavOutlineItem(el) {
   if (el.tagName !== 'LI') return false;
   const text = (el.textContent || '').replace(/\s+/g, '');
@@ -1341,8 +1229,7 @@ function isNavOutlineItem(el) {
   el.querySelectorAll('a').forEach((a) => { linkText += a.textContent || ''; });
   return text === linkText.replace(/\s+/g, '');
 }
-// How long the document is, in body blocks. Counted rather than stamped — the total
-// is all anyone reads, so numbering 50,000 blocks to reach it buys nothing.
+// How long the document is, in body blocks. Counted rather than stamped — the total is all anyone reads, so numbering 50,000 blocks to reach it buys nothing.
 function documentLineCount(body) {
   let lines = 0;
   body.querySelectorAll(DOCUMENT_LINE_SELECTOR).forEach((target) => {
@@ -1354,9 +1241,7 @@ function documentLineCount(body) {
   });
   return lines;
 }
-// Build a collapsed "Outline" from the headings and insert it under the title
-// (mirrors site/outline.js). A DOM pass over the <h1>–<h6>, nesting entries as a
-// bulleted list in a closed <details>. Run before bindDocumentLinks.
+// Build a collapsed "Outline" from the headings and insert it under the title (mirrors site/outline.js). A DOM pass over the <h1>–<h6>, nesting entries as a bulleted list in a closed <details>. Run before bindDocumentLinks.
 function buildDocumentOutline() {
   const body = app.querySelector('.document-body');
   if (!body) return;
@@ -1382,9 +1267,7 @@ function buildDocumentOutline() {
   summaryCount.textContent = `(${formatCount(documentLineCount(body))} lines)`;
   summary.appendChild(summaryCount);
   details.appendChild(summary);
-  // The entry list can be enormous (one <li> per heading), so build it only when
-  // the outline first opens. bindDocumentLinks is delegated, so entry jumps wire
-  // up with no rebinding.
+  // The entry list can be enormous (one <li> per heading), so build it only when the outline first opens. bindDocumentLinks is delegated, so entry jumps wire up with no rebinding.
   details.addEventListener('toggle', () => {
     if (details.open) populateDocumentOutline(details, rest);
   });
@@ -1422,12 +1305,9 @@ function populateDocumentOutline(details, rest) {
   });
   details.appendChild(rootList);
 }
-// The host serves local images over leaf-image://, which arrives as
-// http://leaf-image.local/ where custom protocols are restricted.
+// The host serves local images over leaf-image://, which arrives as http://leaf-image.local/ where custom protocols are restricted.
 const LOCAL_IMAGE_SRC_PREFIXES = ['leaf-image://', 'http://leaf-image.', 'https://leaf-image.'];
-// The web view keeps a decoded image against its URL for the life of the process,
-// so a replaced file would show stale until a restart. A per-render token makes
-// each request a distinct URL.
+// The web view keeps a decoded image against its URL for the life of the process, so a replaced file would show stale until a restart. A per-render token makes each request a distinct URL.
 let localImageEpoch = 0;
 function isLocalImageSrc(src) {
   return LOCAL_IMAGE_SRC_PREFIXES.some((prefix) => src.startsWith(prefix));
@@ -1436,8 +1316,7 @@ function isLocalImageSrc(src) {
 function stampLocalImages(root = app) {
   if (!root) return;
   root.querySelectorAll('img[src]').forEach((img) => {
-    // A missing one is showing our glyph, not its file: put its own source back
-    // first, so this stamp is the re-fetch that finds the file if it has arrived.
+    // A missing one is showing our glyph, not its file: put its own source back first, so this stamp is the re-fetch that finds the file if it has arrived.
     restoreMissingImage(img);
     // getAttribute, not .src: the property is absolute and hides the prefix.
     const src = img.getAttribute('src') || '';
@@ -1447,23 +1326,17 @@ function stampLocalImages(root = app) {
     if (img.getAttribute('src') !== stamped) img.setAttribute('src', stamped);
   });
 }
-// An image changed on disk: re-fetch rather than re-render, so the reader keeps
-// its scroll position.
+// An image changed on disk: re-fetch rather than re-render, so the reader keeps its scroll position.
 window.leafRefreshImages = () => {
   localImageEpoch += 1;
   stampLocalImages();
   scheduleMinimapPreviewUpdate();
 };
-// The broken-image mark is an icon class like every other, painted over a
-// transparent pixel: the element has to stay an <img> so a re-fetch can put the
-// real picture back, and an <img> with no source draws the platform's own broken
-// glyph instead of ours. The mask takes its ink from the rule, so a theme change
-// repaints it with no work here.
+// The broken-image mark is an icon class like every other, painted over a transparent pixel: the element has to stay an <img> so a re-fetch can put the real picture back, and an <img> with no source draws the platform's own broken glyph instead of ours. The mask takes its ink from the rule, so a theme change repaints it with no work here.
 const MISSING_IMAGE_SIZE = 40;
 const TRANSPARENT_PIXEL =
   'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-// Its own source is kept, so a re-fetch once the file appears can go back to it.
-// The alt moves to the tooltip: left on, the platform prints it beside our mark.
+// Its own source is kept, so a re-fetch once the file appears can go back to it. The alt moves to the tooltip: left on, the platform prints it beside our mark.
 function markMissingImage(img) {
   if (!(img instanceof HTMLImageElement) || img.dataset.imageMissing === 'true') return;
   img.dataset.imageMissing = 'true';
@@ -1497,8 +1370,7 @@ function repaintMissingImages() {
     img.src = source;
   });
 }
-// Capture phase, because `error` does not bubble — one listener covers every
-// image, including the ones the page adds later.
+// Capture phase, because `error` does not bubble — one listener covers every image, including the ones the page adds later.
 if (app) {
   app.addEventListener('error', (event) => markMissingImage(event.target), true);
 }
@@ -1506,8 +1378,7 @@ function setCodeCopyLabel(button, label) {
   button.setAttribute('aria-label', label);
   button.title = label;
 }
-// Copy via the async clipboard API, falling back to a hidden textarea +
-// execCommand for webview contexts where the async API is blocked.
+// Copy via the async clipboard API, falling back to a hidden textarea + execCommand for webview contexts where the async API is blocked.
 function copyCodeBlock(button, text) {
   const ok = () => flashCodeCopied(button);
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1516,9 +1387,7 @@ function copyCodeBlock(button, text) {
     ok();
   }
 }
-// The same clipboard pair with nothing to flash — for a right-click item, where the
-// menu has already closed and there is no button left to label. A hoisted
-// declaration on purpose: context-menu.js loads earlier and calls it at event time.
+// The same clipboard pair with nothing to flash — for a right-click item, where the menu has already closed and there is no button left to label. A hoisted declaration on purpose: context-menu.js loads earlier and calls it at event time.
 function copyPlainText(text) {
   if (!text) return;
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1555,18 +1424,14 @@ function flashCodeCopied(button) {
     setCodeCopyLabel(button, 'Copy code');
   }, 1400);
 }
-// What the field block at the top of the document asked for, and what of it did
-// not land. Both ride on `data-leaf-` attributes the renderer stamped on the
-// table: the host cannot call into the page, and this is the one channel the
-// sanitizer passes on any tag, so nothing had to be threaded down the render path.
+// What the field block at the top of the document asked for, and what of it did not land. Both ride on `data-leaf-` attributes the renderer stamped on the table: the host cannot call into the page, and this is the one channel the sanitizer passes on any tag, so nothing had to be threaded down the render path.
 function applyFrontmatterAsks(root) {
   const table = root.querySelector('.frontmatter');
   if (!table) return;
   const body = root.querySelector('.document-body');
   const asked = (table.dataset.leafDocClasses || '').split(/\s+/).filter(Boolean);
   if (body) body.classList.add(...asked);
-  // One growl for the whole block -- a refused line and an unrecognized style
-  // name arrive as one message, not one per name and not two systems.
+  // One growl for the whole block -- a refused line and an unrecognized style name arrive as one message, not one per name and not two systems.
   const unread = table.dataset.leafUnread || '';
   if (unread && window.leafShowNotice) window.leafShowNotice(`Some of this note's fields were not read: ${unread}`);
 }

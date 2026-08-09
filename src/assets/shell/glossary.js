@@ -1,20 +1,16 @@
 // ---- Glossary bottom sheet ------------------------------------------------
-// A glossary link opens the term in a sheet over the current document. The
-// webview can't read the file, so the click asks the host, which reads + renders
-// the glossary and calls window.leafShowGlossary below.
+// A glossary link opens the term in a sheet over the current document. The webview can't read the file, so the click asks the host, which reads + renders the glossary and calls window.leafShowGlossary below.
 const glossarySheet = document.getElementById('glossarySheet');
 const glossaryBackdrop = document.getElementById('glossaryBackdrop');
 const glossarySheetBody = document.getElementById('glossarySheetBody');
 const glossarySheetClose = document.getElementById('glossarySheetClose');
 const glossaryFullLink = document.getElementById('glossaryFullLink');
-// The path part of the last glossary link followed from a document, reused so a
-// glossary-to-glossary jump resolves against the same file the host opened.
+// The path part of the last glossary link followed from a document, reused so a glossary-to-glossary jump resolves against the same file the host opened.
 let glossaryHrefBase = 'GLOSSARY.md';
 let glossaryLastFocus = null;
 function glossaryAnchorFromHref(rawHref) {
   if (!rawHref) return '';
-  // Preferred form: a `glossary:slug` URL with no file path; the host finds the
-  // nearest GLOSSARY.md.
+  // Preferred form: a `glossary:slug` URL with no file path; the host finds the nearest GLOSSARY.md.
   const scheme = /^glossary:(.*)$/i.exec(rawHref);
   if (scheme) {
     let anchor = scheme[1].replace(/^#/, '');
@@ -55,15 +51,13 @@ function onGlossaryKey(event) {
   if (event.key === 'Escape') dismissGlossary();
 }
 function showGlossary() {
-  // Only when it opens: a term followed from inside the sheet calls this again,
-  // and the focus to return to is the document's, not a link about to be replaced.
+  // Only when it opens: a term followed from inside the sheet calls this again, and the focus to return to is the document's, not a link about to be replaced.
   if (glossarySheet.hidden) glossaryLastFocus = document.activeElement;
   glossaryBackdrop.hidden = false;
   glossarySheet.hidden = false;
   requestAnimationFrame(() => {
     glossaryBackdrop.classList.add('open');
-    // Flush again: a sheet parked part-way down by a drag stays there until it
-    // is closed, and the next thing to open it means to be read.
+    // Flush again: a sheet parked part-way down by a drag stays there until it is closed, and the next thing to open it means to be read.
     resetSheetDrag(glossarySheet);
     glossarySheet.classList.add('open');
   });
@@ -85,16 +79,10 @@ function dismissGlossary() {
   setTimeout(hide, 320);
   leafFocusForKeyboard(glossaryLastFocus);
 }
-// A big glossary takes long enough to read and render that a tap can look like
-// it missed, so the sheet goes up on a spinner the moment the link is followed.
-// The page raises it rather than the host: the host can't send a script while it
-// is rendering, so its spinner would arrive after the work it was to cover. The
-// fade-in is delayed (CSS), so a cached lookup never flashes one.
+// A big glossary takes long enough to read and render that a tap can look like it missed, so the sheet goes up on a spinner the moment the link is followed. The page raises it rather than the host: the host can't send a script while it is rendering, so its spinner would arrive after the work it was to cover. The fade-in is delayed (CSS), so a cached lookup never flashes one.
 const GLOSSARY_ANSWER_TIMEOUT_MS = 20000;
 let glossaryWaitTimer = 0;
-// Every openGlossary goes through awaitGlossaryEntry, so an answer arriving with
-// nothing outstanding belongs to a lookup the user dismissed: it must not put the
-// sheet back up on its own.
+// Every openGlossary goes through awaitGlossaryEntry, so an answer arriving with nothing outstanding belongs to a lookup the user dismissed: it must not put the sheet back up on its own.
 const GLOSSARY_FAILED = 'Couldn’t open the glossary.';
 let glossaryWaiting = false;
 function endGlossaryWait() {
@@ -134,8 +122,7 @@ function awaitGlossaryEntry() {
   }, GLOSSARY_ANSWER_TIMEOUT_MS);
   showGlossary();
 }
-// The host looked and came back empty-handed: no glossary file near the
-// document ('missing'), or one it couldn't read.
+// The host looked and came back empty-handed: no glossary file near the document ('missing'), or one it couldn't read.
 window.leafGlossaryFailed = (reason) => {
   if (glossarySheet.hidden) return;
   glossarySheetMessage(reason === 'missing' ? 'No glossary file near this document.' : GLOSSARY_FAILED);
@@ -143,8 +130,7 @@ window.leafGlossaryFailed = (reason) => {
 glossaryBackdrop.addEventListener('click', dismissGlossary);
 glossarySheetClose.addEventListener('click', dismissGlossary);
 makeSheetDraggable(glossarySheet, glossarySheet.querySelector('.leaf-sheet-grip'), dismissGlossary);
-// "Open the full glossary" opens the glossary file as an ordinary document tab,
-// resolved (like the link that opened the sheet) against the active document.
+// "Open the full glossary" opens the glossary file as an ordinary document tab, resolved (like the link that opened the sheet) against the active document.
 glossaryFullLink.addEventListener('click', (event) => {
   event.preventDefault();
   dismissGlossary();
@@ -177,9 +163,7 @@ const linkHoverTipKind = linkHoverTip.querySelector('.link-hover-tip-kind');
 const linkHoverTipDetail = linkHoverTip.querySelector('.link-hover-tip-detail');
 const linkHoverTipLines = linkHoverTip.querySelector('.link-hover-tip-lines');
 const canHoverLinks = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-// A hovered cross-document link shows the target's line count. The webview asks
-// the host (countLines IPC); the host answers via window.leafLineCount. Each hover
-// gets a token so a stale answer is ignored, and answers are cached by href.
+// A hovered cross-document link shows the target's line count. The webview asks the host (countLines IPC); the host answers via window.leafLineCount. Each hover gets a token so a stale answer is ignored, and answers are cached by href.
 let activeHoverToken = 0;
 const lineCountCache = new Map();
 const pendingLineTokens = new Map();
@@ -226,8 +210,7 @@ function positionLinkHoverTip(event) {
   linkHoverTip.style.left = left + 'px';
   linkHoverTip.style.top = top + 'px';
 }
-// The tooltip's detail line. Decodes the percent-encoded href for readability,
-// falling back to the raw href if it isn't valid percent-encoding.
+// The tooltip's detail line. Decodes the percent-encoded href for readability, falling back to the raw href if it isn't valid percent-encoding.
 function hoverDetail(rawHref) {
   try { return decodeURIComponent(rawHref); } catch (e) { return rawHref; }
 }
@@ -260,8 +243,7 @@ function linkHoverInfo(rawHref) {
   if (/^[a-z][a-z0-9+.-]*:/i.test(rawHref)) {
     return { kind: 'App link', detail: hoverDetail(rawHref) };
   }
-  // Any format the app reads, not just Markdown — the host follows all of them in
-  // place, so the hint has to promise the same.
+  // Any format the app reads, not just Markdown — the host follows all of them in place, so the hint has to promise the same.
   if (DOCUMENT_HREF_RE.test(rawHref)) {
     return { kind: 'Another page', detail: hoverDetail(rawHref) };
   }
@@ -314,14 +296,10 @@ if (canHoverLinks) {
   window.addEventListener('blur', hideLinkHoverTip);
   app.addEventListener('scroll', hideLinkHoverTip, true);
 }
-// The parsed glossary document, cached between calls keyed by the exact html the
-// host sent — parsing the (often huge) glossary into a DOM to lift one entry is
-// the dominant cost of opening the sheet. A different glossary reparses once;
-// extractGlossaryEntry only reads/clones, so sharing is safe.
+// The parsed glossary document, cached between calls keyed by the exact html the host sent — parsing the (often huge) glossary into a DOM to lift one entry is the dominant cost of opening the sheet. A different glossary reparses once; extractGlossaryEntry only reads/clones, so sharing is safe.
 let glossaryParsedHtml = null;
 let glossaryParsedRoot = null;
-// Called by the host with the fully rendered glossary document; pull out the
-// requested entry and slide the sheet up.
+// Called by the host with the fully rendered glossary document; pull out the requested entry and slide the sheet up.
 window.leafShowGlossary = (html, anchor) => {
   if (!glossaryWaiting) return; // answer to a lookup the user has since dismissed
   endGlossaryWait();
@@ -341,12 +319,9 @@ window.leafShowGlossary = (html, anchor) => {
   glossarySheetBody.scrollTop = 0;
   showGlossary();
 };
-// One delegated click listener for every document link, bound once — binding each
-// link separately costs a major slice of open time on large documents. Delegation
-// also handles links added later (the async pager) with no rebinding.
+// One delegated click listener for every document link, bound once — binding each link separately costs a major slice of open time on large documents. Delegation also handles links added later (the async pager) with no rebinding.
 let documentLinksBound = false;
-// A link the app itself follows: one inside the document being read. The minimap's
-// clone keeps the class but has its hrefs stripped and takes no pointer events.
+// A link the app itself follows: one inside the document being read. The minimap's clone keeps the class but has its hrefs stripped and takes no pointer events.
 function documentLinkFor(target) {
   const link = target && target.closest ? target.closest('a[href]') : null;
   return link && app.contains(link) && link.closest('.document-body') ? link : null;
@@ -356,18 +331,15 @@ function documentLinkHref(link) {
   const raw = (link.getAttribute('href') || '').trim();
   return typeof link.href === 'string' ? link.href || raw : raw;
 }
-// Hold this and the link opens as a page behind the one you are reading: Cmd on a
-// Mac, where Ctrl is already the right-click, and Ctrl everywhere else.
+// Hold this and the link opens as a page behind the one you are reading: Cmd on a Mac, where Ctrl is already the right-click, and Ctrl everywhere else.
 function newPageModifierHeld(event) {
   return isMacPlatform ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
 }
-// Whether a link has a page in this app to open at all. The hover tip's own test,
-// so what the tip promised and what the gesture does cannot disagree.
+// Whether a link has a page in this app to open at all. The hover tip's own test, so what the tip promised and what the gesture does cannot disagree.
 function isAnotherPageHref(rawHref) {
   return linkHoverKind(rawHref) === 'Another page';
 }
-// What a link is, in the words the hover tip uses. Read by the right-click menu to
-// name Open after where it sends you.
+// What a link is, in the words the hover tip uses. Read by the right-click menu to name Open after where it sends you.
 function linkHoverKind(rawHref) {
   const info = linkHoverInfo((rawHref || '').trim());
   return info ? info.kind : '';
@@ -385,8 +357,7 @@ function bindDocumentLinks() {
     event.preventDefault();
     sendDocumentLink(link, newPageModifierHeld(event));
   });
-  // The middle button raises `auxclick` and never `click`, so this is the only
-  // place it can be seen. Only a link with a page to open answers it.
+  // The middle button raises `auxclick` and never `click`, so this is the only place it can be seen. Only a link with a page to open answers it.
   app.addEventListener('auxclick', (event) => {
     const link = event.button === 1 ? documentLinkFor(event.target) : null;
     if (!link || !isAnotherPageHref(link.getAttribute('href'))) {
@@ -395,8 +366,7 @@ function bindDocumentLinks() {
     event.preventDefault();
     sendDocumentLink(link, true);
   });
-  // The web view's own scroll-anywhere puck opens on mousedown, which is before
-  // the auxclick above — canceling there alone would be too late to stop it.
+  // The web view's own scroll-anywhere puck opens on mousedown, which is before the auxclick above — canceling there alone would be too late to stop it.
   app.addEventListener('mousedown', (event) => {
     const link = event.button === 1 ? documentLinkFor(event.target) : null;
     if (link && isAnotherPageHref(link.getAttribute('href'))) {
@@ -404,9 +374,7 @@ function bindDocumentLinks() {
     }
   });
 }
-// Hand a document link to the host — from a click, or from the right-click menu's
-// own Open. Every click that reaches here is canceled first: a click left
-// uncanceled is the web view's to follow, and the web view is not the app.
+// Hand a document link to the host — from a click, or from the right-click menu's own Open. Every click that reaches here is canceled first: a click left uncanceled is the web view's to follow, and the web view is not the app.
 function sendDocumentLink(link, newPage) {
   const rawHref = link.getAttribute('href') || '';
   if (!rawHref) {
@@ -414,8 +382,7 @@ function sendDocumentLink(link, newPage) {
   }
   const glossaryTerm = glossaryAnchorFromHref(rawHref);
   if (glossaryTerm) {
-    // For a `glossary:` link keep the bare scheme as the base, so term jumps
-    // and "open full glossary" let the host re-resolve the nearest file.
+    // For a `glossary:` link keep the bare scheme as the base, so term jumps and "open full glossary" let the host re-resolve the nearest file.
     glossaryHrefBase = /^glossary:/i.test(rawHref) ? 'glossary:' : rawHref.split('#')[0];
     awaitGlossaryEntry();
     send({ command: 'openGlossary', href: rawHref });

@@ -1,14 +1,8 @@
 // Find inside the open document — one bar over both views.
 //
-// Monaco's own find widget is not in the vendored bundle (see
-// scripts/bundle-monaco.mjs) and our generated theme maps none of its colors, so
-// it would arrive in Monaco's own defaults; two bars behaving differently in two
-// views is also two keyboard paths to learn. So this is one bar, and underneath it
-// the source view uses Monaco's searching (`findMatches`, decorations,
-// `executeEdits`) while the reading view searches the text on the page.
+// Monaco's own find widget is not in the vendored bundle (see scripts/bundle-monaco.mjs) and our generated theme maps none of its colors, so it would arrive in Monaco's own defaults; two bars behaving differently in two views is also two keyboard paths to learn. So this is one bar, and underneath it the source view uses Monaco's searching (`findMatches`, decorations, `executeEdits`) while the reading view searches the text on the page.
 //
-// A replace in the reading view is a source splice on the editBlock path, never a
-// DOM edit: the buffer in Rust is the document, and the page is a picture of it.
+// A replace in the reading view is a source splice on the editBlock path, never a DOM edit: the buffer in Rust is the document, and the page is a picture of it.
 
 const findBar = document.getElementById('findBar');
 const findInput = document.getElementById('findInput');
@@ -24,37 +18,29 @@ const findFlagButtons = {
   scoped: document.getElementById('findInSelection'),
 };
 
-// How Monaco decides where a word ends, for the whole-word toggle. Its own
-// default list, written out because nothing in the bundle exposes it.
+// How Monaco decides where a word ends, for the whole-word toggle. Its own default list, written out because nothing in the bundle exposes it.
 const FIND_WORD_SEPARATORS = '`~!@#$%^&*()-=+[{]}\\|;:\'",.<>/?';
 // The two highlights the stylesheet paints: every match, and the one you are on.
 const FIND_HIGHLIGHT_ALL = 'leaf-find-match';
 const FIND_HIGHLIGHT_CURRENT = 'leaf-find-current';
-// Past this the count is a number nobody reads and drawing every match costs more
-// than the answer is worth. Monaco's own widget stops counting at 999 too.
+// Past this the count is a number nobody reads and drawing every match costs more than the answer is worth. Monaco's own widget stops counting at 999 too.
 const FIND_MATCH_CAP = 999;
 
 let findOpen = false;
 let findFlags = { matchCase: false, wholeWord: false, regex: false, scoped: false };
-// The matches, in document order. Reading view: `{ start, end }` into the
-// flattened page text. Source view: Monaco ranges.
+// The matches, in document order. Reading view: `{ start, end }` into the flattened page text. Source view: Monaco ranges.
 let findMatches = [];
 let findCurrent = -1;
 let findTruncated = false;
 let findInvalidPattern = false;
-// The page's visible text as one string, and the map back to the text nodes it
-// came from — a match found in a string has to become a DOM range before it can be
-// drawn or replaced.
+// The page's visible text as one string, and the map back to the text nodes it came from — a match found in a string has to become a DOM range before it can be drawn or replaced.
 let findFlatText = '';
 let findTextNodes = [];
-// What "find in selection" narrows to: a DOM range in the reading view, a Monaco
-// range in the source view. Captured when the toggle goes on, because focusing the
-// field is what takes the page's selection away.
+// What "find in selection" narrows to: a DOM range in the reading view, a Monaco range in the source view. Captured when the toggle goes on, because focusing the field is what takes the page's selection away.
 let findScopeRange = null;
 let findMonacoScope = null;
 let findMonacoDecorations = null;
-// The document can be re-rendered under an open bar (an edit lands, a live
-// reload), and every range it holds then points at nodes that are gone.
+// The document can be re-rendered under an open bar (an edit lands, a live reload), and every range it holds then points at nodes that are gone.
 let findRenderObserver = null;
 
 function findInSourceView() {
@@ -63,8 +49,7 @@ function findInSourceView() {
 
 // ---- the pattern ----------------------------------------------------------
 
-// One regular expression for the reading view, built from the field and the
-// toggles. A plain query is escaped, so `.` finds a period.
+// One regular expression for the reading view, built from the field and the toggles. A plain query is escaped, so `.` finds a period.
 function findPattern(global) {
   findInvalidPattern = false;
   const query = findInput.value;
@@ -100,8 +85,7 @@ function collectRenderedText() {
   }
 }
 
-// The piece of text holding flat offset `at`. On a boundary either neighbor is the
-// same DOM position, so whichever the search lands on is right.
+// The piece of text holding flat offset `at`. On a boundary either neighbor is the same DOM position, so whichever the search lands on is right.
 function findNodeAt(at) {
   let low = 0;
   let high = findTextNodes.length - 1;
@@ -167,12 +151,7 @@ function clearRenderedHighlights() {
   }
 }
 
-// Draw with the CSS Custom Highlight API: no DOM mutation, so nothing the editing
-// layer measures moves and there is no reflow. Where the web view does not have it
-// (it landed in Safari 17.2), the current match goes into the page's own selection
-// instead — visible everywhere, and still no mutation. Wrapping matches in `<mark>`
-// is the one thing this must not do: `blockDomToMarkdown` would serialize the tags
-// straight back into the file on the next commit.
+// Draw with the CSS Custom Highlight API: no DOM mutation, so nothing the editing layer measures moves and there is no reflow. Where the web view does not have it (it landed in Safari 17.2), the current match goes into the page's own selection instead — visible everywhere, and still no mutation. Wrapping matches in `<mark>` is the one thing this must not do: `blockDomToMarkdown` would serialize the tags straight back into the file on the next commit.
 function paintRenderedMatches() {
   if (!window.CSS || !CSS.highlights || typeof Highlight !== 'function') {
     const match = findMatches[findCurrent];
@@ -196,8 +175,7 @@ function paintRenderedMatches() {
   CSS.highlights.set(FIND_HIGHLIGHT_CURRENT, current);
 }
 
-// Bring the current match into the reader, a third of the way down rather than
-// flush against an edge.
+// Bring the current match into the reader, a third of the way down rather than flush against an edge.
 function revealRenderedMatch() {
   const match = findMatches[findCurrent];
   const range = match ? findRangeFor(match) : null;
@@ -218,8 +196,7 @@ function collectSourceMatches() {
   findInvalidPattern = false;
   const model = monacoEditor.getModel();
   if (!model || !findInput.value) return [];
-  // Monaco answers an unparseable expression with no matches; the bar says which
-  // it is, so a half-typed `(` reads as unfinished rather than as absent.
+  // Monaco answers an unparseable expression with no matches; the bar says which it is, so a half-typed `(` reads as unfinished rather than as absent.
   if (findFlags.regex && !findPattern(false)) return [];
   const found = model.findMatches(
     findInput.value,
@@ -270,8 +247,7 @@ function findCountText() {
   return `${findCurrent + 1} of ${total}`;
 }
 
-// Recompute from the field and the toggles, keeping the cursor on the match
-// nearest where it was so the count does not jump about while a query is typed.
+// Recompute from the field and the toggles, keeping the cursor on the match nearest where it was so the count does not jump about while a query is typed.
 function refreshFind({ keepCurrent = true } = {}) {
   if (!findOpen) return;
   const previous = findMatches[findCurrent] || null;
@@ -306,8 +282,7 @@ function findStep(delta) {
   }
 }
 
-// A short single-line selection is what the field opens with, the way every find
-// bar does: asking for the word just highlighted is the common case.
+// A short single-line selection is what the field opens with, the way every find bar does: asking for the word just highlighted is the common case.
 function findSeedFromSelection() {
   let selected = '';
   if (findInSourceView()) {
@@ -369,8 +344,7 @@ function setFindFlag(name, on) {
   if (button) button.setAttribute('aria-pressed', on ? 'true' : 'false');
 }
 
-// "Find in selection" has to take the selection now: focusing the field is what
-// takes it away.
+// "Find in selection" has to take the selection now: focusing the field is what takes it away.
 function captureFindScope() {
   if (findInSourceView()) {
     const range = monacoEditor.getSelection();
@@ -400,8 +374,7 @@ function toggleFindFlag(name) {
   findStep(0);
 }
 
-// A re-render replaces the page under the bar, so the matches are recomputed
-// rather than trusted.
+// A re-render replaces the page under the bar, so the matches are recomputed rather than trusted.
 function watchFindRender() {
   if (findRenderObserver || typeof MutationObserver !== 'function') return;
   let queued = 0;
@@ -440,9 +413,7 @@ function replaceInSource(all) {
   findStep(0);
 }
 
-// Which editable block each match sits in. Every match is grouped, not only the
-// ones being replaced: a match's number *within its block* is what points at the
-// occurrence to splice, so the ones left alone still have to be counted.
+// Which editable block each match sits in. Every match is grouped, not only the ones being replaced: a match's number *within its block* is what points at the occurrence to splice, so the ones left alone still have to be counted.
 function findRenderedGroups(wanted) {
   const chosen = new Set(wanted);
   const groups = new Map();
@@ -467,10 +438,7 @@ function findRenderedGroups(wanted) {
   return [...groups.values()].filter((group) => group.ranks.length).sort((a, b) => a.start - b.start);
 }
 
-// Rewrite one block's source, replacing the occurrences the page found in it.
-// `null` when the block's source holds fewer than the page shows — formatting
-// split one (`**dh**arma`), so the numbering cannot be trusted and nothing is
-// spliced.
+// Rewrite one block's source, replacing the occurrences the page found in it. `null` when the block's source holds fewer than the page shows — formatting split one (`**dh**arma`), so the numbering cannot be trusted and nothing is spliced.
 function findRewriteBlock(group, replacement) {
   const pattern = findPattern(true);
   if (!pattern) return null;
@@ -536,9 +504,7 @@ function findReplace(all) {
   else replaceInReading(all);
 }
 
-// A cursor on every match: a multiple-cursor edit, which is why it belongs to find
-// rather than sitting beside it. The source view only — the reading view has no
-// cursors to put anywhere.
+// A cursor on every match: a multiple-cursor edit, which is why it belongs to find rather than sitting beside it. The source view only — the reading view has no cursors to put anywhere.
 //
 // The lock is asked before any caret is placed: carets in a read-only editor are cursors every keystroke then growls at, which reads as broken rather than as refused.
 function findSelectAllOccurrences() {
@@ -585,9 +551,7 @@ Object.keys(findFlagButtons).forEach((name) => {
   if (button) button.addEventListener('click', () => toggleFindFlag(name));
 });
 
-// Ctrl+F opens it over whichever view is on screen, Ctrl+H opens it with the
-// replace row down, and Escape closes it from anywhere — including from inside
-// Monaco, which has no find widget of its own to answer either key.
+// Ctrl+F opens it over whichever view is on screen, Ctrl+H opens it with the replace row down, and Escape closes it from anywhere — including from inside Monaco, which has no find widget of its own to answer either key.
 window.addEventListener('keydown', (event) => {
   const key = (event.key || '').toLowerCase();
   if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && (key === 'f' || key === 'h')) {

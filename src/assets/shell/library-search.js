@@ -1,6 +1,4 @@
-// The snippet() markers from the backend are control characters (STX/ETX) that
-// cannot occur in normal Markdown, so we can escape the whole untrusted snippet
-// for the DOM first and only then swap the markers for <mark> tags.
+// The snippet() markers from the backend are control characters (STX/ETX) that cannot occur in normal Markdown, so we can escape the whole untrusted snippet for the DOM first and only then swap the markers for <mark> tags.
 function highlightSnippet(snippet) {
   return escapeText(snippet || '')
     .split('').join('<mark class="library-hit-mark">')
@@ -12,8 +10,7 @@ function searchHitHtml(hit) {
   const anchor = (hit && hit.anchor) || '';
   // The line carries the row to the match itself; the anchor is the fallback.
   const line = (hit && hit.startLine) || 0;
-  // Matched by one of the note's other names: the row still says the file, so the
-  // name that actually matched has to be on it or the row reads as a mystery.
+  // Matched by one of the note's other names: the row still says the file, so the name that actually matched has to be on it or the row reads as a mystery.
   const alias = (hit && hit.alias) || '';
   const also = alias ? `<span class="library-hit-alias">${escapeText(alias)}</span>` : '';
   return `<button type="button" class="library-hit" data-open-path="${escapeAttr(path)}" data-anchor="${escapeAttr(anchor)}" data-line="${escapeAttr(String(line))}" title="${escapeAttr(path)}"><span class="library-hit-title">${escapeText(stripDocumentExt(title) || title)}${also}</span><span class="library-hit-snippet">${highlightSnippet(hit && hit.snippet)}</span></button>`;
@@ -24,19 +21,15 @@ function bindSearchHits() {
       const path = button.dataset.openPath;
       const anchor = button.dataset.anchor || '';
       const line = Number(button.dataset.line) || 0;
-      // Open (or focus) the file, then scroll to the match once it renders — to
-      // the line it is on, or the heading above it if the line cannot be placed.
+      // Open (or focus) the file, then scroll to the match once it renders — to the line it is on, or the heading above it if the line cannot be placed.
       pendingSearchJump = anchor || line ? { path, anchor, line } : null;
-      // A hit is a place in the text, so it is worth leaving the map for; the
-      // anchor it carries has nothing to scroll to on a canvas.
+      // A hit is a place in the text, so it is worth leaving the map for; the anchor it carries has nothing to scroll to on a canvas.
       graphExitPending = true;
       send({ command: 'openRecent', path });
     });
   });
 }
-// Swap between the tree and the search results. A non-empty query shows the
-// results pane (loading, error, no-results, or the ranked hits); an empty query
-// puts the file list back exactly as it was.
+// Swap between the tree and the search results. A non-empty query shows the results pane (loading, error, no-results, or the ranked hits); an empty query puts the file list back exactly as it was.
 function renderLibrarySearch() {
   const active = !!librarySearchQuery;
   librarySearchResults.hidden = !active;
@@ -60,9 +53,7 @@ function renderLibrarySearch() {
     librarySearchResults.innerHTML = note + `<p class="library-empty">No matches.</p>`;
     return;
   }
-  // A row is a match and one file can hold three, so a cut list says what it was
-  // cut to in files, counted off the rows rather than kept as a second copy of the
-  // host's cap.
+  // A row is a match and one file can hold three, so a cut list says what it was cut to in files, counted off the rows rather than kept as a second copy of the host's cap.
   const files = new Set(hits.map((hit) => (hit && hit.absPath) || '')).size;
   const count = librarySearchTruncated
     ? `${formatCount(hits.length)} results in the first ${formatCount(files)} files`
@@ -71,10 +62,7 @@ function renderLibrarySearch() {
   librarySearchResults.innerHTML = note + countLine + hits.map(searchHitHtml).join('');
   bindSearchHits();
 }
-// What the box made of what was typed. A plain word query says nothing — it would
-// only repeat the field back — so this appears the moment there is syntax in it,
-// and names a field the vault has never set rather than leaving an empty list to
-// be read as "nothing matches".
+// What the box made of what was typed. A plain word query says nothing — it would only repeat the field back — so this appears the moment there is syntax in it, and names a field the vault has never set rather than leaving an empty list to be read as "nothing matches".
 function searchNoteHtml() {
   const parts = [];
   if (librarySearchUnderstood) {
@@ -105,8 +93,7 @@ function runLibrarySearch(value) {
   renderLibrarySearch();
   send({ command: 'search', query, today: localDateStamp() });
 }
-// The reader's own date, so `due:<friday` means their Friday. The host cannot
-// ask the machine this without another crate, and the page has it for free.
+// The reader's own date, so `due:<friday` means their Friday. The host cannot ask the machine this without another crate, and the page has it for free.
 function localDateStamp() {
   const now = new Date();
   const pad = (part) => String(part).padStart(2, '0');
@@ -117,8 +104,7 @@ librarySearch.addEventListener('input', () => {
   if (librarySearchTimer) clearTimeout(librarySearchTimer);
   librarySearchTimer = window.setTimeout(() => runLibrarySearch(value), SEARCH_DEBOUNCE_MS);
 });
-// The completion menu takes the arrows, Enter and the first Escape; only then does
-// Escape clear the field and return to the tree.
+// The completion menu takes the arrows, Enter and the first Escape; only then does Escape clear the field and return to the tree.
 librarySearch.addEventListener('keydown', (event) => {
   if (filterMenuKeydown(event)) return;
   if (event.key === 'Escape' && librarySearch.value) {
@@ -147,9 +133,7 @@ window.leafSetSearchResults = (payload) => {
   }
   renderLibrarySearch();
 };
-// What the box can offer as you type: the vault's own field names and the
-// values each is known to hold, plus the three built-in names that are not
-// frontmatter at all. Pushed once per vault read, so a keystroke costs nothing.
+// What the box can offer as you type: the vault's own field names and the values each is known to hold, plus the three built-in names that are not frontmatter at all. Pushed once per vault read, so a keystroke costs nothing.
 window.leafSetFilterHints = (payload) => {
   const data = payload || {};
   filterHintFields = Array.isArray(data.fields) ? data.fields : [];
@@ -165,8 +149,7 @@ function filterTokenAt() {
   while (end < text.length && !/\s/.test(text[end])) end += 1;
   return { text: text.slice(start, end), start, end };
 }
-// The names a filter can use that are not somebody's frontmatter, with what each
-// one holds. `ext:` reads the one table of formats rather than a second list.
+// The names a filter can use that are not somebody's frontmatter, with what each one holds. `ext:` reads the one table of formats rather than a second list.
 function filterBuiltinNames() {
   return [
     { name: 'in', values: [] },
@@ -174,9 +157,7 @@ function filterBuiltinNames() {
     { name: 'task', values: ['open', 'done'] },
   ];
 }
-// What to offer for the token being typed: a value when the token already names a
-// field, a field name otherwise. Capped, because a menu longer than the pane is a
-// list nobody reads.
+// What to offer for the token being typed: a value when the token already names a field, a field name otherwise. Capped, because a menu longer than the pane is a list nobody reads.
 function filterSuggestions(token) {
   const FILTER_MENU_CAP = 8;
   const bare = token.replace(/^-/, '');
@@ -253,8 +234,7 @@ function applyFilterPick(index) {
   // Runs the filter, and brings the menu back for the value a picked field wants next.
   input.dispatchEvent(new Event('input'));
 }
-// Arrow keys walk the menu, Enter takes one, Escape closes it without touching the
-// box — Escape only clears the field when there is no menu to dismiss first.
+// Arrow keys walk the menu, Enter takes one, Escape closes it without touching the box — Escape only clears the field when there is no menu to dismiss first.
 function filterMenuKeydown(event) {
   if (!filterMenuItems.length) return false;
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {

@@ -1,6 +1,4 @@
-// Run a blocking view render. The real stall on a big payload is the render
-// itself, so a heavy payload pops the spinner and yields two frames — one for
-// rAF callbacks, one so the compositor actually paints it — before blocking.
+// Run a blocking view render. The real stall on a big payload is the render itself, so a heavy payload pops the spinner and yields two frames — one for rAF callbacks, one so the compositor actually paints it — before blocking.
 function runViewRender(payload, render) {
   const token = ++readerRenderToken;
   const run = () => {
@@ -17,39 +15,27 @@ function runViewRender(payload, render) {
 }
 window.leafSetState = (state) => {
   currentState = state || { recent: [], favorites: [], tabs: [], active: null, document: null };
-  // Only the gestures that meant "leave the map" close it. Opening a file from
-  // the pane while reading the map is a change of subject, not a change of
-  // view — the graph stays up and moves its highlight to what you opened.
+  // Only the gestures that meant "leave the map" close it. Opening a file from the pane while reading the map is a change of subject, not a change of view — the graph stays up and moves its highlight to what you opened.
   if (graphExitPending) {
     graphExitPending = false;
     closeGraphView();
   }
   if (!currentState.document) {
-    // No document, no views. The three of them are three ways of showing one
-    // thing, and the home screen is not that thing — which is why the bar hides
-    // here. Without this, closing the last tab leaves the map on screen with
-    // nothing left to leave it by.
+    // No document, no views. The three of them are three ways of showing one thing, and the home screen is not that thing — which is why the bar hides here. Without this, closing the last tab leaves the map on screen with nothing left to leave it by.
     closeGraphView();
     emptyDescription = pickEmptyDescription();
   }
   runViewRender(currentState.document && currentState.document.html, () => {
     resetReaderScrollOnNextRender = true;
     renderState();
-    // Opening a file lands on it; the home screen (no active tab) clears the
-    // highlight and leaves the Project/Tree position as the user last saved it.
-    // Fly the graph to it only when the active document actually changed, so a
-    // plain state refresh of the same file doesn't yank a panned-away view back.
+    // Opening a file lands on it; the home screen (no active tab) clears the highlight and leaves the Project/Tree position as the user last saved it. Fly the graph to it only when the active document actually changed, so a plain state refresh of the same file doesn't yank a panned-away view back.
     const openedPath = activeDocumentPath();
     followFileInLibrary(openedPath, !!openedPath && openedPath !== librarySelectedPath);
-    // A search result was clicked: once its document is the active one, jump to the
-    // matching heading. One-shot — cleared whether or not it applied this render.
+    // A search result was clicked: once its document is the active one, jump to the matching heading. One-shot — cleared whether or not it applied this render.
     if (pendingSearchJump) {
       const jump = pendingSearchJump;
       pendingSearchJump = null;
-      // Land on the line the match is on, not the heading above it — a hit near
-      // the foot of a long section used to open at the top of that section. The
-      // heading is the fallback, for a document whose source the page does not
-      // hold (only Markdown carries block ranges).
+      // Land on the line the match is on, not the heading above it — a hit near the foot of a long section used to open at the top of that section. The heading is the fallback, for a document whose source the page does not hold (only Markdown carries block ranges).
       const landed =
         activeDocumentPath() === jump.path &&
         jump.line > 1 &&
@@ -61,11 +47,9 @@ window.leafSetState = (state) => {
     }
   });
 };
-// Re-render the active document after a live reload without scrolling to the top:
-// capture the position, re-render, restore it (clamped if the document shrank).
+// Re-render the active document after a live reload without scrolling to the top: capture the position, re-render, restore it (clamped if the document shrank).
 window.leafReloadDocument = (state) => {
-  // A source-block commit leaves an above-edit anchor; prefer it over the
-  // top-visible capture, which would target the momentarily zero-height block.
+  // A source-block commit leaves an above-edit anchor; prefer it over the top-visible capture, which would target the momentarily zero-height block.
   const anchor = pendingEditAnchor || captureReaderScrollAnchor();
   pendingEditAnchor = null;
   currentState = state || currentState || { recent: [], favorites: [], tabs: [], active: null, document: null };
@@ -80,14 +64,10 @@ window.leafReloadDocument = (state) => {
     });
   });
 };
-// Re-render the document the page already has, staying where the reader is. For
-// the page's own re-renders — the reading padlock — where the text did not change
-// and the only reason to rebuild is that the blocks bind differently.
-// renderState() replaces the document body, and the scroll goes with it.
+// Re-render the document the page already has, staying where the reader is. For the page's own re-renders — the reading padlock — where the text did not change and the only reason to rebuild is that the blocks bind differently. renderState() replaces the document body, and the scroll goes with it.
 function renderStateKeepingPlace() {
   const anchor = captureReaderScrollAnchor();
-  // Nothing on screen to hold onto — a document still arriving. Let the render
-  // land wherever it was already going to.
+  // Nothing on screen to hold onto — a document still arriving. Let the render land wherever it was already going to.
   if (!anchor) {
     renderState();
     return;
@@ -95,8 +75,7 @@ function renderStateKeepingPlace() {
   resetReaderScrollOnNextRender = false;
   renderState();
   readerScrollAnchor = anchor;
-  // Restored before the paint, so the toggle never flashes at the top for a
-  // frame, and again next frame once the fresh document has settled.
+  // Restored before the paint, so the toggle never flashes at the top for a frame, and again next frame once the fresh document has settled.
   restoreReaderScrollAnchor(anchor);
   updateMinimapViewport();
   window.requestAnimationFrame(() => {
@@ -105,9 +84,7 @@ function renderStateKeepingPlace() {
     updateMinimapViewport();
   });
 }
-// Switch to another tab and land where it was last left. `anchor` is a content
-// anchor that survives the re-render, null the first time (starts at the top).
-// Skips the reset-to-top that leafSetState runs so a tab click never jumps up.
+// Switch to another tab and land where it was last left. `anchor` is a content anchor that survives the re-render, null the first time (starts at the top). Skips the reset-to-top that leafSetState runs so a tab click never jumps up.
 window.leafSwitchTab = (state, anchor) => {
   currentState = state || { recent: [], favorites: [], tabs: [], active: null, document: null };
   if (!currentState.document) {
@@ -116,8 +93,7 @@ window.leafSwitchTab = (state, anchor) => {
   runViewRender(currentState.document && currentState.document.html, () => {
     resetReaderScrollOnNextRender = false;
     renderState();
-    // Switching to a tab is "going to" that file: reveal and select it, and in
-    // graph mode fly to its node when the switch changed the active document.
+    // Switching to a tab is "going to" that file: reveal and select it, and in graph mode fly to its node when the switch changed the active document.
     const switchedPath = activeDocumentPath();
     followFileInLibrary(switchedPath, !!switchedPath && switchedPath !== librarySelectedPath);
     if (!anchor) {
@@ -125,12 +101,10 @@ window.leafSwitchTab = (state, anchor) => {
       return;
     }
     readerScrollAnchor = anchor;
-    // Restore synchronously, before the browser paints the freshly rendered
-    // document, so switching tabs never flashes at the top for a frame.
+    // Restore synchronously, before the browser paints the freshly rendered document, so switching tabs never flashes at the top for a frame.
     restoreReaderScrollAnchor(anchor);
     updateMinimapViewport();
-    // Re-apply after layout settles; renderState's reflow observer keeps re-pinning
-    // the anchor as images above it decode and grow, so the landing doesn't drift.
+    // Re-apply after layout settles; renderState's reflow observer keeps re-pinning the anchor as images above it decode and grow, so the landing doesn't drift.
     window.requestAnimationFrame(() => {
       restoreReaderScrollAnchor(anchor);
       readerScrollAnchor = captureReaderScrollAnchor();
@@ -138,10 +112,7 @@ window.leafSwitchTab = (state, anchor) => {
     });
   });
 };
-// Tabs and recents with no document attached. A tab opened straight into the
-// code view renders from the code view's own payload, so the state script never
-// runs for it — without this it would have no entry in the strip and nothing
-// for the page to call the active document.
+// Tabs and recents with no document attached. A tab opened straight into the code view renders from the code view's own payload, so the state script never runs for it — without this it would have no entry in the strip and nothing for the page to call the active document.
 window.leafSetWorkspace = (state) => {
   const next = state || {};
   currentState = Object.assign({}, currentState || {}, {
@@ -179,9 +150,7 @@ window.leafScrollToFragment = (fragment) => {
     target.focus({ preventScroll: true });
     target.scrollIntoView({ block: 'start' });
     setReaderScrollTop(app.scrollTop);
-    // Record where we landed as the reader anchor, or the ResizeObserver's
-    // scheduleReaderLayoutUpdate would re-pin the pre-jump position and yank the
-    // page back. Re-pin next frame too so the landing converges on the target.
+    // Record where we landed as the reader anchor, or the ResizeObserver's scheduleReaderLayoutUpdate would re-pin the pre-jump position and yank the page back. Re-pin next frame too so the landing converges on the target.
     readerScrollAnchor = captureReaderScrollAnchor();
     updateMinimapViewport();
     window.requestAnimationFrame(() => {
@@ -226,9 +195,7 @@ window.leafRestoreScrollAnchor = (anchor) => {
     updateMinimapViewport();
   });
 };
-// Tabs and the library both show the file name (basename, minus the document
-// extension), not the document's heading title. Falls back to the title, then the
-// raw path. Every format loses its extension, so tabs read alike.
+// Tabs and the library both show the file name (basename, minus the document extension), not the document's heading title. Falls back to the title, then the raw path. Every format loses its extension, so tabs read alike.
 function stripDocumentExt(name) {
   return (name || '').replace(DOCUMENT_NAME_RE, '');
 }
@@ -262,8 +229,7 @@ function renderTabs(state) {
     const mark = favorite ? 'Unfavorite' : 'Favorite';
     return `<span class="tab${index === active ? ' tab-active' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-favorite${favorite ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(tabDisplayName(tab))}</button><span class="tab-dirty-dot" aria-hidden="true"></span><button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><span class="lt-icon lt-icon-tab-close"></span></button></span>`;
   }).join('');
-  // A tab opening, closing, or changing title changes what the strip needs —
-  // refold so a longer title takes a button rather than getting clipped.
+  // A tab opening, closing, or changing title changes what the strip needs — refold so a longer title takes a button rather than getting clipped.
   refitAppBar();
 }
 // One listener on the bar answers for tabs that are rebuilt on every render.
@@ -286,8 +252,7 @@ tabBar.addEventListener('click', (event) => {
   if (!label || suppressTabClick) return;
   const index = Number(label.dataset.tabIndex);
   const wasActive = index === (currentState && currentState.active);
-  // A real switch renders the other document (which may be slow); show the
-  // spinner. Re-clicking the active tab is a host no-op, so skip it there.
+  // A real switch renders the other document (which may be slow); show the spinner. Re-clicking the active tab is a host no-op, so skip it there.
   if (!wasActive) beginReaderLoading();
   send({
     command: 'switchTab',
@@ -295,11 +260,7 @@ tabBar.addEventListener('click', (event) => {
     scroll_anchor: currentScrollAnchor(),
     code_scroll: codeViewActive ? viewScrollFraction() : null,
   });
-  // Reveal even when this is already the active tab (no state round-trip
-  // from the host): clicking a file's tab snaps the library back to it, and
-  // in graph mode flies the camera to that node and zooms in. Clicking the
-  // tab you are already on is a deliberate resync — force the graph to
-  // rebuild so it can't stay stuck on a stale scene in memory.
+  // Reveal even when this is already the active tab (no state round-trip from the host): clicking a file's tab snaps the library back to it, and in graph mode flies the camera to that node and zooms in. Clicking the tab you are already on is a deliberate resync — force the graph to rebuild so it can't stay stuck on a stale scene in memory.
   const tab = (currentState.tabs || [])[index];
   followFileInLibrary(tab ? tab.path || null : null, true, wasActive);
 });

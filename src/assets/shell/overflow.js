@@ -3,9 +3,7 @@
 //
 // Both the strip and the bar are asked, and neither replaces the other. The strip's test is what makes a long title cost a button; the bar's is the only one that answers with no document open, since an empty strip cannot overflow — and that is the case where close, minimize and maximize run off the right edge with nothing raised in their place.
 //
-// Listed last-to-fold first. Each entry names the container it came from, since
-// they do not all share one, and restoring rebuilds each container's original
-// order so a returning button lands in its own slot.
+// Listed last-to-fold first. Each entry names the container it came from, since they do not all share one, and restoring rebuilds each container's original order so a returning button lands in its own slot.
 const overflowPanel = document.getElementById('appOverflowPanel');
 const appTrailingItems = document.getElementById('appTrailingItems');
 const historyActions = document.querySelector('.history-actions');
@@ -41,19 +39,16 @@ function closeOverflowMenu() {
 }
 // One fold, start to finish. Answers whether this pass raised the chevron — the one case that measured a bar the chevron was not standing on.
 function foldAppBar() {
-  // Unfold everything first, rebuilding each container's original order, so a
-  // widening window returns the buttons exactly where they came from.
+  // Unfold everything first, rebuilding each container's original order, so a widening window returns the buttons exactly where they came from.
   for (const [home, children] of overflowHomes) {
     for (const child of children) home.appendChild(child);
   }
-  // An open library pins the lead to the rail's width so the tabs line up with
-  // the pane's edge, so folding out of it frees nothing — leave it whole.
+  // An open library pins the lead to the rail's width so the tabs line up with the pane's edge, so folding out of it frees nothing — leave it whole.
   const leadIsPinned = appBar.classList.contains('has-rail');
   for (let index = overflowCandidates.length - 1; index >= 0; index -= 1) {
     if (tabBar.scrollWidth <= tabBar.clientWidth + 1 && appBar.scrollWidth <= appBar.clientWidth + 1) break;
     const { el, inLead } = overflowCandidates[index];
-    // A hidden action takes no width, so folding it frees nothing and would
-    // raise the chevron over an empty-looking menu.
+    // A hidden action takes no width, so folding it frees nothing and would raise the chevron over an empty-looking menu.
     if (el.hidden || el.offsetParent === null) continue;
     if (inLead && leadIsPinned) continue;
     overflowPanel.prepend(el);
@@ -70,8 +65,7 @@ function foldAppBar() {
   return raisedTheChevron;
 }
 function refitAppBar() {
-  // Moving the buttons relayouts the bar, which is what the ResizeObserver
-  // watches; without this the first fold would trigger the next.
+  // Moving the buttons relayouts the bar, which is what the ResizeObserver watches; without this the first fold would trigger the next.
   if (refittingAppBar) return;
   refittingAppBar = true;
   try {
@@ -97,8 +91,7 @@ if (typeof ResizeObserver !== 'undefined') {
   new ResizeObserver(() => refitAppBar()).observe(appBar);
 }
 window.addEventListener('resize', refitAppBar);
-// Served over leaf-asset://, whose spelling is the host's to decide, so the URLs are
-// injected on window.__lt rather than substituted into this file.
+// Served over leaf-asset://, whose spelling is the host's to decide, so the URLs are injected on window.__lt rather than substituted into this file.
 const {
   mermaid: MERMAID_SCRIPT_URL,
   katex: KATEX_SCRIPT_URL,

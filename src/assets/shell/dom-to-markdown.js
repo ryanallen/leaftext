@@ -34,9 +34,7 @@ function rawInlineHtmlToMarkdown(el, tag) {
   return '<' + tag + rawInlineHtmlAttributes(el, tag) + '>' + inlineDomToMarkdown(el) + '</' + tag + '>';
 }
 
-// Serialize a block's inline DOM back to Markdown (bold, italic, strikethrough,
-// code, links, and safe raw inline HTML), stripping render-only decorations.
-// Unknown wrappers contribute just their text.
+// Serialize a block's inline DOM back to Markdown (bold, italic, strikethrough, code, links, and safe raw inline HTML), stripping render-only decorations. Unknown wrappers contribute just their text.
 function inlineDomToMarkdown(node) {
   let out = '';
   node.childNodes.forEach((child) => {
@@ -57,8 +55,7 @@ function inlineDomToMarkdown(node) {
       }
     }
     if (tag === 'br') {
-      // Keep breaks inline. A backslash-newline hard break would end an ATX
-      // heading's source line and split the rendered heading apart on re-render.
+      // Keep breaks inline. A backslash-newline hard break would end an ATX heading's source line and split the rendered heading apart on re-render.
       out += '<br>';
       return;
     }
@@ -104,11 +101,7 @@ function sourceLineEnd(bytes, at) {
   return index;
 }
 
-// A footnote written inside a quote or a list item is lifted out and drawn at the
-// foot of the page, so it is not in what the container draws — serializing the
-// container alone would write its line out of the file. Its own lines go back on
-// the end, taken from the source verbatim rather than rebuilt, separated by the
-// container's own blank line (`>` in a quote, nothing in a list item).
+// A footnote written inside a quote or a list item is lifted out and drawn at the foot of the page, so it is not in what the container draws — serializing the container alone would write its line out of the file. Its own lines go back on the end, taken from the source verbatim rather than rebuilt, separated by the container's own blank line (`>` in a quote, nothing in a list item).
 function restoreLiftedFootnotes(el, markdown) {
   if (el.dataset.holdsFootnote !== 'true') return markdown;
   const start = Number(el.dataset.srcStart);
@@ -153,19 +146,14 @@ function blockDomToMarkdown(el) {
   return text;
 }
 
-// Whether the list is drawn with its items spaced apart, which is how a list
-// written with blank lines between its items comes out: each item's words go in a
-// paragraph of their own. The blank lines are what put them there, so they go back
-// on the way out or the list closes up under the reader.
+// Whether the list is drawn with its items spaced apart, which is how a list written with blank lines between its items comes out: each item's words go in a paragraph of their own. The blank lines are what put them there, so they go back on the way out or the list closes up under the reader.
 function listIsSpacedApart(listEl) {
   return Array.from(listEl.children).some((li) =>
     Array.from(li.children || []).some((child) => child.tagName && child.tagName.toLowerCase() === 'p'),
   );
 }
 
-// Serialize a rendered list back to Markdown item by item. Checkboxes read their
-// live checked property, nested lists recurse with the marker-width indent, and
-// ordered lists renumber from `start`. Items spaced apart keep their blank lines.
+// Serialize a rendered list back to Markdown item by item. Checkboxes read their live checked property, nested lists recurse with the marker-width indent, and ordered lists renumber from `start`. Items spaced apart keep their blank lines.
 function listDomToMarkdown(listEl, indent) {
   const ordered = listEl.tagName.toLowerCase() === 'ol';
   const startNum = Number(listEl.getAttribute('start') || '1') || 1;
@@ -180,8 +168,7 @@ function listDomToMarkdown(listEl, indent) {
       (child) => child.tagName && child.tagName.toLowerCase() === 'input' && child.type === 'checkbox',
     );
     if (box) task = box.checked ? '[x] ' : '[ ] ';
-    // The item's own text: everything but its checkbox and nested lists (handled
-    // separately; the clone keeps the live DOM untouched).
+    // The item's own text: everything but its checkbox and nested lists (handled separately; the clone keeps the live DOM untouched).
     const clone = li.cloneNode(true);
     Array.from(clone.children).forEach((child) => {
       const tag = child.tagName ? child.tagName.toLowerCase() : '';
@@ -199,8 +186,7 @@ function listDomToMarkdown(listEl, indent) {
   return items.join(listIsSpacedApart(listEl) ? '\n\n' : '\n');
 }
 
-// Serialize a rendered blockquote to `> `-prefixed Markdown, one quoted paragraph
-// per child separated by a bare `>` line. `.blockquote-line` spans (from consumed
+// Serialize a rendered blockquote to `> `-prefixed Markdown, one quoted paragraph per child separated by a bare `>` line. `.blockquote-line` spans (from consumed
 // <br>s) re-join with backslash hard breaks. Any unexpected child still
 // serializes as a paragraph rather than being dropped.
 function blockquoteDomToMarkdown(el) {
@@ -224,8 +210,7 @@ function blockquoteDomToMarkdown(el) {
     .join('\n>\n');
 }
 
-// The delimiter row for a serialized table. The original row is reused verbatim
-// while the column count holds, so a cell edit never reformats the table.
+// The delimiter row for a serialized table. The original row is reused verbatim while the column count holds, so a cell edit never reformats the table.
 function tableDelimiterRow(el, headCells) {
   const start = Number(el.dataset.srcStart);
   const end = Number(el.dataset.srcEnd);
@@ -242,9 +227,7 @@ function tableDelimiterRow(el, headCells) {
   return tableDelimiterCells(headCells);
 }
 
-// The row rebuilt from the header cells, for a table whose column count changed.
-// Alignment reads off `align`, where the renderer puts it: bare dashes here drop
-// every `:---:` in the table.
+// The row rebuilt from the header cells, for a table whose column count changed. Alignment reads off `align`, where the renderer puts it: bare dashes here drop every `:---:` in the table.
 function tableDelimiterCells(headCells) {
   const dashes = headCells.map((cell) => {
     const side = (cell.getAttribute('align') || '').toLowerCase();
@@ -256,9 +239,7 @@ function tableDelimiterCells(headCells) {
   return '| ' + dashes.join(' | ') + ' |';
 }
 
-// One rendered cell as GFM: newlines collapse and pipes escape, so what comes back
-// always fits between two pipes. A checkbox-only cell writes its live state as
-// `[ ]`/`[x]` — the marker in a cell is drawn from the text, not parsed as one.
+// One rendered cell as GFM: newlines collapse and pipes escape, so what comes back always fits between two pipes. A checkbox-only cell writes its live state as `[ ]`/`[x]` — the marker in a cell is drawn from the text, not parsed as one.
 function tableCellMarkdown(cell) {
   const box = cell.querySelector('input[type="checkbox"]');
   const text = inlineDomToMarkdown(cell)
@@ -278,17 +259,13 @@ function tableRowElements(el) {
   return rows;
 }
 
-// Every cell of a table as Markdown, row by row. The baseline a commit measures
-// against to find the one cell somebody typed in.
+// Every cell of a table as Markdown, row by row. The baseline a commit measures against to find the one cell somebody typed in.
 function tableCellTexts(el) {
   if (!el || el.dataset.blockKind !== 'table') return null;
   return tableRowElements(el).map((tr) => Array.from(tr.children).map(tableCellMarkdown));
 }
 
-// The one cell that changed between the baseline and the table as it stands now, in
-// the form the host writes: `{ row, column, columns, text }`. Null unless exactly one
-// cell moved and the table kept every row and column it had — anything else is a
-// whole-table rewrite, which is the only thing that can add or drop a column.
+// The one cell that changed between the baseline and the table as it stands now, in the form the host writes: `{ row, column, columns, text }`. Null unless exactly one cell moved and the table kept every row and column it had — anything else is a whole-table rewrite, which is the only thing that can add or drop a column.
 function tableCellChange(before, after) {
   if (!before || !after || before.length !== after.length) return null;
   let found = null;
@@ -303,8 +280,7 @@ function tableCellChange(before, after) {
   return found;
 }
 
-// Where one cell sits in the table that owns it, in that same form. Null for a cell
-// this table does not own — a nested table's is its own block's business.
+// Where one cell sits in the table that owns it, in that same form. Null for a cell this table does not own — a nested table's is its own block's business.
 function tableCellPosition(el, cell) {
   const tr = cell.parentElement;
   const row = tableRowElements(el).indexOf(tr);
@@ -313,9 +289,7 @@ function tableCellPosition(el, cell) {
   return { row, column, columns: tr.children.length, text: tableCellMarkdown(cell) };
 }
 
-// Serialize a rendered table to GFM pipes. The fallback for a table whose cell the
-// host cannot place: it rebuilds every row, so a table lined up by hand loses its
-// columns — see tableCellChange for the path that writes one cell instead.
+// Serialize a rendered table to GFM pipes. The fallback for a table whose cell the host cannot place: it rebuilds every row, so a table lined up by hand loses its columns — see tableCellChange for the path that writes one cell instead.
 function tableDomToMarkdown(el) {
   const headCells = Array.from(el.querySelectorAll(':scope > thead > tr > th'));
   const lines = ['| ' + headCells.map(tableCellMarkdown).join(' | ') + ' |'];
@@ -332,9 +306,7 @@ const MARKDOWN_WYSIWYG_INLINE_TAGS = new Set([
   'abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span', 'div',
 ]);
 
-// Walked rather than handed to a tree walker so a subtree the serializer drops can
-// be stepped over: the number a footnote is drawn with and its arrow back are not
-// the block's to round-trip.
+// Walked rather than handed to a tree walker so a subtree the serializer drops can be stepped over: the number a footnote is drawn with and its arrow back are not the block's to round-trip.
 function inlineMarkdownDomWysiwygSafe(el) {
   for (const node of Array.from(el.children || [])) {
     if (isRenderedFootnoteMark(node)) continue;
@@ -344,18 +316,12 @@ function inlineMarkdownDomWysiwygSafe(el) {
   return true;
 }
 
-// Whether a Markdown block edits WYSIWYG safely. Links are fine
-// (anchorToMarkdown reproduces each form), but raw HTML elements such as <sub>
-// cannot be reconstructed from their rendered DOM, so they use source editing.
+// Whether a Markdown block edits WYSIWYG safely. Links are fine (anchorToMarkdown reproduces each form), but raw HTML elements such as <sub> cannot be reconstructed from their rendered DOM, so they use source editing.
 function markdownBlockWysiwygSafe(el) {
   return inlineMarkdownDomWysiwygSafe(el) && !el.querySelector('img, .katex, .mermaid, input');
 }
 
-// A list serializes faithfully when its items hold inline content, plus
-// checkboxes and nested lists. A list spaced apart draws each item's words in one
-// paragraph, and that writes back — a *second* paragraph in an item is a
-// continuation whose indent cannot be read off the page, so those keep the source
-// editor along with lists holding real blocks.
+// A list serializes faithfully when its items hold inline content, plus checkboxes and nested lists. A list spaced apart draws each item's words in one paragraph, and that writes back — a *second* paragraph in an item is a continuation whose indent cannot be read off the page, so those keep the source editor along with lists holding real blocks.
 function listWysiwygSafe(el) {
   if (el.querySelector('pre, blockquote, table, img, .katex, .mermaid')) return false;
   return Array.from(el.querySelectorAll('li')).every(
@@ -363,8 +329,7 @@ function listWysiwygSafe(el) {
   );
 }
 
-// A table serializes back faithfully when its cells hold only inline content
-// (checkbox cells included) and it has a real header row to key the pipes off.
+// A table serializes back faithfully when its cells hold only inline content (checkbox cells included) and it has a real header row to key the pipes off.
 function tableWysiwygSafe(el) {
   return (
     !el.querySelector('img, pre, blockquote, table, .katex, .mermaid') &&
@@ -372,8 +337,7 @@ function tableWysiwygSafe(el) {
   );
 }
 
-// A blockquote edits WYSIWYG when it's a plain quote of paragraphs. GitHub alerts
-// and quotes holding nested blocks keep the raw-source editor.
+// A blockquote edits WYSIWYG when it's a plain quote of paragraphs. GitHub alerts and quotes holding nested blocks keep the raw-source editor.
 function blockquoteWysiwygSafe(el) {
   if (el.classList.contains('markdown-alert')) return false;
   if (el.querySelector('blockquote, pre, table, ul, ol, img, .katex, .mermaid, input')) {
@@ -382,9 +346,7 @@ function blockquoteWysiwygSafe(el) {
   return Array.from(el.children).every((child) => child.tagName.toLowerCase() === 'p');
 }
 
-// A footnote edits as it is drawn when it holds one paragraph. A second one is
-// indented in the source and that indent cannot be read back off the page, so
-// those keep the source editor.
+// A footnote edits as it is drawn when it holds one paragraph. A second one is indented in the source and that indent cannot be read back off the page, so those keep the source editor.
 function footnoteDefinitionWysiwygSafe(el) {
   const paragraphs = Array.from(el.children).filter((child) => child.tagName.toLowerCase() === 'p');
   if (paragraphs.length !== 1) return false;

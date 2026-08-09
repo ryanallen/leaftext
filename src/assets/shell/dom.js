@@ -40,8 +40,7 @@ const librarySearch = document.getElementById('librarySearch');
 const librarySyncButton = document.getElementById('librarySyncButton');
 const librarySearchResults = document.getElementById('librarySearchResults');
 const filterMenu = document.getElementById('filterMenu');
-// The update bell and its panel. Absent from the bar until there is something to
-// install; the updater un-hides the whole menu.
+// The update bell and its panel. Absent from the bar until there is something to install; the updater un-hides the whole menu.
 const updateMenu = document.getElementById('updateMenu');
 const updateAlertDot = document.getElementById('updateAlertDot');
 const updateButton = document.getElementById('updateButton');
@@ -58,9 +57,7 @@ tabBar.addEventListener('wheel', (event) => {
   event.preventDefault();
   tabBar.scrollLeft += event.deltaY;
 }, { passive: false });
-// Manual pointer-based tab reordering (WebView2 doesn't fire HTML5 drag events
-// reliably in-page). Computes the insertion slot from the pointer vs. the other
-// tabs' centers and sends moveTab on drop.
+// Manual pointer-based tab reordering (WebView2 doesn't fire HTML5 drag events reliably in-page). Computes the insertion slot from the pointer vs. the other tabs' centers and sends moveTab on drop.
 function tabDropIndex(clientX) {
   const before = tabDrag.others.findIndex((entry) => clientX < entry.mid);
   return before === -1 ? tabDrag.others.length : before;
@@ -103,9 +100,7 @@ function endTabDrag(commit) {
   tabDrag = null;
   const committing = drag.moved && commit && drag.to !== drag.filteredFrom;
   if (committing) {
-    // Settle the tab into its new slot immediately (transitions suppressed), so
-    // it doesn't snap back and then jump when the moveTab re-render lands a frame
-    // or two later.
+    // Settle the tab into its new slot immediately (transitions suppressed), so it doesn't snap back and then jump when the moveTab re-render lands a frame or two later.
     const reference = drag.others[drag.to] ? drag.others[drag.to].el : null;
     tabBar.classList.add('tabs-settling');
     drag.el.style.transform = '';
@@ -130,15 +125,7 @@ function endTabDrag(commit) {
 }
 document.addEventListener('pointerup', () => endTabDrag(true));
 document.addEventListener('pointercancel', () => endTabDrag(false));
-// Keeps the promise a bottom sheet's grab bar makes: drag it and the sheet
-// follows, let go and it either falls away or springs back. The travel rides a
-// custom property rather than an inline transform, because the wide layout also
-// centers the sheet with translateX(-50%) -- composing the two in CSS keeps that
-// rule the only place that knows about the centering.
-// Let go part-way down and the sheet stays there. That is the whole point of
-// dragging one: something behind it is being read, and a sheet that springs
-// back the moment you release it is a sheet you cannot see past. It only leaves
-// when it is most of the way gone, or thrown there.
+// Keeps the promise a bottom sheet's grab bar makes: drag it and the sheet follows, let go and it either falls away or springs back. The travel rides a custom property rather than an inline transform, because the wide layout also centers the sheet with translateX(-50%) -- composing the two in CSS keeps that rule the only place that knows about the centering. Let go part-way down and the sheet stays there. That is the whole point of dragging one: something behind it is being read, and a sheet that springs back the moment you release it is a sheet you cannot see past. It only leaves when it is most of the way gone, or thrown there.
 const SHEET_PARK_MIN_PX = 20;
 const SHEET_DISMISS_FRACTION = 0.6;
 const SHEET_FLICK_FRACTION = 0.2;
@@ -153,9 +140,7 @@ function makeSheetDraggable(sheet, grip, dismiss) {
   grip.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return;
     event.preventDefault(); // don't start a text selection on the way down
-    // From wherever it is sitting, not from flush: a sheet parked half-way down
-    // has to be draggable back up, and a drag that always started at zero could
-    // only ever push it further away.
+    // From wherever it is sitting, not from flush: a sheet parked half-way down has to be draggable back up, and a drag that always started at zero could only ever push it further away.
     const parked = parseFloat(sheet.style.getPropertyValue('--sheet-drag')) || 0;
     drag = {
       id: event.pointerId,
@@ -171,8 +156,7 @@ function makeSheetDraggable(sheet, grip, dismiss) {
   });
   grip.addEventListener('pointermove', (event) => {
     if (!drag || event.pointerId !== drag.id) return;
-    // Never above flush: dragging up past that would lift the sheet off the
-    // window's edge and show a gap under it.
+    // Never above flush: dragging up past that would lift the sheet off the window's edge and show a gap under it.
     drag.dy = Math.max(0, drag.from + (event.clientY - drag.startY));
     const dt = event.timeStamp - drag.lastT;
     if (dt > 0) drag.speed = (event.clientY - drag.lastY) / dt;
@@ -182,48 +166,39 @@ function makeSheetDraggable(sheet, grip, dismiss) {
   });
   const finish = (event) => {
     if (!drag || event.pointerId !== drag.id) return;
-    // Measured against the sheet's own height, not a fixed number of pixels: a
-    // tall sheet dragged 90px has barely moved, a short one is nearly gone.
+    // Measured against the sheet's own height, not a fixed number of pixels: a tall sheet dragged 90px has barely moved, a short one is nearly gone.
     const tall = sheet.getBoundingClientRect().height || 1;
     const dy = drag.dy;
     const leaving =
       dy > tall * SHEET_DISMISS_FRACTION ||
       (drag.speed > SHEET_FLICK_PX_PER_MS && dy > tall * SHEET_FLICK_FRACTION);
     drag = null;
-    // Dropping the class first puts the transition back, so both endings
-    // animate from wherever the drag left the sheet.
+    // Dropping the class first puts the transition back, so both endings animate from wherever the drag left the sheet.
     sheet.classList.remove('is-dragging');
     if (!leaving) {
       // Nudged rather than moved: sit flush again. Anything more stays put.
       if (dy < SHEET_PARK_MIN_PX) sheet.style.removeProperty('--sheet-drag');
       return;
     }
-    // The sheet's own close slides it to translateY(100%) from here; the offset
-    // can only be cleared once that has finished, or it would jump first.
+    // The sheet's own close slides it to translateY(100%) from here; the offset can only be cleared once that has finished, or it would jump first.
     dismiss();
     window.setTimeout(() => sheet.style.removeProperty('--sheet-drag'), 400);
   };
   grip.addEventListener('pointerup', finish);
   grip.addEventListener('pointercancel', finish);
 }
-// A growl: one line, bottom right, gone on its own. One slot that replaces
-// itself, not a stack -- a stack is a thing that then needs managing. Failures
-// hold longer: a success is read at a glance, a failure has to be finished and
-// acted on.
+// A growl: one line, bottom right, gone on its own. One slot that replaces itself, not a stack -- a stack is a thing that then needs managing. Failures hold longer: a success is read at a glance, a failure has to be finished and acted on.
 const TOAST_MS = 5000;
 const TOAST_ERROR_MS = 8000;
 let toastTimer = 0;
-// What to run when the current toast leaves, whether it timed out or another
-// replaced it. An offer riding on a toast is only good while the toast is up, so
-// whatever armed it is told the moment it is not.
+// What to run when the current toast leaves, whether it timed out or another replaced it. An offer riding on a toast is only good while the toast is up, so whatever armed it is told the moment it is not.
 let toastGone = null;
 function endToast() {
   const gone = toastGone;
   toastGone = null;
   if (gone) gone();
 }
-// `action` is an optional { label, run, gone } -- a single button on the toast,
-// which is the only thing on one that has ever been pressable.
+// `action` is an optional { label, run, gone } -- a single button on the toast, which is the only thing on one that has ever been pressable.
 function leafToast(message, tone, action) {
   const existing = document.querySelector('.app-toast');
   if (existing) existing.remove();
@@ -236,8 +211,7 @@ function leafToast(message, tone, action) {
   const toast = document.createElement('div');
   const error = tone === 'error';
   toast.className = error ? 'app-toast is-error' : 'app-toast';
-  // `status` rather than `alert` even for failures: nothing here is urgent
-  // enough to interrupt a screen reader mid-sentence.
+  // `status` rather than `alert` even for failures: nothing here is urgent enough to interrupt a screen reader mid-sentence.
   toast.setAttribute('role', 'status');
   if (action) {
     const said = document.createElement('span');
@@ -248,8 +222,7 @@ function leafToast(message, tone, action) {
     button.type = 'button';
     button.className = 'app-toast-action';
     button.textContent = action.label;
-    // The toast goes as the button is pressed: the offer has been taken, so
-    // leaving it up invites a second press on an offer already spent.
+    // The toast goes as the button is pressed: the offer has been taken, so leaving it up invites a second press on an offer already spent.
     button.addEventListener('click', () => {
       const run = action.run;
       leafToast('');
@@ -270,20 +243,14 @@ function leafToast(message, tone, action) {
   }, error ? TOAST_ERROR_MS : TOAST_MS);
 }
 
-// A slow document renders on the Rust side before the HTML comes back. Show a
-// spinner over the reader immediately during that work, cleared when the
-// document state arrives; a safety timeout guarantees it never sticks.
+// A slow document renders on the Rust side before the HTML comes back. Show a spinner over the reader immediately during that work, cleared when the document state arrives; a safety timeout guarantees it never sticks.
 const READER_LOADING_SAFETY_MS = 30000;
 let readerLoadingSafety = 0;
-// Who put the overlay up. It covers the reader cell and the graph draws there
-// too, so a document rendering behind the map must neither cover it nor clear
-// the map's own spinner. Pass 'graph' to speak for the map.
+// Who put the overlay up. It covers the reader cell and the graph draws there too, so a document rendering behind the map must neither cover it nor clear the map's own spinner. Pass 'graph' to speak for the map.
 let readerLoadingOwner = null;
 function beginReaderLoading(owner) {
   const forGraph = owner === 'graph';
-  // Only while the map is staying up. A gesture that leaves it -- a search hit, or
-  // the jump to the source -- deliberately holds the map until its replacement is
-  // ready, so suppressing the spinner there leaves the wait looking like a freeze.
+  // Only while the map is staying up. A gesture that leaves it -- a search hit, or the jump to the source -- deliberately holds the map until its replacement is ready, so suppressing the spinner there leaves the wait looking like a freeze.
   if (graphViewOpen && !graphExitPending && !forGraph) return;
   clearReaderLoading(owner);
   readerLoadingOwner = forGraph ? 'graph' : null;
@@ -296,30 +263,20 @@ function beginReaderLoading(owner) {
 }
 function clearReaderLoading(owner) {
   if (readerLoadingOwner === 'graph' && owner !== 'graph') return;
-  // The same rule the other way round: the map tearing itself down must not pull
-  // down a spinner raised for the document that is replacing it, or the wait
-  // reappears as a blink between the map going and the page arriving.
+  // The same rule the other way round: the map tearing itself down must not pull down a spinner raised for the document that is replacing it, or the wait reappears as a blink between the map going and the page arriving.
   if (owner === 'graph' && readerLoadingOwner !== 'graph') return;
   readerLoadingOwner = null;
   if (readerLoadingSafety) { clearTimeout(readerLoadingSafety); readerLoadingSafety = 0; }
   if (readerLoading) readerLoading.hidden = true;
 }
-// Commands whose host handler always renders a document back, so raising the
-// spinner here and letting that reply lower it is safe. Tab switches and the
-// code-view toggle arm at their call sites (they need a no-op guard); other
-// paths (picker, drag-drop, links) are armed host-side before the render.
+// Commands whose host handler always renders a document back, so raising the spinner here and letting that reply lower it is safe. Tab switches and the code-view toggle arm at their call sites (they need a no-op guard); other paths (picker, drag-drop, links) are armed host-side before the render.
 const READER_LOADING_COMMANDS = new Set(['openRecent']);
 const send = (message) => {
   if (message && READER_LOADING_COMMANDS.has(message.command)) beginReaderLoading();
   window.ipc.postMessage(JSON.stringify(message));
 };
 
-// Custom title-bar chrome, in two kinds. Neither platform gives us a native title
-// bar to keep: on Windows there is none, and on a Mac Apple's own three dots are
-// turned off so ours can fold into the chevron menu the way every other control
-// does. So both draw the same three buttons, from the same markup, wired to the
-// same three commands — the Mac styles them as dots and stands them at the bar's
-// left end. Both kinds get the drag region.
+// Custom title-bar chrome, in two kinds. Neither platform gives us a native title bar to keep: on Windows there is none, and on a Mac Apple's own three dots are turned off so ours can fold into the chevron menu the way every other control does. So both draw the same three buttons, from the same markup, wired to the same three commands — the Mac styles them as dots and stands them at the bar's left end. Both kinds get the drag region.
 if (window.__leafFrameless || window.__leafMacFrame) {
   document.body.classList.add('frameless');
   // The Mac's own look for those three: circles at the left, not squares at the right.
@@ -343,14 +300,7 @@ if (window.__leafFrameless || window.__leafMacFrame) {
   const isDragTarget = (target) =>
     target &&
     !target.closest('button, a, input, select, textarea, [role="tab"], .tab, .window-controls, .update-menu');
-  // The three window buttons are ours on both platforms now, so the one exclusion
-  // above covers a press on a Mac dot as well as on a Windows one.
-  // Maximize is decided on the way down: a drag hands the window to the platform's
-  // own move loop, which swallows every later mouse event, so an app-bar dblclick can
-  // never fire. event.detail is the click count, but it counts in page
-  // coordinates and a dragged window carries the page under the cursor — so a
-  // press just after a quick drag also arrives as 2. An unmoved window.screenX
-  // is what tells the second click apart from the tail of a drag.
+  // The three window buttons are ours on both platforms now, so the one exclusion above covers a press on a Mac dot as well as on a Windows one. Maximize is decided on the way down: a drag hands the window to the platform's own move loop, which swallows every later mouse event, so an app-bar dblclick can never fire. event.detail is the click count, but it counts in page coordinates and a dragged window carries the page under the cursor — so a press just after a quick drag also arrives as 2. An unmoved window.screenX is what tells the second click apart from the tail of a drag.
   let pressedAtX = null;
   let pressedAtY = null;
   const dragWindowFrom = (bar) => {
@@ -368,21 +318,14 @@ if (window.__leafFrameless || window.__leafMacFrame) {
     });
   };
   dragWindowFrom(appBar);
-  // The flowchart sheet covers the app bar, so its header is the drag bar while
-  // it is open — otherwise the window cannot be moved without closing the sheet.
+  // The flowchart sheet covers the app bar, so its header is the drag bar while it is open — otherwise the window cannot be moved without closing the sheet.
   dragWindowFrom(document.getElementById('flowSheetHead'));
 }
-// A full-screen Mac window shows no window buttons — the pointer at the top edge
-// is how you get them — so ours go with them and the bar takes the room back. The
-// Mac class itself stays on: it is what says which shell this is, and the dots'
-// look and place are still the Mac's underneath. Defined unconditionally, like the
-// maximize sync below, so the host's call is safe on every window.
+// A full-screen Mac window shows no window buttons — the pointer at the top edge is how you get them — so ours go with them and the bar takes the room back. The Mac class itself stays on: it is what says which shell this is, and the dots' look and place are still the Mac's underneath. Defined unconditionally, like the maximize sync below, so the host's call is safe on every window.
 window.leafSetFullscreen = (fullscreen) => {
   document.body.classList.toggle('is-fullscreen', !!fullscreen);
 };
-// Reflect the real maximized state: body.is-maximized swaps the maximize glyph
-// for restore-down (CSS) and the label follows. Defined unconditionally (not just
-// frameless) so the host's call is always safe — a no-op where controls are hidden.
+// Reflect the real maximized state: body.is-maximized swaps the maximize glyph for restore-down (CSS) and the label follows. Defined unconditionally (not just frameless) so the host's call is always safe — a no-op where controls are hidden.
 window.leafSetWindowMaximized = (maximized) => {
   document.body.classList.toggle('is-maximized', !!maximized);
   const el = document.getElementById('winMaximize');
@@ -392,9 +335,7 @@ window.leafSetWindowMaximized = (maximized) => {
     el.setAttribute('title', label);
   }
 };
-// Put a floating thing where it was asked for, but inside the window: a menu opened
-// near the right edge would otherwise hang off it, and one at the bottom would open
-// below the fold. Both menus place themselves this way, so the arithmetic is here.
+// Put a floating thing where it was asked for, but inside the window: a menu opened near the right edge would otherwise hang off it, and one at the bottom would open below the fold. Both menus place themselves this way, so the arithmetic is here.
 const LEAF_FLOAT_MARGIN = 8;
 function leafPlaceFloating(el, x, y) {
   // Measured, so it has to be shown first — hidden elements have no size.
@@ -404,10 +345,7 @@ function leafPlaceFloating(el, x, y) {
   el.style.left = Math.max(LEAF_FLOAT_MARGIN, Math.min(x, right)) + 'px';
   el.style.top = Math.max(LEAF_FLOAT_MARGIN, Math.min(y, bottom)) + 'px';
 }
-// Hold the pointer so it keeps reporting after it leaves the element — every drag in
-// the app needs that, and it is the one line they all share. Wrapped because a
-// browser may refuse: the drag still works, it just stops tracking outside the box,
-// and an exception here would lose the whole gesture.
+// Hold the pointer so it keeps reporting after it leaves the element — every drag in the app needs that, and it is the one line they all share. Wrapped because a browser may refuse: the drag still works, it just stops tracking outside the box, and an exception here would lose the whole gesture.
 function leafHoldPointer(el, pointerId) {
   try {
     el.setPointerCapture(pointerId);
@@ -418,10 +356,7 @@ function leafReleasePointer(el, pointerId) {
     el.releasePointerCapture(pointerId);
   } catch (_) {}
 }
-// Escape closes whatever is open. The caller says what that means for it, and a
-// caller whose thing is already shut does nothing — which is what lets four of these
-// live on one page. `target` is the caller's own, because a listener on window is
-// asked after one on document, and which closes first is sometimes the point.
+// Escape closes whatever is open. The caller says what that means for it, and a caller whose thing is already shut does nothing — which is what lets four of these live on one page. `target` is the caller's own, because a listener on window is asked after one on document, and which closes first is sometimes the point.
 function leafOnEscape(close, target) {
   (target || document).addEventListener('keydown', (event) => {
     if (event.key === 'Escape') close(event);

@@ -1,23 +1,15 @@
 // ---- Editing: code view + save -------------------------------------------
-// Source-of-truth is in Rust: the host owns the buffer and the file. The JS drives
-// the code view — Monaco, loaded on first entry — tracks unsaved edits, and relays
-// intent. Its mutable state is declared earlier, above the subscriptions that fire
-// renderState() synchronously on load.
+// Source-of-truth is in Rust: the host owns the buffer and the file. The JS drives the code view — Monaco, loaded on first entry — tracks unsaved edits, and relays intent. Its mutable state is declared earlier, above the subscriptions that fire renderState() synchronously on load.
 
 function isDocumentDirty(path) {
   return !!(path && dirtyByPath.get(path));
 }
 
-// Reflect a document's dirty state into the tab dot and, when it is the active
-// document, the Save button — without forcing a full re-render.
+// Reflect a document's dirty state into the tab dot and, when it is the active document, the Save button — without forcing a full re-render.
 function setDirtyState(path, dirty) {
   if (!path) return;
   const next = !!dirty;
-  // Only touch the DOM when the answer actually changed. Every code-view keystroke
-  // calls this, and the chrome refresh below ends in refitAppBar(), which measures
-  // the tab strip and so forces a layout of the whole page — 141 ms per character
-  // on a 4 MB source. After the first character the document is already dirty and
-  // there is nothing to restate.
+  // Only touch the DOM when the answer actually changed. Every code-view keystroke calls this, and the chrome refresh below ends in refitAppBar(), which measures the tab strip and so forces a layout of the whole page — 141 ms per character on a 4 MB source. After the first character the document is already dirty and there is nothing to restate.
   if ((dirtyByPath.get(path) === true) === next) return;
   if (next) dirtyByPath.set(path, true);
   else dirtyByPath.delete(path);
@@ -29,51 +21,38 @@ function setDirtyState(path, dirty) {
   updateEditingChrome();
 }
 
-// Show/hide and style the floating bar for the active document: which view is
-// on, and whether there is anything to save or undo.
+// Show/hide and style the floating bar for the active document: which view is on, and whether there is anything to save or undo.
 function updateEditingChrome() {
   const path = activeDocumentPath();
   const hasDocument = !!path;
   renderReaderToolbar(hasDocument);
   if (saveButton) {
-    // Nothing to save, nothing shown: the green "Save" button appears only when
-    // the active document has unsaved edits.
+    // Nothing to save, nothing shown: the green "Save" button appears only when the active document has unsaved edits.
     saveButton.hidden = !(hasDocument && isDocumentDirty(path));
   }
   if (undoButton) {
-    // Undo appears whenever the document has reading-view edits since the last
-    // successful save.
+    // Undo appears whenever the document has reading-view edits since the last successful save.
     undoButton.hidden = !(hasDocument && undoableByPath.get(path) === true);
   }
   // Save/Undo/code-view visibility changes the action row's width — refold.
   refitAppBar();
 }
 
-// Ask the host to revert the most recent reading-view edit. The host pops its
-// snapshot, re-renders, and resyncs the chrome, so undoing the last edit hides
-// both buttons.
+// Ask the host to revert the most recent reading-view edit. The host pops its snapshot, re-renders, and resyncs the chrome, so undoing the last edit hides both buttons.
 function undoLastEdit() {
   const path = activeDocumentPath();
   if (!path || undoableByPath.get(path) !== true) return;
   send({ command: 'undoEdit' });
 }
 
-// The last buffer text the host was given: what the next splice is measured
-// against, and what proves the two copies still agree.
+// The last buffer text the host was given: what the next splice is measured against, and what proves the two copies still agree.
 let lastSentSourceText = null;
 
 // Hand the host the edit rather than the buffer.
 //
-// Shipping the whole text on each debounce cost 243 ms of IPC per typing pause on
-// a 4 MB file — the string is marshalled across the process boundary and parsed
-// again on the far side, both ways. The edit itself is a handful of characters, so
-// send those: the common prefix and suffix of the last text the host was given and
-// the current one bracket everything that changed.
+// Shipping the whole text on each debounce cost 243 ms of IPC per typing pause on a 4 MB file — the string is marshalled across the process boundary and parsed again on the far side, both ways. The edit itself is a handful of characters, so send those: the common prefix and suffix of the last text the host was given and the current one bracket everything that changed.
 //
-// Offsets are UTF-16 code units, which is what JS string indices are; the host
-// converts against its own copy. `length` lets it prove the two buffers still
-// agree — if they ever drift, a splice would corrupt the file silently, so a
-// mismatch triggers a full resend instead.
+// Offsets are UTF-16 code units, which is what JS string indices are; the host converts against its own copy. `length` lets it prove the two buffers still agree — if they ever drift, a splice would corrupt the file silently, so a mismatch triggers a full resend instead.
 function sourceSpliceSince(previous, next) {
   const max = Math.min(previous.length, next.length);
   let prefix = 0;
@@ -131,8 +110,7 @@ function scheduleSourceUpdate() {
   }, 180);
 }
 
-// Push the latest buffer to the host now, canceling any pending debounce, so a
-// save writes exactly what is on screen.
+// Push the latest buffer to the host now, canceling any pending debounce, so a save writes exactly what is on screen.
 function flushSourceUpdate() {
   if (!codeViewActive) return;
   if (sourceUpdateTimer) {
@@ -142,9 +120,7 @@ function flushSourceUpdate() {
   sendSourceUpdate();
 }
 
-// The host's copy disagreed with ours, so stop splicing and send the whole buffer.
-// Nothing should reach this; it exists so that if anything does, the file is
-// rewritten from what is on screen rather than from a buffer that has drifted.
+// The host's copy disagreed with ours, so stop splicing and send the whole buffer. Nothing should reach this; it exists so that if anything does, the file is rewritten from what is on screen rather than from a buffer that has drifted.
 window.leafResyncSource = () => {
   if (!codeViewActive) return;
   syncCodeViewText();
@@ -159,10 +135,7 @@ function saveActiveDocument() {
   send({ command: 'saveDocument' });
 }
 
-// How far down the active view is scrolled, as a 0..1 fraction of its scrollable
-// range. Approximate by design — the two views wrap differently — but it keeps
-// "top is top" and "middle is middle" across the toggle. Monaco scrolls itself and
-// the shell around it doesn't, so in the code view only Monaco knows.
+// How far down the active view is scrolled, as a 0..1 fraction of its scrollable range. Approximate by design — the two views wrap differently — but it keeps "top is top" and "middle is middle" across the toggle. Monaco scrolls itself and the shell around it doesn't, so in the code view only Monaco knows.
 function viewScrollFraction() {
   if (codeViewActive && monacoEditor) {
     const scrollable = monacoEditor.getScrollHeight() - monacoEditor.getLayoutInfo().height;
@@ -174,18 +147,13 @@ function viewScrollFraction() {
   return Math.min(1, Math.max(0, app.scrollTop / scrollable));
 }
 
-// Whether the active view sits at its very top. Same split as above: asking the
-// shell in the code view always says yes, which sends every toggle back to the top.
+// Whether the active view sits at its very top. Same split as above: asking the shell in the code view always says yes, which sends every toggle back to the top.
 function viewAtTop() {
   if (codeViewActive && monacoEditor) return monacoEditor.getScrollTop() <= 1;
   return app.scrollTop <= 1;
 }
 
-// The source byte offset of the block at the top of the reading viewport, or
-// null when there's nothing to anchor to. Blocks carry their source range in
-// data-src-start (attached for every Markdown block, stamped inline on TEI
-// blocks), so the topmost visible block names where the reader is in the
-// source exactly — unlike the whole-document height fraction.
+// The source byte offset of the block at the top of the reading viewport, or null when there's nothing to anchor to. Blocks carry their source range in data-src-start (attached for every Markdown block, stamped inline on TEI blocks), so the topmost visible block names where the reader is in the source exactly — unlike the whole-document height fraction.
 function topReadingBlockSourceOffset() {
   const anchorEl = resolveReaderAnchorElement(captureReaderScrollAnchor());
   const block = anchorEl && anchorEl.closest ? anchorEl.closest('[data-src-start]') : null;
@@ -194,10 +162,7 @@ function topReadingBlockSourceOffset() {
   return Number.isFinite(start) ? start : null;
 }
 
-// The 0-based source line containing a UTF-8 byte offset. Block source ranges
-// are byte offsets (pulldown-cmark / roxmltree), but the buffer is a UTF-16 JS
-// string, so walk code points accumulating byte lengths until the offset is
-// reached, counting the newlines passed. Only scans up to the offset.
+// The 0-based source line containing a UTF-8 byte offset. Block source ranges are byte offsets (pulldown-cmark / roxmltree), but the buffer is a UTF-16 JS string, so walk code points accumulating byte lengths until the offset is reached, counting the newlines passed. Only scans up to the offset.
 function lineIndexAtByteOffset(text, byteOffset) {
   if (!Number.isFinite(byteOffset) || byteOffset <= 0) return 0;
   let bytes = 0;
@@ -225,8 +190,7 @@ function byteOffsetAtLineIndex(text, lineIndex) {
   return bytes;
 }
 
-// The 0-based index of the code view's top visible line, by binary search over
-// the in-order color lines.
+// The 0-based index of the code view's top visible line, by binary search over the in-order color lines.
 function topVisibleCodeLineIndex() {
   if (!monacoEditor) return null;
   const ranges = monacoEditor.getVisibleRanges();
@@ -256,8 +220,7 @@ function forgetViewHandoff() {
   viewHandoff = null;
 }
 
-// Read and clear the arm flag: one landing per toggle, so a live reload or a tab
-// switch can't reuse it.
+// Read and clear the arm flag: one landing per toggle, so a live reload or a tab switch can't reuse it.
 function takeExactViewRestore(path) {
   const handoff = viewHandoff && viewHandoff.path === path ? viewHandoff : null;
   if (!handoff || !handoff.restoreExact) return null;
@@ -265,8 +228,7 @@ function takeExactViewRestore(path) {
   return handoff;
 }
 
-// Whether a view is still where the toggle put it. 1px of slack: the landing
-// clamps and rounds, so the readback is not always the value written.
+// Whether a view is still where the toggle put it. 1px of slack: the landing clamps and rounds, so the readback is not always the value written.
 function viewStillLanded(now, landed) {
   return now != null && landed != null && Math.abs(now - landed) <= 1;
 }
@@ -277,9 +239,7 @@ function recordReaderLanded() {
   if (path) viewHandoffFor(path).readerLanded = app.scrollTop;
 }
 
-// Scroll the reading view so the block containing `srcOffset` sits at the top
-// edge: the deterministic landing for leaving the code view. Falls back to
-// no-op (caller keeps its own fallback) when the block map is missing.
+// Scroll the reading view so the block containing `srcOffset` sits at the top edge: the deterministic landing for leaving the code view. Falls back to no-op (caller keeps its own fallback) when the block map is missing.
 function scrollReadingToSrcOffset(srcOffset) {
   const body = app.querySelector('.document-body');
   if (!body) return false;
@@ -299,23 +259,16 @@ function scrollReadingToSrcOffset(srcOffset) {
   return true;
 }
 
-// Swap between the rendered page and its source, carrying the reader's place
-// across. Called from the toolbar's view group — see setReaderView.
+// Swap between the rendered page and its source, carrying the reader's place across. Called from the toolbar's view group — see setReaderView.
 function toggleCodeView() {
     const path = activeDocumentPath();
     if (!path) return;
     const handoff = viewHandoffFor(path);
-    // Carry the current position across the toggle; the destination view's
-    // render consumes it and lands at the same relative spot.
+    // Carry the current position across the toggle; the destination view's render consumes it and lands at the same relative spot.
     pendingViewScrollFraction = viewScrollFraction();
-    // At the very top, land flush at the top of the other view — don't align the
-    // first block below the edge, which reads as a stray scroll-down.
+    // At the very top, land flush at the top of the other view — don't align the first block below the edge, which reads as a stray scroll-down.
     pendingViewAtTop = viewAtTop();
-    // Entering the code view: remember which source line the reader is on, so
-    // it opens there. Leaving: remember which line the code view is on, so the
-    // reading view lands on that block. The fraction stays as the fallback.
-    // Either way, note where this view is now, and whether the view we're going
-    // back to can simply have its own last pixel returned — see viewHandoffFor.
+    // Entering the code view: remember which source line the reader is on, so it opens there. Leaving: remember which line the code view is on, so the reading view lands on that block. The fraction stays as the fallback. Either way, note where this view is now, and whether the view we're going back to can simply have its own last pixel returned — see viewHandoffFor.
     if (codeViewActive) {
       pendingCodeViewSrcOffset = null;
       handoff.codeScrollTop = monacoEditor ? monacoEditor.getScrollTop() : null;
@@ -329,12 +282,10 @@ function toggleCodeView() {
       handoff.readerScrollTop = graphViewOpen ? null : app.scrollTop;
       handoff.restoreExact =
         handoff.codeScrollTop != null && viewStillLanded(handoff.readerScrollTop, handoff.readerLanded);
-      // Coming from the map there is no reading position to carry, and asking for
-      // one measures a document that is not on screen.
+      // Coming from the map there is no reading position to carry, and asking for one measures a document that is not on screen.
       pendingCodeViewSrcOffset = graphViewOpen ? null : topReadingBlockSourceOffset();
     }
-    // Either direction re-renders the whole view (highlighting a big source or
-    // rebuilding a big document is slow), so arm the spinner for the wait.
+    // Either direction re-renders the whole view (highlighting a big source or rebuilding a big document is slow), so arm the spinner for the wait.
     beginReaderLoading();
     send({ command: codeViewActive ? 'exitCodeView' : 'enterCodeView' });
   }
@@ -352,11 +303,7 @@ window.addEventListener('keydown', (event) => {
   event.preventDefault();
   saveActiveDocument();
 });
-// Whether the surface under the keystroke has typing of its own for the browser to
-// take back. A block only owns Ctrl+Z while it holds uncommitted keystrokes: after a
-// delete or a split the caret sits in a block with no keystroke history at all, and
-// handing the key over there meant the press did nothing while the Undo button beside
-// it worked. Monaco and the app's own fields keep theirs unconditionally.
+// Whether the surface under the keystroke has typing of its own for the browser to take back. A block only owns Ctrl+Z while it holds uncommitted keystrokes: after a delete or a split the caret sits in a block with no keystroke history at all, and handing the key over there meant the press did nothing while the Undo button beside it worked. Monaco and the app's own fields keep theirs unconditionally.
 function nativeUndoOwnsKey(target) {
   if (!isEditableMouseTarget(target)) return false;
   if (codeViewActive) return true;
@@ -365,8 +312,7 @@ function nativeUndoOwnsKey(target) {
   return block.__editingActive === true && blockDomToMarkdown(block) !== block.__editBaseline;
 }
 
-// Ctrl/Cmd+Z steps back one committed reading-view edit — but not while the surface
-// under it has uncommitted typing, whose native undo covers it keystroke by keystroke.
+// Ctrl/Cmd+Z steps back one committed reading-view edit — but not while the surface under it has uncommitted typing, whose native undo covers it keystroke by keystroke.
 window.addEventListener('keydown', (event) => {
   const undoKey =
     (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && (event.key === 'z' || event.key === 'Z');
@@ -384,18 +330,9 @@ window.addEventListener('keydown', (event) => {
   undoLastEdit();
 });
 
-// The raw-source code view is Monaco (the VS Code editor): it owns line
-// wrapping, virtualized rendering of huge files, and its own colored minimap.
-// The vendored bundle loads lazily on first entry; edits relay back to the host
-// as source splices. Monaco scrolls internally, so the reader shell does not
-// scroll here and carries no rail.
+// The raw-source code view is Monaco (the VS Code editor): it owns line wrapping, virtualized rendering of huge files, and its own colored minimap. The vendored bundle loads lazily on first entry; edits relay back to the host as source splices. Monaco scrolls internally, so the reader shell does not scroll here and carries no rail.
 
-// Load the vendored Monaco bundle once, over the same leaf-asset channel the
-// other runtimes use (stylesheet linked, script injected). Monaco is handed an
-// inert worker stub so it never spawns a background worker — nor falls back to
-// evaluating worker code on the main thread — because colorizing and the minimap
-// are main-thread already and nothing we use needs one, which keeps the app's
-// security policy untouched.
+// Load the vendored Monaco bundle once, over the same leaf-asset channel the other runtimes use (stylesheet linked, script injected). Monaco is handed an inert worker stub so it never spawns a background worker — nor falls back to evaluating worker code on the main thread — because colorizing and the minimap are main-thread already and nothing we use needs one, which keeps the app's security policy untouched.
 function loadMonacoOnce() {
   if (window.LeafMonaco) return Promise.resolve(window.LeafMonaco);
   if (monacoLoadPromise) return monacoLoadPromise;
@@ -432,28 +369,20 @@ function loadMonacoOnce() {
   return monacoLoadPromise;
 }
 
-// JSON's colors. Monaco bundles no JSON colorer — its own is inside the language
-// service, which wants a worker — so this is a Monarch grammar, which is in the
-// editor core and so costs nothing in the vendored bundle and needs no worker.
+// JSON's colors. Monaco bundles no JSON colorer — its own is inside the language service, which wants a worker — so this is a Monarch grammar, which is in the editor core and so costs nothing in the vendored bundle and needs no worker.
 //
-// The token names are the bundled YAML grammar's, not JSON's own: both formats are
-// keys and values in the same view under the same theme, so a key that is one color
-// in YAML and another in JSON reads as a bug.
+// The token names are the bundled YAML grammar's, not JSON's own: both formats are keys and values in the same view under the same theme, so a key that is one color in YAML and another in JSON reads as a bug.
 //
-// `//` and `/* */` are not JSON and are colored anyway. A file carrying one is the
-// file whose reading view refuses to parse, so the code view is where its author
-// lands.
+// `//` and `/* */` are not JSON and are colored anyway. A file carrying one is the file whose reading view refuses to parse, so the code view is where its author lands.
 function jsonMonarchLanguage() {
   return {
     defaultToken: '',
     tokenizer: {
       root: [
-        // A key is only a key because of the colon after it, so the lookahead is
-        // what tells one from a value — and why it has to be tried first.
+        // A key is only a key because of the colon after it, so the lookahead is what tells one from a value — and why it has to be tried first.
         [/"(?:[^"\\]|\\.)*"(?=[ \t]*:)/, 'type'],
         [/"(?:[^"\\]|\\.)*"/, 'string'],
-        // A quote with no closer takes the rest of its line, which is the quickest
-        // way to see where the closer went missing.
+        // A quote with no closer takes the rest of its line, which is the quickest way to see where the closer went missing.
         [/".*$/, 'string'],
         [/-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][-+]?\d+)?/, 'number'],
         [/\b(?:true|false|null)\b/, 'keyword'],
@@ -470,12 +399,10 @@ function jsonMonarchLanguage() {
   };
 }
 
-// Monaco keeps grammars globally, not per editor, so re-entering the code view
-// must not hand it a second one.
+// Monaco keeps grammars globally, not per editor, so re-entering the code view must not hand it a second one.
 let jsonColoringRegistered = false;
 
-// Monaco itself only loads on the first entry to the code view, so this is the
-// earliest there is anything to register the grammar with.
+// Monaco itself only loads on the first entry to the code view, so this is the earliest there is anything to register the grammar with.
 function registerJsonColoringOnce(monaco) {
   if (jsonColoringRegistered) return;
   jsonColoringRegistered = true;
@@ -484,9 +411,7 @@ function registerJsonColoringOnce(monaco) {
   monaco.languages.setMonarchTokensProvider('json', jsonMonarchLanguage());
 }
 
-// The Monaco language id for a code-view payload. Markdown, XML and YAML are
-// bundled colorizers and JSON is the grammar above; anything else falls back to
-// plain text, which still edits and minimaps.
+// The Monaco language id for a code-view payload. Markdown, XML and YAML are bundled colorizers and JSON is the grammar above; anything else falls back to plain text, which still edits and minimaps.
 function monacoLanguageFor(state) {
   const lang = (state.language || '').toLowerCase();
   if (lang.includes('xml') || lang === 'tei') return 'xml';
@@ -504,13 +429,9 @@ function currentAppearance() {
 }
 
 // ---- Theme: paint Monaco with our colors --------------------------------------
-// Monaco can't read our CSS variables, so we translate the active theme's colors
-// into a Monaco theme and hand it over — the same palette the reading view uses,
-// so the code view and its minimap track every theme and light/dark change.
+// Monaco can't read our CSS variables, so we translate the active theme's colors into a Monaco theme and hand it over — the same palette the reading view uses, so the code view and its minimap track every theme and light/dark change.
 
-// Resolve any CSS color (hex, rgb(a), or a var chain) to hex WITHOUT '#', via a
-// throwaway probe — the trick reportWindowChrome already uses. Six digits, or
-// eight when the color carries alpha.
+// Resolve any CSS color (hex, rgb(a), or a var chain) to hex WITHOUT '#', via a throwaway probe — the trick reportWindowChrome already uses. Six digits, or eight when the color carries alpha.
 function leafResolveColor(value) {
   if (!value) return null;
   const probe = document.createElement('span');
@@ -531,19 +452,14 @@ function leafThemeToken(name) {
   return raw ? leafResolveColor(raw) : null;
 }
 
-// Build and register the Monaco theme for the current appearance from our
-// palette, returning its name. Monaco's rule colors are hex without '#'; its UI
-// colors take '#rrggbb'/'#rrggbbaa'.
+// Build and register the Monaco theme for the current appearance from our palette, returning its name. Monaco's rule colors are hex without '#'; its UI colors take '#rrggbb'/'#rrggbbaa'.
 function defineLeafMonacoTheme(monaco) {
   const dark = currentAppearance() === 'dark';
   const t = leafThemeToken;
   const fg = t('--lt-syntax-foreground') || (dark ? 'd4d4d4' : '2b2b2b');
   const rule = (token, color, fontStyle) =>
     color ? { token, foreground: color, ...(fontStyle ? { fontStyle } : {}) } : null;
-  // Monaco's own Markdown grammar: headings and list markers are `keyword`, bold
-  // `strong`, italic `emphasis`, inline/fenced code `variable`(`.source`), links
-  // `string.link`, blockquotes/comments `comment`, rules `meta.separator`, raw
-  // HTML `tag`/`attribute`. The plain names also cover XML/YAML.
+  // Monaco's own Markdown grammar: headings and list markers are `keyword`, bold `strong`, italic `emphasis`, inline/fenced code `variable`(`.source`), links `string.link`, blockquotes/comments `comment`, rules `meta.separator`, raw HTML `tag`/`attribute`. The plain names also cover XML/YAML.
   const rules = [
     rule('', fg),
     rule('keyword', t('--lt-syntax-keyword'), 'bold'),
@@ -574,14 +490,9 @@ function defineLeafMonacoTheme(monaco) {
     'editorLineNumber.activeForeground': '#' + fg,
     'editor.selectionBackground': hash('--lt-editor-code-selection-background'),
     'editorCursor.foreground': '#' + fg,
-    // Nothing behind the map's glyphs: the rail is chrome and the shell's grain has to
-    // show between the lines (reading.css takes the fill off the editor's boxes for the
-    // same reason). Unset, this defaults to editor.background and the minimap pre-fills
-    // its canvas with it. Only the alpha matters — the glyphs are still antialiased
-    // against editor.background, so the map's text reads exactly as before.
+    // Nothing behind the map's glyphs: the rail is chrome and the shell's grain has to show between the lines (reading.css takes the fill off the editor's boxes for the same reason). Unset, this defaults to editor.background and the minimap pre-fills its canvas with it. Only the alpha matters — the glyphs are still antialiased against editor.background, so the map's text reads exactly as before.
     'minimap.background': '#00000000',
-    // No scrolled-content shadow: Monaco lays it across the whole editor top,
-    // minimap included, and over the rail it reads as a smudge on the chrome.
+    // No scrolled-content shadow: Monaco lays it across the whole editor top, minimap included, and over the rail it reads as a smudge on the chrome.
     'scrollbar.shadow': '#00000000',
     'widget.shadow': '#00000000',
     // No blue focus ring poking through the card's rounded corners.
@@ -596,9 +507,7 @@ function defineLeafMonacoTheme(monaco) {
   return name;
 }
 
-// Re-skin the live editor after a theme or appearance change, and re-fit the code
-// font (per-family). No-op when the editor isn't up. Wired into leafTheme's
-// subscription in theme.js, which fires on family, mode, and system flips.
+// Re-skin the live editor after a theme or appearance change, and re-fit the code font (per-family). No-op when the editor isn't up. Wired into leafTheme's subscription in theme.js, which fires on family, mode, and system flips.
 function reskinMonacoForTheme() {
   if (!monacoEditor || !window.LeafMonaco) return;
   window.LeafMonaco.editor.setTheme(defineLeafMonacoTheme(window.LeafMonaco));
@@ -612,21 +521,9 @@ function reskinMonacoForTheme() {
 
 // Re-fit the wrap column to whatever the code font is measuring right now.
 //
-// The wrap column is a count of characters; it is only a width once you know how
-// wide a character is, and Monaco takes that measurement once — at the moment it is
-// told which font to use. A theme swap points it at a face the web view has usually
-// not finished loading yet, so what gets measured is the fallback standing in for it,
-// and the fallback's width is not the width the text ends up drawn at. Too narrow a
-// measurement and the wrap runs out under the minimap; too wide and it stops well
-// short. Nothing else corrects it: a font arriving changes no geometry, so
-// onDidLayoutChange never fires for it — which makes the wrap look like a property
-// of the theme when it is really down to whether that theme's font had loaded yet.
+// The wrap column is a count of characters; it is only a width once you know how wide a character is, and Monaco takes that measurement once — at the moment it is told which font to use. A theme swap points it at a face the web view has usually not finished loading yet, so what gets measured is the fallback standing in for it, and the fallback's width is not the width the text ends up drawn at. Too narrow a measurement and the wrap runs out under the minimap; too wide and it stops well short. Nothing else corrects it: a font arriving changes no geometry, so onDidLayoutChange never fires for it — which makes the wrap look like a property of the theme when it is really down to whether that theme's font had loaded yet.
 //
-// So: force the measurement again, then re-derive. The cache has to go first because
-// it is keyed on the column number alone, and the same count against a different font
-// reads as "nothing changed". Nothing here knows or asks which fonts exist, where
-// they come from, or when they arrive — any face, from anywhere, is handled by having
-// been re-measured.
+// So: force the measurement again, then re-derive. The cache has to go first because it is keyed on the column number alone, and the same count against a different font reads as "nothing changed". Nothing here knows or asks which fonts exist, where they come from, or when they arrive — any face, from anywhere, is handled by having been re-measured.
 function refitCodeViewToFont() {
   if (!monacoEditor || !window.LeafMonaco) return;
   window.LeafMonaco.editor.remeasureFonts();
@@ -634,17 +531,10 @@ function refitCodeViewToFont() {
   applyCodeViewWrapColumn();
 }
 
-// How far the last character stays clear of the rail's divider. Monaco has no
-// right-padding option and its own 'on' wrap fills flush to the minimap's left
-// edge, tucking the last characters under it — so the gap is bought back through
-// the wrap column instead. This is the gap the owner asked for, and it is measured
-// from the divider, not the minimap.
+// How far the last character stays clear of the rail's divider. Monaco has no right-padding option and its own 'on' wrap fills flush to the minimap's left edge, tucking the last characters under it — so the gap is bought back through the wrap column instead. This is the gap the owner asked for, and it is measured from the divider, not the minimap.
 const CODE_VIEW_TEXT_DIVIDER_GAP_PX = 8;
 
-// Which makes the gap from the minimap that plus however far the divider itself
-// stands off the minimap — read from CSS rather than restated, so moving the
-// divider (--cv-minimap-standoff) carries the text with it and the clearance above
-// stays what it says it is. Converted to whole columns below.
+// Which makes the gap from the minimap that plus however far the divider itself stands off the minimap — read from CSS rather than restated, so moving the divider (--cv-minimap-standoff) carries the text with it and the clearance above stays what it says it is. Converted to whole columns below.
 function codeViewWrapRightGapPx() {
   const standoff = Number.parseFloat(
     getComputedStyle(document.documentElement).getPropertyValue('--cv-minimap-standoff')
@@ -652,20 +542,7 @@ function codeViewWrapRightGapPx() {
   return CODE_VIEW_TEXT_DIVIDER_GAP_PX + (Number.isFinite(standoff) ? standoff : 0);
 }
 
-// Set the bounded wrap column so wrapped text stops codeViewWrapRightGapPx()
-// short of the minimap, and publish the minimap's width to CSS. info.viewportColumn
-// is Monaco's OWN natural wrap column ('on' would land there — flush to the
-// minimap), so pulling a whole number of columns off it lands the wrap a
-// deterministic distance short. Deriving the column from contentWidth by hand
-// instead double-floors the pixel gap and drifts to ~1 column, leaving the text
-// nearly touching the rail. The gap in columns is the pixel gap over the monospace
-// char width, rounded up so it never comes out short. The minimap width goes to
-// --cv-minimap-width because only Monaco knows it and the page frame (top divider,
-// bottom stroke) has to stop at the minimap's left edge. Runs after create and on
-// every layout change; only writes the column when it changed, so the updateOptions
-// it makes doesn't loop back through onDidLayoutChange. That cache is the column
-// number and nothing else, so anything changing what a column is WORTH — the code
-// font — must clear it before calling here: refitCodeViewToFont.
+// Set the bounded wrap column so wrapped text stops codeViewWrapRightGapPx() short of the minimap, and publish the minimap's width to CSS. info.viewportColumn is Monaco's OWN natural wrap column ('on' would land there — flush to the minimap), so pulling a whole number of columns off it lands the wrap a deterministic distance short. Deriving the column from contentWidth by hand instead double-floors the pixel gap and drifts to ~1 column, leaving the text nearly touching the rail. The gap in columns is the pixel gap over the monospace char width, rounded up so it never comes out short. The minimap width goes to --cv-minimap-width because only Monaco knows it and the page frame (top divider, bottom stroke) has to stop at the minimap's left edge. Runs after create and on every layout change; only writes the column when it changed, so the updateOptions it makes doesn't loop back through onDidLayoutChange. That cache is the column number and nothing else, so anything changing what a column is WORTH — the code font — must clear it before calling here: refitCodeViewToFont.
 function applyCodeViewWrapColumn() {
   if (!monacoEditor || !window.LeafMonaco) return;
   const info = monacoEditor.getLayoutInfo();
@@ -688,26 +565,9 @@ function applyCodeViewWrapColumn() {
 
 // Keep the minimap's viewport box inside the rail.
 //
-// Once a file is long enough that the minimap has to scroll inside itself, Monaco
-// stops placing the box at a straight fraction of the scroll and instead lines its
-// top edge up with the minimap's own drawing: a whole number of minimap lines, plus
-// the part-line the viewport happens to start on. That figure is never re-checked
-// against the height of the rail, so at the very bottom of a long file the box's
-// bottom edge lands a pixel or two below the editor's box — and the editor's own
-// overflow:hidden cuts off whatever is down there. Monaco never notices, because its
-// box is a plain translucent fill with nothing at its edges; ours has a border and
-// rounded corners, so what goes missing is the bottom of the frame: the stroke
-// vanishes and the two bottom corners square off. Hence bottom-only, and only on a
-// file long enough to scroll the minimap — measured here at 1.5px over on a
-// 76,000-line document.
+// Once a file is long enough that the minimap has to scroll inside itself, Monaco stops placing the box at a straight fraction of the scroll and instead lines its top edge up with the minimap's own drawing: a whole number of minimap lines, plus the part-line the viewport happens to start on. That figure is never re-checked against the height of the rail, so at the very bottom of a long file the box's bottom edge lands a pixel or two below the editor's box — and the editor's own overflow:hidden cuts off whatever is down there. Monaco never notices, because its box is a plain translucent fill with nothing at its edges; ours has a border and rounded corners, so what goes missing is the bottom of the frame: the stroke vanishes and the two bottom corners square off. Hence bottom-only, and only on a file long enough to scroll the minimap — measured here at 1.5px over on a 76,000-line document.
 //
-// So pull it back in. What it moves by is the part of a minimap line that overflowed,
-// under three pixels at any pixel ratio, so the box still reads as level with the
-// text beside it. Nothing is re-derived: the rail's height and the box's own height
-// are Monaco's numbers, read back off the elements it sized.
-// A pixel clear of the bottom edge too, for the reason the right stroke keeps one
-// (the .minimap-slider rule in reading.css). Fractional geometry: clientHeight and
-// offsetHeight round, and the rail's height is not always whole.
+// So pull it back in. What it moves by is the part of a minimap line that overflowed, under three pixels at any pixel ratio, so the box still reads as level with the text beside it. Nothing is re-derived: the rail's height and the box's own height are Monaco's numbers, read back off the elements it sized. A pixel clear of the bottom edge too, for the reason the right stroke keeps one (the .minimap-slider rule in reading.css). Fractional geometry: clientHeight and offsetHeight round, and the rail's height is not always whole.
 const MINIMAP_SLIDER_RAIL_CLEARANCE_PX = 1;
 function clampMinimapSliderToRail() {
   const rail = app.querySelector('.code-view-monaco .monaco-editor .minimap');
@@ -722,13 +582,9 @@ function clampMinimapSliderToRail() {
   slider.style.top = `${Math.max(0, limit)}px`;
 }
 
-// Monaco writes the offset to the slider's own `style`, so the mutation is the
-// signal — no polling. Our correction trips it once more, sees the box inside, stops.
+// Monaco writes the offset to the slider's own `style`, so the mutation is the signal — no polling. Our correction trips it once more, sees the box inside, stops.
 //
-// But an observer only reports a *change*, and opening the code view already at the
-// bottom positions the box in Monaco's first render — one write, nothing watching yet,
-// so it stays cut off until a resize writes again. So check on the way in too: now, in
-// case that render ran, and next frame in case it had not.
+// But an observer only reports a *change*, and opening the code view already at the bottom positions the box in Monaco's first render — one write, nothing watching yet, so it stays cut off until a resize writes again. So check on the way in too: now, in case that render ran, and next frame in case it had not.
 function watchMinimapSlider() {
   const rail = app.querySelector('.code-view-monaco .monaco-editor .minimap');
   if (!rail) return;
@@ -742,23 +598,9 @@ function watchMinimapSlider() {
   window.requestAnimationFrame(clampMinimapSliderToRail);
 }
 
-// Room to leave above the first line and below the last one. Monaco puts line 1
-// flush against the top of its box and the last line flush against the bottom, and
-// both of those edges are under .reader-edge-fade — the ~36px of page that
-// dissolves to its own color where the document slides under the app bar and where
-// it meets the card's stroke. Scrolled to either end there is nothing left to
-// dissolve, so the wash lands on text that is meant to be read: the first line comes
-// out half erased. The reading view never shows this because its page carries the
-// same clearance as padding; this is that padding, inside the editor's own scroll
-// height, so no line can ever sit in the wash.
+// Room to leave above the first line and below the last one. Monaco puts line 1 flush against the top of its box and the last line flush against the bottom, and both of those edges are under .reader-edge-fade — the ~36px of page that dissolves to its own color where the document slides under the app bar and where it meets the card's stroke. Scrolled to either end there is nothing left to dissolve, so the wash lands on text that is meant to be read: the first line comes out half erased. The reading view never shows this because its page carries the same clearance as padding; this is that padding, inside the editor's own scroll height, so no line can ever sit in the wash.
 //
-// Both numbers are taken from the reading view rather than restated. The top gap is
-// READER_CONTENT_TOP_GAP, measured from the shell's top edge, and the editor's box
-// already starts below the app bar — so the bar's height comes off it. The bottom
-// is what .document-body leaves: the content pad plus
-// the room the floating toolbar needs, which is declared on <body> (a :has() rule),
-// not the root, so it has to be read from there or it comes back 0 and the last
-// line ends up under the bar.
+// Both numbers are taken from the reading view rather than restated. The top gap is READER_CONTENT_TOP_GAP, measured from the shell's top edge, and the editor's box already starts below the app bar — so the bar's height comes off it. The bottom is what .document-body leaves: the content pad plus the room the floating toolbar needs, which is declared on <body> (a :has() rule), not the root, so it has to be read from there or it comes back 0 and the last line ends up under the bar.
 function monacoEditorPadding() {
   const px = (value) => Number.parseFloat(value) || 0;
   const root = getComputedStyle(document.documentElement);
@@ -773,16 +615,13 @@ function monacoEditorPadding() {
   };
 }
 
-// Point the live editor at the source's own padlock -- not the reading view's:
-// unlocking the page you read is not consent to rewrite the file by hand.
+// Point the live editor at the source's own padlock -- not the reading view's: unlocking the page you read is not consent to rewrite the file by hand.
 function applyCodeViewReadOnly() {
   if (!monacoEditor) return;
   monacoEditor.updateOptions({ readOnly: !codeUnlocked });
 }
 
-// A refused keystroke otherwise looks like a broken editor: the cursor moves,
-// the text does not, nothing says why. A held key refuses an edit per repeat,
-// so the growl has a floor -- one message, not a stutter of them.
+// A refused keystroke otherwise looks like a broken editor: the cursor moves, the text does not, nothing says why. A held key refuses an edit per repeat, so the growl has a floor -- one message, not a stutter of them.
 const LOCKED_GROWL_GAP_MS = 1500;
 let lastLockedGrowl = 0;
 function growlLockedForReading() {
@@ -792,9 +631,7 @@ function growlLockedForReading() {
   leafToast('The source is locked. Click the padlock in the toolbar to edit it.');
 }
 
-// Create the editor in `container`, relay content changes to the source-splice
-// path, and land where the reader was if a source offset was carried across the
-// toggle. Skinned with the theme defineLeafMonacoTheme builds from our palette.
+// Create the editor in `container`, relay content changes to the source-splice path, and land where the reader was if a source offset was carried across the toggle. Skinned with the theme defineLeafMonacoTheme builds from our palette.
 function createMonacoEditor(monaco, container, state, text) {
   const codeFont = getComputedStyle(document.documentElement)
     .getPropertyValue('--code-font')
@@ -803,24 +640,17 @@ function createMonacoEditor(monaco, container, state, text) {
     value: text,
     language: monacoLanguageFor(state),
     theme: defineLeafMonacoTheme(monaco),
-    // Bounded, not 'on': 'on' wraps flush to the minimap's left edge, tucking the
-    // last characters under its drop-shadow. applyCodeViewWrapColumn drives the
-    // column so the text stops short of the minimap with a right gap. The initial
-    // column is a placeholder — it is recomputed from the real width right after
-    // create, and on every layout change after.
+    // Bounded, not 'on': 'on' wraps flush to the minimap's left edge, tucking the last characters under its drop-shadow. applyCodeViewWrapColumn drives the column so the text stops short of the minimap with a right gap. The initial column is a placeholder — it is recomputed from the real width right after create, and on every layout change after.
     wordWrap: 'bounded',
     wordWrapColumn: 120,
-    // The source's padlock. Read-only still scrolls, selects and copies -- it
-    // only refuses the typing, and a refusal growls (see growlLockedForReading)
-    // rather than passing in silence.
+    // The source's padlock. Read-only still scrolls, selects and copies -- it only refuses the typing, and a refusal growls (see growlLockedForReading) rather than passing in silence.
     readOnly: !codeUnlocked,
     // showSlider 'always' — the viewport box stays visible instead of only on hover.
     minimap: { enabled: true, showSlider: 'always' },
     automaticLayout: true,
     lineNumbers: 'on',
     scrollBeyondLastLine: false,
-    // Clears the top and bottom edge fades (and the floating toolbar) — see
-    // monacoEditorPadding.
+    // Clears the top and bottom edge fades (and the floating toolbar) — see monacoEditorPadding.
     padding: monacoEditorPadding(),
     fontFamily: codeFont || undefined,
     fontSize: 14,
@@ -829,17 +659,12 @@ function createMonacoEditor(monaco, container, state, text) {
     // Not the editor's default Alt: one modifier has to mean add-a-cursor in both views, and the reading view's is Ctrl.
     multiCursorModifier: 'ctrlCmd',
     quickSuggestions: false,
-    // No echoing back words already in the file: the only suggestions worth a
-    // popup are the ones the host answers (code-intel.js), on their triggers.
+    // No echoing back words already in the file: the only suggestions worth a popup are the ones the host answers (code-intel.js), on their triggers.
     wordBasedSuggestions: 'off',
     occurrencesHighlight: 'off',
     // No box/stroke around the line being edited.
     renderLineHighlight: 'none',
-    // No scrollbars — the reader hides its own too; the wheel and the minimap do
-    // the scrolling. And no overview ruler, so the minimap is the rightmost thing.
-    // verticalScrollbarSize stays 0: it reserves space to the RIGHT of the
-    // minimap, so any value shoves the minimap off the window edge — the right gap
-    // is done through the wrap column instead (applyCodeViewWrapColumn).
+    // No scrollbars — the reader hides its own too; the wheel and the minimap do the scrolling. And no overview ruler, so the minimap is the rightmost thing. verticalScrollbarSize stays 0: it reserves space to the RIGHT of the minimap, so any value shoves the minimap off the window edge — the right gap is done through the wrap column instead (applyCodeViewWrapColumn).
     scrollbar: {
       vertical: 'hidden',
       horizontal: 'hidden',
@@ -868,11 +693,7 @@ function createMonacoEditor(monaco, container, state, text) {
   applyCodeViewWrapColumn();
   // And keep the viewport box off the bottom edge — see clampMinimapSliderToRail.
   watchMinimapSlider();
-  // And in step with the font, which the width can't tell us about. `loadingdone` is
-  // the web view saying a batch of faces has finished loading — it fires for every
-  // font from every source, names none of them, and keeps firing for later batches,
-  // so a font this code has never heard of is covered by the same line. Whatever the
-  // editor was measuring before the face landed, it re-measures after.
+  // And in step with the font, which the width can't tell us about. `loadingdone` is the web view saying a batch of faces has finished loading — it fires for every font from every source, names none of them, and keeps firing for later batches, so a font this code has never heard of is covered by the same line. Whatever the editor was measuring before the face landed, it re-measures after.
   if (document.fonts && document.fonts.addEventListener) {
     monacoFontsDoneHandler = () => refitCodeViewToFont();
     document.fonts.addEventListener('loadingdone', monacoFontsDoneHandler);
@@ -898,8 +719,7 @@ function createMonacoEditor(monaco, container, state, text) {
   monacoEditor.focus();
 }
 
-// Dispose the editor and everything hung off it. Called on re-entry (a live
-// reload rebuilds the view) and by renderState when leaving for the reading view.
+// Dispose the editor and everything hung off it. Called on re-entry (a live reload rebuilds the view) and by renderState when leaving for the reading view.
 function disposeMonacoEditor() {
   if (!monacoEditor) return;
   teardownCodeIntel();
@@ -927,25 +747,20 @@ function disposeMonacoEditor() {
   monacoEditor.dispose();
   monacoEditor = null;
   codeViewWrapColumn = 0;
-  // Drop the published minimap width so a stale value can't frame the reading
-  // view if it ever read the property.
+  // Drop the published minimap width so a stale value can't frame the reading view if it ever read the property.
   document.documentElement.style.removeProperty('--cv-minimap-width');
 }
 
-// Swap the reader shell over to Monaco for the active document's source. Monaco
-// loads lazily; the spinner (armed by the toggle) stays up until the editor is
-// on screen. Re-entering (live reload) disposes and rebuilds.
+// Swap the reader shell over to Monaco for the active document's source. Monaco loads lazily; the spinner (armed by the toggle) stays up until the editor is on screen. Re-entering (live reload) disposes and rebuilds.
 function renderCodeView(state) {
   disposeMonacoEditor();
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
-  // Same as a document render: what is in `app` goes, so the overlay has to be
-  // taken down rather than swept away underneath its own handlers.
+  // Same as a document render: what is in `app` goes, so the overlay has to be taken down rather than swept away underneath its own handlers.
   closeDiagramOverlay();
   readerAnchorBlocks = null;
   app.className = 'reader-shell has-document code-view-monaco-shell';
-  // Flag the code view at the document root so the header's active tab (a sibling
-  // of the reader, not a descendant) can match the code surface color.
+  // Flag the code view at the document root so the header's active tab (a sibling of the reader, not a descendant) can match the code surface color.
   document.documentElement.dataset.codeView = 'true';
   // Monaco draws its own minimap; the reader's rail does not belong here.
   setMinimapMarkup('');
@@ -954,9 +769,7 @@ function renderCodeView(state) {
   codeViewText = text;
   app.innerHTML = '<div class="code-view-monaco"></div>';
   const container = app.querySelector('.code-view-monaco');
-  // runViewRender lowers the spinner right after this returns; re-raise on the
-  // next tick (only when a load is actually pending) so it stays up across the
-  // async load, then lower it once the editor is on screen.
+  // runViewRender lowers the spinner right after this returns; re-raise on the next tick (only when a load is actually pending) so it stays up across the async load, then lower it once the editor is on screen.
   Promise.resolve().then(() => {
     if (codeViewActive && !window.LeafMonaco) beginReaderLoading();
   });
@@ -976,10 +789,7 @@ function renderCodeView(state) {
     });
 }
 
-// Enter the code view by fetching the payload the host staged. The source runs to
-// megabytes, and handing it over as script means crossing the webview's process
-// boundary — seconds on a large file — so the host sends only this URL. A failure
-// leaves the reading view up rather than a half-built editor.
+// Enter the code view by fetching the payload the host staged. The source runs to megabytes, and handing it over as script means crossing the webview's process boundary — seconds on a large file — so the host sends only this URL. A failure leaves the reading view up rather than a half-built editor.
 window.leafLoadCodeView = (url) => {
   fetch(url)
     .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
@@ -990,14 +800,10 @@ window.leafLoadCodeView = (url) => {
     });
 };
 
-// Enter the code view: the host sends the exact buffer text, the language, and the
-// dirty state. The source itself is the weight runViewRender is deciding about —
-// building the editor on a few megabytes blocks, so the spinner goes up first.
+// Enter the code view: the host sends the exact buffer text, the language, and the dirty state. The source itself is the weight runViewRender is deciding about — building the editor on a few megabytes blocks, so the spinner goes up first.
 window.leafShowCodeView = (state) => {
   runViewRender(state && state.text, () => {
-    // The map was held until now (see setReaderView). Dropping it here means the
-    // reading view it was covering is replaced in the same breath rather than
-    // revealed, laid out, and thrown away.
+    // The map was held until now (see setReaderView). Dropping it here means the reading view it was covering is replaced in the same breath rather than revealed, laid out, and thrown away.
     if (graphExitPending) {
       graphExitPending = false;
       closeGraphView();
@@ -1011,16 +817,14 @@ window.leafShowCodeView = (state) => {
   });
 };
 
-// The host has taken a debounced edit: carry its dirty state through. Nothing
-// about the text comes back — the editor colors what it holds.
+// The host has taken a debounced edit: carry its dirty state through. Nothing about the text comes back — the editor colors what it holds.
 window.leafSourceUpdated = (state) => {
   if (!codeViewActive || !state) return;
   const path = activeDocumentPath();
   if (path) setDirtyState(path, !!state.dirty);
 };
 
-// The host reports a save's outcome. On success the document is no longer dirty;
-// on failure, keep the edits and surface the error.
+// The host reports a save's outcome. On success the document is no longer dirty; on failure, keep the edits and surface the error.
 window.leafSaved = (path, ok, error) => {
   if (ok) {
     undoableByPath.delete(path);

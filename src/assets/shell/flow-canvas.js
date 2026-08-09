@@ -1,15 +1,9 @@
 // ---------------------------------------------------------------------------
-// The flowchart sheet: a canvas you draw in and a code pane you type mermaid
-// into, over the page. Two views, one model — the graph is the truth while the
-// sheet is open, text is the interchange between the panes, and mermaid is the
-// only serialization.
+// The flowchart sheet: a canvas you draw in and a code pane you type mermaid into, over the page. Two views, one model — the graph is the truth while the sheet is open, text is the interchange between the panes, and mermaid is the only serialization.
 //
-// Nothing is written until Save, and Save is one splice: the document's undo
-// button then puts the whole diagram back, which is what a reader means by
-// "undo that". Cancel writes nothing.
+// Nothing is written until Save, and Save is one splice: the document's undo button then puts the whole diagram back, which is what a reader means by "undo that". Cancel writes nothing.
 //
-// The grammar lives in flow-model.js. Mermaid draws the canvas and places every
-// box; this file measures the result and lays its handles over it.
+// The grammar lives in flow-model.js. Mermaid draws the canvas and places every box; this file measures the result and lays its handles over it.
 // ---------------------------------------------------------------------------
 
 const flowBackdrop = document.getElementById('flowBackdrop');
@@ -34,39 +28,29 @@ const flowPickerClose = document.getElementById('flowPickerClose');
 const flowNotice = document.getElementById('flowNotice');
 const flowCode = document.getElementById('flowCode');
 
-// What the sheet is editing, for as long as it is open. `graph` is null while
-// the text is something the canvas cannot model; `text` is authoritative either
-// way, because it is what Save writes.
+// What the sheet is editing, for as long as it is open. `graph` is null while the text is something the canvas cannot model; `text` is authoritative either way, because it is what Save writes.
 let flowSession = null;
 let flowSelection = null;
 let flowDrag = null;
 let flowCodeTimer = 0;
-// Drawing is a round trip through mermaid, so it is debounced, and whatever
-// mermaid says when it refuses is what the notice shows.
+// Drawing is a round trip through mermaid, so it is debounced, and whatever mermaid says when it refuses is what the notice shows.
 let flowDrawTimer = 0;
 let flowDrawError = '';
-// True when mermaid drew the diagram but we could not find our boxes in it, so
-// the handles are missing. Silent, otherwise, and indistinguishable from a bug.
+// True when mermaid drew the diagram but we could not find our boxes in it, so the handles are missing. Silent, otherwise, and indistinguishable from a bug.
 let flowLostBoxes = false;
 let flowLastFocus = null;
-// The drawn diagram's own size, how much of life size it is shown at, and where
-// the last draw put everything — which is what lets a label box be placed over
-// the shape it belongs to without measuring the page.
+// The drawn diagram's own size, how much of life size it is shown at, and where the last draw put everything — which is what lets a label box be placed over the shape it belongs to without measuring the page.
 let flowSize = null;
 let flowZoom = 1;
 let flowPlaced = null;
 // The box being typed into on the canvas, if any.
 let flowLabelBox = null;
-// Steps back and forward, and the state as of the last settled point. `before`
-// is what a change undoes to, re-taken after every change — which is how one
-// place can record a step without every caller having to remember to.
+// Steps back and forward, and the state as of the last settled point. `before` is what a change undoes to, re-taken after every change — which is how one place can record a step without every caller having to remember to.
 const flowHistory = { past: [], future: [] };
 let flowBefore = null;
 const FLOW_HISTORY_CAP = 100;
 
-// Why the canvas is off, for when flowRefusal cannot name the line that beat
-// it. The diagram is still drawn and the code pane still edits it, which is why
-// refusing costs the reader nothing.
+// Why the canvas is off, for when flowRefusal cannot name the line that beat it. The diagram is still drawn and the code pane still edits it, which is why refusing costs the reader nothing.
 const FLOW_UNMODELED = 'The canvas can’t model this diagram yet.';
 const FLOW_AS_TEXT = ' Edit it as text below; the picture follows what you type.';
 const FLOW_LOST_BOXES = 'Drawn, but the canvas can’t find its boxes to put handles on — edit it as text below.';
@@ -75,25 +59,21 @@ const FLOW_TIP_IDLE =
   'Double-click empty space to add a box · double-click a box to rename it · right-click anything for more.';
 const FLOW_TIP_NODE =
   'Its + handles add the step before or after it · drag it onto a line to put it in that line · Delete removes it.';
-// The first box is the one that decides which way the whole chart runs, so it is
-// the only one offered all four handles. After that, Flow up top turns it.
+// The first box is the one that decides which way the whole chart runs, so it is the only one offered all four handles. After that, Flow up top turns it.
 const FLOW_TIP_FIRST = 'Its four + handles start the chart running that way. After that, Flow up top turns it.';
 const FLOW_TIP_EDGE = 'Drag either end onto another box to reconnect it · Delete removes it.';
-// The same sentence the text pane carries, on the button that does it — the
-// pane is easy to have scrolled past, and this is the last moment to say so.
+// The same sentence the text pane carries, on the button that does it — the pane is easy to have scrolled past, and this is the last moment to say so.
 const FLOW_SAVE_REWRITES = 'Save rewrites the whole block: one box to a line, every label quoted.';
 // A diagram the canvas cannot model. It is drawn, and that is all it is.
 const FLOW_TIP_PREVIEW = 'Drag to move the picture · Ctrl-scroll to zoom · type below to change it.';
-// What a drag is offering, said while it is still in the air. Every drop this
-// canvas takes is one of these, so none of them has to be guessed at.
+// What a drag is offering, said while it is still in the air. Every drop this canvas takes is one of these, so none of them has to be guessed at.
 const FLOW_TIP_MOVING =
   'Drop on a line to put this box in it · on another box to move it beside that one · in a group to join it, outside to leave it.';
 const FLOW_TIP_BUD = 'Let go on empty space for a new box · on another box to connect to it.';
 
 // ---- opening and closing ---------------------------------------------------
 
-// `save` is handed the mermaid text and decides where it goes: the insert row
-// writes a new block, a diagram already in the page splices its own range.
+// `save` is handed the mermaid text and decides where it goes: the insert row writes a new block, a diagram already in the page splices its own range.
 function openFlowSheet({ title, text, save }) {
   if (!flowSheet || !flowBackdrop) return;
   flowLastFocus = document.activeElement;
@@ -162,14 +142,12 @@ function saveFlowSheet() {
   if (typeof save === 'function') save(text);
 }
 
-// Escape closes without writing, the same as Cancel. Delete removes what the
-// canvas has selected, but never while something is being typed.
+// Escape closes without writing, the same as Cancel. Delete removes what the canvas has selected, but never while something is being typed.
 function onFlowSheetKey(event) {
   if (!flowSession) return;
   if (event.key === 'Escape') {
     event.preventDefault();
-    // One thing at a time: the menu goes first, then the picker if it is asking
-    // which shape to add, and the sheet only when there is nothing over it.
+    // One thing at a time: the menu goes first, then the picker if it is asking which shape to add, and the sheet only when there is nothing over it.
     if (flowMenu) {
       closeFlowMenu();
       return;
@@ -206,9 +184,7 @@ function onFlowSheetKey(event) {
 
 // ---- the two panes, kept in step ------------------------------------------
 
-// Text typed into the code pane, or the text the sheet opened on. This is the
-// only place the graph is re-derived: what the canvas produces is never parsed
-// back, so an edit can never cost the canvas its graph.
+// Text typed into the code pane, or the text the sheet opened on. This is the only place the graph is re-derived: what the canvas produces is never parsed back, so an edit can never cost the canvas its graph.
 function setFlowText(text, from) {
   if (!flowSession) return;
   if (from === 'code') recordFlowStep();
@@ -220,9 +196,7 @@ function setFlowText(text, from) {
   flowBefore = flowSnapshot();
 }
 
-// The canvas moved. The graph is already the truth, so this only writes it out.
-// Never parse it back: an emptied diagram does not survive the trip, and the
-// canvas would be left with no graph to add to.
+// The canvas moved. The graph is already the truth, so this only writes it out. Never parse it back: an emptied diagram does not survive the trip, and the canvas would be left with no graph to add to.
 function flowGraphChanged() {
   if (!flowSession || !flowSession.graph) return;
   recordFlowStep();
@@ -236,10 +210,7 @@ function flowGraphChanged() {
 
 // ---- stepping back ---------------------------------------------------------
 
-// The sheet keeps its own history, because one Save is one document undo and
-// nobody wants "undo" to mean "throw the whole diagram away". A step is the
-// graph and the text together: restoring only the text would re-read it, and an
-// emptied diagram does not survive that trip.
+// The sheet keeps its own history, because one Save is one document undo and nobody wants "undo" to mean "throw the whole diagram away". A step is the graph and the text together: restoring only the text would re-read it, and an emptied diagram does not survive that trip.
 function flowSnapshot() {
   if (!flowSession) return null;
   return {
@@ -293,9 +264,7 @@ function updateFlowHistoryButtons() {
 if (flowUndoButton) flowUndoButton.addEventListener('click', undoFlow);
 if (flowRedoButton) flowRedoButton.addEventListener('click', redoFlow);
 
-// An empty diagram is a legal thing to be halfway through and not a legal thing
-// to write: mermaid cannot draw a flowchart with nothing in it. Export is off for
-// the same reason — there is no drawing to make a file out of.
+// An empty diagram is a legal thing to be halfway through and not a legal thing to write: mermaid cannot draw a flowchart with nothing in it. Export is off for the same reason — there is no drawing to make a file out of.
 function updateFlowSaveState() {
   const graph = flowSession && flowSession.graph;
   const empty = !!graph && !graph.nodes.length;
@@ -317,9 +286,7 @@ function flowSelectionStillThere() {
   return !!flowFindEdge(graph, flowSelection.id);
 }
 
-// Typing waits 180ms before it is read, so anything acting on the text takes what
-// is in the field first — otherwise Save writes the text from before the last
-// keystroke and closes, and those characters are gone.
+// Typing waits 180ms before it is read, so anything acting on the text takes what is in the field first — otherwise Save writes the text from before the last keystroke and closes, and those characters are gone.
 function flushFlowCode() {
   window.clearTimeout(flowCodeTimer);
   if (!flowSession || !flowCode || flowCode.value === flowSession.text) return;
@@ -340,17 +307,14 @@ if (flowBackdrop) flowBackdrop.addEventListener('click', closeFlowSheet);
 
 // ---- the line that says what things are ------------------------------------
 
-// Fourteen shapes is more than anyone can be expected to know by their outline,
-// so hovering one says what it is for. Each hint is a field on the shape's own
-// row, beside the outline the button draws.
+// Fourteen shapes is more than anyone can be expected to know by their outline, so hovering one says what it is for. Each hint is a field on the shape's own row, beside the outline the button draws.
 function setFlowHint(text) {
   if (flowHint) flowHint.textContent = text;
 }
 
 function restoreFlowHint() {
   const graph = flowSession && flowSession.graph;
-  // No graph is a picture, not a canvas: the gestures it does answer to are the
-  // two that only move the view, and the text pane is where it changes.
+  // No graph is a picture, not a canvas: the gestures it does answer to are the two that only move the view, and the text pane is where it changes.
   if (!graph) {
     setFlowHint(FLOW_TIP_PREVIEW);
     return;
@@ -380,8 +344,7 @@ const FLOW_CHIP_W = 42;
 const FLOW_CHIP_H = 26;
 
 
-// One end, drawn where a marker would put it. Markers need a `defs` block and a
-// document-unique id; a chip is one glyph, so it draws the glyph.
+// One end, drawn where a marker would put it. Markers need a `defs` block and a document-unique id; a chip is one glyph, so it draws the glyph.
 function flowEndChipGlyph(mark, x, y, facing) {
   if (!mark) return '';
   if (mark === 'arrow') {
@@ -395,8 +358,7 @@ function flowEndChipGlyph(mark, x, y, facing) {
   );
 }
 
-// A connector, drawn small: the line in its own style with whatever sits at
-// each tip. Used for both the line buttons and the end buttons.
+// A connector, drawn small: the line in its own style with whatever sits at each tip. Used for both the line buttons and the end buttons.
 function flowEdgeChip(lineId, endId) {
   const ends = flowEdgeEnd(endId);
   const y = FLOW_CHIP_H / 2;
@@ -425,18 +387,14 @@ function buildFlowControls() {
   }
 }
 
-// The one way a box is ever made. A + handle, a double-click on empty space and
-// the menu all come through here saying where it goes in the order and what it
-// hangs off, so they cannot disagree about what happens next.
+// The one way a box is ever made. A + handle, a double-click on empty space and the menu all come through here saying where it goes in the order and what it hangs off, so they cannot disagree about what happens next.
 function addFlowNode(shapeId, options) {
   const graph = flowSession && flowSession.graph;
   if (!graph) return null;
   const { before, connectFrom, connectTo, turn, intoEdge, text } = options || {};
-  // Asked for across the flow: the chart turns, so the new step lands on the
-  // side it was asked for rather than wherever the old direction would put it.
+  // Asked for across the flow: the chart turns, so the new step lands on the side it was asked for rather than wherever the old direction would put it.
   if (turn) graph.direction = turn;
-  // The name typed into the picker before a shape was chosen, if there was one.
-  // Otherwise the shape's own name, which is a placeholder to be typed over.
+  // The name typed into the picker before a shape was chosen, if there was one. Otherwise the shape's own name, which is a placeholder to be typed over.
   const named = (text || '').trim();
   const node = flowAddNode(graph, shapeId, named || flowShape(shapeId).label);
   if (before !== undefined) flowMoveNode(graph, node.id, before);
@@ -445,16 +403,12 @@ function addFlowNode(shapeId, options) {
   if (intoEdge) flowSpliceIntoEdge(graph, node.id, intoEdge);
   flowSelection = { kind: 'node', id: node.id };
   flowGraphChanged();
-  // Straight into typing its name: a box called "Step" helps nobody. Already
-  // named, and there is nothing to ask.
+  // Straight into typing its name: a box called "Step" helps nobody. Already named, and there is nothing to ask.
   if (!named) openFlowLabelBox('node', node.id);
   return node;
 }
 
-// Where a point on the canvas falls in the declaration order: the id to put a
-// new box in front of, or null for the end. Nothing stores coordinates, so this
-// is as close as "add it here" can get — and it is close enough that a box lands
-// near where it was asked for.
+// Where a point on the canvas falls in the declaration order: the id to put a new box in front of, or null for the end. Nothing stores coordinates, so this is as close as "add it here" can get — and it is close enough that a box lands near where it was asked for.
 function flowSlotAt(point) {
   const graph = flowSession && flowSession.graph;
   if (!graph || !flowPlaced || !flowPlaced.nodes.length) return undefined;
@@ -488,9 +442,7 @@ function flowSlotAt(point) {
 
 
 
-// A box's + handles, one per side, all meaning the next step *that way*. A chart
-// has one direction, so a step asked for across the flow can only land where it
-// was asked for if the chart turns — see flowBudSidesFor for who may ask.
+// A box's + handles, one per side, all meaning the next step *that way*. A chart has one direction, so a step asked for across the flow can only land where it was asked for if the chart turns — see flowBudSidesFor for who may ask.
 const FLOW_BUD_SIDES = ['up', 'down', 'left', 'right'];
 const FLOW_BUD_WORDS = { up: 'above', down: 'below', left: 'to the left', right: 'to the right' };
 // A mermaid direction and a side of a box are the same fact, said two ways.
@@ -499,9 +451,7 @@ const FLOW_WAY_DIRECTION = { down: 'TD', up: 'BT', right: 'LR', left: 'RL' };
 const FLOW_OPPOSITE_WAY = { up: 'down', down: 'up', left: 'right', right: 'left' };
 
 
-// What a handle does, which depends on which way the chart already runs. With
-// the flow it is the next step; against it, the step before this one; across it,
-// the next step and the chart turns to follow.
+// What a handle does, which depends on which way the chart already runs. With the flow it is the next step; against it, the step before this one; across it, the next step and the chart turns to follow.
 function flowBudIntent(direction, side) {
   const way = FLOW_DIRECTION_WAY[direction] || 'down';
   if (side === way) return { step: 'next' };
@@ -516,10 +466,7 @@ function flowBudTitle(direction, side) {
   return 'Start the chart running ' + FLOW_BUD_WORDS[side];
 }
 
-// Which sides get a handle. A chart of one box has not said which way it runs,
-// so all four are offered and the one you take settles it. After that only the
-// two along the flow appear: a handle that spun the whole diagram round under
-// you would be a trap, and the Flow picker is how it turns from then on.
+// Which sides get a handle. A chart of one box has not said which way it runs, so all four are offered and the one you take settles it. After that only the two along the flow appear: a handle that spun the whole diagram round under you would be a trap, and the Flow picker is how it turns from then on.
 function flowBudSidesFor(graph) {
   if (graph.nodes.length <= 1) return FLOW_BUD_SIDES;
   const way = FLOW_DIRECTION_WAY[graph.direction] || 'down';
@@ -548,15 +495,13 @@ function setFlowZoom(next) {
   if (Math.abs(clamped - flowZoom) < 0.001) return;
   closeFlowLabelBox(true);
   flowZoom = clamped;
-  // The drawing is the same drawing, only bigger — so it is resized rather than
-  // asked for again, and only the measurements have to be taken afresh.
+  // The drawing is the same drawing, only bigger — so it is resized rather than asked for again, and only the measurements have to be taken afresh.
   sizeFlowStage();
   measureFlowDiagram();
   drawFlowOverlay();
 }
 
-// As large as it goes without spilling, and never enlarged past life size — a
-// three-box diagram blown up to fill the pane looks broken, not helpful.
+// As large as it goes without spilling, and never enlarged past life size — a three-box diagram blown up to fill the pane looks broken, not helpful.
 function fitFlowCanvas() {
   if (!flowCanvas || !flowSize) return;
   setFlowPan(0, 0);
@@ -566,10 +511,7 @@ function fitFlowCanvas() {
   setFlowZoom(Math.min(1, room / flowSize.width, tall / flowSize.height));
 }
 
-// Where the diagram has been dragged to, in stage pixels. The layout centers
-// the stage and this moves it from there, so a diagram that fits the pane can
-// still be pushed out from under the picker — which scrolling could never do,
-// there being nothing to scroll.
+// Where the diagram has been dragged to, in stage pixels. The layout centers the stage and this moves it from there, so a diagram that fits the pane can still be pushed out from under the picker — which scrolling could never do, there being nothing to scroll.
 const flowPan = { x: 0, y: 0 };
 
 function setFlowPan(x, y) {
@@ -580,8 +522,7 @@ function setFlowPan(x, y) {
   flowCanvas.style.setProperty('--flow-pan-y', Math.round(y) + 'px');
 }
 
-// Back to the middle: the drag undone, and a diagram bigger than the pane
-// scrolled to its own middle rather than its top-left corner.
+// Back to the middle: the drag undone, and a diagram bigger than the pane scrolled to its own middle rather than its top-left corner.
 function centerFlowCanvas() {
   if (!flowCanvas) return;
   setFlowPan(0, 0);
@@ -591,9 +532,7 @@ function centerFlowCanvas() {
 
 // ---- how much room the text gets -------------------------------------------
 
-// The text pane is dragged to whatever width suits what you are doing: mostly
-// drawing, mostly typing, or halfway. Arrow keys move it too, so it is not a
-// mouse-only control. The canvas re-fits after, since its room just changed.
+// The text pane is dragged to whatever width suits what you are doing: mostly drawing, mostly typing, or halfway. Arrow keys move it too, so it is not a mouse-only control. The canvas re-fits after, since its room just changed.
 const FLOW_CODE_MIN = 180;
 
 function setFlowCodeWidth(pixels) {
@@ -649,24 +588,16 @@ if (flowCanvas) {
 
 // ---- the canvas, which is mermaid's own drawing ----------------------------
 //
-// There is one picture in this sheet and mermaid draws it. Nothing here knows
-// what a decision or a database looks like: the text goes to mermaid, its SVG
-// goes on the stage, and then we measure it to find out where our boxes landed.
-// Handles, rings and drop marks are an overlay on top, in stage pixels.
+// There is one picture in this sheet and mermaid draws it. Nothing here knows what a decision or a database looks like: the text goes to mermaid, its SVG goes on the stage, and then we measure it to find out where our boxes landed. Handles, rings and drop marks are an overlay on top, in stage pixels.
 //
-// Never draw a shape here. Two pictures of one diagram means one of them is a
-// lie, and it would be this one.
+// Never draw a shape here. Two pictures of one diagram means one of them is a lie, and it would be this one.
 
-// Mermaid tags each box `data-id="<the id you wrote>"` and each line
-// `data-id="L_<from>_<to>_<n>"`, counting from zero per pair. Both mappings are
-// exact, so nothing here is matched by guesswork.
+// Mermaid tags each box `data-id="<the id you wrote>"` and each line `data-id="L_<from>_<to>_<n>"`, counting from zero per pair. Both mappings are exact, so nothing here is matched by guesswork.
 function flowEdgeDomId(from, to, nth) {
   return 'L_' + from + '_' + to + '_' + nth;
 }
 
-// Mermaid writes a box's id as `flowchart-<the id you wrote>-<n>`, on `id`
-// rather than `data-id`. Both spellings are read: which one it uses depends on
-// the renderer it took, and matching neither leaves every box unclickable.
+// Mermaid writes a box's id as `flowchart-<the id you wrote>-<n>`, on `id` rather than `data-id`. Both spellings are read: which one it uses depends on the renderer it took, and matching neither leaves every box unclickable.
 function flowNodeIdFromDom(raw, known) {
   if (!raw) return null;
   if (known.has(raw)) return raw;
@@ -688,8 +619,7 @@ function redrawFlowSheet() {
 function drawFlowNotice() {
   if (!flowNotice) return;
   const graph = flowSession && flowSession.graph;
-  // Mermaid refusing to draw it beats us refusing to model it: one is a blank
-  // pane the reader has to explain, the other is a pane full of diagram.
+  // Mermaid refusing to draw it beats us refusing to model it: one is a blank pane the reader has to explain, the other is a pane full of diagram.
   const problem = flowDrawError || (graph && flowLostBoxes ? FLOW_LOST_BOXES : '');
   const message = !graph
     ? problem || (flowRefusal(flowSession ? flowSession.text : '') || FLOW_UNMODELED) + FLOW_AS_TEXT
@@ -707,9 +637,7 @@ function drawFlowNotice() {
   restoreFlowHint();
 }
 
-// Drawing is a round trip through mermaid, so it is debounced and the answer is
-// stamped: a render that finishes after a newer one started is dropped rather
-// than painted over it.
+// Drawing is a round trip through mermaid, so it is debounced and the answer is stamped: a render that finishes after a newer one started is dropped rather than painted over it.
 function queueFlowDiagram() {
   window.clearTimeout(flowDrawTimer);
   flowDrawTimer = window.setTimeout(drawFlowDiagram, 120);
@@ -720,10 +648,7 @@ function drawFlowDiagram() {
   const graph = flowSession.graph;
   const text = flowSession.text;
   const attempt = (flowRenderSeq += 1);
-  // A diagram the canvas cannot model is still drawn, from its text — a pie
-  // chart, a gantt, a flowchart using something we don't read yet. It gets no
-  // handles, but a live picture is most of what an editor is for, and the code
-  // pane is the only way to edit these. Only an empty graph draws nothing.
+  // A diagram the canvas cannot model is still drawn, from its text — a pie chart, a gantt, a flowchart using something we don't read yet. It gets no handles, but a live picture is most of what an editor is for, and the code pane is the only way to edit these. Only an empty graph draws nothing.
   if ((graph && !graph.nodes.length) || !text.trim()) {
     flowCanvas.innerHTML = '';
     flowPlaced = null;
@@ -758,9 +683,7 @@ function drawFlowDiagram() {
     });
 }
 
-// Mermaid sizes its SVG to suit itself. The stage takes the diagram's own
-// dimensions from the viewBox and scales them by the zoom, so one number moves
-// everything and the overlay's pixels stay the diagram's pixels.
+// Mermaid sizes its SVG to suit itself. The stage takes the diagram's own dimensions from the viewBox and scales them by the zoom, so one number moves everything and the overlay's pixels stay the diagram's pixels.
 function sizeFlowStage() {
   const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
   const svg = stage && stage.querySelector('svg');
@@ -778,8 +701,7 @@ function sizeFlowStage() {
   stage.style.height = height + 'px';
 }
 
-// Where mermaid put everything, in pixels relative to the stage. Read off the
-// drawing rather than worked out, which is the whole point of the swap.
+// Where mermaid put everything, in pixels relative to the stage. Read off the drawing rather than worked out, which is the whole point of the swap.
 function measureFlowDiagram() {
   const graph = flowSession && flowSession.graph;
   const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
@@ -791,9 +713,7 @@ function measureFlowDiagram() {
   const origin = stage.getBoundingClientRect();
   const known = new Set(graph.nodes.map((node) => node.id));
   const nodes = [];
-  // Every group carrying a `data-id`. Mermaid names a box either by the id you
-  // wrote or by its own `flowchart-<id>-<n>` spelling depending on the renderer
-  // it took, so both are read rather than one being assumed.
+  // Every group carrying a `data-id`. Mermaid names a box either by the id you wrote or by its own `flowchart-<id>-<n>` spelling depending on the renderer it took, so both are read rather than one being assumed.
   svg.querySelectorAll('g.node, g[data-id]').forEach((group) => {
     const id = flowNodeIdFromDom(group.id, known) || flowNodeIdFromDom(group.dataset.id, known);
     if (!id) return;
@@ -808,10 +728,7 @@ function measureFlowDiagram() {
       radius: flowDrawnRadius(group, rect),
     });
   });
-  // The boxes around boxes. Mermaid draws each one as `g.cluster`, named the
-  // way it names a node, so the same two spellings are read — and a cluster is
-  // measured only to put a title strip on it, never a handle: the whole of what
-  // the canvas does to a group is rename it, empty it out, or take it away.
+  // The boxes around boxes. Mermaid draws each one as `g.cluster`, named the way it names a node, so the same two spellings are read — and a cluster is measured only to put a title strip on it, never a handle: the whole of what the canvas does to a group is rename it, empty it out, or take it away.
   const groups = [];
   const knownGroups = new Set((graph.groups || []).map((group) => group.id));
   svg.querySelectorAll('g.cluster').forEach((drawn) => {
@@ -848,21 +765,14 @@ function measureFlowDiagram() {
   flowLostBoxes = graph.nodes.length && !nodes.length;
 }
 
-// A corner's radius from how far in along its diagonal the fill starts. Its own
-// function because the constant is easy to get wrong and impossible to see when
-// it is — the Euclidean gap, (√2 − 1), is the wrong one and misses by that
-// factor. The harness holds it.
+// A corner's radius from how far in along its diagonal the fill starts. Its own function because the constant is easy to get wrong and impossible to see when it is — the Euclidean gap, (√2 − 1), is the wrong one and misses by that factor. The harness holds it.
 function flowCornerRadiusFrom(inset) {
   return inset / (1 - Math.SQRT1_2);
 }
 
-// How round the corners of the shape mermaid drew are, in stage pixels. Read off
-// the drawing for the same reason everything else is: a table of radii here
-// would be a second opinion about a shape we do not draw.
+// How round the corners of the shape mermaid drew are, in stage pixels. Read off the drawing for the same reason everything else is: a table of radii here would be a second opinion about a shape we do not draw.
 function flowDrawnRadius(group, rect) {
-  // The biggest thing in the group, not the first: a node holds its label's
-  // background and any decoration too, and document order does not say which
-  // one is the outline. The outline is the one that covers the others.
+  // The biggest thing in the group, not the first: a node holds its label's background and any decoration too, and document order does not say which one is the outline. The outline is the one that covers the others.
   let outline = null;
   let widest = 0;
   group.querySelectorAll('rect, circle, ellipse, polygon, path').forEach((drawn) => {
@@ -889,12 +799,7 @@ function flowDrawnRadius(group, rect) {
   const reach = Math.min(box.width, box.height) / 2;
   if (!(reach > 0)) return 0;
 
-  // Measured, not read off an attribute: mermaid builds these with rough.js, so
-  // there is no `rx` and no arc to look up. Walk in along the corner's diagonal
-  // until the fill starts, which works however it chose to draw. A circular
-  // corner of
-  // radius r has its center at (r, r), so the fill begins at (t, t) where
-  // (r − t)√2 = r — that is, t = r(1 − 1/√2), and r is t divided by it.
+  // Measured, not read off an attribute: mermaid builds these with rough.js, so there is no `rx` and no arc to look up. Walk in along the corner's diagonal until the fill starts, which works however it chose to draw. A circular corner of radius r has its center at (r, r), so the fill begins at (t, t) where (r − t)√2 = r — that is, t = r(1 − 1/√2), and r is t divided by it.
   const probe = svg.createSVGPoint();
   const filled = (x, y) => {
     probe.x = x;
@@ -923,8 +828,7 @@ function flowDrawnRadius(group, rect) {
 // How far the ring stands off the shape it is around.
 const FLOW_RING_GAP = 8;
 
-// Rings, + handles, line ends and drop marks. Plain elements over the drawing,
-// so nothing has to be drawn twice and a selection costs no render.
+// Rings, + handles, line ends and drop marks. Plain elements over the drawing, so nothing has to be drawn twice and a selection costs no render.
 function drawFlowOverlay() {
   const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
   const layer = stage && stage.querySelector('.flow-overlay');
@@ -932,8 +836,7 @@ function drawFlowOverlay() {
   layer.textContent = '';
   const graph = flowSession && flowSession.graph;
   if (!graph || !flowPlaced) return;
-  // A line is selected by coloring mermaid's own path; there is nothing to
-  // overlay on a curve we did not draw.
+  // A line is selected by coloring mermaid's own path; there is nothing to overlay on a curve we did not draw.
   for (const placed of flowPlaced.edges) {
     placed.path.classList.toggle('is-selected', !!flowSelection && flowSelection.id === placed.id);
   }
@@ -949,19 +852,14 @@ function drawFlowOverlay() {
     tools.style.height = box.height + FLOW_RING_GAP * 2 + 'px';
     const node = flowFindNode(graph, box.id);
     const ring = document.createElement('div');
-    // A picture and an icon show themselves — mermaid draws them. A link shows
-    // nothing at all, so the box wears a dotted ring of its own and says where it
-    // goes: a box holding something invisible is a box nobody edits on purpose.
+    // A picture and an icon show themselves — mermaid draws them. A link shows nothing at all, so the box wears a dotted ring of its own and says where it goes: a box holding something invisible is a box nobody edits on purpose.
     ring.className = 'flow-ring' + (node && node.href ? ' is-linked' : '');
     if (node && node.href) ring.title = 'Clicking this box opens ' + node.href;
     ring.dataset.node = box.id;
-    // Nested corners, in reverse: the inner radius is the outer minus the gap,
-    // so the outer is the inner plus it. A square shape still gets the gap's
-    // worth of round, which is what keeps the two outlines parallel.
+    // Nested corners, in reverse: the inner radius is the outer minus the gap, so the outer is the inner plus it. A square shape still gets the gap's worth of round, which is what keeps the two outlines parallel.
     ring.style.borderRadius = Math.round(box.radius + FLOW_RING_GAP) + 'px';
     tools.appendChild(ring);
-    // The buds sit on the wrapper's own sides, so nothing has to be measured
-    // twice and they follow the box wherever mermaid puts it.
+    // The buds sit on the wrapper's own sides, so nothing has to be measured twice and they follow the box wherever mermaid puts it.
     for (const side of sides) {
       const bud = document.createElement('button');
       bud.type = 'button';
@@ -994,9 +892,7 @@ function drawFlowOverlay() {
 
 // ---- the little pictures in the picker -------------------------------------
 
-// A shape's button shows the shape, and mermaid draws that too — one tiny
-// diagram per shape, rendered once when the sheet opens and kept for the
-// session. The picker names every shape as well, so it reads before they land.
+// A shape's button shows the shape, and mermaid draws that too — one tiny diagram per shape, rendered once when the sheet opens and kept for the session. The picker names every shape as well, so it reads before they land.
 const flowChipCache = new Map();
 let flowChipsAsked = false;
 
@@ -1035,8 +931,7 @@ function flowNodeAt(x, y) {
   return found && found.kind === 'node' ? found.id : null;
 }
 
-// What is under the pointer, in the three flavors every drop cares about: a box,
-// a line, or the surface itself. Null means the pointer has left the canvas.
+// What is under the pointer, in the three flavors every drop cares about: a box, a line, or the surface itself. Null means the pointer has left the canvas.
 function flowTargetAt(x, y) {
   if (!flowCanvas) return null;
   const found = document.elementFromPoint(x, y);
@@ -1047,16 +942,13 @@ function flowTargetAt(x, y) {
   if (bud) return { kind: 'node', id: bud.dataset.node };
   const edge = flowEdgeUnder(found);
   if (edge) return { kind: 'edge', id: edge };
-  // Inside a group's box, but on nothing in it. Only asked after the boxes and
-  // the lines, so a group never takes a drop meant for what it holds — and the
-  // innermost wins, because a nested group is inside its parent's box too.
+  // Inside a group's box, but on nothing in it. Only asked after the boxes and the lines, so a group never takes a drop meant for what it holds — and the innermost wins, because a nested group is inside its parent's box too.
   const inside = flowGroupAt(x, y);
   if (inside) return { kind: 'group', id: inside };
   return { kind: 'canvas', id: null };
 }
 
-// The smallest drawn group the point falls in. Measured off the cluster mermaid
-// drew, so it is the box the reader can see.
+// The smallest drawn group the point falls in. Measured off the cluster mermaid drew, so it is the box the reader can see.
 function flowGroupAt(x, y) {
   const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
   if (!stage || !flowPlaced || !flowPlaced.groups) return null;
@@ -1075,9 +967,7 @@ function flowGroupAt(x, y) {
   return best;
 }
 
-// True only for the bare surface: the scroll box, the stage, the overlay, or
-// mermaid's SVG root. Anything deeper is part of the drawing, and treating it as
-// empty space is how a double-click on a box adds another one.
+// True only for the bare surface: the scroll box, the stage, the overlay, or mermaid's SVG root. Anything deeper is part of the drawing, and treating it as empty space is how a double-click on a box adds another one.
 function flowPointIsBare(target) {
   if (!target || !target.closest) return false;
   if (target === flowCanvas) return true;
@@ -1087,8 +977,7 @@ function flowPointIsBare(target) {
   return target.tagName === 'svg' || target.tagName === 'SVG';
 }
 
-// A pointer position in stage pixels — the same space the measurements are in,
-// so the rubber band and the drop tests need no conversion.
+// A pointer position in stage pixels — the same space the measurements are in, so the rubber band and the drop tests need no conversion.
 function flowPointAt(x, y) {
   const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
   if (!stage) return { x: 0, y: 0 };
@@ -1100,8 +989,7 @@ function flowPointIn(event) {
   return flowPointAt(event.clientX, event.clientY);
 }
 
-// Which of our lines a mermaid element belongs to. Mermaid names its paths from
-// the two ends, so the answer comes from the measurement rather than a search.
+// Which of our lines a mermaid element belongs to. Mermaid names its paths from the two ends, so the answer comes from the measurement rather than a search.
 function flowEdgeUnder(element) {
   if (!flowPlaced || !element) return null;
   const path = element.closest ? element.closest('path[data-id], g[data-id]') : null;
@@ -1115,9 +1003,7 @@ function flowGroupFor(id) {
   return flowCanvas ? flowCanvas.querySelector('.flow-node-tools[data-node="' + id + '"]') : null;
 }
 
-// The cluster mermaid drew for one of our groups. Named the two ways it names a
-// box, so it is looked up the same way rather than by a selector that only
-// works on one of the renderers.
+// The cluster mermaid drew for one of our groups. Named the two ways it names a box, so it is looked up the same way rather than by a selector that only works on one of the renderers.
 function flowClusterFor(id) {
   const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
   if (!stage) return null;
@@ -1154,8 +1040,7 @@ function clearFlowRubber() {
   if (band) band.remove();
 }
 
-// What the pointer is over, lit up so a drop is never a guess. Takes what
-// flowTargetAt hands back, or an id, or nothing.
+// What the pointer is over, lit up so a drop is never a guess. Takes what flowTargetAt hands back, or an id, or nothing.
 function markFlowDropTarget(target) {
   if (!flowCanvas) return;
   flowCanvas.querySelectorAll('.is-drop').forEach((found) => found.classList.remove('is-drop'));
@@ -1183,8 +1068,7 @@ function flowFixedEnd(edgeId, moving) {
   return moving === 'from' ? placed.to : placed.from;
 }
 
-// The pointer carries the view when there is nothing under it to take hold of —
-// which is the whole of a diagram the canvas cannot model.
+// The pointer carries the view when there is nothing under it to take hold of — which is the whole of a diagram the canvas cannot model.
 function beginFlowPan(event) {
   flowDrag = {
     kind: 'pan',
@@ -1211,9 +1095,7 @@ if (flowCanvas) {
     const bud = near('.flow-bud');
     const node = near('.flow-ring');
     const edge = flowEdgeUnder(target);
-    // Nothing here calls preventDefault: on a pointerdown it suppresses the
-    // compatibility mouse events, dblclick included, so double-clicking a shape
-    // to rename it does nothing. Text selection is held off in the stylesheet.
+    // Nothing here calls preventDefault: on a pointerdown it suppresses the compatibility mouse events, dblclick included, so double-clicking a shape to rename it does nothing. Text selection is held off in the stylesheet.
     const grab = () => leafHoldPointer(flowCanvas, event.pointerId);
     closeFlowLabelBox(true);
     if (endpoint) {
@@ -1243,8 +1125,7 @@ if (flowCanvas) {
       selectFlow('edge', edge);
       return;
     }
-    // Empty space: nothing is selected any more, and the pointer now carries
-    // the view — which is how you get around a diagram bigger than the pane.
+    // Empty space: nothing is selected any more, and the pointer now carries the view — which is how you get around a diagram bigger than the pane.
     selectFlow(null, null);
     beginFlowPan(event);
   });
@@ -1266,9 +1147,7 @@ if (flowCanvas) {
       flowDrag.moved = true;
       flowCanvas.classList.add('is-dragging');
       setFlowHint(FLOW_TIP_MOVING);
-      // The box comes with the pointer. Nothing is stored, so where you let go
-      // only says where it sits among its neighbors and it settles back into the
-      // layout — but a box that would not move at all reads as a broken one.
+      // The box comes with the pointer. Nothing is stored, so where you let go only says where it sits among its neighbors and it settles back into the layout — but a box that would not move at all reads as a broken one.
       const group = flowGroupFor(flowDrag.from);
       if (group) {
         group.classList.add('is-dragging');
@@ -1304,8 +1183,7 @@ if (flowCanvas) {
     const spot = flowTargetAt(event.clientX, event.clientY);
     const over = spot && spot.kind === 'node' ? spot.id : null;
 
-    // A + handle pressed and released without travelling is a click: pick the
-    // shape, and it arrives joined up on the side the handle sits.
+    // A + handle pressed and released without travelling is a click: pick the shape, and it arrives joined up on the side the handle sits.
     if (drag.kind === 'bud' && !drag.moved) {
       openFlowAddPicker((shape, named) =>
         addFlowNode(shape, { ...flowBudRelation(graph, drag.from, drag.side), text: named }),
@@ -1325,8 +1203,7 @@ if (flowCanvas) {
       return;
     }
     if (drag.kind === 'bud') {
-      // Let go on a box to join the two; let go on the surface for a new one,
-      // near where the pointer stopped.
+      // Let go on a box to join the two; let go on the surface for a new one, near where the pointer stopped.
       if (over && over !== drag.from) {
         const edge =
           flowBudIntent(graph.direction, drag.side).step === 'previous'
@@ -1346,27 +1223,21 @@ if (flowCanvas) {
       );
       return;
     }
-    // A box dropped on a line goes into that line: `A --> B` becomes
-    // `A --> this --> B`. This is how a step is added part-way through a chain.
+    // A box dropped on a line goes into that line: `A --> B` becomes `A --> this --> B`. This is how a step is added part-way through a chain.
     if (spot && spot.kind === 'edge') {
       const edge = flowFindEdge(graph, spot.id);
       if (edge && edge.from !== drag.from && edge.to !== drag.from) {
-        // Out of wherever it was, with that chain closed up behind it, and into
-        // this one. Leaving its old lines behind would say it is in two places.
+        // Out of wherever it was, with that chain closed up behind it, and into this one. Leaving its old lines behind would say it is in two places.
         flowExtractNode(graph, drag.from);
         flowSpliceIntoEdge(graph, drag.from, spot.id);
         flowGraphChanged();
         return;
       }
     }
-    // Dropped inside a group's box, on nothing in it: the box joins that group.
-    // Dropped on the bare surface with a group behind it: it leaves the one it
-    // was in. Both are the same gesture read two ways, and it is the only way
-    // to move a box between groups without going through the menu.
+    // Dropped inside a group's box, on nothing in it: the box joins that group. Dropped on the bare surface with a group behind it: it leaves the one it was in. Both are the same gesture read two ways, and it is the only way to move a box between groups without going through the menu.
     const moving = flowFindNode(graph, drag.from);
     if (spot && spot.kind === 'group') {
-      // Dropped back in the group it was already in: nothing happened, and a
-      // step in the history that undoes to the same picture is a step wasted.
+      // Dropped back in the group it was already in: nothing happened, and a step in the history that undoes to the same picture is a step wasted.
       if (moving && moving.group === spot.id) {
         drawFlowOverlay();
         return;
@@ -1385,9 +1256,7 @@ if (flowCanvas) {
       drawFlowOverlay();
       return;
     }
-    // Dropped on another box: the dragged one takes that box's place in the
-    // declaration order, which is what decides where it sits on its rank. From
-    // above it lands after, from below before, so it goes the way the pointer did.
+    // Dropped on another box: the dragged one takes that box's place in the declaration order, which is what decides where it sits on its rank. From above it lands after, from below before, so it goes the way the pointer did.
     const order = graph.nodes.map((node) => node.id);
     const was = order.indexOf(drag.from);
     const onto = order.indexOf(over);
@@ -1408,14 +1277,9 @@ if (flowCanvas) {
       openFlowLabelBox('edge', edge);
       return;
     }
-    // Only genuinely empty space adds a box. Anything inside mermaid's drawing
-    // is part of a box or a line, and a double-click there that quietly adds a
-    // third box — because the ring over it has gone missing — is exactly the
-    // kind of guess this should not make.
+    // Only genuinely empty space adds a box. Anything inside mermaid's drawing is part of a box or a line, and a double-click there that quietly adds a third box — because the ring over it has gone missing — is exactly the kind of guess this should not make.
     if (!flowPointIsBare(event.target)) return;
-    // Nothing stores where a box sits, so the point decides where it lands in
-    // the order rather than on the page — near enough that it appears about
-    // where it was asked for.
+    // Nothing stores where a box sits, so the point decides where it lands in the order rather than on the page — near enough that it appears about where it was asked for.
     const where = flowSlotAt(flowPointIn(event));
     openFlowAddPicker((shape, named) => addFlowNode(shape, { before: where, text: named }));
   });
@@ -1424,8 +1288,7 @@ if (flowCanvas) {
     if (!flowSession || !flowSession.graph) return;
     event.preventDefault();
     const spot = flowTargetAt(event.clientX, event.clientY) || { kind: 'canvas', id: null };
-    // Empty space has nothing to act on, so the question is which box to add —
-    // and that is the picker's question, in the picker's sheet.
+    // Empty space has nothing to act on, so the question is which box to add — and that is the picker's question, in the picker's sheet.
     if (spot.kind === 'canvas' || spot.kind === 'group') {
       const where = flowSlotAt(flowPointIn(event));
       openFlowAddPicker((shape, named) => addFlowNode(shape, { before: where, text: named }));
@@ -1438,9 +1301,7 @@ if (flowCanvas) {
 
 // ---- the menu on a right-click ---------------------------------------------
 
-// Everything the canvas can do, named, on the thing it would do it to. The
-// gestures are faster once they are known; this is where they are learned, and
-// the only place the less common ones (duplicate, detach, flip) live at all.
+// Everything the canvas can do, named, on the thing it would do it to. The gestures are faster once they are known; this is where they are learned, and the only place the less common ones (duplicate, detach, flip) live at all.
 let flowMenu = null;
 let flowMenuAt = { x: 0, y: 0 };
 
@@ -1492,17 +1353,12 @@ function flowMenuItems(spot) {
   return [];
 }
 
-// What a box can do about the group it is in. A group is a box around boxes and
-// the canvas has no gesture that draws one, so this menu is the whole of it:
-// make one, join one, leave one, or take one away. The group's own name is
-// renamed from here too, because a cluster has no handle to double-click.
+// What a box can do about the group it is in. A group is a box around boxes and the canvas has no gesture that draws one, so this menu is the whole of it: make one, join one, leave one, or take one away. The group's own name is renamed from here too, because a cluster has no handle to double-click.
 function flowGroupItems(graph, id) {
   const node = flowFindNode(graph, id);
   if (!node) return [];
   const items = [];
-  // Renamed the way everything else on the canvas is: a field over the thing,
-  // here over the group's own title strip. The draw has to land first, so the
-  // field has somewhere to sit.
+  // Renamed the way everything else on the canvas is: a field over the thing, here over the group's own title strip. The draw has to land first, so the field has somewhere to sit.
   const rename = (groupId) => {
     window.setTimeout(() => openFlowLabelBox('group', groupId), 160);
   };
@@ -1514,8 +1370,7 @@ function flowGroupItems(graph, id) {
       if (group) rename(group.id);
     },
   });
-  // Only the groups it could actually join: its own is not one of them, and
-  // neither is a group holding boxes from somewhere else in the nesting.
+  // Only the groups it could actually join: its own is not one of them, and neither is a group holding boxes from somewhere else in the nesting.
   for (const group of graph.groups || []) {
     if (group.id === node.group) continue;
     items.push({
@@ -1559,8 +1414,7 @@ function openFlowMenuWith(x, y, items) {
   menu.className = 'flow-menu';
   menu.setAttribute('role', 'menu');
   for (const item of items) {
-    // A heading is a label for the run below it, not something to click. It
-    // spans both columns of the grid — see .flow-menu-heading.
+    // A heading is a label for the run below it, not something to click. It spans both columns of the grid — see .flow-menu-heading.
     if (item.heading) {
       const caption = document.createElement('div');
       caption.className = 'flow-menu-heading';
@@ -1584,8 +1438,7 @@ function openFlowMenuWith(x, y, items) {
     menu.appendChild(button);
   }
   flowSheet.appendChild(menu);
-  // Kept inside the sheet: a menu opened near the right edge would otherwise
-  // hang off it, and the sheet is the whole window.
+  // Kept inside the sheet: a menu opened near the right edge would otherwise hang off it, and the sheet is the whole window.
   const sheet = flowSheet.getBoundingClientRect();
   const size = menu.getBoundingClientRect();
   const left = Math.min(x - sheet.left, sheet.width - size.width - 8);
@@ -1608,8 +1461,7 @@ function onFlowMenuOutside(event) {
   closeFlowMenu();
 }
 
-// Where a connection being drawn hangs from: the + handle it left, on the side
-// of the box mermaid drew.
+// Where a connection being drawn hangs from: the + handle it left, on the side of the box mermaid drew.
 function flowBudAnchor(id, side) {
   const box = flowPlaced && flowPlaced.nodes.find((node) => node.id === id);
   if (!box) return { x: 0, y: 0 };
@@ -1621,8 +1473,7 @@ function flowBudAnchor(id, side) {
   return { x: cx, y: box.y + box.height + FLOW_RING_GAP };
 }
 
-// What shape the next box should be. A decision's answers are steps, and
-// everything else carries on as itself — so the common chain needs no choosing.
+// What shape the next box should be. A decision's answers are steps, and everything else carries on as itself — so the common chain needs no choosing.
 function flowNewNodeShape(graph, fromId) {
   const node = flowFindNode(graph, fromId);
   if (!node) return FLOW_SHAPES[0].id;
@@ -1641,8 +1492,7 @@ function deleteFlowSelection() {
   const graph = flowSession && flowSession.graph;
   if (!graph || !flowSelection) return;
   if (flowSelection.kind === 'node') flowDeleteNode(graph, flowSelection.id);
-  // Deleting a group takes the box away, not what is in it: the boxes are the
-  // work, and there is no gesture to get them back.
+  // Deleting a group takes the box away, not what is in it: the boxes are the work, and there is no gesture to get them back.
   else if (flowSelection.kind === 'group') flowUngroup(graph, flowSelection.id);
   else flowDeleteEdge(graph, flowSelection.id);
   flowSelection = null;
@@ -1651,8 +1501,7 @@ function deleteFlowSelection() {
 
 // ---- renaming on the canvas ------------------------------------------------
 
-// A field over the thing it renames, rather than a trip to the strip at the
-// bottom of the pane. Placed from the layout, so nothing has to be measured.
+// A field over the thing it renames, rather than a trip to the strip at the bottom of the pane. Placed from the layout, so nothing has to be measured.
 function openFlowLabelBox(kind, id) {
   const graph = flowSession && flowSession.graph;
   if (!graph || !flowPlaced) return;
@@ -1684,8 +1533,7 @@ function openFlowLabelBox(kind, id) {
   const width =
     kind === 'edge' ? Math.max(90, 140 * flowZoom) : Math.max(70, placed.width - 10);
   const left = kind === 'edge' ? placed.at.x - width / 2 : placed.x + (placed.width - width) / 2;
-  // A group's name is drawn along its top edge, so that is where the field goes
-  // — over the title, not over the boxes it holds.
+  // A group's name is drawn along its top edge, so that is where the field goes — over the title, not over the boxes it holds.
   const middle =
     kind === 'edge' ? placed.at.y : kind === 'group' ? placed.y + tall / 2 + 2 : placed.y + placed.height / 2;
   const top = middle - tall / 2;
@@ -1719,8 +1567,7 @@ function openFlowLabelBox(kind, id) {
   field.select();
 }
 
-// `keep` writes what was typed. Redrawing only happens when it changed, so
-// clicking away from a field nobody edited does not rebuild the surface.
+// `keep` writes what was typed. Redrawing only happens when it changed, so clicking away from a field nobody edited does not rebuild the surface.
 function closeFlowLabelBox(keep) {
   const box = flowLabelBox;
   if (!box) return;
@@ -1748,20 +1595,14 @@ function closeFlowLabelBox(keep) {
 
 // ---- the picker: one sheet for choosing and for changing --------------------
 //
-// Adding a box and changing one are the same question — which shape — so they
-// are the same sheet, in the same order, with the same headings. It slides up
-// from the bottom of the canvas and goes back down when there is nothing
-// selected and nothing being added.
+// Adding a box and changing one are the same question — which shape — so they are the same sheet, in the same order, with the same headings. It slides up from the bottom of the canvas and goes back down when there is nothing selected and nothing being added.
 
-// The callback waiting for a shape, while the sheet is open to add a box, and
-// the name typed into the field above it in the meantime.
+// The callback waiting for a shape, while the sheet is open to add a box, and the name typed into the field above it in the meantime.
 let flowPickerAdd = null;
 let flowPickerName = '';
 let flowPickerReady = false;
 
-// Pushed down and away by its grab bar, like every other sheet. Wired on the
-// first open rather than at load: this fragment is served ahead of the inline
-// script, so `makeSheetDraggable` is not there yet when it runs.
+// Pushed down and away by its grab bar, like every other sheet. Wired on the first open rather than at load: this fragment is served ahead of the inline script, so `makeSheetDraggable` is not there yet when it runs.
 function readyFlowPicker() {
   if (flowPickerReady || !flowPicker) return;
   flowPickerReady = true;
@@ -1777,8 +1618,7 @@ function openFlowAddPicker(make) {
   flowPickerName = '';
   selectFlow(null, null);
   drawFlowPicker();
-  // The field is the first thing in the sheet and the first thing to do with
-  // it: a name can be typed before the shape is chosen, or after, or not at all.
+  // The field is the first thing in the sheet and the first thing to do with it: a name can be typed before the shape is chosen, or after, or not at all.
   window.setTimeout(() => {
     const field = flowPickerHead && flowPickerHead.querySelector('.flow-field');
     if (field && flowPickerAdd) field.focus();
@@ -1819,16 +1659,13 @@ function drawFlowPicker() {
     return;
   }
   flowPicker.hidden = false;
-  // Pushed part-way down to see the diagram behind it, the sheet stays there
-  // while it is open — picking a second box does not shove it back up. It comes
-  // back flush only when it has been away and returns.
+  // Pushed part-way down to see the diagram behind it, the sheet stays there while it is open — picking a second box does not shove it back up. It comes back flush only when it has been away and returns.
   if (!was && typeof resetSheetDrag === 'function') resetSheetDrag(flowPicker);
   requestAnimationFrame(() => flowPicker.classList.add('open'));
 
   flowPickerHead.appendChild(adding ? flowPickerNameField() : flowPickerField(graph, node, edge));
 
-  // A box picks its shape; a line picks its style and what sits at its tips.
-  // Every group is generated from the table it belongs to.
+  // A box picks its shape; a line picks its style and what sits at its tips. Every group is generated from the table it belongs to.
   if (adding) {
     const make = flowPickerAdd;
     for (const family of flowShapeFamilies()) {
@@ -1848,9 +1685,7 @@ function drawFlowPicker() {
       });
     }
   } else {
-    // An invisible line is the one style that takes no ends — mermaid spells it
-    // `~~~` and nothing else. Picking it drops the ends; picking an end back
-    // makes the line solid again, rather than offering a spelling that is not.
+    // An invisible line is the one style that takes no ends — mermaid spells it `~~~` and nothing else. Picking it drops the ends; picking an end back makes the line solid again, rather than offering a spelling that is not.
     flowPickerChoices('Line', FLOW_EDGE_LINES, edge.line, (id) => flowEdgeChip(id, 'none'), (id) => {
       edge.line = id;
       if (flowEdgeLine(id).only) edge.ends = flowEdgeLine(id).only;
@@ -1874,9 +1709,7 @@ function drawFlowPicker() {
   flowPickerBody.appendChild(remove);
 }
 
-// The name for the box about to be added. It is held here rather than on a box
-// that does not exist yet, and picking a shape does not touch it: someone who
-// typed "Read the file" and then chose a cylinder meant both.
+// The name for the box about to be added. It is held here rather than on a box that does not exist yet, and picking a shape does not touch it: someone who typed "Read the file" and then chose a cylinder meant both.
 function flowPickerNameField() {
   const field = document.createElement('input');
   field.type = 'text';
@@ -1903,8 +1736,7 @@ function flowPickerField(graph, node, edge) {
   field.addEventListener('input', () => {
     if (node) node.text = field.value;
     else edge.label = field.value.trim() || null;
-    // The text and the preview follow every keystroke; redrawing the canvas
-    // under the caret would take the focus out of the field being typed in.
+    // The text and the preview follow every keystroke; redrawing the canvas under the caret would take the focus out of the field being typed in.
     flowSession.text = renderFlow(graph);
     if (flowCode) flowCode.value = flowSession.text;
     queueFlowDiagram();
@@ -1913,16 +1745,14 @@ function flowPickerField(graph, node, edge) {
   return field;
 }
 
-// The three things a box can carry that are not its shape. `key` is the field on
-// the box and the key mermaid writes, so there is one name for each of them.
+// The three things a box can carry that are not its shape. `key` is the field on the box and the key mermaid writes, so there is one name for each of them.
 const FLOW_NODE_EXTRAS = [
   { key: 'href', label: 'Link', placeholder: 'Where clicking this box goes' },
   { key: 'icon', label: 'Icon', placeholder: 'leaf:back' },
   { key: 'img', label: 'Picture', placeholder: 'A picture beside this document, or its address' },
 ];
 
-// Typed, not picked: a link and a picture are addresses, and an icon is one of
-// fifty-seven names — none of them a short row of chips.
+// Typed, not picked: a link and a picture are addresses, and an icon is one of fifty-seven names — none of them a short row of chips.
 function flowPickerExtraField(graph, node, extra) {
   const heading = document.createElement('div');
   heading.className = 'flow-menu-heading';
@@ -1937,8 +1767,7 @@ function flowPickerExtraField(graph, node, extra) {
   field.setAttribute('aria-label', extra.label);
   field.addEventListener('input', () => {
     node[extra.key] = field.value.trim() || null;
-    // Emptying the link takes its tooltip with it, or a link typed back in would
-    // arrive wearing words somebody wrote for a different destination.
+    // Emptying the link takes its tooltip with it, or a link typed back in would arrive wearing words somebody wrote for a different destination.
     if (extra.key === 'href' && !node.href) node.hrefTip = null;
     flowSession.text = renderFlow(graph);
     if (flowCode) flowCode.value = flowSession.text;
@@ -1948,9 +1777,7 @@ function flowPickerExtraField(graph, node, extra) {
   flowPickerBody.appendChild(field);
 }
 
-// One heading and the run of choices under it, each drawn by `chip` and applied
-// by `apply`. The same rows the right-click menu is built from, so a shape reads
-// the same wherever it is offered.
+// One heading and the run of choices under it, each drawn by `chip` and applied by `apply`. The same rows the right-click menu is built from, so a shape reads the same wherever it is offered.
 function flowPickerChoices(caption, options, current, chip, apply) {
   if (!options.length) return;
   const heading = document.createElement('div');
@@ -1978,18 +1805,11 @@ function flowPickerChoices(caption, options, current, chip, apply) {
 
 // ---- taking the diagram out ------------------------------------------------
 
-// Two files, one diagram: the mermaid text as a Markdown document of its own, or
-// the drawing as a picture. Nothing here touches the document the sheet was
-// opened from — an export is a file beside it, and Save is still the only thing
-// that writes into the page.
+// Two files, one diagram: the mermaid text as a Markdown document of its own, or the drawing as a picture. Nothing here touches the document the sheet was opened from — an export is a file beside it, and Save is still the only thing that writes into the page.
 //
-// The drawing is always asked for again rather than lifted off the stage: what is
-// on screen carries the zoom, the selection ring and our handles.
+// The drawing is always asked for again rather than lifted off the stage: what is on screen carries the zoom, the selection ring and our handles.
 //
-// **Don't add SVG.** Mermaid's SVG is a web page in an SVG's clothing — a
-// stylesheet keyed to a generated id, labels that are HTML, a font list full of
-// CSS keywords no font is named after — and a drawing program reads those as
-// instructions it cannot follow.
+// **Don't add SVG.** Mermaid's SVG is a web page in an SVG's clothing — a stylesheet keyed to a generated id, labels that are HTML, a font list full of CSS keywords no font is named after — and a drawing program reads those as instructions it cannot follow.
 
 // Twice life size, so a picture pasted somewhere and scaled up still reads.
 const FLOW_PNG_SCALE = 2;
@@ -2001,15 +1821,13 @@ const FLOW_EXPORTS = [
 
 let flowExportSeq = 0;
 
-// The page color behind the diagram. A drawing on its own has no page to sit on,
-// and a pale-ink theme on nothing is a file that looks blank.
+// The page color behind the diagram. A drawing on its own has no page to sit on, and a pale-ink theme on nothing is a file that looks blank.
 function flowExportBackground() {
   const style = window.getComputedStyle(document.documentElement);
   return (style.getPropertyValue('--lt-surface') || '').trim() || '#ffffff';
 }
 
-// Text as base64, through its own bytes: `btoa` takes one character per byte, so
-// a label with an accent or an emoji in it has to be encoded first.
+// Text as base64, through its own bytes: `btoa` takes one character per byte, so a label with an accent or an emoji in it has to be encoded first.
 function flowBase64(text) {
   const bytes = new TextEncoder().encode(text);
   let binary = '';
@@ -2017,14 +1835,10 @@ function flowBase64(text) {
   return window.btoa(binary);
 }
 
-// The room around the drawing, so the picture is not the boxes cropped to their
-// own edges. The reading view pays the same in padding.
+// The room around the drawing, so the picture is not the boxes cropped to their own edges. The reading view pays the same in padding.
 const FLOW_EXPORT_MARGIN = 24;
 
-// The drawing on its way to becoming pixels, and no further: a web view will only
-// rasterize an SVG by loading it as an image, so one has to exist for a moment.
-// It is never written to a file — see the header. `htmlLabels` off because an
-// image-loaded SVG drops a `<foreignObject>`, leaving shapes with no text in them.
+// The drawing on its way to becoming pixels, and no further: a web view will only rasterize an SVG by loading it as an image, so one has to exist for a moment. It is never written to a file — see the header. `htmlLabels` off because an image-loaded SVG drops a `<foreignObject>`, leaving shapes with no text in them.
 async function flowDrawingSvg() {
   if (!flowSession || !flowSession.text) return null;
   const mermaid = await loadMermaid();
@@ -2041,11 +1855,9 @@ async function flowDrawingSvg() {
   }
   const root = new DOMParser().parseFromString(drawn, 'image/svg+xml').documentElement;
   const box = (root.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
-  // Anything unexpected and the drawing goes out exactly as mermaid wrote it,
-  // rather than half-edited by us.
+  // Anything unexpected and the drawing goes out exactly as mermaid wrote it, rather than half-edited by us.
   if (root.tagName !== 'svg' || box.length !== 4 || !(box[2] > 0)) return drawn;
-  // The drawing keeps its own coordinates and the view widens around it, which
-  // is what puts the margin outside every box rather than moving anything.
+  // The drawing keeps its own coordinates and the view widens around it, which is what puts the margin outside every box rather than moving anything.
   const left = box[0] - FLOW_EXPORT_MARGIN;
   const top = box[1] - FLOW_EXPORT_MARGIN;
   const width = box[2] + FLOW_EXPORT_MARGIN * 2;
@@ -2064,8 +1876,7 @@ async function flowDrawingSvg() {
   return new XMLSerializer().serializeToString(root);
 }
 
-// The drawing, as pixels. The markup goes in as a data URL, which is why the
-// page's img-src allows `data:`.
+// The drawing, as pixels. The markup goes in as a data URL, which is why the page's img-src allows `data:`.
 function flowExportPngBase64(svgText) {
   return new Promise((resolve, reject) => {
     const picture = new Image();
@@ -2078,14 +1889,11 @@ function flowExportPngBase64(svgText) {
         reject(new Error('This window cannot make a picture.'));
         return;
       }
-      // Painted again here: a PNG has no transparency to fall back on once it is
-      // dropped into something with a page color of its own.
+      // Painted again here: a PNG has no transparency to fall back on once it is dropped into something with a page color of its own.
       ink.fillStyle = flowExportBackground();
       ink.fillRect(0, 0, canvas.width, canvas.height);
       ink.drawImage(picture, 0, 0, canvas.width, canvas.height);
-      // The pixels go to the host, not a PNG. `toDataURL` writes 32-bit color
-      // with a per-row filter, and a diagram of flat fills is the one shape both
-      // choices cost on — the host's encoder palettes it instead. See src/png.rs.
+      // The pixels go to the host, not a PNG. `toDataURL` writes 32-bit color with a per-row filter, and a diagram of flat fills is the one shape both choices cost on — the host's encoder palettes it instead. See src/png.rs.
       const pixels = ink.getImageData(0, 0, canvas.width, canvas.height).data;
       let text = '';
       for (let at = 0; at < pixels.length; at += 8192) {
@@ -2098,8 +1906,7 @@ function flowExportPngBase64(svgText) {
   });
 }
 
-// The host is handed finished bytes and asked only where they go: it shows the
-// Save dialog, writes the file, and says how it went.
+// The host is handed finished bytes and asked only where they go: it shows the Save dialog, writes the file, and says how it went.
 async function exportFlowDiagram(kind) {
   if (!flowSession) return;
   closeFlowLabelBox(true);
@@ -2143,8 +1950,7 @@ if (flowSheetExport) {
 
 // ---- the two ways in -------------------------------------------------------
 
-// From the block gutter's plus: nothing exists yet, so Save writes a whole
-// block through the insert row's own write path.
+// From the block gutter's plus: nothing exists yet, so Save writes a whole block through the insert row's own write path.
 function openBlockFlowSheet(write) {
   collapseBlockInsertRow();
   openFlowSheet({
@@ -2154,9 +1960,7 @@ function openBlockFlowSheet(write) {
   });
 }
 
-// From a diagram already in the page. The text comes from the buffer, never the
-// DOM: the rendered `<pre>` holds the runtime source with the YAML front matter
-// stripped out, so what it says is not what the document says.
+// From a diagram already in the page. The text comes from the buffer, never the DOM: the rendered `<pre>` holds the runtime source with the YAML front matter stripped out, so what it says is not what the document says.
 function openMermaidBlockSheet(block) {
   const blockStart = Number(block.dataset.srcStart);
   const blockEnd = Number(block.dataset.srcEnd);

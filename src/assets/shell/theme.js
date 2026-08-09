@@ -1,8 +1,4 @@
-// The theme selector: a bottom sheet reached from Settings, with an appearance
-// row (System/Light/Dark/Daylight) and the list of theme families. Picking
-// either applies it live and asks the host to persist it. The family list is
-// server-rendered into #themeSheetGrid from theme.rs, so it's the single source
-// of truth; this only wires interaction and reflects the current selection.
+// The theme selector: a bottom sheet reached from Settings, with an appearance row (System/Light/Dark/Daylight) and the list of theme families. Picking either applies it live and asks the host to persist it. The family list is server-rendered into #themeSheetGrid from theme.rs, so it's the single source of truth; this only wires interaction and reflects the current selection.
 function themeFamilyName(family) {
   const item = themeSheetGrid.querySelector('.theme-item[data-family="' + family + '"]');
   return item ? item.textContent.trim() : family;
@@ -12,8 +8,7 @@ const THEME_MODE_NAMES = { system: 'System', light: 'Light', dark: 'Dark', dayli
 function updateThemeSelection() {
   const mode = window.leafTheme.getMode();
   const family = window.leafTheme.getFamily();
-  // The bar's palette button has no room for a label, so the theme in use rides
-  // its tooltip — the one place left to read it without opening the sheet.
+  // The bar's palette button has no room for a label, so the theme in use rides its tooltip — the one place left to read it without opening the sheet.
   if (themeSheetOpen) {
     themeSheetOpen.title =
       'Themes — ' + themeFamilyName(family) + ' · ' + (THEME_MODE_NAMES[mode] || mode);
@@ -48,10 +43,7 @@ function closeThemeSheet() {
     themeSheet.hidden = true;
   }, 200);
 }
-// Each card previews its theme's own heading font, but web fonts are loaded only
-// while the picker is open and dropped on close, so the app doesn't hold every
-// theme's font at rest. A card keeps the app font (and shows a spinner) until its
-// font is ready, then swaps. Random borrows whichever family it is cycling to.
+// Each card previews its theme's own heading font, but web fonts are loaded only while the picker is open and dropped on close, so the app doesn't hold every theme's font at rest. A card keeps the app font (and shows a spinner) until its font is ready, then swaps. Random borrows whichever family it is cycling to.
 const themeCardFontLinks = new Map();
 let themeRandomTimer = 0;
 let themeRandomIndex = 0;
@@ -91,8 +83,7 @@ function ensureThemeCardFont(card) {
     themeCardFontLinks.set(card.dataset.family, link);
     document.head.appendChild(link);
   }
-  // The @font-face rules must exist before load() can resolve, so wait for the
-  // stylesheet unless it is already parsed.
+  // The @font-face rules must exist before load() can resolve, so wait for the stylesheet unless it is already parsed.
   if (link.sheet) {
     load();
   } else {
@@ -117,8 +108,7 @@ function unloadThemeCardFonts() {
     card.classList.remove('is-loading', 'font-ready');
   });
 }
-// Paint Random with one family's colors, ink and font — keeping Random's own name
-// and only using the theme's font once it has loaded.
+// Paint Random with one family's colors, ink and font — keeping Random's own name and only using the theme's font once it has loaded.
 function paintThemeRandomFrom(card) {
   const random = themeSheetGrid.querySelector('.theme-item-random');
   if (!random || !card) return;
@@ -187,11 +177,7 @@ if (themeSheetBrowse) {
     send({ command: 'openExternal', url: THEME_REPO_URL });
   });
 }
-// Tell the host what the page background and divider color resolve to so it can
-// paint the native title bar to match the page and the window border to the
-// theme's divider color (a darker line on light themes, a colored rule on
-// themes like Nightshade). Runs on every theme change, including system light/dark flips, so
-// the OS chrome always tracks the document.
+// Tell the host what the page background and divider color resolve to so it can paint the native title bar to match the page and the window border to the theme's divider color (a darker line on light themes, a colored rule on themes like Nightshade). Runs on every theme change, including system light/dark flips, so the OS chrome always tracks the document.
 function reportWindowChrome(theme) {
   const shell = document.getElementById('app');
   if (!shell) {
@@ -223,8 +209,7 @@ window.leafTheme.subscribe((theme) => {
   updateThemeSelection();
   reportWindowChrome(theme);
   refreshGraphColors();
-  // The code view is Monaco; repaint it (and its minimap) from our palette so it
-  // tracks the theme and light/dark like everything else.
+  // The code view is Monaco; repaint it (and its minimap) from our palette so it tracks the theme and light/dark like everything else.
   reskinMonacoForTheme();
 });
 window.leafMinimap.subscribe(() => {
@@ -254,12 +239,9 @@ window.addEventListener('keydown', (event) => {
     send({ command: 'closeTab', index: currentState.active });
     return;
   }
-  // Select-all in the reading view means the page, not the library and chrome
-  // around it. Editable fields and the code view keep their native select-all.
+  // Select-all in the reading view means the page, not the library and chrome around it. Editable fields and the code view keep their native select-all.
   //
-  // With the caret in a block it widens a step per press instead: the block, then
-  // the block's section, then the page. The first press is still the browser's own,
-  // which is why the early return has to stay rather than being replaced.
+  // With the caret in a block it widens a step per press instead: the block, then the block's section, then the page. The first press is still the browser's own, which is why the early return has to stay rather than being replaced.
   if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'a') {
     if (codeViewActive) {
       return;
@@ -296,8 +278,7 @@ window.addEventListener('keydown', (event) => {
     event.preventDefault();
     const tabCount = (currentState.tabs || []).length;
     if (tabCount > 0) {
-      // Cycle through the home screen plus every open tab. Position 0 is the
-      // home screen; positions 1..=tabCount map to tab indices 0..tabCount-1.
+      // Cycle through the home screen plus every open tab. Position 0 is the home screen; positions 1..=tabCount map to tab indices 0..tabCount-1.
       const stops = tabCount + 1;
       const current = currentState.active == null ? 0 : currentState.active + 1;
       const step = event.shiftKey ? -1 : 1;
@@ -305,8 +286,7 @@ window.addEventListener('keydown', (event) => {
       if (next === 0) {
         send({ command: 'goHome' });
       } else {
-        // The keyboard cycle always lands on a different tab, so its document
-        // load may be slow — show the spinner while the host renders it.
+        // The keyboard cycle always lands on a different tab, so its document load may be slow — show the spinner while the host renders it.
         beginReaderLoading();
         send({
           command: 'switchTab',

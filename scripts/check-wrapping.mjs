@@ -1,17 +1,10 @@
 #!/usr/bin/env node
-// A paragraph is one line — in Markdown, and in a comment in the code. Nothing that
-// reads either of them wants it wrapped — the app's renderer reflows, so does GitHub, so does every editor
-// — and a hard wrap costs on every edit after it: a word added in the middle
-// re-flows the rest by hand, and the diff of a one-word change is a whole
-// paragraph. So the newline inside a paragraph is noise, and this takes it out.
+// A paragraph is one line — in Markdown, and in a comment in the code. Nothing that reads either of them wants it wrapped — the app's renderer reflows, so does GitHub, so does every editor — and a hard wrap costs on every edit after it: a word added in the middle re-flows the rest by hand, and the diff of a one-word change is a whole paragraph. So the newline inside a paragraph is noise, and this takes it out.
 //
 //   node scripts/check-wrapping.mjs           fail, naming every file and line
 //   node scripts/check-wrapping.mjs --fix     join them
 //
-// Markdown in this repo and the plan tree next door; comments in this repo's `.rs`,
-// `.js` and `.mjs`. A comment joins only where two lines are both flush prose: a
-// body with an indent of its own is a command, a table or a list, where the shape
-// is the content.
+// Markdown in this repo and the plan tree next door; comments in this repo's `.rs`, `.js` and `.mjs`. A comment joins only where two lines are both flush prose: a body with an indent of its own is a command, a table or a list, where the shape is the content.
 //
 // What is left alone, because the break is doing something:
 //
@@ -20,8 +13,8 @@
 //   * a table, a heading, a thematic break, a link definition, raw HTML
 //   * the `[!NOTE]` marker that opens an alert, which needs its own line
 //   * a file whose head says it is generated, and one nobody here wrote
-//   * a file carrying `<!-- keep-wrapping -->`, for verse and quoted text where
-//     the shape of the lines is the point
+//   * a file carrying the keep-wrapping marker on a line of its own, for verse and
+//     quoted text where the shape of the lines is the point
 
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
@@ -32,19 +25,20 @@ const plans = join(root, '..', 'docs');
 
 const SKIP_DIRS = new Set(['node_modules', 'target', 'dist', '.git', 'vendor', 'conformance']);
 
-// Whole folders nobody here writes the prose of. `learn/` is somebody else's
-// writing kept to read, and the notices under `src/assets/` are somebody's license
-// text, reproduced verbatim or not at all.
-const SKIP_PATHS = [/(^|\/)learn\//, /^src\/assets\//, /(^|\/)LICENSE/];
+// Whole folders nobody here writes the prose of. `learn/` is somebody else's writing kept to read, and the Markdown under `src/assets/` is somebody's license text, reproduced verbatim or not at all — the scripts beside it are ours and are read.
+const SKIP_PATHS = [/(^|\/)learn\//, /^src\/assets\/.*\.md$/, /(^|\/)LICENSE/];
 
-/// A file written by a bundler says so in its first lines, and rewriting one only
-/// makes `just verify` fail on the drift.
+/// A file written by a bundler says so in its first lines, and rewriting one only makes `just verify` fail on the drift. It says so in whatever comment its own language writes, so the code files are read here too, not just the Markdown.
 function isGenerated(text) {
-  return /^(<!--[\s\S]{0,400}?generated|\s*<!--[\s\S]{0,400}?do not edit)/i.test(text);
+  return (
+    /^(<!--[\s\S]{0,400}?generated|\s*<!--[\s\S]{0,400}?do not edit)/i.test(text) ||
+    /^(#!.*\n)?\s*(\/\/|\/\*)[^\n]{0,300}?(generated|do not edit)/i.test(text)
+  );
 }
 
+/// Only a line that is the marker and nothing else opts a file out. Matched anywhere in the text, a file that merely names the marker in a sentence exempts itself — which is how the rules file that states the rule stayed outside it.
 function optedOut(text) {
-  return /<!--\s*keep-wrapping\s*-->/i.test(text);
+  return /^[ \t]*<!--[ \t]*keep-wrapping[ \t]*-->[ \t]*$/im.test(text);
 }
 
 /// Every file under `dir` whose name ends in one of `suffixes`.
@@ -65,8 +59,7 @@ function walk(dir, suffixes) {
   return out;
 }
 
-/// A line split into the part that says where it sits and the part that is prose:
-/// its blockquote marker, its indent, and the rest.
+/// A line split into the part that says where it sits and the part that is prose: its blockquote marker, its indent, and the rest.
 function split(line) {
   const quote = line.match(/^(\s*(?:>\s*)+)/)?.[1] ?? '';
   const rest = line.slice(quote.length);
@@ -81,8 +74,7 @@ function depth(quote) {
 
 const FENCE = /^(```+|~~~+)/;
 
-/// Nothing joins onto the end of one of these: the line is the whole thing it is,
-/// and a word landing after it would change what it means.
+/// Nothing joins onto the end of one of these: the line is the whole thing it is, and a word landing after it would change what it means.
 const CLOSED = [
   /^#{1,6}\s/, // heading
   /^(\*\s*){3,}$|^(-\s*){3,}$|^(_\s*){3,}$/, // thematic break
@@ -95,23 +87,19 @@ const CLOSED = [
 
 const LIST = /^([-*+]|\d+[.)])(\s|$)/;
 
-/// Whether this line begins something of its own rather than continuing the prose
-/// above it. A list item does, which is why it is here and not in `CLOSED` — an
-/// item takes its own wrapped continuation, it just never joins onto a paragraph.
+/// Whether this line begins something of its own rather than continuing the prose above it. A list item does, which is why it is here and not in `CLOSED` — an item takes its own wrapped continuation, it just never joins onto a paragraph.
 function opens(body) {
   return body === '' || FENCE.test(body) || LIST.test(body) || CLOSED.some((test) => test.test(body));
 }
 
-/// Whether the line before can take another line onto its end. Two trailing spaces
-/// and a trailing backslash are both real line breaks, so both stop here.
+/// Whether the line before can take another line onto its end. Two trailing spaces and a trailing backslash are both real line breaks, so both stop here.
 function absorbs(line, body) {
   if (body === '' || FENCE.test(body) || CLOSED.some((test) => test.test(body))) return false;
   if (/\s\s$/.test(line) || /\\$/.test(line)) return false;
   return true;
 }
 
-/// Unwrap one file's paragraphs. Returns the new text and the 1-based numbers of
-/// the lines that were joined onto the one above.
+/// Unwrap one file's paragraphs. Returns the new text and the 1-based numbers of the lines that were joined onto the one above.
 export function unwrap(text) {
   const lines = text.split('\n');
   const out = [];
@@ -141,8 +129,7 @@ export function unwrap(text) {
       continue;
     }
 
-    // An indented block after a blank line is code. A wrapped paragraph never
-    // starts four spaces in, and a list's own continuation lines are shallower.
+    // An indented block after a blank line is code. A wrapped paragraph never starts four spaces in, and a list's own continuation lines are shallower.
     const blankBefore = out.length === 0 || out[out.length - 1].trim() === '';
     if (code) {
       if (body === '' || indent.length >= 4) {
@@ -174,9 +161,7 @@ export function unwrap(text) {
   return { text: out.join('\n'), joined };
 }
 
-/// A comment on a line of its own: its indent, its marker, and the prose after it.
-/// A comment sitting after code on the same line is not one — that text is about
-/// the line it is on.
+/// A comment on a line of its own: its indent, its marker, and the prose after it. A comment sitting after code on the same line is not one — that text is about the line it is on.
 function commentAt(line) {
   const found = line.match(/^(\s*)(\/\/\/|\/\/!|\/\/)( ?)(.*)$/);
   if (!found) return null;
@@ -186,11 +171,12 @@ function commentAt(line) {
 /// A run of dashes or stars is a rule somebody drew, not a sentence.
 const RULE = /^[-=*_+~]{3,}/;
 
+/// A hyphen attached to the word before it is a word split across the wrap, so the join takes no space. Two hyphens are an em dash, and that one keeps its space.
+const SPLIT_WORD = /\w-$/;
+
 /// Join a comment's wrapped prose, in `.rs` and `.js` alike.
 ///
-/// Narrower than the Markdown side on purpose: only two flush lines join. A body
-/// with any indent of its own is a shell command, a table, a list continuation or
-/// an example — the shape is the content there, and joining it would destroy it.
+/// Narrower than the Markdown side on purpose: only two flush lines join. A body with any indent of its own is a shell command, a table, a list continuation or an example — the shape is the content there, and joining it would destroy it.
 export function unwrapComments(text) {
   const lines = text.split('\n');
   const out = [];
@@ -222,7 +208,7 @@ export function unwrapComments(text) {
       !opens(here.body) &&
       absorbs(previousLine, previous.body)
     ) {
-      out[out.length - 1] = `${previousLine} ${here.body}`;
+      out[out.length - 1] = `${previousLine}${SPLIT_WORD.test(previousLine) ? '' : ' '}${here.body}`;
       joined.push(index + 1);
       continue;
     }
@@ -232,9 +218,7 @@ export function unwrapComments(text) {
   return { text: out.join('\n'), joined };
 }
 
-/// What the joining has to get right, each case as the text going in and the text
-/// coming out. This runs before the sweep, because a wrong transform rewrites 150
-/// files and the only thing that would notice is somebody reading one.
+/// What the joining has to get right, each case as the text going in and the text coming out. This runs before the sweep, because a wrong transform rewrites 150 files and the only thing that would notice is somebody reading one.
 const CASES = [
   ['a paragraph', 'one two\nthree four\n', 'one two three four\n'],
   ['a blank line ends it', 'one\ntwo\n\nthree\nfour\n', 'one two\n\nthree four\n'],
@@ -268,6 +252,19 @@ const COMMENT_CASES = [
   ['a comment after code is left alone', 'let x = 1; // one\nlet y = 2; // two\n', 'let x = 1; // one\nlet y = 2; // two\n'],
   ['code between comments breaks the run', '// one\nfn a() {}\n// two\n', '// one\nfn a() {}\n// two\n'],
   ['indentation has to match', '// one\n    // two\n', '// one\n    // two\n'],
+  ['a split word joins tight', '// a reading-\n// view affordance\n', '// a reading-view affordance\n'],
+  ['an em dash keeps its space', '// taken back --\n// and the history\n', '// taken back -- and the history\n'],
+];
+
+/// Which files the sweep never opens, and which only look like they say so. A file that names the marker inside a sentence is read like any other, because a rule nobody can see written down is a rule that exempts whoever writes it out.
+const EXEMPT_CASES = [
+  ['the marker on a line of its own opts out', optedOut, '# Title\n\n<!-- keep-wrapping -->\n', true],
+  ['an indented one still opts out', optedOut, '  <!-- keep-wrapping -->\n', true],
+  ['the marker inside a sentence does not', optedOut, 'the file carries `<!-- keep-wrapping -->` when the shape is the point\n', false],
+  ['the marker inside a comment does not', optedOut, '// a file carrying <!-- keep-wrapping -->, for verse\n', false],
+  ['a generated Markdown head is skipped', isGenerated, '<!-- Generated by a bundler. -->\n\n# Title\n', true],
+  ['a generated script head is skipped', isGenerated, '// Generated from design/icons.md. Do not edit.\n', true],
+  ['a script that only writes one is read', isGenerated, "// The bundler writes this file's neighbors, not this one.\n", false],
 ];
 
 function selfTest() {
@@ -280,6 +277,10 @@ function selfTest() {
     const got = unwrapComments(input).text;
     if (got !== want) fails.push(`comments, ${name}: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
   }
+  for (const [name, test, input, want] of EXEMPT_CASES) {
+    const got = test(input);
+    if (got !== want) fails.push(`exemption, ${name}: got ${got}, want ${want}`);
+  }
   // Joining is idempotent, or `--fix` would keep finding work in a file it just wrote.
   if (unwrap(unwrap('one\ntwo\nthree\n').text).joined.length) {
     fails.push('a joined paragraph still reports wrapped lines');
@@ -290,8 +291,7 @@ function selfTest() {
   return fails;
 }
 
-// `unwrap` is exported so it can be run over one string; the walk of both trees and
-// the exit code only happen when this file is the command.
+// `unwrap` is exported so it can be run over one string; the walk of both trees and the exit code only happen when this file is the command.
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const fails = selfTest();
   if (fails.length) {
@@ -347,7 +347,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     for (const line of offenders) console.error(`  ${line}`);
     console.error('\nJoin them: node scripts/check-wrapping.mjs --fix');
     console.error('A break that is doing something keeps two trailing spaces, or the file');
-    console.error('carries <!-- keep-wrapping --> when the shape of the lines is the point.');
+    console.error('carries the keep-wrapping marker on a line of its own, where the shape');
+    console.error('of the lines is the point.');
     process.exit(1);
   }
 

@@ -1,19 +1,13 @@
-// Right-click menu for the library pane, the tab bar, and a link in the document,
-// acting on whatever the pointer is over: a file, a folder, a link, or the folder
-// you are browsing when it is over none of them. Groups: open, clipboard, rename,
-// locate, and destructive delete last.
+// Right-click menu for the library pane, the tab bar, and a link in the document, acting on whatever the pointer is over: a file, a folder, a link, or the folder you are browsing when it is over none of them. Groups: open, clipboard, rename, locate, and destructive delete last.
 const contextMenu = document.createElement('div');
 contextMenu.className = 'context-menu';
 contextMenu.hidden = true;
 contextMenu.setAttribute('role', 'menu');
 document.body.appendChild(contextMenu);
 let contextMenuPath = null;
-// What was right-clicked: 'file', 'folder', 'here' (the pane's empty space,
-// standing for the folder being browsed), or 'link' (a link in the document, whose
-// href sits in contextMenuPath). It picks which list of items to show.
+// What was right-clicked: 'file', 'folder', 'here' (the pane's empty space, standing for the folder being browsed), or 'link' (a link in the document, whose href sits in contextMenuPath). It picks which list of items to show.
 let contextMenuTargetKind = 'file';
-// The link element itself when the menu is a link's, so Open runs the same path a
-// plain click on it does rather than a second reading of the href.
+// The link element itself when the menu is a link's, so Open runs the same path a plain click on it does rather than a second reading of the href.
 let contextMenuLink = null;
 const CONTEXT_MENU_ITEMS = [
   { action: 'open', label: 'Open' },
@@ -30,23 +24,18 @@ const CONTEXT_MENU_ITEMS = [
   'separator',
   { action: 'delete', label: 'Delete', danger: true },
 ];
-// A folder, or the empty space in the pane, which stands for the folder you are
-// browsing. No Copy path for a place you can't open as a document; Paste is the
-// item this menu exists for.
+// A folder, or the empty space in the pane, which stands for the folder you are browsing. No Copy path for a place you can't open as a document; Paste is the item this menu exists for.
 const FOLDER_MENU_ITEMS = [
   { action: 'openFolder', label: 'Open folder', folderOnly: true },
   { action: 'favorite', label: 'Favorite', folderOnly: true },
   'separator',
   { action: 'paste', label: 'Paste' },
   'separator',
-  // "Reveal folder" beside the file menu's "Reveal file" — one verb for the one
-  // action, rather than naming the file manager on each platform.
+  // "Reveal folder" beside the file menu's "Reveal file" — one verb for the one action, rather than naming the file manager on each platform.
   { action: 'reveal', label: 'Reveal folder' },
   { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties' },
 ];
-// A link in the document being read. The two Open items and the copies are all the
-// page can do on its own; `pageOnly` items need somewhere in the app to go, so they
-// drop off an external link and an in-page jump.
+// A link in the document being read. The two Open items and the copies are all the page can do on its own; `pageOnly` items need somewhere in the app to go, so they drop off an external link and an in-page jump.
 const LINK_MENU_ITEMS = [
   { action: 'openLink', label: 'Open' },
   { action: 'openLinkInNewPage', label: 'Open in new page', pageOnly: true },
@@ -66,17 +55,14 @@ function hideContextMenu() {
   contextMenuPath = null;
   contextMenuLink = null;
 }
-// What Cut or Copy last put down, so Paste has something to act on. The page holds
-// it because the page is where it was chosen; it is not the system clipboard, so
-// pasting here moves what you cut *here*, and a file copied in Explorer is not it.
+// What Cut or Copy last put down, so Paste has something to act on. The page holds it because the page is where it was chosen; it is not the system clipboard, so pasting here moves what you cut *here*, and a file copied in Explorer is not it.
 let libraryTransfer = null;
 function runContextAction(action, path, link) {
   switch (action) {
     case 'open': send({ command: 'openRecent', path }); break;
     case 'openLink': if (link) sendDocumentLink(link, false); break;
     case 'openLinkInNewPage': if (link) sendDocumentLink(link, true); break;
-    // The href as it is written, not the resolved one — Copy path is the item for
-    // the file on disk.
+    // The href as it is written, not the resolved one — Copy path is the item for the file on disk.
     case 'copyLink': copyPlainText(path); break;
     case 'copyLinkText': if (link) copyPlainText((link.textContent || '').trim()); break;
     case 'revealLink': send({ command: 'revealLink', href: path }); break;
@@ -91,8 +77,7 @@ function runContextAction(action, path, link) {
       send({ command: 'copyFile', path, cut: false });
       break;
     case 'paste': {
-      // The cut file is consumed; a copied one can be pasted again, the way every
-      // other file manager behaves.
+      // The cut file is consumed; a copied one can be pasted again, the way every other file manager behaves.
       const transfer = libraryTransfer;
       if (!transfer) break;
       if (transfer.cut) libraryTransfer = null;
@@ -117,9 +102,7 @@ function runContextAction(action, path, link) {
     case 'rename': openRenameBox(path); break;
   }
 }
-// The list this menu should show for what was right-clicked. Items that would do
-// nothing are left out rather than shown dead: Paste with nothing cut, or Open
-// folder over the folder you are already in.
+// The list this menu should show for what was right-clicked. Items that would do nothing are left out rather than shown dead: Paste with nothing cut, or Open folder over the folder you are already in.
 function contextMenuEntries() {
   if (contextMenuTargetKind === 'link') {
     return tidySeparators(
@@ -147,16 +130,13 @@ function labelForFavoriteEntry(entry) {
   if (!isFavoritePath(contextMenuPath)) return entry;
   return { action: entry.action, label: 'Unfavorite' };
 }
-// Open says where it is sending you when that is out of the app, so the one item
-// that leaves says so before you pick it.
+// Open says where it is sending you when that is out of the app, so the one item that leaves says so before you pick it.
 function labelForLinkEntry(entry) {
   if (entry === 'separator' || entry.action !== 'openLink') return entry;
   if (linkHoverKind(contextMenuPath) !== 'External site') return entry;
   return { action: entry.action, label: 'Open in browser' };
 }
-// A separator divides two groups, so one with nothing above it divides nothing —
-// which is the rule dropping an item can break. Removing an item can leave a line
-// at the top, at the bottom, or two in a row; none of those is a divider.
+// A separator divides two groups, so one with nothing above it divides nothing — which is the rule dropping an item can break. Removing an item can leave a line at the top, at the bottom, or two in a row; none of those is a divider.
 function tidySeparators(entries) {
   const kept = [];
   for (const entry of entries) {
@@ -199,9 +179,7 @@ function clampContextMenu(x, y) {
   leafPlaceFloating(contextMenu, x, y);
 }
 function showContextMenu(x, y, path, kind, link) {
-  // An empty path is the library's own top — the drive roots, or a vault's folder
-  // seen from outside it — which is not a folder anything can be pasted into. A
-  // folder row inside it still is, and still has its menu.
+  // An empty path is the library's own top — the drive roots, or a vault's folder seen from outside it — which is not a folder anything can be pasted into. A folder row inside it still is, and still has its menu.
   if (!path) {
     return;
   }
@@ -217,9 +195,7 @@ function showContextMenu(x, y, path, kind, link) {
   leafFocusForKeyboard(contextMenu.querySelector('.context-menu-item'));
 }
 document.addEventListener('contextmenu', (event) => {
-  // A link in the document comes first: it is the innermost thing under the pointer
-  // and none of the pane branches below know what to do with it. Not while the block
-  // is being edited, where the menu you want is the one with Paste in it.
+  // A link in the document comes first: it is the innermost thing under the pointer and none of the pane branches below know what to do with it. Not while the block is being edited, where the menu you want is the one with Paste in it.
   const documentLink = documentLinkFor(event.target);
   if (documentLink && !event.target.closest('[contenteditable="true"]')) {
     event.preventDefault();
@@ -227,9 +203,7 @@ document.addEventListener('contextmenu', (event) => {
     showContextMenu(event.clientX, event.clientY, href, 'link', documentLink);
     return;
   }
-  // Closest wins, so a folder row inside the pane beats the pane itself, and the
-  // pane only answers where no row did — which is exactly the empty space below
-  // the last row.
+  // Closest wins, so a folder row inside the pane beats the pane itself, and the pane only answers where no row did — which is exactly the empty space below the last row.
   const row = event.target.closest('[data-reveal-path]');
   if (row) {
     event.preventDefault();
@@ -237,11 +211,7 @@ document.addEventListener('contextmenu', (event) => {
     showContextMenu(event.clientX, event.clientY, row.getAttribute('data-reveal-path'), kind);
     return;
   }
-  // Anywhere else in the pane's scrolling area means the folder being browsed. It is
-  // the scroll box and not the row list because the list is only as tall as its
-  // rows, and the space below them is most of the pane in a small folder. It is the
-  // scroll box and not the whole pane so the search field keeps its own menu, which
-  // is the one with Paste for text in it.
+  // Anywhere else in the pane's scrolling area means the folder being browsed. It is the scroll box and not the row list because the list is only as tall as its rows, and the space below them is most of the pane in a small folder. It is the scroll box and not the whole pane so the search field keeps its own menu, which is the one with Paste for text in it.
   const editable = event.target.closest('input, textarea, [contenteditable="true"]');
   if (!editable && event.target.closest('.library-scroll')) {
     event.preventDefault();
@@ -250,9 +220,7 @@ document.addEventListener('contextmenu', (event) => {
   }
   hideContextMenu();
 });
-// On macOS a Control+click also emits a trailing left-click (ctrlKey still set)
-// that would reach the dismiss handler and close the menu instantly. Swallow it
-// in the capture phase; real item clicks aren't Control-held.
+// On macOS a Control+click also emits a trailing left-click (ctrlKey still set) that would reach the dismiss handler and close the menu instantly. Swallow it in the capture phase; real item clicks aren't Control-held.
 document.addEventListener('click', (event) => {
   if (isMacPlatform && event.ctrlKey && !contextMenu.hidden) {
     event.preventDefault();
@@ -264,8 +232,7 @@ window.addEventListener('blur', hideContextMenu);
 window.addEventListener('resize', hideContextMenu);
 app.addEventListener('scroll', hideContextMenu, true);
 
-// Inline rename: a floating input prefilled with the file name, outside the tree
-// DOM so a live refresh can't clobber it. Enter commits; Escape/blur cancels.
+// Inline rename: a floating input prefilled with the file name, outside the tree DOM so a live refresh can't clobber it. Enter commits; Escape/blur cancels.
 const renameBox = document.createElement('div');
 renameBox.className = 'rename-box';
 renameBox.hidden = true;
@@ -341,9 +308,7 @@ renameInput.addEventListener('keydown', (event) => {
 renameInput.addEventListener('blur', () => {
   commitRename();
 });
-// The one question the app asks, and the only thing in it that stands in your way
-// until you answer. The frame is declared in the boot HTML; what is asked is the
-// caller's, so a second thing worth confirming needs no second dialog.
+// The one question the app asks, and the only thing in it that stands in your way until you answer. The frame is declared in the boot HTML; what is asked is the caller's, so a second thing worth confirming needs no second dialog.
 const confirmBackdrop = document.getElementById('confirmBackdrop');
 const confirmDialog = document.getElementById('confirmDialog');
 const confirmDialogTitle = document.getElementById('confirmDialogTitle');
