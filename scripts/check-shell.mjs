@@ -3472,6 +3472,99 @@ if (booted) {
     if (!markup.includes('Favorites (1)')) throw new Error(`the count is not this vault's: ${markup}`);
   });
 
+  // The start screen really drawn, read back off the element the page writes it into — not the markup helper, because what this is about is whether anything redraws at all.
+  const homeElement = booted.document.getElementById('app');
+  function onTheStartScreen(favorites, run) {
+    try {
+      booted.window.leafSetState({ recent: [], favorites, tabs: [], active: null, document: null });
+      booted.__frames.drain();
+      return run(() => homeElement.innerHTML);
+    } finally {
+      booted.leafSetVaults({ vaults: [], active: 0 });
+      booted.window.leafSetState({ recent: [], favorites: [], tabs: [], active: null, document: null });
+      booted.__frames.drain();
+    }
+  }
+
+  check('switching vaults changes the favorites on screen', () => {
+    onTheStartScreen(KEPT, (screen) => {
+      booted.leafSetVaults({ vaults: VAULTS, active: 1 });
+      if (!screen().includes('A sutta')) throw new Error(`the vault switched to lost its own kept file: ${screen()}`);
+      booted.leafSetVaults({ vaults: VAULTS, active: 2 });
+      const markup = screen();
+      if (!markup.includes('Standup')) throw new Error(`the second vault's kept file never arrived: ${markup}`);
+      if (markup.includes('A sutta') || markup.includes('Loose')) {
+        throw new Error(`the vault that was left is still on the screen: ${markup}`);
+      }
+      if (!markup.includes('Favorites (1)')) throw new Error(`the count is not this vault's: ${markup}`);
+    });
+  });
+
+  check('leaving every vault brings every favorite back, grouped and labeled', () => {
+    onTheStartScreen(KEPT, (screen) => {
+      booted.leafSetVaults({ vaults: VAULTS, active: 2 });
+      booted.leafSetVaults({ vaults: VAULTS, active: 0 });
+      const markup = screen();
+      const groups = [...markup.matchAll(/<li class="home-list-group"[^>]*>([^<]*)</g)].map((m) => m[1]);
+      if (groups.join('|') !== 'Dharma|Work|Outside a vault') {
+        throw new Error(`the groups came out as ${JSON.stringify(groups)}`);
+      }
+      if (!markup.includes('Favorites (4)')) throw new Error(`not every favorite came back: ${markup}`);
+    });
+  });
+
+  check('a vault switch never throws away what is being read', () => {
+    // A tab opened straight into source: the page's copy of the state carries no document, so "is there a document" is the wrong question and only the flag answers it.
+    const wasMarkup = homeElement.innerHTML;
+    try {
+      homeElement.innerHTML = '<div class="code-view">the source somebody is reading</div>';
+      vm.runInContext('codeViewActive = true;', booted);
+      booted.leafSetVaults({ vaults: VAULTS, active: 2 });
+      if (!homeElement.innerHTML.includes('the source somebody is reading')) {
+        throw new Error(`a vault switch drew the start screen over the source view: ${homeElement.innerHTML}`);
+      }
+      if (!vm.runInContext('codeViewActive', booted)) {
+        throw new Error('a vault switch left the page thinking the source view had closed');
+      }
+    } finally {
+      vm.runInContext('codeViewActive = false;', booted);
+      booted.leafSetVaults({ vaults: [], active: 0 });
+      homeElement.innerHTML = wasMarkup;
+    }
+  });
+
+  check('a vault switch keeps the sentence under the headline', () => {
+    const line = (markup) => (markup.match(/<p class="empty-description">([^<]*)</) || [])[1];
+    onTheStartScreen(KEPT, (screen) => {
+      const before = line(screen());
+      if (!before) throw new Error(`the start screen drew no sentence at all: ${screen()}`);
+      booted.leafSetVaults({ vaults: VAULTS, active: 2 });
+      if (line(screen()) !== before) {
+        throw new Error(`the sentence was reshuffled by a vault switch: ${before} became ${line(screen())}`);
+      }
+    });
+  });
+
+  check('a removed vault takes its favorites off the start screen with it', () => {
+    onTheStartScreen(KEPT, (screen) => {
+      booted.leafSetVaults({ vaults: VAULTS, active: 0 });
+      // The order the host sends them in: the shorter list first, then the registry without that vault. Backwards, the screen is drawn from rows naming a vault the registry no longer has, and every one of them lands in a second group with the same name as the real one.
+      booted.window.leafSetWorkspace({
+        recent: [],
+        favorites: KEPT.filter((one) => one.vaultId !== 2),
+        tabs: [],
+        active: null,
+      });
+      booted.leafSetVaults({ vaults: VAULTS.filter((one) => one.id !== 2), active: 0 });
+      const markup = screen();
+      if (markup.includes('Standup')) throw new Error(`the removed vault left its favorite on screen: ${markup}`);
+      const groups = [...markup.matchAll(/<li class="home-list-group"[^>]*>([^<]*)</g)].map((m) => m[1]);
+      if (groups.join('|') !== 'Dharma|Outside a vault') {
+        throw new Error(`the groups came out as ${JSON.stringify(groups)}`);
+      }
+    });
+  });
+
   check('Show all appears only past what the folded layout holds, and names the count', () => {
     // With favorites, because a list on its own is the plain one this screen had before there was a pair — no box to fold and nothing to show all of.
     const short = homeListsMarkup({ recent: ['a.md', 'b.md', 'c.md', 'd.md', 'e.md'], favorites: KEPT });

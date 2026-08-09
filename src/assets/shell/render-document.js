@@ -588,6 +588,14 @@ if (homeSheet) {
   homeSheetClose.addEventListener('click', closeHomeSheet);
   homeSheetBackdrop.addEventListener('click', closeHomeSheet);
 }
+// Is the start screen what is on the page? Not the same question as "is there a
+// document": a tab opened straight into source leaves the page's copy of the state
+// with no document on it, so that alone would draw the start screen over somebody's
+// source and throw its editor away. The map needs no clause — it hides `app` and
+// closes whenever a state arrives with no document.
+function homeScreenIsShowing() {
+  return !!currentState && !currentState.document && !codeViewActive;
+}
 function renderState() {
   const state = currentState || { recent: [], favorites: [], tabs: [], active: null, document: null };
   disconnectMinimapPreviewObservers();

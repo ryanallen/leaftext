@@ -1409,5 +1409,9 @@ window.leafSetVaults = (payload) => {
   // The leftmost crumb reads the root's name, so the trail lays out again.
   libraryCrumbFitKey = null;
   renderLibrary();
+  // The start screen's favorites are the vault you are in, so a registry that moved
+  // leaves them saying the vault you left. Any push means a change worth redrawing:
+  // switching, adding, renaming, repointing or removing all end here.
+  if (homeScreenIsShowing()) renderState();
 };
 

@@ -1692,6 +1692,30 @@ fn full_screen_is_read_off_the_window_not_off_a_gesture() {
     );
 }
 
+#[test]
+fn removing_a_vault_left_its_favorites_drawn_on_the_start_screen() {
+    // A vault going takes its favorites with it, and the registry push is what redraws the start screen. So the page has to be handed the shorter list first: the other way round, the screen is drawn from rows naming a vault the registry no longer has, and every one of them falls into a second group called "Outside a vault".
+    let source = include_str!("event_loop.rs");
+    let arm = source
+        .split("IpcCommand::RemoveVault")
+        .nth(1)
+        .and_then(|rest| rest.split("IpcCommand::").next())
+        .expect("the remove-vault arm");
+    let forget = arm
+        .find("forget_vault_favorites")
+        .expect("the favorites inside the vault are forgotten");
+    let tell = arm
+        .find("refresh_tab_strip")
+        .expect("the page is told the favorites have gone");
+    let row = arm
+        .find("remove_vault_row")
+        .expect("the registry row is removed");
+    assert!(
+        forget < tell && tell < row,
+        "the registry push has to land last, so the start screen is redrawn against the corrected favorites"
+    );
+}
+
 /// Deleted and put back, against the real Recycle Bin. The whole of the undo is a claim about the shell, so a test that mocked it would prove nothing — this one deletes a file of its own and asks for it back.
 #[test]
 #[cfg(windows)]

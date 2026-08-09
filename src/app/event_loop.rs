@@ -993,9 +993,11 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     }
                 }
                 IpcCommand::RemoveVault { id } => {
-                    remove_vault_row(id, &mut vault_state, reader.page());
                     // The registry was the only record of what that id meant, so the favorites inside it go too.
                     reader.forget_vault_favorites(id);
+                    // The shorter list first, because the registry push below is what redraws the start screen. The other way round it is drawn from favorites naming a vault the registry no longer has.
+                    reader.refresh_tab_strip();
+                    remove_vault_row(id, &mut vault_state, reader.page());
                     // Removing the vault on screen lands back at the top of the whole library.
                     vault_state.folder.clear();
                     request_folder(&vault_state, &proxy, String::new());
